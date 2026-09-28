@@ -68,6 +68,20 @@ public class Flavour {
     private boolean isFixed;
 
     /**
+     * The {@link FlavourKind} block this flavour belongs to - the port's way of reaching the
+     * shared tval and glyph {@link FlavourKind} hoists up out of each individual flavour (see
+     * that class's Javadoc for why). C has nothing to port here: {@code struct flavor} carries
+     * its own copy of the tval and glyph directly, so there is no parent link to walk back up.
+     *
+     * <p>Set once, by {@link FlavourKind}'s constructor, on every flavour it is given; never
+     * reassigned afterwards except by {@link #copy()}, which carries the same owner across onto
+     * the copy.
+     *
+     * <p>Field flavourKind coded on 260827, commented in full on 260928.
+     */
+    private FlavourKind flavourKind;
+
+    /**
      * Constructs a fixed flavour — one bound to a specific object sub-type.
      *
      * @param text   the displayed flavour text
@@ -108,6 +122,32 @@ public class Flavour {
      */
     public void setsVal(int sVal) {
         this.sVal = sVal;
+    }
+
+    /**
+     * Returns the {@link FlavourKind} block this flavour belongs to - see {@link #flavourKind}.
+     * {@link ItemObject#getItemObjectADC()} is the one caller today, reaching through this to
+     * read the block's shared glyph.
+     *
+     * <p>Function getFlavourKind coded on 260827, commented in full on 260928.
+     *
+     * @return the owning {@link FlavourKind}
+     */
+    public FlavourKind getFlavourKind() {
+        return flavourKind;
+    }
+
+    /**
+     * Sets the {@link FlavourKind} block this flavour belongs to. Package-private: only
+     * {@link FlavourKind}'s constructor and {@link #copy()} call it, so a flavour cannot be
+     * handed a different owner from outside this package.
+     *
+     * <p>Function setFlavourKind coded on 260827, commented in full on 260928.
+     *
+     * @param flavourKind the owning {@link FlavourKind}
+     */
+    void setFlavourKind(FlavourKind flavourKind) {
+        this.flavourKind = flavourKind;
     }
 
     /**
@@ -168,6 +208,7 @@ public class Flavour {
      */
     public Flavour copy() {
         Flavour copy = new Flavour(this.text, this.sValStr, this.colour, this.index);
+        copy.setFlavourKind(this.getFlavourKind());
         copy.isFixed = this.isFixed;
         return copy;
     }

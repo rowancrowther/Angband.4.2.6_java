@@ -18,6 +18,7 @@
 package uk.co.jackoftradesltd.frontend.ui;
 
 import uk.co.jackoftradesltd.channel.messages.data.*;
+import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 
 /**
  * The UI half's dispatcher from a decoded redraw payload to the model that owns the value it
@@ -219,6 +220,25 @@ public class RedrawRouter {
     public static void setGold(GameEventData gameEventData) {
         if (gameEventData instanceof EventDataLong(long value)) {
             SidebarModel.setGold(value);
+        }
+    }
+
+    /**
+     * Unpacks an {@code EVENT_EQUIPMENT} payload and writes it into {@link SidebarModel}, C's
+     * {@code prt_equippy} ({@code [C] ui-display.c}, function {@code prt_equippy}) reading
+     * {@code player->body} and calling {@code object_attr}/{@code object_char} on each slot's
+     * object directly by comparison. Guarded on the payload shape, the same way {@link #setGold}
+     * is guarded.
+     *
+     * <p>Method setEquippy coded on 260927, commented in full on 260928.
+     *
+     * @param gameEventData the routed payload; must be an {@link EventDataColourString} of one
+     *                      {@link AngbandDisplayCharacter} per equipment slot or nothing is
+     *                      written
+     */
+    public static void setEquippy(GameEventData gameEventData) {
+        if (gameEventData instanceof EventDataColourString(AngbandDisplayCharacter[] string)) {
+            SidebarModel.setEquippyString(string);
         }
     }
 }

@@ -21,10 +21,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
-import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
-import uk.co.jackoftradesltd.channel.messages.data.PlayerEventStatusUpdate;
+import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.Message;
 import uk.co.jackoftradesltd.middle.enums.Stats;
@@ -860,7 +860,7 @@ public class PlayerCalcs {
      * narrowing above happens first, so with the map hidden neither override can be present and the
      * hack always returns.
      *
-     * <p>Most flags are signalled bare through {@link PlayerRedraw#getEventType()}, but seven carry a
+     * <p>Most flags are signalled bare through {@link PlayerRedraw#getEventType()}, but eight carry a
      * payload instead, because there is no shared {@code player} on the front-end side for a handler
      * to read the way C's {@code prt_*} functions do, so each has to hand across whatever that
      * handler would otherwise have read from the global: {@code PR_HP} and {@code PR_MANA} each call
@@ -878,7 +878,15 @@ public class PlayerCalcs {
      * the experience to the next level, computed here from {@link PlayerRegistry#playerExperience}
      * keyed at {@code player.getLevel() - 1} exactly as C indexes
      * {@code player_exp[player->lev - 1]}, or the running total once the character has reached
-     * level fifty. The map is handled separately again, because it also carries data:
+     * level fifty. {@code PR_EQUIP} calls {@code eventSignalColourString} with one
+     * {@link uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter} per equipment slot,
+     * built by calling {@link ItemObject#getItemObjectADC()} on each occupied slot and falling
+     * back to a blank white space for an empty one — C's {@code prt_equippy}
+     * ({@code [C] ui-display.c}) reads {@code player->body} directly instead, and also blanks a
+     * slot whose graphics tile is wider or taller than one character cell, a check this arm does
+     * not reproduce: tile width/height are UI-side state with no core-side counterpart to read
+     * from here, so that fallback is deferred until tiles, as opposed to characters, are ported.
+     * The map is handled separately again, because it also carries data:
      * {@code EVENT_MAP} with the point {@code (-1, -1)}, C's sentinel for "the whole map, not one
      * grid". A last {@code EVENT_END} tells the display the batch is complete and it may now do
      * any plotting it deferred — and, like the narrowing, it is skipped when only subwindows were
@@ -966,6 +974,20 @@ public class PlayerCalcs {
                 }
                 case PR_GOLD -> GameEngine.getEventsBusHandler().eventSignalLong(GameEventType.EVENT_GOLD,
                         player.getAU());
+                case PR_EQUIP -> {
+                    AngbandDisplayCharacter[] equipString =
+                            new AngbandDisplayCharacter[player.getPlayerBody().getCount()];
+                    for (int index = 0; index < player.getPlayerBody().getCount(); index++) {
+                        ItemObject obj = player.getPlayerBody().getSlot(index).getItem();
+                        if (obj != null) {
+                            equipString[index] = obj.getItemObjectADC();
+                        } else {
+                            equipString[index] = new AngbandDisplayCharacter(' ', ColourEnum.COLOUR_WHITE);
+                        }
+                    }
+
+                    GameEngine.getEventsBusHandler().eventSignalColourString(GameEventType.EVENT_EQUIPMENT, equipString);
+                }
                 default -> GameEngine.getEventsBusHandler().eventSignal(playerRedraw.getEventType());
             }
         }

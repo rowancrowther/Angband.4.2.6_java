@@ -1321,4 +1321,18 @@ public class ObjectKind {
     public void setFlavour(Flavour flavour) {
         this.flavour = flavour;
     }
+
+    /**
+     * Returns this kind's display glyph and colour, the port of reading C's {@code kind->d_char}/
+     * {@code kind->d_attr} ({@code object.h}) together. {@link ItemObject#objectKindChar()} and
+     * {@link ItemObject#objectKindAttr()} are the callers, falling back to this whenever an item
+     * of this kind is not drawn with its flavour's glyph instead.
+     *
+     * <p>Function getCharacter coded before 260904, commented in full on 260928.
+     *
+     * @return this kind's display glyph and colour
+     */
+    public AngbandDisplayCharacter getCharacter() {
+        return character;
+    }
 }

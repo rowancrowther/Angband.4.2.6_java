@@ -20,7 +20,10 @@ package uk.co.jackoftradesltd.frontend.ui;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import uk.co.jackoftradesltd.channel.colour.ColourEnum;
+import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
@@ -61,6 +64,7 @@ class SidebarModelTest {
     private int savedLevel;
     private int savedMaxLevel;
     private long savedGold;
+    private AngbandDisplayCharacter[] savedEquipString;
 
     @BeforeEach
     void saveModel() {
@@ -79,6 +83,7 @@ class SidebarModelTest {
         savedLevel = SidebarModel.getLevel();
         savedMaxLevel = SidebarModel.getMaxLevel();
         savedGold = SidebarModel.getGold();
+        savedEquipString = SidebarModel.getEquippyString();
     }
 
     @AfterEach
@@ -98,6 +103,7 @@ class SidebarModelTest {
         SidebarModel.setLevel(savedLevel);
         SidebarModel.setMaxLevel(savedMaxLevel);
         SidebarModel.setGold(savedGold);
+        SidebarModel.setEquippyString(savedEquipString);
     }
 
     /**
@@ -373,5 +379,23 @@ class SidebarModelTest {
         SidebarModel.setGold(0L);
 
         assertEquals(0L, SidebarModel.getGold());
+    }
+
+    /**
+     * A written equippy row is the array read back, unrelated to whatever gold total is already
+     * held.
+     */
+    @Test
+    void equippyStringRoundTrips() {
+        SidebarModel.setGold(1234L);
+        AngbandDisplayCharacter[] glyphs = {
+                new AngbandDisplayCharacter('/', ColourEnum.COLOUR_WHITE),
+                new AngbandDisplayCharacter(')', ColourEnum.COLOUR_UMBER)
+        };
+
+        SidebarModel.setEquippyString(glyphs);
+
+        assertArrayEquals(glyphs, SidebarModel.getEquippyString());
+        assertEquals(1234L, SidebarModel.getGold(), "writing the equippy row must not disturb gold");
     }
 }

@@ -20,6 +20,7 @@ package uk.co.jackoftradesltd.middle.game.event;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
 import uk.co.jackoftradesltd.channel.messages.data.*;
+import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.middle.cave.Loc;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
 import uk.co.jackoftradesltd.middle.enums.Stats;
@@ -175,6 +176,28 @@ public interface EventsHandler {
      */
     default void eventSignal(GameEventType eventType) {
         gameEventDispatch(eventType, null);
+    }
+
+    /**
+     * Send a signal to dispatch all events of a given type with an array of per-cell display
+     * characters - the sibling of {@link #eventSignalString} for a redraw that hands across a
+     * whole row of glyph/colour pairs rather than plain text. Used today only for
+     * {@code EVENT_EQUIPMENT}, sent by {@code PlayerCalcs.redrawStuff}'s {@code PR_EQUIP} arm.
+     *
+     * <p>There is no {@code event_signal_*} counterpart for this shape in C, for the same reason
+     * {@link #eventSignalStat} has none: C's {@code prt_equippy} ({@code [C] ui-display.c}) reads
+     * {@code player->body} and calls {@code object_attr}/{@code object_char} on each slot directly
+     * at draw time, rather than through a signal. See {@link EventDataColourString}'s Javadoc for
+     * the full rationale.
+     *
+     * <p>Function eventSignalColourString coded on 260927, commented in full on 260928.
+     *
+     * @param eventType The event type we are signalling
+     * @param string    one {@link AngbandDisplayCharacter} per cell, in display order; becomes
+     *                  {@link EventDataColourString#string()}
+     */
+    default void eventSignalColourString(GameEventType eventType, AngbandDisplayCharacter[] string) {
+        gameEventDispatch(eventType, new EventDataColourString(string));
     }
 
     /**

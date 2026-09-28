@@ -23,7 +23,9 @@ import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
+import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.middle.Message;
 import uk.co.jackoftradesltd.middle.cave.Chunk;
 import uk.co.jackoftradesltd.middle.enums.DamageAspect;
@@ -308,6 +310,19 @@ public class ItemObject {
      */
     private MonsterRace originRace = null;
 
+    /**
+     * The {@link Pile} this item currently belongs to, or {@code null} if it belongs to none.
+     *
+     * <p>Has no single field counterpart in C: {@code struct object} threads a pile together
+     * itself, with intrusive {@code prev}/{@code next} pointers ({@code object.h}) linking one
+     * item directly to its neighbours, so the pile <em>is</em> the chain and nothing needs to
+     * point back to a container. The port keeps piles as a separate {@link Pile} collection
+     * instead, so an item needs this back-reference to answer which pile, if any, currently holds
+     * it - the way {@link #getOwningPile()} is used to keep a {@link Pile}'s own bookkeeping in
+     * step with the items it is given.
+     *
+     * <p>Field owningPile coded before 260904, commented in full on 260928.
+     */
     private Pile owningPile;
 
     /**
@@ -5459,12 +5474,83 @@ public class ItemObject {
         this.known = known;
     }
 
+    /**
+     * @return the {@link Pile} this item currently belongs to, or {@code null} if it belongs to
+     * none - see {@link #owningPile}
+     */
     public Pile getOwningPile() {
         return this.owningPile;
     }
 
+    /**
+     * Sets the {@link Pile} this item belongs to - see {@link #owningPile}. Takes {@code null} to
+     * record that the item has left every pile.
+     *
+     * @param owner the pile to record as owning this item, or {@code null}
+     */
     public void setOwningPile(Pile owner) {
         this.owningPile = owner;
+    }
+
+    /**
+     * Builds the glyph/colour pair this item is drawn as, the port of calling C's
+     * {@code object_char}/{@code object_attr} ({@code [C] ui-object.c}) on the same object and
+     * combining the two results. Used today by {@code PlayerCalcs.redrawStuff}'s {@code PR_EQUIP}
+     * arm to build the equippy row's payload, one call per equipped item.
+     *
+     * <p>Function getItemObjectADC coded on 260927, commented in full on 260928.
+     *
+     * @return this item's display glyph and colour
+     */
+    public AngbandDisplayCharacter getItemObjectADC() {
+        char ch = objectKindChar();
+        ColourEnum attr = objectKindAttr();
+        return new AngbandDisplayCharacter(ch, attr);
+    }
+
+    /**
+     * Picks this item's display glyph, the port of C's {@code object_char} calling
+     * {@code object_kind_char} ({@code [C] ui-object.c}): the flavour's glyph while
+     * {@link #useFlavourGlyph()} holds, the kind's own glyph otherwise.
+     *
+     * <p>Function objectKindChar coded on 260927, commented in full on 260928.
+     *
+     * @return the glyph this item is drawn as
+     */
+    private char objectKindChar() {
+        return useFlavourGlyph() ? kind.getFlavour().getFlavourKind().getGlyph()
+                : kind.getCharacter().getCharacter();
+    }
+
+    /**
+     * Picks this item's display colour, the port of C's {@code object_attr} calling
+     * {@code object_kind_attr} ({@code [C] ui-object.c}): the flavour's colour while
+     * {@link #useFlavourGlyph()} holds, the kind's own colour otherwise.
+     *
+     * <p>Function objectKindAttr coded on 260927, commented in full on 260928.
+     *
+     * @return the colour this item is drawn in
+     */
+    private ColourEnum objectKindAttr() {
+        return useFlavourGlyph() ? kind.getFlavour().getColour()
+                : kind.getCharacter().getAttributeColour();
+    }
+
+    /**
+     * Decides whether this item should be drawn with its flavour's glyph/colour rather than its
+     * kind's own - the port of C's {@code use_flavor_glyph} ({@code [C] ui-object.c}).
+     *
+     * <p>Matches C's {@code kind->flavor && !(kind->tval == TV_SCROLL && kind->aware)} exactly:
+     * a flavoured kind uses its flavour unless it is both a scroll and identified, in which case
+     * an aware scroll is shown by its own glyph instead - the one case where being identified
+     * turns the flavour glyph back off rather than on.
+     *
+     * <p>Function useFlavourGlyph coded on 260927, commented in full on 260928.
+     *
+     * @return {@code true} if this item's flavour glyph/colour should be used over its kind's own
+     */
+    private boolean useFlavourGlyph() {
+        return kind.getFlavour() != null && !(kind.gettValue().isScroll() && kind.isAware());
     }
 
     /**

@@ -57,6 +57,9 @@ public class FlavourKind {
     public FlavourKind(TValue value, char glyph, List<Flavour> flavours) {
         this.value = value;
         this.glyph = glyph;
+        for (Flavour flavour : flavours) {
+            flavour.setFlavourKind(this);
+        }
         this.flavours = flavours;
     }
 

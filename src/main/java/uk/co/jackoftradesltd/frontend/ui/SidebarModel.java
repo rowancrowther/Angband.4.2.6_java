@@ -17,6 +17,8 @@
 
 package uk.co.jackoftradesltd.frontend.ui;
 
+import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
+
 /**
  * The UI-owned model for the character sidebar's hit-point row — the front end's replacement for
  * reading {@code player->chp}/{@code mhp} straight off the shared player global, the way C's
@@ -216,6 +218,42 @@ public class SidebarModel {
      * <p>Field gold coded on 260927, commented in full on 260928.
      */
     private static long gold;
+
+    /**
+     * The sidebar's equippy row, one {@link AngbandDisplayCharacter} per equipment slot in slot
+     * order - the port's stand-in for C's {@code prt_equippy} ({@code [C] ui-display.c}) reading
+     * {@code player->body} and calling {@code object_attr}/{@code object_char} on each slot's
+     * object directly at draw time. Written each time an {@code EVENT_EQUIPMENT} message is
+     * routed and read whenever the sidebar's equippy row is drawn.
+     *
+     * <p>Field equipString coded on 260927, commented in full on 260928.
+     */
+    private static AngbandDisplayCharacter[] equipString;
+
+    /**
+     * Read the equippy row last written by {@link #setEquippyString(AngbandDisplayCharacter[])} -
+     * {@code HandlersHolder.prtEquippy}'s port of C's {@code prt_equippy} ({@code [C]
+     * ui-display.c}) is today's only reader.
+     *
+     * <p>Method getEquippyString coded on 260927, commented in full on 260928.
+     *
+     * @return one {@link AngbandDisplayCharacter} per equipment slot, in slot order
+     */
+    public static AngbandDisplayCharacter[] getEquippyString() {
+        return equipString;
+    }
+
+    /**
+     * Write the equippy row. Package-private, so only {@link RedrawRouter#setEquippy} - the only
+     * class in this package today - can write the model directly.
+     *
+     * <p>Method setEquippyString coded on 260927, commented in full on 260928.
+     *
+     * @param equipString one {@link AngbandDisplayCharacter} per equipment slot, in slot order
+     */
+    static void setEquippyString(AngbandDisplayCharacter[] equipString) {
+        SidebarModel.equipString = equipString;
+    }
 
     /**
      * Read the gold total last written by {@link #setGold(long)}, for the sidebar's gold row -

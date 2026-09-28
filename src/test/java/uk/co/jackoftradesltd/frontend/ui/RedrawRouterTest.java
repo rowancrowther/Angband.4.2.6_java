@@ -20,12 +20,16 @@ package uk.co.jackoftradesltd.frontend.ui;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataBoolean;
+import uk.co.jackoftradesltd.channel.messages.data.EventDataColourString;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataLong;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataStat;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataString;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataStrings;
+import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
@@ -67,6 +71,7 @@ class RedrawRouterTest {
     private int savedLevel;
     private int savedMaxLevel;
     private long savedGold;
+    private AngbandDisplayCharacter[] savedEquipString;
 
     @BeforeEach
     void saveModel() {
@@ -85,6 +90,7 @@ class RedrawRouterTest {
         savedLevel = SidebarModel.getLevel();
         savedMaxLevel = SidebarModel.getMaxLevel();
         savedGold = SidebarModel.getGold();
+        savedEquipString = SidebarModel.getEquippyString();
     }
 
     @AfterEach
@@ -104,6 +110,7 @@ class RedrawRouterTest {
         SidebarModel.setLevel(savedLevel);
         SidebarModel.setMaxLevel(savedMaxLevel);
         SidebarModel.setGold(savedGold);
+        SidebarModel.setEquippyString(savedEquipString);
     }
 
     /**
@@ -344,5 +351,57 @@ class RedrawRouterTest {
         RedrawRouter.setGold(new EventDataBoolean(true));
 
         assertEquals(1234L, SidebarModel.getGold(), "a mismatched payload must not overwrite gold");
+    }
+
+    /**
+     * {@link EventDataColourString#string()} becomes {@link SidebarModel#getEquippyString()},
+     * array reference and all - the port has no C counterpart here, since C's {@code prt_equippy}
+     * ({@code [C] ui-display.c}) reads {@code player->body} directly rather than through a model.
+     */
+    @Test
+    void equippyIsWrittenFromTheColourStringPayload() {
+        AngbandDisplayCharacter[] glyphs = {
+                new AngbandDisplayCharacter('/', ColourEnum.COLOUR_WHITE),
+                new AngbandDisplayCharacter(')', ColourEnum.COLOUR_UMBER)
+        };
+
+        RedrawRouter.setEquippy(new EventDataColourString(glyphs));
+
+        assertArrayEquals(glyphs, SidebarModel.getEquippyString());
+    }
+
+    /**
+     * A later {@code EVENT_EQUIPMENT} overwrites the model rather than merging with it, matching a
+     * redraw always sending the player's whole current equipment row.
+     */
+    @Test
+    void aSecondEquippyMessageOverwritesTheFirst() {
+        RedrawRouter.setEquippy(new EventDataColourString(new AngbandDisplayCharacter[]{
+                new AngbandDisplayCharacter('/', ColourEnum.COLOUR_WHITE)
+        }));
+
+        AngbandDisplayCharacter[] second = {
+                new AngbandDisplayCharacter('|', ColourEnum.COLOUR_LIGHT_BLUE)
+        };
+        RedrawRouter.setEquippy(new EventDataColourString(second));
+
+        assertArrayEquals(second, SidebarModel.getEquippyString());
+    }
+
+    /**
+     * A payload of the wrong shape is dropped rather than routed, the same guard {@link #setHP}'s
+     * own test pins for {@link RedrawRouter#setHP}.
+     */
+    @Test
+    void aNonColourStringEquippyPayloadLeavesTheModelUntouched() {
+        AngbandDisplayCharacter[] glyphs = {
+                new AngbandDisplayCharacter('/', ColourEnum.COLOUR_WHITE)
+        };
+        RedrawRouter.setEquippy(new EventDataColourString(glyphs));
+
+        RedrawRouter.setEquippy(new EventDataBoolean(true));
+
+        assertArrayEquals(glyphs, SidebarModel.getEquippyString(),
+                "a mismatched payload must not overwrite the equippy row");
     }
 }

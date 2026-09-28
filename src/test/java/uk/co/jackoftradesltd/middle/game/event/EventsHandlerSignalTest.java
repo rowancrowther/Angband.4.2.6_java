@@ -19,10 +19,12 @@ package uk.co.jackoftradesltd.middle.game.event;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataBoolean;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataBolt;
+import uk.co.jackoftradesltd.channel.messages.data.EventDataColourString;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataGrid;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataMessage;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataSize;
@@ -31,6 +33,7 @@ import uk.co.jackoftradesltd.channel.messages.data.EventDataString;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataStrings;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataTunnel;
 import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
+import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.middle.cave.Loc;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
 
@@ -202,6 +205,25 @@ class EventsHandlerSignalTest {
 
         assertEquals(new EventDataBolt(ProjectionEnum.PROJ_FIRE, true, false, true, origin, current),
                 handler.lastData);
+    }
+
+    /**
+     * The colour-string signal wraps its array straight through, reference and all - there is no
+     * C {@code event_signal_*} counterpart to cross against, for the same reason
+     * {@link #aStatSignalWrapsCurrentAndOtherInOrder()} has none: C's {@code prt_equippy}
+     * ({@code [C] ui-display.c}) reads {@code player->body} directly rather than through a signal.
+     */
+    @Test
+    void aColourStringSignalWrapsItsArray() {
+        AngbandDisplayCharacter[] glyphs = {
+                new AngbandDisplayCharacter('/', ColourEnum.COLOUR_WHITE),
+                new AngbandDisplayCharacter(')', ColourEnum.COLOUR_UMBER)
+        };
+
+        handler.eventSignalColourString(GameEventType.EVENT_EQUIPMENT, glyphs);
+
+        EventDataColourString data = assertInstanceOf(EventDataColourString.class, handler.lastData);
+        assertArrayEquals(glyphs, data.string());
     }
 
     /**

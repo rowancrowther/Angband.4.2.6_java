@@ -20,6 +20,7 @@ package uk.co.jackoftradesltd.frontend.screen.handlers;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.globals.ChannelRegistry;
+import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.frontend.screen.Term;
 import uk.co.jackoftradesltd.frontend.screen.TermData;
 import uk.co.jackoftradesltd.frontend.ui.SidebarModel;
@@ -31,10 +32,10 @@ import java.util.List;
  * The Java port of C's {@code side_handlers[]} table ({@code [C] ui-display.c}) - the sidebar rows
  * that redraw themselves in response to a {@code game_event_type} flag, as opposed to the "short"
  * topbar path ({@code update_topbar}, {@code [C] ui-display.c}), which this class does not cover.
- * C's table lists roughly twenty rows; six are ported and registered so far - {@code prt_race},
- * {@code prt_title}, {@code prt_class}, {@code prt_level}, {@code prt_exp} and {@code prt_gold} -
- * so {@link #sideHandlers} today holds six {@link SideHandler}s, in the same order C's table
- * lists them, with the rest joining one at a time as each hook is ported.
+ * C's table lists roughly twenty rows; seven are ported and registered so far - {@code prt_race},
+ * {@code prt_title}, {@code prt_class}, {@code prt_level}, {@code prt_exp}, {@code prt_gold} and
+ * {@code prt_equippy} - so {@link #sideHandlers} today holds seven {@link SideHandler}s, in the
+ * same order C's table lists them, with the rest joining one at a time as each hook is ported.
  *
  * <p>Class HandlersHolder coded on 260927, commented in full on 260928.
  *
@@ -65,14 +66,15 @@ public class HandlersHolder {
 
     /**
      * Builds {@link #sideHandlers} - the port of C's {@code side_handlers[]} initializer
-     * ({@code [C] ui-display.c}). Six rows are registered today, each at the same priority and
+     * ({@code [C] ui-display.c}). Seven rows are registered today, each at the same priority and
      * against the same {@code game_event_type} flag C's table gives it: {@code prt_race} at
      * {@code 19} against {@code EVENT_RACE_CLASS}, {@code prt_title} at {@code 18} against
      * {@code EVENT_PLAYERTITLE}, {@code prt_class} at {@code 22} against {@code EVENT_RACE_CLASS},
      * {@code prt_level} at {@code 10} against {@code EVENT_PLAYERLEVEL}, {@code prt_exp} at
-     * {@code 16} against {@code EVENT_EXPERIENCE}, and {@code prt_gold} at {@code 11} against
-     * {@code EVENT_GOLD} - matching C's table order and figures exactly. The remaining rows join
-     * this method as their own hooks are ported.
+     * {@code 16} against {@code EVENT_EXPERIENCE}, {@code prt_gold} at {@code 11} against
+     * {@code EVENT_GOLD}, and {@code prt_equippy} at {@code 17} against {@code EVENT_EQUIPMENT} -
+     * matching C's table order and figures exactly. The remaining rows join this method as their
+     * own hooks are ported.
      *
      * <p>Method initHandlers coded on 260927, commented in full on 260928.
      */
@@ -89,6 +91,41 @@ public class HandlersHolder {
         sideHandlers.add(handler);
         handler = new SideHandler(HandlersHolder::prtGold, 11, GameEventType.EVENT_GOLD);
         sideHandlers.add(handler);
+        handler = new SideHandler(HandlersHolder::prtEquippy, 17, GameEventType.EVENT_EQUIPMENT);
+        sideHandlers.add(handler);
+    }
+
+    /**
+     * Draws the sidebar's equippy row - the port of C's {@code prt_equippy} ({@code [C]
+     * ui-display.c}), which shows one glyph per equipment slot, in slot order.
+     *
+     * <p>C reads {@code player->body} directly and calls {@code object_attr}/{@code object_char}
+     * on each slot's object at draw time, falling back to a blank white space for an empty slot
+     * or when graphics tiles wider or taller than one character cell are in use. On this side of
+     * the boundary there is no {@code player} global to read from, so
+     * {@code PlayerCalcs.redrawStuff}'s {@code PR_EQUIP} arm builds the whole glyph/colour array
+     * up front - one {@link AngbandDisplayCharacter} per slot, via
+     * {@code ItemObject.getItemObjectADC()} - and sends it as an {@code EVENT_EQUIPMENT} signal;
+     * {@code RedrawRouter.setEquippy} unpacks it into {@link SidebarModel}, and this method only
+     * reads and draws that array.
+     *
+     * <p><b>Outstanding:</b> C's tile-size fallback is not reproduced - the array
+     * {@code PlayerCalcs.redrawStuff} builds blanks only an empty slot, not a real object under
+     * oversized tiles. Tile width/height are UI-side state the core has no access to, so this is
+     * deferred until tiles (as opposed to characters) are ported.
+     *
+     * <p>Method prtEquippy coded on 260927, commented in full on 260928.
+     *
+     * @param row the row to draw at
+     * @param col the column to draw at
+     */
+    private static void prtEquippy(int row, int col) {
+        AngbandDisplayCharacter[] equipString = SidebarModel.getEquippyString();
+
+        for (int index = 0; index < equipString.length; index++) {
+            term.cPutStr(equipString[index].getAttributeColour(), Character.toString(equipString[index].getCharacter()),
+                    row, col + index);
+        }
     }
 
     /**
@@ -329,6 +366,22 @@ public class HandlersHolder {
         term = termData.getTerm();
     }
 
+    /**
+     * A bespoke {@code void (T, U)} functional interface standing in for C's {@code void (*)(int,
+     * int)} sidebar-hook function pointer ({@code side_handler_t} in {@code [C] ui-display.c}).
+     * {@link SideHandler#SideHandler} takes one of these, bound to a method reference such as
+     * {@link HandlersHolder}{@code ::prtRace}, exactly as each row of C's {@code side_handlers[]}
+     * literal names its hook function directly.
+     *
+     * <p>A bespoke type rather than {@link java.util.function.BiConsumer}, which would serve the
+     * same shape; this predates a check of whether the JDK's own two-argument, void-returning
+     * interface would have done as well.
+     *
+     * <p>Interface prtFunction coded on 260927, commented in full on 260928.
+     *
+     * @param <T> the type of the first argument (row)
+     * @param <U> the type of the second argument (column)
+     */
     @FunctionalInterface
     public interface prtFunction<T, U> {
         void apply(T t, U u);

@@ -23,11 +23,14 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
+import uk.co.jackoftradesltd.channel.messages.data.EventDataColourString;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataGrid;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataStat;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataStrings;
 import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
+import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.game.event.EventHandlerInterface;
 import uk.co.jackoftradesltd.middle.game.event.EventsHandler;
@@ -35,7 +38,10 @@ import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.gameinput.DefaultGameInput;
 import uk.co.jackoftradesltd.middle.gameinput.GameInputHolder;
+import uk.co.jackoftradesltd.middle.objects.ItemObject;
+import uk.co.jackoftradesltd.middle.objects.ObjectKind;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
+import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerRedraw;
 import uk.co.jackoftradesltd.testsupport.CalcBonusesFixture;
@@ -419,6 +425,47 @@ class PlayerRedrawStuffTest {
 
             int lev = bus.events.indexOf(GameEventType.EVENT_PLAYERLEVEL);
             assertEquals(new EventDataStat(9, 12), bus.data.get(lev));
+        }
+
+        /**
+         * {@code PR_EQUIP} is special-cased to carry one {@link AngbandDisplayCharacter} per
+         * equipment slot - the port's substitute for C's {@code prt_equippy} reading
+         * {@code player->body} directly off the shared global and calling
+         * {@code object_attr}/{@code object_char} on each slot's object itself. An occupied slot
+         * carries its item's glyph/colour ({@link ItemObject#getItemObjectADC()}); an empty slot
+         * carries a blank white space, matching C's {@code obj ? ... : (L' ', COLOUR_WHITE)}
+         * fallback.
+         */
+        @Test
+        @DisplayName("the equipment event carries one glyph per slot, blank for an empty one")
+        void equipCarriesOneGlyphPerSlotBlankForEmpty() throws ReflectiveOperationException {
+            ObjectKind kind = new ObjectKind();
+            Field tValueField = ObjectKind.class.getDeclaredField("tValue");
+            tValueField.setAccessible(true);
+            tValueField.set(kind, TValue.TV_SWORD);
+            Field characterField = ObjectKind.class.getDeclaredField("character");
+            characterField.setAccessible(true);
+            characterField.set(kind, new AngbandDisplayCharacter('|', ColourEnum.COLOUR_WHITE));
+
+            ItemObject sword = new ItemObject();
+            Field kindField = ItemObject.class.getDeclaredField("kind");
+            kindField.setAccessible(true);
+            kindField.set(sword, kind);
+
+            Field itemField = EquipSlot.class.getDeclaredField("item");
+            itemField.setAccessible(true);
+            itemField.set(player.getPlayerBody().getSlot(0), sword);
+
+            raise(PlayerRedraw.PR_EQUIP);
+
+            PlayerCalcs.redrawStuff(player);
+
+            int equip = bus.events.indexOf(GameEventType.EVENT_EQUIPMENT);
+            EventDataColourString payload = (EventDataColourString) bus.data.get(equip);
+            assertEquals('|', payload.string()[0].getCharacter(),
+                    "the occupied slot carries the item's glyph");
+            assertEquals(' ', payload.string()[1].getCharacter(), "an empty slot is blank");
+            assertEquals(ColourEnum.COLOUR_WHITE, payload.string()[1].getAttributeColour());
         }
 
         /**

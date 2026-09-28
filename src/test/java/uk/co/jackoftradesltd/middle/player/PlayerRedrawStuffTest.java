@@ -331,7 +331,9 @@ class PlayerRedrawStuffTest {
             assertEquals(Set.of(GameEventType.EVENT_HP, GameEventType.EVENT_GOLD,
                             GameEventType.EVENT_DUNGEONLEVEL, GameEventType.EVENT_END),
                     new LinkedHashSet<>(bus.events));
-            assertEquals(4, bus.events.size(), "no event was signalled twice");
+            assertEquals(5, bus.events.size(),
+                    "no event was signalled twice, except PR_HP's second dispatch of its own "
+                            + "single EVENT_HP (the hit-point warning option after the pair)");
             assertEquals(GameEventType.EVENT_END, bus.events.get(bus.events.size() - 1),
                     "EVENT_END closes the batch");
         }
@@ -351,8 +353,14 @@ class PlayerRedrawStuffTest {
          * single {@code event_signal(EVENT_STATS)} fans out to five listeners on the UI side, and
          * message-passing has no fan-out to reuse (see {@code PlayerCalcs.redrawStuff}'s
          * {@code PR_STATS} clause Javadoc) - four raw dispatches beyond its one distinct event type.
-         * So the raw dispatch count is five higher than the set of distinct event types: one from
-         * {@code PR_EXP}, four from {@code PR_STATS}.
+         * {@code PR_HP} dispatches twice under {@code EVENT_HP} (the hit-point pair, then the
+         * warning option C's {@code player_hp_attr} reads) and {@code PR_MANA} three times under
+         * {@code EVENT_MANA} (the pair, the first-spell level, and whether the class has any
+         * spells at all, which {@code prt_sp} reads) - one and two raw dispatches beyond their
+         * single event types.
+         * So the raw dispatch count is eight higher than the set of distinct event types: one from
+         * {@code PR_EXP}, four from {@code PR_STATS}, one from {@code PR_HP}, two from
+         * {@code PR_MANA}.
          */
         @Test
         @DisplayName("every flag maps to the event C's table gives it")
@@ -369,11 +377,12 @@ class PlayerRedrawStuffTest {
             expected.add(GameEventType.EVENT_END);
 
             assertEquals(expected, new LinkedHashSet<>(bus.events));
-            assertEquals(expected.size() + 5, bus.events.size(),
+            assertEquals(expected.size() + 8, bus.events.size(),
                     "no event was signalled twice, except PR_MISC's second distinct event "
                             + "(EVENT_PLAYER_NAME alongside EVENT_RACE_CLASS), PR_EXP's second "
-                            + "dispatch of its own single EVENT_EXPERIENCE, and PR_STATS' five "
-                            + "dispatches of its own single EVENT_STATS (one per stat)");
+                            + "dispatch of its own single EVENT_EXPERIENCE, PR_STATS' five "
+                            + "dispatches of its own single EVENT_STATS (one per stat), PR_HP's "
+                            + "second EVENT_HP and PR_MANA's second and third EVENT_MANA");
         }
 
         /**

@@ -49,44 +49,58 @@ import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
  *
  * @author Rowan Crowther
  */
-public class RedrawRouter {
+public class RedrawRouter {    
     /**
-     * Unpacks an {@code EVENT_HP} payload and writes its pair into {@link SidebarModel}, C's
+     * Unpacks an {@code EVENT_HP} payload and writes it into {@link SidebarModel}, C's
      * {@code prt_hp} ({@code [C] ui-display.c}, function {@code prt_hp}) reading
-     * {@code player->chp}/{@code mhp} directly by comparison. Guarded on the payload shape: a
-     * signal for {@code EVENT_HP} carrying anything other than an {@link EventDataStat} is dropped
-     * rather than written, mirroring the same guard {@code RedrawHandlers.eventHP} already applies
-     * core-side.
+     * {@code player->chp}/{@code mhp} and, through {@code player_hp_attr}, the
+     * {@code opts.hitpoint_warn} option directly by comparison.
      *
-     * <p>Method setHP coded on 260926, commented in full on 260926.
+     * <p>{@code EVENT_HP} carries two payloads on two separate dispatches, sent by
+     * {@code PlayerCalcs.redrawStuff}'s {@code PR_HP} arm: an {@link EventDataStat} of (current,
+     * maximum) hit points, then an {@link EventDataInt} of the warning option. This method is
+     * routed both times and writes whichever it is handed; anything else is dropped.
      *
-     * @param gameEventData the routed payload; must be an {@link EventDataStat} of
-     *                      (current, maximum) hit points or nothing is written
+     * <p>Method setHP coded on 260926, commented in full on 260928.
+     *
+     * @param gameEventData the routed payload; an {@link EventDataStat} writes the hit-point pair,
+     *                      an {@link EventDataInt} writes {@link SidebarModel#setPlayerOptHPWarn}
      */
     public static void setHP(GameEventData gameEventData) {
         if (gameEventData instanceof EventDataStat(int current, int other)) {
             SidebarModel.setCurrentHP(current);
             SidebarModel.setMaxHP(other);
-        } else if (gameEventData instanceof EventDataInt(int acWarn)) {
-            SidebarModel.setACWarn(acWarn);
+        } else if (gameEventData instanceof EventDataInt(int hpWarn)) {
+            SidebarModel.setPlayerOptHPWarn(hpWarn);
         }
     }
 
     /**
-     * Unpacks an {@code EVENT_MANA} payload and writes its pair into {@link SidebarModel}, C's
+     * Unpacks an {@code EVENT_MANA} payload and writes it into {@link SidebarModel}, C's
      * {@code prt_sp} ({@code [C] ui-display.c}, function {@code prt_sp}) reading
-     * {@code player->csp}/{@code msp} directly by comparison. Guarded on the payload shape, the
-     * same way {@link #setHP} is guarded.
+     * {@code player->csp}/{@code msp} and the class's {@code magic.total_spells}/{@code spell_first}
+     * directly by comparison.
      *
-     * <p>Method setSP coded on 260926, commented in full on 260926.
+     * <p>{@code EVENT_MANA} carries three payloads on three separate dispatches, sent by
+     * {@code PlayerCalcs.redrawStuff}'s {@code PR_MANA} arm: an {@link EventDataStat} of (current,
+     * maximum) spell points, an {@link EventDataInt} of the level of the first spell, and an
+     * {@link EventDataBoolean} of whether the class has any spells. This method is routed each time
+     * and writes whichever it is handed; anything else is dropped.
      *
-     * @param gameEventData the routed payload; must be an {@link EventDataStat} of
-     *                      (current, maximum) spell points or nothing is written
+     * <p>Method setSP coded on 260926, commented in full on 260928.
+     *
+     * @param gameEventData the routed payload; an {@link EventDataStat} writes the spell-point
+     *                      pair, an {@link EventDataInt} the first-spell level and an
+     *                      {@link EventDataBoolean} the has-spells flag
      */
     public static void setSP(GameEventData gameEventData) {
         if (gameEventData instanceof EventDataStat(int current, int other)) {
             SidebarModel.setCurrentSP(current);
             SidebarModel.setMaxSP(other);
+        } else if (gameEventData instanceof EventDataInt(int firstSpell)) {
+            SidebarModel.setFirstSpell(firstSpell);
+        } else if (gameEventData instanceof EventDataBoolean(boolean hasMagic)) {
+            SidebarModel.setMagic(hasMagic);
         }
     }
 

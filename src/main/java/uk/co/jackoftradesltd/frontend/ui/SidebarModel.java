@@ -37,7 +37,8 @@ import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
  *
  * <p>Named for what it, and its siblings still to be written, replace field by field:
  * {@link uk.co.jackoftradesltd.channel.messages.data.PlayerEventStatusUpdate}'s static cache is
- * being architected out in their favour. Today this class holds the HP and SP pairs, the player's
+ * being architected out in their favour. Today this class holds the HP and SP pairs, the
+ * hit-point warning option, whether the class has spells and its first-spell level, the player's
  * level and maximum level, title, race name, class name, full name, wizard and total-winner flags,
  * shape name and shapechanged status, current and displayed experience, gold, armour class, and the
  * five stats' current/maximum/displayed-use values; the rest of C's {@code prt_*} family in
@@ -275,12 +276,113 @@ public class SidebarModel {
      */
     private static int ac;
 
+    /**
+     * The player's hit-point warning option, C's {@code player->opts.hitpoint_warn} - the tenths of
+     * maximum hit points (and, in C, maximum spell points) below which the current figure is drawn
+     * red rather than yellow. Written each time an {@code EVENT_HP} message carrying an
+     * {@link uk.co.jackoftradesltd.channel.messages.data.EventDataInt} is routed and read by
+     * {@code HandlersHolder}'s {@code playerHpAttr} and {@code playerSPAttr}.
+     *
+     * <p>Field playerOptHPWarn coded on 260928, commented in full on 260928.
+     */
     private static int playerOptHPWarn;
 
+    /**
+     * Whether the player's class has any spells at all, C's
+     * {@code player->class->magic.total_spells != 0}. Written each time an {@code EVENT_MANA}
+     * message carrying an {@link uk.co.jackoftradesltd.channel.messages.data.EventDataBoolean} is
+     * routed and read by {@code HandlersHolder.prtSp} to decide whether the SP row is drawn or, for
+     * a level-drained caster, blanked.
+     *
+     * <p>Field magic coded on 260928, commented in full on 260928.
+     */
+    private static boolean magic;
+
+    /**
+     * The level at which the player's class gains its first spell, C's
+     * {@code player->class->magic.spell_first}. Written each time an {@code EVENT_MANA} message
+     * carrying an {@link uk.co.jackoftradesltd.channel.messages.data.EventDataInt} is routed and
+     * read by {@code HandlersHolder.prtSp}, which draws nothing below this level.
+     *
+     * <p>Field firstSpell coded on 260928, commented in full on 260928.
+     */
+    private static int firstSpell;
+
+    /**
+     * Read the first-spell level last written by {@link #setFirstSpell(int)}, for the sidebar's SP
+     * row - {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder}'s port of C's
+     * {@code prt_sp} ({@code [C] ui-display.c}) is today's only reader.
+     *
+     * <p>Method getFirstSpell coded on 260928, commented in full on 260928.
+     *
+     * @return the level of the class's first spell, C's {@code player->class->magic.spell_first}
+     */
+    public static int getFirstSpell() {
+        return firstSpell;
+    }
+
+    /**
+     * Write the first-spell level. Package-private, so only {@link RedrawRouter#setSP} - the only
+     * class in this package today - can write the model directly.
+     *
+     * <p>Method setFirstSpell coded on 260928, commented in full on 260928.
+     *
+     * @param firstSpell the level of the class's first spell, C's
+     *                   {@code player->class->magic.spell_first}
+     */
+    static void setFirstSpell(int firstSpell) {
+        SidebarModel.firstSpell = firstSpell;
+    }
+
+    /**
+     * Read the has-spells flag last written by {@link #setMagic(boolean)}, for the sidebar's SP
+     * row - {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder}'s port of C's
+     * {@code prt_sp} ({@code [C] ui-display.c}) is today's only reader.
+     *
+     * <p>Method hasMagic coded on 260928, commented in full on 260928.
+     *
+     * @return {@code true} when the class has any spells, C's
+     * {@code player->class->magic.total_spells != 0}
+     */
+    public static boolean hasMagic() {
+        return magic;
+    }
+
+    /**
+     * Write the has-spells flag. Package-private, so only {@link RedrawRouter#setSP} - the only
+     * class in this package today - can write the model directly.
+     *
+     * <p>Method setMagic coded on 260928, commented in full on 260928.
+     *
+     * @param magic {@code true} when the class has any spells, C's
+     *              {@code player->class->magic.total_spells != 0}
+     */
+    static void setMagic(boolean magic) {
+        SidebarModel.magic = magic;
+    }
+
+    /**
+     * Read the hit-point warning option last written by {@link #setPlayerOptHPWarn(int)}, for the
+     * sidebar's HP and SP colours - {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder}'s
+     * ports of C's {@code player_hp_attr} and {@code player_sp_attr} ({@code [C] player.c}) are
+     * today's only readers.
+     *
+     * <p>Method getPlayerOptHPWarn coded on 260928, commented in full on 260928.
+     *
+     * @return the warning threshold in tenths, C's {@code player->opts.hitpoint_warn}
+     */
     public static int getPlayerOptHPWarn() {
         return playerOptHPWarn;
     }
 
+    /**
+     * Write the hit-point warning option. Package-private, so only {@link RedrawRouter#setHP} -
+     * the only class in this package today - can write the model directly.
+     *
+     * <p>Method setPlayerOptHPWarn coded on 260928, commented in full on 260928.
+     *
+     * @param playerOptHPWarn the warning threshold in tenths, C's {@code player->opts.hitpoint_warn}
+     */
     static void setPlayerOptHPWarn(int playerOptHPWarn) {
         SidebarModel.playerOptHPWarn = playerOptHPWarn;
     }

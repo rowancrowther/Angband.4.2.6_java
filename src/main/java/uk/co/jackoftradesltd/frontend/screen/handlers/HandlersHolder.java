@@ -35,12 +35,13 @@ import java.util.List;
  * The Java port of C's {@code side_handlers[]} table ({@code [C] ui-display.c}) - the sidebar rows
  * that redraw themselves in response to a {@code game_event_type} flag, as opposed to the "short"
  * topbar path ({@code update_topbar}, {@code [C] ui-display.c}), which this class does not cover.
- * C's table lists roughly twenty rows; thirteen are ported and registered so far -
+ * C's table lists roughly twenty rows; fifteen hooks are ported and registered so far -
  * {@code prt_race}, {@code prt_title}, {@code prt_class}, {@code prt_level}, {@code prt_exp},
- * {@code prt_gold}, {@code prt_equippy}, {@code prt_ac}, and the five stat rows {@code prt_str},
- * {@code prt_int}, {@code prt_wis}, {@code prt_dex} and {@code prt_con} - so {@link #sideHandlers}
- * today holds thirteen {@link SideHandler}s, in the same order C's table lists them, with the rest
- * joining one at a time as each hook is ported.
+ * {@code prt_gold}, {@code prt_equippy}, {@code prt_ac}, {@code prt_hp}, {@code prt_sp}, and the
+ * five stat rows {@code prt_str}, {@code prt_int}, {@code prt_wis}, {@code prt_dex} and
+ * {@code prt_con} - so {@link #sideHandlers} today holds seventeen {@link SideHandler}s, the
+ * fifteen hooks plus C's two {@code NULL}-hooked placeholder rows (priorities 15 and 21), in the
+ * same order C's table lists them, with the rest joining one at a time as each hook is ported.
  *
  * <p>Class HandlersHolder coded on 260927, commented in full on 260928.
  *
@@ -71,7 +72,7 @@ public class HandlersHolder {
 
     /**
      * Builds {@link #sideHandlers} - the port of C's {@code side_handlers[]} initializer
-     * ({@code [C] ui-display.c}). Thirteen rows are registered today, each at the same priority and
+     * ({@code [C] ui-display.c}). Seventeen rows are registered today, each at the same priority and
      * against the same {@code game_event_type} flag C's table gives it: {@code prt_race} at
      * {@code 19} against {@code EVENT_RACE_CLASS}, {@code prt_title} at {@code 18} against
      * {@code EVENT_PLAYERTITLE}, {@code prt_class} at {@code 22} against {@code EVENT_RACE_CLASS},
@@ -80,11 +81,14 @@ public class HandlersHolder {
      * {@code EVENT_GOLD}, {@code prt_equippy} at {@code 17} against {@code EVENT_EQUIPMENT}, the
      * five stat rows {@code prt_str}, {@code prt_int}, {@code prt_wis}, {@code prt_dex} and
      * {@code prt_con} at {@code 6}, {@code 5}, {@code 4}, {@code 3} and {@code 2} respectively, all
-     * against {@code EVENT_STATS}, and {@code prt_ac} at {@code 7} against {@code EVENT_AC} -
-     * matching C's table order and figures exactly. Between the stat rows and {@code prt_ac}, a
-     * {@code null}-hooked entry at priority {@code 15} stands in for C's own {@code { NULL, 15, 0 }}
-     * placeholder row, keeping the priority numbering aligned with C's table even though nothing is
-     * drawn for it yet. The remaining rows join this method as their own hooks are ported.
+     * against {@code EVENT_STATS}, {@code prt_ac} at {@code 7} against {@code EVENT_AC},
+     * {@code prt_hp} at {@code 8} against {@code EVENT_HP} and {@code prt_sp} at {@code 9} against
+     * {@code EVENT_MANA} - matching C's table order and figures exactly. Between the stat rows and
+     * {@code prt_ac}, and again after {@code prt_sp}, {@code null}-hooked entries at priorities
+     * {@code 15} and {@code 21} stand in for C's own {@code { NULL, 15, 0 }} and
+     * {@code { NULL, 21, 0 }} placeholder rows, keeping the priority numbering aligned with C's
+     * table even though nothing is drawn for them. The remaining rows join this method as their own
+     * hooks are ported.
      *
      * <p>Method initHandlers coded on 260927, commented in full on 260928.
      */
@@ -125,10 +129,90 @@ public class HandlersHolder {
         sideHandlers.add(handler);
     }
 
+    /**
+     * Draws the sidebar's spell-point row - the port of C's {@code prt_sp} ({@code [C]
+     * ui-display.c}), which prints "SP " followed by current and maximum spell points in the same
+     * four-wide, slash-separated layout {@link #prtHp} uses.
+     *
+     * <p>C shows nothing unless the class has spells at all ({@code magic.total_spells}) and the
+     * character has reached {@code magic.spell_first}; this tests
+     * {@link SidebarModel#hasMagic()} and {@link SidebarModel#getLevel()} against
+     * {@link SidebarModel#getFirstSpell()}, all three carried in by the {@code EVENT_MANA} signals
+     * {@code PlayerCalcs.redrawStuff}'s {@code PR_MANA} arm sends. When that test fails the method
+     * returns without drawing, except for C's level-drain case: a class with spells whose current
+     * experience has fallen below its maximum has the twelve-character field blanked, in case
+     * drain left no points where there used to be some.
+     *
+     * <p>The current figure takes its colour from {@link #playerSPAttr()}; the "/" is white and the
+     * maximum light green, matching C's three {@code c_put_str} calls at {@code col + 3},
+     * {@code col + 7} and {@code col + 8}.
+     *
+     * <p>Method prtSp coded on 260928, commented in full on 260928.
+     *
+     * @param row the row to draw at
+     * @param col the column to draw at
+     */
     private static void prtSp(int row, int col) {
-        
+        ColourEnum colour = playerSPAttr();
+
+        // Deal with situation where we should have no mana
+        if (!SidebarModel.hasMagic() || (SidebarModel.getLevel() < SidebarModel.getFirstSpell())) {
+            // unless we have been level drained
+            if (SidebarModel.hasMagic() && SidebarModel.getExperience() < SidebarModel.getMaxXp()) {
+                term.putStr(" ".repeat(12), row, col);
+            }
+            return;
+        }
+
+        term.putStr("SP ", row, col);
+
+        String mMana = String.format("%4d", SidebarModel.getMaxSP());
+        String cMana = String.format("%4d", SidebarModel.getCurrentSP());
+
+        term.cPutStr(colour, cMana, row, col + 3);
+        term.cPutStr(ColourEnum.COLOUR_WHITE, "/", row, col + 7);
+        term.cPutStr(ColourEnum.COLOUR_LIGHT_GREEN, mMana, row, col + 8);
     }
 
+    /**
+     * Picks the colour of the current spell-point figure - the port of C's {@code player_sp_attr}
+     * ({@code [C] player.c}). Light green at or above maximum, yellow above
+     * {@code msp * hitpoint_warn / 10} (integer division, as in C), red otherwise. C uses the
+     * hit-point warning option for spell points as well; there is no separate mana threshold.
+     *
+     * <p>Method playerSPAttr coded on 260928, commented in full on 260928.
+     *
+     * @return the colour to draw the current spell points in
+     */
+    private static ColourEnum playerSPAttr() {
+        int currentSp = SidebarModel.getCurrentSP();
+        int maxSp = SidebarModel.getMaxSP();
+
+        if (currentSp >= maxSp) {
+            return ColourEnum.COLOUR_LIGHT_GREEN;
+        }
+        int playerHpWarn = SidebarModel.getPlayerOptHPWarn();
+        if (currentSp > (maxSp * playerHpWarn / 10)) {
+            return ColourEnum.COLOUR_YELLOW;
+        }
+        return ColourEnum.COLOUR_RED;
+    }
+
+    /**
+     * Draws the sidebar's hit-point row - the port of C's {@code prt_hp} ({@code [C]
+     * ui-display.c}), which prints "HP " followed by current and maximum hit points, each in a
+     * four-wide field.
+     *
+     * <p>The current figure at {@code col + 3} takes its colour from {@link #playerHpAttr()}, the
+     * "/" at {@code col + 7} is white and the maximum at {@code col + 8} is light green, matching
+     * C's three {@code c_put_str} calls. Both figures are read from {@link SidebarModel} rather than
+     * off {@code player->chp}/{@code mhp}.
+     *
+     * <p>Method prtHp coded on 260928, commented in full on 260928.
+     *
+     * @param row the row to draw at
+     * @param col the column to draw at
+     */
     private static void prtHp(int row, int col) {
         ColourEnum colour = playerHpAttr();
 
@@ -142,6 +226,18 @@ public class HandlersHolder {
         term.cPutStr(ColourEnum.COLOUR_LIGHT_GREEN, maxHp, row, col + 8);
     }
 
+    /**
+     * Picks the colour of the current hit-point figure - the port of C's {@code player_hp_attr}
+     * ({@code [C] player.c}). Light green at or above maximum, yellow above
+     * {@code mhp * hitpoint_warn / 10} (integer division, as in C), red otherwise. The warning
+     * option arrives as {@link SidebarModel#getPlayerOptHPWarn()}, carried by the second
+     * {@code EVENT_HP} signal {@code PlayerCalcs.redrawStuff} sends; with {@code mhp} 100 and a
+     * warning of 3, 30 hit points is red and 31 is yellow.
+     *
+     * <p>Method playerHpAttr coded on 260928, commented in full on 260928.
+     *
+     * @return the colour to draw the current hit points in
+     */
     private static ColourEnum playerHpAttr() {
         int currentHp = SidebarModel.getCurrentHP();
         int maxHp = SidebarModel.getMaxHP();

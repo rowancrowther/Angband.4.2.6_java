@@ -865,7 +865,11 @@ public class PlayerCalcs {
      * to read the way C's {@code prt_*} functions do, so each has to hand across whatever that
      * handler would otherwise have read from the global: {@code PR_HP} and {@code PR_MANA} each call
      * {@code eventSignalStat} with a current/maximum pair — hit points and spell points
-     * respectively; {@code PR_LEV} does the same for the current and maximum character level;
+     * respectively — and then send further signals under the same event for the rest of what
+     * C's {@code player_hp_attr}/{@code player_sp_attr} and {@code prt_sp} read: {@code PR_HP}
+     * follows with {@code eventSignalInt} carrying the hit-point warning option, and
+     * {@code PR_MANA} with {@code eventSignalInt} carrying the class's first-spell level and
+     * {@code eventSignalFlag} carrying whether the class has any spells at all; {@code PR_LEV} does the same for the current and maximum character level;
      * {@code PR_GOLD} calls {@code eventSignalLong} with the player's current gold total, C's
      * {@code player->au}; {@code PR_TITLE} calls {@code eventSignalStrings} with the class title, the wizard flag, the
      * total-winner flag and the shape name, guarding {@link Player#getShape} against {@code null}
@@ -947,8 +951,14 @@ public class PlayerCalcs {
                     GameEngine.getEventsBusHandler().eventSignalInt(GameEventType.EVENT_HP,
                             player.getPlayerOptions().hitPointWarn());
                 }
-                case PR_MANA -> GameEngine.getEventsBusHandler().eventSignalStat(GameEventType.EVENT_MANA,
+                case PR_MANA -> {
+                    GameEngine.getEventsBusHandler().eventSignalStat(GameEventType.EVENT_MANA,
                         player.getCurSp(), player.getMaxSP());
+                    GameEngine.getEventsBusHandler().eventSignalInt(GameEventType.EVENT_MANA,
+                            player.getPlayerClass().getMagic().getSpellFirst());
+                    boolean hasMagic = player.getPlayerClass().getMagic().getTotalSpells() != 0;
+                    GameEngine.getEventsBusHandler().eventSignalFlag(GameEventType.EVENT_MANA, hasMagic);
+                }
                 case PR_TITLE -> {
                     String playerIsWizard = Boolean.toString(player.isWizard());
                     String playerIsWinner = Boolean.toString(player.isWinner());

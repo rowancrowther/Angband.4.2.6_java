@@ -37,7 +37,8 @@ import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
  *
  * <p>Today it wires {@code EVENT_HP}, {@code EVENT_MANA}, {@code EVENT_RACE_CLASS},
  * {@code EVENT_PLAYERTITLE}, {@code EVENT_PLAYER_NAME}, {@code EVENT_PLAYERLEVEL},
- * {@code EVENT_EXPERIENCE} and {@code EVENT_GOLD}; a routing method joins here as each further
+ * {@code EVENT_EXPERIENCE}, {@code EVENT_GOLD}, {@code EVENT_EQUIPMENT}, {@code EVENT_STATS} and
+ * {@code EVENT_AC}; a routing method joins here as each further
  * {@code PR_*} flag gets its own payload record and model, per
  * {@code docs/implementation/260926_change_in_architecture_from_cache_to_messages.md}. That design
  * doc is also why {@link SidebarModel} exists at all —
@@ -66,6 +67,8 @@ public class RedrawRouter {
         if (gameEventData instanceof EventDataStat(int current, int other)) {
             SidebarModel.setCurrentHP(current);
             SidebarModel.setMaxHP(other);
+        } else if (gameEventData instanceof EventDataInt(int acWarn)) {
+            SidebarModel.setACWarn(acWarn);
         }
     }
 
@@ -264,6 +267,23 @@ public class RedrawRouter {
             SidebarModel.setCurrentStat(index, curr);
             SidebarModel.setMaxStat(index, max);
             SidebarModel.setUseStat(index, use);
+        }
+    }
+
+    /**
+     * Unpacks an {@code EVENT_AC} payload and writes it into {@link SidebarModel}, C's
+     * {@code prt_ac} ({@code [C] ui-display.c}, function {@code prt_ac}) reading
+     * {@code player->known_state.ac}/{@code to_a} directly by comparison. Guarded on the payload
+     * shape, the same way {@link #setGold} is guarded.
+     *
+     * <p>Method setAC coded on 260927, commented in full on 260928.
+     *
+     * @param gameEventData the routed payload; must be an {@link EventDataInt} of the player's
+     *                      armour class or nothing is written
+     */
+    public static void setAC(GameEventData gameEventData) {
+        if (gameEventData instanceof EventDataInt(int ac)) {
+            SidebarModel.setAc(ac);
         }
     }
 }

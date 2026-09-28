@@ -39,8 +39,8 @@ import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
  * {@link uk.co.jackoftradesltd.channel.messages.data.PlayerEventStatusUpdate}'s static cache is
  * being architected out in their favour. Today this class holds the HP and SP pairs, the player's
  * level and maximum level, title, race name, class name, full name, wizard and total-winner flags,
- * shape name and shapechanged status, current and displayed experience, gold, and the five stats'
- * current/maximum/displayed-use values; the rest of C's {@code prt_*} family in
+ * shape name and shapechanged status, current and displayed experience, gold, armour class, and the
+ * five stats' current/maximum/displayed-use values; the rest of C's {@code prt_*} family in
  * {@code [C] ui-display.c} join it as their own {@code EVENT_*} payloads are ported.
  *
  * <p>The setters are package-private and the getters public, so only a class in this package —
@@ -265,6 +265,50 @@ public class SidebarModel {
      * <p>Field useStats coded on 260927, commented in full on 260928.
      */
     private static int[] useStats = new int[5];
+
+    /**
+     * The player's armour class, C's {@code player->known_state.ac + known_state.to_a}, written
+     * each time an {@code EVENT_AC} message is routed and read whenever the sidebar's AC row is
+     * drawn.
+     *
+     * <p>Field ac coded on 260927, commented in full on 260928.
+     */
+    private static int ac;
+
+    private static int playerOptHPWarn;
+
+    public static int getPlayerOptHPWarn() {
+        return playerOptHPWarn;
+    }
+
+    static void setPlayerOptHPWarn(int playerOptHPWarn) {
+        SidebarModel.playerOptHPWarn = playerOptHPWarn;
+    }
+
+    /**
+     * Read the armour class last written by {@link #setAc(int)}, for the sidebar's AC row -
+     * {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder#prtAc(int, int)}'s port
+     * of C's {@code prt_ac} ({@code [C] ui-display.c}) is today's only reader.
+     *
+     * <p>Method getAc coded on 260927, commented in full on 260928.
+     *
+     * @return the player's armour class, C's {@code known_state.ac + known_state.to_a}
+     */
+    public static int getAc() {
+        return ac;
+    }
+
+    /**
+     * Write the armour class. Package-private, so only {@link RedrawRouter#setAC} - the only class
+     * in this package today - can write the model directly.
+     *
+     * <p>Method setAc coded on 260927, commented in full on 260928.
+     *
+     * @param ac the player's armour class, C's {@code known_state.ac + known_state.to_a}
+     */
+    static void setAc(int ac) {
+        SidebarModel.ac = ac;
+    }
 
     /**
      * Read a stat's recorded maximum last written by {@link #setMaxStat(int, int)}, for the

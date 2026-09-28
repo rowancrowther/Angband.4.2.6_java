@@ -27,6 +27,7 @@ import uk.co.jackoftradesltd.channel.messages.data.EventDataBolt;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataColourString;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataFullStat;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataGrid;
+import uk.co.jackoftradesltd.channel.messages.data.EventDataInt;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataMessage;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataSize;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataStat;
@@ -184,6 +185,20 @@ class EventsHandlerSignalTest {
         handler.eventSignalFullStat(GameEventType.EVENT_STATS, 3, 11, 18, 14);
 
         assertEquals(new EventDataFullStat(3, 11, 18, 14), handler.lastData);
+    }
+
+    /**
+     * The int signal wraps its number straight through - there is no C {@code event_signal_*}
+     * counterpart to cross against, for the same reason {@link #aStatSignalWrapsCurrentAndOtherInOrder()}
+     * has none: C's {@code prt_ac} ({@code [C] ui-display.c}) reads
+     * {@code player->known_state.ac}/{@code to_a} off the shared global instead of receiving their
+     * sum.
+     */
+    @Test
+    void anIntSignalWrapsItsValue() {
+        handler.eventSignalInt(GameEventType.EVENT_AC, 15);
+
+        assertEquals(new EventDataInt(15), handler.lastData);
     }
 
     /**

@@ -24,6 +24,7 @@ import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataBoolean;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataColourString;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataFullStat;
+import uk.co.jackoftradesltd.channel.messages.data.EventDataInt;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataLong;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataStat;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataString;
@@ -72,6 +73,7 @@ class RedrawRouterTest {
     private int savedLevel;
     private int savedMaxLevel;
     private long savedGold;
+    private int savedAc;
     private AngbandDisplayCharacter[] savedEquipString;
     private int[] savedCurrentStats;
     private int[] savedMaxStats;
@@ -94,6 +96,7 @@ class RedrawRouterTest {
         savedLevel = SidebarModel.getLevel();
         savedMaxLevel = SidebarModel.getMaxLevel();
         savedGold = SidebarModel.getGold();
+        savedAc = SidebarModel.getAc();
         savedEquipString = SidebarModel.getEquippyString();
         savedCurrentStats = new int[5];
         savedMaxStats = new int[5];
@@ -122,6 +125,7 @@ class RedrawRouterTest {
         SidebarModel.setLevel(savedLevel);
         SidebarModel.setMaxLevel(savedMaxLevel);
         SidebarModel.setGold(savedGold);
+        SidebarModel.setAc(savedAc);
         SidebarModel.setEquippyString(savedEquipString);
         for (int index = 0; index < 5; index++) {
             SidebarModel.setCurrentStat(index, savedCurrentStats[index]);
@@ -368,6 +372,41 @@ class RedrawRouterTest {
         RedrawRouter.setGold(new EventDataBoolean(true));
 
         assertEquals(1234L, SidebarModel.getGold(), "a mismatched payload must not overwrite gold");
+    }
+
+    /**
+     * {@link EventDataInt#data()} becomes {@link SidebarModel#getAc()}.
+     */
+    @Test
+    void acIsWrittenFromTheIntPayload() {
+        RedrawRouter.setAC(new EventDataInt(15));
+
+        assertEquals(15, SidebarModel.getAc());
+    }
+
+    /**
+     * A later {@code EVENT_AC} overwrites the model rather than merging with it, matching a redraw
+     * always sending the player's whole current armour class.
+     */
+    @Test
+    void aSecondAcMessageOverwritesTheFirst() {
+        RedrawRouter.setAC(new EventDataInt(15));
+        RedrawRouter.setAC(new EventDataInt(3));
+
+        assertEquals(3, SidebarModel.getAc());
+    }
+
+    /**
+     * A payload of the wrong shape is dropped rather than routed, the same guard {@link #setHP}'s
+     * own test pins for {@link RedrawRouter#setHP}.
+     */
+    @Test
+    void aNonIntAcPayloadLeavesTheModelUntouched() {
+        RedrawRouter.setAC(new EventDataInt(15));
+
+        RedrawRouter.setAC(new EventDataBoolean(true));
+
+        assertEquals(15, SidebarModel.getAc(), "a mismatched payload must not overwrite ac");
     }
 
     /**

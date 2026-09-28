@@ -38,10 +38,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * {@link HandlersHolder}'s {@code prt_field}/{@code prt_race}/{@code prt_class}/{@code prt_level}/
- * {@code prt_title}/{@code fmt_title}/{@code prt_gold}/{@code prt_stat} port and its
+ * {@code prt_title}/{@code fmt_title}/{@code prt_gold}/{@code prt_stat}/{@code prt_ac} port and its
  * {@code side_handlers[]} table, checked against C's originals ({@code [C] ui-display.c},
  * functions {@code prt_field}, {@code prt_race}, {@code prt_class}, {@code prt_level},
- * {@code prt_title}, {@code fmt_title}, {@code prt_gold}, {@code prt_stat} and its
+ * {@code prt_title}, {@code fmt_title}, {@code prt_gold}, {@code prt_stat}, {@code prt_ac} and its
  * {@code prt_str}/{@code prt_int}/{@code prt_wis}/{@code prt_dex}/{@code prt_con} wrappers, and the
  * {@code side_handlers[]} initializer). All of these are private static
  * methods with no public
@@ -75,6 +75,7 @@ class HandlersHolderTest {
     private int savedLevel;
     private int savedMaxLevel;
     private long savedGold;
+    private int savedAc;
     private int savedPyMaxLevel;
     private AngbandDisplayCharacter[] savedEquipString;
     private int[] savedCurrentStats;
@@ -171,6 +172,12 @@ class HandlersHolderTest {
         return method;
     }
 
+    private static Method prtAcMethod() throws Exception {
+        Method method = HandlersHolder.class.getDeclaredMethod("prtAc", int.class, int.class);
+        method.setAccessible(true);
+        return method;
+    }
+
     private static Method setCurrentStatMethod() throws Exception {
         Method method = SidebarModel.class.getDeclaredMethod("setCurrentStat", int.class, int.class);
         method.setAccessible(true);
@@ -249,6 +256,12 @@ class HandlersHolderTest {
         return method;
     }
 
+    private static Method setAcMethod() throws Exception {
+        Method method = SidebarModel.class.getDeclaredMethod("setAc", int.class);
+        method.setAccessible(true);
+        return method;
+    }
+
     private static Method setEquippyStringMethod() throws Exception {
         Method method = SidebarModel.class.getDeclaredMethod("setEquippyString", AngbandDisplayCharacter[].class);
         method.setAccessible(true);
@@ -279,6 +292,7 @@ class HandlersHolderTest {
         savedLevel = SidebarModel.getLevel();
         savedMaxLevel = SidebarModel.getMaxLevel();
         savedGold = SidebarModel.getGold();
+        savedAc = SidebarModel.getAc();
         savedPyMaxLevel = ChannelRegistry.getPYMaxLevel();
         savedEquipString = SidebarModel.getEquippyString();
         savedCurrentStats = new int[5];
@@ -304,6 +318,7 @@ class HandlersHolderTest {
         setLevelMethod().invoke(null, savedLevel);
         setMaxLevelMethod().invoke(null, savedMaxLevel);
         setGoldMethod().invoke(null, savedGold);
+        setAcMethod().invoke(null, savedAc);
         ChannelRegistry.setPYMaxLevel(savedPyMaxLevel);
         setEquippyStringMethod().invoke(null, (Object) savedEquipString);
         for (int index = 0; index < 5; index++) {
@@ -387,33 +402,35 @@ class HandlersHolderTest {
 
     /**
      * {@link HandlersHolder#initHandlers()} - the port of C's {@code side_handlers[]}
-     * initializer - registers all twelve rows ported so far, in C's table order: {@code prt_race}
+     * initializer - registers all fourteen rows built so far, in C's table order: {@code prt_race}
      * at priority {@code 19} against {@code EVENT_RACE_CLASS}, {@code prt_title} at {@code 18}
      * against {@code EVENT_PLAYERTITLE}, {@code prt_class} at {@code 22} against
      * {@code EVENT_RACE_CLASS}, {@code prt_level} at {@code 10} against
      * {@code EVENT_PLAYERLEVEL}, {@code prt_exp} at {@code 16} against
      * {@code EVENT_EXPERIENCE}, {@code prt_gold} at {@code 11} against {@code EVENT_GOLD},
-     * {@code prt_equippy} at {@code 17} against {@code EVENT_EQUIPMENT}, and the five stat rows
+     * {@code prt_equippy} at {@code 17} against {@code EVENT_EQUIPMENT}, the five stat rows
      * {@code prt_str}, {@code prt_int}, {@code prt_wis}, {@code prt_dex} and {@code prt_con} at
      * {@code 6}, {@code 5}, {@code 4}, {@code 3} and {@code 2} respectively, all against
-     * {@code EVENT_STATS} - matching C's {@code { prt_race, 19, EVENT_RACE_CLASS },
+     * {@code EVENT_STATS}, C's {@code { NULL, 15, 0 }} placeholder row, and {@code prt_ac} at
+     * {@code 7} against {@code EVENT_AC} - matching C's {@code { prt_race, 19, EVENT_RACE_CLASS },
      * { prt_title, 18, EVENT_PLAYERTITLE }, { prt_class, 22, EVENT_RACE_CLASS },
      * { prt_level, 10, EVENT_PLAYERLEVEL }, { prt_exp, 16, EVENT_EXPERIENCE },
      * { prt_gold, 11, EVENT_GOLD }, { prt_equippy, 17, EVENT_EQUIPMENT },
      * { prt_str, 6, EVENT_STATS }, { prt_int, 5, EVENT_STATS }, { prt_wis, 4, EVENT_STATS },
-     * { prt_dex, 3, EVENT_STATS }, { prt_con, 2, EVENT_STATS }} entries exactly. Every row built by
+     * { prt_dex, 3, EVENT_STATS }, { prt_con, 2, EVENT_STATS }, { NULL, 15, 0 },
+     * { prt_ac, 7, EVENT_AC }} entries exactly. Every row built by
      * {@link HandlersHolder#initHandlers()} must reach {@link #sideHandlers} - a handler built but
      * never added, as {@code prt_gold}'s once was, is registered in name only and is never invoked
      * by anything that walks the table.
      */
     @Test
     @SuppressWarnings("unchecked")
-    void initHandlersRegistersAllTwelveRowsInTableOrder() throws Exception {
+    void initHandlersRegistersAllFourteenRowsInTableOrder() throws Exception {
         Field field = HandlersHolder.class.getDeclaredField("sideHandlers");
         field.setAccessible(true);
         List<SideHandler> handlers = (List<SideHandler>) field.get(null);
 
-        assertEquals(12, handlers.size());
+        assertEquals(14, handlers.size());
 
         assertEquals(19, handlers.get(0).getPriority());
         assertEquals(GameEventType.EVENT_RACE_CLASS, handlers.get(0).getType());
@@ -451,6 +468,12 @@ class HandlersHolderTest {
         assertEquals(2, handlers.get(11).getPriority());
         assertEquals(GameEventType.EVENT_STATS, handlers.get(11).getType());
 
+        assertEquals(15, handlers.get(12).getPriority());
+        assertEquals(null, handlers.get(12).getType());
+
+        assertEquals(7, handlers.get(13).getPriority());
+        assertEquals(GameEventType.EVENT_AC, handlers.get(13).getType());
+
         setShapechangedMethod().invoke(null, false);
         setRaceNameMethod().invoke(null, "Dwarf");
         handlers.get(0).getResult(6, 0);
@@ -471,6 +494,10 @@ class HandlersHolderTest {
         setUseStatMethod().invoke(null, 0, 18);
         handlers.get(7).getResult(12, 0);
         assertEquals('S', cell(12, 0).getCharacter());
+
+        setAcMethod().invoke(null, 15);
+        handlers.get(13).getResult(13, 0);
+        assertEquals('C', cell(13, 0).getCharacter());
     }
 
     /**
@@ -739,6 +766,50 @@ class HandlersHolderTest {
         prtGoldMethod().invoke(null, 9, 0);
 
         for (int col = 3; col < 11; col++) {
+            assertEquals(' ', cell(9, col).getCharacter(), "cell at col " + col + " should be a leading space");
+        }
+        assertEquals('0', cell(9, 11).getCharacter());
+    }
+
+    /**
+     * {@code prt_ac} ({@code [C] ui-display.c}): writes the "Cur AC " label followed by the armour
+     * class right-justified in a five-wide field, matching C's {@code "%5d"} - here with
+     * {@code "%5d"} of {@code 15}, three leading spaces then the two digits.
+     */
+    @Test
+    void prtAcWritesLabelAndFormattedFigure() throws Exception {
+        setAcMethod().invoke(null, 15);
+
+        prtAcMethod().invoke(null, 9, 0);
+
+        assertEquals('C', cell(9, 0).getCharacter());
+        assertEquals('u', cell(9, 1).getCharacter());
+        assertEquals('r', cell(9, 2).getCharacter());
+        assertEquals(' ', cell(9, 3).getCharacter());
+        assertEquals('A', cell(9, 4).getCharacter());
+        assertEquals('C', cell(9, 5).getCharacter());
+        assertEquals(' ', cell(9, 6).getCharacter());
+
+        // "%5d" of 15 is three leading spaces then "15", at col + 7.
+        assertEquals(' ', cell(9, 7).getCharacter());
+        assertEquals(' ', cell(9, 8).getCharacter());
+        assertEquals(' ', cell(9, 9).getCharacter());
+        assertEquals('1', cell(9, 10).getCharacter());
+        assertEquals('5', cell(9, 11).getCharacter());
+        assertEquals(ColourEnum.COLOUR_LIGHT_GREEN, cell(9, 10).getAttributeColour());
+    }
+
+    /**
+     * {@code prt_ac}: zero AC is a real value, not an "unset" sentinel, so it must format through
+     * the same five-wide field as any other value - four leading spaces then "0".
+     */
+    @Test
+    void prtAcFormatsZeroAsFiveWideField() throws Exception {
+        setAcMethod().invoke(null, 0);
+
+        prtAcMethod().invoke(null, 9, 0);
+
+        for (int col = 7; col < 11; col++) {
             assertEquals(' ', cell(9, col).getCharacter(), "cell at col " + col + " should be a leading space");
         }
         assertEquals('0', cell(9, 11).getCharacter());

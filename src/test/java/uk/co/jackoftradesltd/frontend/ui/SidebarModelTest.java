@@ -64,6 +64,7 @@ class SidebarModelTest {
     private int savedLevel;
     private int savedMaxLevel;
     private long savedGold;
+    private int savedAc;
     private AngbandDisplayCharacter[] savedEquipString;
     private int[] savedCurrentStats;
     private int[] savedMaxStats;
@@ -86,6 +87,7 @@ class SidebarModelTest {
         savedLevel = SidebarModel.getLevel();
         savedMaxLevel = SidebarModel.getMaxLevel();
         savedGold = SidebarModel.getGold();
+        savedAc = SidebarModel.getAc();
         savedEquipString = SidebarModel.getEquippyString();
         savedCurrentStats = new int[5];
         savedMaxStats = new int[5];
@@ -114,6 +116,7 @@ class SidebarModelTest {
         SidebarModel.setLevel(savedLevel);
         SidebarModel.setMaxLevel(savedMaxLevel);
         SidebarModel.setGold(savedGold);
+        SidebarModel.setAc(savedAc);
         SidebarModel.setEquippyString(savedEquipString);
         for (int index = 0; index < 5; index++) {
             SidebarModel.setCurrentStat(index, savedCurrentStats[index]);
@@ -395,6 +398,30 @@ class SidebarModelTest {
         SidebarModel.setGold(0L);
 
         assertEquals(0L, SidebarModel.getGold());
+    }
+
+    /**
+     * A written armour class is the value read back, unrelated to whatever gold total is already
+     * held.
+     */
+    @Test
+    void acRoundTrips() {
+        SidebarModel.setGold(1234L);
+        SidebarModel.setAc(15);
+
+        assertEquals(15, SidebarModel.getAc());
+        assertEquals(1234L, SidebarModel.getGold(), "writing ac must not disturb gold");
+    }
+
+    /**
+     * Zero AC is a value a player can genuinely be at (an unarmoured character at birth), so it
+     * must round-trip like any other value rather than being mistaken for "unset".
+     */
+    @Test
+    void zeroAcRoundTrips() {
+        SidebarModel.setAc(0);
+
+        assertEquals(0, SidebarModel.getAc());
     }
 
     /**

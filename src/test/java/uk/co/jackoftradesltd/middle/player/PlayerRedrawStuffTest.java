@@ -175,13 +175,27 @@ class PlayerRedrawStuffTest {
      * <p>A race and class are installed too, real ones in C's own model - a player always has both
      * from the moment of birth ({@code player-birth.c}) - and load-bearing here since the
      * {@code PR_MISC}/{@code PR_TITLE} arms read {@code player.getRace()}/{@code getPlayerClass()}
-     * directly; a bare {@code new Player()} would NPE the moment either flag is raised.
+     * directly; a bare {@code new Player()} would NPE the moment either flag is raised. A wiped
+     * state and known state are installed too, for the same reason: C's {@code state}/
+     * {@code known_state} are always valid by the time {@code redraw_stuff} can run, since it is
+     * {@code update_bonuses} ({@code player-calcs.c}) that both fills them and raises
+     * {@code PR_STATS}/{@code PR_ARMOR}, and the port's {@link PlayerCalcs#updateBonuses} does the
+     * same (its null-guard before ever touching either) - but this test raises those flags
+     * directly, bypassing that guard, so it must supply what the real path would already have set.
+     * {@link PlayerState#wipe()} is what populates the per-stat maps {@code getStatUse}/etc. read;
+     * a bare {@code new PlayerState()} leaves them empty and would NPE on unboxing just as readily.
      */
     @BeforeEach
     void newPlayer() throws ReflectiveOperationException {
         player = new Player();
         player.setRace(SeededPlayerRegistry.plainRace(SeededPlayerRegistry.humanoidBody()));
         player.setClass(CalcBonusesFixture.plainClass());
+        PlayerState state = new PlayerState();
+        state.wipe();
+        player.setState(state);
+        PlayerState knownState = new PlayerState();
+        knownState.wipe();
+        player.setKnownState(knownState);
 
         bus = new CapturingBus();
         realBus = GameEngine.getEventsBusHandler();
@@ -331,8 +345,14 @@ class PlayerRedrawStuffTest {
          * single event type rather than a second one - a (current, maximum) pair and a lone
          * display figure cannot share one payload shape, so
          * {@code eventSignalLongStat}/{@code eventSignalLong} each fire once under
-         * {@code EVENT_EXPERIENCE} (see {@code RedrawRouter.setExperience}'s Javadoc) - so the raw
-         * dispatch count is one higher than the set of distinct event types.
+         * {@code EVENT_EXPERIENCE} (see {@code RedrawRouter.setExperience}'s Javadoc) - one raw
+         * dispatch beyond its one distinct event type. {@code PR_STATS} dispatches five times under
+         * its own single {@code EVENT_STATS} - one {@code eventSignalFullStat} per stat, since C's
+         * single {@code event_signal(EVENT_STATS)} fans out to five listeners on the UI side, and
+         * message-passing has no fan-out to reuse (see {@code PlayerCalcs.redrawStuff}'s
+         * {@code PR_STATS} clause Javadoc) - four raw dispatches beyond its one distinct event type.
+         * So the raw dispatch count is five higher than the set of distinct event types: one from
+         * {@code PR_EXP}, four from {@code PR_STATS}.
          */
         @Test
         @DisplayName("every flag maps to the event C's table gives it")
@@ -349,10 +369,11 @@ class PlayerRedrawStuffTest {
             expected.add(GameEventType.EVENT_END);
 
             assertEquals(expected, new LinkedHashSet<>(bus.events));
-            assertEquals(expected.size() + 1, bus.events.size(),
+            assertEquals(expected.size() + 5, bus.events.size(),
                     "no event was signalled twice, except PR_MISC's second distinct event "
-                            + "(EVENT_PLAYER_NAME alongside EVENT_RACE_CLASS) and PR_EXP's "
-                            + "second dispatch of its own single EVENT_EXPERIENCE");
+                            + "(EVENT_PLAYER_NAME alongside EVENT_RACE_CLASS), PR_EXP's second "
+                            + "dispatch of its own single EVENT_EXPERIENCE, and PR_STATS' five "
+                            + "dispatches of its own single EVENT_STATS (one per stat)");
         }
 
         /**

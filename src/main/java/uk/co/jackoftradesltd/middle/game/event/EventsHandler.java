@@ -468,4 +468,20 @@ public interface EventsHandler {
     default void eventSignalLong(GameEventType eventType, long value) {
         gameEventDispatch(eventType, new EventDataLong(value));
     }
+
+    /**
+     * Send a signal to dispatch all events of a given type with a single {@code int} number - the
+     * {@code int}-valued sibling of {@link #eventSignalLong}, for a redraw whose figure fits an
+     * {@code int}. Used today only by {@code PlayerCalcs.redrawStuff}'s {@code PR_ARMOR} arm,
+     * sending the player's armour class - see {@link EventDataInt}'s Javadoc for why there is no
+     * {@code event_signal_*} counterpart in C.
+     *
+     * <p>Function eventSignalInt coded on 260927, commented in full on 260928.
+     *
+     * @param eventType The event type we are signalling
+     * @param value     the number this event is reporting; becomes {@link EventDataInt#data()}
+     */
+    default void eventSignalInt(GameEventType eventType, int value) {
+        gameEventDispatch(eventType, new EventDataInt(value));
+    }
 }

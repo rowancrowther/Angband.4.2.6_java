@@ -279,4 +279,8 @@ public class PlayerOptions {
             }
         }
     }
+
+    public int hitPointWarn() {
+        return hitpointWarn;
+    }
 }

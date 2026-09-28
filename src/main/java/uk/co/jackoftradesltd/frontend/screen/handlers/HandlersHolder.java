@@ -35,12 +35,12 @@ import java.util.List;
  * The Java port of C's {@code side_handlers[]} table ({@code [C] ui-display.c}) - the sidebar rows
  * that redraw themselves in response to a {@code game_event_type} flag, as opposed to the "short"
  * topbar path ({@code update_topbar}, {@code [C] ui-display.c}), which this class does not cover.
- * C's table lists roughly twenty rows; twelve are ported and registered so far -
+ * C's table lists roughly twenty rows; thirteen are ported and registered so far -
  * {@code prt_race}, {@code prt_title}, {@code prt_class}, {@code prt_level}, {@code prt_exp},
- * {@code prt_gold}, {@code prt_equippy}, and the five stat rows {@code prt_str}, {@code prt_int},
- * {@code prt_wis}, {@code prt_dex} and {@code prt_con} - so {@link #sideHandlers} today holds
- * twelve {@link SideHandler}s, in the same order C's table lists them, with the rest joining one
- * at a time as each hook is ported.
+ * {@code prt_gold}, {@code prt_equippy}, {@code prt_ac}, and the five stat rows {@code prt_str},
+ * {@code prt_int}, {@code prt_wis}, {@code prt_dex} and {@code prt_con} - so {@link #sideHandlers}
+ * today holds thirteen {@link SideHandler}s, in the same order C's table lists them, with the rest
+ * joining one at a time as each hook is ported.
  *
  * <p>Class HandlersHolder coded on 260927, commented in full on 260928.
  *
@@ -71,17 +71,20 @@ public class HandlersHolder {
 
     /**
      * Builds {@link #sideHandlers} - the port of C's {@code side_handlers[]} initializer
-     * ({@code [C] ui-display.c}). Twelve rows are registered today, each at the same priority and
+     * ({@code [C] ui-display.c}). Thirteen rows are registered today, each at the same priority and
      * against the same {@code game_event_type} flag C's table gives it: {@code prt_race} at
      * {@code 19} against {@code EVENT_RACE_CLASS}, {@code prt_title} at {@code 18} against
      * {@code EVENT_PLAYERTITLE}, {@code prt_class} at {@code 22} against {@code EVENT_RACE_CLASS},
      * {@code prt_level} at {@code 10} against {@code EVENT_PLAYERLEVEL}, {@code prt_exp} at
      * {@code 16} against {@code EVENT_EXPERIENCE}, {@code prt_gold} at {@code 11} against
-     * {@code EVENT_GOLD}, {@code prt_equippy} at {@code 17} against {@code EVENT_EQUIPMENT}, and
-     * the five stat rows {@code prt_str}, {@code prt_int}, {@code prt_wis}, {@code prt_dex} and
-     * {@code prt_con} at {@code 6}, {@code 5}, {@code 4}, {@code 3} and {@code 2} respectively,
-     * all against {@code EVENT_STATS} - matching C's table order and figures exactly. The
-     * remaining rows join this method as their own hooks are ported.
+     * {@code EVENT_GOLD}, {@code prt_equippy} at {@code 17} against {@code EVENT_EQUIPMENT}, the
+     * five stat rows {@code prt_str}, {@code prt_int}, {@code prt_wis}, {@code prt_dex} and
+     * {@code prt_con} at {@code 6}, {@code 5}, {@code 4}, {@code 3} and {@code 2} respectively, all
+     * against {@code EVENT_STATS}, and {@code prt_ac} at {@code 7} against {@code EVENT_AC} -
+     * matching C's table order and figures exactly. Between the stat rows and {@code prt_ac}, a
+     * {@code null}-hooked entry at priority {@code 15} stands in for C's own {@code { NULL, 15, 0 }}
+     * placeholder row, keeping the priority numbering aligned with C's table even though nothing is
+     * drawn for it yet. The remaining rows join this method as their own hooks are ported.
      *
      * <p>Method initHandlers coded on 260927, commented in full on 260928.
      */
@@ -110,6 +113,70 @@ public class HandlersHolder {
         sideHandlers.add(handler);
         handler = new SideHandler(HandlersHolder::prtCon, 2, GameEventType.EVENT_STATS);
         sideHandlers.add(handler);
+        handler = new SideHandler(null, 15, null);
+        sideHandlers.add(handler);
+        handler = new SideHandler(HandlersHolder::prtAc, 7, GameEventType.EVENT_AC);
+        sideHandlers.add(handler);
+        handler = new SideHandler(HandlersHolder::prtHp, 8, GameEventType.EVENT_HP);
+        sideHandlers.add(handler);
+        handler = new SideHandler(HandlersHolder::prtSp, 9, GameEventType.EVENT_MANA);
+        sideHandlers.add(handler);
+        handler = new SideHandler(null, 21, null);
+        sideHandlers.add(handler);
+    }
+
+    private static void prtSp(int row, int col) {
+        
+    }
+
+    private static void prtHp(int row, int col) {
+        ColourEnum colour = playerHpAttr();
+
+        term.putStr("HP ", row, col);
+
+        String maxHp = String.format("%4d", SidebarModel.getMaxHP());
+        String currHp = String.format("%4d", SidebarModel.getCurrentHP());
+
+        term.cPutStr(colour, currHp, row, col + 3);
+        term.cPutStr(ColourEnum.COLOUR_WHITE, "/", row, col + 7);
+        term.cPutStr(ColourEnum.COLOUR_LIGHT_GREEN, maxHp, row, col + 8);
+    }
+
+    private static ColourEnum playerHpAttr() {
+        int currentHp = SidebarModel.getCurrentHP();
+        int maxHp = SidebarModel.getMaxHP();
+
+        if (currentHp >= maxHp) {
+            return ColourEnum.COLOUR_LIGHT_GREEN;
+        }
+        int playerHpWarn = SidebarModel.getPlayerOptHPWarn();
+        if (currentHp > (maxHp * playerHpWarn / 10)) {
+            return ColourEnum.COLOUR_YELLOW;
+        }
+        return ColourEnum.COLOUR_RED;
+    }
+
+    /**
+     * Draws the sidebar's armour-class row - the port of C's {@code prt_ac} ({@code [C]
+     * ui-display.c}), which writes a fixed "Cur AC " label followed by the player's armour class in
+     * a five-wide field.
+     *
+     * <p>Matches C exactly: {@code "Cur AC "} at {@code col}, then {@code "%5d"} against
+     * {@link SidebarModel#getAc()} written at {@code col + 7} - the port of C's
+     * {@code strnfmt(tmp, sizeof(tmp), "%5d", player->known_state.ac + player->known_state.to_a)}
+     * written after the same seven-character label. Like {@link #prtGold}, the figure carries no
+     * threshold test - it is always light green, matching C's single unconditional
+     * {@code c_put_str(COLOUR_L_GREEN, tmp, row, col + 7)} call.
+     *
+     * <p>Method prtAc coded on 260927, commented in full on 260928.
+     *
+     * @param row the row to draw at
+     * @param col the column to draw at
+     */
+    private static void prtAc(int row, int col) {
+        term.putStr("Cur AC ", row, col);
+        String acString = String.format("%5d", SidebarModel.getAc());
+        term.cPutStr(ColourEnum.COLOUR_LIGHT_GREEN, acString, row, col + 7);
     }
 
     /**

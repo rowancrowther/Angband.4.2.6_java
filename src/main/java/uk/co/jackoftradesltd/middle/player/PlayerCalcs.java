@@ -860,7 +860,7 @@ public class PlayerCalcs {
      * narrowing above happens first, so with the map hidden neither override can be present and the
      * hack always returns.
      *
-     * <p>Most flags are signalled bare through {@link PlayerRedraw#getEventType()}, but nine carry a
+     * <p>Most flags are signalled bare through {@link PlayerRedraw#getEventType()}, but ten carry a
      * payload instead, because there is no shared {@code player} on the front-end side for a handler
      * to read the way C's {@code prt_*} functions do, so each has to hand across whatever that
      * handler would otherwise have read from the global: {@code PR_HP} and {@code PR_MANA} each call
@@ -891,6 +891,11 @@ public class PlayerCalcs {
      * alongside its current value, recorded maximum and displayed use figure - C's {@code prt_stat}
      * ({@code [C] ui-display.c}) reads {@code player->stat_cur}/{@code stat_max}/
      * {@code state.stat_use}, indexed by stat, directly instead of receiving them as an argument.
+     * {@code PR_ARMOR} calls {@code eventSignalInt} with the player's armour class, computed here as
+     * {@link PlayerState#getBaseAc()} plus {@link PlayerState#getToAc()} on
+     * {@link Player#getKnownState()} — C's {@code prt_ac} ({@code [C] ui-display.c}) reads
+     * {@code player->known_state.ac}/{@code to_a} directly instead of receiving the sum as an
+     * argument.
      * The map is handled separately again, because it also carries data:
      * {@code EVENT_MAP} with the point {@code (-1, -1)}, C's sentinel for "the whole map, not one
      * grid". A last {@code EVENT_END} tells the display the batch is complete and it may now do
@@ -936,8 +941,12 @@ public class PlayerCalcs {
             switch (playerRedraw) {
                 case PR_MAP -> {
                 }
-                case PR_HP -> GameEngine.getEventsBusHandler().eventSignalStat(GameEventType.EVENT_HP,
+                case PR_HP -> {
+                    GameEngine.getEventsBusHandler().eventSignalStat(GameEventType.EVENT_HP,
                         player.getCurrentHP(), player.getMaxHP());
+                    GameEngine.getEventsBusHandler().eventSignalInt(GameEventType.EVENT_HP,
+                            player.getPlayerOptions().hitPointWarn());
+                }
                 case PR_MANA -> GameEngine.getEventsBusHandler().eventSignalStat(GameEventType.EVENT_MANA,
                         player.getCurSp(), player.getMaxSP());
                 case PR_TITLE -> {
@@ -1002,6 +1011,10 @@ public class PlayerCalcs {
                                 index, player.getCurStatValue(stat), player.getMaxStatValue(stat),
                                 player.getPlayerState().getStatUse(stat));
                     }
+                }
+                case PR_ARMOR -> {
+                    int ac = player.getKnownState().getBaseAc() + player.getKnownState().getToAc();
+                    GameEngine.getEventsBusHandler().eventSignalInt(GameEventType.EVENT_AC, ac);
                 }
                 default -> GameEngine.getEventsBusHandler().eventSignal(playerRedraw.getEventType());
             }

@@ -26,6 +26,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataGrid;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataStat;
+import uk.co.jackoftradesltd.channel.messages.data.EventDataStrings;
 import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.game.event.EventHandlerInterface;
@@ -34,6 +35,8 @@ import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.gameinput.DefaultGameInput;
 import uk.co.jackoftradesltd.middle.gameinput.GameInputHolder;
+import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
+import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerRedraw;
 import uk.co.jackoftradesltd.testsupport.CalcBonusesFixture;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
@@ -318,7 +321,12 @@ class PlayerRedrawStuffTest {
          * wrong event is caught. {@code PR_MAP} is the extra one the table omits, and
          * {@code EVENT_PLAYER_NAME} is a second, port-only signal {@code PR_MISC} sends alongside
          * {@code EVENT_RACE_CLASS} - see that constant's own Javadoc for why C's table has no
-         * equivalent entry for it.
+         * equivalent entry for it. {@code PR_EXP} dispatches twice as well, but under its own
+         * single event type rather than a second one - a (current, maximum) pair and a lone
+         * display figure cannot share one payload shape, so
+         * {@code eventSignalLongStat}/{@code eventSignalLong} each fire once under
+         * {@code EVENT_EXPERIENCE} (see {@code RedrawRouter.setExperience}'s Javadoc) - so the raw
+         * dispatch count is one higher than the set of distinct event types.
          */
         @Test
         @DisplayName("every flag maps to the event C's table gives it")
@@ -335,9 +343,10 @@ class PlayerRedrawStuffTest {
             expected.add(GameEventType.EVENT_END);
 
             assertEquals(expected, new LinkedHashSet<>(bus.events));
-            assertEquals(expected.size(), bus.events.size(),
-                    "no event was signalled twice - PR_MISC fires two distinct events, "
-                            + "EVENT_RACE_CLASS and EVENT_PLAYER_NAME, but neither repeats");
+            assertEquals(expected.size() + 1, bus.events.size(),
+                    "no event was signalled twice, except PR_MISC's second distinct event "
+                            + "(EVENT_PLAYER_NAME alongside EVENT_RACE_CLASS) and PR_EXP's "
+                            + "second dispatch of its own single EVENT_EXPERIENCE");
         }
 
         /**
@@ -389,6 +398,65 @@ class PlayerRedrawStuffTest {
 
             int hp = bus.events.indexOf(GameEventType.EVENT_HP);
             assertEquals(new EventDataStat(17, 30), bus.data.get(hp));
+        }
+
+        /**
+         * {@code PR_LEV} is special-cased to carry the player's current and maximum character
+         * level - the port's substitute for C's {@code prt_level} reading
+         * {@code p->lev}/{@code p->max_lev} off the shared player global. Chosen distinct and
+         * non-symmetric, so a swap of the two arguments cannot pass by accident.
+         */
+        @Test
+        @DisplayName("the level event carries the player's current and maximum level")
+        void levelCarriesCurrentAndMaxLevel() throws ReflectiveOperationException {
+            Field level = Player.class.getDeclaredField("level");
+            level.setAccessible(true);
+            level.set(player, 9);
+            player.setMaxLevel(12);
+            raise(PlayerRedraw.PR_LEV);
+
+            PlayerCalcs.redrawStuff(player);
+
+            int lev = bus.events.indexOf(GameEventType.EVENT_PLAYERLEVEL);
+            assertEquals(new EventDataStat(9, 12), bus.data.get(lev));
+        }
+
+        /**
+         * {@code PR_TITLE} must not throw when the player has no shape - the ordinary state today,
+         * since nothing has ported the shapechange effect yet (see {@link Player#getShape}'s own
+         * Javadoc). The guard sends an empty string for the shape name rather than letting
+         * {@code getShape().getName()} NPE.
+         */
+        @Test
+        @DisplayName("the title event does not NPE and sends an empty shape name when the player has no shape")
+        void titleArmDoesNotNpeWithNoShape() {
+            raise(PlayerRedraw.PR_TITLE);
+
+            PlayerCalcs.redrawStuff(player);
+
+            int title = bus.events.indexOf(GameEventType.EVENT_PLAYERTITLE);
+            EventDataStrings payload = (EventDataStrings) bus.data.get(title);
+            assertEquals("", payload.strings()[3], "no shape means an empty shape name, not an NPE");
+        }
+
+        /**
+         * Once a shape is set, {@code PR_TITLE} carries its real name as the fourth string -
+         * the port's substitute for C's {@code prt_title}/{@code fmt_title} reading
+         * {@code player->shape->name} off the shared global.
+         */
+        @Test
+        @DisplayName("the title event carries the real shape name once one is set")
+        void titleArmCarriesTheRealShapeName() {
+            player.setShape(new PlayerShape("bat", 0, 0, 0, Map.of(),
+                    new Flag<>(ObjectFlag.class), new Flag<>(PlayerFlag.class),
+                    Map.of(), Map.of(), List.of(), 1, List.of()));
+            raise(PlayerRedraw.PR_TITLE);
+
+            PlayerCalcs.redrawStuff(player);
+
+            int title = bus.events.indexOf(GameEventType.EVENT_PLAYERTITLE);
+            EventDataStrings payload = (EventDataStrings) bus.data.get(title);
+            assertEquals("bat", payload.strings()[3]);
         }
 
         /**

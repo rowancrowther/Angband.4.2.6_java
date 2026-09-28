@@ -35,13 +35,14 @@ import java.util.function.BiFunction;
 public class SideHandler {
     /**
      * The drawing hook itself - the port of C's {@code void (*hook)(int, int)} function pointer.
-     * Typed as a {@link BiFunction} rather than a bespoke void-returning functional interface, so
-     * the wrapped hook has to return something even though every C hook it stands in for is
-     * {@code void}; see {@link #getResult(int, int)} for what the returned value means today.
+     * Typed as {@link HandlersHolder.prtFunction}, a bespoke functional interface whose
+     * {@code apply(T, U)} returns {@code void}, so the wrapped hook is called purely for its side
+     * effect of writing to the terminal, exactly as every C hook it stands in for is; see
+     * {@link #getResult(Integer, Integer)}.
      *
      * <p>Field hook coded on 260927, commented in full on 260927.
      */
-    private BiFunction<Integer, Integer, Integer> hook;
+    private HandlersHolder.prtFunction<Integer, Integer> hook;
 
     /**
      * The display priority - the port of C's {@code int priority}. A lower number is more
@@ -71,7 +72,7 @@ public class SideHandler {
      * @param priority the display priority, lower is more important
      * @param type     the redraw event that triggers this hook
      */
-    public SideHandler(BiFunction<Integer, Integer, Integer> hook, int priority, GameEventType type) {
+    public SideHandler(HandlersHolder.prtFunction<Integer, Integer> hook, int priority, GameEventType type) {
         this.hook = hook;
         this.priority = priority;
         this.type = type;
@@ -89,20 +90,18 @@ public class SideHandler {
     }
 
     /**
-     * Invokes this row's drawing hook at the given row and column. C's hooks are all
-     * {@code void (int, int)} and are called for their side effect of writing to the terminal; the
-     * {@code int} this returns is a placeholder the port's {@link BiFunction} typing requires, not
-     * something C's {@code side_handlers[]} dispatch reads back - today's only registered hook,
-     * {@link HandlersHolder#prtRace(int, int)}, always returns {@code 1}.
+     * Invokes this row's drawing hook at the given row and column, for its side effect of writing to
+     * the terminal - the port of C's {@code side_handlers[i].hook(row, col)} dispatch
+     * ({@code [C] ui-display.c}). C's hooks are all {@code void (int, int)}, and so is
+     * {@link HandlersHolder.prtFunction#apply}; nothing is returned or read back on either side.
      *
      * <p>Method getResult coded on 260927, commented in full on 260927.
      *
      * @param x the column to draw at
      * @param y the row to draw at
-     * @return the hook's placeholder return value
      */
-    public int getResult(int x, int y) {
-        return hook.apply(x, y);
+    public void getResult(Integer x, Integer y) {
+        hook.apply(x, y);
     }
 
     /**

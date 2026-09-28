@@ -34,16 +34,12 @@ package uk.co.jackoftradesltd.frontend.ui;
  * <p>Named for what it, and its siblings still to be written, replace field by field:
  * {@link uk.co.jackoftradesltd.channel.messages.data.PlayerEventStatusUpdate}'s static cache is
  * being architected out in their favour. Today this class holds the HP and SP pairs, the player's
- * title, race name, class name, full name and shapechanged status; the rest of C's {@code prt_*}
- * family in {@code [C] ui-display.c} join it as their own {@code EVENT_*} payloads are ported.
+ * level and maximum level, title, race name, class name, full name, wizard and total-winner flags,
+ * shape name and shapechanged status; the rest of C's {@code prt_*} family in
+ * {@code [C] ui-display.c} join it as their own {@code EVENT_*} payloads are ported.
  *
  * <p>The setters are package-private and the getters public, so only a class in this package —
  * today, only {@link RedrawRouter} — can write, while any caller may read.
- *
- * <p><b>Outstanding:</b> {@link #playerIsShapechanged} has no writer yet. Nothing in
- * {@link RedrawRouter} or the {@code EVENT_RACE_CLASS} payload it reads carries a shapechanged
- * flag across the boundary, so the field keeps its Java default of {@code false} forever — see
- * {@link #playerIsShapechanged}'s own Javadoc. Deliberately not yet implemented.
  *
  * <p>Class SidebarModel coded on 260926, commented in full on 260927.
  *
@@ -118,23 +114,306 @@ public class SidebarModel {
     private static String name;
 
     /**
+     * Whether the player is in wizard mode, C's {@code player->wizard}, written each time an
+     * {@code EVENT_PLAYERTITLE} message is routed and read whenever the sidebar's title row is
+     * drawn.
+     *
+     * <p>Field wizard coded on 260927, commented in full on 260927.
+     */
+    private static boolean wizard;
+
+    /**
+     * Whether the player has won the game, C's {@code player->total_winner}, written each time an
+     * {@code EVENT_PLAYERTITLE} message is routed and read whenever the sidebar's title row is
+     * drawn.
+     *
+     * <p>Field isTotalWinner coded on 260927, commented in full on 260927.
+     */
+    private static boolean isTotalWinner;
+
+    /**
+     * The name of the player's current shape, C's {@code player->shape->name}, written each time an
+     * {@code EVENT_PLAYERTITLE} message is routed and read whenever the sidebar's title row is
+     * drawn.
+     *
+     * <p>Field shapeName coded on 260927, commented in full on 260927.
+     */
+    private static String shapeName;
+
+    /**
+     * The player's current character level, C's {@code player->lev}, written each time an
+     * {@code EVENT_PLAYERLEVEL} message is routed and read whenever the sidebar's level row is
+     * drawn.
+     *
+     * <p>Field level coded on 260927, commented in full on 260927.
+     */
+    private static int level;
+
+    /**
+     * The player's highest character level yet attained, C's {@code player->max_lev}, written each
+     * time an {@code EVENT_PLAYERLEVEL} message is routed and read whenever the sidebar's level row
+     * is drawn.
+     *
+     * <p>Field maxLevel coded on 260927, commented in full on 260927.
+     */
+    private static int maxLevel;
+
+    /**
+     * The player's current experience total, C's {@code player->exp}, written each time an
+     * {@code EVENT_EXPERIENCE} message carrying an
+     * {@link uk.co.jackoftradesltd.channel.messages.data.EventDataLongStat} is routed and read
+     * whenever the sidebar's experience row is drawn.
+     *
+     * <p>Field experience coded on 260927, commented in full on 260928.
+     */
+    private static long experience;
+
+    /**
+     * The figure the sidebar's experience row prints, C's local {@code xp} in {@code prt_exp}
+     * ({@code [C] ui-display.c}) - the experience needed to reach the next level, or the running
+     * total once the character has reached level fifty. Written each time an
+     * {@code EVENT_EXPERIENCE} message carrying an
+     * {@link uk.co.jackoftradesltd.channel.messages.data.EventDataLong} is routed; the choice
+     * between the two figures is made core-side, in {@code PlayerCalcs.redrawStuff}'s
+     * {@code PR_EXP} arm, not here.
+     *
+     * <p>Field xpToLevel coded on 260927, commented in full on 260928.
+     */
+    private static long xpToLevel;
+
+    /**
+     * The player's highest experience total yet held, C's {@code player->max_exp}, written each
+     * time an {@code EVENT_EXPERIENCE} message carrying an
+     * {@link uk.co.jackoftradesltd.channel.messages.data.EventDataLongStat} is routed and read
+     * whenever the sidebar's experience row is drawn, to decide whether the row is coloured as
+     * drained or full.
+     *
+     * <p>Field maxXp coded on 260927, commented in full on 260928.
+     */
+    private static long maxXp;
+    /**
      * Whether the player is currently in a non-normal shape, C's {@code player_is_shapechanged}
      * ({@code [C] player-util.c}) — the port of what {@code prt_race} and {@code prt_class}
      * ({@code [C] ui-display.c}) each re-check against the live global at draw time, so that a
      * shapechanged player's race and class fields are blanked rather than shown.
      *
-     * <p><b>Outstanding:</b> nothing writes this field yet. {@link RedrawRouter#setRaceClass} only
-     * carries the race and class names in from the {@code EVENT_RACE_CLASS} payload, and that
-     * payload — built in {@code PlayerCalcs.redrawStuff}'s {@code PR_MISC} arm — never packs a
-     * shapechanged flag in the first place. So this field keeps Java's default of {@code false}
-     * forever today, and {@link HandlersHolder#prtRace}'s blanking branch is unreachable until a
-     * writer is wired up — see
-     * {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder#prtRace(int, int)}.
-     * Deliberately not yet implemented, not a discrepancy in this field itself.
+     * <p>Written by {@link RedrawRouter#setRaceClass} from the third element of the
+     * {@code EVENT_RACE_CLASS} payload, which {@code PlayerCalcs.redrawStuff}'s {@code PR_MISC} arm
+     * packs from {@code player.isShapeChanged()}. Read by
+     * {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder#prtRace(int, int)} and
+     * {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder#prtClass(int, int)} to
+     * decide whether to blank those rows.
      *
      * <p>Field playerIsShapechanged coded on 260927, commented in full on 260927.
      */
     private static boolean playerIsShapechanged;
+
+    /**
+     * Read the maximum experience last written by {@link #setMaxXp(long)}, for the sidebar's
+     * experience row -
+     * {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder}'s port of C's
+     * {@code prt_exp} ({@code [C] ui-display.c}) is today's only reader.
+     *
+     * <p>Method getMaxXp coded on 260927, commented in full on 260928.
+     *
+     * @return the player's highest experience total yet held, C's {@code player->max_exp}
+     */
+    public static long getMaxXp() {
+        return maxXp;
+    }
+
+    /**
+     * Write the maximum experience. Package-private, so only {@link RedrawRouter#setExperience} -
+     * the only class in this package today - can write the model directly.
+     *
+     * <p>Method setMaxXp coded on 260927, commented in full on 260928.
+     *
+     * @param maxXp the player's highest experience total yet held, C's {@code player->max_exp}
+     */
+    static void setMaxXp(long maxXp) {
+        SidebarModel.maxXp = maxXp;
+    }
+
+    /**
+     * Read the displayed experience figure last written by {@link #setXpToLevel(long)}, for the
+     * sidebar's experience row -
+     * {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder}'s port of C's
+     * {@code prt_exp} ({@code [C] ui-display.c}) is today's only reader.
+     *
+     * <p>Method getXpToLevel coded on 260927, commented in full on 260928.
+     *
+     * @return the experience needed to reach the next level, or the running total at level fifty,
+     * C's local {@code xp} in {@code prt_exp}
+     */
+    public static long getXpToLevel() {
+        return xpToLevel;
+    }
+
+    /**
+     * Write the displayed experience figure. Package-private, so only
+     * {@link RedrawRouter#setExperience} - the only class in this package today - can write the
+     * model directly.
+     *
+     * <p>Method setXpToLevel coded on 260927, commented in full on 260928.
+     *
+     * @param xpToLevel the experience needed to reach the next level, or the running total at
+     *                  level fifty
+     */
+    static void setXpToLevel(long xpToLevel) {
+        SidebarModel.xpToLevel = xpToLevel;
+    }
+
+    /**
+     * Read the current experience last written by {@link #setExperience(long)}, for the sidebar's
+     * experience row -
+     * {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder}'s port of C's
+     * {@code prt_exp} ({@code [C] ui-display.c}) is today's only reader.
+     *
+     * <p>Method getExperience coded on 260927, commented in full on 260928.
+     *
+     * @return the player's current experience total, C's {@code player->exp}
+     */
+    public static long getExperience() {
+        return experience;
+    }
+
+    /**
+     * Write the current experience. Package-private, so only {@link RedrawRouter#setExperience} -
+     * the only class in this package today - can write the model directly.
+     *
+     * <p>Method setExperience coded on 260927, commented in full on 260928.
+     *
+     * @param experience the player's current experience total, C's {@code player->exp}
+     */
+    static void setExperience(long experience) {
+        SidebarModel.experience = experience;
+    }
+
+    /**
+     * Read the maximum level last written by {@link #setMaxLevel(int)}, for the sidebar's level row
+     * - {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder}'s port of C's
+     * {@code prt_level} ({@code [C] ui-display.c}) is today's only reader.
+     *
+     * <p>Method getMaxLevel coded on 260927, commented in full on 260927.
+     *
+     * @return the player's highest character level yet attained, C's {@code player->max_lev}
+     */
+    public static int getMaxLevel() {
+        return maxLevel;
+    }
+
+    /**
+     * Write the maximum level. Package-private, so only {@link RedrawRouter#setPlayerLevel} - the
+     * only class in this package today - can write the model directly.
+     *
+     * <p>Method setMaxLevel coded on 260927, commented in full on 260927.
+     *
+     * @param maxLevel the player's highest character level yet attained, C's {@code player->max_lev}
+     */
+    static void setMaxLevel(int maxLevel) {
+        SidebarModel.maxLevel = maxLevel;
+    }
+
+    /**
+     * Read the current level last written by {@link #setLevel(int)}, for the sidebar's level row -
+     * {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder}'s port of C's
+     * {@code prt_level} ({@code [C] ui-display.c}) is today's only reader.
+     *
+     * <p>Method getLevel coded on 260927, commented in full on 260927.
+     *
+     * @return the player's current character level, C's {@code player->lev}
+     */
+    public static int getLevel() {
+        return level;
+    }
+
+    /**
+     * Write the current level. Package-private, so only {@link RedrawRouter#setPlayerLevel} - the
+     * only class in this package today - can write the model directly.
+     *
+     * <p>Method setLevel coded on 260927, commented in full on 260927.
+     *
+     * @param level the player's current character level, C's {@code player->lev}
+     */
+    static void setLevel(int level) {
+        SidebarModel.level = level;
+    }
+
+    /**
+     * Read the shape name last written by {@link #setShapeName(String)}, for the sidebar's title
+     * row - {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder}'s port of C's
+     * {@code fmt_title} ({@code [C] ui-display.c}) is today's only reader.
+     *
+     * <p>Method getShapeName coded on 260927, commented in full on 260927.
+     *
+     * @return the name of the player's current shape, C's {@code player->shape->name}
+     */
+    public static String getShapeName() {
+        return shapeName;
+    }
+
+    /**
+     * Write the shape name. Package-private, so only {@link RedrawRouter#setTitle} - the only class
+     * in this package today - can write the model directly.
+     *
+     * <p>Method setShapeName coded on 260927, commented in full on 260927.
+     *
+     * @param shapeName the name of the player's current shape, C's {@code player->shape->name}
+     */
+    static void setShapeName(String shapeName) {
+        SidebarModel.shapeName = shapeName;
+    }
+
+    /**
+     * Read the total-winner flag last written by {@link #setTotalWinner(boolean)}, for the
+     * sidebar's title row - {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder}'s
+     * port of C's {@code fmt_title} ({@code [C] ui-display.c}) is today's only reader.
+     *
+     * <p>Method isTotalWinner coded on 260927, commented in full on 260927.
+     *
+     * @return {@code true} once the player has won the game, C's {@code player->total_winner}
+     */
+    public static boolean isTotalWinner() {
+        return isTotalWinner;
+    }
+
+    /**
+     * Write the total-winner flag. Package-private, so only {@link RedrawRouter#setTitle} - the
+     * only class in this package today - can write the model directly.
+     *
+     * <p>Method setTotalWinner coded on 260927, commented in full on 260927.
+     *
+     * @param totalWinner {@code true} once the player has won the game, C's
+     *                    {@code player->total_winner}
+     */
+    static void setTotalWinner(boolean totalWinner) {
+        isTotalWinner = totalWinner;
+    }
+
+    /**
+     * Read the wizard-mode flag last written by {@link #setWizard(boolean)}, for the sidebar's title
+     * row - {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder}'s port of C's
+     * {@code fmt_title} ({@code [C] ui-display.c}) is today's only reader.
+     *
+     * <p>Method isWizard coded on 260927, commented in full on 260927.
+     *
+     * @return {@code true} while the player is in wizard mode, C's {@code player->wizard}
+     */
+    public static boolean isWizard() {
+        return wizard;
+    }
+    
+    /**
+     * Write the wizard-mode flag. Package-private, so only {@link RedrawRouter#setTitle} - the only
+     * class in this package today - can write the model directly.
+     *
+     * <p>Method setWizard coded on 260927, commented in full on 260927.
+     *
+     * @param wizard {@code true} while the player is in wizard mode, C's {@code player->wizard}
+     */
+    static void setWizard(boolean wizard) {
+        SidebarModel.wizard = wizard;
+    }
 
     /**
      * Read the current hit-point value last written by {@link #setCurrentHP(int)}, for the
@@ -339,11 +618,10 @@ public class SidebarModel {
     /**
      * Reads the shapechanged flag last written by {@link #setPlayerIsShapechanged(boolean)}, for
      * the sidebar's race and class rows —
-     * {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder#prtRace(int, int)}'s
-     * port of C's {@code prt_race} ({@code [C] ui-display.c}) is today's only reader.
-     *
-     * <p><b>Outstanding:</b> see {@link #playerIsShapechanged}'s own Javadoc — nothing writes this
-     * field yet, so this always returns {@code false} today.
+     * {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder#prtRace(int, int)} and
+     * {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder#prtClass(int, int)},
+     * both ports of C's {@code prt_race}/{@code prt_class} ({@code [C] ui-display.c}), are today's
+     * readers.
      *
      * <p>Method isPlayerIsShapechanged coded on 260927, commented in full on 260927.
      *
@@ -355,9 +633,8 @@ public class SidebarModel {
     }
 
     /**
-     * Writes the shapechanged flag. Package-private, so only a class in this package could write
-     * the model directly — see {@link #playerIsShapechanged}'s own Javadoc for why nothing in this
-     * package calls it yet.
+     * Writes the shapechanged flag. Package-private, so only {@link RedrawRouter#setRaceClass} -
+     * the only class in this package today - can write the model directly.
      *
      * <p>Method setPlayerIsShapechanged coded on 260927, commented in full on 260927.
      *

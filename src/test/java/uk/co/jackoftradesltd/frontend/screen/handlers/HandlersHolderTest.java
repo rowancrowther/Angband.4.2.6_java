@@ -22,6 +22,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
+import uk.co.jackoftradesltd.channel.globals.ChannelRegistry;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.frontend.screen.Term;
 import uk.co.jackoftradesltd.frontend.screen.grid.CellGrid;
@@ -34,16 +35,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * {@link HandlersHolder}'s {@code prt_field}/{@code prt_race} port and its {@code side_handlers[]}
- * table, checked against C's originals ({@code [C] ui-display.c}, functions {@code prt_field} and
- * {@code prt_race}, and the {@code side_handlers[]} initializer). {@code prtField} and {@code
- * prtRace} are private static methods with no public entry point yet - {@link SideHandler#getResult}
- * is never invoked from anywhere in the port today - so this test reaches them the same way {@code
- * PlayerIsImmuneTest} reaches {@link uk.co.jackoftradesltd.middle.player.Player}'s private fields:
- * reflectively, with {@code setAccessible(true)}.
+ * {@link HandlersHolder}'s {@code prt_field}/{@code prt_race}/{@code prt_class}/{@code prt_level}/
+ * {@code prt_title}/{@code fmt_title} port and its {@code side_handlers[]} table, checked against
+ * C's originals ({@code [C] ui-display.c}, functions {@code prt_field}, {@code prt_race},
+ * {@code prt_class}, {@code prt_level}, {@code prt_title} and {@code fmt_title}, and the
+ * {@code side_handlers[]} initializer). All of these are private static methods with no public
+ * entry point yet - {@link SideHandler#getResult} is never invoked from anywhere in the port today
+ * - so this test reaches them the same way {@code PlayerIsImmuneTest} reaches
+ * {@link uk.co.jackoftradesltd.middle.player.Player}'s private fields: reflectively, with
+ * {@code setAccessible(true)}.
  *
  * <p>Not in the same package as {@link SidebarModel} - its writers are exercised reflectively too,
  * rather than moving this test into {@code frontend.ui} - since the class under test here is
@@ -61,7 +63,15 @@ class HandlersHolderTest {
     private CellGrid grid;
     private Term savedTerm;
     private String savedRaceName;
+    private String savedClassName;
+    private String savedTitle;
+    private String savedShapeName;
     private boolean savedShapechanged;
+    private boolean savedWizard;
+    private boolean savedTotalWinner;
+    private int savedLevel;
+    private int savedMaxLevel;
+    private int savedPyMaxLevel;
 
     private static Field termField() throws Exception {
         Field field = HandlersHolder.class.getDeclaredField("term");
@@ -81,8 +91,74 @@ class HandlersHolderTest {
         return method;
     }
 
+    private static Method prtClassMethod() throws Exception {
+        Method method = HandlersHolder.class.getDeclaredMethod("prtClass", int.class, int.class);
+        method.setAccessible(true);
+        return method;
+    }
+
+    private static Method prtLevelMethod() throws Exception {
+        Method method = HandlersHolder.class.getDeclaredMethod("prtLevel", int.class, int.class);
+        method.setAccessible(true);
+        return method;
+    }
+
+    private static Method prtTitleMethod() throws Exception {
+        Method method = HandlersHolder.class.getDeclaredMethod("prtTitle", int.class, int.class);
+        method.setAccessible(true);
+        return method;
+    }
+
+    private static Method fmtTitleMethod() throws Exception {
+        Method method = HandlersHolder.class.getDeclaredMethod("fmtTitle", int.class, boolean.class);
+        method.setAccessible(true);
+        return method;
+    }
+
     private static Method setRaceNameMethod() throws Exception {
         Method method = SidebarModel.class.getDeclaredMethod("setRaceName", String.class);
+        method.setAccessible(true);
+        return method;
+    }
+
+    private static Method setClassNameMethod() throws Exception {
+        Method method = SidebarModel.class.getDeclaredMethod("setClassName", String.class);
+        method.setAccessible(true);
+        return method;
+    }
+
+    private static Method setTitleMethod() throws Exception {
+        Method method = SidebarModel.class.getDeclaredMethod("setTitle", String.class);
+        method.setAccessible(true);
+        return method;
+    }
+
+    private static Method setShapeNameMethod() throws Exception {
+        Method method = SidebarModel.class.getDeclaredMethod("setShapeName", String.class);
+        method.setAccessible(true);
+        return method;
+    }
+
+    private static Method setWizardMethod() throws Exception {
+        Method method = SidebarModel.class.getDeclaredMethod("setWizard", boolean.class);
+        method.setAccessible(true);
+        return method;
+    }
+
+    private static Method setTotalWinnerMethod() throws Exception {
+        Method method = SidebarModel.class.getDeclaredMethod("setTotalWinner", boolean.class);
+        method.setAccessible(true);
+        return method;
+    }
+
+    private static Method setLevelMethod() throws Exception {
+        Method method = SidebarModel.class.getDeclaredMethod("setLevel", int.class);
+        method.setAccessible(true);
+        return method;
+    }
+
+    private static Method setMaxLevelMethod() throws Exception {
+        Method method = SidebarModel.class.getDeclaredMethod("setMaxLevel", int.class);
         method.setAccessible(true);
         return method;
     }
@@ -108,14 +184,30 @@ class HandlersHolderTest {
         field.set(null, term);
 
         savedRaceName = SidebarModel.getRaceName();
+        savedClassName = SidebarModel.getClassName();
+        savedTitle = SidebarModel.getTitle();
+        savedShapeName = SidebarModel.getShapeName();
         savedShapechanged = SidebarModel.isPlayerIsShapechanged();
+        savedWizard = SidebarModel.isWizard();
+        savedTotalWinner = SidebarModel.isTotalWinner();
+        savedLevel = SidebarModel.getLevel();
+        savedMaxLevel = SidebarModel.getMaxLevel();
+        savedPyMaxLevel = ChannelRegistry.getPYMaxLevel();
     }
 
     @AfterEach
     void restoreState() throws Exception {
         termField().set(null, savedTerm);
         setRaceNameMethod().invoke(null, savedRaceName);
+        setClassNameMethod().invoke(null, savedClassName);
+        setTitleMethod().invoke(null, savedTitle);
+        setShapeNameMethod().invoke(null, savedShapeName);
         setShapechangedMethod().invoke(null, savedShapechanged);
+        setWizardMethod().invoke(null, savedWizard);
+        setTotalWinnerMethod().invoke(null, savedTotalWinner);
+        setLevelMethod().invoke(null, savedLevel);
+        setMaxLevelMethod().invoke(null, savedMaxLevel);
+        ChannelRegistry.setPYMaxLevel(savedPyMaxLevel);
     }
 
     /**
@@ -163,9 +255,8 @@ class HandlersHolderTest {
         setShapechangedMethod().invoke(null, false);
         setRaceNameMethod().invoke(null, "Half-Troll");
 
-        Object result = prtRaceMethod().invoke(null, 4, 0);
+        prtRaceMethod().invoke(null, 4, 0);
 
-        assertEquals(1, result);
         assertEquals('H', cell(4, 0).getCharacter());
         assertEquals(ColourEnum.COLOUR_LIGHT_BLUE, cell(4, 0).getAttributeColour());
         assertEquals('a', cell(4, 1).getCharacter());
@@ -183,9 +274,8 @@ class HandlersHolderTest {
         setRaceNameMethod().invoke(null, "Half-Troll");
         setShapechangedMethod().invoke(null, true);
 
-        Object result = prtRaceMethod().invoke(null, 4, 0);
+        prtRaceMethod().invoke(null, 4, 0);
 
-        assertEquals(1, result);
         for (int col = 0; col < 13; col++) {
             assertEquals(' ', cell(4, col).getCharacter(), "race name must not appear when shapechanged");
             assertEquals(ColourEnum.COLOUR_WHITE, cell(4, col).getAttributeColour());
@@ -194,25 +284,249 @@ class HandlersHolderTest {
 
     /**
      * {@link HandlersHolder#initHandlers()} - the port of C's {@code side_handlers[]}
-     * initializer - registers exactly the one row ported so far: {@code prt_race} at priority
-     * {@code 19} against {@code EVENT_RACE_CLASS}, matching C's {@code { prt_race, 19,
-     * EVENT_RACE_CLASS }} entry.
+     * initializer - registers all five rows ported so far, in C's table order: {@code prt_race} at
+     * priority {@code 19} against {@code EVENT_RACE_CLASS}, {@code prt_title} at {@code 18} against
+     * {@code EVENT_PLAYERTITLE}, {@code prt_class} at {@code 22} against {@code EVENT_RACE_CLASS},
+     * {@code prt_level} at {@code 10} against {@code EVENT_PLAYERLEVEL}, and {@code prt_exp} at
+     * {@code 16} against {@code EVENT_EXPERIENCE} - matching C's
+     * {@code { prt_race, 19, EVENT_RACE_CLASS }, { prt_title, 18, EVENT_PLAYERTITLE },
+     * { prt_class, 22, EVENT_RACE_CLASS }, { prt_level, 10, EVENT_PLAYERLEVEL },
+     * { prt_exp, 16, EVENT_EXPERIENCE }} entries exactly.
      */
     @Test
     @SuppressWarnings("unchecked")
-    void initHandlersRegistersThePrtRaceRowAtPriorityNineteen() throws Exception {
+    void initHandlersRegistersAllFiveRowsInTableOrder() throws Exception {
         Field field = HandlersHolder.class.getDeclaredField("sideHandlers");
         field.setAccessible(true);
         List<SideHandler> handlers = (List<SideHandler>) field.get(null);
 
-        assertEquals(1, handlers.size());
-        SideHandler handler = handlers.get(0);
-        assertEquals(19, handler.getPriority());
-        assertEquals(GameEventType.EVENT_RACE_CLASS, handler.getType());
+        assertEquals(5, handlers.size());
+
+        assertEquals(19, handlers.get(0).getPriority());
+        assertEquals(GameEventType.EVENT_RACE_CLASS, handlers.get(0).getType());
+
+        assertEquals(18, handlers.get(1).getPriority());
+        assertEquals(GameEventType.EVENT_PLAYERTITLE, handlers.get(1).getType());
+
+        assertEquals(22, handlers.get(2).getPriority());
+        assertEquals(GameEventType.EVENT_RACE_CLASS, handlers.get(2).getType());
+
+        assertEquals(10, handlers.get(3).getPriority());
+        assertEquals(GameEventType.EVENT_PLAYERLEVEL, handlers.get(3).getType());
+
+        assertEquals(16, handlers.get(4).getPriority());
+        assertEquals(GameEventType.EVENT_EXPERIENCE, handlers.get(4).getType());
 
         setShapechangedMethod().invoke(null, false);
         setRaceNameMethod().invoke(null, "Dwarf");
-        assertTrue(handler.getResult(6, 0) == 1);
+        handlers.get(0).getResult(6, 0);
         assertEquals('D', cell(6, 0).getCharacter());
+    }
+
+    /**
+     * {@code prt_class} ({@code [C] ui-display.c}): the ordinary path writes
+     * {@code player->class->name} - here, {@link SidebarModel#getClassName()} - into the field.
+     */
+    @Test
+    void prtClassWritesTheClassNameWhenNotShapechanged() throws Exception {
+        setShapechangedMethod().invoke(null, false);
+        setClassNameMethod().invoke(null, "Ranger");
+
+        prtClassMethod().invoke(null, 5, 0);
+
+        assertEquals('R', cell(5, 0).getCharacter());
+        assertEquals(ColourEnum.COLOUR_LIGHT_BLUE, cell(5, 0).getAttributeColour());
+        assertEquals('a', cell(5, 1).getCharacter());
+    }
+
+    /**
+     * {@code prt_class} ({@code [C] ui-display.c}): the shapechanged branch blanks the field with
+     * {@code prt_field("", row, col)} rather than showing the class name, the same guard
+     * {@code prt_race} applies.
+     */
+    @Test
+    void prtClassBlanksTheFieldWhenShapechanged() throws Exception {
+        setClassNameMethod().invoke(null, "Ranger");
+        setShapechangedMethod().invoke(null, true);
+
+        prtClassMethod().invoke(null, 5, 0);
+
+        for (int col = 0; col < 13; col++) {
+            assertEquals(' ', cell(5, col).getCharacter(), "class name must not appear when shapechanged");
+        }
+    }
+
+    /**
+     * {@code prt_level} ({@code [C] ui-display.c}): the current level, level-at-maximum path writes
+     * "LEVEL " in light green followed by the level right-justified in a six-wide field, matching
+     * C's {@code "%6d"}.
+     */
+    @Test
+    void prtLevelWritesLevelInLightGreenWhenAtMaximum() throws Exception {
+        setLevelMethod().invoke(null, 12);
+        setMaxLevelMethod().invoke(null, 12);
+
+        prtLevelMethod().invoke(null, 7, 0);
+
+        assertEquals('L', cell(7, 0).getCharacter());
+        assertEquals('E', cell(7, 1).getCharacter());
+        assertEquals(ColourEnum.COLOUR_LIGHT_GREEN, cell(7, 6).getAttributeColour());
+        // "%6d" of 12 is four spaces then "12"
+        assertEquals(' ', cell(7, 6).getCharacter());
+        assertEquals('1', cell(7, 10).getCharacter());
+        assertEquals('2', cell(7, 11).getCharacter());
+    }
+
+    /**
+     * {@code prt_level} ({@code [C] ui-display.c}): below the recorded maximum, the row switches
+     * to "Level " in yellow instead.
+     */
+    @Test
+    void prtLevelWritesLevelInYellowWhenBelowMaximum() throws Exception {
+        setLevelMethod().invoke(null, 9);
+        setMaxLevelMethod().invoke(null, 12);
+
+        prtLevelMethod().invoke(null, 7, 0);
+
+        // "Level " and "LEVEL " both start with 'L'; the second character is what distinguishes them.
+        assertEquals('e', cell(7, 1).getCharacter());
+        assertEquals(ColourEnum.COLOUR_YELLOW, cell(7, 6).getAttributeColour());
+        assertEquals('9', cell(7, 11).getCharacter());
+    }
+
+    /**
+     * {@code prt_title} ({@code [C] ui-display.c}): draws whatever {@code fmt_title} builds through
+     * the same 13-character field {@code prt_race}/{@code prt_class} use - here, the wizard branch,
+     * so the test does not depend on {@code fmt_title}'s own behaviour being separately correct.
+     */
+    @Test
+    void prtTitleDrawsTheFormattedTitleText() throws Exception {
+        setWizardMethod().invoke(null, true);
+
+        prtTitleMethod().invoke(null, 8, 0);
+
+        assertEquals('[', cell(8, 0).getCharacter());
+        assertEquals(ColourEnum.COLOUR_LIGHT_BLUE, cell(8, 0).getAttributeColour());
+    }
+
+    /**
+     * {@code fmt_title} ({@code [C] ui-display.c}): wizard mode wins over every other case,
+     * matching C's {@code my_strcpy(buf, "[=-WIZARD-=]", max)} - including the dashes, not tildes.
+     */
+    @Test
+    void fmtTitleReturnsWizardTextWhenWizard() throws Exception {
+        setWizardMethod().invoke(null, true);
+        setTotalWinnerMethod().invoke(null, true);
+
+        String result = (String) fmtTitleMethod().invoke(null, 32, false);
+
+        assertEquals("[=-WIZARD-=]", result);
+    }
+
+    /**
+     * {@code fmt_title}: the total-winner flag alone produces "***WINNER***", matching C's
+     * {@code player->total_winner} half of the {@code ||}.
+     */
+    @Test
+    void fmtTitleReturnsWinnerTextWhenTotalWinner() throws Exception {
+        setWizardMethod().invoke(null, false);
+        setTotalWinnerMethod().invoke(null, true);
+
+        String result = (String) fmtTitleMethod().invoke(null, 32, false);
+
+        assertEquals("***WINNER***", result);
+    }
+
+    /**
+     * {@code fmt_title}: exceeding the level cap also produces "***WINNER***" even with the flag
+     * unset, matching C's {@code (player->lev > PY_MAX_LEVEL)} half of the {@code ||} -
+     * a case the flag alone would miss.
+     */
+    @Test
+    void fmtTitleReturnsWinnerTextWhenLevelExceedsCap() throws Exception {
+        setWizardMethod().invoke(null, false);
+        setTotalWinnerMethod().invoke(null, false);
+        ChannelRegistry.setPYMaxLevel(50);
+        setLevelMethod().invoke(null, 51);
+
+        String result = (String) fmtTitleMethod().invoke(null, 32, false);
+
+        assertEquals("***WINNER***", result);
+    }
+
+    /**
+     * {@code fmt_title}: the shapechanged branch capitalises the shape name's first letter, the
+     * port of C's {@code my_strcap(buf)}, and leaves the rest of the name as given.
+     */
+    @Test
+    void fmtTitleCapitalisesTheShapeNameWhenShapechanged() throws Exception {
+        setWizardMethod().invoke(null, false);
+        setTotalWinnerMethod().invoke(null, false);
+        ChannelRegistry.setPYMaxLevel(50);
+        setLevelMethod().invoke(null, 10);
+        setShapechangedMethod().invoke(null, true);
+        setShapeNameMethod().invoke(null, "wolf");
+
+        String result = (String) fmtTitleMethod().invoke(null, 32, false);
+
+        assertEquals("Wolf", result);
+    }
+
+    /**
+     * {@code fmt_title}: a shape name shorter than {@code size} must round-trip unchanged rather
+     * than throw - C's {@code my_strcpy(buf, src, max)} copies a short {@code src} unchanged, and a
+     * bare {@code substring(0, size)} would instead throw
+     * {@code StringIndexOutOfBoundsException} here.
+     */
+    @Test
+    void fmtTitleDoesNotThrowWhenShapeNameIsShorterThanSize() throws Exception {
+        setWizardMethod().invoke(null, false);
+        setTotalWinnerMethod().invoke(null, false);
+        ChannelRegistry.setPYMaxLevel(50);
+        setLevelMethod().invoke(null, 10);
+        setShapechangedMethod().invoke(null, true);
+        setShapeNameMethod().invoke(null, "bat");
+
+        String result = (String) fmtTitleMethod().invoke(null, 32, false);
+
+        assertEquals("Bat", result);
+    }
+
+    /**
+     * {@code fmt_title}: with none of wizard, winner or shapechanged, and {@code short_mode}
+     * false, the plain class title is returned - here, shorter than {@code size}, which must not
+     * throw for the same reason as the shapechanged case.
+     */
+    @Test
+    void fmtTitleReturnsThePlainTitleWhenNoOtherCaseApplies() throws Exception {
+        setWizardMethod().invoke(null, false);
+        setTotalWinnerMethod().invoke(null, false);
+        ChannelRegistry.setPYMaxLevel(50);
+        setLevelMethod().invoke(null, 10);
+        setShapechangedMethod().invoke(null, false);
+        setTitleMethod().invoke(null, "Rogue");
+
+        String result = (String) fmtTitleMethod().invoke(null, 32, false);
+
+        assertEquals("Rogue", result);
+    }
+
+    /**
+     * {@code fmt_title}: with {@code short_mode} true and none of the first three cases applying,
+     * C's {@code if}/{@code else if} chain never reaches its last clause, so {@code buf} stays the
+     * empty string it was initialised to - this returns {@code ""} for the same case.
+     */
+    @Test
+    void fmtTitleReturnsEmptyStringInShortModeWhenNoOtherCaseApplies() throws Exception {
+        setWizardMethod().invoke(null, false);
+        setTotalWinnerMethod().invoke(null, false);
+        ChannelRegistry.setPYMaxLevel(50);
+        setLevelMethod().invoke(null, 10);
+        setShapechangedMethod().invoke(null, false);
+        setTitleMethod().invoke(null, "Rogue");
+
+        String result = (String) fmtTitleMethod().invoke(null, 32, true);
+
+        assertEquals("", result);
     }
 }

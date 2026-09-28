@@ -55,6 +55,11 @@ class SidebarModelTest {
     private String savedRaceName;
     private String savedName;
     private boolean savedShapechanged;
+    private boolean savedWizard;
+    private boolean savedTotalWinner;
+    private String savedShapeName;
+    private int savedLevel;
+    private int savedMaxLevel;
 
     @BeforeEach
     void saveModel() {
@@ -67,6 +72,11 @@ class SidebarModelTest {
         savedRaceName = SidebarModel.getRaceName();
         savedName = SidebarModel.getName();
         savedShapechanged = SidebarModel.isPlayerIsShapechanged();
+        savedWizard = SidebarModel.isWizard();
+        savedTotalWinner = SidebarModel.isTotalWinner();
+        savedShapeName = SidebarModel.getShapeName();
+        savedLevel = SidebarModel.getLevel();
+        savedMaxLevel = SidebarModel.getMaxLevel();
     }
 
     @AfterEach
@@ -80,6 +90,11 @@ class SidebarModelTest {
         SidebarModel.setRaceName(savedRaceName);
         SidebarModel.setName(savedName);
         SidebarModel.setPlayerIsShapechanged(savedShapechanged);
+        SidebarModel.setWizard(savedWizard);
+        SidebarModel.setTotalWinner(savedTotalWinner);
+        SidebarModel.setShapeName(savedShapeName);
+        SidebarModel.setLevel(savedLevel);
+        SidebarModel.setMaxLevel(savedMaxLevel);
     }
 
     /**
@@ -259,5 +274,77 @@ class SidebarModelTest {
         SidebarModel.setPlayerIsShapechanged(false);
         assertEquals(false, SidebarModel.isPlayerIsShapechanged());
         assertEquals("Ranger", SidebarModel.getClassName(), "writing shapechanged must not disturb class");
+    }
+
+    /**
+     * A written wizard flag is the flag read back, unrelated to the total-winner flag - and
+     * {@code false} round-trips as faithfully as {@code true} does.
+     */
+    @Test
+    void wizardRoundTrips() {
+        SidebarModel.setTotalWinner(true);
+
+        SidebarModel.setWizard(true);
+        assertEquals(true, SidebarModel.isWizard());
+        assertEquals(true, SidebarModel.isTotalWinner(), "writing wizard must not disturb totalWinner");
+
+        SidebarModel.setWizard(false);
+        assertEquals(false, SidebarModel.isWizard());
+    }
+
+    /**
+     * A written total-winner flag is the flag read back, unrelated to the wizard flag - and
+     * {@code false} round-trips as faithfully as {@code true} does.
+     */
+    @Test
+    void totalWinnerRoundTrips() {
+        SidebarModel.setWizard(true);
+
+        SidebarModel.setTotalWinner(true);
+        assertEquals(true, SidebarModel.isTotalWinner());
+        assertEquals(true, SidebarModel.isWizard(), "writing totalWinner must not disturb wizard");
+
+        SidebarModel.setTotalWinner(false);
+        assertEquals(false, SidebarModel.isTotalWinner());
+    }
+
+    /**
+     * A written shape name is the name read back, unrelated to the wizard/total-winner pair.
+     */
+    @Test
+    void shapeNameRoundTrips() {
+        SidebarModel.setWizard(true);
+        SidebarModel.setTotalWinner(true);
+        SidebarModel.setShapeName("Wolf");
+
+        assertEquals("Wolf", SidebarModel.getShapeName());
+        assertEquals(true, SidebarModel.isWizard(), "writing shapeName must not disturb wizard");
+        assertEquals(true, SidebarModel.isTotalWinner(), "writing shapeName must not disturb totalWinner");
+    }
+
+    /**
+     * A written current level is the level read back, unrelated to whatever maximum level is
+     * already held.
+     */
+    @Test
+    void levelRoundTrips() {
+        SidebarModel.setMaxLevel(20);
+        SidebarModel.setLevel(15);
+
+        assertEquals(15, SidebarModel.getLevel());
+        assertEquals(20, SidebarModel.getMaxLevel(), "writing level must not disturb maxLevel");
+    }
+
+    /**
+     * A written maximum level is the level read back, unrelated to whatever current level is
+     * already held.
+     */
+    @Test
+    void maxLevelRoundTrips() {
+        SidebarModel.setLevel(15);
+        SidebarModel.setMaxLevel(20);
+
+        assertEquals(20, SidebarModel.getMaxLevel());
+        assertEquals(15, SidebarModel.getLevel(), "writing maxLevel must not disturb level");
     }
 }

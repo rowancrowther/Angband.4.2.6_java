@@ -39,7 +39,8 @@ class SideHandlerTest {
      */
     @Test
     void priorityAndTypeRoundTrip() {
-        SideHandler handler = new SideHandler((x, y) -> 1, 19, GameEventType.EVENT_RACE_CLASS);
+        SideHandler handler = new SideHandler((x, y) -> {
+        }, 19, GameEventType.EVENT_RACE_CLASS);
 
         assertEquals(19, handler.getPriority());
         assertEquals(GameEventType.EVENT_RACE_CLASS, handler.getType());
@@ -47,23 +48,20 @@ class SideHandlerTest {
 
     /**
      * {@code getResult} calls through to the wrapped hook with the given column and row, in
-     * that order, and returns exactly what the hook returns - there is no C {@code side_handlers[]}
-     * dispatch to compare this against, since C's hooks are {@code void} and this return value is
-     * a port-only placeholder (see {@link SideHandler#getResult(int, int)}'s own Javadoc).
+     * that order - there is no C {@code side_handlers[]} dispatch to compare this against, since
+     * C's hooks are {@code void} and so is the wrapped hook here.
      */
     @Test
-    void getResultInvokesTheHookWithTheGivenCoordinatesAndReturnsItsResult() {
+    void getResultInvokesTheHookWithTheGivenCoordinates() {
         int[] seenX = new int[1];
         int[] seenY = new int[1];
         SideHandler handler = new SideHandler((x, y) -> {
             seenX[0] = x;
             seenY[0] = y;
-            return 42;
         }, 1, GameEventType.EVENT_RACE_CLASS);
 
-        int result = handler.getResult(7, 3);
+        handler.getResult(7, 3);
 
-        assertEquals(42, result);
         assertEquals(7, seenX[0]);
         assertEquals(3, seenY[0]);
     }

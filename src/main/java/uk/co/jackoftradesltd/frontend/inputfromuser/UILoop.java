@@ -229,6 +229,8 @@ public class UILoop {
                             case EVENT_RACE_CLASS -> RedrawRouter.setRaceClass(gameEventCoreMessage.data());
                             case EVENT_PLAYERTITLE -> RedrawRouter.setTitle(gameEventCoreMessage.data());
                             case EVENT_PLAYER_NAME -> RedrawRouter.setName(gameEventCoreMessage.data());
+                            case EVENT_PLAYERLEVEL -> RedrawRouter.setPlayerLevel(gameEventCoreMessage.data());
+                            case EVENT_EXPERIENCE -> RedrawRouter.setExperience(gameEventCoreMessage.data());
                             default -> {
                             }
                         }

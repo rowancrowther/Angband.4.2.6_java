@@ -267,7 +267,7 @@ public class Player {
     /**
      * Total-winner flag: set once the player has won the game - the port of C's {@code p->total_winner}.
      */
-    private int totalWinner;
+    private boolean totalWinner;
 
     /**
      * Cheating flags that disqualify the character from the score list - the port of C's {@code p->noscore}.
@@ -513,7 +513,7 @@ public class Player {
         skipCmdCoercion = 0;
         spellFlags = new ArrayList<>();
         spellOrder = new ArrayList<>();
-        totalWinner = 0;
+        totalWinner = false;
         noScore = 0;
 
         totalEnergy = 0;
@@ -2833,6 +2833,18 @@ public class Player {
         this.isDead = isDead;
     }
 
+    /**
+     * Sets the player's current experience total - the port of writing C's {@code p->exp}.
+     *
+     * <p>Nothing here clamps or validates the value: C's bare assignment does not either, and
+     * {@link #adjustLevel(boolean)} is what floors it at zero and caps it at
+     * {@link PlayerRegistry#PY_MAX_EXP} afterwards. {@link #playerExpGain} and {@link #playerExpLose}
+     * are the two callers that reach this in the ordinary course of play.
+     *
+     * <p>Function setExp commented in full on 260927.
+     *
+     * @param exp the current experience total to store
+     */
     public void setExp(long exp) {
         this.exp = exp;
 
@@ -2840,14 +2852,85 @@ public class Player {
         PlayerEventStatusUpdate.updatePlayerStatusExperience(this.exp);
     }
 
+    /**
+     * Returns the player's highest experience total yet held - the port of reading C's
+     * {@code p->max_exp}. Never drained below by {@link #playerExpLose} the way {@link #getExp} can
+     * be; only {@link #adjustLevel(boolean)} and a permanent loss move it, and {@link #getMaxLevel}
+     * is driven from it alone.
+     *
+     * <p>Function getMaxExp commented in full on 260927.
+     *
+     * @return the player's highest experience total yet held
+     */
     public long getMaxExp() {
         return maxExp;
     }
 
+    /**
+     * Sets the player's highest experience total yet held - the port of writing C's
+     * {@code p->max_exp}.
+     *
+     * <p>Nothing here clamps or validates the value, matching C's bare assignment;
+     * {@link #adjustLevel(boolean)} is what floors it at zero and caps it at
+     * {@link PlayerRegistry#PY_MAX_EXP} afterwards.
+     *
+     * <p>Function setMaxExp commented in full on 260927.
+     *
+     * @param maxExp the highest experience total to store
+     */
     public void setMaxExp(long maxExp) {
         this.maxExp = maxExp;
 
         // Cache the player max experience
         PlayerEventStatusUpdate.updatePlayerStatusMaxExperience(this.maxExp);
-    }   
+    }
+
+    /**
+     * Returns whether the player is in wizard mode - the port of reading C's {@code p->wizard}.
+     *
+     * <p>Function isWizard commented in full on 260927.
+     *
+     * @return {@code true} while the player is in wizard mode
+     */
+    public boolean isWizard() {
+        return this.isWizard;
+    }
+
+    /**
+     * Returns whether the player has won the game - the port of reading C's
+     * {@code p->total_winner}.
+     *
+     * <p>Function isWinner commented in full on 260927.
+     *
+     * @return {@code true} once the player has won the game
+     */
+    public boolean isWinner() {
+        return totalWinner;
+    }
+
+    /**
+     * Returns the highest character level the player has ever reached - the port of reading C's
+     * {@code p->max_lev}, and the counterpart of {@link #setMaxLevel}. See that method for who
+     * writes it and when.
+     *
+     * <p>Function getMaxLevel commented in full on 260927.
+     *
+     * @return the highest character level reached, never above {@code PY_MAX_LEVEL}
+     */
+    public int getMaxLevel() {
+        return maxLevel;
+    }
+
+    /**
+     * Returns the character's experience factor - the port of reading C's {@code p->expfact}, and
+     * the counterpart of {@link #setExpFact}. See that method for how the value is derived, what
+     * it scales, and why the port's {@code int} is interchangeable with C's {@code uint8_t}.
+     *
+     * <p>Function getExpFact commented in full on 260928.
+     *
+     * @return the summed race and class experience factor, as a percentage
+     */
+    public int getExpFact() {
+        return expFact;
+    }
 }

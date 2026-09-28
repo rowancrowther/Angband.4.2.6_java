@@ -19,6 +19,7 @@ package uk.co.jackoftradesltd.frontend.screen.handlers;
 
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
+import uk.co.jackoftradesltd.channel.globals.ChannelRegistry;
 import uk.co.jackoftradesltd.frontend.screen.Term;
 import uk.co.jackoftradesltd.frontend.screen.TermData;
 import uk.co.jackoftradesltd.frontend.ui.SidebarModel;
@@ -30,11 +31,12 @@ import java.util.List;
  * The Java port of C's {@code side_handlers[]} table ({@code [C] ui-display.c}) - the sidebar rows
  * that redraw themselves in response to a {@code game_event_type} flag, as opposed to the "short"
  * topbar path ({@code update_topbar}, {@code [C] ui-display.c}), which this class does not cover.
- * C's table lists roughly twenty rows; only {@code prt_race} is ported and registered so far, so
- * {@link #sideHandlers} today holds a single {@link SideHandler}, with the rest joining one at a
- * time as each hook is ported.
+ * C's table lists roughly twenty rows; five are ported and registered so far - {@code prt_race},
+ * {@code prt_title}, {@code prt_class}, {@code prt_level} and {@code prt_exp} - so
+ * {@link #sideHandlers} today holds five {@link SideHandler}s, in the same order C's table lists
+ * them, with the rest joining one at a time as each hook is ported.
  *
- * <p>Class HandlersHolder coded on 260927, commented in full on 260927.
+ * <p>Class HandlersHolder coded on 260927, commented in full on 260928.
  *
  * @author Rowan Crowther
  */
@@ -63,15 +65,183 @@ public class HandlersHolder {
 
     /**
      * Builds {@link #sideHandlers} - the port of C's {@code side_handlers[]} initializer
-     * ({@code [C] ui-display.c}). Only the {@code prt_race} row is registered today, at the same
-     * priority, {@code 19}, and against the same {@code EVENT_RACE_CLASS} flag C's table gives it;
-     * the remaining rows join this method as their own hooks are ported.
+     * ({@code [C] ui-display.c}). Five rows are registered today, each at the same priority and
+     * against the same {@code game_event_type} flag C's table gives it: {@code prt_race} at
+     * {@code 19} against {@code EVENT_RACE_CLASS}, {@code prt_title} at {@code 18} against
+     * {@code EVENT_PLAYERTITLE}, {@code prt_class} at {@code 22} against {@code EVENT_RACE_CLASS},
+     * {@code prt_level} at {@code 10} against {@code EVENT_PLAYERLEVEL}, and {@code prt_exp} at
+     * {@code 16} against {@code EVENT_EXPERIENCE} - matching C's table order and figures exactly.
+     * The remaining rows join this method as their own hooks are ported.
      *
-     * <p>Method initHandlers coded on 260927, commented in full on 260927.
+     * <p>Method initHandlers coded on 260927, commented in full on 260928.
      */
     private static void initHandlers() {
         SideHandler handler = new SideHandler(HandlersHolder::prtRace, 19, GameEventType.EVENT_RACE_CLASS);
         sideHandlers.add(handler);
+        handler = new SideHandler(HandlersHolder::prtTitle, 18, GameEventType.EVENT_PLAYERTITLE);
+        sideHandlers.add(handler);
+        handler = new SideHandler(HandlersHolder::prtClass, 22, GameEventType.EVENT_RACE_CLASS);
+        sideHandlers.add(handler);
+        handler = new SideHandler(HandlersHolder::prtLevel, 10, GameEventType.EVENT_PLAYERLEVEL);
+        sideHandlers.add(handler);
+        handler = new SideHandler(HandlersHolder::prtExp, 16, GameEventType.EVENT_EXPERIENCE);
+        sideHandlers.add(handler);
+    }
+
+    /**
+     * Draws the sidebar's experience row - the port of C's {@code prt_exp} ({@code [C]
+     * ui-display.c}), which shows either the experience needed to reach the next level, or, once
+     * the character has reached the level cap, the running total itself.
+     *
+     * <p>The displayed figure is not computed here: {@code PlayerCalcs.redrawStuff}'s
+     * {@code PR_EXP} arm does C's {@code if (!lev50) xp = ...} branch before the signal is even
+     * sent, so {@link SidebarModel#getXpToLevel()} already holds whichever of the two C's local
+     * {@code xp} would - the experience to the next level below level fifty, the current total at
+     * it - and this method only formats and writes it, matching C's {@code "%8ld"} with
+     * {@code "%8d"}.
+     *
+     * <p>The label and colour test is independent of that figure and reads C's own comparison
+     * exactly: {@code xp >= maxXp} against {@link SidebarModel#getExperience()} and
+     * {@link SidebarModel#getMaxXp()} - the character's actual current and maximum experience,
+     * C's {@code player->exp >= player->max_exp} - not against the number being printed.
+     * "EXP"/light green once the character is at their personal best, "Exp"/yellow otherwise; the
+     * label further swaps to "NXT"/"Nxt" until level fifty, following {@code lev50}.
+     *
+     * <p>Method prtExp coded on 260927, commented in full on 260928.
+     *
+     * @param row the row to draw at
+     * @param col the column to draw at
+     */
+    private static void prtExp(int row, int col) {
+        boolean lev50 = (SidebarModel.getLevel() == 50);
+        long xp = SidebarModel.getExperience();
+        long xpToLevel = SidebarModel.getXpToLevel();
+        long maxXp = SidebarModel.getMaxXp();
+
+        String xpString = String.format("%8d", xpToLevel);
+
+        if (xp >= maxXp) {
+            term.putStr(lev50 ? "EXP" : "NXT", row, col);
+            term.cPutStr(ColourEnum.COLOUR_LIGHT_GREEN, xpString, row, col + 4);
+        } else {
+            term.putStr(lev50 ? "Exp" : "Nxt", row, col);
+            term.cPutStr(ColourEnum.COLOUR_YELLOW, xpString, row, col + 4);
+        }
+    }
+
+    /**
+     * Draws the sidebar's level row - the port of C's {@code prt_level} ({@code [C]
+     * ui-display.c}), which formats the level into a six-wide field and colours it by whether the
+     * character is currently at their best-ever level.
+     *
+     * <p>Matches C exactly: {@code "%6d"} against {@link SidebarModel#getLevel()}, "LEVEL "/light
+     * green when the current level has reached the recorded maximum
+     * ({@link SidebarModel#getMaxLevel()}), otherwise "Level "/yellow.
+     *
+     * <p>Method prtLevel coded on 260927, commented in full on 260927.
+     *
+     * @param row the row to draw at
+     * @param col the column to draw at
+     */
+    private static void prtLevel(int row, int col) {
+        String levelString = String.format("%6d", SidebarModel.getLevel());
+
+        if (SidebarModel.getLevel() >= SidebarModel.getMaxLevel()) {
+            term.putStr("LEVEL ", row, col);
+            term.cPutStr(ColourEnum.COLOUR_LIGHT_GREEN, levelString, row, col + 6);
+        } else {
+            term.putStr("Level ", row, col);
+            term.cPutStr(ColourEnum.COLOUR_YELLOW, levelString, row, col + 6);
+        }
+    }
+
+    /**
+     * Draws the sidebar's title row - the port of C's {@code prt_title} ({@code [C]
+     * ui-display.c}), which formats the title text with {@link #fmtTitle} and writes it through the
+     * same 13-character field {@link #prtRace} and {@link #prtClass} use.
+     *
+     * <p>Method prtTitle coded on 260927, commented in full on 260927.
+     *
+     * @param row the row to draw at
+     * @param col the column to draw at
+     */
+    private static void prtTitle(int row, int col) {
+        String title = fmtTitle(32, false);
+
+        prtField(title, row, col);
+    }
+
+    /**
+     * Draws the sidebar's class-name row - the port of C's {@code prt_class} ({@code [C]
+     * ui-display.c}), which blanks the field for a shapechanged player and otherwise writes
+     * {@code player->class->name}.
+     *
+     * <p>Method prtClass coded on 260927, commented in full on 260927.
+     *
+     * @param row the row to draw at
+     * @param col the column to draw at
+     */
+    private static void prtClass(int row, int col) {
+        if (SidebarModel.isPlayerIsShapechanged())
+            prtField("", row, col);
+        else
+            prtField(SidebarModel.getClassName(), row, col);
+    }
+
+    /**
+     * Builds the text {@link #prtTitle} draws - the port of C's {@code fmt_title} ({@code [C]
+     * ui-display.c}), which picks one of four texts in a fixed priority order: wizard mode beats
+     * being a total winner, which beats being shapechanged, which beats the ordinary class title.
+     *
+     * <p>The four branches match C's {@code if}/{@code else if} chain exactly, including the one
+     * C reaches with neither a {@code my_strcpy} nor a fall-through: when {@code shortMode} is
+     * {@code true} and none of the first three apply, C's chain never reaches its last
+     * {@code else if (!short_mode)} clause, so {@code buf} stays the empty string it was
+     * initialised to; this returns {@code ""} for the same case, since the port has no callers that
+     * pass {@code true} today.
+     *
+     * <p>The winner check ORs in {@code SidebarModel.getLevel() > ChannelRegistry.getPYMaxLevel()},
+     * matching C's {@code player->total_winner || (player->lev > PY_MAX_LEVEL)} - a character can be
+     * a winner either by the flag or by having somehow exceeded the level cap.
+     *
+     * <p>The shapechanged branch capitalises the shape name's first letter with
+     * {@code toUpperCase()}, the port of C's {@code my_strcap(buf)} ({@code z-util.c}), which
+     * uppercases {@code buf[0]} and leaves the rest of the string untouched.
+     *
+     * <p>Both the shapechanged and plain-title branches clamp {@code size} down to the string's own
+     * length before calling {@code substring(0, size)}. C's {@code my_strcpy(buf, src, max)} simply
+     * copies a {@code src} shorter than {@code max} unchanged; a bare {@code substring(0, size)}
+     * would instead throw {@code StringIndexOutOfBoundsException} whenever the shape name or class
+     * title (routinely under the 32-character {@code size} {@link #prtTitle} passes) is shorter than
+     * {@code size} - the clamp is what makes the port behave like C's safe copy rather than crash.
+     *
+     * <p>Method fmtTitle coded on 260927, commented in full on 260927.
+     *
+     * @param size      the maximum length of the returned text, before the length is clamped down to
+     *                  what the underlying string actually holds
+     * @param shortMode {@code true} to omit the ordinary class title when none of the other three
+     *                  cases apply, matching C's {@code short_mode} parameter; no caller passes
+     *                  {@code true} today
+     * @return the text to draw in the title field
+     */
+    private static String fmtTitle(int size, boolean shortMode) {
+        if (SidebarModel.isWizard()) {
+            return "[=-WIZARD-=]";
+        }
+        if (SidebarModel.isTotalWinner() || (SidebarModel.getLevel() > ChannelRegistry.getPYMaxLevel())) {
+            return "***WINNER***";
+        }
+        if (SidebarModel.isPlayerIsShapechanged()) {
+            size = Math.min(size, SidebarModel.getShapeName().length());
+            String shapeName = SidebarModel.getShapeName().substring(0, size);
+            shapeName = shapeName.substring(0, 1).toUpperCase() + shapeName.substring(1);
+            return shapeName;
+        }
+        if (!shortMode) {
+            size = Math.min(size, SidebarModel.getTitle().length());
+            return SidebarModel.getTitle().substring(0, size);
+        }
+        return "";
     }
 
     /**
@@ -79,28 +249,24 @@ public class HandlersHolder {
      * ui-display.c}), which blanks the field for a shapechanged player and otherwise writes
      * {@code player->race->name}.
      *
-     * <p><b>Outstanding:</b> the shapechanged branch is not wired up yet. C re-checks
-     * {@code player_is_shapechanged(player)} against the live global on every draw, but this port
-     * reads {@link SidebarModel#isPlayerIsShapechanged()}, and nothing currently writes that flag -
-     * {@code RedrawRouter.setRaceClass} only carries the race and class names across the boundary,
-     * and the {@code EVENT_RACE_CLASS} payload it reads (built in {@code PlayerCalcs.redrawStuff}'s
-     * {@code PR_MISC} arm) never packs a shapechanged flag in the first place. So this branch is
-     * currently unreachable and the race name is always drawn, even for a shapechanged player -
-     * deliberately not yet implemented, not a discrepancy to fix here.
+     * <p>The shapechanged branch reads {@link SidebarModel#isPlayerIsShapechanged()}, which
+     * {@code RedrawRouter.setRaceClass} writes from the third element of the {@code EVENT_RACE_CLASS}
+     * payload; that payload is built in {@code PlayerCalcs.redrawStuff}'s {@code PR_MISC} arm from
+     * {@code player.isShapeChanged()}. So, unlike C's re-check of {@code player_is_shapechanged}
+     * against the live global on every draw, this branch reflects whatever the last
+     * {@code EVENT_RACE_CLASS} signal carried, which is current as of the last time {@code PR_MISC}
+     * was serviced.
      *
      * <p>Method prtRace coded on 260927, commented in full on 260927.
      *
      * @param row the row to draw at
      * @param col the column to draw at
-     * @return a placeholder value; see {@link SideHandler#getResult(int, int)}
      */
-    private static int prtRace(int row, int col) {
+    private static void prtRace(int row, int col) {
         if (SidebarModel.isPlayerIsShapechanged())
             prtField("", row, col);
         else
             prtField(SidebarModel.getRaceName(), row, col);
-
-        return 1;
     }
 
     /**
@@ -131,7 +297,12 @@ public class HandlersHolder {
      *
      * @param termData the wrapper this holder reads its {@link Term} out of
      */
-    public void setTermData(TermData termData) {
-        this.term = termData.getTerm();
+    public static void setTermData(TermData termData) {
+        term = termData.getTerm();
+    }
+
+    @FunctionalInterface
+    public interface prtFunction<T, U> {
+        void apply(T t, U u);
     }
 }

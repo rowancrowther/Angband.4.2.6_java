@@ -23,6 +23,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
+import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
 import uk.co.jackoftradesltd.channel.messages.data.PlayerEventStatusUpdate;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.Message;
@@ -859,17 +860,28 @@ public class PlayerCalcs {
      * narrowing above happens first, so with the map hidden neither override can be present and the
      * hack always returns.
      *
-     * <p>Every remaining flag is signalled through {@link PlayerRedraw#getEventType()}, with two
-     * exceptions: {@code PR_HP} and {@code PR_MANA} each call
-     * {@link uk.co.jackoftradesltd.middle.game.event.EventsHandler#eventSignalStat} with a
-     * current/maximum pair instead — hit points for {@code PR_HP}, spell points for
-     * {@code PR_MANA} — because {@code RedrawHandlers} forwards that payload across the
-     * core-to-front-end boundary and there is no shared {@code player} there for a handler to read
-     * the way C's {@code prt_hp} and {@code prt_sp} do. The map is handled separately again,
-     * because it also carries data: {@code EVENT_MAP} with the point {@code (-1, -1)}, C's
-     * sentinel for "the whole map, not one grid". A last {@code EVENT_END} tells the display the
-     * batch is complete and it may now do any plotting it deferred — and, like the narrowing, it is
-     * skipped when only subwindows were refreshed.
+     * <p>Most flags are signalled bare through {@link PlayerRedraw#getEventType()}, but six carry a
+     * payload instead, because there is no shared {@code player} on the front-end side for a handler
+     * to read the way C's {@code prt_*} functions do, so each has to hand across whatever that
+     * handler would otherwise have read from the global: {@code PR_HP} and {@code PR_MANA} each call
+     * {@code eventSignalStat} with a current/maximum pair — hit points and spell points
+     * respectively; {@code PR_LEV} does the same for the current and maximum character level;
+     * {@code PR_TITLE} calls {@code eventSignalStrings} with the class title, the wizard flag, the
+     * total-winner flag and the shape name, guarding {@link Player#getShape} against {@code null}
+     * first, since nothing has ported the shapechange effect yet and a null shape has no name to
+     * read; and {@code PR_MISC} calls it twice, once with the race name, class name and shapechanged
+     * flag and once with the full name. {@code PR_EXP} is the one flag that dispatches twice under
+     * its own event: {@code eventSignalLongStat} sends the (current, maximum) experience pair as
+     * C's {@code player->exp}/{@code max_exp} comparison needs it, and a second, separate
+     * {@code eventSignalLong} sends whatever C's local {@code xp} in {@code prt_exp} would hold —
+     * the experience to the next level, computed here from {@link PlayerRegistry#playerExperience}
+     * keyed at {@code player.getLevel() - 1} exactly as C indexes
+     * {@code player_exp[player->lev - 1]}, or the running total once the character has reached
+     * level fifty. The map is handled separately again, because it also carries data:
+     * {@code EVENT_MAP} with the point {@code (-1, -1)}, C's sentinel for "the whole map, not one
+     * grid". A last {@code EVENT_END} tells the display the batch is complete and it may now do
+     * any plotting it deferred — and, like the narrowing, it is skipped when only subwindows were
+     * refreshed.
      *
      * <p><b>Deliberate divergence:</b> C drives the signalling from a fixed table
      * ({@code redraw_events}, {@code player-calcs.c}) and so emits the events in that table's
@@ -878,7 +890,7 @@ public class PlayerCalcs {
      * honoured is the map coming after the rest of the events, and {@code EVENT_END} coming last of
      * all.
      *
-     * <p>Function redrawStuff coded on 260828, commented in full on 260926.
+     * <p>Function redrawStuff coded on 260828, commented in full on 260928.
      *
      * @param player the character whose flagged display elements are re-sent to the front end
      * @see #updateStuff(Player)
@@ -914,11 +926,40 @@ public class PlayerCalcs {
                         player.getCurrentHP(), player.getMaxHP());
                 case PR_MANA -> GameEngine.getEventsBusHandler().eventSignalStat(GameEventType.EVENT_MANA,
                         player.getCurSp(), player.getMaxSP());
-                case PR_TITLE -> GameEngine.getEventsBusHandler().eventSignalString(GameEventType.EVENT_PLAYERTITLE,
-                        player.getPlayerClass().getTitle(player.getLevel()));
+                case PR_TITLE -> {
+                    String playerIsWizard = Boolean.toString(player.isWizard());
+                    String playerIsWinner = Boolean.toString(player.isWinner());
+                    String playerShapeName = "";
+                    if (player.getShape() != null && player.getShape().getName() != null) {
+                        playerShapeName = player.getShape().getName();
+                    }
+                    GameEngine.getEventsBusHandler().eventSignalStrings(GameEventType.EVENT_PLAYERTITLE,
+                            player.getPlayerClass().getTitle(player.getLevel()),
+                            playerIsWizard, playerIsWinner,
+                            playerShapeName);
+                }
+                case PR_EXP -> {
+                    long xpToLevel = player.getExp();
+                    if (player.getLevel() < 50) {
+                        int playerLev = player.getLevel() - 1;
+                        if (player.getLevel() == 0)
+                            playerLev = 0;
+
+                        xpToLevel = (PlayerRegistry.playerExperience.getOrDefault(playerLev, 0L)
+                                * player.getExpFact() / 100L) - player.getExp();
+                    }
+                    GameEngine.getEventsBusHandler().eventSignalLongStat(GameEventType.EVENT_EXPERIENCE,
+                            player.getExp(), player.getMaxExp());
+                    GameEngine.getEventsBusHandler().eventSignalLong(GameEventType.EVENT_EXPERIENCE, xpToLevel);
+                }
+                case PR_LEV -> GameEngine.getEventsBusHandler().eventSignalStat(GameEventType.EVENT_PLAYERLEVEL,
+                        player.getLevel(), player.getMaxLevel());
                 case PR_MISC -> {
+                    String playerIsShapechanged = Boolean.toString(player.isShapeChanged());
                     GameEngine.getEventsBusHandler().eventSignalStrings(GameEventType.EVENT_RACE_CLASS,
-                            player.getRace().getName(), player.getPlayerClass().getName());
+                            player.getRace().getName(), player.getPlayerClass().getName(),
+                            // Pass through whether the player is shapechanged or not as a string of "true" or "false"
+                            playerIsShapechanged);
                     GameEngine.getEventsBusHandler().eventSignalString(GameEventType.EVENT_PLAYER_NAME,
                             player.getFullName());
                 }

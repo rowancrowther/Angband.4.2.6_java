@@ -383,6 +383,80 @@ class PlayerScalarStateTest {
     }
 
     /**
+     * Experience, the wizard/total-winner flags and the highest level reached - four accessors with
+     * no logic of their own, written today without any Javadoc and so checked here for the first
+     * time.
+     */
+    @Nested
+    @DisplayName("experience and the wizard/winner flags")
+    class ExperienceAndFlags {
+
+        /**
+         * Current and maximum experience are separate fields, the pair most likely to be crossed -
+         * the same shape as {@link StateOfPlay#hitPointsAreSeparate()}.
+         */
+        @Test
+        @DisplayName("current and maximum experience are separate")
+        void expAndMaxExpAreSeparate() {
+            player.setExp(120L);
+            player.setMaxExp(500L);
+
+            assertEquals(120L, player.getExp());
+            assertEquals(500L, player.getMaxExp());
+
+            player.setExp(80L);
+
+            assertEquals(80L, player.getExp());
+            assertEquals(500L, player.getMaxExp(), "the maximum was not disturbed");
+        }
+
+        /**
+         * A new player has won nothing and cast no wizard-mode spell - both flags start false.
+         */
+        @Test
+        @DisplayName("a new player is neither a wizard nor a winner")
+        void newPlayerIsNeitherWizardNorWinner() {
+            assertFalse(player.isWizard());
+            assertFalse(player.isWinner());
+        }
+
+        /**
+         * {@code isWizard} and {@code isWinner} are independent booleans - setting one must not
+         * disturb the other. Neither has a public setter, so both are reached by reflection, the
+         * same way {@link StateOfPlay#normalShapeIsNotChanged()} reaches {@code shape}.
+         *
+         * @throws Exception if a field cannot be reached
+         */
+        @Test
+        @DisplayName("wizard and winner are independent flags")
+        void wizardAndWinnerAreIndependent() throws Exception {
+            set("isWizard", true);
+            assertTrue(player.isWizard());
+            assertFalse(player.isWinner(), "setting wizard must not disturb winner");
+
+            set("isWizard", false);
+            set("totalWinner", true);
+            assertFalse(player.isWizard());
+            assertTrue(player.isWinner());
+        }
+
+        /**
+         * {@code getMaxLevel} reads {@code p->max_lev} directly; {@code setMaxLevel} is the
+         * counterpart writer, already covered by {@link PlayerIdentityAccessorTest}, so this pins
+         * only the read half.
+         *
+         * @throws Exception if the field cannot be reached
+         */
+        @Test
+        @DisplayName("getMaxLevel reads the highest level reached")
+        void getMaxLevelReadsTheField() throws Exception {
+            set("maxLevel", 27);
+
+            assertEquals(27, player.getMaxLevel());
+        }
+    }
+
+    /**
      * {@code nonCurseRunesKnown}, which asks whether everything on an item bar its curses has been
      * learned. Static, and the one method here with real logic.
      */

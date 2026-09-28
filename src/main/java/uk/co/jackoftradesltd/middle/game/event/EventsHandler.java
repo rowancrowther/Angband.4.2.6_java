@@ -381,4 +381,40 @@ public interface EventsHandler {
                                    int dStart, int dEnd, boolean early) {
         gameEventDispatch(eventType, new EventDataTunnel(nStep, nPierce, nDug, dStart, dEnd, early));
     }
+
+    /**
+     * Send a signal to dispatch all events of a given type with a pair of {@code long} numbers - the
+     * {@code long}-valued sibling of {@link #eventSignalStat}, for a redraw whose current/other pair
+     * does not fit an {@code int}. Used today only by {@code PlayerCalcs.redrawStuff}'s
+     * {@code PR_EXP} arm, sending the player's (current, maximum) experience - see
+     * {@link EventDataLongStat}'s Javadoc for why the wider type and why there is no
+     * {@code event_signal_*} counterpart in C.
+     *
+     * <p>Function eventSignalLongStat coded on 260927, commented in full on 260928.
+     *
+     * @param eventType The event type we are signalling
+     * @param value     the value the redraw is about; becomes {@link EventDataLongStat#value()}
+     * @param other     whatever {@code value} is paired with for display; becomes
+     *                  {@link EventDataLongStat#other()}
+     */
+    default void eventSignalLongStat(GameEventType eventType, long value, long other) {
+        gameEventDispatch(eventType, new EventDataLongStat(value, other));
+    }
+
+    /**
+     * Send a signal to dispatch all events of a given type with a single {@code long} number - the
+     * {@code long}-valued sibling of a bare stat value, for a redraw whose figure does not fit an
+     * {@code int}. Used today only by {@code PlayerCalcs.redrawStuff}'s {@code PR_EXP} arm, sending
+     * the experience needed for the next level (or the current total at level fifty) as a second,
+     * separate dispatch alongside the {@link #eventSignalLongStat} pair - see {@link EventDataLong}'s
+     * Javadoc for why the wider type and why there is no {@code event_signal_*} counterpart in C.
+     *
+     * <p>Function eventSignalLong coded on 260927, commented in full on 260928.
+     *
+     * @param eventType The event type we are signalling
+     * @param value     the number this event is reporting; becomes {@link EventDataLong#value()}
+     */
+    default void eventSignalLong(GameEventType eventType, long value) {
+        gameEventDispatch(eventType, new EventDataLong(value));
+    }
 }

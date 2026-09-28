@@ -29,17 +29,19 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Every {@code RedrawRouter} setter against what its own payload record is documented to carry,
- * not against re-reading {@link RedrawRouter}'s own body. {@link RedrawRouter#setHP} and
- * {@link RedrawRouter#setSP} are pinned against the two things C's {@code prt_hp}/{@code prt_sp}
- * and {@code get_panel_topleft} ({@code [C] ui-display.c} and {@code [C] ui-player.c}) rely on when
- * they read {@code player->chp}/{@code mhp} or {@code player->csp}/{@code msp} directly: which
- * value is current and which is the maximum, and that there is always a pair to read.
- * {@link RedrawRouter#setRaceClass} gets the same "which value lands where" treatment for
- * {@link EventDataStrings#strings()}'s two elements; {@link RedrawRouter#setTitle} and
- * {@link RedrawRouter#setName} each carry only one value, so there is nothing to transpose. There
- * is no C function to diverge from for any of them - this is the port's own translation step.
+ * not against re-reading {@link RedrawRouter}'s own body. {@link RedrawRouter#setHP},
+ * {@link RedrawRouter#setSP} and {@link RedrawRouter#setPlayerLevel} are pinned against the two
+ * things C's {@code prt_hp}/{@code prt_sp}/{@code prt_level} and {@code get_panel_topleft}
+ * ({@code [C] ui-display.c} and {@code [C] ui-player.c}) rely on when they read
+ * {@code player->chp}/{@code mhp}, {@code player->csp}/{@code msp} or
+ * {@code player->lev}/{@code max_lev} directly: which value is current and which is the maximum,
+ * and that there is always a pair to read. {@link RedrawRouter#setRaceClass} gets the same "which
+ * value lands where" treatment for {@link EventDataStrings#strings()}'s three elements, and
+ * {@link RedrawRouter#setTitle} for its four; {@link RedrawRouter#setName} carries only one value,
+ * so there is nothing to transpose. There is no C function to diverge from for any of them - this
+ * is the port's own translation step.
  *
- * <p>Class RedrawRouterTest coded on 260926, commented in full on 260926.
+ * <p>Class RedrawRouterTest coded on 260926, commented in full on 260927.
  *
  * @author Rowan Crowther
  */
@@ -57,6 +59,12 @@ class RedrawRouterTest {
     private String savedClassName;
     private String savedRaceName;
     private String savedName;
+    private String savedShapeName;
+    private boolean savedWizard;
+    private boolean savedTotalWinner;
+    private boolean savedShapechanged;
+    private int savedLevel;
+    private int savedMaxLevel;
 
     @BeforeEach
     void saveModel() {
@@ -68,6 +76,12 @@ class RedrawRouterTest {
         savedClassName = SidebarModel.getClassName();
         savedRaceName = SidebarModel.getRaceName();
         savedName = SidebarModel.getName();
+        savedShapeName = SidebarModel.getShapeName();
+        savedWizard = SidebarModel.isWizard();
+        savedTotalWinner = SidebarModel.isTotalWinner();
+        savedShapechanged = SidebarModel.isPlayerIsShapechanged();
+        savedLevel = SidebarModel.getLevel();
+        savedMaxLevel = SidebarModel.getMaxLevel();
     }
 
     @AfterEach
@@ -80,6 +94,12 @@ class RedrawRouterTest {
         SidebarModel.setClassName(savedClassName);
         SidebarModel.setRaceName(savedRaceName);
         SidebarModel.setName(savedName);
+        SidebarModel.setShapeName(savedShapeName);
+        SidebarModel.setWizard(savedWizard);
+        SidebarModel.setTotalWinner(savedTotalWinner);
+        SidebarModel.setPlayerIsShapechanged(savedShapechanged);
+        SidebarModel.setLevel(savedLevel);
+        SidebarModel.setMaxLevel(savedMaxLevel);
     }
 
     /**
@@ -166,13 +186,19 @@ class RedrawRouterTest {
     }
 
     /**
-     * {@link EventDataString#string()} becomes {@link SidebarModel#getTitle()}.
+     * {@link EventDataStrings#strings()}'s four elements land in {@link SidebarModel#getTitle()},
+     * {@link SidebarModel#isWizard()}, {@link SidebarModel#isTotalWinner()} and
+     * {@link SidebarModel#getShapeName()} respectively - deliberately distinct values, so a router
+     * that mis-ordered them would be caught rather than passing by coincidence.
      */
     @Test
-    void titleIsWrittenFromTheStringPayload() {
-        RedrawRouter.setTitle(new EventDataString("Rogue"));
+    void titleWizardWinnerAndShapeAreNotSwapped() {
+        RedrawRouter.setTitle(new EventDataStrings("Rogue", "true", "false", "Wolf"));
 
-        assertEquals("Rogue", SidebarModel.getTitle());
+        assertEquals("Rogue", SidebarModel.getTitle(), "strings()[0] must land in title");
+        assertEquals(true, SidebarModel.isWizard(), "strings()[1] must land in wizard");
+        assertEquals(false, SidebarModel.isTotalWinner(), "strings()[2] must land in totalWinner");
+        assertEquals("Wolf", SidebarModel.getShapeName(), "strings()[3] must land in shapeName");
     }
 
     /**
@@ -180,12 +206,13 @@ class RedrawRouterTest {
      * own test pins for {@link RedrawRouter#setHP}.
      */
     @Test
-    void aNonStringTitlePayloadLeavesTheModelUntouched() {
-        RedrawRouter.setTitle(new EventDataString("Rogue"));
+    void aNonStringsTitlePayloadLeavesTheModelUntouched() {
+        RedrawRouter.setTitle(new EventDataStrings("Rogue", "true", "false", "Wolf"));
 
         RedrawRouter.setTitle(new EventDataBoolean(true));
 
         assertEquals("Rogue", SidebarModel.getTitle(), "a mismatched payload must not overwrite title");
+        assertEquals(true, SidebarModel.isWizard(), "a mismatched payload must not overwrite wizard");
     }
 
     /**
@@ -211,16 +238,18 @@ class RedrawRouterTest {
     }
 
     /**
-     * {@link EventDataStrings#strings()}'s first element becomes {@link SidebarModel#getRaceName()}
-     * and its second becomes {@link SidebarModel#getClassName()} - deliberately distinct values, so
-     * a router that swapped the pair would be caught rather than passing by coincidence.
+     * {@link EventDataStrings#strings()}'s first element becomes {@link SidebarModel#getRaceName()},
+     * its second {@link SidebarModel#getClassName()} and its third
+     * {@link SidebarModel#isPlayerIsShapechanged()} - deliberately distinct values, so a router
+     * that mis-ordered them would be caught rather than passing by coincidence.
      */
     @Test
-    void raceAndClassAreNotSwapped() {
-        RedrawRouter.setRaceClass(new EventDataStrings("Elf", "Ranger"));
+    void raceClassAndShapechangedAreNotSwapped() {
+        RedrawRouter.setRaceClass(new EventDataStrings("Elf", "Ranger", "true"));
 
         assertEquals("Elf", SidebarModel.getRaceName(), "strings()[0] must land in raceName");
         assertEquals("Ranger", SidebarModel.getClassName(), "strings()[1] must land in className");
+        assertEquals(true, SidebarModel.isPlayerIsShapechanged(), "strings()[2] must land in playerIsShapechanged");
     }
 
     /**
@@ -228,11 +257,53 @@ class RedrawRouterTest {
      */
     @Test
     void aNonStringsRaceClassPayloadLeavesTheModelUntouched() {
-        RedrawRouter.setRaceClass(new EventDataStrings("Elf", "Ranger"));
+        RedrawRouter.setRaceClass(new EventDataStrings("Elf", "Ranger", "true"));
 
         RedrawRouter.setRaceClass(new EventDataBoolean(true));
 
         assertEquals("Elf", SidebarModel.getRaceName(), "a mismatched payload must not overwrite race");
         assertEquals("Ranger", SidebarModel.getClassName(), "a mismatched payload must not overwrite class");
+        assertEquals(true, SidebarModel.isPlayerIsShapechanged(), "a mismatched payload must not overwrite shapechanged");
+    }
+
+    /**
+     * {@link EventDataStat#current()} becomes {@link SidebarModel#getLevel()} and
+     * {@link EventDataStat#other()} becomes {@link SidebarModel#getMaxLevel()} - deliberately
+     * distinct values, so a router that swapped the pair would be caught rather than passing by
+     * coincidence.
+     */
+    @Test
+    void levelAndMaxLevelAreNotSwapped() {
+        RedrawRouter.setPlayerLevel(new EventDataStat(9, 12));
+
+        assertEquals(9, SidebarModel.getLevel(), "current() must land in level");
+        assertEquals(12, SidebarModel.getMaxLevel(), "other() must land in maxLevel");
+    }
+
+    /**
+     * A later {@code EVENT_PLAYERLEVEL} overwrites the model rather than merging with it, matching
+     * a redraw always sending the player's whole current state.
+     */
+    @Test
+    void aSecondLevelMessageOverwritesTheFirst() {
+        RedrawRouter.setPlayerLevel(new EventDataStat(9, 12));
+        RedrawRouter.setPlayerLevel(new EventDataStat(13, 13));
+
+        assertEquals(13, SidebarModel.getLevel());
+        assertEquals(13, SidebarModel.getMaxLevel());
+    }
+
+    /**
+     * A payload of the wrong shape is dropped rather than routed, the same guard {@link #setHP}'s
+     * own test pins for {@link RedrawRouter#setHP}.
+     */
+    @Test
+    void aNonStatLevelPayloadLeavesTheModelUntouched() {
+        RedrawRouter.setPlayerLevel(new EventDataStat(9, 12));
+
+        RedrawRouter.setPlayerLevel(new EventDataBoolean(true));
+
+        assertEquals(9, SidebarModel.getLevel(), "a mismatched payload must not overwrite level");
+        assertEquals(12, SidebarModel.getMaxLevel(), "a mismatched payload must not overwrite maxLevel");
     }
 }

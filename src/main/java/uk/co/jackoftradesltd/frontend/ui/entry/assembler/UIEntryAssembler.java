@@ -50,12 +50,13 @@ import java.util.List;
  * 260919 decision to drop {@code UIEntryBase}'s own registry.
  * <p>
  * Where the C original resolves and folds a record's fields one parser directive at a time against a
- * live {@code struct embryonic_ui_entry} ({@code [C] ui-entry.c:1888-2191}), this port receives the
+ * live {@code struct embryonic_ui_entry} (the {@code parse_entry_*} callbacks in {@code ui-entry.c}),
+ * this port receives the
  * whole record pre-parsed as one {@link UIEntryParseRecord} and does that same directive-by-directive
  * work - template inheritance, renderer/combiner/label/flag resolution, category/priority placement, and
  * {@code parameter:element}/{@code parameter:stat} expansion into per-value entries - in one pass across
  * {@link #assemble} and {@link #parseEachEntry}. The per-value expansion is the Java form of
- * {@code hatch_embryo}'s parameterised-name loop ({@code [C] ui-entry.c:1762-1869}); folding into an
+ * {@code hatch_embryo}'s parameterised-name loop ({@code ui-entry.c}); folding into an
  * already-registered entry of the same name is the Java form of {@code hatch_embryo}'s
  * {@code embryo->exists} branch - exercised here (unlike in {@code UIEntryBaseAssembler}) whenever a
  * {@code ui_entry.txt} record's name already appears in the registry. Unlike
@@ -68,8 +69,12 @@ import java.util.List;
  * Assembly is best-effort and error-collecting, like {@code UIEntryBaseAssembler}: a record whose
  * renderer, combiner, template or parameter cannot be resolved is skipped with a message appended to
  * {@code errors}, and processing continues with the next record.
+ * <p>
+ * The port still diverges from C in several latent ways that no shipped {@code ui_entry.txt} record
+ * reaches; each is recorded on the method it lives in ({@link #buildCategories}, {@link #assemble},
+ * {@link #parseEachEntry}) and collected in {@code docs/precis/260929.md}.
  *
- * <p>Class UIEntryAssembler coded before 260922, commented in full on 260922.
+ * <p>Class UIEntryAssembler coded before 260922, commented in full on 260929.
  *
  * @author Rowan Crowther
  */
@@ -80,19 +85,22 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
      * mirrors a C {@code quit()}/{@code assert} rather than a soft, error-collecting failure, the same
      * as {@code UIEntryBaseAssembler}'s equivalent check.
      *
-     * <p>Field logger coded before 260922, commented in full on 260922.
+     * <p>Field logger coded before 260922, commented in full on 260929.
      */
     private final static Logger logger = LogManager.getLogger(UIEntryAssembler.class);
 
     /**
      * The in-progress {@link UIEntryEmbryo} for the record currently being folded by
      * {@link #parseEachEntry(List, UIEntry)}'s create path - the Java form of C's
-     * {@code struct embryonic_ui_entry} ({@code [C] ui-entry.c:170-177}) while a parser works through
-     * one record's directives. Reassigned (never read back across calls) each time {@link #assemble}
-     * processes a record that does not already exist in the registry; left unused by the override
-     * path, which mutates the existing {@link UIEntry} directly instead.
+     * {@code struct embryonic_ui_entry} ({@code ui-entry.c}) while a parser works through
+     * one record's directives. Reassigned (never read back across calls) by the create path each time
+     * {@link #parseEachEntry} folds in an entry whose name is not already in the registry - once per
+     * expanded value for a {@code parameter:} record - and reset to {@code null} at the top of
+     * {@link #assemble}; left unused by the override path, which mutates the existing {@link UIEntry}
+     * directly instead. Being static, it is shared across assembler instances, so the class is not
+     * safe to run concurrently.
      *
-     * <p>Field embryo coded before 260922, commented in full on 260922.
+     * <p>Field embryo coded before 260922, commented in full on 260929.
      */
     private static UIEntryEmbryo embryo;
 
@@ -102,20 +110,20 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
      * with no priority yet in force, categories in {@code after} were written once the priority from
      * that line was in force. The Java form of the repeated {@code parse_entry_category}/
      * {@code parse_entry_priority} directive calls C performs while parsing one record
-     * ({@code [C] ui-entry.c:2120-2191}), collapsed here into a single pass over the pre-parsed record.
+     * ({@code ui-entry.c}), collapsed here into a single pass over the pre-parsed record.
      * <p>
      * Only the last entry in {@code before} is given {@code priority}/{@code prioritySet=true}
      * directly - matching C's {@code embryo->last_category_index} always pointing at the most recently
-     * seen category ({@code [C] ui-entry.c:2134}) - every other {@code before} category is left
+     * seen category ({@code parse_entry_category}) - every other {@code before} category is left
      * {@code prioritySet=false} so {@code UIDataLoader}'s finishing pass fills it from the entry's own
-     * default priority later, the same as C's finishing pass ({@code [C] ui-entry.c:2325-2331}).
+     * default priority later, the same as C's finishing pass in {@code ui-entry.c}.
      * <p>
      * <b>Known divergence (found 260922, unfixed):</b> every {@code after} category is also stamped
      * with {@code priority} here (with {@code prioritySet=false}, so it is really only waiting on the
      * entry's default priority). That is correct only when {@code before} is empty - i.e. when the
      * {@code priority:} line had no preceding category and so really did set the record's default
-     * ({@code [C] ui-entry.c:2177-2179}). When {@code before} is non-empty, C leaves
-     * {@code default_priority} at 0 ({@code [C] ui-entry.c:2181-2188}), because the {@code priority:}
+     * ({@code parse_entry_priority}'s {@code last_category_index == -1} branch). When {@code before} is
+     * non-empty, C leaves {@code default_priority} at 0, because the {@code priority:}
      * line attached to that category instead - but {@link #assemble} still passes the same
      * {@code priority} value on as the record's own {@code priorityNum} at each of its three call
      * sites, so an {@code after} category would incorrectly inherit the {@code before} category's
@@ -130,7 +138,7 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
      *                        {@code prioritySet=false} means the finishing pass overwrites it
      * @return the resolved category list, in {@code before} then {@code after} order
      *
-     * <p>Function buildCategories coded before 260922, commented in full on 260922.
+     * <p>Function buildCategories coded before 260922, commented in full on 260929.
      */
     private static List<UIEntryCategory> buildCategories(List<String> before, List<String> after, int priority,
                                                          int defaultPriority) {
@@ -157,7 +165,7 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
      * stat index, so the {@code parameter:stat} loop stamps it on afterward with
      * {@link UIEntry#setStatParameter(int)} - the Java form of C's
      * {@code entry->param_index = i} assignment in {@code hatch_embryo}'s
-     * parameterised-name loop ({@code [C] ui-entry.c:1825}). Without it, every
+     * parameterised-name loop ({@code ui-entry.c}). Without it, every
      * per-stat entry silently carries Java's default {@code int} value ({@code 0},
      * STR's index) regardless of which of the five stats it actually is - found and
      * fixed 260922, once a regression test for the override-path fix below caught it.
@@ -181,13 +189,21 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
      * an entry for stat index {@code i} when
      * {@code PlayerEventStatusUpdate.getPlayerStatusView().statString()[i]} is non-empty - a guard
      * C's {@code hatch_embryo} has no counterpart for, since it parameterises unconditionally over
-     * all of {@code get_stat_count()}'s entries ({@code [C] ui-entry.c:1782-1832}) and
+     * all of {@code get_stat_count()}'s entries ({@code ui-entry.c}) and
      * {@code stat_names[]} is a fixed five-element array that is never empty. Currently inert:
      * {@code statString} is seeded from the same hardcoded {@code {"STR","INT","WIS","DEX","CON"}}
-     * order ({@code PlayerEventStatusUpdate.java:69}) and is never actually empty at any index, so
+     * order in {@code PlayerEventStatusUpdate} and is never actually empty at any index, so
      * the guard never filters anything out in practice.
      *
-     * <p>Function assemble coded before 260922, commented in full on 260922.
+     * <p><b>Outstanding (found 260929):</b> two smaller divergences from C's error handling. A
+     * {@code priority:} value outside the {@code int} range makes {@code Integer.parseInt} throw, so
+     * the record is rejected with an error, where C's {@code strtol} clamps it to {@code INT_MIN} or
+     * {@code INT_MAX}. And when the create path fails for a {@code parameter:element} record (no
+     * combiner), the loop appends one {@code "Bad entry"} message per element, where C's
+     * {@code hatch_embryo} fails the record once. The bad-flag message also quotes the record's first
+     * flag rather than the one that failed. All are latent, not live.
+     *
+     * <p>Function assemble coded before 260922, commented in full on 260929.
      */
     @Override
     public List<UIEntry> assemble(@NotNull List<UIEntryParseRecord> records,
@@ -379,8 +395,8 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
      * {@link UIEntryParseRecord} - into the shared {@code results} list, either merging it into an
      * already-registered entry of the same name (the override path) or turning it into a fresh entry
      * via an {@link UIEntryEmbryo} (the create path). Together these are the Java form of
-     * {@code hatch_embryo} ({@code [C] ui-entry.c:1762-1869}) and the individual {@code parse_entry_*}
-     * directive callbacks ({@code [C] ui-entry.c:1888-2191}) that mutate a record's
+     * {@code hatch_embryo} and the individual {@code parse_entry_*}
+     * directive callbacks ({@code ui-entry.c}) that mutate a record's
      * {@code embryonic_ui_entry} while it is being read, collapsed here into one pass over an
      * already-fully-parsed record.
      * <p>
@@ -389,37 +405,58 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
      * earlier {@code parameter:element resist_ui_compact_0} record's fan-out already inserted. It
      * throws if the incoming entry still carries a stat or element parameter, mirroring
      * {@code parse_entry_parameter}'s refusal to parameterise an entry that already exists
-     * ({@code [C] ui-entry.c:1996-1998}) - that specific throw is unreached by shipped data, since
-     * none of the thirteen records carries its own {@code parameter:} line. It then applies the record's template (if
+     * ({@code ui-entry.c}) - that specific throw is unreached by shipped data, since
+     * none of the thirteen records carries its own {@code parameter:} line (and {@link #assemble}
+     * rejects such a record before it gets here). It then applies the record's template (if
      * any), renderer, combiner, label, shortened labels and flags directly onto the existing entry -
      * each an unconditional overwrite in C ({@code parse_entry_renderer}/{@code parse_entry_combine}/
-     * {@code parse_entry_label}, {@code [C] ui-entry.c:2021-2078}) except flags, which C only ever ORs
-     * in ({@code parse_entry_flags}, {@code [C] ui-entry.c:2194-2228}) - before merging in categories
+     * {@code parse_entry_label}) except flags, which C only ever ORs
+     * in ({@code parse_entry_flags}) - before merging in categories
      * not already present and applying the record's priority to either the existing entry's default
      * priority or its last-merged category, matching {@code parse_entry_priority}'s
-     * {@code last_category_index} branch ({@code [C] ui-entry.c:2177-2189}).
+     * {@code last_category_index} branch.
      * <p>
-     * The create path builds a blank {@link UIEntry}, wraps it in a {@link UIEntryEmbryo}, applies the
-     * record's template the same way {@code parse_entry_template} does ({@code [C]
-     * ui-entry.c:1952-1986}), then applies renderer/combiner/label/shortened-labels/categories from the
-     * record. The categories were already given their resolved priority by
+     * The create path builds a blank {@link UIEntry} carrying the record's own flags, wraps it in a
+     * {@link UIEntryEmbryo}, applies the record's template the same way {@code parse_entry_template}
+     * does, then applies renderer/combiner/label/shortened-labels/categories from the
+     * record, and finally rejects the entry (returning {@code false}) if it still has no combiner, as
+     * {@code hatch_embryo} does. Carrying the record's flags onto the blank entry was fixed 260929: it
+     * had been dropping them, which lost {@code TIMED_AS_AUX} on all thirteen
+     * {@code resist_ui_compact_0<TAG>} entries. The categories were already given their resolved priority by
      * {@link #buildCategories(List, List, int, int)} before this method ever sees them; see that
      * method's Javadoc for a known divergence in how a category-attached (rather than record-default)
      * priority is threaded through here. The blank entry's constructor carries across {@code entry}'s
      * resolved element parameter directly, but has no slot for a stat index, so
      * {@link UIEntry#getStatParameter()} is copied across separately with
      * {@link UIEntry#setStatParameter(int)} - without it, an override targeting a stat-parameterised
-     * entry (see the {@code existing.getStatParameter()} read above) would resolve against the
+     * entry (see the {@code existing.getStatParameter()} read in the override path) would resolve against the
      * wrong (default {@code 0}) index; found and fixed 260922 via {@code assemble}'s
      * {@code parameter:stat} loop.
+     * <p>
+     * <b>Outstanding (found 260929), override path:</b> {@code lastCategory} is the last category of
+     * the whole merged list, so a {@code priority:} written before any category sets that last
+     * category's priority where C sets the entry's default priority; a template's flags are never
+     * copied onto the existing entry, where C sets {@code flags = template flags & ~TEMPLATE_ONLY};
+     * and an {@code index} or {@code negative_index} scheme on a non-parameterised entry resolves to
+     * {@code 0} where C uses {@code param_index} ({@code -1}).
+     * <p>
+     * <b>Outstanding (found 260929), create path:</b> the template's own default priority and each
+     * template category's priority and {@code priority_set} are replaced by the record's priority and
+     * {@code prioritySet=false}, where C copies them from the template; a template's flags replace the
+     * record's own flags rather than being OR'd with them, so a record with both a {@code template:}
+     * and {@code flags:} line would lose the latter; and categories stay in insertion order where C
+     * keeps them sorted by name. All are latent: {@code ui_entry_base.txt} gives no base entry a
+     * priority or a category priority, and no shipped record has both a template and flags.
      *
      * @param results the shared entry list being built up across all of {@code ui_entry.txt} (seeded
      *                from the registry's existing entries, including the {@code ui_entry_base.txt}
      *                placeholders); mutated in place
      * @param entry   the resolved {@link UIEntry} {@link #assemble} built from one parse record, not
      *                yet folded into {@code results}
+     * @return {@code true} if the entry was merged or added; {@code false} if the create path rejected
+     * it for having no combiner, in which case nothing is added to {@code results}
      *
-     *                <p>Function parseEachEntry coded before 260922, commented in full on 260922.
+     * <p>Function parseEachEntry coded before 260922, commented in full on 260929.
      */
     private boolean parseEachEntry(List<UIEntry> results, UIEntry entry) {
         UIEntry existing = results.stream()
@@ -515,9 +552,11 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
             }
         } else {
             // Create path
+            Flag<ChannelEntryFlag> entryFlags = new Flag<>(ChannelEntryFlag.class);
+            entryFlags.copyFrom(entry.getEntryFlag());
             UIEntry blank = new UIEntry(entry.getName(), null, entry.getParameter(), entry.getStatOrElement(),
                     null, null, new ArrayList<>(), entry.getPriorityNum(), entry.getPriorityString(),
-                    new Flag<>(ChannelEntryFlag.class), "To keep alive", null, null, null);
+                    entryFlags, "To keep alive", null, null, null);
             // The constructor above carries entry's element parameter across but has no slot for a
             // stat index; copy it separately so a later override merge resolves against it correctly.
             blank.setStatParameter(entry.getStatParameter());

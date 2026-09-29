@@ -160,6 +160,101 @@ class UIDataLoaderTest {
         assertEquals("Poison", poison.getShortenedLabel(9));
     }
 
+    /**
+     * C's {@code finish_parse_ui_entry} keeps the label when {@code nlabel != 0}.
+     */
+    @Test
+    void finalPassKeepsAnExistingLabel() throws Exception {
+        UIEntry labelled = entry("some_name", "Real Label", null, null, 0, List.of());
+
+        finalPass(List.of(labelled));
+
+        assertEquals("Real Label", labelled.getLabel());
+    }
+
+    /**
+     * C fills the label from the name <em>before</em> calling {@code fill_out_shortened}, so an
+     * entry with no label at all must derive every shortened width from its name.
+     */
+    @Test
+    void finalPassFillsTheLabelBeforeTheShortenedLabelsAreDerived() throws Exception {
+        UIEntry bare = entry("regen", "", null, null, 0, List.of());
+
+        finalPass(List.of(bare));
+
+        assertEquals("regen", bare.getLabel());
+        assertEquals("r", bare.getShortenedLabel(0));
+        assertEquals("re", bare.getShortenedLabel(1));
+        assertEquals("regen", bare.getShortenedLabel(4));
+        assertEquals("regen", bare.getShortenedLabel(9), "the name is shorter than 10, so it is not padded");
+    }
+
+    /**
+     * Every entry is finished, in order, and the same objects come back.
+     */
+    @Test
+    void finalPassReturnsEveryEntryInOrderAsTheSameObjects() throws Exception {
+        UIEntry first = entry("a", "", null, null, 1, List.of());
+        UIEntry second = entry("b", "B", null, null, 2, List.of());
+
+        List<UIEntry> out = finalPass(List.of(first, second));
+
+        assertEquals(2, out.size());
+        assertSame(first, out.get(0));
+        assertSame(second, out.get(1));
+    }
+
+    @Test
+    void finalPassOfAnEmptyListIsEmpty() throws Exception {
+        assertTrue(finalPass(List.of()).isEmpty());
+    }
+
+    /**
+     * C's {@code (n < i + 1) ? n : i + 1}: a source shorter than the width is copied whole, never
+     * padded.
+     */
+    @Test
+    void fillOutShortenedNeverPadsALabelShorterThanTheWidth() throws Exception {
+        UIEntry shortLabel = entry("t", "Pox", null, null, 0, List.of());
+
+        fillOutShortened(shortLabel);
+
+        assertEquals("P", shortLabel.getShortenedLabel(0));
+        assertEquals("Po", shortLabel.getShortenedLabel(1));
+        assertEquals("Pox", shortLabel.getShortenedLabel(2));
+        assertEquals("Pox", shortLabel.getShortenedLabel(3));
+        assertEquals("Pox", shortLabel.getShortenedLabel(9));
+    }
+
+    /**
+     * Widths fill in ascending order in C, so a filled lower width is never a source for a higher
+     * one: with only label2 set, widths above it come from the full label, not from "Po".
+     */
+    @Test
+    void fillOutShortenedTakesHigherWidthsFromTheFullLabelNotFromAFilledLowerOne() throws Exception {
+        UIEntry entry = entry("t", "Poison", null, "Xy", 0, List.of());
+
+        fillOutShortened(entry);
+
+        assertEquals("X", entry.getShortenedLabel(0), "index 0 cascades from the nearest longer set label, \"Xy\"");
+        assertEquals("Xy", entry.getShortenedLabel(1));
+        assertEquals("Poi", entry.getShortenedLabel(2));
+        assertEquals("Poison", entry.getShortenedLabel(5));
+    }
+
+    /**
+     * An empty string counts as unset, matching {@code nshortened[i] == 0}.
+     */
+    @Test
+    void fillOutShortenedTreatsAnEmptyStringAsUnset() throws Exception {
+        UIEntry entry = entry("t", "Label", "", "", 0, List.of());
+
+        fillOutShortened(entry);
+
+        assertEquals("La", entry.getShortenedLabel(1));
+        assertEquals("Label", entry.getShortenedLabel(4));
+    }
+
     @Test
     void fillOutShortenedLeavesAnAlreadySetWidthUntouched() throws Exception {
         UIEntry entry = entry("t", "Label", null, "Lb", 0, List.of());

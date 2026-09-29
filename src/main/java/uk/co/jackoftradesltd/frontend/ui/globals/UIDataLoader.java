@@ -44,15 +44,21 @@ import java.util.List;
  * {@link UIRegistry} through its setters.
  *
  * <p>This is the write side of the UI slice, paired with {@code UIRegistry} (the read side).
- * Unlike the rest of the {@code GameConstants}-driven loaders this was split out of, its four
- * methods are invoked from the UI thread — by {@code UILoop}'s {@code EVENT_ENTER_INIT} handler,
- * not by {@code GameConstants.init()} — in dependency order: renderers, then bases (immediately
- * folded into placeholder entries by {@link #portUIEntryBasesToUIEntries()}), then the real,
- * file-parsed entries, which overwrite those placeholders in {@link UIRegistry}. This must still
- * run before the player- and object-property loaders that resolve their {@code bindui} targets
- * against the loaded UI entries.
+ * Unlike the rest of the {@code GameConstants}-driven loaders this was split out of, its three
+ * public loaders are invoked from the UI thread — by {@code UILoop}'s {@code EVENT_ENTER_INIT}
+ * handler, not by {@code GameConstants.init()} — in dependency order: renderers, then bases (which
+ * {@code UIEntryBaseAssembler} folds into {@code TEMPLATE_ONLY} placeholder entries in
+ * {@link UIRegistry} as it parses), then the real, file-parsed entries, which
+ * {@code UIEntryAssembler} merges into that same list before the finishing pass below runs. In C
+ * the same order is set by the {@code pl[]} table in {@code init.c}, where "ui renderers" and
+ * "ui entries" precede the player-property and object-property parsers that resolve their
+ * {@code bindui} targets against the loaded UI entries.
  *
- * <p>Class UIDataLoader coded before 260916, commented in full on 260919.
+ * <p>The two private methods, {@link #finalPass(List)} and {@link #fillOutShortened(UIEntry)}, are
+ * the Java form of C's {@code finish_parse_ui_entry} and {@code fill_out_shortened}
+ * ({@code ui-entry.c}).
+ *
+ * <p>Class UIDataLoader coded before 260916, commented in full on 260929.
  *
  * @author Rowan Crowther
  */
@@ -68,14 +74,16 @@ public class UIDataLoader {
 
     /**
      * Load the UI entries from {@code ui_entry.txt} into {@link UIRegistry}. Must run after the entry
-     * bases and renderers it references.
+     * bases and renderers it references. Corresponds to the second half of C's
+     * {@code run_parse_ui_entry} ({@code ui-entry.c}), which parses {@code ui_entry.txt} once the
+     * bases are in, followed by {@code finish_parse_ui_entry}, here {@link #finalPass(List)}.
      * <p>
      * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the entries that did
      * assemble are registered regardless, per the partial-results contract. The catch is on
      * {@code Exception} rather than {@code IOException} and <em>rethrows</em>, so an unresolvable
      * base or renderer stops the load here rather than leaving the renderer subsystem half-built.
      *
-     * <p>Function loadUIEntries coded before 260916, commented in full on 260919.
+     * <p>Function loadUIEntries coded before 260916, commented in full on 260929.
      *
      * @throws IOException if an IO error occurs while reading the file
      */
@@ -98,14 +106,17 @@ public class UIDataLoader {
 
     /**
      * Load the UI entry bases from {@code ui_entry_base.txt} into {@link UIRegistry}. Must run
-     * before {@link #loadUIEntries()}, which resolves each entry to one of these bases.
+     * before {@link #loadUIEntries()}, which resolves each entry to one of these bases. Corresponds
+     * to the first half of C's {@code run_parse_ui_entry} ({@code ui-entry.c}), which parses
+     * {@code ui_entry_base.txt} and then ORs {@code ENTRY_FLAG_TEMPLATE_ONLY} into every entry so far;
+     * in Java that flagging happens in {@code UIEntryBaseAssembler} as each record is parsed.
      * <p>
      * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the bases that did
      * assemble are registered regardless, per the partial-results contract. The catch is on
      * {@code Exception} and <em>rethrows</em>; a missing base here would resurface as an
      * unresolvable reference while loading the entries, so it is stopped at source.
      *
-     * <p>Function loadUIEntryBases coded before 260916, commented in full on 260919.
+     * <p>Function loadUIEntryBases coded before 260916, commented in full on 260929.
      *
      * @throws IOException an IO error occurred during parsing
      */
@@ -128,12 +139,14 @@ public class UIDataLoader {
     /**
      * Load the UI entry renderers from {@code ui_entry_renderer.txt} into {@link UIRegistry}. Must
      * run before {@link #loadUIEntries()}, which resolves each entry to one of these renderers.
+     * Corresponds to {@code run_parse_ui_entry_renderer} in {@code ui-entry-renderers.c}, which is
+     * just {@code parse_file} on {@code ui_entry_renderer.txt}.
      * <p>
      * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the renderers that
      * did assemble are registered regardless, per the partial-results contract. The catch is on
      * {@code Exception} and <em>rethrows</em>, for the same reason as the bases above.
      *
-     * <p>Function loadUIEntryRenderers coded before 260916, commented in full on 260919.
+     * <p>Function loadUIEntryRenderers coded before 260916, commented in full on 260929.
      *
      * @throws IOException an error occurred during the parsing - log it and rethrow it
      */
@@ -158,15 +171,21 @@ public class UIDataLoader {
      * been parsed and folded into one list: fills any entry's still-empty label from its name, fills
      * out its shortened labels (see {@link #fillOutShortened(UIEntry)}), and resolves any still-unset
      * category priority to the entry's own default priority. The Java form of the per-entry loop in
-     * {@code finish_parse_ui_entry} ({@code [C] ui-entry.c:2289-2336}), run over the same combined set
+     * {@code finish_parse_ui_entry} ({@code ui-entry.c}), run over the same combined set
      * C's single {@code n_entry} covers there - both the {@code ui_entry_base.txt} placeholders and
      * the real {@code ui_entry.txt} entries - since {@code entries} here is seeded from
      * {@link UIRegistry#getUIEntries()} by {@code UIEntryAssembler} before this is called.
      *
-     * @param entries the merged entry list to finish, in file order
-     * @return the same entries, finished in place, as a new list
+     * <p>Two things C does there are not reproduced. C's {@code hatch_last_embryo} is the assemblers'
+     * job here, and C's {@code -1} results (a label that will not convert to wide characters) have no
+     * Java counterpart, as a Java string cannot fail that way. An entry whose label is {@code null}
+     * rather than empty would throw here, where C's {@code nlabel == 0} covers both; the assemblers
+     * always supply {@code ""}.
      *
-     * <p>Function finalPass coded before 260919, commented in full on 260922.
+     * <p>Function finalPass coded before 260919, commented in full on 260929.
+     *
+     * @param entries the merged entry list to finish, in file order
+     * @return a new list holding the same entry objects, each finished in place
      */
     private static List<UIEntry> finalPass(List<UIEntry> entries) {
         List<UIEntry> results = new ArrayList<>();
@@ -193,12 +212,17 @@ public class UIDataLoader {
     /**
      * Fills in an entry's shortened labels at any index left unset, working from the nearest longer
      * shortened label already set (or the full label, if none is) - the Java form of
-     * {@code fill_out_shortened} ({@code [C] ui-entry.c:1724-1759}). An index counts as "set" when its
+     * {@code fill_out_shortened} ({@code ui-entry.c}). An index counts as "set" when its
      * label string is non-null and non-empty, corresponding to C's {@code nshortened[i] != 0}.
      *
-     * @param entry the entry whose shortened labels are filled in place
+     * <p>The label at index {@code i} is truncated to at most {@code i + 1} characters, C's
+     * {@code (n < i + 1) ? n : i + 1}. Indices are visited in ascending order, so a label filled at
+     * a lower index is never the source for a higher one; only labels set by the data file, or the
+     * full label, are.
      *
-     *              <p>Function fillOutShortened coded before 260919, commented in full on 260922.
+     * <p>Function fillOutShortened coded before 260919, commented in full on 260929.
+     *
+     * @param entry the entry whose shortened labels are filled in place
      */
     private static void fillOutShortened(UIEntry entry) {
         for (int index = 0; index < UIRegistry.MAX_SHORTENED; index++) {

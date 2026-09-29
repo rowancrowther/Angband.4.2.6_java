@@ -349,15 +349,15 @@ class HealthBarTest {
     }
 
     /**
-     * C's {@code side_handlers[]} has twenty-two rows; the one not yet ported is
-     * {@code prt_depth}, so the port's table holds twenty-one.
+     * C's {@code side_handlers[]} has twenty-two rows, all of them now ported (the last being
+     * {@code prt_depth}), so the port's table holds twenty-two.
      */
     @Test
-    void sideTableHoldsTwentyOneRows() throws Exception {
+    void sideTableHoldsTwentyTwoRows() throws Exception {
         Field field = HandlersHolder.class.getDeclaredField("sideHandlers");
         field.setAccessible(true);
         java.util.List<?> handlers = (java.util.List<?>) field.get(null);
 
-        assertEquals(21, handlers.size());
+        assertEquals(22, handlers.size());
     }
 }

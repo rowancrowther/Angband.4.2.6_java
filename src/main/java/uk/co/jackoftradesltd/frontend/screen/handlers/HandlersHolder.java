@@ -35,14 +35,14 @@ import java.util.List;
  * The Java port of C's {@code side_handlers[]} table ({@code [C] ui-display.c}) - the sidebar rows
  * that redraw themselves in response to a {@code game_event_type} flag, as opposed to the "short"
  * topbar path ({@code update_topbar}, {@code [C] ui-display.c}), which this class does not cover.
- * C's table lists twenty-two rows; seventeen hooks are ported and registered so far -
- * {@code prt_race}, {@code prt_title}, {@code prt_class}, {@code prt_level}, {@code prt_exp},
- * {@code prt_gold}, {@code prt_equippy}, {@code prt_ac}, {@code prt_hp}, {@code prt_sp},
- * {@code prt_health}, {@code prt_speed}, and the five stat rows {@code prt_str}, {@code prt_int},
- * {@code prt_wis}, {@code prt_dex} and {@code prt_con} - so {@link #sideHandlers} today holds
- * twenty-one {@link SideHandler}s, the seventeen hooks plus C's four {@code NULL}-hooked
- * placeholder rows (priorities 15, 21, 20 and 22), in the same order C's table lists them. The one
- * row still to come is {@code prt_depth}.
+ * C's table lists twenty-two rows; all eighteen hooks are ported and registered -
+ * {@code prt_race}, {@code prt_title}, {@code prt_class}, {@code prt_level},
+ * {@code prt_exp}, {@code prt_gold}, {@code prt_equippy}, {@code prt_ac}, {@code prt_hp},
+ * {@code prt_sp}, {@code prt_health}, {@code prt_speed}, {@code prt_depth}, and the five stat rows
+ * {@code prt_str}, {@code prt_int}, {@code prt_wis}, {@code prt_dex} and {@code prt_con} - so
+ * {@link #sideHandlers} holds twenty-two {@link SideHandler}s, the eighteen hooks plus C's four
+ * {@code NULL}-hooked placeholder rows (priorities 15, 21, 20 and 22), in the same order C's table
+ * lists them.
  *
  * <p>Class HandlersHolder coded on 260927, commented in full on 260929.
  *
@@ -73,7 +73,7 @@ public class HandlersHolder {
 
     /**
      * Builds {@link #sideHandlers} - the port of C's {@code side_handlers[]} initializer
-     * ({@code [C] ui-display.c}). Twenty-one rows are registered today, each at the same priority and
+     * ({@code [C] ui-display.c}). Twenty-two rows are registered, each at the same priority and
      * against the same {@code game_event_type} flag C's table gives it: {@code prt_race} at
      * {@code 19} against {@code EVENT_RACE_CLASS}, {@code prt_title} at {@code 18} against
      * {@code EVENT_PLAYERTITLE}, {@code prt_class} at {@code 22} against {@code EVENT_RACE_CLASS},
@@ -91,9 +91,9 @@ public class HandlersHolder {
      * {@code { NULL, 15, 0 }}, {@code { NULL, 21, 0 }}, {@code { NULL, 20, 0 }} and
      * {@code { NULL, 22, 0 }} placeholder rows, keeping the priority numbering aligned with C's
      * table even though nothing is drawn for them (C's second priority-22 row is a genuine
-     * duplicate of {@code prt_class}'s). {@code prt_speed} comes last, at {@code 13} against
-     * {@code EVENT_PLAYERSPEED}, straight after those placeholders as C's table has it;
-     * {@code prt_depth} joins this method when its own hook is ported.
+     * duplicate of {@code prt_class}'s). {@code prt_speed} follows, at {@code 13} against
+     * {@code EVENT_PLAYERSPEED}, straight after those placeholders as C's table has it, and
+     * {@code prt_depth} closes the table at {@code 14} against {@code EVENT_DUNGEONLEVEL}.
      *
      * <p>Method initHandlers coded on 260927, commented in full on 260929.
      */
@@ -140,6 +140,61 @@ public class HandlersHolder {
         sideHandlers.add(handler);
         handler = new SideHandler(HandlersHolder::prtSpeed, 13, GameEventType.EVENT_PLAYERSPEED);
         sideHandlers.add(handler);
+        handler = new SideHandler(HandlersHolder::prtDepth, 14, GameEventType.EVENT_DUNGEONLEVEL);
+        sideHandlers.add(handler);
+    }
+
+    /**
+     * Draws the sidebar's depth row - the port of C's {@code prt_depth}
+     * ({@code [C] ui-display.c}, function {@code prt_depth}). Asks {@link #fmtDepths(int)} for the
+     * text and writes it in white, left-justified in a thirteen-column field so a shorter string
+     * wipes what the previous one left behind, as C's {@code "%-13s"} does. C's comment calls this
+     * right-adjusting; the format is in fact left-justified, and the port follows the format.
+     *
+     * <p>C hands {@code fmt_depth} a 32-byte buffer; the port passes the same {@code 32}.
+     *
+     * <p>Method prtDepth coded on 260929, commented in full on 260929.
+     *
+     * @param row the row to draw at
+     * @param col the column to draw at
+     */
+    private static void prtDepth(int row, int col) {
+        String depths = fmtDepths(32);
+
+        term.putStr(String.format("%-13s", depths), row, col);
+    }
+
+    /**
+     * Works out the depth text - the port of C's {@code fmt_depth} ({@code [C] ui-display.c},
+     * function {@code fmt_depth}). Level {@code 0} is {@code "Town"}; any other level is
+     * {@code "%d' (L%d)"} with the depth in feet, fifty per level, then the level, so level 12 is
+     * {@code "600' (L12)"}. Nothing is drawn here.
+     *
+     * <p>The level comes from {@link SidebarModel} rather than off the player, so it is as current
+     * as the last {@code EVENT_DUNGEONLEVEL} signal; before any has arrived it holds {@code 0} and
+     * reads "Town".
+     *
+     * <p>The {@code length} argument stands in for C's {@code max}. C's {@code strnfmt} keeps at
+     * most {@code max - 1} characters, so a {@code length} of 32 would cut at 31 where the port
+     * cuts at 32; the longest string possible is a dozen characters, so the difference never shows.
+     * C's return value, {@code strlen(buf)}, is used only by {@code prt_depth_short} and is not
+     * returned here.
+     *
+     * <p>Method fmtDepths coded on 260929, commented in full on 260929.
+     *
+     * @param length the buffer size C passes as {@code max}; the text is cut to this length
+     * @return {@code "Town"} at level {@code 0}, otherwise the depth in feet and the level
+     */
+    private static String fmtDepths(int length) {
+        int depth = SidebarModel.getPlayerDepth();
+        String result;
+        if (depth == 0) {
+            result = "Town";
+        } else {
+            result = String.format("%d' (L%d)", depth * 50, depth);
+        }
+        length = Math.min(length, result.length());
+        return result.substring(0, length);
     }
 
     /**

@@ -38,14 +38,15 @@ import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
  * <p>Today it wires {@code EVENT_HP}, {@code EVENT_MANA}, {@code EVENT_RACE_CLASS},
  * {@code EVENT_PLAYERTITLE}, {@code EVENT_PLAYER_NAME}, {@code EVENT_PLAYERLEVEL},
  * {@code EVENT_EXPERIENCE}, {@code EVENT_GOLD}, {@code EVENT_EQUIPMENT}, {@code EVENT_STATS},
- * {@code EVENT_AC}, {@code EVENT_MONSTERHEALTH} and {@code EVENT_PLAYERSPEED}; a routing method joins here as each further
+ * {@code EVENT_AC}, {@code EVENT_MONSTERHEALTH}, {@code EVENT_PLAYERSPEED} and
+ * {@code EVENT_DUNGEONLEVEL}; a routing method joins here as each further
  * {@code PR_*} flag gets its own payload record and model, per
  * {@code docs/implementation/260926_change_in_architecture_from_cache_to_messages.md}. That design
  * doc is also why {@link SidebarModel} exists at all —
  * {@link uk.co.jackoftradesltd.channel.messages.data.PlayerStatusView} and its sibling caches are
  * being architected out field by field in favour of models this class writes.
  *
- * <p>Class RedrawRouter coded on 260926, commented in full on 260928.
+ * <p>Class RedrawRouter coded on 260926, commented in full on 260929.
  *
  * @author Rowan Crowther
  */
@@ -365,6 +366,27 @@ public class RedrawRouter {
             SidebarModel.setPlayerEffectiveSpeed(effectiveSpeed);
             SidebarModel.setEnergy(energy);
             SidebarModel.setEnergyNormal(energyNormal);
+        }
+    }
+
+    /**
+     * Unpacks an {@code EVENT_DUNGEONLEVEL} payload and writes it into {@link SidebarModel}, C's
+     * {@code prt_depth} and {@code fmt_depth} ({@code [C] ui-display.c}, functions
+     * {@code prt_depth} and {@code fmt_depth}) reading {@code player->depth} directly by
+     * comparison. Guarded on the payload shape, the same way {@link #setGold} is guarded.
+     *
+     * <p>The payload is the dungeon level, not the depth in feet: the {@code * 50} that turns one
+     * into the other is {@code HandlersHolder.prtDepth}'s job at draw time, as in C. Level
+     * {@code 0} is the town.
+     *
+     * <p>Method setPlayerDepth coded on 260929, commented in full on 260929.
+     *
+     * @param gameEventData the routed payload; must be an {@link EventDataInt} of the player's
+     *                      dungeon level or nothing is written
+     */
+    public static void setPlayerDepth(GameEventData gameEventData) {
+        if (gameEventData instanceof EventDataInt(int depth)) {
+            SidebarModel.setPlayerDepth(depth);
         }
     }
 }

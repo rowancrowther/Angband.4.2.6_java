@@ -44,8 +44,8 @@ import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
  * five stats' current/maximum/displayed-use values, and the tracked monster's
  * health-bar state (hit points, visibility, seven timed-effect flags, and whether the player is
  * hallucinating), and the player's speed with the effective-speed option and the two energy-table
- * figures its multiplier needs; the rest of C's {@code prt_*} family in
- * {@code [C] ui-display.c} join it as their own {@code EVENT_*} payloads are ported.
+ * figures its multiplier needs, and the player's dungeon level; the rest of C's {@code prt_*}
+ * family in {@code [C] ui-display.c} join it as their own {@code EVENT_*} payloads are ported.
  *
  * <p>The setters are package-private and the getters public, so only a class in this package —
  * today, only {@link RedrawRouter} — can write, while any caller may read.
@@ -459,6 +459,40 @@ public class SidebarModel {
      * <p>Field energyNormal coded on 260929, commented in full on 260929.
      */
     private static int energyNormal;
+
+    /**
+     * The player's dungeon level, C's {@code player->depth} - {@code 0} is the town. Written each
+     * time an {@code EVENT_DUNGEONLEVEL} message is routed and read whenever the sidebar's depth
+     * row is drawn. Starts at {@code 0}, so before the first message the row reads "Town".
+     *
+     * <p>Field playerDepth coded on 260929, commented in full on 260929.
+     */
+    private static int playerDepth;
+
+    /**
+     * Read the dungeon level last written by {@link #setPlayerDepth(int)}, for the sidebar's depth
+     * row - {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder}'s port of C's
+     * {@code fmt_depth} ({@code [C] ui-display.c}) is today's only reader.
+     *
+     * <p>Method getPlayerDepth coded on 260929, commented in full on 260929.
+     *
+     * @return the dungeon level, in levels rather than feet; {@code 0} in the town
+     */
+    public static int getPlayerDepth() {
+        return playerDepth;
+    }
+
+    /**
+     * Write the dungeon level. Package-private, so only {@link RedrawRouter#setPlayerDepth} - the
+     * only class in this package today - can write the model directly.
+     *
+     * <p>Method setPlayerDepth coded on 260929, commented in full on 260929.
+     *
+     * @param playerDepth the player's dungeon level, C's {@code player->depth}
+     */
+    static void setPlayerDepth(int playerDepth) {
+        SidebarModel.playerDepth = playerDepth;
+    }
 
     /**
      * Read whether speed is shown as a multiplier, last written by

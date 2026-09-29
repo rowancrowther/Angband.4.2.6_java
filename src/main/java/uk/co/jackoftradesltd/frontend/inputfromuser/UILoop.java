@@ -237,6 +237,7 @@ public class UILoop {
                             case EVENT_AC -> RedrawRouter.setAC(gameEventCoreMessage.data());
                             case EVENT_MONSTERHEALTH -> RedrawRouter.setMonsterHealth(gameEventCoreMessage.data());
                             case EVENT_PLAYERSPEED -> RedrawRouter.setPlayerSpeed(gameEventCoreMessage.data());
+                            case EVENT_DUNGEONLEVEL -> RedrawRouter.setPlayerDepth(gameEventCoreMessage.data());
                             default -> {
                             }
                         }

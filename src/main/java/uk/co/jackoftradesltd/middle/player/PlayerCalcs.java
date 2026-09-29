@@ -868,7 +868,7 @@ public class PlayerCalcs {
      * narrowing above happens first, so with the map hidden neither override can be present and the
      * hack always returns.
      *
-     * <p>Most flags are signalled bare through {@link PlayerRedraw#getEventType()}, but ten carry a
+     * <p>Most flags are signalled bare through {@link PlayerRedraw#getEventType()}, but a number carry a
      * payload instead, because there is no shared {@code player} on the front-end side for a handler
      * to read the way C's {@code prt_*} functions do, so each has to hand across whatever that
      * handler would otherwise have read from the global: {@code PR_HP} and {@code PR_MANA} each call
@@ -920,6 +920,9 @@ public class PlayerCalcs {
      * {@code player->state.speed}, the {@code effective_speed} option, and
      * {@link ChannelRegistry#extractEnergy} at the speed and at 110, C's {@code extract_energy[]}.
      * A player with no state yet sends speed {@code 0}, where C would already have one.
+     * {@code PR_DEPTH} calls {@code eventSignalInt} with {@code player.getDepth()}, C's
+     * {@code player->depth}, which C's {@code prt_depth} ({@code [C] ui-display.c}) reads directly;
+     * the level is sent rather than the feet, so the {@code * 50} stays on the drawing side.
      * The map is handled separately again, because it also carries data:
      * {@code EVENT_MAP} with the point {@code (-1, -1)}, C's sentinel for "the whole map, not one
      * grid". A last {@code EVENT_END} tells the display the batch is complete and it may now do
@@ -1096,6 +1099,8 @@ public class PlayerCalcs {
                     GameEngine.getEventsBusHandler().eventSignalPlayerSpeed(GameEventType.EVENT_PLAYERSPEED,
                             playerSpeed, playerOptionEffectiveSpeed, extractEnergy, extractEnergyNormal);
                 }
+                case PR_DEPTH -> GameEngine.getEventsBusHandler().eventSignalInt(GameEventType.EVENT_DUNGEONLEVEL,
+                        player.getDepth());
                 default -> GameEngine.getEventsBusHandler().eventSignal(playerRedraw.getEventType());
             }
         }

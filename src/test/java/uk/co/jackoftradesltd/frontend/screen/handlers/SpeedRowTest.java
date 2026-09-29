@@ -237,16 +237,16 @@ class SpeedRowTest {
     }
 
     /**
-     * The speed row is registered at priority 13 against EVENT_PLAYERSPEED, as C's table has it.
+     * The speed row is registered at priority 13 against EVENT_PLAYERSPEED, second from last as C's table has it (prt_depth follows).
      */
     @Test
     void registeredAtPriority13() throws Exception {
         Field f = HandlersHolder.class.getDeclaredField("sideHandlers");
         f.setAccessible(true);
         java.util.List<?> list = (java.util.List<?>) f.get(null);
-        SideHandler last = (SideHandler) list.get(list.size() - 1);
-        assertEquals(13, last.getPriority());
-        assertEquals(GameEventType.EVENT_PLAYERSPEED, last.getType());
-        assertEquals(21, list.size());
+        SideHandler speed = (SideHandler) list.get(list.size() - 2);
+        assertEquals(13, speed.getPriority());
+        assertEquals(GameEventType.EVENT_PLAYERSPEED, speed.getType());
+        assertEquals(22, list.size());
     }
 }

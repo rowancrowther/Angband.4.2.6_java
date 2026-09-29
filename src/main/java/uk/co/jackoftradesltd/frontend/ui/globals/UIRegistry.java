@@ -294,5 +294,18 @@ public class UIRegistry {
      */
     public static final String[] statReducedNames = {"Str: ", "Int: ", "Wis: ", "Dex: ", "Con: "};
 
+    /**
+     * The longest colour or symbol palette a UI-entry renderer can carry. The Java form of C's
+     * {@code MAX_PALETTE}, defined in {@code ui-entry-renderers.c} (not {@code ui-entry.c}, where the
+     * other constants in this class come from).
+     *
+     * <p>C uses it to cap the parsed {@code colors:} and {@code label-colors:} lists
+     * ({@code renderer->ncolors} and {@code renderer->nlabcolors} become {@code min(n, MAX_PALETTE)}),
+     * and to size the symbol buffers ({@code defsym[MAX_PALETTE]} and the {@code MAX_PALETTE + 1}
+     * allocation for {@code renderer->symbols}). It lives here rather than beside the renderer
+     * because {@code UIEntryRendererAssembler} reads it as {@code UIRegistry.MAX_PALETTE}.
+     *
+     * <p>Field MAX_PALETTE coded before 260929, commented in full on 260929.
+     */
     public static final int MAX_PALETTE = 64;
 }

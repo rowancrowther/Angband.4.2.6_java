@@ -38,6 +38,8 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -125,6 +127,102 @@ class UIRegistryTest {
         @DisplayName("returns null for an unknown name")
         void returnsNullForAnUnknownName() {
             assertNull(UIRegistry.getUIEntry("no_such_entry"));
+        }
+    }
+
+    /**
+     * Tests the lookups' edge cases: the unloaded-registry states and the exact-match rule, against
+     * C's {@code ui_entry_search}, which compares with {@code strcmp} (case-sensitive, whole string).
+     *
+     * <p>Class LookupEdges coded on 260929, commented in full on 260929.
+     */
+    @Nested
+    @DisplayName("lookup edge cases")
+    class LookupEdges {
+
+        @Test
+        @DisplayName("names are matched case-sensitively, as strcmp does")
+        void matchIsCaseSensitive() {
+            assertNull(UIRegistry.getUIEntry("KNOWN_ENTRY"));
+            assertNull(UIRegistry.getUIEntryBase("Known_Base"));
+            assertNull(UIRegistry.getUIEntryRenderer("KNOWN_RENDERER", new ArrayList<>()));
+        }
+
+        @Test
+        @DisplayName("names are matched whole, not by prefix")
+        void matchIsWholeString() {
+            assertNull(UIRegistry.getUIEntry("known"));
+            assertNull(UIRegistry.getUIEntry("known_entry2"));
+            assertNull(UIRegistry.getUIEntry(""));
+        }
+
+        @Test
+        @DisplayName("picks the right record among several")
+        void picksTheRightRecord() {
+            UIEntry a = entry("a");
+            UIEntry b = entry("b");
+            UIRegistry.setUIEntries(List.of(a, b));
+            assertSame(a, UIRegistry.getUIEntry("a"));
+            assertSame(b, UIRegistry.getUIEntry("b"));
+        }
+
+        @Test
+        @DisplayName("an empty registry finds nothing rather than throwing")
+        void emptyRegistryReturnsNull() {
+            UIRegistry.setUIEntries(List.of());
+            assertNull(UIRegistry.getUIEntry("known_entry"));
+        }
+
+        @Test
+        @DisplayName("an unloaded entry registry throws")
+        void unloadedEntriesThrow() {
+            UIRegistry.setUIEntries(null);
+            assertThrows(IllegalStateException.class, () -> UIRegistry.getUIEntry("x"));
+        }
+
+        @Test
+        @DisplayName("an unloaded base registry throws")
+        void unloadedBasesThrow() {
+            UIRegistry.setUIEntryBases(null);
+            assertThrows(IllegalStateException.class, () -> UIRegistry.getUIEntryBase("x"));
+        }
+
+        @Test
+        @DisplayName("an unloaded renderer registry reports through errors and returns null")
+        void unloadedRenderersReportThroughErrors() {
+            UIRegistry.setUIEntryRenderers(null);
+            List<String> errors = new ArrayList<>();
+            assertNull(UIRegistry.getUIEntryRenderer("x", errors));
+            assertEquals(1, errors.size());
+        }
+    }
+
+    /**
+     * Tests the size constants against the {@code #define} values in C: {@code MAX_ENTRY_LABEL} and
+     * {@code MAX_SHORTENED} in {@code ui-entry.c}, {@code MAX_PALETTE} in {@code ui-entry-renderers.c}.
+     *
+     * <p>Class Constants coded on 260929, commented in full on 260929.
+     */
+    @Nested
+    @DisplayName("size constants")
+    class Constants {
+
+        @Test
+        @DisplayName("MAX_ENTRY_LABEL is 80")
+        void maxEntryLabel() {
+            assertEquals(80, UIRegistry.MAX_ENTRY_LABEL);
+        }
+
+        @Test
+        @DisplayName("MAX_SHORTENED is 10")
+        void maxShortened() {
+            assertEquals(10, UIRegistry.MAX_SHORTENED);
+        }
+
+        @Test
+        @DisplayName("MAX_PALETTE is 64")
+        void maxPalette() {
+            assertEquals(64, UIRegistry.MAX_PALETTE);
         }
     }
 

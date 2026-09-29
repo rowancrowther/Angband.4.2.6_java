@@ -47,12 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `frontend/ui/output/Region.java`
-
-1 missing, 0 low
-
-- L36: method `Region` - MISSING
-
 ### `frontend/ui/player/CharSheetConfig.java`
 
 18 missing, 0 low

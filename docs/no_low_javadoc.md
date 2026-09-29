@@ -47,15 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `frontend/ui/globals/UIRegistry.java`
-
-1 missing, 3 low
-
-- L44: field `logger` - MISSING
-- L62: method `getUIEntryRenderers` - LOW
-- L76: method `getUIEntryBases` - LOW
-- L90: method `getUIEntries` - LOW
-
 ### `frontend/ui/output/Region.java`
 
 1 missing, 0 low

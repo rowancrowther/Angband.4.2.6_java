@@ -792,6 +792,83 @@ class UIPlayerTest {
             assertEquals("18/***", invoke(238));
             assertEquals("18/***", invoke(300));
         }
+
+        /**
+         * Invokes the method under test with an explicit output length.
+         *
+         * @param stat the raw stat value to format
+         * @param len  C's {@code out_len}: the buffer size, terminator included
+         * @return the formatted string
+         * @throws Exception if the method cannot be reached or throws
+         */
+        private String invoke(int stat, int len) throws Exception {
+            Method method = UIPlayer.class.getDeclaredMethod("cnvStat", int.class, int.class);
+            method.setAccessible(true);
+            return (String) method.invoke(null, stat, len);
+        }
+
+        /**
+         * C passes {@code out_len} to {@code strnfmt}, which writes at most {@code out_len - 1}
+         * characters and reserves the last byte for the null, so a buffer of seven holds the whole
+         * six-character result but a buffer of six drops the last character.
+         *
+         * @throws Exception if the method cannot be reached
+         */
+        @Test
+        @DisplayName("keeps the whole six characters at len 7 but drops the last at len 6")
+        void truncatesToLenMinusOne() throws Exception {
+            assertEquals("    18", invoke(18, 7));
+            assertEquals("    1", invoke(18, 6));
+            assertEquals(" 18/05", invoke(23, 7));
+            assertEquals(" 18/0", invoke(23, 6));
+            assertEquals("18/100", invoke(118, 7));
+            assertEquals("18/10", invoke(118, 6));
+            assertEquals("18/***", invoke(300, 7));
+            assertEquals("18/**", invoke(300, 6));
+        }
+
+        /**
+         * The lower bound: a one-byte buffer holds only the terminator, so no characters survive;
+         * a two-byte buffer keeps exactly the first character (a space for a plain number).
+         *
+         * @throws Exception if the method cannot be reached
+         */
+        @Test
+        @DisplayName("keeps no characters at len 1 and one at len 2")
+        void truncatesAtLowestLengths() throws Exception {
+            assertEquals("", invoke(18, 1));
+            assertEquals(" ", invoke(18, 2));
+            assertEquals("1", invoke(118, 2));
+        }
+
+        /**
+         * A buffer larger than the result changes nothing, so the lengths the callers use (32
+         * here, {@code sizeof(buf)} = 80 in C) give the same string as C.
+         *
+         * @throws Exception if the method cannot be reached
+         */
+        @Test
+        @DisplayName("leaves the result untouched when len exceeds its length")
+        void leavesResultUntouchedForLargeLen() throws Exception {
+            assertEquals("    18", invoke(18, 32));
+            assertEquals("    18", invoke(18, 80));
+            assertEquals("18/***", invoke(300, 80));
+        }
+
+        /**
+         * A non-positive {@code len} makes {@code len - 1} a negative substring bound. C has no
+         * equivalent (a zero-size {@code strnfmt} writes nothing), so this records the Java
+         * behaviour rather than a C-derived value.
+         *
+         * @throws Exception if the method cannot be reached
+         */
+        @Test
+        @DisplayName("throws StringIndexOutOfBoundsException when len is zero")
+        void throwsWhenLenIsZero() throws Exception {
+            java.lang.reflect.InvocationTargetException thrown = assertThrows(
+                    java.lang.reflect.InvocationTargetException.class, () -> invoke(18, 0));
+            assertTrue(thrown.getCause() instanceof StringIndexOutOfBoundsException);
+        }
     }
 
     /**

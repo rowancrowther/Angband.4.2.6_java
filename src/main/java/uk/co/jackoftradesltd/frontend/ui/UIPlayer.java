@@ -50,7 +50,18 @@ import java.util.function.Supplier;
  * {@link Region} and builder — the Java form of C's file-scope {@code panels[]} table in
  * {@code ui-player.c}.
  *
- * <p>Class UIPlayer coded before 260925, commented in full on 260925.
+ * <p>Unlike C, which draws to the one global {@code Term}, each instance draws onto the
+ * {@link TermData} handed to {@link #setTermData(TermData)}, and reads the player through the
+ * {@link PlayerEventStatusUpdate} views and {@link SidebarModel} that carry player state across
+ * the core-to-front-end message boundary rather than a {@code player} global. All five panel
+ * builders ({@code getPanelX}) and the row helpers they call are ported; what is not is the
+ * drawing side — {@code display_panel}, {@code display_player_sust_info},
+ * {@code display_player_flag_info} and {@code display_player_xtra_info} — so
+ * {@link #displayPlayer(PlayerDisplayMode)} currently draws only the stat block.
+ * {@link #cnvStat(int, int)} is the one public static method, shared with the sidebar's stat
+ * rows in {@code HandlersHolder}.
+ *
+ * <p>Class UIPlayer coded before 260925, commented in full on 260929.
  *
  * @author Rowan Crowther
  */
@@ -198,22 +209,79 @@ public class UIPlayer {
     }
 
     /**
+     * Converts a raw stat value into its six-character, right-justified display form — the port of
+     * C's {@code cnv_stat} ({@code [C] ui-display.c}, function {@code cnv_stat}).
+     *
+     * <p>Stats at or below 18 render as a plain right-justified number ({@code "    %2d"}). Above
+     * 18, {@code stat} carries a bonus ({@code stat - 18}) rendered after a {@code "18/"} prefix:
+     * a bonus of 220 or more collapses to the literal {@code "18/***"} (C's cap on displaying
+     * a stat past its practical maximum); a bonus of 100 or more prints as three digits
+     * ({@code "18/%03d"}); anything below that prints as two digits with a leading space
+     * ({@code " 18/%02d"}) so every branch's output stays six characters wide. The 100 threshold is
+     * inclusive on both sides ({@code bonus >= 100}), matching C's {@code else if (bonus >= 100)} —
+     * a bonus of exactly 100 (a stat of 118) takes the three-digit branch, not the padded one.
+     *
+     * <p>{@code len} stands in for C's {@code out_len} argument, the size of the caller's output
+     * buffer. {@code strnfmt} writes at most {@code out_len - 1} characters and reserves the last
+     * byte for the terminating null, so the result is cut to {@code len - 1} characters when that
+     * is shorter than the six the formatting produces: {@code cnvStat(18, 6)} gives {@code "    1"},
+     * while {@code cnvStat(18, 32)} gives the full {@code "    18"}. Every current caller passes
+     * 32 (C's callers pass {@code sizeof(buf)}, 80 in {@code display_player_stat_info}), so in
+     * practice the string is never cut. A {@code len} of one yields the empty string; a {@code len}
+     * of zero or less makes {@code len - 1} a negative {@link String#substring} bound and throws
+     * {@link StringIndexOutOfBoundsException}, which C has no equivalent of, so callers must not
+     * pass one.
+     *
+     * <p>Method cnvStat coded before 260925, commented in full on 260929.
+     *
+     * @param stat the raw stat value to format
+     * @param len  the size of the notional output buffer, terminator included; the result holds at
+     *             most {@code len - 1} characters
+     * @return the six-character display string for {@code stat}, cut to {@code len - 1}
+     * characters if that is shorter
+     */
+    public static String cnvStat(int stat, int len) {
+        String result = "";
+        // Stats above 18 need special treatment
+        if (stat > 18) {
+            int bonus = (stat - 18);
+
+            if (bonus >= 220) {
+                result = "18/***";
+            } else if (bonus >= 100) {
+                result = String.format("18/%03d", bonus);
+            } else {
+                result = String.format(" 18/%02d", bonus);
+            }
+        } else {
+            result = String.format("    %2d", stat);
+        }
+
+        int min = Math.min(len - 1, result.length());
+
+        return result.substring(0, min);
+    }
+
+    /**
      * Builds an empty {@link Panel} with room for {@code size} rows — the Java form of C's
      * {@code panel_allocate} ({@code ui-player.c}, function {@code panel_allocate}), which
      * {@code mem_zalloc}s a {@code struct panel} and then sets {@code len} to zero, {@code max} to
      * its {@code n} argument, and {@code lines} to a freshly {@code mem_zalloc}'d, {@code max}-element
      * array. This port sets {@link Panel#len} and {@link Panel#max} the same way, field for field,
      * but initialises {@link Panel#lines} to an empty, growable {@link ArrayList} rather than a
-     * pre-sized, zero-filled C array — a difference that doesn't yet matter, since neither C's
-     * {@code panel_line}/{@code panel_space} row-fillers nor a Java equivalent are ported.
+     * pre-sized, zero-filled C array. The difference is handled by the row fillers:
+     * {@link Panel#panelLine(ColourEnum, String, String, Object...)} appends to that list, and
+     * {@link Panel#space()} appends an explicit blank row where C's {@code panel_space} merely walks
+     * past an already-zeroed slot, so {@link Panel#len} and the list's size stay equal throughout.
      *
-     * <p>Called once per panel by each of the five {@code getPanelX} builders — all five now call
-     * it and go on to completely fill and return the {@link Panel} they get back. C's
-     * five {@code get_panel_topleft}/{@code get_panel_midleft}/{@code get_panel_combat}/
+     * <p>Called once per panel by each of the five {@code getPanelX} builders, each of which
+     * then fills and returns the {@link Panel} it gets back. C's five
+     * {@code get_panel_topleft}/{@code get_panel_midleft}/{@code get_panel_combat}/
      * {@code get_panel_skills}/{@code get_panel_misc} functions all open with their own
-     * {@code panel_allocate} call.
+     * {@code panel_allocate} call. C's matching {@code panel_free} has no Java counterpart, since
+     * the garbage collector reclaims the {@link Panel} once the caller drops it.
      *
-     * <p>Method panelAllocate coded before 260925, commented in full on 260925.
+     * <p>Method panelAllocate coded before 260925, commented in full on 260929.
      *
      * @param size the panel's fixed row capacity, the Java form of C's {@code n} argument
      * @return a freshly built {@link Panel} with {@link Panel#len} zero and {@link Panel#max} set to
@@ -236,32 +304,34 @@ public class UIPlayer {
      * same order as C, via six {@link Panel#panelLine(ColourEnum, String, String, Object...)}
      * calls, all in {@link ColourEnum#COLOUR_LIGHT_BLUE} matching C's {@code COLOUR_L_BLUE}: Name,
      * Race, Class and Title each a plain {@code "%s"} of
-     * {@link PlayerEventStatusUpdate#getPlayerStatusView()}'s {@code name()}/{@code raceName()}/
-     * {@code className()}/{@code title()}, standing in for C's {@code player->full_name}/
-     * {@code player->race->name}/{@code player->class->name}/{@code show_title()}. HP and SP are
-     * the two rows that do not read this view: HP is a {@code "%d/%d"} of
-     * {@link SidebarModel#getCurrentHP()}/{@link SidebarModel#getMaxHP()}, standing in for C's
-     * {@code player->chp}/{@code mhp}, and SP is a {@code "%d/%d"} of
-     * {@link SidebarModel#getCurrentSP()}/{@link SidebarModel#getMaxSP()}, standing in for C's
-     * {@code player->csp}/{@code msp} — the two fields of this panel moved onto the
-     * core-to-front-end message boundary rather than the shared-cache view the rest of this method
-     * still reads, per
+     * {@link SidebarModel#getName()}/{@link SidebarModel#getRaceName()}/
+     * {@link SidebarModel#getClassName()}/{@link SidebarModel#getTitle()}, standing in for C's
+     * {@code player->full_name}/{@code player->race->name}/{@code player->class->name}/
+     * {@code show_title()}; HP a {@code "%d/%d"} of {@link SidebarModel#getCurrentHP()}/
+     * {@link SidebarModel#getMaxHP()}, standing in for C's {@code player->chp}/{@code mhp}; and SP
+     * a {@code "%d/%d"} of {@link SidebarModel#getCurrentSP()}/{@link SidebarModel#getMaxSP()},
+     * standing in for C's {@code player->csp}/{@code msp}. All six rows read {@link SidebarModel},
+     * the front end's own copy of these values, rather than a shared-cache view — the first panel
+     * moved wholesale onto the core-to-front-end message boundary, per
      * {@code docs/implementation/260926_change_in_architecture_from_cache_to_messages.md}.
+     *
+     * <p>C's {@code show_title} chooses between {@code "[=-WIZARD-=]"}, {@code "***WINNER***"} and
+     * the class title for the player's level; that choice is not made here. {@code getTitle()}
+     * returns whatever string was last stored by {@code RedrawRouter.setTitle} from an
+     * {@code EVENT_PLAYERTITLE} message, so this panel shows the title exactly as it arrived.
      *
      * <p>The {@code topLeft.initLines()} call partway down this method re-runs the same
      * initialisation {@link #panelAllocate(int)} already performed just above; it replaces one
      * empty {@link Panel#lines} list with another, so it has no effect on the panel this method
      * returns.
      *
-     * <p>Of the five {@code getPanelX} builders, this is the only one that both allocates and
-     * completely fills its {@link Panel} before returning it. Called from the constructor as
-     * {@code pr1}'s builder and, at draw time, by {@link #displayPlayer(PlayerDisplayMode)} via
-     * {@link PanelRegions#getPanel()} for {@link PlayerDisplayMode#DISPLAY_FULL}; the returned
-     * {@link Panel} is not yet drawn, since the {@code display_panel} renderer
-     * ({@code [C] ui-player.c}, function {@code display_panel}) that would read it is not ported
-     * yet.
+     * <p>Called from the constructor as {@code pr1}'s builder and, at draw time, by
+     * {@link #displayPlayer(PlayerDisplayMode)} via {@link PanelRegions#getPanel()} for
+     * {@link PlayerDisplayMode#DISPLAY_FULL}; the returned {@link Panel} is not yet drawn, since
+     * the {@code display_panel} renderer ({@code [C] ui-player.c}, function {@code display_panel})
+     * that would read it is not ported yet.
      *
-     * <p>Method getPanelTopLeft coded on 260925, commented in full on 260926.
+     * <p>Method getPanelTopLeft coded on 260925, commented in full on 260929.
      *
      * @return a freshly built, fully populated six-row {@link Panel} for the top-left name/
      * race/class/title/HP/SP block
@@ -309,15 +379,16 @@ public class UIPlayer {
      * {@code player->total_energy / 100}; and Resting a plain {@code "%d"} of
      * {@code restingTurn()}, matching C's {@code player->resting_turn}.
      *
-     * <p>Of the five {@code getPanelX} builders, this is now the third, alongside
-     * {@link #getPanelTopLeft()} and {@link #getPanelMidLeft()}, that both allocates and completely
-     * fills its {@link Panel} before returning it — {@link #getPanelCombat()} and
-     * {@link #getPanelSkills()} remain {@code TODO} stubs. Called from the constructor as
-     * {@code pr2}'s builder; the returned {@link Panel} is not yet drawn, since the
-     * {@code display_panel} renderer ({@code [C] ui-player.c}, function {@code display_panel})
-     * that would read it is not ported yet.
+     * <p>The "Turns used:" row is a real {@link Panel#panelLine(ColourEnum, String, String,
+     * Object...)} call with an empty value string, not a {@link Panel#space()} call: as in C, it
+     * carries a label and so is drawn by {@code display_panel}, which skips only rows whose label
+     * is {@code null}.
      *
-     * <p>Method getPanelMisc coded on 260926, commented in full on 260926.
+     * <p>Called from the constructor as {@code pr2}'s builder; the returned {@link Panel} is not
+     * yet drawn, since the {@code display_panel} renderer ({@code [C] ui-player.c}, function
+     * {@code display_panel}) that would read it is not ported yet.
+     *
+     * <p>Method getPanelMisc coded on 260926, commented in full on 260929.
      *
      * @return a freshly built, fully populated seven-row {@link Panel} for the age/height/weight/
      * turn-count block
@@ -343,66 +414,6 @@ public class UIPlayer {
                 PlayerEventStatusUpdate.getPlayerStatusView().restingTurn());
 
         return misc;
-    }
-
-    /**
-     * Builds the mid-left character-sheet panel — level, experience, gold, encumbrance and
-     * dungeon depth — the port of C's {@code get_panel_midleft} ({@code [C] ui-player.c},
-     * function {@code get_panel_midleft}).
-     *
-     * <p>Allocates a nine-row {@link Panel} via {@link #panelAllocate(int)}, computes
-     * {@code diff} via {@link #weightRemaining()} and an {@code attr} colour from it
-     * ({@link ColourEnum#COLOUR_LIGHT_RED} when {@code diff} is negative,
-     * {@link ColourEnum#COLOUR_LIGHT_GREEN} otherwise), matching C's own
-     * {@code weight_remaining(player)} call and {@code diff < 0} colour choice. Fills the panel
-     * in the same order as C's nine {@code panel_line}/{@code panel_space} calls: Level and Cur
-     * Exp (each coloured via {@link #maxColour(int, int)}/{@link #maxColour(long, long)} against
-     * the player's recorded maximum), Max Exp, Adv Exp (via {@link #showAdvanceExperience()}), a
-     * blank spacer row (via {@link Panel#space()}), Gold, Burden ({@code attr}-coloured, a
-     * {@code "%.1f lb"} of {@link PlayerEventStatusUpdate#getPlayerCharSheetView()}'s
-     * {@code totalWeight()} divided by ten), Overweight ({@code attr}-coloured, {@code diff}
-     * split into whole and tenths via {@code -diff / 10} and {@code Math.abs(diff) % 10}), and
-     * Max Depth (via {@link #showDepth()}).
-     *
-     * <p>Of the five {@code getPanelX} builders, this is now the second, alongside
-     * {@link #getPanelTopLeft()}, that both allocates and completely fills its {@link Panel}
-     * before returning it — {@link #getPanelMisc()}, {@link #getPanelCombat()} and
-     * {@link #getPanelSkills()} remain {@code TODO} stubs. Called from the constructor as
-     * {@code pr3}'s builder; the returned {@link Panel} is not yet drawn, since the
-     * {@code display_panel} renderer ({@code [C] ui-player.c}, function {@code display_panel})
-     * that would read it is not ported yet.
-     *
-     * <p>Method getPanelMidLeft coded before 260925, commented in full on 260926.
-     *
-     * @return a freshly built, fully populated nine-row {@link Panel} for the mid-left
-     * level/experience/gold/encumbrance/depth block
-     */
-    private Panel getPanelMidLeft() {
-        Panel midLeft = panelAllocate(9);
-        int diff = weightRemaining();
-        ColourEnum attr = diff < 0 ? ColourEnum.COLOUR_LIGHT_RED : ColourEnum.COLOUR_LIGHT_GREEN;
-
-        midLeft.initLines();
-        midLeft.panelLine(maxColour(PlayerEventStatusUpdate.getPlayerStatusView().level(),
-                        PlayerEventStatusUpdate.getPlayerStatusView().maxLevel()), "Level", "%d",
-                PlayerEventStatusUpdate.getPlayerStatusView().level());
-        midLeft.panelLine(maxColour(PlayerEventStatusUpdate.getPlayerStatusView().experience(),
-                        PlayerEventStatusUpdate.getPlayerStatusView().maxExperience()), "Cur Exp", "%d",
-                PlayerEventStatusUpdate.getPlayerStatusView().experience());
-        midLeft.panelLine(ColourEnum.COLOUR_LIGHT_GREEN, "Max Exp", "%d",
-                PlayerEventStatusUpdate.getPlayerStatusView().maxExperience());
-        midLeft.panelLine(ColourEnum.COLOUR_LIGHT_GREEN, "Adv Exp", "%s",
-                showAdvanceExperience());
-        midLeft.space();
-        midLeft.panelLine(ColourEnum.COLOUR_LIGHT_GREEN, "Gold", "%d",
-                PlayerEventStatusUpdate.getPlayerStatusView().gold());
-        midLeft.panelLine(attr, "Burden", "%.1f lb",
-                PlayerEventStatusUpdate.getPlayerCharSheetView().totalWeight() / 10.0F);
-        midLeft.panelLine(attr, "Overweight", "%d.%d lb", -diff / 10,
-                Math.abs(diff) % 10);
-        midLeft.panelLine(ColourEnum.COLOUR_LIGHT_GREEN, "Max Depth", "%s", showDepth());
-
-        return midLeft;
     }
 
     /**
@@ -461,6 +472,73 @@ public class UIPlayer {
     }
 
     /**
+     * Builds the mid-left character-sheet panel — level, experience, gold, encumbrance and
+     * dungeon depth — the port of C's {@code get_panel_midleft} ({@code [C] ui-player.c},
+     * function {@code get_panel_midleft}).
+     *
+     * <p>Allocates a nine-row {@link Panel} via {@link #panelAllocate(int)}, computes
+     * {@code diff} via {@link #weightRemaining()} and an {@code attr} colour from it
+     * ({@link ColourEnum#COLOUR_LIGHT_RED} when {@code diff} is negative,
+     * {@link ColourEnum#COLOUR_LIGHT_GREEN} otherwise), matching C's own
+     * {@code weight_remaining(player)} call and {@code diff < 0} colour choice. Fills the panel
+     * in the same order as C's nine {@code panel_line}/{@code panel_space} calls: Level and Cur
+     * Exp (each coloured via {@link #maxColour(int, int)}/{@link #maxColour(long, long)} against
+     * the player's recorded maximum), Max Exp, Adv Exp (via {@link #showAdvanceExperience()}), a
+     * blank spacer row (via {@link Panel#space()}), Gold, Burden ({@code attr}-coloured, a
+     * {@code "%.1f lb"} of {@link PlayerEventStatusUpdate#getPlayerCharSheetView()}'s
+     * {@code totalWeight()} divided by ten), Overweight ({@code attr}-coloured, {@code diff}
+     * split into whole and tenths via {@code -diff / 10} and {@code Math.abs(diff) % 10}), and
+     * Max Depth (via {@link #showDepth()}).
+     *
+     * <p>The Level/Cur Exp/Max Exp/Adv Exp rows read
+     * {@link PlayerEventStatusUpdate#getPlayerStatusView()}, and Gold the same view's
+     * {@code gold()}; the encumbrance rows read
+     * {@link PlayerEventStatusUpdate#getPlayerCharSheetView()} via {@link #weightRemaining()}.
+     * Overweight's whole-and-tenths split takes {@code -diff / 10} and {@code Math.abs(diff) % 10}
+     * separately, exactly as C does: {@code diff = -25} (over the limit) prints {@code "2.5 lb"},
+     * {@code diff = 25} (under it) prints {@code "-2.5 lb"}, and a {@code diff} between 0 and 9
+     * loses its sign because {@code -diff / 10} truncates to zero ({@code diff = 5} prints
+     * {@code "0.5 lb"}). The "Burden" and "Overweight" rows share {@code attr}, so both turn light
+     * red together.
+     *
+     * <p>Called from the constructor as {@code pr3}'s builder; the returned {@link Panel} is not
+     * yet drawn, since the {@code display_panel} renderer ({@code [C] ui-player.c}, function
+     * {@code display_panel}) that would read it is not ported yet.
+     *
+     * <p>Method getPanelMidLeft coded before 260925, commented in full on 260929.
+     *
+     * @return a freshly built, fully populated nine-row {@link Panel} for the mid-left
+     * level/experience/gold/encumbrance/depth block
+     */
+    private Panel getPanelMidLeft() {
+        Panel midLeft = panelAllocate(9);
+        int diff = weightRemaining();
+        ColourEnum attr = diff < 0 ? ColourEnum.COLOUR_LIGHT_RED : ColourEnum.COLOUR_LIGHT_GREEN;
+
+        midLeft.initLines();
+        midLeft.panelLine(maxColour(PlayerEventStatusUpdate.getPlayerStatusView().level(),
+                        PlayerEventStatusUpdate.getPlayerStatusView().maxLevel()), "Level", "%d",
+                PlayerEventStatusUpdate.getPlayerStatusView().level());
+        midLeft.panelLine(maxColour(PlayerEventStatusUpdate.getPlayerStatusView().experience(),
+                        PlayerEventStatusUpdate.getPlayerStatusView().maxExperience()), "Cur Exp", "%d",
+                PlayerEventStatusUpdate.getPlayerStatusView().experience());
+        midLeft.panelLine(ColourEnum.COLOUR_LIGHT_GREEN, "Max Exp", "%d",
+                PlayerEventStatusUpdate.getPlayerStatusView().maxExperience());
+        midLeft.panelLine(ColourEnum.COLOUR_LIGHT_GREEN, "Adv Exp", "%s",
+                showAdvanceExperience());
+        midLeft.space();
+        midLeft.panelLine(ColourEnum.COLOUR_LIGHT_GREEN, "Gold", "%d",
+                PlayerEventStatusUpdate.getPlayerStatusView().gold());
+        midLeft.panelLine(attr, "Burden", "%.1f lb",
+                PlayerEventStatusUpdate.getPlayerCharSheetView().totalWeight() / 10.0F);
+        midLeft.panelLine(attr, "Overweight", "%d.%d lb", -diff / 10,
+                Math.abs(diff) % 10);
+        midLeft.panelLine(ColourEnum.COLOUR_LIGHT_GREEN, "Max Depth", "%s", showDepth());
+
+        return midLeft;
+    }
+
+    /**
      * Builds the combat character-sheet panel — armour class, melee and ranged figures — the port
      * of C's {@code get_panel_combat} ({@code [C] ui-player.c}, function {@code get_panel_combat}).
      *
@@ -494,8 +572,11 @@ public class UIPlayer {
      * {@code shootSkill} fields this method reads off
      * {@link PlayerEventStatusUpdate#getPlayerCharSheetView()} are meant to already carry that same
      * computation by the time they are pushed into the view from the middle side, keeping this
-     * method — like its three already-filled siblings — a pure formatter over whatever the view
-     * hands it, and keeping {@link PlayerCharSheetView} itself no larger than it needs to be.
+     * method — like its four siblings — a pure formatter over whatever the view hands it, and
+     * keeping {@link uk.co.jackoftradesltd.channel.messages.data.PlayerCharSheetView} itself no
+     * larger than it needs to be. That includes C's {@code melee_dice = 1, melee_sides = 1}
+     * fallback for a player with no identified weapon: this method applies no default of its own,
+     * so the values pushed into the view must already be {@code 1} and {@code 1} in that case.
      *
      * <p>The "Armour" label is a deliberate British-spelling divergence from C's American "Armor"
      * ({@code [C] ui-player.c}, function {@code get_panel_combat}); every other label matches C's
@@ -503,14 +584,11 @@ public class UIPlayer {
      * matching C's own identical lowercase spelling in both its own melee and ranged
      * {@code panel_line} calls.
      *
-     * <p>Of the five {@code getPanelX} builders, this is the fourth, alongside
-     * {@link #getPanelTopLeft()}, {@link #getPanelMidLeft()} and {@link #getPanelMisc()}, that both
-     * allocates and completely fills its {@link Panel} before returning it — {@link #getPanelSkills()}
-     * is the fifth and last. Called from the constructor as {@code pr4}'s builder; the
-     * returned {@link Panel} is not yet drawn, since the {@code display_panel} renderer
-     * ({@code [C] ui-player.c}, function {@code display_panel}) that would read it is not ported yet.
+     * <p>Called from the constructor as {@code pr4}'s builder; the returned {@link Panel} is not
+     * yet drawn, since the {@code display_panel} renderer ({@code [C] ui-player.c}, function
+     * {@code display_panel}) that would read it is not ported yet.
      *
-     * <p>Method getPanelCombat coded on 260926, commented in full on 260926.
+     * <p>Method getPanelCombat coded on 260926, commented in full on 260929.
      *
      * @return a freshly built, fully populated nine-row {@link Panel} for the armour/melee/ranged
      * combat block
@@ -553,91 +631,6 @@ public class UIPlayer {
                 PlayerEventStatusUpdate.getPlayerCharSheetView().numShots() % 10);
 
         return combat;
-    }
-
-    /**
-     * Builds the skills character-sheet panel — saving throw, stealth, the two disarm skills,
-     * device use, searching, infravision and speed — the port of C's {@code get_panel_skills}
-     * ({@code [C] ui-player.c}, function {@code get_panel_skills}).
-     *
-     * <p>Allocates an eight-row {@link Panel} via {@link #panelAllocate(int)} and fills it, in the
-     * same order as C: Saving Throw a {@code "%d%%"} of {@link PlayerEventStatusUpdate#getPlayerCharSheetView()}'s
-     * {@code saveSkill()} clamped to 0–100, coloured via {@link #colourTable}, standing in for C's
-     * {@code player->state.skills[SKILL_SAVE]}; Stealth a {@code "%s"} via {@link #likert(int, int)}
-     * of {@code stealthSkill()}; Disarm - phys. and Disarm - magic each a {@code "%d%%"} of their
-     * skill minus {@code depth / 5} (read from
-     * {@link PlayerEventStatusUpdate#getPlayerStatusView()}'s {@code depth()}, standing in for C's
-     * {@code cave ? cave->depth : 0}), clamped to 2–100; Magic Devices a plain {@code "%d"} of
-     * {@code deviceSkill()}, coloured via {@link #colourTable} at a thirteenth rather than a tenth
-     * of the skill, matching C's own {@code colour_table[skill / 13]}; Searching a {@code "%d%%"} of
-     * {@code searchSkill()} clamped to 0–100; Infravision a {@code "%d ft"} of {@code infra()}
-     * multiplied by ten, standing in for C's {@code player->state.see_infra * 10} — {@code infra()}
-     * itself is stored in the same ten-foot units as C's {@code see_infra}; and Speed a {@code "%s"}
-     * via {@link #showSpeed()}, coloured {@link ColourEnum#COLOUR_LIGHT_UMBER} below 110 and
-     * {@link ColourEnum#COLOUR_LIGHT_GREEN} at or above it, matching C's own {@code skill < 110}
-     * test on {@code calcSpeed()} — see {@link #showSpeed()} for why neither this test nor that
-     * method itself re-applies a fast/slow adjustment the way C's own {@code get_panel_skills} and
-     * {@code show_speed} each do locally.
-     *
-     * <p>Of the five {@code getPanelX} builders, this is the fifth and last to both allocate and
-     * completely fill its {@link Panel} before returning it. Called from the constructor as
-     * {@code pr5}'s builder; the returned {@link Panel} is not yet drawn, since the
-     * {@code display_panel} renderer ({@code [C] ui-player.c}, function {@code display_panel}) that
-     * would read it is not ported yet.
-     *
-     * <p><b>Outstanding:</b> {@code saveSkill}, {@code stealthSkill}, {@code disarmPhysSkill},
-     * {@code disarmMagicSkill}, {@code deviceSkill}, {@code searchSkill}, {@code infra} and
-     * {@code calcSpeed} have no {@code updatePlayerCharSheet*} setter yet, so every row this method
-     * builds currently reads {@link PlayerEventStatusUpdate}'s all-zero construction default rather
-     * than a real value.
-     *
-     * <p>Method getPanelSkills coded before 260926, commented in full on 260926.
-     *
-     * @return a freshly built, fully populated eight-row {@link Panel} for the skills block
-     */
-    private Panel getPanelSkills() {
-        Panel skills = panelAllocate(8);
-
-        int depth = PlayerEventStatusUpdate.getPlayerStatusView().depth();
-
-        skills.initLines();
-        // Saving throws
-        int skill = Math.clamp(PlayerEventStatusUpdate.getPlayerCharSheetView().saveSkill(), 0, 100);
-        skills.panelLine(colourTable[skill / 10], "Saving Throw", "%d%%", skill);
-
-        // Stealth
-        StringAndColour col = likert(PlayerEventStatusUpdate.getPlayerCharSheetView().stealthSkill(), 1);
-        skills.panelLine(col.attr(), "Stealth", "%s", col.string());
-
-        // Physical disarming - based on disarming a dungeon trap
-        skill = Math.clamp(PlayerEventStatusUpdate.getPlayerCharSheetView().disarmPhysSkill() - depth / 5,
-                2, 100);
-        skills.panelLine(colourTable[skill / 10], "Disarm - phys.", "%d%%", skill);
-
-        // Magical disarming 
-        skill = Math.clamp(PlayerEventStatusUpdate.getPlayerCharSheetView().disarmMagicSkill() - depth / 5,
-                2, 100);
-        skills.panelLine(colourTable[skill / 10], "Disarm - magic", "%d%%", skill);
-
-        // Magic devices
-        skill = PlayerEventStatusUpdate.getPlayerCharSheetView().deviceSkill();
-        skills.panelLine(colourTable[skill / 13], "Magic Devices", "%d", skill);
-
-        // Searching ability
-        skill = Math.clamp(PlayerEventStatusUpdate.getPlayerCharSheetView().searchSkill(), 0, 100);
-        skills.panelLine(colourTable[skill / 10], "Searching", "%d%%", skill);
-
-        // Infravision
-        skills.panelLine(ColourEnum.COLOUR_LIGHT_GREEN, "Infravision", "%d ft",
-                PlayerEventStatusUpdate.getPlayerCharSheetView().infra() * 10);
-
-        // Speed
-        skill = PlayerEventStatusUpdate.getPlayerCharSheetView().calcSpeed();
-        ColourEnum attr = skill < 110 ? ColourEnum.COLOUR_LIGHT_UMBER
-                : ColourEnum.COLOUR_LIGHT_GREEN;
-        skills.panelLine(attr, "Speed", "%s", showSpeed());
-
-        return skills;
     }
 
     /**
@@ -726,30 +719,92 @@ public class UIPlayer {
     }
 
     /**
-     * Computes how much more weight the player can carry before becoming burdened — the port
-     * of C's {@code weight_remaining}, {@code player-calcs.c}.
+     * Builds the skills character-sheet panel — saving throw, stealth, the two disarm skills,
+     * device use, searching, infravision and speed — the port of C's {@code get_panel_skills}
+     * ({@code [C] ui-player.c}, function {@code get_panel_skills}).
      *
-     * <p>{@code 60 * weightLimit - totalWeight - 1}, both operands in tenth-pounds. C recomputes
-     * {@code adj_str_wgt[state.stat_ind[STAT_STR]]} directly here rather than routing through
-     * its own {@code weight_limit} helper (also {@code player-calcs.c}), which returns that same
-     * table entry multiplied by 100 for a different calculation (the carry-limit used for the
-     * speed-penalty threshold). {@link PlayerEventStatusUpdate#getPlayerCharSheetView()}'s
-     * {@code weightLimit} field carries the raw, unscaled table entry to match — not
-     * {@link uk.co.jackoftradesltd.middle.player.PlayerState#weightLimit()}'s ×100 figure,
-     * despite the shared name.
+     * <p>Allocates an eight-row {@link Panel} via {@link #panelAllocate(int)} and fills it, in the
+     * same order as C: Saving Throw a {@code "%d%%"} of {@link PlayerEventStatusUpdate#getPlayerCharSheetView()}'s
+     * {@code saveSkill()} clamped to 0–100, coloured via {@link #colourTable}, standing in for C's
+     * {@code player->state.skills[SKILL_SAVE]}; Stealth a {@code "%s"} via {@link #likert(int, int)}
+     * of {@code stealthSkill()}; Disarm - phys. and Disarm - magic each a {@code "%d%%"} of their
+     * skill minus {@code depth / 5} (read from
+     * {@link PlayerEventStatusUpdate#getPlayerStatusView()}'s {@code depth()}, standing in for C's
+     * {@code cave ? cave->depth : 0}), clamped to 2–100; Magic Devices a plain {@code "%d"} of
+     * {@code deviceSkill()}, coloured via {@link #colourTable} at a thirteenth rather than a tenth
+     * of the skill, matching C's own {@code colour_table[skill / 13]}; Searching a {@code "%d%%"} of
+     * {@code searchSkill()} clamped to 0–100; Infravision a {@code "%d ft"} of {@code infra()}
+     * multiplied by ten, standing in for C's {@code player->state.see_infra * 10} — {@code infra()}
+     * itself is stored in the same ten-foot units as C's {@code see_infra}; and Speed a {@code "%s"}
+     * via {@link #showSpeed()}, coloured {@link ColourEnum#COLOUR_LIGHT_UMBER} below 110 and
+     * {@link ColourEnum#COLOUR_LIGHT_GREEN} at or above it, matching C's own {@code skill < 110}
+     * test on {@code calcSpeed()} — see {@link #showSpeed()} for why neither this test nor that
+     * method itself re-applies a fast/slow adjustment the way C's own {@code get_panel_skills} and
+     * {@code show_speed} each do locally.
      *
-     * <p>Called from {@link #getPanelMidLeft()} to build the panel's "Burden" line, though that
-     * call's result ({@code diff}) is not yet consumed — {@link #getPanelMidLeft()} is still a
-     * stub.
+     * <p>{@link #colourTable} has eleven entries, so the Magic Devices row's {@code skill / 13}
+     * index runs off the end once {@code deviceSkill()} reaches 143. C indexes past its own
+     * {@code colour_table} there (undefined behaviour); this port throws
+     * {@link ArrayIndexOutOfBoundsException} instead. The other rows are clamped to 0–100 first,
+     * so their {@code skill / 10} index never exceeds ten.
      *
-     * <p>Method weightRemaining coded on 260925, commented in full on 260925.
+     * <p>Called from the constructor as {@code pr5}'s builder; the returned {@link Panel} is not
+     * yet drawn, since the {@code display_panel} renderer ({@code [C] ui-player.c}, function
+     * {@code display_panel}) that would read it is not ported yet.
      *
-     * @return the tenth-pounds still available before the player is burdened; negative once over
-     * the limit
+     * <p><b>Outstanding:</b> {@code saveSkill}, {@code stealthSkill}, {@code disarmPhysSkill},
+     * {@code disarmMagicSkill}, {@code deviceSkill}, {@code searchSkill}, {@code infra} and
+     * {@code calcSpeed} have no {@code updatePlayerCharSheet*} setter yet, so every row this method
+     * builds currently reads {@link PlayerEventStatusUpdate}'s all-zero construction default rather
+     * than a real value.
+     *
+     * <p>Method getPanelSkills coded before 260926, commented in full on 260929.
+     *
+     * @return a freshly built, fully populated eight-row {@link Panel} for the skills block
      */
-    private int weightRemaining() {
-        return 60 * PlayerEventStatusUpdate.getPlayerCharSheetView().weightLimit() -
-                PlayerEventStatusUpdate.getPlayerCharSheetView().totalWeight() - 1;
+    private Panel getPanelSkills() {
+        Panel skills = panelAllocate(8);
+
+        int depth = PlayerEventStatusUpdate.getPlayerStatusView().depth();
+
+        skills.initLines();
+        // Saving throws
+        int skill = Math.clamp(PlayerEventStatusUpdate.getPlayerCharSheetView().saveSkill(), 0, 100);
+        skills.panelLine(colourTable[skill / 10], "Saving Throw", "%d%%", skill);
+
+        // Stealth
+        StringAndColour col = likert(PlayerEventStatusUpdate.getPlayerCharSheetView().stealthSkill(), 1);
+        skills.panelLine(col.attr(), "Stealth", "%s", col.string());
+
+        // Physical disarming - based on disarming a dungeon trap
+        skill = Math.clamp(PlayerEventStatusUpdate.getPlayerCharSheetView().disarmPhysSkill() - depth / 5,
+                2, 100);
+        skills.panelLine(colourTable[skill / 10], "Disarm - phys.", "%d%%", skill);
+
+        // Magical disarming 
+        skill = Math.clamp(PlayerEventStatusUpdate.getPlayerCharSheetView().disarmMagicSkill() - depth / 5,
+                2, 100);
+        skills.panelLine(colourTable[skill / 10], "Disarm - magic", "%d%%", skill);
+
+        // Magic devices
+        skill = PlayerEventStatusUpdate.getPlayerCharSheetView().deviceSkill();
+        skills.panelLine(colourTable[skill / 13], "Magic Devices", "%d", skill);
+
+        // Searching ability
+        skill = Math.clamp(PlayerEventStatusUpdate.getPlayerCharSheetView().searchSkill(), 0, 100);
+        skills.panelLine(colourTable[skill / 10], "Searching", "%d%%", skill);
+
+        // Infravision
+        skills.panelLine(ColourEnum.COLOUR_LIGHT_GREEN, "Infravision", "%d ft",
+                PlayerEventStatusUpdate.getPlayerCharSheetView().infra() * 10);
+
+        // Speed
+        skill = PlayerEventStatusUpdate.getPlayerCharSheetView().calcSpeed();
+        ColourEnum attr = skill < 110 ? ColourEnum.COLOUR_LIGHT_UMBER
+                : ColourEnum.COLOUR_LIGHT_GREEN;
+        skills.panelLine(attr, "Speed", "%s", showSpeed());
+
+        return skills;
     }
 
     /**
@@ -808,48 +863,37 @@ public class UIPlayer {
     }
 
     /**
-     * Converts a raw stat value into its six-character, right-justified display form — the port of
-     * C's {@code cnv_stat} ({@code [C] ui-display.c:117-132}).
+     * Computes how much more weight the player can carry before becoming burdened — the port
+     * of C's {@code weight_remaining}, {@code player-calcs.c}.
      *
-     * <p>Stats at or below 18 render as a plain right-justified number ({@code "    %2d"}). Above
-     * 18, {@code stat} carries a bonus ({@code stat - 18}) rendered after a {@code "18/"} prefix:
-     * a bonus of 220 or more collapses to the literal {@code "18/***"} (C's cap on displaying
-     * a stat past its practical maximum); a bonus of 100 or more prints as three digits
-     * ({@code "18/%03d"}); anything below that prints as two digits with a leading space
-     * ({@code " 18/%02d"}) so every branch's output stays six characters wide. The 100 threshold is
-     * inclusive on both sides ({@code bonus >= 100}), matching C's {@code else if (bonus >= 100)} —
-     * a bonus of exactly 100 (a stat of 118) takes the three-digit branch, not the padded one.
+     * <p>{@code 60 * weightLimit - totalWeight - 1}, both operands in tenth-pounds. C recomputes
+     * {@code adj_str_wgt[state.stat_ind[STAT_STR]]} directly here rather than routing through
+     * its own {@code weight_limit} helper (also {@code player-calcs.c}), which returns that same
+     * table entry multiplied by 100 for a different calculation (the carry-limit used for the
+     * speed-penalty threshold). {@link PlayerEventStatusUpdate#getPlayerCharSheetView()}'s
+     * {@code weightLimit} field carries the raw, unscaled table entry to match — not
+     * {@link uk.co.jackoftradesltd.middle.player.PlayerState#weightLimit()}'s ×100 figure,
+     * despite the shared name.
      *
-     * <p>Method cnvStat coded before 260925, commented in full on 260925.
+     * <p>The {@code - 1} makes the boundary exclusive: a player carrying exactly
+     * {@code 60 * weightLimit} tenth-pounds gets {@code -1}, and so counts as over the limit.
      *
-     * @param stat the raw stat value to format
-     * @return the six-character display string for {@code stat}
+     * <p>Called once, from {@link #getPanelMidLeft()}, whose result ({@code diff}) picks the
+     * colour of the "Burden" and "Overweight" rows and supplies the "Overweight" figure itself.
+     *
+     * <p>Method weightRemaining coded on 260925, commented in full on 260929.
+     *
+     * @return the tenth-pounds still available before the player is burdened; negative once over
+     * the limit
      */
-    public static String cnvStat(int stat, int len) {
-        String result = "";
-        // Stats above 18 need special treatment
-        if (stat > 18) {
-            int bonus = (stat - 18);
-
-            if (bonus >= 220) {
-                result = "18/***";
-            } else if (bonus >= 100) {
-                result = String.format("18/%03d", bonus);
-            } else {
-                result = String.format(" 18/%02d", bonus);
-            }
-        } else {
-            result = String.format("    %2d", stat);
-        }
-
-        int min = Math.min(len, result.length());
-
-        return result.substring(0, min);
+    private int weightRemaining() {
+        return 60 * PlayerEventStatusUpdate.getPlayerCharSheetView().weightLimit() -
+                PlayerEventStatusUpdate.getPlayerCharSheetView().totalWeight() - 1;
     }
 
     /**
      * Displays the character sheet in one of two modes - the port of C's {@code display_player}
-     * ({@code [C] ui-player.c:906-935}).
+     * ({@code [C] ui-player.c}, function {@code display_player}).
      *
      * <p>Rebuilds the cached resistance-panel layout first if {@link #haveValidCharSheetConfig()}
      * reports it stale, matching C's own {@code have_valid_char_sheet_config}/
@@ -874,7 +918,12 @@ public class UIPlayer {
      * {@code display_player_sust_info}, {@code display_player_flag_info} and
      * {@code display_player_xtra_info}.
      *
-     * <p>Method displayPlayer coded before 260925, commented in full on 260928.
+     * <p>Where C tests {@code mode} for truthiness, this takes a {@link PlayerDisplayMode}: any
+     * value other than {@link PlayerDisplayMode#DISPLAY_FULL} takes the {@code else} arm, matching
+     * C's {@code mode == 0} branch. Unlike C, a {@code null} {@link #termData} (no prior
+     * {@link #setTermData(TermData)} call) throws {@link NullPointerException} at the screen clear.
+     *
+     * <p>Method displayPlayer coded before 260925, commented in full on 260929.
      *
      * @param mode which of the two character-sheet layouts to draw
      */
@@ -905,7 +954,8 @@ public class UIPlayer {
     /**
      * Draws the six stat-block columns (current/self, race bonus, class bonus, equipment bonus,
      * modified maximum, and — when a stat is drained — the currently-used value) for every stat in
-     * turn — the port of C's {@code display_player_stat_info} ({@code [C] ui-player.c:450-510}).
+     * turn — the port of C's {@code display_player_stat_info} ({@code [C] ui-player.c}, function
+     * {@code display_player_stat_info}).
      *
      * <p>Column headers are written once at {@code row - 1}, then each of the
      * {@link ChannelRegistry#STAT_MAX} stats gets one row starting at {@code row = 2}: the stat's
@@ -920,17 +970,23 @@ public class UIPlayer {
      * name-column choice, exactly as C tests {@code stat_cur[i] < stat_max[i]} twice rather than
      * caching the comparison.
      *
-     * <p>All six stat arrays come from {@link PlayerEventStatusUpdate#getPlayerStatusView()}, the
-     * Java stand-ins for C's direct {@code player->stat_cur}, {@code player->stat_max},
-     * {@code player->race->r_adj}, {@code player->class->c_adj}, {@code player->state.stat_add} and
-     * {@code player->state.stat_top}/{@code stat_use} field reads. Drawing itself goes through
+     * <p>The seven stat arrays are the Java stand-ins for C's direct field reads, from two views:
+     * {@link PlayerEventStatusUpdate#getPlayerStatusView()} supplies {@code currentStats()} and
+     * {@code maxStats()} ({@code player->stat_cur}, {@code player->stat_max}), and
+     * {@link PlayerEventStatusUpdate#getPlayerCharSheetView()} supplies
+     * {@code playerRaceStatBonuses()} ({@code player->race->r_adj}),
+     * {@code playerClassStatBonuses()} ({@code player->class->c_adj}),
+     * {@code playerEquipStatBonuses()} ({@code player->state.stat_add}),
+     * {@code playerTotalStatBonuses()} ({@code player->state.stat_top}) and
+     * {@code playerCurrModStat()} ({@code player->state.stat_use}). Both {@link #cnvStat(int, int)}
+     * calls pass a {@code len} of 32, as C passes {@code sizeof(buf)}. Drawing itself goes through
      * {@link #termData}'s {@link Term}, standing in for C's implicit draw onto the active terminal.
      *
      * <p>Called from {@link #displayPlayer(PlayerDisplayMode)} as the second stage of the
      * character-sheet draw, after the screen clear and before the (not yet ported) resistance-panel
      * and stat-modifier passes.
      *
-     * <p>Method displayPlayerStatInfo coded before 260925, commented in full on 260925.
+     * <p>Method displayPlayerStatInfo coded before 260925, commented in full on 260929.
      */
     private void displayPlayerStatInfo() {
         int[] currentStats = PlayerEventStatusUpdate.getPlayerStatusView().currentStats();
@@ -997,17 +1053,17 @@ public class UIPlayer {
 
     /**
      * Builds and caches the character-sheet's resistance-panel layout for the current player —
-     * the port of C's {@code configure_char_sheet} ({@code [C] ui-player.c:186-266}). Replaces
-     * {@link #cachedConfig} outright with a freshly-populated {@link CharSheetConfig}; C instead
-     * frees and reallocates {@code cached_config} via {@code release_char_sheet_config}
-     * ({@code [C] ui-player.c:160-173, 198}), but the two reach the same end state, since neither
+     * the port of C's {@code configure_char_sheet} ({@code [C] ui-player.c}, function
+     * {@code configure_char_sheet}). Replaces {@link #cachedConfig} outright with a
+     * freshly-populated {@link CharSheetConfig}; C instead frees and reallocates
+     * {@code cached_config} via {@code release_char_sheet_config} ({@code [C] ui-player.c}, function
+     * {@code release_char_sheet_config}), but the two reach the same end state, since neither
      * leaves any part of the previous layout observable afterwards.
      *
      * <p>First builds the stat-modifier entry list: every {@link UIEntry} in both the
      * {@code "CHAR_SCREEN1"} and {@code "stat_modifiers"} categories, capped at
      * {@link ChannelRegistry#STAT_MAX} because the stat-modifier display is hardwired to that many
-     * rows — C applies the same {@code STAT_MAX} clamp for the same reason
-     * ({@code [C] ui-player.c:211-213}).
+     * rows — C applies the same {@code STAT_MAX} clamp for the same reason, in the same function.
      *
      * <p>Then, for each of the four resistance-panel regions ({@code "resistances"},
      * {@code "abilities"}, {@code "hindrances"}, {@code "modifiers"}, in that order): positions
@@ -1015,24 +1071,35 @@ public class UIPlayer {
      * {@code 2 + STAT_MAX} and width {@code resCols}; counts the matching entries and, if fitting
      * them plus two rows of chrome below that region's row would overflow row 22, shortens the
      * count to {@code 20 - row} instead — the same 22/20 bounds C uses to keep the panel inside
-     * its display ({@code [C] ui-player.c:238-244}); then, for each matching entry in turn, builds
+     * its display; then, for each matching entry in turn, builds
      * a {@link CharSheetResist} wrapping it, files it under that region's index and that entry's
      * position within the region via
      * {@link CharSheetConfig#setResistsByRegion(int, int, CharSheetResist)}, and computes its
      * display label via {@link #getUIEntryLabel} with a trailing {@code ":"} appended — standing
      * in for C's separate {@code get_ui_entry_label} plus {@code text_mbstowcs} call that writes
-     * the colon into the last slot of the entry's own six-character label buffer
-     * ({@code [C] ui-player.c:250-252}). {@link CharSheetConfig}'s resist storage, keyed by
-     * (region, entry-within-region), is the Java form of C's {@code resists_by_region[i][j]} — an
-     * array of pointers, each to a separately-sized array of per-region entries
-     * ({@code [C] ui-player.c:135, 246}).
+     * the colon over the terminating null in the last slot of the entry's own six-character label
+     * buffer. With {@code resNlabel} of 6, {@link #getUIEntryLabel} yields five characters, so the
+     * stored label is those five plus {@code ":"}, six in all. {@link CharSheetConfig}'s resist
+     * storage, keyed by (region, entry-within-region), is the Java form of C's
+     * {@code resists_by_region[i][j]} — an array of pointers, each to a separately-sized array of
+     * per-region entries.
      *
      * <p>{@link CharSheetConfig#getResRows()} tracks the largest per-region entry count seen
      * across all four regions as the loop runs; once every region has been processed, every
      * region's {@code pageRows} is set to that maximum plus two, in a final pass mirroring C's own
-     * closing loop ({@code [C] ui-player.c:262-265}).
+     * closing loop.
      *
-     * <p>Method configureCharSheet coded before 260925, commented in full on 260925.
+     * <p>C's {@code initialize_ui_entry_iterator}/{@code release_ui_entry_iterator} pairing has no
+     * explicit release here: {@link UIEntryCode#initialiseUIEntryIterator} returns an ordinary
+     * object that is simply dropped once the pass is done. {@code resNlabel} is fixed at 6 and
+     * {@code resCols} is derived from it plus one and the body part count from
+     * {@link PlayerEventStatusUpdate#getPlayerCharSheetView()}, which is exactly the sum
+     * {@link #haveValidCharSheetConfig()} later re-derives to detect a stale layout.
+     *
+     * <p>Called from {@link #displayPlayer(PlayerDisplayMode)} whenever
+     * {@link #haveValidCharSheetConfig()} reports no usable layout.
+     *
+     * <p>Method configureCharSheet coded before 260925, commented in full on 260929.
      */
     private void configureCharSheet() {
         String[] regionCategories = {"resistances", "abilities", "hindrances", "modifiers"};
@@ -1091,7 +1158,7 @@ public class UIPlayer {
 
     /**
      * Builds a label for a UI entry, padded or truncated to an exact display width — the port of
-     * C's {@code get_ui_entry_label} ({@code [C] ui-entry.c:339-387}).
+     * C's {@code get_ui_entry_label} ({@code [C] ui-entry.c}, function {@code get_ui_entry_label}).
      *
      * <p>{@code length} counts the visible characters only; C's buffer additionally reserves a
      * terminating null, so where C computes padding and truncation against {@code length - 1},
@@ -1104,7 +1171,10 @@ public class UIPlayer {
      * <p>The source text comes from {@link UIEntry#getShortenedLabel(int)} when {@code length}
      * falls within {@link UIRegistry#MAX_SHORTENED} plus one, and from {@link UIEntry#getLabel()}
      * otherwise, exactly as C selects between {@code entry->shortened_labels} and
-     * {@code entry->label}. If that source text is too long for the requested width it is
+     * {@code entry->label}. The shortened label is fetched at index {@code length - 2}, the same
+     * subscript C uses on {@code shortened_labels[]}, and the text's length is taken from the
+     * {@link String} itself rather than from C's separately-stored {@code nshortened}/{@code nlabel}
+     * counts. If that source text is too long for the requested width it is
      * truncated to {@code length - 1} characters; if it is too short it is padded with spaces on
      * the side {@code padLeft} names, {@code length - 1 - numChars} of them, so the padded and
      * truncated cases both end up with the same content width.
@@ -1115,7 +1185,7 @@ public class UIPlayer {
      *
      * <p>Called from {@link #configureCharSheet()} while laying out the resistance panel.
      *
-     * <p>Method getUIEntryLabel coded before 260925, commented in full on 260925.
+     * <p>Method getUIEntryLabel coded before 260925, commented in full on 260929.
      *
      * @param entry   the UI entry whose label text is being formatted
      * @param length  the desired content width in characters; zero or less is a no-op, one
@@ -1264,6 +1334,13 @@ public class UIPlayer {
      * <p>Class Panel coded before 260925, commented in full on 260926.
      */
     private class Panel {
+        /**
+         * Log4j logger for {@link Panel}, used by {@link #panelLine} and {@link #space()} to record
+         * an over-capacity request just before they throw. C has no equivalent: its
+         * {@code assert(p->len != p->max)} simply aborts a debug build.
+         *
+         * <p>Field logger coded before 260925, commented in full on 260929.
+         */
         private static final Logger logger = LogManager.getLogger(Panel.class);
 
         /**
@@ -1419,10 +1496,12 @@ public class UIPlayer {
          * {@link #lines}{@code .size()} keeps equalling {@link #len} and every row appended after a
          * spacer keeps its correct position.
          *
-         * <p>Called once so far, by {@link UIPlayer#getPanelMidLeft()}, between its "Adv Exp" row
-         * and its "Gold" row.
+         * <p>Called three times: once by {@link UIPlayer#getPanelMidLeft()}, between its "Adv Exp"
+         * row and its "Gold" row, and twice by {@link UIPlayer#getPanelCombat()}, before its Melee
+         * block and before its Shoot block. It logs at fatal level where {@link #panelLine} logs at
+         * error level; both then throw the same {@link RuntimeException} type.
          *
-         * <p>Method space coded on 260926, commented in full on 260926.
+         * <p>Method space coded on 260926, commented in full on 260929.
          */
         public void space() {
             if (len == max) {
@@ -1438,17 +1517,22 @@ public class UIPlayer {
 
     /**
      * One labelled row of a {@link Panel} — the port of C's {@code struct panel_line}
-     * ({@code [C] ui-player.c:53-57}).
+     * ({@code [C] ui-player.c}, struct {@code panel_line}).
      *
-     * <p>Built by {@link Panel#panelLine(ColourEnum, String, String, Object...)} on every call —
-     * {@link UIPlayer#getPanelTopLeft()} builds six of these with real player data, and
-     * {@link UIPlayer#getPanelMidLeft()} builds nine more: eight populated rows via
-     * {@link Panel#panelLine(ColourEnum, String, String, Object...)} plus one blank spacer row via
-     * {@link Panel#space()}. The {@code display_panel} renderer that would read a filled
-     * {@link Panel} back and draw its {@link PanelLine}s to screen is not ported yet, so none
-     * built so far reach the screen.
+     * <p>Built by {@link Panel#panelLine(ColourEnum, String, String, Object...)} on every call,
+     * and by {@link Panel#space()} for a blank row (empty label and value). Across the five
+     * {@code getPanelX} builders that is 39 rows per full draw: six from
+     * {@link UIPlayer#getPanelTopLeft()}, seven from {@link UIPlayer#getPanelMisc()}, nine each
+     * from {@link UIPlayer#getPanelMidLeft()} and {@link UIPlayer#getPanelCombat()} (each including
+     * its spacer rows), and eight from {@link UIPlayer#getPanelSkills()}. The {@code display_panel}
+     * renderer that would read a filled {@link Panel} back and draw its {@link PanelLine}s to
+     * screen is not ported yet, so none built so far reach the screen.
      *
-     * <p>Class PanelLine coded before 260925, commented in full on 260925.
+     * <p>C's {@code display_panel} skips a row whose {@code label} is {@code NULL}. This class
+     * holds an empty string for a spacer row's label instead, so the eventual port will need to
+     * test for that rather than for {@code null}.
+     *
+     * <p>Class PanelLine coded before 260925, commented in full on 260929.
      */
     private class PanelLine {
         /**
@@ -1549,12 +1633,14 @@ public class UIPlayer {
      * {@code display_panel}, while {@link #panelFunc} takes the place of C's function pointer,
      * called once per draw to obtain the single {@link Panel} that belongs in {@link #bounds}.
      *
-     * <p>Not yet built or read anywhere — no code constructs a {@code panelRegions} or the
-     * five-element table C assembles from it in {@code panels[]}, so there is no counterpart yet
-     * to the {@code get_panel_topleft}/{@code get_panel_midleft}/{@code get_panel_combat}/
-     * {@code get_panel_skills}/{@code get_panel_misc} suppliers C wires into that table.
+     * <p>The {@link UIPlayer} constructor builds five of these into {@link UIPlayer#panels},
+     * wiring the five {@code getPanelX} builders in as {@link #panelFunc} through method
+     * references, in C's table order. So far only {@link UIPlayer#displayPlayer(PlayerDisplayMode)}
+     * reads the table, taking the first entry's {@link #getPanel()} for
+     * {@link PlayerDisplayMode#DISPLAY_FULL}; nothing yet reads {@link #bounds} or
+     * {@link #alignLeft}, which wait on the {@code display_panel} port.
      *
-     * <p>Class panelRegions coded before 260925, commented in full on 260925.
+     * <p>Class PanelRegions coded before 260925, commented in full on 260929.
      */
     private class PanelRegions {
         /**
@@ -1587,7 +1673,7 @@ public class UIPlayer {
          * three by reference exactly as assigned — the Java form of C's brace-initialised
          * {@code panels[]} element ({@code ui-player.c}).
          *
-         * <p>Constructor panelRegions coded before 260925, commented in full on 260925.
+         * <p>Constructor PanelRegions coded before 260925, commented in full on 260929.
          *
          * @param bounds    the screen area this entry draws into
          * @param alignLeft whether this entry's labels align flush left rather than flush right

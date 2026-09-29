@@ -2501,4 +2501,3 @@ the existing doc comment for context.
 - L71: method `getTop` - LOW
 - L78: method `getRight` - LOW
 - L85: method `getBottom` - LOW
-

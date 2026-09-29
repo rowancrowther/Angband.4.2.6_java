@@ -22,6 +22,7 @@ import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftradesltd.frontend.entries.enums.UIEntryEnum;
 import uk.co.jackoftradesltd.frontend.entries.enums.UIEntryRendererEnum;
+import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,34 +48,70 @@ public class UIEntryRendererAssembler
         for (UIEntryRendererParseRecord record : records) {
             int line = Integer.parseInt(record.lineNumber());
 
-            UIEntryRendererEnum code;
-            try {
-                code = UIEntryRendererEnum.valueOf("UI_ENTRY_RENDERER_" + record.code());
-            } catch (IllegalArgumentException e) {
-                errors.add("Block starting on line: " + line
-                        + " has illegal code enum value: " + record.code());
-                continue;
-            }
-
             String name = record.name();
-            String colours = record.colours().isEmpty() ? code.getDefaultColours() : record.colours();
-            String labelColours = record.labelColours().isEmpty() ? code.getDefaultLabelColours() : record.labelColours();
-            String symbols = record.symbols().isEmpty() ? code.getDefaultSymbols() : record.symbols();
-            int nDigits = record.nDigits().isEmpty() ? code.getDefaultDigits() : Integer.parseInt(record.nDigits());
-            UIEntryEnum sign;
-            if (record.sign().isEmpty())
-                sign = code.getEntry();
-            else {
+            UIEntryRendererEnum code = null;
+            String outputColours = null;
+            String outputLabelColours = null;
+            String outputSymbols = null;
+            int nDigits = 1;
+            UIEntryEnum sign = null;
+
+            if (!record.code().isEmpty()) {
                 try {
-                    sign = UIEntryEnum.valueOf("UI_ENTRY_" + record.sign());
+                    code = UIEntryRendererEnum.valueOf("UI_ENTRY_RENDERER_" + record.code());
                 } catch (IllegalArgumentException e) {
                     errors.add("Block starting on line: " + line
-                            + " has illegal sign enum value: " + record.sign());
+                            + " has illegal code enum value: " + record.code());
                     continue;
+                }
+
+                int maxPalette = UIRegistry.MAX_PALETTE;
+
+                String inputColours = record.colours();
+                String defaultColours = code.getDefaultColours();
+                if (inputColours.length() > maxPalette) inputColours = inputColours.substring(0, maxPalette);
+                if (inputColours.length() > defaultColours.length()) outputColours = inputColours;
+                else outputColours = inputColours + defaultColours.substring(inputColours.length());
+
+                String inputLabelColours = record.labelColours();
+                String defaultLabelColours = code.getDefaultLabelColours();
+                if (inputLabelColours.length() > maxPalette)
+                    inputLabelColours = inputLabelColours.substring(0, maxPalette);
+                if (inputLabelColours.length() > defaultLabelColours.length()) outputLabelColours = inputLabelColours;
+                else outputLabelColours = inputLabelColours + defaultLabelColours.substring(inputLabelColours.length());
+
+                String inputSymbols = record.symbols();
+                String defaultSymbols = code.getDefaultSymbols();
+                if (inputSymbols.length() > maxPalette) inputSymbols = inputSymbols.substring(0, maxPalette);
+                if (inputSymbols.length() > defaultSymbols.length()) outputSymbols = inputSymbols;
+                else outputSymbols = inputSymbols + defaultSymbols.substring(inputSymbols.length());
+
+                int parsedNDigits = record.nDigits().isEmpty() ? 1 : Integer.parseInt(record.nDigits());
+                if (parsedNDigits < 1) {
+                    errors.add("Block starting on line: " + line + " has " +
+                            "a zero or negative nDigits value:" + record.nDigits());
+                    continue;
+                }
+
+                nDigits = record.nDigits().isEmpty() ? code.getDefaultDigits() : Integer.parseInt(record.nDigits());
+
+                if (record.sign().isEmpty())
+                    sign = code.getEntry();
+                else {
+                    try {
+                        sign = UIEntryEnum.valueOf("UI_ENTRY_" + record.sign());
+                    } catch (IllegalArgumentException e) {
+                        errors.add("Block starting on line: " + line
+                                + " has illegal sign enum value: " + record.sign());
+                        continue;
+                    }
                 }
             }
 
-            results.add(new UIEntryRenderer(name, code, colours, labelColours, symbols, nDigits, sign));
+            // UIEntryRenderer old = results.stream().filter(r -> r.getName().equals(name)
+            //        .findFirst().orElse(null);
+
+            results.add(new UIEntryRenderer(name, code, outputColours, outputLabelColours, outputSymbols, nDigits, sign));
         }
 
         return results;

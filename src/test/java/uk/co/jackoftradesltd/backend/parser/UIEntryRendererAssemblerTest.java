@@ -66,9 +66,12 @@ class UIEntryRendererAssemblerTest {
         assertEquals(1, out.size());
         UIEntryRenderer u = out.get(0);
         assertEquals(UIEntryRendererEnum.UI_ENTRY_RENDERER_NUMERIC_RENDERER_WITH_BOOL_AUX, u.getCode());
-        assertEquals("abc", u.getColours());
-        assertEquals("def", u.getLabelColours());
-        assertEquals("ghi", u.getSymbols());
+        // Palettes shorter than the backend default are topped up from it at the same index
+        // (augment_colors / augment_symbols in ui-entry-renderers.c): defaults are
+        // "wdsgGgrRwdsgGgrR", "wwwwwww" and "? .s*=".
+        assertEquals("abcgGgrRwdsgGgrR", u.getColours());
+        assertEquals("defwwww", u.getLabelColours());
+        assertEquals("ghis*=", u.getSymbols());
         assertEquals(3, u.getnDigit());
         assertEquals(UIEntryEnum.UI_ENTRY_ALWAYS_SIGN, u.getSign());
     }

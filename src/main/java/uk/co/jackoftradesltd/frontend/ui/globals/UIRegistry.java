@@ -293,4 +293,6 @@ public class UIRegistry {
      * <p>Field statReducedNames coded before 260925, commented in full on 260925.
      */
     public static final String[] statReducedNames = {"Str: ", "Int: ", "Wis: ", "Dex: ", "Con: "};
+
+    public static final int MAX_PALETTE = 64;
 }

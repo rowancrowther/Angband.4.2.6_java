@@ -38,51 +38,61 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Loads the relevant data-file entries into {@link UIEntryRenderer} objects by driving the
- * matching ANTLR-generated lexer/parser. The thin handwritten bridge between
- * the generated grammar code and the game, implementing the shared
- * {@link Reader} contract (Java port of the equivalent C data-file parser).
+ * First stage of the {@code ui_entry_renderer.txt} pipeline: drives the ANTLR-generated
+ * {@link UIEntryRendererLexer} and {@link UIEntryRendererGrammar}, checks the declared
+ * {@code record-count}, and hands the raw text of each record to the
+ * {@link UIEntryRendererAssembler} as a {@link UIEntryRendererParseRecord}. It implements the
+ * shared {@link Reader} contract and is the thin handwritten boundary between the generated
+ * grammar code and the game.
+ *
+ * <p>The C original is {@code ui-entry-renderers.c}, where {@code init_parse_ui_entry_renderer}
+ * registers one callback per directive ({@code parse_renderer_name}, {@code parse_renderer_code},
+ * {@code parse_renderer_colors}, {@code parse_renderer_labelcolors}, {@code parse_renderer_symbols},
+ * {@code parse_renderer_ndigit}, {@code parse_renderer_sign}) and
+ * {@code finish_parse_ui_entry_renderer} applies the backend defaults afterwards. Here the split
+ * is different: this class and the grammar do the parsing, holding text only, while the assembler
+ * does the {@code code} and {@code sign} lookups, the {@code ndigit} range check and the defaulting.
+ *
+ * <p>Errors travel two ways. A grammar or lexer error is fail-closed: {@code errorCatcher.throwIfAny()}
+ * in {@link #extract} aborts the read and the caller gets an empty list plus the collected
+ * messages. A {@code record-count} mismatch is soft: it is appended to the error list and the
+ * records still flow through to the assembler.
+ *
+ * <p>The directives C accepts that this reader cannot carry ({@code combine}, {@code units},
+ * {@code combined-renderer}), the fixed directive order, the mandatory {@code code} and the missing
+ * merge of a repeated {@code name} are recorded under "Things not to drop" in
+ * {@code docs/precis/260929.md}; none of them is reached by the shipped file.
+ *
+ * <p>Class UIEntryRendererReader coded before 260929, commented in full on 260929.
  *
  * @author Rowan Crowther
  */
 public class UIEntryRendererReader implements Reader<UIEntryRenderer> {
     /**
-     * Logger used to report file-loading failures.
+     * Logger handed to {@link GrammarDriver#run} so that lexer, grammar and assembly errors for
+     * this file are reported under this class's name.
+     *
+     * <p>Field logger coded before 260929, commented in full on 260929.
      */
     private static final Logger logger = LogManager.getLogger();
 
     /**
-     * Run the parser and generate the ArrayList from the file
+     * Runs the grammar's {@code file} rule and turns each parsed record into a
+     * {@link UIEntryRendererParseRecord}. The order is: parse, {@code errorCatcher.throwIfAny()}
+     * (fail-closed on any lexer or grammar error), compare the declared {@code record-count}
+     * against the number of records with {@link GrammarDriver#checkRecordCount} (soft: appends to
+     * {@code errors} and carries on), then convert every record.
      *
-     * @param filename the name of the file
-     * @return an ArrayList of items read from the file
-     */
-    @NotNull
-    @Contract("_ -> !null")
-    @Override
-    public List<UIEntryRenderer> parse(@NotNull String filename) throws IOException {
-        return parseWithResults(filename).items();
-    }
-
-    /**
-     * Run the parser and generate both the ArrayList and the error list, returning
-     * a ParseResult which contains both
+     * <p>The count compared is the number of {@code name:} blocks parsed, not the number of distinct
+     * renderers, so a file that repeats a {@code name} counts each block.
      *
-     * @param filename The filename of the file we are parsing
-     * @return A ParseResult containing a List of {@link UIEntryRenderer}
-     * and a list of errors thrown during the parse
-     * @throws IOException when the file cannot be read/is not existent
+     * <p>Function extract coded before 260929, commented in full on 260929.
+     *
+     * @param parser       the generated grammar positioned at the start of the file
+     * @param errorCatcher collects lexer and grammar errors; a non-empty catcher aborts the read
+     * @param errors       receives the soft {@code record-count} mismatch message
+     * @return one parse record per record in the file, in file order
      */
-    @NotNull
-    @CheckReturnValue
-    public ParseResult<UIEntryRenderer> parseWithResults(@NotNull String filename) throws IOException {
-        return GrammarDriver.run(filename,
-                UIEntryRendererLexer::new,
-                UIEntryRendererGrammar::new,
-                UIEntryRendererReader::extract,
-                new UIEntryRendererAssembler(), logger);
-    }
-
     private static List<UIEntryRendererParseRecord> extract(
             @NotNull UIEntryRendererGrammar parser,
             @NotNull ParseErrors errorCatcher,
@@ -97,8 +107,6 @@ public class UIEntryRendererReader implements Reader<UIEntryRenderer> {
                 results.size(), errors);
 
         for (List<String> result : results) {
-            int line = Integer.parseInt(result.getLast());
-
             records.add(getUiEntryRendererParseRecord(result));
         }
 
@@ -106,11 +114,19 @@ public class UIEntryRendererReader implements Reader<UIEntryRenderer> {
     }
 
     /**
-     * Small function to turn a list of strings into a {@link UIEntryRendererParseRecord}
+     * Unpacks the grammar's positional string list into a {@link UIEntryRendererParseRecord}. The
+     * grammar's {@code uiEntry} rule fills seven slots in a fixed order - name, code, colours,
+     * label colours, symbols, {@code ndigit}, sign - with the empty string for any optional
+     * directive that was absent, then appends the record's line number as the last element. This
+     * method reads slots 0 to 6 by index and takes the line from {@code getLast()}; nothing is
+     * validated or defaulted here, so an absent directive stays {@code ""} for the assembler to
+     * default.
      *
-     * @param record the list of strings that have been read in from
-     *               lib/gamedata/ui_entry_renderer.txt
-     * @return A UIEntryRendererParseRecord
+     * <p>Function getUiEntryRendererParseRecord coded before 260929, commented in full on 260929.
+     *
+     * @param record the seven directive strings followed by the line number, as built by the
+     *               grammar from {@code lib/gamedata/ui_entry_renderer.txt}
+     * @return the equivalent {@link UIEntryRendererParseRecord}
      */
     @CheckReturnValue
     @NotNull
@@ -126,5 +142,50 @@ public class UIEntryRendererReader implements Reader<UIEntryRenderer> {
 
         return new UIEntryRendererParseRecord(line, name, code, colours,
                 labelColours, symbols, nDigits, sign);
+    }
+
+    /**
+     * Reads {@code filename} and returns only the resolved renderers, discarding the error list.
+     * It is exactly {@code parseWithResults(filename).items()}, so a fail-closed grammar error
+     * gives an empty list here and the reason is visible only through the logger. Callers that
+     * need the messages use {@link #parseWithResults}.
+     *
+     * <p>Function parse coded before 260929, commented in full on 260929.
+     *
+     * @param filename the path of the data file, normally {@code lib/gamedata/ui_entry_renderer.txt}
+     * @return the renderers read from the file, in file order, never null
+     * @throws IOException when the file cannot be read or does not exist
+     */
+    @NotNull
+    @Contract("_ -> !null")
+    @Override
+    public List<UIEntryRenderer> parse(@NotNull String filename) throws IOException {
+        return parseWithResults(filename).items();
+    }
+
+    /**
+     * Reads {@code filename} through {@link GrammarDriver#run}, wiring in the generated lexer and
+     * grammar, {@link #extract} as the record extractor and a new {@link UIEntryRendererAssembler}
+     * as the second stage, and returns both the renderers and every error message.
+     *
+     * <p>A hard grammar or lexer error gives an empty item list. A {@code record-count} mismatch
+     * or an assembler rejection (unknown {@code code}, unknown {@code sign}, {@code ndigit} below
+     * 1) is soft: it adds a message and the valid records still come through in file order.
+     *
+     * <p>Function parseWithResults coded before 260929, commented in full on 260929.
+     *
+     * @param filename the path of the file being parsed
+     * @return a {@link ParseResult} holding the {@link UIEntryRenderer} list and the errors
+     * raised during the parse and assembly
+     * @throws IOException when the file cannot be read or does not exist
+     */
+    @NotNull
+    @CheckReturnValue
+    public ParseResult<UIEntryRenderer> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                UIEntryRendererLexer::new,
+                UIEntryRendererGrammar::new,
+                UIEntryRendererReader::extract,
+                new UIEntryRendererAssembler(), logger);
     }
 }

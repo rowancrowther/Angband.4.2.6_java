@@ -35,14 +35,14 @@ import java.util.List;
  * The Java port of C's {@code side_handlers[]} table ({@code [C] ui-display.c}) - the sidebar rows
  * that redraw themselves in response to a {@code game_event_type} flag, as opposed to the "short"
  * topbar path ({@code update_topbar}, {@code [C] ui-display.c}), which this class does not cover.
- * C's table lists twenty-two rows; sixteen hooks are ported and registered so far -
+ * C's table lists twenty-two rows; seventeen hooks are ported and registered so far -
  * {@code prt_race}, {@code prt_title}, {@code prt_class}, {@code prt_level}, {@code prt_exp},
  * {@code prt_gold}, {@code prt_equippy}, {@code prt_ac}, {@code prt_hp}, {@code prt_sp},
- * {@code prt_health}, and the five stat rows {@code prt_str}, {@code prt_int}, {@code prt_wis},
- * {@code prt_dex} and {@code prt_con} - so {@link #sideHandlers} today holds twenty
- * {@link SideHandler}s, the sixteen hooks plus C's four {@code NULL}-hooked placeholder rows
- * (priorities 15, 21, 20 and 22), in the same order C's table lists them. The two rows still to
- * come are {@code prt_speed} and {@code prt_depth}.
+ * {@code prt_health}, {@code prt_speed}, and the five stat rows {@code prt_str}, {@code prt_int},
+ * {@code prt_wis}, {@code prt_dex} and {@code prt_con} - so {@link #sideHandlers} today holds
+ * twenty-one {@link SideHandler}s, the seventeen hooks plus C's four {@code NULL}-hooked
+ * placeholder rows (priorities 15, 21, 20 and 22), in the same order C's table lists them. The one
+ * row still to come is {@code prt_depth}.
  *
  * <p>Class HandlersHolder coded on 260927, commented in full on 260929.
  *
@@ -73,7 +73,7 @@ public class HandlersHolder {
 
     /**
      * Builds {@link #sideHandlers} - the port of C's {@code side_handlers[]} initializer
-     * ({@code [C] ui-display.c}). Twenty rows are registered today, each at the same priority and
+     * ({@code [C] ui-display.c}). Twenty-one rows are registered today, each at the same priority and
      * against the same {@code game_event_type} flag C's table gives it: {@code prt_race} at
      * {@code 19} against {@code EVENT_RACE_CLASS}, {@code prt_title} at {@code 18} against
      * {@code EVENT_PLAYERTITLE}, {@code prt_class} at {@code 22} against {@code EVENT_RACE_CLASS},
@@ -91,8 +91,9 @@ public class HandlersHolder {
      * {@code { NULL, 15, 0 }}, {@code { NULL, 21, 0 }}, {@code { NULL, 20, 0 }} and
      * {@code { NULL, 22, 0 }} placeholder rows, keeping the priority numbering aligned with C's
      * table even though nothing is drawn for them (C's second priority-22 row is a genuine
-     * duplicate of {@code prt_class}'s). {@code prt_speed} and {@code prt_depth} join this method
-     * as their own hooks are ported.
+     * duplicate of {@code prt_class}'s). {@code prt_speed} comes last, at {@code 13} against
+     * {@code EVENT_PLAYERSPEED}, straight after those placeholders as C's table has it;
+     * {@code prt_depth} joins this method when its own hook is ported.
      *
      * <p>Method initHandlers coded on 260927, commented in full on 260929.
      */
@@ -137,6 +138,85 @@ public class HandlersHolder {
         sideHandlers.add(handler);
         handler = new SideHandler(null, 22, null);
         sideHandlers.add(handler);
+        handler = new SideHandler(HandlersHolder::prtSpeed, 13, GameEventType.EVENT_PLAYERSPEED);
+        sideHandlers.add(handler);
+    }
+
+    /**
+     * Draws the sidebar's speed row - the port of C's {@code prt_speed}
+     * ({@code [C] ui-display.c}, function {@code prt_speed}). Asks {@link #prtSpeedAux(int)} for
+     * the text and colour, then writes the text left-justified in an eleven-column field so a
+     * shorter string wipes what the previous one left behind, as C's {@code "%-11s"} does. At
+     * normal speed the text is empty, so the row is blanked in white.
+     *
+     * <p>C hands {@code prt_speed_aux} a 32-byte buffer; the port passes the same {@code 32}.
+     *
+     * <p>Method prtSpeed coded on 260929, commented in full on 260929.
+     *
+     * @param row the row to draw at
+     * @param col the column to draw at
+     */
+    private static void prtSpeed(int row, int col) {
+        ColourAndString result = prtSpeedAux(32);
+        term.cPutStr(result.colour(), String.format("%-11s", result.string()), row, col);
+    }
+
+    /**
+     * Works out the speed text and its colour - the port of C's {@code prt_speed_aux}
+     * ({@code [C] ui-display.c}, function {@code prt_speed_aux}), which C also shares with the
+     * topbar's {@code prt_speed_short}. Nothing is drawn here.
+     *
+     * <p>110 is normal speed and yields an empty string in white. Above it the type is "Fast" in
+     * light green, below it "Slow" in light umber. With the effective-speed option off the text is
+     * the signed offset, {@code "Slow (-10)"} or {@code "Fast (+5)"}. With it on, the text is a
+     * multiplier taken from the energy table: {@code 10 * energy / energyNormal} in {@code int}
+     * arithmetic, then split into a whole part and a tenths digit, so a ratio of 1.99 shows as
+     * {@code "1.9x"} - truncated, not rounded, exactly as in C.
+     *
+     * <p>The values come from {@link SidebarModel} rather than off the player, so they are as
+     * current as the last {@code EVENT_PLAYERSPEED} signal. Before any has arrived the model holds
+     * speed {@code 0}, which reads as "Slow", and energy figures of {@code 0}, which would divide
+     * by zero with the option on. C's {@code update_sidebar} calls a row's hook only for that
+     * row's own event, which keeps both out of reach; nothing in the port calls the hooks yet, so
+     * a dispatcher that ports it must keep to that rule.
+     *
+     * <p>The {@code size} argument stands in for C's {@code max}. C's {@code strnfmt} keeps at most
+     * {@code max - 1} characters, so a {@code size} of 32 would cut at 31 where the port cuts at
+     * 32; the longest string possible is a dozen characters, so the difference never shows.
+     *
+     * <p>Method prtSpeedAux coded on 260929, commented in full on 260929.
+     *
+     * @param size the buffer size C passes as {@code max}; the text is cut to this length
+     * @return the colour and text, with an empty string at normal speed
+     */
+    private static ColourAndString prtSpeedAux(int size) {
+        int playerSpeed = SidebarModel.getPlayerSpeed();
+        String result = "";
+        String type = "";
+        ColourEnum attr = ColourEnum.COLOUR_WHITE;
+
+        if (playerSpeed > 110) {
+            type = "Fast";
+            attr = ColourEnum.COLOUR_LIGHT_GREEN;
+        } else if (playerSpeed < 110) {
+            type = "Slow";
+            attr = ColourEnum.COLOUR_LIGHT_UMBER;
+        }
+
+        if (!type.isEmpty() && !SidebarModel.getPlayerEffectiveSpeed()) {
+            result = String.format("%s (%+d)", type, playerSpeed - 110);
+            size = Math.min(size, result.length());
+            result = result.substring(0, size);
+        } else if (!type.isEmpty()) {
+            int multiplier = 10 * SidebarModel.getEnergy() / SidebarModel.getEnergyNormal();
+            int intMul = multiplier / 10;
+            int decMul = multiplier % 10;
+            result = String.format("%s (%d.%dx)", type, intMul, decMul);
+            size = Math.min(size, result.length());
+            result = result.substring(0, size);
+        }
+
+        return new ColourAndString(attr, result);
     }
 
     /**
@@ -811,6 +891,20 @@ public class HandlersHolder {
      */
     public static void setTermData(TermData termData) {
         term = termData.getTerm();
+    }
+
+    /**
+     * A colour paired with a string - the Java stand-in for the two things C's
+     * {@code prt_speed_aux} returns through its {@code buf} and {@code attr} out-parameters, since
+     * Java has no out-parameters. C's third result, the string's length, is not carried: only the
+     * topbar's {@code prt_speed_short} uses it, and that path is not ported.
+     *
+     * <p>Record ColourAndString coded on 260929, commented in full on 260929.
+     *
+     * @param colour the colour to draw {@code string} in, C's {@code *attr}
+     * @param string the text to draw, C's {@code buf}
+     */
+    private record ColourAndString(ColourEnum colour, String string) {
     }
 
     /**

@@ -24,6 +24,7 @@ import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
+import uk.co.jackoftradesltd.channel.globals.ChannelRegistry;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.Message;
@@ -82,6 +83,12 @@ import java.util.*;
  * @author Rowan Crowther
  */
 public class PlayerCalcs {
+    /**
+     * The class's log4j logger, used by {@link #calcInventory} to report a pack or quiver
+     * whose item counts do not add up.
+     *
+     * <p>Field logger coded before 260901, commented in full on 260929.
+     */
     private static final Logger logger = LogManager.getLogger(PlayerCalcs.class);
 
     /**
@@ -908,6 +915,11 @@ public class PlayerCalcs {
      * and the seven timed effects the bar colours by, each reduced to "is the timer non-zero".
      * The player's {@code TMD_IMAGE} (hallucination) is read whether or not a monster is tracked;
      * every monster-derived component is a placeholder ({@code 0}/{@code false}) when none is.
+     * {@code PR_SPEED} calls {@code eventSignalPlayerSpeed} once, packing what C's
+     * {@code prt_speed_aux} ({@code [C] ui-display.c}) reads at draw time: the speed from
+     * {@code player->state.speed}, the {@code effective_speed} option, and
+     * {@link ChannelRegistry#extractEnergy} at the speed and at 110, C's {@code extract_energy[]}.
+     * A player with no state yet sends speed {@code 0}, where C would already have one.
      * The map is handled separately again, because it also carries data:
      * {@code EVENT_MAP} with the point {@code (-1, -1)}, C's sentinel for "the whole map, not one
      * grid". A last {@code EVENT_END} tells the display the batch is complete and it may now do
@@ -1075,6 +1087,14 @@ public class PlayerCalcs {
                     GameEngine.getEventsBusHandler().eventSignalMonInfo(GameEventType.EVENT_MONSTERHEALTH,
                             monsterHp, monMaxHP, monsterExists, monsterVisible, feared, disen, command, conf, stunned,
                             slept, held, tmdImage);
+                }
+                case PR_SPEED -> {
+                    int playerSpeed = player.getPlayerState() != null ? player.getPlayerState().getSpeed() : 0;
+                    boolean playerOptionEffectiveSpeed = player.opt(PlayerOptionEnum.OP_effective_speed);
+                    int extractEnergy = ChannelRegistry.extractEnergy[playerSpeed];
+                    int extractEnergyNormal = ChannelRegistry.extractEnergy[110];
+                    GameEngine.getEventsBusHandler().eventSignalPlayerSpeed(GameEventType.EVENT_PLAYERSPEED,
+                            playerSpeed, playerOptionEffectiveSpeed, extractEnergy, extractEnergyNormal);
                 }
                 default -> GameEngine.getEventsBusHandler().eventSignal(playerRedraw.getEventType());
             }

@@ -526,4 +526,31 @@ public interface EventsHandler {
         gameEventDispatch(eventType, new EventDataMonsterInfo(monHP, monMaxHP, exists, visible, fear, disen, comm,
                 conf, stun, slept, held, playerImage));
     }
+
+    /**
+     * Send a signal to dispatch all events of a given type with the four figures the sidebar's
+     * speed row needs. Used today only for {@code EVENT_PLAYERSPEED}, sent by
+     * {@code PlayerCalcs.redrawStuff}'s {@code PR_SPEED} arm.
+     *
+     * <p>There is no {@code event_signal_*} counterpart in C: {@code prt_speed_aux}
+     * ({@code [C] ui-display.c}) reads {@code player->state.speed}, the {@code effective_speed}
+     * option and {@code extract_energy[]} directly, and C's {@code redraw_events} table
+     * ({@code player-calcs.c}) fires {@code EVENT_PLAYERSPEED} as a bare signal. The values travel
+     * with the signal instead - see {@link EventDataPlayerSpeed}'s Javadoc.
+     *
+     * <p>Function eventSignalPlayerSpeed coded on 260929, commented in full on 260929.
+     *
+     * @param eventType      The event type we are signalling
+     * @param playerSpeed    the player's speed; becomes {@link EventDataPlayerSpeed#speed()}
+     * @param effectiveSpeed whether the effective-speed option is on; becomes
+     *                       {@link EventDataPlayerSpeed#optEffectiveSpeed()}
+     * @param energy         {@code extract_energy[speed]}; becomes
+     *                       {@link EventDataPlayerSpeed#extractEnergy()}
+     * @param energyNormal   {@code extract_energy[110]}; becomes
+     *                       {@link EventDataPlayerSpeed#extractEnergyNormal()}
+     */
+    default void eventSignalPlayerSpeed(GameEventType eventType, int playerSpeed, boolean effectiveSpeed,
+                                        int energy, int energyNormal) {
+        gameEventDispatch(eventType, new EventDataPlayerSpeed(playerSpeed, effectiveSpeed, energy, energyNormal));
+    }
 }

@@ -37,8 +37,8 @@ import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
  *
  * <p>Today it wires {@code EVENT_HP}, {@code EVENT_MANA}, {@code EVENT_RACE_CLASS},
  * {@code EVENT_PLAYERTITLE}, {@code EVENT_PLAYER_NAME}, {@code EVENT_PLAYERLEVEL},
- * {@code EVENT_EXPERIENCE}, {@code EVENT_GOLD}, {@code EVENT_EQUIPMENT}, {@code EVENT_STATS} and
- * {@code EVENT_AC}; a routing method joins here as each further
+ * {@code EVENT_EXPERIENCE}, {@code EVENT_GOLD}, {@code EVENT_EQUIPMENT}, {@code EVENT_STATS},
+ * {@code EVENT_AC}, {@code EVENT_MONSTERHEALTH} and {@code EVENT_PLAYERSPEED}; a routing method joins here as each further
  * {@code PR_*} flag gets its own payload record and model, per
  * {@code docs/implementation/260926_change_in_architecture_from_cache_to_messages.md}. That design
  * doc is also why {@link SidebarModel} exists at all —
@@ -338,6 +338,33 @@ public class RedrawRouter {
             SidebarModel.setMonSlept(slept);
             SidebarModel.setMonHeld(held);
             SidebarModel.setPlayerTmdImage(playerTmdImage);
+        }
+    }
+
+    /**
+     * Unpacks an {@code EVENT_PLAYERSPEED} payload and writes its four parts into
+     * {@link SidebarModel}, C's {@code prt_speed_aux} ({@code [C] ui-display.c}, function
+     * {@code prt_speed_aux}) reading {@code player->state.speed}, the {@code effective_speed}
+     * option and {@code extract_energy[]} directly by comparison. Guarded on the payload shape, the
+     * same way {@link #setGold} is guarded.
+     *
+     * <p>All four parts are written every time, whether or not the effective-speed option is on;
+     * it is {@code HandlersHolder.prtSpeed}'s job to ignore the energy figures when it is off.
+     *
+     * <p>Method setPlayerSpeed coded on 260929, commented in full on 260929.
+     *
+     * @param gameEventData the routed payload; must be an {@link EventDataPlayerSpeed} or nothing
+     *                      is written
+     */
+    public static void setPlayerSpeed(GameEventData gameEventData) {
+        if (gameEventData instanceof EventDataPlayerSpeed(
+                int speed, boolean effectiveSpeed, int energy,
+                int energyNormal
+        )) {
+            SidebarModel.setPlayerSpeed(speed);
+            SidebarModel.setPlayerEffectiveSpeed(effectiveSpeed);
+            SidebarModel.setEnergy(energy);
+            SidebarModel.setEnergyNormal(energyNormal);
         }
     }
 }

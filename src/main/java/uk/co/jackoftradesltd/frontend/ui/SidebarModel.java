@@ -43,7 +43,8 @@ import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
  * shape name and shapechanged status, current and displayed experience, gold, armour class, and the
  * five stats' current/maximum/displayed-use values, and the tracked monster's
  * health-bar state (hit points, visibility, seven timed-effect flags, and whether the player is
- * hallucinating); the rest of C's {@code prt_*} family in
+ * hallucinating), and the player's speed with the effective-speed option and the two energy-table
+ * figures its multiplier needs; the rest of C's {@code prt_*} family in
  * {@code [C] ui-display.c} join it as their own {@code EVENT_*} payloads are ported.
  *
  * <p>The setters are package-private and the getters public, so only a class in this package —
@@ -54,6 +55,11 @@ import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
  * @author Rowan Crowther
  */
 public class SidebarModel {
+    /**
+     * The class's log4j logger, used to report a stat index outside the five the model holds.
+     *
+     * <p>Field logger coded on 260926, commented in full on 260929.
+     */
     private static final Logger logger = LogManager.getLogger(SidebarModel.class);
     
     /**
@@ -415,6 +421,149 @@ public class SidebarModel {
      * <p>Field playerTmdImage coded on 260929, commented in full on 260929.
      */
     private static boolean playerTmdImage;
+
+    /**
+     * The player's speed, C's {@code player->state.speed} - 110 is normal. Written each time an
+     * {@code EVENT_PLAYERSPEED} message is routed and read whenever the sidebar's speed row is
+     * drawn. Starts at {@code 0}, which reads as very slow, until the first message arrives.
+     *
+     * <p>Field playerSpeed coded on 260929, commented in full on 260929.
+     */
+    private static int playerSpeed;
+
+    /**
+     * Whether speed is shown as a multiplier rather than a signed offset, C's
+     * {@code OPT(player, effective_speed)}. Written each time an {@code EVENT_PLAYERSPEED} message
+     * is routed and read whenever the sidebar's speed row is drawn.
+     *
+     * <p>Field playerEffectiveSpeed coded on 260929, commented in full on 260929.
+     */
+    private static boolean playerEffectiveSpeed;
+
+    /**
+     * The energy gained per game turn at the player's speed, C's
+     * {@code extract_energy[player->state.speed]}. Written each time an {@code EVENT_PLAYERSPEED}
+     * message is routed and read whenever the speed row is drawn with the effective-speed option
+     * on; the numerator of the multiplier.
+     *
+     * <p>Field energy coded on 260929, commented in full on 260929.
+     */
+    private static int energy;
+
+    /**
+     * The energy gained per game turn at normal speed, C's {@code extract_energy[110]}. Written
+     * each time an {@code EVENT_PLAYERSPEED} message is routed and read whenever the speed row is
+     * drawn with the effective-speed option on; the denominator of the multiplier. Starts at
+     * {@code 0}, so it must not be used to divide before the first message arrives.
+     *
+     * <p>Field energyNormal coded on 260929, commented in full on 260929.
+     */
+    private static int energyNormal;
+
+    /**
+     * Read whether speed is shown as a multiplier, last written by
+     * {@link #setPlayerEffectiveSpeed(boolean)}, for the sidebar's speed row -
+     * {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder}'s port of C's
+     * {@code prt_speed_aux} ({@code [C] ui-display.c}) is today's only reader.
+     *
+     * <p>Method getPlayerEffectiveSpeed coded on 260929, commented in full on 260929.
+     *
+     * @return {@code true} when the effective-speed option is on, C's
+     * {@code OPT(player, effective_speed)}
+     */
+    public static boolean getPlayerEffectiveSpeed() {
+        return playerEffectiveSpeed;
+    }
+
+    /**
+     * Write whether speed is shown as a multiplier. Package-private, so only
+     * {@link RedrawRouter#setPlayerSpeed} - the only class in this package today - can write the
+     * model directly.
+     *
+     * <p>Method setPlayerEffectiveSpeed coded on 260929, commented in full on 260929.
+     *
+     * @param playerEffectiveSpeed whether the effective-speed option is on
+     */
+    static void setPlayerEffectiveSpeed(boolean playerEffectiveSpeed) {
+        SidebarModel.playerEffectiveSpeed = playerEffectiveSpeed;
+    }
+
+    /**
+     * Read the energy per game turn at the player's speed, last written by
+     * {@link #setEnergy(int)}, for the multiplier form of the sidebar's speed row -
+     * {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder}'s port of C's
+     * {@code prt_speed_aux} ({@code [C] ui-display.c}) is today's only reader.
+     *
+     * <p>Method getEnergy coded on 260929, commented in full on 260929.
+     *
+     * @return C's {@code extract_energy[player->state.speed]}
+     */
+    public static int getEnergy() {
+        return energy;
+    }
+
+    /**
+     * Write the energy per game turn at the player's speed. Package-private, so only
+     * {@link RedrawRouter#setPlayerSpeed} can write the model directly.
+     *
+     * <p>Method setEnergy coded on 260929, commented in full on 260929.
+     *
+     * @param energy C's {@code extract_energy[player->state.speed]}
+     */
+    static void setEnergy(int energy) {
+        SidebarModel.energy = energy;
+    }
+
+    /**
+     * Read the energy per game turn at normal speed, last written by
+     * {@link #setEnergyNormal(int)}, for the multiplier form of the sidebar's speed row -
+     * {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder}'s port of C's
+     * {@code prt_speed_aux} ({@code [C] ui-display.c}) is today's only reader.
+     *
+     * <p>Method getEnergyNormal coded on 260929, commented in full on 260929.
+     *
+     * @return C's {@code extract_energy[110]}; {@code 0} until the first speed message arrives
+     */
+    public static int getEnergyNormal() {
+        return energyNormal;
+    }
+
+    /**
+     * Write the energy per game turn at normal speed. Package-private, so only
+     * {@link RedrawRouter#setPlayerSpeed} can write the model directly.
+     *
+     * <p>Method setEnergyNormal coded on 260929, commented in full on 260929.
+     *
+     * @param energyNormal C's {@code extract_energy[110]}
+     */
+    static void setEnergyNormal(int energyNormal) {
+        SidebarModel.energyNormal = energyNormal;
+    }
+
+    /**
+     * Read the player's speed last written by {@link #setPlayerSpeed(int)}, for the sidebar's speed
+     * row - {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder}'s port of C's
+     * {@code prt_speed_aux} ({@code [C] ui-display.c}) is today's only reader.
+     *
+     * <p>Method getPlayerSpeed coded on 260929, commented in full on 260929.
+     *
+     * @return C's {@code player->state.speed}; 110 is normal
+     */
+    public static int getPlayerSpeed() {
+        return playerSpeed;
+    }
+
+    /**
+     * Write the player's speed. Package-private, so only {@link RedrawRouter#setPlayerSpeed} can
+     * write the model directly.
+     *
+     * <p>Method setPlayerSpeed coded on 260929, commented in full on 260929.
+     *
+     * @param playerSpeed C's {@code player->state.speed}
+     */
+    static void setPlayerSpeed(int playerSpeed) {
+        SidebarModel.playerSpeed = playerSpeed;
+    }
 
     /**
      * Read whether the player is hallucinating last written by {@link #setPlayerTmdImage(boolean)}, for the sidebar's monster health

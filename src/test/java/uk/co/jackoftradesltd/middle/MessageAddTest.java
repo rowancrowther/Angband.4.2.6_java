@@ -20,55 +20,39 @@ package uk.co.jackoftradesltd.middle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import uk.co.jackoftradesltd.channel.enums.GameEventType;
-import uk.co.jackoftradesltd.channel.messages.data.EventDataMessage;
-import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
+import uk.co.jackoftradesltd.middle.MessageLogProbe.CapturingBus;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
-import uk.co.jackoftradesltd.middle.game.event.EventHandlerInterface;
 import uk.co.jackoftradesltd.middle.game.event.EventsHandler;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 /**
  * Unit tests for {@link Message#messageAdd(String, MessageType)}, the port of C's
- * {@code message_add} ({@code src/message.c}) — the log-only half of {@code msgt} that
- * {@link Message#messageType} calls before it raises {@code EVENT_MESSAGE}.
+ * {@code message_add} ({@code message.c}). Expected values come from the C source:
  *
- * <p>{@code messageAdd} never signals a bus event of its own, so most of these tests observe it
- * indirectly: they seed the log with {@code messageAdd}, then make one {@link Message#messageType}
- * call against the same text and type and read the repeat count off the announced text. Since
- * coalescing only ever compares against the newest entry, that one probing call is enough to prove
- * what {@code messageAdd} left at the head without disturbing anything else in the shared log.
+ * <ul>
+ *   <li>if the head has the same type and text, its count goes up and nothing is inserted;</li>
+ *   <li>otherwise a new entry with count 1 becomes the head;</li>
+ *   <li>the log holds at most {@code messages->max} (2048) entries, dropping the tail when a
+ *       genuine insert takes it over;</li>
+ *   <li>it takes an already-formatted string and does no formatting or truncation of its own.</li>
+ * </ul>
  *
- * <p>The 2048-entry cap has no observable effect through the public API — C's {@code message_add}
- * only ever exposes the head, and this port has not carried {@code message_get}/{@code
- * message_count} across — so the boundary test reaches the private {@code messageLog} field by
- * reflection, matching the pattern already used elsewhere in this suite (for example {@code
- * PlayerCalcBonusesTest}).
+ * <p>The log is read directly through {@link MessageLogProbe} (age 0 is the newest entry), and
+ * the log is emptied before each test.
+ *
+ * <p>Not ported, and so not tested: C's {@code count != (uint16_t)-1} wrap guard.
  *
  * @author Rowan Crowther
  */
 class MessageAddTest {
-
-    private static final AtomicInteger UNIQUE = new AtomicInteger();
     private EventsHandler realBus;
     private CapturingBus bus;
 
-    private static String unique(String stem) {
-        return stem + " #" + UNIQUE.incrementAndGet();
-    }
-
     @BeforeEach
-    void setUp() {
+    void setUp() throws ReflectiveOperationException {
+        MessageLogProbe.clear();
         realBus = GameEngine.getEventsBusHandler();
         bus = new CapturingBus();
         GameEngine.setEventsBusHandler(bus);
@@ -79,124 +63,130 @@ class MessageAddTest {
         GameEngine.setEventsBusHandler(realBus);
     }
 
-    /**
-     * A fresh call is a silent log write: no event goes out, and the entry it leaves behind
-     * becomes the head that the next matching {@link Message#messageType} call coalesces with.
-     */
     @Test
-    void anOrdinaryCallLogsSilentlyAndBecomesTheNewHead() {
-        String text = unique("You feel the cold touch of undeath");
+    void theFirstMessageIntoAnEmptyLogIsAnEntryWithCountOne() throws Exception {
+        Message.messageAdd("You feel cold", MessageType.MSG_HIT);
 
-        Message.messageAdd(text, MessageType.MSG_HIT);
-        assertEquals(0, bus.types.size(), "message_add in C never raises an event of its own");
-
-        Message.messageType(MessageType.MSG_HIT, text);
-        assertEquals(text + " (x2)", bus.lastMessage().message(),
-                "the messageAdd entry was the head, so the matching messageType call bumped its count");
+        assertEquals(1, MessageLogProbe.size());
+        assertEquals("You feel cold", MessageLogProbe.text(0));
+        assertEquals(MessageType.MSG_HIT, MessageLogProbe.type(0));
+        assertEquals(1, MessageLogProbe.count(0));
     }
 
     /**
-     * Repeats coalesce within {@code messageAdd} itself, exactly as C's {@code message_add} bumps
-     * {@code messages->head->count} in place when text and type both match the newest entry.
+     * C's {@code message_add} raises no event; that is {@code msgt}'s job.
      */
     @Test
-    void repeatedCallsCoalesceIntoOneEntry() {
-        String text = unique("You miss the jelly");
+    void loggingIsSilent() {
+        Message.messageAdd("quiet", MessageType.MSG_GENERIC);
 
-        Message.messageAdd(text, MessageType.MSG_MISS);
-        Message.messageAdd(text, MessageType.MSG_MISS);
-        Message.messageAdd(text, MessageType.MSG_MISS);
+        assertEquals(0, bus.types.size());
+    }
 
-        Message.messageType(MessageType.MSG_MISS, text);
-        assertEquals(text + " (x4)", bus.lastMessage().message(),
-                "three coalesced messageAdd calls plus the probing messageType call");
+    @Test
+    void repeatsCoalesceIntoOneEntry() throws Exception {
+        for (int i = 0; i < 4; i++) Message.messageAdd("You miss the jelly", MessageType.MSG_MISS);
+
+        assertEquals(1, MessageLogProbe.size());
+        assertEquals(4, MessageLogProbe.count(0));
+    }
+
+    @Test
+    void aDifferentTypeStartsAFreshEntry() throws Exception {
+        Message.messageAdd("Something stirs", MessageType.MSG_HIT);
+        Message.messageAdd("Something stirs", MessageType.MSG_MISS);
+
+        assertEquals(2, MessageLogProbe.size());
+        assertEquals(MessageType.MSG_MISS, MessageLogProbe.type(0));
+        assertEquals(1, MessageLogProbe.count(0));
+        assertEquals(MessageType.MSG_HIT, MessageLogProbe.type(1));
+        assertEquals(1, MessageLogProbe.count(1));
+    }
+
+    @Test
+    void differentTextUnderTheSameTypeStartsAFreshEntry() throws Exception {
+        Message.messageAdd("one", MessageType.MSG_HIT);
+        Message.messageAdd("two", MessageType.MSG_HIT);
+
+        assertEquals(2, MessageLogProbe.size());
+        assertEquals("two", MessageLogProbe.text(0));
+        assertEquals("one", MessageLogProbe.text(1));
     }
 
     /**
-     * Coalescing compares text <em>and</em> type, same as {@link Message#messageType}: the same
-     * words under a different type start a fresh entry rather than joining the existing one.
+     * Only {@code messages->head} is compared, so A, B, A is three entries.
      */
     @Test
-    void aDifferentTypeStartsAFreshEntry() {
-        String text = unique("Something stirs");
+    void onlyTheNewestEntryIsCompared() throws Exception {
+        Message.messageAdd("A", MessageType.MSG_GENERIC);
+        Message.messageAdd("B", MessageType.MSG_GENERIC);
+        Message.messageAdd("A", MessageType.MSG_GENERIC);
 
-        Message.messageAdd(text, MessageType.MSG_HIT);
-        Message.messageAdd(text, MessageType.MSG_MISS);
+        assertEquals(3, MessageLogProbe.size());
+        assertEquals(1, MessageLogProbe.count(0));
+    }
 
-        Message.messageType(MessageType.MSG_MISS, text);
-        assertEquals(text + " (x2)", bus.lastMessage().message(),
-                "the MISS entry was fresh (count 1), not sharing the HIT entry's count");
+    @Test
+    void textIsStoredExactlyAsGiven() throws Exception {
+        Message.messageAdd("50% resistant %s grue", MessageType.MSG_GENERIC);
+
+        assertEquals("50% resistant %s grue", MessageLogProbe.text(0));
     }
 
     /**
-     * C's {@code message_add} takes the already-formatted string and never calls a printf-family
-     * function on it — formatting happens earlier, in {@code msg}/{@code msgt}. This port mirrors
-     * that split: {@code messageAdd} has no {@code Object...} parameter and stores the text as
-     * given. A stray {@code %} that would blow up {@link String#format} in {@link Message#message}
-     * must pass through untouched here.
+     * No truncation here: the 1023 cut happens in {@code msg}/{@code msgt}, before this.
      */
     @Test
-    void aStrayPercentSignIsStoredLiterally() {
-        String text = unique("50% resistant grue");
+    void messageAddDoesNotTruncate() throws Exception {
+        String longText = "x".repeat(2000);
 
-        assertDoesNotThrow(() -> Message.messageAdd(text, MessageType.MSG_GENERIC));
+        Message.messageAdd(longText, MessageType.MSG_GENERIC);
+
+        assertEquals(longText, MessageLogProbe.text(0));
     }
 
-    /**
-     * The log is capped at {@link Message}'s {@code queueSize} (2048), C's {@code messages->max}:
-     * once a genuinely new entry would push the log over the cap, the oldest is dropped first so
-     * the log never grows past it. Reaches the private log via reflection since nothing in the
-     * public surface exposes its size.
-     */
+    @Test
+    void theLogFillsToTheCapWithoutLosingAnything() throws Exception {
+        int cap = MessageLogProbe.cap();
+        assertEquals(2048, cap, "messages_init sets max = 2048");
+
+        for (int i = 0; i < cap; i++) Message.messageAdd("m" + i, MessageType.MSG_GENERIC);
+
+        assertEquals(cap, MessageLogProbe.size());
+        assertEquals("m" + (cap - 1), MessageLogProbe.text(0));
+        assertEquals("m0", MessageLogProbe.text(cap - 1), "the oldest is still there at exactly max");
+    }
+
+    /** One over the cap drops the tail and only the tail. */
+    @Test
+    void theEntryAfterTheCapDropsTheOldest() throws Exception {
+        int cap = MessageLogProbe.cap();
+        for (int i = 0; i < cap + 1; i++) Message.messageAdd("m" + i, MessageType.MSG_GENERIC);
+
+        assertEquals(cap, MessageLogProbe.size());
+        assertEquals("m" + cap, MessageLogProbe.text(0));
+        assertEquals("m1", MessageLogProbe.text(cap - 1), "m0 was dropped, m1 is the new tail");
+    }
+
+    /** A repeat is not an insert, so it must not cost a full log its oldest entry. */
+    @Test
+    void aRepeatAtFullCapacityEvictsNothing() throws Exception {
+        int cap = MessageLogProbe.cap();
+        for (int i = 0; i < cap; i++) Message.messageAdd("m" + i, MessageType.MSG_GENERIC);
+
+        Message.messageAdd("m" + (cap - 1), MessageType.MSG_GENERIC);
+
+        assertEquals(cap, MessageLogProbe.size());
+        assertEquals(2, MessageLogProbe.count(0));
+        assertEquals("m0", MessageLogProbe.text(cap - 1));
+    }
+
     @Test
     void theLogNeverGrowsPastTheCap() throws Exception {
-        Field logField = Message.class.getDeclaredField("messageLog");
-        logField.setAccessible(true);
-        Deque<?> log = (Deque<?>) logField.get(null);
+        int cap = MessageLogProbe.cap();
+        for (int i = 0; i < cap + 50; i++) Message.messageAdd("m" + i, MessageType.MSG_GENERIC);
 
-        Field capField = Message.class.getDeclaredField("queueSize");
-        capField.setAccessible(true);
-        int cap = capField.getInt(null);
-
-        // Push well past the cap with distinct messages so every call is a genuine insert, never
-        // a coalesce - a coalesce would not grow the log and would tell us nothing about eviction.
-        for (int i = 0; i < cap + 50; i++) {
-            Message.messageAdd(unique("cap probe"), MessageType.MSG_GENERIC);
-        }
-
-        assertEquals(cap, log.size(), "a full log must drop its oldest entry before growing further, per C's message_add");
-    }
-
-    /**
-     * Records every dispatch so assertions can be made about the sequence.
-     *
-     * @author Rowan Crowther
-     */
-    private static final class CapturingBus implements EventsHandler {
-        private final List<GameEventType> types = new ArrayList<>();
-        private final List<GameEventData> payloads = new ArrayList<>();
-
-        @Override
-        public void eventAddHandler(GameEventType eventType, EventHandlerInterface handler) {
-        }
-
-        @Override
-        public void eventRemoveHandler(GameEventType eventType, EventHandlerInterface handler) {
-        }
-
-        @Override
-        public void eventRemoveHandlerType(GameEventType eventType) {
-        }
-
-        @Override
-        public void gameEventDispatch(GameEventType eventType, GameEventData data) {
-            types.add(eventType);
-            payloads.add(data);
-        }
-
-        private EventDataMessage lastMessage() {
-            assertInstanceOf(EventDataMessage.class, payloads.get(payloads.size() - 1));
-            return (EventDataMessage) payloads.get(payloads.size() - 1);
-        }
+        assertEquals(cap, MessageLogProbe.size());
+        assertEquals("m50", MessageLogProbe.text(cap - 1));
     }
 }

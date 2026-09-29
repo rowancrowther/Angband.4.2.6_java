@@ -17,33 +17,92 @@
 
 package uk.co.jackoftradesltd.middle;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
+import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.player.Player;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerOptionEnum;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.IllegalFormatException;
 
 /**
  * The engine's outbound message channel - the port of C's {@code msg}/{@code msgt} family
  * ({@code src/message.c}). The middle layer calls this to surface a line of text to the player
  * without knowing how the front-end displays it.
  *
- * <p>Each call does two things, in C's order: it records the text in the recent-message log
- * (C's {@code message_add}) and then signals an {@link GameEventType#EVENT_MESSAGE} carrying the
- * text and its {@link MessageType}, leaving display entirely to whichever front-end has
- * registered a handler. Nothing here knows about screens, colours or sound.
+ * <p>Each call, in C's order, cuts the formatted text to fit C's 1024-byte buffer (1023
+ * characters), records it in the recent-message log (C's {@code message_add}), and then signals
+ * an {@link GameEventType#EVENT_MESSAGE} carrying the text and its {@link MessageType}, leaving
+ * display entirely to whichever front-end has registered a handler. {@link #messageType} also
+ * raises an {@link GameEventType#EVENT_SOUND} between the log write and the message event, as
+ * C's {@code msgt} does; {@link #message} does not, as C's {@code msg} does not. Nothing here
+ * knows about screens or colours, and the audio itself is left to a front-end sound module.
+ *
+ * <p>The text signalled is always the plain text. The repeat count of consecutive identical
+ * messages is kept in the log alone, as in C, for a front-end that walks the log to render.
  *
  * <p>Callers that pass caller-controlled text should send it as a {@code "%s"} argument (as
  * {@link uk.co.jackoftradesltd.middle.game.gameengine.Command#getString} does) so a stray {@code %}
  * is not read as a format directive - mirroring C's {@code msg("%s", text)} idiom, and the reason
- * C's own header warns never to hand a string read from a file straight to {@code msg}.
+ * the doc comment on C's {@code msg} warns never to hand a string read from a file straight to it.
+ *
+ * <p><b>ASCII only.</b> All message text is assumed to be ASCII. C cuts at 1023 <em>bytes</em>
+ * and Java cuts at 1023 <em>characters</em>; the two agree only for ASCII, so the cut here is
+ * exact for ASCII text and unspecified for anything else (multi-byte text would keep more
+ * characters than C does, and a supplementary character could be split).
+ *
+ * <p><b>Accepted format vocabulary.</b> C formats with {@code vstrnfmt} ({@code src/z-form.c}),
+ * this port with {@link String#format}. The two share a core, and only that core is accepted:
+ * <ul>
+ *   <li>{@code %%} - a literal percent sign.</li>
+ *   <li>{@code %s} - a string; {@code %c} - a character; {@code %d} - a decimal integer.</li>
+ *   <li>{@code %x}, {@code %X}, {@code %o} - hexadecimal and octal integers.</li>
+ *   <li>{@code %f}, {@code %e}, {@code %E} - floating point.</li>
+ *   <li>The {@code -}, {@code +} and {@code 0} flags, a width and a {@code .precision}. C
+ *       documents {@code +} and {@code 0} as unsafe with {@code %s} and {@code %c}; Java
+ *       throws for them.</li>
+ * </ul>
+ * Everything else is out of vocabulary. Some of it fails and some of it silently gives
+ * different text, and the silent cases are the dangerous ones:
+ * <ul>
+ *   <li>Valid in C, an error in Java: {@code %i}, {@code %u}, the {@code l} modifier
+ *       ({@code %ld}, {@code %lu}), a {@code *} width or precision, and {@code %p}.</li>
+ *   <li>Valid in both with different meanings: {@code %n} (C stores the length written so far
+ *       and takes a pointer; Java emits a line separator and takes no argument), and
+ *       {@code %g} (the two differ over trailing zeros and when the exponent form is chosen).</li>
+ *   <li>A {@code null} argument to {@code %s}: C writes the empty string, Java writes
+ *       {@code "null"}. Callers must not pass one.</li>
+ *   <li>Java-only conversions ({@code %b}, {@code %h}, {@code %t}, {@code %S}, the {@code ,}
+ *       flag) are errors in C and must not be used here.</li>
+ * </ul>
+ *
+ * <p><b>Malformed patterns become an empty message, as in C.</b> When {@code vstrnfmt} meets an
+ * illegal conversion or an unterminated {@code %} it empties the buffer, and C's {@code msg}
+ * and {@code msgt} carry on regardless: an empty string is logged and an empty
+ * {@link GameEventType#EVENT_MESSAGE} is signalled (with the sound, for {@code msgt}). Here the
+ * {@link IllegalFormatException} from {@link String#format} is caught and the text is set to
+ * {@code ""}, after which the call follows the ordinary path, so the log, the sound and the event
+ * all see the empty message exactly as C's do. The one addition is a warning written to the
+ * logger, naming the offending pattern, which C does not do. A {@code null} pattern is not an
+ * {@link IllegalFormatException} and is not caught.
+ *
+ * <p>Class Message commented in full on 260929.
  *
  * @author Rowan Crowther
  */
 public class Message {
+    /**
+     * Where a malformed format pattern is reported. C's {@code vstrnfmt} fails silently, so this
+     * has no C counterpart; it exists so that a bad pattern, which becomes a blank message, can
+     * still be traced to its source.
+     */
+    private static final Logger logger = LogManager.getLogger(Message.class);
+    
     /**
      * How many messages the log keeps before the oldest is discarded - the port of C's
      * {@code messages->max}, set to the same 2048 in {@code messages_init} ({@code
@@ -56,17 +115,21 @@ public class Message {
      * chain hanging off C's {@code messages} ({@code src/message.c}).
      *
      * <p>Held newest-at-the-head so that {@code peekFirst} is C's {@code messages->head} - the
-     * entry {@link #messageType} compares against when deciding whether a message is a repeat -
+     * entry {@link #messageAdd} compares against when deciding whether a message is a repeat -
      * and the tail is C's {@code messages->tail}, the oldest, which is what gets dropped when
      * the log is full. A {@link Deque} is the natural fit because both ends are worked: pushed
      * at the head, trimmed at the tail.
      *
      * <p>The {@code queueSize} passed to the constructor is only an initial-capacity hint;
      * {@link ArrayDeque} is unbounded, so the cap is enforced explicitly by the
-     * {@code removeLast} in {@link #messageType}.
+     * {@code removeLast} in {@link #messageAdd}.
      */
     private static Deque<MessageT> messageLog = new ArrayDeque<>(queueSize);
 
+    /**
+     * Not instantiable: like the C {@code message.c} functions, everything here is static and
+     * works on the one shared log.
+     */
     private Message() {
     }
 
@@ -75,20 +138,41 @@ public class Message {
      * ({@code src/message.c}), which is {@code msgt} tagged {@code MSG_GENERIC} and with no sound
      * attached.
      *
-     * <p>The message is logged and raised as an {@link GameEventType#EVENT_MESSAGE} carrying
-     * {@link MessageType#MSG_GENERIC}, leaving it to the front-end to decide how it is shown. Use
-     * {@link #messageType} instead when the message should be tagged with a specific type so the
-     * front-end can colour it or play a sound.
+     * <p>The text is formatted, cut to 1023 characters (C formats into {@code char buf[1024]}),
+     * logged with {@link MessageType#MSG_GENERIC} through {@link #messageAdd}, and raised as an
+     * {@link GameEventType#EVENT_MESSAGE} carrying that type and the plain text, leaving it to the
+     * front-end to decide how it is shown. Use {@link #messageType} instead when the message should
+     * be tagged with a specific type so the front-end can colour it or play a sound.
      *
      * <p>Text that did not come from a literal here should be passed as a {@code "%s"} argument
      * rather than as the pattern itself, so a stray {@code %} in an object or monster name is not
      * read as a format directive.
      *
+     * <p>A pattern {@link String#format} rejects is treated as C treats one {@code vstrnfmt}
+     * rejects: the text becomes {@code ""} and the message is still logged and signalled, blank.
+     * A warning is also written to the logger. See the class comment for the accepted format
+     * vocabulary.
+     *
+     * <p>Method message commented in full on 260929.
+     *
      * @param message the message text, or a {@link String#format} pattern when {@code args} is given
      * @param args    optional format arguments substituted into {@code message}
      */
     public static void message(String message, Object... args) {
-        messageType(MessageType.MSG_GENERIC, message, args);
+        String toSend;
+        try {
+            toSend = String.format(message, args);
+        } catch (IllegalFormatException e) {
+            logger.warn("Exception while trying to send message: {}", message, e);
+            toSend = "";
+        }
+
+        toSend = size(toSend, 1023);
+
+        messageAdd(toSend, MessageType.MSG_GENERIC);
+
+        GameEngine.getEventsBusHandler().eventSignalMessage(GameEventType.EVENT_MESSAGE,
+                MessageType.MSG_GENERIC, toSend);
     }
 
     /**
@@ -96,62 +180,50 @@ public class Message {
      * the port of C's {@code msgt} ({@code src/message.c}) together with the {@code message_add}
      * it calls.
      *
-     * <p>Identical to {@link #message} except that the type travels with the message, letting the
-     * front-end colour it by category and play the matching sound.
+     * <p>Differs from {@link #message} in that the type travels with the message, and in the sound:
+     * after the log write and before the {@link GameEventType#EVENT_MESSAGE} is signalled it calls
+     * {@link #sound} for that type, in C's order. The sound is only heard if the current player has
+     * {@code use_sound} on. The player is taken from {@link GameState#getPlayer()}, standing in for
+     * C's {@code player} global.
+     *
+     * <p>The formatted text is cut to 1023 characters (C's {@code char buf[1024]}) <em>before</em> it
+     * is logged, so the log and the signalled event both see the cut text, and two over-long lines
+     * that differ only past the cut count as the same message.
      *
      * <p><b>Repeats coalesce.</b> A message whose text and type both match the newest entry in the
-     * log does not get an entry of its own; the existing entry's count is bumped instead, exactly
-     * as C's {@code message_add} does when {@code messages->head} matches on both {@code str} and
-     * {@code type}. Only the newest entry is ever compared, so the sequence A, B, A yields three
-     * entries rather than folding the two As together - a burst of "You miss the orc." collapses,
-     * but a message that merely recurred earlier does not.
+     * log does not get an entry of its own; the existing entry's count is bumped instead - see
+     * {@link #messageAdd}. Only the newest entry is ever compared, so the sequence A, B, A yields
+     * three entries rather than folding the two As together - a burst of "You miss the orc."
+     * collapses, but a message that merely recurred earlier does not. Every call still signals: the
+     * coalescing affects the log, not the traffic, and the signalled text is always the plain text,
+     * as C's is.
      *
-     * <p><b>Port divergence: the {@code (xN)} suffix.</b> When the newest entry has been seen more
-     * than once, the text signalled to the front-end gains a {@code " (x3)"} suffix. C instead
-     * signals the plain text every time and keeps the count in the log alone, for a UI that walks
-     * the log and renders the repeat count itself. Decorating here keeps the count visible without
-     * every front-end having to reach into the log, at the cost of the event text no longer being
-     * byte-identical to C's. The <em>stored</em> text stays plain either way, so the count is never
-     * parsed back out of it.
+     * <p>A pattern {@link String#format} rejects is treated as C treats one {@code vstrnfmt}
+     * rejects: the text becomes {@code ""}, and the empty message is logged, sounded and signalled
+     * in the usual order. A warning is also written to the logger. See the class comment for the
+     * accepted format vocabulary.
+     *
+     * <p>Method messageType commented in full on 260929.
      *
      * @param messageType the category to tag the message with
      * @param message     the message text, or a {@link String#format} pattern when {@code args} is given
      * @param args        optional format arguments substituted into {@code message}
      */
     public static void messageType(MessageType messageType, String message, Object... args) {
-        String toSend = String.format(message, args);
-
-        // C's message_add: a repeat of the newest entry bumps its count in place rather than
-        // taking a slot of its own. peekFirst returning null covers the empty log, which is the
-        // null half of C's "if (messages->head && ...)" guard.
-        MessageT top = messageLog.peekFirst();
-
-        if (top != null && top.getType() == messageType && top.getText().equals(toSend))
-            top.incrementCount();
-        else {
-            // Only a genuinely new entry can push the log over its cap, so the oldest is dropped
-            // here rather than before the comparison - a repeat arriving at full capacity must
-            // not cost the log its oldest message.
-            if (messageLog.size() >= queueSize) {
-                messageLog.removeLast();
-            }
-            messageLog.addFirst(new MessageT(1, toSend, messageType));
+        String toSend;
+        try {
+            toSend = String.format(message, args);
+        } catch (IllegalFormatException e) {
+            logger.warn("Exception while trying to send message: {}", message, e);
+            toSend = "";
         }
 
-        // Re-read the head: after a coalesce it is the bumped entry, after an insert the new one.
-        top = messageLog.peekFirst();
-        MessageType type = top.getType();
-        int count = top.getCount();
-        String msg = top.getText();
+        toSend = size(toSend, 1023);
 
-        // The repeat count decorates the outgoing text only - the logged text stays plain.
-        if (count > 1) {
-            msg = msg + " (x" + count + ")";
-        }
+        messageAdd(toSend, messageType);
 
-        // TODO: C's msgt plays the type's sound before signalling - sound(type) in src/message.c.
-        //  Not wired up until the front-end has a sound module to hear it.
-        GameEngine.getEventsBusHandler().eventSignalMessage(GameEventType.EVENT_MESSAGE, type, msg);
+        sound(messageType, GameState.getPlayer());
+        GameEngine.getEventsBusHandler().eventSignalMessage(GameEventType.EVENT_MESSAGE, messageType, toSend);
     }
 
     /**
@@ -163,11 +235,19 @@ public class Message {
      * OPT(player, use_sound)} guard); when enabled it signals an {@link GameEventType#EVENT_SOUND}
      * carrying the sound's {@link MessageType} and no message text.
      *
+     * <p><b>Port divergence:</b> C's {@code sound} reads {@code OPT(player, use_sound)} without
+     * checking that {@code player} exists. This port treats a null player, or a player with no
+     * option set, as "sound off" and returns quietly, so a message raised before a character exists
+     * is still delivered.
+     *
+     * <p>Method sound commented in full on 260929.
+     *
      * @param messageType the sound category to play
-     * @param player      the player whose sound option gates the event
+     * @param player      the player whose sound option gates the event, or {@code null} for none
      */
     public static void sound(MessageType messageType, Player player) {
-        if (!player.getPlayerOptions().has(PlayerOptionEnum.OP_use_sound))
+        if (player == null || player.getPlayerOptions() == null
+                || !player.getPlayerOptions().has(PlayerOptionEnum.OP_use_sound))
             return;
 
         GameEngine.getEventsBusHandler().eventSignalMessage(GameEventType.EVENT_SOUND, messageType, null);
@@ -176,20 +256,26 @@ public class Message {
     /**
      * Records a message in the log without announcing it — the port of C's {@code message_add}
      * ({@code src/message.c}), the half of {@code msgt} that {@link #messageType} calls before it
-     * signals the {@link GameEventType#EVENT_MESSAGE} event. Callers that only need the log entry
-     * (nothing on the boundary listening yet) can reach this directly instead of going through
-     * {@link #messageType}.
+     * signals the {@link GameEventType#EVENT_MESSAGE} event. {@link #message} and
+     * {@link #messageType} both go through it. Callers that only need the log entry (nothing on the
+     * boundary listening yet) can reach this directly.
      *
-     * <p>Same repeat-coalescing rule as {@link #messageType}: a message whose text and type both
-     * match the newest entry bumps that entry's count in place rather than taking a slot of its
-     * own. C additionally guards the increment against wrapping its 16-bit counter
-     * ({@code count != (uint16_t)-1}); that guard is not ported here, for the same reason it is
-     * not ported in {@link #messageType} — a Java {@code int} has room to spare.
+     * <p>Repeats coalesce: a message whose text and type both match the newest entry - C's
+     * {@code messages->head} - bumps that entry's count in place rather than taking a slot of its
+     * own. Nothing else in the log is compared. C additionally guards the increment against
+     * wrapping its 16-bit counter ({@code count != (uint16_t)-1}), starting a fresh entry at 65535
+     * instead; that guard is not ported here, as a Java {@code int} has room to spare, so a run of
+     * more than 65535 identical messages stays one entry here where C would split it.
      *
      * <p>The log is capped at {@link #queueSize} entries, C's {@code messages->max}: once a
-     * genuinely new entry would push the log over the cap, the oldest entry is dropped first.
+     * genuinely new entry would push the log over the cap, the oldest entry is dropped first. C
+     * inserts and then trims; the end state is the same. A repeat never evicts anything.
      *
-     * <p>Method messageAdd coded on 260908, commented in full on 260908.
+     * <p>Like C's {@code message_add}, this takes an already-formatted string and does no
+     * formatting or truncation of its own; the 1023-character cut happens in {@link #message} and
+     * {@link #messageType}.
+     *
+     * <p>Method messageAdd coded on 260908, commented in full on 260929.
      *
      * @param message the message text, stored exactly as given, without any repeat-count decoration
      * @param type    the category the message was raised under
@@ -207,6 +293,23 @@ public class Message {
             messageLog.removeLast();
         }
         messageLog.offerFirst(messageT);
+    }
+
+    /**
+     * Cuts text to at most {@code length} characters, standing in for the cut C gets from
+     * formatting into a fixed {@code char buf[1024]}. Text already short enough is returned as it
+     * is. The cut is by character, which matches C's by-byte cut only for ASCII text (see the
+     * class comment).
+     *
+     * <p>Method size commented in full on 260929.
+     *
+     * @param text   the formatted text
+     * @param length the most characters to keep (callers pass 1023)
+     * @return {@code text}, or its first {@code length} characters
+     */
+    private static String size(String text, int length) {
+        int size = Math.min(length, text.length());
+        return text.substring(0, size);
     }
 
     /**

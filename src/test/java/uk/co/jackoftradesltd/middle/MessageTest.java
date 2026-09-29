@@ -21,283 +21,380 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
-import uk.co.jackoftradesltd.channel.messages.data.EventDataMessage;
-import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
+import uk.co.jackoftradesltd.middle.MessageLogProbe.CapturingBus;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
-import uk.co.jackoftradesltd.middle.game.event.EventHandlerInterface;
 import uk.co.jackoftradesltd.middle.game.event.EventsHandler;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
+import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
+import uk.co.jackoftradesltd.middle.player.Player;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
- * Unit tests for {@link Message}, the port of C's {@code msg}/{@code msgt} family
- * ({@code src/message.c}) — the engine's way of putting a line of text in front of the player
- * without knowing how it will be shown.
+ * Unit tests for {@link Message#message} and {@link Message#messageType}, the ports of C's
+ * {@code msg} and {@code msgt} ({@code message.c}). Expected values come from the C source:
  *
- * <p>The behaviour worth pinning is the <b>repeat coalescing</b>. C's {@code message_add} compares
- * an incoming message against {@code messages->head} alone, and bumps a count instead of taking a
- * new slot when the text and type both match. Only the newest entry is ever compared, so
- * A, B, A gives three entries rather than folding the two As together — a burst collapses, a
- * recurrence does not. That "newest only" detail is the easy thing to get wrong when reading the C,
- * and the difference is invisible until a log fills up in play.
+ * <ul>
+ *   <li>{@code msg} formats into a {@code char buf[1024]}, calls {@code message_add(buf,
+ *       MSG_GENERIC)} and signals {@code EVENT_MESSAGE}. It makes no sound.</li>
+ *   <li>{@code msgt} does the same under the caller's type, and calls {@code sound(type)}
+ *       <em>between</em> {@code message_add} and the {@code EVENT_MESSAGE} signal.</li>
+ *   <li>The buffer holds 1023 characters plus the terminator, so longer text is cut to 1023
+ *       before it reaches either the log or the event.</li>
+ *   <li>The signalled text is the plain buffer every time; the repeat count lives in the log
+ *       only. (An earlier version of the port appended {@code " (xN)"}; it no longer does.)</li>
+ * </ul>
  *
- * <p>There is also a deliberate <b>divergence from C</b> to hold in place: this port appends a
- * {@code " (xN)"} suffix to the text it signals, where C signals the plain line every time and
- * leaves the counting to a front end that walks the log. The stored text stays plain either way,
- * so the count is never parsed back out of it — and that is the property that stops the divergence
- * turning into a bug.
- *
- * <p><b>On isolation.</b> {@code Message} keeps its log in a static field with no reset, so tests
- * cannot start from an empty log. Rather than reach in and clear it, each test below uses text
- * unique to itself: coalescing only ever compares against the newest entry, so a message no other
- * test sends can never be affected by what ran before it. That makes these tests order-independent
- * without needing access to the internals.
+ * <p>The log is emptied before each test through {@link MessageLogProbe}, and the engine's bus and
+ * current player are swapped for test doubles and restored afterwards.
  *
  * @author Rowan Crowther
  */
 class MessageTest {
-
-    /**
-     * Gives each test its own text, so nothing it sends can coalesce with an entry left in the
-     * static log by an earlier test.
-     */
-    private static final AtomicInteger UNIQUE = new AtomicInteger();
     private EventsHandler realBus;
+    private Player realPlayer;
     private CapturingBus bus;
 
-    /**
-     * @param stem a readable stem for the message
-     * @return the stem made unique to this test run
-     */
-    private static String unique(String stem) {
-        return stem + " #" + UNIQUE.incrementAndGet();
-    }
-
-    /**
-     * Swaps the engine's bus for a capture. {@code Message} reaches it through
-     * {@link GameEngine#getEventsBusHandler()}, which is static, so the original is put back
-     * afterwards to leave the rest of the suite as it was found.
-     */
     @BeforeEach
-    void setUp() {
+    void setUp() throws ReflectiveOperationException {
+        MessageLogProbe.clear();
         realBus = GameEngine.getEventsBusHandler();
+        realPlayer = GameState.getPlayer();
         bus = new CapturingBus();
         GameEngine.setEventsBusHandler(bus);
+        GameState.setPlayer(null);
     }
 
     @AfterEach
     void tearDown() {
         GameEngine.setEventsBusHandler(realBus);
+        GameState.setPlayer(realPlayer);
+    }
+
+    private Player playerWithSound(boolean on) throws ReflectiveOperationException {
+        Player p = MessageLogProbe.playerWithSound(on);
+        GameState.setPlayer(p);
+        return p;
+    }
+
+    // ---- msg ----
+
+    @Test
+    void aPlainMessageIsLoggedAndSignalledAsGeneric() throws Exception {
+        Message.message("You feel a sense of loss");
+
+        assertEquals(List.of(GameEventType.EVENT_MESSAGE), bus.types);
+        assertEquals(MessageType.MSG_GENERIC, bus.last().type());
+        assertEquals("You feel a sense of loss", bus.last().message());
+        assertEquals(1, MessageLogProbe.size());
+        assertEquals("You feel a sense of loss", MessageLogProbe.text(0));
+        assertEquals(MessageType.MSG_GENERIC, MessageLogProbe.type(0));
+        assertEquals(1, MessageLogProbe.count(0));
+    }
+
+    @Test
+    void formatArgumentsAreSubstituted() throws Exception {
+        Message.message("The %s hits you for %d", "orc", 7);
+
+        assertEquals("The orc hits you for 7", bus.last().message());
+        assertEquals("The orc hits you for 7", MessageLogProbe.text(0));
+    }
+
+    @Test
+    void textPassedAsAnArgumentSurvivesAStrayPercentSign() throws Exception {
+        Message.message("%s", "50% resistant grue");
+
+        assertEquals("50% resistant grue", bus.last().message());
+        assertEquals("50% resistant grue", MessageLogProbe.text(0));
     }
 
     /**
-     * The plain {@code message} call is C's {@code msg}: tagged generic, and raised as an
-     * {@code EVENT_MESSAGE} rather than shown directly.
+     * C's {@code msg} never calls {@code sound}, even with {@code use_sound} on.
      */
     @Test
-    void aPlainMessageIsSignalledAsGeneric() {
-        String text = unique("You feel a sense of loss");
+    void aPlainMessageNeverMakesASound() throws Exception {
+        playerWithSound(true);
+
+        Message.message("Silence");
+
+        assertEquals(List.of(GameEventType.EVENT_MESSAGE), bus.types);
+    }
+
+    // ---- msgt ----
+
+    @Test
+    void aTypedMessageKeepsItsTypeInTheLogAndTheEvent() throws Exception {
+        Message.messageType(MessageType.MSG_HIT, "You hit the orc");
+
+        assertEquals(List.of(GameEventType.EVENT_MESSAGE), bus.types);
+        assertEquals(MessageType.MSG_HIT, bus.last().type());
+        assertEquals("You hit the orc", bus.last().message());
+        assertEquals(MessageType.MSG_HIT, MessageLogProbe.type(0));
+    }
+
+    @Test
+    void aTypedMessageSubstitutesFormatArguments() throws Exception {
+        Message.messageType(MessageType.MSG_MISS, "You miss the %s (%d)", "jelly", 3);
+
+        assertEquals("You miss the jelly (3)", bus.last().message());
+        assertEquals("You miss the jelly (3)", MessageLogProbe.text(0));
+    }
+
+    /**
+     * With {@code use_sound} on, {@code msgt} sounds first, then signals the message.
+     */
+    @Test
+    void aTypedMessageSoundsBeforeItIsSignalledWhenSoundIsOn() throws Exception {
+        playerWithSound(true);
+
+        Message.messageType(MessageType.MSG_HIT, "You hit the orc");
+
+        assertEquals(List.of(GameEventType.EVENT_SOUND, GameEventType.EVENT_MESSAGE), bus.types);
+        assertEquals(MessageType.MSG_HIT, bus.payload(0).type());
+        assertNull(bus.payload(0).message(), "sound() carries no text");
+        assertEquals("You hit the orc", bus.payload(1).message());
+    }
+
+    @Test
+    void aTypedMessageIsSilentWhenSoundIsOff() throws Exception {
+        playerWithSound(false);
+
+        Message.messageType(MessageType.MSG_HIT, "You hit the orc");
+
+        assertEquals(List.of(GameEventType.EVENT_MESSAGE), bus.types);
+    }
+
+    /**
+     * The port is null-safe where C would dereference; the message still goes out.
+     */
+    @Test
+    void aTypedMessageStillGoesOutWithNoPlayer() throws Exception {
+        GameState.setPlayer(null);
+
+        Message.messageType(MessageType.MSG_HIT, "You hit the orc");
+
+        assertEquals(List.of(GameEventType.EVENT_MESSAGE), bus.types);
+        assertEquals(1, MessageLogProbe.size());
+    }
+
+    // ---- repeat coalescing (message_add, seen through msg/msgt) ----
+
+    /** Every call signals; only the log coalesces, and the event text stays plain. */
+    @Test
+    void aBurstCoalescesInTheLogButEveryCallSignalsPlainText() throws Exception {
+        for (int i = 0; i < 3; i++) Message.messageType(MessageType.MSG_MISS, "You miss the orc");
+
+        assertEquals(3, bus.types.size());
+        for (int i = 0; i < 3; i++) assertEquals("You miss the orc", bus.payload(i).message());
+        assertEquals(1, MessageLogProbe.size());
+        assertEquals(3, MessageLogProbe.count(0));
+        assertEquals("You miss the orc", MessageLogProbe.text(0));
+    }
+
+    @Test
+    void theSameTextUnderADifferentTypeDoesNotCoalesce() throws Exception {
+        Message.messageType(MessageType.MSG_HIT, "Something happens");
+        Message.messageType(MessageType.MSG_MISS, "Something happens");
+
+        assertEquals(2, MessageLogProbe.size());
+        assertEquals(1, MessageLogProbe.count(0));
+        assertEquals(MessageType.MSG_MISS, MessageLogProbe.type(0));
+        assertEquals(1, MessageLogProbe.count(1));
+    }
+
+    /** {@code message_add} compares only {@code messages->head}: A, B, A is three entries. */
+    @Test
+    void aRecurrenceDoesNotCoalesceWithAnEarlierEntry() throws Exception {
+        Message.message("A");
+        Message.message("B");
+        Message.message("A");
+
+        assertEquals(3, MessageLogProbe.size());
+        assertEquals("A", MessageLogProbe.text(0));
+        assertEquals("B", MessageLogProbe.text(1));
+        assertEquals("A", MessageLogProbe.text(2));
+        assertEquals(1, MessageLogProbe.count(0));
+    }
+
+    @Test
+    void anInterruptedRunStartsCountingAgain() throws Exception {
+        Message.message("A");
+        Message.message("A");
+        Message.message("B");
+        Message.message("A");
+        Message.message("A");
+
+        assertEquals(3, MessageLogProbe.size());
+        assertEquals(2, MessageLogProbe.count(0));
+        assertEquals(1, MessageLogProbe.count(1));
+        assertEquals(2, MessageLogProbe.count(2));
+    }
+
+    /** {@code msg} and {@code msgt(MSG_GENERIC)} are the same message to {@code message_add}. */
+    @Test
+    void msgAndMsgtGenericShareAnEntry() throws Exception {
+        Message.message("Same");
+        Message.messageType(MessageType.MSG_GENERIC, "Same");
+
+        assertEquals(1, MessageLogProbe.size());
+        assertEquals(2, MessageLogProbe.count(0));
+    }
+
+    // ---- the format vocabulary shared with vstrnfmt (z-form.c) ----
+
+    @Test
+    void doublePercentIsALiteralPercent() throws Exception {
+        Message.message("100%% sure");
+
+        assertEquals("100% sure", bus.last().message());
+    }
+
+    /** Values are what {@code snprintf} gives for the same directive in {@code vstrnfmt}. */
+    @Test
+    void integerAndCharacterDirectivesMatchC() throws Exception {
+        Message.message("%x|%X|%o|%c|%+d", 255, 255, 8, 'A', 5);
+
+        assertEquals("ff|FF|10|A|+5", bus.last().message());
+    }
+
+    @Test
+    void widthFlagsAndPrecisionMatchC() throws Exception {
+        Message.message("[%5d][%-5d][%05d][%.3s]", 42, 42, 42, "abcdef");
+
+        assertEquals("[   42][42   ][00042][abc]", bus.last().message());
+    }
+
+    @Test
+    void floatingPointDirectivesMatchC() throws Exception {
+        Message.message("%f %e", 1.5, 12345.678);
+
+        assertEquals("1.500000 1.234568e+04", bus.last().message());
+    }
+
+    // ---- malformed patterns: vstrnfmt empties the buffer, msg/msgt carry on ----
+
+    /**
+     * An unterminated {@code %}: C's {@code vstrnfmt} returns with {@code buf[0] = '\0'}.
+     */
+    @Test
+    void anUnterminatedPercentIsLoggedAndSignalledAsAnEmptyMessage() throws Exception {
+        Message.message("100%");
+
+        assertEquals(List.of(GameEventType.EVENT_MESSAGE), bus.types);
+        assertEquals("", bus.last().message());
+        assertEquals(MessageType.MSG_GENERIC, bus.last().type());
+        assertEquals(1, MessageLogProbe.size());
+        assertEquals("", MessageLogProbe.text(0));
+    }
+
+    /**
+     * {@code %q} reaches the {@code default:} branch of {@code vstrnfmt}.
+     */
+    @Test
+    void anIllegalConversionIsAnEmptyMessage() throws Exception {
+        Message.message("You hit the %q", "orc");
+
+        assertEquals("", bus.last().message());
+        assertEquals("", MessageLogProbe.text(0));
+    }
+
+    /**
+     * A missing argument is an error in Java only; it takes the same empty-message path.
+     */
+    @Test
+    void aMissingArgumentIsAnEmptyMessage() throws Exception {
+        Message.message("You hit the %s");
+
+        assertEquals("", bus.last().message());
+        assertEquals(1, MessageLogProbe.size());
+    }
+
+    /**
+     * {@code msgt} still sounds, between the log write and the signal, on the empty message.
+     */
+    @Test
+    void aMalformedTypedMessageStillSoundsThenSignalsEmpty() throws Exception {
+        playerWithSound(true);
+
+        Message.messageType(MessageType.MSG_HIT, "100%");
+
+        assertEquals(List.of(GameEventType.EVENT_SOUND, GameEventType.EVENT_MESSAGE), bus.types);
+        assertEquals("", bus.payload(1).message());
+        assertEquals(MessageType.MSG_HIT, bus.payload(1).type());
+        assertEquals("", MessageLogProbe.text(0));
+        assertEquals(MessageType.MSG_HIT, MessageLogProbe.type(0));
+    }
+
+    /**
+     * Empty is just another text to {@code message_add}: consecutive blanks coalesce.
+     */
+    @Test
+    void consecutiveEmptyMessagesCoalesce() throws Exception {
+        Message.message("100%");
+        Message.message("50%");
+
+        assertEquals(1, MessageLogProbe.size());
+        assertEquals(2, MessageLogProbe.count(0));
+    }
+
+    /**
+     * Documented divergence: {@code %i}, {@code %u} and the {@code l} modifier are legal in
+     * {@code vstrnfmt} (which would print "5"), but {@link String#format} rejects them, so the
+     * port produces the empty message instead.
+     */
+    @Test
+    void directivesOnlyCAcceptsBecomeEmptyMessages() throws Exception {
+        Message.message("%i", 5);
+        assertEquals("", bus.last().message());
+
+        Message.message("%u", 5);
+        assertEquals("", bus.last().message());
+
+        Message.message("%ld", 5L);
+        assertEquals("", bus.last().message());
+    }
+
+    // ---- the 1024-byte buffer ----
+
+    @Test
+    void textOf1023CharactersIsUntouched() throws Exception {
+        String text = "x".repeat(1023);
 
         Message.message(text);
 
-        assertEquals(GameEventType.EVENT_MESSAGE, bus.types.get(0));
-        assertEquals(MessageType.MSG_GENERIC, bus.lastMessage().type());
-        assertEquals(text, bus.lastMessage().message());
+        assertEquals(text, bus.last().message());
+        assertEquals(text, MessageLogProbe.text(0));
+    }
+
+    /** One past the buffer: {@code vstrnfmt} into {@code buf[1024]} keeps 1023 characters. */
+    @Test
+    void textOf1024CharactersIsCutTo1023() throws Exception {
+        Message.message("x".repeat(1024));
+
+        assertEquals("x".repeat(1023), bus.last().message());
+        assertEquals("x".repeat(1023), MessageLogProbe.text(0));
+    }
+
+    @Test
+    void aTypedMessageIsCutTheSameWayInLogAndEvent() throws Exception {
+        Message.messageType(MessageType.MSG_HIT, "y".repeat(3000));
+
+        assertEquals(1023, bus.last().message().length());
+        assertEquals(1023, MessageLogProbe.text(0).length());
     }
 
     /**
-     * The type travels with the message when one is given, so the display can colour it.
+     * Two over-long lines that differ only past the cut are the same message, as in C.
      */
     @Test
-    void aTypedMessageKeepsItsType() {
-        String text = unique("You hit the orc");
+    void linesThatDifferOnlyPastTheCutCoalesce() throws Exception {
+        Message.message("z".repeat(1023) + "1");
+        Message.message("z".repeat(1023) + "2");
 
-        Message.messageType(MessageType.MSG_HIT, text);
-
-        assertEquals(MessageType.MSG_HIT, bus.lastMessage().type());
-        assertEquals(text, bus.lastMessage().message());
-    }
-
-    /**
-     * Format arguments are substituted before the message goes anywhere — C's {@code msg} is a
-     * printf-family call, and this is the port of that.
-     */
-    @Test
-    void formatArgumentsAreSubstituted() {
-        String stem = unique("The %s hits you for %d");
-
-        Message.message(stem, "orc", 7);
-
-        assertEquals(String.format(stem, "orc", 7), bus.lastMessage().message());
-    }
-
-    /**
-     * The reason the Javadoc tells callers to pass caller-controlled text as a {@code "%s"}
-     * argument rather than as the pattern: a stray {@code %} in a monster or object name would
-     * otherwise be read as a format directive. Passed correctly, the percent survives untouched.
-     */
-    @Test
-    void textPassedAsAnArgumentSurvivesAStrayPercentSign() {
-        String awkward = unique("50% resistant grue");
-
-        Message.message("%s", awkward);
-
-        assertEquals(awkward, bus.lastMessage().message());
-    }
-
-    /**
-     * A run of identical messages collapses: still one signal per call, but the text gains the
-     * repeat count. This is the behaviour a player sees as "You miss the orc. (x3)".
-     */
-    @Test
-    void aBurstOfIdenticalMessagesGainsARepeatCount() {
-        String text = unique("You miss the orc");
-
-        Message.messageType(MessageType.MSG_MISS, text);
-        assertEquals(text, bus.lastMessage().message(), "the first is sent plain");
-
-        Message.messageType(MessageType.MSG_MISS, text);
-        assertEquals(text + " (x2)", bus.lastMessage().message());
-
-        Message.messageType(MessageType.MSG_MISS, text);
-        assertEquals(text + " (x3)", bus.lastMessage().message());
-
-        assertEquals(3, bus.types.size(), "every call still signals - coalescing affects the log, not the traffic");
-    }
-
-    /**
-     * Coalescing compares text <em>and</em> type. The same words under a different type are a
-     * different message and start their own count.
-     */
-    @Test
-    void theSameTextUnderADifferentTypeDoesNotCoalesce() {
-        String text = unique("Something happens");
-
-        Message.messageType(MessageType.MSG_HIT, text);
-        Message.messageType(MessageType.MSG_MISS, text);
-
-        assertEquals(text, bus.lastMessage().message(), "a different type starts a fresh entry, so no count");
-        assertEquals(MessageType.MSG_MISS, bus.lastMessage().type());
-    }
-
-    /**
-     * The "newest entry only" rule, which is the detail most easily lost when reading C's
-     * {@code message_add}. A, B, A must leave the second A uncounted — it is a recurrence, not a
-     * burst, and C keeps them apart.
-     */
-    @Test
-    void aMessageThatMerelyRecursDoesNotCoalesceWithAnEarlierOne() {
-        String first = unique("You feel less confident");
-        String interrupting = unique("The door opens");
-
-        Message.message(first);
-        Message.message(interrupting);
-        Message.message(first);
-
-        assertEquals(first, bus.lastMessage().message(),
-                "only the newest entry is compared, so A,B,A leaves the second A on a count of one");
-    }
-
-    /**
-     * Interrupting a run resets it: after A, B, the next A starts counting from one again rather
-     * than resuming the earlier run's count.
-     */
-    @Test
-    void anInterruptedRunStartsCountingAgain() {
-        String repeated = unique("You are hit");
-        String interrupting = unique("You feel a draught");
-
-        Message.message(repeated);
-        Message.message(repeated);
-        assertEquals(repeated + " (x2)", bus.lastMessage().message());
-
-        Message.message(interrupting);
-
-        Message.message(repeated);
-        assertEquals(repeated, bus.lastMessage().message(), "the run was broken, so the count restarts");
-
-        Message.message(repeated);
-        assertEquals(repeated + " (x2)", bus.lastMessage().message());
-    }
-
-    /**
-     * The divergence from C, stated as a test so it cannot be "fixed" by accident: the suffix is
-     * added to the outgoing text only. Two sends of the same line therefore produce two
-     * <em>different</em> payloads, which is exactly what C would not do — and is why the stored
-     * text has to stay plain, or the count would start compounding into the log.
-     */
-    @Test
-    void theRepeatCountDecoratesTheOutgoingTextOnly() {
-        String text = unique("Your pack overflows");
-
-        Message.message(text);
-        EventDataMessage first = bus.lastMessage();
-
-        Message.message(text);
-        EventDataMessage second = bus.lastMessage();
-
-        assertNotEquals(first, second);
-        assertEquals(text, first.message());
-        assertEquals(text + " (x2)", second.message());
-
-        Message.message(text);
-        assertEquals(text + " (x3)", bus.lastMessage().message(),
-                "the count must come from the log's counter, not from re-reading the last text - "
-                        + "if the suffix were being stored, this would read '(x2) (x2)' or similar");
-    }
-
-    /**
-     * Every message goes out as {@code EVENT_MESSAGE}, whatever its type. The type distinguishes
-     * categories <em>within</em> that event; it is not a second event channel.
-     */
-    @Test
-    void everyMessageIsSignalledOnTheSameEventType() {
-        Message.message(unique("first"));
-        Message.messageType(MessageType.MSG_HIT, unique("second"));
-
-        for (GameEventType type : bus.types) {
-            assertEquals(GameEventType.EVENT_MESSAGE, type);
-        }
-    }
-
-    /**
-     * Records every dispatch so assertions can be made about the sequence, which is what the
-     * coalescing behaviour is really about.
-     *
-     * @author Rowan Crowther
-     */
-    private static final class CapturingBus implements EventsHandler {
-        private final List<GameEventType> types = new ArrayList<>();
-        private final List<GameEventData> payloads = new ArrayList<>();
-
-        @Override
-        public void eventAddHandler(GameEventType eventType, EventHandlerInterface handler) {
-        }
-
-        @Override
-        public void eventRemoveHandler(GameEventType eventType, EventHandlerInterface handler) {
-        }
-
-        @Override
-        public void eventRemoveHandlerType(GameEventType eventType) {
-        }
-
-        @Override
-        public void gameEventDispatch(GameEventType eventType, GameEventData data) {
-            types.add(eventType);
-            payloads.add(data);
-        }
-
-        private EventDataMessage lastMessage() {
-            assertInstanceOf(EventDataMessage.class, payloads.get(payloads.size() - 1));
-            return (EventDataMessage) payloads.get(payloads.size() - 1);
-        }
+        assertEquals(1, MessageLogProbe.size());
+        assertEquals(2, MessageLogProbe.count(0));
     }
 }

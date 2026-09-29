@@ -47,21 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/AllocEntry.java`
-
-0 missing, 10 low
-
-- L54: method `getIndex` - LOW
-- L61: method `setIndex` - LOW
-- L68: method `getLevel` - LOW
-- L75: method `setLevel` - LOW
-- L82: method `getProb1` - LOW
-- L89: method `setProb1` - LOW
-- L96: method `getProb2` - LOW
-- L103: method `setProb2` - LOW
-- L110: method `getProb3` - LOW
-- L117: method `setProb3` - LOW
-
 ### `middle/Message.java`
 
 1 missing, 4 low

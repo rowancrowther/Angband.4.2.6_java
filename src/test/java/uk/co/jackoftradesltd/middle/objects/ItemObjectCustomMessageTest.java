@@ -469,15 +469,17 @@ class ItemObjectCustomMessageTest {
         }
 
         /**
-         * There is no length limit. C builds the message in a 1024-byte buffer and truncates
-         * silently at it; this builds a string, so a template longer than that survives whole.
+         * C builds the message in a {@code char buf[1024]} and truncates silently at it, so at
+         * most 1023 characters go out. This builds an unbounded string, but hands it to
+         * {@code Message.messageType}, which cuts at 1023 as C's {@code msgt} buffer does, so the
+         * signalled text ends up the same as C's. The tag after the filler is cut off with the rest.
          */
         @Test
-        @DisplayName("a message longer than C's buffer is not truncated")
-        void noTruncation() {
+        @DisplayName("a message longer than C's buffer is truncated to 1023 characters")
+        void truncatedTo1023() {
             String filler = "x".repeat(2000);
 
-            assertEquals(filler + " is hot.", print(item(1), filler + " {is} hot.", false));
+            assertEquals("x".repeat(1023), print(item(1), filler + " {is} hot.", false));
         }
     }
 }

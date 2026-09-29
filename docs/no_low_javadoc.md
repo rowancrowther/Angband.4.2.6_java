@@ -47,29 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `frontend/ui/player/CharSheetConfig.java`
-
-18 missing, 0 low
-
-- L23: class `CharSheetConfig` - MISSING
-- L24: field `stat_mod_entries` - MISSING
-- L25: field `resRegions` - MISSING
-- L26: field `resistsByRegion` - MISSING
-- L27: field `nResistsByRegion` - MISSING
-- L28: field `nStatModEntries` - MISSING
-- L29: field `resCols` - MISSING
-- L30: field `resRows` - MISSING
-- L31: field `resNLabel` - MISSING
-- L33: method `getResCols` - MISSING
-- L37: method `getResRows` - MISSING
-- L41: method `getResNLabel` - MISSING
-- L45: method `setNStatModEntries` - MISSING
-- L49: method `initStatModEntries` - MISSING
-- L53: method `setStatModEntry` - MISSING
-- L59: method `setResNlabel` - MISSING
-- L63: method `setResCols` - MISSING
-- L67: method `setResRows` - MISSING
-
 ### `frontend/ui/player/CharSheetResist.java`
 
 3 missing, 0 low

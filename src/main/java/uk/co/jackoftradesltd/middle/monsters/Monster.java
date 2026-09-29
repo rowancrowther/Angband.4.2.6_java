@@ -247,7 +247,7 @@ public class Monster {
      * @return the turns remaining on that effect, or {@code 0} if the monster is not under it
      */
     public int getMonTimed(MonTimed timed) {
-        return mTimed.get(timed);
+        return mTimed.getOrDefault(timed, 0);
     }
 
     /**
@@ -260,7 +260,7 @@ public class Monster {
      * @return {@code true} if the effect was active and has now been cleared
      */
     public boolean clearTimed(MonTimed timed, Flag<MonTimedFlags> flag) {
-        if (mTimed.get(timed) == 0) {
+        if (mTimed.getOrDefault(timed, 0) == 0) {
             return false;
         }
         return setTimed(timed, 0, flag);
@@ -312,7 +312,7 @@ public class Monster {
      * @return {@code true} if the effect's value actually changed
      */
     public boolean decrementTimed(MonTimed timed, int timer, Flag<MonTimedFlags> flag) {
-        int newLevel = mTimed.get(timed) - timer;
+        int newLevel = mTimed.getOrDefault(timed, 0) - timer;
         newLevel = Math.max(0, newLevel);
 
         return setTimed(timed, newLevel, flag);
@@ -499,10 +499,30 @@ public class Monster {
         return monsterRace.hasMonsterRaceFlag(MonsterRaceFlag.RF_STUPID);
     }
 
+    /**
+     * Read the monster's current hit points.
+     *
+     * <p>Method getHp coded before 260929, commented in full on 260929.
+     *
+     * @return the current hit points, C's {@code mon->hp}; negative means dead
+     */
     public int getHp() {
         return hp;
     }
 
+    /**
+     * Write the monster's current hit points and keep the legacy cache in step. The cache write,
+     * {@code PlayerEventStatusUpdate.updatePlayerStatusMonsterHealth}, is not part of C's
+     * {@code mon->hp = ...}; it is a leftover of the shared-cache design that
+     * {@code docs/implementation/260926_change_in_architecture_from_cache_to_messages.md} is
+     * replacing. The health bar no longer reads it - {@code PlayerCalcs.redrawStuff}'s
+     * {@code PR_HEALTH} arm reads {@link #getHp()} directly - so the call goes when the cache does.
+     * The constructor calls this method, so building a monster also writes the cache.
+     *
+     * <p>Method setHp coded before 260929, commented in full on 260929.
+     *
+     * @param hp the new current hit points
+     */
     public void setHp(int hp) {
         this.hp = hp;
 
@@ -510,10 +530,27 @@ public class Monster {
         PlayerEventStatusUpdate.updatePlayerStatusMonsterHealth(this.hp);
     }
 
+    /**
+     * Read the monster's maximum hit points.
+     *
+     * <p>Method getMaxHp coded before 260929, commented in full on 260929.
+     *
+     * @return the maximum hit points, C's {@code mon->maxhp}
+     */
     public int getMaxHp() {
         return maxHp;
     }
 
+    /**
+     * Write the monster's maximum hit points and keep the legacy cache in step - the same
+     * cache-write caveat as {@link #setHp(int)}, via
+     * {@code PlayerEventStatusUpdate.updatePlayerStatusMaxMonsterHealth}. The constructor calls
+     * this method too.
+     *
+     * <p>Method setMaxHp coded before 260929, commented in full on 260929.
+     *
+     * @param maxHp the new maximum hit points
+     */
     public void setMaxHp(int maxHp) {
         this.maxHp = maxHp;
 
@@ -521,6 +558,16 @@ public class Monster {
         PlayerEventStatusUpdate.updatePlayerStatusMaxMonsterHealth(this.maxHp);
     }
 
+    /**
+     * Set one of this monster's transient status flags - the port of C's {@code mflag_on}, the
+     * counterpart of {@link #monsterFlagOff}. Setting a flag that is already set changes nothing.
+     * Setting {@code MFLAG_VISIBLE} also refreshes the legacy cache, as {@link #monsterFlagOff}
+     * does when it clears it.
+     *
+     * <p>Method monsterFlagOn coded before 260929, commented in full on 260929.
+     *
+     * @param flag the flag to set
+     */
     public void monsterFlagOn(MonsterFlag flag) {
         monsterFlag.on(flag);
 
@@ -528,10 +575,37 @@ public class Monster {
             updateCached(null);
     }
 
+    /**
+     * Push whether this monster is the one the health bar tracks into the legacy cache. Has no C
+     * counterpart: C tracks by {@code player->upkeep->health_who} pointing at the monster, which
+     * {@code PlayerUpkeep.setHealthWho} already models and also writes to the cache. Nothing calls
+     * this method today.
+     *
+     * <p>Method setMonsterTracked coded before 260929, commented in full on 260929.
+     *
+     * @param monsterTracked whether this monster is the tracked one
+     */
     public void setMonsterTracked(boolean monsterTracked) {
         updateCached(monsterTracked);
     }
 
+    /**
+     * Copy this monster's visibility, optional tracked state and seven health-bar timed effects
+     * into the legacy {@code PlayerEventStatusUpdate} cache. Has no C counterpart - C's health bar
+     * reads the live monster - and, like the cache writes in {@link #setHp(int)}, exists only until
+     * the cache-to-messages migration removes the cache.
+     *
+     * <p>Each part is skipped when its source is {@code null}, because the constructor can call
+     * this before the flag set and timed-effect map are assigned: the visibility write needs
+     * {@link #monsterFlag}, and the seven timed-effect writes need {@link #mTimed}. The tracked
+     * write is skipped when {@code monTracked} is {@code null}, which is how the flag setters ask
+     * for "leave tracking alone".
+     *
+     * <p>Method updateCached coded before 260929, commented in full on 260929.
+     *
+     * @param monTracked whether this monster is the tracked one, or {@code null} to leave that
+     *                   part of the cache untouched
+     */
     private void updateCached(Boolean monTracked) {
         if (monsterFlag != null)
             PlayerEventStatusUpdate.updatePlayerStatusMonsterVisible(monsterFlag.has(MonsterFlag.MFLAG_VISIBLE));
@@ -546,5 +620,19 @@ public class Monster {
             PlayerEventStatusUpdate.updatePlayerStatusMonTmdSleep(getMonTimed(MonTimed.MON_TMD_SLEEP) != 0);
             PlayerEventStatusUpdate.updatePlayerStatusMonTmdHold(getMonTimed(MonTimed.MON_TMD_HOLD) != 0);
         }
+    }
+
+    /**
+     * Test whether the player can currently see this monster - the port of C's
+     * {@code monster_is_visible}, a read of the transient {@code MFLAG_VISIBLE} flag.
+     * {@code PlayerCalcs.redrawStuff}'s {@code PR_HEALTH} arm uses it to fill the health bar's
+     * visibility component.
+     *
+     * <p>Method isVisible coded before 260929, commented in full on 260929.
+     *
+     * @return {@code true} if {@code MFLAG_VISIBLE} is set
+     */
+    public boolean isVisible() {
+        return monsterFlag.has(MonsterFlag.MFLAG_VISIBLE);
     }
 }

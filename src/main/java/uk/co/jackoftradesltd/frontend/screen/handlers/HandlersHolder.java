@@ -35,15 +35,16 @@ import java.util.List;
  * The Java port of C's {@code side_handlers[]} table ({@code [C] ui-display.c}) - the sidebar rows
  * that redraw themselves in response to a {@code game_event_type} flag, as opposed to the "short"
  * topbar path ({@code update_topbar}, {@code [C] ui-display.c}), which this class does not cover.
- * C's table lists roughly twenty rows; fifteen hooks are ported and registered so far -
+ * C's table lists twenty-two rows; sixteen hooks are ported and registered so far -
  * {@code prt_race}, {@code prt_title}, {@code prt_class}, {@code prt_level}, {@code prt_exp},
- * {@code prt_gold}, {@code prt_equippy}, {@code prt_ac}, {@code prt_hp}, {@code prt_sp}, and the
- * five stat rows {@code prt_str}, {@code prt_int}, {@code prt_wis}, {@code prt_dex} and
- * {@code prt_con} - so {@link #sideHandlers} today holds seventeen {@link SideHandler}s, the
- * fifteen hooks plus C's two {@code NULL}-hooked placeholder rows (priorities 15 and 21), in the
- * same order C's table lists them, with the rest joining one at a time as each hook is ported.
+ * {@code prt_gold}, {@code prt_equippy}, {@code prt_ac}, {@code prt_hp}, {@code prt_sp},
+ * {@code prt_health}, and the five stat rows {@code prt_str}, {@code prt_int}, {@code prt_wis},
+ * {@code prt_dex} and {@code prt_con} - so {@link #sideHandlers} today holds twenty
+ * {@link SideHandler}s, the sixteen hooks plus C's four {@code NULL}-hooked placeholder rows
+ * (priorities 15, 21, 20 and 22), in the same order C's table lists them. The two rows still to
+ * come are {@code prt_speed} and {@code prt_depth}.
  *
- * <p>Class HandlersHolder coded on 260927, commented in full on 260928.
+ * <p>Class HandlersHolder coded on 260927, commented in full on 260929.
  *
  * @author Rowan Crowther
  */
@@ -72,7 +73,7 @@ public class HandlersHolder {
 
     /**
      * Builds {@link #sideHandlers} - the port of C's {@code side_handlers[]} initializer
-     * ({@code [C] ui-display.c}). Seventeen rows are registered today, each at the same priority and
+     * ({@code [C] ui-display.c}). Twenty rows are registered today, each at the same priority and
      * against the same {@code game_event_type} flag C's table gives it: {@code prt_race} at
      * {@code 19} against {@code EVENT_RACE_CLASS}, {@code prt_title} at {@code 18} against
      * {@code EVENT_PLAYERTITLE}, {@code prt_class} at {@code 22} against {@code EVENT_RACE_CLASS},
@@ -82,15 +83,18 @@ public class HandlersHolder {
      * five stat rows {@code prt_str}, {@code prt_int}, {@code prt_wis}, {@code prt_dex} and
      * {@code prt_con} at {@code 6}, {@code 5}, {@code 4}, {@code 3} and {@code 2} respectively, all
      * against {@code EVENT_STATS}, {@code prt_ac} at {@code 7} against {@code EVENT_AC},
-     * {@code prt_hp} at {@code 8} against {@code EVENT_HP} and {@code prt_sp} at {@code 9} against
-     * {@code EVENT_MANA} - matching C's table order and figures exactly. Between the stat rows and
-     * {@code prt_ac}, and again after {@code prt_sp}, {@code null}-hooked entries at priorities
-     * {@code 15} and {@code 21} stand in for C's own {@code { NULL, 15, 0 }} and
-     * {@code { NULL, 21, 0 }} placeholder rows, keeping the priority numbering aligned with C's
-     * table even though nothing is drawn for them. The remaining rows join this method as their own
-     * hooks are ported.
+     * {@code prt_hp} at {@code 8} against {@code EVENT_HP}, {@code prt_sp} at {@code 9} against
+     * {@code EVENT_MANA} and {@code prt_health} at {@code 12} against {@code EVENT_MONSTERHEALTH}
+     * - matching C's table order and figures exactly. Between the stat rows and {@code prt_ac},
+     * after {@code prt_sp}, and twice after {@code prt_health}, {@code null}-hooked entries at
+     * priorities {@code 15}, {@code 21}, {@code 20} and {@code 22} stand in for C's own
+     * {@code { NULL, 15, 0 }}, {@code { NULL, 21, 0 }}, {@code { NULL, 20, 0 }} and
+     * {@code { NULL, 22, 0 }} placeholder rows, keeping the priority numbering aligned with C's
+     * table even though nothing is drawn for them (C's second priority-22 row is a genuine
+     * duplicate of {@code prt_class}'s). {@code prt_speed} and {@code prt_depth} join this method
+     * as their own hooks are ported.
      *
-     * <p>Method initHandlers coded on 260927, commented in full on 260928.
+     * <p>Method initHandlers coded on 260927, commented in full on 260929.
      */
     private static void initHandlers() {
         SideHandler handler = new SideHandler(HandlersHolder::prtRace, 19, GameEventType.EVENT_RACE_CLASS);
@@ -127,6 +131,152 @@ public class HandlersHolder {
         sideHandlers.add(handler);
         handler = new SideHandler(null, 21, null);
         sideHandlers.add(handler);
+        handler = new SideHandler(HandlersHolder::prtHealth, 12, GameEventType.EVENT_MONSTERHEALTH);
+        sideHandlers.add(handler);
+        handler = new SideHandler(null, 20, null);
+        sideHandlers.add(handler);
+        handler = new SideHandler(null, 22, null);
+        sideHandlers.add(handler);
+    }
+
+    /**
+     * Draws the sidebar's monster health bar - the port of C's {@code prt_health}
+     * ({@code [C] ui-display.c}), which does nothing but call {@code prt_health_aux}. The split
+     * exists in C because {@code prt_health_short}, the topbar's version, calls the same helper
+     * and wants its returned width; this sidebar hook discards it, and so does the port.
+     *
+     * <p>Method prtHealth coded before 260929, commented in full on 260929.
+     *
+     * @param row the row to draw at
+     * @param col the column to draw at
+     */
+    private static void prtHealth(int row, int col) {
+        prtHealthAux(row, col);
+    }
+
+    /**
+     * Draws the monster health bar and reports how many columns it used - the port of C's
+     * {@code prt_health_aux} ({@code [C] ui-display.c}).
+     *
+     * <p>Three outcomes, tested in C's order. With no monster tracked
+     * ({@link SidebarModel#monExists()} {@code false}) twelve cells are erased and {@code 0} is
+     * returned. With a monster that is unseen, dead (negative hit points) or drawn while the
+     * player is hallucinating, the unknown bar {@code "[----------]"} is written in the colour
+     * {@link #monsterHealthAttr()} gives (white, in all three cases). Otherwise the percentage is
+     * {@code 100 * hp / maxhp} in {@code long} arithmetic then truncated, as C's {@code 100L}
+     * does, and turned into a star count: one star below 10 per cent, {@code pct / 10 + 1} below
+     * 90, ten from 90 up - so a monster at 89 per cent shows nine stars and one at 90 shows ten.
+     * The unknown bar is drawn first in white, then the stars over it from {@code col + 1}, so the
+     * unfilled part stays white whatever colour the stars are.
+     *
+     * <p>The values come from {@link SidebarModel} rather than off the monster, so they are as
+     * current as the last {@code EVENT_MONSTERHEALTH} signal. A tracked monster with a maximum of
+     * zero would divide by zero, exactly as in C; the core sends {@code 0} only when nothing is
+     * tracked, which returns first.
+     *
+     * <p>Function prtHealthAux coded on 260915, commented in full on 260929.
+     *
+     * @param row the row to draw at
+     * @param col the column to draw at
+     * @return {@code 12}, the width of the bar, or {@code 0} when nothing is tracked and the field
+     * was erased
+     */
+    private static int prtHealthAux(int row, int col) {
+        ColourEnum attr = monsterHealthAttr();
+
+        if (!SidebarModel.monExists()) {
+            term.termErase(col, row, 12);
+            return 0;
+        }
+
+        if (!SidebarModel.isMonVisible() // unseen
+                || SidebarModel.isPlayerTmdImage() // hallucinating
+                || SidebarModel.getMonHealth() < 0) { // Dead
+            term.putstr(col, row, 12, attr, "[----------]");
+        } else {
+            // Calculate the percentage
+            int percent = (int) (100L * SidebarModel.getMonHealth() / SidebarModel.getMonMaxHealth());
+
+            // Convert percent to health
+            int len = (percent < 10) ? 1 : (percent < 90) ? (percent / 10 + 1) : 10;
+
+            // Default to unknown
+            term.putstr(col, row, 12, ColourEnum.COLOUR_WHITE, "[----------]");
+
+            // dump the current health using '*' symbols
+            term.putstr(col + 1, row, len, attr, "**********");
+        }
+
+        return 12;
+    }
+
+    /**
+     * Picks the colour of the monster health bar - the port of C's {@code monster_health_attr}
+     * ({@code [C] ui-display.c}), which C splits out "for ports".
+     *
+     * <p>Dark when nothing is tracked; white when the monster is unseen, dead or the player is
+     * hallucinating. Otherwise the colour starts from the health percentage - red below 10 per
+     * cent, light red from 10, orange from 25, yellow from 60, light green at 100 - and is then
+     * overridden by each timed effect in C's order, so a later one wins over an earlier one:
+     * fear (violet), disenchantment (light umber), command (light purple), confusion (umber),
+     * stun (light blue), then sleep and hold (both blue). A monster that is both afraid and
+     * asleep is therefore blue.
+     *
+     * <p>Every input is read from {@link SidebarModel}; C's {@code mon->m_timed[x]} non-zero
+     * tests arrive as booleans, and {@code player->timed[TMD_IMAGE]} as
+     * {@link SidebarModel#isPlayerTmdImage()}.
+     *
+     * <p>Function monsterHealthAttr coded on 260915, commented in full on 260929.
+     *
+     * @return the colour to draw the health bar in
+     */
+    private static ColourEnum monsterHealthAttr() {
+        ColourEnum attr;
+
+        if (!SidebarModel.monExists())
+            return ColourEnum.COLOUR_DARK;
+
+        if (!SidebarModel.isMonVisible() || SidebarModel.getMonHealth() < 0 || SidebarModel.isPlayerTmdImage())
+            return ColourEnum.COLOUR_WHITE;
+
+        int percent = (int) (100L * SidebarModel.getMonHealth() / SidebarModel.getMonMaxHealth());
+        // Default to almost dead
+        attr = ColourEnum.COLOUR_RED;
+
+        // Badly wounded
+        if (percent >= 10) attr = ColourEnum.COLOUR_LIGHT_RED;
+
+        // Wounded
+        if (percent >= 25) attr = ColourEnum.COLOUR_ORANGE;
+
+        // Somewhat wounded
+        if (percent >= 60) attr = ColourEnum.COLOUR_YELLOW;
+
+        // Healthy
+        if (percent >= 100) attr = ColourEnum.COLOUR_LIGHT_GREEN;
+
+        // Afraid
+        if (SidebarModel.isMonFeared()) attr = ColourEnum.COLOUR_VIOLET;
+
+        // Disenchanted
+        if (SidebarModel.isMonDisen()) attr = ColourEnum.COLOUR_LIGHT_UMBER;
+
+        // Commanded
+        if (SidebarModel.isMonCommand()) attr = ColourEnum.COLOUR_LIGHT_PURPLE;
+
+        // Confused
+        if (SidebarModel.isMonConf()) attr = ColourEnum.COLOUR_UMBER;
+
+        // Stunned
+        if (SidebarModel.isMonStunned()) attr = ColourEnum.COLOUR_LIGHT_BLUE;
+
+        // Asleep
+        if (SidebarModel.isMonSlept()) attr = ColourEnum.COLOUR_BLUE;
+
+        // Held
+        if (SidebarModel.isMonHeld()) attr = ColourEnum.COLOUR_BLUE;
+
+        return attr;
     }
 
     /**

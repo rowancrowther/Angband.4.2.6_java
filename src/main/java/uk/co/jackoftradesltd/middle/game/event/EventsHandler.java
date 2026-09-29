@@ -484,4 +484,46 @@ public interface EventsHandler {
     default void eventSignalInt(GameEventType eventType, int value) {
         gameEventDispatch(eventType, new EventDataInt(value));
     }
+
+    /**
+     * Send a signal to dispatch all events of a given type with the tracked monster's health-bar
+     * state - the sibling of {@link #eventSignalStat} for a redraw that needs a dozen values at
+     * once. Used today only for {@code EVENT_MONSTERHEALTH}, sent by
+     * {@code PlayerCalcs.redrawStuff}'s {@code PR_HEALTH} arm.
+     *
+     * <p>There is no {@code event_signal_*} counterpart for this shape in C: C's
+     * {@code prt_health_aux} and {@code monster_health_attr} ({@code [C] ui-display.c}) read
+     * {@code player->upkeep->health_who} and the monster behind it directly, and C's
+     * {@code redraw_events} table ({@code player-calcs.c}) fires {@code EVENT_MONSTERHEALTH} as a
+     * bare signal. A handler on the far side of the boundary has no such pointer to follow, so the
+     * values travel with the signal - see {@link EventDataMonsterInfo}'s Javadoc for the full
+     * rationale.
+     *
+     * <p>Function eventSignalMonInfo coded on 260929, commented in full on 260929.
+     *
+     * @param eventType   The event type we are signalling
+     * @param monHP       the tracked monster's current hit points; becomes
+     *                    {@link EventDataMonsterInfo#monHP()}
+     * @param monMaxHP    the tracked monster's maximum hit points; becomes
+     *                    {@link EventDataMonsterInfo#monMaxHP()}
+     * @param exists      whether a monster is being tracked; becomes
+     *                    {@link EventDataMonsterInfo#monsterExists()}
+     * @param visible     whether the player can see it; becomes
+     *                    {@link EventDataMonsterInfo#monsterVisible()}
+     * @param fear        whether it is afraid; becomes {@link EventDataMonsterInfo#feared()}
+     * @param disen       whether it is disenchanted; becomes {@link EventDataMonsterInfo#disen()}
+     * @param comm        whether it is commanded; becomes {@link EventDataMonsterInfo#command()}
+     * @param conf        whether it is confused; becomes {@link EventDataMonsterInfo#conf()}
+     * @param stun        whether it is stunned; becomes {@link EventDataMonsterInfo#stuned()}
+     * @param slept       whether it is asleep; becomes {@link EventDataMonsterInfo#slept()}
+     * @param held        whether it is held; becomes {@link EventDataMonsterInfo#held()}
+     * @param playerImage whether the player is hallucinating; becomes
+     *                    {@link EventDataMonsterInfo#playerTmdImage()}
+     */
+    default void eventSignalMonInfo(GameEventType eventType, int monHP, int monMaxHP, boolean exists,
+                                    boolean visible, boolean fear, boolean disen, boolean comm, boolean conf,
+                                    boolean stun, boolean slept, boolean held, boolean playerImage) {
+        gameEventDispatch(eventType, new EventDataMonsterInfo(monHP, monMaxHP, exists, visible, fear, disen, comm,
+                conf, stun, slept, held, playerImage));
+    }
 }

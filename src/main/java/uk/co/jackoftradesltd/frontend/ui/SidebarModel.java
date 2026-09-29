@@ -41,13 +41,15 @@ import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
  * hit-point warning option, whether the class has spells and its first-spell level, the player's
  * level and maximum level, title, race name, class name, full name, wizard and total-winner flags,
  * shape name and shapechanged status, current and displayed experience, gold, armour class, and the
- * five stats' current/maximum/displayed-use values; the rest of C's {@code prt_*} family in
+ * five stats' current/maximum/displayed-use values, and the tracked monster's
+ * health-bar state (hit points, visibility, seven timed-effect flags, and whether the player is
+ * hallucinating); the rest of C's {@code prt_*} family in
  * {@code [C] ui-display.c} join it as their own {@code EVENT_*} payloads are ported.
  *
  * <p>The setters are package-private and the getters public, so only a class in this package —
  * today, only {@link RedrawRouter} — can write, while any caller may read.
  *
- * <p>Class SidebarModel coded on 260926, commented in full on 260928.
+ * <p>Class SidebarModel coded on 260926, commented in full on 260929.
  *
  * @author Rowan Crowther
  */
@@ -307,6 +309,436 @@ public class SidebarModel {
      * <p>Field firstSpell coded on 260928, commented in full on 260928.
      */
     private static int firstSpell;
+
+    /**
+     * The tracked monster's current hit points, C's {@code mon->hp},
+     * written each time an {@code EVENT_MONSTERHEALTH} message is routed and read whenever the sidebar's monster health bar is drawn. Only
+     * meaningful while {@link #monExists} is {@code true}.
+     *
+     * <p>Field monHealth coded on 260929, commented in full on 260929.
+     */
+    private static int monHealth;
+
+    /**
+     * The tracked monster's maximum hit points, C's {@code mon->maxhp},
+     * written each time an {@code EVENT_MONSTERHEALTH} message is routed and read whenever the sidebar's monster health bar is drawn. Only
+     * meaningful while {@link #monExists} is {@code true}.
+     *
+     * <p>Field monMaxHealth coded on 260929, commented in full on 260929.
+     */
+    private static int monMaxHealth;
+
+    /**
+     * Whether a monster is being tracked at all, C's {@code player->upkeep->health_who != NULL},
+     * written each time an {@code EVENT_MONSTERHEALTH} message is routed and read whenever the sidebar's monster health bar is drawn.
+     *
+     * <p>Field monExists coded on 260929, commented in full on 260929.
+     */
+    private static boolean monExists;
+
+    /**
+     * Whether the player can see the tracked monster, C's {@code monster_is_visible(mon)},
+     * written each time an {@code EVENT_MONSTERHEALTH} message is routed and read whenever the sidebar's monster health bar is drawn. Only
+     * meaningful while {@link #monExists} is {@code true}.
+     *
+     * <p>Field monVisible coded on 260929, commented in full on 260929.
+     */
+    private static boolean monVisible;
+
+    /**
+     * Whether the tracked monster is afraid, C's {@code mon->m_timed[MON_TMD_FEAR] != 0},
+     * written each time an {@code EVENT_MONSTERHEALTH} message is routed and read whenever the sidebar's monster health bar is drawn. Only
+     * meaningful while {@link #monExists} is {@code true}.
+     *
+     * <p>Field monFeared coded on 260929, commented in full on 260929.
+     */
+    private static boolean monFeared;
+
+    /**
+     * Whether the tracked monster is disenchanted, C's {@code mon->m_timed[MON_TMD_DISEN] != 0},
+     * written each time an {@code EVENT_MONSTERHEALTH} message is routed and read whenever the sidebar's monster health bar is drawn. Only
+     * meaningful while {@link #monExists} is {@code true}.
+     *
+     * <p>Field monDisen coded on 260929, commented in full on 260929.
+     */
+    private static boolean monDisen;
+
+    /**
+     * Whether the tracked monster is commanded, C's {@code mon->m_timed[MON_TMD_COMMAND] != 0},
+     * written each time an {@code EVENT_MONSTERHEALTH} message is routed and read whenever the sidebar's monster health bar is drawn. Only
+     * meaningful while {@link #monExists} is {@code true}.
+     *
+     * <p>Field monCommand coded on 260929, commented in full on 260929.
+     */
+    private static boolean monCommand;
+
+    /**
+     * Whether the tracked monster is confused, C's {@code mon->m_timed[MON_TMD_CONF] != 0},
+     * written each time an {@code EVENT_MONSTERHEALTH} message is routed and read whenever the sidebar's monster health bar is drawn. Only
+     * meaningful while {@link #monExists} is {@code true}.
+     *
+     * <p>Field monConf coded on 260929, commented in full on 260929.
+     */
+    private static boolean monConf;
+
+    /**
+     * Whether the tracked monster is stunned, C's {@code mon->m_timed[MON_TMD_STUN] != 0},
+     * written each time an {@code EVENT_MONSTERHEALTH} message is routed and read whenever the sidebar's monster health bar is drawn. Only
+     * meaningful while {@link #monExists} is {@code true}.
+     *
+     * <p>Field monStun coded on 260929, commented in full on 260929.
+     */
+    private static boolean monStun;
+
+    /**
+     * Whether the tracked monster is asleep, C's {@code mon->m_timed[MON_TMD_SLEEP] != 0},
+     * written each time an {@code EVENT_MONSTERHEALTH} message is routed and read whenever the sidebar's monster health bar is drawn. Only
+     * meaningful while {@link #monExists} is {@code true}.
+     *
+     * <p>Field monSlept coded on 260929, commented in full on 260929.
+     */
+    private static boolean monSlept;
+
+    /**
+     * Whether the tracked monster is held, C's {@code mon->m_timed[MON_TMD_HOLD] != 0},
+     * written each time an {@code EVENT_MONSTERHEALTH} message is routed and read whenever the sidebar's monster health bar is drawn. Only
+     * meaningful while {@link #monExists} is {@code true}.
+     *
+     * <p>Field monHeld coded on 260929, commented in full on 260929.
+     */
+    private static boolean monHeld;
+
+    /**
+     * Whether the player is hallucinating, C's {@code player->timed[TMD_IMAGE] != 0},
+     * written each time an {@code EVENT_MONSTERHEALTH} message is routed and read whenever the sidebar's monster health bar is drawn.
+     *
+     * <p>Field playerTmdImage coded on 260929, commented in full on 260929.
+     */
+    private static boolean playerTmdImage;
+
+    /**
+     * Read whether the player is hallucinating last written by {@link #setPlayerTmdImage(boolean)}, for the sidebar's monster health
+     * bar - {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder}'s port of C's
+     * {@code prt_health_aux}/{@code monster_health_attr} ({@code [C] ui-display.c}) is today's
+     * only reader.
+     *
+     * <p>Method isPlayerTmdImage coded on 260929, commented in full on 260929.
+     *
+     * @return {@code true} when the player is hallucinating, C's {@code player->timed[TMD_IMAGE] != 0}
+     */
+    public static boolean isPlayerTmdImage() {
+        return playerTmdImage;
+    }
+
+    /**
+     * Write whether the player is hallucinating. Package-private, so only
+     * {@link RedrawRouter#setMonsterHealth} - the only class in this package today - can write
+     * the model directly.
+     *
+     * <p>Method setPlayerTmdImage coded on 260929, commented in full on 260929.
+     *
+     * @param playerTmdImage whether the player is hallucinating, C's {@code player->timed[TMD_IMAGE] != 0}
+     */
+    static void setPlayerTmdImage(boolean playerTmdImage) {
+        SidebarModel.playerTmdImage = playerTmdImage;
+    }
+
+    /**
+     * Read whether the tracked monster is held last written by {@link #setMonHeld(boolean)}, for the sidebar's monster health
+     * bar - {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder}'s port of C's
+     * {@code prt_health_aux}/{@code monster_health_attr} ({@code [C] ui-display.c}) is today's
+     * only reader.
+     *
+     * <p>Method isMonHeld coded on 260929, commented in full on 260929.
+     *
+     * @return {@code true} when the tracked monster is held, C's {@code m_timed[MON_TMD_HOLD] != 0}
+     */
+    public static boolean isMonHeld() {
+        return monHeld;
+    }
+
+    /**
+     * Write whether the tracked monster is held. Package-private, so only
+     * {@link RedrawRouter#setMonsterHealth} - the only class in this package today - can write
+     * the model directly.
+     *
+     * <p>Method setMonHeld coded on 260929, commented in full on 260929.
+     *
+     * @param monHeld whether the tracked monster is held, C's {@code m_timed[MON_TMD_HOLD] != 0}
+     */
+    static void setMonHeld(boolean monHeld) {
+        SidebarModel.monHeld = monHeld;
+    }
+
+    /**
+     * Read whether the tracked monster is asleep last written by {@link #setMonSlept(boolean)}, for the sidebar's monster health
+     * bar - {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder}'s port of C's
+     * {@code prt_health_aux}/{@code monster_health_attr} ({@code [C] ui-display.c}) is today's
+     * only reader.
+     *
+     * <p>Method isMonSlept coded on 260929, commented in full on 260929.
+     *
+     * @return {@code true} when the tracked monster is asleep, C's {@code m_timed[MON_TMD_SLEEP] != 0}
+     */
+    public static boolean isMonSlept() {
+        return monSlept;
+    }
+
+    /**
+     * Write whether the tracked monster is asleep. Package-private, so only
+     * {@link RedrawRouter#setMonsterHealth} - the only class in this package today - can write
+     * the model directly.
+     *
+     * <p>Method setMonSlept coded on 260929, commented in full on 260929.
+     *
+     * @param monSlept whether the tracked monster is asleep, C's {@code m_timed[MON_TMD_SLEEP] != 0}
+     */
+    static void setMonSlept(boolean monSlept) {
+        SidebarModel.monSlept = monSlept;
+    }
+
+    /**
+     * Read whether the tracked monster is stunned last written by {@link #setMonStunned(boolean)}, for the sidebar's monster health
+     * bar - {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder}'s port of C's
+     * {@code prt_health_aux}/{@code monster_health_attr} ({@code [C] ui-display.c}) is today's
+     * only reader.
+     *
+     * <p>Method isMonStunned coded on 260929, commented in full on 260929.
+     *
+     * @return {@code true} when the tracked monster is stunned, C's {@code m_timed[MON_TMD_STUN] != 0}
+     */
+    public static boolean isMonStunned() {
+        return monStun;
+    }
+
+    /**
+     * Write whether the tracked monster is stunned. Package-private, so only
+     * {@link RedrawRouter#setMonsterHealth} - the only class in this package today - can write
+     * the model directly.
+     *
+     * <p>Method setMonStunned coded on 260929, commented in full on 260929.
+     *
+     * @param monStunned whether the tracked monster is stunned, C's {@code m_timed[MON_TMD_STUN] != 0}
+     */
+    static void setMonStunned(boolean monStunned) {
+        SidebarModel.monStun = monStunned;
+    }
+
+    /**
+     * Read whether the tracked monster is confused last written by {@link #setMonConf(boolean)}, for the sidebar's monster health
+     * bar - {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder}'s port of C's
+     * {@code prt_health_aux}/{@code monster_health_attr} ({@code [C] ui-display.c}) is today's
+     * only reader.
+     *
+     * <p>Method isMonConf coded on 260929, commented in full on 260929.
+     *
+     * @return {@code true} when the tracked monster is confused, C's {@code m_timed[MON_TMD_CONF] != 0}
+     */
+    public static boolean isMonConf() {
+        return monConf;
+    }
+
+    /**
+     * Write whether the tracked monster is confused. Package-private, so only
+     * {@link RedrawRouter#setMonsterHealth} - the only class in this package today - can write
+     * the model directly.
+     *
+     * <p>Method setMonConf coded on 260929, commented in full on 260929.
+     *
+     * @param monConf whether the tracked monster is confused, C's {@code m_timed[MON_TMD_CONF] != 0}
+     */
+    static void setMonConf(boolean monConf) {
+        SidebarModel.monConf = monConf;
+    }
+
+    /**
+     * Read whether the tracked monster is commanded last written by {@link #setMonCommand(boolean)}, for the sidebar's monster health
+     * bar - {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder}'s port of C's
+     * {@code prt_health_aux}/{@code monster_health_attr} ({@code [C] ui-display.c}) is today's
+     * only reader.
+     *
+     * <p>Method isMonCommand coded on 260929, commented in full on 260929.
+     *
+     * @return {@code true} when the tracked monster is commanded, C's {@code m_timed[MON_TMD_COMMAND] != 0}
+     */
+    public static boolean isMonCommand() {
+        return monCommand;
+    }
+
+    /**
+     * Write whether the tracked monster is commanded. Package-private, so only
+     * {@link RedrawRouter#setMonsterHealth} - the only class in this package today - can write
+     * the model directly.
+     *
+     * <p>Method setMonCommand coded on 260929, commented in full on 260929.
+     *
+     * @param monCommand whether the tracked monster is commanded, C's {@code m_timed[MON_TMD_COMMAND] != 0}
+     */
+    static void setMonCommand(boolean monCommand) {
+        SidebarModel.monCommand = monCommand;
+    }
+
+    /**
+     * Read whether the tracked monster is disenchanted last written by {@link #setMonDisen(boolean)}, for the sidebar's monster health
+     * bar - {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder}'s port of C's
+     * {@code prt_health_aux}/{@code monster_health_attr} ({@code [C] ui-display.c}) is today's
+     * only reader.
+     *
+     * <p>Method isMonDisen coded on 260929, commented in full on 260929.
+     *
+     * @return {@code true} when the tracked monster is disenchanted, C's {@code m_timed[MON_TMD_DISEN] != 0}
+     */
+    public static boolean isMonDisen() {
+        return monDisen;
+    }
+
+    /**
+     * Write whether the tracked monster is disenchanted. Package-private, so only
+     * {@link RedrawRouter#setMonsterHealth} - the only class in this package today - can write
+     * the model directly.
+     *
+     * <p>Method setMonDisen coded on 260929, commented in full on 260929.
+     *
+     * @param monDisen whether the tracked monster is disenchanted, C's {@code m_timed[MON_TMD_DISEN] != 0}
+     */
+    static void setMonDisen(boolean monDisen) {
+        SidebarModel.monDisen = monDisen;
+    }
+
+    /**
+     * Read whether the tracked monster is afraid last written by {@link #setMonFeared(boolean)}, for the sidebar's monster health
+     * bar - {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder}'s port of C's
+     * {@code prt_health_aux}/{@code monster_health_attr} ({@code [C] ui-display.c}) is today's
+     * only reader.
+     *
+     * <p>Method isMonFeared coded on 260929, commented in full on 260929.
+     *
+     * @return {@code true} when the tracked monster is afraid, C's {@code m_timed[MON_TMD_FEAR] != 0}
+     */
+    public static boolean isMonFeared() {
+        return monFeared;
+    }
+
+    /**
+     * Write whether the tracked monster is afraid. Package-private, so only
+     * {@link RedrawRouter#setMonsterHealth} - the only class in this package today - can write
+     * the model directly.
+     *
+     * <p>Method setMonFeared coded on 260929, commented in full on 260929.
+     *
+     * @param monFeared whether the tracked monster is afraid, C's {@code m_timed[MON_TMD_FEAR] != 0}
+     */
+    static void setMonFeared(boolean monFeared) {
+        SidebarModel.monFeared = monFeared;
+    }
+
+    /**
+     * Read whether the player can see the tracked monster last written by {@link #setMonVisible(boolean)}, for the sidebar's monster health
+     * bar - {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder}'s port of C's
+     * {@code prt_health_aux}/{@code monster_health_attr} ({@code [C] ui-display.c}) is today's
+     * only reader.
+     *
+     * <p>Method isMonVisible coded on 260929, commented in full on 260929.
+     *
+     * @return {@code true} when the player can see the tracked monster, C's {@code monster_is_visible(mon)}
+     */
+    public static boolean isMonVisible() {
+        return monVisible;
+    }
+
+    /**
+     * Write whether the player can see the tracked monster. Package-private, so only
+     * {@link RedrawRouter#setMonsterHealth} - the only class in this package today - can write
+     * the model directly.
+     *
+     * <p>Method setMonVisible coded on 260929, commented in full on 260929.
+     *
+     * @param monVisible whether the player can see the tracked monster, C's {@code monster_is_visible(mon)}
+     */
+    static void setMonVisible(boolean monVisible) {
+        SidebarModel.monVisible = monVisible;
+    }
+
+    /**
+     * Read whether a monster is being tracked last written by {@link #setMonExists(boolean)}, for the sidebar's monster health
+     * bar - {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder}'s port of C's
+     * {@code prt_health_aux}/{@code monster_health_attr} ({@code [C] ui-display.c}) is today's
+     * only reader.
+     *
+     * <p>Method monExists coded on 260929, commented in full on 260929.
+     *
+     * @return {@code true} when a monster is being tracked, C's {@code player->upkeep->health_who != NULL}
+     */
+    public static boolean monExists() {
+        return monExists;
+    }
+
+    /**
+     * Write whether a monster is being tracked. Package-private, so only
+     * {@link RedrawRouter#setMonsterHealth} - the only class in this package today - can write
+     * the model directly.
+     *
+     * <p>Method setMonExists coded on 260929, commented in full on 260929.
+     *
+     * @param monExists whether a monster is being tracked, C's {@code player->upkeep->health_who != NULL}
+     */
+    static void setMonExists(boolean monExists) {
+        SidebarModel.monExists = monExists;
+    }
+
+    /**
+     * Read the tracked monster's maximum hit points last written by {@link #setMonMaxHealth(int)}, for the sidebar's monster health
+     * bar - {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder}'s port of C's
+     * {@code prt_health_aux}/{@code monster_health_attr} ({@code [C] ui-display.c}) is today's
+     * only reader.
+     *
+     * <p>Method getMonMaxHealth coded on 260929, commented in full on 260929.
+     *
+     * @return the tracked monster's maximum hit points, C's {@code mon->maxhp}
+     */
+    public static int getMonMaxHealth() {
+        return monMaxHealth;
+    }
+
+    /**
+     * Write the tracked monster's maximum hit points. Package-private, so only
+     * {@link RedrawRouter#setMonsterHealth} - the only class in this package today - can write
+     * the model directly.
+     *
+     * <p>Method setMonMaxHealth coded on 260929, commented in full on 260929.
+     *
+     * @param monMaxHealth the tracked monster's maximum hit points, C's {@code mon->maxhp}
+     */
+    static void setMonMaxHealth(int monMaxHealth) {
+        SidebarModel.monMaxHealth = monMaxHealth;
+    }
+
+    /**
+     * Read the tracked monster's current hit points last written by {@link #setMonHealth(int)}, for the sidebar's monster health
+     * bar - {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder}'s port of C's
+     * {@code prt_health_aux}/{@code monster_health_attr} ({@code [C] ui-display.c}) is today's
+     * only reader.
+     *
+     * <p>Method getMonHealth coded on 260929, commented in full on 260929.
+     *
+     * @return the tracked monster's current hit points, C's {@code mon->hp}
+     */
+    public static int getMonHealth() {
+        return monHealth;
+    }
+
+    /**
+     * Write the tracked monster's current hit points. Package-private, so only
+     * {@link RedrawRouter#setMonsterHealth} - the only class in this package today - can write
+     * the model directly.
+     *
+     * <p>Method setMonHealth coded on 260929, commented in full on 260929.
+     *
+     * @param monHealth the tracked monster's current hit points, C's {@code mon->hp}
+     */
+    static void setMonHealth(int monHealth) {
+        SidebarModel.monHealth = monHealth;
+    }
 
     /**
      * Read the first-spell level last written by {@link #setFirstSpell(int)}, for the sidebar's SP

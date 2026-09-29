@@ -430,7 +430,7 @@ class HandlersHolderTest {
         field.setAccessible(true);
         List<SideHandler> handlers = (List<SideHandler>) field.get(null);
 
-        assertEquals(17, handlers.size());
+        assertEquals(20, handlers.size());
 
         assertEquals(19, handlers.get(0).getPriority());
         assertEquals(GameEventType.EVENT_RACE_CLASS, handlers.get(0).getType());
@@ -483,6 +483,16 @@ class HandlersHolderTest {
 
         assertEquals(21, handlers.get(16).getPriority());
         assertEquals(null, handlers.get(16).getType());
+
+        // C: { prt_health, 12, EVENT_MONSTERHEALTH }, { NULL, 20, 0 }, { NULL, 22, 0 }
+        assertEquals(12, handlers.get(17).getPriority());
+        assertEquals(GameEventType.EVENT_MONSTERHEALTH, handlers.get(17).getType());
+
+        assertEquals(20, handlers.get(18).getPriority());
+        assertEquals(null, handlers.get(18).getType());
+
+        assertEquals(22, handlers.get(19).getPriority());
+        assertEquals(null, handlers.get(19).getType());
 
         setShapechangedMethod().invoke(null, false);
         setRaceNameMethod().invoke(null, "Dwarf");

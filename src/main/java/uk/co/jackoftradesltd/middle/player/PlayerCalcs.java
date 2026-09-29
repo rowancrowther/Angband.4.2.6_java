@@ -38,6 +38,7 @@ import uk.co.jackoftradesltd.middle.game.globals.registry.StatTables;
 import uk.co.jackoftradesltd.middle.gameinput.GameInputHolder;
 import uk.co.jackoftradesltd.middle.magic.MagicRealm;
 import uk.co.jackoftradesltd.middle.monsters.MonsterUtils;
+import uk.co.jackoftradesltd.middle.monsters.enums.MonTimed;
 import uk.co.jackoftradesltd.middle.objects.*;
 import uk.co.jackoftradesltd.middle.objects.enums.*;
 import uk.co.jackoftradesltd.middle.player.enums.*;
@@ -900,6 +901,13 @@ public class PlayerCalcs {
      * {@link Player#getKnownState()} — C's {@code prt_ac} ({@code [C] ui-display.c}) reads
      * {@code player->known_state.ac}/{@code to_a} directly instead of receiving the sum as an
      * argument.
+     * {@code PR_HEALTH} calls {@code eventSignalMonInfo} once, packing what C's
+     * {@code prt_health_aux} and {@code monster_health_attr} ({@code [C] ui-display.c}) read off
+     * {@code player->upkeep->health_who} at draw time: whether a monster is tracked
+     * ({@link PlayerUpkeep#healthWho()}), and if so its hit points, maximum hit points, visibility
+     * and the seven timed effects the bar colours by, each reduced to "is the timer non-zero".
+     * The player's {@code TMD_IMAGE} (hallucination) is read whether or not a monster is tracked;
+     * every monster-derived component is a placeholder ({@code 0}/{@code false}) when none is.
      * The map is handled separately again, because it also carries data:
      * {@code EVENT_MAP} with the point {@code (-1, -1)}, C's sentinel for "the whole map, not one
      * grid". A last {@code EVENT_END} tells the display the batch is complete and it may now do
@@ -1025,6 +1033,48 @@ public class PlayerCalcs {
                 case PR_ARMOR -> {
                     int ac = player.getKnownState().getBaseAc() + player.getKnownState().getToAc();
                     GameEngine.getEventsBusHandler().eventSignalInt(GameEventType.EVENT_AC, ac);
+                }
+                case PR_HEALTH -> {
+                    boolean monsterExists = player.getPlayerUpkeep().healthWho();
+                    boolean monsterVisible;
+                    int monsterHp;
+                    boolean tmdImage;
+                    int monMaxHP;
+                    boolean feared;
+                    boolean disen;
+                    boolean command;
+                    boolean conf;
+                    boolean stunned;
+                    boolean slept;
+                    boolean held;
+                    if (monsterExists) {
+                        monsterVisible = player.getPlayerUpkeep().getHealthWho().isVisible();
+                        monsterHp = player.getPlayerUpkeep().getHealthWho().getHp();
+                        tmdImage = player.getTimedEffect(TimedEffect.TMD_IMAGE) != 0;
+                        monMaxHP = player.getPlayerUpkeep().getHealthWho().getMaxHp();
+                        feared = player.getPlayerUpkeep().getHealthWho().getMonTimed(MonTimed.MON_TMD_FEAR) != 0;
+                        disen = player.getPlayerUpkeep().getHealthWho().getMonTimed(MonTimed.MON_TMD_DISEN) != 0;
+                        command = player.getPlayerUpkeep().getHealthWho().getMonTimed(MonTimed.MON_TMD_COMMAND) != 0;
+                        conf = player.getPlayerUpkeep().getHealthWho().getMonTimed(MonTimed.MON_TMD_CONF) != 0;
+                        stunned = player.getPlayerUpkeep().getHealthWho().getMonTimed(MonTimed.MON_TMD_STUN) != 0;
+                        slept = player.getPlayerUpkeep().getHealthWho().getMonTimed(MonTimed.MON_TMD_SLEEP) != 0;
+                        held = player.getPlayerUpkeep().getHealthWho().getMonTimed(MonTimed.MON_TMD_HOLD) != 0;
+                    } else {
+                        monsterVisible = false;
+                        monsterHp = 0;
+                        tmdImage = player.getTimedEffect(TimedEffect.TMD_IMAGE) != 0;
+                        monMaxHP = 0;
+                        feared = false;
+                        disen = false;
+                        command = false;
+                        conf = false;
+                        stunned = false;
+                        slept = false;
+                        held = false;
+                    }
+                    GameEngine.getEventsBusHandler().eventSignalMonInfo(GameEventType.EVENT_MONSTERHEALTH,
+                            monsterHp, monMaxHP, monsterExists, monsterVisible, feared, disen, command, conf, stunned,
+                            slept, held, tmdImage);
                 }
                 default -> GameEngine.getEventsBusHandler().eventSignal(playerRedraw.getEventType());
             }

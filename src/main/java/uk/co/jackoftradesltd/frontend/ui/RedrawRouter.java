@@ -300,4 +300,44 @@ public class RedrawRouter {
             SidebarModel.setAc(ac);
         }
     }
+
+    /**
+     * Unpacks an {@code EVENT_MONSTERHEALTH} payload and writes its twelve parts into
+     * {@link SidebarModel}, C's {@code prt_health_aux} and {@code monster_health_attr}
+     * ({@code [C] ui-display.c}) reading {@code player->upkeep->health_who}, the monster it points
+     * at, and {@code player->timed[TMD_IMAGE]} directly by comparison. Guarded on the payload
+     * shape, the same way {@link #setGold} is guarded.
+     *
+     * <p>Unlike {@link #setHP} and its siblings this is one dispatch carrying everything, sent by
+     * {@code PlayerCalcs.redrawStuff}'s {@code PR_HEALTH} arm. When no monster is tracked the
+     * payload's {@code monsterExists} is {@code false} and the health, maximum and monster-status
+     * components are placeholders; they are still written, and it is
+     * {@code HandlersHolder.prtHealth}'s job to ignore them.
+     *
+     * <p>Method setMonsterHealth coded on 260929, commented in full on 260929.
+     *
+     * @param data the routed payload; must be an {@link EventDataMonsterInfo} or nothing is
+     *             written
+     */
+    public static void setMonsterHealth(GameEventData data) {
+        if (data instanceof EventDataMonsterInfo(
+                int monsterHealth, int monMaxHealth, boolean monExists,
+                boolean monVisible, boolean feared, boolean disen, boolean command,
+                boolean conf, boolean stunned, boolean slept, boolean held,
+                boolean playerTmdImage
+        )) {
+            SidebarModel.setMonHealth(monsterHealth);
+            SidebarModel.setMonMaxHealth(monMaxHealth);
+            SidebarModel.setMonExists(monExists);
+            SidebarModel.setMonVisible(monVisible);
+            SidebarModel.setMonFeared(feared);
+            SidebarModel.setMonDisen(disen);
+            SidebarModel.setMonCommand(command);
+            SidebarModel.setMonConf(conf);
+            SidebarModel.setMonStunned(stunned);
+            SidebarModel.setMonSlept(slept);
+            SidebarModel.setMonHeld(held);
+            SidebarModel.setPlayerTmdImage(playerTmdImage);
+        }
+    }
 }

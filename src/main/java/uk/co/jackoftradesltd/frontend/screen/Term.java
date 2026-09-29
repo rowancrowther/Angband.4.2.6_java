@@ -252,6 +252,13 @@ public class Term {
      */
     private TermTextHook outputHook;
 
+    /**
+     * The {@link TermData} that owns this terminal, written once by {@link #termInit}. Distinct
+     * from {@link #data}, which the front end attaches later with {@link #setData}; nothing in
+     * this class reads it yet.
+     *
+     * <p>Field owner coded before 260929, commented in full on 260929.
+     */
     private TermData owner;
 
     /**
@@ -260,9 +267,19 @@ public class Term {
      * and the per-row change bounds, and clear all hooks. This is the Java port
      * of the C original's {@code term_init}.
      *
+     * <p>Unlike C, which is handed a {@code term} to fill in, this also takes the two references
+     * the port needs in place of C's implicit globals: the owning {@link TermData}, kept in
+     * {@link #owner}, and the {@link Screen} that {@link #outputHook} is built around. It is the
+     * only place {@link #outputHook} is assigned, so every write this class makes reaches the
+     * screen through the {@link Screen} passed here.
+     *
+     * <p>Method termInit coded before 260929, commented in full on 260929.
+     *
      * @param width  terminal width in columns
      * @param height terminal height in rows
      * @param keys   key-queue capacity
+     * @param owner  the {@link TermData} that owns this terminal
+     * @param screen the character grid the output hook draws onto
      */
     public void termInit(int width, int height, int keys, TermData owner, Screen screen) {
         user = null;
@@ -589,7 +606,7 @@ public class Term {
      * @param row the row to blank
      * @param n   how many characters to blank
      */
-    private void termErase(int col, int row, int n) {
+    public void termErase(int col, int row, int n) {
         String spaces = " ".repeat(n);
         if (gotoXY(col, row) == -1) return;
         outputHook.putStr(col, row, n, ColourEnum.COLOUR_WHITE, spaces);

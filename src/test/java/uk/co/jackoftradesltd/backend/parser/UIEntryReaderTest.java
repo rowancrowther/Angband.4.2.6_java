@@ -209,6 +209,61 @@ class UIEntryReaderTest {
                 result.errors()::toString);
     }
 
+    // ---- reader plumbing (independent of the assembler's insert stub) -----------------------
+
+    @Test
+    void recordCountMismatchIsReportedEvenWhenTheRecordIsSkipped() throws IOException {
+        // Declares 5, holds 1. The record itself is skipped (unknown renderer), so this does not
+        // depend on the assembler inserting into its result - only on extract() calling
+        // checkRecordCount with the number of records parsed.
+        String path = tempFile("count-5.txt", "record-count:5\nname:foo\nrenderer:no_such_renderer\n");
+
+        ParseResult<UIEntry> result = new UIEntryReader().parseWithResults(path);
+
+        assertTrue(result.errors().stream()
+                        .anyMatch(e -> e.contains("declares 5 records, but file contains 1")),
+                result.errors()::toString);
+    }
+
+    @Test
+    void matchingRecordCountAddsNoCountError() throws IOException {
+        String path = tempFile("count-1.txt", "record-count:1\nname:foo\nrenderer:no_such_renderer\n");
+
+        ParseResult<UIEntry> result = new UIEntryReader().parseWithResults(path);
+
+        assertTrue(result.errors().stream().noneMatch(e -> e.contains("record-count header")),
+                result.errors()::toString);
+    }
+
+    @Test
+    void parseReturnsTheSameItemsAsParseWithResults() throws IOException {
+        String path = tempFile("same.txt", "record-count:1\nname:foo\nrenderer:no_such_renderer\n");
+
+        assertEquals(new UIEntryReader().parseWithResults(path).items(),
+                new UIEntryReader().parse(path));
+    }
+
+    @Test
+    void missingFileIsAnIOException() {
+        String path = tempDir.resolve("does-not-exist.txt").toString();
+
+        assertThrows(IOException.class, () -> new UIEntryReader().parseWithResults(path));
+    }
+
+    @Test
+    void syntaxErrorAfterAValidHeaderFailsClosedAndSkipsTheCountCheck() throws IOException {
+        // A hard error must abort before extract() reaches checkRecordCount, so the only
+        // messages are the grammar's, and no partial list comes back.
+        String path = tempFile("garbage.txt", "record-count:1\nthis is not a directive\n");
+
+        ParseResult<UIEntry> result = new UIEntryReader().parseWithResults(path);
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
+        assertTrue(result.errors().stream().noneMatch(e -> e.contains("record-count header")),
+                result.errors()::toString);
+    }
+
     // ---- hard errors (fail-closed: empty list) ----------------------------------------------
 
     @Test

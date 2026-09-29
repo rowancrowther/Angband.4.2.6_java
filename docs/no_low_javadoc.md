@@ -47,14 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `frontend/ui/player/CharSheetResist.java`
-
-3 missing, 0 low
-
-- L22: class `CharSheetResist` - MISSING
-- L23: field `entry` - MISSING
-- L24: field `label` - MISSING
-
 ### `middle/AllocEntry.java`
 
 0 missing, 10 low

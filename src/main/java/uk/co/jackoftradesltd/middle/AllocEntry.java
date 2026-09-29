@@ -18,37 +18,64 @@
 package uk.co.jackoftradesltd.middle;
 
 /**
- * One entry in an allocation table used to pick a random object/monster/etc.
- * weighted by dungeon level. The three probability fields are the standard
- * Angband three-stage weights ({@code prob1}/{@code prob2}/{@code prob3}) applied
- * at successive filtering stages of the selection. This is the Java port of the
- * C original's {@code struct alloc_entry} ({@code src/init.h}).
+ * One entry in the object/monster allocation table: a plain data holder with no
+ * behaviour of its own. Each entry records the thing's index, its base dungeon
+ * level, and three probability weights, one per allocation pass. The weights are
+ * filled in at different times: pass 1 ({@code prob1}) comes from the allocation
+ * information in the game data, pass 2 ({@code prob2}) from the allocation
+ * restriction (the caller's filter), and pass 3 ({@code prob3}) from the
+ * allocation calculation at the level being generated.
+ *
+ * <p>This is the Java port of {@code struct alloc_entry} in the C original's
+ * {@code alloc.h}. All fields are plain {@code int}, as in C, and default to
+ * zero, matching the zero-filled tables C allocates.
+ *
+ * <p>Class AllocEntry commented in full on 260929.
  *
  * @author Rowan Crowther
  */
 public class AllocEntry {
     /**
-     * Index of the thing this entry allocates (into its kind table).
+     * The actual index of the thing this entry allocates, into its own kind
+     * table (C field {@code index}).
+     *
+     * <p>Field Index commented in full on 260929.
      */
     private int Index;
     /**
-     * Native level of the thing (depth at which it naturally appears).
+     * Base dungeon level of the thing: the depth at which it naturally appears
+     * (C field {@code level}).
+     *
+     * <p>Field level commented in full on 260929.
      */
     private int level;
     /**
-     * Base (stage 1) allocation probability weight.
+     * Allocation probability for pass 1, determined from the allocation
+     * information in the game data (C field {@code prob1}).
+     *
+     * <p>Field prob1 commented in full on 260929.
      */
     private int prob1;
     /**
-     * Stage 2 allocation probability weight (after the first filter).
+     * Allocation probability for pass 2, determined from the allocation
+     * restriction, i.e. the caller's filter (C field {@code prob2}).
+     *
+     * <p>Field prob2 commented in full on 260929.
      */
     private int prob2;
     /**
-     * Stage 3 allocation probability weight (after the second filter).
+     * Allocation probability for pass 3, determined from the allocation
+     * calculation at the level being generated (C field {@code prob3}).
+     *
+     * <p>Field prob3 commented in full on 260929.
      */
     private int prob3;
 
     /**
+     * Plain getter; no C equivalent, as C reads the struct field directly.
+     *
+     * <p>Method getIndex commented in full on 260929.
+     *
      * @return the index of the allocated thing
      */
     public int getIndex() {
@@ -56,6 +83,10 @@ public class AllocEntry {
     }
 
     /**
+     * Plain setter; no C equivalent, as C writes the struct field directly.
+     *
+     * <p>Method setIndex commented in full on 260929.
+     *
      * @param index the index of the allocated thing
      */
     public void setIndex(int index) {
@@ -63,56 +94,88 @@ public class AllocEntry {
     }
 
     /**
-     * @return the native level of the allocated thing
+     * Plain getter; no C equivalent, as C reads the struct field directly.
+     *
+     * <p>Method getLevel commented in full on 260929.
+     *
+     * @return the base dungeon level of the allocated thing
      */
     public int getLevel() {
         return level;
     }
 
     /**
-     * @param level the native level of the allocated thing
+     * Plain setter; no C equivalent, as C writes the struct field directly.
+     *
+     * <p>Method setLevel commented in full on 260929.
+     *
+     * @param level the base dungeon level of the allocated thing
      */
     public void setLevel(int level) {
         this.level = level;
     }
 
     /**
-     * @return the stage 1 probability weight
+     * Plain getter; no C equivalent, as C reads the struct field directly.
+     *
+     * <p>Method getProb1 commented in full on 260929.
+     *
+     * @return the pass 1 probability (from allocation information)
      */
     public int getProb1() {
         return prob1;
     }
 
     /**
-     * @param prob1 the stage 1 probability weight
+     * Plain setter; no C equivalent, as C writes the struct field directly.
+     *
+     * <p>Method setProb1 commented in full on 260929.
+     *
+     * @param prob1 the pass 1 probability (from allocation information)
      */
     public void setProb1(int prob1) {
         this.prob1 = prob1;
     }
 
     /**
-     * @return the stage 2 probability weight
+     * Plain getter; no C equivalent, as C reads the struct field directly.
+     *
+     * <p>Method getProb2 commented in full on 260929.
+     *
+     * @return the pass 2 probability (from allocation restriction)
      */
     public int getProb2() {
         return prob2;
     }
 
     /**
-     * @param prob2 the stage 2 probability weight
+     * Plain setter; no C equivalent, as C writes the struct field directly.
+     *
+     * <p>Method setProb2 commented in full on 260929.
+     *
+     * @param prob2 the pass 2 probability (from allocation restriction)
      */
     public void setProb2(int prob2) {
         this.prob2 = prob2;
     }
 
     /**
-     * @return the stage 3 probability weight
+     * Plain getter; no C equivalent, as C reads the struct field directly.
+     *
+     * <p>Method getProb3 commented in full on 260929.
+     *
+     * @return the pass 3 probability (from allocation calculation)
      */
     public int getProb3() {
         return prob3;
     }
 
     /**
-     * @param prob3 the stage 3 probability weight
+     * Plain setter; no C equivalent, as C writes the struct field directly.
+     *
+     * <p>Method setProb3 commented in full on 260929.
+     *
+     * @param prob3 the pass 3 probability (from allocation calculation)
      */
     public void setProb3(int prob3) {
         this.prob3 = prob3;

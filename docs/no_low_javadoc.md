@@ -47,51 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/cave/enums/TerrainFlags.java`
-
-25 missing, 0 low
-
-- L30: enum-const `FEAT_NONE` - MISSING
-- L31: enum-const `FEAT_FLOOR` - MISSING
-- L32: enum-const `FEAT_CLOSED` - MISSING
-- L33: enum-const `FEAT_OPEN` - MISSING
-- L34: enum-const `FEAT_BROKEN` - MISSING
-- L35: enum-const `FEAT_LESS` - MISSING
-- L36: enum-const `FEAT_MORE` - MISSING
-- L37: enum-const `FEAT_STORE_GENERAL` - MISSING
-- L38: enum-const `FEAT_STORE_ARMOR` - MISSING
-- L39: enum-const `FEAT_STORE_WEAPON` - MISSING
-- L40: enum-const `FEAT_STORE_BOOK` - MISSING
-- L41: enum-const `FEAT_STORE_ALCHEMY` - MISSING
-- L42: enum-const `FEAT_STORE_MAGIC` - MISSING
-- L43: enum-const `FEAT_STORE_BLACK` - MISSING
-- L44: enum-const `FEAT_HOME` - MISSING
-- L45: enum-const `FEAT_SECRET` - MISSING
-- L46: enum-const `FEAT_RUBBLE` - MISSING
-- L47: enum-const `FEAT_MAGMA` - MISSING
-- L48: enum-const `FEAT_QUARTZ` - MISSING
-- L49: enum-const `FEAT_MAGMA_K` - MISSING
-- L50: enum-const `FEAT_QUARTZ_K` - MISSING
-- L51: enum-const `FEAT_GRANITE` - MISSING
-- L52: enum-const `FEAT_PERM` - MISSING
-- L53: enum-const `FEAT_LAVA` - MISSING
-- L54: enum-const `FEAT_PASS_RUBBLE` - MISSING
-
-### `middle/cave/profiles/dungeon/CaveProfile.java`
-
-0 missing, 10 low
-
-- L105: constructor `CaveProfile` - LOW
-- L123: method `getName` - LOW
-- L130: method `getBlockSize` - LOW
-- L137: method `getDunRooms` - LOW
-- L144: method `getDunUnusual` - LOW
-- L151: method `getMaxRarity` - LOW
-- L158: method `getTun` - LOW
-- L165: method `getStr` - LOW
-- L172: method `getRoomProfiles` - LOW
-- L179: method `getMinLevel` - LOW
-
 ### `middle/cave/profiles/dungeon/RoomProfile.java`
 
 9 missing, 1 low

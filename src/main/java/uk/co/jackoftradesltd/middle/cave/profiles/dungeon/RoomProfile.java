@@ -21,68 +21,101 @@ import uk.co.jackoftradesltd.middle.cave.roombuilders.RoomType;
 
 /**
  * One kind of room a level style may contain, and the terms on which it may appear — the port of
- * C's {@code struct room_profile} (generate.h:247), loaded from a {@code room:} line of
+ * C's {@code struct room_profile} ({@code generate.h}), loaded from a {@code room:} line of
  * {@code dungeon_profile.txt}.
  *
  * <p>A {@link CaveProfile} holds these in file order, and that order is load-bearing: when a
  * rarity has been chosen the generator rolls 0-99 and walks the list for a room whose
- * {@link #cutoff} clears the roll, so a room listed after one with a larger cutoff is only
- * reached when the earlier room fails to place.
+ * {@link #cutoff} clears the roll and whose {@link #rarity} does not exceed the rolled rarity
+ * ({@code gen-cave.c}, the room-placing loop of the classic and modified builders), so a room
+ * listed after one with a larger cutoff is only reached when the earlier room fails to place.
  *
  * <p>Where C stores a {@code room_builder} function pointer resolved from the name at parse time,
  * the port stores the {@link RoomType} the name resolves to, which carries the builder on the
  * enum constant. C's {@code next} field is dropped in favour of the enclosing {@link java.util.List}.
+ * The class is an immutable-by-convention data holder: it has no setters and no behaviour.
+ *
+ * <p>Class RoomProfile coded before 260930, commented in full on 260930.
  *
  * @author Rowan Crowther
  */
 public class RoomProfile {
     /**
      * The room's name as the data file gives it, which is also how it resolves to a room builder.
+     * C keeps it as {@code name}, and frees it with the profile.
+     *
+     * <p>Field name coded before 260930, commented in full on 260930.
      */
     private String name;
 
     /**
-     * The room type the name resolved to — the port's stand-in for C's builder function pointer.
+     * The room type the name resolved to — the port's stand-in for C's {@code builder} function
+     * pointer, which {@code parse_profile_room()} fills from the {@code room_builders} table.
+     *
+     * <p>Field roomType coded before 260930, commented in full on 260930.
      */
     private RoomType roomType;
 
     /**
-     * Selects between variants of the room; used only by template rooms.
+     * Selects between variants of the room; used only by template rooms (C: {@code rating},
+     * "extra control for template rooms").
+     *
+     * <p>Field rating coded before 260930, commented in full on 260930.
      */
     private int rating;
 
     /**
-     * The rows to reserve for this room.
+     * The rows to reserve for this room (C: {@code height}, "space required in grids").
+     *
+     * <p>Field height coded before 260930, commented in full on 260930.
      */
     private int height;
 
     /**
-     * The columns to reserve for this room.
+     * The columns to reserve for this room (C: {@code width}, "space required in grids").
+     *
+     * <p>Field width coded before 260930, commented in full on 260930.
      */
     private int width;
 
     /**
-     * The shallowest depth this room may appear at.
+     * The shallowest depth this room may appear at (C: {@code level}, "minimum dungeon level").
+     *
+     * <p>Field level coded before 260930, commented in full on 260930.
      */
     private int level;
 
     /**
-     * Whether this room is a pit or nest, and so stocked from {@code pit.txt}.
+     * Whether this room is a pit or nest, and so stocked from {@code pit.txt}. C reads it as an
+     * integer on the {@code room:} line and stores it as a {@code bool}.
+     *
+     * <p>Field pit coded before 260930, commented in full on 260930.
      */
     private boolean pit;
 
     /**
      * How unusual the room is — normally 0, 1 or 2. Rooms chosen by other means usually sit at 0.
+     * A room is skipped when this exceeds the rarity the generator rolled for the current attempt.
+     *
+     * <p>Field rarity coded before 260930, commented in full on 260930.
      */
     private int rarity;
 
     /**
      * The room is eligible when a 0-99 roll comes in under this. Rooms of the same rarity within
-     * a profile normally list ascending cutoffs.
+     * a profile normally list ascending cutoffs. C's own comment calls it the "upper limit of
+     * 1-100 roll", but the generator's comparison is {@code cutoff <= key} to skip, so a cutoff of
+     * 100 accepts every roll of 0-99.
+     *
+     * <p>Field cutoff coded before 260930, commented in full on 260930.
      */
     private int cutoff;
 
     /**
+     * Builds a profile from the fields of one {@code room:} line, in the file's own order.
+     *
+     * <p>Constructor RoomProfile coded before 260930, commented in full on 260930.
+     *
      * @param name     the room's name as the data file gives it
      * @param roomType the room type that name resolved to, or {@code null} if none matched
      * @param rating   selects between variants; used only by template rooms
@@ -106,38 +139,83 @@ public class RoomProfile {
         this.cutoff = cutoff;
     }
 
+    /**
+     * Method getName coded before 260930, commented in full on 260930.
+     *
+     * @return the room's name as the data file gives it
+     */
     public String getName() {
         return name;
     }
 
+    /**
+     * Method getRoomType coded before 260930, commented in full on 260930.
+     *
+     * @return the room type the name resolved to; {@code null} if none matched
+     */
     public RoomType getRoomType() {
         return roomType;
     }
 
+    /**
+     * Method getRating coded before 260930, commented in full on 260930.
+     *
+     * @return the variant selector, meaningful only for template rooms
+     */
     public int getRating() {
         return rating;
     }
 
+    /**
+     * Method getHeight coded before 260930, commented in full on 260930.
+     *
+     * @return the rows to reserve for the room
+     */
     public int getHeight() {
         return height;
     }
 
+    /**
+     * Method getWidth coded before 260930, commented in full on 260930.
+     *
+     * @return the columns to reserve for the room
+     */
     public int getWidth() {
         return width;
     }
 
+    /**
+     * Method getLevel coded before 260930, commented in full on 260930.
+     *
+     * @return the shallowest depth the room may appear at
+     */
     public int getLevel() {
         return level;
     }
 
+    /**
+     * Method isPit coded before 260930, commented in full on 260930.
+     *
+     * @return {@code true} if the room is a pit or nest
+     */
     public boolean isPit() {
         return pit;
     }
 
+    /**
+     * Method getRarity coded before 260930, commented in full on 260930.
+     *
+     * @return how unusual the room is
+     */
     public int getRarity() {
         return rarity;
     }
 
+    /**
+     * Method getCutoff coded before 260930, commented in full on 260930.
+     *
+     * @return the exclusive upper bound a 0-99 roll must fall under for the room to be eligible
+     */
     public int getCutoff() {
         return cutoff;
     }

@@ -20,27 +20,49 @@ package uk.co.jackoftradesltd.middle.cave;
 import java.util.ArrayList;
 
 /**
- * A simple collection of dungeon grid locations, used during level generation to
- * track sets of points (e.g. candidate or already-processed grids). This is the
- * Java port of the C original's {@code point_set} ({@code src/generate.c}).
+ * An ordered collection of grid locations, collected so that a set of changes can be
+ * applied to them afterwards (targeting uses it to gather candidate grids).
+ * Java port of {@code struct point_set} and its utility functions in {@code z-type.h}
+ * and {@code z-type.c}.
+ * <p>
+ * Despite the name this is a bag, not a set: like the C original it admits duplicates,
+ * and it keeps insertion order. Membership is by value, through {@link Loc#equals}, as
+ * C's {@code loc_eq} does.
+ * <p>
+ * The C growth bookkeeping ({@code n}, {@code allocated}, {@code pts}, the
+ * {@code initial_size} argument and {@code point_set_dispose}) has no Java equivalent:
+ * {@link ArrayList} grows itself and the garbage collector frees it.
+ * <p>
+ * Class PointSet coded before 260930, commented in full on 260930.
  *
  * @author Rowan Crowther
  */
 public class PointSet {
     /**
-     * The locations held in this set, in insertion order.
+     * The locations held in this set, in insertion order. Replaces the C fields
+     * {@code pts}, {@code n} and {@code allocated}, which an {@link ArrayList} tracks
+     * for itself.
+     * <p>
+     * Field points coded before 260930, commented in full on 260930.
      */
     private final ArrayList<Loc> points;
 
     /**
-     * Constructor
+     * Creates an empty point set. Ports {@code point_set_new}; C's {@code initial_size}
+     * parameter is dropped because the list resizes itself.
+     * <p>
+     * Function PointSet coded before 260930, commented in full on 260930.
      */
     public PointSet() {
         points = new ArrayList<>();
     }
 
     /**
-     * Add a particular location to the ArrayList of locations
+     * Appends a location to the set. Ports {@code add_to_point_set}. No duplicate check is
+     * made, exactly as in C, and the location is stored by reference, so it should not be
+     * mutated afterwards.
+     * <p>
+     * Function add coded before 260930, commented in full on 260930.
      *
      * @param location the location to add
      */
@@ -49,19 +71,25 @@ public class PointSet {
     }
 
     /**
-     * Returns true if and only if the points ArrayList contains one element p such that p.equals(location)
+     * Tests whether an equal location is already in the set. Ports {@code point_set_contains},
+     * which scans the array in order and compares each entry with {@code loc_eq}; here the
+     * comparison is {@link Loc#equals}. C returns {@code int} 1 or 0, Java a boolean.
+     * <p>
+     * Function contains coded before 260930, commented in full on 260930.
      *
-     * @param location the location we are looking for in the ArrayList
-     * @return true if the ArrayList contains the location, false otherwise
+     * @param location the location to look for
+     * @return true if some stored location has the same x and y, false otherwise
      */
     public boolean contains(Loc location) {
         return points.contains(location);
     }
 
     /**
-     * Gets the current size of this point set
+     * Gets the number of locations held, duplicates counted. Ports {@code point_set_size}.
+     * <p>
+     * Function size coded before 260930, commented in full on 260930.
      *
-     * @return The current size of this point set
+     * @return the number of locations added so far
      */
     public int size() {
         return points.size();

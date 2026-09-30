@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Unit tests for {@link PointSet}, the port of the C source's grid collection
- * ({@code src/z-set.c}).
+ * ({@code struct point_set} in {@code z-type.c}).
  *
  * <p>Despite the name this is a bag rather than a set - it is backed by an
  * {@link java.util.ArrayList} and admits duplicates - so the tests pin that explicitly
@@ -108,6 +108,21 @@ class PointSetTest {
 
         assertEquals(2, points.size());
         assertTrue(points.contains(Loc.row(3).col(5)));
+    }
+
+    @Test
+    void everyGridSurvivesPastCsGrowthPoints() {
+        // C doubles its array whenever n reaches allocated; the sizes around common initial
+        // sizes (1, 2, 4, 8, 16 ...) are where a hand-grown array would lose members.
+        for (int i = 0; i < 100; i++) {
+            points.add(Loc.row(i).col(i + 1));
+            assertEquals(i + 1, points.size());
+        }
+
+        for (int i = 0; i < 100; i++) {
+            assertTrue(points.contains(Loc.row(i).col(i + 1)));
+        }
+        assertFalse(points.contains(Loc.row(100).col(101)));
     }
 
     @Test

@@ -103,7 +103,7 @@ class ChunkUtilsLosTest {
         for (TerrainFeatureFlags flag : flags)
             set.on(flag);
         return new Feature(null, "test", "", null, 0, 0, set, null, "", "", "", "", "", "", "",
-                new Flag<>(MonsterRaceFlag.class));
+                new Flag<>(MonsterRaceFlag.class), 0);
     }
 
     /**

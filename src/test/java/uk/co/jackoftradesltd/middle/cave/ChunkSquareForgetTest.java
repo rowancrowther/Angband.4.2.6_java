@@ -186,7 +186,7 @@ class ChunkSquareForgetTest {
         for (TerrainFeatureFlags flag : setOn) flags.on(flag);
 
         return new Feature(code, name, "", null, 0, 0, flags, null,
-                null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, 0);
     }
 
     /**

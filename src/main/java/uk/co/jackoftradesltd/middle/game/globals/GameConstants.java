@@ -587,6 +587,10 @@ public class GameConstants {
         return storeMax;
     }
 
+    public static void setStoreMax(int storeMax) {
+        GameConstants.storeMax = storeMax;
+    }
+
     /**
      * @return the configured value of {@code randartActivationsMax}
      */

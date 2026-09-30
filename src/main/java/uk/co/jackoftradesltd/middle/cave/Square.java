@@ -24,11 +24,9 @@ import uk.co.jackoftradesltd.middle.cave.enums.TerrainFlags;
 import uk.co.jackoftradesltd.middle.enums.TrapEnum;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.registry.TerrainRegistry;
-import uk.co.jackoftradesltd.middle.monsters.Monster;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
 import uk.co.jackoftradesltd.middle.objects.Pile;
 import uk.co.jackoftradesltd.middle.player.Player;
-import uk.co.jackoftradesltd.middle.player.PlayerKnowledge;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -265,7 +263,7 @@ public class Square {
     @Contract(pure = true)
     @CheckReturnValue
     public boolean isPerm() {
-        return feat.isPermanent() && feat.fullRock();
+        return feat.isFullPermanent() && feat.fullRock();
     }
 
     /**

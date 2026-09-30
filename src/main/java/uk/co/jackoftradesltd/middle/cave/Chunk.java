@@ -317,7 +317,7 @@ public class Chunk {
                 squares[x][y] = new Square(new Feature(TerrainFlags.FEAT_NONE, "", "",
                         TerrainFlags.FEAT_NONE, 0, 0, new Flag<>(TerrainFeatureFlags.class),
                         null, "", "", "", "", "",
-                        "", "", new Flag<>(MonsterRaceFlag.class)),
+                        "", "", new Flag<>(MonsterRaceFlag.class), 0),
                         0, 0);
             }
         }

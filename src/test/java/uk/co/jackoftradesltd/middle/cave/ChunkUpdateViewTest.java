@@ -212,7 +212,7 @@ class ChunkUpdateViewTest {
         for (TerrainFeatureFlags flag : setOn) flags.on(flag);
 
         return new Feature(code, name, "", null, 0, 0, flags, null, "", "", "", "", "", "", "",
-                new Flag<>(MonsterRaceFlag.class));
+                new Flag<>(MonsterRaceFlag.class), 0);
     }
 
     /**

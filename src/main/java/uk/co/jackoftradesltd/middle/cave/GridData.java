@@ -20,6 +20,7 @@ package uk.co.jackoftradesltd.middle.cave;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import uk.co.jackoftradesltd.middle.cave.enums.TerrainFeatureFlags;
 import uk.co.jackoftradesltd.middle.numerics.RandomValueUtils;
 import uk.co.jackoftradesltd.middle.cave.enums.GridLightLevel;
 import uk.co.jackoftradesltd.middle.cave.enums.SquareEnum;
@@ -146,8 +147,7 @@ public class GridData {
         unseenMoney = false;
 
         feature = cave.getSquare(grid).getFeature();
-        if (feature.isMimicing())
-            feature = feature.getMimic();
+        feature = feature.getMimic();
 
         inView = cave.squareIsSeen(grid);
         isPlayer = cave.squareIsPlayer(grid);
@@ -179,12 +179,10 @@ public class GridData {
             lighting = GridLightLevel.LIGHTING_LIT;
         }
 
-        // Mimic
+        // Mimic <-- Is this meant to be here or earlier - it appears twice!
         feature = playerCave.getSquare(grid).getFeature();
-        if (feature.isMimicing()) {
-            feature = feature.getMimic();
-        }
-
+        feature = feature.getMimic();
+        
         // Traps
         if (playerCave.squareIsTrap(grid) && cave.isKnown(grid)) {
             List<Trap> traps = playerCave.getSquare(grid).getTraps();

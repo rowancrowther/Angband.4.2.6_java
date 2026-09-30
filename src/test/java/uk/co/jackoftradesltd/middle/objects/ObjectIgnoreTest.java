@@ -131,7 +131,7 @@ class ObjectIgnoreTest {
             featureFlags.on(flag);
         }
         return new Feature(null, "test", "test", null, 0, 0, featureFlags,
-                null, null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null, 0);
     }
 
     /**

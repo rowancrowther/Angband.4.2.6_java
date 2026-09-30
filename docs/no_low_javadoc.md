@@ -47,16 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/cave/enums/DirectionEnum.java`
-
-1 missing, 4 low
-
-- L77: field `standard` - MISSING
-- L96: method `ddx` - LOW
-- L103: method `ddy` - LOW
-- L110: method `ddgrid` - LOW
-- L117: method `getKey` - LOW
-
 ### `middle/cave/enums/RoomFlags.java`
 
 0 missing, 1 low

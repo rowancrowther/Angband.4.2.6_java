@@ -47,18 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/cave/profiles/dungeon/StreamerProfile.java`
-
-0 missing, 7 low
-
-- L73: constructor `StreamerProfile` - LOW
-- L85: method `getDen` - LOW
-- L92: method `getRng` - LOW
-- L99: method `getMam` - LOW
-- L106: method `getMc` - LOW
-- L113: method `getQua` - LOW
-- L120: method `getQc` - LOW
-
 ### `middle/cave/profiles/dungeon/TunnelProfile.java`
 
 0 missing, 6 low

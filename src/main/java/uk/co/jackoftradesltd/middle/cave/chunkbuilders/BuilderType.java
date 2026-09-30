@@ -31,8 +31,16 @@ import uk.co.jackoftradesltd.middle.player.Player;
  * <p>Where C keeps the name and the function pointer in a static array and indexes into it, the
  * enum holds both on the constant, so the lookup C does by hand comes free.
  *
- * <p>Constants are declared in {@code list-dun-profiles.h} order, which is the order the profiles
- * are considered in.
+ * <p>Constants are declared in {@code list-dun-profiles.h} order, matching the C table entry for
+ * entry. The order carries no behaviour: C only searches the table by name, in
+ * {@code parse_profile_name} in {@code generate.c}, when reading a profile record, and an unknown
+ * name is a parse error ({@code PARSE_ERROR_NO_BUILDER_FOUND}). The order profiles are tried in at
+ * generation time comes from {@code dungeon_profile.txt}, not from here.
+ *
+ * <p>The C builders take a trailing {@code const char **err} out-parameter to report why they
+ * gave up. That has no Java counterpart — see {@link CaveBuilder#build}.
+ *
+ * <p>coded on 2026-09-30 / commented in full on 2026-09-30
  *
  * @author Rowan Crowther
  */
@@ -85,6 +93,11 @@ public enum BuilderType {
     private final CaveBuilder caveBuilder;
 
     /**
+     * Pair a profile name with its builder — the Java form of one {@code DUN(a, b)} row of
+     * {@code list-dun-profiles.h}, which C expands to {@code { a, b##_gen }}.
+     *
+     * <p>coded on 2026-09-30 / commented in full on 2026-09-30
+     *
      * @param name        the name {@code dungeon_profile.txt} refers to this builder by
      * @param caveBuilder the algorithm that lays out a level of this style
      */
@@ -94,6 +107,12 @@ public enum BuilderType {
     }
 
     /**
+     * The name a profile record in {@code dungeon_profile.txt} uses to select this builder — the
+     * string C compares with {@code streq} against the {@code name} member of
+     * {@code cave_builders[]}. Matching is exact, so {@code "hard centre"} keeps its space.
+     *
+     * <p>coded on 2026-09-30 / commented in full on 2026-09-30
+     *
      * @return the name this builder is known by in {@code dungeon_profile.txt}
      */
     public String getName() {
@@ -102,6 +121,13 @@ public enum BuilderType {
 
     /**
      * Build a level in this style, by handing off to the builder held on the constant.
+     *
+     * <p>C stores the function pointer in the profile ({@code c->builder} in
+     * {@code parse_profile_name}) and calls it directly; here the profile holds a
+     * {@code BuilderType} and calls this method. Nothing is added: the arguments and the result
+     * pass straight through, including a {@code null} for a failed attempt.
+     *
+     * <p>coded on 2026-09-30 / commented in full on 2026-09-30
      *
      * @param player    the player the level is being built for
      * @param minHeight the smallest acceptable level height, in grids

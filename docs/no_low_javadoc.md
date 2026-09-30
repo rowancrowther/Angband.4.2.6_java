@@ -47,17 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/cave/TrapKind.java`
-
-0 missing, 6 low
-
-- L170: method `getDescription` - LOW
-- L188: method `getTrapKindIndex` - LOW - "{@code tidx}"
-- L203: method `getEffect` - LOW
-- L210: method `getFlags` - LOW
-- L220: method `getSaveFlags` - LOW - "trap"
-- L229: method `getText` - LOW
-
 ### `middle/cave/chunkbuilders/BuilderType.java`
 
 0 missing, 1 low

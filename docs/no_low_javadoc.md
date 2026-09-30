@@ -47,22 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/cave/profiles/room/RoomTemplate.java`
-
-0 missing, 11 low
-
-- L81: constructor `RoomTemplate` - LOW
-- L97: method `getName` - LOW
-- L102: method `getMapText` - LOW
-- L107: method `getMap` - LOW
-- L112: method `getFlags` - LOW
-- L117: method `getType` - LOW
-- L122: method `getRating` - LOW
-- L127: method `getHeight` - LOW
-- L132: method `getWidth` - LOW
-- L137: method `getDoors` - LOW
-- L142: method `getTval` - LOW
-
 ### `middle/cave/profiles/vault/Vault.java`
 
 0 missing, 10 low

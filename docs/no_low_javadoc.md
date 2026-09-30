@@ -47,46 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/cave/enums/TerrainFeatureFlags.java`
-
-34 missing, 1 low
-
-- L31: method `TF_MAX` - MISSING
-- L31: enum-const `TF_NONE` - MISSING
-- L32: enum-const `TF_LOS` - MISSING
-- L33: enum-const `TF_PROJECT` - MISSING
-- L34: enum-const `TF_PASSABLE` - MISSING
-- L35: enum-const `TF_INTERESTING` - MISSING
-- L36: enum-const `TF_PERMANENT` - MISSING
-- L37: enum-const `TF_EASY` - MISSING
-- L38: enum-const `TF_TRAP` - MISSING
-- L39: enum-const `TF_NO_SCENT` - MISSING
-- L40: enum-const `TF_NO_FLOW` - MISSING
-- L41: enum-const `TF_OBJECT` - MISSING
-- L42: enum-const `TF_TORCH` - MISSING
-- L43: enum-const `TF_HIDDEN` - MISSING
-- L44: enum-const `TF_GOLD` - MISSING
-- L45: enum-const `TF_CLOSABLE` - MISSING
-- L46: enum-const `TF_FLOOR` - MISSING
-- L47: enum-const `TF_WALL` - MISSING
-- L48: enum-const `TF_ROCK` - MISSING
-- L49: enum-const `TF_GRANITE` - MISSING
-- L50: enum-const `TF_DOOR_ANY` - MISSING
-- L51: enum-const `TF_DOOR_CLOSED` - MISSING
-- L52: enum-const `TF_SHOP` - MISSING
-- L53: enum-const `TF_DOOR_JAMMED` - MISSING
-- L54: enum-const `TF_DOOR_LOCKED` - MISSING
-- L55: enum-const `TF_MAGMA` - MISSING
-- L56: enum-const `TF_QUARTZ` - MISSING
-- L57: enum-const `TF_STAIR` - MISSING
-- L58: enum-const `TF_UPSTAIR` - MISSING
-- L59: enum-const `TF_DOWNSTAIR` - MISSING
-- L60: enum-const `TF_SMOOTH` - MISSING
-- L61: enum-const `TF_BRIGHT` - MISSING
-- L62: enum-const `TF_FIERY` - MISSING
-- L63: enum-const `TF_MAX` - MISSING
-- L82: method `getDescription` - LOW
-
 ### `middle/cave/enums/TerrainFlags.java`
 
 25 missing, 0 low

@@ -40,38 +40,81 @@ import java.util.List;
  * Java port of the C original's {@code struct square} and the {@code square_*}
  * predicates ({@code src/cave.h} / {@code src/cave-square.c}).
  *
+ * <p>The predicates fall into three groups, mirroring the section headings in
+ * {@code cave-square.c}. <em>Feature</em> predicates ({@link #isFloor()}, {@link #isRock()},
+ * {@link #isDoor()} and so on) read the terrain's flags. <em>Info</em> predicates
+ * ({@link #isRoom()}, {@link #isVault()}, {@link #isSeen()} and so on) read the per-grid
+ * {@link SquareEnum} flags. <em>Behaviour</em> predicates ({@link #isOpen()}, {@link #isEmpty()},
+ * {@link #isArrivable()}) combine the other two with the occupant, the traps and the object pile.
+ * Where C takes a chunk and a grid, the port is an instance method on the {@code Square} at that
+ * grid, so the chunk and grid parameters disappear; {@link #isMemoryBad(Chunk, Loc)} is the one
+ * predicate that still needs them, because it compares two chunks.
+ *
+ * <p>Where C asserts that a grid is in bounds, the port has nothing to assert: a {@code Square}
+ * exists only for a valid grid, and {@code Chunk} does the bounds test before it hands one out.
+ *
+ * <p>Class Square coded before 260930, commented in full on 260930.
+ *
  * @author Rowan Crowther
  */
 public class Square {
     /**
-     * The terrain feature occupying this grid.
+     * Per-grid info flags (seen, view, room, vault, generation hints, …), C's
+     * {@code square->info}. The info predicates read it through {@link Flag#has}, and it is written
+     * only through {@link #sqInfoOn(SquareEnum)} and {@link #sqInfoOff(SquareEnum)}.
+     *
+     * <p>Field info coded before 260930, commented in full on 260930.
+     */
+    private final Flag<SquareEnum> info;
+    /**
+     * The terrain feature occupying this grid, C's {@code square->feat}. C stores an index into
+     * {@code f_info[]}; the port holds the {@link Feature} itself, so every feature predicate is a
+     * call on it rather than a flag lookup through the index.
+     *
+     * <p>Field feat coded before 260930, commented in full on 260930.
      */
     private Feature feat;
     /**
-     * Per-grid info flags (seen, view, room, vault, generation hints, …).
-     */
-    private final Flag<SquareEnum> info;
-
-    /**
-     * Current light intensity of this grid (>0 means lit).
+     * Current light intensity of this grid (&gt;0 means lit), C's {@code square->light}. It is the
+     * light actually falling on the grid, recomputed by {@code Chunk.calcLighting}, and is not the
+     * same thing as the permanent {@code SQUARE_GLOW} flag. It can be negative, since darkness
+     * sources subtract.
+     *
+     * <p>Field light coded before 260930, commented in full on 260930.
      */
     private int light;
     /**
-     * Occupant index: positive for a monster, negative for the player, 0 if empty.
+     * Occupant index, C's {@code square->mon}: positive for a monster, negative for the player, 0 if
+     * empty. Every occupancy predicate is a different comparison against this one value.
+     *
+     * <p>Field monsterIndex coded before 260930, commented in full on 260930.
      */
     private int monsterIndex;
     /**
-     * The pile of objects lying on this grid.
+     * The pile of objects lying on this grid, C's {@code square->obj}. C holds the head of a linked
+     * list; the port holds a {@link Pile}, whose last element is C's head.
+     *
+     * <p>Field objectPile coded before 260930, commented in full on 260930.
      */
     private Pile objectPile;
     /**
-     * The traps present on this grid.
+     * The traps present on this grid, C's {@code square->trap} chain. C keeps the head pointer and
+     * walks {@code trap->next}; the port keeps a list, and its first element is the head. C
+     * currently permits only one trap per grid, but every scan here walks the whole list as the C
+     * scans do.
+     *
+     * <p>Field traps coded before 260930, commented in full on 260930.
      */
     private List<Trap> traps;
 
     /**
      * Build a square with the given feature, light level and occupant, starting
      * with empty info flags, an empty object pile and no traps.
+     *
+     * <p>There is no single C counterpart: C squares are the zeroed entries of
+     * {@code c->squares[][]}, so this constructor is where the port's per-grid defaults are set.
+     *
+     * <p>Function Square coded before 260930, commented in full on 260930.
      *
      * @param feature      the terrain feature
      * @param light        the initial light level
@@ -88,7 +131,11 @@ public class Square {
     }
 
     /**
-     * Check the square info field to see if a particular flag is set on it
+     * Check the square info field to see if a particular flag is set on it, the port of C's
+     * {@code sqinfo_has} ({@code cave.h}) applied to {@code square->info}. Every info predicate
+     * ({@link #isRoom()}, {@link #isVault()} and the rest) is this test with one flag fixed.
+     *
+     * <p>Function hasInfoFlag coded before 260930, commented in full on 260930.
      *
      * @param squareInfo the flag we are checking for
      * @return true if the flag is set on the info field
@@ -98,7 +145,14 @@ public class Square {
     }
 
     /**
-     * Excise an object from a floor pile, leaving it orphaned (and hence potential bait for the garbage collector)
+     * Excise an object from a floor pile, leaving it orphaned (and hence potential bait for the garbage collector),
+     * the port of C's {@code square_excise_object} ({@code cave-square.c}).
+     *
+     * <p>Only the pile membership changes: the object is unlinked from this grid's pile and is
+     * otherwise untouched. Deleting it, and the bookkeeping that goes with that, is
+     * {@code Chunk.objectDelete}'s job, as it is C's {@code object_delete}'s.
+     *
+     * <p>Function pileExcise coded before 260930, commented in full on 260930.
      *
      * @param item The item we are removing.
      */
@@ -107,10 +161,20 @@ public class Square {
     }
 
     /**
-     * Gets the top most object on this square
-     * <br/><br/>
-     * TODO: Deal with returning the next object from the square as at present this is impossible
-     * @return the top most object on this square
+     * Gets the top most object on this square, the port of C's {@code square_object}
+     * ({@code cave-square.c}), which returns the head of the grid's object list or {@code null}
+     * when there is none.
+     *
+     * <p>The head of C's list is the last element of the port's {@link Pile}, because
+     * {@link Pile#insert} pushes at the tail where C's {@code pile_insert} links in at the head.
+     * C callers then walk on with {@code obj->next}; the port has no next pointer, so a caller
+     * wanting the rest of the pile uses {@link #getSquarePileIterator()} or {@link #getObjectPile()}.
+     *
+     * <p>TODO: Deal with returning the next object from the square as at present this is impossible
+     *
+     * <p>Function getTopObject coded before 260930, commented in full on 260930.
+     *
+     * @return the top most object on this square, or {@code null} if the pile is empty
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -120,11 +184,17 @@ public class Square {
     }
 
     /**
-     * Gets the top most trap on a square
-     * <br/><br/>
-     * Can have multiple traps on a square, but currently not allowed in C code. TODO check if this needs to be kept in
+     * Gets the top most trap on a square, the port of C's {@code square_trap}
+     * ({@code cave-square.c}), which returns {@code square->trap}, the head of the trap chain, or
+     * {@code null} for an empty grid.
      *
-     * @return the top most trap on a square
+     * <p>C's {@code square_trap} also returns {@code null} for an out-of-bounds grid; here the
+     * bounds test belongs to {@code Chunk}. Can have multiple traps on a square, but currently not
+     * allowed in C code. TODO check if this needs to be kept in
+     *
+     * <p>Function getTrap coded before 260930, commented in full on 260930.
+     *
+     * @return the top most trap on a square, or {@code null} if there is none
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -134,9 +204,12 @@ public class Square {
     }
 
     /**
-     * Get the current light status of this square
+     * Get the current light status of this square, the port of C's {@code square_light}
+     * ({@code cave-square.c}), which returns {@code square->light}.
      *
-     * @return the current light status of this square
+     * <p>Function getLight coded before 260930, commented in full on 260930.
+     *
+     * @return the current light status of this square: zero is dark, positive is lit
      */
     public int getLight() {
         return light;
@@ -170,6 +243,8 @@ public class Square {
      * from every source — glow, the player's light, monster light — as recomputed by
      * {@code calcLighting}, not the {@code SQUARE_GLOW} flag tested by {@link #isGlow()}.
      *
+     * <p>Function isLit coded before 260930, commented in full on 260930.
+     *
      * @return true if the square's light level is above zero
      */
     @CheckReturnValue
@@ -179,7 +254,14 @@ public class Square {
     }
 
     /**
-     * Test for normal open floor
+     * Test for normal open floor, the port of C's {@code square_isfloor} ({@code cave-square.c}),
+     * which is {@code feat_is_floor} on the grid's terrain: the {@code TF_FLOOR} flag.
+     *
+     * <p>Only the terrain is consulted. A floor grid with a monster, an object or a trap on it is
+     * still a floor; {@link #isOpen()} and {@link #isEmpty()} are the predicates that look at what
+     * is standing on it.
+     *
+     * <p>Function isFloor coded before 260930, commented in full on 260930.
      *
      * @return true if the square is normal open floor
      */
@@ -190,7 +272,13 @@ public class Square {
     }
 
     /**
-     * Tests for the ability to hold a trap
+     * Tests for the ability to hold a trap, the port of C's {@code square_istrappable}
+     * ({@code cave-square.c}): {@code feat_is_trap_holding}, the {@code TF_TRAP} flag.
+     *
+     * <p>This is a property of the terrain, not of the grid's current contents; a grid that already
+     * carries a trap is still trappable.
+     *
+     * <p>Function isTrappable coded before 260930, commented in full on 260930.
      *
      * @return true if the square can hold a trap
      */
@@ -201,7 +289,14 @@ public class Square {
     }
 
     /**
-     * Tests for whether the square can hold an object
+     * Tests for whether the square can hold an object, the port of C's
+     * {@code square_isobjectholding} ({@code cave-square.c}): {@code feat_is_object_holding}, the
+     * {@code TF_OBJECT} flag.
+     *
+     * <p>Like {@link #isTrappable()} this is about the terrain, not the pile: it says an object
+     * may lie here, not that none does. {@link #canPutItem()} adds those conditions.
+     *
+     * <p>Function isObjectHolding coded before 260930, commented in full on 260930.
      *
      * @return true if the square can hold an object
      */
@@ -212,7 +307,15 @@ public class Square {
     }
 
     /**
-     * Check to see if the square is a granite wall
+     * Check to see if the square is a granite wall, the port of C's {@code square_isrock}
+     * ({@code cave-square.c}): {@code TF_GRANITE} and not {@code TF_DOOR_ANY}.
+     *
+     * <p>The door exclusion is the point. A secret door is built from granite so that it looks like
+     * a wall, and this predicate says <em>no</em> for it even though it behaves as rock. Use
+     * {@link #featSeemsLikeWall()} for the question of how the grid behaves, and
+     * {@link #isGranite()} for the bare flag with no door exclusion.
+     *
+     * <p>Function isRock coded before 260930, commented in full on 260930.
      *
      * @return true if the square is a granite wall
      */
@@ -223,7 +326,14 @@ public class Square {
     }
 
     /**
-     * Tests whether the square seems like a wall or not
+     * Tests whether the square seems like a wall or not, the port of C's
+     * {@code square_seemslikewall} ({@code cave-square.c}): the {@code TF_ROCK} flag.
+     *
+     * <p>{@code TF_ROCK} is set on walls, rubble and secret doors alike, so this is true for a
+     * grid the player cannot yet tell from a wall. It is not {@code TF_WALL}; see
+     * {@link #isRubble()}, which needs the two apart.
+     *
+     * <p>Function featSeemsLikeWall coded before 260930, commented in full on 260930.
      *
      * @return true if this square seems like a wall to the player
      */
@@ -234,7 +344,12 @@ public class Square {
     }
 
     /**
-     * Tests for whether we have an interesting feat or not
+     * Tests for whether we have an interesting feat or not, the port of C's
+     * {@code square_isinteresting} ({@code cave-square.c}): the {@code TF_INTERESTING} flag. C's
+     * pathfinding ({@code player-path.c}) and targeting ({@code target.c}, {@code ui-target.c})
+     * use it to decide which grids are worth noticing.
+     *
+     * <p>Function featIsIntersting coded before 260930, commented in full on 260930.
      *
      * @return true if the feat is interesting
      */
@@ -245,7 +360,12 @@ public class Square {
     }
 
     /**
-     * Tests to see if this is granite
+     * Tests to see if this is granite, the port of C's {@code square_isgranite}
+     * ({@code cave-square.c}): {@code feat_is_granite}, the bare {@code TF_GRANITE} flag.
+     *
+     * <p>Unlike {@link #isRock()} a secret door answers true here, as it is made of granite.
+     *
+     * <p>Function isGranite coded before 260930, commented in full on 260930.
      *
      * @return true if the square is granite
      */
@@ -256,7 +376,15 @@ public class Square {
     }
 
     /**
-     * Test to see if the feature is a permanent wall
+     * Test to see if the feature is a permanent wall, the port of C's {@code square_isperm}
+     * ({@code cave-square.c}): {@code TF_PERMANENT} and {@code TF_ROCK}.
+     *
+     * <p>Both flags are needed. Permanent terrain that is not rock, such as a shop entrance or a
+     * staircase, is not a permanent <em>wall</em>. {@code Feature.isFullPermanent} already tests
+     * both flags, so the trailing {@code fullRock()} here repeats one of them; that is harmless and
+     * matches C's two-flag test.
+     *
+     * <p>Function isPerm coded before 260930, commented in full on 260930.
      *
      * @return true for a permanent wall
      */
@@ -267,7 +395,13 @@ public class Square {
     }
 
     /**
-     * Checks to see if there is an artefact on this square
+     * Checks to see if there is an artefact on this square.
+     *
+     * <p>There is no single C function for this. It is the loop in {@code square_changeable}
+     * ({@code cave-square.c}), which walks {@code square_object(c, grid)} by {@code obj->next}
+     * refusing the grid if any {@code obj->artifact} is set, lifted into a predicate on the pile.
+     *
+     * <p>Function hasObjectArtifact coded before 260930, commented in full on 260930.
      *
      * @return true if this square contains an artefact
      */
@@ -278,7 +412,11 @@ public class Square {
     }
 
     /**
-     * Test for magma (Stef beware!)
+     * Test for magma (Stef beware!), the port of C's {@code square_ismagma}
+     * ({@code cave-square.c}): {@code feat_is_magma}, the {@code TF_MAGMA} flag. Treasure-bearing
+     * veins are still magma; see {@link #hasGoldVein()} for that.
+     *
+     * <p>Function isMagma coded before 260930, commented in full on 260930.
      *
      * @return true if the feature is magma
      */
@@ -289,7 +427,10 @@ public class Square {
     }
 
     /**
-     * Tests for Quartz
+     * Tests for Quartz, the port of C's {@code square_isquartz} ({@code cave-square.c}):
+     * {@code feat_is_quartz}, the {@code TF_QUARTZ} flag.
+     *
+     * <p>Function isQuartz coded before 260930, commented in full on 260930.
      *
      * @return true if this square is quartz
      */
@@ -300,7 +441,15 @@ public class Square {
     }
 
     /**
-     * Tests for minerals
+     * Tests for minerals, the port of C's {@code square_ismineral} ({@code cave-square.c}):
+     * {@code square_isrock || square_ismagma || square_isquartz}.
+     *
+     * <p>The rock arm is {@link #isRock()}, granite <em>excluding</em> doors, so a secret door is
+     * not mineral even though it looks like granite. Rubble and permanent walls are not mineral
+     * either, which is what {@code square_isdiggable} and {@code square_isstrongwall} rely on when
+     * they add those cases separately.
+     *
+     * <p>Function isMineral coded before 260930, commented in full on 260930.
      *
      * @return true if this square is rock, quartz or magma
      */
@@ -311,7 +460,10 @@ public class Square {
     }
 
     /**
-     * Tests for gold veins
+     * Tests for gold veins, the port of C's {@code square_hasgoldvein} ({@code cave-square.c}):
+     * the {@code TF_GOLD} flag, which marks both magma and quartz with treasure.
+     *
+     * <p>Function hasGoldVein coded before 260930, commented in full on 260930.
      *
      * @return true if there is a gold vein here
      */
@@ -322,7 +474,13 @@ public class Square {
     }
 
     /**
-     * Tests for rubble, defined as rock which isn't in a wall
+     * Tests for rubble, defined as rock which isn't in a wall, the port of C's
+     * {@code square_isrubble} ({@code cave-square.c}): {@code TF_ROCK} without {@code TF_WALL}.
+     *
+     * <p>The {@code TF_ROCK} half is the full-rock test, not the granite test, which is why
+     * {@code Feature.fullRock} exists: a granite-only test would find no rubble at all.
+     *
+     * <p>Function isRubble coded before 260930, commented in full on 260930.
      *
      * @return true if this square has rubble in it
      */
@@ -333,9 +491,16 @@ public class Square {
     }
 
     /**
-     * Get an iterator through the pile
+     * Get an iterator through the pile, the port of the {@code for (obj = square_object(c, grid);
+     * obj; obj = obj->next)} walk that C callers write by hand ({@code cave-square.c}, for example
+     * in {@code square_changeable}).
      *
-     * @return an Iterator<ItemObject> for the pile of objects on this square
+     * <p>The iterator runs in the pile's own order, which is the reverse of C's head-first list
+     * order; a caller that depends on the order should check.
+     *
+     * <p>Function getSquarePileIterator coded before 260930, commented in full on 260930.
+     *
+     * @return an Iterator&lt;ItemObject&gt; for the pile of objects on this square
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -344,9 +509,14 @@ public class Square {
     }
 
     /**
-     * Tests for secret doors
-     * <br/><br/>
-     * These appear as if they were granite, when detected they are replaced by a closed door
+     * Tests for secret doors, the port of C's {@code square_issecretdoor}
+     * ({@code cave-square.c}): {@code TF_DOOR_ANY} and {@code TF_ROCK}.
+     *
+     * <p>These appear as if they were granite, when detected they are replaced by a closed door.
+     * A visible door has {@code TF_DOOR_ANY} without {@code TF_ROCK}, which is what separates the
+     * two.
+     *
+     * <p>Function isSecretDoor coded before 260930, commented in full on 260930.
      *
      * @return true if this square contains a secret door
      */
@@ -357,7 +527,11 @@ public class Square {
     }
 
     /**
-     * Tests for open doors
+     * Tests for open doors, the port of C's {@code square_isopendoor} ({@code cave-square.c}).
+     * C tests {@code TF_CLOSABLE}: a door that can still be closed is, by definition, open. A
+     * broken door is passable but not closable, so it is not an open door.
+     *
+     * <p>Function isOpenDoor coded before 260930, commented in full on 260930.
      *
      * @return true if a door is open here
      */
@@ -368,7 +542,10 @@ public class Square {
     }
 
     /**
-     * Test to see if this is a closed door (locked/jammed are also closed)
+     * Test to see if this is a closed door (locked/jammed are also closed), the port of C's
+     * {@code square_iscloseddoor} ({@code cave-square.c}): the {@code TF_DOOR_CLOSED} flag.
+     *
+     * <p>Function isClosedDoor coded before 260930, commented in full on 260930.
      *
      * @return true for a closed door
      */
@@ -379,7 +556,11 @@ public class Square {
     }
 
     /**
-     * Tests for a broken door
+     * Tests for a broken door, the port of C's {@code square_isbrokendoor}
+     * ({@code cave-square.c}): {@code TF_DOOR_ANY} and {@code TF_PASSABLE} but not
+     * {@code TF_CLOSABLE}.
+     *
+     * <p>Function isBrokenDoor coded before 260930, commented in full on 260930.
      *
      * @return true if this door is broken
      */
@@ -390,7 +571,13 @@ public class Square {
     }
 
     /**
-     * Test to see if this square is a locked door
+     * Test to see if this square is a locked door, the port of C's {@code square_islockeddoor}
+     * ({@code cave-square.c}): the lock's power is greater than zero.
+     *
+     * <p>{@link #squareDoorPower()} answers zero for anything that is not a closed door, so an
+     * open door, or a floor grid carrying a stray lock trap, is never locked.
+     *
+     * <p>Function isLockedDoor coded before 260930, commented in full on 260930.
      *
      * @return true if this square contains a door of power greater than 0
      */
@@ -401,9 +588,16 @@ public class Square {
     }
 
     /**
-     * Test to see if this square is an unlocked door
+     * Test to see if this square is an unlocked door, the port of C's
+     * {@code square_isunlockeddoor} ({@code cave-square.c}): a closed door whose lock power is
+     * zero.
      *
-     * @return true if this square contains a door of power of 0
+     * <p>The closed-door test is needed here because {@link #squareDoorPower()} is zero for every
+     * grid that is not a door, so the power alone would call a floor an unlocked door.
+     *
+     * <p>Function isUnlockedDoor coded before 260930, commented in full on 260930.
+     *
+     * @return true if this square contains a closed door of power 0
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -412,7 +606,17 @@ public class Square {
     }
 
     /**
-     * The current power of the lock on the door of this square
+     * The current power of the lock on the door of this square, the port of C's
+     * {@code square_door_power} ({@code trap.c}).
+     *
+     * <p>Zero unless the grid is a closed door carrying a "door lock" trap, in which case it is
+     * that trap's power. The checks run in C's order, with one addition: the {@link #isTrap()}
+     * test comes before the registry lookup so a grid with no traps never reaches
+     * {@code TerrainRegistry}. {@link #trapSpecific(TrapKind)} repeats that test, which is
+     * harmless. The scan matches the lock by {@link TrapKind} identity, as C compares
+     * {@code trap->kind == lock}.
+     *
+     * <p>Function squareDoorPower coded before 260930, commented in full on 260930.
      *
      * @return the current door lock power
      */
@@ -437,7 +641,10 @@ public class Square {
     }
 
     /**
-     * Tests for any door including open, closed, and hidden
+     * Tests for any door including open, closed, and hidden, the port of C's
+     * {@code square_isdoor} ({@code cave-square.c}): the {@code TF_DOOR_ANY} flag.
+     *
+     * <p>Function isDoor coded before 260930, commented in full on 260930.
      *
      * @return true for any door
      */
@@ -448,7 +655,10 @@ public class Square {
     }
 
     /**
-     * Tests for any type of staircase
+     * Tests for any type of staircase, the port of C's {@code square_isstairs}
+     * ({@code cave-square.c}): the {@code TF_STAIR} flag.
+     *
+     * <p>Function isStairs coded before 260930, commented in full on 260930.
      *
      * @return true for any type of staircase
      */
@@ -459,7 +669,10 @@ public class Square {
     }
 
     /**
-     * Tests for an upward staircase
+     * Tests for an upward staircase, the port of C's {@code square_isupstairs}
+     * ({@code cave-square.c}): the {@code TF_UPSTAIR} flag.
+     *
+     * <p>Function isUpStairs coded before 260930, commented in full on 260930.
      *
      * @return true for an up staircase
      */
@@ -470,7 +683,10 @@ public class Square {
     }
 
     /**
-     * Tests for the presence of a downward going staircase
+     * Tests for the presence of a downward going staircase, the port of C's
+     * {@code square_isdownstairs} ({@code cave-square.c}): the {@code TF_DOWNSTAIR} flag.
+     *
+     * <p>Function isDownStairs coded before 260930, commented in full on 260930.
      *
      * @return true for downstairs
      */
@@ -481,7 +697,10 @@ public class Square {
     }
 
     /**
-     * Test for shop entrance
+     * Test for shop entrance, the port of C's {@code square_isshop} ({@code cave-square.c}):
+     * {@code feat_is_shop}, the {@code TF_SHOP} flag.
+     *
+     * <p>Function isShop coded before 260930, commented in full on 260930.
      *
      * @return true if this is a shop entrance
      */
@@ -492,7 +711,13 @@ public class Square {
     }
 
     /**
-     * Test for the location of the player
+     * Test for the location of the player, the port of C's {@code square_isplayer}
+     * ({@code cave-square.c}): {@code square->mon < 0}.
+     *
+     * <p>C stores the player as a negative occupant index, so any negative value counts, not just
+     * {@code -1}. Zero and every positive (monster) index answer false.
+     *
+     * <p>Function isPlayer coded before 260930, commented in full on 260930.
      *
      * @return true if the player is here
      */
@@ -503,7 +728,10 @@ public class Square {
     }
 
     /**
-     * Tests if a mob or the player is in this square
+     * Tests if a mob or the player is in this square, the port of C's {@code square_isoccupied}
+     * ({@code cave-square.c}): {@code square->mon != 0}.
+     *
+     * <p>Function isOccupied coded before 260930, commented in full on 260930.
      *
      * @return true if the square contains either a mob or the player
      */
@@ -514,7 +742,11 @@ public class Square {
     }
 
     /**
-     * Tests to see if a square is occupied
+     * Tests to see if a square is free of any occupant. C has no function of this name; it is the
+     * {@code !square(c, grid)->mon} half of {@code square_isopen} ({@code cave-square.c}) given a
+     * name, and is the exact negation of {@link #isOccupied()}.
+     *
+     * <p>Function isFree coded before 260930, commented in full on 260930.
      *
      * @return true if the square doesn't contain a monster or the player
      */
@@ -546,11 +778,22 @@ public class Square {
 //    }
 
     /**
-     * Tests to see if the player's memory of this square has failed
+     * Tests to see if the player's memory of this square has failed, the port of C's
+     * {@code square_ismemorybad} ({@code cave-square.c}): the grid is unknown to the player, or the
+     * feature the player remembers differs from the real one.
+     *
+     * <p>Neither answer reads {@code this}: like C, it looks the grid up in the chunk it is given,
+     * in the player's remembered cave and in the live cave, so it can be called on any
+     * {@code Square}. The known test is {@code Chunk.isKnown}, which is where C's
+     * {@code square_isknown} lives, and it runs first so that a missing player cave is never
+     * dereferenced. The features are compared with {@link Feature#equals}, which stands in for C's
+     * comparison of two feature indexes.
+     *
+     * <p>Function isMemoryBad coded before 260930, commented in full on 260930.
      *
      * @param c    The chunk we are examining
      * @param grid the grid in that chunk which points to this square in the other grids
-     * @return true if there is a difference between the features of this square and the players chunk square
+     * @return true if the grid is unknown, or the features of the player's chunk square and the live square differ
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -566,7 +809,10 @@ public class Square {
      */
 
     /**
-     * Tests to see if this square is marked
+     * Tests to see if this square is marked, the port of C's {@code square_ismark}
+     * ({@code cave-square.c}): the {@code SQUARE_MARK} info flag.
+     *
+     * <p>Function isMark coded before 260930, commented in full on 260930.
      *
      * @return true if this square is marked
      */
@@ -581,6 +827,8 @@ public class Square {
      * ({@code cave-square.c}). This is the terrain's own illumination — a lit room, a daylit
      * surface grid — and is independent of the transient light level tested by {@link #isLit()}.
      *
+     * <p>Function isGlow coded before 260930, commented in full on 260930.
+     *
      * @return true if the square carries {@code SQUARE_GLOW}
      */
     @Contract(pure = true)
@@ -590,7 +838,10 @@ public class Square {
     }
 
     /**
-     * Tests to see if this room is part of a vault, not the role it plays in that vault
+     * Tests to see if this room is part of a vault, not the role it plays in that vault, the port
+     * of C's {@code square_isvault} ({@code cave-square.c}): the {@code SQUARE_VAULT} info flag.
+     *
+     * <p>Function isVault coded before 260930, commented in full on 260930.
      *
      * @return true if the square is part of a vault
      */
@@ -601,7 +852,10 @@ public class Square {
     }
 
     /**
-     * Tests to see if this is part of a room
+     * Tests to see if this is part of a room, the port of C's {@code square_isroom}
+     * ({@code cave-square.c}): the {@code SQUARE_ROOM} info flag.
+     *
+     * <p>Function isRoom coded before 260930, commented in full on 260930.
      *
      * @return true if it is part of a room
      */
@@ -612,7 +866,11 @@ public class Square {
     }
 
     /**
-     * Tests whether the player has seen this square
+     * Tests whether the player has seen this square, the port of C's {@code square_isseen}
+     * ({@code cave-square.c}): the {@code SQUARE_SEEN} info flag. Not to be confused with
+     * {@link #isView()}, which is about what can be seen right now.
+     *
+     * <p>Function isSeen coded before 260930, commented in full on 260930.
      *
      * @return true if the player has seen this square
      */
@@ -623,7 +881,11 @@ public class Square {
     }
 
     /**
-     * Tests to see whether the player can currently see this square
+     * Tests to see whether the player can currently see this square, the port of C's
+     * {@code square_isview} ({@code cave-square.c}): the {@code SQUARE_VIEW} info flag, rebuilt
+     * whenever the view is recalculated.
+     *
+     * <p>Function isView coded before 260930, commented in full on 260930.
      *
      * @return true if this square is in view
      */
@@ -634,7 +896,11 @@ public class Square {
     }
 
     /**
-     * Tests if this square was seen before the current update
+     * Tests if this square was seen before the current update, the port of C's
+     * {@code square_wasseen} ({@code cave-square.c}): the {@code SQUARE_WASSEEN} info flag, set by
+     * {@code Chunk.markWasSeen} so the view update can tell what has changed.
+     *
+     * <p>Function wasSeen coded before 260930, commented in full on 260930.
      *
      * @return true if the square was seen
      */
@@ -645,7 +911,10 @@ public class Square {
     }
 
     /**
-     * Tests if this square triggers a feeling
+     * Tests if this square triggers a feeling, the port of C's {@code square_isfeel}
+     * ({@code cave-square.c}): the {@code SQUARE_FEEL} info flag.
+     *
+     * <p>Function isFeel coded before 260930, commented in full on 260930.
      *
      * @return true if this square triggers a feeling
      */
@@ -656,7 +925,14 @@ public class Square {
     }
 
     /**
-     * Tests if this square has a known trap
+     * Tests if this square has a known trap, the port of C's {@code square_istrap}
+     * ({@code cave-square.c}): the {@code SQUARE_TRAP} info flag.
+     *
+     * <p>It is a marker flag, not a search of the trap list, and every trap scan in this class
+     * tests it first, as the C scans do. A grid whose {@link #getTraps()} list is non-empty but
+     * whose flag is off answers false to every trap predicate.
+     *
+     * <p>Function isTrap coded before 260930, commented in full on 260930.
      *
      * @return true if this square has a known trap
      */
@@ -667,7 +943,13 @@ public class Square {
     }
 
     /**
-     * Get all the traps associated with this square
+     * Get all the traps associated with this square, C's {@code square->trap} chain
+     * ({@code square_trap} returns its head; {@code trap->next} links the rest).
+     *
+     * <p>Live, not a copy, in the same way as {@link #getObjectPile()}; callers add and remove
+     * traps through it. Nothing keeps the {@code SQUARE_TRAP} flag in step with the list.
+     *
+     * <p>Function getTraps coded before 260930, commented in full on 260930.
      *
      * @return the traps on this square
      */
@@ -678,7 +960,10 @@ public class Square {
     }
 
     /**
-     * Tests to see if this square has an unknown trap
+     * Tests to see if this square has an unknown trap, the port of C's {@code square_isinvis}
+     * ({@code cave-square.c}): the {@code SQUARE_INVIS} info flag.
+     *
+     * <p>Function isInvis coded before 260930, commented in full on 260930.
      *
      * @return true if this square has an unknown trap
      */
@@ -689,7 +974,10 @@ public class Square {
     }
 
     /**
-     * Tests to see if this square in an inner wall (generation)
+     * Tests to see if this square in an inner wall (generation), the port of C's
+     * {@code square_iswall_inner} ({@code cave-square.c}): the {@code SQUARE_WALL_INNER} info flag.
+     *
+     * <p>Function isWallInner coded before 260930, commented in full on 260930.
      *
      * @return true if this square is an inner wall
      */
@@ -700,7 +988,10 @@ public class Square {
     }
 
     /**
-     * Tests to see if this square is an outer wall (generation)
+     * Tests to see if this square is an outer wall (generation), the port of C's
+     * {@code square_iswall_outer} ({@code cave-square.c}): the {@code SQUARE_WALL_OUTER} info flag.
+     *
+     * <p>Function isWallOuter coded before 260930, commented in full on 260930.
      *
      * @return true if this square is an outer wall
      */
@@ -711,7 +1002,10 @@ public class Square {
     }
 
     /**
-     * Tests to see if this square is a solid wall (generation)
+     * Tests to see if this square is a solid wall (generation), the port of C's
+     * {@code square_iswall_solid} ({@code cave-square.c}): the {@code SQUARE_WALL_SOLID} info flag.
+     *
+     * <p>Function isWallSolid coded before 260930, commented in full on 260930.
      *
      * @return true if this square is a solid wall
      */
@@ -722,7 +1016,11 @@ public class Square {
     }
 
     /**
-     * Tests to see if there are monster restrictions on this square (generation)
+     * Tests to see if there are monster restrictions on this square (generation), the port of C's
+     * {@code square_ismon_restrict} ({@code cave-square.c}): the {@code SQUARE_MON_RESTRICT} info
+     * flag.
+     *
+     * <p>Function isMonRestrict coded before 260930, commented in full on 260930.
      *
      * @return true for monster restrictions on this square
      */
@@ -733,7 +1031,11 @@ public class Square {
     }
 
     /**
-     * Tests tp see of the square cannot be teleported FROM by the player
+     * Tests to see if the square cannot be teleported FROM by the player, the port of C's
+     * {@code square_isno_teleport} ({@code cave-square.c}): the {@code SQUARE_NO_TELEPORT} info
+     * flag.
+     *
+     * <p>Function isNoTeleport coded before 260930, commented in full on 260930.
      *
      * @return true if the player cannot teleport from this square
      */
@@ -744,7 +1046,10 @@ public class Square {
     }
 
     /**
-     * Tests if this square cannot be magically mapped by the player
+     * Tests if this square cannot be magically mapped by the player, the port of C's
+     * {@code square_isno_map} ({@code cave-square.c}): the {@code SQUARE_NO_MAP} info flag.
+     *
+     * <p>Function isNoMap coded before 260930, commented in full on 260930.
      *
      * @return true if this square CANNOT be magically mapped
      */
@@ -755,7 +1060,10 @@ public class Square {
     }
 
     /**
-     * Tests if the square can't be detected by player ESP
+     * Tests if the square can't be detected by player ESP, the port of C's
+     * {@code square_isno_esp} ({@code cave-square.c}): the {@code SQUARE_NO_ESP} info flag.
+     *
+     * <p>Function isNoEsp coded before 260930, commented in full on 260930.
      *
      * @return true if the player cannot detect this square by ESP
      */
@@ -766,7 +1074,12 @@ public class Square {
     }
 
     /**
-     * Tests to see if this square is marked for projection processing
+     * Tests to see if this square is marked for projection processing, the port of C's
+     * {@code square_isproject} ({@code cave-square.c}): the {@code SQUARE_PROJECT} info flag. It
+     * is a per-grid marker and is unrelated to the terrain's own {@code TF_PROJECT} flag tested by
+     * {@link #featIsProjectable()}.
+     *
+     * <p>Function isProject coded before 260930, commented in full on 260930.
      *
      * @return true if this square is marked for projection processing
      */
@@ -777,7 +1090,10 @@ public class Square {
     }
 
     /**
-     * Tests to see if this square has been detected for traps
+     * Tests to see if this square has been detected for traps, the port of C's
+     * {@code square_isdtrap} ({@code cave-square.c}): the {@code SQUARE_DTRAP} info flag.
+     *
+     * <p>Function isDTrap coded before 260930, commented in full on 260930.
      *
      * @return true if the player has detected for traps here
      */
@@ -788,7 +1104,10 @@ public class Square {
     }
 
     /**
-     * Tests to see if the square is inappropriate to place stairs
+     * Tests to see if the square is inappropriate to place stairs, the port of C's
+     * {@code square_isno_stairs} ({@code cave-square.c}): the {@code SQUARE_NO_STAIRS} info flag.
+     *
+     * <p>Function isNoStairs coded before 260930, commented in full on 260930.
      *
      * @return true if this square is inappropriate to place stairs
      */
@@ -799,7 +1118,11 @@ public class Square {
     }
 
     /**
-     * Check for the location of a player trap on this square
+     * Check for the location of a player trap on this square, the port of C's
+     * {@code square_isplayertrap} ({@code cave-square.c}): {@code square_trap_flag} with
+     * {@code TRF_TRAP}, known or unknown.
+     *
+     * <p>Function isPlayerTrap coded before 260930, commented in full on 260930.
      *
      * @return true if this square contains a player trap
      */
@@ -810,7 +1133,13 @@ public class Square {
     }
 
     /**
-     * Check whether this square has a web trap on it
+     * Check whether this square has a web trap on it, the port of C's {@code square_iswebbed}
+     * ({@code cave-square.c}): {@code square_trap_specific} for the kind {@code lookup_trap("web")}.
+     *
+     * <p>The {@link #isTrap()} test runs before the registry lookup, so a trapless grid never
+     * touches {@code TerrainRegistry}; C looks the kind up first and cannot afford that test.
+     *
+     * <p>Function isWebbed coded before 260930, commented in full on 260930.
      *
      * @return true if this square has a web trap on it
      */
@@ -823,7 +1152,13 @@ public class Square {
     }
 
     /**
-     * Checks for a decoy trap
+     * Checks for a decoy trap, the port of C's {@code square_isdecoyed} ({@code cave-square.c}):
+     * {@code square_trap_specific} for the kind {@code lookup_trap("decoy")}.
+     *
+     * <p>Unlike {@link #isWebbed()} this looks the kind up before testing the grid, as C does, so
+     * it needs the trap registry loaded even for a trapless square.
+     *
+     * <p>Function isDecoyed coded before 260930, commented in full on 260930.
      *
      * @return true if this square has a decoy trap on it
      */
@@ -835,7 +1170,13 @@ public class Square {
     }
 
     /**
-     * Checks for a warded trap
+     * Checks for a warded trap, the port of C's {@code square_iswarded} ({@code cave-square.c}):
+     * {@code square_trap_specific} for the kind {@code lookup_trap("glyph of warding")}.
+     *
+     * <p>As with {@link #isDecoyed()}, the kind is looked up first, so the trap registry must be
+     * loaded.
+     *
+     * <p>Function isWarded coded before 260930, commented in full on 260930.
      *
      * @return true if this square has a warded trap on it
      */
@@ -847,9 +1188,17 @@ public class Square {
     }
 
     /**
-     * Check for a specific kind of trap on a square. This only checks for the same description text, as the TrapKind
-     * class also contains information which may not be the same for trap of the same kind
-     * TODO: Check this out
+     * Check for a specific kind of trap on a square, the port of C's {@code square_trap_specific}
+     * ({@code trap.c}).
+     *
+     * <p>The kinds are compared by their index in the trap-kind table, C's {@code t_idx}, which is
+     * {@link TrapKind#getTrapKindIndex()}. Comparing descriptions is not equivalent, because
+     * several kinds in {@code trap.txt} share one: three of the dart traps read "A trap which
+     * shoots damaging darts." The {@link #isTrap()} marker is tested first, and the whole trap
+     * list is scanned rather than only the first entry.
+     *
+     * <p>Function trapSpecific coded before 260930, commented in full on 260930, updated on 260930
+     * when the match moved from the description text to the kind index.
      *
      * @param kind the kind of trap we are checking for
      * @return true if one of the traps on this square is the same kind of trap as the incoming kind
@@ -860,14 +1209,18 @@ public class Square {
         if (!isTrap()) return false;
 
         for (Trap trap : traps) {
-            if (trap.getKind().getDescription().equals(kind.getDescription())) return true;
+            if (trap.getKind().getTrapKindIndex() == kind.getTrapKindIndex()) return true;
         }
 
         return false;
     }
 
     /**
-     * Checks if there is a visible trap on this square
+     * Checks if there is a visible trap on this square, the port of C's
+     * {@code square_isvisibletrap} ({@code cave-square.c}): {@code square_trap_flag} with
+     * {@code TRF_VISIBLE}.
+     *
+     * <p>Function isVisibleTrap coded before 260930, commented in full on 260930.
      *
      * @return true for the existance of visible traps
      */
@@ -878,7 +1231,11 @@ public class Square {
     }
 
     /**
-     * Check for the existance of a trap with a given flag on this square
+     * Check for the existance of a trap with a given flag on this square, the port of C's
+     * {@code square_trap_flag} ({@code trap.c}). The {@link #isTrap()} marker is tested first, then
+     * every trap on the grid is scanned and the answer is true if any carries the flag.
+     *
+     * <p>Function trapFlag coded before 260930, commented in full on 260930.
      *
      * @param trapFlag the flag to check for
      * @return if there is a trap on this square with the given flag set
@@ -899,17 +1256,28 @@ public class Square {
     }
 
     /**
-     * Get the remaining time for a trap identified by its index to be disabled. Note, the first matching trap on the
-     * square is used
+     * Get the remaining time for a trap of a given kind to be disabled, the port of C's
+     * {@code square_trap_timeout} ({@code trap.c}). Note, the first matching trap on the square
+     * with a non-zero timeout is used.
      *
-     * @param trapIndex the integer index of the trap
+     * <p>The argument is a trap-kind index, C's {@code t_idx}, matched against
+     * {@link TrapKind#getTrapKindIndex()}. A negative value means "any kind", which is how
+     * {@code square_isdisabledtrap} calls it with {@code -1}. Traps of the wrong kind are skipped,
+     * a trap whose timeout is zero is skipped rather than ending the scan, and zero is returned if
+     * no trap qualifies. Unlike {@link #trapFlag(TrapEnum)} it does not test the
+     * {@link #isTrap()} marker first, as in C.
+     *
+     * <p>Function trapTimeout coded before 260930, commented in full on 260930, updated on 260930
+     * when the match moved from the trap's list position to the kind index.
+     *
+     * @param trapIndex the index of the trap kind, or a negative number to accept any kind
      * @return the number of turns until this trap disarms
      */
     @CheckReturnValue
     @Contract(pure = true)
     public int trapTimeout(int trapIndex) {
         for (Trap trap : traps) {
-            if (trapIndex >= 0 && trapIndex != trap.getTrapIndex())
+            if (trapIndex >= 0 && trapIndex != trap.getKind().getTrapKindIndex())
                 continue;
 
             if (trap.getTimeout() != 0)
@@ -920,7 +1288,13 @@ public class Square {
     }
 
     /**
-     * Checks to see if this square is open, a floor square not occupied by a monster
+     * Checks to see if this square is open, a floor square not occupied by a monster, the port of
+     * C's {@code square_isopen} ({@code cave-square.c}): {@link #isFloor()} and no occupant.
+     *
+     * <p>The player counts as an occupant, since C tests {@code !square->mon} and the player is a
+     * negative index. Objects and traps do not matter here; see {@link #isEmpty()}.
+     *
+     * <p>Function isOpen coded before 260930, commented in full on 260930.
      *
      * @return true for an empty square
      */
@@ -931,7 +1305,13 @@ public class Square {
     }
 
     /**
-     * Tests to see if this square is empty, (an open square without any items)
+     * Tests to see if this square is empty, (an open square without any items), the port of C's
+     * {@code square_isempty} ({@code cave-square.c}).
+     *
+     * <p>The checks run in C's order: a player trap or a web vetoes first, then the grid must be
+     * {@link #isOpen()} with an empty object pile.
+     *
+     * <p>Function isEmpty coded before 260930, commented in full on 260930.
      *
      * @return true if the square doesn't contain any items and is open
      */
@@ -943,9 +1323,17 @@ public class Square {
     }
 
     /**
-     * Check to see if this square can br run through
+     * Check to see if a monster or the player could be placed on this square, the port of C's
+     * {@code square_isarrivable} ({@code cave-square.c}).
      *
-     * @return true if this square can be run through
+     * <p>Any occupant, player trap or web refuses the grid; otherwise floor and stairs are
+     * accepted and everything else, doors included, is not. C carries a comment wondering about
+     * open doors, and the answer is left as it is. Unlike {@link #isEmpty()} this ignores the
+     * object pile.
+     *
+     * <p>Function isArrivable coded before 260930, commented in full on 260930.
+     *
+     * @return true if this square can be arrived at
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -956,7 +1344,15 @@ public class Square {
     }
 
     /**
-     * Checks to see if this square is monster walkable
+     * Checks to see if this square is monster walkable, the port of C's
+     * {@code square_is_monster_walkable} ({@code cave-square.c}): {@code feat_is_monster_walkable},
+     * which tests {@code TF_PASSABLE}, the same flag as {@link #featIsPassable()}.
+     *
+     * <p>C uses it for polymorphing, when a monster may be standing on terrain that is not an empty
+     * space. The {@code null} guard is the port's own: it makes a feature-less square answer false
+     * rather than throw.
+     *
+     * <p>Function featIsMonsterWalkable coded before 260930, commented in full on 260930.
      *
      * @return true if a monster can walk through this square
      */
@@ -967,7 +1363,11 @@ public class Square {
     }
 
     /**
-     * Checks to see if the player can walk through this square
+     * Checks to see if the player can walk through this square, the port of C's
+     * {@code square_ispassable} ({@code cave-square.c}): {@code feat_is_passable}, the
+     * {@code TF_PASSABLE} flag. The {@code null} guard is the port's own.
+     *
+     * <p>Function featIsPassable coded before 260930, commented in full on 260930.
      *
      * @return true if the square is passable by the player
      */
@@ -978,7 +1378,15 @@ public class Square {
     }
 
     /**
-     * Checks to see if a projectile can pass through this square
+     * Checks to see if a projectile can pass through this square, the port of C's
+     * {@code square_isprojectable} ({@code cave-square.c}): {@code feat_is_projectable}, the
+     * {@code TF_PROJECT} flag.
+     *
+     * <p>C also answers false for an out-of-bounds grid; here that test belongs to {@code Chunk},
+     * and the {@code null} guard is the port's own. Not to be confused with the per-grid marker
+     * {@link #isProject()}.
+     *
+     * <p>Function featIsProjectable coded before 260930, commented in full on 260930.
      *
      * @return true if this square can have a projectable in it
      */
@@ -989,7 +1397,11 @@ public class Square {
     }
 
     /**
-     * Checks to see if the feature of this square allows line of sight
+     * Checks to see if the feature of this square allows line of sight, the port of C's
+     * {@code square_allowslos} ({@code cave-square.c}): {@code feat_is_los}, the {@code TF_LOS}
+     * flag. The {@code null} guard is the port's own.
+     *
+     * <p>Function featAllowsLOS coded before 260930, commented in full on 260930.
      *
      * @return true if this square allows LoS
      */
@@ -1000,7 +1412,13 @@ public class Square {
     }
 
     /**
-     * Checks to see if the feature of this square is a wall
+     * Checks to see if the feature of this square is a wall, the port of C's {@code feat_is_wall}
+     * ({@code cave-square.c}) applied to this grid's terrain: the {@code TF_WALL} flag.
+     *
+     * <p>Rubble is rock but not a wall, so it answers false. The {@code null} guard is the port's
+     * own.
+     *
+     * <p>Function featIsWall coded before 260930, commented in full on 260930.
      *
      * @return true if this square is a wall
      */
@@ -1011,7 +1429,12 @@ public class Square {
     }
 
     /**
-     * Check to see if this square is internally lit
+     * Check to see if this square is internally lit, the port of C's {@code square_isbright}
+     * ({@code cave-square.c}): {@code feat_is_bright}, the {@code TF_BRIGHT} flag. Bright terrain
+     * lights itself, which is why {@code Chunk.calcLighting} adds light for it. The {@code null}
+     * guard is the port's own.
+     *
+     * <p>Function featIsBright coded before 260930, commented in full on 260930.
      *
      * @return true if this square is internally lit
      */
@@ -1022,7 +1445,12 @@ public class Square {
     }
 
     /**
-     * Checks if this square is fire based
+     * Checks if this square is fire based, the port of C's {@code square_isfiery}
+     * ({@code cave-square.c}): {@code feat_is_fiery}, the {@code TF_FIERY} flag. The {@code null}
+     * guard is the port's own. See {@link #isDamaging()}, which asks the same question of the
+     * terrain but reads as damage.
+     *
+     * <p>Function featIsFiery coded before 260930, commented in full on 260930.
      *
      * @return true if this square is lava
      */
@@ -1033,7 +1461,11 @@ public class Square {
     }
 
     /**
-     * Checks if the square doesn't allow monster flow information
+     * Checks if the square doesn't allow monster flow information, the port of C's
+     * {@code square_isnoflow} ({@code cave-square.c}): {@code feat_is_no_flow}, the
+     * {@code TF_NO_FLOW} flag. The {@code null} guard is the port's own.
+     *
+     * <p>Function featIsNoFlow coded before 260930, commented in full on 260930.
      *
      * @return true if the square DOESN'T allow monster flow information
      */
@@ -1044,7 +1476,11 @@ public class Square {
     }
 
     /**
-     * Tests to see if this square carries player scent or not
+     * Tests to see if this square carries player scent or not, the port of C's
+     * {@code square_isnoscent} ({@code cave-square.c}): {@code feat_is_no_scent}, the
+     * {@code TF_NO_SCENT} flag. The {@code null} guard is the port's own.
+     *
+     * <p>Function featIsNoScent coded before 260930, commented in full on 260930.
      *
      * @return true if this square DOESN'T carry player scent
      */
@@ -1055,7 +1491,15 @@ public class Square {
     }
 
     /**
-     * Check to see if this is an untrapped square without items
+     * Check to see if this is an untrapped square without items, the port of C's
+     * {@code square_canputitem} ({@code cave-square.c}).
+     *
+     * <p>The terrain must be able to hold an object ({@link #isObjectHolding()}), the grid must
+     * not carry a known trap ({@link #isTrap()}, the marker, not the player-trap flag), and the
+     * pile must be empty. Occupants are not considered, so a monster standing on bare floor does
+     * not prevent an item being put there.
+     *
+     * <p>Function canPutItem coded before 260930, commented in full on 260930.
      *
      * @return true if this is an untrapped square without items
      */
@@ -1067,7 +1511,10 @@ public class Square {
     }
 
     /**
-     * Check to see if the square can damage an individual - currently only lava
+     * Check to see if the square can damage an individual - currently only lava, the port of C's
+     * {@code square_isdamaging} ({@code cave-square.c}): {@code feat_is_fiery}.
+     *
+     * <p>Function isDamaging coded before 260930, commented in full on 260930.
      *
      * @return true if the square is lava
      */
@@ -1078,7 +1525,10 @@ public class Square {
     }
 
     /**
-     * True if a feeling can be used on this square
+     * True if a feeling can be used on this square, the port of C's {@code square_allowsfeel}
+     * ({@code cave-square.c}): the terrain is passable and not damaging.
+     *
+     * <p>Function allowsFeel coded before 260930, commented in full on 260930.
      *
      * @return true if this square can be used for a feeling
      */
@@ -1089,7 +1539,11 @@ public class Square {
     }
 
     /**
-     * Getter
+     * Getter for the terrain of this square, the port of C's {@code square_feat}
+     * ({@code cave-square.c}). C returns the {@code f_info[]} entry for the grid's feature index;
+     * the port holds the {@link Feature} directly, so this hands back the field.
+     *
+     * <p>Function getFeature coded before 260930, commented in full on 260930.
      *
      * @return the feat of this square
      */
@@ -1100,7 +1554,26 @@ public class Square {
     }
 
     /**
-     * Getter
+     * Setter for the terrain of this square, package-private.
+     *
+     * <p>This is a plain assignment. C's {@code square_set_feat} ({@code cave-square.c}) does more
+     * than write the field: it keeps the chunk's per-feature counts, turns on {@code SQUARE_GLOW}
+     * for bright terrain, and once the level exists removes traps the new terrain cannot hold and
+     * redraws the grid. None of that happens here, so it is for setting a feature up rather than
+     * for changing terrain in play.
+     *
+     * <p>Function setFeature coded before 260930, commented in full on 260930.
+     *
+     * @param feature the feature to set this.feat to
+     */
+    void setFeature(@NotNull Feature feature) {
+        feat = feature; }
+
+    /**
+     * Getter for the occupant index, reading C's {@code square->mon}: positive for a monster,
+     * negative for the player, zero for nobody.
+     *
+     * <p>Function getMonsterIndex coded before 260930, commented in full on 260930.
      *
      * @return the int index of the monster on this square
      */
@@ -1111,18 +1584,12 @@ public class Square {
     }
 
     /**
-     * Setter
-     *
-     * @param feature the feature to set this.feat to
-     */
-    void setFeature(@NotNull Feature feature) {
-        feat = feature; }
-
-    /**
      * Test-only helper that populates this square with a known fixture. When
      * {@code full} is true the square becomes a lit floor occupied by a monster,
      * carrying three objects, a trap and all info flags set; otherwise it becomes
      * an empty, dark, unknown square holding the player.
+     *
+     * <p>Function setUpTest coded before 260930, commented in full on 260930.
      *
      * @param full whether to build the fully-populated fixture
      */
@@ -1281,6 +1748,18 @@ public class Square {
         light = level;
     }
 
+    /**
+     * Sets the occupant index, the port of C's {@code square_set_mon} ({@code cave-square.c}),
+     * which is the single assignment {@code c->squares[y][x].mon = midx}.
+     *
+     * <p>The value is not validated or cross-checked against the monster list: positive is a
+     * monster's index, negative is the player, zero clears the grid, and keeping the chunk's
+     * monster table consistent with it is the caller's job, as in C.
+     *
+     * <p>Function setMon coded before 260930, commented in full on 260930.
+     *
+     * @param monIndex the new occupant index: positive for a monster, negative for the player, zero for nobody
+     */
     public void setMon(int monIndex) {
         this.monsterIndex = monIndex;
     }

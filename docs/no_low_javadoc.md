@@ -47,12 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/cave/PointSet.java`
-
-0 missing, 1 low
-
-- L38: constructor `PointSet` - LOW - "Constructor"
-
 ### `middle/cave/Square.java`
 
 0 missing, 5 low

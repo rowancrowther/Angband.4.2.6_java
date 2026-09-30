@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.cave;
 
+import uk.co.jackoftradesltd.middle.game.globals.registry.DungeonRegistry;
 import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.channel.utils.Flag;
@@ -27,6 +28,7 @@ import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 /**
@@ -34,21 +36,29 @@ import java.util.Objects;
  * {@code trap.txt}) — its display glyph, depth/rarity, power, effect(s) and the
  * messages shown when it is saved against or triggers. Live traps on the map are
  * {@link Trap} instances referring back to a {@code TrapKind}. This is the Java
- * port of the C original's {@code struct trap_kind} ({@code src/trap.h}).
+ * port of the C original's {@code struct trap_kind} ({@code trap.h}).
+ *
+ * <p>The C {@code next} link is dropped (kinds live in a {@code List}), and {@code d_attr}/{@code d_char} are
+ * folded into one {@link AngbandDisplayCharacter}. C also keeps a blank kind at index 0 of {@code trap_info};
+ * the Java list has no such padding, which is harmless because {@code lookup_trap()} skips unnamed kinds anyway.
+ *
+ * <p>Class coded before 260930, commented in full on 260930.
  *
  * @author Rowan Crowther
  */
 public class TrapKind {
     /**
-     * The trap type's internal name.
+     * The trap type's internal grouping name (C {@code name}, first field of the {@code name:} line). Not
+     * unique across kinds; a {@code null} name marks an unused table slot and makes {@link #lookupTrap} skip it.
      */
     private String trapKindName;
     /**
-     * The trap's display text/title.
+     * The trap's flavour text (C {@code text}, from the {@code desc:} directive).
      */
     private String text;
     /**
-     * Human-readable description of the trap.
+     * Short description (C {@code desc}, second field of the {@code name:} line). This is the key
+     * {@link #lookupTrap} matches against.
      */
     private String description;
     /**
@@ -93,7 +103,7 @@ public class TrapKind {
      */
     private int maxNum;
     /**
-     * The trap's power, as a dice/random expression.
+     * The trap's power (C {@code power}, "visibility of player trap"), as a dice/random expression.
      */
     private Random power;
 
@@ -165,20 +175,60 @@ public class TrapKind {
     }
 
     /**
-     * @return this trap type's human-readable description
+     * Finds a trap kind from its short description, the Java form of {@code lookup_trap()} in {@code trap.c}.
+     * Walks {@link TerrainRegistry#getTrapKinds()} in table order, skipping kinds with a {@code null} name. The
+     * first kind whose description equals the argument exactly (case-sensitive) wins immediately; failing that,
+     * the first kind whose description contains the argument case-insensitively (C {@code my_stristr}) is
+     * returned. Consequently an empty string matches every description and returns the first named kind, as in C,
+     * and an argument with no match returns {@code null}.
+     *
+     * <p>Function lookupTrap coded before 260930, commented in full on 260930.
+     *
+     * @param description the trap description to match, exactly or as a substring
+     * @return the matching trap kind, or {@code null} if nothing matches
+     */
+    public static TrapKind lookupTrap(String description) {
+        TrapKind closest = null;
+
+        for (TrapKind tk : TerrainRegistry.getTrapKinds()) {
+            if (tk.getTrapKindName() == null) continue;
+
+            // Test for equality
+            if (tk.getDescription().equals(description)) {
+                return tk;
+            }
+
+            // Test for close matches
+            if (closest == null && tk.getDescription().toLowerCase(Locale.ROOT)
+                    .contains(description.toLowerCase(Locale.ROOT))) {
+                closest = tk;
+            }
+        }
+
+        // Return 1st close match
+        return closest;
+    }
+
+    /**
+     * Returns the short description, the key {@link #lookupTrap} matches on.
+     *
+     * <p>Function getDescription coded before 260930, commented in full on 260930.
+     *
+     * @return this trap type's short description (C {@code desc})
      */
     public String getDescription() {
         return description;
     }
 
     /**
-     * Look up a trap kind by its description via the global constants table.
+     * Returns the internal grouping name (C {@code name}); {@code null} for an unused table slot.
      *
-     * @param description the trap description to match
-     * @return the matching trap kind
+     * <p>Function getTrapKindName coded before 260930, commented in full on 260930.
+     *
+     * @return this trap type's internal name
      */
-    public static TrapKind lookupTrap(String description) {
-        return TerrainRegistry.lookupTrap(description);
+    public String getTrapKindName() {
+        return trapKindName;
     }
 
     /**
@@ -243,7 +293,16 @@ public class TrapKind {
 
         TrapKind trapKind = (TrapKind) o;
         return trapKindIndex == trapKind.trapKindIndex && rarity == trapKind.rarity && minDepth == trapKind.minDepth
-                && maxNum == trapKind.maxNum && Objects.equals(trapKindName, trapKind.trapKindName) && Objects.equals(text, trapKind.text) && Objects.equals(getDescription(), trapKind.getDescription()) && Objects.equals(messageOnSave, trapKind.messageOnSave) && Objects.equals(messageOnFailure, trapKind.messageOnFailure) && Objects.equals(messageOnExtraEffect, trapKind.messageOnExtraEffect) && Objects.equals(angbandDisplayCharacter, trapKind.angbandDisplayCharacter) && Objects.equals(power, trapKind.power) && Objects.equals(flags, trapKind.flags) && Objects.equals(saveFlags, trapKind.saveFlags) && Objects.equals(effect, trapKind.effect) && Objects.equals(effectXtra, trapKind.effectXtra);
+                && maxNum == trapKind.maxNum && Objects.equals(trapKindName, trapKind.trapKindName)
+                && Objects.equals(text, trapKind.text) && Objects.equals(getDescription(), trapKind.getDescription())
+                && Objects.equals(messageOnSave, trapKind.messageOnSave)
+                && Objects.equals(messageOnFailure, trapKind.messageOnFailure)
+                && Objects.equals(messageOnExtraEffect, trapKind.messageOnExtraEffect)
+                && Objects.equals(angbandDisplayCharacter, trapKind.angbandDisplayCharacter)
+                && Objects.equals(power, trapKind.power) && Objects.equals(flags, trapKind.flags)
+                && Objects.equals(saveFlags, trapKind.saveFlags) && Objects.equals(effect, trapKind.effect)
+                && Objects.equals(effectXtra, trapKind.effectXtra)
+                && Objects.equals(message, trapKind.message);
     }
 
     /**
@@ -256,6 +315,7 @@ public class TrapKind {
         int result = Objects.hashCode(trapKindName);
         result = 31 * result + Objects.hashCode(text);
         result = 31 * result + Objects.hashCode(getDescription());
+        result = 31 * result + Objects.hashCode(message);
         result = 31 * result + Objects.hashCode(messageOnSave);
         result = 31 * result + Objects.hashCode(messageOnFailure);
         result = 31 * result + Objects.hashCode(messageOnExtraEffect);

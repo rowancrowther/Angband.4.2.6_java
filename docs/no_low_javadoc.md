@@ -47,14 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/cave/Trap.java`
-
-0 missing, 3 low
-
-- L66: method `getKind` - LOW
-- L96: method `getTrapIndex` - LOW
-- L105: method `getTimeout` - LOW
-
 ### `middle/cave/TrapKind.java`
 
 0 missing, 6 low

@@ -23,12 +23,14 @@ import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import uk.co.jackoftradesltd.middle.cave.Feature;
+import uk.co.jackoftradesltd.middle.cave.Trap;
 import uk.co.jackoftradesltd.middle.cave.TrapKind;
 import uk.co.jackoftradesltd.middle.cave.enums.TerrainFlags;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 public class TerrainRegistry {
     private static final Logger logger = LogManager.getLogger();
@@ -82,30 +84,25 @@ public class TerrainRegistry {
      */
     @CheckReturnValue
     public static @Nullable TrapKind lookupTrap(@NotNull String description) {
-        if (trapInfo.isEmpty()) return null;
-//        {
-//            String message = "Invalid attempt to access trapInfo when it hasn't been initialized";
-//            IllegalStateException e = new IllegalStateException(message);
-//            logger.fatal(message, e);
-//            throw e;
-//        }
+        TrapKind closest = null;
 
-        for (TrapKind trap : trapInfo) {
-            if (trap.getDescription().equals(description)) {
-                return trap;
+        for (TrapKind tk : TerrainRegistry.getTrapKinds()) {
+            if (tk.getTrapKindName() == null) continue;
+
+            // Test for equality
+            if (tk.getDescription().equals(description)) {
+                return tk;
+            }
+
+            // Test for close matches
+            if (closest == null && tk.getDescription().toLowerCase(Locale.ROOT)
+                    .contains(description.toLowerCase(Locale.ROOT))) {
+                closest = tk;
             }
         }
 
-        // check for a close match as we can't find an exact one. Close matches are ones where the cases don't match
-        // but the characters do.
-        for (TrapKind trap : trapInfo) {
-            if (trap.getDescription().equalsIgnoreCase(description)) {
-                return trap;
-            }
-        }
-
-        // not found - return null
-        return null;
+        // Return 1st close match
+        return closest;
     }
 
     /**
@@ -113,5 +110,9 @@ public class TerrainRegistry {
      */
     public static int getTrapMax() {
         return trapMax;
+    }
+
+    public static List<TrapKind> getTrapKinds() {
+        return Collections.unmodifiableList(trapInfo);
     }
 }

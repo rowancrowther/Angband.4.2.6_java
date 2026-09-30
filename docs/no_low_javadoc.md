@@ -47,36 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/cave/enums/SquareEnum.java`
-
-24 missing, 1 low
-
-- L31: method `SQUARE_MAX` - MISSING
-- L31: enum-const `SQUARE_NONE` - MISSING
-- L32: enum-const `SQUARE_MARK` - MISSING
-- L33: enum-const `SQUARE_GLOW` - MISSING
-- L34: enum-const `SQUARE_VAULT` - MISSING
-- L35: enum-const `SQUARE_ROOM` - MISSING
-- L36: enum-const `SQUARE_SEEN` - MISSING
-- L37: enum-const `SQUARE_VIEW` - MISSING
-- L38: enum-const `SQUARE_WASSEEN` - MISSING
-- L39: enum-const `SQUARE_FEEL` - MISSING
-- L40: enum-const `SQUARE_TRAP` - MISSING
-- L41: enum-const `SQUARE_INVIS` - MISSING
-- L42: enum-const `SQUARE_WALL_INNER` - MISSING
-- L43: enum-const `SQUARE_WALL_OUTER` - MISSING
-- L44: enum-const `SQUARE_WALL_SOLID` - MISSING
-- L45: enum-const `SQUARE_MON_RESTRICT` - MISSING
-- L46: enum-const `SQUARE_NO_TELEPORT` - MISSING
-- L47: enum-const `SQUARE_NO_MAP` - MISSING
-- L48: enum-const `SQUARE_NO_ESP` - MISSING
-- L49: enum-const `SQUARE_PROJECT` - MISSING
-- L50: enum-const `SQUARE_DTRAP` - MISSING
-- L51: enum-const `SQUARE_NO_STAIRS` - MISSING
-- L52: enum-const `SQUARE_CLOSE_PLAYER` - MISSING
-- L53: enum-const `SQUARE_MAX` - MISSING
-- L72: method `getDescription` - LOW
-
 ### `middle/cave/enums/TerrainFeatureFlags.java`
 
 34 missing, 1 low

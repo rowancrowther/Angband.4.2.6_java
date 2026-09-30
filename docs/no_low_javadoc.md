@@ -47,17 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/cave/profiles/dungeon/TunnelProfile.java`
-
-0 missing, 6 low
-
-- L67: constructor `TunnelProfile` - LOW
-- L78: method `getChg` - LOW
-- L85: method `getCon` - LOW
-- L92: method `getJct` - LOW
-- L99: method `getPen` - LOW
-- L106: method `getRnd` - LOW
-
 ### `middle/cave/profiles/room/RoomTemplate.java`
 
 0 missing, 11 low

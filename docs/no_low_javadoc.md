@@ -47,16 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/cave/Square.java`
-
-0 missing, 5 low
-
-- L297: method `isQuartz` - LOW - "Tests for Quartz"
-- L308: method `isMineral` - LOW - "Tests for minerals"
-- L1096: method `getFeature` - LOW - "Getter"
-- L1107: method `getMonsterIndex` - LOW - "Getter"
-- L1118: method `setFeature` - LOW - "Setter"
-
 ### `middle/cave/Trap.java`
 
 0 missing, 3 low

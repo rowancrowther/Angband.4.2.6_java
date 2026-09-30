@@ -47,16 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/cave/KeypadDirectionLoop.java`
-
-0 missing, 5 low
-
-- L57: method `getLoop` - LOW
-- L89: method `getXOffset` - LOW
-- L96: method `getYOffset` - LOW
-- L103: method `getGrid` - LOW
-- L165: method `getNext` - LOW
-
 ### `middle/cave/Loc.java`
 
 0 missing, 2 low

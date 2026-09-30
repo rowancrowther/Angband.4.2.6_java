@@ -34,19 +34,19 @@ import uk.co.jackoftradesltd.middle.cave.enums.DirectionEnum;
  * Both coordinates are final and every operation returns a new instance rather than
  * mutating in place, so a {@code Loc} is safe to use as a key in a hashed collection:
  * it cannot change identity after being stored.
+ * <p>
+ * The C {@code loc(x, y)} constructor function has no public counterpart: build one with
+ * {@code Loc.row(y).col(x)}, or derive it from an existing location. The methods here come
+ * from three C files: {@code z-type.c} ({@code loc_eq}, {@code loc_is_zero},
+ * {@code loc_sum}, {@code loc_diff}, {@code loc_offset}, {@code rand_loc}),
+ * {@code cave.c} ({@code next_grid}, {@code motion_dir}) and {@code cave-view.c}
+ * ({@code distance}).
+ * <p>
+ * Class Loc coded on 260830, commented in full on 260930.
  *
  * @author Rowan Crowther
  */
 public class Loc {
-    /**
-     * Column (horizontal) coordinate.
-     */
-    private final int x;
-    /**
-     * Row (vertical) coordinate.
-     */
-    private final int y;
-
     /**
      * The origin (0, 0), shared rather than reallocated at each use. Safe to share
      * because {@link Loc} is immutable.
@@ -54,14 +54,32 @@ public class Loc {
      * Note that much of the C original overloads (0, 0) to mean "no location" as well as
      * the literal top-left grid — see {@link #isZero()} and the {@code loc_is_zero} checks
      * it ports. Treat a bare {@code zero} as a sentinel with care.
+     * <p>
+     * Field zero coded on 260830, commented in full on 260930.
      */
     public static final Loc zero = new Loc(0, 0);
+    /**
+     * Column (horizontal) coordinate, the C {@code struct loc} field {@code x}.
+     * <p>
+     * Field x coded on 260830, commented in full on 260930.
+     */
+    private final int x;
+    /**
+     * Row (vertical) coordinate, the C {@code struct loc} field {@code y}.
+     * <p>
+     * Field y coded on 260830, commented in full on 260930.
+     */
+    private final int y;
 
     /**
      * Private because instances are obtained through the fluent {@link #row(int)} idiom or
      * derived from an existing location, which keeps the (x, y) argument order from being
      * transposed at the call site — a standing hazard in the C original, where
      * {@code loc(x, y)} takes column first but the grids it indexes are row-major.
+     * <p>
+     * Ports {@code loc} ({@code src/z-type.c}), which simply fills in a {@code struct loc}.
+     * <p>
+     * Constructor coded on 260830, commented in full on 260930.
      *
      * @param x the x coordinate (column) of this location
      * @param y the y coordinate (row) of this location
@@ -72,18 +90,42 @@ public class Loc {
     }
 
     /**
-     * Getter for y
+     * Entry point for the fluent {@code Loc.row(y).col(x)} construction idiom, fixing the row
+     * (y-coordinate) first and returning a builder that then takes the column. This is the
+     * only public way to build a {@link Loc} from scratch, standing in for the C
+     * {@code loc(x, y)}, and naming the axes at the call site keeps the arguments from being
+     * transposed.
+     * <p>
+     * Function row coded on 260830, commented in full on 260930.
      *
-     * @return the current value of y
+     * @param y the row (y-coordinate)
+     * @return a {@link RowBuilder} awaiting the column to complete the {@link Loc}
+     */
+    public static RowBuilder row(int y) {
+        RowBuilder rowHolder = new RowBuilder();
+        rowHolder.y = y;
+        return rowHolder;
+    }
+
+    /**
+     * Returns the row (vertical) coordinate of this location, the C {@code grid.y}. Rows are
+     * numbered from the top of the dungeon downwards, so a larger {@code y} is further south.
+     * <p>
+     * Function getY coded on 260830, commented in full on 260930.
+     *
+     * @return the row coordinate
      */
     public int getY() {
         return y;
     }
 
     /**
-     * Getter for x
+     * Returns the column (horizontal) coordinate of this location, the C {@code grid.x}.
+     * Columns are numbered from the left of the dungeon, so a larger {@code x} is further east.
+     * <p>
+     * Function getX coded on 260830, commented in full on 260930.
      *
-     * @return the current value of x
+     * @return the column coordinate
      */
     public int getX() {
         return x;
@@ -91,11 +133,17 @@ public class Loc {
 
     /**
      * Returns a grid which is the result of moving one grid in the given direction.
-     * Ports {@code next_grid} ({@code src/cave.h}), with the C {@code int dir} replaced by
-     * {@link DirectionEnum} so an out-of-range direction cannot be passed.
+     * Ports {@code next_grid} ({@code src/cave.c}), with the C {@code int dir} replaced by
+     * {@link DirectionEnum} so an out-of-range direction cannot be passed. The C adds the
+     * {@code ddgrid[dir]} entry; here {@link DirectionEnum#ddx()} and {@link DirectionEnum#ddy()}
+     * supply the same deltas, and the non-moving directions ({@code DIR_NONE},
+     * {@code DIR_TARGET}, {@code DIR_UNKNOWN}) return an equal grid, as {@code ddgrid[0]} and
+     * {@code ddgrid[5]} do.
      * <p>
      * Performs no bounds checking — the result may lie outside the dungeon, so callers
      * stepping towards an edge must test it before indexing a grid array.
+     * <p>
+     * Function nextGrid coded on 260830, commented in full on 260930.
      *
      * @param direction The direction enum of the direction to move in
      * @return a new grid one step away from this grid in the given direction
@@ -114,6 +162,8 @@ public class Loc {
      * collections at all, because {@code List.contains}, {@code HashSet} and
      * {@code HashMap} all dispatch through {@code equals(Object)}. An overload is
      * invisible to them, and they would silently fall back to reference identity.
+     * <p>
+     * Function equals coded on 260830, commented in full on 260930.
      *
      * @param obj the object to compare against this location; may be null
      * @return true if {@code obj} is a {@link Loc} with the same {@code x} and {@code y};
@@ -132,6 +182,8 @@ public class Loc {
      * Determines if this location is the origin location (0, 0). Ports
      * {@code loc_is_zero} ({@code src/z-type.c}), which likewise defers to an equality
      * check against the origin rather than testing the fields directly.
+     * <p>
+     * Function isZero coded on 260830, commented in full on 260930.
      *
      * @return true if this is equivalent to the origin location, false otherwise
      */
@@ -145,6 +197,8 @@ public class Loc {
      * <p>
      * The second operand is usually an offset rather than a position — this is how the C
      * applies the {@code ddgrid} direction deltas when walking a grid's eight neighbours.
+     * <p>
+     * Function sum coded on 260830, commented in full on 260930.
      *
      * @param other The location to sum with this one
      * @return A location which consists of (x1 + x2, y1 + y2)
@@ -159,6 +213,8 @@ public class Loc {
      * <p>
      * The result is a displacement, not a position, and its coordinates are routinely
      * negative — one of the few ways a {@link Loc} legitimately leaves the dungeon bounds.
+     * <p>
+     * Function diff coded on 260830, commented in full on 260930.
      *
      * @param other the other point to work out the difference from this point
      * @return A new location (x1 - x2, y1 - y2).
@@ -172,7 +228,12 @@ public class Loc {
      * {@code rand_loc} ({@code src/z-type.c}).
      * <p>
      * Draws each axis independently, so the result is uniform over the enclosing
-     * rectangle, not over a circle around this point.
+     * rectangle, not over a circle around this point. Each axis is
+     * {@code RandomValueUtils.randSpread}, the port of the C macro {@code rand_spread} in
+     * {@code z-rand.h}, drawn x first and then y as in C. A spread of 0 returns the coordinate
+     * unchanged, though the draw is still consumed from the random stream.
+     * <p>
+     * Function rand coded on 260830, commented in full on 260930.
      *
      * @param xSpread The x spread value - new value should be between this.x - xSpread and this.x + xSpread
      * @param ySpread The y spread value - new value should be between this.y - ySpread and this.y + ySpread
@@ -184,22 +245,11 @@ public class Loc {
     }
 
     /**
-     * Entry point for the fluent {@code Loc.row(y).col(x)} construction idiom, fixing the row
-     * (y-coordinate) first and returning a builder that then takes the column.
-     *
-     * @param y the row (y-coordinate)
-     * @return a {@link RowBuilder} awaiting the column to complete the {@link Loc}
-     */
-    public static RowBuilder row(int y) {
-        RowBuilder rowHolder = new RowBuilder();
-        rowHolder.y = y;
-        return rowHolder;
-    }
-
-    /**
      * Returns a new location offset from this location by dx and dy. Ports
      * {@code loc_offset} ({@code src/z-type.c}); equivalent to {@link #sum} with the
      * offset supplied as loose coordinates rather than as a {@link Loc}.
+     * <p>
+     * Function offset coded on 260830, commented in full on 260930.
      *
      * @param dx The amount that the x coordinate is offset
      * @param dy The amount that the y coordinate is offset
@@ -296,29 +346,6 @@ public class Loc {
     }
 
     /**
-     * Intermediate builder for the fluent {@code Loc.row(y).col(x)} idiom, holding the row until the
-     * column is supplied.
-     *
-     * @author Rowan Crowther
-     */
-    public static class RowBuilder {
-        /**
-         * The row (y-coordinate) fixed by {@link Loc#row(int)}.
-         */
-        private int y;
-
-        /**
-         * Completes the location by supplying the column.
-         *
-         * @param x the column (x-coordinate)
-         * @return the {@link Loc} at the previously-fixed row and this column
-         */
-        public Loc col(int x) {
-            return new Loc(x, y);
-        }
-    }
-
-    /**
      * Hashes the coordinate pair by multiplying {@code x} by the 32-bit golden-ratio
      * constant (Knuth's multiplicative hashing constant) and adding {@code y}.
      * <p>
@@ -336,6 +363,11 @@ public class Loc {
      * Note that {@code 0x9E3779B1} is a negative {@code int} — hex literals may set the
      * sign bit, unlike decimal ones. That is harmless here: the arithmetic wraps modulo
      * 2<sup>32</sup> regardless of sign.
+     * <p>
+     * C has no equivalent, since {@code struct loc} is never hashed there; this exists only
+     * because Java collections need it to agree with {@link #equals(Object)}.
+     * <p>
+     * Function hashCode coded on 260830, commented in full on 260930.
      *
      * @return a hash code consistent with {@link #equals(Object)}
      * @see #equals(Object)
@@ -343,5 +375,38 @@ public class Loc {
     @Override
     public int hashCode() {
         return x * 0x9E3779B1 + y;
+    }
+
+    /**
+     * Intermediate builder for the fluent {@code Loc.row(y).col(x)} idiom, holding the row until the
+     * column is supplied. It has no C counterpart; it exists only so the two coordinates are
+     * named when a {@link Loc} is built.
+     * <p>
+     * Class RowBuilder coded on 260830, commented in full on 260930.
+     *
+     * @author Rowan Crowther
+     */
+    public static class RowBuilder {
+        /**
+         * The row (y-coordinate) fixed by {@link Loc#row(int)}, held until {@link #col(int)}
+         * completes the location.
+         * <p>
+         * Field y coded on 260830, commented in full on 260930.
+         */
+        private int y;
+
+        /**
+         * Completes the location by supplying the column, pairing it with the row fixed earlier
+         * by {@link Loc#row(int)}. The builder is not consumed, so it may be completed more
+         * than once.
+         * <p>
+         * Function col coded on 260830, commented in full on 260930.
+         *
+         * @param x the column (x-coordinate)
+         * @return the {@link Loc} at the previously-fixed row and this column
+         */
+        public Loc col(int x) {
+            return new Loc(x, y);
+        }
     }
 }

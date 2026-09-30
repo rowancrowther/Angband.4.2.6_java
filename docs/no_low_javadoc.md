@@ -47,21 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/cave/profiles/dungeon/RoomProfile.java`
-
-9 missing, 1 low
-
-- L96: constructor `RoomProfile` - LOW
-- L109: method `getName` - MISSING
-- L113: method `getRoomType` - MISSING
-- L117: method `getRating` - MISSING
-- L121: method `getHeight` - MISSING
-- L125: method `getWidth` - MISSING
-- L129: method `getLevel` - MISSING
-- L133: method `isPit` - MISSING
-- L137: method `getRarity` - MISSING
-- L141: method `getCutoff` - MISSING
-
 ### `middle/cave/profiles/dungeon/StreamerProfile.java`
 
 0 missing, 7 low

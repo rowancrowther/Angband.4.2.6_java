@@ -19,50 +19,80 @@ package uk.co.jackoftradesltd.middle.cave.profiles.dungeon;
 
 /**
  * The mineral veins running through one style of level — the port of C's
- * {@code struct streamer_profile} (generate.h:201), loaded from the {@code streamer:} line of
- * {@code dungeon_profile.txt}.
+ * {@code struct streamer_profile} in {@code generate.h}, loaded from the {@code streamer:} line of
+ * {@code dungeon_profile.txt} (fields in file order: {@code den : rng : mag : mc : qua : qc}).
  *
- * <p>A streamer is drawn as a random walk that stops at the level edge, turning a band of rock
- * around its path to magma or quartz; some of those grids hold buried treasure. See
- * {@code gen-cave.c:121} and {@code build_streamer}.
+ * <p>A streamer is drawn by C's {@code build_streamer} in {@code gen-cave.c}: it starts near the
+ * middle of the level, picks one of the eight directions and walks that way until it leaves the
+ * level. At every step it makes {@link #den} attempts, each picking a random grid within
+ * {@link #rng} of the walk in both axes; a grid that is plain rock becomes magma or quartz, and
+ * with probability 1/{@link #mc} (or 1/{@link #qc}) it is then upgraded to a vein holding known
+ * treasure. Each level builder calls it {@link #mam} times for magma and {@link #qua} times for
+ * quartz, after the tunnels are dug.
  *
- * <p>As with {@link TunnelProfile}, C's unused {@code name} field is not ported.
+ * <p>The town's record ({@code streamer:1:1:0:0:0:0}) has no streamers; {@code classic} and
+ * {@code modified} use {@code streamer:5:2:3:90:2:40}.
+ *
+ * <p>As with {@link TunnelProfile}, C's unused {@code name} field is not ported. C's
+ * {@code mag} field is named {@code mam} here; it is the same count.
+ *
+ * <p>Class StreamerProfile coded before 260930, commented in full on 260930.
  *
  * @author Rowan Crowther
  */
 public class StreamerProfile {
     /**
-     * How many grids near each step of the walk become vein.
+     * C's {@code den}: how many grids near each step of the walk become vein. It is the loop count
+     * of attempts per step, so a pick that lands on something other than rock still uses one up.
+     *
+     * <p>Field den coded before 260930, commented in full on 260930.
      */
     private int den;
 
     /**
-     * How far from the walk those grids may lie.
+     * C's {@code rng}: how far from the walk those grids may lie. The pick is a square of side
+     * {@code 2 * rng + 1} centred on the walk, limited to grids fully inside the level.
+     *
+     * <p>Field rng coded before 260930, commented in full on 260930.
      */
     private int rng;
 
     /**
-     * How many magma streamers the level gets.
+     * C's {@code mag}: how many magma streamers the level gets.
+     *
+     * <p>Field mam coded before 260930, commented in full on 260930.
      */
     private int mam;
 
     /**
-     * Reciprocal chance of treasure in magma: a grid holds treasure with probability 1/this, so a
-     * larger number means rarer treasure.
+     * C's {@code mc}: reciprocal chance of treasure in magma: a vein grid holds treasure with
+     * probability 1/this, so a larger number means rarer treasure. It is only consulted when
+     * {@link #mam} is above zero.
+     *
+     * <p>Field mc coded before 260930, commented in full on 260930.
      */
     private int mc;
 
     /**
-     * How many quartz streamers the level gets.
+     * C's {@code qua}: how many quartz streamers the level gets.
+     *
+     * <p>Field qua coded before 260930, commented in full on 260930.
      */
     private int qua;
 
     /**
-     * Reciprocal chance of treasure in quartz, as {@link #mc}.
+     * C's {@code qc}: reciprocal chance of treasure in quartz, as {@link #mc}.
+     *
+     * <p>Field qc coded before 260930, commented in full on 260930.
      */
     private int qc;
 
     /**
+     * Builds a streamer profile from the six integers of a {@code streamer:} line, stored as given
+     * with no clamping, as C's {@code parse_profile_streamer} does.
+     *
+     * <p>Constructor StreamerProfile coded before 260930, commented in full on 260930.
+     *
      * @param den how many grids near each walk step become vein
      * @param rng how far from the walk those grids may lie
      * @param mam how many magma streamers the level gets
@@ -80,42 +110,54 @@ public class StreamerProfile {
     }
 
     /**
-     * @return how many grids near each step of the walk become vein
+     * Function getDen coded before 260930, commented in full on 260930.
+     *
+     * @return how many grids near each step of the walk become vein (C's {@code den})
      */
     public int getDen() {
         return den;
     }
 
     /**
-     * @return how far from the walk those grids may lie
+     * Function getRng coded before 260930, commented in full on 260930.
+     *
+     * @return how far from the walk those grids may lie (C's {@code rng})
      */
     public int getRng() {
         return rng;
     }
 
     /**
-     * @return how many magma streamers the level gets
+     * Function getMam coded before 260930, commented in full on 260930.
+     *
+     * @return how many magma streamers the level gets (C's {@code mag})
      */
     public int getMam() {
         return mam;
     }
 
     /**
-     * @return the reciprocal chance of treasure in magma
+     * Function getMc coded before 260930, commented in full on 260930.
+     *
+     * @return the reciprocal chance of treasure in magma (C's {@code mc})
      */
     public int getMc() {
         return mc;
     }
 
     /**
-     * @return how many quartz streamers the level gets
+     * Function getQua coded before 260930, commented in full on 260930.
+     *
+     * @return how many quartz streamers the level gets (C's {@code qua})
      */
     public int getQua() {
         return qua;
     }
 
     /**
-     * @return the reciprocal chance of treasure in quartz
+     * Function getQc coded before 260930, commented in full on 260930.
+     *
+     * @return the reciprocal chance of treasure in quartz (C's {@code qc})
      */
     public int getQc() {
         return qc;

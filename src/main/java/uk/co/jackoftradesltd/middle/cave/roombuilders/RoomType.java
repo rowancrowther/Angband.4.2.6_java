@@ -39,6 +39,8 @@ import java.util.stream.Stream;
  * <p>Constants are declared in {@code list-rooms.h} order, because that order is what the indices
  * mean.
  *
+ * <p>coded on 2026-08-30 / commented in full on 2026-09-30
+ *
  * @author Rowan Crowther
  */
 public enum RoomType {
@@ -166,25 +168,21 @@ public enum RoomType {
     }
 
     /**
-     * @return the name this room type is known by in the data files
-     */
-    public String getName() {
-        return name;
-    }
-
-    /**
      * Find a room type's index from the name the data files use — the port of C's
      * {@code get_room_builder_index_from_name}.
      *
-     * <p>C compares with {@code streq}, which is case-sensitive; this match is not. That matters
-     * for the six vault types, whose names are the only ones that are capitalised.
+     * <p>Like C's {@code streq}, the comparison is case-sensitive, so the names must be written
+     * exactly as in {@code list-rooms.h}. That matters for the seven capitalised names, which are
+     * {@code Interesting room} and the six vault types.
+     *
+     * <p>coded on 2026-08-30 / commented in full on 2026-09-30
      *
      * @param name the name to look for
      * @return the matching room type's index, or -1 if no room type has that name
      */
     public static int getIndexFromName(String name) {
         for (RoomType type : values()) {
-            if (type.name.equalsIgnoreCase(name)) {
+            if (type.name.equals(name)) {
                 return type.ordinal();
             }
         }
@@ -196,19 +194,28 @@ public enum RoomType {
      * Get a room type's data-file name from its index — the port of C's
      * {@code get_room_builder_name_from_index}.
      *
-     * <p>C bounds-checks and returns {@code NULL} for an index outside the table; here an
-     * out-of-range index throws instead.
+     * <p>Like C, this bounds-checks: an index below 0 or at or above
+     * {@link #getRoomBuilderCount()} returns {@code null} rather than throwing.
+     *
+     * <p>coded on 2026-08-30 / commented in full on 2026-09-30
      *
      * @param index the index to look up
-     * @return the name of the room type at that index
-     * @throws ArrayIndexOutOfBoundsException if the index is not a valid room type index
+     * @return the name of the room type at that index, or {@code null} if the index is out of range
      */
     public static String getNameFromIndex(int index) {
+        if (index < 0 || index >= values().length) {
+            return null;
+        }
         return values()[index].name;
     }
 
     /**
-     * @return how many room types there are — the port of C's {@code get_room_builder_count}
+     * Count the room types — the port of C's {@code get_room_builder_count}, which returns
+     * {@code N_ELEMENTS(room_builders)}. There are 19.
+     *
+     * <p>coded on 2026-08-30 / commented in full on 2026-09-30
+     *
+     * @return how many room types there are
      */
     public static int getRoomBuilderCount() {
         return values().length;
@@ -219,25 +226,62 @@ public enum RoomType {
      *
      * <p>The same lookup as {@link #getIndexFromName}, returning the constant rather than its
      * index — what the assembler wants, since it stores the type on a {@code RoomProfile} rather
-     * than indexing a table. Matching is case-insensitive for the same reason given there.
+     * than indexing a table. Matching is case-sensitive, exactly as in C.
      *
      * <p>Where C treats an unmatched name as a fatal parse error
-     * ({@code PARSE_ERROR_NO_ROOM_FOUND}, generate.c:176), this returns {@code null} and leaves
-     * the caller to decide.
+     * ({@code PARSE_ERROR_NO_ROOM_FOUND}, raised by {@code parse_profile_room} in
+     * {@code generate.c}), this returns {@code null} and leaves the caller to decide.
+     *
+     * <p>coded on 2026-08-30 / commented in full on 2026-09-30
      *
      * @param name the name to look for
      * @return the matching room type, or {@code null} if no room type has that name
      */
     public static RoomType getRoomTypeFromName(String name) {
         return Stream.of(values())
-                .filter(r -> r.name.equalsIgnoreCase(name))
+                .filter(r -> r.name.equals(name))
                 .findFirst().orElse(null);
     }
 
+    /**
+     * The name this room type is known by in the data files, the port of C's
+     * {@code room_builders[i].name}.
+     *
+     * <p>coded on 2026-08-30 / commented in full on 2026-09-30
+     *
+     * @return the exact, case-sensitive name used in {@code room:} and {@code type:} lines
+     */
+    public String getName() {
+        return name;
+    }
+
+    /**
+     * The row cap for this room type, the port of C's {@code room_builders[i].max_height}.
+     *
+     * <p>Only {@link #TEMPLATE}, {@link #INTERESTING} and the six vault types have a non-zero cap.
+     * The assemblers check a template's or vault's row count against it, as {@code generate.c}
+     * does in {@code parse_room_height} and {@code parse_vault_rows}; every other type returns 0,
+     * meaning no cap.
+     *
+     * <p>coded on 2026-08-30 / commented in full on 2026-09-30
+     *
+     * @return the most rows a room of this type may occupy, or 0 for no cap
+     */
     public int getMaxHeight() {
         return maxHeight;
     }
 
+    /**
+     * The column cap for this room type, the port of C's {@code room_builders[i].max_width}.
+     *
+     * <p>Zero for every type except {@link #TEMPLATE}, {@link #INTERESTING} and the six vault
+     * types. C checks it in {@code parse_room_width} and {@code parse_vault_columns}; see
+     * {@link #getMaxHeight()} for how the assemblers use it.
+     *
+     * <p>coded on 2026-08-30 / commented in full on 2026-09-30
+     *
+     * @return the most columns a room of this type may occupy, or 0 for no cap
+     */
     public int getMaxWidth() {
         return maxWidth;
     }

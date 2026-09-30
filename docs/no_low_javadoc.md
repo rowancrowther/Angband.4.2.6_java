@@ -47,21 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/cave/profiles/vault/Vault.java`
-
-0 missing, 10 low
-
-- L113: constructor `Vault` - LOW - "world maximum"
-- L130: method `getName` - LOW
-- L137: method `getType` - LOW
-- L152: method `getMap` - LOW
-- L159: method `getFlags` - LOW
-- L166: method `getRating` - LOW
-- L173: method `getHeight` - LOW
-- L180: method `getWidth` - LOW
-- L187: method `getMinLevel` - LOW
-- L194: method `getMaxLevel` - LOW
-
 ### `middle/cave/roombuilders/RoomType.java`
 
 2 missing, 2 low

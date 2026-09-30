@@ -23,54 +23,76 @@ import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftradesltd.middle.cave.enums.DirectionEnum;
 
 /**
- * A circular, singly-linked ring of the eight compass directions (plus centre)
- * ordered <em>clockwise</em> (N → NE → E → SE → S → SW → W → NW → centre → N…).
- * Walking this ring reproduces the C original's clockwise neighbour-scanning used
- * during level generation and monster movement. Implemented as a lazily-built
- * singleton; {@link #moveNext()} advances the shared cursor and the offset
- * accessors report the current direction's step.
+ * A circular, singly-linked ring of the eight compass directions plus the centre,
+ * ordered <em>clockwise</em> starting at north (N, NE, E, SE, S, SW, W, NW, centre, then
+ * back to N). It is the Java form of the C original's paired arrays {@code clockwise_ddd[]}
+ * and {@code clockwise_grid[]} in {@code cave.c}, which hold the same nine directions as keypad
+ * numbers ({@code 8, 9, 6, 3, 2, 1, 4, 7, 5}) and as {@link Loc} offsets respectively.
+ * <p>
+ * The C code walks those arrays by index and takes {@code (d + 1) % 8} or {@code (d - 1 + 8) % 8}
+ * to turn a heading one step either way; it uses them in {@code effect-handler-attack.c}, function
+ * {@code effect_handler_MOVE_ATTACK()} (step towards a target, trying the neighbouring headings
+ * if the way is blocked) and {@code effect_handler_SWEEP()} (attack all eight neighbours in
+ * turn). This class replaces the index with a cursor that {@link #moveNext()} advances.
+ * <p>
+ * The ring of nodes is built once, when the class loads, and is never changed afterwards, so all
+ * loops share it safely. Each {@code new ClockwiseDirectionLoop()} owns only its cursor, which
+ * starts at north, so any number of loops can run at once without affecting each other. This is
+ * the Java equivalent of each C caller holding its own index into the shared const arrays.
+ * <p>
+ * coded on 260930 / commented in full on 260930
  *
  * @author Rowan Crowther
  */
 public class ClockwiseDirectionLoop {
     /**
-     * The ring cursor: the direction node currently pointed at.
+     * The north node of the shared ring, built once when the class loads. Every loop's cursor
+     * starts here. The nodes are linked once and never modified, so sharing them between loops is
+     * safe.
+     * <p>
+     * coded on 260930 / commented in full on 260930
      */
-    private static ClockwiseDirectionLoop.DirectionNode keypadDirection;
+    private static final ClockwiseDirectionLoop.DirectionNode north = createAndLinkKeypadDirection();
     /**
-     * The singleton instance (constructing it builds and links the ring).
+     * This loop's cursor: the node whose offsets {@link #getXOffset()}, {@link #getYOffset()} and
+     * {@link #getGrid()} report. It is an instance field, so each loop has its own position; it
+     * starts at north and only {@link #moveNext()} changes it. Never null.
+     * <p>
+     * coded on 260930 / commented in full on 260930
      */
-    private static final ClockwiseDirectionLoop instance = new ClockwiseDirectionLoop();
+    private ClockwiseDirectionLoop.DirectionNode keypadDirection;
 
     /**
-     * Private constructor: builds and links the clockwise direction ring.
+     * Create a loop with its own cursor, pointing at north. The ring itself is shared and already
+     * built, so construction is cheap and does not touch any other loop.
+     * <p>
+     * coded on 260930 / commented in full on 260930
      */
     @CheckReturnValue
     @Contract(pure = true)
-    private ClockwiseDirectionLoop() {
-        createAndLinkKeypadDirection();
+    public ClockwiseDirectionLoop() {
+        keypadDirection = north;
     }
 
     /**
-     * @return the singleton clockwise direction loop
+     * Build the nine direction nodes, link them into the clockwise ring in the order of C's
+     * {@code clockwise_grid[]} (N, NE, E, SE, S, SW, W, NW, centre, back to N) and return the
+     * north node. Called once, to initialise the static ring. Each node takes its offsets from {@link DirectionEnum#ddx()} and
+     * {@link DirectionEnum#ddy()}; the centre node uses {@link DirectionEnum#DIR_NONE}, whose
+     * offsets are (0, 0), matching the last entry {@code {0, 0}} of the C array.
+     * <p>
+     * coded on 260930 / commented in full on 260930
      */
-    public static ClockwiseDirectionLoop getLoop() {
-        return instance;
-    }
-
-    /**
-     * Build the nine direction nodes and link them into the clockwise ring.
-     */
-    private static void createAndLinkKeypadDirection() {
-        ClockwiseDirectionLoop.DirectionNode south = new ClockwiseDirectionLoop.DirectionNode(DirectionEnum.DIR_S, DirectionEnum.DIR_S.ddx(), DirectionEnum.DIR_S.ddy());
-        ClockwiseDirectionLoop.DirectionNode north = new ClockwiseDirectionLoop.DirectionNode(DirectionEnum.DIR_N, DirectionEnum.DIR_N.ddx(), DirectionEnum.DIR_N.ddy());
-        ClockwiseDirectionLoop.DirectionNode west = new ClockwiseDirectionLoop.DirectionNode(DirectionEnum.DIR_W, DirectionEnum.DIR_W.ddx(), DirectionEnum.DIR_W.ddy());
-        ClockwiseDirectionLoop.DirectionNode east = new ClockwiseDirectionLoop.DirectionNode(DirectionEnum.DIR_E, DirectionEnum.DIR_E.ddx(), DirectionEnum.DIR_E.ddy());
-        ClockwiseDirectionLoop.DirectionNode northeast = new ClockwiseDirectionLoop.DirectionNode(DirectionEnum.DIR_NE, DirectionEnum.DIR_NE.ddx(), DirectionEnum.DIR_NE.ddy());
-        ClockwiseDirectionLoop.DirectionNode southeast = new ClockwiseDirectionLoop.DirectionNode(DirectionEnum.DIR_SE, DirectionEnum.DIR_SE.ddx(), DirectionEnum.DIR_SE.ddy());
-        ClockwiseDirectionLoop.DirectionNode northwest = new ClockwiseDirectionLoop.DirectionNode(DirectionEnum.DIR_NW, DirectionEnum.DIR_NW.ddx(), DirectionEnum.DIR_NW.ddy());
-        ClockwiseDirectionLoop.DirectionNode southwest = new ClockwiseDirectionLoop.DirectionNode(DirectionEnum.DIR_SW, DirectionEnum.DIR_SW.ddx(), DirectionEnum.DIR_SW.ddy());
-        ClockwiseDirectionLoop.DirectionNode centre = new ClockwiseDirectionLoop.DirectionNode(DirectionEnum.DIR_NONE, DirectionEnum.DIR_NONE.ddx(), DirectionEnum.DIR_NONE.ddy());
+    private static ClockwiseDirectionLoop.DirectionNode createAndLinkKeypadDirection() {
+        ClockwiseDirectionLoop.DirectionNode south = new DirectionNode(DirectionEnum.DIR_S, DirectionEnum.DIR_S.ddx(), DirectionEnum.DIR_S.ddy());
+        ClockwiseDirectionLoop.DirectionNode north = new DirectionNode(DirectionEnum.DIR_N, DirectionEnum.DIR_N.ddx(), DirectionEnum.DIR_N.ddy());
+        ClockwiseDirectionLoop.DirectionNode west = new DirectionNode(DirectionEnum.DIR_W, DirectionEnum.DIR_W.ddx(), DirectionEnum.DIR_W.ddy());
+        ClockwiseDirectionLoop.DirectionNode east = new DirectionNode(DirectionEnum.DIR_E, DirectionEnum.DIR_E.ddx(), DirectionEnum.DIR_E.ddy());
+        ClockwiseDirectionLoop.DirectionNode northeast = new DirectionNode(DirectionEnum.DIR_NE, DirectionEnum.DIR_NE.ddx(), DirectionEnum.DIR_NE.ddy());
+        ClockwiseDirectionLoop.DirectionNode southeast = new DirectionNode(DirectionEnum.DIR_SE, DirectionEnum.DIR_SE.ddx(), DirectionEnum.DIR_SE.ddy());
+        ClockwiseDirectionLoop.DirectionNode northwest = new DirectionNode(DirectionEnum.DIR_NW, DirectionEnum.DIR_NW.ddx(), DirectionEnum.DIR_NW.ddy());
+        ClockwiseDirectionLoop.DirectionNode southwest = new DirectionNode(DirectionEnum.DIR_SW, DirectionEnum.DIR_SW.ddx(), DirectionEnum.DIR_SW.ddy());
+        ClockwiseDirectionLoop.DirectionNode centre = new DirectionNode(DirectionEnum.DIR_NONE, DirectionEnum.DIR_NONE.ddx(), DirectionEnum.DIR_NONE.ddy());
 
         north.setNext(northeast);
         northeast.setNext(east);
@@ -81,64 +103,92 @@ public class ClockwiseDirectionLoop {
         west.setNext(northwest);
         northwest.setNext(centre);
         centre.setNext(north);
+
+        return north;
     }
 
     /**
+     * The column step of the direction the cursor is on: the {@code x} of the matching
+     * {@code clockwise_grid[]} entry in C.
+     * <p>
+     * coded on 260930 / commented in full on 260930
+     *
      * @return the column step of the current direction
      */
-    public static int getXOffset() {
+    public int getXOffset() {
         return keypadDirection.xOff;
     }
 
     /**
+     * The row step of the direction the cursor is on: the {@code y} of the matching
+     * {@code clockwise_grid[]} entry in C.
+     * <p>
+     * coded on 260930 / commented in full on 260930
+     *
      * @return the row step of the current direction
      */
-    public static int getYOffset() {
+    public int getYOffset() {
         return keypadDirection.yOff;
     }
 
     /**
+     * The step of the direction the cursor is on as a new {@link Loc}, the equivalent of reading
+     * {@code clockwise_grid[d]} in C. The centre entry gives (0, 0).
+     * <p>
+     * coded on 260930 / commented in full on 260930
+     *
      * @return the current direction's step as a {@link Loc}
      */
     @Contract(" -> new")
-    public static @NotNull Loc getGrid() {
+    public @NotNull Loc getGrid() {
         return Loc.row(getYOffset()).col(getXOffset());
     }
 
     /**
-     * Advance the shared cursor to the next direction in the clockwise ring.
+     * Advance this loop's cursor one step clockwise, the equivalent of {@code d = (d + 1) % 9}
+     * over the nine entries (the eight compass directions and the centre). The C callers
+     * take the modulus over eight instead, so they never visit the centre; here the centre is
+     * part of the ring, and a caller that wants only compass headings must skip it. After the
+     * centre the cursor wraps to north.
+     * <p>
+     * coded on 260930 / commented in full on 260930
      */
-    public static void moveNext() {
+    public void moveNext() {
         keypadDirection = keypadDirection.getNext();
     }
 
     /**
-     * One node in the circular direction ring: a direction with its step offsets
-     * and a link to the next node clockwise.
+     * One node in the circular direction ring: a direction with its step offsets and a link to
+     * the next node clockwise.
+     * <p>
+     * coded on 260930 / commented in full on 260930
      *
      * @author Rowan Crowther
      */
     private static class DirectionNode {
         /**
-         * The direction this node represents.
+         * The direction this node represents. Not read anywhere yet; the offsets below are what
+         * callers use.
          */
         private final DirectionEnum dir;
         /**
-         * Column step for this direction.
+         * Column step for this direction (C's {@code x} in {@code clockwise_grid[]}).
          */
         private int xOff;
         /**
-         * Row step for this direction.
+         * Row step for this direction (C's {@code y} in {@code clockwise_grid[]}).
          */
         private int yOff;
 
         /**
-         * The next node clockwise in the ring.
+         * The next node clockwise in the ring; set by {@link #setNext(DirectionNode)} when the
+         * ring is linked, and never null afterwards.
          */
         private ClockwiseDirectionLoop.DirectionNode next;
 
         /**
-         * Build a direction node from its direction and step offsets.
+         * Build a direction node from its direction and step offsets. The link to the next node
+         * is left null until {@link #setNext(DirectionNode)} is called.
          *
          * @param direction the direction
          * @param xOffset   the column step

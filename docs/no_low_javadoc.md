@@ -47,17 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/cave/Chunk.java`
-
-2 missing, 4 low
-
-- L1238: method `getWidth` - LOW - "Getter"
-- L1248: method `getHeight` - LOW - "Getter"
-- L1408: method `monsterCount` - LOW
-- L1599: method `getObjects` - LOW
-- L2593: method `getMonCurrent` - MISSING
-- L2597: method `setFeeling` - MISSING
-
 ### `middle/cave/ClockwiseDirectionLoop.java`
 
 0 missing, 5 low

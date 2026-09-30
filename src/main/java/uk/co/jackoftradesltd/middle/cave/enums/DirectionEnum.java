@@ -164,6 +164,6 @@ public enum DirectionEnum {
     public static DirectionEnum[] surroundingDirections() {
         return Stream.of(
                 DIR_S, DIR_N, DIR_E, DIR_W,
-                DIR_SE, DIR_SE, DIR_NE, DIR_NW).toArray(DirectionEnum[]::new);
+                DIR_SE, DIR_SW, DIR_NE, DIR_NW).toArray(DirectionEnum[]::new);
     }
 }

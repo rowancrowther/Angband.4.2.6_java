@@ -30,6 +30,7 @@ import uk.co.jackoftradesltd.middle.game.event.EventsHandler;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.monsters.Monster;
+import uk.co.jackoftradesltd.middle.monsters.MonsterRace;
 import uk.co.jackoftradesltd.middle.player.Player;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerRedraw;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
@@ -95,22 +96,15 @@ class ChunkTrapsAndStubsTest {
     private Chunk savedCave;
 
     /**
-     * Wires a level, a player and a capturing bus.
+     * A race with nothing set. Only its presence matters: C treats a slot whose {@code race} is NULL
+     * as dead, so a monster that is to count as live needs one.
+     *
+     * @return a bare race
      */
-    @BeforeEach
-    void setUp() {
-        savedPlayer = GameState.getPlayer();
-        savedCave = GameState.getCave();
-        realBus = GameEngine.getEventsBusHandler();
-
-        player = new Player();
-        level = new Chunk("level", 0, 0, 0, 0, 0, false, 6, 6, 0, 4, 2, 0, 0, 0, player);
-        GameState.setPlayer(player);
-        GameState.setCave(level);
-        level.setCurrentLevel(level);
-
-        bus = new CapturingBus();
-        GameEngine.setEventsBusHandler(bus);
+    private static MonsterRace liveRace() {
+        return new MonsterRace("test", "", "", null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                null, null, List.of(), 0, 0, null, null,
+                List.of(), List.of(), List.of(), List.of(), List.of(), 0, null);
     }
 
     /**
@@ -121,6 +115,26 @@ class ChunkTrapsAndStubsTest {
         GameEngine.setEventsBusHandler(realBus);
         GameState.setPlayer(savedPlayer);
         GameState.setCave(savedCave);
+    }
+
+    /**
+     * Wires a level, a player and a capturing bus.
+     */
+    @BeforeEach
+    void setUp() {
+        savedPlayer = GameState.getPlayer();
+        savedCave = GameState.getCave();
+        realBus = GameEngine.getEventsBusHandler();
+
+        player = new Player();
+        level = new Chunk("level", 0, 0, 0, 0, 0, false, 6, 6, 0, 4, 2, 0, 0, 0, player);
+        player.setCave(new Chunk("known", 0, 0, 0, 0, 0, false, 6, 6, 0, 4, 2, 0, 0, 0, player));
+        GameState.setPlayer(player);
+        GameState.setCave(level);
+        level.setCurrentLevel(level);
+
+        bus = new CapturingBus();
+        GameEngine.setEventsBusHandler(bus);
     }
 
     /**
@@ -366,7 +380,7 @@ class ChunkTrapsAndStubsTest {
         @Test
         @DisplayName("a live monster leaves the mark alone")
         void aLiveMonsterIsSkipped() {
-            level.getMonsters()[1] = new Monster(null, null, null, 0, 0, null, 0, 0, 0, null,
+            level.getMonsters()[1] = new Monster(liveRace(), null, null, 0, 0, null, 0, 0, 0, null,
                     null, null, null, null, null, null, null, 0, 0);
 
             level.compactMonsters(0);

@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.combat;
 
+import uk.co.jackoftradesltd.middle.cave.Chunk;
 import uk.co.jackoftradesltd.middle.cave.Loc;
 import uk.co.jackoftradesltd.middle.monsters.Monster;
 
@@ -31,13 +32,43 @@ public class Target {
     /**
      * The targeted grid location.
      */
-    private Loc grid;
+    private static Loc grid;
+
+    private static boolean targetFixed;
+
+    private static boolean targetSet;
+    
     /**
      * The targeted monster, or {@code null} when only a grid is targeted.
      */
-    private Monster monster;
+    private static Monster monster;
 
-    public static void setMonster(Monster monster) {
-        // Stub class TODO: Implement
+    private static int targetMonsterIndex;
+
+    public static boolean setTargetMonster(Monster monster, int toIndex) {
+        if (monster != null && targetable(monster)) {
+            targetSet = true;
+            Target.monster = monster;
+            targetMonsterIndex = toIndex;
+            Target.grid = monster.getGrid();
+            return true;
+        } else if (targetFixed) {
+            targetMonsterIndex = 0;
+            return true;
+        }
+
+        targetSet = false;
+        targetMonsterIndex = 0;
+        Target.monster = null;
+        grid = Loc.zero;
+        return false;
+    }
+
+    public static Monster getTargetMonster(Chunk cave) {
+        return cave.caveMonster(targetMonsterIndex);
+    }
+
+    private static boolean targetable(Monster monster) {
+        return monster != null && monster.isObvious();
     }
 }

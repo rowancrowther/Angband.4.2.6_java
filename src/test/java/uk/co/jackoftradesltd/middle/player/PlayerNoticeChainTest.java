@@ -28,6 +28,7 @@ import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.data.CarryCapData;
 import uk.co.jackoftradesltd.middle.game.globals.data.GameConstantsData;
+import uk.co.jackoftradesltd.middle.game.globals.data.LevelMaxData;
 import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
 import uk.co.jackoftradesltd.middle.objects.KnownObject;
@@ -189,7 +190,7 @@ class PlayerNoticeChainTest {
     void seedWorld() throws Exception {
         savedConstants = constantsField().get(null);
         constantsField().set(null, new GameConstantsData(
-                null, null, null, null, null,
+                new LevelMaxData(1024), null, null, null, null,
                 new CarryCapData(PACK_SIZE, 10, 40, 5, 16),
                 null, null, null, null, null, null, null, null, null, null, null));
 

@@ -36,6 +36,7 @@ import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.data.CarryCapData;
 import uk.co.jackoftradesltd.middle.game.globals.data.GameConstantsData;
+import uk.co.jackoftradesltd.middle.game.globals.data.LevelMaxData;
 import uk.co.jackoftradesltd.middle.game.globals.data.PlayerData;
 import uk.co.jackoftradesltd.middle.game.globals.data.WorldData;
 import uk.co.jackoftradesltd.middle.game.globals.registry.TerrainRegistry;
@@ -56,7 +57,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@code Chunk.updateView}, the port of C's {@code update_view} ({@code cave-view.c:871}).
+ * Tests {@code Chunk.updateView}, the port of C's {@code update_view} ({@code cave-view.c}).
  *
  * <p>The expected values are taken from the C body, which does six things in order: snapshot and
  * wipe the visibility flags ({@code mark_wasseen}); recompute the light ({@code calc_lighting});
@@ -254,7 +255,7 @@ class ChunkUpdateViewTest {
         TerrainRegistry.setFeatures(List.of(none, granite, floor));
 
         GameConstantsData seed = new GameConstantsData(
-                null, null, null, null,
+                new LevelMaxData(1024), null, null, null,
                 new WorldData(128, 0, 0, 0, 0, 0, 0, 10, 0, 0),
                 new CarryCapData(23, 10, 40, 5, 16),
                 null, null, new PlayerData(20, 20, 0, 0),

@@ -38,6 +38,7 @@ import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.data.CarryCapData;
 import uk.co.jackoftradesltd.middle.game.globals.data.GameConstantsData;
+import uk.co.jackoftradesltd.middle.game.globals.data.LevelMaxData;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
@@ -135,7 +136,7 @@ class ObjectGearInvenCarryTest {
     @BeforeAll
     static void seedGlobals() throws Exception {
         savedConstants = setStatic(GameConstants.class, "data", new GameConstantsData(
-                null, null, null, null, null,
+                new LevelMaxData(1024), null, null, null, null,
                 new CarryCapData(PACK_SIZE, QUIVER_SLOTS, SLOT_SIZE, THROWN_MULT, QUIVER_SIZE),
                 null, null, null, null, null, null, null, null, null, null, null));
 

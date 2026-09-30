@@ -34,6 +34,7 @@ import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.data.CarryCapData;
 import uk.co.jackoftradesltd.middle.game.globals.data.GameConstantsData;
+import uk.co.jackoftradesltd.middle.game.globals.data.LevelMaxData;
 import uk.co.jackoftradesltd.middle.game.globals.data.WorldData;
 import uk.co.jackoftradesltd.middle.player.Player;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerRedraw;
@@ -53,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@code Chunk.updateOne}, the port of C's {@code update_one} ({@code cave-view.c:834}).
+ * Tests {@code Chunk.updateOne}, the port of C's {@code update_one} ({@code cave-view.c}).
  *
  * <p>The expected values come from the C body rather than from the port. C does four things to a
  * grid, in this order: it clears {@code SQUARE_SEEN} and {@code SQUARE_CLOSE_PLAYER} if the player
@@ -152,7 +153,7 @@ class ChunkUpdateOneTest {
      */
     private void seedConstants() {
         GameConstantsData seed = new GameConstantsData(
-                null, null, null, null,
+                new LevelMaxData(1024), null, null, null,
                 new WorldData(128, 0, 0, 0, 0, 0, 0, FEELING_NEED, 0, 0),
                 new CarryCapData(23, 10, 40, 5, 16),
                 null, null, null, null, null, null, null, null, null, null, null);
@@ -192,6 +193,8 @@ class ChunkUpdateOneTest {
         player = new Player();
         level = new Chunk("level", 0, 0, 0, 0, 0, false,
                 HEIGHT, WIDTH, 0, 4, 3, 0, 0, 0, player);
+        player.setCave(new Chunk("known", 0, 0, 0, 0, 0, false,
+                HEIGHT, WIDTH, 0, 4, 3, 0, 0, 0, player));
         GameState.setPlayer(player);
         GameState.setCave(level);
         level.setCurrentLevel(level);

@@ -23,8 +23,9 @@ import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import uk.co.jackoftradesltd.channel.messages.data.PlayerEventStatusUpdate;
+import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.cave.enums.TerrainFlags;
+import uk.co.jackoftradesltd.middle.combat.Target;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.registry.TerrainRegistry;
 import uk.co.jackoftradesltd.middle.numerics.RandomValueUtils;
@@ -40,6 +41,7 @@ import uk.co.jackoftradesltd.middle.monsters.Monster;
 import uk.co.jackoftradesltd.middle.monsters.MonsterGroup;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
+import uk.co.jackoftradesltd.middle.objects.Pile;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectNotice;
 import uk.co.jackoftradesltd.middle.player.Player;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
@@ -60,153 +62,238 @@ import static uk.co.jackoftradesltd.middle.cave.ChunkUtils.los;
  * {@code struct chunk} ({@code src/cave.h}), which represents both the live cave
  * and the player's remembered copy of it.
  *
+ * <p>A running game holds two of these. One is the real level, C's global {@code cave}; the other
+ * is what the player remembers of it, C's {@code player->cave}. C tells them apart by comparing
+ * the pointer against the global, so this class keeps that global in {@link #currentLevel}, set
+ * through {@link #setCurrentLevel(Chunk)}, and the knowledge accessors ({@link #isKnown},
+ * {@link #squareMemorize}, {@link #squareSetKnownFeat}, {@link #squareForget}) do nothing useful
+ * on a chunk that was never given it.
+ *
+ * <p>Grids are stored {@code [x][y]}, where C stores {@code [y][x]}; always go through
+ * {@link #getSquare(Loc)} rather than indexing {@link #squares} directly. Where C asserts that a
+ * grid is in bounds, the predicates here answer {@code false} (or {@code null} / {@code 0}) instead
+ * of halting the game.
+ *
+ * <p>Several members are still stubs waiting on later chapters: {@link #deleteMonsterIndex(int)}
+ * and {@link MonsterGroup#monsterGroupChangeIndex} on Chapter 6, and {@link #squareNoteSpot(Loc)},
+ * {@link #squareRevealTrap(Loc, boolean, boolean)} and {@link #resetNoise()} on Chapter 4.
+ * {@link #illuminate(boolean)}, {@link #pickAndPlaceDistantMonster},
+ * {@link #squareMemorizeTraps(Loc)} and {@link #displayFeeling(boolean)} are stubs too. Each says
+ * so in its own block.
+ *
+ * <p>Class Chunk coded before 260930, commented in full on 260930.
+ *
  * @author Rowan Crowther
  */
 public class Chunk {
     /**
-     * Logger used to report out-of-bounds access and similar errors.
+     * Logger used to report out-of-bounds access and similar errors. Java-only; C reports these
+     * through {@code assert()} or {@code quit()}.
      */
     private static final Logger logger = LogManager.getLogger();
 
     /**
-     * The chunk's name (e.g. the level/vault it represents).
+     * The chunk's name, C's {@code c->name}: the level or vault this chunk represents, or
+     * {@code null} if unnamed. Read through {@link #getName()}, for example to recognise the arena.
      */
     private String name;
     /**
-     * The game turn this chunk was generated/last updated.
+     * The game turn this chunk was created, C's {@code c->turn} (set from the global {@code turn}
+     * in {@code cave_new()}, {@code cave.c}). Nothing in this class reads it after construction.
      */
     private int turn;
     /**
-     * The dungeon depth (level) of this chunk.
+     * The dungeon depth of this chunk, C's {@code c->depth}. Nothing in this class reads it after
+     * construction.
      */
     private int depth;
 
     /**
-     * The level feeling value (how dangerous/rewarding the level feels).
+     * The packed level feeling, C's {@code c->feeling}: the object feeling is {@code feeling / 10}
+     * and the monster feeling is {@code feeling % 10}. Written by {@link #setFeeling(int)}.
      */
     private int feeling;
     /**
-     * Accumulated rating of the objects on this level.
+     * Accumulated rating of the objects on this level, C's {@code c->obj_rating}. Nothing in this
+     * class reads it yet; level generation will.
      */
     private int objectRating;
     /**
-     * Accumulated rating of the monsters on this level.
+     * Accumulated rating of the monsters on this level, C's {@code c->mon_rating}. Nothing in this
+     * class reads it yet; level generation will.
      */
     private int monsterRating;
     /**
-     * Whether the level contains a notably good item.
+     * Whether the level holds a notably good item, C's {@code c->good_item}. Nothing in this class
+     * reads it yet.
      */
     private boolean goodItem;
 
     /**
-     * Level height in rows.
+     * Level height in rows, C's {@code c->height}. Valid {@code y} runs {@code 0 .. height - 1}.
      */
     private int height;
     /**
-     * Level width in columns.
+     * Level width in columns, C's {@code c->width}. Valid {@code x} runs {@code 0 .. width - 1}.
      */
     private int width;
 
-    /* How many feeling squares the player has visited */
     /**
-     * How many feeling squares the player has visited so far.
+     * How many feeling squares the player has seen so far, C's {@code c->feeling_squares}. It is
+     * incremented in {@link #updateOne(Loc, Player)} and the level feeling is announced when it
+     * reaches {@code world:feeling-need}.
      */
     private int feelingSquares;
     /**
-     * Count of grids carrying each terrain-feature flag (used for level feeling).
+     * Tally of grids per terrain feature, the counterpart of C's {@code c->feat_count}, which
+     * {@code square_set_feat()} ({@code cave-square.c}) keeps current.
+     *
+     * <p>Nothing in this class fills or reads it yet, because {@code square_set_feat()} is not
+     * ported. Note that C keys it by feature index, while this map is keyed by
+     * {@link TerrainFeatureFlags}, so the key type will need settling when that function arrives.
      */
     private HashMap<TerrainFeatureFlags, Integer> featCount;
 
     /**
-     * The grid of squares, indexed {@code [y][x]}.
+     * The grid of squares, indexed {@code [x][y]} — the reverse of C's {@code c->squares[y][x]}.
+     * Reach it through {@link #getSquare(Loc)}, which bounds-checks and takes the {@link Loc}.
      */
     private Square[][] squares;
     /**
-     * Noise flow map used for monster pathfinding toward sound.
+     * Noise flow map used for monster hearing, C's {@code c->noise}. See {@link #resetNoise()}.
      */
     private Heatmap noise;
     /**
-     * Scent flow map used for monsters that track by smell.
+     * Scent flow map used for monsters that track by smell, C's {@code c->scent}. See
+     * {@link #updateScent()}.
      */
     private Heatmap scent;
     /**
-     * Location of the player's decoy, if one is placed.
+     * Location of the player's decoy, C's {@code c->decoy}. {@link Loc#zero} means there is none,
+     * as C uses {@code loc(0, 0)}. Nothing in this class reads it yet.
      */
     private Loc decoy;
 
     /**
-     * Master list of all objects in this chunk.
+     * Master list of the objects in this chunk, the counterpart of C's {@code c->objects} array.
+     *
+     * <p>C indexes that array by each object's {@code oidx} and nulls a slot to delist an object.
+     * This is a plain list searched with {@code contains()}, because the port does not carry
+     * {@code oidx}. Read it through {@link #getObjects()}.
      */
-    private List<ItemObject> objects; // Should this be ItemObject[][] objects?
+    private List<ItemObject> objects;
     /**
-     * Highest object index in use.
+     * Highest object index in use, C's {@code c->obj_max}. Nothing in this class reads it, since
+     * {@link #objects} is a list rather than a fixed array.
      */
     private int objMax;
 
     /**
-     * The monsters present in this chunk, indexed by monster index.
+     * The monsters present in this chunk, indexed by monster index, C's {@code c->monsters}.
+     *
+     * <p>Sized at construction from {@code level-max:monsters}, C's {@code z_info->level_monster_max}.
+     * Slot {@code 0} is a reserved dummy and an empty slot is {@code null}, where C has a zeroed
+     * struct with {@code race == NULL}.
      */
     private Monster[] monsters;
     /**
-     * Capacity of the {@link #monsters} array (maximum monster index).
+     * One past the highest monster index in use, the port of C's {@code c->mon_max}
+     * ({@code struct chunk}, {@code src/cave.h}). C starts it at {@code 1}, since slot {@code 0} is
+     * reserved, and {@link #compactMonsters(int)} lowers it as trailing holes are removed.
+     *
+     * <p>This is the high-water mark and not the capacity: the capacity is
+     * {@code monsters.length}. Read it through {@link #getMonMax()}.
      */
     private int monMax;
     /**
-     * Current count of live monsters.
+     * Live monster count as supplied to the constructor, the port of C's {@code mon_cnt}
+     * ({@code struct chunk}, {@code src/cave.h}).
+     *
+     * <p>Nothing reads or updates this field after construction. {@link #monsterCount()} derives the
+     * live count by scanning {@link #monsters} instead, so this is a dead copy of the constructor
+     * argument.
+     *
+     * <p>Field monCnt coded before 260929, commented in full on 260929.
      */
     private int monCnt;
     /**
-     * Index of the monster currently being processed.
+     * Index of the monster currently taking its turn, the port of C's {@code mon_current}
+     * ({@code struct chunk}, {@code src/cave.h}).
+     *
+     * <p>{@code -1} means no monster is acting, which is what C sets in {@code cave_new()}
+     * ({@code cave.c}) and restores after each monster's turn in {@code process_monsters()}
+     * ({@code mon-move.c}). Callers test {@code > 0} to ask "is a monster the cause of this?".
+     *
+     * <p>Field monCurrent coded before 260929, commented in full on 260929.
      */
     private int monCurrent;
     /**
-     * Number of breeding monsters currently on the level.
+     * Number of breeding monsters currently on the level, C's {@code c->num_repro}. C decrements it
+     * in {@code delete_monster_idx()} for {@code RF_MULTIPLY} races. Nothing in this class reads it
+     * yet.
      */
     private int numRepro;
 
     /**
-     * The monster groups (packs) on this level.
+     * The monster groups (packs) on this level, C's {@code c->monster_groups}. Nothing in this
+     * class reads it yet; see {@link MonsterGroup#monsterGroupChangeIndex}.
      */
     private ArrayList<MonsterGroup> monsterGroups;
 
     /**
-     * Connection points used when stitching this chunk into a larger level.
+     * Connection points used when stitching this chunk into a larger level, C's {@code c->join}
+     * list of {@code struct connector}. Nothing in this class reads it yet.
      */
     private ArrayList<Connector> join;
 
     /**
-     * The player associated with this chunk, used by the knowledge accessors that compare this chunk
-     * against the player's remembered cave (see {@link #isKnown} and {@link #squareSetKnownFeat}).
+     * The player this chunk belongs to, standing in for C's global {@code player}. The knowledge
+     * accessors reach the player's remembered cave through it (see {@link #isKnown} and
+     * {@link #squareSetKnownFeat}). It may be {@code null}, in which case {@link #objectDelete} and
+     * {@link #delistObject} skip the player-specific steps but {@link #isKnown} does not.
      */
     private Player player;
     /**
-     * The live current level — {@link GameState#getCave()} at construction. Several accessors compare
-     * {@code this} against it to tell whether this chunk is the real cave or the player's remembered
-     * copy, since the two share the same {@code Chunk} type.
+     * The live current level, standing in for C's global {@code cave}. It is <em>not</em> taken at
+     * construction: it starts {@code null} and is set through {@link #setCurrentLevel(Chunk)}.
+     * Several accessors compare {@code this} against it to tell whether this chunk is the real cave
+     * or the player's remembered copy, since the two share the same {@code Chunk} type.
      */
     private Chunk currentLevel;
 
     /**
-     * Build a chunk of the given dimensions and metadata, allocating a fresh
-     * grid of blank {@link Square}s, empty flow maps, an empty object pile and a
-     * monster array sized to {@code monMax}.
+     * Builds a chunk of the given dimensions and metadata, the port of C's {@code cave_new()}
+     * ({@code cave.c}). It allocates a grid of blank {@link Square}s, two zeroed flow maps, an empty
+     * object list, empty group and connector lists, and a monster array of
+     * {@code level-max:monsters} empty slots.
      *
-     * @param name           chunk name
-     * @param turn           generation turn
+     * <p>C's {@code cave_new()} takes only the height and width and fixes the rest itself:
+     * {@code mon_max = 1}, {@code mon_current = -1} and {@code turn} from the global. Here the
+     * caller supplies them, so a chunk meant to behave like C's should be given {@code monMax = 1}
+     * and {@code monCurrent = -1}.
+     *
+     * <p>{@link #currentLevel} is left unset; the caller must follow up with
+     * {@link #setCurrentLevel(Chunk)}. The {@code GameConstants} table must be loaded before this
+     * runs, since the monster array is sized from it.
+     *
+     * <p>Constructor Chunk coded before 260930, commented in full on 260930.
+     *
+     * @param name           chunk name, or {@code null} if unnamed
+     * @param turn           the game turn of creation
      * @param depth          dungeon depth
-     * @param feeling        level feeling value
+     * @param feeling        packed level feeling
      * @param objectRating   object rating
      * @param monsterRating  monster rating
      * @param goodItem       whether a notably good item is present
      * @param height         level height in rows
      * @param width          level width in columns
-     * @param feelingSquares number of feeling squares visited
+     * @param feelingSquares number of feeling squares already seen
      * @param objMax         highest object index
-     * @param monMax         monster array capacity
-     * @param monCnt         live monster count
-     * @param monCurrent     index of the monster being processed
+     * @param monMax         the initial high-water mark for monster indices; C uses {@code 1}
+     * @param monCnt         live monster count; kept but never read afterwards
+     * @param monCurrent     index of the monster taking its turn; C uses {@code -1} for none
      * @param numRepro       number of breeding monsters
-     * @param player         the player associated with this chunk
+     * @param player         the player this chunk belongs to; may be {@code null}
      */
     public Chunk(String name, int turn, int depth, int feeling, int objectRating, int monsterRating,
                  boolean goodItem, int height, int width, int feelingSquares, int objMax, int monMax,
@@ -227,7 +314,11 @@ public class Chunk {
 
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
-                squares[x][y] = new Square(null, 1, 1);
+                squares[x][y] = new Square(new Feature(TerrainFlags.FEAT_NONE, "", "",
+                        TerrainFlags.FEAT_NONE, 0, 0, new Flag<>(TerrainFeatureFlags.class),
+                        null, "", "", "", "", "",
+                        "", "", new Flag<>(MonsterRaceFlag.class)),
+                        0, 0);
             }
         }
 
@@ -236,7 +327,7 @@ public class Chunk {
         this.decoy = Loc.zero;
         this.objects = new ArrayList<>();
         this.objMax = objMax;
-        this.monsters = new Monster[monMax];
+        this.monsters = new Monster[GameConstants.getLevelMaxMonsters()];
         this.monMax = monMax;
         this.monCnt = monCnt;
         this.monCurrent = monCurrent;
@@ -247,9 +338,14 @@ public class Chunk {
     }
 
     /**
-     * @return the chunk that is the live current level - C's global {@code cave}. A chunk compares
-     * itself against this to tell whether it is the real level or the player's remembered
-     * copy, since the two share this class
+     * Returns the chunk that is the live current level, C's global {@code cave}. A chunk compares
+     * itself against this to tell whether it is the real level or the player's remembered copy,
+     * since the two share this class. It is {@code null} until {@link #setCurrentLevel(Chunk)} has
+     * been called.
+     *
+     * <p>Function getCurrentLevel coded before 260930, commented in full on 260930.
+     *
+     * @return the live current level, or {@code null} if none has been set
      */
     public Chunk getCurrentLevel() {
         return currentLevel;
@@ -276,10 +372,15 @@ public class Chunk {
     }
 
     /**
-     * Test to see whether a grid location is in the bounds for this chunk
+     * Tests whether a grid lies inside this chunk, the port of C's {@code square_in_bounds}
+     * ({@code cave-square.c}). Valid {@code x} runs {@code 0 .. width - 1} and valid {@code y} runs
+     * {@code 0 .. height - 1}, so the outermost ring of the level is inside the bounds; contrast
+     * {@link #inBoundsFully(Loc)}.
      *
-     * @param grid The Loc of this square
-     * @return true if this square is in the bounds of this chunk
+     * <p>Function inBounds coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid is inside this chunk
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -289,10 +390,15 @@ public class Chunk {
     }
 
     /**
-     * Test to see if the grid location is fully inside the bounds of this chunk
+     * Tests whether a grid lies inside this chunk and off its outermost ring, the port of C's
+     * {@code square_in_bounds_fully} ({@code cave-square.c}). Valid {@code x} runs
+     * {@code 1 .. width - 2} and valid {@code y} runs {@code 1 .. height - 2}, which is the region
+     * where all eight neighbours of the grid also exist.
      *
-     * @param grid the Loc to test
-     * @return true if grid is wholly in the bounds of this chunk
+     * <p>Function inBoundsFully coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid is inside this chunk and not on its edge
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -302,10 +408,14 @@ public class Chunk {
     }
 
     /**
-     * Tests to see if the square is marked
+     * Tests whether a grid is marked, the port of C's {@code square_ismark} ({@code cave-square.c}).
+     * Reads the {@code SQUARE_MARK} info flag. C asserts the grid is in bounds; this answers
+     * {@code false} for an out-of-bounds grid instead.
      *
-     * @param grid The Loc of the square
-     * @return true if the square is marked
+     * <p>Function squareIsMarked coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid carries {@code SQUARE_MARK}
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -314,10 +424,16 @@ public class Chunk {
     }
 
     /**
-     * Tests to see if the square is lit
+     * Tests whether a grid is permanently lit, the port of C's {@code square_isglow}
+     * ({@code cave-square.c}). Reads the {@code SQUARE_GLOW} info flag, which is the standing light
+     * of a lit room; it is not the same as the accumulated light level that
+     * {@link #squareIsLit(Loc)} tests. C asserts the grid is in bounds; this answers {@code false}
+     * instead.
      *
-     * @param grid the Loc of the square
-     * @return true if the square is lit
+     * <p>Function squareIsGlow coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid carries {@code SQUARE_GLOW}
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -326,10 +442,15 @@ public class Chunk {
     }
 
     /**
-     * Checks to see if a square is damaging to its inhabitants - currently only lava
+     * Tests whether a grid's terrain damages whoever stands in it, the port of C's
+     * {@code square_isdamaging} ({@code cave-square.c}). C's own comment says "only lava so far":
+     * the test is the {@code TF_FIERY} terrain flag. C asserts the grid is in bounds; this answers
+     * {@code false} instead.
      *
-     * @param grid the Loc of the square
-     * @return true if the square damages its occupants
+     * <p>Function squareIsDamaging coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid's terrain is fiery
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -338,10 +459,15 @@ public class Chunk {
     }
 
     /**
-     * Tests to see if the square is part of a vault
+     * Tests whether a grid is part of a vault, the port of C's {@code square_isvault}
+     * ({@code cave-square.c}). Reads the {@code SQUARE_VAULT} info flag, which says only that the
+     * grid belongs to a vault and nothing about what kind of grid it is. C asserts the grid is in
+     * bounds; this answers {@code false} instead.
      *
-     * @param grid the Loc of this grid
-     * @return true if the square is part of a vault
+     * <p>Function squareIsVault coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid carries {@code SQUARE_VAULT}
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -350,10 +476,15 @@ public class Chunk {
     }
 
     /**
-     * Tests to see if the square at location grid has been seen by the player
+     * Tests whether a grid is currently seen by the player, the port of C's {@code square_isseen}
+     * ({@code cave-square.c}). Reads the {@code SQUARE_SEEN} info flag, which
+     * {@link #updateView(Player)} rebuilds on every recalculation, so it answers "visible now", not
+     * "has ever been visited". C asserts the grid is in bounds; this answers {@code false} instead.
      *
-     * @param grid The Loc of the square
-     * @return true if the square has been seen by the player
+     * <p>Function squareIsSeen coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid carries {@code SQUARE_SEEN}
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -362,10 +493,15 @@ public class Chunk {
     }
 
     /**
-     * Checks to see if a specific square allows monster flow information
+     * Tests whether a grid's terrain carries no monster flow information, the port of C's
+     * {@code square_isnoflow} ({@code cave-square.c}). Tests the {@code TF_NO_FLOW} terrain flag, so
+     * {@code true} means the noise map does not propagate through the grid. C asserts the grid is in
+     * bounds; this answers {@code false} instead.
      *
-     * @param grid the Loc of the square
-     * @return true if the square does NOT allow monster flow information
+     * <p>Function squareIsNoFlow coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid's terrain does NOT carry monster flow information
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -374,10 +510,15 @@ public class Chunk {
     }
 
     /**
-     * Checks to see if a specific square carries the player scent
+     * Tests whether a grid's terrain carries no player scent, the port of C's
+     * {@code square_isnoscent} ({@code cave-square.c}). Tests the {@code TF_NO_SCENT} terrain flag,
+     * so {@code true} means scent is not laid on the grid. C asserts the grid is in bounds; this
+     * answers {@code false} instead.
      *
-     * @param grid the Loc of the square
-     * @return true if the square does NOT carry player scent
+     * <p>Function squareIsNoScent coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid's terrain does NOT carry player scent
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -386,10 +527,16 @@ public class Chunk {
     }
 
     /**
-     * Tests to see if the square at Location grid is in view of the player
+     * Tests whether a grid is in the player's line of sight, the port of C's {@code square_isview}
+     * ({@code cave-square.c}). Reads the {@code SQUARE_VIEW} info flag. In view is not the same as
+     * seen: a grid can have a line of sight to it and still be too dark to see, which is why
+     * {@link #becomeViewable(Loc, Player, boolean)} sets this flag first and {@code SQUARE_SEEN}
+     * only when there is light. C asserts the grid is in bounds; this answers {@code false} instead.
      *
-     * @param grid the Loc of the square
-     * @return true if the square is in view of the player
+     * <p>Function squareIsView coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid carries {@code SQUARE_VIEW}
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -398,10 +545,16 @@ public class Chunk {
     }
 
     /**
-     * Tests if a square was seen before the current update
+     * Tests whether a grid was seen before the current view update, the port of C's
+     * {@code square_wasseen} ({@code cave-square.c}). Reads the {@code SQUARE_WASSEEN} info flag,
+     * the snapshot that {@link #markWasSeen()} takes and {@link #updateOne(Loc, Player)} clears. It
+     * is only meaningful in the middle of {@link #updateView(Player)}. C asserts the grid is in
+     * bounds; this answers {@code false} instead.
      *
-     * @param grid the Loc of this square
-     * @return true if this square was seen before the current update
+     * <p>Function squareWasSeen coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid carries {@code SQUARE_WASSEEN}
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -410,10 +563,15 @@ public class Chunk {
     }
 
     /**
-     * Tests to see if the square at Loc grid has a known trap
+     * Tests whether a grid carries the trap marker, the port of C's {@code square_istrap}
+     * ({@code cave-square.c}). Reads the {@code SQUARE_TRAP} info flag, which C's own comment calls
+     * "a known trap". {@link #squareTrapFlag(Loc, TrapEnum)} tests this marker before it looks at
+     * the traps themselves. C asserts the grid is in bounds; this answers {@code false} instead.
      *
-     * @param grid the Loc grid of the square
-     * @return true if the grid has a known trap
+     * <p>Function squareIsTrap coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid carries {@code SQUARE_TRAP}
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -422,10 +580,15 @@ public class Chunk {
     }
 
     /**
-     * Tests to see if the square at grid has an unknown trap
+     * Tests whether a grid carries the unknown-trap marker, the port of C's {@code square_isinvis}
+     * ({@code cave-square.c}). Reads the {@code SQUARE_INVIS} info flag. This is a flag test, not
+     * the trap-list test that {@link #squareIsSecretTrap(Loc)} makes. C asserts the grid is in
+     * bounds; this answers {@code false} instead.
      *
-     * @param grid the Loc of the square
-     * @return true if the square has an unknown trap
+     * <p>Function squareIsInvis coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid carries {@code SQUARE_INVIS}
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -434,10 +597,16 @@ public class Chunk {
     }
 
     /**
-     * Gets an iterator to iterate through the objects on a particular square
+     * Returns an iterator over the pile of objects lying on a grid. C has no such function; it walks
+     * {@code square_object()} and follows each object's {@code next} pointer by hand.
      *
-     * @param grid the Loc of the square
-     * @return an Iterator<ItemObject> for the objects on square located at grid
+     * <p>Unlike the predicates around it, this does not check the bounds, so an out-of-bounds grid
+     * throws a {@code NullPointerException} from {@link #getSquare(Loc)}.
+     *
+     * <p>Function getPileIterator coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid whose pile to walk; must be inside this chunk
+     * @return an iterator over the objects on the grid, topmost first
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -446,10 +615,16 @@ public class Chunk {
     }
 
     /**
-     * Tests to see if there is a visible trap on a square
+     * Tests whether a grid holds a visible trap, the port of C's {@code square_isvisibletrap}
+     * ({@code cave-square.c}), which asks {@code square_trap_flag()} for {@code TRF_VISIBLE}. That
+     * helper first checks the {@code SQUARE_TRAP} marker and then scans the grid's whole trap list,
+     * so a grid with the marker but no visible trap answers {@code false}. Out-of-bounds grids
+     * answer {@code false}.
      *
-     * @param grid the Loc of the square
-     * @return true if the square has a visible trap on it
+     * <p>Function squareIsVisibleTrap coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if a trap on the grid is visible
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -458,10 +633,15 @@ public class Chunk {
     }
 
     /**
-     * Tests for an unknown player trap
+     * Tests whether a grid holds a player trap the player cannot see yet, the port of C's
+     * {@code square_issecrettrap} ({@code cave-square.c}): no visible trap, but a player trap. C's
+     * comment adds that such a grid "will appear as a floor tile". Both halves answer {@code false}
+     * out of bounds, so this does too.
      *
-     * @param grid the Loc of the square
-     * @return true if the square at grid contains an unknown player trap
+     * <p>Function squareIsSecretTrap coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid holds an unseen player trap
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -470,10 +650,15 @@ public class Chunk {
     }
 
     /**
-     * Checks for the location of a known disabled player trap
+     * Tests whether a grid holds a known player trap that is currently disabled, the port of C's
+     * {@code square_isdisabledtrap} ({@code cave-square.c}): a visible trap whose timeout is above
+     * zero. The timeout is read with {@code -1} as the trap index, which in C's
+     * {@code square_trap_timeout()} means "any trap on the grid" rather than one specific kind.
      *
-     * @param grid the Loc of the square
-     * @return true if the square contains a visible disabled player trap
+     * <p>Function squareIsDisabledTrap coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid holds a visible trap with a running timeout
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -482,10 +667,15 @@ public class Chunk {
     }
 
     /**
-     * Check if the square contains a trap that can be disarmed
+     * Tests whether a grid holds a trap the player can try to disarm, the port of C's
+     * {@code square_isdisarmabletrap} ({@code cave-square.c}): a visible player trap that is not
+     * currently disabled. A trap that has been disabled already cannot be disarmed again until its
+     * timeout expires.
      *
-     * @param grid the Loc of the square to check
-     * @return true if the square contains a known, disarmable player trap
+     * <p>Function squareIsDisarmableTrap coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid holds a known, enabled player trap
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -498,10 +688,17 @@ public class Chunk {
     }
 
     /**
-     * Check to see if a given square can be destroyed. Used by destruction spells, and for placing stairs, etc.
+     * Tests whether a grid may be destroyed, the port of C's {@code square_changeable}
+     * ({@code cave-square.c}). Used by the destruction spells and when placing stairs. A grid is
+     * refused if it is permanent rock, a shop entrance or a staircase, or if any object lying on it
+     * is an artifact; otherwise it is accepted.
      *
-     * @param grid the Loc of the square we are examining
-     * @return true if it can be destroyed
+     * <p>C does not check the bounds; this answers {@code false} for an out-of-bounds grid.
+     *
+     * <p>Function squareChangeable coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid can be changed
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -516,15 +713,21 @@ public class Chunk {
     }
 
     /**
-     * Check to see if a square is at the (inner) edge of a trap detection area
+     * Tests whether a grid is on the inner edge of a trap-detection area, the port of C's
+     * {@code square_dtrap_edge} ({@code cave-square.c}). The grid must itself be detected
+     * ({@code SQUARE_DTRAP}), and at least one of its four orthogonal neighbours must be fully
+     * inside the level and not detected. Diagonals are not consulted. The order in which the four
+     * neighbours are tried does not affect the answer.
      *
-     * @param grid the Loc of the square
-     * @return true if the square is on the edge of a trap detection area
+     * <p>Function squareDTrapEdge coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid is a detected grid next to an undetected one
      */
     @CheckReturnValue
     @Contract(pure = true)
     private boolean squareDTrapEdge(@NotNull Loc grid) {
-        if (!inBounds(grid) || getSquare(grid).isDTrap()) return false;
+        if (!inBounds(grid) || !getSquare(grid).isDTrap()) return false;
 
         return Stream.of(DirectionEnum.DIR_N, DirectionEnum.DIR_S, DirectionEnum.DIR_E, DirectionEnum.DIR_W)
                 .map(grid::nextGrid)
@@ -532,10 +735,14 @@ public class Chunk {
     }
 
     /**
-     * Tests to see if the square at Loc grid is an inner wall
+     * Tests whether a grid is an inner room wall, the port of C's {@code square_iswall_inner}
+     * ({@code cave-square.c}). Reads the {@code SQUARE_WALL_INNER} info flag, which only level
+     * generation uses. C asserts the grid is in bounds; this answers {@code false} instead.
      *
-     * @param grid th Loc of the square
-     * @return true if the square at grid is an inner wall
+     * <p>Function squareIsWallInner coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid carries {@code SQUARE_WALL_INNER}
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -544,10 +751,14 @@ public class Chunk {
     }
 
     /**
-     * Tests to see if the square at Loc grid is an outer wall
+     * Tests whether a grid is an outer room wall, the port of C's {@code square_iswall_outer}
+     * ({@code cave-square.c}). Reads the {@code SQUARE_WALL_OUTER} info flag, which only level
+     * generation uses. C asserts the grid is in bounds; this answers {@code false} instead.
      *
-     * @param grid the Loc of the square
-     * @return true if the square at grid is an outer wall
+     * <p>Function squareIsWallOuter coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid carries {@code SQUARE_WALL_OUTER}
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -556,10 +767,14 @@ public class Chunk {
     }
 
     /**
-     * Tests to see if the square at Loc grid is a solid wall
+     * Tests whether a grid is a solid room wall, the port of C's {@code square_iswall_solid}
+     * ({@code cave-square.c}). Reads the {@code SQUARE_WALL_SOLID} info flag, which only level
+     * generation uses. C asserts the grid is in bounds; this answers {@code false} instead.
      *
-     * @param grid the Loc of the square
-     * @return true if the square is a solid wall
+     * <p>Function squareIsWallSolid coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid carries {@code SQUARE_WALL_SOLID}
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -568,10 +783,16 @@ public class Chunk {
     }
 
     /**
-     * Tests to see if a square has monster restrictions (generation)
+     * Tests whether a grid is barred to randomly generated monsters, the port of C's
+     * {@code square_ismon_restrict} ({@code cave-square.c}). Reads the {@code SQUARE_MON_RESTRICT}
+     * info flag, which level generation sets on marked rooms; {@code pick_and_place_distant_monster}
+     * skips such grids while the level is still being built. C asserts the grid is in bounds; this
+     * answers {@code false} instead.
      *
-     * @param grid the Loc of the square
-     * @return true if the square has monster restrictions
+     * <p>Function squareIsMonRestrict coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid carries {@code SQUARE_MON_RESTRICT}
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -580,10 +801,15 @@ public class Chunk {
     }
 
     /**
-     * Tests to see if the player can teleport FROM the square
+     * Tests whether the player is barred from teleporting away from a grid, the port of C's
+     * {@code square_isno_teleport} ({@code cave-square.c}). Reads the {@code SQUARE_NO_TELEPORT}
+     * info flag. The flag forbids teleporting <em>out of</em> the grid, so {@code true} means the
+     * player is held. C asserts the grid is in bounds; this answers {@code false} instead.
      *
-     * @param grid the Loc of the square
-     * @return true if the player can teleport from the square at Loc grid
+     * <p>Function squareIsNoTeleport coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid carries {@code SQUARE_NO_TELEPORT}
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -592,10 +818,15 @@ public class Chunk {
     }
 
     /**
-     * Tests to see if the square can be magically mapped by the player
+     * Tests whether magic mapping skips a grid, the port of C's {@code square_isno_map}
+     * ({@code cave-square.c}). Reads the {@code SQUARE_NO_MAP} info flag, so {@code true} means the
+     * grid CANNOT be magically mapped. C asserts the grid is in bounds; this answers {@code false}
+     * instead.
      *
-     * @param grid the Loc of the square
-     * @return true if the square CANNOT be magically mapped by the player
+     * <p>Function squareIsNoMap coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid carries {@code SQUARE_NO_MAP}
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -604,10 +835,15 @@ public class Chunk {
     }
 
     /**
-     * Tests to see if the player can see the square by ESP
+     * Tests whether the player's ESP skips a grid, the port of C's {@code square_isno_esp}
+     * ({@code cave-square.c}). Reads the {@code SQUARE_NO_ESP} info flag, so {@code true} means the
+     * grid CANNOT be detected by ESP. C asserts the grid is in bounds; this answers {@code false}
+     * instead.
      *
-     * @param grid the Loc of the square
-     * @return true if the sqaure CANNOT be detected by ESP
+     * <p>Function squareIsNoESP coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid carries {@code SQUARE_NO_ESP}
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -616,10 +852,16 @@ public class Chunk {
     }
 
     /**
-     * Tests to see if the square is marked for projection passing
+     * Tests whether a grid is queued for projection processing, the port of C's
+     * {@code square_isproject} ({@code cave-square.c}). Reads the {@code SQUARE_PROJECT} info flag,
+     * a working mark set while a projection is being resolved. It is unrelated to whether the
+     * terrain lets a projection through, which is {@link #squareIsProjectable(Loc)}. C asserts the
+     * grid is in bounds; this answers {@code false} instead.
      *
-     * @param grid the Loc of the square
-     * @return true if the square is marked for projection passing
+     * <p>Function squareIsProject coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid carries {@code SQUARE_PROJECT}
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -628,10 +870,15 @@ public class Chunk {
     }
 
     /**
-     * Tests to see if a square has been detected for traps
+     * Tests whether a grid has been covered by trap detection, the port of C's
+     * {@code square_isdtrap} ({@code cave-square.c}). Reads the {@code SQUARE_DTRAP} info flag.
+     * {@link #squareDTrapEdge(Loc)} builds on it. C asserts the grid is in bounds; this answers
+     * {@code false} instead.
      *
-     * @param grid the Loc of the square
-     * @return true if the square has been detected for traps
+     * <p>Function squareIsDTrap coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid carries {@code SQUARE_DTRAP}
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -640,10 +887,15 @@ public class Chunk {
     }
 
     /**
-     * Tests to see if stairs can be placed on a square
+     * Tests whether level generation must not put stairs on a grid, the port of C's
+     * {@code square_isno_stairs} ({@code cave-square.c}). Reads the {@code SQUARE_NO_STAIRS} info
+     * flag, so {@code true} means stairs are NOT allowed here. C asserts the grid is in bounds; this
+     * answers {@code false} instead.
      *
-     * @param grid the Loc of the square
-     * @return true if the square is NOT appropriate to place squares
+     * <p>Function squareIsNoStairs coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid carries {@code SQUARE_NO_STAIRS}
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -652,10 +904,16 @@ public class Chunk {
     }
 
     /**
-     * Tests to see if a square is open, a floor square not occupied by a monster (or the player)
+     * Tests whether a grid is open, the port of C's {@code square_isopen} ({@code cave-square.c}):
+     * a floor grid with nobody in it. The occupant test is C's {@code square->mon}, which is
+     * non-zero for a monster and negative for the player, so either one makes the grid not open.
+     * Items and traps do not matter; contrast {@link #squareIsEmpty(Loc)}. Out-of-bounds grids
+     * answer {@code false}.
      *
-     * @param grid the Loc of the sqyare
-     * @return true if the square is a floor unoccupied by a monster or the player
+     * <p>Function squareIsOpen coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid is floor with no monster or player on it
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -664,10 +922,15 @@ public class Chunk {
     }
 
     /**
-     * Tests for a warded trap on a given square
+     * Tests whether a grid holds a glyph of warding, the port of C's {@code square_iswarded}
+     * ({@code cave-square.c}). The glyph is a trap of the kind named {@code "glyph of warding"}, so
+     * this looks for that specific trap rather than for a flag. Out-of-bounds grids answer
+     * {@code false}.
      *
-     * @param grid the Loc of the square
-     * @return whether there is a glyph of warding on the square
+     * <p>Function squareIsWarded coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid holds a glyph of warding
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -676,10 +939,14 @@ public class Chunk {
     }
 
     /**
-     * Checks for a decoy trap on a given square
+     * Tests whether a grid holds a decoy, the port of C's {@code square_isdecoyed}
+     * ({@code cave-square.c}). The decoy is a trap of the kind named {@code "decoy"}, so this looks
+     * for that specific trap rather than for any trap. Out-of-bounds grids answer {@code false}.
      *
-     * @param grid the Loc of the square
-     * @return true if a trap exists on the given square
+     * <p>Function squareIsDecoyed coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid holds a decoy
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -688,10 +955,14 @@ public class Chunk {
     }
 
     /**
-     * Checks for a web trap on a given square
+     * Tests whether a grid holds a web, the port of C's {@code square_iswebbed}
+     * ({@code cave-square.c}). The web is a trap of the kind named {@code "web"}, so this looks for
+     * that specific trap rather than for any trap. Out-of-bounds grids answer {@code false}.
      *
-     * @param grid the Loc of the square
-     * @return true if a web trap exists on the square
+     * <p>Function squareIsWebbed coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid holds a web
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -700,10 +971,15 @@ public class Chunk {
     }
 
     /**
-     * Tests whether a specific square seems to be a wall
+     * Tests whether a grid looks like rock, the port of C's {@code square_seemslikewall}
+     * ({@code cave-square.c}). Tests the {@code TF_ROCK} terrain flag, which is set on walls, rubble
+     * and secret doors alike: a secret door is not a wall, but it seems like one until the player
+     * finds it. Out-of-bounds grids answer {@code false}.
      *
-     * @param grid the Loc of the square
-     * @return true if the square seems to be a wall
+     * <p>Function squareSeemsLikeWall coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid's terrain has {@code TF_ROCK}
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -712,10 +988,14 @@ public class Chunk {
     }
 
     /**
-     * Tests for whether a square has an interesting feature or not
+     * Tests whether a grid's terrain is worth the player's attention, the port of C's
+     * {@code square_isinteresting} ({@code cave-square.c}). Tests the {@code TF_INTERESTING}
+     * terrain flag. Out-of-bounds grids answer {@code false}.
      *
-     * @param grid the Loc of the square
-     * @return true if the square has an interesting feature
+     * <p>Function squareIsInteresting coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid's terrain has {@code TF_INTERESTING}
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -724,12 +1004,17 @@ public class Chunk {
     }
 
     /**
-     * Tests for a trap of a certain type in a square at location grid. The square already tests for the location of
-     * a trap at all, so we leave that ti the square
+     * Tests whether any trap on a grid carries a given trap flag, the port of C's
+     * {@code square_trap_flag} ({@code trap.c}). C first checks the {@code SQUARE_TRAP} marker, so a
+     * grid without it answers {@code false} whatever its trap list holds, and then scans every trap
+     * on the grid for the flag. The visible-trap and player-trap tests are built on this.
+     * Out-of-bounds grids answer {@code false}.
      *
-     * @param grid     the Loc of the square
-     * @param trapFlag the trap type
-     * @return true if the square at location grid contains a trap with a particular flag
+     * <p>Function squareTrapFlag coded before 260930, commented in full on 260930.
+     *
+     * @param grid     the grid to test
+     * @param trapFlag the trap flag to look for
+     * @return true if a trap on the grid has the flag
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -738,10 +1023,15 @@ public class Chunk {
     }
 
     /**
-     * Tests the existence of a locked door
+     * Tests whether a grid is a closed, locked door, the port of C's {@code square_islockeddoor}
+     * ({@code cave-square.c}). C's {@code square_door_power()} returns the power of the door-lock
+     * trap and returns {@code 0} for anything that is not a closed door, so a locked door is one
+     * whose lock power is above zero. Out-of-bounds grids answer {@code false}.
      *
-     * @param grid the Loc of the square to test
-     * @return true if the square is a locked door
+     * <p>Function squareIsLockedDoor coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid is a closed door with a lock on it
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -750,10 +1040,15 @@ public class Chunk {
     }
 
     /**
-     * Tests the existence of an unlocked door
+     * Tests whether a grid is a closed door with no lock, the port of C's
+     * {@code square_isunlockeddoor} ({@code cave-square.c}): a closed door whose lock power is
+     * {@code 0}. An open or broken door is not counted, because it is not closed. Out-of-bounds
+     * grids answer {@code false}.
      *
-     * @param grid the Loc of the square to test
-     * @return true if the square is an unlocked door
+     * <p>Function squareIsUnlockedDoor coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid is a closed, unlocked door
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -762,10 +1057,14 @@ public class Chunk {
     }
 
     /**
-     * Tests for the existence of a player trap
+     * Tests whether a grid holds a player trap, known or not, the port of C's
+     * {@code square_isplayertrap} ({@code cave-square.c}), which asks {@code square_trap_flag()} for
+     * {@code TRF_TRAP}. Out-of-bounds grids answer {@code false}.
      *
-     * @param grid the Loc to test
-     * @return true if there is a player trap on the square at grid
+     * <p>Function squareIsPlayerTrap coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if a trap on the grid is a player trap
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -774,10 +1073,15 @@ public class Chunk {
     }
 
     /**
-     * Tests to see if the player is on this square
+     * Tests whether the player is standing on a grid, the port of C's {@code square_isplayer}
+     * ({@code cave-square.c}). C stores the occupant in {@code square->mon}: a positive value is a
+     * monster's index and a negative value means the player, so the test is {@code mon < 0}.
+     * Out-of-bounds grids answer {@code false}.
      *
-     * @param grid the Loc of this square
-     * @return true if the player is on this square
+     * <p>Function squareIsPlayer coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the player occupies the grid
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -786,10 +1090,15 @@ public class Chunk {
     }
 
     /**
-     * Checks to see if a square at a given Loc is empty - open without any items
+     * Tests whether a grid is empty, the port of C's {@code square_isempty} ({@code cave-square.c}).
+     * Empty is stricter than open: the grid must hold no player trap and no web, be open floor with
+     * nobody standing in it, and have no object lying on it. Several placement rules depend on it,
+     * including the stair and summoning tests below. Out-of-bounds grids answer {@code false}.
      *
-     * @param grid the Loc of the square
-     * @return true if the square at grid is empty
+     * <p>Function squareIsEmpty coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid is open, untrapped, unwebbed and free of objects
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -801,10 +1110,18 @@ public class Chunk {
     }
 
     /**
-     * Checks to see if the square at location grid can be run through
+     * Tests whether a grid is an acceptable place to arrive at, the port of C's
+     * {@code square_isarrivable} ({@code cave-square.c}). The grid must have nobody in it, no player
+     * trap and no web, and must be floor or stairs. Unlike {@link #squareIsEmpty(Loc)} it does not
+     * mind objects lying there. C's doc comment on this function is a copy of the one on
+     * {@code square_isempty} and does not describe it; the body is what is documented here, and it
+     * carries a C comment wondering about allowing open doors. Out-of-bounds grids answer
+     * {@code false}.
      *
-     * @param grid the Loc of the square
-     * @return whether the square can be run through
+     * <p>Function squareIsArrivable coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid is unoccupied, untrapped, unwebbed floor or stairs
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -813,10 +1130,15 @@ public class Chunk {
     }
 
     /**
-     * Check whether a specific square is untrapped without items
+     * Tests whether an object may be dropped on a grid, the port of C's {@code square_canputitem}
+     * ({@code cave-square.c}): the terrain must be able to hold objects, the grid must not carry the
+     * {@code SQUARE_TRAP} marker, and no object may already lie there. Out-of-bounds grids answer
+     * {@code false}.
      *
-     * @param grid the Loc of the square
-     * @return true if the square is untrapped without items
+     * <p>Function squareCanPutItem coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid can take a new object
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -825,10 +1147,14 @@ public class Chunk {
     }
 
     /**
-     * Checks to see if this square can be dug. This includes rubble and non-permanent walls
+     * Tests whether a grid can be dug, the port of C's {@code square_isdiggable}
+     * ({@code cave-square.c}). That covers rubble, secret doors and the mineral walls (granite,
+     * magma and quartz); permanent rock is excluded. Out-of-bounds grids answer {@code false}.
      *
-     * @param grid the location of this square
-     * @return true if the player can dig this square
+     * <p>Function squareIsDiggable coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid is mineral, a secret door or rubble
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -840,10 +1166,14 @@ public class Chunk {
     }
 
     /**
-     * Checks to see if the square at location grid is a floor square
+     * Tests whether a grid is normal open floor, the port of C's {@code square_isfloor}
+     * ({@code cave-square.c}). Tests the {@code TF_FLOOR} terrain flag; occupants and objects are
+     * ignored. Out-of-bounds grids answer {@code false}.
      *
-     * @param grid the Loc of this square
-     * @return true if this square is floor
+     * <p>Function squareIsFloor coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid's terrain is floor
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -852,24 +1182,35 @@ public class Chunk {
     }
 
     /**
-     * Checks to see if a square is a floor without any traps
+     * Tests whether a spider could spin a web on a grid, the port of C's {@code square_iswebbable}
+     * ({@code cave-square.c}): floor with no trap of any kind. C asks {@code square_trap()} for the
+     * first trap and refuses if there is one; this asks whether the trap list is empty, which is the
+     * same question. Out-of-bounds grids answer {@code false}.
      *
-     * @param grid the Loc of the square
-     * @return true if the square is trap free floor
+     * <p>Function squareIsWebbable coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid is floor with no traps on it
      */
     @CheckReturnValue
     @Contract(pure = true)
     private boolean squareIsWebbable(@NotNull Loc grid) {
         if (!inBounds(grid)) return false;
-        if (getSquare(grid).getTraps().isEmpty()) return false;
+        if (!getSquare(grid).getTraps().isEmpty()) return false;
         return squareIsFloor(grid);
     }
 
     /**
-     * Checks to see if a monster can walk through a particular square
+     * Tests whether a monster can walk through a grid's terrain, the port of C's
+     * {@code square_is_monster_walkable} ({@code cave-square.c}). C says this is needed for
+     * polymorphing, since a monster may stand on terrain that is not plain floor. It tests the same
+     * {@code TF_PASSABLE} flag as {@link #squareIsPassable(Loc)}. Out-of-bounds grids answer
+     * {@code false}.
      *
-     * @param grid the Loc of the square
-     * @return true if a monster can walk through this square
+     * <p>Function squareIsMonsterWalkable coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid's terrain has {@code TF_PASSABLE}
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -878,10 +1219,15 @@ public class Chunk {
     }
 
     /**
-     * Check to see if the player can walk through a particular square
+     * Tests whether the player can walk through a grid's terrain, the port of C's
+     * {@code square_ispassable} ({@code cave-square.c}). Tests the {@code TF_PASSABLE} flag and
+     * ignores whatever is standing there. C asserts the grid is in bounds; this answers
+     * {@code false} instead.
      *
-     * @param grid the Loc of the square
-     * @return true if the player can pass through the square
+     * <p>Function squareIsPassable coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid's terrain has {@code TF_PASSABLE}
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -890,10 +1236,14 @@ public class Chunk {
     }
 
     /**
-     * Checks if a given square can have a projectile go through it
+     * Tests whether a projection can pass through a grid, the port of C's
+     * {@code square_isprojectable} ({@code cave-square.c}). Tests the {@code TF_PROJECT} terrain
+     * flag. C already answers {@code false} for an out-of-bounds grid here, so the two agree.
      *
-     * @param grid the Loc of the square
-     * @return true if the square is projectile passable
+     * <p>Function squareIsProjectable coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid's terrain has {@code TF_PROJECT}
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -902,10 +1252,16 @@ public class Chunk {
     }
 
     /**
-     * Checks to see if a square can be used as a feeling square
+     * Tests whether a grid could be a level-feeling trigger square, the port of C's
+     * {@code square_allowsfeel} ({@code cave-square.c}): passable terrain that does not damage its
+     * occupant. This only says the grid is suitable; whether it <em>is</em> a trigger is the
+     * {@code SQUARE_FEEL} flag that {@link #squareIsFeel(Loc)} reads. Out-of-bounds grids answer
+     * {@code false}.
      *
-     * @param grid the Loc of the square
-     * @return whether the square can be used as a feeling square
+     * <p>Function squareAllowsFeel coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid is passable and not damaging
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -914,10 +1270,16 @@ public class Chunk {
     }
 
     /**
-     * Checks whether line of sight can pass through this square
+     * Tests whether line of sight passes through a grid, the port of C's {@code square_allowslos}
+     * ({@code cave-square.c}). Tests the {@code TF_LOS} terrain flag. The lighting code uses it
+     * throughout as its definition of "not a wall". C asserts the grid is in bounds; this answers
+     * {@code false} instead, which the lighting code relies on when it probes a neighbour that may
+     * lie off the level.
      *
-     * @param grid the Loc of the square
-     * @return true if line of sight passes through this square
+     * <p>Function squareAllowsLOS coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid's terrain has {@code TF_LOS}
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -926,11 +1288,15 @@ public class Chunk {
     }
 
     /**
-     * Checks to see if the square is a stronger or permanent wall, such as granite, magma and quartz.
-     * This excludes secret doors and rubble
+     * Tests whether a grid is a strong wall, the port of C's {@code square_isstrongwall}
+     * ({@code cave-square.c}): a mineral wall (granite, magma or quartz) or permanent rock. Secret
+     * doors and rubble are excluded. C asserts the grid is in bounds; this answers {@code false}
+     * instead.
      *
-     * @param grid the Loc of the square
-     * @return true if the square is a strong wall
+     * <p>Function squareIsStrongWall coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid is mineral or permanent rock
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -942,10 +1308,15 @@ public class Chunk {
     }
 
     /**
-     * Checks to see whether a square is internally lit
+     * Tests whether a grid's terrain gives off light of its own, the port of C's
+     * {@code square_isbright} ({@code cave-square.c}). Tests the {@code TF_BRIGHT} terrain flag.
+     * {@link #calcLighting(Player)} gives such a grid intensity {@code 2} and lights its neighbours.
+     * C asserts the grid is in bounds; this answers {@code false} instead.
      *
-     * @param grid the Loc of the square
-     * @return true if the square is internally lit
+     * <p>Function squareIsBright coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid's terrain has {@code TF_BRIGHT}
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -954,10 +1325,15 @@ public class Chunk {
     }
 
     /**
-     * Checks whether a square is fire-based
+     * Tests whether a grid's terrain is fire-based, the port of C's {@code square_isfiery}
+     * ({@code cave-square.c}). Tests the {@code TF_FIERY} terrain flag, the same flag that
+     * {@link #squareIsDamaging(Loc)} reads. C asserts the grid is in bounds; this answers
+     * {@code false} instead.
      *
-     * @param grid the Loc of the square
-     * @return true if the square is lava
+     * <p>Function squareIsFiery coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid's terrain has {@code TF_FIERY}
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -966,10 +1342,21 @@ public class Chunk {
     }
 
     /**
-     * Check to see if the player thinks a square will block projections
+     * Tests whether the player believes a grid blocks projections, the port of C's
+     * {@code square_isbelievedwall} ({@code cave-square.c}). The answer comes from the player's
+     * memory, which may be wrong. A grid on the edge of the level or off it is always believed to be
+     * a wall. A grid the player has no knowledge of is believed <em>not</em> to be one, so the
+     * player assumes the way is clear. Otherwise the answer is the opposite of whether the
+     * remembered terrain is projectable.
      *
-     * @param grid the Loc of the square
-     * @return true if the player believes the square will block projections/is a wall
+     * <p>C ends with {@code square_isprojectable(player->cave, grid)}, which bounds-checks; this
+     * calls the square's own test directly, which is safe because the fully-in-bounds test has
+     * already passed.
+     *
+     * <p>Function squareIsBelievedWall coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the player believes the grid blocks projections
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -982,10 +1369,15 @@ public class Chunk {
     }
 
     /**
-     * Check to see if a square is known by the player to be passible
+     * Tests whether the player knows a grid to be passable, the port of C's
+     * {@code square_isknownpassable} ({@code cave-square.c}): the terrain must be known, and the
+     * player's <em>remembered</em> terrain must be passable. The method name keeps the original
+     * spelling "Passible". Out-of-bounds grids answer {@code false}.
      *
-     * @param grid the Loc of the square
-     * @return true if the player knows this square is passable
+     * <p>Function isKnownPassible coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the player knows the grid and remembers it as passable
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -998,10 +1390,16 @@ public class Chunk {
     }
 
     /**
-     * Tests if a square is in a cul-de-sac
+     * Tests whether a grid is a good place for stairs because it is a dead end, the port of C's
+     * {@code square_suits_stairs_well} ({@code cave-square.c}). Vault grids and grids flagged
+     * no-stairs are refused; otherwise the grid must have exactly 3 walls among its four orthogonal
+     * neighbours, all 4 diagonal neighbours walls, and be empty (see {@link #squareIsEmpty(Loc)}).
+     * Out-of-bounds grids answer {@code false}.
      *
-     * @param grid the Loc of the square we are testing
-     * @return true if the square has exactly 3 horizontal/vertical neighbouring walls and 4 diagonal neighbouring walls
+     * <p>Function squareSuitsStairsWell coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid is an empty cul-de-sac
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1014,10 +1412,16 @@ public class Chunk {
     }
 
     /**
-     * Checks whether a square is in a corridor
+     * Tests whether a grid is an acceptable place for stairs because it is in a corridor, the port
+     * of C's {@code square_suits_stairs_ok} ({@code cave-square.c}). It is the second choice after
+     * {@link #squareSuitsStairsWell(Loc)}: vault and no-stairs grids are refused, and the grid must
+     * have exactly 2 orthogonal and all 4 diagonal neighbours as walls, and be empty. Out-of-bounds
+     * grids answer {@code false}.
      *
-     * @param grid the Loc of this square
-     * @return true if the square has exactly 4 diagonal neighbouring walls and 2 adjacent neighbouring walls
+     * <p>Function squareSuitsStairsOK coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid is an empty corridor grid
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1030,10 +1434,14 @@ public class Chunk {
     }
 
     /**
-     * Check to see if a square is suitable for placing a summoned monster
+     * Tests whether a summoned monster may be placed on a grid, the port of C's
+     * {@code square_allows_summon} ({@code cave-square.c}): the grid must be empty and hold neither
+     * a glyph of warding nor a decoy. Out-of-bounds grids answer {@code false}.
      *
-     * @param grid the Loc of this square
-     * @return true if the square is appropriate for summoning a monster onto
+     * <p>Function squareAllowsSummoning coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if a summoned monster may appear there
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1044,45 +1452,85 @@ public class Chunk {
     }
 
     /**
-     * Counts the number of adjacent squares vertically or horizontally which are walls
+     * Counts the walls among a grid's four orthogonal neighbours, the port of C's
+     * {@code square_num_walls_adjacent} ({@code cave-square.c}). "Wall" is the {@code TF_WALL}
+     * terrain flag, which excludes rubble and secret doors. A neighbour that falls off the level
+     * counts as not a wall; C would read outside its array there, so this is a safe reading of an
+     * undefined case. An out-of-bounds grid itself returns {@code 0}, where C asserts.
      *
-     * @param grid the Loc of the grid we are examining
-     * @return the number of adjacent walls
+     * <p>Function squareNumWallsAdjacent coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid whose neighbours are counted
+     * @return the number of walls among the four orthogonal neighbours, {@code 0 .. 4}
      */
     @Contract(pure = true)
     @CheckReturnValue
     private int squareNumWallsAdjacent(@NotNull Loc grid) {
         if (!inBounds(grid)) return 0;
 
-        return (int) Stream.of(
-                        DirectionEnum.DIR_S, DirectionEnum.DIR_N, DirectionEnum.DIR_E, DirectionEnum.DIR_W
-                )
-                .filter(dir -> getSquare(grid.nextGrid(dir)).featIsWall())
-                .count();
+        int count = 0;
+        Square square = getSquare(grid.nextGrid(DirectionEnum.DIR_S));
+        if (square != null && square.featIsWall())
+            count++;
+        square = getSquare(grid.nextGrid(DirectionEnum.DIR_E));
+        if (square != null && square.featIsWall())
+            count++;
+
+        square = getSquare(grid.nextGrid(DirectionEnum.DIR_N));
+        if (square != null && square.featIsWall())
+            count++;
+
+        square = getSquare(grid.nextGrid(DirectionEnum.DIR_W));
+        if (square != null && square.featIsWall())
+            count++;
+
+        return count;
     }
 
     /**
-     * Counts the number of adjacent walls diagonally
+     * Counts the walls among a grid's four diagonal neighbours, the port of C's
+     * {@code square_num_walls_diagonal} ({@code cave-square.c}). It treats "wall" and off-level
+     * neighbours exactly as {@link #squareNumWallsAdjacent(Loc)} does.
      *
-     * @param grid the Loc we are looking at
-     * @return the number of diagonal neighbouring walls
+     * <p>Function squareNumWallsDiagonal coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid whose neighbours are counted
+     * @return the number of walls among the four diagonal neighbours, {@code 0 .. 4}
      */
     @Contract(pure = true)
     @CheckReturnValue
     private int squareNumWallsDiagonal(@NotNull Loc grid) {
         if (!inBounds(grid)) return 0;
 
-        return (int) Stream.of(
-                        DirectionEnum.DIR_SE, DirectionEnum.DIR_NW, DirectionEnum.DIR_NE, DirectionEnum.DIR_SW
-                )
-                .filter(dir -> getSquare(grid.nextGrid(dir)).featIsWall())
-                .count();
+        int count = 0;
+        Square square = getSquare(grid.nextGrid(DirectionEnum.DIR_SW));
+        if (square != null && square.featIsWall())
+            count++;
+        square = getSquare(grid.nextGrid(DirectionEnum.DIR_SE));
+        if (square != null && square.featIsWall())
+            count++;
+
+        square = getSquare(grid.nextGrid(DirectionEnum.DIR_NE));
+        if (square != null && square.featIsWall())
+            count++;
+
+        square = getSquare(grid.nextGrid(DirectionEnum.DIR_NW));
+        if (square != null && square.featIsWall())
+            count++;
+
+        return count;
     }
 
     /**
-     * Returns the square at a given grid location, or null if the location is out of bounds
-     * @param grid A grid Loc
-     * @return the square at the location grid, or null if the location is out of bounds
+     * Returns the square at a grid, the port of C's {@code square()} ({@code cave-square.c}), which
+     * is {@code &c->squares[grid.y][grid.x]}. C asserts the grid is in bounds; this returns
+     * {@code null} instead, so a caller that has not checked the bounds gets a
+     * {@code NullPointerException} rather than a halt.
+     *
+     * <p>Function getSquare coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to look up
+     * @return the square there, or {@code null} if the grid is out of bounds
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1092,10 +1540,14 @@ public class Chunk {
     }
 
     /**
-     * Gets the feature of a given square
+     * Returns the terrain feature of a grid, the port of C's {@code square_feat}
+     * ({@code cave-square.c}), which is {@code &f_info[square(c, grid)->feat]}. C asserts the grid is
+     * in bounds; this returns {@code null} instead.
      *
-     * @param grid the Loc of the square
-     * @return the feature of the square
+     * <p>Function squareFeature coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to look up
+     * @return the feature there, or {@code null} if the grid is out of bounds
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -1105,10 +1557,15 @@ public class Chunk {
     }
 
     /**
-     * Gets the light value for this square
+     * Returns the accumulated light level of a grid, the port of C's {@code square_light}
+     * ({@code cave-square.c}). The level is rebuilt by {@link #calcLighting(Player)} and can go
+     * negative where an unlight source overlaps lit terrain. C asserts the grid is in bounds; this
+     * returns {@code 0} instead.
      *
-     * @param grid the Loc of this square
-     * @return the light value for this square
+     * <p>Function squareLight coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to look up
+     * @return the light level, or {@code 0} if the grid is out of bounds
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -1118,10 +1575,16 @@ public class Chunk {
     }
 
     /**
-     * Get a monster in this chunk based on its location
+     * Returns the monster standing on a grid, the port of C's {@code square_monster}
+     * ({@code cave-square.c}). The answer is {@code null} for an out-of-bounds grid, for a grid
+     * holding no monster (occupant index zero or negative, the latter being the player), and for a
+     * slot whose monster is dead, meaning it has no race. That last check is why this is preferred
+     * over {@link #getMonster(Loc)}.
      *
-     * @param grid the Loc of the square to check for a monster
-     * @return the monster on this square, or null if no monster is on the square
+     * <p>Function squareMonster coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to look at
+     * @return the live monster there, or {@code null}
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -1140,38 +1603,57 @@ public class Chunk {
     }
 
     /**
-     * Get a monster in this chunk by its index
+     * Returns the monster in a given slot, the port of C's {@code cave_monster}
+     * ({@code cave.c}), which returns {@code NULL} for an index of zero or below and otherwise a
+     * pointer to {@code &c->monsters[idx]}. Where C hands back a pointer to a zeroed struct for an
+     * empty slot, this returns {@code null}, so callers must check for it. Index {@code 0} reads the
+     * reserved dummy slot, which is {@code null}, so it agrees with C. A negative index, or one past
+     * the end of the array, answers {@code null}. C returns {@code NULL} for the negative case, and
+     * for the past-the-end case C reads out of bounds, so {@code null} is the safe reading.
      *
-     * @param index the index of the monster
-     * @return the monster on this level with the given index
+     * <p>Function caveMonster coded before 260930, commented in full on 260930, updated on 260930
+     * when the out-of-range indices stopped throwing.
+     *
+     * @param index the monster index; {@code 0} is the reserved dummy slot
+     * @return the monster in that slot, or {@code null} if it is empty or the index is out of range
      */
     @CheckReturnValue
     @Contract(pure = true)
     public Monster caveMonster(int index) {
+        if (index < 0 || index >= monsters.length)
+            return null;
+        
         return monsters[index];
     }
 
     /**
-     * Gets the monster on a given grid
+     * Returns whatever monster object is indexed by a grid's occupant. This has no C counterpart and
+     * duplicates {@link #squareMonster(Loc)} without its dead-monster check: a slot that still holds
+     * a monster with no race is returned as if it were live. Prefer {@link #squareMonster(Loc)}
+     * unless that difference is wanted.
      *
-     * @param grid the loc of the monster
-     * @return the monster on this square
+     * <p>Function getMonster coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to look at
+     * @return the monster in the occupant's slot, or {@code null} if the grid is out of bounds or
+     * holds no monster
      */
     @Contract(pure = true)
     @CheckReturnValue
     Monster getMonster(@NotNull Loc grid) {
-        if (!inBounds(grid)) return null;
-        int mIndex = getSquare(grid).getMonsterIndex();
-        if (mIndex > 0) return monsters[mIndex];
-        else return null;
+        return squareMonster(grid);
     }
 
     /**
-     * Checks for a particular info flag on a square at a given grid location
+     * Tests whether a grid carries a given info flag. C has no single function for this; it calls
+     * {@code sqinfo_has(square(c, grid)->info, flag)} directly wherever it needs one, and the
+     * predicates above are that call with the flag fixed. Out-of-bounds grids answer {@code false}.
      *
-     * @param grid     the Loc of the square
-     * @param infoFlag the info flag we are checking for
-     * @return true if the square at Loc grid has infoFlag set
+     * <p>Function squareHasInfoFlag coded before 260930, commented in full on 260930.
+     *
+     * @param grid     the grid to test
+     * @param infoFlag the {@code SQUARE_*} flag to look for
+     * @return true if the grid has the flag set
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -1180,10 +1662,16 @@ public class Chunk {
     }
 
     /**
-     * Gets whether a square is lit or not
+     * Tests whether a grid has any light on it, the port of C's {@code square_islit}
+     * ({@code cave-square.c}): the accumulated light level, from {@link #squareLight(Loc)}, is above
+     * zero. This is the result of the lighting calculation, not the {@code SQUARE_GLOW} flag that
+     * {@link #squareIsGlow(Loc)} reads. C asserts the grid is in bounds; this answers {@code false}
+     * instead.
      *
-     * @param grid the Loc of the square
-     * @return true if the square is lit
+     * <p>Function squareIsLit coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the grid's light level is positive
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -1192,10 +1680,14 @@ public class Chunk {
     }
 
     /**
-     * Gets the top object of a pile on the current level by its position
+     * Returns the top object of the pile on a grid, the port of C's {@code square_object}
+     * ({@code cave-square.c}), which returns {@code square->obj}, the head of the pile. Both C and
+     * this answer {@code null} for an out-of-bounds grid.
      *
-     * @param grid the Loc of the square we are examining
-     * @return The topmost object on this square
+     * <p>Function squareObject coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to look at
+     * @return the topmost object there, or {@code null} if there is none
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -1205,10 +1697,14 @@ public class Chunk {
     }
 
     /**
-     * Get the top most trap from a square
+     * Returns the first trap on a grid, the port of C's {@code square_trap} ({@code cave-square.c}),
+     * which returns {@code square->trap}. C's own comment calls it "the first (and currently only)
+     * trap". Both C and this answer {@code null} for an out-of-bounds grid.
      *
-     * @param grid the Loc of the square
-     * @return the top most/only trap on the square
+     * <p>Function squareTrap coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to look at
+     * @return the first trap there, or {@code null} if there is none
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -1218,11 +1714,15 @@ public class Chunk {
     }
 
     /**
-     * Tests if a given object is on a specific square
+     * Tests whether a given object lies in the pile on a grid, the port of C's
+     * {@code square_holds_object} ({@code cave-square.c}), which is {@code pile_contains()} over the
+     * grid's pile. C asserts the grid is in bounds; this answers {@code false} instead.
      *
-     * @param grid   the Loc of the square
-     * @param object the object we are checking for
-     * @return true if the object is in the square
+     * <p>Function squareHoldsObject coded before 260930, commented in full on 260930.
+     *
+     * @param grid   the grid to look at
+     * @param object the object to look for
+     * @return true if the object is in the grid's pile
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -1232,7 +1732,11 @@ public class Chunk {
     }
 
     /**
-     * Getter
+     * Returns the number of columns in this chunk, C's {@code c->width}. Valid {@code x} values run
+     * from {@code 0} to {@code getWidth() - 1}, matching {@link #inBounds(Loc)}.
+     *
+     * <p>Function getWidth coded before 260929, commented in full on 260929.
+     *
      * @return the width of this chunk
      */
     @Contract(pure = true)
@@ -1242,7 +1746,11 @@ public class Chunk {
     }
 
     /**
-     * Getter
+     * Returns the number of rows in this chunk, C's {@code c->height}. Valid {@code y} values run
+     * from {@code 0} to {@code getHeight() - 1}, matching {@link #inBounds(Loc)}.
+     *
+     * <p>Function getHeight coded before 260929, commented in full on 260929.
+     *
      * @return the height of this chunk
      */
     @Contract(pure = true)
@@ -1252,9 +1760,18 @@ public class Chunk {
     }
 
     /**
-     * Excise an object from a floor pile leaving it orphaned
+     * Removes an object from a grid's floor pile and leaves it orphaned, the port of C's
+     * {@code square_excise_object} ({@code cave-square.c}). The object is unlinked from the pile and
+     * nothing else: it is not deleted, not delisted from {@link #objects} and not freed, so the
+     * caller either re-homes it or follows up with {@link #delistObject(ItemObject)} and
+     * {@link #objectDelete(Chunk, ItemObject)}.
      *
-     * @param grid the location of the object
+     * <p>C asserts the grid is in bounds and would halt the game. This logs a fatal error and
+     * throws instead, so the failure is visible to a test.
+     *
+     * <p>Function squareExciseObject coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid whose pile the object is in
      * @param item the object to excise
      * @throws IndexOutOfBoundsException if the grid is outside the chunk's boundaries
      */
@@ -1271,56 +1788,111 @@ public class Chunk {
     }
 
     /**
-     * Delete an object from the cave, and release it for the garbage collector to remove
+     * Deletes an object, or orphans it if the player still remembers it, the port of C's
+     * {@code object_delete} ({@code obj-pile.c}). The receiver is C's {@code c}, the chunk the
+     * object belongs to, and {@code playerCave} is C's {@code p_c}, the matching known chunk (the
+     * player's remembered cave when {@code c} is the live level).
      *
-     * @param item The object we wish to delete
+     * <p>Four things happen, in this order. First, the object leaves whichever {@link Pile} holds
+     * it. Second, if the player is tracking this object in their upkeep, the tracking is dropped.
+     * Third, if the receiver lists the object <em>and</em> {@code playerCave} lists the object's
+     * known counterpart, the object is orphaned rather than deleted: its grid, holder and mimic
+     * indices are zeroed, and the known counterpart is marked {@code OBJ_NOTICE_IMAGINED} because
+     * it is now purely a figment of the player's memory. The method returns there, and both lists
+     * still hold their entries. Fourth, otherwise the object is removed from {@code playerCave}, if
+     * given, and from the receiver.
+     *
+     * <p>The pile step comes first and is unconditional, because both outcomes detach the object
+     * from its pile: C unlinks it from its {@code prev} and {@code next} neighbours at the top of
+     * {@code object_delete}, before the orphan test, and the orphan branch then clears those two
+     * links as well. The orphan test must likewise be made before either list is changed, which is
+     * why it sits ahead of the removals.
+     *
+     * <p>Differences from C: the objects here are list members, so removing one is a
+     * {@code remove()} rather than nulling the slot at its {@code oidx}. C's pile is a linked list
+     * threaded through the objects, so the unlink needs no grid; here the pile is found through
+     * {@link ItemObject#getOwningPile()}, which every {@link Pile} insert sets, and
+     * {@link Pile#excise(ItemObject)} removes the object and clears that owner. An object in no
+     * pile has no owner and this step is skipped. It works for any pile, not only a floor pile,
+     * and never reads the object's {@code grid}, so an object a monster carries is handled the same
+     * way. A caller therefore does not need to call {@link #squareExciseObject(Loc, ItemObject)}
+     * first, although doing so does no harm. Nothing is freed; the collector reclaims it.
+     *
+     * <p>Function objectDelete coded before 260930, commented in full on 260930, updated on 260930
+     * when the pile removal moved to the object's owning pile.
+     *
+     * @param playerCave the known chunk to consult and clean, or {@code null} for none
+     * @param item       the object to delete
      */
     @Contract(mutates = "this")
     public void objectDelete(@Nullable Chunk playerCave, @NotNull ItemObject item) {
         Chunk cave = this;
 
+        Pile pile = item.getOwningPile();
+        if (pile != null) {
+            pile.excise(item);
+        }
+        
         // Remove the object from those tracked by the player upkeep
-        if (player.getPlayerUpkeep() != null
+        if (player != null
+                && player.getPlayerUpkeep() != null
                 && item == player.getPlayerUpkeep().getObject())
             player.getPlayerUpkeep().setObject(null);
 
         if (playerCave != null
                 && cave.objects.contains(item)
-                && playerCave.objects.contains(item)) {
+                && playerCave.objects.contains(item.getKnown())) {
             item.setGrid(Loc.zero);
             item.setHeldMIndex(0);
             item.setMimickingMIndex(0);
 
-            if (item.getKnown() != null) item.getKnown().orNotice(ObjectNotice.OBJ_NOTICE_IMAGINED);
+            item.getKnown().orNotice(ObjectNotice.OBJ_NOTICE_IMAGINED);
             return;
         }
 
-        if (playerCave != null && playerCave.objects.contains(item))
+        if (playerCave != null) {
             playerCave.objects.remove(item);
+        }
 
-        if (cave.objects.contains(item))
-            cave.objects.remove(item);
+        cave.objects.remove(item);
     }
 
     /**
-     * Remove an object from the object pile in this chunk
+     * Removes an object from this chunk's master list, the port of C's {@code delist_object}
+     * ({@code cave.c}). C says the function is "robust against delisting of unlisted objects", and
+     * so is this: an object that is not listed is ignored. It does not touch the square's floor
+     * pile.
      *
-     * @param item the object to remove
+     * <p>A real object stays listed while the player still remembers it. When this chunk is the live
+     * level and the player's cave lists the object's known counterpart, the method returns without
+     * removing anything, because deleting the real object would leave that memory pointing at
+     * nothing. C also resets the object's {@code oidx}, which the port does not carry.
+     *
+     * <p>This dereferences {@link #player}, so it assumes a player was given at construction
+     * whenever this chunk is the live level.
+     *
+     * <p>Function delistObject coded before 260930, commented in full on 260930.
+     *
+     * @param item the object to delist
      */
     @Contract(mutates = "this")
     public void delistObject(ItemObject item) {
         if (!objects.contains(item)) return;
 
-        if (this.equals(currentLevel) && player.getCave() != null && player.getCave().objects.contains(item))
+        if (this.equals(currentLevel) && player.getCave() != null && player.getCave().objects.contains(item.getKnown()))
             return;
 
         objects.remove(item);
     }
 
     /**
-     * Memorize the feature on this square by setting the feature on the same square in the player cave to it
+     * Copies a grid's real terrain into the player's memory, the port of C's
+     * {@code square_memorize} ({@code cave-square.c}). It does nothing unless this chunk is the live
+     * level. The write is made by {@link #squareSetKnownFeat(Loc, Feature)}, which repeats that test.
      *
-     * @param grid the Loc of the square we are memorizing
+     * <p>Function squareMemorize coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid whose terrain the player now remembers; must be inside this chunk
      */
     void squareMemorize(@NotNull Loc grid) {
         if (this != currentLevel) return;
@@ -1328,10 +1900,20 @@ public class Chunk {
     }
 
     /**
-     * Set the feature that is on the main cave to that on the player cave, so they 'know' it
+     * Writes a terrain feature into the player's remembered cave at a grid, the port of C's static
+     * {@code square_set_known_feat} ({@code cave-square.c}). C's version returns unless the chunk is
+     * the live cave, and this does the same; it also ignores an out-of-bounds grid, which C does not
+     * check. Nothing is written to this chunk itself.
      *
-     * @param grid    the location of the grid we are setting the feature
-     * @param feature the feature to set
+     * <p>{@link #squareMemorize(Loc)} passes the real feature to remember, and
+     * {@link #squareForget(Loc)} passes {@code FEAT_NONE}, which is what {@link #isKnown(Loc)} reads
+     * as "not known". Dereferences {@link #player} and its cave, so both must be present on the live
+     * level.
+     *
+     * <p>Function squareSetKnownFeat coded before 260930, commented in full on 260930.
+     *
+     * @param grid    the grid whose remembered terrain is set
+     * @param feature the feature the player is to remember there
      */
     void squareSetKnownFeat(@NotNull Loc grid, Feature feature) {
         if (!inBounds(grid)) return;
@@ -1341,10 +1923,19 @@ public class Chunk {
     }
 
     /**
-     * Checks whether the square at a particular location is known
+     * Tests whether the player knows the terrain at a grid, the port of C's {@code square_isknown}
+     * ({@code cave-square.c}). It only answers for the two chunks that make up the player's world: a
+     * chunk that is neither the live level nor the player's remembered cave gets {@code false}, and
+     * so does a player with no remembered cave. Otherwise the terrain is known when the remembered
+     * feature is anything but {@code FEAT_NONE}.
      *
-     * @param grid the Loc of the square
-     * @return true if the location is known
+     * <p>C tests {@code !player} first. This dereferences {@link #player} to reach the remembered
+     * cave, so a chunk built with no player throws here. Out-of-bounds grids answer {@code false}.
+     *
+     * <p>Function isKnown coded before 260930, commented in full on 260930.
+     *
+     * @param grid the grid to test
+     * @return true if the player's memory holds real terrain there
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -1359,9 +1950,14 @@ public class Chunk {
     }
 
     /**
-     * Get the maximum number of monsters on this level
+     * Returns one past the highest monster index in use, the port of C's {@code cave_monster_max}
+     * ({@code cave.c}), which returns {@code c->mon_max}. It is a high-water mark that starts at
+     * {@code 1} in C and is lowered by {@link #compactMonsters(int)}. It is neither the number of
+     * live monsters, which is {@link #monsterCount()}, nor the capacity of the array.
      *
-     * @return the maximum number of monsters on this level
+     * <p>Function getMonMax coded before 260930, commented in full on 260930.
+     *
+     * @return the monster high-water mark
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1370,43 +1966,79 @@ public class Chunk {
     }
 
     /**
-     * @return this level's name, or {@code null} if unnamed - the port of C's {@code c->name}; used
-     * for example to recognise the "arena" level
+     * Returns this level's name, the port of reading C's {@code c->name}. It is used, for example,
+     * to recognise the arena level.
+     *
+     * <p>Function getName coded before 260930, commented in full on 260930.
+     *
+     * @return the name, or {@code null} if the chunk is unnamed
      */
     public String getName() {
         return name;
     }
 
     /**
-     * @return the raw monster array, indexed by monster index — the port of reading C's
+     * Returns the raw monster array, indexed by monster index — the port of reading C's
      * {@code cave->monsters}. Index 0 is a reserved dummy and unused slots are {@code null} (C's
      * empty, {@code race == NULL} slots), so callers iterating this must skip {@code null} entries.
+     * The array is the full capacity, {@code level-max:monsters} long, so a loop that should stop at
+     * the high-water mark must use {@link #getMonMax()} as its bound. The array is live, not a copy.
+     *
+     * <p>Function getMonsters coded before 260930, commented in full on 260930.
+     *
+     * @return the monster array
      */
     public Monster[] getMonsters() {
         return monsters;
     }
 
     /**
-     * Flag a single grid as needing to be relit and redrawn on the map — the port of C's
-     * {@code square_light_spot}. Sets the item-list redraw flag and signals the map-update event for
-     * this grid, so the display recomputes the square (for example to reshow a monster or a light
-     * change) on the next refresh; out-of-bounds grids are ignored.
+     * Flags a single grid as needing to be redrawn on the map — the port of C's
+     * {@code square_light_spot} ({@code cave-map.c}). Sets the item-list redraw flag and signals the
+     * map-update event for this grid, so the display recomputes the square (for example to reshow a
+     * monster or a light change) on the next refresh.
+     *
+     * <p>Only the live level signals: C's guard is {@code c == cave && player->cave}, so a call on the
+     * player's remembered copy, or before the player has a remembered cave, does nothing. C says the
+     * grid must be "legal" and does not check; this ignores an out-of-bounds grid.
+     *
+     * <p>The event carries the coordinates as x then y, which is what C sends.
+     *
+     * <p>Function squareLightSpot coded before 260930, commented in full on 260930.
      *
      * @param grid the grid whose display needs refreshing
      */
     public void squareLightSpot(@NotNull Loc grid) {
         if (!inBounds(grid)) return;
 
-        player.getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_ITEMLIST);
-        // The data is passed x/y and not y/x on this line as that is what the C does.
-        GameEngine.getEventsBusHandler().eventSignalPoint(GameEventType.EVENT_MAP, grid.getX(), grid.getY());
+        if (this == currentLevel && player.getCave() != null) {
+            player.getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_ITEMLIST);
+            // The data is passed x/y and not y/x on this line as that is what the C does.
+            GameEngine.getEventsBusHandler().eventSignalPoint(GameEventType.EVENT_MAP, grid.getX(), grid.getY());
+        }
     }
 
     /**
-     * @return the number of monster slots in this chunk's monster array
+     * Counts the monsters currently alive on this chunk, the port of C's {@code cave_monster_count()}
+     * ({@code cave.c}), which returns {@code c->mon_cnt}.
+     *
+     * <p>Where C keeps a running counter that {@code place_new_monster_one()} increments and
+     * {@code delete_monster_idx()} decrements ({@code mon-make.c}), this scans {@link #monsters}
+     * and counts the non-null slots. The two agree because C wipes a deleted monster's slot, which
+     * is a {@code null} here, and never places a monster in slot {@code 0}. It is not the high-water
+     * mark, which is {@link #getMonMax()}.
+     *
+     * <p>Function monsterCount coded before 260929, commented in full on 260929.
+     *
+     * @return the number of live monsters in this chunk
      */
     public int monsterCount() {
-        return Arrays.stream(monsters).toList().size();
+        int count = 0;
+        for (Monster monster : monsters) {
+            if (monster != null) count++;
+        }
+
+        return count;
     }
 
     /**
@@ -1414,13 +2046,28 @@ public class Chunk {
      * ({@code mon-make.c}). Passes over the monster list with escalating aggression each iteration —
      * raising the level cap and shrinking the distance threshold — deleting eligible monsters that
      * fail a saving throw, with quest monsters and uniques given progressively better odds of
-     * surviving. Finally excises the dead entries and shrinks the array's high-water mark.
+     * surviving. Finally excises the dead entries and lowers the high-water mark, {@link #monMax}.
+     *
+     * <p>Each pass of the outer loop uses {@code maxLevel = 5 * iteration} as the highest monster
+     * level it will touch and {@code minDistance = 5 * (20 - iteration)} as the nearest it will go
+     * to the player, so both relax until enough have been culled. A monster gets a saving throw of
+     * {@code 90}; a quest monster gets {@code 100} (never culled) while fewer than {@code 1000}
+     * passes have run; and a unique gets {@code 99}, which takes over if a monster is both. It
+     * survives when
+     * {@code randint0(100)} falls below that figure. The excise loop then walks the list backwards
+     * and moves the last monster into each hole, lowering the mark by one each time. Slot
+     * {@code 0} is never examined.
+     *
+     * <p><b>Outstanding:</b> {@link #deleteMonsterIndex(int)} is a stub waiting on Chapter 6, so the
+     * culling pass counts each victim as removed without actually removing it. The loop terminates
+     * and the excise pass is correct, but no monster is deleted yet.
+     *
+     * <p>Function compactMonsters coded before 260930, commented in full on 260930.
      *
      * @param numToCompact the minimum number of monsters to remove; {@code 0} simply excises the
      *                     already-dead entries without a "Compacting monsters..." message
      */
     public void compactMonsters(int numToCompact) {
-        int monIndex;
         int numCompacted;
         int iteration;
 
@@ -1441,8 +2088,9 @@ public class Chunk {
             // Get closer each iteration
             minDistance = 5 * (20 - iteration);
 
-            // Check all the monsters
-            for (Monster monster : monsters) {
+            // Check the monsters
+            for (int monIndex = 1; monIndex < caveMonsterMax(); monIndex++) {
+                Monster monster = monsters[monIndex];
                 if (monster == null) continue;
 
                 // skip dead monsters
@@ -1474,34 +2122,123 @@ public class Chunk {
         }
 
         // Excise dead monsters (backwards)
-        for (monIndex = monMax - 1; monIndex >= 1; monIndex--) {
+        for (int monIndex = monMax - 1; monIndex >= 1; monIndex--) {
             Monster monster = monsters[monIndex];
 
-            if (monster != null) continue;
-
-            monsterIndexMove(monMax - 1, monIndex);
-
-            monMax--;
+            if (monster == null || monster.getMonsterRace() == null) {
+                monsterIndexMove(monMax - 1, monIndex);
+                monMax--;
+            }
         }
     }
 
     /**
-     * Relocates a monster from one index to another in the monster array, updating all references,
-     * the port of C's {@code monster_index_move} ({@code mon-make.c}). Used when compacting the array.
+     * The port of C's {@code cave_monster_max} ({@code cave.c}): the monster high-water mark used as
+     * the loop bound in {@link #compactMonsters(int)}. It returns {@link #monMax}, as does the
+     * public {@link #getMonMax()}.
      *
-     * <p><b>Stub:</b> not yet implemented.
+     * <p>Function caveMonsterMax coded before 260930, commented in full on 260930.
+     *
+     * @return the monster high-water mark
+     */
+    private int caveMonsterMax() {
+        return monMax;
+    }
+
+    /**
+     * Moves a monster from one slot of the monster list to another, the port of C's
+     * {@code monster_index_move} ({@code mon-make.c}). {@link #compactMonsters(int)} uses it to fill
+     * the holes left by dead monsters. C says this must only be called when there is really a
+     * monster in the source slot; here an empty source slot, or {@code fromIndex == toIndex}, is
+     * quietly ignored.
+     *
+     * <p>Everything that refers to the monster by index is repaired, in C's order: the grid's
+     * occupant, the monster's own {@code monIndex}, the pack it belongs to, the {@code held_m_idx}
+     * of each object it carries, the {@code mimicking_m_idx} of any object it mimics, and the
+     * player's target. Then the slots are swapped, leaving {@code null} behind.
+     *
+     * <p>C also repoints the health bar, whose {@code health_who} is a pointer to the monster's slot.
+     * Here the bar holds the monster object itself and the object does not move, so there is nothing
+     * to repair. The target is handled differently: {@link Target} stores an index, so it is
+     * updated.
+     *
+     * <p><b>Outstanding:</b> {@link MonsterGroup#monsterGroupChangeIndex} is a stub waiting on
+     * Chapter 6 that always reports success, so pack membership is not re-indexed yet and the
+     * "Bad monster group info!" failure below cannot occur.
+     *
+     * <p>Function monsterIndexMove coded before 260930, commented in full on 260930.
      *
      * @param fromIndex the monster's current index
      * @param toIndex   the index to move it to
+     * @throws IllegalStateException if the pack bookkeeping reports an inconsistency
      */
     public void monsterIndexMove(int fromIndex, int toIndex) {
-        // Stub function : TODO: implement this
+        if (fromIndex == toIndex) return;
+
+        Monster monster = monsters[fromIndex];
+        if (monster == null) return;
+
+        // Update the cave
+        squareSetMon(monster.getGrid(), toIndex);
+
+        // Update the monster index
+        monster.setMonIndex(toIndex);
+
+        // Update group
+        if (!MonsterGroup.monsterGroupChangeIndex(this, toIndex, fromIndex)) {
+            logger.fatal("Bad monster group info!");
+            throw new IllegalStateException("Bad monster group info!");
+        }
+
+        // Repair objects being held by monster
+        for (ItemObject obj : monster.getHeldObjects()) {
+            obj.setHeldMIndex(toIndex);
+        }
+
+        // Move mimicked objects
+        if (monster.getMimickedObject() != null) {
+            monster.getMimickedObject().setMimickingMIndex(toIndex);
+        }
+
+        // Change target to new monster index
+        if (Target.getTargetMonster(this) == monster)
+            Target.setTargetMonster(monster, toIndex);
+
+        // Health bar points to a monster, not an index 
+        // No need to update it
+
+        // Move the monster
+        monsters[toIndex] = monsters[fromIndex];
+        monsters[fromIndex] = null;
+    }
+
+    /**
+     * Records which monster occupies a grid, the port of C's {@code square_set_mon}
+     * ({@code cave-square.c}). The value is a monster index; {@code 0} means nobody and a negative
+     * value means the player. Neither C nor this checks the bounds, so the grid must be inside the
+     * chunk.
+     *
+     * <p>Function squareSetMon coded before 260930, commented in full on 260930.
+     *
+     * @param grid    the grid to update
+     * @param toIndex the occupant's monster index
+     */
+    private void squareSetMon(Loc grid, int toIndex) {
+        Square square = getSquare(grid);
+        square.setMon(toIndex);
     }
 
     /**
      * Deletes the monster occupying the given grid, if any — the port of C's {@code delete_monster}
      * ({@code mon-make.c}). Resolves the grid to its square and delegates to
-     * {@link #deleteMonsterIndex(int)}; out-of-bounds grids are ignored.
+     * {@link #deleteMonsterIndex(int)} if a monster is there; a grid with no monster, or with the
+     * player (a negative occupant), is left alone. C asserts the grid is in bounds; this ignores an
+     * out-of-bounds grid instead.
+     *
+     * <p><b>Outstanding:</b> the work is done by {@link #deleteMonsterIndex(int)}, a stub waiting on
+     * Chapter 6, so this currently deletes nothing.
+     *
+     * <p>Function deleteMonster coded before 260930, commented in full on 260930.
      *
      * @param grid the map location to clear of its monster
      */
@@ -1517,7 +2254,19 @@ public class Chunk {
      * Deletes the monster at the given array index, freeing its slot and clearing its square — the
      * port of C's {@code delete_monster_idx} ({@code mon-make.c}).
      *
-     * <p><b>Stub:</b> not yet implemented.
+     * <p>When ported this has to do what C does, in C's order: lower the race's live count (the
+     * original race if the monster is a shapechanger), lower {@code numRepro} for a breeder, ask for
+     * a view update if the race gives off light, clear the player's target and health-bar tracking
+     * if they point at this monster, clear the command status, empty the square and remove the
+     * monster from its pack, delete each carried object (with the artifact and known-object
+     * bookkeeping) and any mimicked object, wipe the slot, lower the live count, and redraw the
+     * grid.
+     *
+     * <p><b>Stub:</b> waiting on Chapter 6 (monsters and combat), because it touches the pack,
+     * carried-object and health-tracking subsystems that arrive there. It does nothing, so
+     * {@link #deleteMonster(Loc)} and {@link #compactMonsters(int)} delete nothing until it is done.
+     *
+     * <p>Function deleteMonsterIndex stubbed, commented in full on 260930.
      *
      * @param monsterIndex the index of the monster to delete
      */
@@ -1526,12 +2275,22 @@ public class Chunk {
     }
 
     /**
-     * Lights or darkens the whole level as appropriate — the port of C's {@code cave_illuminate}
-     * ({@code cave.c}). In town this reflects day/night; in the dungeon it handles lit rooms.
+     * Lights or darkens the town for day or night — the port of C's {@code cave_illuminate}
+     * ({@code cave-map.c}), whose own comment is "Light or Darken the town".
      *
-     * <p><b>Stub:</b> not yet implemented.
+     * <p>C makes two sweeps. The first visits every grid: a grid with no floor or stairs in its 3x3
+     * neighbourhood is skipped for memorising; by day, or for any grid that is not floor, it sets
+     * {@code SQUARE_GLOW} and memorises the grid if it has floor or stairs near it; at night a floor
+     * grid that is not bright terrain loses {@code SQUARE_GLOW} and is forgotten. The second sweep
+     * lights and memorises the eight grids around every shop entrance. Both end by asking for a
+     * full view update and redrawing the map, monster list and item list.
      *
-     * @param daytime {@code true} if it is daytime (relevant in the town)
+     * <p><b>Stub:</b> not yet implemented; the level is left as it is.
+     *
+     * <p>Function illuminate stubbed, commented in full on 260930.
+     *
+     * @param daytime {@code true} for daylight; when ported this should come from
+     *                {@code GameWorld.isDaytime} instead of being passed in
      */
     public void illuminate(boolean daytime) {
         // Stub function : TODO: implement this
@@ -1543,10 +2302,17 @@ public class Chunk {
      * {@code pick_and_place_distant_monster} ({@code mon-make.c}), used to spawn wandering monsters
      * away from the player.
      *
+     * <p>C picks random grids, up to {@code 10000} attempts, until it finds an empty one that is
+     * strictly further than the distance from the grid to avoid, and that is not monster-restricted
+     * while the level is still being generated. If it runs out of attempts it reports failure,
+     * with a warning under the cheat options. Otherwise it places a monster there, allowing a group.
+     *
      * <p><b>Stub:</b> not yet implemented; always reports failure.
      *
+     * <p>Function pickAndPlaceDistantMonster stubbed, commented in full on 260930.
+     *
      * @param toAvoid  the grid to keep the new monster away from
-     * @param distance the minimum distance from {@code toAvoid}
+     * @param distance the distance the chosen grid must exceed
      * @param sleep    whether the placed monster starts asleep
      * @param depth    the depth to generate the monster at
      * @return {@code true} if a monster was placed
@@ -1560,7 +2326,13 @@ public class Chunk {
      * Marks the traps on a square as remembered by the player so they stay drawn — the port of C's
      * {@code square_memorize_traps} ({@code cave-square.c}).
      *
+     * <p>{@link #decreaseTrapTimeout()} calls it when a trap's timeout expires on a grid the player
+     * can see, so until it is ported that redraw still happens but the trap is not committed to the
+     * player's memory.
+     *
      * <p><b>Stub:</b> not yet implemented.
+     *
+     * <p>Function squareMemorizeTraps stubbed, commented in full on 260930.
      *
      * @param grid the grid whose traps to memorize
      */
@@ -1570,13 +2342,29 @@ public class Chunk {
 
     /**
      * Ticks every trap on the level down by one turn, re-memorising and re-lighting any square whose
-     * trap just became active again (timeout reaching zero) while it is in view. Mirrors the trap
-     * half of C's per-turn trap ageing.
+     * trap just became active again (timeout reaching zero) while it is in view. This is the
+     * "Decrease trap timeouts" loop inside C's {@code process_world()} ({@code game-world.c}),
+     * lifted out as its own method.
+     *
+     * <p>Every grid is visited and every trap on it is examined. A trap with a running timeout loses
+     * one; a trap whose timeout has just reached zero marks its grid as changed, and a trap that
+     * was already at zero is untouched. A changed grid is only memorised and redrawn if the player
+     * can currently see it, so a trap re-arming out of sight waits until the player next sees it.
+     *
+     * <p>The local {@code width} and {@code height} shadow the fields of the same names; they come
+     * from the array and equal the fields.
+     *
+     * <p><b>Outstanding:</b> {@link #squareMemorizeTraps(Loc)} is a stub, so the memorising step of
+     * a change does nothing yet. The countdown and the redraw are complete.
+     *
+     * <p>Function decreaseTrapTimeout coded before 260930, commented in full on 260930.
      */
     public void decreaseTrapTimeout() {
-        for (int y = 0; y < squares.length; y++) {
-            for (int x = 0; x < squares[y].length; x++) {
-                Square square = squares[y][x];
+        int width = squares.length;
+        int height = squares[0].length;
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                Square square = squares[x][y];
                 boolean changed = false;
                 for (Trap trap : square.getTraps()) {
                     if (trap.getTimeout() > 0) {
@@ -1594,6 +2382,16 @@ public class Chunk {
     }
 
     /**
+     * Returns a read-only view of this chunk's master object list, the counterpart of C's
+     * {@code c->objects} array ({@code struct chunk}, {@code src/cave.h}). C has no accessor for it;
+     * callers index the array directly.
+     *
+     * <p>The view is live: objects added or removed through the chunk show up in it, but attempting
+     * to modify it throws {@link UnsupportedOperationException}, so changes have to go through the
+     * chunk's own object methods.
+     *
+     * <p>Function getObjects coded before 260929, commented in full on 260929.
+     *
      * @return an unmodifiable view of the objects lying on this chunk's floor
      */
     public List<ItemObject> getObjects() {
@@ -1601,13 +2399,23 @@ public class Chunk {
     }
 
     /**
-     * Clears this chunk's sound map back to silence by replacing it with a fresh {@link
-     * Heatmap} (every grid {@code 0}). Ports the "set all the grids to silence" loop that opens
-     * C's {@code make_noise} ({@code src/game-world.c}); a new zeroed map is equivalent to
-     * zeroing the interior in place, since only interior grids are ever read.
+     * Clears this chunk's sound map back to silence, the first step of C's {@code make_noise}
+     * ({@code game-world.c}). C sets every interior grid, {@code 1 .. dimension - 2} in each
+     * direction, to {@code 0}, then marks the player's grid and spreads the noise outwards through
+     * grids that do not carry {@code TF_NO_FLOW}. The border ring is left as it was: the spread can
+     * write there when the terrain allows flow, so a port that zeroes the border as well is not
+     * exactly equivalent.
+     *
+     * <p><b>Stub:</b> not yet implemented, awaiting the monster flow work in Chapter 4. It does
+     * nothing, so the noise map keeps whatever it held. It is expected to zero the interior in
+     * place rather than replace the map, which would also keep the reference returned by
+     * {@link #getNoise()} valid.
+     *
+     * <p>Function resetNoise stubbed, commented in full on 260930.
      */
     public void resetNoise() {
-        noise = new Heatmap(width, height);
+        // Stubbed
+        // TODO: Implement as part of Chapter 4 
     }
 
     /**
@@ -1616,6 +2424,12 @@ public class Chunk {
      * src/game-world.c}): only grids that already carry scent ({@code > 0}) are incremented, so
      * never-visited grids stay at the {@code 0} baseline, and only the interior is scanned (the
      * outermost ring is skipped, matching the {@code 1 .. dimension - 2} bounds in C).
+     *
+     * <p>Only that first loop of {@code update_scent()} is ported here. C then returns early for a
+     * player with covered tracks and otherwise lays fresh scent around the player from a 5x5
+     * strength table; the caller is responsible for those steps.
+     *
+     * <p>Function updateScent coded before 260930, commented in full on 260930.
      */
     public void updateScent() {
         // ignore outside boundary of cave
@@ -1631,7 +2445,10 @@ public class Chunk {
     /**
      * Returns this chunk's sound map — the per-grid noise distances from the player used by
      * monster hearing to home in along passable terrain. Ports access to C's {@code
-     * cave->noise} ({@code src/cave.h}).
+     * cave->noise} ({@code src/cave.h}). The map is live, not a copy. {@link #resetNoise()} is a
+     * stub, so nothing here changes it yet.
+     *
+     * <p>Function getNoise coded before 260930, commented in full on 260930.
      *
      * @return the noise {@link Heatmap} for this chunk
      */
@@ -1642,7 +2459,9 @@ public class Chunk {
     /**
      * Returns this chunk's scent map — the per-grid age of the player's scent trail, read by
      * monster smell to track the player along open floor. Ports access to C's {@code cave->scent}
-     * ({@code src/cave.h}).
+     * ({@code src/cave.h}). The map is live, and {@link #updateScent()} ages it in place.
+     *
+     * <p>Function getScent coded before 260930, commented in full on 260930.
      *
      * @return the scent {@link Heatmap} for this chunk
      */
@@ -1662,7 +2481,7 @@ public class Chunk {
      * <p><b>Stub:</b> not yet implemented, awaiting the message and level-feeling subsystems; takes
      * no action, so the player currently arrives on a level without being told anything about it.
      *
-     * <p>Function displayFeeling coded before 260817, commented in full on 260817.
+     * <p>Function displayFeeling stubbed, commented in full on 260930.
      *
      * @param objectOnly {@code true} to report only the object half of the feeling, as C does when
      *                   the threshold for knowing it has just been crossed
@@ -2183,7 +3002,7 @@ public class Chunk {
      * @param grid the location whose remembered terrain is to be forgotten
      */
     private void squareForget(Loc grid) {
-        if (GameState.getCave() != this)
+        if (currentLevel != this)
             return;
 
         Feature none = TerrainRegistry.lookupFeature(TerrainFlags.FEAT_NONE);
@@ -2590,15 +3409,32 @@ public class Chunk {
         }
     }
 
+    /**
+     * Returns the index of the monster currently taking its turn, C's {@code c->mon_current}.
+     * {@code -1} means no monster is acting, so callers ask "did a monster cause this?" with
+     * {@code getMonCurrent() > 0}, as {@code player-timed.c} and {@code effects.c} do.
+     *
+     * <p>Function getMonCurrent coded before 260929, commented in full on 260929.
+     *
+     * @return the acting monster's index, or {@code -1} when none is
+     */
     public int getMonCurrent() {
         return monCurrent;
     }
 
+    /**
+     * Stores the level feeling, C's {@code chunk->feeling = ...} assignment in
+     * {@code cave_generate()} ({@code generate.c}).
+     *
+     * <p>The value packs two digits: the object feeling is {@code feeling / 10} and the monster
+     * feeling is {@code feeling % 10}, which is how {@code ui-display.c} and {@code cmd-cave.c}
+     * unpack it. The setter only records the number; turning it into text is a display concern.
+     *
+     * <p>Function setFeeling coded before 260929, commented in full on 260929.
+     *
+     * @param feeling the packed level feeling
+     */
     public void setFeeling(int feeling) {
         this.feeling = feeling;
-
-        // Update cached value
-        // TODO: Update with correct feeling string
-        PlayerEventStatusUpdate.updatePlayerStatusLevelFeeling("Feeling string goes here");
     }
 }

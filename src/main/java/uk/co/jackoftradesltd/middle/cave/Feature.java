@@ -442,6 +442,12 @@ public class Feature {
     @CheckReturnValue
     @Contract(pure = true)
     public boolean isRock() {
+        return flags.has(TerrainFeatureFlags.TF_GRANITE) && !flags.has(TerrainFeatureFlags.TF_DOOR_ANY);
+    }
+
+    @CheckReturnValue
+    @Contract(pure = true)
+    public boolean fullRock() {
         return flags.has(TerrainFeatureFlags.TF_ROCK);
     }
 
@@ -519,7 +525,7 @@ public class Feature {
     @CheckReturnValue
     @Contract(pure = true)
     public boolean isNoFeat() {
-        return flags.has(TerrainFeatureFlags.TF_NONE);
+        return code == TerrainFlags.FEAT_NONE;
     }
 
     /**

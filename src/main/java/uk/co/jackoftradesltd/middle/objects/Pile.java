@@ -19,10 +19,7 @@ package uk.co.jackoftradesltd.middle.objects;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.CheckReturnValue;
-import org.jetbrains.annotations.Contract;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.TestOnly;
+import org.jetbrains.annotations.*;
 import uk.co.jackoftradesltd.middle.utils.ControlUtils;
 
 import java.util.ArrayList;
@@ -331,5 +328,9 @@ public class Pile {
 
     public void remove(int index) {
         pile.remove(index);
+    }
+
+    public @Nullable ItemObject peekLastItem() {
+        return peek();
     }
 }

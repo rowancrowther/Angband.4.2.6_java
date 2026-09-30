@@ -155,7 +155,7 @@ public class GameEngine {
         // TODO: replace with real level generation
         Chunk cave = new Chunk("Current Level", 0, 0, 0, 0,
                 0, false, 10, 10, 4, 3, 3,
-                1, 1, 15, mainPlayer);
+                1, -1, 15, mainPlayer);
         cave.setCurrentLevel(cave);
         GameState.setCave(cave);
 

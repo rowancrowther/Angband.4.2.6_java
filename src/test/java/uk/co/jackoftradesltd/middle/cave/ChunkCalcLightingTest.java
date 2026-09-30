@@ -29,6 +29,7 @@ import uk.co.jackoftradesltd.middle.cave.enums.TerrainFeatureFlags;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.data.CarryCapData;
 import uk.co.jackoftradesltd.middle.game.globals.data.GameConstantsData;
+import uk.co.jackoftradesltd.middle.game.globals.data.LevelMaxData;
 import uk.co.jackoftradesltd.middle.game.globals.data.PlayerData;
 import uk.co.jackoftradesltd.middle.monsters.Monster;
 import uk.co.jackoftradesltd.middle.monsters.MonsterRace;
@@ -213,7 +214,7 @@ class ChunkCalcLightingTest {
     @BeforeEach
     void seedConstants() {
         GameConstantsData seed = new GameConstantsData(
-                null, null, null, null, null,
+                new LevelMaxData(1024), null, null, null, null,
                 new CarryCapData(23, 10, 40, 5, 16),
                 null, null, new PlayerData(20, 20, 0, 0),
                 null, null, null, null, null, null, null, null);

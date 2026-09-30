@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
+import uk.co.jackoftradesltd.middle.objects.Pile;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectNotice;
 import uk.co.jackoftradesltd.middle.player.Player;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
@@ -42,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Tests {@link Chunk}'s object disposal — {@code objectDelete}, {@code delistObject} and
  * {@code squareExciseObject}, the port of C's {@code object_delete}, {@code delist_object} and
- * {@code square_excise_object} ({@code obj-pile.c:308}, {@code cave.c}).
+ * {@code square_excise_object} ({@code obj-pile.c}, {@code cave.c}).
  *
  * <p>{@code objectDelete} has two outcomes and choosing between them is its whole job. An object the
  * player still remembers is <b>orphaned</b>: stripped of its position and marked as imaginary, but
@@ -173,7 +174,7 @@ class ChunkObjectDisposalTest {
         void rememberedObjectIsOrphaned() throws Exception {
             ItemObject item = knownObject();
             list(level, item);
-            list(known, item);
+            list(known, item.getKnown());
             item.setGrid(Loc.row(2).col(3));
 
             level.objectDelete(known, item);
@@ -230,7 +231,7 @@ class ChunkObjectDisposalTest {
         void orphanTestPrecedesRemoval() throws Exception {
             ItemObject item = knownObject();
             list(level, item);
-            list(known, item);
+            list(known, item.getKnown());
 
             level.objectDelete(known, item);
 
@@ -254,6 +255,93 @@ class ChunkObjectDisposalTest {
             level.objectDelete(known, item);
 
             assertNull(player.getPlayerUpkeep().getObject());
+        }
+
+        /**
+         * C's {@code object_delete} unlinks the object from its pile neighbours before it does
+         * anything else, so a deleted floor object is no longer in the floor pile. Here the pile is
+         * the object's owning {@link Pile}; the object and the pile must stop referring to each
+         * other.
+         *
+         * @throws Exception if a fixture field cannot be reached
+         */
+        @Test
+        @DisplayName("a deleted object leaves the floor pile it was in")
+        void deletedObjectLeavesItsPile() throws Exception {
+            Loc grid = Loc.row(2).col(3);
+            ItemObject item = knownObject();
+            ItemObject neighbour = knownObject();
+            list(level, item);
+            level.getSquare(grid).getObjectPile().insert(item);
+            level.getSquare(grid).getObjectPile().insert(neighbour);
+
+            level.objectDelete(known, item);
+
+            assertFalse(level.getSquare(grid).holdsObject(item), "the pile no longer holds it");
+            assertNull(item.getOwningPile(), "and the object no longer names the pile");
+            assertTrue(level.getSquare(grid).holdsObject(neighbour), "its neighbour is untouched");
+        }
+
+        /**
+         * Both outcomes detach the object: C unlinks first and the orphan branch then clears
+         * {@code prev} and {@code next} again. An object the player remembers is kept in the lists
+         * but must still leave its pile, or the floor would go on showing an object that has no
+         * position.
+         *
+         * @throws Exception if a fixture field cannot be reached
+         */
+        @Test
+        @DisplayName("an orphaned object leaves its pile too")
+        void orphanedObjectLeavesItsPile() throws Exception {
+            Loc grid = Loc.row(2).col(3);
+            ItemObject item = knownObject();
+            list(level, item);
+            list(known, item.getKnown());
+            item.setGrid(grid);
+            level.getSquare(grid).getObjectPile().insert(item);
+
+            level.objectDelete(known, item);
+
+            assertTrue(level.getObjects().contains(item), "it was orphaned, not deleted");
+            assertFalse(level.getSquare(grid).holdsObject(item), "but it is off the floor");
+            assertNull(item.getOwningPile());
+        }
+
+        /**
+         * C's unlink works from the object's neighbours and never reads a grid, so an object held
+         * in some other pile (a monster's pack, whose {@code grid} is zero) leaves that pile, and
+         * the floor at grid zero is not searched.
+         *
+         * @throws Exception if a fixture field cannot be reached
+         */
+        @Test
+        @DisplayName("an object in a pile that is not on the floor leaves that pile")
+        void objectInOtherPileLeavesIt() throws Exception {
+            Pile pack = new Pile();
+            ItemObject item = knownObject();
+            list(level, item);
+            pack.insert(item);
+
+            level.objectDelete(known, item);
+
+            assertFalse(pack.contains(item));
+            assertNull(item.getOwningPile());
+        }
+
+        /**
+         * An object in no pile has no owner, and deleting it must not fail on that.
+         *
+         * @throws Exception if a fixture field cannot be reached
+         */
+        @Test
+        @DisplayName("an object in no pile is deleted without error")
+        void objectInNoPileIsDeleted() throws Exception {
+            ItemObject item = knownObject();
+            list(level, item);
+
+            level.objectDelete(known, item);
+
+            assertFalse(level.getObjects().contains(item));
         }
 
         /**
@@ -324,7 +412,7 @@ class ChunkObjectDisposalTest {
         void levelKeepsRememberedObject() throws Exception {
             ItemObject item = knownObject();
             list(level, item);
-            list(known, item);
+            list(known, item.getKnown());
 
             level.delistObject(item);
 

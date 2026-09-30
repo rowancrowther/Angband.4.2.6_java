@@ -510,7 +510,7 @@ public class GameWorld {
             playAmbientSound();
 
             // Cancel the target
-            Target.setMonster(null);
+            Target.setTargetMonster(null, 0);
 
             // Cancel the health bar
             player.getPlayerUpkeep().healthTrack(null);

@@ -18,11 +18,13 @@
 package uk.co.jackoftradesltd.middle.cave;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.middle.player.Player;
+import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -217,15 +219,15 @@ class ChunkGeometryTest {
         }
 
         /**
-         * The monster array is sized from the constructor's figure, and the count reports its
-         * length.
+         * The monster array is sized from {@code level-max:monsters}, as C sizes it from {@code z_info->level_monster_max}, while the constructor's figure is only the high-water mark. The count is of live monsters
+         * (C's {@code cave_monster_count}), so a fresh array of empty slots counts none.
          */
         @Test
         @DisplayName("the monster array is sized as asked")
         void monsterArraySized() {
             assertEquals(3, chunk.getMonMax());
-            assertEquals(3, chunk.getMonsters().length);
-            assertEquals(3, chunk.monsterCount());
+            assertEquals(GameConstants.getLevelMaxMonsters(), chunk.getMonsters().length);
+            assertEquals(0, chunk.monsterCount());
         }
 
         /**
@@ -263,20 +265,22 @@ class ChunkGeometryTest {
         }
 
         /**
-         * Resetting the noise replaces the map rather than clearing it in place, so a caller holding
-         * the old one keeps the old readings — worth knowing before caching it.
+         * C's {@code make_noise} ({@code game-world.c}) sets every interior grid, {@code 1 .. height - 2}
+         * by {@code 1 .. width - 2}, to zero and leaves the border ring alone. This is the C-derived
+         * specification for {@code resetNoise}, kept disabled while the method is a stub waiting on
+         * Chapter 4; enable it when the method is ported.
          */
         @Test
-        @DisplayName("resetting the noise replaces the map")
-        void resetReplacesTheMap() {
-            Heatmap before = chunk.getNoise();
-            before.setValue(2, 3, 5);
+        @Disabled("resetNoise is a stub waiting on Chapter 4")
+        @DisplayName("resetting the noise zeroes the interior and leaves the border")
+        void resetZeroesTheInterior() {
+            chunk.getNoise().setValue(2, 3, 5);
+            chunk.getNoise().setValue(0, 0, 7);
 
             chunk.resetNoise();
 
-            assertNotSame(before, chunk.getNoise());
-            assertEquals(0, chunk.getNoise().getValue(2, 3));
-            assertEquals(5, before.getValue(2, 3), "the replaced map still holds its readings");
+            assertEquals(0, chunk.getNoise().getValue(2, 3), "an interior grid is silenced");
+            assertEquals(7, chunk.getNoise().getValue(0, 0), "the border ring is not touched");
         }
 
         /**

@@ -47,16 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/Message.java`
-
-1 missing, 4 low
-
-- L70: constructor `Message` - MISSING
-- L247: constructor `MessageT` - LOW - "Build a log entry."
-- L264: method `getCount` - LOW
-- L271: method `getText` - LOW
-- L278: method `getType` - LOW
-
 ### `middle/cave/Chunk.java`
 
 2 missing, 4 low

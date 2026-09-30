@@ -387,14 +387,16 @@ class ChunkSquareForgetTest {
         /**
          * Called on a level that is not the current one — a chunk being generated, or one the player
          * has left — nothing happens, even though that chunk is a real level rather than a memory.
-         * The guard tests identity with the live level, not the kind of chunk it was given.
+         * The guard tests identity with the live level, not the kind of chunk it was given. C's
+         * {@code cave} global is each chunk's {@code currentLevel} here, so the other level is one
+         * whose pointer names the real level rather than itself.
          */
         @Test
         @DisplayName("called on a level that is not current, nothing is forgotten")
         void otherLevelDoesNothing() {
             Chunk other = new Chunk("elsewhere", 0, 0, 0, 0, 0, false,
                     HEIGHT, WIDTH, 0, 4, 3, 0, 0, 0, player);
-            other.setCurrentLevel(other);
+            other.setCurrentLevel(level);
             lay(other, granite);
 
             forget(other, GRID);
@@ -406,11 +408,13 @@ class ChunkSquareForgetTest {
         /**
          * With no live level at all, nothing happens and nothing throws. C compares against a
          * {@code cave} global that is {@code NULL} between levels, and the comparison is as happy
-         * with {@code NULL} as with anything else.
+         * with {@code NULL} as with anything else. Here that global is the chunk's own
+         * {@code currentLevel}, so the level is left pointing at nothing.
          */
         @Test
         @DisplayName("with no live level, nothing is forgotten")
         void noLiveLevelDoesNothing() {
+            level.setCurrentLevel(null);
             GameState.setCave(null);
 
             assertDoesNotThrow(() -> forget(level, GRID));

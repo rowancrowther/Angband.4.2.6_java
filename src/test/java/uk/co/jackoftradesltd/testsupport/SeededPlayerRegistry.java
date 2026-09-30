@@ -25,6 +25,7 @@ import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.data.CarryCapData;
 import uk.co.jackoftradesltd.middle.game.globals.data.GameConstantsData;
+import uk.co.jackoftradesltd.middle.game.globals.data.LevelMaxData;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftradesltd.middle.objects.Curse;
@@ -194,17 +195,17 @@ public class SeededPlayerRegistry implements BeforeAllCallback, AfterAllCallback
      * A constants table holding the real carry-cap figures and nothing else.
      *
      * <p>The values are {@code constants.txt}'s own, so a test that reads them gets the numbers the
-     * game runs on rather than a made-up set. Every other section is left null: this exists to let a
+     * game runs on rather than a made-up set. {@code level-max:monsters} is also seeded, because the {@code Chunk} constructor sizes its monster array from it. Every other section is left null: this exists to let a
      * {@code Player} be constructed, not to stand in for
      * {@link uk.co.jackoftradesltd.middle.game.globals.GameConstants#init()}, and a test needing more
      * than carry-cap should seed what it needs itself — as
      * {@code ItemObjectRechargeTest} does for {@code world:max-depth}.
      *
-     * @return a constants table with only {@code carryCap} filled in
+     * @return a constants table with only {@code carryCap} and {@code levelMax} filled in
      */
     private static GameConstantsData carryCapOnly() {
         return new GameConstantsData(
-                null, null, null, null, null,
+                new LevelMaxData(1024), null, null, null, null,
                 new CarryCapData(23, 10, 40, 5, 16),
                 null, null, null, null, null, null, null, null, null, null, null);
     }

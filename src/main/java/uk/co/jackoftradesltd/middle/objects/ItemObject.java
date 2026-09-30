@@ -5566,4 +5566,8 @@ public class ItemObject {
      */
     private record PowerAndMult(int power, int mult) {
     }
+
+    public int getMimickingMIndex() {
+        return mimickingMIndex;
+    }
 }

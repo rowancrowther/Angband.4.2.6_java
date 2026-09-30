@@ -50,6 +50,8 @@ import java.util.Map;
  * @author Rowan Crowther
  */
 public class Monster {
+    private int monIndex;
+    
     /**
      * The race this monster currently is.
      */
@@ -634,5 +636,29 @@ public class Monster {
      */
     public boolean isVisible() {
         return monsterFlag.has(MonsterFlag.MFLAG_VISIBLE);
+    }
+
+    public List<ItemObject> getHeldObjects() {
+        return heldObject;
+    }
+
+    public ItemObject getMimickedObject() {
+        return mimickedObject;
+    }
+
+    public boolean isObvious() {
+        return monsterIsVisible() && !monsterIsCamouflaged();
+    }
+
+    public boolean monsterIsVisible() {
+        return monsterFlag.has(MonsterFlag.MFLAG_VISIBLE);
+    }
+
+    public int getMonIndex() {
+        return monIndex;
+    }
+
+    public void setMonIndex(int monIndex) {
+        this.monIndex = monIndex;
     }
 }

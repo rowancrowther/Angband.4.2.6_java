@@ -24,6 +24,7 @@ import uk.co.jackoftradesltd.middle.cave.enums.TerrainFlags;
 import uk.co.jackoftradesltd.middle.enums.TrapEnum;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.registry.TerrainRegistry;
+import uk.co.jackoftradesltd.middle.monsters.Monster;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
 import uk.co.jackoftradesltd.middle.objects.Pile;
 import uk.co.jackoftradesltd.middle.player.Player;
@@ -117,7 +118,7 @@ public class Square {
     @Contract(pure = true)
     public @Nullable ItemObject getTopObject() {
         if (objectPile.isEmpty()) return null;
-        return objectPile.lastItem();
+        return objectPile.peekLastItem();
     }
 
     /**
@@ -231,7 +232,7 @@ public class Square {
     @CheckReturnValue
     @Contract(pure = true)
     public boolean featSeemsLikeWall() {
-        return feat.isRock();
+        return feat.fullRock();
     }
 
     /**
@@ -264,7 +265,7 @@ public class Square {
     @Contract(pure = true)
     @CheckReturnValue
     public boolean isPerm() {
-        return feat.isPermanent() && feat.isRock();
+        return feat.isPermanent() && feat.fullRock();
     }
 
     /**
@@ -330,7 +331,7 @@ public class Square {
     @Contract(pure = true)
     @CheckReturnValue
     public boolean isRubble() {
-        return !feat.isWall() && feat.isRock();
+        return !feat.isWall() && feat.fullRock();
     }
 
     /**
@@ -354,7 +355,7 @@ public class Square {
     @Contract(pure = true)
     @CheckReturnValue
     public boolean isSecretDoor() {
-        return feat.hasAnyDoor() && feat.isRock();
+        return feat.hasAnyDoor() && feat.fullRock();
     }
 
     /**
@@ -913,7 +914,8 @@ public class Square {
             if (trapIndex >= 0 && trapIndex != trap.getTrapIndex())
                 continue;
 
-            return trap.getTimeout();
+            if (trap.getTimeout() != 0)
+                return trap.getTimeout();
         }
 
         return 0;
@@ -1062,7 +1064,7 @@ public class Square {
     @CheckReturnValue
     @Contract(pure = true)
     public boolean canPutItem() {
-        if (isObjectHolding() || isTrap()) return false;
+        if (!isObjectHolding() || isTrap()) return false;
         return objectPile.isEmpty();
     }
 
@@ -1279,5 +1281,9 @@ public class Square {
      */
     public void setLight(int level) {
         light = level;
+    }
+
+    public void setMon(int monIndex) {
+        this.monsterIndex = monIndex;
     }
 }

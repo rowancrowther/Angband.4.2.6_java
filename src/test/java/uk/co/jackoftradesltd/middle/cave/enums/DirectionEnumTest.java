@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Unit tests for {@link DirectionEnum}, the port of the C source's direction tables
- * ({@code ddx}/{@code ddy} in {@code src/cave.c}).
+ * ({@code ddx}/{@code ddy}/{@code ddgrid}/{@code ddd} in {@code cave.c}).
  *
  * <p>The C original is a pair of parallel arrays indexed by the numeric-keypad digit the
  * player pressed, which is why the keys here are 1-9 laid out as a keypad rather than 0-7
@@ -256,6 +256,59 @@ class DirectionEnumTest {
             boolean moves = direction.ddx() != 0 || direction.ddy() != 0;
 
             assertEquals(moves, direction.isStandard(), direction.name());
+        }
+    }
+
+    /**
+     * The neighbour ring, checked against C's {@code ddd} and {@code ddgrid_ddd} tables in
+     * {@code cave.c}.
+     */
+    @Nested
+    class SurroundingDirections {
+
+        /**
+         * C's {@code ddd[0..7]}: the keypad digit of each ring entry, in loop order.
+         */
+        private final int[] cDdd = {2, 8, 6, 4, 3, 1, 9, 7};
+
+        /**
+         * C's {@code ddgrid_ddd[0..7]} as {x, y} pairs, in the same order.
+         */
+        private final int[][] cDdgridDdd = {{0, 1}, {0, -1}, {1, 0}, {-1, 0}, {1, 1}, {-1, 1}, {1, -1}, {-1, -1}};
+
+        @Test
+        void theRingFollowsCsLoopOrderByKey() {
+            DirectionEnum[] ring = DirectionEnum.surroundingDirections();
+
+            assertEquals(8, ring.length);
+            for (int i = 0; i < 8; i++) {
+                assertEquals(cDdd[i], ring[i].getKey(), "ddd[" + i + "]");
+            }
+        }
+
+        @Test
+        void theRingOffsetsMatchDdgridDddEntryForEntry() {
+            DirectionEnum[] ring = DirectionEnum.surroundingDirections();
+
+            for (int i = 0; i < 8; i++) {
+                assertEquals(cDdgridDdd[i][0], ring[i].ddx(), "ddgrid_ddd[" + i + "].x");
+                assertEquals(cDdgridDdd[i][1], ring[i].ddy(), "ddgrid_ddd[" + i + "].y");
+            }
+        }
+
+        @Test
+        void theRingHoldsOnlyStandardDirections() {
+            for (DirectionEnum direction : DirectionEnum.surroundingDirections()) {
+                assertTrue(direction.isStandard(), direction.name());
+            }
+        }
+
+        @Test
+        void eachCallReturnsAFreshArray() {
+            DirectionEnum[] first = DirectionEnum.surroundingDirections();
+            first[0] = DirectionEnum.DIR_NONE;
+
+            assertSame(DirectionEnum.DIR_S, DirectionEnum.surroundingDirections()[0]);
         }
     }
 }

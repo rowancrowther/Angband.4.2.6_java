@@ -47,12 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/cave/chunkbuilders/BuilderType.java`
-
-0 missing, 1 low
-
-- L99: method `getName` - LOW
-
 ### `middle/cave/enums/DirectionEnum.java`
 
 1 missing, 4 low

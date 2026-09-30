@@ -47,12 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/cave/enums/RoomFlags.java`
-
-0 missing, 1 low
-
-- L67: method `getHelpString` - LOW
-
 ### `middle/cave/enums/SquareEnum.java`
 
 24 missing, 1 low

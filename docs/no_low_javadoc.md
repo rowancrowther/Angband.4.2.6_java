@@ -47,18 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/cave/Feature.java`
-
-0 missing, 7 low
-
-- L178: method `getTerrainFlag` - LOW
-- L200: method `isMagma` - LOW - "Tests for Magma"
-- L211: method `isQuartz` - LOW - "Tests for Quartz"
-- L222: method `isGranite` - LOW - "Test for Granite"
-- L310: method `isLos` - LOW - "Test line of sight"
-- L546: method `getCodeFlags` - LOW
-- L562: method `toString` - LOW
-
 ### `middle/cave/KeypadDirectionLoop.java`
 
 0 missing, 5 low

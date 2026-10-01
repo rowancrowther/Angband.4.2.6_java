@@ -47,12 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/game/Hint.java`
-
-0 missing, 1 low
-
-- L49: method `getHint` - LOW
-
 ### `middle/game/Name.java`
 
 2 missing, 0 low

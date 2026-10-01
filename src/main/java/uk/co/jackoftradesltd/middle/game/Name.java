@@ -41,12 +41,32 @@ import java.util.List;
  * version: the one consumer, {@code build_prob} ({@code randname.c}), counts letter transitions
  * per word and does not care what order the words arrive in.
  *
- * <p>Class Name coded on 260902, commented in full on 260908.
+ * <p>{@code section} zero is accepted here, as C's {@code parse_names_section} ({@code init.c})
+ * accepts it; C files those words in a {@code name_sections} slot nothing reads. The Java
+ * pipeline rejects it later, in {@code RandnameType.fromIndex}, so the shipped {@code names.txt},
+ * which uses only sections one and two, loads identically in both.
+ *
+ * <p>Class Name coded on 260902, commented in full on 261001.
  *
  * @author Rowan Crowther
  */
 public class Name {
+    /**
+     * The raw section number from the name file — C's {@code names_parse.section} at the moment
+     * this record's words were read. Held unvalidated; {@code RandnameType.fromIndex} does the
+     * range check later.
+     *
+     * <p>Field section coded on 260902, commented in full on 261001.
+     */
     private int section;
+
+    /**
+     * The section's word fragments in file order. Held by reference, not copied, and only ever
+     * handed out through an unmodifiable view by {@link #getWord()}. C's counterpart is the
+     * {@code str} member of each {@code struct name} ({@code init.c}) in the section's list.
+     *
+     * <p>Field word coded on 260902, commented in full on 261001.
+     */
     private List<String> word;
 
     /**

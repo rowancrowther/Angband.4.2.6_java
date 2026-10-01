@@ -47,19 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/enums/EffectEnum.java`
-
-1 missing, 7 low
-
-- L36: method `EF_MAX` - MISSING
-- L211: method `getSubType` - LOW
-- L219: method `getAim` - LOW
-- L227: method `getInfoLabel` - LOW
-- L235: method `getNumberOfArguments` - LOW
-- L243: method `getEffectInfo` - LOW
-- L251: method `getDescription` - LOW
-- L259: method `getMenuFormat` - LOW
-
 ### `middle/enums/MessageType.java`
 
 1 missing, 0 low

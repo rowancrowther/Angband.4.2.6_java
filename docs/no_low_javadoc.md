@@ -47,12 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/combat/Target.java`
-
-1 missing, 0 low
-
-- L40: method `setMonster` - MISSING
-
 ### `ProjectEnum` ###
 
 Many missing

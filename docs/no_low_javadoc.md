@@ -47,14 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/enums/Stats.java`
-
-3 missing, 0 low
-
-- L48: field `value` - MISSING
-- L49: field `statString` - MISSING
-- L56: method `getStatString` - MISSING
-
 ### `middle/enums/TrapEnum.java`
 
 3 missing, 1 low

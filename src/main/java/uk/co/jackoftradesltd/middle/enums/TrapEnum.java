@@ -20,7 +20,15 @@ package uk.co.jackoftradesltd.middle.enums;
 import org.jetbrains.annotations.Contract;
 
 /**
- * The trap list
+ * The trap flags, mirroring the C original's {@code TRF_*} constants, generated in C from
+ * {@code list-trap-flags.h} ({@code trap.h}). Each constant carries the description string from
+ * the same header. The declaration order matches C, so the order is the C numbering; a flag set
+ * is held as a {@code Flag<TrapEnum>}. {@code TRF_NONE} is a real member here (it is C's flag 0
+ * too), and {@code TRF_MAX} is the count sentinel.
+ *
+ * <p>Enum TrapEnum coded on 261001, commented in full on 261001.
+ *
+ * @author Rowan Crowther
  */
 public enum TrapEnum {
     /**
@@ -71,7 +79,7 @@ public enum TrapEnum {
     /**
      * This trap is magical, if this trap flag is not set then the trap is physical
      */
-    TRF_MAGICAL("Has magical activation _absence of this flag means physical),"),
+    TRF_MAGICAL("Has magical activation (absence of this flag means physical)"),
 
     /**
      * The player can make a saving throw to avoid all effects
@@ -98,19 +106,37 @@ public enum TrapEnum {
      */
     TRF_WEB("Is a web"),
 
+    /**
+     * Count sentinel, C's {@code TRF_MAX}; not a real flag. Its description is empty.
+     */
     TRF_MAX("");
 
+    /**
+     * The text C's {@code list-trap-flags.h} gives the flag, kept word for word (the empty string
+     * for {@code TRF_NONE} and {@code TRF_MAX}).
+     *
+     * <p>Field description coded on 261001, commented in full on 261001.
+     */
     private final String description;
 
+    /**
+     * Binds each constant to its description.
+     *
+     * <p>Constructor TrapEnum coded on 261001, commented in full on 261001.
+     *
+     * @param description the description string from {@code list-trap-flags.h}
+     */
     @Contract(pure = true)
     TrapEnum(String description) {
         this.description = description;
     }
 
     /**
-     * Gets the description string for this trap
+     * Gets the description string for this trap flag, as C's {@code list-trap-flags.h} words it.
      *
-     * @return the description string for this trap
+     * <p>Method getDescription coded on 261001, commented in full on 261001.
+     *
+     * @return the description string for this trap flag
      */
     @Contract(pure = true)
     public String getDescription() {

@@ -27,7 +27,7 @@ import uk.co.jackoftradesltd.middle.enums.MessageType;
 /**
  * One level in the O-combat critical-hit table: a 1/chance probability paired
  * with the number of extra damage dice and the message shown. Unlike the Vanilla
- * {@link CriticalLevel} (which keys off a power cut-off), O-combat criticals are
+ * {@link uk.co.jackoftradesltd.middle.game.globals.data.MeleeCriticalLevelData} (which keys off a power cut-off), O-combat criticals are
  * chosen probabilistically. This is the Java port of the C original's
  * {@code o_critical_level}.
  *

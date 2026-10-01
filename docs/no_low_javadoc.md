@@ -47,25 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/combat/BlowMethod.java`
-
-0 missing, 5 low
-
-- L94: method `getName` - LOW
-- L101: method `isCut` - LOW
-- L108: method `isStun` - LOW
-- L126: method `isPhys` - LOW
-- L156: method `getDesc` - LOW
-
-### `middle/combat/CriticalLevel.java`
-
-0 missing, 4 low
-
-- L68: method `getCutOff` - LOW
-- L75: method `getMult` - LOW
-- L82: method `getAdd` - LOW
-- L89: method `getMsgt` - LOW
-
 ### `middle/combat/Target.java`
 
 1 missing, 0 low

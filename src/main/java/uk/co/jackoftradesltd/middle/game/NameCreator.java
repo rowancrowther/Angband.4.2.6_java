@@ -26,11 +26,53 @@ import uk.co.jackoftradesltd.channel.utils.StringUtils;
 
 import java.util.List;
 
+/**
+ * Random word generation for player names, scroll titles and artifact names — the port of C's
+ * {@code randname.c}, W. Sheldon Simms' Markov-chain name generator. {@link #buildProbs} counts
+ * which letter follows each pair of letters in a section of the name file, and
+ * {@link #randnameMake} walks those counts to produce a new word in the same style.
+ *
+ * <p>The class holds no state. C keeps its probability table in a function-level {@code static}
+ * and rebuilds it when the name type changes; here the table is a local that every call
+ * builds afresh, so no call can see another's counts. {@link #playerRandomName} is the port of
+ * C's {@code player_random_name} ({@code player.c}), which sits on top of the generator.
+ *
+ * <p>Class NameCreator coded on 260831, commented in full on 261001.
+ */
 public class NameCreator {
+    /**
+     * Logs the out-of-range letter indices that {@link #randnameMake} throws on, where C would
+     * trip an {@code assert}.
+     *
+     * <p>Field logger coded on 260831, commented in full on 261001.
+     */
     private static final Logger logger = LogManager.getLogger(NameCreator.class);
 
+    /**
+     * The start-of-word marker, C's {@code S_WORD} ({@code randname.c}). It is 26, the first
+     * value after the letters {@code a}-{@code z}, so it fits the same index axes as a letter
+     * and seeds both halves of the opening pair.
+     *
+     * <p>Field S_WORD coded on 260831, commented in full on 261001.
+     */
     private static final int S_WORD = 26;
+
+    /**
+     * The end-of-word marker, C's {@code E_WORD} ({@code randname.c}). It is the same value as
+     * {@link #S_WORD}: the marker means "start" when read as part of the pair a transition is
+     * keyed on and "end" when read as the outcome of that transition.
+     *
+     * <p>Field E_WORD coded on 260831, commented in full on 261001.
+     */
     private static final int E_WORD = S_WORD;
+
+    /**
+     * The slot on the outcome axis that holds a pair's running total, C's {@code TOTAL}
+     * ({@code randname.c}). It is 27, one past the last real outcome, and is the bound
+     * {@link #randnameMake} rolls against.
+     *
+     * <p>Field TOTAL coded on 260831, commented in full on 261001.
+     */
     private static final int TOTAL = 27;
 
     /**
@@ -211,11 +253,18 @@ public class NameCreator {
      * changes; a freshly zeroed table is returned on every call instead, which is the state
      * C's {@code memset} puts its static back into before each rebuild.
      *
-     * <p>Method buildProbs coded on 260831, commented in full on 260831.
+     * <p>C reaches {@code S_WORD}, {@code E_WORD} and {@code TOTAL} as macros; here the caller
+     * passes them in, and the parameters shadow the class constants of the same value. They
+     * size the table, so the {@code [prev][cur][next]} array comes out 27 x 27 x 28.
      *
-     * @param e_WORD
-     * @param s_WORD
-     * @param TOTAL
+     * <p>Method buildProbs coded on 260831, commented in full on 261001.
+     *
+     * @param e_WORD   the end-of-word marker, which also sizes the second axis; always
+     *                 {@link #E_WORD}
+     * @param s_WORD   the start-of-word marker the pair is seeded with, which also sizes the
+     *                 first axis; always {@link #S_WORD}
+     * @param TOTAL    the slot holding each pair's running total, which also sizes the third
+     *                 axis; always {@link #TOTAL}
      * @param nameType the section of the name file to learn from
      * @return a newly counted table, indexed {@code [prev][cur][next]}
      */

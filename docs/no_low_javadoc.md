@@ -47,24 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/effect/EffectSubTypeWrapper.java`
-
-0 missing, 13 low
-
-- L203: method `getTeleportMonsterMayCast` - LOW
-- L218: method `getTeleportToMonsterMayCast` - LOW
-- L467: method `getSubType` - LOW
-- L493: method `getTimedWrapper` - LOW
-- L508: method `getNourishWrapper` - LOW
-- L523: method `getMonTimedWrapper` - LOW
-- L538: method `getSummonWrapper` - LOW
-- L553: method `getSummonTypeWrapper` - LOW
-- L568: method `getStatsWrapper` - LOW
-- L583: method `getEnchantWrapper` - LOW
-- L598: method `getShapeWrapper` - LOW
-- L613: method `getQuakeWrapper` - LOW
-- L628: method `getGlyphType` - LOW
-
 ### `middle/enums/EffectEnum.java`
 
 1 missing, 7 low

@@ -33,15 +33,15 @@ import static org.junit.jupiter.api.Assertions.assertSame;
  *
  * <p>The expected figures come from three places in the C, none of them from the port. The indices
  * are the order of {@code list-stats.h}, whose own comment warns that changing it breaks savefiles.
- * The names are {@code stat_name_list[]} ({@code player.c:103}), which the {@code STAT()} macro
+ * The names are {@code stat_name_list[]}, which the {@code STAT()} macro
  * builds as the bare {@code STR INT WIS DEX CON}, followed by {@code MAX} and a {@code NULL}
- * terminator. And the two lookups are {@code stat_name_to_idx} ({@code player.c:111}) and
- * {@code stat_idx_to_name} ({@code player.c:122}).
+ * terminator. And the two lookups are {@code stat_name_to_idx} and
+ * {@code stat_idx_to_name}.
  *
  * <p>Three properties carry the weight here. The indices are a file format rather than an ordering,
  * so they are asserted as literal numbers. The names have no {@code STAT_} prefix, which is what
  * lets the wizard's stat editor seed a prompt with one and read the reply back
- * ({@code cmd-wizard.c:1309-1313}) - so the round trip is tested in both directions. And C matches
+ * - so the round trip is tested in both directions. And C matches
  * names with {@code my_stricmp}, so case must not matter; the case folding is pinned to
  * {@link Locale#ROOT}, and the Turkish locale is what proves the pin, because the default folding
  * there maps {@code i} to a dotted capital and would lose {@code int} and {@code wis} alone.
@@ -190,8 +190,8 @@ class StatsTest {
         }
 
         /**
-         * Each of those names resolves back to its stat, which is the lookup {@code init.c:2876}
-         * and {@code effects.c:217} depend on.
+         * Each of those names resolves back to its stat, which is the lookup {@code init.c}
+         * and {@code effects.c} depend on.
          */
         @Test
         @DisplayName("statNameToIdx resolves each of them")
@@ -202,7 +202,7 @@ class StatsTest {
         }
 
         /**
-         * And the pair closes in both directions, which is what {@code cmd-wizard.c:1309-1313}
+         * And the pair closes in both directions, which is what {@code cmd-wizard.c}
          * does: it prints a name, takes it back from the player and reads it as a stat.
          */
         @Test

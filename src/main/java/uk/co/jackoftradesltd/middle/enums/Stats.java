@@ -21,7 +21,11 @@ import java.util.Locale;
 
 /**
  * The player's primary statistics, mirroring the C original's {@code STAT_*}
- * constants. {@code STAT_NONE}/{@code STAT_MAX} bracket the five real stats.
+ * constants, generated in C from {@code list-stats.h} ({@code player.h}). {@code STAT_NONE} and
+ * {@code STAT_MAX} bracket the five real stats; the names live in {@code stat_name_list[]} in
+ * {@code player.c}.
+ *
+ * <p>Enum Stats coded on 260831, commented in full on 261001.
  *
  * @author Rowan Crowther
  */
@@ -45,52 +49,42 @@ public enum Stats {
     /** Count sentinel. @author Rowan Crowther */
     STAT_MAX(5, "");
 
+    /**
+     * The stat's index, as C's stat enum numbers it ({@code -1} for {@code STAT_NONE}, {@code 5}
+     * for {@code STAT_MAX}). Written out rather than taken from {@link #ordinal()} because the
+     * order is part of the savefile format.
+     *
+     * <p>Field value coded on 260831, commented in full on 261001.
+     */
     private final int value;
+
+    /**
+     * The bare name C's {@code stat_name_list[]} holds for the stat ({@code "STR"}, not
+     * {@code "STAT_STR"}), or the empty string for the two sentinels.
+     *
+     * <p>Field statString coded on 260831, commented in full on 261001.
+     */
     private final String statString;
 
+    /**
+     * Binds each constant to its index and bare name.
+     *
+     * <p>Constructor Stats coded on 260831, commented in full on 261001.
+     *
+     * @param value      the index C's stat enum gives the stat
+     * @param statString the bare name used in the game data
+     */
     Stats(int value, String statString) {
         this.value = value;
         this.statString = statString;
     }
 
-    public String getStatString() {
-        return statString;
-    }
-
-    /**
-     * The stat holding a given index, the inverse of {@link #getValue()}. Where C indexes an array
-     * with the integer directly, the port has to turn it back into a constant, so this stands in
-     * for every {@code stat_max[i]}-style subscript in the original.
-     *
-     * <p>Every index is answered by exactly one constant, sentinels included: {@code -1} gives
-     * {@code STAT_NONE} and {@code 5} gives {@code STAT_MAX}. That is only true because the two
-     * sentinels carry distinct values; while both held {@code -1} the walk could never reach
-     * {@code STAT_MAX}, and callers converting an index would have had no way to name it.
-     *
-     * <p>An index outside the set answers {@code null} rather than throwing. C has no counterpart
-     * to fail here - it would simply read past the end of the array - so the {@code null} is a
-     * boundary the port adds, and callers that build an index by arithmetic should test it.
-     *
-     * <p>Method getStats coded on 260831, commented in full on 260831.
-     *
-     * @param value the index to look up
-     * @return the stat carrying that index, or {@code null} if none does
-     */
-    public static Stats getStats(int value) {
-        for (Stats stat : Stats.values()) {
-            if (stat.getValue() == value)
-                return stat;
-        }
-
-        return null;
-    }
-
     /**
      * Looks a stat up by the name the game data writes it under, the port of C's
-     * {@code stat_name_to_idx} ({@code player.c:111}). This is the route the parsers take: the
-     * {@code stat:} line of a magic realm ({@code init.c:2876}) and the sub-type of the four
+     * {@code stat_name_to_idx} ({@code player.c}). This is the route the parsers take: the
+     * {@code stat:} line of a magic realm ({@code init.c}) and the sub-type of the four
      * stat effects - {@code RESTORE_STAT}, {@code DRAIN_STAT}, {@code LOSE_RANDOM_STAT} and
-     * {@code GAIN_STAT} ({@code effects.c:217}).
+     * {@code GAIN_STAT} ({@code effects.c}).
      *
      * <p>The names are the bare ones C's {@code stat_name_list[]} holds - {@code STR}, {@code INT},
      * {@code WIS}, {@code DEX}, {@code CON} and {@code MAX} - not the {@code STAT_} prefixed
@@ -132,11 +126,39 @@ public enum Stats {
     }
 
     /**
+     * The stat holding a given index, the inverse of {@link #getValue()}. Where C indexes an array
+     * with the integer directly, the port has to turn it back into a constant, so this stands in
+     * for every {@code stat_max[i]}-style subscript in the original.
+     *
+     * <p>Every index is answered by exactly one constant, sentinels included: {@code -1} gives
+     * {@code STAT_NONE} and {@code 5} gives {@code STAT_MAX}. That is only true because the two
+     * sentinels carry distinct values; while both held {@code -1} the walk could never reach
+     * {@code STAT_MAX}, and callers converting an index would have had no way to name it.
+     *
+     * <p>An index outside the set answers {@code null} rather than throwing. C has no counterpart
+     * to fail here - it would simply read past the end of the array - so the {@code null} is a
+     * boundary the port adds, and callers that build an index by arithmetic should test it.
+     *
+     * <p>Method getStats coded on 260831, commented in full on 260831.
+     *
+     * @param value the index to look up
+     * @return the stat carrying that index, or {@code null} if none does
+     */
+    public static Stats getStats(int value) {
+        for (Stats stat : Stats.values()) {
+            if (stat.getValue() == value)
+                return stat;
+        }
+
+        return null;
+    }
+
+    /**
      * The name a stat is written under in the game data and shown under in prompts, the port of
-     * C's {@code stat_idx_to_name} ({@code player.c:122}) and the inverse of
+     * C's {@code stat_idx_to_name} ({@code player.c}) and the inverse of
      * {@link #statNameToIdx(String)}. The wizard's stat editor round-trips through the pair,
      * seeding its prompt with a name and reading the reply back as a stat
-     * ({@code cmd-wizard.c:1309-1313}).
+     * ({@code cmd-wizard.c}).
      *
      * <p>The answer is the bare name - {@code STR}, not {@code STAT_STR}. Reaching for the
      * constant's own name here would break that round trip, because the reply would come back
@@ -159,7 +181,20 @@ public enum Stats {
     }
 
     /**
-     * The stat's index, which is its position in C's stat enum ({@code player.h:32}) and therefore
+     * The bare name of the stat, the string {@link #statIdxToName(Stats)} hands back. See that
+     * method for how it relates to C's {@code stat_name_list[]}.
+     *
+     * <p>Method getStatString coded on 260831, commented in full on 261001.
+     *
+     * @return {@code "STR"}, {@code "INT"}, {@code "WIS"}, {@code "DEX"} or {@code "CON"}, or the
+     * empty string for either sentinel
+     */
+    public String getStatString() {
+        return statString;
+    }
+
+    /**
+     * The stat's index, which is its position in C's stat enum ({@code player.h}) and therefore
      * its position in every stat-indexed array the game keeps - {@code stat_max}, {@code stat_cur},
      * the race and class adjustments, and the savefile.
      *

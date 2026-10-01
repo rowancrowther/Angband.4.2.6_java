@@ -47,12 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/enums/MessageType.java`
-
-1 missing, 0 low
-
-- L30: method `MSG_MAX` - MISSING
-
 ### `middle/enums/Stats.java`
 
 3 missing, 0 low

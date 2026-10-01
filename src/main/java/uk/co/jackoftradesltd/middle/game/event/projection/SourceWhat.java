@@ -17,11 +17,29 @@
 
 package uk.co.jackoftradesltd.middle.game.event.projection;
 
+/**
+ * Discriminator that says what kind of thing an effect came from. It is the Java form of the anonymous
+ * {@code what} enum inside {@code struct source} in {@code source.h}, and it selects which payload of
+ * {@link Source} is meaningful.
+ *
+ * <p>The constants are declared in the same order as the C enum, so {@link #ordinal()} matches the C
+ * integer value of each one.
+ *
+ * <p>Enum SourceWhat coded on 260829, commented in full on 261001.
+ */
 public enum SourceWhat {
+    /**
+     * No source: the effect has no originator. Carries no payload.
+     */
     SRC_NONE,
+    /** The effect came from a trap on the floor. */
     SRC_TRAP,
+    /** The effect came from the player. */
     SRC_PLAYER,
+    /** The effect came from a monster. */
     SRC_MONSTER,
+    /** The effect came from an object. */
     SRC_OBJECT,
+    /** The effect came from a trap on a chest. */
     SRC_CHEST_TRAP
 }

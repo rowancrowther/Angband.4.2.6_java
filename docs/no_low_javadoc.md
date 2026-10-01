@@ -48,16 +48,6 @@ Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS`
 the existing doc comment for context.
 
 
-### `middle/game/event/projection/Projection.java`
-
-0 missing, 5 low
-
-- L213: method `getName` - LOW - "displayed under"
-- L220: method `getType` - LOW
-- L227: method `getLashDescription` - LOW
-- L234: method `getProjection` - LOW
-- L241: method `toString` - LOW
-
 ### `middle/game/event/projection/SourceWhat.java`
 
 6 missing, 0 low

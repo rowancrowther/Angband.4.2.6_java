@@ -47,23 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/game/Name.java`
-
-2 missing, 0 low
-
-- L49: field `section` - MISSING
-- L50: field `word` - MISSING
-
-### `middle/game/NameCreator.java`
-
-5 missing, 0 low
-
-- L29: class `NameCreator` - MISSING
-- L30: field `logger` - MISSING
-- L32: field `S_WORD` - MISSING
-- L33: field `E_WORD` - MISSING
-- L34: field `TOTAL` - MISSING
-
 ### `middle/game/bespokeexceptions/CommandArgumentWrongTypeException.java`
 
 0 missing, 1 low

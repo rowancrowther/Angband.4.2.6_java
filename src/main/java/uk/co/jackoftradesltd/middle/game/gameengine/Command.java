@@ -23,7 +23,6 @@ import uk.co.jackoftradesltd.middle.Message;
 import uk.co.jackoftradesltd.middle.cave.Loc;
 import uk.co.jackoftradesltd.middle.cave.enums.DirectionEnum;
 import uk.co.jackoftradesltd.middle.effect.Effect;
-import uk.co.jackoftradesltd.middle.game.bespokeexceptions.CommandArgumentWrongTypeException;
 import uk.co.jackoftradesltd.middle.game.enums.CommandArgumentType;
 import uk.co.jackoftradesltd.middle.game.enums.CommandCode;
 import uk.co.jackoftradesltd.middle.game.enums.CommandContext;
@@ -310,31 +309,29 @@ public class Command {
 
     /**
      * Reads this command's {@code argName} argument as a choice - the port of C's
-     * {@code cmd_get_arg_choice}. C folded three outcomes into an {@code int} return code; the port
-     * splits them: an empty {@link Optional} for an unset argument (C's {@code CMD_ARG_NOT_PRESENT})
-     * and a {@link CommandArgumentWrongTypeException} for one that is set but holds another type
-     * (C's {@code CMD_ARG_WRONG_TYPE}).
+     * {@code cmd_get_arg_choice}. C returned an {@code int} code; every C caller only tests it
+     * against {@code CMD_OK}, so an unset argument ({@code CMD_ARG_NOT_PRESENT}) and one holding
+     * another type ({@code CMD_ARG_WRONG_TYPE}) are the same outcome and both map to an empty
+     * {@link Optional}.
      *
      * @param argName the name to look up
-     * @return the stored choice, or empty if no argument of that name is set
-     * @throws CommandArgumentWrongTypeException if the argument is set but is not a choice
+     * @return the stored choice, or empty if no argument of that name is set or it is not a choice
      */
     public Optional<Integer> getArgChoice(@NotNull String argName) {
         CommandArgument arg = findArg(argName);
 
         if (arg == null) return Optional.empty();
         if (arg.getData() instanceof ArgumentChoice(int value)) return Optional.of(value);
-        throw new CommandArgumentWrongTypeException(
-                argName + " requested as choice but stored as " + arg.getType());
+
+        return Optional.empty();
     }
 
     /**
      * Reads this command's {@code argName} argument as a direction - the port of C's
-     * {@code cmd_get_arg_direction}. Empty when unset; throws when set to another type.
+     * {@code cmd_get_arg_direction}. Empty when unset or when set to another type.
      *
      * @param argName the name to look up
-     * @return the stored direction, or empty if no argument of that name is set
-     * @throws CommandArgumentWrongTypeException if the argument is set but is not a direction
+     * @return the stored direction, or empty if no argument of that name is set or it is not a direction
      */
     public Optional<DirectionEnum> getArgDirection(@NotNull String argName) {
         CommandArgument arg = findArg(argName);
@@ -342,17 +339,16 @@ public class Command {
         if (arg == null) return Optional.empty();
         if (arg.getData() instanceof ArgumentDirection(DirectionEnum value))
             return Optional.of(value);
-        throw new CommandArgumentWrongTypeException(
-                argName + " requested as direction but stored as " + arg.getType());
+
+        return Optional.empty();
     }
 
     /**
      * Reads this command's {@code argName} argument as an item - the port of C's
-     * {@code cmd_get_arg_item}. Empty when unset; throws when set to another type.
+     * {@code cmd_get_arg_item}. Empty when unset or when set to another type.
      *
      * @param argName the name to look up
-     * @return the stored item, or empty if no argument of that name is set
-     * @throws CommandArgumentWrongTypeException if the argument is set but is not an item
+     * @return the stored item, or empty if no argument of that name is set or it is not an item
      */
     public Optional<ItemObject> getArgItem(@NotNull String argName) {
         CommandArgument argument = findArg(argName);
@@ -361,17 +357,16 @@ public class Command {
             return Optional.empty();
         if (argument.getData() instanceof ArgumentItem(ItemObject value))
             return Optional.of(value);
-        throw new CommandArgumentWrongTypeException(
-                argName + " requested as item but stored as " + argument.getType());
+
+        return Optional.empty();
     }
 
     /**
      * Reads this command's {@code argName} argument as a number - the port of C's
-     * {@code cmd_get_arg_number}. Empty when unset; throws when set to another type.
+     * {@code cmd_get_arg_number}. Empty when unset or when set to another type.
      *
      * @param argName the name to look up
-     * @return the stored number, or empty if no argument of that name is set
-     * @throws CommandArgumentWrongTypeException if the argument is set but is not a number
+     * @return the stored number, or empty if no argument of that name is set or it is not a number
      */
     public Optional<Integer> getArgNumber(@NotNull String argName) {
         CommandArgument argument = findArg(argName);
@@ -380,17 +375,16 @@ public class Command {
             return Optional.empty();
         if (argument.getData() instanceof ArgumentNumber(int value))
             return Optional.of(value);
-        throw new CommandArgumentWrongTypeException(
-                argName + " requested as number but stored as " + argument.getType());
+
+        return Optional.empty();
     }
 
     /**
      * Reads this command's {@code argName} argument as a point - the port of C's
-     * {@code cmd_get_arg_point}. Empty when unset; throws when set to another type.
+     * {@code cmd_get_arg_point}. Empty when unset or when set to another type.
      *
      * @param argName the name to look up
-     * @return the stored grid location, or empty if no argument of that name is set
-     * @throws CommandArgumentWrongTypeException if the argument is set but is not a point
+     * @return the stored grid location, or empty if no argument of that name is set or it is not a point
      */
     public Optional<Loc> getArgPoint(@NotNull String argName) {
         CommandArgument argument = findArg(argName);
@@ -399,17 +393,16 @@ public class Command {
             return Optional.empty();
         if (argument.getData() instanceof ArgumentPoint(Loc value))
             return Optional.of(value);
-        throw new CommandArgumentWrongTypeException(
-                argName + " requested as point but stored as " + argument.getType());
+
+        return Optional.empty();
     }
 
     /**
      * Reads this command's {@code argName} argument as a string - the port of C's
-     * {@code cmd_get_arg_string}. Empty when unset; throws when set to another type.
+     * {@code cmd_get_arg_string}. Empty when unset or when set to another type.
      *
      * @param argName the name to look up
-     * @return the stored string, or empty if no argument of that name is set
-     * @throws CommandArgumentWrongTypeException if the argument is set but is not a string
+     * @return the stored string, or empty if no argument of that name is set or it is not a string
      */
     public Optional<String> getArgString(@NotNull String argName) {
         CommandArgument argument = findArg(argName);
@@ -418,19 +411,18 @@ public class Command {
             return Optional.empty();
         if (argument.getData() instanceof ArgumentString(String value))
             return Optional.of(value);
-        throw new CommandArgumentWrongTypeException(
-                argName + " requested as string but stored as " + argument.getType());
+
+        return Optional.empty();
     }
 
     /**
      * Reads this command's {@code argName} argument as a target - the port of C's
-     * {@code cmd_get_arg_target}. Empty when unset; throws when set to another type. Note this is a
+     * {@code cmd_get_arg_target}. Empty when unset or when set to another type. Note this is a
      * raw read: it does <em>not</em> validate that the target is still reachable - that live check
      * belongs to {@link #getTarget}.
      *
      * @param argName the name to look up
-     * @return the stored target code, or empty if no argument of that name is set
-     * @throws CommandArgumentWrongTypeException if the argument is set but is not a target
+     * @return the stored target code, or empty if no argument of that name is set or it is not a target
      */
     public Optional<DirectionEnum> getArgTarget(@NotNull String argName) {
         CommandArgument argument = findArg(argName);
@@ -439,8 +431,8 @@ public class Command {
             return Optional.empty();
         if (argument.getData() instanceof ArgumentTarget(DirectionEnum value))
             return Optional.of(value);
-        throw new CommandArgumentWrongTypeException(
-                argName + " requested as target but stored as " + argument.getType());
+
+        return Optional.empty();
     }
 
     /**

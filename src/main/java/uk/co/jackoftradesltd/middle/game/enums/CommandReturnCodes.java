@@ -37,12 +37,20 @@ package uk.co.jackoftradesltd.middle.game.enums;
  *       cancelled.</li>
  * </ul>
  *
+ * <p>coded on 2026-10-01 / commented in full on 2026-10-01
+ *
  * @author Rowan Crowther
  */
 public enum CommandReturnCodes {
+    /**
+     * The argument was present and of the requested type; C {@code CMD_OK}, value {@code 0}.
+     */
     CMD_OK(0),
+    /** No argument of that name was set; C {@code CMD_ARG_NOT_PRESENT}, value {@code -1}. */
     CMD_ARG_NOT_PRESENT(-1),
+    /** An argument of that name exists but holds a different type; C {@code CMD_ARG_WRONG_TYPE}, value {@code -2}. */
     CMD_ARG_WRONG_TYPE(-2),
+    /** The player was prompted for the value and cancelled; C {@code CMD_ARG_ABORTED}, value {@code -3}. */
     CMD_ARG_ABORTED(-3);
 
     /**
@@ -50,22 +58,22 @@ public enum CommandReturnCodes {
      */
     private final int value;
 
+    /**
+     * Binds a constant to its C numeric value.
+     *
+     * <p>coded on 2026-10-01 / commented in full on 2026-10-01
+     *
+     * @param value the value C assigns in {@code cmd_return_codes}
+     */
     CommandReturnCodes(int value) {
         this.value = value;
     }
 
     /**
-     * Returns the C-style numeric value of this code.
-     *
-     * @return {@code 0} for {@link #CMD_OK}, or the corresponding negative value for a failure
-     */
-    public int getValue() {
-        return value;
-    }
-
-    /**
      * Maps a C-style numeric value back to its enum constant - the inverse of {@link #getValue()},
      * for use at the boundary where a raw {@code int} return code crosses into the port.
+     *
+     * <p>coded on 2026-10-01 / commented in full on 2026-10-01
      *
      * @param value a numeric code, expected to be one of {@code 0}, {@code -1}, {@code -2},
      *              {@code -3}
@@ -79,5 +87,16 @@ public enum CommandReturnCodes {
         }
 
         return null;
+    }
+
+    /**
+     * Returns the C-style numeric value of this code.
+     *
+     * <p>coded on 2026-10-01 / commented in full on 2026-10-01
+     *
+     * @return {@code 0} for {@link #CMD_OK}, or the corresponding negative value for a failure
+     */
+    public int getValue() {
+        return value;
     }
 }

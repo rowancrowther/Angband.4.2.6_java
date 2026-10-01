@@ -53,6 +53,10 @@ the existing doc comment for context.
 
 - L40: method `setMonster` - MISSING
 
+### `ProjectEnum` ###
+
+Many missing
+
 ### `middle/effect/Effect.java`
 
 1 missing, 0 low

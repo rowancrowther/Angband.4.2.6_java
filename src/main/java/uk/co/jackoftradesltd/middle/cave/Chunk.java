@@ -170,7 +170,11 @@ public class Chunk {
     private Heatmap scent;
     /**
      * Location of the player's decoy, C's {@code c->decoy}. {@link Loc#zero} means there is none,
-     * as C uses {@code loc(0, 0)}. Nothing in this class reads it yet.
+     * as C uses {@code loc(0, 0)}. {@link #caveFindDecoy()} is its only reader. Nothing in
+     * {@code middle/} assigns it after the constructor, so it stays {@link Loc#zero} until the
+     * decoy-placing code is ported.
+     *
+     * <p>Field decoy coded before 260930, commented in full on 261001.
      */
     private Loc decoy;
 
@@ -1360,7 +1364,7 @@ public class Chunk {
      */
     @Contract(pure = true)
     @CheckReturnValue
-    private boolean squareIsBelievedWall(@NotNull Loc grid) {
+    boolean squareIsBelievedWall(@NotNull Loc grid) {
         if (!inBoundsFully(grid)) return true;
 
         if (!this.isKnown(grid)) return false;
@@ -2202,7 +2206,7 @@ public class Chunk {
 
         // Change target to new monster index
         if (Target.getTargetMonster(this) == monster)
-            Target.setTargetMonster(monster, toIndex);
+            Target.setTargetMonster(monster);
 
         // Health bar points to a monster, not an index 
         // No need to update it
@@ -3436,5 +3440,22 @@ public class Chunk {
      */
     public void setFeeling(int feeling) {
         this.feeling = feeling;
+    }
+
+    /**
+     * Returns the location of the player's decoy, the port of C's {@code cave_find_decoy()}
+     * ({@code cave.c}), which simply returns {@code c->decoy}.
+     *
+     * <p>A result of {@link Loc#zero} means no decoy exists, matching C's {@code loc(0, 0)}; callers
+     * such as {@code ChunkUtils} test it with {@link Loc#isZero()}. C returns the {@code struct loc}
+     * by value, so the caller gets a copy. {@link Loc} is immutable here, so handing back the
+     * stored reference is equivalent and no defensive copy is needed.
+     *
+     * <p>Function caveFindDecoy coded before 260930, commented in full on 261001.
+     *
+     * @return the decoy's grid, or {@link Loc#zero} when there is none
+     */
+    public Loc caveFindDecoy() {
+        return decoy;
     }
 }

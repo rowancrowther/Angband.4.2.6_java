@@ -6,7 +6,7 @@
 //
 // Cf. src/mon-init.c: init_parse_meth() registers the directive table
 // (name/cut/stun/miss/phys/msg/act/desc -> parse_meth_*), and struct blow_method lives
-// in src/monster.h. This grammar does EXTRACTION ONLY: every action stashes raw text
+// in src/mon-blows.h. This grammar does EXTRACTION ONLY: every action stashes raw text
 // into a BlowMethodParseRecord; the 0/1 -> boolean conversion and the message-name
 // lookup both happen in BlowMethodAssembler.
 //

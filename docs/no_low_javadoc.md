@@ -47,15 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/cave/roombuilders/RoomType.java`
-
-2 missing, 2 low
-
-- L171: method `getName` - LOW
-- L213: method `getRoomBuilderCount` - LOW
-- L237: method `getMaxHeight` - MISSING
-- L241: method `getMaxWidth` - MISSING
-
 ### `middle/combat/BlowMethod.java`
 
 0 missing, 5 low

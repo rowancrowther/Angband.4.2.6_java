@@ -48,25 +48,6 @@ Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS`
 the existing doc comment for context.
 
 
-### `middle/game/enums/CommandReturnCodes.java`
-
-5 missing, 0 low
-
-- L43: method `CMD_ARG_ABORTED` - MISSING
-- L43: enum-const `CMD_OK` - MISSING
-- L44: enum-const `CMD_ARG_NOT_PRESENT` - MISSING
-- L45: enum-const `CMD_ARG_WRONG_TYPE` - MISSING
-- L46: enum-const `CMD_ARG_ABORTED` - MISSING
-
-### `middle/game/event/EventDataMissile.java`
-
-0 missing, 4 low
-
-- L69: method `getItemObject` - LOW
-- L76: method `isSeen` - LOW
-- L83: method `getY` - LOW
-- L90: method `getX` - LOW
-
 ### `middle/game/event/projection/Projection.java`
 
 0 missing, 5 low

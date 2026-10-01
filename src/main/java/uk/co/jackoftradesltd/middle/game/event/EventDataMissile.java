@@ -21,35 +21,53 @@ import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
 
 /**
- * {@link GameEventData} payload describing a thrown/fired missile object in
- * flight — the {@link ItemObject} being thrown, whether the player sees it, and
- * its current grid. Consumed by the display layer to animate the missile.
+ * {@link GameEventData} payload for {@code EVENT_MISSILE}: a thrown or fired
+ * object in flight, whether the player can see it, and the grid it currently
+ * occupies. Port of the {@code missile} member of the {@code game_event_data}
+ * union in {@code game-event.h}, as filled by {@code event_signal_missile()} in
+ * {@code game-event.c} and read by {@code display_missile()} in
+ * {@code ui-display.c}, which only draws the missile when {@code seen} is set.
  *
- * <p>Needs to have it's ItemObject flattened so it can move into 
- * channel.messages.data
+ * <p>Like the C struct it carries the object by reference, not a copy. Outstanding:
+ * the {@link ItemObject} needs flattening before this can move into
+ * {@code channel.messages.data}.
+ *
+ * <p>coded on 260929 / commented in full on 261001
  *
  * @author Rowan Crowther
  */
 public class EventDataMissile implements GameEventData {
     /**
-     * The missile object in flight.
+     * The missile object in flight ({@code struct object *obj} in C).
+     *
+     * <p>coded on 260929 / commented in full on 261001
      */
     private ItemObject itemObject;
     /**
-     * Whether the player can see the missile.
+     * Whether the player can see the missile ({@code bool seen} in C). The display
+     * handler skips all drawing and delay when this is false.
+     *
+     * <p>coded on 260929 / commented in full on 261001
      */
     private boolean seen;
     /**
-     * Current row.
+     * Row of the missile's current grid ({@code int y} in C).
+     *
+     * <p>coded on 260929 / commented in full on 261001
      */
     private int y;
     /**
-     * Current column.
+     * Column of the missile's current grid ({@code int x} in C).
+     *
+     * <p>coded on 260929 / commented in full on 261001
      */
     private int x;
 
     /**
-     * Build a missile payload.
+     * Builds a missile payload; argument order matches {@code event_signal_missile()}
+     * in {@code game-event.c} (object, seen, y, x). Nothing is validated or copied.
+     *
+     * <p>coded on 260929 / commented in full on 261001
      *
      * @param itemObject the missile object
      * @param seen       whether the player sees it
@@ -64,13 +82,21 @@ public class EventDataMissile implements GameEventData {
     }
 
     /**
-     * @return the missile object
+     * Reads {@code data->missile.obj}.
+     *
+     * <p>coded on 260929 / commented in full on 261001
+     *
+     * @return the missile object, by reference
      */
     public ItemObject getItemObject() {
         return itemObject;
     }
 
     /**
+     * Reads {@code data->missile.seen}.
+     *
+     * <p>coded on 260929 / commented in full on 261001
+     *
      * @return whether the player sees the missile
      */
     public boolean isSeen() {
@@ -78,6 +104,10 @@ public class EventDataMissile implements GameEventData {
     }
 
     /**
+     * Reads {@code data->missile.y}.
+     *
+     * <p>coded on 260929 / commented in full on 261001
+     *
      * @return the current row
      */
     public int getY() {
@@ -85,6 +115,10 @@ public class EventDataMissile implements GameEventData {
     }
 
     /**
+     * Reads {@code data->missile.x}.
+     *
+     * <p>coded on 260929 / commented in full on 261001
+     *
      * @return the current column
      */
     public int getX() {

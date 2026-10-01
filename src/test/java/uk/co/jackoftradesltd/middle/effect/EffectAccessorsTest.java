@@ -27,6 +27,7 @@ import uk.co.jackoftradesltd.middle.numerics.Random;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -63,6 +64,16 @@ class EffectAccessorsTest {
     }
 
     /**
+     * Asks whether an effect is aimed when it is the only one in its list.
+     *
+     * @param e the effect
+     * @return {@code e.isAim} over a one-element list
+     */
+    private static boolean aimAlone(Effect e) {
+        return e.isAim(List.of(e));
+    }
+
+    /**
      * The three accessors that read the effect's identity.
      */
     @Nested
@@ -79,7 +90,7 @@ class EffectAccessorsTest {
             Effect bolt = effect(EffectEnum.EF_BOLT);
 
             assertTrue(bolt.isValid());
-            assertTrue(bolt.isAim(), "a bolt is aimed at something");
+            assertTrue(aimAlone(bolt), "a bolt is aimed at something");
             assertEquals("dam", bolt.getInfo());
         }
 
@@ -93,8 +104,8 @@ class EffectAccessorsTest {
             Effect bolt = effect(EffectEnum.EF_BOLT);
             Effect unaimed = effect(EffectEnum.EF_HEAL_HP);
 
-            assertTrue(bolt.isAim());
-            assertFalse(unaimed.isAim());
+            assertTrue(aimAlone(bolt));
+            assertFalse(aimAlone(unaimed));
         }
 
         /**
@@ -107,7 +118,7 @@ class EffectAccessorsTest {
             Effect none = effect(EffectEnum.EF_NONE);
 
             assertFalse(none.isValid());
-            assertFalse(none.isAim());
+            assertFalse(aimAlone(none));
             assertNull(none.getInfo());
         }
 
@@ -121,8 +132,107 @@ class EffectAccessorsTest {
             Effect max = effect(EffectEnum.EF_MAX);
 
             assertFalse(max.isValid());
-            assertFalse(max.isAim());
+            assertFalse(aimAlone(max));
             assertNull(max.getInfo());
+        }
+    }
+
+    /**
+     * {@code isAim} over a list, derived from {@code effect_aim} in {@code effects.c}: an invalid
+     * head is false at once, otherwise the walk starts at the effect itself and runs to the end of
+     * the chain.
+     */
+    @Nested
+    @DisplayName("isAim over a chain")
+    class IsAimChain {
+
+        /**
+         * The walk is inclusive of the starting effect, so a lone aimed effect is aimed.
+         */
+        @Test
+        @DisplayName("the starting effect is tested itself")
+        void startIsInclusive() {
+            Effect bolt = effect(EffectEnum.EF_BOLT);
+
+            assertTrue(bolt.isAim(List.of(bolt)));
+        }
+
+        /**
+         * The last element of the chain is still reached.
+         */
+        @Test
+        @DisplayName("an aimed effect at the end is reached from an earlier one")
+        void laterEffectCounts() {
+            Effect heal = effect(EffectEnum.EF_HEAL_HP);
+            Effect bolt = effect(EffectEnum.EF_BOLT);
+
+            assertTrue(heal.isAim(List.of(heal, bolt)));
+        }
+
+        /**
+         * Only effects from the starting point onward count, so an aimed effect before it is
+         * ignored.
+         */
+        @Test
+        @DisplayName("effects before the starting one are ignored")
+        void earlierEffectIgnored() {
+            Effect bolt = effect(EffectEnum.EF_BOLT);
+            Effect heal = effect(EffectEnum.EF_HEAL_HP);
+
+            assertFalse(heal.isAim(List.of(bolt, heal)));
+            assertTrue(bolt.isAim(List.of(bolt, heal)));
+        }
+
+        /**
+         * An invalid head is false even though a valid aimed effect follows, because C returns
+         * before it walks.
+         */
+        @Test
+        @DisplayName("an invalid head is false despite an aimed successor")
+        void invalidHeadShortCircuits() {
+            Effect none = effect(EffectEnum.EF_NONE);
+            Effect bolt = effect(EffectEnum.EF_BOLT);
+
+            assertFalse(none.isAim(List.of(none, bolt)));
+            assertTrue(bolt.isAim(List.of(none, bolt)));
+        }
+
+        /**
+         * An invalid effect in the middle of the chain is passed over, and the aimed effect behind
+         * it is still found.
+         */
+        @Test
+        @DisplayName("an invalid effect mid-chain does not stop the walk")
+        void invalidMiddleSkipped() {
+            Effect heal = effect(EffectEnum.EF_HEAL_HP);
+            Effect none = effect(EffectEnum.EF_NONE);
+            Effect bolt = effect(EffectEnum.EF_BOLT);
+
+            assertTrue(heal.isAim(List.of(heal, none, bolt)));
+        }
+
+        /**
+         * A chain with nothing aimed in it is false.
+         */
+        @Test
+        @DisplayName("a chain with no aimed effect is false")
+        void noneAimed() {
+            Effect heal = effect(EffectEnum.EF_HEAL_HP);
+            Effect damage = effect(EffectEnum.EF_DAMAGE);
+
+            assertFalse(heal.isAim(List.of(heal, damage)));
+        }
+
+        /**
+         * An effect that is not in the list has no position to start from. C cannot express this;
+         * the port answers false.
+         */
+        @Test
+        @DisplayName("an effect outside the list is false")
+        void notInList() {
+            Effect bolt = effect(EffectEnum.EF_BOLT);
+
+            assertFalse(bolt.isAim(List.of(effect(EffectEnum.EF_BOLT))));
         }
     }
 
@@ -164,7 +274,7 @@ class EffectAccessorsTest {
             Effect duplicate = original.copy();
 
             assertTrue(duplicate.isValid());
-            assertEquals(original.isAim(), duplicate.isAim());
+            assertEquals(aimAlone(original), aimAlone(duplicate));
             assertEquals(original.getInfo(), duplicate.getInfo());
             assertEquals(original.getDescription(), duplicate.getDescription());
         }

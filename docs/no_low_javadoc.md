@@ -47,10 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `ProjectEnum` ###
-
-Many missing
-
 ### `middle/effect/Effect.java`
 
 1 missing, 0 low

@@ -48,17 +48,6 @@ Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS`
 the existing doc comment for context.
 
 
-### `middle/game/gameengine/Command.java`
-
-1 missing, 5 low
-
-- L143: method `getContext` - LOW
-- L160: method `getCode` - LOW
-- L167: method `getNrepeats` - LOW
-- L190: method `getBackgroundCommand` - LOW
-- L197: method `getArgs` - LOW
-- L801: method `setBacgroundCommand` - MISSING
-
 ### `middle/game/gameengine/CommandArgument.java`
 
 0 missing, 3 low

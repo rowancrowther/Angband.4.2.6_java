@@ -47,18 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/game/enums/CommandArgumentType.java`
-
-7 missing, 0 low
-
-- L39: enum-const `arg_NONE` - MISSING
-- L40: enum-const `arg_STRING` - MISSING
-- L41: enum-const `arg_CHOICE` - MISSING
-- L42: enum-const `arg_ITEM` - MISSING
-- L43: enum-const `arg_NUMBER` - MISSING
-- L44: enum-const `arg_DIRECTION` - MISSING
-- L45: enum-const `arg_TARGET` - MISSING
-
 ### `middle/game/enums/CommandCode.java`
 
 115 missing, 0 low

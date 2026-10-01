@@ -2756,7 +2756,7 @@ public class ItemObject {
      * @param includingKnown {@code true} to copy the known half as well
      * @return a new item that shares no mutable state with this one, bar the noted templates
      */
-    ItemObject copy(boolean includingKnown) {
+    public ItemObject copy(boolean includingKnown) {
         ItemObject copy = new ItemObject();
 
         copy.setKind(this.getKind());

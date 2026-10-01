@@ -34,4 +34,9 @@ public record ArgumentChoice(int value) implements CommandArgumentData {
     public CommandArgumentType type() {
         return CommandArgumentType.arg_CHOICE;
     }
+
+    @Override
+    public CommandArgumentData copy() {
+        return new ArgumentChoice(value);
+    }
 }

@@ -39,4 +39,8 @@ public record ArgumentTarget(DirectionEnum value) implements CommandArgumentData
     public CommandArgumentType type() {
         return CommandArgumentType.arg_TARGET;
     }
+
+    public CommandArgumentData copy() {
+        return new ArgumentTarget(value);
+    }
 }

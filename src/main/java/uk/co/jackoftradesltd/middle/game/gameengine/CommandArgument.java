@@ -102,4 +102,8 @@ public class CommandArgument {
         if (argName != null)
             this.name = argName;
     }
+
+    public CommandArgument copy() {
+        return new CommandArgument(type, data.copy(), name);
+    }
 }

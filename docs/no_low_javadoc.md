@@ -48,16 +48,6 @@ Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS`
 the existing doc comment for context.
 
 
-### `middle/game/event/projection/SourceWhich.java`
-
-5 missing, 0 low
-
-- L25: interface `SourceWhich` - MISSING
-- L27: record `TrapRecord` - MISSING
-- L30: record `MonsterRecord` - MISSING
-- L33: record `ObjectRecord` - MISSING
-- L36: record `ChestTrapRecord` - MISSING
-
 ### `middle/game/gameengine/Command.java`
 
 1 missing, 5 low

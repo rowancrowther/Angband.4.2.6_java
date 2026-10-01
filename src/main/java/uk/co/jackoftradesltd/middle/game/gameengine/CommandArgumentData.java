@@ -48,4 +48,6 @@ public sealed interface CommandArgumentData permits ArgumentString, ArgumentChoi
      * @return this variant's {@link CommandArgumentType}
      */
     CommandArgumentType type();
+
+    CommandArgumentData copy();
 }

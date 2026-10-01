@@ -34,4 +34,9 @@ public record ArgumentString(String value) implements CommandArgumentData {
     public CommandArgumentType type() {
         return CommandArgumentType.arg_STRING;
     }
+
+    @Override
+    public CommandArgumentData copy() {
+        return new ArgumentString(value);
+    }
 }

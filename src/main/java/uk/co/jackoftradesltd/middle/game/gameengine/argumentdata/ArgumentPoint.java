@@ -36,4 +36,8 @@ public record ArgumentPoint(Loc value) implements CommandArgumentData {
     public CommandArgumentType type() {
         return CommandArgumentType.arg_POINT;
     }
+
+    public CommandArgumentData copy() {
+        return new ArgumentPoint(value.copy());
+    }
 }

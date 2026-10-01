@@ -37,4 +37,9 @@ public record ArgumentDirection(DirectionEnum value) implements CommandArgumentD
     public CommandArgumentType type() {
         return CommandArgumentType.arg_DIRECTION;
     }
+
+    @Override
+    public CommandArgumentData copy() {
+        return new ArgumentDirection(value);
+    }
 }

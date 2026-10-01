@@ -35,4 +35,9 @@ public record ArgumentNumber(int value) implements CommandArgumentData {
     public CommandArgumentType type() {
         return CommandArgumentType.arg_NUMBER;
     }
+
+    @Override
+    public CommandArgumentData copy() {
+        return new ArgumentNumber(value);
+    }
 }

@@ -46,4 +46,9 @@ public record ArgumentItem(ItemObject value) implements CommandArgumentData {
     public ItemObject getValue() {
         return value;
     }
+
+    @Override
+    public CommandArgumentData copy() {
+        return new ArgumentItem(value);
+    }
 }

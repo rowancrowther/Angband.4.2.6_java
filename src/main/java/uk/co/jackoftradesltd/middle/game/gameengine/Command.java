@@ -18,6 +18,7 @@
 package uk.co.jackoftradesltd.middle.game.gameengine;
 
 import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.Nullable;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.Message;
 import uk.co.jackoftradesltd.middle.cave.Loc;
@@ -52,21 +53,29 @@ import static uk.co.jackoftradesltd.middle.game.enums.CommandArgumentType.arg_CH
  * engine pops one, looks its {@link #code} up in the dispatch table, and runs the handler, which
  * pulls whatever it needs from {@link #args}.
  *
+ * <p>Class Command coded on 260830, commented in full on 261001.
+ *
  * @author Rowan Crowther
  */
 public class Command {
     /**
      * The context this command was issued in (splash, birth, game, store, death).
+     *
+     * <p>Field context coded on 260830, commented in full on 261001.
      */
     private CommandContext context;
 
     /**
      * Which command to perform.
+     *
+     * <p>Field code coded on 260830, commented in full on 261001.
      */
     private CommandCode code;
 
     /**
      * How many times to attempt to repeat this command.
+     *
+     * <p>Field nrepeats coded on 260830, commented in full on 261001.
      */
     private int nrepeats;
 
@@ -80,6 +89,8 @@ public class Command {
      * </ul>
      * The engine tests {@code background_command > 1} to decide whether to skip the bloodlust
      * (berserk-attack) substitution, which is why this is a small counter rather than a boolean.
+     *
+     * <p>Field backgroundCommand coded on 260830, commented in full on 261001.
      */
     private int backgroundCommand;
 
@@ -87,6 +98,8 @@ public class Command {
      * This command's arguments, matched by {@link CommandArgument#getName() name} rather than by
      * position (C used a fixed {@code arg[CMD_MAX_ARGS]} array of four; a list is used here since
      * lookup is by name). Initialised empty so arguments can be added before the command runs.
+     *
+     * <p>Field args coded on 260830, commented in full on 261001.
      */
     private List<CommandArgument> args = new ArrayList<>();
 
@@ -94,11 +107,16 @@ public class Command {
      * The player this command acts for, captured once at construction so {@link #getItem} can
      * consult shapechange state without another global lookup. In C the handlers reached the global
      * {@code player} directly; the port holds the reference on the command instead.
+     *
+     * <p>Field player coded on 260830, commented in full on 261001.
      */
     private Player player;
 
     /**
-     * Creates a command and binds it to the current {@link GameState#getPlayer() player}.
+     * Creates a command and binds it to the current {@link GameState#getPlayer() player}. The
+     * {@code arg} list is adopted as-is, not copied, so the caller should not keep mutating it.
+     *
+     * <p>Constructor Command coded on 260830, commented in full on 261001.
      *
      * @param context            the context the command is issued in
      * @param code               which command to perform
@@ -120,23 +138,35 @@ public class Command {
      * Returns an independent copy of this command - the port of the copy that C's {@code cmd_copy}
      * makes when it duplicates a command into the queue.
      *
-     * <p>The scalar fields are copied and a fresh {@link ArrayList} wraps the arguments, so the two
-     * commands can be executed and mutated (e.g. their {@code nrepeats} decremented) without
-     * affecting one another. The {@link CommandArgument} elements themselves are shared, not deep
-     * copied: their payloads are effectively immutable, so there is nothing to protect against -
-     * which is why C only ever deep-copied string arguments, for heap ownership, not the rest.
+     * <p>The scalar fields are copied and a fresh {@link ArrayList} is filled with a copy of every
+     * argument ({@link CommandArgument#copy()}, which in turn calls {@link
+     * CommandArgumentData#copy()}), so the two commands can be executed and mutated (e.g. their
+     * {@code nrepeats} decremented, or an argument overwritten by {@code setArg*}) without
+     * affecting one another. C only needed a deep copy for string arguments, to give each command
+     * its own heap buffer; the port copies every argument uniformly, which is harmless for the
+     * immutable payloads and keeps the method free of per-type special cases.
      *
      * <p>Used by {@link CommandQueue}'s {@code CMD_REPEAT} handling, where the replayed command must
      * be independent of the retained lastCommand.
      *
+     * <p>Function clone coded on 260830, commented in full on 261001.
+     *
      * @return an independent copy of this command
      */
     public Command clone() {
-        return new Command(this.context, this.code, this.nrepeats, this.backgroundCommand,
-                new ArrayList<>(args));
+        List<CommandArgument> cloneArgs = new ArrayList<>();
+        for (CommandArgument arg : args) {
+            cloneArgs.add(arg.copy());
+        }
+
+        return new Command(this.context, this.code, this.nrepeats, this.backgroundCommand, cloneArgs);
     }
 
     /**
+     * Returns the context this command is being carried out in.
+     *
+     * <p>Function getContext coded on 260830, commented in full on 261001.
+     *
      * @return the context this command is being carried out in
      */
     public CommandContext getContext() {
@@ -147,6 +177,8 @@ public class Command {
      * Sets the context this command runs in, stamped on at execution - the port of C's
      * {@code cmd->context = ctx}.
      *
+     * <p>Function setContext coded on 260830, commented in full on 261001.
+     *
      * @param context the execution context
      */
     public void setContext(CommandContext context) {
@@ -154,6 +186,10 @@ public class Command {
     }
 
     /**
+     * Returns which command this is.
+     *
+     * <p>Function getCode coded on 260830, commented in full on 261001.
+     *
      * @return which command this is
      */
     public CommandCode getCode() {
@@ -161,6 +197,10 @@ public class Command {
     }
 
     /**
+     * Returns how many times this command is still to attempt to repeat.
+     *
+     * <p>Function getNrepeats coded on 260830, commented in full on 261001.
+     *
      * @return how many times this command is still to attempt to repeat
      */
     public int getNrepeats() {
@@ -170,6 +210,8 @@ public class Command {
     /**
      * Sets the remaining repeat count.
      *
+     * <p>Function setNrepeats coded on 260830, commented in full on 261001.
+     *
      * @param nrepeats the number of repeats to attempt
      */
     public void setNrepeats(int nrepeats) {
@@ -177,13 +219,20 @@ public class Command {
     }
 
     /**
-     * Records one execution against the repeat count by decrementing it.
+     * Records one execution against the repeat count by decrementing it. Not clamped, so it can go
+     * negative if called more often than the count allows.
+     *
+     * <p>Function repeated coded on 260830, commented in full on 261001.
      */
     public void repeated() {
         nrepeats--;
     }
 
     /**
+     * Returns the tri-state repeat/bloodlust flag (see {@link #backgroundCommand}).
+     *
+     * <p>Function getBackgroundCommand coded on 260830, commented in full on 261001.
+     *
      * @return the tri-state repeat/bloodlust flag (see {@link #backgroundCommand})
      */
     public int getBackgroundCommand() {
@@ -191,6 +240,11 @@ public class Command {
     }
 
     /**
+     * Returns this command's live argument list, which is matched by name rather than position.
+     * The list itself is returned, not a copy.
+     *
+     * <p>Function getArgs coded on 260830, commented in full on 261001.
+     *
      * @return this command's arguments (matched by name)
      */
     public List<CommandArgument> getArgs() {
@@ -202,6 +256,8 @@ public class Command {
      * {@code cmd_set_arg_target}. A target is a direction <em>code</em> (a real direction, or a
      * sentinel meaning "the current health-bar target"), which is why it is a distinct argument
      * variant even though C physically stored a target and a direction in the same union int.
+     *
+     * <p>Function setArgTarget coded on 260830, commented in full on 261001.
      *
      * @param argName the name the argument is looked up by
      * @param value   the target code to store
@@ -216,6 +272,8 @@ public class Command {
      * {@code cmd_set_arg_string}. C deep-copied the string here because the command owned the heap
      * buffer; a Java {@code String} is immutable, so the reference is stored as-is.
      *
+     * <p>Function setArgString coded on 260830, commented in full on 261001.
+     *
      * @param argName the name the argument is looked up by
      * @param value   the string to store
      */
@@ -227,6 +285,8 @@ public class Command {
     /**
      * Stores {@code value} as this command's {@code argName} point argument - the port of C's
      * {@code cmd_set_arg_point}. A point is a grid location on the map, distinct from a direction.
+     *
+     * <p>Function setArgPoint coded on 260830, commented in full on 261001.
      *
      * @param argName the name the argument is looked up by
      * @param value   the grid location to store
@@ -240,6 +300,8 @@ public class Command {
      * Stores {@code value} as this command's {@code argName} number argument - the port of C's
      * {@code cmd_set_arg_number}. Used for plain counts and quantities (see {@link #getQuantity}).
      *
+     * <p>Function setArgNumber coded on 260830, commented in full on 261001.
+     *
      * @param argName the name the argument is looked up by
      * @param value   the number to store
      */
@@ -251,6 +313,8 @@ public class Command {
     /**
      * Stores {@code value} as this command's {@code argName} item argument - the port of C's
      * {@code cmd_set_arg_item}. The stored reference is the selected object itself.
+     *
+     * <p>Function setArgItem coded on 260830, commented in full on 261001.
      *
      * @param argName the name the argument is looked up by
      * @param value   the item to store
@@ -264,6 +328,8 @@ public class Command {
      * Stores {@code value} as this command's {@code argName} direction argument - the port of C's
      * {@code cmd_set_arg_direction}.
      *
+     * <p>Function setArgDirection coded on 260830, commented in full on 261001.
+     *
      * @param argName the name the argument is looked up by
      * @param value   the direction to store
      */
@@ -275,6 +341,8 @@ public class Command {
     /**
      * Stores {@code value} as this command's {@code argName} choice argument - the port of C's
      * {@code cmd_set_arg_choice}. A choice is a menu selection index rather than a game quantity.
+     *
+     * <p>Function setArgChoice coded on 260830, commented in full on 261001.
      *
      * @param argName the name the argument is looked up by
      * @param value   the choice index to store
@@ -291,6 +359,8 @@ public class Command {
      * slot or filled the next free entry of its fixed {@code arg[]} array; the port matches by name
      * against a list instead, so the type tag and payload are kept in step via
      * {@link CommandArgument#update}.
+     *
+     * <p>Function setArg coded on 260830, commented in full on 261001.
      *
      * @param argName      the name the argument is looked up by
      * @param argumentType the type tag for the value
@@ -314,6 +384,8 @@ public class Command {
      * another type ({@code CMD_ARG_WRONG_TYPE}) are the same outcome and both map to an empty
      * {@link Optional}.
      *
+     * <p>Function getArgChoice coded on 260830, commented in full on 261001.
+     *
      * @param argName the name to look up
      * @return the stored choice, or empty if no argument of that name is set or it is not a choice
      */
@@ -329,6 +401,8 @@ public class Command {
     /**
      * Reads this command's {@code argName} argument as a direction - the port of C's
      * {@code cmd_get_arg_direction}. Empty when unset or when set to another type.
+     *
+     * <p>Function getArgDirection coded on 260830, commented in full on 261001.
      *
      * @param argName the name to look up
      * @return the stored direction, or empty if no argument of that name is set or it is not a direction
@@ -346,6 +420,8 @@ public class Command {
     /**
      * Reads this command's {@code argName} argument as an item - the port of C's
      * {@code cmd_get_arg_item}. Empty when unset or when set to another type.
+     *
+     * <p>Function getArgItem coded on 260830, commented in full on 261001.
      *
      * @param argName the name to look up
      * @return the stored item, or empty if no argument of that name is set or it is not an item
@@ -365,6 +441,8 @@ public class Command {
      * Reads this command's {@code argName} argument as a number - the port of C's
      * {@code cmd_get_arg_number}. Empty when unset or when set to another type.
      *
+     * <p>Function getArgNumber coded on 260830, commented in full on 261001.
+     *
      * @param argName the name to look up
      * @return the stored number, or empty if no argument of that name is set or it is not a number
      */
@@ -383,6 +461,8 @@ public class Command {
      * Reads this command's {@code argName} argument as a point - the port of C's
      * {@code cmd_get_arg_point}. Empty when unset or when set to another type.
      *
+     * <p>Function getArgPoint coded on 260830, commented in full on 261001.
+     *
      * @param argName the name to look up
      * @return the stored grid location, or empty if no argument of that name is set or it is not a point
      */
@@ -400,6 +480,8 @@ public class Command {
     /**
      * Reads this command's {@code argName} argument as a string - the port of C's
      * {@code cmd_get_arg_string}. Empty when unset or when set to another type.
+     *
+     * <p>Function getArgString coded on 260830, commented in full on 261001.
      *
      * @param argName the name to look up
      * @return the stored string, or empty if no argument of that name is set or it is not a string
@@ -420,6 +502,8 @@ public class Command {
      * {@code cmd_get_arg_target}. Empty when unset or when set to another type. Note this is a
      * raw read: it does <em>not</em> validate that the target is still reachable - that live check
      * belongs to {@link #getTarget}.
+     *
+     * <p>Function getArgTarget coded on 260830, commented in full on 261001.
      *
      * @param argName the name to look up
      * @return the stored target code, or empty if no argument of that name is set or it is not a target
@@ -445,6 +529,8 @@ public class Command {
      * declines to choose) the in-flight repeat is cancelled via {@link CommandQueue#cancelRepeat} -
      * a failed direction must stop a repeating command dead - and an empty {@link Optional} is
      * returned to signal C's {@code CMD_ARG_ABORTED}.
+     *
+     * <p>Function getDirection coded on 260830, commented in full on 261001.
      *
      * @param argName the name the direction argument is stored under
      * @param allow5  whether the "5"/self target is a permitted answer (C's {@code allow_5})
@@ -478,6 +564,8 @@ public class Command {
      * boolean; Java has no out-parameters, so the selection comes back as the {@link Optional}
      * return value instead - present is C's {@code CMD_OK}, empty is {@code CMD_ARG_ABORTED}.
      *
+     * <p>Function getItem coded on 260830, commented in full on 261001.
+     *
      * @param argName the name the item argument is stored under
      * @param prompt  the selection prompt shown to the player
      * @param reject  the message shown when nothing eligible exists (C's {@code str})
@@ -488,18 +576,21 @@ public class Command {
     public Optional<ItemObject> getItem(String argName, String prompt, String reject,
                                         Predicate<ItemObject> filter, Flag<GetItemFlags> mode) {
         Optional<ItemObject> result = getArgItem(argName);
+        Flag<GetItemFlags> incomingMode = new Flag<>(GetItemFlags.class);
+        incomingMode.copyFrom(mode);
 
         if (result.isPresent() && (filter == null || filter.test(result.get()))) {
             return result;
         }
 
         if (player.isShapeChanged()) {
-            mode.off(GetItemFlags.USE_EQUIP);
-            mode.off(GetItemFlags.USE_INVEN);
-            mode.off(GetItemFlags.USE_QUIVER);
+            incomingMode.off(GetItemFlags.USE_EQUIP);
+            incomingMode.off(GetItemFlags.USE_INVEN);
+            incomingMode.off(GetItemFlags.USE_QUIVER);
         }
 
-        Optional<ItemObject> chosen = GameInputHolder.getInstance().getItem(prompt, reject, this.code, filter, mode);
+        Optional<ItemObject> chosen = GameInputHolder.getInstance().getItem(prompt, reject, this.code, filter,
+                incomingMode);
         if (chosen.isEmpty()) return Optional.empty();
 
         setArgItem(argName, chosen.get());
@@ -517,6 +608,8 @@ public class Command {
      * yields an empty {@link Optional} (C's {@code CMD_ARG_ABORTED}), which is why the accept/abort
      * decision comes from the UI's own optional rather than from testing the text for emptiness.
      *
+     * <p>Function getString coded on 260830, commented in full on 261001.
+     *
      * @param argName the name the string argument is stored under
      * @param initial the value the input field is pre-filled with (may be {@code null} or empty)
      * @param title   an introductory message shown before the prompt
@@ -532,14 +625,18 @@ public class Command {
         Message.message("%s", title);
         GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_MESSAGE_FLUSH);
 
-        if (initial != null && !initial.isEmpty())
-            temp = initial;
+        if (initial != null && !initial.isEmpty()) {
+            int length = Math.min(initial.length(), 79);
+            temp = initial.substring(0, length);
+        }
 
         Optional<String> resultFromUser = GameInputHolder.getInstance().getString(prompt, temp);
 
         if (resultFromUser.isPresent()) {
-            setArgString(argName, resultFromUser.get());
-            return resultFromUser;
+            String from = resultFromUser.get();
+            int length = Math.min(from.length(), 79);
+            setArgString(argName, from.substring(0, length));
+            return Optional.of(from.substring(0, length));
         }
 
         return Optional.empty();
@@ -557,6 +654,8 @@ public class Command {
      * {@code get_aim_dir}. The aimed direction returns as the {@link Optional} value (C's out-param
      * {@code *target}); empty is C's {@code CMD_ARG_ABORTED}. Unlike {@link #getDirection}, an
      * aborted aim does not cancel the repeat.
+     *
+     * <p>Function getTarget coded on 260830, commented in full on 261001.
      *
      * @param argName the name the target argument is stored under
      * @return the chosen target, or empty if the player aborted
@@ -587,6 +686,8 @@ public class Command {
      * amount: a prompt result of zero (or the UI aborting) yields an empty {@link Optional}, C's
      * {@code CMD_ARG_ABORTED}. The stored value is backed by the same {@code arg_NUMBER} slot as
      * {@link #getArgNumber}/{@link #setArgNumber}; there is no separate quantity argument type.
+     *
+     * <p>Function getQuantity coded on 260830, commented in full on 261001.
      *
      * @param argName the name the number argument is stored under
      * @param max     the largest quantity the prompt will allow
@@ -626,6 +727,11 @@ public class Command {
      * round-trip, converted to and from the object at this boundary via the {@link ClassMagic}
      * helpers.
      *
+     * <p>One deliberate difference from C: {@code spellFilter} is {@code @NotNull} here, where
+     * {@code cmd_get_spell} tolerates a NULL filter.
+     *
+     * <p>Function getSpell coded on 260830, commented in full on 261001.
+     *
      * @param argName     the name the spell-choice argument is stored under
      * @param verb        the action the spell is wanted for (e.g. "cast", "study"), shown by the UI
      * @param bookFilter  the predicate a book must satisfy to be eligible, for the full picker
@@ -641,7 +747,7 @@ public class Command {
         ItemObject bookItem;
         MagicSpell spell;
         ClassMagic magic = player.getPlayerClass().getMagic();
-        if (magic == null || !magic.isCaster())
+        if (magic == null)
             return Optional.empty();
 
         if (result.isPresent()) {
@@ -682,7 +788,10 @@ public class Command {
 
     /**
      * Finds the argument stored under {@code argName}, if any - the shared name lookup behind the
-     * {@code getArg*} readers.
+     * {@code getArg*} readers. Mirrors the name-matching loop of C's {@code cmd_get_arg}, minus the
+     * type check, which each reader does itself; the first argument with that name wins.
+     *
+     * <p>Function findArg coded on 260830, commented in full on 261001.
      *
      * @param argName the name to look up
      * @return the matching argument, or {@code null} if none is stored under that name
@@ -696,6 +805,8 @@ public class Command {
      * {@code get_spell_from_book} call in {@code cmd_get_spell}. A thin pass-through to the installed
      * {@link GameInput}; kept as its own method so {@link #getSpell}'s book-arg branch reads as one
      * step and the boundary lookup lives in a single place.
+     *
+     * <p>Function getSpellFromBook coded on 260830, commented in full on 261001.
      *
      * @param player      the caster
      * @param verb        the action the spell is wanted for (e.g. "cast", "study")
@@ -728,6 +839,8 @@ public class Command {
      * abort. Note {@code -2} is a valid <em>present</em> value, not a failure - the empty case is
      * reserved for a genuine abort, which is why {@code Optional<Integer>} and not {@code Optional} of
      * the {@link Effect} itself.
+     *
+     * <p>Function getEffectFromList coded on 260830, commented in full on 261001.
      *
      * @param argName     the name the choice argument is stored under
      * @param prompt      the prompt to show, or {@code null} for the default
@@ -774,14 +887,16 @@ public class Command {
      * Resolves a carried book item to the class {@link MagicBook} it represents - the port of C's
      * {@code player_object_to_book}. The match is on the item kind's {@code (tval, sval)} against
      * each of the caster's books, exactly as C compares {@code obj->tval}/{@code obj->sval} to
-     * {@code magic.books[i]}.
+     * {@code magic.books[i]}. Nothing in the port calls this method at present.
+     *
+     * <p>Function playerObjectToBook coded on 260830, commented in full on 261001.
      *
      * @param player the caster whose books are searched
      * @param item   the book item to identify
      * @return the matching {@link MagicBook}, or {@code null} if the item is not one of this class's
      * books
      */
-    private MagicBook playerObjectToBook(Player player, ItemObject item) {
+    private @Nullable MagicBook playerObjectToBook(@NotNull Player player, @NotNull ItemObject item) {
         for (MagicBook book : player.getPlayerClass().getMagic().getMagicBooks()) {
             if (item.getKind().gettValue() == book.getBookTValue()
                     && item.getKind().getsVal() == book.getSval())
@@ -790,6 +905,16 @@ public class Command {
         return null;
     }
 
+    /**
+     * Sets the tri-state repeat/bloodlust flag (see {@link #backgroundCommand}). Used when a
+     * command is queued on the player's behalf rather than typed, so it cannot be the target of
+     * {@code CMD_REPEAT} and (above {@code 1}) cannot trigger bloodlust. The name is misspelt
+     * ("Bacground"); it is left as is so existing callers keep compiling.
+     *
+     * <p>Function setBacgroundCommand coded on 260830, commented in full on 261001.
+     *
+     * @param i the new flag value: 0, 1 or greater than 1
+     */
     public void setBacgroundCommand(int i) {
         backgroundCommand = i;
     }

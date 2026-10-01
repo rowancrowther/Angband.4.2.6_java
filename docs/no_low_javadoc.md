@@ -48,17 +48,6 @@ Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS`
 the existing doc comment for context.
 
 
-### `middle/game/event/projection/SourceWhat.java`
-
-6 missing, 0 low
-
-- L20: enum `SourceWhat` - MISSING
-- L21: enum-const `SRC_NONE` - MISSING
-- L22: enum-const `SRC_TRAP` - MISSING
-- L23: enum-const `SRC_PLAYER` - MISSING
-- L24: enum-const `SRC_MONSTER` - MISSING
-- L25: enum-const `SRC_OBJECT` - MISSING
-
 ### `middle/game/event/projection/SourceWhich.java`
 
 5 missing, 0 low

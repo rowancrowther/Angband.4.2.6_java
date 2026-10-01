@@ -18,21 +18,36 @@
 package uk.co.jackoftradesltd.middle.game.enums;
 
 /**
- * The situation a command is issued in - the port of C's {@code enum cmd_context} (cmd-core.h).
+ * The situation a command is issued in - the port of C's {@code enum cmd_context} ({@code cmd-core.h}).
  *
- * <p>The same key can mean different things depending on where the player is, so the input layer
- * tags each command with the context that produced it and the game loop pops commands for the
- * context it is currently servicing (the main loop runs with {@link #CTX_GAME}). The five states
- * span the whole session: {@link #CTX_INIT} for the splash screen, {@link #CTX_BIRTH} for
- * character creation, {@link #CTX_GAME} for normal play, {@link #CTX_STORE} while shopping, and
- * {@link #CTX_DEATH} for the end-of-character screen.
+ * <p>The same key can mean different things depending on where the player is, so every command
+ * carries the context it was issued in, and the queue is drained for one context at a time: the
+ * main loop pops {@link #CTX_GAME}, birth executes {@link #CTX_BIRTH}, the store menu pops
+ * {@link #CTX_STORE}, and the death-screen spoiler menu executes {@link #CTX_DEATH}.
+ * {@link #CTX_INIT} is the placeholder C gives a blank command, not a screen of its own.
+ *
+ * <p>The five constants match C in name and order, so the ordinals equal C's integer values
+ * ({@code CTX_INIT} is 0). Nothing in the port depends on that, but it keeps cross-referencing the
+ * C source painless.
+ *
+ * <p>coded on 2026-10-01 / commented in full on 2026-10-01
  *
  * @author Rowan Crowther
  */
 public enum CommandContext {
+    /**
+     * The default context of a blank command: C's {@code last_command} and the command built by
+     * {@code cmdq_push_repeat} both start here. No queue is ever drained for it.
+     */
     CTX_INIT,
+    /**
+     * Character creation: {@code player-birth.c} runs {@code cmdq_execute(CTX_BIRTH)}.
+     */
     CTX_BIRTH,
+    /** Normal play: {@code game-world.c} pops this context once per game turn. */
     CTX_GAME,
+    /** Shopping: {@code ui-store.c} pops this context while the store menu is open. */
     CTX_STORE,
+    /** The end-of-character screen: {@code ui-spoil.c} executes this once the player is dead. */
     CTX_DEATH
 }

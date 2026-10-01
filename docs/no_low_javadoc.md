@@ -47,12 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/game/bespokeexceptions/CommandArgumentWrongTypeException.java`
-
-0 missing, 1 low
-
-- L35: constructor `CommandArgumentWrongTypeException` - LOW
-
 ### `middle/game/enums/CommandArgumentType.java`
 
 7 missing, 0 low

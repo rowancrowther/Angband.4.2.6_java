@@ -82,6 +82,7 @@ public enum ColourEnum {
     COLOUR_SHADE(' ', "Shade",
             new char[]{' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '});
 
+    public final static int basicColours = 29;
     /**
      * Single-character code identifying this colour in data files/preferences.
      */

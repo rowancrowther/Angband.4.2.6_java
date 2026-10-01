@@ -59,6 +59,7 @@ public class Colour {
      * <p>Field basicColours coded on 260902, commented in full on 260916.
      */
     public final static int basicColours = 29;
+
     /**
      * The 29 default RGB triples, in {@link ColourEnum} declaration order -
      * the Java form of the C original's {@code angband_color_table[MAX_COLORS][4]}

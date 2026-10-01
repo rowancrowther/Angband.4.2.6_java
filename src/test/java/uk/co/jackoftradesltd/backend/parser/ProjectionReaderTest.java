@@ -34,8 +34,11 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p>The happy-path test runs against the real shipped {@code lib/gamedata/projection.txt}; a clean
  * load is itself the assertion that all 56 records resolved (every code/type/msgt/colour). The
- * error-path tests build minimal fixtures injecting a single defect each. The reader is fail-closed:
- * any error yields an empty item list plus the collected errors.
+ * error-path tests inject a single defect each, either into a minimal fixture or into a copy of
+ * the shipped file. The assembler is fail-closed on the element block (a wrong element count
+ * yields an empty item list plus the collected errors) but soft on other faults, where the bad
+ * record is skipped and the rest still loads; see {@link ProjectionAssemblerTest} for the cases
+ * driven from hand-built records.
  *
  * @author Rowan Crowther
  */
@@ -69,15 +72,34 @@ class ProjectionReaderTest {
     }
 
     @Test
-    void recordCountMismatchIsReportedButValidRecordStillLoads() throws IOException {
-        // Header over-declares: 5 vs the single record present. The mismatch is a
-        // soft error - the one valid record still loads (partial-results contract).
+    void recordCountMismatchIsReportedAlongsideTheElementCountFailure() throws IOException {
+        // Header over-declares: 5 vs the single record present. The mismatch is reported as a soft
+        // error, but a one-record file cannot satisfy the element rule either: C's
+        // finish_parse_projection() quits unless exactly 25 records are of type element, so the
+        // assembler discards the lone record and says why.
         String path = tempFile("bad-count.txt", "record-count:5\n" + ONE_RECORD);
         ParseResult<Projection> result = new ProjectionReader().parseWithResults(path);
         assertTrue(result.hasErrors());
-        assertEquals(1, result.items().size());
+        assertTrue(result.items().isEmpty(), result.items()::toString);
         assertTrue(result.errors().stream().anyMatch(e -> e.contains("declares 5") &&
                         e.contains("contains 1")),
+                result.errors()::toString);
+        assertTrue(result.errors().stream().anyMatch(e -> e.contains("expected 25 got 1")),
+                result.errors()::toString);
+    }
+
+    @Test
+    void headerMismatchOnTheRealFileIsReportedButAllProjectionsStillLoad() throws IOException {
+        // The shipped file with its header changed to over-declare by one: the mismatch is a soft
+        // error and the 56 valid records, which satisfy the element rule, all still load.
+        String path = tempFile("real-bad-count.txt",
+                Files.readString(Path.of(REAL_FILE)).replace("record-count:56", "record-count:57"));
+
+        ParseResult<Projection> result = new ProjectionReader().parseWithResults(path);
+
+        assertEquals(56, result.items().size());
+        assertTrue(result.errors().stream().anyMatch(e -> e.contains("declares 57") &&
+                        e.contains("contains 56")),
                 result.errors()::toString);
     }
 
@@ -106,28 +128,39 @@ class ProjectionReaderTest {
     }
 
     @Test
-    void twoDifferentErrorsAreEachLoggedAndGoodRecordSurvives() throws IOException {
-        // Three records with a matching record-count (so no count error): one valid, one with an
-        // unknown type, one with an unknown code. The two *different* semantic errors are each
-        // logged independently and both bad records are skipped (null type/code -> continue), while
-        // the one valid record still loads. It does NOT fail closed.
-        // (Note: an unknown *colour* would NOT work here - resolveColour falls back to Dark for an
-        // unrecognised name rather than returning null, so it never errors or skips.)
-        String path = tempFile("mixed.txt", String.join("\n",
-                "record-count:3",
+    void unknownCodeAfterTheElementBlockIsReportedAndTheRestLoads() throws IOException {
+        // The shipped file plus one extra block whose code is not a ProjectionEnum value, with the
+        // header raised to match. The element block is intact, so the file passes the element rule;
+        // the unknown code is a soft error and that one block is skipped. It does NOT fail closed.
+        String extra = "\ncode:NOTACODE\ntype:monster\ndesc:x\nblind-desc:x\nobvious:1\ncolor:Slate\n";
+        String path = tempFile("real-plus-bad-code.txt",
+                Files.readString(Path.of(REAL_FILE)).replace("record-count:56", "record-count:57") + extra);
+
+        ParseResult<Projection> result = new ProjectionReader().parseWithResults(path);
+
+        assertEquals(56, result.items().size(), result.items()::toString);
+        List<String> errors = result.errors();
+        assertEquals(1, errors.size(), errors::toString);
+        assertTrue(errors.getFirst().contains("NOTACODE"), errors::toString);
+    }
+
+    @Test
+    void unknownTypeIsNotAnError() throws IOException {
+        // C keeps type as a string and only ever tests it against "element", so an unrecognised
+        // type is not a fault: the block loads with no type. Here ELEC (position 2) has an unknown
+        // type, so it no longer counts as an element, the file has 24, and the element rule rejects
+        // it - with the element count as the only complaint.
+        String path = tempFile("unknown-type.txt", String.join("\n",
+                "record-count:2",
                 "code:ACID\ntype:element\ndesc:x\nblind-desc:x\nobvious:1\ncolor:Slate",
                 "code:ELEC\ntype:NOTATYPE\ndesc:x\nblind-desc:x\nobvious:1\ncolor:Blue",
-                "code:NOTACODE\ntype:element\ndesc:x\nblind-desc:x\nobvious:1\ncolor:Slate",
                 ""));
 
         ParseResult<Projection> result = new ProjectionReader().parseWithResults(path);
 
-        // Only the valid record survives; the two defective ones are skipped.
-        assertEquals(1, result.items().size(), result.items()::toString);
-
-        // Both distinct errors are present.
+        assertTrue(result.items().isEmpty(), result.items()::toString);
         List<String> errors = result.errors();
-        assertTrue(errors.stream().anyMatch(e -> e.contains("Unknown projection type")), errors::toString);
-        assertTrue(errors.stream().anyMatch(e -> e.contains("NOTACODE")), errors::toString);
+        assertEquals(1, errors.size(), errors::toString);
+        assertTrue(errors.getFirst().contains("expected 25 got 1"), errors::toString);
     }
 }

@@ -47,12 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/effect/Effect.java`
-
-1 missing, 0 low
-
-- L234: method `effectDo` - MISSING
-
 ### `middle/effect/EffectSubTypeWrapper.java`
 
 0 missing, 13 low

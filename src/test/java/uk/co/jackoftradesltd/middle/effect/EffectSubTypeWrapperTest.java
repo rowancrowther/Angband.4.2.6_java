@@ -33,6 +33,7 @@ import uk.co.jackoftradesltd.middle.player.PlayerShape;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 import uk.co.jackoftradesltd.middle.player.enums.TimedEffect;
 
+import java.security.InvalidParameterException;
 import java.util.List;
 import java.util.Map;
 
@@ -59,6 +60,24 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * @author Rowan Crowther
  */
 class EffectSubTypeWrapperTest {
+
+    /**
+     * The copy is shallow: the two reference payloads are shared, and the teleport flags, which
+     * are primitives, are carried across by value.
+     *
+     * @throws Exception if an accessor rejects the payload
+     */
+    @Test
+    @DisplayName("a copy shares reference payloads and carries teleport flags")
+    void copyIsShallow() throws Exception {
+        Summon kin = new Summon("kin", null, false, List.of(), null, null, null, "your kin");
+        EffectSubTypeWrapper summon = new EffectSubTypeWrapper(kin);
+        EffectSubTypeWrapper away = EffectSubTypeWrapper.teleport(true);
+
+        assertSame(kin, summon.copy().getSummonWrapper());
+        assertTrue(away.copy().getTeleportMonsterMayCast());
+        assertEquals(EffectSubTypeEnum.EST_TELEPORT, away.copy().getSubType());
+    }
 
     /**
      * {@link EffectSubTypeWrapper#copy()} duplicates every field rather than just the live one, so
@@ -96,8 +115,7 @@ class EffectSubTypeWrapperTest {
             EffectSubTypeWrapper wrapper = new EffectSubTypeWrapper(ProjectionEnum.PROJ_ACID);
 
             assertEquals(EffectSubTypeEnum.EST_PROJ, wrapper.getSubType());
-            assertEquals(ProjectionEnum.PROJ_ACID,
-                    wrapper.getProjectionWrapper(EffectSubTypeEnum.EST_PROJ));
+            assertEquals(ProjectionEnum.PROJ_ACID, wrapper.getProjectionWrapper());
         }
 
         /**
@@ -270,16 +288,56 @@ class EffectSubTypeWrapperTest {
         }
 
         /**
-         * The projection accessor takes the expectation as an argument, so it refuses when the
-         * caller's expectation and the stored payload disagree — even though the payload is present.
+         * The projection accessor, like every other, checks the wrapper's own discriminator. It once
+         * checked a caller-supplied argument instead, which let a non-projection wrapper answer with
+         * a null projection.
          */
         @Test
-        @DisplayName("the projection accessor refuses a mismatched expectation")
-        void projectionExpectationChecked() {
-            EffectSubTypeWrapper projection = new EffectSubTypeWrapper(ProjectionEnum.PROJ_ACID);
+        @DisplayName("the projection accessor refuses a wrapper that is not a projection")
+        void projectionAccessorChecksField() {
+            EffectSubTypeWrapper stat = new EffectSubTypeWrapper(Stats.STAT_STR);
 
-            assertThrows(Exception.class,
-                    () -> projection.getProjectionWrapper(EffectSubTypeEnum.EST_TMD));
+            InvalidParameterException ex = assertThrows(InvalidParameterException.class,
+                    stat::getProjectionWrapper);
+            assertTrue(ex.getMessage().contains("got EST_STAT"));
+        }
+
+        /**
+         * A wrapper built from an unresolved sub-type has a null discriminator. Reading any payload
+         * from it must raise the documented exception, naming "null", not a NullPointerException
+         * from formatting the message.
+         */
+        @Test
+        @DisplayName("an unresolved wrapper refuses every accessor with a clear message")
+        void nullDiscriminatorThrowsInvalidParameter() {
+            EffectSubTypeWrapper unresolved = new EffectSubTypeWrapper(EffectSubTypeEnum.EST_PROJ);
+
+            assertNull(unresolved.getSubType());
+            for (org.junit.jupiter.api.function.Executable getter : List.<org.junit.jupiter.api.function.Executable>of(
+                    unresolved::getProjectionWrapper, unresolved::getTimedWrapper,
+                    unresolved::getNourishWrapper, unresolved::getMonTimedWrapper,
+                    unresolved::getSummonWrapper, unresolved::getSummonTypeWrapper,
+                    unresolved::getStatsWrapper, unresolved::getEnchantWrapper,
+                    unresolved::getShapeWrapper, unresolved::getQuakeWrapper,
+                    unresolved::getGlyphType, unresolved::getTeleportMonsterMayCast,
+                    unresolved::getTeleportToMonsterMayCast)) {
+                InvalidParameterException ex = assertThrows(InvalidParameterException.class, getter);
+                assertTrue(ex.getMessage().endsWith("got null"));
+            }
+        }
+
+        /**
+         * An {@code EST_NONE} wrapper keeps its discriminator, so the refusal names it rather than
+         * saying "null".
+         */
+        @Test
+        @DisplayName("an EST_NONE wrapper refuses a payload and names EST_NONE")
+        void noneWrapperRefuses() {
+            EffectSubTypeWrapper none = new EffectSubTypeWrapper(EffectSubTypeEnum.EST_NONE);
+
+            InvalidParameterException ex = assertThrows(InvalidParameterException.class,
+                    none::getProjectionWrapper);
+            assertTrue(ex.getMessage().endsWith("got EST_NONE"));
         }
     }
 

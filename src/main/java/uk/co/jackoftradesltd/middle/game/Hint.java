@@ -21,21 +21,37 @@ package uk.co.jackoftradesltd.middle.game;
  * A single piece of gameplay advice, loaded from {@code hints.txt}.
  *
  * <p>Ports the C {@code struct hint} ({@code hint.h}), which is one line of text plus a {@code next}
- * pointer; the port drops the pointer and holds the collection as a {@code List<Hint>} on
- * {@link uk.co.jackoftradesltd.middle.game.globals.GameConstants} instead. In the original game these
- * are the shopkeeper's remarks: entering or browsing a store has a one-in-three chance of the
- * keeper muttering a randomly chosen hint (C {@code random_hint}, {@code ui-store.c}).
+ * pointer. The port drops the pointer and holds the collection as a {@code List<Hint>} in
+ * {@link uk.co.jackoftradesltd.middle.game.globals.registry.MiscRegistry}, filled by
+ * {@code MiscDataLoader.loadHints()}. Because the C list is built by prepending each parsed
+ * {@code H:} line, it ends up in reverse file order; the port keeps file order. Nothing depends on
+ * the difference, since C {@code random_hint} ({@code ui-store.c}) picks uniformly with a
+ * reservoir sample and so treats every position alike.
+ *
+ * <p>In the original game these are the shopkeeper's remarks. When you enter a store other than the
+ * Home, {@code prt_welcome} ({@code ui-store.c}) returns silently half the time; otherwise, if any
+ * hints are loaded, there is a one-in-three chance the keeper mutters a randomly chosen hint
+ * through one of the {@code comment_hint} templates - about one entry in six overall. Hints are
+ * not shown when merely browsing stock.
+ *
+ * <p>Class coded before 261001, commented in full on 261001.
  *
  * @author Rowan Crowther
  */
 public class Hint {
     /**
      * The hint text, exactly as written on the {@code H:} line (C: {@code hint.hint}).
+     *
+     * <p>Package-private; read it through {@link #getHint()}. Field coded before 261001, commented
+     * in full on 261001.
      */
     String hint;
 
     /**
-     * Construct a hint from its text.
+     * Construct a hint from its text, as {@code HintAssembler} does for each parsed {@code H:}
+     * record (C: {@code parse_hint} in {@code init.c}, minus the list linking).
+     *
+     * <p>Constructor coded before 261001, commented in full on 261001.
      *
      * @param hint the advice line
      */
@@ -44,6 +60,10 @@ public class Hint {
     }
 
     /**
+     * Return the advice line, for the caller to feed into a {@code comment_hint} template.
+     *
+     * <p>Function getHint coded before 261001, commented in full on 261001.
+     *
      * @return this hint's text
      */
     public String getHint() {

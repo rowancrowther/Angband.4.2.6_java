@@ -47,15 +47,6 @@ By declaration kind:
 Grouped by file, sorted alphabetically. Each entry is `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/enums/TrapEnum.java`
-
-3 missing, 1 low
-
-- L25: enum `TrapEnum` - LOW - "The trap list"
-- L101: enum-const `TRF_MAX` - MISSING
-- L103: field `description` - MISSING
-- L105: constructor `TrapEnum` - MISSING
-
 ### `middle/game/Hint.java`
 
 0 missing, 1 low

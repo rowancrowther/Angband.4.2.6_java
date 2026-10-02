@@ -91,13 +91,31 @@ Stage 3: new `ItemObjectPowerCursesTest`, 58 cases. The full suite is green.
 Already stamped in C: `object_power`, `nonstandard_weight_power`, `curse_power` and `apply_curse_attributes` all carried
 `/* Ported to Java 2026-08-30 */`, so Stage 5 added nothing.
 
-## Batch 5 - object power: the property components
+## Batch 5 - object power: the property components (done 2026-10-02)
 
 Methods, each with its plain and `Curse` overload: `effectsPower`, `elementPower`, `flagsPower`, `modifierPower`,
 `jewelleryPower`, `toAcPower`, `acPower`, `toHitPower`, `rescaleBowPower`.
 
 C sources: `effects_power`, `element_power`, `flags_power`, `modifier_power`, `jewelry_power`, `to_ac_power`,
 `ac_power`, `to_hit_power`, `rescale_bow_power` (`obj-power.c`).
+
+Matches C: all nine, clause for clause. The three tables, the band thresholds, the ability-table boundaries, the two
+truncating divisions in `acPower` and the type multiplier all agree.
+
+Fixed: `rescaleBowPower` reads the live player; `effectsPower` tolerates a null activation list; two log typos.
+
+Accepted divergences: an item with no kind prices at zero in `effectsPower` where C would dereference null; unknown flag
+and modifier properties throw where C asserts; the element table's rows name their element where C relies on position.
+
+Deferred: `wieldSlot` still reads the construction-time `player`, so the bow test is only as live as that method. It
+belongs to Batch 8.
+
+Stage 2: the nine field blocks these methods read and all eighteen method blocks were rewritten, without C line numbers
+and without the unsupported claim that base armour halves acid damage.
+
+Stage 3: new `ItemObjectPropertyPowerTest`, 97 cases. The full suite is green.
+
+Already stamped in C: all nine functions carried `/* Ported to Java 2026-08-30 */`, so Stage 5 added nothing.
 
 ## Batch 6 - object power: damage
 

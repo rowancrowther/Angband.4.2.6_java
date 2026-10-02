@@ -106,10 +106,15 @@ public class ItemObject {
      * see the live player - {@link #earlierObject} and {@link #similar} - therefore refresh it from
      * {@link GameState#getPlayer()} on every call, which means they overwrite it. {@link #objectAbsorb}
      * refreshes it as well, and hands it on to {@link #objectAbsorbMerge} as a parameter. The methods
-     * that read it without refreshing (the partial absorb, slot lookups and the power calculations)
-     * still depend on the snapshot.
+     * that read it without refreshing (the partial absorb and {@link #wieldSlot}) still depend on the
+     * snapshot.
      *
-     * <p>Field player commented in full on 261002.
+     * <p>The power calculation reaches it only through {@link #wieldSlot}, by way of
+     * {@link #rescaleBowPower(int)}, which fetches the live player for the shooting slot it compares
+     * against. The bow test therefore compares a slot found on the snapshot with one found on the
+     * live player, and the two agree only while both players have the same body.
+     *
+     * <p>Field player commented in full on 261002, power note revised on 261002.
      */
     private Player player;
 
@@ -119,9 +124,11 @@ public class ItemObject {
      * <p>Two items are only candidates to stack if their kinds are equal, and awareness of the
      * item's flavour is read from the kind, not the item. The pricing code takes its figures from
      * here too: {@link #objectValueBase} returns the kind's {@code cost} for an aware object, and
-     * the fixed-price route of {@link #objectValueReal} starts from it.
+     * the fixed-price route of {@link #objectValueReal} starts from it. {@link #effectsPower(int)}
+     * falls back on the kind's power when the item carries no activation of its own, and skips the
+     * fallback for an item with no kind, which C would dereference.
      *
-     * <p>Field kind commented in full on 261002, pricing added on 261002.
+     * <p>Field kind commented in full on 261002, pricing added on 261002, effects power added on 261002.
      */
     private ObjectKind kind;
     /**
@@ -199,7 +206,13 @@ public class ItemObject {
      * pick a route in {@link #objectValue} and {@link #objectValueReal}, and switches on it in
      * {@link #objectValueBase}.
      *
-     * <p>Field tValue commented in full on 261002, pricing added on 261002.
+     * <p>The power calculation reads it three more ways: {@link #flagsPower(int)} and
+     * {@link #modifierPower(int)} pass it to the property's type multiplier, which is why the same
+     * flag can be worth more on one kind of object than another, and {@link #jewelleryPower(int)}
+     * asks whether it is a ring or an amulet.
+     *
+     * <p>Field tValue commented in full on 261002, pricing added on 261002, property pricing added
+     * on 261002.
      */
     private TValue tValue;
     /**
@@ -309,8 +322,10 @@ public class ItemObject {
      * anything unusual — body armour carries a to-hit penalty from its kind. {@link #hasStandardToH}
      * is the test that knows the difference.
      *
+     * <p>{@link #toHitPower(int)} prices it linearly, at one and a half power a point.
+     *
      * <p>Field toHit coded before 260815, retyped from {@code Random} to {@code int} on 260815.
-     * Commented in full on 260815.
+     * Commented in full on 260815, power read added on 261002.
      */
     private int toHit;
     /**
@@ -325,6 +340,9 @@ public class ItemObject {
      * <p>{@link #applyCurseAttributes} adds each active curse's figure to this, and to
      * {@link #toDam} and {@link #toHit}, with the saturating 16-bit add, on a scratch copy only.
      *
+     * <p>The power calculation reads it twice: {@link #toAcPower(int)} prices it in bands, and
+     * {@link #acPower(int)} adds it to the base armour class when scaling that by weight.
+     *
      * <p>Field toAC coded before 260815, retyped from {@code Random} to {@code int} on 260815.
      * Commented in full on 260815, power added on 261002.
      */
@@ -337,7 +355,9 @@ public class ItemObject {
      * light that is consumed as it is used. {@link #nonStandardWeightPower(int)} merges it with the
      * active curses' flags to see whether the object is throwable, and
      * {@link #applyCurseAttributes} unions the curses' flags into it through {@link #setFlags}
-     * (the live set, not the copy {@link #getFlags()} returns).
+     * (the live set, not the copy {@link #getFlags()} returns). {@link #flagsPower(int)} prices the
+     * item's own flags only, from a copy, as C's {@code object_flags} is a plain copy of
+     * {@code obj->flags}; the curses' flags are priced separately.
      *
      * <p>Field flags commented in full on 261002, pricing added on 261002, power added on 261002.
      */
@@ -356,7 +376,8 @@ public class ItemObject {
      *
      * <p>{@link #applyCurseAttributes} adds each active curse's modifiers into this map, saturating
      * at the 16-bit limits, and writes into the live map: {@link #getModifiers()} hands it back
-     * shared, but an immutable empty one if it was never created.
+     * shared, but an immutable empty one if it was never created. {@link #modifierPower(int)} reads
+     * it for every modifier there is, treating an absent entry as zero.
      *
      * <p>Comment corrected on 260816, when the field's type changed from the unparsed dice text it
      * had previously held. Field modifiers commented in full on 261002, power added on 261002.
@@ -374,6 +395,9 @@ public class ItemObject {
      * an entry for an element the item did not mention but a curse does, and temporarily holds the
      * level {@link #VULN_AND_RES} while it works. {@link #copy} deep-copies each entry, so that merge
      * never reaches the original.
+     *
+     * <p>{@link #elementPower(int)} looks each element up here and treats a missing entry as an
+     * element the item says nothing about.
      *
      * <p>Field elInfo commented in full on 261002, power added on 261002.
      */
@@ -424,7 +448,12 @@ public class ItemObject {
      * <p>{@link #copy} shares the list with the original, as C shares the pointer: the activations
      * are registry templates, not per-item state.
      *
-     * <p>Field activation commented in full on 261002.
+     * <p>Not always present: the no-argument constructor never assigns it, so an item built that way
+     * holds {@code null}, which is the port's form of C's null pointer. {@link #wipe} and the full
+     * constructor assign a list. {@link #effectsPower(int)} treats null, an empty list and an empty
+     * first entry alike, as no activation, and prices only the first entry.
+     *
+     * <p>Field activation commented in full on 261002, effects power added on 261002.
      */
     private List<Activation> activation;
     /**
@@ -4206,17 +4235,22 @@ public class ItemObject {
 
     /**
      * Adds power for what this object does when used - the port of C's {@code effects_power}
-     * ({@code obj-power.c:715}).
+     * ({@code obj-power.c}).
      *
      * <p>An object's own activation is worth its activation's power; failing that, the kind's power
-     * stands in, which is how an ordinary wand or staff is priced for what it casts.
+     * stands in, which is how an ordinary wand or staff is priced for what it casts. Only one of the
+     * two counts, never both, and a figure of zero adds nothing and logs nothing.
      *
-     * <p>The guard asks whether there is an activation <em>at all</em>. C tests a single pointer;
-     * the port holds a list, where the equivalent question is non-null and non-empty - an empty list
-     * is the shape an object with no activation has, and treating it as an activation would both
-     * throw and hide the fallback.
+     * <p>The guard asks whether there is an activation <em>at all</em>. C tests a single pointer,
+     * which a zeroed object leaves null. The port holds a list, so the equivalent question is whether
+     * the list exists, is not empty and has a first entry; a list that is null or empty is the shape
+     * an object with no activation has, and treating either as an activation would throw and hide the
+     * fallback. Only the first entry is priced, because C's pointer names one activation.
      *
-     * <p>Function effectsPower commented in full on 260827.
+     * <p>C dereferences {@code obj->kind} without a test. The port skips the fallback for an item with
+     * no kind, which therefore prices at zero here.
+     *
+     * <p>Function effectsPower coded before 260827, commented in full on 261002.
      *
      * @param power the running power total
      * @return the total with any activation power added
@@ -4224,7 +4258,7 @@ public class ItemObject {
     private int effectsPower(int power) {
         int q = 0;
 
-        if (!activation.isEmpty() && activation.getFirst() != null)
+        if (activation != null && !activation.isEmpty() && activation.getFirst() != null)
             q = activation.getFirst().getPower();
         else if (getKind() != null)
             q = getKind().getPower();
@@ -4242,10 +4276,11 @@ public class ItemObject {
      *
      * <p>C reaches {@code effects_power(curses[i].obj, p)}, whose first branch tests
      * {@code obj->activation} and whose second tests {@code obj->kind->power}
-     * ({@code obj-power.c:719-722}). A curse object has no activation, and the shared curse object
-     * kind carries no power, so both are zero and {@code p} comes back untouched.
+     * ({@code obj-power.c}). A curse object has no activation, and the shared curse object
+     * kind, {@code <curse object>} in {@code object.txt}, carries no power, so both are zero and
+     * {@code p} comes back untouched.
      *
-     * <p>Function effectsPower commented in full on 260827.
+     * <p>Function effectsPower coded before 260827, commented in full on 261002.
      *
      * @param curse the curse being priced
      * @param power the running power total
@@ -4257,7 +4292,7 @@ public class ItemObject {
 
     /**
      * Adds power for this object's elemental protections - the port of C's {@code element_power}
-     * ({@code obj-power.c:637}).
+     * ({@code obj-power.c}).
      *
      * <p>Two things at once, and the order matters. Walking the elements prices each one on its own -
      * ignoring, resisting, being immune to or being vulnerable to it - and at the same time counts
@@ -4265,16 +4300,27 @@ public class ItemObject {
      * combination bonuses added, because a count read part-way through is not the object's.
      *
      * <p>An immunity is priced as immunity plus resistance, because it subsumes the resistance it
-     * replaces.
+     * replaces. Ignoring an element and being at a resistance level are separate tests, so one
+     * element can score for both. A resistance level of 2 matches none of the three level tests and
+     * scores nothing on its own.
+     *
+     * <p>The rows are immunities, low resists and high resists. A row scores its factor times the
+     * square of its count once the count passes one, and a flat bonus when the count reaches the
+     * row's size. A level-3 element also counts in the low-resists row, because the row asks for a
+     * level of at least 1. The immunities row's bonus is the inhibit figure, so immunity to all four
+     * basic elements is refused outright.
      *
      * <p>An element the object says nothing about is skipped. That matches C, where a zero entry
      * satisfies neither the ignore test nor any of the three level tests, and cannot reach a
      * combination row either, because every row demands a level above zero.
      *
+     * <p>Each row of the element-power table names its element, where C relies on the row's position
+     * matching the element's index; the two tables list the same thirteen elements in the same order.
+     *
      * <p>The combination rows are shared mutable state, zeroed here before use; see
      * {@link ElementSet}.
      *
-     * <p>Function elementPower commented in full on 260827.
+     * <p>Function elementPower coded before 260827, commented in full on 261002.
      *
      * @param power the running power total
      * @return the total with the elemental terms added
@@ -4355,8 +4401,11 @@ public class ItemObject {
      *
      * <p>Not an identity, unlike most of the curse overloads: {@code curse.txt} does grant and
      * withhold resistances, and C prices them by running the same function over the curse object.
+     * The body is {@link #elementPower(int)}'s with the curse's element info in place of the
+     * item's, and it zeroes and fills the same shared combination rows, so the two must not run at
+     * once.
      *
-     * <p>Function elementPower commented in full on 260827.
+     * <p>Function elementPower coded before 260827, commented in full on 261002.
      *
      * @param curse the curse being priced
      * @param power the running power total
@@ -4434,21 +4483,28 @@ public class ItemObject {
 
     /**
      * Adds power for this object's flags - the port of C's {@code flags_power}
-     * ({@code obj-power.c:581}).
+     * ({@code obj-power.c}).
      *
      * <p>Each flag is looked up in the object property table and priced at its base power times the
      * multiplier for this object's type, because the same flag is worth different amounts on
-     * different things. A flag the table prices at zero is a derived one and adds nothing.
+     * different things. A type the table names no multiplier for gets 1. A flag the table prices at
+     * zero is a derived one and adds nothing to the sum, but it still counts towards its family.
      *
      * <p>As with the elements, the walk both prices individual flags and counts them into families,
-     * and the family bonuses are added only once the walk is done.
+     * and the family bonuses are added only once the walk is done. The families are sustains,
+     * protections and miscellaneous abilities; a family scores its factor times the square of its
+     * count once the count passes one, and a flat bonus when the count reaches the family's size.
+     *
+     * <p>The flags are those of the item itself, read from a copy. The flags its curses add are not
+     * folded in here, because C's {@code object_flags} is a plain copy and the curses are priced
+     * separately by {@link #cursePower(int, boolean, String)}.
      *
      * <p>A flag the property table does not know is a data error rather than a runtime condition, so
-     * this throws rather than skipping it.
+     * this throws rather than skipping it, where C asserts.
      *
      * <p>The family rows are shared mutable state, zeroed here before use; see {@link FlagSet}.
      *
-     * <p>Function flagsPower commented in full on 260827.
+     * <p>Function flagsPower coded before 260827, commented in full on 261002.
      *
      * @param power the running power total
      * @return the total with the flag terms added
@@ -4510,11 +4566,14 @@ public class ItemObject {
      * flag set.
      *
      * <p>The type multiplier is 1 rather than a lookup, and deliberately so: C prices the curse
-     * object, whose tval is never assigned and so is {@code TV_NONE}, and no property in
-     * {@code object_property.txt} names that type - so every one of them falls back on the table's
-     * default of 1.
+     * object, whose tval is never assigned and so is zero - C's {@code TV_NULL}, {@link TValue#TV_NONE}
+     * here - and no property in {@code object_property.txt} names that type, so every one of them
+     * falls back on the table's default of 1.
      *
-     * <p>Function flagsPower commented in full on 260827.
+     * <p>The flags come from {@link Curse#getObjectFlags()}. The family rows are the same shared
+     * ones {@link #flagsPower(int)} uses, so the two must not run at once.
+     *
+     * <p>Function flagsPower coded before 260827, commented in full on 261002.
      *
      * @param curse the curse being priced
      * @param power the running power total
@@ -4574,18 +4633,23 @@ public class ItemObject {
 
     /**
      * Adds power for this object's modifiers - the port of C's {@code modifier_power}
-     * ({@code obj-power.c:544}).
+     * ({@code obj-power.c}).
      *
      * <p>Each modifier is priced at its value times its base power times the multiplier for this
      * object's type. A modifier the object does not carry reads as zero, which is what C's fixed
-     * array gives and what the {@code getOrDefault} here stands in for.
+     * array gives and what the {@code getOrDefault} here stands in for. A negative modifier prices
+     * negatively. A modifier the property table does not know is a data error, so this throws where
+     * C asserts.
      *
-     * <p>Separately, the modifiers accumulate a weighted total - not all of them count equally - and
-     * a large total buys a further bonus from the ability table, or a refusal if it is large enough.
+     * <p>Separately, the modifiers accumulate a weighted total - each value times the property's own
+     * multiplier, so not all of them count equally - and a large total buys a further bonus from the
+     * ability table, or a refusal if it is large enough. A total above 249 adds the inhibit figure;
+     * otherwise a positive total is divided by ten to index the table, whose first seven entries are
+     * zero, so a total under 70 adds nothing and a zero or negative total is not looked up at all.
      * That is what stops an object with many strong modifiers being priced as merely the sum of
      * them.
      *
-     * <p>Function modifierPower commented in full on 260827.
+     * <p>Function modifierPower coded before 260827, commented in full on 261002.
      *
      * @param power the running power total
      * @return the total with the modifier terms and any ability bonus added
@@ -4622,7 +4686,7 @@ public class ItemObject {
 
         // Add extra power term if there are a lot of ability bonuses
         if (extraStatBonus > 249) {
-            logger.info("Inhibiting - Total ability bonus of {}} is too high", extraStatBonus);
+            logger.info("Inhibiting - Total ability bonus of {} is too high", extraStatBonus);
             power += ObjectRegistry.INHIBIT_POWER;
         } else if (extraStatBonus > 0) {
             q = ObjectRegistry.abilityPower[extraStatBonus / 10];
@@ -4642,9 +4706,10 @@ public class ItemObject {
      * same answer because an undeclared one contributes nothing.
      *
      * <p>No type multiplier, for the reason given on {@link #flagsPower(Curse, int)}: the curse
-     * object's type is one no property names, so the multiplier is always 1.
+     * object's type is one no property names, so the multiplier is always 1. The weighted total and
+     * the ability-table bonus are as in {@link #modifierPower(int)}, and so is the refusal above 249.
      *
-     * <p>Function modifierPower commented in full on 260827.
+     * <p>Function modifierPower coded before 260827, commented in full on 261002.
      *
      * @param curse the curse being priced
      * @param power the running power total
@@ -4665,11 +4730,7 @@ public class ItemObject {
                 throw new RuntimeException(message);
             }
 
-            int k;
-            if (curse.getModifiers() == null)
-                k = 0;
-            else
-                k = curse.getModifiers().getOrDefault(om, 0);
+            int k = curse.getModifiers().getOrDefault(om, 0);
             extraStatBonus += k * mod.getMultiplier();
 
             if (mod.getPower() != 0) {
@@ -4682,7 +4743,7 @@ public class ItemObject {
 
         // Add extra power term if there are a lot of ability bonuses
         if (extraStatBonus > 249) {
-            logger.info("Inhibiting - Total ability bonus of {}} is too high", extraStatBonus);
+            logger.info("Inhibiting - Total ability bonus of {} is too high", extraStatBonus);
             power += ObjectRegistry.INHIBIT_POWER;
         } else if (extraStatBonus > 0) {
             q = ObjectRegistry.abilityPower[extraStatBonus / 10];
@@ -4696,11 +4757,12 @@ public class ItemObject {
 
     /**
      * Adds the flat bonus every piece of jewellery carries - the port of C's {@code jewelry_power}
-     * ({@code obj-power.c:531}).
+     * ({@code obj-power.c}).
      *
-     * <p>A ring or amulet is worth something for being one, before anything it does is counted.
+     * <p>A ring or amulet is worth something for being one, before anything it does is counted. The
+     * bonus is {@code BASE_JEWELRY_POWER}, 4, and the test is {@link TValue#isJewellery()}.
      *
-     * <p>Function jewelleryPower commented in full on 260827.
+     * <p>Function jewelleryPower coded before 260827, commented in full on 261002.
      *
      * @param power the running power total
      * @return the total, with the jewellery bonus added if this object is jewellery
@@ -4718,10 +4780,10 @@ public class ItemObject {
     /**
      * Returns its input: a curse object is not jewellery.
      *
-     * <p>C's {@code jewelry_power} tests {@code tval_is_jewelry(obj)} ({@code obj-power.c:533}), and
-     * a curse object's tval is {@code TV_NONE}.
+     * <p>C's {@code jewelry_power} tests {@code tval_is_jewelry(obj)} ({@code obj-power.c}), and
+     * a curse object's tval is zero, C's {@code TV_NULL}.
      *
-     * <p>Function jewelleryPower commented in full on 260827.
+     * <p>Function jewelleryPower coded before 260827, commented in full on 261002.
      *
      * @param curse the curse being priced
      * @param power the running power total
@@ -4733,16 +4795,22 @@ public class ItemObject {
 
     /**
      * Adds power for this object's to-armour bonus - the port of C's {@code to_ac_power}
-     * ({@code obj-power.c:500}).
+     * ({@code obj-power.c}).
      *
      * <p>Priced in bands rather than linearly: every point is worth the base rate, points above the
      * high threshold are worth it again, and points above the very high threshold twice again - so
      * a large bonus is worth disproportionately more than a small one. A bonus at or above the
      * inhibit threshold is refused outright rather than priced.
      *
+     * <p>The thresholds are 26, 36 and 56. The base term is the bonus times {@code TO_AC_POWER}
+     * halved, which with the constant at 2 is the bonus itself; above 26 each point over 25 adds
+     * twice that again, above 36 each point over 35 adds four times it, and from 56 the inhibit
+     * figure is added on top. A bonus of +30 therefore prices at 40 and one of +56 at 20202. A
+     * negative bonus scores only the base term, and so prices negatively.
+     *
      * <p>A zero bonus returns early, which keeps the log clean rather than changing the answer.
      *
-     * <p>Function toAcPower commented in full on 260827.
+     * <p>Function toAcPower coded before 260827, commented in full on 261002.
      *
      * @param power the running power total
      * @return the total with the to-armour terms added
@@ -4776,9 +4844,11 @@ public class ItemObject {
      * curse's own figure.
      *
      * <p>Not an identity: {@code curse.txt} does grant and withhold armour bonuses, and C prices
-     * them by running the same function over the curse object.
+     * them by running the same function over the curse object. The figure is the third value of a
+     * curse's {@code combat:} line in {@code curse.txt}, read through {@link Curse#getCombatAC()};
+     * the bands and the inhibit threshold are those of {@link #toAcPower(int)}.
      *
-     * <p>Function toAcPower commented in full on 260827.
+     * <p>Function toAcPower coded before 260827, commented in full on 261002.
      *
      * @param curse the curse being priced
      * @param power the running power total
@@ -4810,22 +4880,27 @@ public class ItemObject {
 
     /**
      * Adds power for this object's base armour class, adjusted for weight - the port of C's
-     * {@code ac_power} ({@code obj-power.c:465}).
+     * {@code ac_power} ({@code obj-power.c}).
      *
-     * <p>An object with base armour is worth a flat bonus for being armour at all - it halves acid
-     * damage - plus a figure for the armour itself, scaled by how much armour it gives per unit of
-     * weight. Light armour is therefore worth more than heavy armour of the same class, which is the
-     * point.
+     * <p>An object with base armour is worth a flat bonus for being armour at all,
+     * {@code BASE_ARMOUR_POWER}, plus a figure for the armour itself, scaled by how much armour it
+     * gives per unit of weight. Light armour is therefore worth more than heavy armour of the same class,
+     * which is the point.
      *
-     * <p>The scaling is capped, explicitly so as not to overprice elven cloaks, which give a good
-     * deal of armour for almost no weight. A weightless object cannot be scaled at all and takes a
-     * fixed multiple instead.
+     * <p>The armour figure starts as the base class times {@code BASE_AC_POWER} halved. It is then
+     * multiplied by 750 times base class plus to-armour bonus, divided by the weight, and divided by
+     * a hundred, each division truncating. The scaling is capped at 450, explicitly so as not to
+     * overprice elven cloaks, which give a good deal of armour for almost no weight; the cap has no
+     * floor, so a large enough negative bonus scales the figure below zero. A weightless object
+     * cannot be scaled at all and takes a fixed multiple of five instead. Base class 10 at weight
+     * 100 prices at 8: the flat 1, plus 10 scaled by 75 per cent and truncated to 7.
      *
      * <p>The weight used is {@link #objectWeightOne()}, so curses that make the object heavier or lighter
      * are already reflected; that is also why {@link #nonStandardWeightPower(int)} skips objects
-     * with base armour, having been accounted for here.
+     * with base armour, having been accounted for here. The weight is read before the test for base
+     * armour, where C reads it inside, which makes no difference because reading it has no effect.
      *
-     * <p>Function acPower commented in full on 260827.
+     * <p>Function acPower coded before 260827, commented in full on 261002.
      *
      * @param power the running power total
      * @return the total with the base armour terms added
@@ -4853,7 +4928,7 @@ public class ItemObject {
                 q *= 5;
             }
             power += q;
-            logger.info("Add {} power for AX per unit weight, now {}", q, power);
+            logger.info("Add {} power for AC per unit weight, now {}", q, power);
         }
 
         return power;
@@ -4862,11 +4937,11 @@ public class ItemObject {
     /**
      * Returns its input: a curse has no base armour class.
      *
-     * <p>C's {@code ac_power} sits entirely behind {@code if (obj->ac)} ({@code obj-power.c:470}),
+     * <p>C's {@code ac_power} sits entirely behind {@code if (obj->ac)} ({@code obj-power.c}),
      * and {@code curse.txt} has no syntax for giving a curse base armour - {@code obj-curse.c} says
      * so where it merges the field.
      *
-     * <p>Function acPower commented in full on 260827.
+     * <p>Function acPower coded before 260827, commented in full on 261002.
      *
      * @param curse the curse being priced
      * @param power the running power total
@@ -4878,12 +4953,16 @@ public class ItemObject {
 
     /**
      * Adds power for this object's to-hit bonus - the port of C's {@code to_hit_power}
-     * ({@code obj-power.c:454}).
+     * ({@code obj-power.c}).
      *
      * <p>Linear, unlike the to-armour term: every point is worth the same. The rate is halved, which
-     * is why the constant is doubled and the expression divides by two.
+     * is why the constant is doubled and the expression divides by two. The division truncates
+     * towards zero, so +1 prices at 1, +2 at 3 and -1 at -1.
      *
-     * <p>Function toHitPower commented in full on 260827.
+     * <p>Unlike the to-armour term there is no early return for a zero bonus. The log line is written
+     * when the running <em>total</em> is nonzero, not when the term is, as in C.
+     *
+     * <p>Function toHitPower coded before 260827, commented in full on 261002.
      *
      * @param power the running power total
      * @return the total with the to-hit term added
@@ -4903,9 +4982,10 @@ public class ItemObject {
      * own figure.
      *
      * <p>Not an identity: curses adjust to-hit, and C prices that by running the same function over
-     * the curse object.
+     * the curse object. The figure is the first value of a curse's {@code combat:} line in
+     * {@code curse.txt}, read through {@link Curse#getCombatToHit()}.
      *
-     * <p>Function toHitPower commented in full on 260827.
+     * <p>Function toHitPower coded before 260827, commented in full on 261002.
      *
      * @param curse the curse being priced
      * @param power the running power total
@@ -4923,22 +5003,28 @@ public class ItemObject {
 
     /**
      * Divides a launcher's power down so it can be compared with a melee weapon's - the port of C's
-     * {@code rescale_bow_power} ({@code obj-power.c:442}).
+     * {@code rescale_bow_power} ({@code obj-power.c}).
      *
      * <p>The damage terms above assume a melee weapon landing {@code MAX_BLOWS} blows a turn. A
-     * launcher does not, so its total is divided by the same figure; without it every bow would
-     * outprice every sword.
+     * launcher does not, so its total is divided by the same figure, 5; without it every bow would
+     * outprice every sword. The division truncates towards zero, so a total of -7 becomes -1.
      *
      * <p>Applies to whatever is worn in the shooting slot, which is how the test is phrased rather
      * than by asking whether the object is a bow.
      *
-     * <p>Function rescaleBowPower commented in full on 260827.
+     * <p>The shooting slot is looked up on the live player from {@link GameState#getPlayer()}, as C
+     * reads its {@code player} global at the call, and the lookup is made for every object, not only
+     * bows. It therefore needs a player to exist, and throws if the player's body has no slot named
+     * {@code shooting}. The slot this object would occupy comes from {@link #wieldSlot()}, which reads
+     * the snapshot in {@link #player}; see that field for what follows from it.
+     *
+     * <p>Function rescaleBowPower coded before 260827, commented in full on 261002.
      *
      * @param power the running power total
      * @return the total, rescaled if this object is worn in the shooting slot
      */
     private int rescaleBowPower(int power) {
-        if (wieldSlot() == ObjectUtils.slotByName(player, "shooting")) {
+        if (wieldSlot() == ObjectUtils.slotByName(GameState.getPlayer(), "shooting")) {
             power /= ObjectRegistry.MAX_BLOWS;
             logger.info("Rescaling bow power, total is {}", power);
         }
@@ -4950,9 +5036,9 @@ public class ItemObject {
      * Returns its input: a curse is not worn in the shooting slot.
      *
      * <p>C's {@code rescale_bow_power} tests {@code wield_slot(obj) == slot_by_name(player,
-     * "shooting")} ({@code obj-power.c:444}); a curse object is not wielded at all.
+     * "shooting")} ({@code obj-power.c}); a curse object is not wielded at all.
      *
-     * <p>Function rescaleBowPower commented in full on 260827.
+     * <p>Function rescaleBowPower coded before 260827, commented in full on 261002.
      *
      * @param curse the curse being priced
      * @param power the running power total

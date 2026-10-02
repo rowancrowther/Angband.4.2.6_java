@@ -49,45 +49,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 the existing doc comment for context.
 
 
-### `middle/objects/enums/TValue.java`
-
-0 missing, 34 low
-
-- L70: enum-const `TV_BOW` - LOW - "A bow"
-- L256: method `isStaff` - LOW
-- L263: method `isWand` - LOW
-- L270: method `isRod` - LOW
-- L277: method `isPotion` - LOW
-- L284: method `isScroll` - LOW
-- L291: method `isFood` - LOW
-- L298: method `isMushroom` - LOW
-- L305: method `isLight` - LOW
-- L312: method `isRing` - LOW
-- L319: method `isChest` - LOW
-- L326: method `isFuel` - LOW
-- L333: method `isMoney` - LOW
-- L340: method `isDigger` - LOW
-- L347: method `canHaveNourishment` - LOW
-- L355: method `canHaveCharges` - LOW
-- L362: method `canHaveTimeout` - LOW
-- L369: method `isBodyArmour` - LOW
-- L379: method `isHeadArmour` - LOW
-- L386: method `isAmmo` - LOW
-- L396: method `isSharpMissile` - LOW
-- L406: method `isBolt` - LOW
-- L413: method `isLauncher` - LOW
-- L420: method `isUseable` - LOW
-- L430: method `canHaveFailure` - LOW
-- L461: method `isWeapon` - LOW
-- L472: method `isArmour` - LOW
-- L483: method `isMeleeWeapon` - LOW
-- L493: method `hasVariablePower` - LOW
-- L505: method `isWearable` - LOW
-- L517: method `isEdible` - LOW
-- L536: method `isBook` - LOW
-- L546: method `isZapper` - LOW
-- L696: method `isJewellery` - LOW
-
 ### `middle/objects/enums/IgnoreType.java`
 
 32 missing, 0 low

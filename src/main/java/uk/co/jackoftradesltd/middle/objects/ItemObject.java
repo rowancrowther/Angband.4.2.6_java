@@ -71,6 +71,12 @@ import static uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum.ORIGIN
  * grid, a weight, a timeout, or a {@link #known} pointer to a known version of itself. Nothing in
  * this class is shaped around that second role, so do not press it back into service for it.
  *
+ * <p>The class also holds the power calculation of {@code obj-power.c}, which prices an item's
+ * usefulness ({@code objectPower}) and feeds the gold value. Because the port's {@link Curse} is
+ * a flattened record and not an object, most of the calculation exists twice, once for an item and
+ * once for a curse; the curse pricing also builds scratch copies of the item with the curses folded
+ * in.
+ *
  * <p>Class ItemObject commented in full on 261002.
  *
  * @author Rowan Crowther
@@ -79,7 +85,11 @@ import static uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum.ORIGIN
 public class ItemObject {
     /**
      * Logger used to report the impossible states the port throws on where C asserts: a split that
-     * would take the whole stack, and an absorb run in a store.
+     * would take the whole stack, an absorb run in a store, a negative weight reaching the power
+     * calculation, and an element held at an impossible resistance level during a curse merge.
+     *
+     * <p>It also carries the power calculation's running commentary at info level, where C writes
+     * the same lines to a log file with {@code log_obj}.
      *
      * <p>Field logger commented in full on 261002.
      */
@@ -216,19 +226,20 @@ public class ItemObject {
      * <p>Field pValue commented in full on 261002, pricing added on 261002.
      */
     private int pValue;
-
     /**
-     * The weight of one of this item, in tenth-pounds, before its curses are applied. C's
-     * {@code obj->weight}, an {@code int16_t}, which {@code obj-util.c} documents as "only the base
-     * weight and does not include curses".
+     * The sentinel resistance level meaning "vulnerable and resistant at once", which the curse
+     * merge uses while combining and then flattens to plain zero before the caller sees it - the
+     * port of C's magic {@code -32768} in {@code apply_curse_attributes} ({@code obj-curse.c}).
      *
-     * <p>Not the figure to use for the burden an item puts on the player: {@link #objectWeightOne}
-     * floors it at zero and then lets each active curse adjust it, and callers multiply that by
-     * {@link #number}. {@link #copy} carries the base figure across unchanged.
+     * <p>Spelled as the minimum {@code short} because that is what the value is in C, where the
+     * field it lives in is an {@code int16_t}. It is far from the real levels (-1 vulnerable, 0 none,
+     * 1 resistant, 3 immune), and {@code applyCurseAttributes} tests for it before it tests for
+     * "less than zero", as C does, so it is not mistaken for a plain vulnerability. An instance
+     * field only by accident; every object holds the same constant.
      *
-     * <p>Field weight commented in full on 261002.
+     * <p>Field VULN_AND_RES commented in full on 261002.
      */
-    private int weight;
+    private final int VULN_AND_RES = Short.MIN_VALUE;
 
     /**
      * Number of damage dice. C's {@code obj->dd}, a {@code uint8_t}. One of the values
@@ -256,25 +267,32 @@ public class ItemObject {
      */
     private Random baseDamage;
     /**
+     * The weight of one of this item, in tenth-pounds, before its curses are applied. C's
+     * {@code obj->weight}, an {@code int16_t}, which {@code obj-util.c} documents as "only the base
+     * weight and does not include curses".
+     *
+     * <p>Not the figure to use for the burden an item puts on the player: {@link #objectWeightOne}
+     * floors it at zero and then lets each active curse adjust it, and callers multiply that by
+     * {@link #number}. {@link #copy} carries the base figure across unchanged.
+     *
+     * <p>The power calculation uses it as the <em>standard</em> weight in
+     * {@link #nonStandardWeightPower(int)}, and {@link #applyCurseAttributes} overwrites it on a
+     * scratch copy with the weight the curses give.
+     *
+     * <p>Field weight commented in full on 261002, power added on 261002.
+     */
+    private int weight;
+    /**
      * Base armour class, before any to-armour-class bonus. C's {@code obj->ac}, an
      * {@code int16_t}. {@link #similar} requires it to be identical before wearables stack.
      *
-     * <p>Field baseAC commented in full on 261002.
+     * <p>{@link #nonStandardWeightPower(int)} tests it against zero: an object with base armour has
+     * had its weight priced already by {@link #acPower}. {@link #applyCurseAttributes} does not
+     * change it, because C adds a curse's base armour and {@code curse.txt} cannot supply one.
+     *
+     * <p>Field baseAC commented in full on 261002, power added on 261002.
      */
     private int baseAC;
-    /**
-     * This item's own to-armour-class bonus — the rolled result, not the dice it came from. C's
-     * {@code obj->to_a} ({@code object.h}), an {@code int16_t}.
-     *
-     * <p>The dice live one level up, on the kind's {@code toA}, because they belong to the
-     * recipe rather than to any particular item: {@code object.txt} writes {@code armor:32:0} once
-     * and every suit rolled from it gets its own figure. By the time an item exists this is a
-     * settled number, so reading it is a plain field access and never a fresh roll.
-     *
-     * <p>Field toAC coded before 260815, retyped from {@code Random} to {@code int} on 260815.
-     * Commented in full on 260815.
-     */
-    private int toAC;
     /**
      * This item's own to-damage bonus, rolled at generation. C's {@code obj->to_d}. See
      * {@link #toAC} for why the instance holds a number and the kind holds dice.
@@ -295,15 +313,33 @@ public class ItemObject {
      * Commented in full on 260815.
      */
     private int toHit;
-
+    /**
+     * This item's own to-armour-class bonus — the rolled result, not the dice it came from. C's
+     * {@code obj->to_a} ({@code object.h}), an {@code int16_t}.
+     *
+     * <p>The dice live one level up, on the kind's {@code toA}, because they belong to the
+     * recipe rather than to any particular item: {@code object.txt} writes {@code armor:32:0} once
+     * and every suit rolled from it gets its own figure. By the time an item exists this is a
+     * settled number, so reading it is a plain field access and never a fresh roll.
+     *
+     * <p>{@link #applyCurseAttributes} adds each active curse's figure to this, and to
+     * {@link #toDam} and {@link #toHit}, with the saturating 16-bit add, on a scratch copy only.
+     *
+     * <p>Field toAC coded before 260815, retyped from {@code Random} to {@code int} on 260815.
+     * Commented in full on 260815, power added on 261002.
+     */
+    private int toAC;
     /**
      * The item's object flags. C's {@code obj->flags}, a bitflag array.
      *
      * <p>{@link #similar} requires the whole set to be equal, so two items differing in a single
      * flag never stack. {@link #objectValueReal} reads {@code OF_BURNS_OUT} from it to recognise a
-     * light that is consumed as it is used.
+     * light that is consumed as it is used. {@link #nonStandardWeightPower(int)} merges it with the
+     * active curses' flags to see whether the object is throwable, and
+     * {@link #applyCurseAttributes} unions the curses' flags into it through {@link #setFlags}
+     * (the live set, not the copy {@link #getFlags()} returns).
      *
-     * <p>Field flags commented in full on 261002, pricing added on 261002.
+     * <p>Field flags commented in full on 261002, pricing added on 261002, power added on 261002.
      */
     private Flag<ObjectFlag> flags;
     /**
@@ -318,8 +354,12 @@ public class ItemObject {
      * was never set reads zero. Code comparing two objects must therefore read an absent entry as
      * zero, as {@link #getModifierValue(ObjectModifier)} does and as {@link #similar} does.
      *
+     * <p>{@link #applyCurseAttributes} adds each active curse's modifiers into this map, saturating
+     * at the 16-bit limits, and writes into the live map: {@link #getModifiers()} hands it back
+     * shared, but an immutable empty one if it was never created.
+     *
      * <p>Comment corrected on 260816, when the field's type changed from the unparsed dice text it
-     * had previously held. Field modifiers commented in full on 261002.
+     * had previously held. Field modifiers commented in full on 261002, power added on 261002.
      */
     private Map<ObjectModifier, Integer> modifiers;
     /**
@@ -330,39 +370,32 @@ public class ItemObject {
      * {@link #checkElementStacking} compares two of these for {@link #similar}, and is stricter than
      * C when an element is recorded on one item and absent from the other.
      *
-     * <p>Field elInfo commented in full on 261002.
+     * <p>{@link #applyCurseAttributes} merges the active curses' resistance levels into it, creating
+     * an entry for an element the item did not mention but a curse does, and temporarily holds the
+     * level {@link #VULN_AND_RES} while it works. {@link #copy} deep-copies each entry, so that merge
+     * never reaches the original.
+     *
+     * <p>Field elInfo commented in full on 261002, power added on 261002.
      */
     private Map<ElementEnum, ElementInfo> elInfo;
     /**
      * Brands on the item — C's {@code obj->brands}. A set, because membership is the whole of the
      * state; C indexes an array by registry position and stores a bare boolean.
      *
-     * <p>Field brands commented in full on 260817.
+     * <p>{@link #applyCurseAttributes} does not merge brands, because curses cannot carry any.
+     * {@link #freeBrands()} replaces the set on a scratch copy with an empty one once it has been
+     * priced.
+     *
+     * <p>Field brands commented in full on 260817, power added on 261002.
      */
     private Set<Brand> brands;
     /**
-     * Slays on the item — C's {@code obj->slays}. As {@link #brands}.
+     * Slays on the item — C's {@code obj->slays}. As {@link #brands}, including the part played by
+     * {@link #applyCurseAttributes} and {@link #freeSlays()}.
      *
-     * <p>Field slays commented in full on 260817.
+     * <p>Field slays commented in full on 260817, power added on 261002.
      */
     private Set<Slay> slays;
-    /**
-     * Curses on the item, each mapped to its per-object {@link CurseData} — the power it has here
-     * and the countdown to its next effect. C's {@code obj->curses}.
-     *
-     * <p>A map holding only the curses the object actually carries, where C keeps an array with a
-     * slot for every curse in the game and reads a power of zero as "not cursed with this".
-     * Absence is the port's way of saying the same thing, but an entry at power zero can still be
-     * stored (by {@code setCursePower}, for one), so code comparing curses reads a zero-power entry
-     * and an absent one as equal, as {@link #cursesAreEqual} does.
-     *
-     * <p>Null until the first curse is added, which the accessors absorb rather than pass on —
-     * {@link #getCurses()} reports an empty map and the mutators create the map on demand.
-     *
-     * <p>Field curses retyped from {@code Map<Curse.CurseEntry, Boolean>} on 260817, commented in
-     * full on 260817, comment corrected on 261002.
-     */
-    private LinkedHashMap<Curse, CurseData> curses;
 
     /**
      * Effects this item produces when used. C's {@code obj->effect}, a linked chain.
@@ -469,14 +502,28 @@ public class ItemObject {
      */
     private int originDepth;
     /**
-     * The sentinel resistance level meaning "vulnerable and resistant at once", which the curse
-     * merge uses while combining and then flattens to plain zero before the caller sees it - the
-     * port of C's magic {@code -32768} in {@code apply_curse_attributes} ({@code obj-curse.c}).
+     * Curses on the item, each mapped to its per-object {@link CurseData} — the power it has here
+     * and the countdown to its next effect. C's {@code obj->curses}.
      *
-     * <p>Spelled as the minimum {@code short} because that is what the value is in C, where the
-     * field it lives in is an {@code int16_t}.
+     * <p>A map holding only the curses the object actually carries, where C keeps an array with a
+     * slot for every curse in the game and reads a power of zero as "not cursed with this".
+     * Absence is the port's way of saying the same thing, but an entry at power zero can still be
+     * stored (by {@code setCursePower}, for one), so code comparing curses reads a zero-power entry
+     * and an absent one as equal, as {@link #cursesAreEqual} does.
+     *
+     * <p>Null until the first curse is added, which the accessors absorb rather than pass on —
+     * {@link #getCurses()} reports an empty map and the mutators create the map on demand.
+     *
+     * <p>Insertion order is the order the curses were added, not their registry order, so code that
+     * must follow C's index order sorts first, as {@link #objectWeightOne()} and
+     * {@link #applyCurseAttributes} do. {@link #cursePower(int, boolean, String)} reads each entry's
+     * power to decide whether a curse is active and how much to discount it, and
+     * {@link #freeCurses()} replaces the map on a scratch copy once the curses have been merged in.
+     *
+     * <p>Field curses retyped from {@code Map<Curse.CurseEntry, Boolean>} on 260817, commented in
+     * full on 260817, comment corrected on 261002, power added on 261002.
      */
-    private final int VULN_AND_RES = Short.MIN_VALUE;
+    private LinkedHashMap<Curse, CurseData> curses;
 
     /**
      * The player's inscription on the item, or {@code null} if it has none. C's {@code obj->note},
@@ -3474,7 +3521,7 @@ public class ItemObject {
 
     /**
      * Prices this object's usefulness as a single number - the port of C's {@code object_power}
-     * ({@code obj-power.c:1005}).
+     * ({@code obj-power.c}).
      *
      * <p>Power is not the same as gold: it is what {@link #objectValueReal} feeds its curve, what
      * the artifact generator judges its creations by, and what the {@code INHIBIT_} thresholds
@@ -3486,16 +3533,23 @@ public class ItemObject {
      * total.
      *
      * <p>Three early returns on {@code INHIBIT_POWER} stop the calculation as soon as the object is
-     * beyond what should exist, matching C - there is no point pricing the rest of it.
+     * beyond what should exist, matching C - there is no point pricing the rest of it. They follow
+     * the blows, shots and might steps, and the value returned is the running total at that point,
+     * not a capped one.
      *
      * <p>The multiplier returned by the extra-might step is assigned and then unused, as in C, where
      * it is a by-value argument that goes no further.
      *
-     * <p>Function objectPower commented in full on 260827.
+     * <p>C's running log of each step is written through {@code log_obj} to a file chosen by the
+     * caller. The port logs the same lines at info level instead, so {@code logFileName} is only
+     * handed on to {@link #cursePower(int, boolean, String)}, which hands it on to the scratch
+     * copies it prices; nothing in the chain opens a file.
+     *
+     * <p>Function objectPower commented in full on 261002.
      *
      * @param verbose     {@code true} to log the brand and slay breakdown as well as the running
      *                    totals
-     * @param logFileName the log file to write the breakdown to, or {@code null}
+     * @param logFileName C's log file name, kept for the signature; no file is written
      * @return this object's power
      */
     private int objectPower(boolean verbose, String logFileName) {
@@ -3545,8 +3599,8 @@ public class ItemObject {
      *
      * <p><b>Why there are two of these.</b> In C a curse <em>is</em> an object - {@code curses[i].obj}
      * is a real {@code struct object} with a tval, flags, modifiers and element info - so
-     * {@code curse_power} simply runs the ordinary calculation over it ({@code obj-power.c:774}).
-     * The port's {@link Curse} is a flattened record instead, so almost every power function has a
+     * {@code curse_power} in {@code obj-power.c} simply runs {@code object_power} over it. The
+     * port's {@link Curse} is a flattened record instead, so almost every power function has a
      * second overload taking one, and this method calls them in the same order the object version
      * calls theirs.
      *
@@ -3559,11 +3613,16 @@ public class ItemObject {
      * <p>When the two paths drift, there is no single function to correct - a change on one side
      * needs the same change considered on the other.
      *
-     * <p>Function objectPower commented in full on 260827.
+     * <p>The early returns on {@code INHIBIT_POWER} and the unused multiplier are as in
+     * {@link #objectPower(boolean, String)}. The callers are the first pass of
+     * {@link #cursePower(int, boolean, String)}, which subtracts a tenth of the curse's strength
+     * from the result.
+     *
+     * <p>Function objectPower commented in full on 261002.
      *
      * @param curse       the curse to price
      * @param verbose     {@code true} to log the breakdown
-     * @param logFileName the log file to write to, or {@code null}
+     * @param logFileName C's log file name, kept for the signature; no file is written
      * @return the curse's power
      */
     private int objectPower(Curse curse, boolean verbose, String logFileName) {
@@ -3610,27 +3669,37 @@ public class ItemObject {
 
     /**
      * Adjusts power for an object that is heavier or lighter than its kind - the port of C's
-     * {@code nonstandard_weight_power} ({@code obj-power.c:930}).
+     * {@code nonstandard_weight_power} ({@code obj-power.c}).
      *
-     * <p>Only curses can produce the difference: the object's own weight is the kind's, and
-     * {@link #objectWeightOne()} is what the curses have made of it.
+     * <p>Only curses can produce the difference: the object's own {@link #weight} is the standard
+     * figure, floored at zero, and {@link #objectWeightOne()} is what the curses have made of it.
+     * Equal figures return the power untouched. A negative figure from {@code objectWeightOne} is
+     * impossible; C asserts on it and the port logs and throws a {@link RuntimeException}.
      *
      * <p>Two separate adjustments, and an object can take both. An object with no base armour class
      * is judged on carrying capacity - lighter is better, because it leaves room for something else.
-     * An object with the {@code THROWING} flag is judged the other way, because a heavier missile
-     * hits harder. Objects that do provide base armour are skipped for the first: {@link #acPower}
-     * has already accounted for their weight, and charging twice would be wrong.
+     * That adjustment is one point for each {@code WGT_POWER_DEN_NOBASEAC} (50) tenth-pounds, the
+     * difference divided with Java's truncating integer division exactly as C divides. An object
+     * with the {@code THROWING} flag is judged the other way, because a heavier missile hits harder:
+     * the two weights are each divided by {@code WGT_POWER_DEN_THROW} (12) <em>before</em> they are
+     * subtracted, so the rounding of each is separate, and the difference is multiplied by
+     * {@code WGT_POWER_NUM_THROW} (15). Both products are clamped to the {@code int} range, and the
+     * two are summed and added to the power with the saturating adds. Objects that do provide base
+     * armour are skipped for the first: {@link #acPower} has already accounted for their weight, and
+     * charging twice would be wrong.
      *
      * <p>Flags are merged from the object and its active curses first, because a curse can be what
-     * makes the object throwable in the first place.
+     * makes the object throwable in the first place. A curse recorded at power zero is not active
+     * and adds none.
      *
      * <p>C's comment lists what is deliberately not modelled: blows, heavy-wield status, criticals
      * and shield bashes all move with weight and none of them are priced here.
      *
-     * <p>Function nonStandardWeightPower commented in full on 260827.
+     * <p>Function nonStandardWeightPower commented in full on 261002.
      *
      * @param power the running power total
      * @return the total with any weight adjustment applied
+     * @throws RuntimeException if {@link #objectWeightOne()} is negative
      */
     private int nonStandardWeightPower(int power) {
         int standardWeight = Math.max(getWeight(), 0);
@@ -3722,11 +3791,13 @@ public class ItemObject {
      *
      * <p>C reaches {@code nonstandard_weight_power(curses[i].obj, p)}, which compares the curse
      * object's weight against {@code object_weight_one(curse_obj)}. A curse object has no curses of
-     * its own, so {@code object_weight_one} returns the weight unchanged ({@code obj-util.c:276}),
-     * the two figures are equal, and the function's first test returns {@code p} untouched. Always -
-     * including for a {@code MULTIPLY_WEIGHT} curse of weight 100, which means "no change".
+     * its own, so {@code object_weight_one} ({@code obj-util.c}) returns the weight, floored at
+     * zero, unchanged. The standard weight is floored the same way, so even a curse with a negative
+     * additive weight gives two equal figures, and the function's first test returns {@code p}
+     * untouched. Always - including for a {@code MULTIPLY_WEIGHT} curse of weight 100, which means
+     * "no change".
      *
-     * <p>Function nonStandardWeightPower commented in full on 260827.
+     * <p>Function nonStandardWeightPower commented in full on 261002.
      *
      * @param curse the curse being priced
      * @param power the running power total
@@ -3738,31 +3809,41 @@ public class ItemObject {
 
     /**
      * Adjusts power for the curses on this object - the port of C's {@code curse_power}
-     * ({@code obj-power.c:736}).
+     * ({@code obj-power.c}).
      *
      * <p>Two passes, because curses come in two kinds and the second kind cannot be priced
-     * individually.
+     * individually. A curse recorded at power zero is not active and is skipped by both.
      *
-     * <p>An ordinary curse is priced on its own, by running the whole power calculation over it, and
-     * then discounted by a tenth of its strength - a curse that resists removal is worth less to the
-     * carrier than one that can be shrugged off.
+     * <p>An ordinary curse - one with no weight effect, meaning an additive weight of zero or a
+     * {@code MULTIPLY_WEIGHT} factor of exactly 100 - is priced on its own, by running the whole
+     * power calculation over it. The result is then reduced by a tenth of the power the curse has on
+     * this object (integer division), and the figures are summed into one total, {@code q}.
      *
      * <p>A weight-affecting curse cannot be priced that way, because weight interacts with
-     * everything else the object does. Those are priced by difference instead: the object is copied,
-     * all its curses applied, and priced; then copied again with one curse held back, and priced
-     * again. The gap between the two is that curse's contribution. Where the gap is negative - the
-     * curse makes the object worse - it is scaled by how hard the curse is to remove, because a
-     * penalty you cannot escape counts for more.
+     * everything else the object does. Those are priced by difference instead: the object is copied
+     * with {@link #copy(boolean)}, all its curses applied with
+     * {@link #applyCurseAttributes(Curse)} and then cleared so they are not priced twice, and the
+     * copy priced; then copied again with one curse held back, and priced again. The gap between
+     * the two, found with the saturating subtract, is that curse's contribution. Where the gap is
+     * negative - the curse makes the object worse - it is multiplied by the curse's power on this
+     * object held between 20 and 100, then divided by 100. That keeps between a fifth and all of the
+     * penalty, so a curse that is hard to remove counts for more than one that is easy to shed. A
+     * gap that is not negative is used as it stands. The contributions join {@code q} with the
+     * saturating add.
      *
      * <p>Splitting them keeps the answers identical to the previous version of the algorithm for the
      * common case, which is C's stated reason for not treating all curses the way the second pass
-     * treats these.
+     * treats these. The log text from C's {@code log_obj} is written at info level.
      *
-     * <p>Function cursePower commented in full on 260827.
+     * <p>C visits the curses in registry order and the port in the order they were added to the
+     * object. That cannot change the first pass, which only sums, and could change the second only
+     * when a sum reaches the {@code int} limits.
+     *
+     * <p>Function cursePower commented in full on 261002.
      *
      * @param power       the running power total
      * @param verbose     {@code true} to log the breakdown
-     * @param logFileName the log file to write to, or {@code null}
+     * @param logFileName C's log file name, kept for the signature and handed on; no file is written
      * @return the total with the curse adjustment applied
      */
     private int cursePower(int power, boolean verbose, String logFileName) {
@@ -3889,36 +3970,46 @@ public class ItemObject {
     }
 
     /**
-     * Empties this object's slays - the port of C's {@code mem_free(obj_local.slays)}.
+     * Empties this object's slays - the port of C's {@code mem_free(obj_local.slays)} in
+     * {@code curse_power}.
      *
-     * <p>Called on the scratch copies the curse pricing builds, once they have been priced, so that
-     * the copy releases what it borrowed. Assigns a fresh empty set rather than null, which keeps
-     * the accessors' distinction between "no collection" and "an empty one" pointing the right way.
+     * <p>Called on the scratch copies the curse pricing builds, once they have been priced. In C
+     * this returns memory; Java's collector does that, so the call changes nothing the pricing can
+     * see and is kept to mirror the C. It assigns a fresh empty set rather than null, which keeps
+     * the accessors' distinction between "no collection" and "an empty one" pointing the right way,
+     * and never touches the set the copy was made from, because {@link #copy(boolean)} gave the
+     * scratch copy its own.
      *
-     * <p>Function freeSlays commented in full on 260827.
+     * <p>Function freeSlays commented in full on 261002.
      */
     private void freeSlays() {
         this.slays = new HashSet<>();
     }
 
     /**
-     * Empties this object's brands - the counterpart of {@link #freeSlays()}, and used in the same
-     * place for the same reason.
+     * Empties this object's brands - the port of C's {@code mem_free(obj_local.brands)}, the
+     * counterpart of {@link #freeSlays()}, and used in the same place for the same reason: it
+     * mirrors C's memory release and is harmless on a scratch copy.
      *
-     * <p>Function freeBrands commented in full on 260827.
+     * <p>Function freeBrands commented in full on 261002.
      */
     private void freeBrands() {
         this.brands = new HashSet<>();
     }
 
     /**
-     * Empties this object's curses - the port of C clearing {@code obj_local.curses} after
-     * {@code apply_curse_attributes} has folded them in ({@code obj-power.c:795}).
+     * Empties this object's curses - the port of C freeing and nulling {@code obj_local.curses}
+     * after {@code apply_curse_attributes} has folded them in, in {@code curse_power}
+     * ({@code obj-power.c}).
      *
      * <p>Necessary rather than tidy: the scratch copy has just had every curse's attributes merged
-     * into its own, so leaving the curses on it as well would price them twice.
+     * into its own, so leaving the curses on it as well would price them twice - the copy's own
+     * {@link #cursePower(int, boolean, String)} and {@link #nonStandardWeightPower(int)} would find
+     * them and run again. C clears the curses <em>before</em> pricing the copy and frees the brands
+     * and slays after, and the caller keeps that order. Assigns an empty map, not null; the original
+     * keeps its own, as {@link #copy(boolean)} deep-copied it.
      *
-     * <p>Function freeCurses commented in full on 260827.
+     * <p>Function freeCurses commented in full on 261002.
      */
     private void freeCurses() {
         this.curses = new LinkedHashMap<>();
@@ -3926,14 +4017,24 @@ public class ItemObject {
 
     /**
      * Folds every active curse's attributes into this object - the port of C's
-     * {@code apply_curse_attributes} ({@code obj-curse.c:450}).
+     * {@code apply_curse_attributes} ({@code obj-curse.c}).
      *
      * <p>Called on a scratch copy by the curse pricing, which then prices the merged object as a
      * whole. One curse may be held back, which is how the pricing takes the difference a single
-     * curse makes; passing {@code null} merges them all.
+     * curse makes; passing {@code null} merges them all. An object with no curses is left as it is.
      *
-     * <p>Weight, the three combat bonuses, the flags and the modifiers all combine additively, the
-     * combat bonuses through the saturating adds so that a long chain cannot wrap round.
+     * <p>The curses are applied in ascending registry index, which is C's order and matters because
+     * the weight changes do not commute. Each active curse - present, with a power other than zero -
+     * first changes the weight through {@link Curse#modifyWeightForCurse(int)}. Its to-armour,
+     * to-hit and to-damage figures are then added to the object's through the saturating 16-bit
+     * add, so a long chain cannot wrap round; its flags are unioned in; and its modifiers are added
+     * to the object's, again saturating, a modifier the object lacks being taken from the curse
+     * as it stands.
+     *
+     * <p>C also adds the curse object's base armour class. {@code curse.txt} has no way to set one,
+     * so it is always zero and the port has nothing to add; if the data file ever gains one, this
+     * method and {@link Curse} both need it. Brands, slays and the curse list are left alone: C
+     * leaves the last for the caller to clear, which is what {@link #freeCurses()} is for.
      *
      * <p><b>Resistances combine by rule, not by addition.</b> An immunity beats everything; a
      * resistance meeting a vulnerability - in either order - becomes both at once, held as
@@ -3944,11 +4045,21 @@ public class ItemObject {
      * <p>A curse that mentions an element the object does not is handled by creating the entry: C's
      * element array has a slot for every element and the port's map does not, so absence has to be
      * turned into a real entry rather than skipped. A curse silent about an element reads as
-     * resistance level zero, which is C's default and means no change.
+     * resistance level zero, which is C's default and means no change. Only the resistance level is
+     * merged; the curse's hates and ignores flags are not, as C's header says.
      *
-     * <p>Function applyCurseAttributes commented in full on 260827.
+     * <p>An element the object holds at a level the merge does not expect - 2, say, which is none
+     * of immune, resistant, both-at-once, vulnerable or none - is impossible, and the port logs and
+     * throws where C asserts.
+     *
+     * <p>The modifier and element maps are written to in place, which is safe because the pricing
+     * calls this only on a {@link #copy(boolean)}; on an object whose maps were never created the
+     * accessors answer immutable empties and the modifier write would fail.
+     *
+     * <p>Function applyCurseAttributes commented in full on 261002.
      *
      * @param curseToIgnore the one curse to leave out, or {@code null} to merge them all
+     * @throws RuntimeException if an element is held at an impossible resistance level
      */
     private void applyCurseAttributes(Curse curseToIgnore) {
         if (getCurses() == null || getCurses().isEmpty()) {
@@ -3956,95 +4067,111 @@ public class ItemObject {
             return;
         }
 
-        for (Curse curse : getCurses().keySet()) {
-            if (curse == curseToIgnore || getCurses().get(curse).getPower() == 0) continue;
+        List<Integer> curseIndices = new ArrayList<>();
+        for (Curse curse : ObjectRegistry.getCurses()) {
+            curseIndices.add(curse.getIndex());
+        }
 
-            // We have a flattened curse data - so don't look at an object, look directly at the curse
-            this.setWeight(curse.modifyWeightForCurse(this.getWeight()));
+        curseIndices.sort(Comparator.naturalOrder());
 
-            // Curses can adjust the ac, hit and dam modifiers
-            this.setToAC(Guards.addGuardI(this.getToAC(), curse.getCombatAC()));
-            this.setToHit(Guards.addGuardI(this.getToHit(), curse.getCombatToHit()));
-            this.setToDam(Guards.addGuardI(this.getToDam(), curse.getCombatDam()));
+        for (Integer index : curseIndices) {
+            for (Curse curse : ObjectRegistry.getCurses()) {
+                if (curse.getIndex() == index) {
 
-            // The curse may extend the objects flags - C's of_union(obj->flags, curse_obj->flags).
-            // setFlags is the named mutator for that, and unions into the real set. getFlags() must
-            // NOT be used here: it hands back a copy, so unioning into it would build the merged set
-            // and then throw it away, leaving this object's flags untouched and the curse silently
-            // unapplied - a mistake the compiler cannot catch, which prices the object as though the
-            // curse carried no flags at all.
-            this.setFlags(curse.getObjectFlags());
+                    if (curse == curseToIgnore) continue;
 
-            // The curses modifiers combine additively with those from this object;
-            for (ObjectModifier om : curse.getModifiers().keySet()) {
-                if (this.getModifiers().containsKey(om)) {
-                    this.getModifiers().put(om, this.getModifiers().getOrDefault(om, 0) + curse.getModifiers().getOrDefault(om, 0));
-                } else {
-                    this.getModifiers().put(om, curse.getModifiers().getOrDefault(om, 0));
-                }
-            }
-
-            // Resistances combine with standard logic for combining them.
-            for (ElementEnum elem : ElementEnum.values()) {
-                if (elem == ElementEnum.ELEM_MAX || elem == ElementEnum.ELEM_NONE) continue;
-                ElementInfo curseElInfo = curse.getElInfo().getOrDefault(elem, null);
-                int curseResLevel = curseElInfo == null ? 0 : curseElInfo.getResLevel();
-                ElementInfo elInfo = getElInfo().getOrDefault(elem, null);
-                int elInfoResLevel = elInfo == null ? 0 : elInfo.getResLevel();
-                if (elInfo != null) {
-                    if (elInfoResLevel >= 3) {
-                        // Already immune
+                    if (!getCurses().containsKey(curse) || getCurses().get(curse).getPower() == 0)
                         continue;
-                    } else if (elInfoResLevel == 1) {
-                        /*
-                         * Has resistance.  An immunity will override
-                         * that.  A resistance or no resistance on
-                         * the curse will do nothing.  A vulnerability
-                         * will convert the resistance to
-                         * vulnerability + resistance.
-                         */
-                        if (curseResLevel >= 3) {
-                            elInfo.setResLevel(3);
-                        } else if (curseResLevel < 0) {
-                            elInfo.setResLevel(VULN_AND_RES);
+
+                    // We have a flattened curse data - so don't look at an object, look directly at the curse
+                    this.setWeight(curse.modifyWeightForCurse(this.getWeight()));
+
+                    // Curses can adjust the ac, hit and dam modifiers
+                    this.setToAC(Guards.addGuardI16(this.getToAC(), curse.getCombatAC()));
+                    this.setToHit(Guards.addGuardI16(this.getToHit(), curse.getCombatToHit()));
+                    this.setToDam(Guards.addGuardI16(this.getToDam(), curse.getCombatDam()));
+
+                    // The curse may extend the objects flags - C's of_union(obj->flags, curse_obj->flags).
+                    // setFlags is the named mutator for that, and unions into the real set. getFlags() must
+                    // NOT be used here: it hands back a copy, so unioning into it would build the merged set
+                    // and then throw it away, leaving this object's flags untouched and the curse silently
+                    // unapplied - a mistake the compiler cannot catch, which prices the object as though the
+                    // curse carried no flags at all.
+                    this.setFlags(curse.getObjectFlags());
+
+                    // The curses modifiers combine additively with those from this object;
+                    for (ObjectModifier om : curse.getModifiers().keySet()) {
+                        if (this.getModifiers().containsKey(om)) {
+                            this.getModifiers().put(om, Guards.addGuardI16(this.getModifiers().getOrDefault(om, 0),
+                                    curse.getModifiers().getOrDefault(om, 0)));
+                        } else {
+                            this.getModifiers().put(om, curse.getModifiers().getOrDefault(om, 0));
                         }
-                    } else if (elInfoResLevel == VULN_AND_RES) {
-                        // Combined result so far is vulnerability and resistance.
-                        // Only change if there is an immunity
-                        if (curseResLevel >= 3) {
-                            elInfo.setResLevel(3);
-                        }
-                    } else if (elInfoResLevel < 0) {
-                        /*
-                         * Has vulnerability.  An immunity will override
-                         * that.  A vulnerability or no resistance on
-                         * the curse will do nothing.  A resistance will
-                         * convert the vulnerability to vulnerability +
-                         * resistance.
-                         */
-                        if (curseResLevel >= 3) {
-                            elInfo.setResLevel(3);
-                        } else if (curseResLevel == 1) {
-                            elInfo.setResLevel(VULN_AND_RES);
-                        }
-                    } else {
-                        /*
-                         * With no resistance in the base attributes,
-                         * the merged result will be the same as
-                         * whatever is in the curse.
-                         */
-                        if (elInfoResLevel != 0) {
-                            String message = "Invalid Resistance Level. Was " + elInfoResLevel + " expecting 0";
-                            logger.error(message);
-                            throw new RuntimeException(message);
-                        }
-                        elInfo.setResLevel(curseResLevel);
                     }
-                } else {
-                    if (curseElInfo != null) {
-                        ElementInfo newElInfo = new ElementInfo();
-                        newElInfo.setResLevel(curseResLevel);
-                        putElInfo(elem, newElInfo);
+
+                    // Resistances combine with standard logic for combining them.
+                    for (ElementEnum elem : ElementEnum.values()) {
+                        if (elem == ElementEnum.ELEM_MAX || elem == ElementEnum.ELEM_NONE) continue;
+                        ElementInfo curseElInfo = curse.getElInfo().getOrDefault(elem, null);
+                        int curseResLevel = curseElInfo == null ? 0 : curseElInfo.getResLevel();
+                        ElementInfo elInfo = getElInfo().getOrDefault(elem, null);
+                        int elInfoResLevel = elInfo == null ? 0 : elInfo.getResLevel();
+                        if (elInfo != null) {
+                            if (elInfoResLevel >= 3) {
+                                // Already immune
+                                continue;
+                            } else if (elInfoResLevel == 1) {
+                                /*
+                                 * Has resistance.  An immunity will override
+                                 * that.  A resistance or no resistance on
+                                 * the curse will do nothing.  A vulnerability
+                                 * will convert the resistance to
+                                 * vulnerability + resistance.
+                                 */
+                                if (curseResLevel >= 3) {
+                                    elInfo.setResLevel(3);
+                                } else if (curseResLevel < 0) {
+                                    elInfo.setResLevel(VULN_AND_RES);
+                                }
+                            } else if (elInfoResLevel == VULN_AND_RES) {
+                                // Combined result so far is vulnerability and resistance.
+                                // Only change if there is an immunity
+                                if (curseResLevel >= 3) {
+                                    elInfo.setResLevel(3);
+                                }
+                            } else if (elInfoResLevel < 0) {
+                                /*
+                                 * Has vulnerability.  An immunity will override
+                                 * that.  A vulnerability or no resistance on
+                                 * the curse will do nothing.  A resistance will
+                                 * convert the vulnerability to vulnerability +
+                                 * resistance.
+                                 */
+                                if (curseResLevel >= 3) {
+                                    elInfo.setResLevel(3);
+                                } else if (curseResLevel == 1) {
+                                    elInfo.setResLevel(VULN_AND_RES);
+                                }
+                            } else {
+                                /*
+                                 * With no resistance in the base attributes,
+                                 * the merged result will be the same as
+                                 * whatever is in the curse.
+                                 */
+                                if (elInfoResLevel != 0) {
+                                    String message = "Invalid Resistance Level. Was " + elInfoResLevel + " expecting 0";
+                                    logger.error(message);
+                                    throw new RuntimeException(message);
+                                }
+                                elInfo.setResLevel(curseResLevel);
+                            }
+                        } else {
+                            if (curseElInfo != null) {
+                                ElementInfo newElInfo = new ElementInfo();
+                                newElInfo.setResLevel(curseResLevel);
+                                putElInfo(elem, newElInfo);
+                            }
+                        }
                     }
                 }
             }
@@ -4055,15 +4182,17 @@ public class ItemObject {
             if (this.getElInfo().get(elem).getResLevel() == VULN_AND_RES)
                 this.getElInfo().get(elem).setResLevel(0);
         }
+
     }
 
     /**
      * Returns its input: a curse carries no curses of its own.
      *
-     * <p>C reaches {@code curse_power(curses[i].obj, ...)}, whose whole body sits behind
-     * {@code if (obj->curses)} ({@code obj-power.c:741}), and a curse object's curse list is empty.
+     * <p>C reaches {@code curse_power(curses[i].obj, ...)} through {@code object_power}, whose whole
+     * body sits behind {@code if (obj->curses)} ({@code obj-power.c}), and a curse object's curse
+     * list is empty.
      *
-     * <p>Function cursePower commented in full on 260827.
+     * <p>Function cursePower commented in full on 261002.
      *
      * @param curse       the curse being priced
      * @param power       the running power total

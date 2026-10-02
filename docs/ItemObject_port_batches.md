@@ -66,13 +66,30 @@ short path is about 20000, well short of the 46,000 where they apply.
 Already stamped in C: all three functions carried `/* Ported to Java 2026-08-30 */` before this pass, so Stage 5 added
 nothing.
 
-## Batch 4 - object power: driver and curse plumbing
+## Batch 4 - object power: driver and curse plumbing (done 2026-10-02)
 
 Methods: both `objectPower` overloads, both `nonStandardWeightPower` overloads, both `cursePower` overloads,
 `freeSlays`, `freeBrands`, `freeCurses`, `applyCurseAttributes`.
 
-C sources: `object_power`, `object_power_nonstandard_weight`, `curse_power`, `apply_curse_attributes`-style helpers in
-`obj-power.c`.
+C sources: `object_power`, `nonstandard_weight_power` and `curse_power` (`obj-power.c`), `apply_curse_attributes`
+(`obj-curse.c`). The `free` methods stand in for the `mem_free` calls inside `curse_power`.
+
+Matches C: all of them, clause for clause. The step order, the three `INHIBIT_POWER` returns, the truncating divisions,
+the 20 to 100 clamp on a curse's strength, the throwing term's divide-before-subtract and the resistance-combining table
+all agree.
+
+Accepted divergences: `logFileName` is carried but no file is written, because the trace goes to the logger;
+`applyCurseAttributes` omits C's addition of the curse object's base armour, which `curse.txt` cannot set; the
+impossible-state `assert`s become thrown `RuntimeException`s; `cursePower` visits curses in the order they were added to
+the object, where C uses registry order, which could matter only if the saturating adds reach the `int` limits.
+
+Stage 2: the C line numbers were removed, the `applyCurseAttributes` block no longer says flags add, and the class,
+`logger`, `VULN_AND_RES` and the eleven fields these methods touch were expanded.
+
+Stage 3: new `ItemObjectPowerCursesTest`, 58 cases. The full suite is green.
+
+Already stamped in C: `object_power`, `nonstandard_weight_power`, `curse_power` and `apply_curse_attributes` all carried
+`/* Ported to Java 2026-08-30 */`, so Stage 5 added nothing.
 
 ## Batch 5 - object power: the property components
 

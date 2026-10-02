@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Unit tests for {@link ItemObject#rechargeTimeout()} and its helper
  * {@link ItemObject#numberCharging()} — the ports of C's {@code recharge_timeout} and
- * {@code number_charging} ({@code obj-util.c:1018-1065}).
+ * {@code number_charging} ({@code obj-util.c}).
  *
  * <p>The pair implements Angband's pooled-timeout model for stacks of rods. A stack of rods is a
  * single object with one {@code timeout} counter shared across {@code number} rods, rather than one
@@ -327,6 +327,102 @@ class ItemObjectRechargeTest {
             assertEquals(3, reports, "one announcement per rod that came ready");
             assertEquals(18, turns, "the stack drains more slowly as fewer rods remain charging");
             assertEquals(0, item.getTimeout());
+        }
+    }
+
+    /**
+     * An interval written as dice, which is how most rods have it ({@code time:d10} and the like),
+     * evaluated at its average.
+     *
+     * <p>C's {@code randcalc(..., AVERAGE)} gives {@code base + dice * (sides + 1) / 2} at level
+     * zero, with the division truncating, so {@code 1d10} averages {@code 5} and {@code 1d2}
+     * averages {@code 1}, not {@code 1.5}.
+     */
+    @Nested
+    @DisplayName("an interval written as dice")
+    class DiceInterval {
+
+        /**
+         * A rod stack whose interval is {@code base + dice d sides}.
+         *
+         * @param base    the fixed part
+         * @param dice    the number of dice
+         * @param sides   the sides on each
+         * @param timeout the pooled timeout
+         * @param number  the stack size
+         * @return the item
+         */
+        private ItemObject diceRod(int base, int dice, int sides, int timeout, int number) {
+            ItemObject item = new ItemObject();
+            set(item, "time", new Random(base, 0, dice, sides, false));
+            set(item, "timeout", timeout);
+            set(item, "number", number);
+            return item;
+        }
+
+        /**
+         * With an average interval of five, the charging count steps up each time the timeout
+         * passes a multiple of five, and stops at the stack size.
+         *
+         * @param timeout  the pooled timeout
+         * @param expected the number of rods charging
+         */
+        @ParameterizedTest(name = "1d10, timeout {0} -> {1} charging")
+        @CsvSource({"1, 1", "5, 1", "6, 2", "10, 2", "11, 3", "15, 3", "16, 3"})
+        @DisplayName("1d10 averages five")
+        void oneDTen(int timeout, int expected) {
+            assertEquals(expected, diceRod(0, 1, 10, timeout, 3).numberCharging());
+        }
+
+        /**
+         * A fixed part is added to the dice's average: {@code 2 + 1d10} averages seven.
+         *
+         * @param timeout  the pooled timeout
+         * @param expected the number of rods charging
+         */
+        @ParameterizedTest(name = "2+1d10, timeout {0} -> {1} charging")
+        @CsvSource({"7, 1", "8, 2", "14, 2", "15, 3"})
+        @DisplayName("a base is added to the average")
+        void baseAndDice(int timeout, int expected) {
+            assertEquals(expected, diceRod(2, 1, 10, timeout, 3).numberCharging());
+        }
+
+        /**
+         * The average truncates: {@code 1d2} is {@code 3 / 2 = 1}, so a timeout of four on five
+         * rods is four rods charging, not the three that an interval of 1.5 would give.
+         */
+        @Test
+        @DisplayName("the average truncates")
+        void truncates() {
+            assertEquals(4, diceRod(0, 1, 2, 4, 5).numberCharging());
+        }
+
+        /**
+         * A stack of three on a {@code 1d10} interval, drained turn by turn: the pooled charge is
+         * spent at the number still charging, and the return value is true on the turns that
+         * reduce that number.
+         *
+         * @param timeout        the timeout before the tick
+         * @param expectedBefore the rod count the tick starts from
+         * @param expectedAfter  the timeout the tick leaves
+         * @param recharged      whether a rod came ready
+         */
+        @ParameterizedTest(name = "1d10 x3, timeout {0} -> {2}, recharged={3}")
+        @CsvSource({
+                "15, 3, 12, false",
+                "12, 3,  9, true",
+                " 9, 2,  7, false",
+                " 7, 2,  5, true",
+                " 5, 1,  4, false",
+                " 1, 1,  0, true"
+        })
+        @DisplayName("drains at the number still charging")
+        void drain(int timeout, int expectedBefore, int expectedAfter, boolean recharged) {
+            ItemObject item = diceRod(0, 1, 10, timeout, 3);
+
+            assertEquals(expectedBefore, item.numberCharging());
+            assertEquals(recharged, item.rechargeTimeout());
+            assertEquals(expectedAfter, item.getTimeout());
         }
     }
 }

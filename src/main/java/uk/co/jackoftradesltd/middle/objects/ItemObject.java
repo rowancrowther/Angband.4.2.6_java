@@ -77,7 +77,13 @@ import static uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum.ORIGIN
  * once for a curse; the curse pricing also builds scratch copies of the item with the curses folded
  * in.
  *
- * <p>Class ItemObject commented in full on 261002.
+ * <p>The knowledge, ignoring and recharge queries ({@link #isKnown}, {@link #flagsKnown},
+ * {@link #ignoreLevelOf}, {@link #numberCharging} and their neighbours) report on an item and
+ * change nothing, with one exception: {@link #rechargeTimeout} spends a turn of the item's
+ * timeout. The quality table they read for ignoring lives in {@code ObjectInfo}, and the marks
+ * a player has put on an ego live on the {@link EgoItem}, not here.
+ *
+ * <p>Class ItemObject commented in full on 261002, knowledge and recharge note added on 261002.
  *
  * @author Rowan Crowther
  * @see KnownObject
@@ -91,7 +97,11 @@ public class ItemObject {
      * <p>It also carries the power calculation's running commentary at info level, where C writes
      * the same lines to a log file with {@code log_obj}.
      *
-     * <p>Field logger commented in full on 261002.
+     * <p>{@link #flagMessage} reports its two data errors here, a flag with no entry in
+     * {@code object_property.txt} and a flag index that could never be valid, where C prints a
+     * "Bug:" line to the player.
+     *
+     * <p>Field logger commented in full on 261002, flag message note added on 261002.
      */
     private static final Logger logger = LogManager.getLogger();
 
@@ -134,8 +144,14 @@ public class ItemObject {
      * <p>{@link #ammoDamagePower(int)} reads the kind's flags to learn which ammunition a launcher
      * fires, and answers zero for an item with no kind where C would dereference it.
      *
+     * <p>The knowledge and ignore queries read it too. {@link #flavourIsAware} and {@link #easyKnow}
+     * ask it whether the player is aware of the kind, {@link #flagsKnown} adds the kind's own flags
+     * back in for an aware one, {@link #getIgnoreTypeOf} matches its name against the quality table,
+     * and {@link #isGood} compares the item's bonuses with the kind's dice. {@link #hasStandardToH}
+     * calls an item with no kind standard, which is how a curse's bare object passes.
+     *
      * <p>Field kind commented in full on 261002, pricing added on 261002, effects power added on 261002,
-     * ammunition read added on 261002.
+     * ammunition read added on 261002, knowledge reads added on 261002.
      */
     private ObjectKind kind;
     /**
@@ -148,8 +164,14 @@ public class ItemObject {
      * it has no ego. {@link #launcherAmmoDamagePower(int)} tests it too: only ego ammunition takes
      * the launcher's assumed to-damage bonus.
      *
+     * <p>{@link #isEgo} is the truth test on it. {@link #egoIsIgnored} asks the ego whether the
+     * player has marked it ignorable under a category, which reads the marks held on the shared
+     * registry entry, so they apply to every item of that ego. {@link #flagsKnown} folds an
+     * easy-known ego's flags in and its suppressed flags out, and {@link #ignoreLevelOf} grades any
+     * fully known ego item {@code IGNORE_ALL}.
+     *
      * <p>Field ego commented in full on 261002, pricing added on 261002, ammunition read added on
-     * 261002.
+     * 261002, knowledge and ignore reads added on 261002.
      */
     private EgoItem ego;
     /**
@@ -158,7 +180,10 @@ public class ItemObject {
      * <p>Any item with an artifact, on either side of the comparison, never stacks: {@link #similar}
      * rejects it before looking at anything else about its type.
      *
-     * <p>Field artifact commented in full on 261002.
+     * <p>{@link #ignoreLevelOf} grades a fully known artifact {@code IGNORE_MAX}, which no setting
+     * reaches, and refuses to promote one to {@code IGNORE_ALL} merely for having been assessed.
+     *
+     * <p>Field artifact commented in full on 261002, ignore read added on 261002.
      */
     private Artifact artifact;
 
@@ -187,7 +212,13 @@ public class ItemObject {
      * real one, so that the price never reveals a bonus the player has not learned. With no known
      * half that route is skipped.
      *
-     * <p>Field known commented in full on 261002, pricing added on 261002.
+     * <p>{@link #isKnown} reports whether it is present. {@link #flagsKnown} intersects this item's
+     * flags with its flags, and {@link #ignoreLevelOf} reads the jewellery modifiers, the combat
+     * bonuses and the notice flags from it, so that a figure the player has not learned cannot sway
+     * an ignore decision.
+     *
+     * <p>Field known commented in full on 261002, pricing added on 261002, knowledge reads added on
+     * 261002.
      */
     private ItemObject known;
 
@@ -225,8 +256,12 @@ public class ItemObject {
      * its archery row from it, and {@link #bowMulitplier()} treats only {@code TV_BOW} as a
      * launcher.
      *
+     * <p>{@link #getIgnoreTypeOf} matches it against the quality table, {@link #hasStandardToH} asks
+     * whether it is body armour, and {@link #ignoreLevelOf} asks whether it is jewellery, which is
+     * graded by a rule of its own.
+     *
      * <p>Field tValue commented in full on 261002, pricing added on 261002, property pricing added
-     * on 261002, damage pricing added on 261002.
+     * on 261002, damage pricing added on 261002, ignore reads added on 261002.
      */
     private TValue tValue;
     /**
@@ -337,8 +372,11 @@ public class ItemObject {
      * <p>{@link #toDamagePower()} prices it at half of {@code DAMAGE_POWER} a point, and again at
      * the full figure for an object that is not a weapon, missile or launcher.
      *
+     * <p>{@link #isGood} weighs it against the kind's worst roll at four times the weight of
+     * {@link #toAC}, so a weapon is judged chiefly on this bonus.
+     *
      * <p>Field toDam coded before 260815, retyped from {@code Random} to {@code int} on 260815.
-     * Commented in full on 260815, damage pricing added on 261002.
+     * Commented in full on 260815, damage pricing added on 261002, ignore read added on 261002.
      */
     private int toDam;
     /**
@@ -351,8 +389,13 @@ public class ItemObject {
      *
      * <p>{@link #toHitPower(int)} prices it linearly, at one and a half power a point.
      *
+     * <p>{@link #hasStandardToH} compares it with the kind's fixed figure for body armour and with
+     * zero for everything else. {@link #isGood} weighs it against the kind's worst roll at twice the
+     * weight of {@link #toAC}.
+     *
      * <p>Field toHit coded before 260815, retyped from {@code Random} to {@code int} on 260815.
-     * Commented in full on 260815, power read added on 261002.
+     * Commented in full on 260815, power read added on 261002, knowledge and ignore reads added on
+     * 261002.
      */
     private int toHit;
     /**
@@ -370,8 +413,11 @@ public class ItemObject {
      * <p>The power calculation reads it twice: {@link #toAcPower(int)} prices it in bands, and
      * {@link #acPower(int)} adds it to the base armour class when scaling that by weight.
      *
+     * <p>{@link #isGood} weighs it against the kind's worst roll at the lowest weight of the three
+     * bonuses, one.
+     *
      * <p>Field toAC coded before 260815, retyped from {@code Random} to {@code int} on 260815.
-     * Commented in full on 260815, power added on 261002.
+     * Commented in full on 260815, power added on 261002, ignore read added on 261002.
      */
     private int toAC;
     /**
@@ -386,7 +432,11 @@ public class ItemObject {
      * item's own flags only, from a copy, as C's {@code object_flags} is a plain copy of
      * {@code obj->flags}; the curses' flags are priced separately.
      *
-     * <p>Field flags commented in full on 261002, pricing added on 261002, power added on 261002.
+     * <p>{@link #hasFlag} tests one flag, {@link #objectFlags} fills a caller's set from it, and
+     * {@link #flagsKnown} starts from a copy and narrows it to what the player has learned.
+     *
+     * <p>Field flags commented in full on 261002, pricing added on 261002, power added on 261002,
+     * knowledge reads added on 261002.
      */
     private Flag<ObjectFlag> flags;
     /**
@@ -504,7 +554,12 @@ public class ItemObject {
      * rods and activations. {@link #distributeCharges} takes its average to cap how much of a
      * rod's timeout a moved stack can hold.
      *
-     * <p>Field time commented in full on 261002.
+     * <p>{@link #numberCharging} evaluates it at its average to find how long one item takes to
+     * recharge, and {@link #getTime} hands it out. It is {@code null} on an item with no recharge
+     * interval, which {@link #numberCharging} reads as nothing charging, as C reads its zeroed
+     * {@code random_value}.
+     *
+     * <p>Field time commented in full on 261002, recharge reads added on 261002.
      */
     private Random time;
     /**
@@ -515,7 +570,11 @@ public class ItemObject {
      * is its fuel and must match), and {@link #distributeCharges} shares a rod's remaining timeout
      * out between stacks.
      *
-     * <p>Field timeout commented in full on 261002.
+     * <p>A stack of rods pools one timeout rather than keeping one per rod. {@link #numberCharging}
+     * works out how many rods that pool still covers, and {@link #rechargeTimeout} takes that many
+     * turns off it each game turn, never past zero.
+     *
+     * <p>Field timeout commented in full on 261002, recharge reads added on 261002.
      */
     private int timeout;
 
@@ -526,7 +585,11 @@ public class ItemObject {
      * {@link #objectValueReal} divides by it as well, to share a wand's or staff's charges out per
      * item, and throws {@link ArithmeticException} on zero where C would fault.
      *
-     * <p>Field number commented in full on 261002, pricing added on 261002.
+     * <p>{@link #numberCharging} caps the count of items still charging at it, so a stack can never
+     * report more rods recharging than it holds.
+     *
+     * <p>Field number commented in full on 261002, pricing added on 261002, recharge read added on
+     * 261002.
      */
     private int number;
     /**
@@ -536,7 +599,10 @@ public class ItemObject {
      * <p>A mutable set, so {@link #copy} builds a new one rather than sharing it - noticing
      * something on the copy must not mark the original.
      *
-     * <p>Field notice commented in full on 261002.
+     * <p>{@link #ignoreLevelOf} reads {@code OBJ_NOTICE_ASSESSED} from the {@link #known} half's set
+     * to tell an item the player has examined closely from one merely sensed across a room.
+     *
+     * <p>Field notice commented in full on 261002, ignore read added on 261002.
      */
     private Flag<ObjectNotice> notice;
 
@@ -1519,9 +1585,20 @@ public class ItemObject {
     }
 
     /**
-     * @return the random interval between activations of this object's effect — the
-     * port of C's {@code obj->time}; for a curse template this is the dice re-rolled
-     * into each cursed object's timeout
+     * Returns this object's recharge interval, the port of reading C's {@code obj->time}.
+     *
+     * <p>The dice, not a rolled figure: a rod's {@code time:} line gives the interval and every
+     * recharge re-rolls from it. {@link #numberCharging} takes its average to work out how many
+     * items in a stack are still charging. For a curse's bare object it is the dice re-rolled into
+     * each cursed object's timeout.
+     *
+     * <p>{@code null} when the object has no recharge interval, where C holds a zeroed
+     * {@code random_value}; a caller must test for it, as {@link #numberCharging} does.
+     *
+     * <p>Function getTime commented in full on 261002.
+     *
+     * @return the random interval between activations of this object's effect, or {@code null} if
+     * it has none
      */
     public Random getTime() {
         return time;
@@ -1529,7 +1606,7 @@ public class ItemObject {
 
     /**
      * Advances this object's recharge by one game turn, the port of C's {@code recharge_timeout}
-     * ({@code obj-util.c:1043-1065}).
+     * ({@code obj-util.c}).
      *
      * <p>A stack of rods is a single object with one pooled {@link #timeout} rather than a counter
      * per rod, so the turn's charge is spent on every rod still charging at once: {@link #timeout}
@@ -1543,8 +1620,15 @@ public class ItemObject {
      * {@link #getTimeout()} instead.
      *
      * <p>Because the drain rate is the number still charging, a stack recharges more slowly as it
-     * goes: three rods on a ten-turn interval spend thirty turns of pooled charge over eighteen
-     * game turns, not ten, as the rate steps down from three per turn to one.
+     * goes: three rods on a ten-turn interval hold thirty turns of pooled charge, which drains over
+     * eighteen game turns as the rate steps down from three per turn to one. The first rod is
+     * ready on the fourth turn, the second on the eighth and the third on the eighteenth.
+     *
+     * <p>Nothing charging is the early return: with a zero count the timeout is left untouched and
+     * the answer is {@code false}, so a ready object costs one call to {@link #numberCharging} and
+     * no write.
+     *
+     * <p>Function rechargeTimeout coded before 261002, commented in full on 261002.
      *
      * @return {@code true} if at least one item obtained a charge this turn
      */
@@ -1568,6 +1652,14 @@ public class ItemObject {
      * <p>Derived from the remaining {@link #timeout} and the per-item recharge interval
      * ({@link #time}, evaluated at its average), clamped to the stack size {@link #number}.
      * Objects with no recharge interval or no outstanding timeout have nothing charging.
+     *
+     * <p>The division rounds up, so any timeout left at all counts one more item as charging: a
+     * timeout of 1 on a ten-turn rod is one rod charging, and 10 is still one, but 11 is two. The
+     * interval is taken at its average, which truncates for dice, so a {@code 1d10} interval is
+     * five. An interval that averages to zero or below, like a missing one, means nothing is ever
+     * charging.
+     *
+     * <p>Function numberCharging coded before 261002, commented in full on 261002.
      *
      * @return the number of items currently charging (0 if none)
      */
@@ -1692,13 +1784,20 @@ public class ItemObject {
      * Reports whether this item has a known counterpart — the object that records how much of it
      * the player can currently see. The port of C's {@code obj->known} tested for non-NULL.
      *
-     * <p>This is emphatically not "has the player identified this item". Every object in play
-     * carries a {@code known} companion from the moment it is created, so on a live item the answer
-     * is yes long before anything about it has been learned; what the player actually knows is the
-     * <em>content</em> of that companion. Reading this as identification is the mistake the name
-     * invites, and it is why C only ever uses the test the way {@code equip_learn_on_defend} does —
-     * as {@code assert(obj->known)}, a sanity check that the pairing was set up, on its own line and
-     * never folded into a condition that decides whether to learn something.
+     * <p>This is emphatically not "has the player identified this item". C makes the counterpart
+     * the first time the player senses, sees or grabs the item ({@code object_sense},
+     * {@code object_see} and {@code object_grab} in {@code obj-knowledge.c}), and it starts nearly
+     * empty, so the answer turns to yes long before anything about the item has been learned. What
+     * the player actually knows is the <em>content</em> of that companion. Reading this as
+     * identification is the mistake the name invites.
+     *
+     * <p>C uses the test two ways. The learning code asserts it, as {@code assert(obj->known)}, a
+     * sanity check that the pairing was set up, on its own line and never folded into a condition
+     * that decides whether to learn something. {@code ignore_level_of} instead branches on it: an
+     * item the player has never met is graded {@code IGNORE_MAX}, so it is never ignored on
+     * quality. {@link #ignoreLevelOf} is that caller here.
+     *
+     * <p>Function isKnown coded before 261002, commented in full on 261002.
      *
      * @return whether a known counterpart has been attached to this item
      */
@@ -1709,12 +1808,12 @@ public class ItemObject {
     /**
      * Reports whether this item's to-hit bonus is the one it ought to have — that is, whether it
      * is carrying nothing worth learning from. The port of C's {@code object_has_standard_to_h}
-     * ({@code obj-knowledge.c:580}).
+     * ({@code obj-knowledge.c}).
      *
      * <p>The question exists because to-hit is the one combat figure an ordinary item can have
      * without being remarkable. Body armour is heavy and gets in the way, so its kind declares a
      * penalty as a matter of course — Chain Mail is {@code attack:1d4:-2:0} in {@code object.txt},
-     * and every hauberk ever rolled has {@code toHit == -2}. A plain {@code getToHit() != 0} would
+     * and every Chain Mail rolled has {@code toHit == -2}. A plain {@code getToHit() != 0} would
      * read that as evidence of enchantment and teach the to-hit rune to anyone who put one on, which
      * is why {@link PlayerKnowledge#equipLearnOnMeleeAttack} asks this
      * instead. To-damage and to-AC need no such test: nothing has those as standard equipment, so
@@ -1740,7 +1839,11 @@ public class ItemObject {
      * learned, and says nothing about whether the player has learned it. That second question is
      * {@link KnownObject#toHIsKnown}.
      *
-     * <p>Function hasStandardToH coded on 260815, commented in full on 260815.
+     * <p>Body armour here means soft, hard and dragon armour, as C's {@code tval_is_body_armor}
+     * does. Worked through: a Chain Mail at {@code -2} is standard and one at {@code 0} or
+     * {@code +3} is not; a Dagger at {@code 0} is standard and at {@code -1} is not.
+     *
+     * <p>Function hasStandardToH coded on 260815, commented in full on 261002.
      *
      * @return whether this item's to-hit bonus is the unremarkable one for its kind
      */
@@ -1781,7 +1884,8 @@ public class ItemObject {
      *
      * <p>Function hasFlag coded on 260815, commented in full on 260815. Corrected on 260816: the
      * previous version placed an item's readable flags on {@link KnownObject}, which is a different
-     * store, and routed them through {@code getKnownFlags}, since withdrawn.
+     * store, and routed them through {@code getKnownFlags}, since withdrawn. Checked against C
+     * again on 261002.
      *
      * @param flag the flag to test for
      * @return whether this item carries it
@@ -1817,7 +1921,7 @@ public class ItemObject {
 
     /**
      * Announces that a flag has shown itself on a named item — the port of C's
-     * {@code flag_message} ({@code obj-properties.c:86}). Called at the moment of noticing, so the
+     * {@code flag_message} ({@code obj-properties.c}). Called at the moment of noticing, so the
      * message describes an event rather than a fact: the player did not read the property off the
      * item, the property did something and gave itself away.
      *
@@ -1832,9 +1936,22 @@ public class ItemObject {
      * distinction preserved between a flag index that could never be valid ({@link ObjectFlag#OF_NONE},
      * {@link ObjectFlag#OF_MAX}) and a real flag that simply has no entry. A property that exists
      * but declares no {@code msg:} is not an error at all — most flags are learned silently — and
-     * returns without a word.
+     * returns without a word. The two errors are logged here, where C prints a "Bug:" line to the
+     * player. C numbers its {@code OF_NONE} as zero, which is a valid index, so it would report
+     * that one as a missing entry; here it is reported as an invalid index.
      *
-     * <p>Function flagMessage coded on 260815, commented in full on 260815.
+     * <p><b>Where the substitution differs from C.</b> C walks the message and, for any
+     * {@code {tag}} of letters whose spelling starts {@code name}, inserts the item's name; it drops
+     * every other tag, and it truncates the result at 1,024 characters. The plain replace here
+     * handles only the exact {@code {name}}, leaves other tags in place and does not truncate.
+     * None of that is reachable with the shipped data, where every {@code msg:} line that carries a
+     * tag uses {@code {name}} and nothing else, but a new tag in the data file would need this
+     * method teaching.
+     *
+     * <p>The finished text goes to {@link Message#message} as a {@code "%s"} argument, never as the
+     * pattern, so a percent sign in an item's name cannot be read as a format directive.
+     *
+     * <p>Function flagMessage coded on 260815, commented in full on 261002.
      *
      * @param flag the flag that has just shown itself
      * @param name the item's description, as {@link #description} builds it
@@ -1901,7 +2018,7 @@ public class ItemObject {
      * instance method has no such case to answer — a caller with no item cannot reach this at all —
      * so a Java caller that could be holding nothing wipes its own set on that path.
      *
-     * <p>Function objectFlags coded on 260829 / commented in full on 260829.
+     * <p>Function objectFlags coded on 260829 / commented in full on 261002.
      *
      * @param flag the set to fill; wiped first, then written with this item's flags
      */
@@ -2463,7 +2580,7 @@ public class ItemObject {
 
     /**
      * Whether the player has learned what this object's flavour is — the port of C's
-     * {@code object_flavor_is_aware} ({@code obj-knowledge.c:2239-2243}).
+     * {@code object_flavor_is_aware} ({@code obj-knowledge.c}).
      *
      * <p>Awareness belongs to the <em>kind</em>, not to the object: drinking one unlabelled potion
      * teaches the player what every potion of that kind is, so the answer is the same for every
@@ -2471,9 +2588,11 @@ public class ItemObject {
      *
      * <p>C asserts that the kind exists; the port answers {@code false} for a kindless object
      * instead, which is the safe reading — nothing is known about an object with no kind to know
-     * about.
+     * about. {@link #objectFlavourIsAware()} is a second port of the same C function that throws
+     * for that state instead. This one is the lenient form, for the knowledge code, where a curse's
+     * bare object can reach it.
      *
-     * <p>Function flavourIsAware commented in full on 260820.
+     * <p>Function flavourIsAware commented in full on 261002.
      *
      * @return {@code true} if the player knows what objects of this kind are
      */
@@ -2484,7 +2603,7 @@ public class ItemObject {
 
     /**
      * Whether this object is of a kind that gives up everything at a glance — the port of C's
-     * {@code easy_know} ({@code obj-knowledge.c:2225-2232}).
+     * {@code easy_know} ({@code obj-knowledge.c}).
      *
      * <p>Both halves are required: the kind must be one the player is aware of, and it must carry
      * {@code KF_EASY_KNOW}. The flag marks kinds with nothing hidden to discover — a scroll's
@@ -2492,7 +2611,12 @@ public class ItemObject {
      * kind there is no further identification to do. {@code flagsKnown} uses it to decide whether an
      * ego's flags may be folded in without the player having learned the individual runes.
      *
-     * <p>Function easyKnow commented in full on 260820.
+     * <p>Neither half is enough alone: an easy-know kind the player has not yet met is not known,
+     * and an aware kind without the flag still has runes to find.
+     *
+     * <p>C asserts that the kind exists; the port answers {@code false} for a kindless object.
+     *
+     * <p>Function easyKnow commented in full on 261002.
      *
      * @return {@code true} if recognising this object's kind reveals all of its properties
      */
@@ -2503,7 +2627,7 @@ public class ItemObject {
 
     /**
      * This object's flags reduced to what the player has actually learned — the port of C's
-     * {@code object_flags_known} ({@code obj-util.c:362-379}).
+     * {@code object_flags_known} ({@code obj-util.c}).
      *
      * <p>Built in three movements, and the order matters. The object's real flags are copied, then
      * <em>intersected</em> with the known counterpart's, which is the whole of the restriction: a
@@ -2516,7 +2640,10 @@ public class ItemObject {
      * returns an empty one rather than its real flags — nothing is known. C has neither case: it
      * wipes the caller's buffer first and dereferences {@code obj->known} unguarded.
      *
-     * <p>Function flagsKnown commented in full on 260820.
+     * <p>An object with no kind returns after the intersection, so only the known flags it really
+     * has survive, with nothing added back.
+     *
+     * <p>Function flagsKnown commented in full on 261002.
      *
      * @return a new flag set holding only the flags the player knows this object to have
      */
@@ -2718,13 +2845,21 @@ public class ItemObject {
 
     /**
      * Reports which ignore category this object falls into - the port of C's
-     * {@code ignore_type_of} ({@code obj-ignore.c:382}).
+     * {@code ignore_type_of} ({@code obj-ignore.c}).
      *
      * <p>The quality mapping table is searched for the first entry matching this object's tval. An
      * entry may narrow that further with an identifier, which has to match the kind's name - that
      * is how, say, diggers are split out from the other tools sharing their tval.
      *
-     * <p>Function getIgnoreTypeOf coded on 260822, commented in full on 260824.
+     * <p>The first match wins, so the order of the table matters: a Sword named for Chaos is a
+     * {@code ITYPE_GREAT} because that row comes before the plain sword row, while any other sword
+     * is {@code ITYPE_SHARP}. The identifier is a substring test on the kind's name, not an
+     * equality, as C's {@code strstr}. The table is in {@code ObjectInfo} and keeps C's order.
+     *
+     * <p>Reads the kind's name only for a row that has an identifier, so an object with no kind
+     * throws there, where C would dereference null.
+     *
+     * <p>Function getIgnoreTypeOf coded on 260822, commented in full on 261002.
      *
      * @return the matching {@link IgnoreType}, or {@link IgnoreType#ITYPE_MAX} if the object is not
      * subject to quality ignoring at all
@@ -2746,8 +2881,16 @@ public class ItemObject {
     }
 
     /**
-     * @return {@code true} if this item is an ego item - the port of C's truth test on
-     * {@code obj->ego}
+     * Reports whether this item is an ego item - the port of C's truth test on {@code obj->ego}.
+     *
+     * <p>Asks about the item's <em>real</em> ego, not whether the player has learned it. An
+     * artifact is not an ego item, because an item holds one or the other.
+     *
+     * <p>{@link #ignoreLevelOf} reads it to grade a fully known ego item {@code IGNORE_ALL}.
+     *
+     * <p>Function isEgo coded before 261002, commented in full on 261002.
+     *
+     * @return {@code true} if this item is an ego item
      */
     public boolean isEgo() {
         return ego != null;
@@ -2755,13 +2898,19 @@ public class ItemObject {
 
     /**
      * Answers whether this item's ego is marked ignorable under one category - the port of C's
-     * {@code ego_is_ignored(obj->ego->eidx, type)} ({@code obj-ignore.c:606}).
+     * {@code ego_is_ignored(obj->ego->eidx, type)} ({@code obj-ignore.c}).
      *
      * <p>Reads the item's <em>real</em> ego, while its one caller gates the question on the
      * <em>known</em> one. That split is C's and is deliberate: an ego the player has not yet learned
      * must not make the item disappear.
      *
-     * <p>Function egoIsIgnored commented in full on 260827.
+     * <p>C keeps the marks in a table indexed by ego and category; here each {@link EgoItem} holds
+     * its own, so the answer is the same for every item sharing that ego. An item with no ego is
+     * never ignored this way: C has no such case to answer, because its caller has already tested
+     * {@code obj->known->ego}, so the {@code null} test is a guard the port adds. The caller here
+     * is {@code ObjectIgnore}, which makes the same known-ego test first.
+     *
+     * <p>Function egoIsIgnored commented in full on 261002.
      *
      * @param type the ignore category to test
      * @return {@code true} if this item has an ego and that ego is marked under the category
@@ -2773,7 +2922,7 @@ public class ItemObject {
 
     /**
      * Reports the quality band this object would be ignored at - the port of C's
-     * {@code ignore_level_of} ({@code obj-ignore.c:464}). The caller compares the answer against
+     * {@code ignore_level_of} ({@code obj-ignore.c}). The caller compares the answer against
      * the player's setting for the object's {@link IgnoreType}.
      *
      * <p>An object the player does not know returns {@link QualityValueEnum#IGNORE_MAX}, which no
@@ -2786,10 +2935,18 @@ public class ItemObject {
      *
      * <p>Everything else is graded against its kind's expected bonuses by {@code isGood}, then
      * overridden - an ego is {@link QualityValueEnum#IGNORE_ALL}, an artifact
-     * {@link QualityValueEnum#IGNORE_MAX}. An object known well enough to have been assessed but
-     * not fully known is treated as {@code IGNORE_ALL} unless it is an artifact.
+     * {@link QualityValueEnum#IGNORE_MAX}. That override applies only to an object the player knows
+     * in full. An object not yet fully known is {@code IGNORE_ALL} if it has been assessed, unless it
+     * is an artifact, and {@code IGNORE_MAX} otherwise, so that an unfinished identification can
+     * never lose the player something good.
      *
-     * <p>Function ignoreLevelOf coded on 260822, commented in full on 260824.
+     * <p>Worked through: a ring with a known {@code +2} to-hit is average, one with a known
+     * {@code -1} to-AC and nothing positive is bad, and one with every known figure at zero is
+     * average. A fully known Dagger, whose kind rolls no bonuses, is average at {@code +0,+0}, good
+     * at {@code +0,+1} and bad at {@code -1,+0} (to-hit, to-damage); an ego one is {@code IGNORE_ALL} whatever its
+     * bonuses.
+     *
+     * <p>Function ignoreLevelOf coded on 260822, commented in full on 261002.
      *
      * @return the {@link QualityValueEnum} band this object sits in
      */
@@ -2841,14 +2998,22 @@ public class ItemObject {
 
     /**
      * Scores how far this item's combat bonuses exceed what its kind rolls at worst - the port of
-     * C's {@code is_object_good} ({@code obj-ignore.c:448}).
+     * C's {@code is_object_good} ({@code obj-ignore.c}).
      *
      * <p>Weighted rather than counted: to-damage is worth four, to-hit two and to-armour one, so a
      * weapon is judged mostly on the bonus that matters for a weapon. A positive answer means good,
      * negative means bad, zero means average, and {@link #ignoreLevelOf()} turns that into a quality
      * band.
      *
-     * <p>Function isGood commented in full on 260827.
+     * <p>Reads this item's own bonuses and its kind's dice, never the known half's, because
+     * {@link #ignoreLevelOf()} has already insisted the item is fully known before it asks. Each
+     * figure contributes only its sign, so a to-damage of {@code +9} counts four and a to-AC of
+     * {@code +1} counts one. With every floor at zero, a {@code +1} to-damage with a to-hit of
+     * {@code -1} nets four minus two, which is good.
+     *
+     * <p>Throws for an item with no kind, where C would dereference null.
+     *
+     * <p>Function isGood commented in full on 261002.
      *
      * @return a positive, zero or negative score
      */
@@ -2863,12 +3028,17 @@ public class ItemObject {
 
     /**
      * Compares one combat bonus against the worst its kind could roll - the port of C's
-     * {@code cmp_object_trait} ({@code obj-ignore.c:434}).
+     * {@code cmp_object_trait} ({@code obj-ignore.c}).
      *
      * <p>The kind's minimum is clamped to zero first, so an item is never judged good merely for
      * failing to be as negative as it might have been.
      *
-     * <p>Function compareObjectTrait commented in full on 260827.
+     * <p>The floor is the kind's dice at their minimum, evaluated at level zero, so a kind that
+     * rolls {@code -2} at worst puts the floor at {@code -2} and a kind that rolls {@code +3} at
+     * worst puts it at zero. A bonus of {@code -2} on the first is average and on the second is bad;
+     * {@code 0} is good on the first and average on the second.
+     *
+     * <p>Function compareObjectTrait commented in full on 261002.
      *
      * @param bonus this item's bonus
      * @param base  the kind's dice for that bonus
@@ -5775,16 +5945,18 @@ public class ItemObject {
 
     /**
      * Answers whether the player has learned what this object's flavour means - the port of C's
-     * {@code object_flavor_is_aware} ({@code obj-desc.c}).
+     * {@code object_flavor_is_aware} ({@code obj-knowledge.c}).
      *
      * <p>Awareness lives on the kind, not the object: learning that one blue potion is cure light
      * wounds teaches the player about every blue potion.
      *
      * <p>Throws for an object with no kind, where {@link #flavourIsAware()} answers {@code false}
      * for the same state. The two differ because this one is called where a kind must exist and a
-     * missing one is a defect rather than a case.
+     * missing one is a defect rather than a case. Both ports are of the one C function, which
+     * asserts a kind; this is the strict reading of that assertion.
      *
-     * <p>Function objectFlavourIsAware commented in full on 260827.
+     * <p>Function objectFlavourIsAware commented in full on 261002. The previous comment named
+     * {@code obj-desc.c} as the C file; the function is in {@code obj-knowledge.c}.
      *
      * @return {@code true} if the player is aware of this object's flavour
      */

@@ -149,13 +149,37 @@ Stage 3: new `ItemObjectDamagePowerTest`, 152 cases. The full suite is green.
 
 Already stamped in C: all nine functions carried `/* Ported to Java 2026-08-30 */`, so Stage 5 added nothing.
 
-## Batch 7 - knowledge, ignoring and flags
+## Batch 7 - knowledge, ignoring and flags (done 2026-10-02)
 
 Methods: `isKnown`, `hasStandardToH`, `hasFlag`, `flagMessage`, `objectFlags`, `flagsKnown`, `easyKnow`,
 `flavourIsAware`, `objectFlavourIsAware`, `getIgnoreTypeOf`, `isEgo`, `egoIsIgnored`, `ignoreLevelOf`, `isGood`,
 `compareObjectTrait`, `rechargeTimeout`, `numberCharging`, `getTime`.
 
-C sources: `obj-knowledge.c`, `obj-ignore.c`, `obj-util.c` (`number_charging`, `recharge_timeout`).
+C sources: `object_has_standard_to_h`, `easy_know` and `object_flavor_is_aware` (`obj-knowledge.c`), `flag_message`
+(`obj-properties.c`), `object_flags` and `object_flags_known` (`obj-util.c`), `ignore_type_of`, `ego_is_ignored`,
+`ignore_level_of`, `is_object_good` and `cmp_object_trait` (`obj-ignore.c`), `number_charging` and `recharge_timeout`
+(`obj-util.c`). `isKnown`, `hasFlag`, `isEgo` and `getTime` read a struct field in C and have no function to compare.
+
+Matches C: all of them, clause for clause. The quality table agrees with C row for row and in order, the weights are
+four, two and one, the kind's minimum roll is clamped to at most zero, `flagsKnown` intersects, then adds the kind's
+flags, then adds and removes the ego's, and the charging count rounds up and caps at the stack size.
+
+Accepted divergences: `flagsKnown` answers an empty set for an item with no known half where C dereferences null;
+`easyKnow` and `flavourIsAware` answer false for a kindless item where C asserts; `objectFlavourIsAware` is a second,
+strict port of the same C function that throws instead; `egoIsIgnored` guards a null ego where C's caller has already
+tested the known one; `flagMessage` substitutes only the exact `{name}` tag, where C drops other tags, accepts any tag
+starting `name` and truncates at 1,024 characters, and it logs its two data errors where C prints a "Bug:" line. None of
+those is reachable with the shipped data.
+
+Stage 2: the C line numbers were removed from eleven blocks, the `isKnown` block no longer says every object carries a
+known counterpart from creation (C makes one when the item is first sensed, seen or grabbed) or that C only asserts the
+test (`ignore_level_of` branches on it), the `objectFlavourIsAware` block names the right C file, and the class,
+`logger` and thirteen field blocks these methods read were extended.
+
+Stage 3: new `ItemObjectKnowledgeIgnoreTest`, 88 cases, and a dice-interval class in `ItemObjectRechargeTest`, 18 cases.
+The full suite is green.
+
+Already stamped in C: all thirteen functions carried `/* Ported to Java 2026-08-30 */`, so Stage 5 added nothing.
 
 ## Batch 8 - description, messages, slots and glyphs
 

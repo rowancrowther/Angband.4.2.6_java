@@ -220,8 +220,34 @@ Stage 3: new `ItemObjectWieldSlotTest`, 8 cases; four new cases in `ItemObjectWi
 Stage 5: `object_wipe` was stamped 2026-10-02. The other eight functions already carried a stamp. `obj_kind_can_browse`
 in `obj-util.c` has none, though `ObjectKind.canBrowse` is its port; that file is outside this batch.
 
-## Batch 9 - fields, accessors and mutators (Javadoc coverage)
+## Batch 9 - fields, accessors and mutators (done 2026-10-02)
 
 Methods: the constructors, every plain getter and setter, the curse, brand and slay editing methods, and the
-`PowerAndMult` record. These have no C counterpart beyond the struct field, so Stage 1 is mostly a field-by-field check
-against `struct object` in `object.h`, and the weight falls on Stage 2: class, field and method Javadoc.
+`PowerAndMult` record. These have no C counterpart beyond the struct field, so Stage 1 was a field-by-field check
+against `struct object` in `object.h`, and the weight fell on Stage 2: class, field and method Javadoc.
+
+C sources: `struct object` (`object.h`), `object_new` (`obj-pile.c`) and `copy_curses` (`obj-curse.c`).
+
+Matches C: every getter and setter that exists agrees with the `struct object` field it stands for, including
+`setTime`'s copy (C's struct assign), `getFlags` and `getNotice` handing back copies, and the add, remove and clear trio
+for brands, slays and curses. The full constructor stores its arguments by reference, as the `ItemObject` fields do.
+
+Fixed: the map setters no longer clear before assigning; `setCurses` and `clearAndPutCurses` copy the incoming map
+before assigning, so the same power with a new timeout is kept, as `copy_curses` rewrites it; `ItemObject()` sets
+`tValue` to `TV_NONE`; `getModifierValue(ObjectModifier)` reads through the null-safe getter.
+
+Accepted divergences: the `int` fields do not narrow to C's `uint8_t` and `int16_t`; `PowerAndMult` hands back a
+multiplier that `objectPower` assigns and never reads, which C does not need.
+
+Not ported: `ItemObject` has no getters for the artifact, effect message, activation, origin depth, origin race or
+holding monster, and no `setBrands`; nothing calls them yet.
+
+Stage 2: the class, the `tValue`, `activation` and `curses` fields, both constructors and every accessor and editor were
+given blocks with the provenance line. The full-constructor block no longer says it copies the curse map, the
+`removeCurse` block no longer says nothing is stored at power zero, the `getModifierValue(Stats)` block no longer says
+the sentinels throw, and the C line numbers were removed from the blocks rewritten.
+
+Stage 3: new `ItemObjectFieldSurfaceTest`, 35 cases. The full suite is green (0 failures, 18 skipped).
+
+Stage 5: `object_new` was stamped 2026-10-02. `copy_curses` is not stamped; `ObjectUtils.copyCurses` is its port and is
+outside this batch.

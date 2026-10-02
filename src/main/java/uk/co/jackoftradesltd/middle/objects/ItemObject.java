@@ -90,8 +90,18 @@ import static uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum.ORIGIN
  * whether the player's class can read it, and {@link #getItemObjectADC} how it is drawn.
  * {@link #wipe} blanks every field, and {@link #initCurses} gives the item a fresh curse map.
  *
+ * <p>The rest is the field-by-field surface of {@code struct object}. Two constructors build an
+ * item, one blank and one from every parsed field, and each field then has a getter, a setter or
+ * both. C reads and assigns these struct members inline wherever it likes, so the port gathers
+ * each access into one named method. {@link #getFlags()} and {@link #getNotice()} hand out copies
+ * and take changes through named mutators ({@link #getObjectFlags()} is the live exception). The modifier, element, brand, slay and curse collections are edited
+ * through add, put, remove and clear methods, because their getters answer an immutable empty
+ * collection for a field that was never built. A setter that takes a whole collection stores it
+ * as given, except {@link #setCurses} and {@link #clearAndPutCurses}, which copy the map they are
+ * handed.
+ *
  * <p>Class ItemObject commented in full on 261002, knowledge and recharge note added on 261002,
- * text and placement note added on 261002.
+ * text and placement note added on 261002, constructor and accessor note added on 261002.
  *
  * @author Rowan Crowther
  * @see KnownObject
@@ -287,11 +297,13 @@ public class ItemObject {
      *
      * <p>{@link #wieldSlot} switches on it to pick the slot type, falling back on the {@link TValue}
      * predicates for weapons, rings, lights and armour, and answers {@code -1} for a type that is
-     * never worn. {@link #wipe} sets it to {@link TValue#TV_NONE}, C's tval 0.
+     * never worn. {@link #wipe} and the no-argument constructor set it to {@link TValue#TV_NONE},
+     * C's tval 0, which is what C's zero-filled {@code object_new} holds. {@link #gettValue()} and
+     * {@link #settValue} are its accessors.
      *
      * <p>Field tValue commented in full on 261002, pricing added on 261002, property pricing added
      * on 261002, damage pricing added on 261002, ignore reads added on 261002, slot read and wipe
-     * reset added on 261002.
+     * reset added on 261002, constructor default added on 261002.
      */
     private TValue tValue;
     /**
@@ -606,11 +618,14 @@ public class ItemObject {
      * are registry templates, not per-item state.
      *
      * <p>Not always present: the no-argument constructor never assigns it, so an item built that way
-     * holds {@code null}, which is the port's form of C's null pointer. {@link #wipe} and the full
-     * constructor assign a list. {@link #effectsPower(int)} treats null, an empty list and an empty
-     * first entry alike, as no activation, and prices only the first entry.
+     * holds {@code null}, which is the port's form of C's null pointer. {@link #wipe} assigns a
+     * fresh empty list. The full constructor stores whatever it is given, so a {@code null} passed
+     * there stays {@code null} and a list passed there is shared with the caller.
+     * {@link #effectsPower(int)} treats null, an empty list and an empty first entry alike, as no
+     * activation, and prices only the first entry.
      *
-     * <p>Field activation commented in full on 261002, effects power added on 261002.
+     * <p>Field activation commented in full on 261002, effects power added on 261002, constructor
+     * note corrected on 261002.
      */
     private List<Activation> activation;
     /**
@@ -736,8 +751,11 @@ public class ItemObject {
      * stored (by {@code setCursePower}, for one), so code comparing curses reads a zero-power entry
      * and an absent one as equal, as {@link #cursesAreEqual} does.
      *
-     * <p>Null until the first curse is added, which the accessors absorb rather than pass on —
-     * {@link #getCurses()} reports an empty map and the mutators create the map on demand.
+     * <p>The no-argument constructor and {@link #wipe} build an empty map. A {@code null} can only
+     * arrive through the full constructor, which stores the map it is given, and the accessors
+     * absorb it rather than pass it on — {@link #getCurses()} reports an empty map and the editing
+     * mutators create the map on demand. {@link #setCurses} and {@link #clearAndPutCurses} replace
+     * the field with a copy of the map they are handed.
      *
      * <p>Insertion order is the order the curses were added, not their registry order, so code that
      * must follow C's index order sorts first, as {@link #objectWeightOne()} and
@@ -746,7 +764,8 @@ public class ItemObject {
      * {@link #freeCurses()} replaces the map on a scratch copy once the curses have been merged in.
      *
      * <p>Field curses retyped from {@code Map<Curse.CurseEntry, Boolean>} on 260817, commented in
-     * full on 260817, comment corrected on 261002, power added on 261002.
+     * full on 260817, comment corrected on 261002, power added on 261002, constructor and setter
+     * note added on 261002.
      *
      * <p>{@link #wipe} and {@link #initCurses} each replace the map with a fresh empty
      * {@link LinkedHashMap}, discarding every curse the item carried. Wipe reset and initialiser
@@ -801,7 +820,30 @@ public class ItemObject {
     private Pile owningPile;
 
     /**
-     * Build an empty item (used as a blank slot/placeholder).
+     * Builds a blank item, the port of C's {@code object_new}, which is {@code mem_zalloc} of one
+     * {@code struct object} and so leaves every member at zero.
+     *
+     * <p>Where C's zero is a value, the port lands on it: {@link #origin} is {@code ORIGIN_NONE},
+     * {@link #tValue} is {@link TValue#TV_NONE} (C's tval 0), and the numeric fields are zero.
+     * Where C's zero is a collection, the port builds an empty one rather than leaving {@code null}:
+     * {@link #flags} and {@link #notice} are empty sets, {@link #modifiers}, {@link #elInfo} and
+     * {@link #curses} are empty {@link LinkedHashMap}s, {@link #brands} and {@link #slays} are
+     * empty sets, and {@link #effect} is an empty list. The maps are insertion-ordered so the order
+     * they are walked in does not depend on how their enum keys hash.
+     *
+     * <p>The rest stay {@code null}: {@link #kind}, {@link #ego}, {@link #artifact}, {@link #known},
+     * {@link #location}, {@link #baseDamage}, {@link #effectMessage}, {@link #activation},
+     * {@link #time}, {@link #originRace} and {@link #note}. Unlike an item that {@link #wipe} has
+     * blanked, this one has no activation list. {@link #location} being {@code null} stands for C's
+     * grid of (0, 0), and {@link #time} for its four zero dice.
+     *
+     * <p>{@link #player} is set from {@link GameState#getPlayer()}, so an item built before a
+     * character exists holds {@code null} there. {@code PlayerBirth} builds the known counterpart
+     * of a starting item this way and fills it in afterwards, and {@link #copy} builds its result
+     * the same way, as C does with the {@code object_new} it makes for {@code obj->known}.
+     *
+     * <p>Constructor ItemObject() coded before 260904, commented in full on 261002, TV_NONE default
+     * added on 261002.
      */
     public ItemObject() {
         player = GameState.getPlayer();
@@ -815,11 +857,35 @@ public class ItemObject {
         brands = new HashSet<>();
         slays = new HashSet<>();
         effect = new ArrayList<>();
+        tValue = TValue.TV_NONE;
     }
 
     /**
-     * Build a fully-specified item from its parsed data-file fields, resolving the
-     * dice strings into {@link Random}s and copying the curse map.
+     * Builds an item with every field supplied, assigning each argument to the member of the same
+     * name. C has no equivalent: it makes a blank object with {@code object_new} and then fills
+     * members in one at a time. No production code calls this form yet; the tests use it to build
+     * an item whose every value they hold.
+     *
+     * <p><b>Nothing is copied.</b> {@code flags}, {@code modifiers}, {@code elInfo}, {@code brands},
+     * {@code slays}, {@code curses}, {@code effect}, {@code activation}, {@code notice},
+     * {@code location}, {@code known} and the rest are stored by reference, so the new item and the
+     * caller share them and a change through one shows in the other. Callers that need an
+     * independent item build fresh collections to pass in. A {@code null} collection stays
+     * {@code null}, which the getters for modifiers, element info, brands, slays and curses absorb;
+     * {@link #getEffect()} is the exception, and hands a {@code null} straight back.
+     *
+     * <p>Three arguments are parsed. {@code pValue} arrives as text: the empty string is zero,
+     * anything else goes through {@link Integer#parseInt}, so a {@code null} or a non-number throws.
+     * {@code baseDamage} and {@code time} go through {@link Random#parseStr}, which answers
+     * {@code null} for the empty string and rejects a {@code null} argument. A {@code time} of
+     * {@code ""} therefore leaves {@link #time} {@code null}, which {@link #numberCharging} reads as
+     * nothing charging.
+     *
+     * <p>{@link #player} is taken from {@link GameState#getPlayer()} at the end, and
+     * {@link #owningPile} starts {@code null}: a new item belongs to no pile.
+     *
+     * <p>Constructor ItemObject(...) coded before 260904, commented in full on 261002; the claim
+     * that it copies the curse map was removed on 261002.
      *
      * @param kind            object kind
      * @param ego             ego type, if any
@@ -1021,7 +1087,28 @@ public class ItemObject {
     }
 
     /**
-     * Sets the grid location this object occupies on the floor.
+     * Returns the grid this object lies on, the port of reading C's {@code obj->grid}.
+     *
+     * <p>{@code null} for an item that has never been placed or has been wiped, where C holds the
+     * grid (0, 0). A caller that must tell "on the floor" from "not" tests for both, as
+     * {@link #objectAbsorb} does.
+     *
+     * <p>Function getGrid coded before 260904, commented in full on 261002.
+     *
+     * @return the grid location this object occupies, or {@code null} if it is not on the floor
+     */
+    public Loc getGrid() {
+        return location;
+    }
+
+    /**
+     * Sets the grid this object lies on, the port of C's {@code obj->grid = grid}.
+     *
+     * <p>Stores the {@link Loc} given. {@link Loc} is immutable, so sharing it with the caller is
+     * safe where C copies its {@code struct loc} by value. {@code null} and the origin both mean
+     * "not on the floor", the reading {@link #objectAbsorb} gives them; see {@link #location}.
+     *
+     * <p>Function setGrid coded before 260904, commented in full on 261002.
      *
      * @param grid the map location, or {@code null} if the object is not on the floor
      */
@@ -1030,15 +1117,13 @@ public class ItemObject {
     }
 
     /**
-     * @return the grid location this object occupies, or {@code null} if it is not on the floor
-     */
-    public Loc getGrid() {
-        return location;
-    }
-
-    /**
      * Raises a notice flag on this object, recording something the player has learned or noticed
-     * about it.
+     * about it. The port of C's {@code obj->notice |= flag}.
+     *
+     * <p>Sets the one flag and leaves the rest alone. {@link #getNotice()} hands out a copy, so this
+     * is the way to change the item's notice flags.
+     *
+     * <p>Function orNotice coded before 260904, commented in full on 261002.
      *
      * @param notice the {@link ObjectNotice} flag to set
      */
@@ -1047,6 +1132,14 @@ public class ItemObject {
     }
 
     /**
+     * Reports whether this object is an artifact, the port of testing C's {@code obj->artifact}
+     * against {@code NULL}.
+     *
+     * <p>This class has no getter for the artifact itself, so this test is the only view of it from
+     * outside.
+     *
+     * <p>Function isArtifact coded before 260904, commented in full on 261002.
+     *
      * @return {@code true} if this object is an artifact (has an associated artifact definition)
      */
     public boolean isArtifact() {
@@ -1054,6 +1147,13 @@ public class ItemObject {
     }
 
     /**
+     * Returns the kind this object is an instance of, the port of reading C's {@code obj->kind}.
+     *
+     * <p>{@code null} for the bare object hanging off a curse definition and for a wiped item. See
+     * {@link #setKind} for why that is a marker and not a missing value.
+     *
+     * <p>Function getKind coded before 260904, commented in full on 261002.
+     *
      * @return the object kind (base type) this object is an instance of
      */
     public ObjectKind getKind() {
@@ -1061,21 +1161,35 @@ public class ItemObject {
     }
 
     /**
-     * Sets the index of the monster currently holding this object.
+     * Sets the kind this item is an instance of — C's {@code obj->kind}.
+     *
+     * <p>A null kind is not a missing value but a marker: the bearer-less item hanging off a curse
+     * definition has one, and {@code knowObject} stops early on exactly that test.
+     *
+     * <p>Sets only the kind. The type, sub-type, weight, dice and the other values C copies from it
+     * are separate fields with their own setters, which the item-preparation code calls in turn.
+     *
+     * <p>Function setKind coded before 260904, commented in full on 261002.
+     *
+     * @param kind the kind to set
+     */
+    public void setKind(ObjectKind kind) {
+        this.kind = kind;
+    }
+
+    /**
+     * Sets the index of the monster currently holding this object, the port of C's
+     * {@code obj->held_m_idx = idx}.
+     *
+     * <p>Zero means no monster holds it. The index is stored as given; nothing checks that a
+     * monster with that index exists.
+     *
+     * <p>Function setHeldMIndex coded before 260904, commented in full on 261002.
      *
      * @param heldMIndex the holding monster's index (0 if not held by a monster)
      */
     public void setHeldMIndex(int heldMIndex) {
         this.heldMIndex = heldMIndex;
-    }
-
-    /**
-     * Sets the index of the monster this object is mimicking, for a mimic disguised as an item.
-     *
-     * @param mimickingMIndex the mimicking monster's index (0 if this object is not a mimic)
-     */
-    public void setMimickingMIndex(int mimickingMIndex) {
-        this.mimickingMIndex = mimickingMIndex;
     }
 
     /**
@@ -1602,18 +1716,20 @@ public class ItemObject {
      * curses named and no others. That is the operation wanted when an object's curse list is being
      * rebuilt from a source of truth rather than accumulated.
      *
-     * <p>Function clearAndPutCurses coded before 260817, renamed from {@code clearAndPut} on 260817,
-     * commented in full on 260817.
+     * <p>The field is replaced with a new {@link LinkedHashMap} built from the argument, so the
+     * argument map itself is not kept and later changes to it do not reach this object. The
+     * {@link CurseData} values are shared, not copied. Because the copy is made before the field is
+     * assigned, passing this object's own {@link #getCurses()} view is safe and leaves the curses as
+     * they were. The same holds for {@link #setCurses}.
      *
-     * @param curseEntries the curses this object should carry, with their instance data taken by
-     *                     reference
+     * <p>Function clearAndPutCurses coded before 260817, renamed from {@code clearAndPut} on 260817,
+     * commented in full on 260817, rewritten on 261002 for the copying replace.
+     *
+     * @param curseEntries the curses this object should carry; the map is copied, the instance data
+     *                     in it is taken by reference
      */
     public void clearAndPutCurses(Map<Curse, CurseData> curseEntries) {
-        if (this.curses == null) {
-            this.curses = new LinkedHashMap<>();
-        }
-        this.curses.clear();
-        this.curses.putAll(curseEntries);
+        this.curses = new LinkedHashMap<>(curseEntries);
     }
 
     /**
@@ -1667,13 +1783,14 @@ public class ItemObject {
      *
      * <p>The port of C's {@code obj->curses[i].power = 0}. C cannot delete an entry from an array
      * indexed by curse, so it zeroes the power and reads that back as "no curse"; the port holds a
-     * map, where absence says the same thing directly. The two representations agree because
-     * nothing here ever stores a curse at power zero — which is also what lets
-     * {@code cursesAreEqual} compare two maps and reach C's answer.
+     * map, where absence says the same thing directly. Removing the entry is the way to take a
+     * curse off: {@link #setCursePower} can leave an entry in the map at power zero, so zeroing
+     * the power does not remove the curse from {@link #getCurses()}.
      *
      * <p>Silently does nothing for a curse the object does not carry.
      *
-     * <p>Function removeCurse coded on 260817, commented in full on 260817.
+     * <p>Function removeCurse coded on 260817, commented in full on 260817, power-zero note
+     * corrected on 261002.
      *
      * @param curse the curse to remove
      */
@@ -1784,6 +1901,13 @@ public class ItemObject {
     }
 
     /**
+     * Returns the number of items in this stack, the port of reading C's {@code obj->number}.
+     *
+     * <p>Zero only on a blank or wiped item. A pile holds one object per stack, so this is the
+     * stack size, not the number of objects in the pile.
+     *
+     * <p>Function getNumber coded before 260904, commented in full on 261002.
+     *
      * @return the number of items in this stack
      */
     public int getNumber() {
@@ -1791,6 +1915,26 @@ public class ItemObject {
     }
 
     /**
+     * Sets the stack size, the port of C's {@code obj->number = ...} assignment. Stored as given;
+     * C's field is a {@code uint8_t} and the port's is an {@code int}, so nothing caps it at 255.
+     *
+     * <p>Function setNumber coded before 260904, commented in full on 261002.
+     *
+     * @param number the stack count to set — C's {@code obj->number}
+     */
+    public void setNumber(int number) {
+        this.number = number;
+    }
+
+    /**
+     * Returns this object's item type, the port of reading C's {@code obj->tval}.
+     *
+     * <p>{@link TValue#TV_NONE}, C's tval 0, on a blank or wiped item. Unlike {@link #getKind()}
+     * this is a copy of the kind's type held on the object itself, so it can be read when the kind
+     * is {@code null}.
+     *
+     * <p>Function gettValue coded before 260904, commented in full on 261002.
+     *
      * @return this object's base type (tval)
      */
     public TValue gettValue() {
@@ -1798,40 +1942,30 @@ public class ItemObject {
     }
 
     /**
+     * Sets this item's type, the port of C's {@code obj->tval = ...} assignment. Stored as given,
+     * and independent of {@link #kind}: nothing checks that the two agree.
+     *
+     * <p>Function settValue coded before 260904, commented in full on 261002.
+     *
+     * @param tValue the item type value to set — C's {@code obj->tval}
+     */
+    public void settValue(TValue tValue) {
+        this.tValue = tValue;
+    }
+
+    /**
+     * Returns the turns remaining until this object can be used again, the port of reading C's
+     * {@code obj->timeout}.
+     *
+     * <p>For a stack of rods this is one pooled figure, not a figure per rod; see
+     * {@link #numberCharging} for how many rods it still covers. For a light it is the fuel left.
+     *
+     * <p>Function getTimeout coded before 260904, commented in full on 261002.
+     *
      * @return the turns remaining until this object is ready to use again (0 = ready)
      */
     public int getTimeout() {
         return timeout;
-    }
-
-    /**
-     * Returns the player's inscription on this object, or {@code null} if it carries none.
-     *
-     * <p>C stores this as {@code quark_t note} ({@code object.h:472}) — an index into the global
-     * quark table, where {@code 0} means "no inscription" and the text is fetched with
-     * {@code quark_str}. The port holds the text directly, so {@code null} is the equivalent of
-     * C's {@code 0} and callers test it rather than the index.
-     *
-     * @return the inscription, or {@code null} if the object is uninscribed
-     */
-    public String getNote() {
-        return note;
-    }
-
-    /**
-     * Returns the live brand set, not a copy, matching how C hands out {@code obj->brands} — an
-     * array on the struct that callers read and write in place.
-     *
-     * <p>The brands here are the ones the item actually has, each at its own strength. That is a
-     * different question from whether the player can read them, which is
-     * {@link KnownObject#brandIsKnown} and is not per-item at all.
-     *
-     * @return this item's brands, shared with this instance
-     */
-    public Set<Brand> getBrands() {
-        if (brands == null)
-            return Set.of();
-        return brands;
     }
 
     /**
@@ -2171,6 +2305,67 @@ public class ItemObject {
     }
 
     /**
+     * Sets the turns remaining before this item can be used again — the port of C's
+     * {@code obj->timeout = ...} field assignment (e.g. {@code object_prep} in {@code obj-make.c},
+     * which starts a light's timeout at its fuel).
+     *
+     * <p>Stored as given. For a stack of rods the figure is one pooled timeout for the whole stack,
+     * and for a light it is the fuel left; {@link #getTimeout()} reads it back.
+     *
+     * <p>Function setTimeout coded before 260904, commented in full on 260904, rewritten on 261002.
+     *
+     * @param timeout turns until ready; {@code 0} means ready now
+     */
+    public void setTimeout(int timeout) {
+        this.timeout = timeout;
+    }
+
+    /**
+     * Returns the player's inscription on this object, or {@code null} if it carries none.
+     *
+     * <p>C stores this as {@code quark_t note} in {@code object.h} — an index into the global
+     * quark table, where {@code 0} means "no inscription" and the text is fetched with
+     * {@code quark_str}. The port holds the text directly, so {@code null} is the equivalent of
+     * C's {@code 0} and callers test it rather than the index.
+     *
+     * <p>Function getNote coded before 260904, commented in full on 261002; the C line number was
+     * removed on 261002.
+     *
+     * @return the inscription, or {@code null} if the object is uninscribed
+     */
+    public String getNote() {
+        return note;
+    }
+
+    /**
+     * Returns the live brand set, not a copy, matching how C hands out {@code obj->brands} — an
+     * array on the struct that callers read and write in place.
+     *
+     * <p>The brands here are the ones the item actually has, each at its own strength. That is a
+     * different question from whether the player can read them, which is
+     * {@link KnownObject#brandIsKnown} and is not per-item at all.
+     *
+     * <p>An immutable empty set while the field is {@code null}, which takes no writes; use
+     * {@link #addBrand}, {@link #removeBrand} and {@link #clearBrands} to change the brands.
+     *
+     * <p>Function getBrands coded before 260817, commented in full on 261002.
+     *
+     * @return this item's brands, shared with this instance
+     */
+    public Set<Brand> getBrands() {
+        if (brands == null)
+            return Set.of();
+        return brands;
+    }
+
+    /**
+     * Returns this item's sub-type within its type, the port of reading C's {@code obj->sval}.
+     *
+     * <p>Copied from the kind when the item is prepared, so two items of one kind always agree.
+     * {@link #earlierObject} sorts the pack by it within a type.
+     *
+     * <p>Function getsValue coded before 260904, commented in full on 261002.
+     *
      * @return this item's sub-type value — C's {@code obj->sval}
      */
     public int getsValue() {
@@ -2178,6 +2373,11 @@ public class ItemObject {
     }
 
     /**
+     * Sets this item's sub-type, the port of C's {@code obj->sval = ...} assignment. Stored as
+     * given; C's field is a {@code uint8_t} and the port's is an {@code int}, so nothing narrows it.
+     *
+     * <p>Function setsValue coded before 260904, commented in full on 261002.
+     *
      * @param sValue the sub-type value to set — C's {@code obj->sval}
      */
     public void setsValue(int sValue) {
@@ -2185,6 +2385,13 @@ public class ItemObject {
     }
 
     /**
+     * Returns the base weight of one of this item, the port of reading C's {@code obj->weight}.
+     *
+     * <p>The base figure only, as the field note on {@link #weight} says. For the burden an item
+     * puts on the player, with curses applied, use {@link #objectWeightOne()}.
+     *
+     * <p>Function getWeight coded before 260904, commented in full on 261002.
+     *
      * @return this item's weight in tenths of a pound — C's {@code obj->weight}
      */
     public int getWeight() {
@@ -2192,6 +2399,12 @@ public class ItemObject {
     }
 
     /**
+     * Sets the base weight of one of this item, the port of C's {@code obj->weight = ...}
+     * assignment. Stored as given, with no floor at zero; {@link #objectWeightOne()} applies that
+     * when the weight is read for a burden.
+     *
+     * <p>Function setWeight coded before 260904, commented in full on 261002.
+     *
      * @param weight the weight to set — C's {@code obj->weight}
      */
     public void setWeight(int weight) {
@@ -2199,32 +2412,10 @@ public class ItemObject {
     }
 
     /**
-     * Sets the kind this item is an instance of — C's {@code obj->kind}.
+     * Returns the number of damage dice this item rolls, the port of reading C's {@code obj->dd}.
      *
-     * <p>A null kind is not a missing value but a marker: the bearer-less item hanging off a curse
-     * definition has one, and {@code knowObject} stops early on exactly that test.
+     * <p>Function getDamageDice coded before 260904, commented in full on 261002.
      *
-     * @param kind the kind to set
-     */
-    public void setKind(ObjectKind kind) {
-        this.kind = kind;
-    }
-
-    /**
-     * @param tValue the item type value to set — C's {@code obj->tval}
-     */
-    public void settValue(TValue tValue) {
-        this.tValue = tValue;
-    }
-
-    /**
-     * @param number the stack count to set — C's {@code obj->number}
-     */
-    public void setNumber(int number) {
-        this.number = number;
-    }
-
-    /**
      * @return the number of damage dice this item rolls — C's {@code obj->dd}
      */
     public int getDamageDice() {
@@ -2235,6 +2426,8 @@ public class ItemObject {
      * Sets the number of damage dice — C's {@code obj->dd}. See {@link #setBaseAC} for why a known
      * counterpart may be given a zero here rather than the truth.
      *
+     * <p>Function setDamageDice coded before 260904, commented in full on 261002.
+     *
      * @param damageDice the number of damage dice to set
      */
     public void setDamageDice(int damageDice) {
@@ -2242,6 +2435,10 @@ public class ItemObject {
     }
 
     /**
+     * Returns the sides on each damage die, the port of reading C's {@code obj->ds}.
+     *
+     * <p>Function getDamageSides coded before 260904, commented in full on 261002.
+     *
      * @return the sides per damage die — C's {@code obj->ds}
      */
     public int getDamageSides() {
@@ -2249,6 +2446,11 @@ public class ItemObject {
     }
 
     /**
+     * Sets the sides on each damage die — C's {@code obj->ds}. See {@link #setBaseAC} for why a
+     * known counterpart may be given a zero here rather than the truth.
+     *
+     * <p>Function setDamageSides coded before 260904, commented in full on 261002.
+     *
      * @param damageSides the sides per damage die to set — C's {@code obj->ds}
      */
     public void setDamageSides(int damageSides) {
@@ -2256,6 +2458,11 @@ public class ItemObject {
     }
 
     /**
+     * Returns this item's base armour class, before any to-armour-class bonus — the port of reading
+     * C's {@code obj->ac}.
+     *
+     * <p>Function getBaseAC coded before 260904, commented in full on 261002.
+     *
      * @return this item's base armour class — C's {@code obj->ac}
      */
     public int getBaseAC() {
@@ -2269,6 +2476,8 @@ public class ItemObject {
      * cannot read armour class is given a zero rather than the truth. That is C's idiom and the
      * zero is meaningful: it is what the display shows for an unknown quantity.
      *
+     * <p>Function setBaseAC coded before 260904, commented in full on 261002.
+     *
      * @param baseAC the base armour class to set
      */
     public void setBaseAC(int baseAC) {
@@ -2279,6 +2488,8 @@ public class ItemObject {
      * Sets the to-hit bonus — C's {@code obj->to_h}. See {@link #hasStandardToH} for why a non-zero
      * value here is not by itself remarkable: body armour carries a to-hit penalty from its kind.
      *
+     * <p>Function setToHit coded before 260904, commented in full on 261002.
+     *
      * @param toHit the to-hit bonus to set
      */
     public void setToHit(int toHit) {
@@ -2286,6 +2497,13 @@ public class ItemObject {
     }
 
     /**
+     * Returns this item's extra parameter, the port of reading C's {@code obj->pval}.
+     *
+     * <p>What it means depends on the type: charges for a wand or staff, an amount for gold, a
+     * launcher's multiplier for a bow. See the field note on {@link #pValue}.
+     *
+     * <p>Function getpValue coded before 260904, commented in full on 261002.
+     *
      * @return this item's extra parameter value — C's {@code obj->pval}
      */
     public int getpValue() {
@@ -2293,6 +2511,12 @@ public class ItemObject {
     }
 
     /**
+     * Sets this item's extra parameter, the port of C's {@code obj->pval = ...} assignment. Stored
+     * as given; C's field is an {@code int16_t} and the port's is an {@code int}, so nothing clamps
+     * it to {@code MAX_PVAL}. The stacking code applies that cap itself.
+     *
+     * <p>Function setpValue coded before 260904, commented in full on 261002.
+     *
      * @param pValue the extra parameter value to set — C's {@code obj->pval}
      */
     public void setpValue(int pValue) {
@@ -2300,6 +2524,11 @@ public class ItemObject {
     }
 
     /**
+     * Sets the to-armour-class bonus — C's {@code obj->to_a}. See {@link #setBaseAC} for why a
+     * known counterpart may be given a zero here rather than the truth.
+     *
+     * <p>Function setToAC coded before 260904, commented in full on 261002.
+     *
      * @param toAC the to-armour-class bonus to set — C's {@code obj->to_a}
      */
     public void setToAC(int toAC) {
@@ -2307,6 +2536,11 @@ public class ItemObject {
     }
 
     /**
+     * Sets the to-damage bonus — C's {@code obj->to_d}. See {@link #setBaseAC} for why a known
+     * counterpart may be given a zero here rather than the truth.
+     *
+     * <p>Function setToDam coded before 260904, commented in full on 261002.
+     *
      * @param toDam the to-damage bonus to set — C's {@code obj->to_d}
      */
     public void setToDam(int toDam) {
@@ -2333,10 +2567,20 @@ public class ItemObject {
     }
 
     /**
+     * Replaces this item's modifier map, the port of filling C's {@code obj->modifiers} array.
+     *
+     * <p>Stores the map given, without copying it, so the item and the caller share it afterwards.
+     * The old map is dropped untouched: it is not cleared, so a map the item shared with another is
+     * left alone, and passing {@link #getModifiers()} back in changes nothing. A {@code null} makes
+     * {@link #getModifiers()} answer an empty map. {@link #putModifier} changes one entry instead.
+     * Callers that build a map for this call, as the item-preparation and knowledge code do, choose
+     * its type; a {@link HashMap} walks in hash order and a {@link LinkedHashMap} in insertion order.
+     *
+     * <p>Function setModifiers coded before 260904, commented in full on 261002.
+     *
      * @param modifiers the modifier map to set — C's {@code obj->modifiers}; stored, not copied
      */
     public void setModifiers(Map<ObjectModifier, Integer> modifiers) {
-        this.modifiers.clear();
         this.modifiers = modifiers;
     }
 
@@ -2361,10 +2605,18 @@ public class ItemObject {
     }
 
     /**
+     * Replaces this item's element info map, the port of filling C's {@code obj->el_info} array.
+     *
+     * <p>Stores the map given, without copying it, and drops the old map untouched, as
+     * {@link #setModifiers} does. The {@link ElementInfo} values are shared too, so a caller
+     * copying them from another item wants {@link ElementInfo#copy} first. {@link #putElInfo}
+     * and {@link #setElInfoResLevel} change one entry instead.
+     *
+     * <p>Function setElInfo coded before 260904, commented in full on 261002.
+     *
      * @param elInfo the element info map to set — C's {@code obj->el_info}; stored, not copied
      */
     public void setElInfo(Map<ElementEnum, ElementInfo> elInfo) {
-        this.elInfo.clear();
         this.elInfo = elInfo;
     }
 
@@ -2373,27 +2625,29 @@ public class ItemObject {
      * {@code obj->el_info[i].res_level = level}.
      *
      * <p>There is no C function behind this one. {@code res_level} is a plain struct field that C
-     * assigns inline wherever it needs to — the data-file parsers at {@code obj-init.c:2058}, the
-     * curse stacking in {@code obj-curse.c}, the knowledge code at {@code obj-knowledge.c:1059} and
-     * {@code obj-knowledge.c:2153}. The method exists to give those assignments one place to land.
+     * assigns inline wherever it needs to — the data-file parsers {@code parse_object_values},
+     * {@code parse_curse_values} and {@code parse_ego_values} in {@code obj-init.c}, the curse
+     * merge {@code apply_curse_attributes} in {@code obj-curse.c}, and {@code player_know_object}
+     * in {@code obj-knowledge.c}. The method exists to give those assignments one place to land.
      *
      * <p>The boundary between the two representations is what the body is for. C declares
      * {@code struct element_info el_info[ELEM_MAX]} inside the object struct, so a slot exists for
      * every element from the moment {@code object_new} zero-fills it and the assignment can never
-     * fail. Here the map is sparse and may not exist at all — the no-argument constructor leaves it
-     * null, and those are exactly the counterpart ("known") items {@code equip_learn_element} writes
-     * to. So both the map and the entry are created on demand, and a fresh {@link ElementInfo}
-     * starts with empty flags and a zero level, which is what C's zero-fill leaves behind.
+     * fail. Here the map is sparse, so the entry is created on demand, and a fresh
+     * {@link ElementInfo} starts with empty flags and a zero level, which is what C's zero-fill
+     * leaves behind. The map is created as well if the field is {@code null}, which only the full
+     * constructor can leave it, and that map is a {@link HashMap}, not the insertion-ordered
+     * {@link LinkedHashMap} the other paths build.
      *
      * <p>Writes the level only, leaving {@link ElementInfo#getFlags flags} untouched, as the C
-     * assignment does. The knowledge sites that copy both halves ({@code obj-knowledge.c:1059-1060},
-     * {@code obj-knowledge.c:2153-2154}) need the flags dealt with separately, or
-     * {@link #putElInfo} with a whole value.
+     * assignment does. The knowledge code in {@code player_know_object}, which copies both halves,
+     * needs the flags dealt with separately, or {@link #putElInfo} with a whole value.
      *
      * <p>The level is passed through uninterpreted; the scale is C's, where zero is neutral,
      * positive resists and negative is a vulnerability.
      *
-     * <p>Function setElInfoResLevel commented in full on 260830.
+     * <p>Function setElInfoResLevel commented in full on 260830, rewritten on 261002 without the C
+     * line numbers.
      *
      * @param element the element being described
      * @param level   the resistance level to store against it
@@ -2413,17 +2667,19 @@ public class ItemObject {
      * Records this item's relation to one element, the port of assigning into C's
      * {@code obj->el_info[i]}.
      *
-     * <p>Exists because {@link #getElInfo()} answers {@code Map.of()} for an item whose map has never
-     * been created, and an immutable empty map takes no writes. The knowledge code writes element
-     * info onto counterpart objects built by the no-argument constructor, which are exactly those
-     * items, so the map is created here on demand.
+     * <p>Exists because {@link #getElInfo()} answers {@code Map.of()} for an item whose map is
+     * {@code null}, and an immutable empty map takes no writes, so a caller cannot add an entry
+     * through the getter. The no-argument constructor and {@link #wipe} build an empty
+     * insertion-ordered map, so the map is only created here, as a {@link HashMap}, for an item the
+     * full constructor was given {@code null}.
      *
      * <p>Stores the {@link ElementInfo} given rather than copying it. That matters more here than for
      * most values: {@code ElementInfo} is mutable, so handing over a real item's instance would leave
      * the item and its counterpart unable to differ. Callers copying one object's element info onto
      * another want {@link ElementInfo#copy} first — {@code knowObject} does.
      *
-     * <p>Function putElInfo coded on 260817, commented in full on 260817.
+     * <p>Function putElInfo coded on 260817, commented in full on 260817, null-map note corrected on
+     * 261002.
      *
      * @param element the element being described
      * @param elInfo  this item's relation to it, taken by reference
@@ -2439,11 +2695,12 @@ public class ItemObject {
      * Records this item's value for one modifier - the port of assigning into C's
      * {@code obj->modifiers[i]}.
      *
-     * <p>Creates the map on demand, for the same reason {@link #putElInfo} does: an item built by
-     * the no-argument constructor has none, and {@link #getModifiers()} answers an immutable empty
-     * map for that state, which takes no writes.
+     * <p>Creates the map on demand, for the same reason {@link #putElInfo} does: an item the full
+     * constructor was given {@code null} for has none, and {@link #getModifiers()} answers an
+     * immutable empty map for that state, which takes no writes. An item built any other way
+     * already has an insertion-ordered map, and the one created here is a {@link HashMap}.
      *
-     * <p>Function putModifier commented in full on 260827.
+     * <p>Function putModifier commented in full on 260827, null-map note corrected on 261002.
      *
      * @param modifier the modifier being set
      * @param value    its value on this item
@@ -2471,6 +2728,15 @@ public class ItemObject {
     }
 
     /**
+     * Sets the effects this item produces, the port of C's {@code obj->effect = ...} pointer
+     * assignment.
+     *
+     * <p>Stores the list given, without copying it, which matches C sharing the effect chain
+     * between a kind and the items made from it. A {@code null} is turned into a fresh empty list,
+     * so {@link #getEffect()} never answers {@code null} for an item that has been through here.
+     *
+     * <p>Function setEffect coded before 260904, commented in full on 261002.
+     *
      * @param effect the effect list to set — C's {@code obj->effect}; stored, not copied
      */
     public void setEffect(List<Effect> effect) {
@@ -2496,6 +2762,14 @@ public class ItemObject {
     }
 
     /**
+     * Replaces this item's slay set, the port of assigning C's {@code obj->slays} array.
+     *
+     * <p>Stores the set given, without copying it, and drops the old one untouched. A {@code null}
+     * is kept and makes {@link #getSlays()} answer an empty set. There is no setter for brands;
+     * {@link #addSlay}, {@link #removeSlay} and {@link #clearSlays} change the set in place.
+     *
+     * <p>Function setSlays coded before 260904, commented in full on 261002.
+     *
      * @param slays the slay set to set — C's {@code obj->slays}; stored, not copied
      */
     public void setSlays(Set<Slay> slays) {
@@ -2517,6 +2791,13 @@ public class ItemObject {
     }
 
     /**
+     * Sets this item's ego type, the port of C's {@code obj->ego = ...} pointer assignment.
+     *
+     * <p>Stores the registry entry itself, not a copy, because {@link #similar} compares egos by
+     * identity. {@code null} makes the item an ordinary one.
+     *
+     * <p>Function setEgo coded before 260904, commented in full on 261002.
+     *
      * @param ego the ego type to set — C's {@code obj->ego}
      */
     public void setEgo(EgoItem ego) {
@@ -2786,12 +3067,18 @@ public class ItemObject {
      * {@code STAT_STR} to {@code OM_STR} by name so that correspondence is stated rather than
      * assumed.
      *
-     * <p>Function getModifierValue commented in full on 260820.
+     * <p>The name is built by dropping the {@code STAT_} prefix and adding {@code OM_}. The two
+     * sentinels follow the same rule: {@code STAT_NONE} and {@code STAT_MAX} resolve to
+     * {@code OM_NONE} and {@code OM_MAX}, which exist and which the item-preparation code never
+     * fills, so they answer zero and do not throw. C would read outside the array for {@code STAT_MAX}.
+     *
+     * <p>Function getModifierValue commented in full on 260820, sentinel note corrected on 261002.
      *
      * @param stat one of the five real stats; the {@code STAT_NONE} and {@code STAT_MAX} sentinels
-     *             have no matching modifier
+     *             are accepted and answer zero
      * @return the object's modifier for that stat, or zero if it carries none
-     * @throws IllegalArgumentException if the stat has no correspondingly named modifier
+     * @throws IllegalArgumentException if the stat has no correspondingly named modifier, which
+     *                                  none of the current {@code Stats} values lacks
      */
     public int getModifierValue(Stats stat) {
         return getModifierValue(ObjectModifier.valueOf("OM_" + stat.name().substring(5)));
@@ -2802,16 +3089,19 @@ public class ItemObject {
      *
      * <p>Raw, and not the whole story where the player's knowledge matters: {@code calcBonuses}
      * multiplies every modifier it reads by the player's rune knowledge for it
-     * ({@code player-calcs.c:1943-1970}), so a value returned here may still contribute nothing.
-     * A modifier the object does not carry reads as zero, matching C's zeroed array.
+     * (in {@code player-calcs.c}), so a value returned here may still contribute nothing.
+     * A modifier the object does not carry reads as zero, matching C's zeroed array, and so does
+     * every modifier on an item whose map is {@code null}, because the read goes through
+     * {@link #getModifiers()}.
      *
-     * <p>Function getModifierValue commented in full on 260820.
+     * <p>Function getModifierValue commented in full on 260820, null-map note and the C line
+     * numbers corrected on 261002.
      *
      * @param om the modifier to read
      * @return the object's value for it, or zero
      */
     public int getModifierValue(ObjectModifier om) {
-        return modifiers.getOrDefault(om, 0);
+        return this.getModifiers().getOrDefault(om, 0);
     }
 
     /**
@@ -6408,6 +6698,14 @@ public class ItemObject {
      * Returns this item's live flag set, unlike {@link #getFlags()}, which hands back a defensive
      * copy — a caller here can mutate the set and reach the item's actual flags.
      *
+     * <p>Reading through it skips the copy {@link #getFlags()} makes, which is how
+     * {@code ObjectUtils} tests a flag on a known counterpart. It is also the unnamed write path
+     * into the flags that {@link #getFlags()} warns about, so prefer {@link #hasFlag} for a single
+     * test. {@link #wipe} replaces the set, so a handle taken from here before a wipe no longer
+     * reaches the item.
+     *
+     * <p>Function getObjectFlags coded before 260904, commented in full on 261002.
+     *
      * @return this object's flags
      */
     public Flag<ObjectFlag> getObjectFlags() {
@@ -6494,7 +6792,7 @@ public class ItemObject {
 
     /**
      * Sets the recharge-time dice — the port of C's {@code obj->time = k->time;} struct assign
-     * (e.g. {@code object_prep}, {@code obj-make.c:833}).
+     * (e.g. {@code object_prep} in {@code obj-make.c}).
      *
      * <p>C's {@code random_value} is a plain struct, so assigning it copies the four dice terms by
      * value; this class's {@link Random} is a mutable reference type, so a bare field assignment
@@ -6504,7 +6802,8 @@ public class ItemObject {
      * <p>{@code null} clears the dice outright, which C's struct assign cannot express; no current
      * caller passes it.
      *
-     * <p>Function setTime coded before 260904, commented in full on 260904.
+     * <p>Function setTime coded before 260904, commented in full on 260904, C line number removed on
+     * 261002.
      *
      * @param time the recharge dice to copy in, or {@code null} to clear it
      */
@@ -6516,15 +6815,26 @@ public class ItemObject {
     }
 
     /**
-     * Sets the turns remaining before this item can be used again — the port of C's
-     * {@code obj->timeout = ...} field assignment (e.g. {@code object_prep}, {@code obj-make.c:860}).
+     * Replaces this object's curses with a copy of the given map, the port of the loop in C's
+     * {@code copy_curses} ({@code obj-curse.c}) that writes the power and the rolled timeout into
+     * each slot.
      *
-     * <p>Function setTimeout coded before 260904, commented in full on 260904.
+     * <p>The field is assigned a new {@link LinkedHashMap} built from the argument, so the argument
+     * map is not kept and the curses end up in the argument's order. The {@link CurseData} values
+     * are shared, not copied, and whatever the object carried before is discarded. Because the copy
+     * is made before the assignment, passing this object's own {@link #getCurses()} view is safe.
      *
-     * @param timeout turns until ready; {@code 0} means ready now
+     * <p>C's loop merges into the curses already on the object. This method does not merge: its
+     * only production caller, {@link ObjectUtils#copyCurses}, builds the merged map itself, rolling
+     * each timeout, and hands the result over. A {@code null} argument throws.
+     *
+     * <p>Function setCurses coded before 261002, commented in full on 261002.
+     *
+     * @param destCurseMap the curses this object should carry; the map is copied, the instance data
+     *                     in it is taken by reference
      */
-    public void setTimeout(int timeout) {
-        this.timeout = timeout;
+    public void setCurses(Map<Curse, CurseData> destCurseMap) {
+        curses = new LinkedHashMap<>(destCurseMap);
     }
 
     /**
@@ -6550,18 +6860,17 @@ public class ItemObject {
         curses = new LinkedHashMap<>();
     }
 
-    public void setCurses(Map<Curse, CurseData> destCurseMap) {
-        curses.clear();
-        curses.putAll(destCurseMap);
-    }
-
     /**
      * Sets where this item came from, the port of C's direct field assignment
      * {@code obj->origin = origin}, repeated at each of C's origin-setting call sites (for example
-     * {@code gen-util.c:511} on generation, {@code mon-blows.c:829} on a theft) rather than gathered
-     * behind one function.
+     * {@code place_object} in {@code gen-util.c} on generation, and the item-stealing blow in
+     * {@code mon-blows.c}) rather than gathered behind one function.
      *
-     * <p>Function setOrigin coded before 260904, commented in full on 260904.
+     * <p>Only the origin is set. {@link #originDepth} and {@link #originRace} have no setter in
+     * this class.
+     *
+     * <p>Function setOrigin coded before 260904, commented in full on 260904, C line numbers removed
+     * on 261002.
      *
      * @param objectOriginEnum the new origin
      */
@@ -6572,10 +6881,15 @@ public class ItemObject {
     /**
      * Attaches the player's known view of this item, the port of C's direct field assignment
      * {@code obj->known = known}, made at each of C's own known-object call sites (for example
-     * {@code obj-knowledge.c:924} when a fresh known object is minted) rather than gathered behind
-     * one function. See {@link #getKnown()} for what the counterpart holds.
+     * {@code object_sense}, {@code object_see} and {@code object_grab} in {@code obj-knowledge.c},
+     * when a fresh known object is minted) rather than gathered behind one function. See
+     * {@link #getKnown()} for what the counterpart holds.
      *
-     * <p>Function setKnown coded before 260904, commented in full on 260904.
+     * <p>Stores the reference; the two items are not linked back, and the previous counterpart, if
+     * any, is dropped without being touched.
+     *
+     * <p>Function setKnown coded before 260904, commented in full on 260904, C line number removed
+     * on 261002.
      *
      * @param known the known counterpart to attach, or {@code null} to detach it
      */
@@ -6584,6 +6898,14 @@ public class ItemObject {
     }
 
     /**
+     * Returns the {@link Pile} this item currently belongs to. The port has no field of C's to
+     * read: C answers the question by walking the item's {@code prev} and {@code next} pointers.
+     *
+     * <p>{@link Pile} keeps this in step as it inserts and removes items, so it answers
+     * {@code null} for an item that is in no pile and for one that has been wiped.
+     *
+     * <p>Function getOwningPile coded before 260904, commented in full on 261002.
+     *
      * @return the {@link Pile} this item currently belongs to, or {@code null} if it belongs to
      * none - see {@link #owningPile}
      */
@@ -6595,10 +6917,32 @@ public class ItemObject {
      * Sets the {@link Pile} this item belongs to - see {@link #owningPile}. Takes {@code null} to
      * record that the item has left every pile.
      *
+     * <p>Records the back-reference only and does not add the item to the pile or take it out of
+     * its previous one; {@link Pile} calls this as part of its own insert and remove. Calling it
+     * from elsewhere leaves the pile and the item disagreeing.
+     *
+     * <p>Function setOwningPile coded before 260904, commented in full on 261002.
+     *
      * @param owner the pile to record as owning this item, or {@code null}
      */
     public void setOwningPile(Pile owner) {
         this.owningPile = owner;
+    }
+
+    /**
+     * Returns the index of the monster mimicking this item, the port of reading C's
+     * {@code obj->mimicking_m_idx}.
+     *
+     * <p>Zero means the item is not a disguise, and {@link #similar} will not stack one that is.
+     * Its partner is {@link #setMimickingMIndex}; this class has no getter for
+     * {@link #heldMIndex}.
+     *
+     * <p>Function getMimickingMIndex coded before 261002, commented in full on 261002.
+     *
+     * @return the mimicking monster's index, or 0 if this object is not a mimic's disguise
+     */
+    public int getMimickingMIndex() {
+        return mimickingMIndex;
     }
 
     /**
@@ -6678,20 +7022,38 @@ public class ItemObject {
     }
 
     /**
+     * Sets the index of the monster this object is mimicking, for a mimic disguised as an item. The
+     * port of C's {@code obj->mimicking_m_idx = idx}.
+     *
+     * <p>Zero means the item is not a disguise. {@link #similar} refuses to stack an item with a
+     * non-zero value, and {@link #getMimickingMIndex()} reads it back.
+     *
+     * <p>Function setMimickingMIndex coded before 260904, commented in full on 261002.
+     *
+     * @param mimickingMIndex the mimicking monster's index (0 if this object is not a mimic)
+     */
+    public void setMimickingMIndex(int mimickingMIndex) {
+        this.mimickingMIndex = mimickingMIndex;
+    }
+
+    /**
      * A running power total and the shooting multiplier that goes with it, returned together by the
      * extra-might step.
      *
-     * <p>Exists because C's {@code extra_might_power} takes the multiplier as an argument and
-     * returns the power, mutating nothing; the port's version needs to hand back both, and a record
-     * says so more plainly than an out-parameter would.
+     * <p>C's {@code extra_might_power} takes the multiplier as an argument and returns only the
+     * power, and {@code object_power} reads the multiplier from {@code bow_multiplier} once and
+     * never again. The port's {@link #extraMightPower(PowerAndMult)} instead takes and returns
+     * both through this record, and {@link #objectPower(boolean, String)} stores the returned
+     * multiplier back into a local that nothing then reads. The multiplier it hands back, the
+     * launcher's plus any extra might, is therefore informational. When extra might reaches the
+     * inhibit threshold the step adds {@code INHIBIT_POWER} to the power and returns the
+     * multiplier unchanged.
+     *
+     * <p>Record PowerAndMult coded before 260827, commented in full on 261002.
      *
      * @param power the running power total
      * @param mult  the shooting multiplier after any extra might
      */
     private record PowerAndMult(int power, int mult) {
-    }
-
-    public int getMimickingMIndex() {
-        return mimickingMIndex;
     }
 }

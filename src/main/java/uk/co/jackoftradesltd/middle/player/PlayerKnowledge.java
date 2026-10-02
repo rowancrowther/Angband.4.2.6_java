@@ -164,7 +164,7 @@ public class PlayerKnowledge {
 
         // modifiers
         Map<ObjectModifier, Integer> modifiers = item.getModifiers();
-        Map<ObjectModifier, Integer> newModifiers = new HashMap<>();
+        Map<ObjectModifier, Integer> newModifiers = new LinkedHashMap<>();
         for (ObjectModifier modifier : ObjectModifier.values()) {
             newModifiers.put(modifier, 0);
         }

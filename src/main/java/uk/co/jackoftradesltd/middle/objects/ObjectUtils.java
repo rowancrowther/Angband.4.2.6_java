@@ -1000,7 +1000,7 @@ public class ObjectUtils {
         obj.setFlagsTo(flags);
 
         // assign modifiers
-        Map<ObjectModifier, Integer> modifiers = new HashMap<>();
+        Map<ObjectModifier, Integer> modifiers = new LinkedHashMap<>();
         for (ObjectModifier modifier : ObjectModifier.values()) {
             if (modifier == ObjectModifier.OM_NONE || modifier == ObjectModifier.OM_MAX) continue;
 
@@ -1039,7 +1039,7 @@ public class ObjectUtils {
         copyCurses(obj, kind.getCurses());
 
         // Default resists
-        Map<ElementEnum, ElementInfo> newResists = new HashMap<>();
+        Map<ElementEnum, ElementInfo> newResists = new LinkedHashMap<>();
         for (ElementEnum elementEnum : ElementEnum.values()) {
             if (elementEnum == ElementEnum.ELEM_NONE || elementEnum == ElementEnum.ELEM_MAX)
                 continue;

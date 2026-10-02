@@ -307,6 +307,26 @@ class ItemObjectCustomMessageTest {
         }
 
         /**
+         * A stack of zero, which a wiped or emptied item holds. C's tests are {@code obj->number == 1}
+         * for {@code {s}} and {@code obj->number > 1} for {@code {is}}, so zero is neither: the verb
+         * ending is dropped as for a pile, but {@code {is}} reads as the singular.
+         */
+        @Test
+        @DisplayName("a stack of zero drops {s}")
+        void verbEndingForStackOfZero() {
+            assertEquals("It glow brightly.", print(item(0), "It glow{s} brightly.", false));
+        }
+
+        /**
+         * The other half of the zero case: only a count above one gives {@code are}.
+         */
+        @Test
+        @DisplayName("a stack of zero reads {is} as is")
+        void isForStackOfZero() {
+            assertEquals("It is hot.", print(item(0), "It {is} hot.", false));
+        }
+
+        /**
          * Two tags in one message, which is the case that catches a tag consuming the wrong
          * number of characters: the second substitution only lands if the first left the loop
          * pointing just past its own closing brace.

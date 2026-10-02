@@ -35,7 +35,9 @@ import uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +46,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -51,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Tests {@link ItemObject#wipe()} and {@link ItemObject#getObjectFlags()}.
  *
- * <p>{@code wipe} is the port of C's {@code object_wipe} ({@code obj-pile.c:704}): free the three
+ * <p>{@code wipe} is the port of C's {@code object_wipe} ({@code obj-pile.c}): free the three
  * allocated arrays, then {@code memset} the whole struct to zero. The port has no frees to make —
  * the old collections are simply discarded — so what is worth pinning down is that every field C's
  * {@code memset} reaches is also reached here, landing on the value zero means for that field's
@@ -275,7 +278,7 @@ class ItemObjectWipeTest {
 
     /**
      * The one field a first pass at this method left unreset: {@code mimickingMIndex}, C's
-     * {@code mimicking_m_idx} ({@code object.h:466}), zeroed by the same {@code memset} as every
+     * {@code mimicking_m_idx} ({@code object.h}), zeroed by the same {@code memset} as every
      * other scalar. A stale value here would misidentify a wiped object as a mimic disguise.
      */
     @Test
@@ -295,6 +298,80 @@ class ItemObjectWipeTest {
     @DisplayName("resets origin to ORIGIN_NONE, not null")
     void resetsOriginToNoOrigin() throws Exception {
         assertEquals(ObjectOriginEnum.ORIGIN_NONE, read(item, "origin"));
+    }
+
+    /**
+     * {@code modifiers} and {@code elInfo} come back as the insertion-ordered maps the constructors
+     * build, not as plain hash maps. Enum keys hash by identity, so a {@link java.util.HashMap}
+     * would walk them in an order that changes from run to run, where C walks its arrays by index.
+     */
+    @Test
+    @DisplayName("modifiers and elInfo become insertion-ordered maps, as the constructors build them")
+    void resetsMapsToInsertionOrderedType() throws Exception {
+        assertTrue(read(item, "modifiers") instanceof LinkedHashMap);
+        assertTrue(read(item, "elInfo") instanceof LinkedHashMap);
+    }
+
+    /**
+     * Puts every modifier and every element into a wiped item in reverse declaration order and
+     * reads them back. A map that kept insertion order answers exactly the reversed list; a hash
+     * map of enum keys would not, except by a one-in-many accident.
+     */
+    @Test
+    @DisplayName("a wiped item walks its modifiers and elements in the order they were put in")
+    void wipedMapsKeepInsertionOrder() {
+        List<ObjectModifier> modifiers = new ArrayList<>(Arrays.asList(ObjectModifier.values()));
+        modifiers.remove(ObjectModifier.OM_NONE);
+        modifiers.remove(ObjectModifier.OM_MAX);
+        Collections.reverse(modifiers);
+        for (ObjectModifier modifier : modifiers) {
+            item.putModifier(modifier, 1);
+        }
+
+        List<ElementEnum> elements = new ArrayList<>(Arrays.asList(ElementEnum.values()));
+        elements.remove(ElementEnum.ELEM_NONE);
+        elements.remove(ElementEnum.ELEM_MAX);
+        Collections.reverse(elements);
+        for (ElementEnum element : elements) {
+            item.putElInfo(element, new ElementInfo());
+        }
+
+        assertEquals(modifiers, new ArrayList<>(item.getModifiers().keySet()));
+        assertEquals(elements, new ArrayList<>(item.getElInfo().keySet()));
+    }
+
+    /**
+     * {@code wipe} replaces the flag set instead of clearing the one it held. A handle taken before
+     * the wipe therefore still holds what it held, and no longer reaches the item: nothing a caller
+     * does with it afterwards can change the wiped item.
+     */
+    @Test
+    @DisplayName("wipe replaces the flag set rather than clearing the one it held")
+    void replacesTheFlagSetRatherThanClearingIt() {
+        ItemObject fresh = populatedItem();
+        Flag<ObjectFlag> held = fresh.getObjectFlags();
+
+        fresh.wipe();
+
+        assertTrue(held.has(ObjectFlag.OF_SEE_INVIS), "the old set is left as it was");
+        assertNotSame(held, fresh.getObjectFlags());
+        assertTrue(fresh.getObjectFlags().isEmpty());
+    }
+
+    /**
+     * C's {@code memset} zeroes the pile pointers {@code prev} and {@code next}. The port keeps no
+     * pointers; {@code owningPile} stands for them, so it goes to {@code null}.
+     */
+    @Test
+    @DisplayName("an item that belonged to a pile no longer does after a wipe")
+    void forgetsItsOwningPile() {
+        ItemObject fresh = populatedItem();
+        fresh.setOwningPile(new Pile());
+        assertNotNull(fresh.getOwningPile());
+
+        fresh.wipe();
+
+        assertNull(fresh.getOwningPile());
     }
 
     /**

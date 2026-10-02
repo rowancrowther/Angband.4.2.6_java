@@ -181,16 +181,44 @@ The full suite is green.
 
 Already stamped in C: all thirteen functions carried `/* Ported to Java 2026-08-30 */`, so Stage 5 added nothing.
 
-## Batch 8 - description, messages, slots and glyphs
+## Batch 8 - description, messages, slots and glyphs (done 2026-10-02)
 
 Methods: `description`, `printCustomMessage`, `objectKindName`, `objDescNameFormat`, `wieldSlot`, `canBrowse`,
 `objectKindChar`, `objectKindAttr`, `useFlavourGlyph`, `getItemObjectADC`, `wipe`, `initCurses`.
 
-C sources: `obj-desc.c`, `obj-util.c` (`print_custom_message`, `wield_slot`, `obj_can_browse`), `obj-pile.c`
-(`object_wipe`).
+C sources: `obj-desc.c`, `obj-util.c` (`print_custom_message`, `obj_can_browse`), `obj-gear.c` (`wield_slot`),
+`obj-pile.c` (`object_wipe`), `ui-object.c` (`object_kind_char`, `object_kind_attr`, `use_flavor_glyph`).
 
-Carry-over from the 260929 precis: the `printCustomMessage` Javadoc still says the Java version cannot truncate, and the
-method passes its built text to `Message.messageType` as the pattern where C passes it as a `"%s"` argument.
+Carry-over from the 260929 precis: `printCustomMessage` now passes its built text to `Message.messageType` as a `"%s"`
+argument, so that half is closed. Its Javadoc still says the Java version cannot truncate, but `Message.messageType`
+cuts at 1023 characters; that is a Stage 2 fix.
+
+Matches C: `printCustomMessage`, `objectKindName`, `objDescNameFormat`, `canBrowse`, `objectKindChar`,
+`objectKindAttr`, `useFlavourGlyph`, `getItemObjectADC`, `initCurses`, and `wieldSlot` and `wipe` after the fixes below.
+
+Fixed: `wieldSlot` refreshes `player` from `GameState.getPlayer()`, which closes the Batch 5 and 6 deferral; `wipe`
+builds `LinkedHashMap`s for `modifiers` and `elInfo`, as the constructors do.
+
+Not verifiable: `description` is a stub returning `{DESCRIPTION_TAG}`; `object_desc` and its helpers wait for Chapter 7.
+
+Accepted divergences: C's `print_custom_message` hands `object_desc` the start of its buffer, so text ahead of
+`{name}` is overwritten there, where Java appends in place (every `{name}` message in `activation.txt` and
+`artifact.txt` leads with the tag); a tag's letters are tested with `Character.isAlphabetic` where C's `isalpha` is
+ASCII only; `objDescNameFormat` treats a second `~` straight after the first as having nothing before it, where C writes
+a bare `s`; the glyph methods read the parsed data where C reads the pref-remappable `kind_x_char` and `flavor_x_char`
+tables; `wipe` leaves `location` and `time` as `null` where C's zero is a grid of (0, 0) and four zero dice.
+
+Stage 2: the C line numbers were removed from `wipe` and `initCurses`; the `printCustomMessage` block no longer says
+Java cannot truncate (`Message.messageType` cuts at 1023) or that the messages live in `object.txt`; the
+`objectKindName` block now names the real C callers; the `initCurses` block no longer says `copyCurses` guards its call;
+the `wipe`, `wieldSlot` and `canBrowse` blocks were rewritten, and the class, `player` and every field `wipe`
+writes were extended. `rescaleBowPower`'s block was brought into line with the `wieldSlot` fix.
+
+Stage 3: new `ItemObjectWieldSlotTest`, 8 cases; four new cases in `ItemObjectWipeTest` and two in
+`ItemObjectCustomMessageTest`. The full suite is green (0 failures, 18 skipped).
+
+Stage 5: `object_wipe` was stamped 2026-10-02. The other eight functions already carried a stamp. `obj_kind_can_browse`
+in `obj-util.c` has none, though `ObjectKind.canBrowse` is its port; that file is outside this batch.
 
 ## Batch 9 - fields, accessors and mutators (Javadoc coverage)
 

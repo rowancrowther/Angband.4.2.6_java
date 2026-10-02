@@ -83,7 +83,15 @@ import static uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum.ORIGIN
  * timeout. The quality table they read for ignoring lives in {@code ObjectInfo}, and the marks
  * a player has put on an ego live on the {@link EgoItem}, not here.
  *
- * <p>Class ItemObject commented in full on 261002, knowledge and recharge note added on 261002.
+ * <p>The text and placement side turns an item into words and says where it goes.
+ * {@link #description} is still a stub, {@link #printCustomMessage} fills the tags of a data-file
+ * message from the item, and {@link #objectKindName} and {@link #objDescNameFormat} build a kind's
+ * name. {@link #wieldSlot} answers which equipment slot the item would be worn in, {@link #canBrowse}
+ * whether the player's class can read it, and {@link #getItemObjectADC} how it is drawn.
+ * {@link #wipe} blanks every field, and {@link #initCurses} gives the item a fresh curse map.
+ *
+ * <p>Class ItemObject commented in full on 261002, knowledge and recharge note added on 261002,
+ * text and placement note added on 261002.
  *
  * @author Rowan Crowther
  * @see KnownObject
@@ -115,19 +123,21 @@ public class ItemObject {
      * {@code null}, and one that outlives a change of player holds the old one. Methods that must
      * see the live player - {@link #earlierObject} and {@link #similar} - therefore refresh it from
      * {@link GameState#getPlayer()} on every call, which means they overwrite it. {@link #objectAbsorb}
-     * refreshes it as well, and hands it on to {@link #objectAbsorbMerge} as a parameter. The methods
-     * that read it without refreshing (the partial absorb and {@link #wieldSlot}) still depend on the
-     * snapshot.
+     * refreshes it as well, and hands it on to {@link #objectAbsorbMerge} as a parameter.
+     * {@link #wieldSlot} refreshes it too, so every caller of that sees the live body. The partial
+     * absorb is the one reader that still depends on the snapshot, because it hands the field to
+     * {@link #objectAbsorbMerge} without refreshing it.
      *
      * <p>The power calculation reads it through {@link #wieldSlot}, which every shooting-slot test
-     * in the damage and bow steps goes through. {@link #toDamagePower()}, {@link #damageDicePower()},
-     * {@link #ammoDamagePower(int)} and {@link #rescaleBowPower(int)} each refresh it from
-     * {@link GameState#getPlayer()} before they ask, so those steps see the live player, as C's
-     * {@code player} global does. The refresh finds {@code null} when no character exists, and the
-     * slot lookup then throws where C would crash.
+     * in the damage and bow steps goes through, and which refreshes it itself, so those steps see
+     * the live player as C's {@code player} global does. {@link #toDamagePower()},
+     * {@link #damageDicePower()} and {@link #ammoDamagePower(int)} also refresh it before they look
+     * up the shooting slot, a second refresh of the same value, and {@link #rescaleBowPower(int)}
+     * reads {@link GameState#getPlayer()} directly for that lookup. The refresh finds {@code null}
+     * when no character exists, and the slot lookup then throws where C would crash.
      *
      * <p>Field player commented in full on 261002, power note revised on 261002 and again on 261002
-     * for the damage steps.
+     * for the damage steps, wieldSlot refresh added on 261002.
      */
     private Player player;
 
@@ -150,8 +160,13 @@ public class ItemObject {
      * and {@link #isGood} compares the item's bonuses with the kind's dice. {@link #hasStandardToH}
      * calls an item with no kind standard, which is how a curse's bare object passes.
      *
+     * <p>{@link #objectKindName} is handed one to name, and {@link #printCustomMessage} passes this
+     * item's own. The glyph methods read its flavour, glyph and colour, and {@link #canBrowse} asks
+     * it whether the player's class can read it. {@link #wipe} sets it to {@code null}.
+     *
      * <p>Field kind commented in full on 261002, pricing added on 261002, effects power added on 261002,
-     * ammunition read added on 261002, knowledge reads added on 261002.
+     * ammunition read added on 261002, knowledge reads added on 261002, text and glyph reads added
+     * on 261002.
      */
     private ObjectKind kind;
     /**
@@ -170,8 +185,10 @@ public class ItemObject {
      * easy-known ego's flags in and its suppressed flags out, and {@link #ignoreLevelOf} grades any
      * fully known ego item {@code IGNORE_ALL}.
      *
+     * <p>{@link #wipe} sets it to {@code null}.
+     *
      * <p>Field ego commented in full on 261002, pricing added on 261002, ammunition read added on
-     * 261002, knowledge and ignore reads added on 261002.
+     * 261002, knowledge and ignore reads added on 261002, wipe reset added on 261002.
      */
     private EgoItem ego;
     /**
@@ -183,7 +200,10 @@ public class ItemObject {
      * <p>{@link #ignoreLevelOf} grades a fully known artifact {@code IGNORE_MAX}, which no setting
      * reaches, and refuses to promote one to {@code IGNORE_ALL} merely for having been assessed.
      *
-     * <p>Field artifact commented in full on 261002, ignore read added on 261002.
+     * <p>{@link #wipe} sets it to {@code null}.
+     *
+     * <p>Field artifact commented in full on 261002, ignore read added on 261002, wipe reset added
+     * on 261002.
      */
     private Artifact artifact;
 
@@ -217,8 +237,10 @@ public class ItemObject {
      * bonuses and the notice flags from it, so that a figure the player has not learned cannot sway
      * an ignore decision.
      *
+     * <p>{@link #wipe} sets it to {@code null} without touching the counterpart itself.
+     *
      * <p>Field known commented in full on 261002, pricing added on 261002, knowledge reads added on
-     * 261002.
+     * 261002, wipe reset added on 261002.
      */
     private ItemObject known;
 
@@ -231,7 +253,10 @@ public class ItemObject {
      * {@code loc_is_zero} does, and {@link #copy} copies the {@link Loc} so the copy can move
      * without moving the original.
      *
-     * <p>Field location commented in full on 261002.
+     * <p>{@link #wipe} sets it to {@code null}, which reads as "not on the floor" just as the origin
+     * does.
+     *
+     * <p>Field location commented in full on 261002, wipe reset added on 261002.
      */
     private Loc location;
 
@@ -260,8 +285,13 @@ public class ItemObject {
      * whether it is body armour, and {@link #ignoreLevelOf} asks whether it is jewellery, which is
      * graded by a rule of its own.
      *
+     * <p>{@link #wieldSlot} switches on it to pick the slot type, falling back on the {@link TValue}
+     * predicates for weapons, rings, lights and armour, and answers {@code -1} for a type that is
+     * never worn. {@link #wipe} sets it to {@link TValue#TV_NONE}, C's tval 0.
+     *
      * <p>Field tValue commented in full on 261002, pricing added on 261002, property pricing added
-     * on 261002, damage pricing added on 261002, ignore reads added on 261002.
+     * on 261002, damage pricing added on 261002, ignore reads added on 261002, slot read and wipe
+     * reset added on 261002.
      */
     private TValue tValue;
     /**
@@ -271,7 +301,9 @@ public class ItemObject {
      * <p>Carried across by {@link #copy}. Nothing in the stacking code reads it directly, because
      * two items of the same {@link #kind} already share it.
      *
-     * <p>Field sValue commented in full on 261002.
+     * <p>{@link #wipe} sets it to zero.
+     *
+     * <p>Field sValue commented in full on 261002, wipe reset added on 261002.
      */
     private int sValue;
 
@@ -288,8 +320,10 @@ public class ItemObject {
      * <p>{@link #bowMulitplier()} reads it as a launcher's damage multiplier, and only for
      * {@code TV_BOW}.
      *
+     * <p>{@link #wipe} sets it to zero.
+     *
      * <p>Field pValue commented in full on 261002, pricing added on 261002, bow multiplier added on
-     * 261002.
+     * 261002, wipe reset added on 261002.
      */
     private int pValue;
     /**
@@ -314,7 +348,10 @@ public class ItemObject {
      * <p>{@link #damageDicePower()} prices a melee weapon or a missile from it, as
      * {@code damageDice * (damageSides + 1) * DAMAGE_POWER / 4}.
      *
-     * <p>Field damageDice commented in full on 261002, damage pricing added on 261002.
+     * <p>{@link #wipe} sets it to zero.
+     *
+     * <p>Field damageDice commented in full on 261002, damage pricing added on 261002, wipe reset
+     * added on 261002.
      */
     private int damageDice;
     /**
@@ -324,7 +361,10 @@ public class ItemObject {
      * <p>{@link #damageDicePower()} reads it as the side count plus one, which is twice the average
      * roll of a die.
      *
-     * <p>Field damageSides commented in full on 261002, damage pricing added on 261002.
+     * <p>{@link #wipe} sets it to zero.
+     *
+     * <p>Field damageSides commented in full on 261002, damage pricing added on 261002, wipe reset
+     * added on 261002.
      */
     private int damageSides;
     /**
@@ -351,7 +391,9 @@ public class ItemObject {
      * {@link #nonStandardWeightPower(int)}, and {@link #applyCurseAttributes} overwrites it on a
      * scratch copy with the weight the curses give.
      *
-     * <p>Field weight commented in full on 261002, power added on 261002.
+     * <p>{@link #wipe} sets it to zero.
+     *
+     * <p>Field weight commented in full on 261002, power added on 261002, wipe reset added on 261002.
      */
     private int weight;
     /**
@@ -362,7 +404,9 @@ public class ItemObject {
      * had its weight priced already by {@link #acPower}. {@link #applyCurseAttributes} does not
      * change it, because C adds a curse's base armour and {@code curse.txt} cannot supply one.
      *
-     * <p>Field baseAC commented in full on 261002, power added on 261002.
+     * <p>{@link #wipe} sets it to zero.
+     *
+     * <p>Field baseAC commented in full on 261002, power added on 261002, wipe reset added on 261002.
      */
     private int baseAC;
     /**
@@ -377,6 +421,7 @@ public class ItemObject {
      *
      * <p>Field toDam coded before 260815, retyped from {@code Random} to {@code int} on 260815.
      * Commented in full on 260815, damage pricing added on 261002, ignore read added on 261002.
+     * {@link #wipe} sets it to zero, added on 261002.
      */
     private int toDam;
     /**
@@ -395,7 +440,7 @@ public class ItemObject {
      *
      * <p>Field toHit coded before 260815, retyped from {@code Random} to {@code int} on 260815.
      * Commented in full on 260815, power read added on 261002, knowledge and ignore reads added on
-     * 261002.
+     * 261002. {@link #wipe} sets it to zero, added on 261002.
      */
     private int toHit;
     /**
@@ -418,6 +463,7 @@ public class ItemObject {
      *
      * <p>Field toAC coded before 260815, retyped from {@code Random} to {@code int} on 260815.
      * Commented in full on 260815, power added on 261002, ignore read added on 261002.
+     * {@link #wipe} sets it to zero, added on 261002.
      */
     private int toAC;
     /**
@@ -435,8 +481,11 @@ public class ItemObject {
      * <p>{@link #hasFlag} tests one flag, {@link #objectFlags} fills a caller's set from it, and
      * {@link #flagsKnown} starts from a copy and narrows it to what the player has learned.
      *
+     * <p>{@link #wipe} replaces the set with a fresh empty one rather than clearing it, so a handle
+     * from {@link #getObjectFlags()} taken earlier no longer reaches this item.
+     *
      * <p>Field flags commented in full on 261002, pricing added on 261002, power added on 261002,
-     * knowledge reads added on 261002.
+     * knowledge reads added on 261002, wipe reset added on 261002.
      */
     private Flag<ObjectFlag> flags;
     /**
@@ -465,6 +514,10 @@ public class ItemObject {
      * <p>Comment corrected on 260816, when the field's type changed from the unparsed dice text it
      * had previously held. Field modifiers commented in full on 261002, power added on 261002,
      * damage steps added on 261002.
+     *
+     * <p>{@link #wipe} replaces the map with a fresh empty {@link LinkedHashMap}, the type the
+     * constructors build, so the order it is walked in is the order entries were put in.
+     * Wipe reset added on 261002.
      */
     private Map<ObjectModifier, Integer> modifiers;
     /**
@@ -483,7 +536,10 @@ public class ItemObject {
      * <p>{@link #elementPower(int)} looks each element up here and treats a missing entry as an
      * element the item says nothing about.
      *
-     * <p>Field elInfo commented in full on 261002, power added on 261002.
+     * <p>{@link #wipe} replaces the map with a fresh empty {@link LinkedHashMap}, as it does for
+     * {@link #modifiers}.
+     *
+     * <p>Field elInfo commented in full on 261002, power added on 261002, wipe reset added on 261002.
      */
     private Map<ElementEnum, ElementInfo> elInfo;
     /**
@@ -498,8 +554,10 @@ public class ItemObject {
      * {@link #damageDicePower()} treats a non-empty set as a reason to credit a non-weapon with a
      * flat assumed damage. {@link #getBrands()} answers an empty set while none exists.
      *
+     * <p>{@link #wipe} replaces the set with a fresh empty one, as C frees the array first.
+     *
      * <p>Field brands commented in full on 260817, power added on 261002, damage steps added on
-     * 261002.
+     * 261002, wipe reset added on 261002.
      */
     private Set<Brand> brands;
     /**
@@ -509,8 +567,10 @@ public class ItemObject {
      * <p>{@link #slayPower(int, boolean, int)} splits them into slays and kills by multiplier, so a
      * slay of three or less counts as a slay and anything above counts as a kill.
      *
+     * <p>{@link #wipe} replaces the set with a fresh empty one, as C frees the array first.
+     *
      * <p>Field slays commented in full on 260817, power added on 261002, damage steps added on
-     * 261002.
+     * 261002, wipe reset added on 261002.
      */
     private Set<Slay> slays;
 
@@ -520,7 +580,9 @@ public class ItemObject {
      * <p>Whether the player knows the effect is a comparison between this list and the one on the
      * {@link #known} counterpart, made by {@link #effectIsKnown()}.
      *
-     * <p>Field effect commented in full on 261002.
+     * <p>{@link #wipe} replaces the list with a fresh empty one.
+     *
+     * <p>Field effect commented in full on 261002, wipe reset added on 261002.
      */
     private List<Effect> effect;
     /**
@@ -531,7 +593,9 @@ public class ItemObject {
      * <p>A string is immutable, so {@link #copy} shares it safely where it must deep-copy the
      * mutable fields.
      *
-     * <p>Field effectMessage commented in full on 261002.
+     * <p>{@link #wipe} sets it to {@code null}.
+     *
+     * <p>Field effectMessage commented in full on 261002, wipe reset added on 261002.
      */
     private String effectMessage;
     /**
@@ -559,7 +623,11 @@ public class ItemObject {
      * interval, which {@link #numberCharging} reads as nothing charging, as C reads its zeroed
      * {@code random_value}.
      *
-     * <p>Field time commented in full on 261002, recharge reads added on 261002.
+     * <p>{@link #wipe} sets it to {@code null}, where C's zeroed {@code random_value} is four zeros;
+     * {@link #numberCharging} reads both as nothing charging.
+     *
+     * <p>Field time commented in full on 261002, recharge reads added on 261002, wipe reset added
+     * on 261002.
      */
     private Random time;
     /**
@@ -574,7 +642,10 @@ public class ItemObject {
      * works out how many rods that pool still covers, and {@link #rechargeTimeout} takes that many
      * turns off it each game turn, never past zero.
      *
-     * <p>Field timeout commented in full on 261002, recharge reads added on 261002.
+     * <p>{@link #wipe} sets it to zero.
+     *
+     * <p>Field timeout commented in full on 261002, recharge reads added on 261002, wipe reset
+     * added on 261002.
      */
     private int timeout;
 
@@ -588,8 +659,13 @@ public class ItemObject {
      * <p>{@link #numberCharging} caps the count of items still charging at it, so a stack can never
      * report more rods recharging than it holds.
      *
+     * <p>{@link #printCustomMessage} reads it for the {@code {s}} and {@code {is}} tags: one item
+     * gives {@code s} and {@code is}, a pile gives nothing and {@code are}. A stack of zero is the
+     * odd case: {@code {s}} prints nothing, as for a pile, but {@code {is}} prints {@code is},
+     * because only a count above one gives {@code are}, as in C. {@link #wipe} sets it to zero.
+     *
      * <p>Field number commented in full on 261002, pricing added on 261002, recharge read added on
-     * 261002.
+     * 261002, message tags and wipe reset added on 261002.
      */
     private int number;
     /**
@@ -602,7 +678,10 @@ public class ItemObject {
      * <p>{@link #ignoreLevelOf} reads {@code OBJ_NOTICE_ASSESSED} from the {@link #known} half's set
      * to tell an item the player has examined closely from one merely sensed across a room.
      *
-     * <p>Field notice commented in full on 261002, ignore read added on 261002.
+     * <p>{@link #wipe} replaces the set with a fresh empty one.
+     *
+     * <p>Field notice commented in full on 261002, ignore read added on 261002, wipe reset added on
+     * 261002.
      */
     private Flag<ObjectNotice> notice;
 
@@ -612,7 +691,9 @@ public class ItemObject {
      *
      * <p>Carried across by {@link #copy}, so a copy of a carried item is still marked as carried.
      *
-     * <p>Field heldMIndex commented in full on 261002.
+     * <p>{@link #wipe} sets it to zero.
+     *
+     * <p>Field heldMIndex commented in full on 261002, wipe reset added on 261002.
      */
     private int heldMIndex;
     /**
@@ -620,7 +701,9 @@ public class ItemObject {
      * {@code int16_t}. An item that is a monster's disguise never stacks, so {@link #similar}
      * rejects a non-zero value on either side.
      *
-     * <p>Field mimickingMIndex commented in full on 261002.
+     * <p>{@link #wipe} sets it to zero.
+     *
+     * <p>Field mimickingMIndex commented in full on 261002, wipe reset added on 261002.
      */
     private int mimickingMIndex;
 
@@ -629,14 +712,18 @@ public class ItemObject {
      * {@code uint8_t}. {@link #originCombine} sets it to {@code ORIGIN_MIXED} when two stacks with
      * different origins are merged.
      *
-     * <p>Field origin commented in full on 261002.
+     * <p>{@link #wipe} sets it to {@code ORIGIN_NONE}, the value C's zeroed byte lands on.
+     *
+     * <p>Field origin commented in full on 261002, wipe reset added on 261002.
      */
     private ObjectOriginEnum origin;
     /**
      * The depth at which the item originated. C's {@code obj->origin_depth}, a {@code uint8_t}.
      * {@link #originCombine} treats a difference in depth, with the same origin, as a mixed origin.
      *
-     * <p>Field originDepth commented in full on 261002.
+     * <p>{@link #wipe} sets it to zero.
+     *
+     * <p>Field originDepth commented in full on 261002, wipe reset added on 261002.
      */
     private int originDepth;
     /**
@@ -660,6 +747,10 @@ public class ItemObject {
      *
      * <p>Field curses retyped from {@code Map<Curse.CurseEntry, Boolean>} on 260817, commented in
      * full on 260817, comment corrected on 261002, power added on 261002.
+     *
+     * <p>{@link #wipe} and {@link #initCurses} each replace the map with a fresh empty
+     * {@link LinkedHashMap}, discarding every curse the item carried. Wipe reset and initialiser
+     * added on 261002.
      */
     private LinkedHashMap<Curse, CurseData> curses;
 
@@ -673,7 +764,9 @@ public class ItemObject {
      * {@link #objectAbsorbMerge} takes the absorbed stack's note when it has one, and
      * {@link #objectSplit} gives the new stack the same note as the old.
      *
-     * <p>Field note commented in full on 261002.
+     * <p>{@link #wipe} sets it to {@code null}, C's quark 0.
+     *
+     * <p>Field note commented in full on 261002, wipe reset added on 261002.
      */
     private String note;
     /**
@@ -681,7 +774,9 @@ public class ItemObject {
      * {@code obj->origin_race}, a pointer. {@link #originCombine} compares it by identity and
      * prefers to keep the record of a unique.
      *
-     * <p>Field originRace commented in full on 261002.
+     * <p>{@link #wipe} sets it to {@code null}.
+     *
+     * <p>Field originRace commented in full on 261002, wipe reset added on 261002.
      */
     private MonsterRace originRace = null;
 
@@ -696,7 +791,12 @@ public class ItemObject {
      * it - the way {@link #getOwningPile()} is used to keep a {@link Pile}'s own bookkeeping in
      * step with the items it is given.
      *
-     * <p>Field owningPile coded before 260904, commented in full on 260928.
+     * <p>{@link #wipe} sets it to {@code null}, the port's form of C's {@code memset} zeroing
+     * {@code prev} and {@code next}. The pile itself is not told, so a wiped item that was in one
+     * is left for the caller to remove from it first.
+     *
+     * <p>Field owningPile coded before 260904, commented in full on 260928, wipe reset added on
+     * 261002.
      */
     private Pile owningPile;
 
@@ -1907,7 +2007,14 @@ public class ItemObject {
      * message and shows it to the player. An empty string would produce "Your  glows." and read as
      * a spacing bug; the tag reads as a thing not yet built.
      *
-     * <p>Function description coded on 260815, commented in full on 260815.
+     * <p>What is still to port is {@code object_desc} and the static helpers beside it in
+     * {@code obj-desc.c}, which build the base name, the quantity prefix, the combat, charge and
+     * light details and the inscription in turn. Of those, only {@link #objDescNameFormat} and
+     * {@link #objectKindName} exist so far. Today the stub reaches the player through
+     * {@link #printCustomMessage}'s {@code {name}} tag, {@link #flagMessage} and
+     * {@link #verifyObject}, and none of them can say anything about the item.
+     *
+     * <p>Function description coded on 260815, commented in full on 261002.
      *
      * @param descriptionFlags how much of the name to build, C's {@code mode}
      * @param player           the player whose knowledge decides what may appear in the name
@@ -5228,8 +5335,8 @@ public class ItemObject {
      * <p>The shooting slot is looked up on the live player from {@link GameState#getPlayer()}, as C
      * reads its {@code player} global at the call, and the lookup is made for every object, not only
      * bows. It therefore needs a player to exist, and throws if the player's body has no slot named
-     * {@code shooting}. The slot this object would occupy comes from {@link #wieldSlot()}, which reads
-     * the snapshot in {@link #player}; see that field for what follows from it.
+     * {@code shooting}. The slot this object would occupy comes from {@link #wieldSlot()}, which
+     * refreshes {@link #player} itself, so both sides of the comparison see the live player.
      *
      * <p>Function rescaleBowPower coded before 260827, commented in full on 261002.
      *
@@ -5901,18 +6008,33 @@ public class ItemObject {
      * Reports which equipment slot this object would be worn in - the port of C's
      * {@code wield_slot} ({@code obj-gear.c}).
      *
-     * <p>Most types map straight onto a slot. Weapons, rings and lights go through the slot search
-     * instead, because there may be more than one of them and an empty one is preferred; rings in
-     * particular is why the search exists.
+     * <p>The object's type picks a slot type: a bow, amulet, cloak, shield, pair of gloves or pair
+     * of boots has one of its own, a melee weapon, ring or light is sent to the weapon, ring or light
+     * slot, body armour to the body slot and a helm or crown to the head slot. Every one of them is
+     * then resolved by {@link ObjectUtils#slotByType}, asking for an <em>empty</em> slot. Where a
+     * body has several slots of a type, as it does of rings, the first empty one is answered, and
+     * the first of that type if all are occupied.
      *
      * <p>Answers a slot index rather than a slot, which is what the callers compare against
-     * {@code slotByName}. An object that belongs in no slot answers {@code -1}.
+     * {@code slotByName}. There are two different answers for "nowhere". A type that maps to no slot
+     * type at all, a potion say, answers {@code -1}, as C's {@code wield_slot} does. A type that
+     * maps to a slot type the body has none of answers the slot count, one past the last valid
+     * index, which is {@code slotByType}'s own "not found". A caller that goes on to index the body
+     * has to reject both.
      *
-     * <p>Function wieldSlot commented in full on 260827.
+     * <p>The player is refreshed from {@link GameState#getPlayer()} on every call, standing in for C's
+     * {@code player} global, so an item built before a character exists, or before the character
+     * changed, is still asked about the live body. With no character at all the lookup throws a
+     * {@code NullPointerException} where C would crash on its null global.
      *
-     * @return the index of the slot this object would occupy, or {@code -1} if it is not wearable
+     * <p>Function wieldSlot commented in full on 260827, corrected on 261002 to refresh the player,
+     * rewritten in full on 261002.
+     *
+     * @return the index of the slot this object would occupy, {@code -1} if its type is never worn,
+     * or the body's slot count if the body has no slot of the type it needs
      */
     public int wieldSlot() {
+        player = GameState.getPlayer();
         switch (this.gettValue()) {
             case TV_BOW:
                 return ObjectUtils.slotByType(player, EquipmentSlotsEnum.EQUIP_BOW, false);
@@ -5973,10 +6095,16 @@ public class ItemObject {
      * Answers whether the player's class can read this object as a spell book - the port of C's
      * {@code obj_can_browse} ({@code obj-util.c}).
      *
-     * <p>Delegates to the kind, since browsability is a property of the book rather than the copy.
-     * Read by the pack ordering, which lists readable books first.
+     * <p>Delegates to {@link ObjectKind#canBrowse()}, since browsability is a property of the book
+     * rather than the copy. That walks the class's books and needs both the type and the sub-type to
+     * match, and reads the live player through {@link GameState#getPlayer()} at the moment of the
+     * call, as C's {@code obj_kind_can_browse} reads its {@code player} global.
      *
-     * <p>Function canBrowse commented in full on 260827.
+     * <p>Read by {@link #earlierObject}, which lists readable books first in a player's pack and
+     * does not ask at all when ordering a store's stock. An object with no kind throws a
+     * {@code NullPointerException} here, where C would dereference null.
+     *
+     * <p>Function canBrowse commented in full on 260827, rewritten in full on 261002.
      *
      * @return {@code true} if the current player's class can browse this object
      */
@@ -5989,7 +6117,8 @@ public class ItemObject {
      * {@code print_custom_message} ({@code obj-util.c}).
      *
      * <p>Messages in the data files are written with tags in braces, so a single line in
-     * {@code object.txt} serves whatever object triggers it. The tags are replaced here and the
+     * {@code activation.txt}, {@code artifact.txt} or {@code player_timed.txt} serves whatever
+     * object triggers it. The tags are replaced here and the
      * finished text handed to {@link Message#messageType} under the caller's type. Four tags are
      * understood, looked up by {@link MessageTag#getTag}:
      *
@@ -6014,13 +6143,23 @@ public class ItemObject {
      * version is called on the object itself, so {@code noObject} carries that case instead, and
      * every place C tests {@code obj} this tests the flag.
      *
-     * <p>Two divergences from the C, neither reachable from the shipped data files. Tag lookup
+     * <p>Three divergences from the C, none reachable from the shipped data files. Tag lookup
      * matches the whole tag where C's {@code msg_tag_lookup} matches only its opening letters, so
-     * a malformed {@code {names}} is dropped here and read as {@code {name}} there. And C builds
-     * the message in a 1024-byte buffer and silently truncates at it, where this builds a string
-     * and cannot.
+     * a malformed {@code {names}} is dropped here and read as {@code {name}} there. A tag's letters
+     * are tested with {@link Character#isAlphabetic}, which accepts any Unicode letter, where C's
+     * {@code isalpha} takes ASCII only. And C builds the message in a 1024-byte buffer and
+     * truncates at it, where this builds a string of any length and leaves the cut to
+     * {@link Message#messageType}, which makes it at 1023 characters.
      *
-     * <p>Function printCustomMessage coded 260829, commented in full on 260829.
+     * <p>One more difference is a fault in C. Its {@code {name}} arm gives
+     * {@code object_desc} the start of its buffer instead of the write position, and
+     * {@code object_desc} begins writing at the start it is given, so text ahead of the tag is
+     * overwritten there. Every message in {@code activation.txt} and {@code artifact.txt} that
+     * carries {@code {name}} begins with it, which hides the fault. Here the name is appended where
+     * the tag stood, as the other three tags are.
+     *
+     * <p>Function printCustomMessage coded 260829, commented in full on 261002; the truncation note
+     * was corrected and the data files and the {@code {name}} arm added on 261002.
      *
      * @param string   the message template, which may be {@code null} - C is called with the
      *                 message field of a property that need not have one, and answers by printing
@@ -6108,9 +6247,11 @@ public class ItemObject {
      * strips the {@code &} article marker and resolves any {@code ~} or {@code |x|y|} in the
      * template.
      *
-     * <p>{@code easyKnow} forces the identified name regardless of awareness. C uses it where the
-     * caller already knows what the kind is - the knowledge menus, the wizard-mode object list and
-     * the ignore settings - rather than as a property of the object.
+     * <p>{@code easyKnow} forces the identified name regardless of awareness. C's callers choose it
+     * by what they are showing, not by a property of the object: the message tags and the wizard-mode
+     * object picker pass {@code true}, the ignore menus pass the kind's own awareness, and the
+     * knowledge menu passes the {@code cheat_xtra} option. The only caller here is
+     * {@link #printCustomMessage}, which always passes {@code true}.
      *
      * <p>Note this is the kind's name, not an object's: there is no quantity prefix, no ego or
      * artifact name, and no runes.
@@ -6119,7 +6260,7 @@ public class ItemObject {
      * string and so cannot truncate, matching the divergence already recorded on
      * {@link #objDescNameFormat}.
      *
-     * <p>Function objectKindName commented in full on 260829.
+     * <p>Function objectKindName commented in full on 261002; the C callers were corrected on 261002.
      *
      * @param kind     the kind to name
      * @param easyKnow whether to use the identified name even when the player is unaware
@@ -6155,7 +6296,8 @@ public class ItemObject {
      * <p>C walks the template once, left to right, copying bytes into a bounded buffer. This
      * version instead rewrites an immutable string in passes: ampersands, then the modifier, then
      * tildes, then bars. That is a deliberate divergence, and it buys four differences in
-     * behaviour, none of them reachable from the shipped game data:
+     * behaviour, none of them reachable from the shipped game data (a fifth, for two {@code ~} in a
+     * row, follows the list):
      *
      * <ul>
      * <li>Because the modifier goes in before the tilde pass, a {@code ~} written directly after a
@@ -6174,7 +6316,12 @@ public class ItemObject {
      * <p>Both error exits hand back the text with any unconsumed bars and tildes still in it, so a
      * malformed template shows up in the game rather than being quietly swallowed.
      *
-     * <p>Function objDescNameFormat commented in full on 260829.
+     * <p>Two {@code ~} in a row take the same exit when pluralising. After the first is replaced the
+     * rest of the template is treated afresh, so the second sits at the front of it and is read as a
+     * {@code ~} with nothing before it, where C reads the first {@code ~} as the preceding character
+     * and writes a bare {@code s}.
+     *
+     * <p>Function objDescNameFormat commented in full on 261002.
      *
      * @param string    the name template to format
      * @param modString the text to substitute for {@code #}, or {@code null} to leave any
@@ -6268,24 +6415,43 @@ public class ItemObject {
     }
 
     /**
-     * Resets this object to a blank slate, as if newly constructed.
+     * Resets every field of this object to the blank value C's zero fill leaves, whatever it held.
      *
-     * <p>The port of C's {@code object_wipe} ({@code obj-pile.c:704}), which frees {@code slays},
+     * <p>The port of C's {@code object_wipe} ({@code obj-pile.c}), which frees {@code slays},
      * {@code brands} and {@code curses} and then {@code memset}s the whole struct to zero. The port
      * has no manual frees to make — the old collections are simply replaced — and where C's zero
      * fill lands on a collection field, this method assigns a fresh empty collection rather than
      * {@code null}, so callers see "empty" rather than risking a {@code NullPointerException}.
      *
-     * <p>{@code origin} resets to {@link uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum#ORIGIN_NONE}
-     * rather than {@code null}: C's zeroed {@code origin} byte lands on ordinal 0, which is
-     * {@code ORIGIN_NONE} in both the C {@code ORIGIN(...)} list ({@code list-origins.h}) and this
-     * enum, matching the convention the no-arg {@link #ItemObject()} constructor already uses.
+     * <p>The collections are <em>replaced</em>, not cleared in place. A handle taken earlier from
+     * {@link #getObjectFlags()} or {@link #getModifiers()} therefore stops reaching the item, and a
+     * set or map the item shared with another is left alone. {@code modifiers} and {@code elInfo}
+     * become insertion-ordered {@link LinkedHashMap}s, as the constructors build them, so that the
+     * order they are walked in does not depend on how their enum keys happen to hash.
      *
-     * <p>Does not touch C's {@code oidx}, {@code prev} or {@code next} — the port does not carry
-     * pile-list pointers or an item-list index as fields on this class.
+     * <p>Where C's zero is not {@code null} the port still lands on it. {@code origin} resets to
+     * {@link uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum#ORIGIN_NONE} rather than
+     * {@code null}: C's zeroed {@code origin} byte lands on ordinal 0, which is {@code ORIGIN_NONE}
+     * in both the C {@code ORIGIN(...)} list ({@code list-origins.h}) and this enum, matching the
+     * convention the no-arg {@link #ItemObject()} constructor already uses. {@code tValue} resets to
+     * {@link TValue#TV_NONE}, which is C's tval 0.
+     *
+     * <p>Three fields come back as {@code null} where C's zero is a value. {@code location} is
+     * {@code null} where C's grid is (0, 0), and {@link #objectAbsorb} reads both as "not on the
+     * floor". {@code time} is {@code null} where C's recharge dice are all zero, and
+     * {@link #numberCharging} reads that as nothing charging. {@code baseDamage} has no C
+     * counterpart at all. Unlike a freshly built item, a wiped one has an empty {@code activation}
+     * list rather than {@code null}.
+     *
+     * <p>C's {@code memset} also zeroes {@code prev} and {@code next}, the pile pointers, and
+     * {@code oidx}, the item-list index. The port keeps no index, and {@code owningPile} stands for
+     * the pointers, so it is reset to {@code null}; the pile itself is not told. {@code player}, the
+     * snapshot the port adds, is left as it was.
+     *
+     * <p>Function wipe coded before 260904, commented in full on 261002; the pile and map notes and
+     * the C line number were removed on 261002.
      *
      * @author Rowan Crowther
-     * <p>Function wipe coded before 260904, commented in full on 260904.
      */
     public void wipe() {
         kind = null;
@@ -6305,8 +6471,8 @@ public class ItemObject {
         toDam = 0;
         toHit = 0;
         flags = new Flag<>(ObjectFlag.class);
-        modifiers = new HashMap<>();
-        elInfo = new HashMap<>();
+        modifiers = new LinkedHashMap<>();
+        elInfo = new LinkedHashMap<>();
         brands = new HashSet<>();
         slays = new HashSet<>();
         curses = new LinkedHashMap<>();
@@ -6364,18 +6530,21 @@ public class ItemObject {
     /**
      * Gives this object a fresh, empty curse map, discarding whatever it already held.
      *
-     * <p>The port of the allocation branch inside C's {@code copy_curses} —
-     * {@code obj->curses = mem_zalloc(z_info->curse_max * sizeof(struct curse_data));}
-     * ({@code obj-curse.c:58-60}) — which runs only when {@code obj->curses} is still
-     * {@code null}. That guard is the caller's job here too; {@link ObjectUtils#copyCurses}
-     * checks {@link #getCurses()} for null before calling this method rather than this method
-     * checking itself.
+     * <p>The port of the allocation branch inside C's {@code copy_curses}
+     * ({@code obj-curse.c}), {@code obj->curses = mem_zalloc(z_info->curse_max * sizeof(struct
+     * curse_data))}, which C runs only when {@code obj->curses} is still {@code null}. This method
+     * has no such guard and always discards what the item held. {@link ObjectUtils#copyCurses}
+     * calls it unconditionally, and is safe in doing so because it has already copied the item's
+     * curses into a scratch map and puts the merged result back with {@link #setCurses} straight
+     * afterwards.
      *
      * <p>An empty map is this port's equivalent of the zeroed array {@code mem_zalloc} hands
      * back: {@link #getCurses()} already reads "no entry" the way C reads a curse slot at power
-     * zero, so there is no C-side loop to mirror here.
+     * zero, so there is no C-side loop to mirror here. The map keeps insertion order, as the
+     * {@code curses} field requires.
      *
-     * <p>Function initCurses coded before 260904, commented in full on 260904.
+     * <p>Function initCurses coded before 260904, commented in full on 261002; the line numbers were
+     * removed and the note on {@code copyCurses} corrected on 261002.
      */
     public void initCurses() {
         curses = new LinkedHashMap<>();
@@ -6434,11 +6603,17 @@ public class ItemObject {
 
     /**
      * Builds the glyph/colour pair this item is drawn as, the port of calling C's
-     * {@code object_char}/{@code object_attr} ({@code [C] ui-object.c}) on the same object and
+     * {@code object_char}/{@code object_attr} ({@code ui-object.c}) on the same object and
      * combining the two results. Used today by {@code PlayerCalcs.redrawStuff}'s {@code PR_EQUIP}
      * arm to build the equippy row's payload, one call per equipped item.
      *
-     * <p>Function getItemObjectADC coded on 260927, commented in full on 260928.
+     * <p>C's two functions read the {@code kind_x_char}, {@code kind_x_attr}, {@code flavor_x_char}
+     * and {@code flavor_x_attr} tables, which start out as the data files' glyphs and colours and
+     * which a pref file can then remap. This port has no such tables and reads the parsed data
+     * directly, so a remapped glyph is not honoured. An item with no kind throws a
+     * {@code NullPointerException}, where C would dereference null.
+     *
+     * <p>Function getItemObjectADC coded on 260927, commented in full on 261002.
      *
      * @return this item's display glyph and colour
      */
@@ -6450,10 +6625,15 @@ public class ItemObject {
 
     /**
      * Picks this item's display glyph, the port of C's {@code object_char} calling
-     * {@code object_kind_char} ({@code [C] ui-object.c}): the flavour's glyph while
+     * {@code object_kind_char} ({@code ui-object.c}): the flavour's glyph while
      * {@link #useFlavourGlyph()} holds, the kind's own glyph otherwise.
      *
-     * <p>Function objectKindChar coded on 260927, commented in full on 260928.
+     * <p>The flavour's glyph is the one the {@code kind:} block of {@code flavor.txt} gives, which
+     * {@link FlavourKind#getGlyph()} holds once for every flavour of that type, where C copies it
+     * onto each flavour. So every potion that is still unidentified is drawn with the same glyph and
+     * differs only in colour.
+     *
+     * <p>Function objectKindChar coded on 260927, commented in full on 261002.
      *
      * @return the glyph this item is drawn as
      */
@@ -6464,10 +6644,13 @@ public class ItemObject {
 
     /**
      * Picks this item's display colour, the port of C's {@code object_attr} calling
-     * {@code object_kind_attr} ({@code [C] ui-object.c}): the flavour's colour while
+     * {@code object_kind_attr} ({@code ui-object.c}): the flavour's colour while
      * {@link #useFlavourGlyph()} holds, the kind's own colour otherwise.
      *
-     * <p>Function objectKindAttr coded on 260927, commented in full on 260928.
+     * <p>The flavour's colour is its own, from its line in {@code flavor.txt}, so it is what tells
+     * two unidentified potions apart on screen.
+     *
+     * <p>Function objectKindAttr coded on 260927, commented in full on 261002.
      *
      * @return the colour this item is drawn in
      */
@@ -6478,14 +6661,15 @@ public class ItemObject {
 
     /**
      * Decides whether this item should be drawn with its flavour's glyph/colour rather than its
-     * kind's own - the port of C's {@code use_flavor_glyph} ({@code [C] ui-object.c}).
+     * kind's own - the port of C's {@code use_flavor_glyph} ({@code ui-object.c}).
      *
      * <p>Matches C's {@code kind->flavor && !(kind->tval == TV_SCROLL && kind->aware)} exactly:
      * a flavoured kind uses its flavour unless it is both a scroll and identified, in which case
      * an aware scroll is shown by its own glyph instead - the one case where being identified
-     * turns the flavour glyph back off rather than on.
+     * turns the flavour glyph back off rather than on. The test reads the kind's type, not the
+     * object's, as C does.
      *
-     * <p>Function useFlavourGlyph coded on 260927, commented in full on 260928.
+     * <p>Function useFlavourGlyph coded on 260927, commented in full on 261002.
      *
      * @return {@code true} if this item's flavour glyph/colour should be used over its kind's own
      */

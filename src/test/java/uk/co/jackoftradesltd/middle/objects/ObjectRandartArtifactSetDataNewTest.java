@@ -44,14 +44,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests {@link ObjectRandart#artifactSetDataNew()} and the {@link ArtifactSetData} constructor it
- * wraps — the port of C's {@code artifact_set_data_new()} ({@code obj-randart.c:2993}).
+ * wraps — the port of C's {@code artifact_set_data_new()} ({@code obj-randart.c}).
  *
  * <p>C allocates the struct with {@code mem_zalloc}, so every one of its eleven learned-probability
- * arrays reads {@code 0} at any valid index before a single artifact has been examined. Neither
- * {@link ObjectRandart#artifactSetDataNew()} nor {@link ArtifactSetData} expose that state through an
- * accessor yet, so every assertion here reaches it through reflection — the same technique
- * {@code ObjectRegistryTablesTest} and {@code PlayerBirthGetAHWTest} already use for fields with no
- * getters.
+ * arrays reads {@code 0} at any valid index before a single artifact has been examined. The
+ * assertions here reach that state through reflection, so they can also check map sizes and the
+ * {@code ART_IDX_TOTAL} sentinel, which the per-key getters cannot show — the same technique
+ * {@code ObjectRegistryTablesTest} and {@code PlayerBirthGetAHWTest} use. The public accessors are
+ * covered separately in {@code ArtifactSetDataTest}.
  *
  * <p>{@link ObjectRegistry}'s artifact table is static and read by the constructor, so each test
  * saves and restores it, matching {@code ObjectRegistryTablesTest}'s pattern.
@@ -140,7 +140,8 @@ class ObjectRandartArtifactSetDataNewTest {
 
     /**
      * The six mean start and increment values, which C sets by hand after the {@code mem_zalloc}
-     * ({@code obj-randart.c:3011-3016}) rather than leaving them zeroed.
+     * ({@code obj-randart.c}, function {@code artifact_set_data_new()}) rather than leaving them
+     * zeroed.
      *
      * @throws Exception if a field cannot be reached
      */

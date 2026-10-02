@@ -283,6 +283,9 @@ public class Curse {
      * the {@code values:} line); element resistances are held in {@link #getElInfo()}
      */
     public Map<ObjectModifier, Integer> getModifiers() {
+        if (modifiers == null)
+            return Map.of();
+        
         return modifiers;
     }
 

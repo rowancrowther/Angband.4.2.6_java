@@ -117,13 +117,37 @@ Stage 3: new `ItemObjectPropertyPowerTest`, 97 cases. The full suite is green.
 
 Already stamped in C: all nine functions carried `/* Ported to Java 2026-08-30 */`, so Stage 5 added nothing.
 
-## Batch 6 - object power: damage
+## Batch 6 - object power: damage (done 2026-10-02)
 
 Methods, each with its plain and `Curse` overload where it has one: `slayPower`, `extraMightPower`, `extraShotsPower`,
 `extraBlowsPower`, `launcherAmmoDamagePower`, `bowMulitplier`, `ammoDamagePower`, `damageDicePower`, `toDamagePower`.
 
 C sources: `slay_power`, `extra_might_power`, `extra_shots_power`, `extra_blows_power`, `launcher_ammo_damage_power`,
 `bow_multiplier`, `ammo_damage_power`, `damage_dice_power`, `to_damage_power` (`obj-power.c`).
+
+Matches C: all nine, clause for clause, on every value walked through. The `archery` rows, the five constants, the three
+inhibit thresholds, the truncating divisions and the order of steps in both `objectPower` overloads all agree.
+
+Fixed: `damageDicePower` and `toDamagePower` now refresh `player` before the shooting-slot lookup, as `ammoDamagePower`
+already did, so an item built before a character exists prices against the live player. A null modifier map in a `Curse`
+no longer throws in `extraBlowsPower(Curse)` or `extraShotsPower(Curse)`, because `Curse.getModifiers()` now answers an
+empty map.
+
+Accepted divergences: `ammoDamagePower` answers zero for an item with no kind where C would dereference null; with no
+character at all the slot lookup throws a `NullPointerException` where C would crash on its null global; the Java
+`damageDicePower(Curse)` logs "non-combat bonuses" where C says "non-weapon combat bonuses".
+
+Deferred: `wieldSlot` still reads the construction-time `player`, so the shooting-slot tests are only as live as the
+refresh each caller does first. It belongs to Batch 8.
+
+Stage 2: the C line numbers were removed from all eighteen method blocks and from the `archery` block in
+`ObjectRegistry`; the eleven field blocks these methods read were extended, including `player`, whose note no longer
+says only `wieldSlot` reaches it; the unsupported claims that a ring's doubled to-damage and the floor of 1 in
+`slayPower` are deliberate were dropped.
+
+Stage 3: new `ItemObjectDamagePowerTest`, 152 cases. The full suite is green.
+
+Already stamped in C: all nine functions carried `/* Ported to Java 2026-08-30 */`, so Stage 5 added nothing.
 
 ## Batch 7 - knowledge, ignoring and flags
 

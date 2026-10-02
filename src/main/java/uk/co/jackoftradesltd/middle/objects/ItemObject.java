@@ -109,12 +109,15 @@ public class ItemObject {
      * that read it without refreshing (the partial absorb and {@link #wieldSlot}) still depend on the
      * snapshot.
      *
-     * <p>The power calculation reaches it only through {@link #wieldSlot}, by way of
-     * {@link #rescaleBowPower(int)}, which fetches the live player for the shooting slot it compares
-     * against. The bow test therefore compares a slot found on the snapshot with one found on the
-     * live player, and the two agree only while both players have the same body.
+     * <p>The power calculation reads it through {@link #wieldSlot}, which every shooting-slot test
+     * in the damage and bow steps goes through. {@link #toDamagePower()}, {@link #damageDicePower()},
+     * {@link #ammoDamagePower(int)} and {@link #rescaleBowPower(int)} each refresh it from
+     * {@link GameState#getPlayer()} before they ask, so those steps see the live player, as C's
+     * {@code player} global does. The refresh finds {@code null} when no character exists, and the
+     * slot lookup then throws where C would crash.
      *
-     * <p>Field player commented in full on 261002, power note revised on 261002.
+     * <p>Field player commented in full on 261002, power note revised on 261002 and again on 261002
+     * for the damage steps.
      */
     private Player player;
 
@@ -128,7 +131,11 @@ public class ItemObject {
      * falls back on the kind's power when the item carries no activation of its own, and skips the
      * fallback for an item with no kind, which C would dereference.
      *
-     * <p>Field kind commented in full on 261002, pricing added on 261002, effects power added on 261002.
+     * <p>{@link #ammoDamagePower(int)} reads the kind's flags to learn which ammunition a launcher
+     * fires, and answers zero for an item with no kind where C would dereference it.
+     *
+     * <p>Field kind commented in full on 261002, pricing added on 261002, effects power added on 261002,
+     * ammunition read added on 261002.
      */
     private ObjectKind kind;
     /**
@@ -138,9 +145,11 @@ public class ItemObject {
      * <p>Compared by identity in {@link #similar}, as C compares pointers: two items stack only
      * if they carry the very same ego entry from the registry, or both carry none. {@link
      * #objectValueReal} also tests it: a burning light is divided down as an expendable only when
-     * it has no ego.
+     * it has no ego. {@link #launcherAmmoDamagePower(int)} tests it too: only ego ammunition takes
+     * the launcher's assumed to-damage bonus.
      *
-     * <p>Field ego commented in full on 261002, pricing added on 261002.
+     * <p>Field ego commented in full on 261002, pricing added on 261002, ammunition read added on
+     * 261002.
      */
     private EgoItem ego;
     /**
@@ -211,8 +220,13 @@ public class ItemObject {
      * flag can be worth more on one kind of object than another, and {@link #jewelleryPower(int)}
      * asks whether it is a ring or an amulet.
      *
+     * <p>The damage steps read it as well. {@link #damageDicePower()} and {@link #toDamagePower()}
+     * ask whether it is a melee weapon or ammunition, {@link #launcherAmmoDamagePower(int)} takes
+     * its archery row from it, and {@link #bowMulitplier()} treats only {@code TV_BOW} as a
+     * launcher.
+     *
      * <p>Field tValue commented in full on 261002, pricing added on 261002, property pricing added
-     * on 261002.
+     * on 261002, damage pricing added on 261002.
      */
     private TValue tValue;
     /**
@@ -236,7 +250,11 @@ public class ItemObject {
      * one's, capped at {@code MAX_PVAL}, for charged items and gold. {@link #objectValueReal}
      * prices the charges of a wand or staff from it, per item as {@code pValue * quantity / number}.
      *
-     * <p>Field pValue commented in full on 261002, pricing added on 261002.
+     * <p>{@link #bowMulitplier()} reads it as a launcher's damage multiplier, and only for
+     * {@code TV_BOW}.
+     *
+     * <p>Field pValue commented in full on 261002, pricing added on 261002, bow multiplier added on
+     * 261002.
      */
     private int pValue;
     /**
@@ -258,14 +276,20 @@ public class ItemObject {
      * Number of damage dice. C's {@code obj->dd}, a {@code uint8_t}. One of the values
      * {@link #similar} requires to be identical before two weapons stack.
      *
-     * <p>Field damageDice commented in full on 261002.
+     * <p>{@link #damageDicePower()} prices a melee weapon or a missile from it, as
+     * {@code damageDice * (damageSides + 1) * DAMAGE_POWER / 4}.
+     *
+     * <p>Field damageDice commented in full on 261002, damage pricing added on 261002.
      */
     private int damageDice;
     /**
      * Sides per damage die. C's {@code obj->ds}, a {@code uint8_t}. Compared with
      * {@link #damageDice} by {@link #similar}.
      *
-     * <p>Field damageSides commented in full on 261002.
+     * <p>{@link #damageDicePower()} reads it as the side count plus one, which is twice the average
+     * roll of a die.
+     *
+     * <p>Field damageSides commented in full on 261002, damage pricing added on 261002.
      */
     private int damageSides;
     /**
@@ -310,8 +334,11 @@ public class ItemObject {
      * This item's own to-damage bonus, rolled at generation. C's {@code obj->to_d}. See
      * {@link #toAC} for why the instance holds a number and the kind holds dice.
      *
+     * <p>{@link #toDamagePower()} prices it at half of {@code DAMAGE_POWER} a point, and again at
+     * the full figure for an object that is not a weapon, missile or launcher.
+     *
      * <p>Field toDam coded before 260815, retyped from {@code Random} to {@code int} on 260815.
-     * Commented in full on 260815.
+     * Commented in full on 260815, damage pricing added on 261002.
      */
     private int toDam;
     /**
@@ -379,8 +406,15 @@ public class ItemObject {
      * shared, but an immutable empty one if it was never created. {@link #modifierPower(int)} reads
      * it for every modifier there is, treating an absent entry as zero.
      *
+     * <p>The damage steps read three entries by name, again as zero when absent:
+     * {@link #extraBlowsPower(int)}, {@link #extraShotsPower(int)} and
+     * {@link #extraMightPower(PowerAndMult)} price blows, shots and might, and
+     * {@link #damageDicePower()} treats any of the three above zero as a reason to credit a
+     * non-weapon with a flat assumed damage.
+     *
      * <p>Comment corrected on 260816, when the field's type changed from the unparsed dice text it
-     * had previously held. Field modifiers commented in full on 261002, power added on 261002.
+     * had previously held. Field modifiers commented in full on 261002, power added on 261002,
+     * damage steps added on 261002.
      */
     private Map<ObjectModifier, Integer> modifiers;
     /**
@@ -410,14 +444,23 @@ public class ItemObject {
      * {@link #freeBrands()} replaces the set on a scratch copy with an empty one once it has been
      * priced.
      *
-     * <p>Field brands commented in full on 260817, power added on 261002.
+     * <p>{@link #slayPower(int, boolean, int)} counts them and takes the best figure among them, and
+     * {@link #damageDicePower()} treats a non-empty set as a reason to credit a non-weapon with a
+     * flat assumed damage. {@link #getBrands()} answers an empty set while none exists.
+     *
+     * <p>Field brands commented in full on 260817, power added on 261002, damage steps added on
+     * 261002.
      */
     private Set<Brand> brands;
     /**
      * Slays on the item — C's {@code obj->slays}. As {@link #brands}, including the part played by
      * {@link #applyCurseAttributes} and {@link #freeSlays()}.
      *
-     * <p>Field slays commented in full on 260817, power added on 261002.
+     * <p>{@link #slayPower(int, boolean, int)} splits them into slays and kills by multiplier, so a
+     * slay of three or less counts as a slay and anything above counts as a kill.
+     *
+     * <p>Field slays commented in full on 260817, power added on 261002, damage steps added on
+     * 261002.
      */
     private Set<Slay> slays;
 
@@ -5050,24 +5093,25 @@ public class ItemObject {
 
     /**
      * Adds power for this object's brands and slays - the port of C's {@code slay_power}
-     * ({@code obj-power.c:335}).
+     * ({@code obj-power.c}).
      *
      * <p>Priced from the <em>best</em> brand or slay rather than the sum of them, because only one
      * applies to any given blow. That best figure is a percentage-style number where 100 means "no
      * better than a bare weapon", so subtracting 100 is what turns it into a bonus - and what lets a
-     * weak brand price negatively. The floor of 1 rather than 0 is C's, and gives a deliberate
-     * penalty when every brand and slay present is worthless.
+     * weak brand price negatively. The search starts from 1 rather than 0, as C's does, so a set
+     * whose every member scores below 100 still takes the full penalty of 99 below it.
      *
-     * <p>The result is scaled by the damage dice squared, so the same brand is worth far more on a
-     * heavy weapon than on a light one.
+     * <p>The result is scaled by the damage dice squared and divided by 2500, truncating, so the
+     * same brand is worth far more on a heavy weapon than on a light one.
      *
      * <p>Carrying several then buys further bonuses - separately for slays, for brands, for having
      * both, and for kills, which are slays with a multiplier above three and counted apart from
-     * them. Holding a complete set of any of the three buys a flat bonus on top.
+     * them. Holding a complete set of any of the three buys a flat bonus on top: 10 for eight
+     * slays, 20 for five brands, 20 for three kills.
      *
      * <p>Returns early when there is nothing to price, which is the common case.
      *
-     * <p>Function slayPower commented in full on 260827.
+     * <p>Function slayPower coded before 260827, commented in full on 261002.
      *
      * @param power     the running power total
      * @param verbose   {@code true} to log each brand and slay and the best figure
@@ -5156,9 +5200,10 @@ public class ItemObject {
      * Returns its input: no curse in {@code curse.txt} carries a brand or a slay.
      *
      * <p>C's {@code slay_power} returns {@code p} as soon as the counts come to zero
-     * ({@code obj-power.c:366}), which is what running it over a curse object does.
+     * ({@code obj-power.c}), which is what running it over a curse object does: a curse object has
+     * no brand or slay table, and {@code curse.txt} has no line that could give it one.
      *
-     * <p>Function slayPower commented in full on 260827.
+     * <p>Function slayPower coded before 260827, commented in full on 261002.
      *
      * @param curse     the curse being priced
      * @param power     the running power total
@@ -5172,19 +5217,20 @@ public class ItemObject {
 
     /**
      * Applies extra shooting might to the running total - the port of C's
-     * {@code extra_might_power} ({@code obj-power.c:302}).
+     * {@code extra_might_power} ({@code obj-power.c}).
      *
-     * <p>Might multiplies rather than adds: it raises the launcher's multiplier, and the whole
+     * <p>Might multiplies rather than adds: it adds to the launcher's multiplier, and the whole
      * damage total so far is multiplied by the result. That is why this step comes after the damage
-     * terms and before everything else.
+     * terms and before the brand and slay pricing. An object with no might still multiplies by its
+     * launcher multiplier, which is one for anything that is not a bow.
      *
-     * <p>Might at or above the inhibit threshold refuses the object instead of pricing it, returning
-     * at once with the multiplier untouched.
+     * <p>Might at or above the inhibit threshold refuses the object instead of pricing it, adding
+     * {@code INHIBIT_POWER} and returning at once with the multiplier untouched.
      *
      * <p>Returns both figures because the caller keeps the multiplier as well; C passes it by value
      * and returns only the power, having no need of it afterwards.
      *
-     * <p>Function extraMightPower commented in full on 260827.
+     * <p>Function extraMightPower coded before 260827, commented in full on 261002.
      *
      * @param incoming the running power total and current multiplier
      * @return the updated total and multiplier
@@ -5214,9 +5260,10 @@ public class ItemObject {
      * against the curse's own modifier.
      *
      * <p>Not an identity: curses can carry a might modifier, and C prices it by running the same
-     * function over the curse object.
+     * function over the curse object. The multiplier it starts from is the one the caller passes,
+     * which is one, since {@link #bowMulitplier(Curse)} answers one for a curse.
      *
-     * <p>Function extraMightPower commented in full on 260827.
+     * <p>Function extraMightPower coded before 260827, commented in full on 261002.
      *
      * @param curse    the curse being priced
      * @param incoming the running power total and current multiplier
@@ -5249,15 +5296,16 @@ public class ItemObject {
 
     /**
      * Applies extra shots to the running total - the port of C's {@code extra_shots_power}
-     * ({@code obj-power.c:322}).
+     * ({@code obj-power.c}).
      *
-     * <p>Proportional rather than additive: each extra shot raises the total by a tenth, because
-     * shots multiply everything the launcher already does.
+     * <p>Proportional rather than additive: each point of the shots modifier raises the total by a
+     * tenth of itself, truncating, because shots multiply everything the launcher already does. The
+     * log reports ten times the modifier as the percentage.
      *
      * <p>Shots at or above the inhibit threshold refuse the object. Negative shots are not handled,
-     * as C's own comment says.
+     * as C's own comment says: they leave the total as it was.
      *
-     * <p>Function extraShotsPower commented in full on 260827.
+     * <p>Function extraShotsPower coded before 260827, commented in full on 261002.
      *
      * @param power the running power total
      * @return the total, scaled up for any extra shots
@@ -5285,17 +5333,21 @@ public class ItemObject {
      * Applies a curse's extra shots, mirroring {@link #extraShotsPower(int)} against the curse's own
      * modifier.
      *
-     * <p>Not an identity: curses can carry a shots modifier.
+     * <p>Not an identity: curses can carry a shots modifier. A curse with no modifiers, or with
+     * none for shots, leaves the total as it was.
      *
-     * <p>Function extraShotsPower commented in full on 260827.
+     * <p>Function extraShotsPower coded before 260827, commented in full on 261002.
      *
      * @param curse the curse being priced
      * @param power the running power total
      * @return the total, scaled up for any extra shots the curse grants
      */
     private int extraShotsPower(Curse curse, int power) {
-        if (!curse.getModifiers().containsKey(ObjectModifier.OM_SHOTS)
-                || curse.getModifiers().getOrDefault(ObjectModifier.OM_SHOTS, 0) == 0) {
+        if (curse == null)
+            return power;
+
+        if (curse.getModifiers() != null && (!curse.getModifiers().containsKey(ObjectModifier.OM_SHOTS)
+                || curse.getModifiers().getOrDefault(ObjectModifier.OM_SHOTS, 0) == 0)) {
             return power;
         }
 
@@ -5315,15 +5367,17 @@ public class ItemObject {
 
     /**
      * Applies extra blows to the running total - the port of C's {@code extra_blows_power}
-     * ({@code obj-power.c:268}).
+     * ({@code obj-power.c}).
      *
-     * <p>Two parts. The total is scaled by the blows the object gives relative to the assumed
-     * maximum, and then a flat amount is added for damage the player deals that does not come from
-     * the weapon - rings and the like - which extra blows also multiply.
+     * <p>Two parts. The total is scaled by {@code (MAX_BLOWS + blows) / MAX_BLOWS}, truncating, and
+     * then a flat amount is added - {@code NONWEAP_DAMAGE} times the blows times half of
+     * {@code DAMAGE_POWER} - which C describes as a fudge to boost extra blows, standing for damage
+     * the player deals that does not come from the weapon.
      *
-     * <p>Blows at or above the inhibit threshold refuse the object.
+     * <p>Blows at or above the inhibit threshold refuse the object. A negative figure goes through
+     * the same scaling and takes power away.
      *
-     * <p>Function extraBlowsPower commented in full on 260827.
+     * <p>Function extraBlowsPower coded before 260827, commented in full on 261002.
      *
      * @param power the running power total
      * @return the total, scaled and boosted for any extra blows
@@ -5353,9 +5407,10 @@ public class ItemObject {
      * Applies a curse's extra blows, mirroring {@link #extraBlowsPower(int)} against the curse's own
      * modifier.
      *
-     * <p>Not an identity: curses can carry a blows modifier.
+     * <p>Not an identity: curses can carry a blows modifier. A curse with none for blows leaves the
+     * total as it was.
      *
-     * <p>Function extraBlowsPower commented in full on 260827.
+     * <p>Function extraBlowsPower coded before 260827, commented in full on 261002.
      *
      * @param curse the curse being priced
      * @param power the running power total
@@ -5386,17 +5441,19 @@ public class ItemObject {
 
     /**
      * Prices ammunition for the launcher that will fire it - the port of C's
-     * {@code launcher_ammo_damage_power} ({@code obj-power.c:255}).
+     * {@code launcher_ammo_damage_power} ({@code obj-power.c}).
      *
      * <p>A missile is worth little on its own and a great deal once launched, so its total is
-     * multiplied by the assumed launcher multiplier for its type and then rescaled to a per-turn
-     * figure. Ego ammunition additionally takes the launcher's assumed to-damage bonus, because an
-     * ego missile is the one worth enchanting.
+     * multiplied by the assumed launcher multiplier for its type and then divided by twice
+     * {@code MAX_BLOWS}, truncating, which rescales it against a melee weapon's blows. Ego
+     * ammunition additionally takes the launcher's assumed to-damage bonus before that, at half of
+     * {@code DAMAGE_POWER} a point.
      *
      * <p>The stored multiplier is doubled, which is why the divisor is twice the assumed blows; see
-     * {@link Archery}.
+     * {@link Archery}. The row comes from {@code ObjectRegistry.archery}, keyed by this object's
+     * type, where C indexes by the type's distance from {@code TV_SHOT}.
      *
-     * <p>Function launcherAmmoDamagePower commented in full on 260827.
+     * <p>Function launcherAmmoDamagePower coded before 260827, commented in full on 261002.
      *
      * @param power the running power total
      * @return the total, multiplied and rescaled if this object is ammunition
@@ -5418,10 +5475,10 @@ public class ItemObject {
     /**
      * Returns its input: a curse is not ammunition.
      *
-     * <p>C's {@code launcher_ammo_damage_power} sits behind {@code tval_is_ammo(obj)}
-     * ({@code obj-power.c:261}), and a curse object's tval is {@code TV_NONE}.
+     * <p>C's {@code launcher_ammo_damage_power} does its work only inside {@code tval_is_ammo(obj)}
+     * ({@code obj-power.c}), and a curse object's tval is {@code TV_NONE}.
      *
-     * <p>Function launcherAmmoDamagePower commented in full on 260827.
+     * <p>Function launcherAmmoDamagePower coded before 260827, commented in full on 261002.
      *
      * @param curse the curse being priced
      * @param power the running power total
@@ -5433,15 +5490,15 @@ public class ItemObject {
 
     /**
      * Reports the damage multiplier a launcher gives - the port of C's {@code bow_multiplier}
-     * ({@code obj-power.c:158}).
+     * ({@code obj-power.c}).
      *
      * <p>Anything that is not a bow multiplies by one, which lets the caller apply the result
-     * unconditionally. For a bow the multiplier is its {@code pval}, where the data file keeps it.
+     * unconditionally. For a bow the multiplier is its {@code pval}, as in C.
      *
      * <p>The method name has its letters transposed, which is worth knowing when searching for
      * callers.
      *
-     * <p>Function bowMulitplier commented in full on 260827.
+     * <p>Function bowMulitplier coded before 260827, commented in full on 261002.
      *
      * @return the launcher's multiplier, or 1 for anything that is not one
      */
@@ -5461,9 +5518,9 @@ public class ItemObject {
      * Returns 1: a curse is not a bow, so it multiplies nothing.
      *
      * <p>C's {@code bow_multiplier} returns its initial {@code mult} of 1 for any object whose tval
-     * is not {@code TV_BOW} ({@code obj-power.c:162}).
+     * is not {@code TV_BOW} ({@code obj-power.c}).
      *
-     * <p>Function bowMulitplier commented in full on 260827.
+     * <p>Function bowMulitplier coded before 260827, commented in full on 261002.
      *
      * @param curse the curse being priced
      * @return {@code 1}
@@ -5474,16 +5531,21 @@ public class ItemObject {
 
     /**
      * Prices a launcher for the ammunition it will fire - the port of C's
-     * {@code ammo_damage_power} ({@code obj-power.c:232}).
+     * {@code ammo_damage_power} ({@code obj-power.c}).
      *
      * <p>The mirror of {@link #launcherAmmoDamagePower(int)}: a bow does no damage by itself, so it
-     * is priced by what its ammunition is assumed to average. Which ammunition that is comes from
-     * the launcher's kind flags, since a sling, a bow and a crossbow take different things.
+     * is priced by what its ammunition is assumed to average, at half of {@code DAMAGE_POWER} a
+     * point of that average. Which ammunition that is comes from the launcher's kind flags, since a
+     * sling, a bow and a crossbow take different things, tested in the order shots, arrows, bolts.
      *
-     * <p>Applies to whatever is worn in the shooting slot. Returns an increment rather than a new
-     * total, which is why the caller adds it on.
+     * <p>Applies to anything {@link #wieldSlot()} sends to the shooting slot, worn or not. Returns
+     * an increment rather than a new total, which is why the caller adds it on. The player is
+     * refreshed from {@link GameState#getPlayer()} first, so the slot comparison sees the live
+     * body.
      *
-     * <p>Function ammoDamagePower commented in full on 260827.
+     * <p>An object with no kind answers zero, where C would dereference it.
+     *
+     * <p>Function ammoDamagePower coded before 260827, commented in full on 261002.
      *
      * @param power the running power total, used only for the log line
      * @return the power to add for the ammunition this launcher fires, or zero
@@ -5494,6 +5556,8 @@ public class ItemObject {
 
         if (this.getKind() == null) return 0;
         ObjectKind kind = this.getKind();
+
+        player = GameState.getPlayer();
 
         if (wieldSlot() == ObjectUtils.slotByName(player, "shooting")) {
             if (kind.getKindFlags().has(ObjectKindFlag.KF_SHOOTS_SHOTS))
@@ -5516,10 +5580,10 @@ public class ItemObject {
     /**
      * Returns zero: a curse is not worn in the shooting slot, so there is no ammunition to price.
      *
-     * <p>C's {@code ammo_damage_power} returns its {@code q} of 0 unless the object is in that slot
-     * ({@code obj-power.c:238}).
+     * <p>C's {@code ammo_damage_power} returns its {@code q} of 0 unless {@code wield_slot} sends
+     * the object to that slot ({@code obj-power.c}), and a curse object has no tval to send.
      *
-     * <p>Function ammoDamagePower commented in full on 260827.
+     * <p>Function ammoDamagePower coded before 260827, commented in full on 261002.
      *
      * @param curse the curse being priced
      * @param power unused
@@ -5531,24 +5595,30 @@ public class ItemObject {
 
     /**
      * Prices what this object's damage dice are worth - the port of C's
-     * {@code damage_dice_power} ({@code obj-power.c:199}).
+     * {@code damage_dice_power} ({@code obj-power.c}).
      *
-     * <p>A melee weapon or a missile is priced from its dice: average damage times the rate.
+     * <p>A melee weapon or a missile is priced from its dice, as
+     * {@code dice * (sides + 1) * DAMAGE_POWER / 4}: the sides plus one is twice the average roll,
+     * and the rate is half of {@code DAMAGE_POWER}, which together make the average damage times
+     * the rate.
      *
-     * <p>Anything else that is not a launcher can still be worth a damage term, if it carries
-     * something that makes the player's other attacks better - a brand, a slay, or a blows, shots or
-     * might modifier. Such an object is credited with a flat assumed damage instead, because there
-     * are no dice to price.
+     * <p>Anything else that {@link #wieldSlot()} does not send to the shooting slot can still be
+     * worth a damage term, if it carries something that makes the player's other attacks better - a
+     * brand, a slay, or a blows, shots or might modifier above zero. Such an object is credited with
+     * {@code WEAP_DAMAGE * DAMAGE_POWER} instead, because there are no dice to price. A launcher
+     * takes neither branch, and its term is zero.
      *
      * <p>Returns the dice term alone rather than a running total; the caller adds it on and keeps it,
-     * because the brand and slay pricing needs it later.
+     * because the brand and slay pricing needs it later. The player is refreshed from
+     * {@link GameState#getPlayer()} first, so the slot comparison sees the live body.
      *
-     * <p>Function damageDicePower commented in full on 260827.
+     * <p>Function damageDicePower coded before 260827, commented in full on 261002.
      *
      * @return the damage-dice term for this object
      */
     private int damageDicePower() {
         int dice = 0;
+        player = GameState.getPlayer();
 
         // Add damage from dice for any wearable weapon or ammo
         if (this.gettValue().isMeleeWeapon() || this.gettValue().isAmmo()) {
@@ -5573,9 +5643,10 @@ public class ItemObject {
      *
      * <p>Only that branch applies: a curse has no dice of its own and is not worn in the shooting
      * slot, so C reaches the same test - blows, shots or might above zero - and credits the same
-     * flat assumed damage.
+     * flat assumed damage. A curse with no modifiers, or none above zero for those three, takes a
+     * term of zero.
      *
-     * <p>Function damageDicePower commented in full on 260827.
+     * <p>Function damageDicePower coded before 260827, commented in full on 261002.
      *
      * @param curse the curse being priced
      * @return the damage-dice term for the curse
@@ -5598,13 +5669,17 @@ public class ItemObject {
 
     /**
      * Adds power for this object's to-damage bonus - the port of C's {@code to_damage_power}
-     * ({@code obj-power.c:177}).
+     * ({@code obj-power.c}).
      *
-     * <p>Counted twice for an object that is neither a weapon, nor ammunition, nor worn in the
-     * shooting slot. That is deliberate in C: a ring of damage improves every blow the player lands,
-     * where a weapon's bonus improves only its own, so the ring is worth more per point.
+     * <p>The first lot is half of {@code DAMAGE_POWER} a point, truncating. An object that is
+     * neither a melee weapon, nor ammunition, nor sent to the shooting slot by {@link #wieldSlot()}
+     * takes a second lot at the full {@code DAMAGE_POWER} a point, as C does, so a point of
+     * to-damage on a ring is priced at three times a point on a weapon.
      *
-     * <p>Function toDamagePower commented in full on 260827.
+     * <p>The player is refreshed from {@link GameState#getPlayer()} before the slot is asked for,
+     * so the comparison sees the live body.
+     *
+     * <p>Function toDamagePower coded before 260827, commented in full on 261002.
      *
      * @return this object's to-damage term
      */
@@ -5613,6 +5688,7 @@ public class ItemObject {
         if (power != 0)
             logger.info("{} power from to_dam", power);
 
+        player = GameState.getPlayer();
         // Add second lot of damage power for non weapons
         if ((this.wieldSlot() != ObjectUtils.slotByName(player, "shooting"))
                 && !this.gettValue().isMeleeWeapon()
@@ -5632,9 +5708,9 @@ public class ItemObject {
      *
      * <p>Takes the second lot of damage power unconditionally, and that is right: a curse object is
      * not a weapon, not ammunition and not worn in the shooting slot, so C always reaches that
-     * branch.
+     * branch. The curse's figure is {@code getCombatDam()}.
      *
-     * <p>Function toDamagePower commented in full on 260827.
+     * <p>Function toDamagePower coded before 260827, commented in full on 261002.
      *
      * @param curse the curse being priced
      * @return the curse's to-damage term

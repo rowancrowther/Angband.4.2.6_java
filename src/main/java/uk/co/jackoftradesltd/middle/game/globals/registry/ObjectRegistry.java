@@ -178,7 +178,7 @@ public class ObjectRegistry {
     private static final Logger logger = LogManager.getLogger();
     /**
      * The launcher-and-ammo pricing assumptions, keyed by ammunition type - the port of C's
-     * {@code archery[]} table ({@code obj-power.c:47}). See {@link Archery} for what the rows mean
+     * {@code archery[]} table ({@code obj-power.c}). See {@link Archery} for what the rows mean
      * and why the port keys them where C indexes.
      */
     public static Map<TValue, Archery> archery;

@@ -33,6 +33,7 @@ import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -98,8 +99,9 @@ class PlayerFlavourAwareTest {
 
         ItemObject item = new ItemObject();
         item.setKind(kind);
-        // An empty list, not a null: the assertions are about which list object the counterpart ends
-        // up holding, and a fresh ItemObject leaves its own effect null, so identity is enough to
+        // The assertions are about which list object the counterpart ends up holding. A fresh
+        // ItemObject starts with an empty effect list of its own, so the item and its counterpart
+        // hold different lists until the counterpart learns the item's, and identity is enough to
         // tell "learned it" from "did not".
         item.setEffect(new ArrayList<Effect>());
         poke(ItemObject.class, item, "known", new ItemObject());
@@ -149,7 +151,7 @@ class PlayerFlavourAwareTest {
         void counterpartLearnsEffect() throws Exception {
             ItemObject potion = unknownPotion();
 
-            assertNull(potion.getKnown().getEffect());
+            assertNotSame(potion.getEffect(), potion.getKnown().getEffect());
             flavourAware(potion);
 
             assertSame(potion.getEffect(), potion.getKnown().getEffect());
@@ -169,7 +171,7 @@ class PlayerFlavourAwareTest {
 
             flavourAware(potion);
 
-            assertNull(potion.getKnown().getEffect());
+            assertNotSame(potion.getEffect(), potion.getKnown().getEffect());
             assertTrue(player.getPlayerUpkeep().orNoticeFlag(PlayerNotice.PN_IGNORE));
         }
 

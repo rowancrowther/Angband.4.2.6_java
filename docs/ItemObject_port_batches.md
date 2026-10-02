@@ -24,20 +24,47 @@ Open findings:
 - `earlierObject` and `similar` read the static `player`, which is whatever `GameState.getPlayer()` returned when an
   `ItemObject` was last constructed, where C reads its `player` global at the moment of the call.
 
-## Batch 2 - stackability, absorb, split, copy
+## Batch 2 - stackability, absorb, split, copy (done 2026-10-02)
 
 Methods: `mergeable`, `objectStackable`, `objectAbsorb`, `objectAbsorbMerge`, `nullKnown`, `objectSplit`, `copy`,
 `objectIsInQuiver`, `objectWeightOne`, `checkForInscription`, `verifyObject`.
 
 C sources: `object_mergeable`, `object_stackable`, `object_absorb`, `object_absorb_merge`, `object_split`,
-`object_copy` / `object_copy_amt` (`obj-pile.c`), `object_weight_one`, `check_for_inscrip` (`obj-util.c`),
-`object_is_in_quiver` (`obj-gear.c`), `verify_object` (`ui-object.c`).
+`object_copy` / `object_copy_amt` (`obj-pile.c`), `object_weight_one`, `check_for_inscrip`, `verify_object`
+(`obj-util.c`), `object_is_in_quiver` (`obj-gear.c`). There is no Java counterpart to `object_copy_amt`.
 
-## Batch 3 - value
+Matches C: `objectStackable`, `objectIsInQuiver`, `objectWeightOne`, `checkForInscription`, `nullKnown`, and
+`verifyObject`'s flags.
+
+Fixed: `objectAbsorb` now refreshes `player`; `objectSplit` aligns the known count first; `mergeable` tests `this` for
+ammo.
+
+Accepted divergences: `objectAbsorbMerge` ignores an empty absorbed note, which C does not test for (no empty notes
+exist); `copy(false)` leaves `known` null where C's `object_copy` copies the pointer (`includingKnown` stays).
+
+Deferred: `object_copy_amt` is used only by the store code, so it waits for Chapter 8. `verifyObject` prints a
+placeholder name until `description` is ported in Chapter 7.
+
+Stage 3: new `ItemObjectCopyTest`; new absorb, split and charge-pooling cases in `ItemObjectAbsorbTest`; an ordering
+case in `ItemObjectWeightTest`. `ItemObjectStackingTest` now seeds the registry's curse list, which `similar` reads.
+
+## Batch 3 - value (done 2026-10-02)
 
 Methods: `objectValue`, `objectValueBase`, `objectValueReal`.
 
-C sources: `object_value`, `object_value_base`, `object_value_real` (`obj-util.c`).
+C sources: `object_value`, `object_value_base`, `object_value_real` (`obj-power.c`).
+
+Matches C: all three, clause for clause. The overflow clamps, the `AMMO_RESCALER` division, the lift of zero to one and
+the round-up of charges all agree.
+
+Accepted divergences: `objectValueReal` returns zero for a kindless object where C would dereference null;
+`objectValueBase`'s switch on a null type would throw where C's falls through to zero.
+
+Stage 3: new `ItemObjectValueTest`. The overflow clamps are not tested, because the largest power reachable through a
+short path is about 20000, well short of the 46,000 where they apply.
+
+Already stamped in C: all three functions carried `/* Ported to Java 2026-08-30 */` before this pass, so Stage 5 added
+nothing.
 
 ## Batch 4 - object power: driver and curse plumbing
 

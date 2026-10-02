@@ -28,6 +28,7 @@ import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.data.CarryCapData;
 import uk.co.jackoftradesltd.middle.game.globals.data.GameConstantsData;
+import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
@@ -55,8 +56,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Tests the three rules that decide whether two stacks may become one — {@code checkForInscription},
  * {@link ItemObject#objectStackable} and {@link ItemObject#mergeable} — the ports of C's
- * {@code check_for_inscrip} ({@code obj-util.c:423}), {@code object_stackable}
- * ({@code obj-pile.c:499}) and {@code object_mergeable} ({@code obj-pile.c:512}).
+ * {@code check_for_inscrip} ({@code obj-util.c}), {@code object_stackable}
+ * and {@code object_mergeable} ({@code obj-pile.c}).
  *
  * <p>The three sit in a line. {@code similar} settles whether the objects are the same thing,
  * {@code objectStackable} adds the inscription rule on top of it, and {@code mergeable} adds
@@ -107,6 +108,12 @@ class ItemObjectStackingTest {
     private static Object savedRaces;
 
     /**
+     * The registry's curse list before the test class, put back afterwards. {@code similar} walks
+     * it through {@code cursesAreEqual}, and an unloaded registry holds {@code null}.
+     */
+    private static Object savedCurses;
+
+    /**
      * The kind every fixture item shares. {@code similar} compares kinds by identity, so one
      * instance is what makes two items the same kind.
      */
@@ -140,6 +147,8 @@ class ItemObjectStackingTest {
         registryField("playerBodies").set(null, new ArrayList<>(List.of(humanoid)));
         registryField("playerRaces").set(null, new ArrayList<>(List.of(testRace(humanoid))));
 
+        savedCurses = setStatic(ObjectRegistry.class, "curses", new ArrayList<Curse>());
+
         savedPlayer = GameState.getPlayer();
         GameState.setPlayer(new Player());
 
@@ -149,6 +158,7 @@ class ItemObjectStackingTest {
     @AfterAll
     static void restoreGlobals() throws Exception {
         GameState.setPlayer(savedPlayer);
+        setStatic(ObjectRegistry.class, "curses", savedCurses);
         setStatic(GameConstants.class, "data", savedConstants);
         registryField("playerBodies").set(null, savedBodies);
         registryField("playerRaces").set(null, savedRaces);

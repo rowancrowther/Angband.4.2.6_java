@@ -43,8 +43,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests {@link ItemObject#objectAbsorb} and {@link ItemObject#objectSplit} — the two halves of
- * moving items between stacks, and the port of C's {@code object_absorb} and {@code object_split}
- * ({@code obj-pile.c:676}, {@code obj-pile.c:790}).
+ * moving items between stacks, and the port of C's {@code object_absorb}, {@code object_absorb_merge}
+ * and {@code object_split} ({@code obj-pile.c}).
  *
  * <p>Both need the two caves wired, and that is the point of the fixture here. C keeps the real
  * level and the player's remembered copy of it as separate chunks, and an absorb touches both: the
@@ -166,6 +166,23 @@ class ItemObjectAbsorbTest {
         // dice strings the way the parser does, so the copy has something to copy.
         return ItemFixture.item(TValue.TV_ARROW).kind(kind).number(number)
                 .origin(ObjectOriginEnum.ORIGIN_FLOOR, 1, null).build();
+    }
+
+    /**
+     * A stack of an item type that pools charges, gold or timeouts, with no knowledge and listed in
+     * the real level so the absorb can delete it.
+     *
+     * @param tValue the item type
+     * @param number the stack size
+     * @return the stack
+     * @throws Exception if a field cannot be reached
+     */
+    private ItemObject bareLoaded(TValue tValue, int number) throws Exception {
+        ObjectKind loaded = ItemFixture.loadedKind(tValue, tValue.name(), MAX_STACK);
+        ItemObject item = ItemFixture.item(tValue).kind(loaded).number(number)
+                .origin(ObjectOriginEnum.ORIGIN_FLOOR, 1, null).build();
+        listInLevel(item);
+        return item;
     }
 
     /**
@@ -310,6 +327,157 @@ class ItemObjectAbsorbTest {
             assertEquals(15, survivor.getNumber());
             assertFalse(level.getObjects().contains(absorbed));
         }
+
+        /**
+         * An item remembers the player that was current when it was built, and C reads its global
+         * at the moment of the call. An absorb on an item whose snapshot is empty or stale must
+         * still reach the live player's caves, so the player is refreshed first.
+         *
+         * @throws Exception if a fixture field cannot be reached
+         */
+        @Test
+        @DisplayName("a stale player snapshot is refreshed before the absorb")
+        void stalePlayerIsRefreshed() throws Exception {
+            ItemObject survivor = stack(10);
+            ItemObject absorbed = stack(5);
+            ItemObject absorbedKnowledge = absorbed.getKnown();
+            set(survivor, "player", null);
+
+            survivor.objectAbsorb(absorbed);
+
+            assertEquals(15, survivor.getNumber());
+            assertFalse(level.getObjects().contains(absorbed), "the live level was used");
+            assertFalse(known.getObjects().contains(absorbedKnowledge), "and the live player's cave");
+        }
+
+        /**
+         * An inscription on the absorbed stack replaces the survivor's, as C's
+         * {@code if (obj2->note) obj1->note = obj2->note}.
+         *
+         * @throws Exception if a fixture field cannot be reached
+         */
+        @Test
+        @DisplayName("the absorbed stack's inscription is taken")
+        void absorbedInscriptionIsTaken() throws Exception {
+            ItemObject survivor = bareStack(10);
+            ItemObject absorbed = bareStack(5);
+            absorbed.setNote("!d");
+            listInLevel(absorbed);
+
+            survivor.objectAbsorb(absorbed);
+
+            assertEquals("!d", survivor.getNote());
+        }
+
+        /**
+         * An absorbed stack with no inscription leaves the survivor's untouched.
+         *
+         * @throws Exception if a fixture field cannot be reached
+         */
+        @Test
+        @DisplayName("the survivor's inscription stays when the absorbed stack has none")
+        void survivorInscriptionStays() throws Exception {
+            ItemObject survivor = bareStack(10);
+            survivor.setNote("@f1");
+            ItemObject absorbed = bareStack(5);
+            listInLevel(absorbed);
+
+            survivor.objectAbsorb(absorbed);
+
+            assertEquals("@f1", survivor.getNote());
+        }
+
+        /**
+         * Wand charges are pooled: C adds the two {@code pval}s, capped at {@code MAX_PVAL}.
+         *
+         * @throws Exception if a fixture field cannot be reached
+         */
+        @Test
+        @DisplayName("wand charges are added")
+        void wandChargesAreAdded() throws Exception {
+            ItemObject survivor = bareLoaded(TValue.TV_WAND, 2);
+            ItemObject absorbed = bareLoaded(TValue.TV_WAND, 3);
+            set(survivor, "pValue", 5);
+            set(absorbed, "pValue", 7);
+
+            survivor.objectAbsorb(absorbed);
+
+            assertEquals(12, survivor.getpValue());
+        }
+
+        /**
+         * The pooled charges stop at {@code MAX_PVAL}, 32767 in C's {@code obj-util.h}.
+         *
+         * @throws Exception if a fixture field cannot be reached
+         */
+        @Test
+        @DisplayName("pooled charges are capped at 32767")
+        void chargesAreCapped() throws Exception {
+            ItemObject survivor = bareLoaded(TValue.TV_WAND, 2);
+            ItemObject absorbed = bareLoaded(TValue.TV_WAND, 3);
+            set(survivor, "pValue", 30000);
+            set(absorbed, "pValue", 5000);
+
+            survivor.objectAbsorb(absorbed);
+
+            assertEquals(32767, survivor.getpValue());
+        }
+
+        /**
+         * Gold is pooled the same way as charges, because C's test is
+         * {@code tval_can_have_charges(obj1) || tval_is_money(obj1)}.
+         *
+         * @throws Exception if a fixture field cannot be reached
+         */
+        @Test
+        @DisplayName("gold is added")
+        void goldIsAdded() throws Exception {
+            ItemObject survivor = bareLoaded(TValue.TV_GOLD, 1);
+            ItemObject absorbed = bareLoaded(TValue.TV_GOLD, 1);
+            set(survivor, "pValue", 100);
+            set(absorbed, "pValue", 250);
+
+            survivor.objectAbsorb(absorbed);
+
+            assertEquals(350, survivor.getpValue());
+        }
+
+        /**
+         * Rod timeouts are added, so a stack of rods is as far from ready as the two were together.
+         *
+         * @throws Exception if a fixture field cannot be reached
+         */
+        @Test
+        @DisplayName("rod timeouts are added")
+        void rodTimeoutsAreAdded() throws Exception {
+            ItemObject survivor = bareLoaded(TValue.TV_ROD, 1);
+            ItemObject absorbed = bareLoaded(TValue.TV_ROD, 1);
+            set(survivor, "timeout", 30);
+            set(absorbed, "timeout", 12);
+
+            survivor.objectAbsorb(absorbed);
+
+            assertEquals(42, survivor.getTimeout());
+        }
+
+        /**
+         * Ordinary items do not pool a {@code pval}: C only does so for charged items and gold.
+         *
+         * @throws Exception if a fixture field cannot be reached
+         */
+        @Test
+        @DisplayName("an ordinary item's pval is not pooled")
+        void ordinaryPvalIsNotPooled() throws Exception {
+            ItemObject survivor = bareStack(10);
+            ItemObject absorbed = bareStack(5);
+            set(survivor, "pValue", 3);
+            set(absorbed, "pValue", 4);
+            listInLevel(absorbed);
+
+            survivor.objectAbsorb(absorbed);
+
+            assertEquals(3, survivor.getpValue());
+        }
     }
 
     /**
@@ -421,6 +589,87 @@ class ItemObjectAbsorbTest {
             assertEquals(8, split.getNumber());
             assertEquals(12, original.getNumber());
             assertNull(split.getKnown());
+        }
+
+        /**
+         * A wand's charges are shared out in proportion to the count moved, rounding down for the
+         * new stack: C's {@code pval * amt / number}, here {@code 10 * 1 / 4 = 2}.
+         *
+         * @throws Exception if a fixture field cannot be reached
+         */
+        @Test
+        @DisplayName("wand charges are shared out by the count moved")
+        void chargesAreShared() throws Exception {
+            ObjectKind wand = ItemFixture.loadedKind(TValue.TV_WAND, "wand", MAX_STACK);
+            ItemObject original = ItemFixture.item(TValue.TV_WAND).kind(wand).number(4).build();
+            set(original, "pValue", 10);
+
+            ItemObject split = original.objectSplit(1);
+
+            assertEquals(2, split.getpValue());
+            assertEquals(8, original.getpValue());
+        }
+
+        /**
+         * Splitting off most of the stack moves most of the charges, with the remainder left behind
+         * and the total conserved: {@code 10 * 3 / 4 = 7}.
+         *
+         * @throws Exception if a fixture field cannot be reached
+         */
+        @Test
+        @DisplayName("most of the stack takes most of the charges")
+        void mostChargesMove() throws Exception {
+            ObjectKind wand = ItemFixture.loadedKind(TValue.TV_WAND, "wand", MAX_STACK);
+            ItemObject original = ItemFixture.item(TValue.TV_WAND).kind(wand).number(4).build();
+            set(original, "pValue", 10);
+
+            ItemObject split = original.objectSplit(3);
+
+            assertEquals(7, split.getpValue());
+            assertEquals(3, original.getpValue());
+        }
+
+        /**
+         * C sets the known half's count to the real count before it copies and shares out the known
+         * charges, because {@code distribute_charges} divides by the count it finds. A known half
+         * left at a stale count must not skew the share: with the real count 4 and the stale count
+         * 7, the new known stack still takes {@code 10 * 1 / 4 = 2} charges, not {@code 10 * 1 / 7 = 1}.
+         *
+         * @throws Exception if a fixture field cannot be reached
+         */
+        @Test
+        @DisplayName("a stale known count does not skew the known charges")
+        void staleKnownCountIsAligned() throws Exception {
+            ObjectKind wand = ItemFixture.loadedKind(TValue.TV_WAND, "wand", MAX_STACK);
+            ItemObject counterpart = ItemFixture.item(TValue.TV_WAND).kind(wand).number(7).build();
+            set(counterpart, "pValue", 10);
+            ItemObject original = ItemFixture.item(TValue.TV_WAND).kind(wand).number(4)
+                    .known(counterpart).build();
+            set(original, "pValue", 10);
+
+            ItemObject split = original.objectSplit(1);
+
+            assertEquals(2, split.getKnown().getpValue());
+            assertEquals(8, original.getKnown().getpValue());
+            assertEquals(1, split.getKnown().getNumber());
+            assertEquals(3, original.getKnown().getNumber());
+        }
+
+        /**
+         * The known half of the new stack takes the known half's own inscription, as C's
+         * {@code dest->known->note = src->known->note}.
+         *
+         * @throws Exception if a fixture field cannot be reached
+         */
+        @Test
+        @DisplayName("the new known half takes the known half's inscription")
+        void knownInscriptionIsCarried() throws Exception {
+            ItemObject original = stack(20);
+            original.getKnown().setNote("@k");
+
+            ItemObject split = original.objectSplit(8);
+
+            assertEquals("@k", split.getKnown().getNote());
         }
     }
 }

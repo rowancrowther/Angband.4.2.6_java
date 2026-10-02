@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests {@link ItemObject#objectWeightOne()}, the port of C's {@code object_weight_one}
- * ({@code obj-util.c:274}) — one item's weight after its curses have had their say.
+ * ({@code obj-util.c}) — one item's weight after its curses have had their say.
  *
  * <p>Curses compose rather than override: each active curse is applied in turn to the running
  * result, so two weight curses both take effect and neither wins outright. That is the behaviour
@@ -55,6 +55,20 @@ class ItemObjectWeightTest {
      * @return the curse
      */
     private static Curse curse(int weight, boolean multiply) {
+        return curse(weight, multiply, 0);
+    }
+
+    /**
+     * Builds a curse as {@link #curse(int, boolean)} does, with an explicit index. Two curses on one
+     * object always have different indices, because the index is the curse's place in the registry,
+     * so a test laying two on an item must give them different ones.
+     *
+     * @param weight   the curse's weight figure
+     * @param multiply whether it carries {@code OF_MULTIPLY_WEIGHT}
+     * @param index    the curse's registry index
+     * @return the curse
+     */
+    private static Curse curse(int weight, boolean multiply, int index) {
         Flag<ObjectFlag> flags = new Flag<>(ObjectFlag.class);
         if (multiply) {
             flags.set(List.of(ObjectFlag.OF_MULTIPLY_WEIGHT));
@@ -62,7 +76,7 @@ class ItemObjectWeightTest {
 
         return new Curse("weighty", List.of(), weight, null, flags,
                 Map.of(), Map.of(), 0, 0, 0, List.of(),
-                new Flag<>(ObjectFlag.class), "", "", 0);
+                new Flag<>(ObjectFlag.class), "", "", index);
     }
 
     /**
@@ -245,11 +259,29 @@ class ItemObjectWeightTest {
         @DisplayName("two curses compose in turn")
         void twoCursesCompose() throws Exception {
             Map<Curse, CurseData> both = new LinkedHashMap<>();
-            both.put(curse(50, false), new CurseData(10, 0));
-            both.put(curse(200, true), new CurseData(10, 0));
+            both.put(curse(50, false, 0), new CurseData(10, 0));
+            both.put(curse(200, true, 1), new CurseData(10, 0));
 
             assertEquals(200, item(50, both).objectWeightOne(),
                     "the multiplier saw the added weight, not the original");
+        }
+
+        /**
+         * The curses are applied in ascending index order, as C's loop over its curse array does,
+         * whatever order they were laid on the object in. Laid in the opposite order here, the
+         * multiplier (index 0) still goes first: {@code 50 * 2 = 100}, then {@code + 50 = 150},
+         * where the other order would give {@code (50 + 50) * 2 = 200}.
+         *
+         * @throws Exception if a field cannot be reached
+         */
+        @Test
+        @DisplayName("curses apply in ascending index order, not insertion order")
+        void indexOrderNotInsertionOrder() throws Exception {
+            Map<Curse, CurseData> laidBackwards = new LinkedHashMap<>();
+            laidBackwards.put(curse(50, false, 1), new CurseData(10, 0));
+            laidBackwards.put(curse(200, true, 0), new CurseData(10, 0));
+
+            assertEquals(150, item(50, laidBackwards).objectWeightOne());
         }
 
         /**
@@ -274,8 +306,8 @@ class ItemObjectWeightTest {
         @DisplayName("an active curse applies alongside an inactive one")
         void activeAppliesBesideInactive() throws Exception {
             Map<Curse, CurseData> mixed = new LinkedHashMap<>();
-            mixed.put(curse(20, false), new CurseData(0, 0));
-            mixed.put(curse(30, false), new CurseData(10, 0));
+            mixed.put(curse(20, false, 0), new CurseData(0, 0));
+            mixed.put(curse(30, false, 1), new CurseData(10, 0));
 
             assertEquals(80, item(50, mixed).objectWeightOne());
         }

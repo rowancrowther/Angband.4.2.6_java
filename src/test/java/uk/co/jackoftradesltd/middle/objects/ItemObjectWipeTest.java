@@ -215,7 +215,8 @@ class ItemObjectWipeTest {
         assertFalse(item.isArtifact());
         assertFalse(item.isKnown());
         assertNull(item.getGrid());
-        assertNull(item.gettValue());
+        // C's zeroed tval byte is ordinal 0, which is TV_NONE in both C's list-tvals.h and TValue
+        assertEquals(TValue.TV_NONE, item.gettValue());
         assertEquals(0, item.getsValue());
         assertEquals(0, item.getpValue());
         assertEquals(0, item.getWeight());

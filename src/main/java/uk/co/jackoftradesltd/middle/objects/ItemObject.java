@@ -71,12 +71,17 @@ import static uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum.ORIGIN
  * grid, a weight, a timeout, or a {@link #known} pointer to a known version of itself. Nothing in
  * this class is shaped around that second role, so do not press it back into service for it.
  *
+ * <p>Class ItemObject commented in full on 261002.
+ *
  * @author Rowan Crowther
  * @see KnownObject
  */
 public class ItemObject {
     /**
-     * Logger used to report stack-merge errors.
+     * Logger used to report the impossible states the port throws on where C asserts: a split that
+     * would take the whole stack, and an absorb run in a store.
+     *
+     * <p>Field logger commented in full on 261002.
      */
     private static final Logger logger = LogManager.getLogger();
 
@@ -89,9 +94,10 @@ public class ItemObject {
      * constructors. It is only a snapshot: an item built before a character exists holds
      * {@code null}, and one that outlives a change of player holds the old one. Methods that must
      * see the live player - {@link #earlierObject} and {@link #similar} - therefore refresh it from
-     * {@link GameState#getPlayer()} on every call, which means they overwrite it. The methods that
-     * read it without refreshing (merging, slot lookups and the power calculations) still depend on
-     * the snapshot.
+     * {@link GameState#getPlayer()} on every call, which means they overwrite it. {@link #objectAbsorb}
+     * refreshes it as well, and hands it on to {@link #objectAbsorbMerge} as a parameter. The methods
+     * that read it without refreshing (the partial absorb, slot lookups and the power calculations)
+     * still depend on the snapshot.
      *
      * <p>Field player commented in full on 261002.
      */
@@ -101,9 +107,11 @@ public class ItemObject {
      * The object kind this item is an instance of. C's {@code obj->kind}.
      *
      * <p>Two items are only candidates to stack if their kinds are equal, and awareness of the
-     * item's flavour is read from the kind, not the item.
+     * item's flavour is read from the kind, not the item. The pricing code takes its figures from
+     * here too: {@link #objectValueBase} returns the kind's {@code cost} for an aware object, and
+     * the fixed-price route of {@link #objectValueReal} starts from it.
      *
-     * <p>Field kind commented in full on 261002.
+     * <p>Field kind commented in full on 261002, pricing added on 261002.
      */
     private ObjectKind kind;
     /**
@@ -111,9 +119,11 @@ public class ItemObject {
      * {@code obj->ego}.
      *
      * <p>Compared by identity in {@link #similar}, as C compares pointers: two items stack only
-     * if they carry the very same ego entry from the registry, or both carry none.
+     * if they carry the very same ego entry from the registry, or both carry none. {@link
+     * #objectValueReal} also tests it: a burning light is divided down as an expendable only when
+     * it has no ego.
      *
-     * <p>Field ego commented in full on 261002.
+     * <p>Field ego commented in full on 261002, pricing added on 261002.
      */
     private EgoItem ego;
     /**
@@ -140,11 +150,31 @@ public class ItemObject {
      * <p>Null on an item the player has never seen. It is not the same object as this one and
      * never points back at it; C's {@code obj_k} having a {@code known} of its own is an artefact
      * of the struct reuse this port drops.
+     *
+     * <p>The stack operations keep the two halves in step. {@link #objectSplit} aligns the known
+     * count before copying and writes both counts afterwards, {@link #objectAbsorbMerge} brings the
+     * surviving known effect up to date, and {@link #objectAbsorb} deletes the absorbed object's
+     * known half along with it. {@link #copy} copies it only when asked, and {@link #nullKnown}
+     * clears the link.
+     *
+     * <p>{@link #objectValue} prices a variable-power object from this half rather than from the
+     * real one, so that the price never reveals a bonus the player has not learned. With no known
+     * half that route is skipped.
+     *
+     * <p>Field known commented in full on 261002, pricing added on 261002.
      */
     private ItemObject known;
 
     /**
-     * The grid this item lies on (when on the floor).
+     * The grid this item lies on, or the origin when it does not lie on the floor. C's
+     * {@code obj->grid}, a {@code struct loc}: "position on map, or (0, 0)".
+     *
+     * <p>A grid at the origin means "not on the floor", so {@link #objectAbsorb} skips excising a
+     * known object from a pile when its grid is zero. The test compares coordinates, as C's
+     * {@code loc_is_zero} does, and {@link #copy} copies the {@link Loc} so the copy can move
+     * without moving the original.
+     *
+     * <p>Field location commented in full on 261002.
      */
     private Loc location;
 
@@ -153,13 +183,23 @@ public class ItemObject {
      *
      * <p>{@code TValue} is declared in {@code list-tvals.h} order, so its ordinal is C's tval
      * number; {@link #earlierObject} orders the pack by it. {@link #similar} reads it to decide
-     * which stacking rules apply.
+     * which stacking rules apply. The pricing code reads it through the {@link TValue} predicates
+     * - {@link TValue#hasVariablePower()}, {@link TValue#canHaveFlavour()},
+     * {@link TValue#canHaveCharges()}, {@link TValue#isLight()} and {@link TValue#isAmmo()} - to
+     * pick a route in {@link #objectValue} and {@link #objectValueReal}, and switches on it in
+     * {@link #objectValueBase}.
      *
-     * <p>Field tValue commented in full on 261002.
+     * <p>Field tValue commented in full on 261002, pricing added on 261002.
      */
     private TValue tValue;
     /**
-     * The sub-type value (sval).
+     * The item's sub-type within its type. C's {@code obj->sval}, a {@code uint8_t}, copied from the
+     * kind alongside {@link #tValue}.
+     *
+     * <p>Carried across by {@link #copy}. Nothing in the stacking code reads it directly, because
+     * two items of the same {@link #kind} already share it.
+     *
+     * <p>Field sValue commented in full on 261002.
      */
     private int sValue;
 
@@ -169,14 +209,24 @@ public class ItemObject {
      *
      * <p>{@link #similar} caps the combined {@code pval} of charged items and gold at
      * {@code MAX_PVAL}, {@link #earlierObject} sorts lights by it, and {@link #distributeCharges}
-     * divides it between stacks.
+     * divides it between stacks. {@link #objectAbsorbMerge} adds the absorbed stack's value to this
+     * one's, capped at {@code MAX_PVAL}, for charged items and gold. {@link #objectValueReal}
+     * prices the charges of a wand or staff from it, per item as {@code pValue * quantity / number}.
      *
-     * <p>Field pValue commented in full on 261002.
+     * <p>Field pValue commented in full on 261002, pricing added on 261002.
      */
     private int pValue;
 
     /**
-     * The item's weight.
+     * The weight of one of this item, in tenth-pounds, before its curses are applied. C's
+     * {@code obj->weight}, an {@code int16_t}, which {@code obj-util.c} documents as "only the base
+     * weight and does not include curses".
+     *
+     * <p>Not the figure to use for the burden an item puts on the player: {@link #objectWeightOne}
+     * floors it at zero and then lets each active curse adjust it, and callers multiply that by
+     * {@link #number}. {@link #copy} carries the base figure across unchanged.
+     *
+     * <p>Field weight commented in full on 261002.
      */
     private int weight;
 
@@ -195,7 +245,14 @@ public class ItemObject {
      */
     private int damageSides;
     /**
-     * Base damage, as a dice expression.
+     * Base damage, as a dice expression, parsed from the string the constructor is given.
+     *
+     * <p>Has no field counterpart in C's {@code struct object}, which keeps the rolled dice as the
+     * two integers {@link #damageDice} and {@link #damageSides}. Nothing in this class reads it
+     * after construction: {@link #copy} deep-copies it, so the copy shares no dice with the
+     * original, and {@link #wipe} clears it.
+     *
+     * <p>Field baseDamage commented in full on 261002.
      */
     private Random baseDamage;
     /**
@@ -243,9 +300,10 @@ public class ItemObject {
      * The item's object flags. C's {@code obj->flags}, a bitflag array.
      *
      * <p>{@link #similar} requires the whole set to be equal, so two items differing in a single
-     * flag never stack.
+     * flag never stack. {@link #objectValueReal} reads {@code OF_BURNS_OUT} from it to recognise a
+     * light that is consumed as it is used.
      *
-     * <p>Field flags commented in full on 261002.
+     * <p>Field flags commented in full on 261002, pricing added on 261002.
      */
     private Flag<ObjectFlag> flags;
     /**
@@ -316,11 +374,24 @@ public class ItemObject {
      */
     private List<Effect> effect;
     /**
-     * Message shown when the item's effect fires.
+     * Message shown when the item's effect fires, or {@code null} if it has none. C's
+     * {@code obj->effect_msg}, a {@code char *} that {@code struct object} holds as a shared
+     * pointer.
+     *
+     * <p>A string is immutable, so {@link #copy} shares it safely where it must deep-copy the
+     * mutable fields.
+     *
+     * <p>Field effectMessage commented in full on 261002.
      */
     private String effectMessage;
     /**
-     * Activations available on this item.
+     * Activations available on this item. C's {@code obj->activation}, a pointer to a single
+     * activation record in the shared registry, which the port holds as a list.
+     *
+     * <p>{@link #copy} shares the list with the original, as C shares the pointer: the activations
+     * are registry templates, not per-item state.
+     *
+     * <p>Field activation commented in full on 261002.
      */
     private List<Activation> activation;
     /**
@@ -347,17 +418,30 @@ public class ItemObject {
      * Quantity in this stack. C's {@code obj->number}, a {@code uint8_t}.
      *
      * <p>{@link #distributeCharges} divides by it, so it must not be zero when that is called.
+     * {@link #objectValueReal} divides by it as well, to share a wand's or staff's charges out per
+     * item, and throws {@link ArithmeticException} on zero where C would fault.
      *
-     * <p>Field number commented in full on 261002.
+     * <p>Field number commented in full on 261002, pricing added on 261002.
      */
     private int number;
     /**
-     * The player's notice flags for this item (worn/assessed/ignore/imagined).
+     * The player's notice flags for this item (worn/assessed/ignore/imagined). C's
+     * {@code obj->notice}, a bitflag: the "attention paid to the object".
+     *
+     * <p>A mutable set, so {@link #copy} builds a new one rather than sharing it - noticing
+     * something on the copy must not mark the original.
+     *
+     * <p>Field notice commented in full on 261002.
      */
     private Flag<ObjectNotice> notice;
 
     /**
-     * Index of the monster holding this item, or 0 if not held.
+     * Index of the monster holding this item, or 0 if not held. C's {@code obj->held_m_idx}, an
+     * {@code int16_t}: "monster holding us (if any)".
+     *
+     * <p>Carried across by {@link #copy}, so a copy of a carried item is still marked as carried.
+     *
+     * <p>Field heldMIndex commented in full on 261002.
      */
     private int heldMIndex;
     /**
@@ -395,7 +479,16 @@ public class ItemObject {
     private final int VULN_AND_RES = Short.MIN_VALUE;
 
     /**
-     * The player's inscription on the item.
+     * The player's inscription on the item, or {@code null} if it has none. C's {@code obj->note},
+     * a quark - an index into a table of interned strings.
+     *
+     * <p>The port keeps the string itself. C compares two quarks with {@code ==}, which is
+     * equality of the text because the table never holds a string twice, so the port compares with
+     * {@code equals}; {@link #objectStackable} does so. {@link #checkForInscription} searches it,
+     * {@link #objectAbsorbMerge} takes the absorbed stack's note when it has one, and
+     * {@link #objectSplit} gives the new stack the same note as the old.
+     *
+     * <p>Field note commented in full on 261002.
      */
     private String note;
     /**
@@ -1599,7 +1692,7 @@ public class ItemObject {
      */
     public String description(Flag<ObjectDescription> descriptionFlags, Player player) {
         // Stub function
-        // TODO: Implement
+        // TODO: Implement as part of Chapter 7
         return "{DESCRIPTION_TAG}";
     }
 
@@ -2370,7 +2463,7 @@ public class ItemObject {
 
     /**
      * The weight of a single one of these, after its curses have had their say — the port of C's
-     * {@code object_weight_one} ({@code obj-util.c:274-289}).
+     * {@code object_weight_one} ({@code obj-util.c}).
      *
      * <p>One, not the stack: a pile of twenty arrows answers with the weight of one arrow. Callers
      * wanting the burden of the stack multiply by the count themselves, as C does.
@@ -2380,7 +2473,12 @@ public class ItemObject {
      * the last one winning. A curse present at zero power is skipped — it is recorded on the object
      * but not active. The base weight is floored at zero before any curse sees it.
      *
-     * <p>Function weightOne commented in full on 260820.
+     * <p>The curses are applied in ascending curse index, as C's loop over its curse array does.
+     * C starts that loop at index 1 because slot 0 of its array is a placeholder; the port numbers
+     * its curses from 0 and has no placeholder, so it skips nothing. The map the curses live in
+     * keeps insertion order, which is why the indices are sorted first.
+     *
+     * <p>Function objectWeightOne coded on 260820, commented in full on 261002.
      *
      * @return this object's individual weight in tenth-pounds, never negative
      */
@@ -2406,7 +2504,7 @@ public class ItemObject {
 
     /**
      * Counts how many times an inscription fragment occurs in this object's note - the port of C's
-     * {@code check_for_inscrip} ({@code obj-util.c:423}). Callers use it as a yes/no test:
+     * {@code check_for_inscrip} ({@code obj-util.c}). Callers use it as a yes/no test:
      * a non-zero answer means the tag is present.
      *
      * <p>Occurrences may overlap, because the scan resumes one character past the start of each
@@ -2414,8 +2512,10 @@ public class ItemObject {
      * twice.
      *
      * <p>An object with no note, and an empty or null fragment, count as zero rather than failing.
+     * C has no such guard for an empty fragment, where {@code strstr} would match at every position;
+     * no caller passes one.
      *
-     * <p>Function checkForInscription coded before 260822, commented in full on 260824.
+     * <p>Function checkForInscription coded before 260822, commented in full on 261002.
      *
      * @param s the inscription fragment to look for, e.g. {@code "!d"}
      * @return the number of occurrences, {@code 0} if none
@@ -2437,7 +2537,7 @@ public class ItemObject {
 
             // Resume one character past the match's first character, not past the whole match,
             // so overlapping occurrences are each counted - "!!!" holds "!!" twice. This is C's
-            // s++ in check_for_inscrip (obj-util.c:437).
+            // s++ in check_for_inscrip (obj-util.c).
             location = result;
             result = note.indexOf(s, location) + 1;
         }
@@ -2447,14 +2547,23 @@ public class ItemObject {
 
     /**
      * Puts a yes/no question to the player about this object - the port of C's
-     * {@code verify_object} ({@code obj-util.c:1072}).
+     * {@code verify_object} ({@code obj-util.c}).
      *
      * <p>The object is described with prefix, combat values and extra detail, and appended to the
      * caller's prompt, so {@code "Really take off and drop"} becomes
      * {@code "Really take off and drop a Long Sword (+3,+4)? "}. The question goes out through
      * {@code GameInputHolder}, which is the boundary the middle layer asks the player through.
      *
-     * <p>Function verifyObject coded before 260822, commented in full on 260824.
+     * <p>The three description flags are C's {@code ODESC_PREFIX | ODESC_FULL}, with {@code ODESC_FULL}
+     * written out as {@code ODESC_COMBAT} and {@code ODESC_EXTRA} because the port's
+     * {@link ObjectDescription} has no combined constant. C builds the name into an 80-character
+     * buffer and the prompt into a 160-character one, truncating either; the port does not truncate.
+     *
+     * <p><b>Outstanding:</b> {@link #description} is still a stub that returns a placeholder tag, so
+     * until the object description code lands in Chapter 7 the prompt carries that tag in place of the
+     * object's name.
+     *
+     * <p>Function verifyObject coded before 260822, commented in full on 261002.
      *
      * @param prompt the question, without the object name or the question mark
      * @param player the player whose knowledge shapes the description
@@ -2656,15 +2765,17 @@ public class ItemObject {
 
     /**
      * Answers whether this item is currently in the quiver - the port of C's
-     * {@code object_is_in_quiver}.
+     * {@code object_is_in_quiver} ({@code obj-gear.c}).
      *
      * <p>Compares by identity, not equality: two identical stacks of arrows are still different
-     * stacks, and the question is about this one.
+     * stacks, and the question is about this one. Every slot of the quiver is checked, empty ones
+     * included, and an empty slot never matches because this object is never {@code null}.
      *
      * <p>The answer decides which stacking limits apply when two stacks are merged, since the quiver
-     * caps a slot more tightly than the pack does.
+     * caps a slot more tightly than the pack does: callers turn it into
+     * {@code OSTACK_QUIVER} or not before asking {@link #mergeable}.
      *
-     * <p>Function isInQuiver commented in full on 260827.
+     * <p>Function objectIsInQuiver coded before 260827, commented in full on 261002.
      *
      * @param player the player whose quiver to search
      * @return {@code true} if this exact object sits in a quiver slot
@@ -2679,7 +2790,7 @@ public class ItemObject {
 
     /**
      * Tests whether {@code toMerge} could be folded into this stack in its entirety - the port of
-     * C's {@code object_mergeable} ({@code obj-pile.c:512}).
+     * C's {@code object_mergeable} ({@code obj-pile.c}).
      *
      * <p>The whole-stack question, as against {@link #objectStackable}, which only asks whether the
      * two could share a slot at all. The difference is capacity: the combined count has to fit
@@ -2690,10 +2801,11 @@ public class ItemObject {
      * <p>The quiver test is nested inside the store test rather than beside it, because a store
      * stack has no limits at all and the quiver limit must be waived along with the rest.
      *
-     * <p>The maximum is read from this object's kind. The two kinds will be identical by the time
-     * the answer matters, but only {@link #similar} establishes that, and it runs afterwards.
+     * <p>The maximum and the ammunition test are both read from this object, as C reads them from
+     * its first argument. The two objects will be of one kind and type by the time the answer
+     * matters, but only {@link #similar} establishes that, and it runs afterwards.
      *
-     * <p>Function mergeable coded on 260822, commented in full on 260824.
+     * <p>Function mergeable coded on 260822, commented in full on 261002.
      *
      * @param toMerge    the stack that would be absorbed whole
      * @param stackModes the {@link ObjectStackEnum} flags in force
@@ -2708,7 +2820,7 @@ public class ItemObject {
 
             // Quiver can impose stricter limits
             if (stackModes.has(ObjectStackEnum.OSTACK_QUIVER)) {
-                if (toMerge.gettValue().isAmmo()) {
+                if (this.gettValue().isAmmo()) {
                     if (total > GameConstants.getCarryCapQuiverSlotSize()) return false;
                 } else {
                     if (total > GameConstants.getCarryCapQuiverSlotSize()
@@ -2722,14 +2834,19 @@ public class ItemObject {
 
     /**
      * Tests whether two objects may share a stack, capacity aside - the port of C's
-     * {@code object_stackable} ({@code obj-pile.c:499}).
+     * {@code object_stackable} ({@code obj-pile.c}).
      *
      * <p>{@link #similar} settles everything about the objects themselves; this adds the
      * inscription rule. Two objects are compatible when either is uninscribed, or when both carry
      * the same inscription - an uninscribed item takes on whatever the stack it joins is called,
      * but two differently inscribed stacks stay apart so the player's tags survive.
      *
-     * <p>Function objectStackable coded on 260822, commented in full on 260824.
+     * <p>Inscriptions are compared as text. C compares the quarks with {@code ==}, which comes to
+     * the same thing because the quark table never holds one string twice.
+     *
+     * <p>{@link #similar} refreshes {@link #player} as it runs, so this does too.
+     *
+     * <p>Function objectStackable coded on 260822, commented in full on 261002.
      *
      * @param toMerge    the other object
      * @param stackModes the {@link ObjectStackEnum} flags in force
@@ -2745,12 +2862,17 @@ public class ItemObject {
 
     /**
      * Folds another stack into this one entirely, destroying it - the port of C's
-     * {@code object_absorb} ({@code obj-pile.c:676}).
+     * {@code object_absorb} ({@code obj-pile.c}).
      *
      * <p>The counts are added, capped at the kind's {@code max_stack}, and everything else that has
      * to travel between the two is handled by {@link #objectAbsorbMerge}. The absorbed object is
      * then disposed of, along with its known half: excised from whatever pile holds it, delisted
-     * from the cave's object list, and deleted.
+     * from the player's cave object list, and deleted.
+     *
+     * <p>C reads its {@code player} global throughout. The port refreshes {@link #player} from
+     * {@link GameState#getPlayer()} first, so the cave it excises from and deletes through is the
+     * live player's, never a snapshot from when this item was built. The absorbed object itself is
+     * deleted through the current level's cave, with the player's cave passed as its view.
      *
      * <p>The excise is skipped for a known object at the origin, because a zero grid means it is
      * not on the floor to be excised from - C's {@code loc_is_zero}, which compares coordinates.
@@ -2761,7 +2883,8 @@ public class ItemObject {
      * reached; a caller that leaves it out ends up with the emptied stack still in the pack at its
      * old count.
      *
-     * <p>Function objectAbsorb coded on 260822, commented in full on 260824.
+     * <p>Function objectAbsorb coded on 260822, corrected on 261002 to refresh the player, commented
+     * in full on 261002.
      *
      * @param toAbsorb the stack to fold in; it does not survive the call
      */
@@ -2772,6 +2895,8 @@ public class ItemObject {
 
         this.number = Math.min(total, this.getKind().getBase().getMaxStack());
 
+        player = GameState.getPlayer();
+        
         this.objectAbsorbMerge(toAbsorb, player, true);
         if (known != null) {
             Chunk cave = player.getCave();
@@ -2787,19 +2912,28 @@ public class ItemObject {
 
     /**
      * Carries everything except the counts across from one stack to another - the port of C's
-     * {@code object_absorb_merge} ({@code obj-pile.c:579}). Shared by the whole and partial absorbs.
+     * {@code object_absorb_merge} ({@code obj-pile.c}, where it is {@code static}). Shared by the
+     * whole and partial absorbs.
      *
-     * <p>Knowledge first: the surviving object's known half is brought up to date with its own real
-     * effect and the player is told about the object again, which is how learning one stack teaches
-     * the other. The direction matters - what is written into the known object is the surviving
-     * object's reality, never the absorbed object's knowledge.
+     * <p>Knowledge first: when both objects have a known half, and the absorbed one's known half
+     * has an effect, the surviving known half takes this object's real effect, and the player is
+     * told about the object again, which is how learning one stack teaches the other. The direction
+     * matters - what is written into the known object is the surviving object's reality, never the
+     * absorbed object's knowledge.
      *
-     * <p>An inscription on the absorbed stack carries over. Charges and timeouts are pooled only
-     * when the caller asks: rod timeouts add, and wand and staff charges add up to
-     * {@code MAX_PVAL}. A partial absorb passes {@code false} for anything but money, because the
-     * charges have already been shared out by {@code distributeCharges}. Origins are combined last.
+     * <p>An inscription on the absorbed stack carries over, replacing any note this stack had; the
+     * stacking rules guarantee the two do not conflict. The port also treats an empty note as no
+     * note, which C does not test for, so an empty inscription never overwrites a real one.
      *
-     * <p>Function objectAbsorbMerge coded on 260822, commented in full on 260824.
+     * <p>Charges and timeouts are pooled only when the caller asks: rod timeouts add, and wand,
+     * staff and gold values add up to {@code MAX_PVAL}. A partial absorb passes {@code false} for
+     * anything but money, because the charges have already been shared out by
+     * {@code distributeCharges}. Origins are combined last.
+     *
+     * <p>The player is a parameter, where C reads its global, so the caller decides whose
+     * knowledge is updated; {@link #objectAbsorb} passes the refreshed player.
+     *
+     * <p>Function objectAbsorbMerge coded on 260822, commented in full on 261002.
      *
      * @param toAbsorb               the stack being folded in
      * @param player                 the player whose knowledge is updated
@@ -2815,7 +2949,7 @@ public class ItemObject {
             PlayerKnowledge.knowObject(player, this);
         }
 
-        if (toAbsorb.getNote() != null && !toAbsorb.getNote().isEmpty())
+        if (toAbsorb.getNote() != null)
             this.note = toAbsorb.getNote();
 
         // Combine tValues information
@@ -2841,9 +2975,10 @@ public class ItemObject {
      *
      * <p>Used where an object is about to be absorbed or deleted and its knowledge has already been
      * dealt with separately; clearing the link first stops the disposal from following it a second
-     * time.
+     * time. {@code ObjectUtils} calls it on both halves when it combines two pack stacks, after
+     * absorbing the known halves and removing the known object from the player's known gear.
      *
-     * <p>Function nullKnown commented in full on 260827.
+     * <p>Function nullKnown coded before 260827, commented in full on 261002.
      */
     public void nullKnown() {
         this.known = null;
@@ -2945,20 +3080,24 @@ public class ItemObject {
 
     /**
      * Splits a number of items off this stack into a new one - the port of C's {@code object_split}
-     * ({@code obj-pile.c:790}).
+     * ({@code obj-pile.c}).
      *
      * <p>The new stack is a copy of this one, so it carries the same kind, bonuses, flags and
      * inscription; what it does not carry is a share of the counts and charges, which are handed
      * over afterwards. Charges are distributed with {@code destNew} set, because the destination is
      * brand new and should take its share rather than add to one.
      *
-     * <p>The known halves are split alongside, and their counts written to match, so that knowledge
-     * and truth do not drift apart over the split.
+     * <p>The known halves are split alongside. This stack's known count is set to its own before
+     * anything is copied, because {@code distributeCharges} divides by the count it finds, and the
+     * known halves' counts are written to match again at the end, so that knowledge and truth do
+     * not drift apart over the split. C also zeroes the {@code oidx} item-list index of both new
+     * objects; the port carries no such index.
      *
      * <p>Refuses to split off the whole stack or more: C asserts on it, and a caller wanting all of
      * it should move the stack rather than split it.
      *
-     * <p>Function objectSplit commented in full on 260827.
+     * <p>Function objectSplit coded before 260827, corrected on 261002 to align the known count
+     * first, commented in full on 261002.
      *
      * @param amount how many items to move to the new stack
      * @return the new stack, holding {@code amount} items
@@ -2968,6 +3107,8 @@ public class ItemObject {
         ItemObject destination;
 
         // Get a copy of the object, pass in true to ensure the known is copied once
+        if (this.getKnown() != null)
+            this.getKnown().setNumber(this.getNumber());
         destination = this.copy(true);
 
         // Check legality
@@ -3015,10 +3156,21 @@ public class ItemObject {
      * elsewhere the class distinguishes "no collection" from "an empty one" - the accessors answer
      * an immutable empty collection for the former, which takes no writes.
      *
-     * <p>The known half is copied only when asked for. A caller splitting a stack wants both halves
-     * copied; a caller building a scratch item to price wants the knowledge left alone.
+     * <p>The known half is copied only when asked for, and then without its own known half. C's
+     * {@code object_copy} is a {@code memcpy}, so it always copies the {@code known} pointer and the
+     * copy aliases the original's known object; callers there either overwrite it at once, copy an
+     * object that is itself a known half (whose pointer is null), or never read it. The port
+     * instead gives {@code copy(false)} a null known half, which is safer than an alias and gives
+     * the same answer at every call site that exists. A caller splitting a stack passes
+     * {@code true}, as does the object power code that works on a scratch copy; a caller copying a
+     * known half passes {@code false}.
      *
-     * <p>Function copy commented in full on 260827.
+     * <p>Not carried across, because the port has no such fields: C's {@code prev} and {@code next}
+     * pile pointers, which {@code object_copy} sets to null, and {@code oidx}, which it copies.
+     * {@code object_copy_amt}, the variant that also sets the count and shares out charges, has no
+     * port yet; C uses it only in the store code, which belongs to Chapter 8.
+     *
+     * <p>Function copy coded before 260827, commented in full on 261002.
      *
      * @param includingKnown {@code true} to copy the known half as well
      * @return a new item that shares no mutable state with this one, bar the noted templates
@@ -3110,13 +3262,26 @@ public class ItemObject {
      * Prices a stack as the player would see it - the port of C's {@code object_value}
      * ({@code obj-power.c}).
      *
-     * <p>Which of the two pricing routes is taken depends on what the player is entitled to know. An
-     * object whose worth varies with its bonuses is priced from its <em>known</em> half, so an
-     * unidentified sword is not priced as the fine one it may turn out to be. A flavoured object the
-     * player has learned is priced in full. Anything else gets the flat base price for its type,
-     * multiplied by the count.
+     * <p>Which of the three pricing routes is taken depends on what the player is entitled to know.
+     * An object whose type has variable power ({@link TValue#hasVariablePower()}: weapons, armour,
+     * lights, jewellery and ammunition) is priced from its <em>known</em> half through
+     * {@link #objectValueReal}, so an unidentified sword is not priced as the fine one it may turn
+     * out to be. A flavoured type whose flavour the player has learned is priced in full from the
+     * object itself. Anything else gets {@link #objectValueBase}'s flat figure multiplied by the
+     * count.
      *
-     * <p>Function objectValue commented in full on 260827.
+     * <p>The routes are tried in that order, and a variable-power object with no {@code known}
+     * half falls past the first test. No variable-power type can have a flavour, so it lands on the
+     * base route, which prices an unlisted type at zero: an object the player has never seen is
+     * worth nothing here. C's {@code tval_can_have_flavor_k} takes the kind's type where this reads
+     * the object's own {@link #tValue}; the two agree because an object copies its type from its
+     * kind. Unlike C, which would stop on a kindless object, {@link #flavourIsAware()} answers
+     * {@code false} for one, though {@link #objectValueBase} then throws.
+     *
+     * <p>Read by {@link #earlierObject} to order stock by price, and by the shop and wizard-mode
+     * code C routes through {@code object_value}.
+     *
+     * <p>Function objectValue coded before 260827, commented in full on 261002.
      *
      * @param quantity how many items are being priced
      * @return the price of the stack in gold
@@ -3139,14 +3304,22 @@ public class ItemObject {
 
     /**
      * Guesses the worth of an object the player has not identified - the port of C's
-     * {@code object_value_base} ({@code obj-power.c:1058}).
+     * {@code object_value_base} ({@code obj-power.c}, a {@code static} function there).
      *
-     * <p>An object whose flavour is known is worth its kind's listed cost. One that is not is worth
-     * a flat figure for its type, rising from food through potions and scrolls to rods: the player
+     * <p>An object whose flavour is known is worth its kind's listed cost, whatever its type. One
+     * that is not is worth a flat figure for its type: 5 for food and mushrooms, 20 for potions and
+     * scrolls, 45 for rings and amulets, 50 for wands, 70 for staves and 90 for rods. The player
      * knows roughly what an unidentified rod is worth without knowing which rod it is. Types not
-     * listed are worth nothing unidentified.
+     * listed are worth nothing unidentified, which includes every wearable that is not jewellery.
      *
-     * <p>Function objectValueBase commented in full on 260827.
+     * <p>Awareness goes through {@link #objectFlavourIsAware()}, which throws for a kindless
+     * object as C's assertion does, so the kind is dereferenced safely on the aware branch. The
+     * switch has no null guard: an object with no type would throw, where C's switch falls through
+     * to zero.
+     *
+     * <p>Only {@link #objectValue} calls it, and it multiplies the result by the count.
+     *
+     * <p>Function objectValueBase coded before 260827, commented in full on 261002.
      *
      * @return the price of one such object in gold
      */
@@ -3167,29 +3340,45 @@ public class ItemObject {
 
     /**
      * Prices a stack from what it can actually do - the port of C's {@code object_value_real}
-     * ({@code obj-power.c:1101}).
+     * ({@code obj-power.c}).
      *
-     * <p>Two routes, chosen by whether the type's worth varies with its properties.
+     * <p>Two routes, chosen by whether the type's worth varies with its properties
+     * ({@link TValue#hasVariablePower()}).
      *
      * <p><b>Variable-power objects</b> are priced from {@link #objectPower}, through the quadratic
-     * {@code power * (power * a + b)}. The quadratic is what makes a strong object worth
-     * disproportionately more than a middling one, rather than merely proportionately more. A
-     * negative power - a cursed object - is priced by the mirror of the same curve, and comes out
-     * negative.
+     * {@code power * (power * a + b)} with {@code a = 1} and {@code b = 5}. The quadratic is what
+     * makes a strong object worth disproportionately more than a middling one, rather than merely
+     * proportionately more. A negative power - a cursed object - is priced by the mirror of the same
+     * curve, {@code -power * (power * a - b)}, which is negative for a single item. Zero power
+     * gives zero.
      *
      * <p>The overflow checks around each multiply are C's, kept rather than replaced by wider
      * arithmetic so that the saturating behaviour matches: a price too large to represent becomes
-     * the largest representable one, not a wrapped negative. The coefficients are locals here
-     * because C has them as locals too, with the same comment that both must stay non-negative.
+     * {@code Integer.MAX_VALUE}, and one too negative becomes {@code Integer.MIN_VALUE}, not a
+     * wrapped value. The coefficients are locals here because C has them as locals too, with the
+     * same comment that both must stay non-negative, so the branches that apply when {@code a} is
+     * zero cannot be reached with the values in force.
      *
-     * <p>Expendables are then divided down: a burning light or a missile is not worth what its power
-     * suggests, because it is consumed. A price that rounds to nothing is lifted to one, so that a
-     * cheap-but-real object is not worthless - C raises zero only, not negative values.
+     * <p>Expendables are then divided down by {@link ObjectRegistry#AMMO_RESCALER}, C's
+     * {@code AMMO_RESCALER} of 20: ammunition, and any light that burns out and has no ego, are
+     * consumed, so are not worth what their power suggests. The division truncates toward zero, as
+     * C's does. A price that is then exactly zero is lifted to one so that a cheap-but-real object
+     * such as a cloak is not worthless; a negative price is not touched. The stack total is
+     * {@code value * quantity}, floored at zero, so a cursed stack is never worth less than
+     * nothing - the negative single-item price survives only inside the calculation.
      *
-     * <p><b>Fixed-price objects</b> take the kind's listed cost, with a surcharge for the charges a
-     * wand or staff carries, rounded up. The total is floored at zero.
+     * <p><b>Fixed-price objects</b> take the kind's listed cost, and a kind that costs nothing
+     * returns zero at once. A wand or staff is charged extra for the charges it carries: its
+     * {@link #pValue} is shared out per item as {@code pValue * quantity / number}, rounded up
+     * when the division is inexact, and each charge adds one twentieth of the kind's cost. The
+     * total is floored at zero. A kindless object is priced at zero here where C would dereference
+     * a null kind.
      *
-     * <p>Function objectValueReal commented in full on 260827.
+     * <p>{@link #objectValue} calls it on the known half or on the object itself, and
+     * {@code PlayerBirth} calls it directly to charge the player for their starting kit, as
+     * {@code player-birth.c} does.
+     *
+     * <p>Function objectValueReal coded before 260827, commented in full on 261002.
      *
      * @param quantity how many items are being priced
      * @return the price of the stack in gold, never negative

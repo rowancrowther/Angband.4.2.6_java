@@ -79,7 +79,7 @@ class RuneVarietyTest {
      */
     private static Curse curse(String name, String description) {
         return new Curse(name, null, 0, null, null, null, null, 0, 0, 0, null, null, description,
-                null);
+                null, 0);
     }
 
     /**

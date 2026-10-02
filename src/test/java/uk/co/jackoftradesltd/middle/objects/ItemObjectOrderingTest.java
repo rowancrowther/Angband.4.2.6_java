@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests {@link ItemObject#earlierObject}, the port of C's {@code earlier_object}
- * ({@code obj-gear.c}) — the comparison the pack ordering is built from.
+ * ({@code player-calcs.c}) — the comparison the pack ordering is built from.
  *
  * <p>It answers for one slot at a time: given the object holding a position and a candidate for it,
  * {@code true} means the candidate belongs earlier. The two null tests come first and are
@@ -74,6 +74,19 @@ class ItemObjectOrderingTest {
      * The player the game held before each test.
      */
     private Player savedPlayer;
+
+    /**
+     * Calls {@code earlierObject}, which is an instance method only so that it can refresh the
+     * receiver's player; the receiver plays no part in the ordering, so a fresh item stands in.
+     *
+     * @param orig  the object currently holding the position, or {@code null}
+     * @param cand  the candidate, or {@code null}
+     * @param store {@code true} when ordering a shop's stock
+     * @return {@code true} if the candidate should come before the original
+     */
+    private static boolean earlier(ItemObject orig, ItemObject cand, boolean store) {
+        return new ItemObject().earlierObject(orig, cand, store);
+    }
 
     /**
      * A class that can read the one magic book.
@@ -182,6 +195,33 @@ class ItemObjectOrderingTest {
     }
 
     /**
+     * C reads its {@code player} global at the moment of the call. An item built before any
+     * character existed holds a null player from construction, and must not carry that into the
+     * comparison: {@code earlierObject} fetches the live player on every call.
+     *
+     * @throws Exception if a fixture field cannot be reached
+     */
+    @Test
+    @DisplayName("an item built before the player existed still orders ammunition")
+    void liveAcrossLatePlayer() throws Exception {
+        Player live = GameState.getPlayer();
+        // The ammunition rule reads the player's calculated state, which a bare player lacks.
+        Field state = Player.class.getDeclaredField("state");
+        state.setAccessible(true);
+        state.set(live, new uk.co.jackoftradesltd.middle.player.PlayerState());
+        GameState.setPlayer(null);
+        ItemObject receiver = new ItemObject();
+        GameState.setPlayer(live);
+
+        ItemObject arrow = item(TValue.TV_ARROW, 1);
+        ItemObject bolt = item(TValue.TV_BOLT, 1);
+
+        // With no usable ammunition chosen, arrow sorts before bolt by type: C's tval order.
+        assertTrue(receiver.earlierObject(arrow, bolt, false));
+        assertFalse(receiver.earlierObject(bolt, arrow, false));
+    }
+
+    /**
      * The null tests, which come first and are not symmetrical.
      */
     @Nested
@@ -196,8 +236,8 @@ class ItemObjectOrderingTest {
         @Test
         @DisplayName("a null candidate never comes earlier")
         void nullCandidateNeverWins() throws Exception {
-            assertFalse(ItemObject.earlierObject(item(TValue.TV_POTION, 1), null, false));
-            assertFalse(ItemObject.earlierObject(null, null, false));
+            assertFalse(earlier(item(TValue.TV_POTION, 1), null, false));
+            assertFalse(earlier(null, null, false));
         }
 
         /**
@@ -210,7 +250,7 @@ class ItemObjectOrderingTest {
         @Test
         @DisplayName("a null incumbent is always displaced")
         void nullIncumbentAlwaysLoses() throws Exception {
-            assertTrue(ItemObject.earlierObject(null, item(TValue.TV_POTION, 1), false));
+            assertTrue(earlier(null, item(TValue.TV_POTION, 1), false));
         }
     }
 
@@ -233,7 +273,7 @@ class ItemObjectOrderingTest {
             ItemObject readable = item(TValue.TV_MAGIC_BOOK, READABLE_SVAL);
             ItemObject unreadable = item(TValue.TV_MAGIC_BOOK, READABLE_SVAL + 1);
 
-            assertTrue(ItemObject.earlierObject(unreadable, readable, false));
+            assertTrue(earlier(unreadable, readable, false));
         }
 
         /**
@@ -247,7 +287,7 @@ class ItemObjectOrderingTest {
             ItemObject readable = item(TValue.TV_MAGIC_BOOK, READABLE_SVAL);
             ItemObject unreadable = item(TValue.TV_MAGIC_BOOK, READABLE_SVAL + 1);
 
-            assertFalse(ItemObject.earlierObject(readable, unreadable, false));
+            assertFalse(earlier(readable, unreadable, false));
         }
 
         /**
@@ -265,9 +305,9 @@ class ItemObjectOrderingTest {
             ItemObject readable = item(TValue.TV_MAGIC_BOOK, READABLE_SVAL);
             ItemObject lowerSval = item(TValue.TV_MAGIC_BOOK, READABLE_SVAL - 1);
 
-            assertTrue(ItemObject.earlierObject(lowerSval, readable, false),
+            assertTrue(earlier(lowerSval, readable, false),
                     "in the pack, readability wins over sub-type");
-            assertFalse(ItemObject.earlierObject(lowerSval, readable, true),
+            assertFalse(earlier(lowerSval, readable, true),
                     "in a store, readability is suppressed and the lower sub-type keeps its place");
         }
 
@@ -343,7 +383,7 @@ class ItemObjectOrderingTest {
 
             boolean laterTypeWins = TValue.TV_POTION.ordinal() > TValue.TV_SWORD.ordinal();
 
-            assertEquals(laterTypeWins, ItemObject.earlierObject(earlierType, laterType, false));
+            assertEquals(laterTypeWins, earlier(earlierType, laterType, false));
         }
 
         /**
@@ -359,9 +399,9 @@ class ItemObjectOrderingTest {
             ItemObject low = item(TValue.TV_SWORD, 1);
             ItemObject high = item(TValue.TV_SWORD, 5);
 
-            assertTrue(ItemObject.earlierObject(high, low, false),
+            assertTrue(earlier(high, low, false),
                     "the lower sub-type displaces the higher");
-            assertFalse(ItemObject.earlierObject(low, high, false));
+            assertFalse(earlier(low, high, false));
         }
 
         /**
@@ -376,8 +416,8 @@ class ItemObjectOrderingTest {
             ItemObject first = item(TValue.TV_SWORD, 1);
             ItemObject second = item(TValue.TV_SWORD, 1);
 
-            assertFalse(ItemObject.earlierObject(first, second, false));
-            assertFalse(ItemObject.earlierObject(second, first, false));
+            assertFalse(earlier(first, second, false));
+            assertFalse(earlier(second, first, false));
         }
     }
 }

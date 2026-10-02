@@ -49,43 +49,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 the existing doc comment for context.
 
 
-### `middle/objects/enums/IgnoreType.java`
-
-32 missing, 0 low
-
-- L20: enum `IgnoreType` - MISSING
-- L21: method `ITYPE_MAX` - MISSING
-- L21: enum-const `ITYPE_NONE` - MISSING
-- L22: enum-const `ITYPE_SHARP` - MISSING
-- L23: enum-const `ITYPE_BLUNT` - MISSING
-- L24: enum-const `ITYPE_GREAT` - MISSING
-- L25: enum-const `ITYPE_SLING` - MISSING
-- L26: enum-const `ITYPE_BOW` - MISSING
-- L27: enum-const `ITYPE_CROSSBOW` - MISSING
-- L28: enum-const `ITYPE_SHOT` - MISSING
-- L29: enum-const `ITYPE_ARROW` - MISSING
-- L30: enum-const `ITYPE_BOLT` - MISSING
-- L31: enum-const `ITYPE_ROBE` - MISSING
-- L32: enum-const `ITYPE_BODY_ARMOR` - MISSING
-- L33: enum-const `ITYPE_BASIC_DRAGON_ARMOR` - MISSING
-- L34: enum-const `ITYPE_MULTI_DRAGON_ARMOR` - MISSING
-- L35: enum-const `ITYPE_HIGH_DRAGON_ARMOR` - MISSING
-- L36: enum-const `ITYPE_BALANCE_DRAGON_ARMOR` - MISSING
-- L37: enum-const `ITYPE_POWER_DRAGON_ARMOR` - MISSING
-- L38: enum-const `ITYPE_CLOAK` - MISSING
-- L39: enum-const `ITYPE_ELVEN_CLOAK` - MISSING
-- L40: enum-const `ITYPE_SHIELD` - MISSING
-- L41: enum-const `ITYPE_HEADGEAR` - MISSING
-- L42: enum-const `ITYPE_HANDGEAR` - MISSING
-- L43: enum-const `ITYPE_FEET` - MISSING
-- L44: enum-const `ITYPE_DIGGER` - MISSING
-- L45: enum-const `ITYPE_RING` - MISSING
-- L46: enum-const `ITYPE_AMULET` - MISSING
-- L47: enum-const `ITYPE_LIGHT` - MISSING
-- L48: enum-const `ITYPE_MAX` - MISSING
-- L50: field `name` - MISSING
-- L56: method `getName` - MISSING
-
 ### `middle/objects/ItemObject.java`
 
 4 missing, 26 low

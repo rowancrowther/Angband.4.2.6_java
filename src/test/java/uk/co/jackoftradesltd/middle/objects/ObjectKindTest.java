@@ -124,7 +124,7 @@ class ObjectKindTest {
      */
     private static Curse curse(String name) {
         return new Curse(name, List.of(), 0, null, new Flag<>(ObjectFlag.class), Map.of(), Map.of(), 0, 0, 0,
-                List.of(), new Flag<>(ObjectFlag.class), "", "");
+                List.of(), new Flag<>(ObjectFlag.class), "", "", 0);
     }
 
     /**

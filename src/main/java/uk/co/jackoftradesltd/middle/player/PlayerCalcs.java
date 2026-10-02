@@ -1869,7 +1869,7 @@ public class PlayerCalcs {
                         || (GameConstants.getCarryCapQuiverSlotSize() > 0
                         && numStackSplit <= numPackRemaining))) {
                     // Get the first in order
-                    if (ItemObject.earlierObject(first, current, false)) {
+                    if (new ItemObject().earlierObject(first, current, false)) {
                         first = current;
                         firstIndex = gearIndex;
                     }
@@ -1925,7 +1925,7 @@ public class PlayerCalcs {
 
                 // Consider if it if hasn't already been handled
                 if (!assigned.get(gearIndex)) {
-                    if (ItemObject.earlierObject(first, current, false)) {
+                    if (new ItemObject().earlierObject(first, current, false)) {
                         first = current;
                         firstIndex = gearIndex;
                     }

@@ -113,7 +113,7 @@ class BonusSourceTest {
         Flag<ObjectFlag> flagSet = new Flag<>(ObjectFlag.class);
         if (!flags.isEmpty()) flagSet.set(flags);
         return new Curse("test curse", List.of(), 0, null, flagSet, modifiers, elInfo,
-                toHit, toDam, toAc, List.of(), new Flag<>(ObjectFlag.class), "", "");
+                toHit, toDam, toAc, List.of(), new Flag<>(ObjectFlag.class), "", "", 0);
     }
 
     /**

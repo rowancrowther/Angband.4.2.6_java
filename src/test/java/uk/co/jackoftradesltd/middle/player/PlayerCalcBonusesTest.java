@@ -93,7 +93,7 @@ class PlayerCalcBonusesTest {
     private static Curse curse(Map<ObjectModifier, Integer> modifiers, int toHit, int toDam, int toAc) {
         return new Curse("test curse", List.of(), 0, null, new Flag<>(ObjectFlag.class), modifiers,
                 Map.<ElementEnum, ElementInfo>of(), toHit, toDam, toAc,
-                List.of(), new Flag<>(ObjectFlag.class), "", "");
+                List.of(), new Flag<>(ObjectFlag.class), "", "", 0);
     }
 
     /**

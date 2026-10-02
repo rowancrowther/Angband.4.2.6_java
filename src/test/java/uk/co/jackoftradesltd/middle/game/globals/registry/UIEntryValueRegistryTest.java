@@ -194,7 +194,7 @@ class UIEntryValueRegistryTest {
         Flag<ObjectFlag> flags = new Flag<>(ObjectFlag.class);
         flags.on(flag);
         return new Curse("Test Curse", List.of(), 0, null, flags, Map.of(), Map.of(),
-                0, 0, 0, List.of(), new Flag<>(ObjectFlag.class), "", "");
+                0, 0, 0, List.of(), new Flag<>(ObjectFlag.class), "", "", 0);
     }
 
     private static Player newPlayer() {

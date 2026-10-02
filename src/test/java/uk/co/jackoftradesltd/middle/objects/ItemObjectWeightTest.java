@@ -62,7 +62,7 @@ class ItemObjectWeightTest {
 
         return new Curse("weighty", List.of(), weight, null, flags,
                 Map.of(), Map.of(), 0, 0, 0, List.of(),
-                new Flag<>(ObjectFlag.class), "", "");
+                new Flag<>(ObjectFlag.class), "", "", 0);
     }
 
     /**

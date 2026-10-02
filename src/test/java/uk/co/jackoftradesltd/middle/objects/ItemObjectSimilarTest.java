@@ -42,6 +42,7 @@ import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftradesltd.middle.player.PlayerBody;
 import uk.co.jackoftradesltd.middle.player.PlayerRace;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
+import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 
 import java.lang.reflect.Field;
@@ -91,6 +92,16 @@ class ItemObjectSimilarTest {
      */
     private static ObjectKind kind;
 
+    /**
+     * The one curse the curse tests use. {@code cursesAreEqual} walks the registry's curses, as C
+     * walks {@code z_info->curse_max}, so a curse the registry does not hold is invisible to it;
+     * {@link #newPair} therefore seeds the registry with this one before each test.
+     */
+    private static final Curse SIREN = curse("siren");
+
+    private static Object savedCurses;
+    private static Object savedCurseMax;
+
     private ItemObject first;
     private ItemObject second;
 
@@ -121,6 +132,9 @@ class ItemObjectSimilarTest {
 
         GameState.setPlayer(player);
         kind = new ObjectKind();
+
+        savedCurses = objectRegistryField("curses").get(null);
+        savedCurseMax = objectRegistryField("curseMax").get(null);
     }
 
     @AfterAll
@@ -128,6 +142,19 @@ class ItemObjectSimilarTest {
         GameState.setPlayer(savedPlayer);
         registryField("playerBodies").set(null, savedBodies);
         registryField("playerRaces").set(null, savedRaces);
+        objectRegistryField("curses").set(null, savedCurses);
+        objectRegistryField("curseMax").set(null, savedCurseMax);
+    }
+
+    /**
+     * @param fieldName the object-registry field to reach
+     * @return that private static field, made accessible
+     * @throws Exception if the field cannot be reached
+     */
+    private static Field objectRegistryField(String fieldName) throws Exception {
+        Field f = ObjectRegistry.class.getDeclaredField(fieldName);
+        f.setAccessible(true);
+        return f;
     }
 
     /**
@@ -224,7 +251,7 @@ class ItemObjectSimilarTest {
      */
     private static Curse curse(String name) {
         return new Curse(name, List.of(), 0, null, new Flag<>(ObjectFlag.class), Map.of(), Map.of(), 0, 0, 0,
-                List.of(), new Flag<>(ObjectFlag.class), "", "");
+                List.of(), new Flag<>(ObjectFlag.class), "", "", 0);
     }
 
     /**
@@ -252,6 +279,9 @@ class ItemObjectSimilarTest {
      */
     @BeforeEach
     void newPair() {
+        // Seeded per test, not once: the shared extension that seeds the registry runs for every
+        // nested class too, and can leave the curse list empty again by the time a test reads it.
+        ObjectRegistry.setCurses(new ArrayList<>(List.of(SIREN)));
         first = weapon();
         second = weapon();
     }
@@ -589,6 +619,104 @@ class ItemObjectSimilarTest {
         }
 
         /**
+         * C compares every slot of a fixed array, so a modifier never set reads zero and equals an
+         * explicit zero. The maps here may omit a modifier, so the comparison has to read an absent
+         * entry as zero rather than as a difference.
+         */
+        @Test
+        @DisplayName("an explicit zero modifier stacks with an absent one, from either side")
+        void zeroModifierEqualsAbsentModifier() {
+            Map<ObjectModifier, Integer> withZero = modifiers();
+            withZero.put(ObjectModifier.OM_STR, 0);
+            set(first, "modifiers", withZero);
+
+            Map<ObjectModifier, Integer> sparse = modifiers();
+            sparse.remove(ObjectModifier.OM_STR);
+            set(second, "modifiers", sparse);
+
+            assertAll(
+                    () -> assertTrue(first.similar(second, mode())),
+                    () -> assertTrue(second.similar(first, mode())));
+        }
+
+        /**
+         * The same non-zero value on both sides is equal, and a different non-zero value on both
+         * is not: when both entries are present they are compared by value.
+         */
+        @Test
+        @DisplayName("modifiers present on both items are compared by value")
+        void modifiersPresentOnBothAreComparedByValue() {
+            Map<ObjectModifier, Integer> two = modifiers();
+            two.put(ObjectModifier.OM_STR, 2);
+            set(first, "modifiers", two);
+
+            Map<ObjectModifier, Integer> alsoTwo = modifiers();
+            alsoTwo.put(ObjectModifier.OM_STR, 2);
+            set(second, "modifiers", alsoTwo);
+            assertTrue(first.similar(second, mode()));
+
+            Map<ObjectModifier, Integer> three = modifiers();
+            three.put(ObjectModifier.OM_STR, 3);
+            set(second, "modifiers", three);
+            assertAll(
+                    () -> assertFalse(first.similar(second, mode())),
+                    () -> assertFalse(second.similar(first, mode())));
+        }
+
+        /**
+         * A curse the object carries at power zero reads as not carrying it, as in C where a zero
+         * power is the whole meaning of "not cursed". So zero against absent, and zero against
+         * zero, stack; only a non-zero power on one side separates them.
+         */
+        @Test
+        @DisplayName("a curse at power zero equals the curse being absent")
+        void zeroPowerCurseEqualsAbsentCurse() {
+            Map<Curse, CurseData> zero = new LinkedHashMap<>();
+            zero.put(SIREN, new CurseData(0, 0));
+            set(first, "curses", zero);
+
+            assertAll(
+                    () -> assertTrue(first.similar(second, mode())),
+                    () -> assertTrue(second.similar(first, mode())));
+
+            Map<Curse, CurseData> alsoZero = new LinkedHashMap<>();
+            alsoZero.put(SIREN, new CurseData(0, 7));
+            set(second, "curses", alsoZero);
+
+            assertTrue(first.similar(second, mode()));
+        }
+
+        /**
+         * The one-sided case from the other direction: a real curse on either item, with nothing
+         * on the other, refuses the stack.
+         */
+        @Test
+        @DisplayName("a curse on one item only refuses in both directions")
+        void curseOnOneSideOnly() {
+            Map<Curse, CurseData> curses = new LinkedHashMap<>();
+            curses.put(SIREN, new CurseData(2, 0));
+            set(first, "curses", curses);
+
+            assertAll(
+                    () -> assertFalse(first.similar(second, mode())),
+                    () -> assertFalse(second.similar(first, mode())));
+        }
+
+        /**
+         * C walks only the curses in its registry ({@code z_info->curse_max}), so a curse the
+         * registry does not hold is never compared.
+         */
+        @Test
+        @DisplayName("a curse missing from the registry is not compared")
+        void unregisteredCurseIsIgnored() {
+            Map<Curse, CurseData> firstCurses = new LinkedHashMap<>();
+            firstCurses.put(curse("unregistered"), new CurseData(2, 0));
+            set(first, "curses", firstCurses);
+
+            assertTrue(first.similar(second, mode()));
+        }
+
+        /**
          * Egos are compared by reference, which is right when they come from the registry: two
          * items of the same ego hold the same definition.
          */
@@ -604,7 +732,7 @@ class ItemObjectSimilarTest {
         @DisplayName("different curses do not stack")
         void differentCurses() {
             Map<Curse, CurseData> curses = new LinkedHashMap<>();
-            curses.put(curse("siren"), new CurseData(1, 0));
+            curses.put(SIREN, new CurseData(1, 0));
             set(second, "curses", curses);
 
             assertFalse(first.similar(second, mode()));
@@ -623,7 +751,7 @@ class ItemObjectSimilarTest {
         @Test
         @DisplayName("the same curse at the same power stacks whatever the timeouts")
         void sameCurseDifferentTimeouts() {
-            Curse siren = curse("siren");
+            Curse siren = SIREN;
             Map<Curse, CurseData> firstCurses = new LinkedHashMap<>();
             firstCurses.put(siren, new CurseData(3, 1));
             set(first, "curses", firstCurses);
@@ -642,7 +770,7 @@ class ItemObjectSimilarTest {
         @Test
         @DisplayName("the same curse at different powers does not stack")
         void sameCurseDifferentPowers() {
-            Curse siren = curse("siren");
+            Curse siren = SIREN;
             Map<Curse, CurseData> firstCurses = new LinkedHashMap<>();
             firstCurses.put(siren, new CurseData(3, 0));
             set(first, "curses", firstCurses);

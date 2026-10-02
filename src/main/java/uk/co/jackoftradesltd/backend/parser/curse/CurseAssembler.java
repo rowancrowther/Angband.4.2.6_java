@@ -94,6 +94,7 @@ public class CurseAssembler implements Assembler<CurseParseRecord, List<Curse>> 
     public List<Curse> assemble(@NotNull List<CurseParseRecord> records, @NotNull List<String> errors) {
         List<Curse> results = new ArrayList<>();
 
+        int curseIndex = 0;
         // First pass
         for (CurseParseRecord record : records) {
             int line = record.line();
@@ -259,7 +260,8 @@ public class CurseAssembler implements Assembler<CurseParseRecord, List<Curse>> 
             results.add(new Curse(name, types, weightAdjustment,
                     result, objectFlags, modifiers, elInfo,
                     toh, tod, toa, conflictingCurses, cFlags,
-                    description, message));
+                    description, message, curseIndex));
+            curseIndex++;
         }
 
         // Second pass - link the conflicting curses

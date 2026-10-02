@@ -65,6 +65,15 @@ public class Guards {
         return (int) result;
     }
 
+    public static int addGuardI16(int a, int b) {
+        long al = a;
+        long bl = b;
+
+        long result = Math.clamp(al + bl, Short.MIN_VALUE, Short.MAX_VALUE);
+
+        return (int) result;
+    }
+
     /**
      * Subtracts one integer from another, stopping at the end of the range rather than wrapping
      * round it - the port of C's {@code sub_guardi}.

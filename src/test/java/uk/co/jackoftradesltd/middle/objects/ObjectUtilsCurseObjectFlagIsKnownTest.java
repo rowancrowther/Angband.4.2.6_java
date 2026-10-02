@@ -66,7 +66,7 @@ class ObjectUtilsCurseObjectFlagIsKnownTest {
         return new Curse("test curse", List.of(), 0, null,
                 new Flag<>(ObjectFlag.class), new HashMap<>(), new HashMap<>(),
                 combatToHit, 0, 0, List.of(), new Flag<>(ObjectFlag.class),
-                "test curse", "the test curse fires");
+                "test curse", "the test curse fires", 0);
     }
 
     /**

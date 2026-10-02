@@ -137,7 +137,7 @@ class ObjectRegistryTest {
     }
 
     private static Curse curse(String name) {
-        return new Curse(name, null, 0, null, null, null, null, 0, 0, 0, null, null, null, null);
+        return new Curse(name, null, 0, null, null, null, null, 0, 0, 0, null, null, null, null, 0);
     }
 
     private static Activation activation(String name) {

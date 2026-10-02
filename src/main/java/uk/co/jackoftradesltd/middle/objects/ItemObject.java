@@ -82,24 +82,47 @@ public class ItemObject {
 
     /**
      * The player this object's calculations are asked about - the equipment slots it would be worn
-     * in, the quiver it might sit in, the cave its knowledge lives in.
+     * in, the quiver it might sit in, the cave its knowledge lives in. Stands in for C's
+     * {@code player} global, which C functions read at the moment they run.
      *
-     * <p>Static, and so shared by every item: C reaches the same information through its
-     * {@code player} global, and the port keeps the shape rather than threading a player through
-     * every power and pricing call.
+     * <p>An instance field, one per item, set from {@link GameState#getPlayer()} by both
+     * constructors. It is only a snapshot: an item built before a character exists holds
+     * {@code null}, and one that outlives a change of player holds the old one. Methods that must
+     * see the live player - {@link #earlierObject} and {@link #similar} - therefore refresh it from
+     * {@link GameState#getPlayer()} on every call, which means they overwrite it. The methods that
+     * read it without refreshing (merging, slot lookups and the power calculations) still depend on
+     * the snapshot.
+     *
+     * <p>Field player commented in full on 261002.
      */
-    private static Player player;
+    private Player player;
 
     /**
-     * The object kind this item is an instance of.
+     * The object kind this item is an instance of. C's {@code obj->kind}.
+     *
+     * <p>Two items are only candidates to stack if their kinds are equal, and awareness of the
+     * item's flavour is read from the kind, not the item.
+     *
+     * <p>Field kind commented in full on 261002.
      */
     private ObjectKind kind;
     /**
-     * The ego type applied to this item, if any.
+     * The ego type applied to this item, or {@code null} for an ordinary or artifact item. C's
+     * {@code obj->ego}.
+     *
+     * <p>Compared by identity in {@link #similar}, as C compares pointers: two items stack only
+     * if they carry the very same ego entry from the registry, or both carry none.
+     *
+     * <p>Field ego commented in full on 261002.
      */
     private EgoItem ego;
     /**
-     * The artifact this item is, if any.
+     * The artifact this item is, or {@code null} if it is not one. C's {@code obj->artifact}.
+     *
+     * <p>Any item with an artifact, on either side of the comparison, never stacks: {@link #similar}
+     * rejects it before looking at anything else about its type.
+     *
+     * <p>Field artifact commented in full on 261002.
      */
     private Artifact artifact;
 
@@ -126,7 +149,13 @@ public class ItemObject {
     private Loc location;
 
     /**
-     * The item type value (tval).
+     * The item type value, copied from the kind. C's {@code obj->tval}, a {@code uint8_t}.
+     *
+     * <p>{@code TValue} is declared in {@code list-tvals.h} order, so its ordinal is C's tval
+     * number; {@link #earlierObject} orders the pack by it. {@link #similar} reads it to decide
+     * which stacking rules apply.
+     *
+     * <p>Field tValue commented in full on 261002.
      */
     private TValue tValue;
     /**
@@ -135,7 +164,14 @@ public class ItemObject {
     private int sValue;
 
     /**
-     * The item's extra parameter value (pval).
+     * The item's extra parameter. C's {@code obj->pval}, an {@code int16_t}, whose meaning depends
+     * on the type: charges for a wand or staff, an amount for gold, remaining fuel for a light.
+     *
+     * <p>{@link #similar} caps the combined {@code pval} of charged items and gold at
+     * {@code MAX_PVAL}, {@link #earlierObject} sorts lights by it, and {@link #distributeCharges}
+     * divides it between stacks.
+     *
+     * <p>Field pValue commented in full on 261002.
      */
     private int pValue;
 
@@ -145,11 +181,17 @@ public class ItemObject {
     private int weight;
 
     /**
-     * Number of damage dice.
+     * Number of damage dice. C's {@code obj->dd}, a {@code uint8_t}. One of the values
+     * {@link #similar} requires to be identical before two weapons stack.
+     *
+     * <p>Field damageDice commented in full on 261002.
      */
     private int damageDice;
     /**
-     * Sides per damage die.
+     * Sides per damage die. C's {@code obj->ds}, a {@code uint8_t}. Compared with
+     * {@link #damageDice} by {@link #similar}.
+     *
+     * <p>Field damageSides commented in full on 261002.
      */
     private int damageSides;
     /**
@@ -157,7 +199,10 @@ public class ItemObject {
      */
     private Random baseDamage;
     /**
-     * Base armour class.
+     * Base armour class, before any to-armour-class bonus. C's {@code obj->ac}, an
+     * {@code int16_t}. {@link #similar} requires it to be identical before wearables stack.
+     *
+     * <p>Field baseAC commented in full on 261002.
      */
     private int baseAC;
     /**
@@ -195,7 +240,12 @@ public class ItemObject {
     private int toHit;
 
     /**
-     * The item's object flags.
+     * The item's object flags. C's {@code obj->flags}, a bitflag array.
+     *
+     * <p>{@link #similar} requires the whole set to be equal, so two items differing in a single
+     * flag never stack.
+     *
+     * <p>Field flags commented in full on 261002.
      */
     private Flag<ObjectFlag> flags;
     /**
@@ -206,12 +256,23 @@ public class ItemObject {
      * {@link ObjectKind} and {@link EgoItem}, which is what makes recognising an ego by its
      * modifiers a question about ranges rather than about this number.
      *
+     * <p>A map that may omit a modifier, where C's array has a slot for every one and a slot that
+     * was never set reads zero. Code comparing two objects must therefore read an absent entry as
+     * zero, as {@link #getModifierValue(ObjectModifier)} does and as {@link #similar} does.
+     *
      * <p>Comment corrected on 260816, when the field's type changed from the unparsed dice text it
-     * had previously held.
+     * had previously held. Field modifiers commented in full on 261002.
      */
     private Map<ObjectModifier, Integer> modifiers;
     /**
-     * Per-element relation info.
+     * Per-element relation info: resistance level and the hates/ignores flags for each element the
+     * item has something to say about. C's {@code obj->el_info}.
+     *
+     * <p>A map holding only the elements recorded, where C keeps an entry for every element.
+     * {@link #checkElementStacking} compares two of these for {@link #similar}, and is stricter than
+     * C when an element is recorded on one item and absent from the other.
+     *
+     * <p>Field elInfo commented in full on 261002.
      */
     private Map<ElementEnum, ElementInfo> elInfo;
     /**
@@ -232,20 +293,26 @@ public class ItemObject {
      * and the countdown to its next effect. C's {@code obj->curses}.
      *
      * <p>A map holding only the curses the object actually carries, where C keeps an array with a
-     * slot for every curse in the game and reads a power of zero as "not cursed with this". The two
-     * agree because nothing stores a curse at power zero: absence is the port's way of saying the
-     * same thing.
+     * slot for every curse in the game and reads a power of zero as "not cursed with this".
+     * Absence is the port's way of saying the same thing, but an entry at power zero can still be
+     * stored (by {@code setCursePower}, for one), so code comparing curses reads a zero-power entry
+     * and an absent one as equal, as {@link #cursesAreEqual} does.
      *
      * <p>Null until the first curse is added, which the accessors absorb rather than pass on —
      * {@link #getCurses()} reports an empty map and the mutators create the map on demand.
      *
      * <p>Field curses retyped from {@code Map<Curse.CurseEntry, Boolean>} on 260817, commented in
-     * full on 260817.
+     * full on 260817, comment corrected on 261002.
      */
     private LinkedHashMap<Curse, CurseData> curses;
 
     /**
-     * Effects this item produces when used.
+     * Effects this item produces when used. C's {@code obj->effect}, a linked chain.
+     *
+     * <p>Whether the player knows the effect is a comparison between this list and the one on the
+     * {@link #known} counterpart, made by {@link #effectIsKnown()}.
+     *
+     * <p>Field effect commented in full on 261002.
      */
     private List<Effect> effect;
     /**
@@ -257,16 +324,31 @@ public class ItemObject {
      */
     private List<Activation> activation;
     /**
-     * Recharge time, as a dice expression.
+     * Recharge time, as a dice expression. C's {@code obj->time}, a {@code random_value}, used by
+     * rods and activations. {@link #distributeCharges} takes its average to cap how much of a
+     * rod's timeout a moved stack can hold.
+     *
+     * <p>Field time commented in full on 261002.
      */
     private Random time;
     /**
-     * Turns until the item can be used again (0 = ready).
+     * Turns until the item can be used again (0 = ready). C's {@code obj->timeout}, an
+     * {@code int16_t}.
+     *
+     * <p>{@link #similar} will not stack a recharging wearable (other than a light, whose timeout
+     * is its fuel and must match), and {@link #distributeCharges} shares a rod's remaining timeout
+     * out between stacks.
+     *
+     * <p>Field timeout commented in full on 261002.
      */
     private int timeout;
 
     /**
-     * Quantity in this stack.
+     * Quantity in this stack. C's {@code obj->number}, a {@code uint8_t}.
+     *
+     * <p>{@link #distributeCharges} divides by it, so it must not be zero when that is called.
+     *
+     * <p>Field number commented in full on 261002.
      */
     private int number;
     /**
@@ -279,16 +361,27 @@ public class ItemObject {
      */
     private int heldMIndex;
     /**
-     * Index of the monster mimicking this item, or 0 if none.
+     * Index of the monster mimicking this item, or 0 if none. C's {@code obj->mimicking_m_idx}, an
+     * {@code int16_t}. An item that is a monster's disguise never stacks, so {@link #similar}
+     * rejects a non-zero value on either side.
+     *
+     * <p>Field mimickingMIndex commented in full on 261002.
      */
     private int mimickingMIndex;
 
     /**
-     * Where this item came from (for the description history line).
+     * Where this item came from (for the description history line). C's {@code obj->origin}, a
+     * {@code uint8_t}. {@link #originCombine} sets it to {@code ORIGIN_MIXED} when two stacks with
+     * different origins are merged.
+     *
+     * <p>Field origin commented in full on 261002.
      */
     private ObjectOriginEnum origin;
     /**
-     * The depth at which the item originated.
+     * The depth at which the item originated. C's {@code obj->origin_depth}, a {@code uint8_t}.
+     * {@link #originCombine} treats a difference in depth, with the same origin, as a mixed origin.
+     *
+     * <p>Field originDepth commented in full on 261002.
      */
     private int originDepth;
     /**
@@ -306,7 +399,11 @@ public class ItemObject {
      */
     private String note;
     /**
-     * The monster race that dropped the item, if applicable.
+     * The monster race that dropped the item, or {@code null} if none did. C's
+     * {@code obj->origin_race}, a pointer. {@link #originCombine} compares it by identity and
+     * prefers to keep the record of a unique.
+     *
+     * <p>Field originRace commented in full on 261002.
      */
     private MonsterRace originRace = null;
 
@@ -339,6 +436,7 @@ public class ItemObject {
         elInfo = new LinkedHashMap<>();
         brands = new HashSet<>();
         slays = new HashSet<>();
+        effect = new ArrayList<>();
     }
 
     /**
@@ -443,7 +541,7 @@ public class ItemObject {
 
     /**
      * Decides whether one object should be listed before another - the port of C's
-     * {@code earlier_object} ({@code obj-gear.c}).
+     * {@code earlier_object} ({@code player-calcs.c}).
      *
      * <p>Answers for the pack ordering that {@code calcInventory} builds: given the object currently
      * holding a slot and a candidate for it, {@code true} means the candidate belongs earlier.
@@ -462,14 +560,28 @@ public class ItemObject {
      * objects that survive all of them are equal in the pack's eyes, and the answer is "no
      * preference".
      *
-     * <p>Function earlierObject commented in full on 260827.
+     * <p>This is an instance method only so that it can set {@link #player}: the usable-ammunition
+     * test needs the player's {@code ammo_tval}, which C reads from its {@code player} global at
+     * the moment of the call, so the current player is fetched from {@link GameState#getPlayer()}
+     * on every call rather than relying on the one captured at construction. The receiver takes no
+     * part in the ordering itself - only {@code origObj} and {@code newObj} are compared - and
+     * callers conventionally pass the incumbent as both receiver and {@code origObj}. A side effect
+     * is that every call overwrites the receiver's {@code player}.
+     *
+     * <p>Object type is compared by {@code TValue} ordinal, which equals C's {@code tval} value
+     * because {@code TValue} is declared in {@code list-tvals.h} order. The flavour tests go
+     * through {@link #flavourIsAware()} and {@link #objectFlavourIsAware()}, both of which read the
+     * kind's awareness as C's {@code object_flavor_is_aware} does, and the value tests use
+     * {@code objectValue(1)}, C's {@code object_value(obj, 1)}.
+     *
+     * <p>Function earlierObject commented in full on 261002.
      *
      * @param origObj the object currently holding the position, or {@code null}
      * @param newObj  the candidate, or {@code null}
      * @param store   {@code true} when ordering a shop's stock rather than the player's pack
      * @return {@code true} if {@code newObj} should come before {@code origObj}
      */
-    public static boolean earlierObject(ItemObject origObj, ItemObject newObj, boolean store) {
+    public boolean earlierObject(ItemObject origObj, ItemObject newObj, boolean store) {
         // Are both of the objects real
         if (newObj == null) return false;
         if (origObj == null) return true;
@@ -480,6 +592,8 @@ public class ItemObject {
             if (!origObj.canBrowse() && newObj.canBrowse()) return true;
         }
 
+        player = GameState.getPlayer();
+        
         // Usable ammo is before other ammo
         if (origObj.gettValue().isAmmo() && newObj.gettValue().isAmmo()) {
             // first favour usable ammo
@@ -587,11 +701,49 @@ public class ItemObject {
     }
 
     /**
-     * Tests whether two objects are similar enough to stack, under the given stacking mode — the
-     * port of C's {@code object_similar} ({@code obj-util.c}). The comparison covers kind, ego,
-     * artifact, known/unknown state, curses, runes, effect knowledge and any mode-specific rules.
+     * Tests whether one item like this one can be stacked with one item like {@code itm2}, ignoring
+     * inscriptions - the port of C's {@code object_similar} ({@code obj-pile.c}). {@code
+     * object_stackable} adds the inscription check on top of this.
      *
-     * <p>Function similar coded before 260822, commented in full on 260824.
+     * <p>The tests run in C's order and the first to fail answers {@code false}: equipped items,
+     * mimics, unknown kinds (only in {@code OSTACK_LIST} mode), an item with itself, differing
+     * kind, flags or element info, and artifacts. The rest depends on the item type:
+     * <ul>
+     *   <li>Chests never stack.</li>
+     *   <li>Food, potions, scrolls and rods always stack, as the kinds are identical.</li>
+     *   <li>Wands, staves and gold stack unless the combined {@code pval} would exceed
+     *       {@code MAX_PVAL}.</li>
+     *   <li>Weapons, armour, jewellery and lights must also match in armour class, dice, to-hit,
+     *       to-damage, to-armour-class, every modifier, ego, curses and timeout. A wearable that is
+     *       recharging never stacks unless it is a light, and a light needs the same fuel.
+     *       Finally, in {@code OSTACK_LIST} mode an item whose runes and effect are fully known will
+     *       not stack with one that is not, so the object list does not merge identified items with
+     *       unidentified ones.</li>
+     *   <li>Anything else is similar.</li>
+     * </ul>
+     *
+     * <p>The current player is fetched from {@link GameState#getPlayer()} on each call, standing in
+     * for C's {@code player} global, so that the equipped test never sees a stale or missing
+     * player; this overwrites the receiver's {@code player}.
+     *
+     * <p>Where the port is deliberately not a transliteration:
+     * <ul>
+     *   <li><b>Modifiers</b> are held in a map that may omit a modifier, where C compares every slot
+     *       of a fixed array. The loop over every modifier therefore treats an absent entry as zero
+     *       - one side absent and the other zero stacks - and compares by value when both are
+     *       present.</li>
+     *   <li><b>Element info</b> is checked by {@link #checkElementStacking}, which is stricter than
+     *       C in the corner its comment describes.</li>
+     *   <li><b>Curses</b> are checked by {@link #cursesAreEqual}.</li>
+     *   <li>The explicit {@code tValue} equality test has no C counterpart; the kind test already
+     *       implies it.</li>
+     * </ul>
+     *
+     * <p>Like C, which dereferences {@code obj->known}, this throws a {@code NullPointerException}
+     * in {@code OSTACK_LIST} mode if either item has no known counterpart. The modifier loop also
+     * assumes both modifier maps exist.
+     *
+     * <p>Function similar coded before 260822, commented in full on 261002.
      *
      * @param itm2 the other object to compare against
      * @param mode the {@link ObjectStackEnum} flags selecting which stacking rules apply
@@ -599,6 +751,8 @@ public class ItemObject {
      */
     @CheckReturnValue
     public boolean similar(@NotNull ItemObject itm2, @NotNull Flag<ObjectStackEnum> mode) {
+        player = GameState.getPlayer();
+        
         // Check for equipped items
         if (player.getPlayerBody().itemIsEquipped(this)) return false;
         if (player.getPlayerBody().itemIsEquipped(itm2)) return false;
@@ -649,11 +803,21 @@ public class ItemObject {
             if (this.toAC != itm2.toAC) return false;
 
             // identical modifiers
-            for (ObjectModifier mod : this.modifiers.keySet()) {
-                if (!this.modifiers.get(mod).equals(itm2.modifiers.get(mod))) return false;
-            }
-            for (ObjectModifier mod : itm2.modifiers.keySet()) {
-                if (!itm2.modifiers.get(mod).equals(this.modifiers.get(mod))) return false;
+            for (ObjectModifier om : ObjectModifier.values()) {
+                if (om == ObjectModifier.OM_NONE || om == ObjectModifier.OM_MAX)
+                    continue;
+
+                if (this.modifiers.containsKey(om) && itm2.modifiers.containsKey(om)) {
+                    if (this.modifiers.get(om).equals(itm2.modifiers.get(om))) continue;
+
+                    return false;
+                } else if ((this.modifiers.containsKey(om) && !itm2.modifiers.containsKey(om))
+                        || (!this.modifiers.containsKey(om) && itm2.modifiers.containsKey(om))) {
+                    if (this.modifiers.containsKey(om) && this.modifiers.get(om) == 0) continue;
+                    if (itm2.modifiers.containsKey(om) && itm2.modifiers.get(om) == 0) continue;
+
+                    return false;
+                }
             }
 
             // Same ego item
@@ -675,9 +839,9 @@ public class ItemObject {
     /**
      * Compares two objects' element info one way round, reporting whether everything the second
      * records is matched by the first. Extracted from {@link #similar} to carry the element half of
-     * C's {@code object_stackable} ({@code obj-util.c}), which rejects a stack when two objects
+     * C's {@code object_similar} ({@code obj-pile.c}), which rejects a stack when two objects
      * differ in either their resistance levels or their {@code EL_INFO_HATES}/{@code EL_INFO_IGNORE}
-     * flags.
+     * flags. The {@code ELEM_NONE} and {@code ELEM_MAX} sentinels are skipped.
      *
      * <p><b>Why it is one-directional, and called twice.</b> C compares full arrays indexed by
      * element, so a single loop over {@code 0..ELEM_MAX} sees both objects' entries at once. Here
@@ -694,7 +858,7 @@ public class ItemObject {
      * no-argument constructor, whose map is still null, compares as carrying no element info rather
      * than throwing.
      *
-     * <p>Function checkElementStacking coded on 260817, commented in full on 260817.
+     * <p>Function checkElementStacking coded on 260817, commented in full on 261002.
      *
      * @param itm1 the object whose element info must cover the other's
      * @param itm2 the object whose recorded elements are walked
@@ -735,8 +899,13 @@ public class ItemObject {
      * flag switched on in its known set to record that the flag was ruled out. Once the item is
      * fully known there is nothing left to rule out, so the bookkeeping stops.
      *
+     * <p>The two checks are {@link #runesKnown()}, which answers {@code false} for an item with no
+     * known counterpart, and {@link #effectIsKnown()}. Taking them in that order matters in C
+     * as well: {@code object_effect_is_known} dereferences {@code obj->known}, and it is only safe
+     * because the rune check has already rejected an item without one.
+     *
      * <p>Function isFullyKnown coded before 260815 as the private {@code fullyKnown}, made public on
-     * 260815 when a second copy of it was folded back in. Commented in full on 260815.
+     * 260815 when a second copy of it was folded back in. Commented in full on 261002.
      *
      * @return true if the player has full knowledge of this object
      */
@@ -747,21 +916,64 @@ public class ItemObject {
     }
 
     /**
-     * Check the curse lists between this and the incoming object and confirm they are equal
+     * Checks whether two objects have the exact same curses - the port of C's {@code
+     * curses_are_equal} ({@code obj-curse.c}).
      *
-     * @param itm2 The object to compare with this object
-     * @return true if the two curse lists on this and the incoming item are identical
+     * <p>Every curse in {@code ObjectRegistry.getCurses()} is visited and only the <em>power</em>
+     * is compared; the countdown to the curse's next effect is ignored, as in C. A curse an object
+     * does not carry reads as power zero, so a curse at power zero on one object matches the curse
+     * being absent from the other, and a curse absent from both matches. Both present means the
+     * powers must be equal.
+     *
+     * <p>C also begins by comparing the curse arrays themselves: both null is equal, and exactly
+     * one null is not, even if the other array holds only zeros. The port keeps maps rather than
+     * arrays and reads a null map as empty, so an empty map and a map of zero-power entries compare
+     * equal. The difference only shows after every curse has been taken off one of two otherwise
+     * identical items.
+     *
+     * <p>Reads through {@link #getCurses()}, so an object whose map has never been created counts
+     * as having no curses. Used by {@link #similar} and {@link #runesKnown()}, the latter comparing
+     * an object with its own known counterpart.
+     *
+     * <p>Function cursesAreEqual coded before 261002, commented in full on 261002.
+     *
+     * @param itm2 the object to compare with this object
+     * @return {@code true} if the two objects carry the same curses at the same powers
      */
     @CheckReturnValue
     @Contract(pure = true)
     private boolean cursesAreEqual(@NotNull ItemObject itm2) {
-        return this.getCurses().equals(itm2.getCurses());
+        for (Curse curse : ObjectRegistry.getCurses()) {
+            if (this.getCurses().containsKey(curse) && itm2.getCurses().containsKey(curse)) {
+                if (this.getCurses().get(curse).getPower() != itm2.getCurses().get(curse).getPower())
+                    return false;
+            } else if (!this.getCurses().containsKey(curse) && !itm2.getCurses().containsKey(curse)) {
+                // Do nothing
+            } else {
+                if (this.getCurses().containsKey(curse) && this.getCurses().get(curse).getPower() != 0)
+                    return false;
+                if (itm2.getCurses().containsKey(curse) && itm2.getCurses().get(curse).getPower() != 0)
+                    return false;
+            }
+        }
+
+        return true;
     }
 
     /**
-     * Checks to see if all the runes on this object are known
+     * Checks whether all the runes on this object are known to the player - the port of C's
+     * {@code object_runes_known} ({@code obj-knowledge.c}).
      *
-     * @return true if all the runes on this object are known
+     * <p>An object with no known counterpart answers {@code false}. Otherwise its curses must match
+     * its known counterpart's exactly, by {@link #cursesAreEqual}, and then the answer is that of
+     * {@code PlayerKnowledge.nonCurseRunesKnown}, the port of C's
+     * {@code object_non_curse_runes_known}, which covers every other rune.
+     *
+     * <p>Called by {@link #isFullyKnown()}.
+     *
+     * <p>Function runesKnown coded before 261002, commented in full on 261002.
+     *
+     * @return {@code true} if every rune on this object, curses included, is known
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -774,9 +986,21 @@ public class ItemObject {
     }
 
     /**
-     * Checks whether the player is aware of the object's effect
+     * Checks whether the player is aware of what the object's effect does - the port of C's
+     * {@code object_effect_is_known} ({@code obj-knowledge.c}).
      *
-     * @return true if the object's known effect is the same as its effect
+     * <p>C compares the two {@code effect} pointers: the known counterpart either shares the
+     * object's effect chain once the player has learned it, or holds none. The port keeps lists, so
+     * it compares contents both ways: every effect on this object must be on the known counterpart
+     * and every effect on the known counterpart must be on this object, which is {@code true} for
+     * two empty lists as well as for a fully learned one.
+     *
+     * <p>An object with no known counterpart answers {@code false}, where C would dereference a null
+     * pointer; {@link #isFullyKnown()} never reaches here without one.
+     *
+     * <p>Function effectIsKnown coded before 261002, commented in full on 261002.
+     *
+     * @return {@code true} if the known counterpart's effects are the same as this object's
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -786,13 +1010,26 @@ public class ItemObject {
         for (Effect eff : this.getEffect()) {
             if (!knownEffects.contains(eff)) return false;
         }
+        for (Effect eff : known.getEffect()) {
+            if (!effect.contains(eff)) return false;
+        }
         return true;
     }
 
     /**
-     * Combine the origin of another object with this one
+     * Combines the origin of another object into this one when the two are merged - the port of C's
+     * {@code object_origin_combine} ({@code obj-pile.c}). Only this object changes.
      *
-     * @param item the item to combine into this one if possible
+     * <p>If the two came from different monster races, a unique's record is preferred over a
+     * non-unique's: this keeps its own if it is the unique, and takes the other's origin, depth and
+     * race if that is the unique. If neither or both are unique the origin becomes
+     * {@code ORIGIN_MIXED}. If they came from the same race (including both having none) the origin
+     * becomes {@code ORIGIN_MIXED} only when the origin type or depth differs, and is left alone
+     * otherwise. Race is compared by identity, as C compares pointers.
+     *
+     * <p>Function originCombine coded before 261002, commented in full on 261002.
+     *
+     * @param item the item being merged into this one; not changed
      */
     private void originCombine(@NotNull ItemObject item) {
         if (originRace != item.originRace) {
@@ -814,11 +1051,31 @@ public class ItemObject {
     }
 
     /**
-     * Distribute the charges of rods, staves and wands which are being merged
+     * Shares out the charges and recharge timeout of rods, staves and wands when some of a stack
+     * moves to another - the port of C's {@code distribute_charges} ({@code obj-util.c}). This
+     * object is C's {@code source}, {@code item} is its {@code dest}, and {@code amount} is its
+     * {@code amt}.
      *
-     * @param item    the item which will be the destination of the merge
-     * @param amount  the amount of items we are merging
-     * @param destNew whether the destination is a new object, or an existing one
+     * <p>Wands and staves split their total {@code pval} in proportion, {@code pval * amount /
+     * number} in integer division. The destination gets that share - replacing its own {@code pval}
+     * if {@code destNew}, adding to it otherwise - and the source loses it, unless the whole stack
+     * is moving, which leaves the source's {@code pval} alone for a neater message.
+     *
+     * <p>Rods also share out their timeout. The destination takes all the time remaining, up to the
+     * most that {@code amount} rods can hold, which is the average recharge time multiplied by the
+     * count. For a new destination the cap is {@code amount} rods; for an existing one it is the
+     * destination's rods after the move, and nothing is moved if the destination is already at or
+     * past that cap. The source loses whatever the destination gains, again unless the whole stack
+     * is moving.
+     *
+     * <p>Divides by this object's {@code number}, so a stack of zero throws, as C would fault.
+     *
+     * <p>Function distributeCharges coded before 261002, commented in full on 261002.
+     *
+     * @param item    the object receiving the share, of the same type as this one
+     * @param amount  how many items are being moved
+     * @param destNew {@code true} to ignore whatever charges or timeout the destination holds and
+     *                treat it as a new stack
      */
     private void distributeCharges(@NotNull ItemObject item, int amount, boolean destNew) {
         if (this.tValue.canHaveCharges()) {
@@ -1386,7 +1643,7 @@ public class ItemObject {
         String toSend = property.getNoticeMessage();
         if (toSend == null) return;
         toSend = toSend.replace("{name}", name);
-        Message.message(toSend);
+        Message.message("%s", toSend);
     }
 
     /**
@@ -1781,7 +2038,8 @@ public class ItemObject {
      * @param effect the effect list to set — C's {@code obj->effect}; stored, not copied
      */
     public void setEffect(List<Effect> effect) {
-        this.effect = effect;
+        if (effect != null) this.effect = effect;
+        else this.effect = new ArrayList<>();
     }
 
     /**
@@ -2129,9 +2387,18 @@ public class ItemObject {
     public int objectWeightOne() {
         int result = Math.max(weight, 0);
 
-        for (Curse curse : getCurses().keySet()) {
-            if (getCurses().get(curse) != null && getCurses().get(curse).getPower() != 0)
-                result = curse.modifyWeightForCurse(result);
+        List<Integer> sortedIndex = new ArrayList<>();
+        for (Curse c : getCurses().keySet()) {
+            sortedIndex.add(c.getIndex());
+        }
+        sortedIndex.sort(Comparator.naturalOrder());
+
+        for (int index : sortedIndex) {
+            for (Curse curse : getCurses().keySet()) {
+                if (curse != null && curse.getIndex() == index && getCurses().get(curse).getPower() != 0) {
+                    result = curse.modifyWeightForCurse(result);
+                }
+            }
         }
 
         return result;
@@ -2239,7 +2506,7 @@ public class ItemObject {
             if (mapping.tval() == gettValue()) {
                 // Is there a matching identifier
                 if (!mapping.identifier().isEmpty()) {
-                    if (!getKind().getName().equals(mapping.identifier())) {
+                    if (!getKind().getName().contains(mapping.identifier())) {
                         continue;
                     }
                 }
@@ -2508,7 +2775,7 @@ public class ItemObject {
         this.objectAbsorbMerge(toAbsorb, player, true);
         if (known != null) {
             Chunk cave = player.getCave();
-            if (cave != null && !known.getGrid().isZero())
+            if (cave != null && known.getGrid() != null && !known.getGrid().isZero())
                 cave.getSquare(known.getGrid()).pileExcise(known);
             if (cave != null) {
                 cave.delistObject(known);
@@ -2779,7 +3046,10 @@ public class ItemObject {
         copy.weight = this.weight;
         copy.damageDice = this.damageDice;
         copy.damageSides = this.damageSides;
-        copy.baseDamage = this.baseDamage.copy();
+        if (this.baseDamage == null)
+            copy.baseDamage = null;
+        else
+            copy.baseDamage = this.baseDamage.copy();
         copy.baseAC = this.baseAC;
         copy.toAC = this.toAC;
         copy.toDam = this.toDam;
@@ -2817,7 +3087,10 @@ public class ItemObject {
         copy.effect = this.effect;
         copy.effectMessage = this.effectMessage;
         copy.activation = this.activation;
-        copy.time = this.time.copy();
+        if (this.time == null)
+            copy.time = null;
+        else
+            copy.time = this.time.copy();
         copy.timeout = this.timeout;
         copy.number = this.number;
         Flag<ObjectNotice> nFlags = new Flag<>(ObjectNotice.class);
@@ -3207,6 +3480,13 @@ public class ItemObject {
          */
         if (getBaseAC() == 0) {
             int adjustWC = (standardWeight - nonStandardWeight) / ObjectRegistry.WGT_POWER_DEN_NOBASEAC;
+            if (adjustWC >= 0) {
+                adjustWC = (adjustWC < Integer.MAX_VALUE / ObjectRegistry.WGT_POWER_NUM_NOBASEAC) ?
+                        adjustWC * ObjectRegistry.WGT_POWER_NUM_NOBASEAC : Integer.MAX_VALUE;
+            } else {
+                adjustWC = (adjustWC > Integer.MIN_VALUE / ObjectRegistry.WGT_POWER_NUM_NOBASEAC) ?
+                        adjustWC * ObjectRegistry.WGT_POWER_NUM_NOBASEAC : Integer.MIN_VALUE;
+            }
 
             logger.info("Add {} power for non-standard weight of object not  " +
                     "affecting base armour.", adjustWC);
@@ -3215,8 +3495,15 @@ public class ItemObject {
 
         // Objects with the "THROWING" flag increase damage with increasing weight
         if (flags.has(ObjectFlag.OF_THROWING)) {
-            int adjustThrow = nonStandardWeight / ObjectRegistry.WGT_POWER_DEN_THROW
-                    - standardWeight / ObjectRegistry.WGT_POWER_DEN_THROW;
+            int adjustThrow = ((nonStandardWeight / ObjectRegistry.WGT_POWER_DEN_THROW)
+                    - (standardWeight / ObjectRegistry.WGT_POWER_DEN_THROW));
+            if (adjustThrow >= 0) {
+                adjustThrow = adjustThrow < Integer.MAX_VALUE / ObjectRegistry.WGT_POWER_NUM_THROW ?
+                        adjustThrow * ObjectRegistry.WGT_POWER_NUM_THROW : Integer.MAX_VALUE;
+            } else {
+                adjustThrow = adjustThrow > Integer.MIN_VALUE / ObjectRegistry.WGT_POWER_NUM_THROW ?
+                        adjustThrow * ObjectRegistry.WGT_POWER_NUM_THROW : Integer.MIN_VALUE;
+            }
 
             logger.info("Add {} power for non-standard weight of object good " +
                     "for throwing", adjustThrow);
@@ -5156,7 +5443,7 @@ public class ItemObject {
 
         sb.append(string);
 
-        Message.messageType(msgT, sb.toString());
+        Message.messageType(msgT, "%s", sb.toString());
     }
 
     /**
@@ -5354,7 +5641,7 @@ public class ItemObject {
         artifact = null;
         known = null;
         location = null;
-        tValue = null;
+        tValue = TValue.TV_NONE;
         sValue = 0;
         pValue = 0;
         weight = 0;
@@ -5384,6 +5671,7 @@ public class ItemObject {
         originRace = null;
         note = null;
         mimickingMIndex = 0;
+        owningPile = null;
     }
 
     /**

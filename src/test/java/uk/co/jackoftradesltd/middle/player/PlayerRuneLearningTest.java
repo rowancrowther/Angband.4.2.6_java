@@ -148,22 +148,22 @@ class PlayerRuneLearningTest {
         evil5 = new Slay("EVIL_5", "evil", null, "smites", "smites", MonsterRaceFlag.RF_EVIL,
                 17, 3, 15);
         siren = new Curse("siren", List.of(), 0, null, objectFlags(), Map.of(), Map.of(), 0, 0, 0,
-                List.of(), objectFlags(), "wakes monsters", "The curse fires.");
+                List.of(), objectFlags(), "wakes monsters", "The curse fires.", 0);
 
         // Two curses that change the armour class, taken from curse.txt, and one (siren) that does
         // not. The signs are opposite on purpose: the rune names the enchantment, not its direction,
         // so a curse that makes armour worse teaches it exactly as one that makes it better does.
         vulnerability = new Curse("vulnerability", List.of(), 0, null, objectFlags(), Map.of(), Map.of(),
-                0, 0, -50, List.of(), objectFlags(), "weakens armour", "The curse fires.");
+                0, 0, -50, List.of(), objectFlags(), "weakens armour", "The curse fires.", 0);
         enveloping = new Curse("enveloping", List.of(), 0, null, objectFlags(), Map.of(), Map.of(),
-                -5, -5, 20, List.of(), objectFlags(), "restricts movement", "The curse fires.");
+                -5, -5, 20, List.of(), objectFlags(), "restricts movement", "The curse fires.", 0);
 
         // A curse carrying object flags rather than combat figures, for the flag half of the
         // family. Two flags, so a test can name one of them and watch the intersection discard the
         // other.
         cowardice = new Curse("cowardice", List.of(), 0, null,
                 objectFlags(ObjectFlag.OF_AFRAID, ObjectFlag.OF_IMPAIR_HP), Map.of(), Map.of(),
-                0, 0, 0, List.of(), objectFlags(), "unnerves the wearer", "The curse fires.");
+                0, 0, 0, List.of(), objectFlags(), "unnerves the wearer", "The curse fires.", 0);
 
         strengthProperty = new ObjectProperty(null, null, null, null, 0, 0, null,
                 "strength", null, null, null, null, null);
@@ -2081,7 +2081,7 @@ class PlayerRuneLearningTest {
         @DisplayName("learnCurse matches by name, not identity")
         void learnCurseMatchesByName() {
             Curse rebuilt = new Curse("siren", List.of(), 0, null, objectFlags(), Map.of(), Map.of(),
-                    0, 0, 0, List.of(), objectFlags(), "wakes monsters", "The curse fires.");
+                    0, 0, 0, List.of(), objectFlags(), "wakes monsters", "The curse fires.", 0);
 
             PlayerKnowledge.learnCurse(player, rebuilt);
 
@@ -2096,7 +2096,7 @@ class PlayerRuneLearningTest {
         @DisplayName("learnCurse survives a curse with no rune")
         void learnCurseWithoutARune() {
             Curse unknown = new Curse("nowhere", List.of(), 0, null, objectFlags(), Map.of(), Map.of(),
-                    0, 0, 0, List.of(), objectFlags(), "does nothing", "Nothing happens.");
+                    0, 0, 0, List.of(), objectFlags(), "does nothing", "Nothing happens.", 0);
 
             PlayerKnowledge.learnCurse(player, unknown);
 
@@ -2164,7 +2164,7 @@ class PlayerRuneLearningTest {
         @DisplayName("knowsCurse does not answer for a curse never learned")
         void knowsCurseIsNotShared() {
             Curse other = new Curse("teleportation", List.of(), 0, null, objectFlags(), Map.of(),
-                    Map.of(), 0, 0, 0, List.of(), objectFlags(), "teleports", "The curse fires.");
+                    Map.of(), 0, 0, 0, List.of(), objectFlags(), "teleports", "The curse fires.", 0);
 
             PlayerKnowledge.learnCurse(player, siren);
 

@@ -146,7 +146,7 @@ class CurseGetTimeTest {
      */
     private static Curse curse(Effect effect) {
         return new Curse("test curse", List.of(), 0, effect, new Flag<>(ObjectFlag.class),
-                Map.of(), Map.of(), 0, 0, 0, List.of(), new Flag<>(ObjectFlag.class), "", "");
+                Map.of(), Map.of(), 0, 0, 0, List.of(), new Flag<>(ObjectFlag.class), "", "", 0);
     }
 
     /**

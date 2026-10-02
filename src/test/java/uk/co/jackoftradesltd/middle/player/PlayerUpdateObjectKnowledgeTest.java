@@ -189,7 +189,7 @@ class PlayerUpdateObjectKnowledgeTest {
     private static Curse curseWithModifiers(String name, Map<ObjectModifier, Integer> modifiers) {
         return new Curse(name, List.of(), 0, null, new Flag<>(ObjectFlag.class), modifiers,
                 Map.<ElementEnum, ElementInfo>of(), 0, 0, 0,
-                List.of(), new Flag<>(ObjectFlag.class), "", "");
+                List.of(), new Flag<>(ObjectFlag.class), "", "", 0);
     }
 
     /**
@@ -588,7 +588,7 @@ class PlayerUpdateObjectKnowledgeTest {
             Curse curse = new Curse("uncursed player", List.of(), 0, null, flags,
                     Map.of(ObjectModifier.OM_STR, 3),
                     Map.of(ElementEnum.ELEM_FIRE, new ElementInfo()), 2, 3, 4,
-                    List.of(), new Flag<>(ObjectFlag.class), "", "");
+                    List.of(), new Flag<>(ObjectFlag.class), "", "", 0);
             pokeStatic(ObjectRegistry.class, "curses", new RecordingCurseList(curse));
             poke(player, "gear", null);
             player.itemKnowledge = null;

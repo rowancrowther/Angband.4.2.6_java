@@ -78,6 +78,8 @@ public class Curse {
      */
     private final String name;
 
+    private final int index;
+
     /**
      * The object bases this curse may attach to (C: {@code curse->poss}, the
      * per-tval possibility array; port {@code types:} line).
@@ -215,7 +217,8 @@ public class Curse {
                  List<String> conflictNames,
                  Flag<ObjectFlag> conflictFlags,
                  String description,
-                 String message) {
+                 String message,
+                 int index) {
         this.name = name;
         this.objectBases = objectBases;
         this.weight = weight;
@@ -230,9 +233,14 @@ public class Curse {
         this.conflictFlags = conflictFlags;
         this.description = description;
         this.message = message;
+        this.index = index;
         knownElInfo = new HashMap<>();
         knownObjectFlags = new Flag<>(ObjectFlag.class);
         knownModifiers = new HashMap<>();
+    }
+
+    public int getIndex() {
+        return index;
     }
 
     /**

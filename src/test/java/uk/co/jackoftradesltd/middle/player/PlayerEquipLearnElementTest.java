@@ -126,7 +126,7 @@ class PlayerEquipLearnElementTest {
 
         fireResisting = new Curse("burning", List.of(), 0, null, new Flag<>(ObjectFlag.class),
                 Map.of(), Map.of(ElementEnum.ELEM_FIRE, elementInfo(1)), 0, 0, 0, List.of(),
-                new Flag<>(ObjectFlag.class), "burning", "The curse fires.");
+                new Flag<>(ObjectFlag.class), "burning", "The curse fires.", 0);
 
         ObjectRegistry.setCurses(List.of(fireResisting));
 

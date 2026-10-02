@@ -26,31 +26,70 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Record storing the various data groups which should be read in from the constants.txt file
+ * Every game constant read from {@code constants.txt}, grouped by the directive that sets it. This is
+ * the Java counterpart of the {@code constants.txt} half of C's {@code struct angband_constants}
+ * ({@code init.h}), which C fills in place through the {@code parse_constants_*()} handlers in
+ * {@code init.c} and then publishes as the global {@code z_info}. The other half of that struct, the
+ * array bounds such as {@code k_max} and {@code r_max}, is set by the other data-file parsers and is
+ * not held here.
  *
- * @param levelMax             The various maximums per level
- * @param monGen               Tne monster generation information
- * @param monPlay              The monster gameplay information
- * @param dunGen               Dungeon generation constants
- * @param world                Game world constants
- * @param carryCap             Constants relating to inventory
- * @param store                Constants relating to store generation
- * @param objMake              Constants relating to object generation
- * @param player               Constants relating to player
- * @param meleeCritical        Constants related to standard mêlée critical hits
- * @param meleeCriticalLevel   List of data for levels of standard mêlée critical
- *                             hits
- * @param rangedCritical       Constants related to ranged critical hits
- * @param rangedCriticalLevel  Each of the levels for ranged critical hits.
- *                             If none are defined then no extra damage will
- *                             occur for critical hits
- * @param oMeleeCritical       Constants related to non-standard (O) mêlée
- *                             critical hits
- * @param oMeleeCriticalLevel  List of data for levels of non-standard mêlée
- *                             criticals
- * @param oRangedCritical      Constants related to non-standard (O) ranged
- *                             critical hits
- * @param oRangedCriticalLevel List of levels of non-standard ranged criticals
+ * <p>C keeps all of these as flat fields on one struct. The port groups them into one record per
+ * {@code constants.txt} directive ({@link LevelMaxData}, {@link MonGenData} and so on), and replaces
+ * C's four singly linked lists of critical levels ({@code m_crit_level_head}, {@code r_crit_level_head},
+ * {@code o_m_crit_level_head}, {@code o_r_crit_level_head}) with {@link List}s in file order.
+ *
+ * <p>Differences from C worth knowing:
+ * <ul>
+ *   <li>C declares the non-critical constants as {@code uint16_t}, and {@code init.c} only rejects
+ *       negative values, so a value above 65535 is silently truncated in C. The port holds every
+ *       constant as an {@link Integer} and keeps such a value as written.</li>
+ *   <li>{@link GameConstantsBuilder#checkCriticalLevelDataLists()} also rejects a {@code -1} cutoff
+ *       in the middle of the melee or ranged level list, which C allows. This is a deliberate Java-only
+ *       rule, confirmed by Rowan on 261002.</li>
+ *   <li>The four level lists are the builder's own {@link ArrayList}s, handed over without a copy, so
+ *       they stay mutable after {@link GameConstantsBuilder#build(List)} returns. C's lists are just as
+ *       mutable, so this matches C rather than diverging from it.</li>
+ * </ul>
+ *
+ * <p>Record GameConstantsData coded before 261002, commented in full on 261002.
+ *
+ * @param levelMax             The {@code level-max} constants: the most monsters allowed on one level
+ *                             ({@code z_info->level_monster_max})
+ * @param monGen               The {@code mon-gen} constants: how often, how many and how far out of
+ *                             depth monsters are generated
+ * @param monPlay              The {@code mon-play} constants: monster behaviour during play, such as
+ *                             glyph breaking, breeding rate, life drain and fleeing
+ * @param dunGen               The {@code dun-gen} constants: room, door, wall-piercing, tunnel and pit
+ *                             limits, and the average amounts of items and gold placed on a level
+ * @param world                The {@code world} constants: dungeon depth and size, town size, day
+ *                             length, level feelings, stair skip and move energy
+ * @param carryCap             The {@code carry-cap} constants: pack, quiver and floor capacities
+ * @param store                The {@code store} constants: store inventory size, turnover, owner
+ *                             shuffling and the magic level for stock
+ * @param objMake              The {@code obj-make} constants: object allocation depth, the chances of
+ *                             inflating object and ego levels, and light-source fuel amounts
+ * @param player               The {@code player} constants: sight and missile range, starting gold and
+ *                             food value
+ * @param meleeCritical        The {@code melee-critical} constants: the scale factors for the chance
+ *                             and power of a standard melee critical hit in {@code critical_melee()}
+ * @param meleeCriticalLevel   The {@code melee-critical-level} rows in file order. Each row's cutoff
+ *                             caps the power for that level, apart from the last row's, which is never
+ *                             read. An empty list means a standard melee hit is never critical
+ * @param rangedCritical       The {@code ranged-critical} constants: the scale factors for the chance
+ *                             and power of a standard ranged critical hit in {@code critical_shot()}
+ * @param rangedCriticalLevel  The {@code ranged-critical-level} rows in file order, laid out like
+ *                             {@code meleeCriticalLevel}. An empty list means a standard ranged hit is
+ *                             never critical
+ * @param oMeleeCritical       The {@code o-melee-critical} constants for O-combat melee criticals in
+ *                             {@code o_critical_melee()}
+ * @param oMeleeCriticalLevel  The {@code o-melee-critical-level} rows in file order. Each level is taken
+ *                             with a one-in-{@code chance} roll, otherwise play moves on to the next
+ *                             level; the last level catches whatever remains. An empty list means an
+ *                             O-combat melee hit is never critical
+ * @param oRangedCritical      The {@code o-ranged-critical} constants for O-combat ranged criticals in
+ *                             {@code o_critical_shot()}
+ * @param oRangedCriticalLevel The {@code o-ranged-critical-level} rows in file order, laid out like
+ *                             {@code oMeleeCriticalLevel}
  * @author Rowan Crowther
  */
 public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPlayData monPlay,
@@ -63,1727 +102,2320 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
                                 List<ORangedCriticalLevelData> oRangedCriticalLevel) {
 
     /**
-     * Game constants builder
+     * Collects {@code constants.txt} values one at a time as {@code GameConstantsAssembler} dispatches
+     * each parsed line, then assembles them into a {@link GameConstantsData}. This plays the part of the
+     * zeroed {@code struct angband_constants} that {@code init_parse_constants()} in {@code init.c}
+     * allocates and hands to the parser as its private data. Each {@code parse_constants_*()} handler
+     * writes one field of it, and {@code finish_parse_constants()} checks the critical level lists.
      *
-     * <p>Consists of methods to log each constant in constants.txt, and store
-     * it in the relevant area in GameConstantsData.
+     * <p>The constants live in {@link Integer} fields that start as {@code null}, so it is visible
+     * whether a line set them. {@link #build(List)} turns any constant still {@code null} into
+     * {@code 0}, which is what C's {@code mem_zalloc} leaves in a field that no line sets.
+     *
+     * <p>The setters store whatever they are given. Label matching, number parsing and message
+     * lookup happen in {@code GameConstantsAssembler} before a setter is called. The builder does
+     * its own checking only on the O-combat level rows ({@link #addOMeleeCriticalLevelData} and
+     * {@link #addORangedCriticalLevel}) and in {@link #checkCriticalLevelDataLists()}.
+     *
+     * <p>Class GameConstantsBuilder coded before 261002, commented in full on 261002.
      *
      * @author Rowan Crowther
      */
     public static final class GameConstantsBuilder {
         // List of game constants - set here to ensure they are all accounted for during parsing
-        private Integer levelMaxMonsters;
-
-        private Integer monGenChance;
-        private Integer monGenLevelMin;
-        private Integer monGenTownDay;
-        private Integer monGenTownNight;
-        private Integer monGenReproMax;
-        private Integer monGenOodChance;
-        private Integer monGenOodAmount;
-        private Integer monGenGroupMax;
-        private Integer monGenGroupDist;
-
-        private Integer monPlayBreakGlyph;
-        private Integer monPlayMultRate;
-        private Integer monPlayLifeDrain;
-        private Integer monPlayFleeRange;
-        private Integer monPlayTurnRange;
-
-        private Integer dunGenCentMax;
-        private Integer dunGenDoorMax;
-        private Integer dunGenWallMax;
-        private Integer dunGenTunnMax;
-        private Integer dunGenAmtRoom;
-        private Integer dunGenAmtItem;
-        private Integer dunGenAmtGold;
-        private Integer dunGenPitMax;
-
-        private Integer worldMaxDepth;
-        private Integer worldDayLength;
-        private Integer worldDungeonHgt;
-        private Integer worldDungeonWid;
-        private Integer worldTownHgt;
-        private Integer worldTownWid;
-        private Integer worldFeelingTotal;
-        private Integer worldFeelingNeed;
-        private Integer worldStairSkip;
-        private Integer worldMoveEnergy;
-
-        private Integer carryCapPackSize;
-        private Integer carryCapQuiverSize;
-        private Integer carryCapQuiverSlotSize;
-        private Integer carryCapThrownQuiverMult;
-        private Integer carryCapFloorSize;
-
-        private Integer storeInvenMax;
-        private Integer storeTurns;
-        private Integer storeShuffle;
-        private Integer storeMagicLevel;
-
-        private Integer objMakeMaxDepth;
-        private Integer objMakeGreatObj;
-        private Integer objMakeGreatEgo;
-        private Integer objMakeFuelTorch;
-        private Integer objMakeFuelLamp;
-        private Integer objMakeDefaultLamp;
-
-        private Integer playerMaxSight;
-        private Integer playerMaxRange;
-        private Integer playerStartGold;
-        private Integer playerFoodValue;
-
-        private Integer meleeCriticalDebuffToh;
-        private Integer meleeCriticalChanceWeightScale;
-        private Integer meleeCriticalChanceTohScale;
-        private Integer meleeCriticalChanceLevelScale;
-        private Integer meleeCriticalChanceTohSkillScale;
-        private Integer meleeCriticalChanceOffset;
-        private Integer meleeCriticalChanceRange;
-        private Integer meleeCriticalPowerWeightScale;
-        private Integer meleeCriticalPowerRandom;
-
+        /**
+         * The {@code melee-critical-level} rows in file order. Port of C's
+         * {@code z_info->m_crit_level_head} linked list. {@code critical_melee()} walks it and stops at
+         * the first level whose cutoff is above the critical's power, or at the last level.
+         *
+         * <p>Field meleeCriticalLevelDataList coded before 261002, commented in full on 261002.
+         */
         private final List<MeleeCriticalLevelData> meleeCriticalLevelDataList = new ArrayList<>();
-
-        private Integer rangedCriticalDebuffToh;
-        private Integer rangedCriticalChanceWeightScale;
-        private Integer rangedCriticalChanceTohScale;
-        private Integer rangedCriticalChanceLevelScale;
-        private Integer rangedCriticalChanceLaunchedTohSkillScale;
-        private Integer rangedCriticalChanceThrownTohSkillScale;
-        private Integer rangedCriticalChanceOffset;
-        private Integer rangedCriticalChanceRange;
-        private Integer rangedCriticalPowerWeightScale;
-        private Integer rangedCriticalPowerRandom;
-
+        /**
+         * The {@code ranged-critical-level} rows in file order. Port of C's
+         * {@code z_info->r_crit_level_head} linked list, walked by {@code critical_shot()} the same way
+         * {@link #meleeCriticalLevelDataList} is walked for melee.
+         *
+         * <p>Field rangedCriticalLevelDataList coded before 261002, commented in full on 261002.
+         */
         private final List<RangedCriticalLevelData> rangedCriticalLevelDataList = new ArrayList<>();
-
-        private Integer oMeleeCriticalDebuffToh;
-        private Integer oMeleeCriticalPowerTohScaleNumerator;
-        private Integer oMeleeCriticalPowerTohScaleDenominator;
-        private Integer oMeleeCriticalChancePowerScaleNumerator;
-        private Integer oMeleeCriticalChancePowerScaleDenominator;
-        private Integer oMeleeCriticalChanceAddDenominator;
-
+        /**
+         * The {@code o-melee-critical-level} rows in file order. Port of C's
+         * {@code z_info->o_m_crit_level_head} linked list. {@code o_critical_melee()} walks it,
+         * stopping at a level when a one-in-{@code chance} roll succeeds or when it reaches the last
+         * level.
+         *
+         * <p>Field oMeleeCriticalLevelDataList coded before 261002, commented in full on 261002.
+         */
         private final List<OMeleeCriticalLevelData> oMeleeCriticalLevelDataList = new ArrayList<>();
-
+        /**
+         * The {@code o-ranged-critical-level} rows in file order. Port of C's
+         * {@code z_info->o_r_crit_level_head} linked list, walked by {@code o_critical_shot()} the same
+         * way {@link #oMeleeCriticalLevelDataList} is walked for melee.
+         *
+         * <p>Field oRangedCriticalLevelDataList coded before 261002, commented in full on 261002.
+         */
+        private final List<ORangedCriticalLevelData> oRangedCriticalLevelDataList = new ArrayList<>();
+        /**
+         * The most monsters allowed on a single level, from {@code level-max:monsters}. Port of
+         * {@code z_info->level_monster_max}.
+         *
+         * <p>Field levelMaxMonsters coded before 261002, commented in full on 261002.
+         */
+        private Integer levelMaxMonsters;
+        /**
+         * The one-in-N chance per game turn that a new monster is generated, from
+         * {@code mon-gen:chance}. Port of {@code z_info->alloc_monster_chance}.
+         *
+         * <p>Field monGenChance coded before 261002, commented in full on 261002.
+         */
+        private Integer monGenChance;
+        /**
+         * The minimum number of monsters generated when a level is built, from
+         * {@code mon-gen:level-min}. Port of {@code z_info->level_monster_min}.
+         *
+         * <p>Field monGenLevelMin coded before 261002, commented in full on 261002.
+         */
+        private Integer monGenLevelMin;
+        /**
+         * The number of townsfolk generated in the town by day, from {@code mon-gen:town-day}. Port of
+         * {@code z_info->town_monsters_day}.
+         *
+         * <p>Field monGenTownDay coded before 261002, commented in full on 261002.
+         */
+        private Integer monGenTownDay;
+        /**
+         * The number of townsfolk generated in the town by night, from {@code mon-gen:town-night}.
+         * Port of {@code z_info->town_monsters_night}.
+         *
+         * <p>Field monGenTownNight coded before 261002, commented in full on 261002.
+         */
+        private Integer monGenTownNight;
+        /**
+         * The most breeding monsters allowed on one level, from {@code mon-gen:repro-max}. Port of
+         * {@code z_info->repro_monster_max}.
+         *
+         * <p>Field monGenReproMax coded before 261002, commented in full on 261002.
+         */
+        private Integer monGenReproMax;
+        /**
+         * The one-in-N chance that a generated monster is out of depth, from
+         * {@code mon-gen:ood-chance}. Port of {@code z_info->ood_monster_chance}.
+         *
+         * <p>Field monGenOodChance coded before 261002, commented in full on 261002.
+         */
+        private Integer monGenOodChance;
+        /**
+         * The most levels out of depth a generated monster can be, from {@code mon-gen:ood-amount}.
+         * Port of {@code z_info->ood_monster_amount}.
+         *
+         * <p>Field monGenOodAmount coded before 261002, commented in full on 261002.
+         */
+        private Integer monGenOodAmount;
+        /**
+         * The largest size of a monster group, from {@code mon-gen:group-max}. Port of
+         * {@code z_info->monster_group_max}.
+         *
+         * <p>Field monGenGroupMax coded before 261002, commented in full on 261002.
+         */
+        private Integer monGenGroupMax;
+        /**
+         * The furthest a monster group may be placed from a related group, from
+         * {@code mon-gen:group-dist}. Port of {@code z_info->monster_group_dist}.
+         *
+         * <p>Field monGenGroupDist coded before 261002, commented in full on 261002.
+         */
+        private Integer monGenGroupDist;
+        /**
+         * How hard it is for a monster to break a glyph of warding, from {@code mon-play:break-glyph}.
+         * Port of {@code z_info->glyph_hardness}.
+         *
+         * <p>Field monPlayBreakGlyph coded before 261002, commented in full on 261002.
+         */
+        private Integer monPlayBreakGlyph;
+        /**
+         * The monster reproduction rate, from {@code mon-play:mult-rate}; a larger value means slower
+         * breeding. Port of {@code z_info->repro_monster_rate}.
+         *
+         * <p>Field monPlayMultRate coded before 261002, commented in full on 261002.
+         */
+        private Integer monPlayMultRate;
+        /**
+         * The percentage of the player's life drained by a life-draining hit, from
+         * {@code mon-play:life-drain}. Port of {@code z_info->life_drain_percent}.
+         *
+         * <p>Field monPlayLifeDrain coded before 261002, commented in full on 261002.
+         */
+        private Integer monPlayLifeDrain;
+        /**
+         * How many grids out of the player's view a fleeing monster runs, from
+         * {@code mon-play:flee-range}. Port of {@code z_info->flee_range}.
+         *
+         * <p>Field monPlayFleeRange coded before 261002, commented in full on 261002.
+         */
+        private Integer monPlayFleeRange;
+        /**
+         * The distance inside which a frightened monster turns to fight, from
+         * {@code mon-play:turn-range}. Port of {@code z_info->turn_range}.
+         *
+         * <p>Field monPlayTurnRange coded before 261002, commented in full on 261002.
+         */
+        private Integer monPlayTurnRange;
+        /**
+         * The most rooms (room centres) on a level, from {@code dun-gen:cent-max}. Port of
+         * {@code z_info->level_room_max}.
+         *
+         * <p>Field dunGenCentMax coded before 261002, commented in full on 261002.
+         */
+        private Integer dunGenCentMax;
+        /**
+         * The most potential door locations on a level, from {@code dun-gen:door-max}. Port of
+         * {@code z_info->level_door_max}.
+         *
+         * <p>Field dunGenDoorMax coded before 261002, commented in full on 261002.
+         */
+        private Integer dunGenDoorMax;
+        /**
+         * The most places where a tunnel may pierce a room wall, from {@code dun-gen:wall-max}. Port
+         * of {@code z_info->wall_pierce_max}.
+         *
+         * <p>Field dunGenWallMax coded before 261002, commented in full on 261002.
+         */
+        private Integer dunGenWallMax;
+        /**
+         * The most tunnel grids on a level, from {@code dun-gen:tunn-max}. Port of
+         * {@code z_info->tunn_grid_max}.
+         *
+         * <p>Field dunGenTunnMax coded before 261002, commented in full on 261002.
+         */
+        private Integer dunGenTunnMax;
+        /**
+         * The average number of items placed in rooms, from {@code dun-gen:amt-room}. Port of
+         * {@code z_info->room_item_av}.
+         *
+         * <p>Field dunGenAmtRoom coded before 261002, commented in full on 261002.
+         */
+        private Integer dunGenAmtRoom;
+        /**
+         * The average number of items placed in random places (rooms or corridors), from
+         * {@code dun-gen:amt-item}. Port of {@code z_info->both_item_av}.
+         *
+         * <p>Field dunGenAmtItem coded before 261002, commented in full on 261002.
+         */
+        private Integer dunGenAmtItem;
+        /**
+         * The average number of gold items placed in random places, from {@code dun-gen:amt-gold}.
+         * Port of {@code z_info->both_gold_av}.
+         *
+         * <p>Field dunGenAmtGold coded before 261002, commented in full on 261002.
+         */
+        private Integer dunGenAmtGold;
+        /**
+         * The most monster pits or nests on a level, from {@code dun-gen:pit-max}. Port of
+         * {@code z_info->level_pit_max}.
+         *
+         * <p>Field dunGenPitMax coded before 261002, commented in full on 261002.
+         */
+        private Integer dunGenPitMax;
+        /**
+         * The deepest dungeon level, from {@code world:max-depth}. Port of {@code z_info->max_depth}.
+         *
+         * <p>Field worldMaxDepth coded before 261002, commented in full on 261002.
+         */
+        private Integer worldMaxDepth;
+        /**
+         * The number of game turns from dawn to dawn, from {@code world:day-length}. Port of
+         * {@code z_info->day_length}.
+         *
+         * <p>Field worldDayLength coded before 261002, commented in full on 261002.
+         */
+        private Integer worldDayLength;
+        /**
+         * The most vertical grids on a dungeon level, from {@code world:dungeon-hgt}. Port of
+         * {@code z_info->dungeon_hgt}.
+         *
+         * <p>Field worldDungeonHgt coded before 261002, commented in full on 261002.
+         */
+        private Integer worldDungeonHgt;
+        /**
+         * The most horizontal grids on a dungeon level, from {@code world:dungeon-wid}. Port of
+         * {@code z_info->dungeon_wid}.
+         *
+         * <p>Field worldDungeonWid coded before 261002, commented in full on 261002.
+         */
+        private Integer worldDungeonWid;
+        /**
+         * The most vertical grids in the town, from {@code world:town-hgt}. Port of
+         * {@code z_info->town_hgt}.
+         *
+         * <p>Field worldTownHgt coded before 261002, commented in full on 261002.
+         */
+        private Integer worldTownHgt;
+        /**
+         * The most horizontal grids in the town, from {@code world:town-wid}. Port of
+         * {@code z_info->town_wid}.
+         *
+         * <p>Field worldTownWid coded before 261002, commented in full on 261002.
+         */
+        private Integer worldTownWid;
+        /**
+         * The total number of feeling squares on a level, from {@code world:feeling-total}. Port of
+         * {@code z_info->feeling_total}.
+         *
+         * <p>Field worldFeelingTotal coded before 261002, commented in full on 261002.
+         */
+        private Integer worldFeelingTotal;
+        /**
+         * The number of feeling squares the player must see before getting the first level feeling,
+         * from {@code world:feeling-need}. Port of {@code z_info->feeling_need}.
+         *
+         * <p>Field worldFeelingNeed coded before 261002, commented in full on 261002.
+         */
+        private Integer worldFeelingNeed;
+        /**
+         * The number of levels each down staircase skips, from {@code world:stair-skip}. Port of
+         * {@code z_info->stair_skip}.
+         *
+         * <p>Field worldStairSkip coded before 261002, commented in full on 261002.
+         */
+        private Integer worldStairSkip;
+        /**
+         * The energy the player or a monster needs to move, from {@code world:move-energy}. Port of
+         * {@code z_info->move_energy}.
+         *
+         * <p>Field worldMoveEnergy coded before 261002, commented in full on 261002.
+         */
+        private Integer worldMoveEnergy;
+        /**
+         * The number of pack (inventory) slots, from {@code carry-cap:pack-size}. Port of
+         * {@code z_info->pack_size}.
+         *
+         * <p>Field carryCapPackSize coded before 261002, commented in full on 261002.
+         */
+        private Integer carryCapPackSize;
+        /**
+         * The number of quiver slots, from {@code carry-cap:quiver-size}. Port of
+         * {@code z_info->quiver_size}.
+         *
+         * <p>Field carryCapQuiverSize coded before 261002, commented in full on 261002.
+         */
+        private Integer carryCapQuiverSize;
+        /**
+         * The most missiles in one quiver slot, from {@code carry-cap:quiver-slot-size}. Port of
+         * {@code z_info->quiver_slot_size}.
+         *
+         * <p>Field carryCapQuiverSlotSize coded before 261002, commented in full on 261002.
+         */
+        private Integer carryCapQuiverSlotSize;
+        /**
+         * The size multiplier for a non-ammunition throwing item kept in the quiver, from
+         * {@code carry-cap:thrown-quiver-mult}. Port of {@code z_info->thrown_quiver_mult}.
+         *
+         * <p>Field carryCapThrownQuiverMult coded before 261002, commented in full on 261002.
+         */
+        private Integer carryCapThrownQuiverMult;
+        /**
+         * The most items on one floor grid, from {@code carry-cap:floor-size}. Port of
+         * {@code z_info->floor_size}.
+         *
+         * <p>Field carryCapFloorSize coded before 261002, commented in full on 261002.
+         */
+        private Integer carryCapFloorSize;
+        /**
+         * The most objects in a store's inventory, from {@code store:inven-max}. Port of
+         * {@code z_info->store_inven_max}.
+         *
+         * <p>Field storeInvenMax coded before 261002, commented in full on 261002.
+         */
+        private Integer storeInvenMax;
+        /**
+         * The number of game turns between store turnovers, from {@code store:turns}. Port of
+         * {@code z_info->store_turns}.
+         *
+         * <p>Field storeTurns coded before 261002, commented in full on 261002.
+         */
+        private Integer storeTurns;
+        /**
+         * The one-in-N chance per day that a store's owner changes, from {@code store:shuffle}. Port
+         * of {@code z_info->store_shuffle}.
+         *
+         * <p>Field storeShuffle coded before 261002, commented in full on 261002.
+         */
+        private Integer storeShuffle;
+        /**
+         * The level passed to {@code apply_magic()} for stock in normal stores, from
+         * {@code store:magic-level}. Port of {@code z_info->store_magic_level}.
+         *
+         * <p>Field storeMagicLevel coded before 261002, commented in full on 261002.
+         */
+        private Integer storeMagicLevel;
+        /**
+         * The deepest level used in object allocation, from {@code obj-make:max-depth}. Port of
+         * {@code z_info->max_obj_depth}.
+         *
+         * <p>Field objMakeMaxDepth coded before 261002, commented in full on 261002.
+         */
+        private Integer objMakeMaxDepth;
+        /**
+         * The one-in-N chance of inflating the level of a requested object, from
+         * {@code obj-make:great-obj}. Port of {@code z_info->great_obj}.
+         *
+         * <p>Field objMakeGreatObj coded before 261002, commented in full on 261002.
+         */
+        private Integer objMakeGreatObj;
+        /**
+         * The one-in-N chance of inflating the level of a requested ego item, from
+         * {@code obj-make:great-ego}. Port of {@code z_info->great_ego}.
+         *
+         * <p>Field objMakeGreatEgo coded before 261002, commented in full on 261002.
+         */
+        private Integer objMakeGreatEgo;
+        /**
+         * The most fuel a torch can hold, from {@code obj-make:fuel-torch}. Port of
+         * {@code z_info->fuel_torch}.
+         *
+         * <p>Field objMakeFuelTorch coded before 261002, commented in full on 261002.
+         */
+        private Integer objMakeFuelTorch;
+        /**
+         * The most fuel a lantern can hold, from {@code obj-make:fuel-lamp}. Port of
+         * {@code z_info->fuel_lamp}.
+         *
+         * <p>Field objMakeFuelLamp coded before 261002, commented in full on 261002.
+         */
+        private Integer objMakeFuelLamp;
+        /**
+         * The fuel a newly made lantern starts with, from {@code obj-make:default-lamp}. Port of
+         * {@code z_info->default_lamp}.
+         *
+         * <p>Field objMakeDefaultLamp coded before 261002, commented in full on 261002.
+         */
+        private Integer objMakeDefaultLamp;
+        /**
+         * The player's maximum visual range, from {@code player:max-sight}. Port of
+         * {@code z_info->max_sight}.
+         *
+         * <p>Field playerMaxSight coded before 261002, commented in full on 261002.
+         */
+        private Integer playerMaxSight;
+        /**
+         * The maximum range of missiles and spells, from {@code player:max-range}. Port of
+         * {@code z_info->max_range}.
+         *
+         * <p>Field playerMaxRange coded before 261002, commented in full on 261002.
+         */
+        private Integer playerMaxRange;
+        /**
+         * The gold a new character starts with, from {@code player:start-gold}. Port of
+         * {@code z_info->start_gold}.
+         *
+         * <p>Field playerStartGold coded before 261002, commented in full on 261002.
+         */
+        private Integer playerStartGold;
+        /**
+         * The number of game turns that 1% of the player's food lasts, from
+         * {@code player:food-value}. Port of {@code z_info->food_value}.
+         *
+         * <p>Field playerFoodValue coded before 261002, commented in full on 261002.
+         */
+        private Integer playerFoodValue;
+        /**
+         * Added to the to-hit used for a standard melee critical when the target is debuffed, from
+         * {@code melee-critical:debuff-toh}. Port of {@code z_info->m_crit_debuff_toh}, read by
+         * {@code critical_melee()} in {@code player-attack.c}.
+         *
+         * <p>Field meleeCriticalDebuffToh coded before 261002, commented in full on 261002.
+         */
+        private Integer meleeCriticalDebuffToh;
+        /**
+         * The weapon-weight term in the chance of a standard melee critical, from
+         * {@code melee-critical:chance-weight-scale}. Port of {@code z_info->m_crit_chance_weight_scl}.
+         *
+         * <p>Field meleeCriticalChanceWeightScale coded before 261002, commented in full on 261002.
+         */
+        private Integer meleeCriticalChanceWeightScale;
+        /**
+         * The to-hit term (player to-hit plus the weapon's bonus) in the chance of a standard melee
+         * critical, from {@code melee-critical:chance-toh-scale}. Port of
+         * {@code z_info->m_crit_chance_toh_scl}.
+         *
+         * <p>Field meleeCriticalChanceTohScale coded before 261002, commented in full on 261002.
+         */
+        private Integer meleeCriticalChanceTohScale;
+        /**
+         * The player-level term in the chance of a standard melee critical, from
+         * {@code melee-critical:chance-level-scale}. Port of {@code z_info->m_crit_chance_level_scl}.
+         *
+         * <p>Field meleeCriticalChanceLevelScale coded before 261002, commented in full on 261002.
+         */
+        private Integer meleeCriticalChanceLevelScale;
+        /**
+         * The melee to-hit skill term in the chance of a standard melee critical, from
+         * {@code melee-critical:chance-toh-skill-scale}. Port of
+         * {@code z_info->m_crit_chance_toh_skill_scl}.
+         *
+         * <p>Field meleeCriticalChanceTohSkillScale coded before 261002, commented in full on 261002.
+         */
+        private Integer meleeCriticalChanceTohSkillScale;
+        /**
+         * The constant added to the chance of a standard melee critical, from
+         * {@code melee-critical:chance-offset}. Port of {@code z_info->m_crit_chance_offset}.
+         *
+         * <p>Field meleeCriticalChanceOffset coded before 261002, commented in full on 261002.
+         */
+        private Integer meleeCriticalChanceOffset;
+        /**
+         * The die size the melee critical chance is rolled against: {@code critical_melee()} misses
+         * the critical when {@code randint1(range)} exceeds the chance. From
+         * {@code melee-critical:chance-range}; port of {@code z_info->m_crit_chance_range}.
+         *
+         * <p>Field meleeCriticalChanceRange coded before 261002, commented in full on 261002.
+         */
+        private Integer meleeCriticalChanceRange;
+        /**
+         * The weapon-weight term in the power of a standard melee critical, from
+         * {@code melee-critical:power-weight-scale}. Port of {@code z_info->m_crit_power_weight_scl}.
+         *
+         * <p>Field meleeCriticalPowerWeightScale coded before 261002, commented in full on 261002.
+         */
+        private Integer meleeCriticalPowerWeightScale;
+        /**
+         * The die size of the random part of a standard melee critical's power ({@code randint1} of
+         * this is added), from {@code melee-critical:power-random}. Port of
+         * {@code z_info->m_crit_power_random}.
+         *
+         * <p>Field meleeCriticalPowerRandom coded before 261002, commented in full on 261002.
+         */
+        private Integer meleeCriticalPowerRandom;
+        /**
+         * Added to the to-hit used for a standard ranged critical when the target is debuffed, from
+         * {@code ranged-critical:debuff-toh}. Port of {@code z_info->r_crit_debuff_toh}, read by
+         * {@code critical_shot()} in {@code player-attack.c}.
+         *
+         * <p>Field rangedCriticalDebuffToh coded before 261002, commented in full on 261002.
+         */
+        private Integer rangedCriticalDebuffToh;
+        /**
+         * The missile-weight term in the chance of a standard ranged critical, from
+         * {@code ranged-critical:chance-weight-scale}. Port of {@code z_info->r_crit_chance_weight_scl}.
+         *
+         * <p>Field rangedCriticalChanceWeightScale coded before 261002, commented in full on 261002.
+         */
+        private Integer rangedCriticalChanceWeightScale;
+        /**
+         * The to-hit term in the chance of a standard ranged critical, from
+         * {@code ranged-critical:chance-toh-scale}. Port of {@code z_info->r_crit_chance_toh_scl}.
+         *
+         * <p>Field rangedCriticalChanceTohScale coded before 261002, commented in full on 261002.
+         */
+        private Integer rangedCriticalChanceTohScale;
+        /**
+         * The player-level term in the chance of a standard ranged critical, from
+         * {@code ranged-critical:chance-level-scale}. Port of {@code z_info->r_crit_chance_level_scl}.
+         *
+         * <p>Field rangedCriticalChanceLevelScale coded before 261002, commented in full on 261002.
+         */
+        private Integer rangedCriticalChanceLevelScale;
+        /**
+         * The bow skill term in the chance of a ranged critical from a launched missile, from
+         * {@code ranged-critical:chance-launched-toh-skill-scale}. Port of
+         * {@code z_info->r_crit_chance_launched_toh_skill_scl}.
+         *
+         * <p>Field rangedCriticalChanceLaunchedTohSkillScale coded before 261002, commented in full on
+         * 261002.
+         */
+        private Integer rangedCriticalChanceLaunchedTohSkillScale;
+        /**
+         * The throwing skill term in the chance of a ranged critical from a thrown object, from
+         * {@code ranged-critical:chance-thrown-toh-skill-scale}. Port of
+         * {@code z_info->r_crit_chance_thrown_toh_skill_scl}.
+         *
+         * <p>Field rangedCriticalChanceThrownTohSkillScale coded before 261002, commented in full on
+         * 261002.
+         */
+        private Integer rangedCriticalChanceThrownTohSkillScale;
+        /**
+         * The constant added to the chance of a standard ranged critical, from
+         * {@code ranged-critical:chance-offset}. Port of {@code z_info->r_crit_chance_offset}.
+         *
+         * <p>Field rangedCriticalChanceOffset coded before 261002, commented in full on 261002.
+         */
+        private Integer rangedCriticalChanceOffset;
+        /**
+         * The die size the ranged critical chance is rolled against: {@code critical_shot()} misses
+         * the critical when {@code randint1(range)} exceeds the chance. From
+         * {@code ranged-critical:chance-range}; port of {@code z_info->r_crit_chance_range}.
+         *
+         * <p>Field rangedCriticalChanceRange coded before 261002, commented in full on 261002.
+         */
+        private Integer rangedCriticalChanceRange;
+        /**
+         * The missile-weight term in the power of a standard ranged critical, from
+         * {@code ranged-critical:power-weight-scale}. Port of {@code z_info->r_crit_power_weight_scl}.
+         *
+         * <p>Field rangedCriticalPowerWeightScale coded before 261002, commented in full on 261002.
+         */
+        private Integer rangedCriticalPowerWeightScale;
+        /**
+         * The die size of the random part of a standard ranged critical's power ({@code randint1} of
+         * this is added), from {@code ranged-critical:power-random}. Port of
+         * {@code z_info->r_crit_power_random}.
+         *
+         * <p>Field rangedCriticalPowerRandom coded before 261002, commented in full on 261002.
+         */
+        private Integer rangedCriticalPowerRandom;
+        /**
+         * Added to the power of an O-combat melee critical when the target is debuffed, from
+         * {@code o-melee-critical:debuff-toh}. Port of {@code z_info->o_m_crit_debuff_toh}, read by
+         * {@code o_critical_melee()} in {@code player-attack.c}.
+         *
+         * <p>Field oMeleeCriticalDebuffToh coded before 261002, commented in full on 261002.
+         */
+        private Integer oMeleeCriticalDebuffToh;
+        /**
+         * Numerator of the rational scale factor applied to the base melee hit chance to get an
+         * O-combat critical's power, from {@code o-melee-critical:power-toh-scale-numerator}. Port of
+         * {@code z_info->o_m_crit_power_toh_scl_num}.
+         *
+         * <p>Field oMeleeCriticalPowerTohScaleNumerator coded before 261002, commented in full on 261002.
+         */
+        private Integer oMeleeCriticalPowerTohScaleNumerator;
+        /**
+         * Denominator of the rational scale factor applied to the base melee hit chance to get an
+         * O-combat critical's power, from {@code o-melee-critical:power-toh-scale-denominator}. Port
+         * of {@code z_info->o_m_crit_power_toh_scl_den}. C divides by it with integer division.
+         *
+         * <p>Field oMeleeCriticalPowerTohScaleDenominator coded before 261002, commented in full on
+         * 261002.
+         */
+        private Integer oMeleeCriticalPowerTohScaleDenominator;
+        /**
+         * The {@code a} in the O-combat melee critical chance {@code a * power / (b * power + c)}, from
+         * {@code o-melee-critical:chance-power-scale-numerator}. Port of
+         * {@code z_info->o_m_crit_chance_power_scl_num}.
+         *
+         * <p>Field oMeleeCriticalChancePowerScaleNumerator coded before 261002, commented in full on
+         * 261002.
+         */
+        private Integer oMeleeCriticalChancePowerScaleNumerator;
+        /**
+         * The {@code b} in the O-combat melee critical chance {@code a * power / (b * power + c)}, from
+         * {@code o-melee-critical:chance-power-scale-denominator}. Port of
+         * {@code z_info->o_m_crit_chance_power_scl_den}.
+         *
+         * <p>Field oMeleeCriticalChancePowerScaleDenominator coded before 261002, commented in full on
+         * 261002.
+         */
+        private Integer oMeleeCriticalChancePowerScaleDenominator;
+        /**
+         * The {@code c} in the O-combat melee critical chance {@code a * power / (b * power + c)}, from
+         * {@code o-melee-critical:chance-add-denominator}. Port of
+         * {@code z_info->o_m_crit_chance_add_den}.
+         *
+         * <p>Field oMeleeCriticalChanceAddDenominator coded before 261002, commented in full on 261002.
+         */
+        private Integer oMeleeCriticalChanceAddDenominator;
+        /**
+         * Added to the power of an O-combat ranged critical when the target is debuffed, from
+         * {@code o-ranged-critical:debuff-toh}. Port of {@code z_info->o_r_crit_debuff_toh}, read by
+         * {@code o_critical_shot()} in {@code player-attack.c}.
+         *
+         * <p>Field oRangedCriticalDebuffToh coded before 261002, commented in full on 261002.
+         */
         private Integer oRangedCriticalDebuffToh;
+        /**
+         * Numerator of the scale factor applied to the base missile hit chance to get an O-combat
+         * critical's power when the missile is launched, from
+         * {@code o-ranged-critical:power-launched-toh-scale-numerator}. Port of
+         * {@code z_info->o_r_crit_power_launched_toh_scl_num}.
+         *
+         * <p>Field oRangedCriticalPowerLaunchedTohScaleNumerator coded before 261002, commented in full
+         * on 261002.
+         */
         private Integer oRangedCriticalPowerLaunchedTohScaleNumerator;
+        /**
+         * Denominator of the scale factor applied to the base missile hit chance to get an O-combat
+         * critical's power when the missile is launched, from
+         * {@code o-ranged-critical:power-launched-toh-scale-denominator}. Port of
+         * {@code z_info->o_r_crit_power_launched_toh_scl_den}. C divides by it with integer division.
+         *
+         * <p>Field oRangedCriticalPowerLaunchedTohScaleDenominator coded before 261002, commented in
+         * full on 261002.
+         */
         private Integer oRangedCriticalPowerLaunchedTohScaleDenominator;
+        /**
+         * Numerator of the scale factor applied to the base missile hit chance to get an O-combat
+         * critical's power when the object is thrown, from
+         * {@code o-ranged-critical:power-thrown-toh-scale-numerator}. Port of
+         * {@code z_info->o_r_crit_power_thrown_toh_scl_num}.
+         *
+         * <p>Field oRangedCriticalPowerThrownTohScaleNumerator coded before 261002, commented in full on
+         * 261002.
+         */
         private Integer oRangedCriticalPowerThrownTohScaleNumerator;
+        /**
+         * Denominator of the scale factor applied to the base missile hit chance to get an O-combat
+         * critical's power when the object is thrown, from
+         * {@code o-ranged-critical:power-thrown-toh-scale-denominator}. Port of
+         * {@code z_info->o_r_crit_power_thrown_toh_scl_den}. C divides by it with integer division.
+         *
+         * <p>Field oRangedCriticalPowerThrownTohScaleDenominator coded before 261002, commented in full
+         * on 261002.
+         */
         private Integer oRangedCriticalPowerThrownTohScaleDenominator;
+        /**
+         * The {@code a} in the O-combat ranged critical chance {@code a * power / (b * power + c)},
+         * from {@code o-ranged-critical:chance-power-scale-numerator}. Port of
+         * {@code z_info->o_r_crit_chance_power_scl_num}.
+         *
+         * <p>Field oRangedCriticalChancePowerScaleNumerator coded before 261002, commented in full on
+         * 261002.
+         */
         private Integer oRangedCriticalChancePowerScaleNumerator;
+        /**
+         * The {@code b} in the O-combat ranged critical chance {@code a * power / (b * power + c)},
+         * from {@code o-ranged-critical:chance-power-scale-denominator}. Port of
+         * {@code z_info->o_r_crit_chance_power_scl_den}.
+         *
+         * <p>Field oRangedCriticalChancePowerScaleDenominator coded before 261002, commented in full on
+         * 261002.
+         */
         private Integer oRangedCriticalChancePowerScaleDenominator;
+        /**
+         * The {@code c} in the O-combat ranged critical chance {@code a * power / (b * power + c)},
+         * from {@code o-ranged-critical:chance-add-denominator}. Port of
+         * {@code z_info->o_r_crit_chance_add_den}.
+         *
+         * <p>Field oRangedCriticalChanceAddDenominator coded before 261002, commented in full on 261002.
+         */
         private Integer oRangedCriticalChanceAddDenominator;
 
-        private final List<ORangedCriticalLevelData> oRangedCriticalLevelDataList = new ArrayList<>();
-
         /**
-         * Add a new o-ranged-critical-level record to the list
+         * Checks one {@code o-ranged-critical-level} row and, if it passes, appends it to
+         * {@link #oRangedCriticalLevelDataList}. Port of the value checks and list append in
+         * {@code parse_constants_o_ranged_critical_level()} in {@code init.c}.
          *
-         * @param oRangedCriticalLevelData the record to add
+         * <p>C rejects a {@code chance} of {@code 0} with {@code PARSE_ERROR_INVALID_VALUE}. It declares
+         * both {@code chance} and {@code dice} as {@code uint}, so the parser has already refused a
+         * negative value before the handler runs. Java holds them as signed ints, so this method rejects
+         * {@code chance <= 0} and {@code dice < 0} to cover both cases. The chance is checked first. A
+         * rejected row is not added. C's message lookup ({@code PARSE_ERROR_INVALID_MESSAGE}) is done in
+         * {@code GameConstantsAssembler} before this method is called.
+         *
+         * <p>Function addORangedCriticalLevel coded before 261002, commented in full on 261002.
+         *
+         * @param value the parsed row, with its message type already resolved
+         * @return an empty string if the row was added, otherwise the error message
          */
         @Contract(mutates = "this")
-        public void addORangedCriticalLevel(ORangedCriticalLevelData oRangedCriticalLevelData) {
-            oRangedCriticalLevelDataList.add(oRangedCriticalLevelData);
+        public String addORangedCriticalLevel(ORangedCriticalLevelData value) {
+            if (value.chance() <= 0) {
+                return "Negative or zero chance found in oRanged critical level data";
+            }
+            if (value.dice() < 0) {
+                return "Negative dice found in oRanged critical level data";
+            }
+            oRangedCriticalLevelDataList.add(value);
+            return "";
         }
 
         /**
-         * Set the o-ranged-critical:chance-power-scale-denominator value
+         * Stores {@code o-ranged-critical:chance-add-denominator} in
+         * {@link #oRangedCriticalChanceAddDenominator}. Port of the {@code "chance-add-denominator"}
+         * branch of {@code parse_constants_o_ranged_critical()} in {@code init.c}.
          *
-         * @param value denominator scale factor for the critical power chance
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setORangedCriticalChanceAddDenominator coded before 261002, commented in full on
+         * 261002.
+         *
+         * @param value the {@code c} term added to the denominator of the O-combat ranged critical
+         *              chance
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setORangedCriticalChanceAddDenominator(Integer value) {
-            if (oRangedCriticalChanceAddDenominator != null) return false;
+        public void setORangedCriticalChanceAddDenominator(Integer value) {
             oRangedCriticalChanceAddDenominator = value;
-            return true;
         }
 
         /**
-         * Set the o-ranged-critical:chance-power-scale-denominator value
+         * Stores {@code o-ranged-critical:chance-power-scale-denominator} in
+         * {@link #oRangedCriticalChancePowerScaleDenominator}. Port of the
+         * {@code "chance-power-scale-denominator"} branch of {@code parse_constants_o_ranged_critical()}
+         * in {@code init.c}.
          *
-         * @param value denominator scale factor for the critical power chance
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setORangedCriticalChancePowerScaleDenominator coded before 261002, commented in
+         * full on 261002.
+         *
+         * @param value the {@code b} multiplier on power in the denominator of the O-combat ranged
+         *              critical chance
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setORangedCriticalChancePowerScaleDenominator(Integer value) {
-            if (oRangedCriticalChancePowerScaleDenominator != null) return false;
+        public void setORangedCriticalChancePowerScaleDenominator(Integer value) {
             oRangedCriticalChancePowerScaleDenominator = value;
-            return true;
         }
 
         /**
-         * Set the o-ranged-critical:chance-power-scale-numerator value
+         * Stores {@code o-ranged-critical:chance-power-scale-numerator} in
+         * {@link #oRangedCriticalChancePowerScaleNumerator}. Port of the
+         * {@code "chance-power-scale-numerator"} branch of {@code parse_constants_o_ranged_critical()}
+         * in {@code init.c}.
          *
-         * @param value numerator scale factor for the critical power chance
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setORangedCriticalChancePowerScaleNumerator coded before 261002, commented in full
+         * on 261002.
+         *
+         * @param value the {@code a} multiplier on power in the numerator of the O-combat ranged critical
+         *              chance
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setORangedCriticalChancePowerScaleNumerator(Integer value) {
-            if (oRangedCriticalChancePowerScaleNumerator != null) return false;
+        public void setORangedCriticalChancePowerScaleNumerator(Integer value) {
             oRangedCriticalChancePowerScaleNumerator = value;
-            return true;
         }
 
         /**
-         * Set the o-ranged-critical:power-thrown-toh-scale-denominator value
+         * Stores {@code o-ranged-critical:power-thrown-toh-scale-denominator} in
+         * {@link #oRangedCriticalPowerThrownTohScaleDenominator}. Port of the
+         * {@code "power-thrown-toh-scale-denominator"} branch of
+         * {@code parse_constants_o_ranged_critical()} in {@code init.c}.
          *
-         * @param value scale factor denominator for to-hit value used to get power of thrown attack
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setORangedCriticalPowerThrownTohScaleDenominator coded before 261002, commented in
+         * full on 261002.
+         *
+         * @param value denominator of the scale factor from hit chance to critical power for thrown
+         *              objects
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setORangedCriticalPowerThrownTohScaleDenominator(Integer value) {
-            if (oRangedCriticalPowerThrownTohScaleDenominator != null) return false;
+        public void setORangedCriticalPowerThrownTohScaleDenominator(Integer value) {
             oRangedCriticalPowerThrownTohScaleDenominator = value;
-            return true;
         }
 
         /**
-         * Set the o-ranged-critical:power-thrown-toh-scale-numerator value
+         * Stores {@code o-ranged-critical:power-thrown-toh-scale-numerator} in
+         * {@link #oRangedCriticalPowerThrownTohScaleNumerator}. Port of the
+         * {@code "power-thrown-toh-scale-numerator"} branch of
+         * {@code parse_constants_o_ranged_critical()} in {@code init.c}.
          *
-         * @param value scale factor numerator for to-hit value used to get power of thrown attack
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setORangedCriticalPowerThrownTohScaleNumerator coded before 261002, commented in
+         * full on 261002.
+         *
+         * @param value numerator of the scale factor from hit chance to critical power for thrown
+         *              objects
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setORangedCriticalPowerThrownTohScaleNumerator(Integer value) {
-            if (oRangedCriticalPowerThrownTohScaleNumerator != null) return false;
+        public void setORangedCriticalPowerThrownTohScaleNumerator(Integer value) {
             oRangedCriticalPowerThrownTohScaleNumerator = value;
-            return true;
         }
 
         /**
-         * Set the o-ranged-critical:power-launched-toh-scale-denominator value
+         * Stores {@code o-ranged-critical:power-launched-toh-scale-denominator} in
+         * {@link #oRangedCriticalPowerLaunchedTohScaleDenominator}. Port of the
+         * {@code "power-launched-toh-scale-denominator"} branch of
+         * {@code parse_constants_o_ranged_critical()} in {@code init.c}.
          *
-         * @param value scale factor denominator for to-hit value used to get power of launched ranged attacks
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setORangedCriticalPowerLaunchedTohScaleDenominator coded before 261002, commented
+         * in full on 261002.
+         *
+         * @param value denominator of the scale factor from hit chance to critical power for launched
+         *              missiles
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setORangedCriticalPowerLaunchedTohScaleDenominator(Integer value) {
-            if (oRangedCriticalPowerLaunchedTohScaleDenominator != null) return false;
+        public void setORangedCriticalPowerLaunchedTohScaleDenominator(Integer value) {
             oRangedCriticalPowerLaunchedTohScaleDenominator = value;
-            return true;
         }
 
         /**
-         * Set the o-ranged-critical:power-launched-toh-scale-numerator value
+         * Stores {@code o-ranged-critical:power-launched-toh-scale-numerator} in
+         * {@link #oRangedCriticalPowerLaunchedTohScaleNumerator}. Port of the
+         * {@code "power-launched-toh-scale-numerator"} branch of
+         * {@code parse_constants_o_ranged_critical()} in {@code init.c}.
          *
-         * @param value scale factor numerator for to-hit value used to get power of launched ranged attack
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setORangedCriticalPowerLaunchedTohScaleNumerator coded before 261002, commented in
+         * full on 261002.
+         *
+         * @param value numerator of the scale factor from hit chance to critical power for launched
+         *              missiles
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setORangedCriticalPowerLaunchedTohScaleNumerator(Integer value) {
-            if (oRangedCriticalPowerLaunchedTohScaleNumerator != null) return false;
+        public void setORangedCriticalPowerLaunchedTohScaleNumerator(Integer value) {
             oRangedCriticalPowerLaunchedTohScaleNumerator = value;
-            return true;
         }
 
         /**
-         * Set the o-ranged-critical:debuff-toh value
+         * Stores {@code o-ranged-critical:debuff-toh} in {@link #oRangedCriticalDebuffToh}. Port of the
+         * {@code "debuff-toh"} branch of {@code parse_constants_o_ranged_critical()} in {@code init.c}.
          *
-         * @param value added to to-hit value for debuffed target
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setORangedCriticalDebuffToh coded before 261002, commented in full on 261002.
+         *
+         * @param value the amount added to an O-combat ranged critical's power against a debuffed
+         *              target
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setORangedCriticalDebuffToh(Integer value) {
-            if (oRangedCriticalDebuffToh != null) return false;
+        public void setORangedCriticalDebuffToh(Integer value) {
             oRangedCriticalDebuffToh = value;
-            return true;
         }
 
         /**
-         * Add a new o-melee-critical-level record to the list
+         * Checks one {@code o-melee-critical-level} row and, if it passes, appends it to
+         * {@link #oMeleeCriticalLevelDataList}. Port of the value checks and list append in
+         * {@code parse_constants_o_melee_critical_level()} in {@code init.c}.
          *
-         * @param oMeleeCriticalLevelData the record to add
+         * <p>C rejects a {@code chance} of {@code 0} with {@code PARSE_ERROR_INVALID_VALUE}. It declares
+         * both {@code chance} and {@code dice} as {@code uint}, so the parser has already refused a
+         * negative value before the handler runs. Java holds them as signed ints, so this method rejects
+         * {@code chance <= 0} and {@code dice < 0} to cover both cases. The chance is checked first. A
+         * rejected row is not added. C's message lookup ({@code PARSE_ERROR_INVALID_MESSAGE}) is done in
+         * {@code GameConstantsAssembler} before this method is called.
+         *
+         * <p>Function addOMeleeCriticalLevelData coded before 261002, commented in full on 261002.
+         *
+         * @param value the parsed row, with its message type already resolved
+         * @return an empty string if the row was added, otherwise the error message
          */
         @Contract(mutates = "this")
-        public void addOMeleeCriticalLevelData(OMeleeCriticalLevelData oMeleeCriticalLevelData) {
-            oMeleeCriticalLevelDataList.add(oMeleeCriticalLevelData);
+        public String addOMeleeCriticalLevelData(OMeleeCriticalLevelData value) {
+            if (value.chance() <= 0) {
+                return "Negative or zero chance found in oMelee critical level data";
+            }
+            if (value.dice() < 0) {
+                return "Negative dice found in oMelee critical level data";
+            }
+            oMeleeCriticalLevelDataList.add(value);
+            return "";
         }
 
         /**
-         * Set the o-melee-critical:chance-add-denominator value
+         * Stores {@code o-melee-critical:chance-add-denominator} in
+         * {@link #oMeleeCriticalChanceAddDenominator}. Port of the {@code "chance-add-denominator"}
+         * branch of {@code parse_constants_o_melee_critical()} in {@code init.c}.
          *
-         * @param value value of added term in denominator for critical chance
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setOMeleeCriticalChanceAddDenominator coded before 261002, commented in full on
+         * 261002.
+         *
+         * @param value the {@code c} term added to the denominator of the O-combat melee critical
+         *              chance
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setOMeleeCriticalChanceAddDenominator(Integer value) {
-            if (oMeleeCriticalChanceAddDenominator != null) return false;
+        public void setOMeleeCriticalChanceAddDenominator(Integer value) {
             oMeleeCriticalChanceAddDenominator = value;
-            return true;
         }
 
         /**
-         * Set the o-melee-critical:power-toh-scale-numerator value
+         * Stores {@code o-melee-critical:chance-power-scale-denominator} in
+         * {@link #oMeleeCriticalChancePowerScaleDenominator}. Port of the
+         * {@code "chance-power-scale-denominator"} branch of {@code parse_constants_o_melee_critical()}
+         * in {@code init.c}.
          *
-         * @param value numerator of scale factor applied to combined to-hit value
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setOMeleeCriticalChancePowerScaleDenominator coded before 261002, commented in full
+         * on 261002.
+         *
+         * @param value the {@code b} multiplier on power in the denominator of the O-combat melee
+         *              critical chance
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setOMeleeCriticalChancePowerScaleDenominator(Integer value) {
-            if (oMeleeCriticalChancePowerScaleDenominator != null) return false;
+        public void setOMeleeCriticalChancePowerScaleDenominator(Integer value) {
             oMeleeCriticalChancePowerScaleDenominator = value;
-            return true;
         }
 
         /**
-         * Set the o-melee-critical:chance-power-scale-numerator value
+         * Stores {@code o-melee-critical:chance-power-scale-numerator} in
+         * {@link #oMeleeCriticalChancePowerScaleNumerator}. Port of the
+         * {@code "chance-power-scale-numerator"} branch of {@code parse_constants_o_melee_critical()} in
+         * {@code init.c}.
          *
-         * @param value numerator of scale factor applied to critical's power
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setOMeleeCriticalChancePowerScaleNumerator coded before 261002, commented in full
+         * on 261002.
+         *
+         * @param value the {@code a} multiplier on power in the numerator of the O-combat melee critical
+         *              chance
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setOMeleeCriticalChancePowerScaleNumerator(Integer value) {
-            if (oMeleeCriticalChancePowerScaleNumerator != null) return false;
+        public void setOMeleeCriticalChancePowerScaleNumerator(Integer value) {
             oMeleeCriticalChancePowerScaleNumerator = value;
-            return true;
         }
 
         /**
-         * Set the o-melee-critical:power-toh-scale-denominator value
+         * Stores {@code o-melee-critical:power-toh-scale-denominator} in
+         * {@link #oMeleeCriticalPowerTohScaleDenominator}. Port of the
+         * {@code "power-toh-scale-denominator"} branch of {@code parse_constants_o_melee_critical()} in
+         * {@code init.c}.
          *
-         * @param value denominator of scale factor applied to combined to-hit value
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setOMeleeCriticalPowerTohScaleDenominator coded before 261002, commented in full on
+         * 261002.
+         *
+         * @param value denominator of the scale factor from melee hit chance to critical power
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setOMeleeCriticalPowerTohScaleDenominator(Integer value) {
-            if (oMeleeCriticalPowerTohScaleDenominator != null) return false;
+        public void setOMeleeCriticalPowerTohScaleDenominator(Integer value) {
             oMeleeCriticalPowerTohScaleDenominator = value;
-            return true;
         }
 
         /**
-         * Set the o-melee-critical:power-toh-scale-numerator value
+         * Stores {@code o-melee-critical:power-toh-scale-numerator} in
+         * {@link #oMeleeCriticalPowerTohScaleNumerator}. Port of the
+         * {@code "power-toh-scale-numerator"} branch of {@code parse_constants_o_melee_critical()} in
+         * {@code init.c}.
          *
-         * @param value numerator of scale factor applied to combined to-hit value
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setOMeleeCriticalPowerTohScaleNumerator coded before 261002, commented in full on
+         * 261002.
+         *
+         * @param value numerator of the scale factor from melee hit chance to critical power
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setOMeleeCriticalPowerTohScaleNumerator(Integer value) {
-            if (oMeleeCriticalPowerTohScaleNumerator != null) return false;
+        public void setOMeleeCriticalPowerTohScaleNumerator(Integer value) {
             oMeleeCriticalPowerTohScaleNumerator = value;
-            return true;
         }
 
         /**
-         * Set the o-melee-critical:debuff-toh value
+         * Stores {@code o-melee-critical:debuff-toh} in {@link #oMeleeCriticalDebuffToh}. Port of the
+         * {@code "debuff-toh"} branch of {@code parse_constants_o_melee_critical()} in {@code init.c}.
          *
-         * @param value amount added to to-hit if target is debuffed
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setOMeleeCriticalDebuffToh coded before 261002, commented in full on 261002.
+         *
+         * @param value the amount added to an O-combat melee critical's power against a debuffed target
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setOMeleeCriticalDebuffToh(Integer value) {
-            if (oMeleeCriticalDebuffToh != null) return false;
+        public void setOMeleeCriticalDebuffToh(Integer value) {
             oMeleeCriticalDebuffToh = value;
-            return true;
         }
 
         /**
-         * Add a RangedCriticalData item to the rangedCriticalDataList
+         * Appends one {@code ranged-critical-level} row to {@link #rangedCriticalLevelDataList}, with no
+         * checks. Port of the list append in {@code parse_constants_ranged_critical_level()} in
+         * {@code init.c}. C checks only the message name, and {@code GameConstantsAssembler} does that
+         * before calling here. The cutoff order is checked once every row is in, by
+         * {@link #checkCriticalLevelDataLists()}.
          *
-         * @param value added to the rangedCriticalDataList
+         * <p>Function addRangedCriticalLevelData coded before 261002, commented in full on 261002.
+         *
+         * @param value the parsed row, with its message type already resolved
          */
         public void addRangedCriticalLevelData(RangedCriticalLevelData value) {
             rangedCriticalLevelDataList.add(value);
         }
 
         /**
-         * Set the ranged-critical:power-random value
+         * Stores {@code ranged-critical:power-random} in {@link #rangedCriticalPowerRandom}. Port of the
+         * {@code "power-random"} branch of {@code parse_constants_ranged_critical()} in {@code init.c}.
          *
-         * @param value minimum of random part of power
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setRangedCriticalPowerRandom coded before 261002, commented in full on 261002.
+         *
+         * @param value the die size of the random part of a ranged critical's power
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setRangedCriticalPowerRandom(Integer value) {
-            if (rangedCriticalPowerRandom != null) return false;
+        public void setRangedCriticalPowerRandom(Integer value) {
             rangedCriticalPowerRandom = value;
-            return true;
         }
 
         /**
-         * Set the ranged-critical:power-weight-value
+         * Stores {@code ranged-critical:power-weight-scale} in {@link #rangedCriticalPowerWeightScale}.
+         * Port of the {@code "power-weight-scale"} branch of {@code parse_constants_ranged_critical()} in
+         * {@code init.c}.
          *
-         * @param value scale factor for missile weight
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setRangedCriticalPowerWeightScale coded before 261002, commented in full on 261002.
+         *
+         * @param value the multiplier on missile weight in a ranged critical's power
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setRangedCriticalPowerWeightScale(Integer value) {
-            if (rangedCriticalPowerWeightScale != null) return false;
+        public void setRangedCriticalPowerWeightScale(Integer value) {
             rangedCriticalPowerWeightScale = value;
-            return true;
         }
 
         /**
-         * Set the ranged-critical:chance-range value
+         * Stores {@code ranged-critical:chance-range} in {@link #rangedCriticalChanceRange}. Port of the
+         * {@code "chance-range"} branch of {@code parse_constants_ranged_critical()} in {@code init.c}.
          *
-         * @param value maximum range for a ranged critical chance
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setRangedCriticalChanceRange coded before 261002, commented in full on 261002.
+         *
+         * @param value the die size the ranged critical chance is rolled against
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setRangedCriticalChanceRange(Integer value) {
-            if (rangedCriticalChanceRange != null) return false;
+        public void setRangedCriticalChanceRange(Integer value) {
             rangedCriticalChanceRange = value;
-            return true;
         }
 
         /**
-         * Set the ranged-critical:chance-offset value
+         * Stores {@code ranged-critical:chance-offset} in {@link #rangedCriticalChanceOffset}. Port of
+         * the {@code "chance-offset"} branch of {@code parse_constants_ranged_critical()} in
+         * {@code init.c}.
          *
-         * @param value added to chance for a ranged critical
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setRangedCriticalChanceOffset coded before 261002, commented in full on 261002.
+         *
+         * @param value the constant added to the chance of a ranged critical
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setRangedCriticalChanceOffset(Integer value) {
-            if (rangedCriticalChanceOffset != null) return false;
+        public void setRangedCriticalChanceOffset(Integer value) {
             rangedCriticalChanceOffset = value;
-            return true;
         }
 
         /**
-         * Set the ranged-critical:chance-thrown-toh-skill-scale value
+         * Stores {@code ranged-critical:chance-thrown-toh-skill-scale} in
+         * {@link #rangedCriticalChanceThrownTohSkillScale}. Port of the
+         * {@code "chance-thrown-toh-skill-scale"} branch of {@code parse_constants_ranged_critical()} in
+         * {@code init.c}.
          *
-         * @param value scale factor for the thrown to-hit skill
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setRangedCriticalChanceThrownTohSkillScale coded before 261002, commented in full on
+         * 261002.
+         *
+         * @param value the multiplier on the throwing skill in the chance of a thrown critical
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setRangedCriticalChanceThrownTohSkillScale(Integer value) {
-            if (rangedCriticalChanceThrownTohSkillScale != null) return false;
+        public void setRangedCriticalChanceThrownTohSkillScale(Integer value) {
             rangedCriticalChanceThrownTohSkillScale = value;
-            return true;
         }
 
         /**
-         * Set the ranged-critical:chance-launched-toh-skill-scale
+         * Stores {@code ranged-critical:chance-launched-toh-skill-scale} in
+         * {@link #rangedCriticalChanceLaunchedTohSkillScale}. Port of the
+         * {@code "chance-launched-toh-skill-scale"} branch of {@code parse_constants_ranged_critical()}
+         * in {@code init.c}.
          *
-         * @param value scale factor for the launched to-hit skill
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setRangedCriticalChanceLaunchedTohSkillScale coded before 261002, commented in full
+         * on 261002.
+         *
+         * @param value the multiplier on the bow skill in the chance of a launched critical
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setRangedCriticalChanceLaunchedTohSkillScale(Integer value) {
-            if (rangedCriticalChanceLaunchedTohSkillScale != null) return false;
+        public void setRangedCriticalChanceLaunchedTohSkillScale(Integer value) {
             rangedCriticalChanceLaunchedTohSkillScale = value;
-            return true;
         }
 
         /**
-         * Set the ranged-critical:chance-level-scale value
+         * Stores {@code ranged-critical:chance-level-scale} in {@link #rangedCriticalChanceLevelScale}.
+         * Port of the {@code "chance-level-scale"} branch of {@code parse_constants_ranged_critical()} in
+         * {@code init.c}.
          *
-         * @param value scale factor for player level
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setRangedCriticalChanceLevelScale coded before 261002, commented in full on 261002.
+         *
+         * @param value the multiplier on player level in the chance of a ranged critical
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setRangedCriticalChanceLevelScale(Integer value) {
-            if (rangedCriticalChanceLevelScale != null) return false;
+        public void setRangedCriticalChanceLevelScale(Integer value) {
             rangedCriticalChanceLevelScale = value;
-            return true;
         }
 
         /**
-         * Set the ranged-critical:chance-toh-scale value
+         * Stores {@code ranged-critical:chance-toh-scale} in {@link #rangedCriticalChanceTohScale}. Port
+         * of the {@code "chance-toh-scale"} branch of {@code parse_constants_ranged_critical()} in
+         * {@code init.c}.
          *
-         * @param value scale-factor for overall ranged to-hit value
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setRangedCriticalChanceTohScale coded before 261002, commented in full on 261002.
+         *
+         * @param value the multiplier on to-hit in the chance of a ranged critical
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setRangedCriticalChanceTohScale(Integer value) {
-            if (rangedCriticalChanceTohScale != null) return false;
+        public void setRangedCriticalChanceTohScale(Integer value) {
             rangedCriticalChanceTohScale = value;
-            return true;
         }
 
         /**
-         * Set the ranged-critical:chance-weight-scale value
+         * Stores {@code ranged-critical:chance-weight-scale} in {@link #rangedCriticalChanceWeightScale}.
+         * Port of the {@code "chance-weight-scale"} branch of {@code parse_constants_ranged_critical()} in
+         * {@code init.c}.
          *
-         * @param value scale factor for the missile's weight
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setRangedCriticalChanceWeightScale coded before 261002, commented in full on 261002.
+         *
+         * @param value the multiplier on missile weight in the chance of a ranged critical
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setRangedCriticalChanceWeightScale(Integer value) {
-            if (rangedCriticalChanceWeightScale != null) return false;
+        public void setRangedCriticalChanceWeightScale(Integer value) {
             rangedCriticalChanceWeightScale = value;
-            return true;
         }
 
         /**
-         * Set the ranged-critical:debuff-toh value
+         * Stores {@code ranged-critical:debuff-toh} in {@link #rangedCriticalDebuffToh}. Port of the
+         * {@code "debuff-toh"} branch of {@code parse_constants_ranged_critical()} in {@code init.c}.
          *
-         * @param value added to the to-hit value for calculating the chance of a ranged critical
+         * <p>Function setRangedCriticalDebuffToh coded before 261002, commented in full on 261002.
+         *
+         * @param value the amount added to to-hit when working out the chance of a ranged critical
          *              against a debuffed target
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setRangedCriticalDebuffToh(Integer value) {
-            if (rangedCriticalDebuffToh != null) return false;
+        public void setRangedCriticalDebuffToh(Integer value) {
             rangedCriticalDebuffToh = value;
-            return true;
         }
 
         /**
-         * Add a MeleeCriticalData item to the meleeCriticalDataList
+         * Appends one {@code melee-critical-level} row to {@link #meleeCriticalLevelDataList}, with no
+         * checks. Port of the list append in {@code parse_constants_melee_critical_level()} in
+         * {@code init.c}. C checks only the message name, and {@code GameConstantsAssembler} does that
+         * before calling here. The cutoff order is checked once every row is in, by
+         * {@link #checkCriticalLevelDataLists()}.
          *
-         * @param value added to the meleeCriticalDataList
+         * <p>Function addMeleeCriticalLevelData coded before 261002, commented in full on 261002.
+         *
+         * @param value the parsed row, with its message type already resolved
          */
         public void addMeleeCriticalLevelData(MeleeCriticalLevelData value) {
             meleeCriticalLevelDataList.add(value);
         }
 
         /**
-         * Set the melee-critical:debuff-toh value
+         * Checks that the power cutoffs in the melee list, then the ranged list, strictly increase.
+         * Port of {@code check_critical_levels()} in {@code init.c}, which
+         * {@code finish_parse_constants()} runs on {@code m_crit_level_head} and then
+         * {@code r_crit_level_head}, failing with {@code PARSE_ERROR_NON_SEQUENTIAL_RECORDS}.
          *
-         * @param value added to the to-hit value when the target is debuffed
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>As in C, the last row's cutoff is never compared, because {@code critical_melee()} and
+         * {@code critical_shot()} stop on the last level without reading its cutoff. The first row's
+         * cutoff is compared only as the "previous" value for the second row. So every cutoff from the
+         * second row to the second-to-last must be strictly greater than the one before it, and a list
+         * of zero, one or two rows always passes.
+         *
+         * <p>Intentional divergence from C, confirmed by Rowan on 261002: a cutoff of {@code -1} in one
+         * of the compared positions (second row to second-to-last) is rejected with its own "Invalid
+         * sentinel" message, and that check runs before the order check. C has no such rule. It rejects
+         * a middle {@code -1} only when it fails the order check, and then with the general
+         * "not strictly increasing" error. (C accepts {@code [-5, -1, 10, -1]}, for instance; Java
+         * rejects it.) {@code constants.txt} uses {@code -1} only as the unused last cutoff.
+         *
+         * <p>Function checkCriticalLevelDataLists coded before 261002, commented in full on 261002.
+         *
+         * @return an empty string if both lists pass, otherwise the first error found (melee before
+         *         ranged)
          */
-        @CheckReturnValue
+        public String checkCriticalLevelDataLists() {
+            int listSize = meleeCriticalLevelDataList.size();
+            int prevCutOff;
+            if (listSize != 0) {
+                prevCutOff = meleeCriticalLevelDataList.getFirst().powerCutoff();
+                for (int index = 1; index < listSize - 1; index++) {
+                    if (meleeCriticalLevelDataList.get(index).powerCutoff() == -1) {
+                        return "Invalid sentinel value -1 found in middle of melee critical level data";
+                    }
+                    if (meleeCriticalLevelDataList.get(index).powerCutoff() <= prevCutOff) {
+                        return "Melee critical level data not strictly increasing.";
+                    }
+                    prevCutOff = meleeCriticalLevelDataList.get(index).powerCutoff();
+                }
+//                if (meleeCriticalLevelDataList.getLast().powerCutoff() != -1) {
+//                    return "No -1 sentinal at end of melee critical level data";
+//                }
+            }
+
+            listSize = rangedCriticalLevelDataList.size();
+            if (listSize != 0) {
+                prevCutOff = rangedCriticalLevelDataList.getFirst().powerCutoff();
+                for (int index = 1; index < listSize - 1; index++) {
+                    if (rangedCriticalLevelDataList.get(index).powerCutoff() == -1) {
+                        return "Invalid sentinel value -1 found in middle of ranged critical level data";
+                    }
+                    if (rangedCriticalLevelDataList.get(index).powerCutoff() <= prevCutOff) {
+                        return "Ranged critical level data not strictly increasing.";
+                    }
+                    prevCutOff = rangedCriticalLevelDataList.get(index).powerCutoff();
+                }
+//                if (rangedCriticalLevelDataList.getLast().powerCutoff() != -1) {
+//                    return "No -1 sentinal at end of ranged critical level data";
+//                }
+            }
+
+            return "";
+        }
+
+        /**
+         * Stores {@code melee-critical:power-random} in {@link #meleeCriticalPowerRandom}. Port of the
+         * {@code "power-random"} branch of {@code parse_constants_melee_critical()} in {@code init.c}.
+         *
+         * <p>Function setMeleeCriticalPowerRandom coded before 261002, commented in full on 261002.
+         *
+         * @param value the die size of the random part of a melee critical's power
+         */
         @Contract(mutates = "this")
-        public boolean setMeleeCriticalPowerRandom(Integer value) {
-            if (meleeCriticalPowerRandom != null) return false;
+        public void setMeleeCriticalPowerRandom(Integer value) {
             meleeCriticalPowerRandom = value;
-            return true;
         }
 
         /**
-         * Set the melee-critical:power-weight-scale value
+         * Stores {@code melee-critical:power-weight-scale} in {@link #meleeCriticalPowerWeightScale}.
+         * Port of the {@code "power-weight-scale"} branch of {@code parse_constants_melee_critical()} in
+         * {@code init.c}.
          *
-         * @param value scale factor for the weapon weight in the power of a mêlée critical
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setMeleeCriticalPowerWeightScale coded before 261002, commented in full on 261002.
+         *
+         * @param value the multiplier on weapon weight in a melee critical's power
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setMeleeCriticalPowerWeightScale(Integer value) {
-            if (meleeCriticalPowerWeightScale != null) return false;
+        public void setMeleeCriticalPowerWeightScale(Integer value) {
             meleeCriticalPowerWeightScale = value;
-            return true;
         }
 
         /**
-         * Set the melee-critical:chance-range value
+         * Stores {@code melee-critical:chance-range} in {@link #meleeCriticalChanceRange}. Port of the
+         * {@code "chance-range"} branch of {@code parse_constants_melee_critical()} in {@code init.c}.
          *
-         * @param value maximum range for mêlée critical chance
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setMeleeCriticalChanceRange coded before 261002, commented in full on 261002.
+         *
+         * @param value the die size the melee critical chance is rolled against
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setMeleeCriticalChanceRange(Integer value) {
-            if (meleeCriticalChanceRange != null) return false;
+        public void setMeleeCriticalChanceRange(Integer value) {
             meleeCriticalChanceRange = value;
-            return true;
         }
 
         /**
-         * Set the melee-critical:chance-offset value
+         * Stores {@code melee-critical:chance-offset} in {@link #meleeCriticalChanceOffset}. Port of the
+         * {@code "chance-offset"} branch of {@code parse_constants_melee_critical()} in {@code init.c}.
          *
-         * @param value value added to chance for calculating mêlée critical
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setMeleeCriticalChanceOffset coded before 261002, commented in full on 261002.
+         *
+         * @param value the constant added to the chance of a melee critical
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setMeleeCriticalChanceOffset(Integer value) {
-            if (meleeCriticalChanceOffset != null) return false;
+        public void setMeleeCriticalChanceOffset(Integer value) {
             meleeCriticalChanceOffset = value;
-            return true;
         }
 
         /**
-         * Set the melee-critical:chance-toh-skill-scale value
+         * Stores {@code melee-critical:chance-toh-skill-scale} in
+         * {@link #meleeCriticalChanceTohSkillScale}. Port of the {@code "chance-toh-skill-scale"} branch
+         * of {@code parse_constants_melee_critical()} in {@code init.c}.
          *
-         * @param value scale factor for the to-hit skill
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setMeleeCriticalChanceTohSkillScale coded before 261002, commented in full on
+         * 261002.
+         *
+         * @param value the multiplier on the melee skill in the chance of a melee critical
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setMeleeCriticalChanceTohSkillScale(Integer value) {
-            if (meleeCriticalChanceTohSkillScale != null) return false;
+        public void setMeleeCriticalChanceTohSkillScale(Integer value) {
             meleeCriticalChanceTohSkillScale = value;
-            return true;
         }
 
         /**
-         * Set the melee-critical:chance-level-scale value
+         * Stores {@code melee-critical:chance-level-scale} in {@link #meleeCriticalChanceLevelScale}.
+         * Port of the {@code "chance-level-scale"} branch of {@code parse_constants_melee_critical()} in
+         * {@code init.c}.
          *
-         * @param value scale factor for player level
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setMeleeCriticalChanceLevelScale coded before 261002, commented in full on 261002.
+         *
+         * @param value the multiplier on player level in the chance of a melee critical
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setMeleeCriticalChanceLevelScale(Integer value) {
-            if (meleeCriticalChanceLevelScale != null) return false;
+        public void setMeleeCriticalChanceLevelScale(Integer value) {
             meleeCriticalChanceLevelScale = value;
-            return true;
         }
 
         /**
-         * Set the melee-critical:chance-toh-scale value
+         * Stores {@code melee-critical:chance-toh-scale} in {@link #meleeCriticalChanceTohScale}. Port of
+         * the {@code "chance-toh-scale"} branch of {@code parse_constants_melee_critical()} in
+         * {@code init.c}.
          *
-         * @param value scale factor for overall to-hit
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setMeleeCriticalChanceTohScale coded before 261002, commented in full on 261002.
+         *
+         * @param value the multiplier on to-hit in the chance of a melee critical
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setMeleeCriticalChanceTohScale(Integer value) {
-            if (meleeCriticalChanceTohScale != null) return false;
+        public void setMeleeCriticalChanceTohScale(Integer value) {
             meleeCriticalChanceTohScale = value;
-            return true;
         }
 
         /**
-         * Set the melee-critical:chance-weight-scale value
+         * Stores {@code melee-critical:chance-weight-scale} in {@link #meleeCriticalChanceWeightScale}.
+         * Port of the {@code "chance-weight-scale"} branch of {@code parse_constants_melee_critical()} in
+         * {@code init.c}.
          *
-         * @param value Scale factor for the weapon's weight
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setMeleeCriticalChanceWeightScale coded before 261002, commented in full on 261002.
+         *
+         * @param value the multiplier on weapon weight in the chance of a melee critical
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setMeleeCriticalChanceWeightScale(Integer value) {
-            if (meleeCriticalChanceWeightScale != null) return false;
+        public void setMeleeCriticalChanceWeightScale(Integer value) {
             meleeCriticalChanceWeightScale = value;
-            return true;
         }
 
         /**
-         * Set the melee-critical:debuff-toh value
+         * Stores {@code melee-critical:debuff-toh} in {@link #meleeCriticalDebuffToh}. Port of the
+         * {@code "debuff-toh"} branch of {@code parse_constants_melee_critical()} in {@code init.c}.
          *
-         * @param value added to the to-hit value when the target is debuffed
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setMeleeCriticalDebuffToh coded before 261002, commented in full on 261002.
+         *
+         * @param value the amount added to to-hit when working out the chance of a melee critical
+         *              against a debuffed target
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setMeleeCriticalDebuffToh(Integer value) {
-            if (meleeCriticalDebuffToh != null) return false;
+        public void setMeleeCriticalDebuffToh(Integer value) {
             meleeCriticalDebuffToh = value;
-            return true;
         }
 
         /**
-         * Set the player:food-value value
+         * Stores {@code player:food-value} in {@link #playerFoodValue}. Port of the
+         * {@code "food-value"} branch of {@code parse_constants_player()} in {@code init.c}.
          *
-         * @param value the number of turns that 1% of the player food capacity feeds them for
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setPlayerFoodValue coded before 261002, commented in full on 261002.
+         *
+         * @param value the number of game turns that 1% of the player's food lasts
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setPlayerFoodValue(Integer value) {
-            if (playerFoodValue != null) return false;
+        public void setPlayerFoodValue(Integer value) {
             playerFoodValue = value;
-            return true;
         }
 
         /**
-         * Set the player:start-gold value
+         * Stores {@code player:start-gold} in {@link #playerStartGold}. Port of the
+         * {@code "start-gold"} branch of {@code parse_constants_player()} in {@code init.c}.
          *
-         * @param value the starting gold of the player
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setPlayerStartGold coded before 261002, commented in full on 261002.
+         *
+         * @param value the gold a new character starts with
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setPlayerStartGold(Integer value) {
-            if (playerStartGold != null) return false;
+        public void setPlayerStartGold(Integer value) {
             playerStartGold = value;
-            return true;
         }
 
         /**
-         * Set the player:max-range value
+         * Stores {@code player:max-range} in {@link #playerMaxRange}. Port of the {@code "max-range"}
+         * branch of {@code parse_constants_player()} in {@code init.c}.
          *
-         * @param value the maximum missile and spell range
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setPlayerMaxRange coded before 261002, commented in full on 261002.
+         *
+         * @param value the maximum range of missiles and spells
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setPlayerMaxRange(Integer value) {
-            if (playerMaxRange != null) return false;
+        public void setPlayerMaxRange(Integer value) {
             playerMaxRange = value;
-            return true;
         }
 
         /**
-         * Set the player:max-sight value
+         * Stores {@code player:max-sight} in {@link #playerMaxSight}. Port of the {@code "max-sight"}
+         * branch of {@code parse_constants_player()} in {@code init.c}.
          *
-         * @param value the maximum visual range of the player
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setPlayerMaxSight coded before 261002, commented in full on 261002.
+         *
+         * @param value the player's maximum visual range
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setPlayerMaxSight(Integer value) {
-            if (playerMaxSight != null) return false;
+        public void setPlayerMaxSight(Integer value) {
             playerMaxSight = value;
-            return true;
         }
 
         /**
-         * Set the obj-make:default-lamp value
+         * Stores {@code obj-make:default-lamp} in {@link #objMakeDefaultLamp}. Port of the
+         * {@code "default-lamp"} branch of {@code parse_constants_obj_make()} in {@code init.c}.
          *
-         * @param value normal amount of fuel in a lamp
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setObjDefaultLamp coded before 261002, commented in full on 261002.
+         *
+         * @param value the fuel a newly made lantern starts with
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setObjDefaultLamp(Integer value) {
-            if (objMakeDefaultLamp != null) return false;
+        public void setObjDefaultLamp(Integer value) {
             objMakeDefaultLamp = value;
-            return true;
         }
 
         /**
-         * Set the obj-make:fuel-lamp value
+         * Stores {@code obj-make:fuel-lamp} in {@link #objMakeFuelLamp}. Port of the {@code "fuel-lamp"}
+         * branch of {@code parse_constants_obj_make()} in {@code init.c}.
          *
-         * @param value maximum amount of fuel in a lantern
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setObjFuelLamp coded before 261002, commented in full on 261002.
+         *
+         * @param value the most fuel a lantern can hold
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setObjFuelLamp(Integer value) {
-            if (objMakeFuelLamp != null) return false;
+        public void setObjFuelLamp(Integer value) {
             objMakeFuelLamp = value;
-            return true;
         }
 
         /**
-         * Set the obj-make:fuel-torch value
+         * Stores {@code obj-make:fuel-torch} in {@link #objMakeFuelTorch}. Port of the
+         * {@code "fuel-torch"} branch of {@code parse_constants_obj_make()} in {@code init.c}.
          *
-         * @param value maximum amount of fuel in a torch
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setObjFuelTorch coded before 261002, commented in full on 261002.
+         *
+         * @param value the most fuel a torch can hold
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setObjFuelTorch(Integer value) {
-            if (objMakeFuelTorch != null) return false;
+        public void setObjFuelTorch(Integer value) {
             objMakeFuelTorch = value;
-            return true;
         }
 
         /**
-         * Set the obj-make:great-ego value
+         * Stores {@code obj-make:great-ego} in {@link #objMakeGreatEgo}. Port of the {@code "great-ego"}
+         * branch of {@code parse_constants_obj_make()} in {@code init.c}.
          *
-         * @param value 1/chance of inflating the requested ego item level
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setObjGreatEgo coded before 261002, commented in full on 261002.
+         *
+         * @param value the one-in-N chance of inflating the level of a requested ego item
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setObjGreatEgo(Integer value) {
-            if (objMakeGreatEgo != null) return false;
+        public void setObjGreatEgo(Integer value) {
             objMakeGreatEgo = value;
-            return true;
         }
 
         /**
-         * Set the obj-make:great-obj value
+         * Stores {@code obj-make:great-obj} in {@link #objMakeGreatObj}. Port of the {@code "great-obj"}
+         * branch of {@code parse_constants_obj_make()} in {@code init.c}.
          *
-         * @param value 1/chance of inflating the requested object's level
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setObjGreatObj coded before 261002, commented in full on 261002.
+         *
+         * @param value the one-in-N chance of inflating the level of a requested object
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setObjGreatObj(Integer value) {
-            if (objMakeGreatObj != null) return false;
+        public void setObjGreatObj(Integer value) {
             objMakeGreatObj = value;
-            return true;
         }
 
         /**
-         * Set the obj-make:max-depth value
+         * Stores {@code obj-make:max-depth} in {@link #objMakeMaxDepth}. Port of the {@code "max-depth"}
+         * branch of {@code parse_constants_obj_make()} in {@code init.c}.
          *
-         * @param value maximum depth to be used in object allocation
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setObjMakeMaxDepth coded before 261002, commented in full on 261002.
+         *
+         * @param value the deepest level used in object allocation
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setObjMakeMaxDepth(Integer value) {
-            if (objMakeMaxDepth != null) return false;
+        public void setObjMakeMaxDepth(Integer value) {
             objMakeMaxDepth = value;
-            return true;
         }
 
         /**
-         * Set the store:magic-level value
+         * Stores {@code store:magic-level} in {@link #storeMagicLevel}. Port of the
+         * {@code "magic-level"} branch of {@code parse_constants_store()} in {@code init.c}.
          *
-         * @param value the level to apply magic to objects for normal stores
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setStoreMagicLevel coded before 261002, commented in full on 261002.
+         *
+         * @param value the level passed to {@code apply_magic()} for stock in normal stores
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setStoreMagicLevel(Integer value) {
-            if (storeMagicLevel != null) return false;
+        public void setStoreMagicLevel(Integer value) {
             storeMagicLevel = value;
-            return true;
         }
 
         /**
-         * Set the store:shuffle value
+         * Stores {@code store:shuffle} in {@link #storeShuffle}. Port of the {@code "shuffle"} branch of
+         * {@code parse_constants_store()} in {@code init.c}.
          *
-         * @param value the 1/chance per day of a shop owner changing
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setStoreShuffle coded before 261002, commented in full on 261002.
+         *
+         * @param value the one-in-N chance per day that a store's owner changes
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setStoreShuffle(Integer value) {
-            if (storeShuffle != null) return false;
+        public void setStoreShuffle(Integer value) {
             storeShuffle = value;
-            return true;
         }
 
         /**
-         * Set the store:turns value
+         * Stores {@code store:turns} in {@link #storeTurns}. Port of the {@code "turns"} branch of
+         * {@code parse_constants_store()} in {@code init.c}.
          *
-         * @param value the number of turns between turnovers
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setStoreTurns coded before 261002, commented in full on 261002.
+         *
+         * @param value the number of game turns between store turnovers
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setStoreTurns(Integer value) {
-            if (storeTurns != null) return false;
+        public void setStoreTurns(Integer value) {
             storeTurns = value;
-            return true;
         }
 
         /**
-         * Set the store:inven-max value
+         * Stores {@code store:inven-max} in {@link #storeInvenMax}. Port of the {@code "inven-max"}
+         * branch of {@code parse_constants_store()} in {@code init.c}.
          *
-         * @param value the maximum number of items per shop
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setStoreInvenMax coded before 261002, commented in full on 261002.
+         *
+         * @param value the most objects in a store's inventory
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setStoreInvenMax(Integer value) {
-            if (storeInvenMax != null) return false;
+        public void setStoreInvenMax(Integer value) {
             storeInvenMax = value;
-            return true;
         }
 
         /**
-         * Set the carry-cap:floor-size value
+         * Stores {@code carry-cap:floor-size} in {@link #carryCapFloorSize}. Port of the
+         * {@code "floor-size"} branch of {@code parse_constants_carry_cap()} in {@code init.c}.
          *
-         * @param value the maximum number of items per square
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setCarryCapFloorSize coded before 261002, commented in full on 261002.
+         *
+         * @param value the most items on one floor grid
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setCarryCapFloorSize(Integer value) {
-            if (carryCapFloorSize != null) return false;
+        public void setCarryCapFloorSize(Integer value) {
             carryCapFloorSize = value;
-            return true;
         }
 
         /**
-         * Set the carry-cap:thrown-quiver-mult value
+         * Stores {@code carry-cap:thrown-quiver-mult} in {@link #carryCapThrownQuiverMult}. Port of the
+         * {@code "thrown-quiver-mult"} branch of {@code parse_constants_carry_cap()} in {@code init.c}.
          *
-         * @param value the multiplier for non-ammo thrown items
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setCarryCapThrownQuiverMult coded before 261002, commented in full on 261002.
+         *
+         * @param value the size multiplier for a non-ammunition throwing item in the quiver
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setCarryCapThrownQuiverMult(Integer value) {
-            if (carryCapThrownQuiverMult != null) return false;
+        public void setCarryCapThrownQuiverMult(Integer value) {
             carryCapThrownQuiverMult = value;
-            return true;
         }
 
         /**
-         * Set the carry-cap:quiver-slot-size value
+         * Stores {@code carry-cap:quiver-slot-size} in {@link #carryCapQuiverSlotSize}. Port of the
+         * {@code "quiver-slot-size"} branch of {@code parse_constants_carry_cap()} in {@code init.c}.
          *
-         * @param value the number of missiles per quiver slot
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setCarryCapQuiverSlotSize coded before 261002, commented in full on 261002.
+         *
+         * @param value the most missiles in one quiver slot
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setCarryCapQuiverSlotSize(Integer value) {
-            if (carryCapQuiverSlotSize != null) return false;
+        public void setCarryCapQuiverSlotSize(Integer value) {
             carryCapQuiverSlotSize = value;
-            return true;
         }
 
         /**
-         * Set the carry-cap:quiver-size value
+         * Stores {@code carry-cap:quiver-size} in {@link #carryCapQuiverSize}. Port of the
+         * {@code "quiver-size"} branch of {@code parse_constants_carry_cap()} in {@code init.c}.
+         *
+         * <p>Function setCarryCapQuiverSize coded before 261002, commented in full on 261002.
          *
          * @param value the number of quiver slots
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setCarryCapQuiverSize(Integer value) {
-            if (carryCapQuiverSize != null) return false;
+        public void setCarryCapQuiverSize(Integer value) {
             carryCapQuiverSize = value;
-            return true;
         }
 
         /**
-         * Set the carry-cap:pack-size value
+         * Stores {@code carry-cap:pack-size} in {@link #carryCapPackSize}. Port of the
+         * {@code "pack-size"} branch of {@code parse_constants_carry_cap()} in {@code init.c}.
          *
-         * @param value the number of item slots in the inventory
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setCarryCapPackSize coded before 261002, commented in full on 261002.
+         *
+         * @param value the number of pack (inventory) slots
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setCarryCapPackSize(Integer value) {
-            if (carryCapPackSize != null) return false;
+        public void setCarryCapPackSize(Integer value) {
             carryCapPackSize = value;
-            return true;
         }
 
         /**
-         * Set the world:move-energy value
+         * Stores {@code world:move-energy} in {@link #worldMoveEnergy}. Port of the
+         * {@code "move-energy"} branch of {@code parse_constants_world()} in {@code init.c}.
          *
-         * @param value the amount of energy for a monster or player to move
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setWorldMoveEnergy coded before 261002, commented in full on 261002.
+         *
+         * @param value the energy the player or a monster needs to move
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setWorldMoveEnergy(Integer value) {
-            if (this.worldMoveEnergy != null) return false;
+        public void setWorldMoveEnergy(Integer value) {
             this.worldMoveEnergy = value;
-            return true;
         }
 
         /**
-         * Set the world:stair-skip value
+         * Stores {@code world:stair-skip} in {@link #worldStairSkip}. Port of the {@code "stair-skip"}
+         * branch of {@code parse_constants_world()} in {@code init.c}.
          *
-         * @param value the number of levels for each stair
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setWorldStairSkip coded before 261002, commented in full on 261002.
+         *
+         * @param value the number of levels each down staircase skips
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setWorldStairSkip(Integer value) {
-            if (worldStairSkip != null) return false;
+        public void setWorldStairSkip(Integer value) {
             worldStairSkip = value;
-            return true;
         }
 
         /**
-         * Set the world:feeling-need value
+         * Stores {@code world:feeling-need} in {@link #worldFeelingNeed}. Port of the
+         * {@code "feeling-need"} branch of {@code parse_constants_world()} in {@code init.c}.
          *
-         * @param value the minimum number of squares to vidit to get first feeling
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setWorldFeelingNeed coded before 261002, commented in full on 261002.
+         *
+         * @param value the number of feeling squares the player must see before the first level feeling
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setWorldFeelingNeed(Integer value) {
-            if (worldFeelingNeed != null) return false;
+        public void setWorldFeelingNeed(Integer value) {
             worldFeelingNeed = value;
-            return true;
         }
 
         /**
-         * Set the world:feeling-total value
+         * Stores {@code world:feeling-total} in {@link #worldFeelingTotal}. Port of the
+         * {@code "feeling-total"} branch of {@code parse_constants_world()} in {@code init.c}.
          *
-         * @param value the number of feeling squares per level
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setWorldFeelingTotal coded before 261002, commented in full on 261002.
+         *
+         * @param value the total number of feeling squares on a level
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setWorldFeelingTotal(Integer value) {
-            if (worldFeelingTotal != null) return false;
+        public void setWorldFeelingTotal(Integer value) {
             worldFeelingTotal = value;
-            return true;
         }
 
         /**
-         * Set the world:town-wid value
+         * Stores {@code world:town-wid} in {@link #worldTownWid}. Port of the {@code "town-wid"} branch
+         * of {@code parse_constants_world()} in {@code init.c}.
          *
-         * @param value the maximum number of horizontal grids in a town level
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setWorldTownWid coded before 261002, commented in full on 261002.
+         *
+         * @param value the most horizontal grids in the town
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setWorldTownWid(Integer value) {
-            if (worldTownWid != null) return false;
+        public void setWorldTownWid(Integer value) {
             worldTownWid = value;
-            return true;
         }
 
         /**
-         * Set the world:town-hgt value
+         * Stores {@code world:town-hgt} in {@link #worldTownHgt}. Port of the {@code "town-hgt"} branch
+         * of {@code parse_constants_world()} in {@code init.c}.
          *
-         * @param value the maximum number of vertical grids in a town level
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setWorldTownHgt coded before 261002, commented in full on 261002.
+         *
+         * @param value the most vertical grids in the town
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setWorldTownHgt(Integer value) {
-            if (worldTownHgt != null) return false;
+        public void setWorldTownHgt(Integer value) {
             worldTownHgt = value;
-            return true;
         }
 
         /**
-         * Set the world:dungeon-wid value
+         * Stores {@code world:dungeon-wid} in {@link #worldDungeonWid}. Port of the
+         * {@code "dungeon-wid"} branch of {@code parse_constants_world()} in {@code init.c}.
          *
-         * @param value the maximum number of horizontal grids in a dungeon level
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setWorldDungeonWid coded before 261002, commented in full on 261002.
+         *
+         * @param value the most horizontal grids on a dungeon level
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setWorldDungeonWid(Integer value) {
-            if (worldDungeonWid != null) return false;
+        public void setWorldDungeonWid(Integer value) {
             worldDungeonWid = value;
-            return true;
         }
 
         /**
-         * Set the world:dungeon-hgt value
+         * Stores {@code world:dungeon-hgt} in {@link #worldDungeonHgt}. Port of the
+         * {@code "dungeon-hgt"} branch of {@code parse_constants_world()} in {@code init.c}.
          *
-         * @param value the maximum number of vertical grids in a dungeon level
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setWorldDungeonHgt coded before 261002, commented in full on 261002.
+         *
+         * @param value the most vertical grids on a dungeon level
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setWorldDungeonHgt(Integer value) {
-            if (worldDungeonHgt != null) return false;
+        public void setWorldDungeonHgt(Integer value) {
             worldDungeonHgt = value;
-            return true;
         }
 
         /**
-         * Set the world:day-length value
+         * Stores {@code world:day-length} in {@link #worldDayLength}. Port of the {@code "day-length"}
+         * branch of {@code parse_constants_world()} in {@code init.c}.
          *
-         * @param value the number of turns from dawn to dawn
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setWorldDayLength coded before 261002, commented in full on 261002.
+         *
+         * @param value the number of game turns from dawn to dawn
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setWorldDayLength(Integer value) {
-            if (worldDayLength != null) return false;
+        public void setWorldDayLength(Integer value) {
             worldDayLength = value;
-            return true;
         }
 
         /**
-         * Set the world:max-depth value
+         * Stores {@code world:max-depth} in {@link #worldMaxDepth}. Port of the {@code "max-depth"}
+         * branch of {@code parse_constants_world()} in {@code init.c}.
          *
-         * @param value the maximum dungeon level
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setWorldMaxDepth coded before 261002, commented in full on 261002.
+         *
+         * @param value the deepest dungeon level
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setWorldMaxDepth(Integer value) {
-            if (worldMaxDepth != null) return false;
+        public void setWorldMaxDepth(Integer value) {
             worldMaxDepth = value;
-            return true;
         }
 
         /**
-         * Set the dun-gen:pit-max value
+         * Stores {@code dun-gen:pit-max} in {@link #dunGenPitMax}. Port of the {@code "pit-max"} branch
+         * of {@code parse_constants_dun_gen()} in {@code init.c}.
          *
-         * @param value the maximum number of pits or nests allowed on a level
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setDunGenPitMax coded before 261002, commented in full on 261002.
+         *
+         * @param value the most monster pits or nests on a level
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setDunGenPitMax(Integer value) {
-            if (dunGenPitMax != null) return false;
+        public void setDunGenPitMax(Integer value) {
             dunGenPitMax = value;
-            return true;
         }
 
         /**
-         * Set the dun-gen:amt-gold value
+         * Stores {@code dun-gen:amt-gold} in {@link #dunGenAmtGold}. Port of the {@code "amt-gold"}
+         * branch of {@code parse_constants_dun_gen()} in {@code init.c}.
          *
-         * @param value the average number of treasure to place in rooms/corridors
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setDunGenAmtGold coded before 261002, commented in full on 261002.
+         *
+         * @param value the average number of gold items placed in random places
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setDunGenAmtGold(Integer value) {
-            if (dunGenAmtGold != null) return false;
+        public void setDunGenAmtGold(Integer value) {
             dunGenAmtGold = value;
-            return true;
         }
 
         /**
-         * Set the dun-gen:amt-item value
+         * Stores {@code dun-gen:amt-item} in {@link #dunGenAmtItem}. Port of the {@code "amt-item"}
+         * branch of {@code parse_constants_dun_gen()} in {@code init.c}.
          *
-         * @param value the average number of items to place in rooms/corridors
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setDunGenAmtItem coded before 261002, commented in full on 261002.
+         *
+         * @param value the average number of items placed in random places (rooms or corridors)
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setDunGenAmtItem(Integer value) {
-            if (dunGenAmtItem != null) return false;
+        public void setDunGenAmtItem(Integer value) {
             dunGenAmtItem = value;
-            return true;
         }
 
         /**
-         * Set the dun-gen:amt-room value
+         * Stores {@code dun-gen:amt-room} in {@link #dunGenAmtRoom}. Port of the {@code "amt-room"}
+         * branch of {@code parse_constants_dun_gen()} in {@code init.c}.
          *
-         * @param value the average number of objects to place in rooms
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setDunGenAmtRoom coded before 261002, commented in full on 261002.
+         *
+         * @param value the average number of items placed in rooms
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setDunGenAmtRoom(Integer value) {
-            if (dunGenAmtRoom != null) return false;
+        public void setDunGenAmtRoom(Integer value) {
             dunGenAmtRoom = value;
-            return true;
         }
 
         /**
-         * Set the dun-gen:tunn-max value
+         * Stores {@code dun-gen:tunn-max} in {@link #dunGenTunnMax}. Port of the {@code "tunn-max"}
+         * branch of {@code parse_constants_dun_gen()} in {@code init.c}.
          *
-         * @param value the maximum number of tunnel grids
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setDunGenTunnMax coded before 261002, commented in full on 261002.
+         *
+         * @param value the most tunnel grids on a level
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setDunGenTunnMax(Integer value) {
-            if (dunGenTunnMax != null) return false;
+        public void setDunGenTunnMax(Integer value) {
             dunGenTunnMax = value;
-            return true;
         }
 
 
         /**
-         * Set the dun-gen:wall-max value
+         * Stores {@code dun-gen:wall-max} in {@link #dunGenWallMax}. Port of the {@code "wall-max"}
+         * branch of {@code parse_constants_dun_gen()} in {@code init.c}.
          *
-         * @param value the maximum number of places to potentially pierce room walls with tunnels on a level
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setDunGenWallMax coded before 261002, commented in full on 261002.
+         *
+         * @param value the most places where a tunnel may pierce a room wall on a level
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setDunGenWallMax(Integer value) {
-            if (dunGenWallMax != null) return false;
+        public void setDunGenWallMax(Integer value) {
             dunGenWallMax = value;
-            return true;
         }
 
         /**
-         * Set the dun-gen:door-max value
+         * Stores {@code dun-gen:door-max} in {@link #dunGenDoorMax}. Port of the {@code "door-max"}
+         * branch of {@code parse_constants_dun_gen()} in {@code init.c}.
          *
-         * @param value the maximum number of potential door locations on a level
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setDunGenDoorMax coded before 261002, commented in full on 261002.
+         *
+         * @param value the most potential door locations on a level
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setDunGenDoorMax(Integer value) {
-            if (dunGenDoorMax != null) return false;
+        public void setDunGenDoorMax(Integer value) {
             dunGenDoorMax = value;
-            return true;
         }
 
         /**
-         * Set the dun-gen:cent-max value
+         * Stores {@code dun-gen:cent-max} in {@link #dunGenCentMax}. Port of the {@code "cent-max"}
+         * branch of {@code parse_constants_dun_gen()} in {@code init.c}.
          *
-         * @param value the maximum number of room centres on a level
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setDunGenCentMax coded before 261002, commented in full on 261002.
+         *
+         * @param value the most rooms (room centres) on a level
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setDunGenCentMax(Integer value) {
-            if (dunGenCentMax != null) return false;
+        public void setDunGenCentMax(Integer value) {
             dunGenCentMax = value;
-            return true;
         }
 
         /**
-         * Set the mon-play:turn-range value
+         * Stores {@code mon-play:turn-range} in {@link #monPlayTurnRange}. Port of the
+         * {@code "turn-range"} branch of {@code parse_constants_mon_play()} in {@code init.c}.
          *
-         * @param value how close a slow scared monster must be to turn and fight
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setMonPlayTurnRange coded before 261002, commented in full on 261002.
+         *
+         * @param value the distance inside which a frightened monster turns to fight
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setMonPlayTurnRange(Integer value) {
-            if (monPlayTurnRange != null) return false;
+        public void setMonPlayTurnRange(Integer value) {
             monPlayTurnRange = value;
-            return true;
         }
 
         /**
-         * Set the mon-play:flee-range value
+         * Stores {@code mon-play:flee-range} in {@link #monPlayFleeRange}. Port of the
+         * {@code "flee-range"} branch of {@code parse_constants_mon_play()} in {@code init.c}.
          *
-         * @param value number of grids out of sight a monster will flee
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setMonPlayFleeRange coded before 261002, commented in full on 261002.
+         *
+         * @param value how many grids out of the player's view a fleeing monster runs
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setMonPlayFleeRange(Integer value) {
-            if (monPlayFleeRange != null) return false;
+        public void setMonPlayFleeRange(Integer value) {
             monPlayFleeRange = value;
-            return true;
         }
 
         /**
-         * Set the mon-play:life-drain value
+         * Stores {@code mon-play:life-drain} in {@link #monPlayLifeDrain}. Port of the
+         * {@code "life-drain"} branch of {@code parse_constants_mon_play()} in {@code init.c}.
          *
-         * @param value the % of player exp drained per hit
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setMonPlayLifeDrain coded before 261002, commented in full on 261002.
+         *
+         * @param value the percentage of the player's life drained by a life-draining hit
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setMonPlayLifeDrain(Integer value) {
-            if (monPlayLifeDrain != null) return false;
+        public void setMonPlayLifeDrain(Integer value) {
             monPlayLifeDrain = value;
-            return true;
         }
 
         /**
-         * Set the mon-play:mult-rate value
+         * Stores {@code mon-play:mult-rate} in {@link #monPlayMultRate}. Port of the {@code "mult-rate"}
+         * branch of {@code parse_constants_mon_play()} in {@code init.c}.
          *
-         * @param value a value inversely related to the speed of monster multiplication
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setMonPlayMultRate coded before 261002, commented in full on 261002.
+         *
+         * @param value the monster reproduction rate; a larger value means slower breeding
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setMonPlayMultRate(Integer value) {
-            if (monPlayMultRate != null) return false;
+        public void setMonPlayMultRate(Integer value) {
             monPlayMultRate = value;
-            return true;
         }
 
         /**
-         * Set the mon-play:break-glyph
+         * Stores {@code mon-play:break-glyph} in {@link #monPlayBreakGlyph}. Port of the
+         * {@code "break-glyph"} branch of {@code parse_constants_mon_play()} in {@code init.c}.
          *
-         * @param value the rune of protection's resistance to monster breaking
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setMonPlayBreakGlyph coded before 261002, commented in full on 261002.
+         *
+         * @param value how hard it is for a monster to break a glyph of warding
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setMonPlayBreakGlyph(Integer value) {
-            if (monPlayBreakGlyph != null) return false;
+        public void setMonPlayBreakGlyph(Integer value) {
             monPlayBreakGlyph = value;
-            return true;
         }
 
         /**
-         * Set the mon-gen:group-dist value
+         * Stores {@code mon-gen:group-dist} in {@link #monGenGroupDist}. Port of the
+         * {@code "group-dist"} branch of {@code parse_constants_mon_gen()} in {@code init.c}.
          *
-         * @param value the maximum distance of a group of monsters from a related group
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setMonGenGroupDist coded before 261002, commented in full on 261002.
+         *
+         * @param value the furthest a monster group may be placed from a related group
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setMonGenGroupDist(Integer value) {
-            if (monGenGroupDist != null) return false;
+        public void setMonGenGroupDist(Integer value) {
             monGenGroupDist = value;
-            return true;
         }
 
         /**
-         * Set the mon-gen:group-max value
+         * Stores {@code mon-gen:group-max} in {@link #monGenGroupMax}. Port of the {@code "group-max"}
+         * branch of {@code parse_constants_mon_gen()} in {@code init.c}.
          *
-         * @param value the maximum number of monsters in a group
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setMonGenGroupMax coded before 261002, commented in full on 261002.
+         *
+         * @param value the largest size of a monster group
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setMonGenGroupMax(Integer value) {
-            if (monGenGroupMax != null) return false;
+        public void setMonGenGroupMax(Integer value) {
             monGenGroupMax = value;
-            return true;
         }
 
         /**
-         * Set the mon-gen:ood-amount value
+         * Stores {@code mon-gen:ood-amount} in {@link #monGenOodAmount}. Port of the
+         * {@code "ood-amount"} branch of {@code parse_constants_mon_gen()} in {@code init.c}.
          *
-         * @param value the maximum out of depth amount for a monster spawn
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setMonGenOodAmount coded before 261002, commented in full on 261002.
+         *
+         * @param value the most levels out of depth a generated monster can be
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setMonGenOodAmount(Integer value) {
-            if (monGenOodAmount != null) return false;
+        public void setMonGenOodAmount(Integer value) {
             monGenOodAmount = value;
-            return true;
         }
 
         /**
-         * Set the mon-gen:ood-chance value
+         * Stores {@code mon-gen:ood-chance} in {@link #monGenOodChance}. Port of the
+         * {@code "ood-chance"} branch of {@code parse_constants_mon_gen()} in {@code init.c}.
          *
-         * @param value the chance of a generated monster's level being inflated
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setMonGenOodChance coded before 261002, commented in full on 261002.
+         *
+         * @param value the one-in-N chance that a generated monster is out of depth
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setMonGenOodChance(Integer value) {
-            if (monGenOodChance != null) return false;
+        public void setMonGenOodChance(Integer value) {
             monGenOodChance = value;
-            return true;
         }
 
         /**
-         * Set the mon-gen:repro-max value
+         * Stores {@code mon-gen:repro-max} in {@link #monGenReproMax}. Port of the {@code "repro-max"}
+         * branch of {@code parse_constants_mon_gen()} in {@code init.c}.
          *
-         * @param value the maximum number of breeding monsters allowed on a level
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setMonGenReproMax coded before 261002, commented in full on 261002.
+         *
+         * @param value the most breeding monsters allowed on one level
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setMonGenReproMax(Integer value) {
-            if (monGenReproMax != null) return false;
+        public void setMonGenReproMax(Integer value) {
             monGenReproMax = value;
-            return true;
         }
 
         /**
-         * Set the mon-gen:town-night value
+         * Stores {@code mon-gen:town-night} in {@link #monGenTownNight}. Port of the
+         * {@code "town-night"} branch of {@code parse_constants_mon_gen()} in {@code init.c}.
          *
-         * @param value the value of the number of townsfolk spawned during the night
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setMonGenTownNight coded before 261002, commented in full on 261002.
+         *
+         * @param value the number of townsfolk generated in the town by night
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setMonGenTownNight(Integer value) {
-            if (monGenTownNight != null) return false;
+        public void setMonGenTownNight(Integer value) {
             monGenTownNight = value;
-            return true;
         }
 
         /**
-         * Set the mon-gen:town-day value
+         * Stores {@code mon-gen:town-day} in {@link #monGenTownDay}. Port of the {@code "town-day"}
+         * branch of {@code parse_constants_mon_gen()} in {@code init.c}.
          *
-         * @param value the value of the number of townsfolk spawned during the day
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setMonGenTownDay coded before 261002, commented in full on 261002.
+         *
+         * @param value the number of townsfolk generated in the town by day
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setMonGenTownDay(Integer value) {
-            if (monGenTownDay != null) return false;
+        public void setMonGenTownDay(Integer value) {
             monGenTownDay = value;
-            return true;
         }
 
         /**
-         * Set the mon-gen:level-min value
+         * Stores {@code mon-gen:level-min} in {@link #monGenLevelMin}. Port of the {@code "level-min"}
+         * branch of {@code parse_constants_mon_gen()} in {@code init.c}.
          *
-         * @param value the value of the minimum number of monsters spawned per level
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setMonGenLevelMin coded before 261002, commented in full on 261002.
+         *
+         * @param value the minimum number of monsters generated when a level is built
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setMonGenLevelMin(Integer value) {
-            if (monGenLevelMin != null) return false;
+        public void setMonGenLevelMin(Integer value) {
             monGenLevelMin = value;
-            return true;
         }
 
         /**
-         * Set the level-max:monsters value
+         * Stores {@code level-max:monsters} in {@link #levelMaxMonsters}. Port of the
+         * {@code "monsters"} branch of {@code parse_constants_level_max()} in {@code init.c}.
          *
-         * @param value the value of max monsters on a given level from constants.txt
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setLevelMaxMonsters coded before 261002, commented in full on 261002.
+         *
+         * @param value the most monsters allowed on a single level
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setLevelMaxMonsters(Integer value) {
-            if (levelMaxMonsters != null) return false;
+        public void setLevelMaxMonsters(Integer value) {
             levelMaxMonsters = value;
-            return true;
         }
 
         /**
-         * Sets the mon-gen:chance value
+         * Stores {@code mon-gen:chance} in {@link #monGenChance}. Port of the {@code "chance"} branch of
+         * {@code parse_constants_mon_gen()} in {@code init.c}.
          *
-         * @param value The 1/turn chance of new monster generation
-         * @return false if this value has already been set (duplicate values are not allowed),
-         * true otherwise
+         * <p>Function setMonGenChance coded before 261002, commented in full on 261002.
+         *
+         * @param value the one-in-N chance per game turn that a new monster is generated
          */
-        @CheckReturnValue
         @Contract(mutates = "this")
-        public boolean setMonGenChance(Integer value) {
-            if (monGenChance != null) return false;
+        public void setMonGenChance(Integer value) {
             monGenChance = value;
-            return true;
         }
 
         /**
-         * Check that all the constants have been read in (their validity will be checked in
-         * GameConstantsReader) and record an error if one is missing. Otherwise return the
-         * GameConstantsData record fully filled in.
+         * Assembles the collected constants into a {@link GameConstantsData}. This plays the part of the
+         * moment in {@code finish_parse_constants()} ({@code init.c}) when C publishes the parser's
+         * private struct as {@code z_info}.
          *
-         * @param errors The list of errors at this point in time
-         * @return The GameConstantsData record, fully filled with its values, or null if
-         * an error occurred
+         * <p>Every constant still {@code null} (no {@code constants.txt} line set it) is first replaced
+         * with {@code 0}. Missing constants are not reported as errors. This matches C, where
+         * {@code init_parse_constants()} allocates the struct with {@code mem_zalloc} and an unset field
+         * just stays zero. Note that the defaulting writes into the builder's own fields, so it happens
+         * even when the method then returns {@code null}.
+         *
+         * <p>If {@code errors} already holds anything (from the assembler, or from
+         * {@link #checkCriticalLevelDataLists()}), the method returns {@code null} instead of a record,
+         * as C's {@code run_parser()} fails the whole file on any error. Otherwise each group record is
+         * built and the four critical level lists are passed into the result as they are, not copied.
+         *
+         * <p>Function build coded before 261002, commented in full on 261002.
+         *
+         * @param errors the errors collected so far while assembling {@code constants.txt}; only read
+         *               here, never added to
+         * @return the filled-in {@link GameConstantsData}, or {@code null} if {@code errors} is not
+         *         empty
          */
         @Nullable
         @CheckReturnValue
         public GameConstantsData build(@NotNull List<String> errors) {
             // Level maxima
             if (levelMaxMonsters == null) {
-                errors.add("Missing required constant level-max:monsters");
+                levelMaxMonsters = 0;
             }
 
             // Monster generation
             if (monGenChance == null) {
-                errors.add("Missing required constant mon-gen:chance");
+                monGenChance = 0;
             }
             if (monGenLevelMin == null) {
-                errors.add("Missing required constant mon-gen:level-min");
+                monGenLevelMin = 0;
             }
             if (monGenTownDay == null) {
-                errors.add("Missing required constant mon-gen:town-day");
+                monGenTownDay = 0;
             }
             if (monGenTownNight == null) {
-                errors.add("Missing required constant mon-gen:town-night");
+                monGenTownNight = 0;
             }
             if (monGenReproMax == null) {
-                errors.add("Missing required constant mon-gen:repro-max");
+                monGenReproMax = 0;
             }
             if (monGenOodChance == null) {
-                errors.add("Missing required constant mon-gen:ood-chance");
+                monGenOodChance = 0;
             }
             if (monGenOodAmount == null) {
-                errors.add("Missing required constant mon-gen:ood-amount");
+                monGenOodAmount = 0;
             }
             if (monGenGroupMax == null) {
-                errors.add("Missing required constant mon-gen:group-max");
+                monGenGroupMax = 0;
             }
             if (monGenGroupDist == null) {
-                errors.add("Missing required constant mon-gen:group-dist");
+                monGenGroupDist = 0;
             }
 
             // Monster Gameplay
             if (monPlayBreakGlyph == null) {
-                errors.add("Missing required constant mon-play:break-glyph");
+                monPlayBreakGlyph = 0;
             }
             if (monPlayMultRate == null) {
-                errors.add("Missing required constant mon-play:mult-rate");
+                monPlayMultRate = 0;
             }
             if (monPlayLifeDrain == null) {
-                errors.add("Missing required constant mon-play:life-drain");
+                monPlayLifeDrain = 0;
             }
             if (monPlayFleeRange == null) {
-                errors.add("Missing required constant mon-play:flee-range");
+                monPlayFleeRange = 0;
             }
             if (monPlayTurnRange == null) {
-                errors.add("Missing required constant mon-play:turn-range");
+                monPlayTurnRange = 0;
             }
 
             // Dungeon Generation
             if (dunGenCentMax == null) {
-                errors.add("Missing required constant dun-gen:cent-max");
+                dunGenCentMax = 0;
             }
             if (dunGenDoorMax == null) {
-                errors.add("Missing required constant dun-gen:door-max");
+                dunGenDoorMax = 0;
             }
             if (dunGenWallMax == null) {
-                errors.add("Missing required constant dun-gen:wall-max");
+                dunGenWallMax = 0;
             }
             if (dunGenTunnMax == null) {
-                errors.add("Missing required constant dun-gen:tunn-max");
+                dunGenTunnMax = 0;
             }
             if (dunGenAmtRoom == null) {
-                errors.add("Missing required constant dun-gen:amt-room");
+                dunGenAmtRoom = 0;
             }
             if (dunGenAmtItem == null) {
-                errors.add("Missing required constant dun-gen:amt-item");
+                dunGenAmtItem = 0;
             }
             if (dunGenAmtGold == null) {
-                errors.add("Missing required constant dun-gen:amt-gold");
+                dunGenAmtGold = 0;
             }
             if (dunGenPitMax == null) {
-                errors.add("Missing required constant dun-gen:pit-max");
+                dunGenPitMax = 0;
             }
 
             // Game World
             if (worldMaxDepth == null) {
-                errors.add("Missing required constant world:max-depth");
+                worldMaxDepth = 0;
             }
             if (worldDayLength == null) {
-                errors.add("Missing required constant world:day-length");
+                worldDayLength = 0;
             }
             if (worldDungeonHgt == null) {
-                errors.add("Missing required constant world:dungeon-hgt");
+                worldDungeonHgt = 0;
             }
             if (worldDungeonWid == null) {
-                errors.add("Missing required constant world:dungeon-wid");
+                worldDungeonWid = 0;
             }
             if (worldTownHgt == null) {
-                errors.add("Missing required constant world:town-hgt");
+                worldTownHgt = 0;
             }
             if (worldTownWid == null) {
-                errors.add("Missing required constant world:town-wid");
+                worldTownWid = 0;
             }
             if (worldFeelingTotal == null) {
-                errors.add("Missing required constant world:feeling-total");
+                worldFeelingTotal = 0;
             }
             if (worldFeelingNeed == null) {
-                errors.add("Missing required constant world:feeling-need");
+                worldFeelingNeed = 0;
             }
             if (worldStairSkip == null) {
-                errors.add("Missing required constant world:stair-skip");
+                worldStairSkip = 0;
             }
             if (worldMoveEnergy == null) {
-                errors.add("Missing required constant world:move-energy");
+                worldMoveEnergy = 0;
             }
 
             // Carry Capacity
             if (carryCapPackSize == null) {
-                errors.add("Missing required constant carry-cap:pack-size");
+                carryCapPackSize = 0;
             }
             if (carryCapQuiverSize == null) {
-                errors.add("Missing required constant carry-cap:quiver-size");
+                carryCapQuiverSize = 0;
             }
             if (carryCapQuiverSlotSize == null) {
-                errors.add("Missing required constant carry-cap:quiver-slot-size");
+                carryCapQuiverSlotSize = 0;
             }
             if (carryCapThrownQuiverMult == null) {
-                errors.add("Missing required constant carry-cap:thrown-quiver-mult");
+                carryCapThrownQuiverMult = 0;
             }
             if (carryCapFloorSize == null) {
-                errors.add("Missing required constant carry-cap:floor-size");
+                carryCapFloorSize = 0;
             }
 
             // Store Parameters
             if (storeInvenMax == null) {
-                errors.add("Missing required constant store:inven-max");
+                storeInvenMax = 0;
             }
             if (storeTurns == null) {
-                errors.add("Missing required constant store:turns");
+                storeTurns = 0;
             }
             if (storeShuffle == null) {
-                errors.add("Missing required constant store:shuffle");
+                storeShuffle = 0;
             }
             if (storeMagicLevel == null) {
-                errors.add("Missing required constant store:magic-level");
+                storeMagicLevel = 0;
             }
 
             // Object Generation
             if (objMakeMaxDepth == null) {
-                errors.add("Missing required constant obj-make:max-depth");
+                objMakeMaxDepth = 0;
             }
             if (objMakeGreatObj == null) {
-                errors.add("Missing required constant obj-make:great-obj");
+                objMakeGreatObj = 0;
             }
             if (objMakeGreatEgo == null) {
-                errors.add("Missing required constant obj-make:great-ego");
+                objMakeGreatEgo = 0;
             }
             if (objMakeFuelTorch == null) {
-                errors.add("Missing required constant obj-make:fuel-torch");
+                objMakeFuelTorch = 0;
             }
             if (objMakeFuelLamp == null) {
-                errors.add("Missing required constant obj-make:fuel-lamp");
+                objMakeFuelLamp = 0;
             }
             if (objMakeDefaultLamp == null) {
-                errors.add("Missing required constant obj-make:default-lamp");
+                objMakeDefaultLamp = 0;
             }
 
             // Player Constants
             if (playerMaxSight == null) {
-                errors.add("Missing required constant player:max-sight");
+                playerMaxSight = 0;
             }
             if (playerMaxRange == null) {
-                errors.add("Missing required constant player:max-range");
+                playerMaxRange = 0;
             }
             if (playerStartGold == null) {
-                errors.add("Missing required constant player:start-gold");
+                playerStartGold = 0;
             }
             if (playerFoodValue == null) {
-                errors.add("Missing required constant player:food-value");
+                playerFoodValue = 0;
             }
 
             // Non-O critical melee calculations
             if (meleeCriticalDebuffToh == null) {
-                errors.add("Missing required constant melee-critical:debuff-toh");
+                meleeCriticalDebuffToh = 0;
             }
             if (meleeCriticalChanceWeightScale == null) {
-                errors.add("Missing required constant melee-critical:chance-weight-scale");
+                meleeCriticalChanceWeightScale = 0;
             }
             if (meleeCriticalChanceTohScale == null) {
-                errors.add("Missing required constant melee-critical:chance-toh-scale");
+                meleeCriticalChanceTohScale = 0;
             }
             if (meleeCriticalChanceLevelScale == null) {
-                errors.add("Missing required constant melee-critical:chance-level-scale");
+                meleeCriticalChanceLevelScale = 0;
             }
             if (meleeCriticalChanceTohSkillScale == null) {
-                errors.add("Missing required constant melee-critical:chance-toh-skill-scale");
+                meleeCriticalChanceTohSkillScale = 0;
             }
             if (meleeCriticalChanceOffset == null) {
-                errors.add("Missing required constant melee-critical:chance-offset");
+                meleeCriticalChanceOffset = 0;
             }
             if (meleeCriticalChanceRange == null) {
-                errors.add("Missing required constant melee-critical:chance-range");
+                meleeCriticalChanceRange = 0;
             }
             if (meleeCriticalPowerWeightScale == null) {
-                errors.add("Missing required constant melee-critical:power-weight-scale");
+                meleeCriticalPowerWeightScale = 0;
             }
             if (meleeCriticalPowerRandom == null) {
-                errors.add("Missing required constant melee-critical:power-random");
+                meleeCriticalPowerRandom = 0;
             }
 
             // Non-O critical ranged calculations
             if (rangedCriticalDebuffToh == null) {
-                errors.add("Missing required constant ranged-critical:debuff-toh");
+                rangedCriticalDebuffToh = 0;
             }
             if (rangedCriticalChanceWeightScale == null) {
-                errors.add("Missing required constant ranged-critical:chance-weight-scale");
+                rangedCriticalChanceWeightScale = 0;
             }
             if (rangedCriticalChanceTohScale == null) {
-                errors.add("Missing required constant ranged-critical:chance-toh-scale");
+                rangedCriticalChanceTohScale = 0;
             }
             if (rangedCriticalChanceLevelScale == null) {
-                errors.add("Missing required constant ranged-critical:chance-level-scale");
+                rangedCriticalChanceLevelScale = 0;
             }
             if (rangedCriticalChanceLaunchedTohSkillScale == null) {
-                errors.add("Missing required constant ranged-critical:chance-launched-toh-skill-scale");
+                rangedCriticalChanceLaunchedTohSkillScale = 0;
             }
             if (rangedCriticalChanceThrownTohSkillScale == null) {
-                errors.add("Missing required constant ranged-critical:chance-thrown-toh-skill-scale");
+                rangedCriticalChanceThrownTohSkillScale = 0;
             }
             if (rangedCriticalChanceOffset == null) {
-                errors.add("Missing required constant ranged-critical:chance-offset");
+                rangedCriticalChanceOffset = 0;
             }
             if (rangedCriticalChanceRange == null) {
-                errors.add("Missing required constant ranged-critical:chance-range");
+                rangedCriticalChanceRange = 0;
             }
             if (rangedCriticalPowerWeightScale == null) {
-                errors.add("Missing required constant ranged-critical:power-weight-scale");
+                rangedCriticalPowerWeightScale = 0;
             }
             if (rangedCriticalPowerRandom == null) {
-                errors.add("Missing required constant ranged-critical:power-random");
+                rangedCriticalPowerRandom = 0;
             }
 
             // O Critical Calculations
             if (oMeleeCriticalDebuffToh == null) {
-                errors.add("Missing required constant o-melee-critical:debuff-toh");
+                oMeleeCriticalDebuffToh = 0;
             }
             if (oMeleeCriticalPowerTohScaleNumerator == null) {
-                errors.add("Missing required constant o-melee-critical:power-toh-scale-numerator");
+                oMeleeCriticalPowerTohScaleNumerator = 0;
             }
             if (oMeleeCriticalPowerTohScaleDenominator == null) {
-                errors.add("Missing required constant o-melee-critical:power-toh-scale-denominator");
+                oMeleeCriticalPowerTohScaleDenominator = 0;
             }
             if (oMeleeCriticalChancePowerScaleNumerator == null) {
-                errors.add("Missing required constant o-melee-critical:chance-power-scale-numerator");
+                oMeleeCriticalChancePowerScaleNumerator = 0;
             }
             if (oMeleeCriticalChancePowerScaleDenominator == null) {
-                errors.add("Missing required constant o-melee-critical:chance-power-scale-denominator");
+                oMeleeCriticalChancePowerScaleDenominator = 0;
             }
             if (oMeleeCriticalChanceAddDenominator == null) {
-                errors.add("Missing required constant o-melee-critical:chance-add-denominator");
+                oMeleeCriticalChanceAddDenominator = 0;
             }
 
             // o-ranged criticals
             if (oRangedCriticalDebuffToh == null) {
-                errors.add("Missing required constant o-ranged-critical:debuff-toh");
+                oRangedCriticalDebuffToh = 0;
             }
             if (oRangedCriticalPowerLaunchedTohScaleNumerator == null) {
-                errors.add("Missing required constant o-ranged-critical:power-launched-toh-scale-numerator");
+                oRangedCriticalPowerLaunchedTohScaleNumerator = 0;
             }
             if (oRangedCriticalPowerLaunchedTohScaleDenominator == null) {
-                errors.add("Missing required constant o-ranged-critical:power-launched-toh-scale-denominator");
+                oRangedCriticalPowerLaunchedTohScaleDenominator = 0;
             }
             if (oRangedCriticalPowerThrownTohScaleNumerator == null) {
-                errors.add("Missing required constant o-ranged-critical:power-thrown-toh-scale-numerator");
+                oRangedCriticalPowerThrownTohScaleNumerator = 0;
             }
             if (oRangedCriticalPowerThrownTohScaleDenominator == null) {
-                errors.add("Missing required constant o-ranged-critical:power-thrown-toh-scale-denominator");
+                oRangedCriticalPowerThrownTohScaleDenominator = 0;
             }
             if (oRangedCriticalChancePowerScaleNumerator == null) {
-                errors.add("Missing required constant o-ranged-critical:chance-power-scale-numerator");
+                oRangedCriticalChancePowerScaleNumerator = 0;
             }
             if (oRangedCriticalChancePowerScaleDenominator == null) {
-                errors.add("Missing required constant o-ranged-critical:chance-power-scale-denominator");
+                oRangedCriticalChancePowerScaleDenominator = 0;
             }
             if (oRangedCriticalChanceAddDenominator == null) {
-                errors.add("Missing required constant o-ranged-critical:chance-add-denominator");
+                oRangedCriticalChanceAddDenominator = 0;
             }
 
             if (!errors.isEmpty())

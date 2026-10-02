@@ -33,22 +33,23 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Reader/assembly tests for {@link GameConstantsReader} (grammar-suite reader-track R4).
  *
- * <p>Unlike the list readers, this one produces a single {@link GameConstantsData} carrier, so a
- * clean load <em>is</em> the assertion that every required constant was present exactly once.
+ * <p>Unlike the list readers, this one produces a single {@link GameConstantsData} carrier. As in C,
+ * the carrier is not completeness- or duplicate-checked. {@code init_parse_constants()} in
+ * {@code init.c} {@code mem_zalloc}s the struct, so a constant no line sets reads {@code 0}, and each
+ * {@code parse_constants_*()} handler simply assigns its field, so a later line for the same label
+ * overwrites the earlier one with no error. {@link #missingConstantIsLeftAtZero} and
+ * {@link #duplicateScalarConstantOverwritesEarlierValue} pin both.
  *
  * <p>The happy-path test runs against the real shipped {@code lib/gamedata/constants.txt}. The
- * error-path tests start from that same complete file and inject a single defect each, so the only
- * error reported is the one under test — no "missing constant" cascade drowning out the signal.
- * The completeness check is exercised on its own by removing a line ({@link #missingConstantIsReported}).
+ * error-path tests start from that same complete file and inject defects on appended lines, so the
+ * only errors reported are the ones under test.
  *
- * <p>Two deliberate properties of these fixtures are worth noting:
- * <ul>
- *   <li>The injected scalar defects target {@code world:max-depth}, which is already set by the real
- *       file near the top. A duplicate or a non-integer on a later line therefore produces exactly
- *       one error and no missing-constant cascade (the slot is already filled).</li>
- *   <li>The critical-level categories are not completeness-checked (0-or-more is legal), so a
- *       malformed level line yields just its own arity error.</li>
- * </ul>
+ * <p>The injected scalar defects target {@code world:max-depth}, which the real file already sets
+ * near the top. A non-integer on a later line is refused before the setter is called, so the earlier
+ * value stands and the defect is the only error.
+ *
+ * <p>Class GameConstantsReaderTest coded before 261002, updated on 261002 once missing constants
+ * defaulted to 0 and duplicates overwrote, as in C.
  *
  * @author Rowan Crowther
  */
@@ -117,16 +118,21 @@ class GameConstantsReaderTest {
         assertEquals(3, data.oRangedCriticalLevel().size());
     }
 
+    /**
+     * Two independent defects on appended lines, a non-integer value and an unknown category, are
+     * both collected and each is tagged with its own line. Any error at all means no carrier, as C's
+     * {@code run_parser()} fails the whole file.
+     *
+     * <p>Function twoDistinctErrorsAreBothReportedWithTheirLines coded before 261002, updated on
+     * 261002 to use a non-integer in place of the duplicate, which is no longer an error.
+     */
     @Test
     void twoDistinctErrorsAreBothReportedWithTheirLines() throws IOException {
-        // Append a duplicate (world:max-depth is already set) and an unknown category; neither
-        // removes a required constant, so collect-and-report yields exactly these two, each tagged
-        // with its own line.
         String base = realText();
-        int duplicateLine = lineCount(base) + 1;
+        int badIntLine = lineCount(base) + 1;
         int unknownLine = lineCount(base) + 2;
 
-        String path = tempFile("two-errors.txt", base + "world:max-depth:1\n" + "nonsense:foo:1\n");
+        String path = tempFile("two-errors.txt", base + "world:max-depth:notanumber\n" + "nonsense:foo:1\n");
 
         GameConstantsParseResult result = new GameConstantsReader().parseWithResults(path);
 
@@ -137,51 +143,58 @@ class GameConstantsReaderTest {
         assertEquals(2, errors.size(), errors::toString);
 
         assertTrue(errors.stream().anyMatch(
-                        e -> e.contains("Line: " + duplicateLine) && e.contains("duplicate world:max-depth")),
+                        e -> e.contains("Line: " + badIntLine) && e.contains("not an integer")),
                 errors::toString);
         assertTrue(errors.stream().anyMatch(
                         e -> e.contains("Line: " + unknownLine) && e.contains("unknown category")),
                 errors::toString);
     }
 
+    /**
+     * Removing {@code world:max-depth} is not an error. The load is clean and the constant reads
+     * {@code 0}, as it would in C's zeroed {@code struct angband_constants}. The rest of the file is
+     * unaffected.
+     *
+     * <p>Function missingConstantIsLeftAtZero coded on 261002, commented in full on 261002.
+     */
     @Test
-    void missingConstantIsReported() throws IOException {
-        // Drop world:max-depth from an otherwise complete file; build()'s completeness sweep flags it.
+    void missingConstantIsLeftAtZero() throws IOException {
         String path = tempFile("missing.txt", realTextWithout("world:max-depth:"));
 
         GameConstantsParseResult result = new GameConstantsReader().parseWithResults(path);
 
-        assertTrue(result.hasErrors());
-        assertNull(result.getData());
+        assertFalse(result.hasErrors(), () -> result.getErrors().toString());
 
-        List<String> errors = result.getErrors();
-        assertEquals(1, errors.size(), errors::toString);
-        assertTrue(errors.get(0).contains("Missing required constant world:max-depth"), errors::toString);
+        GameConstantsData data = result.getData();
+        assertNotNull(data);
+        assertEquals(0, data.world().maxDepth());
+        assertEquals(1024, data.levelMax().monsters());
     }
 
+    /**
+     * A second {@code world:max-depth} line is not an error. The later value wins, because C's
+     * {@code parse_constants_world()} simply assigns {@code z->max_depth} again.
+     *
+     * <p>Function duplicateScalarConstantOverwritesEarlierValue coded on 261002, commented in full on
+     * 261002.
+     */
     @Test
-    void duplicateScalarConstantIsReportedWithItsLine() throws IOException {
-        String base = realText();
-        int duplicateLine = lineCount(base) + 1;
-
-        String path = tempFile("duplicate.txt", base + "world:max-depth:1\n");
+    void duplicateScalarConstantOverwritesEarlierValue() throws IOException {
+        String path = tempFile("duplicate.txt", realText() + "world:max-depth:1\n");
 
         GameConstantsParseResult result = new GameConstantsReader().parseWithResults(path);
 
-        assertTrue(result.hasErrors());
-        assertNull(result.getData());
+        assertFalse(result.hasErrors(), () -> result.getErrors().toString());
 
-        List<String> errors = result.getErrors();
-        assertEquals(1, errors.size(), errors::toString);
-        assertTrue(errors.get(0).contains("Line: " + duplicateLine), errors::toString);
-        assertTrue(errors.get(0).contains("duplicate world:max-depth"), errors::toString);
+        GameConstantsData data = result.getData();
+        assertNotNull(data);
+        assertEquals(1, data.world().maxDepth());
     }
 
     @Test
     void nonIntegerValueIsReportedWithItsLine() throws IOException {
         // A second world:max-depth carrying a non-numeric value: coercion fails on that line and the
-        // null-guard returns before the set, so the already-filled slot is untouched — one error, no
-        // missing cascade.
+        // null-guard returns before the set, so the earlier value is untouched — exactly one error.
         String base = realText();
         int badLine = lineCount(base) + 1;
 

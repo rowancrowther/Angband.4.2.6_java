@@ -53,6 +53,11 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
         for (GameConstantsParseRecord record : records) {
             dispatch(record, b, errors);
         }
+        String result = b.checkCriticalLevelDataLists();
+        if (!result.isEmpty()) {
+            errors.add(result);
+        }
+            
         return b.build(errors);
     }
 
@@ -128,7 +133,10 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
         }
 
         ORangedCriticalLevelData record = new ORangedCriticalLevelData(chance, dice, messageTypeEnum);
-        b.addORangedCriticalLevel(record);
+        String result = b.addORangedCriticalLevel(record);
+        if (!result.isEmpty()) {
+            errors.add(result);
+        }
     }
 
     /**
@@ -158,44 +166,28 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
 
         switch (label) {
             case "debuff-toh" -> {
-                if (!b.setORangedCriticalDebuffToh(value)) {
-                    errors.add("Line: " + line + ": duplicate o-ranged-critical:debuff-toh");
-                }
+                b.setORangedCriticalDebuffToh(value);
             }
             case "power-launched-toh-scale-numerator" -> {
-                if (!b.setORangedCriticalPowerLaunchedTohScaleNumerator(value)) {
-                    errors.add("Line: " + line + ": duplicate o-ranged-critical:power-launched-toh-scale-numerator");
-                }
+                b.setORangedCriticalPowerLaunchedTohScaleNumerator(value);
             }
             case "power-launched-toh-scale-denominator" -> {
-                if (!b.setORangedCriticalPowerLaunchedTohScaleDenominator(value)) {
-                    errors.add("Line: " + line + ": duplicate o-ranged-critical:power-launched-toh-scale-denominator");
-                }
+                b.setORangedCriticalPowerLaunchedTohScaleDenominator(value);
             }
             case "power-thrown-toh-scale-numerator" -> {
-                if (!b.setORangedCriticalPowerThrownTohScaleNumerator(value)) {
-                    errors.add("Line: " + line + ": duplicate o-ranged-critical:power-thrown-toh-scale-numerator");
-                }
+                b.setORangedCriticalPowerThrownTohScaleNumerator(value);
             }
             case "power-thrown-toh-scale-denominator" -> {
-                if (!b.setORangedCriticalPowerThrownTohScaleDenominator(value)) {
-                    errors.add("Line: " + line + ": duplicate o-ranged-critical:power-thrown-toh-scale-denominator");
-                }
+                b.setORangedCriticalPowerThrownTohScaleDenominator(value);
             }
             case "chance-power-scale-numerator" -> {
-                if (!b.setORangedCriticalChancePowerScaleNumerator(value)) {
-                    errors.add("Line: " + line + ": duplicate o-ranged-critical:chance-power-scale-numerator");
-                }
+                b.setORangedCriticalChancePowerScaleNumerator(value);
             }
             case "chance-power-scale-denominator" -> {
-                if (!b.setORangedCriticalChancePowerScaleDenominator(value)) {
-                    errors.add("Line: " + line + ": duplicate o-ranged-critical:chance-power-scale-denominator");
-                }
+                b.setORangedCriticalChancePowerScaleDenominator(value);
             }
             case "chance-add-denominator" -> {
-                if (!b.setORangedCriticalChanceAddDenominator(value)) {
-                    errors.add("Line: " + line + ": duplicate o-ranged-critical:chance-add-denominator");
-                }
+                b.setORangedCriticalChanceAddDenominator(value);
             }
             default -> errors.add("Line: " + line + " unknown o-ranged-critical constant");
         }
@@ -241,7 +233,10 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
         }
 
         OMeleeCriticalLevelData record = new OMeleeCriticalLevelData(chance, dice, messageTypeEnum);
-        b.addOMeleeCriticalLevelData(record);
+        String result = b.addOMeleeCriticalLevelData(record);
+        if (!result.isEmpty()) {
+            errors.add(result);
+        }
     }
 
     /**
@@ -271,33 +266,22 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
 
         switch (label) {
             case "debuff-toh" -> {
-                if (!b.setOMeleeCriticalDebuffToh(value))
-                    errors.add("Line: " + line + ": duplicate constant o-melee-critical:debuff-toh");
+                b.setOMeleeCriticalDebuffToh(value);
             }
             case "power-toh-scale-numerator" -> {
-                if (!b.setOMeleeCriticalPowerTohScaleNumerator(value)) {
-                    errors.add("Line: " + line + ": duplicate constant o-melee-critical:power-toh-scale-numerator");
-                }
+                b.setOMeleeCriticalPowerTohScaleNumerator(value);
             }
             case "power-toh-scale-denominator" -> {
-                if (!b.setOMeleeCriticalPowerTohScaleDenominator(value)) {
-                    errors.add("Line: " + line + ": duplicate constant o-melee-critical:power-toh-scale-denominator");
-                }
+                b.setOMeleeCriticalPowerTohScaleDenominator(value);
             }
             case "chance-power-scale-numerator" -> {
-                if (!b.setOMeleeCriticalChancePowerScaleNumerator(value)) {
-                    errors.add("Line: " + line + ": duplicate constant o-melee-critical:chance-power-scale-numerator");
-                }
+                b.setOMeleeCriticalChancePowerScaleNumerator(value);
             }
             case "chance-power-scale-denominator" -> {
-                if (!b.setOMeleeCriticalChancePowerScaleDenominator(value)) {
-                    errors.add("Line: " + line + ": duplicate constant o-melee-critical:chance-power-scale-denominator");
-                }
+                b.setOMeleeCriticalChancePowerScaleDenominator(value);
             }
             case "chance-add-denominator" -> {
-                if (!b.setOMeleeCriticalChanceAddDenominator(value)) {
-                    errors.add("Line: " + line + ": duplicate constant o-melee-critical:chance-add-denominator");
-                }
+                b.setOMeleeCriticalChanceAddDenominator(value);
             }
             default -> errors.add("Line: " + line + ": unknown o-melee-critical constant");
         }
@@ -372,54 +356,34 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
 
         switch (label) {
             case "debuff-toh" -> {
-                if (!b.setRangedCriticalDebuffToh(value)) {
-                    errors.add("Line: " + line + ": duplicate ranged-critical:debuff-toh");
-                }
+                b.setRangedCriticalDebuffToh(value);
             }
             case "chance-weight-scale" -> {
-                if (!b.setRangedCriticalChanceWeightScale(value)) {
-                    errors.add("Line: " + line + ": duplicate ranged-critical:chance-weight-scale");
-                }
+                b.setRangedCriticalChanceWeightScale(value);
             }
             case "chance-toh-scale" -> {
-                if (!b.setRangedCriticalChanceTohScale(value)) {
-                    errors.add("Line: " + line + ": duplicate ranged-critical:chance-toh-scale");
-                }
+                b.setRangedCriticalChanceTohScale(value);
             }
             case "chance-level-scale" -> {
-                if (!b.setRangedCriticalChanceLevelScale(value)) {
-                    errors.add("Line: " + line + ": duplicate ranged-critical:chance-level-scale");
-                }
+                b.setRangedCriticalChanceLevelScale(value);
             }
             case "chance-launched-toh-skill-scale" -> {
-                if (!b.setRangedCriticalChanceLaunchedTohSkillScale(value)) {
-                    errors.add("Line: " + line + ": duplicate ranged-critical:chance-launched-toh-skill-scale");
-                }
+                b.setRangedCriticalChanceLaunchedTohSkillScale(value);
             }
             case "chance-thrown-toh-skill-scale" -> {
-                if (!b.setRangedCriticalChanceThrownTohSkillScale(value)) {
-                    errors.add("Line: " + line + ": duplicate ranged-critical:chance-thrown-toh-skill-scale");
-                }
+                b.setRangedCriticalChanceThrownTohSkillScale(value);
             }
             case "chance-offset" -> {
-                if (!b.setRangedCriticalChanceOffset(value)) {
-                    errors.add("Line: " + line + ": duplicate ranged-critical:chance-offset");
-                }
+                b.setRangedCriticalChanceOffset(value);
             }
             case "chance-range" -> {
-                if (!b.setRangedCriticalChanceRange(value)) {
-                    errors.add("Line: " + line + ": duplicate ranged-critical:chance-range");
-                }
+                b.setRangedCriticalChanceRange(value);
             }
             case "power-weight-scale" -> {
-                if (!b.setRangedCriticalPowerWeightScale(value)) {
-                    errors.add("Line: " + line + ": duplicate ranged-critical:power-weight-scale");
-                }
+                b.setRangedCriticalPowerWeightScale(value);
             }
             case "power-random" -> {
-                if (!b.setRangedCriticalPowerRandom(value)) {
-                    errors.add("Line: " + line + ": duplicate ranged-critical:power-random");
-                }
+                b.setRangedCriticalPowerRandom(value);
             }
             default -> errors.add("Line: " + line + ": unknown ranged-critical constant");
         }
@@ -497,49 +461,31 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
 
         switch (label) {
             case "debuff-toh" -> {
-                if (!b.setMeleeCriticalDebuffToh(value)) {
-                    errors.add("Line: " + line + ": duplicate melee-critical:debuff-toh");
-                }
+                b.setMeleeCriticalDebuffToh(value);
             }
             case "chance-weight-scale" -> {
-                if (!b.setMeleeCriticalChanceWeightScale(value)) {
-                    errors.add("Line: " + line + ": duplicate melee-critical:chance-weight-scale");
-                }
+                b.setMeleeCriticalChanceWeightScale(value);
             }
             case "chance-toh-scale" -> {
-                if (!b.setMeleeCriticalChanceTohScale(value)) {
-                    errors.add("Line: " + line + ": duplicate melee-critical:chance-toh-scale");
-                }
+                b.setMeleeCriticalChanceTohScale(value);
             }
             case "chance-level-scale" -> {
-                if (!b.setMeleeCriticalChanceLevelScale(value)) {
-                    errors.add("Line: " + line + ": duplicate melee-critical:chance-level-scale");
-                }
+                b.setMeleeCriticalChanceLevelScale(value);
             }
             case "chance-toh-skill-scale" -> {
-                if (!b.setMeleeCriticalChanceTohSkillScale(value)) {
-                    errors.add("Line: " + line + ": duplicate melee-critical:chance-toh-skill-scale");
-                }
+                b.setMeleeCriticalChanceTohSkillScale(value);
             }
             case "chance-offset" -> {
-                if (!b.setMeleeCriticalChanceOffset(value)) {
-                    errors.add("Line: " + line + ": duplicate melee-critical:chance-offset");
-                }
+                b.setMeleeCriticalChanceOffset(value);
             }
             case "chance-range" -> {
-                if (!b.setMeleeCriticalChanceRange(value)) {
-                    errors.add("Line: " + line + ": duplicate melee-critical:chance-range");
-                }
+                b.setMeleeCriticalChanceRange(value);
             }
             case "power-weight-scale" -> {
-                if (!b.setMeleeCriticalPowerWeightScale(value)) {
-                    errors.add("Line: " + line + ": duplicate melee-critical:power-weight-scale");
-                }
+                b.setMeleeCriticalPowerWeightScale(value);
             }
             case "power-random" -> {
-                if (!b.setMeleeCriticalPowerRandom(value)) {
-                    errors.add("Line: " + line + ": duplicate melee-critical:power-random");
-                }
+                b.setMeleeCriticalPowerRandom(value);
             }
             default -> errors.add("Line: " + line + ": unknown melee-critical constant");
         }
@@ -571,24 +517,16 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
 
         switch (label) {
             case "max-sight" -> {
-                if (!b.setPlayerMaxSight(value)) {
-                    errors.add("Line: " + line + ": duplicate player:max-sight");
-                }
+                b.setPlayerMaxSight(value);
             }
             case "max-range" -> {
-                if (!b.setPlayerMaxRange(value)) {
-                    errors.add("Line: " + line + ": duplicate player:max-range");
-                }
+                b.setPlayerMaxRange(value);
             }
             case "start-gold" -> {
-                if (!b.setPlayerStartGold(value)) {
-                    errors.add("Line: " + line + ": duplicate player:start-gold");
-                }
+                b.setPlayerStartGold(value);
             }
             case "food-value" -> {
-                if (!b.setPlayerFoodValue(value)) {
-                    errors.add("Line: " + line + ": duplicate player:food-value");
-                }
+                b.setPlayerFoodValue(value);
             }
             default -> errors.add("Line: " + line + ": unknown player constant");
         }
@@ -620,34 +558,22 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
 
         switch (label) {
             case "max-depth" -> {
-                if (!b.setObjMakeMaxDepth(value)) {
-                    errors.add("Line: " + line + ": duplicate obj-make:max-depth");
-                }
+                b.setObjMakeMaxDepth(value);
             }
             case "great-obj" -> {
-                if (!b.setObjGreatObj(value)) {
-                    errors.add("Line: " + line + ": duplicate obj-make:great-obj");
-                }
+                b.setObjGreatObj(value);
             }
             case "great-ego" -> {
-                if (!b.setObjGreatEgo(value)) {
-                    errors.add("Line: " + line + ": duplicate obj-make:great-ego");
-                }
+                b.setObjGreatEgo(value);
             }
             case "fuel-torch" -> {
-                if (!b.setObjFuelTorch(value)) {
-                    errors.add("Line: " + line + ": duplicate obj-make:fuel-torch");
-                }
+                b.setObjFuelTorch(value);
             }
             case "fuel-lamp" -> {
-                if (!b.setObjFuelLamp(value)) {
-                    errors.add("Line: " + line + ": duplicate obj-make:fuel-lamp");
-                }
+                b.setObjFuelLamp(value);
             }
             case "default-lamp" -> {
-                if (!b.setObjDefaultLamp(value)) {
-                    errors.add("Line: " + line + ": duplicate obj-make:default-lamp");
-                }
+                b.setObjDefaultLamp(value);
             }
             default -> errors.add("Line: " + line + ": unknown obj-make constant");
         }
@@ -679,20 +605,16 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
 
         switch (label) {
             case "inven-max" -> {
-                if (!b.setStoreInvenMax(value))
-                    errors.add("Line: " + line + ": duplicate store:inven-max");
+                b.setStoreInvenMax(value);
             }
             case "turns" -> {
-                if (!b.setStoreTurns(value))
-                    errors.add("Line: " + line + ": duplicate store:turns");
+                b.setStoreTurns(value);
             }
             case "shuffle" -> {
-                if (!b.setStoreShuffle(value))
-                    errors.add("Line: " + line + ": duplicate store:shuffle");
+                b.setStoreShuffle(value);
             }
             case "magic-level" -> {
-                if (!b.setStoreMagicLevel(value))
-                    errors.add("Line: " + line + ": duplicate store:magic-level");
+                b.setStoreMagicLevel(value);
             }
             default -> errors.add("Line: " + line + ": unknown store constant");
         }
@@ -724,29 +646,19 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
 
         switch (label) {
             case "pack-size" -> {
-                if (!b.setCarryCapPackSize(value)) {
-                    errors.add("Line: " + line + ": duplicate carry-cap:pack-size");
-                }
+                b.setCarryCapPackSize(value);
             }
             case "quiver-size" -> {
-                if (!b.setCarryCapQuiverSize(value)) {
-                    errors.add("Line: " + line + ": duplicate carry-cap:quiver-size");
-                }
+                b.setCarryCapQuiverSize(value);
             }
             case "quiver-slot-size" -> {
-                if (!b.setCarryCapQuiverSlotSize(value)) {
-                    errors.add("Line: " + line + ": duplicate carry-cap:quiver-slot-size");
-                }
+                b.setCarryCapQuiverSlotSize(value);
             }
             case "thrown-quiver-mult" -> {
-                if (!b.setCarryCapThrownQuiverMult(value)) {
-                    errors.add("Line: " + line + ": duplicate carry-cap:thrown-quiver-mult");
-                }
+                b.setCarryCapThrownQuiverMult(value);
             }
             case "floor-size" -> {
-                if (!b.setCarryCapFloorSize(value)) {
-                    errors.add("Line: " + line + ": duplicate carry-cap:floor-size");
-                }
+                b.setCarryCapFloorSize(value);
             }
             default -> {
                 errors.add("Line: " + line + ": unknown carry-cap constant");
@@ -780,54 +692,34 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
 
         switch (label) {
             case "max-depth" -> {
-                if (!b.setWorldMaxDepth(value)) {
-                    errors.add("Line: " + line + ": duplicate world:max-depth");
-                }
+                b.setWorldMaxDepth(value);
             }
             case "day-length" -> {
-                if (!b.setWorldDayLength(value)) {
-                    errors.add("Line: " + line + ": duplicate world:day-length");
-                }
+                b.setWorldDayLength(value);
             }
             case "dungeon-hgt" -> {
-                if (!b.setWorldDungeonHgt(value)) {
-                    errors.add("Line: " + line + ": duplicate world:dungeon-hgt");
-                }
+                b.setWorldDungeonHgt(value);
             }
             case "dungeon-wid" -> {
-                if (!b.setWorldDungeonWid(value)) {
-                    errors.add("Line: " + line + ": duplicate world:dungeon-wid");
-                }
+                b.setWorldDungeonWid(value);
             }
             case "town-hgt" -> {
-                if (!b.setWorldTownHgt(value)) {
-                    errors.add("Line: " + line + ": duplicate world:town-hgt");
-                }
+                b.setWorldTownHgt(value);
             }
             case "town-wid" -> {
-                if (!b.setWorldTownWid(value)) {
-                    errors.add("Line: " + line + ": duplicate world:town-wid");
-                }
+                b.setWorldTownWid(value);
             }
             case "feeling-total" -> {
-                if (!b.setWorldFeelingTotal(value)) {
-                    errors.add("Line: " + line + ": duplicate world:feeling-total");
-                }
+                b.setWorldFeelingTotal(value);
             }
             case "feeling-need" -> {
-                if (!b.setWorldFeelingNeed(value)) {
-                    errors.add("Line: " + line + ": duplicate world:feeling-need");
-                }
+                b.setWorldFeelingNeed(value);
             }
             case "stair-skip" -> {
-                if (!b.setWorldStairSkip(value)) {
-                    errors.add("Line: " + line + ": duplicate world:stair-skip");
-                }
+                b.setWorldStairSkip(value);
             }
             case "move-energy" -> {
-                if (!b.setWorldMoveEnergy(value)) {
-                    errors.add("Line: " + line + ": duplicate world:move-energy");
-                }
+                b.setWorldMoveEnergy(value);
             }
             default -> errors.add("Line: " + line + ": unknown world constant");
         }
@@ -859,36 +751,28 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
 
         switch (label) {
             case "cent-max" -> {
-                if (!b.setDunGenCentMax(value))
-                    errors.add("Line: " + line + ": duplicate dun-gen:cent-max");
+                b.setDunGenCentMax(value);
             }
             case "door-max" -> {
-                if (!b.setDunGenDoorMax(value))
-                    errors.add("Line: " + line + ": duplicate dun-gen:door-max");
+                b.setDunGenDoorMax(value);
             }
             case "wall-max" -> {
-                if (!b.setDunGenWallMax(value))
-                    errors.add("Line: " + line + ": duplicate dun-gen:wall-max");
+                b.setDunGenWallMax(value);
             }
             case "tunn-max" -> {
-                if (!b.setDunGenTunnMax(value))
-                    errors.add("Line: " + line + ": duplicate dun-gen:tunn-max");
+                b.setDunGenTunnMax(value);
             }
             case "amt-room" -> {
-                if (!b.setDunGenAmtRoom(value))
-                    errors.add("Line: " + line + ": duplicate dun-gen:amt-room");
+                b.setDunGenAmtRoom(value);
             }
             case "amt-item" -> {
-                if (!b.setDunGenAmtItem(value))
-                    errors.add("Line: " + line + ": duplicate dun-gen:amt-item");
+                b.setDunGenAmtItem(value);
             }
             case "amt-gold" -> {
-                if (!b.setDunGenAmtGold(value))
-                    errors.add("Line: " + line + ": duplicate dun-gen:amt-gold");
+                b.setDunGenAmtGold(value);
             }
             case "pit-max" -> {
-                if (!b.setDunGenPitMax(value))
-                    errors.add("Line: " + line + ": duplicate dun-gen:pit-max");
+                b.setDunGenPitMax(value);
             }
             default -> {
                 errors.add("Line: " + line + ": unknown dun-gen constant " + label);
@@ -922,24 +806,19 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
 
         switch (label) {
             case "break-glyph" -> {
-                if (!b.setMonPlayBreakGlyph(value))
-                    errors.add("Line: " + line + ": duplicate mon-play:break-glyph");
+                b.setMonPlayBreakGlyph(value);
             }
             case "mult-rate" -> {
-                if (!b.setMonPlayMultRate(value))
-                    errors.add("Line: " + line + ": duplicate mon-play:mult-rate");
+                b.setMonPlayMultRate(value);
             }
             case "life-drain" -> {
-                if (!b.setMonPlayLifeDrain(value))
-                    errors.add("Line: " + line + ": duplicate mon-play:life-drain");
+                b.setMonPlayLifeDrain(value);
             }
             case "flee-range" -> {
-                if (!b.setMonPlayFleeRange(value))
-                    errors.add("Line: " + line + ": duplicate mon-play:flee-range");
+                b.setMonPlayFleeRange(value);
             }
             case "turn-range" -> {
-                if (!b.setMonPlayTurnRange(value))
-                    errors.add("Line: " + line + ": duplicate mon-play:turn-range");
+                b.setMonPlayTurnRange(value);
             }
             default -> {
                 errors.add("Line: " + line + ": unknown mon-play constant " + label);
@@ -973,40 +852,31 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
 
         switch (label) {
             case "chance" -> {
-                if (!b.setMonGenChance(value))
-                    errors.add("Line: " + line + ": duplicate mon-gen:chance");
+                b.setMonGenChance(value);
             }
             case "level-min" -> {
-                if (!b.setMonGenLevelMin(value))
-                    errors.add("Line: " + line + ": duplicate mon-gen:level-min");
+                b.setMonGenLevelMin(value);
             }
             case "town-day" -> {
-                if (!b.setMonGenTownDay(value))
-                    errors.add("Line: " + line + ": duplicate mon-gen:town-day");
+                b.setMonGenTownDay(value);
             }
             case "town-night" -> {
-                if (!b.setMonGenTownNight(value))
-                    errors.add("Line: " + line + ": duplicate mon-gen:town-night");
+                b.setMonGenTownNight(value);
             }
             case "repro-max" -> {
-                if (!b.setMonGenReproMax(value))
-                    errors.add("Line: " + line + ": duplicate mon-gen:repro-max");
+                b.setMonGenReproMax(value);
             }
             case "ood-chance" -> {
-                if (!b.setMonGenOodChance(value))
-                    errors.add("Line: " + line + ": duplicate mon-gen:ood-chance");
+                b.setMonGenOodChance(value);
             }
             case "ood-amount" -> {
-                if (!b.setMonGenOodAmount(value))
-                    errors.add("Line: " + line + ": duplicate mon-gen:ood-amount");
+                b.setMonGenOodAmount(value);
             }
             case "group-max" -> {
-                if (!b.setMonGenGroupMax(value))
-                    errors.add("Line: " + line + ": duplicate mon-gen:group-max");
+                b.setMonGenGroupMax(value);
             }
             case "group-dist" -> {
-                if (!b.setMonGenGroupDist(value))
-                    errors.add("Line: " + line + ": duplicate mon-gen:group-dist");
+                b.setMonGenGroupDist(value);
             }
             default -> {
                 errors.add("Line: " + line + ": unknown mon-gen constant '" + label + "'");
@@ -1039,8 +909,7 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
         if (value == null) return;
 
         if (label.equals("monsters")) {
-            if (!b.setLevelMaxMonsters(value))
-                errors.add("Line: " + line + ": duplicate level-max:monsters");
+            b.setLevelMaxMonsters(value);
         } else {
             errors.add("Line: " + line + ": unknown level-max constant '" + label + "'");
         }

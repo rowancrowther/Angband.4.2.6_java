@@ -18,7 +18,6 @@
 package uk.co.jackoftradesltd.middle.game.gameengine;
 
 import org.jetbrains.annotations.NotNull;
-import org.jspecify.annotations.Nullable;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.Message;
 import uk.co.jackoftradesltd.middle.cave.Loc;
@@ -53,7 +52,16 @@ import static uk.co.jackoftradesltd.middle.game.enums.CommandArgumentType.arg_CH
  * engine pops one, looks its {@link #code} up in the dispatch table, and runs the handler, which
  * pulls whatever it needs from {@link #args}.
  *
- * <p>Class Command coded on 260830, commented in full on 261001.
+ * <p>The class also carries the argument accessors that C kept as free functions in
+ * {@code cmd-core.c}: the typed {@code setArg*} / {@code getArg*} pairs over the generic
+ * {@code cmd_set_arg} / {@code cmd_get_arg}, and the {@code get*} methods ({@link #getDirection},
+ * {@link #getItem}, {@link #getString}, {@link #getTarget}, {@link #getQuantity}, {@link #getSpell},
+ * {@link #getEffectFromList}) that take a queued argument if there is one and otherwise prompt the
+ * player through the {@link GameInputHolder} boundary. Where C returned a status code
+ * ({@code CMD_OK}, {@code CMD_ARG_NOT_PRESENT}, {@code CMD_ARG_WRONG_TYPE}, {@code CMD_ARG_ABORTED})
+ * and filled an out-parameter, the port returns an {@link Optional}, empty for every non-OK code.
+ *
+ * <p>Class Command coded on 260830, commented in full on 261003.
  *
  * @author Rowan Crowther
  */
@@ -105,10 +113,13 @@ public class Command {
 
     /**
      * The player this command acts for, captured once at construction so {@link #getItem} can
-     * consult shapechange state without another global lookup. In C the handlers reached the global
-     * {@code player} directly; the port holds the reference on the command instead.
+     * consult shapechange state and class magic without another global lookup. In C the handlers
+     * reached the global {@code player} directly; the port holds the reference on the command
+     * instead. It is read by {@link #getItem} and {@link #getSpell}, and is not refreshed afterwards,
+     * so a command built before {@link GameState#setPlayer} replaces the player keeps the old one;
+     * {@link #clone()} rebinds to whichever player is current when the copy is made.
      *
-     * <p>Field player coded on 260830, commented in full on 261001.
+     * <p>Field player coded on 260830, commented in full on 261003.
      */
     private Player player;
 
@@ -146,10 +157,15 @@ public class Command {
      * its own heap buffer; the port copies every argument uniformly, which is harmless for the
      * immutable payloads and keeps the method free of per-type special cases.
      *
+     * <p>An item argument is copied by reference, not cloned: both commands name the same
+     * {@link ItemObject}, as C's {@code *dest = *src} copies the {@code struct object *} pointer
+     * and not the object it points to. The copy is bound to the current {@link GameState#getPlayer()
+     * player} by the constructor rather than to this command's {@link #player}.
+     *
      * <p>Used by {@link CommandQueue}'s {@code CMD_REPEAT} handling, where the replayed command must
      * be independent of the retained lastCommand.
      *
-     * <p>Function clone coded on 260830, commented in full on 261001.
+     * <p>Function clone coded on 260830, commented in full on 261003.
      *
      * @return an independent copy of this command
      */
@@ -360,7 +376,12 @@ public class Command {
      * against a list instead, so the type tag and payload are kept in step via
      * {@link CommandArgument#update}.
      *
-     * <p>Function setArg coded on 260830, commented in full on 261001.
+     * <p>C also asserts that the name is non-empty and that a free slot exists (the array holds at
+     * most four arguments, each name at most 19 characters); the list is unbounded and the port
+     * checks neither, relying on every caller passing a short literal name. C freed the old string
+     * buffer when overwriting a string argument; a Java {@code String} needs no such step.
+     *
+     * <p>Function setArg coded on 260830, commented in full on 261003.
      *
      * @param argName      the name the argument is looked up by
      * @param argumentType the type tag for the value
@@ -558,13 +579,15 @@ public class Command {
      * accepts anything, matching C's {@code !filter} branch); a queued item that no longer
      * qualifies is treated as absent and re-prompted. Before prompting, a shapechanged player is
      * confined to the floor by clearing the equipment, inventory and quiver bits from {@code mode},
-     * mirroring C's {@code mode &= ~(USE_EQUIP | USE_INVEN | USE_QUIVER)}.
+     * mirroring C's {@code mode &= ~(USE_EQUIP | USE_INVEN | USE_QUIVER)}. C's {@code mode} is an
+     * {@code int} passed by value, so that masking never reaches the caller; the port keeps the same
+     * guarantee by clearing the bits on a copy and leaving the caller's {@code mode} untouched.
      *
      * <p>C returned the chosen object through a {@code struct object **} out-parameter alongside a
      * boolean; Java has no out-parameters, so the selection comes back as the {@link Optional}
      * return value instead - present is C's {@code CMD_OK}, empty is {@code CMD_ARG_ABORTED}.
      *
-     * <p>Function getItem coded on 260830, commented in full on 261001.
+     * <p>Function getItem coded on 260830, commented in full on 261003.
      *
      * @param argName the name the item argument is stored under
      * @param prompt  the selection prompt shown to the player
@@ -608,7 +631,11 @@ public class Command {
      * yields an empty {@link Optional} (C's {@code CMD_ARG_ABORTED}), which is why the accept/abort
      * decision comes from the UI's own optional rather than from testing the text for emptiness.
      *
-     * <p>Function getString coded on 260830, commented in full on 261001.
+     * <p>C works in an 80-byte buffer ({@code char tmp[80]}), so both {@code initial} and the
+     * entered text are limited to 79 characters; the port truncates each to 79 to match, and the
+     * truncated text is what is stored and returned.
+     *
+     * <p>Function getString coded on 260830, commented in full on 261003.
      *
      * @param argName the name the string argument is stored under
      * @param initial the value the input field is pre-filled with (may be {@code null} or empty)
@@ -720,7 +747,10 @@ public class Command {
      * settled on. On success the chosen book is stored as the {@code "book"} item argument and the
      * spell's flattened index ({@link ClassMagic#indexOfSpell}) as {@code argName}'s choice, so a
      * replay re-resolves the same spell; any abort yields an empty {@link Optional} (C's
-     * {@code CMD_ARG_ABORTED}). Non-casters short-circuit to empty.
+     * {@code CMD_ARG_ABORTED}). There is no explicit non-caster branch: a class with no books
+     * ({@link ClassMagic#NONE}) resolves no stored choice, so the prompt is still opened, and the
+     * result is empty either because the boundary aborts or because the spell it returns has no
+     * index ({@link ClassMagic#indexOfSpell} gives {@code -1}).
      *
      * <p>Where C threaded the selection through an {@code int *spell} out-parameter, the port returns
      * the resolved {@link MagicSpell}; the {@code int} lives only in the queued {@code arg_CHOICE}
@@ -730,7 +760,13 @@ public class Command {
      * <p>One deliberate difference from C: {@code spellFilter} is {@code @NotNull} here, where
      * {@code cmd_get_spell} tolerates a NULL filter.
      *
-     * <p>Function getSpell coded on 260830, commented in full on 261001.
+     * <p>One ordering difference, unreachable in practice: the {@code "book"} argument is stored
+     * before the spell's index is looked up, so a spell that belongs to none of the caster's books
+     * ({@link ClassMagic#indexOfSpell} returns {@code -1}) would leave the book stored while
+     * returning empty. C stores both only after {@code *spell >= 0} and has no such case, since its
+     * spell is already an index.
+     *
+     * <p>Function getSpell coded on 260830, commented in full on 261003.
      *
      * @param argName     the name the spell-choice argument is stored under
      * @param verb        the action the spell is wanted for (e.g. "cast", "study"), shown by the UI
@@ -738,7 +774,8 @@ public class Command {
      * @param bookError   the message shown when no eligible book exists
      * @param spellFilter the predicate a spell must satisfy, tested against the player and spell
      * @param spellError  the message shown when no eligible spell exists
-     * @return the chosen spell, or empty if the player aborted (or is not a caster)
+     * @return the chosen spell, or empty if the player aborted (or the chosen spell is not one of
+     * the caster's)
      */
     public Optional<MagicSpell> getSpell(String argName, String verb,
                                          @NotNull Predicate<ItemObject> bookFilter, String bookError,
@@ -747,8 +784,6 @@ public class Command {
         ItemObject bookItem;
         MagicSpell spell;
         ClassMagic magic = player.getPlayerClass().getMagic();
-        if (magic == null)
-            return Optional.empty();
 
         if (result.isPresent()) {
             spell = magic.spellByIndex(result.get());
@@ -802,11 +837,13 @@ public class Command {
 
     /**
      * Asks the input boundary to choose a spell from a single, already-known book - the port of C's
-     * {@code get_spell_from_book} call in {@code cmd_get_spell}. A thin pass-through to the installed
-     * {@link GameInput}; kept as its own method so {@link #getSpell}'s book-arg branch reads as one
-     * step and the boundary lookup lives in a single place.
+     * {@code get_spell_from_book} ({@code game-input.c}), as called from {@code cmd_get_spell}. C's
+     * version forwards to the UI hook and returns {@code -1} (no spell) when none is installed; the
+     * port is a thin pass-through to the installed {@link GameInput}, whose empty {@link Optional}
+     * stands in for that {@code -1}. It is kept as its own method so {@link #getSpell}'s book-arg
+     * branch reads as one step and the boundary lookup lives in a single place.
      *
-     * <p>Function getSpellFromBook coded on 260830, commented in full on 261001.
+     * <p>Function getSpellFromBook coded on 260830, commented in full on 261003.
      *
      * @param player      the caster
      * @param verb        the action the spell is wanted for (e.g. "cast", "study")
@@ -825,29 +862,36 @@ public class Command {
      * prompting the player - the port of C's {@code cmd_get_effect_from_list}. Used when an effect
      * offers the player several sub-effects to pick between.
      *
-     * <p>Unlike {@link #getSpell}, the selection is a plain {@code int} throughout - a list index in
-     * {@code [0, count)}, or the sentinel {@code -2} meaning "choose at random" when
-     * {@code allowRandom} is set - so there is no object to resolve and the value round-trips through
-     * {@code arg_CHOICE} directly. A stored choice is used only if still valid; a missing,
-     * out-of-range, or (when random is disallowed) {@code -2} choice falls through to the prompt.
-     * Whatever is finally settled on is stored back under {@code argName} so a replay reuses it. An
-     * abort - or a prompt result that is still invalid - yields an empty {@link Optional} (C's
-     * {@code CMD_ARG_ABORTED}).
+     * <p>Unlike {@link #getSpell}, there is no object to resolve: the selection is a list index in
+     * {@code [0, count)}, or C's sentinel {@code -2} meaning "choose at random" when
+     * {@code allowRandom} is set. The command still stores it as a plain {@code int} in
+     * {@code arg_CHOICE}, exactly as C does, so a replay reads the same {@code -2} back. A stored
+     * choice is used only if still valid; a missing, out-of-range, or (when random is disallowed)
+     * {@code -2} choice falls through to the prompt in {@link GameInputHolder}. Whatever is finally
+     * settled on is stored back under {@code argName} so a replay reuses it.
      *
      * <p>Where C returned the outcome through an {@code int *choice} out-parameter and a status code,
-     * the port folds both into the return: present is the chosen index (or {@code -2}), empty is the
-     * abort. Note {@code -2} is a valid <em>present</em> value, not a failure - the empty case is
-     * reserved for a genuine abort, which is why {@code Optional<Integer>} and not {@code Optional} of
-     * the {@link Effect} itself.
+     * the port returns a three-way {@link EffectChoice}:
+     * <pre>{@code
+     * sealed interface EffectChoice permits Index, Random, Aborted
+     * record Index(int value)   // a list index in [0, count)   - C's CMD_OK, *choice >= 0
+     * record Random()           // "choose at random"           - C's CMD_OK, *choice == -2
+     * record Aborted()          // the player backed out        - C's CMD_ARG_ABORTED
+     * }</pre>
+     * {@link EffectChoice.Random} is a success, not a failure, which is why the {@code -2} sentinel
+     * is a type of its own rather than an out-of-band integer. A prompt result that is still
+     * invalid - an index outside the range, or {@link EffectChoice.Random} when {@code allowRandom}
+     * is false - is reported as {@link EffectChoice.Aborted}, as C reports {@code CMD_ARG_ABORTED}.
      *
-     * <p>Function getEffectFromList coded on 260830, commented in full on 261001.
+     * <p>Function getEffectFromList coded on 260830, commented in full on 261003.
      *
      * @param argName     the name the choice argument is stored under
      * @param prompt      the prompt to show, or {@code null} for the default
      * @param effects     the effects to choose among (only its size is read here; the boundary shows them)
      * @param count       how many of the effects to offer, or {@code -1} for all of them
-     * @param allowRandom whether to offer an extra "choose at random" option, whose result is {@code -2}
-     * @return the chosen index (or {@code -2} for random), or empty if the player aborted
+     * @param allowRandom whether to offer an extra "choose at random" option
+     * @return the choice made: an {@link EffectChoice.Index}, an {@link EffectChoice.Random}, or an
+     * {@link EffectChoice.Aborted} if the player backed out or nothing valid was selected
      */
     public EffectChoice getEffectFromList(String argName, String prompt,
                                                List<Effect> effects, int count, boolean allowRandom) {
@@ -887,16 +931,18 @@ public class Command {
      * Resolves a carried book item to the class {@link MagicBook} it represents - the port of C's
      * {@code player_object_to_book}. The match is on the item kind's {@code (tval, sval)} against
      * each of the caster's books, exactly as C compares {@code obj->tval}/{@code obj->sval} to
-     * {@code magic.books[i]}. Nothing in the port calls this method at present.
+     * {@code magic.books[i]}. C's function lives in {@code player-spell.c} and is public; the port's
+     * copy is {@code private} to {@link Command} and unreferenced, so nothing calls it at present.
+     * The first match wins and no match yields {@code null}, as C returns {@code NULL}.
      *
-     * <p>Function playerObjectToBook coded on 260830, commented in full on 261001.
+     * <p>Function playerObjectToBook coded on 260830, commented in full on 261003.
      *
      * @param player the caster whose books are searched
      * @param item   the book item to identify
      * @return the matching {@link MagicBook}, or {@code null} if the item is not one of this class's
      * books
      */
-    private @Nullable MagicBook playerObjectToBook(@NotNull Player player, @NotNull ItemObject item) {
+    private MagicBook playerObjectToBook(@NotNull Player player, @NotNull ItemObject item) {
         for (MagicBook book : player.getPlayerClass().getMagic().getMagicBooks()) {
             if (item.getKind().gettValue() == book.getBookTValue()
                     && item.getKind().getsVal() == book.getSval())

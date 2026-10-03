@@ -54,12 +54,12 @@ import static org.junit.jupiter.api.Assertions.*;
  * string is not an abort for a string, and strings are cut to the 79 characters C's 80-byte
  * buffer holds. The UI is a scripted {@link DefaultGameInput} that counts how often it was asked.
  *
- * <p>Not covered: {@code cmd_get_spell} (needs a caster with a book list built by hand), the
- * shapechange mask in {@code getItem} (needs a hand-built {@code PlayerShape}), and the
- * {@code DIR_TARGET} stale-target branch of {@code getTarget}, because {@code GameState.targetOkay}
- * is still a stub that always answers true.
+ * <p>Not covered here: {@code cmd_get_spell}, the shapechange mask in {@code getItem}, the
+ * repeat-cancel rule and the sharing of an item argument by {@code clone}, which are in
+ * {@link CommandSpellItemRepeatTest}. Covered by neither: the {@code DIR_TARGET} stale-target branch
+ * of {@code getTarget}, because {@code GameState.targetOkay} is still a stub that always answers true.
  *
- * <p>Class CommandTest coded on 261001, commented in full on 261001.
+ * <p>Class CommandTest coded on 261001, commented in full on 261003.
  *
  * @author Rowan Crowther
  */

@@ -31,6 +31,7 @@ import uk.co.jackoftradesltd.middle.cave.Chunk;
 import uk.co.jackoftradesltd.middle.cave.Loc;
 import uk.co.jackoftradesltd.middle.enums.DamageAspect;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
+import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.game.event.EventsHandler;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
@@ -40,6 +41,7 @@ import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.*;
 import uk.co.jackoftradesltd.middle.objects.enums.*;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerNotice;
+import uk.co.jackoftradesltd.middle.player.enums.SustainStat;
 
 import java.util.*;
 
@@ -58,7 +60,8 @@ import java.util.*;
  *       {@link #learnBrand}, {@link #learnSlay}, {@link #learnCurse}, {@link #learnInnate},
  *       {@link #learnAllRunes} - and the {@code equipLearn*} family, which are the hooks that fire
  *       when worn gear is used in anger, all end in {@link #learnRune}. That is C's single
- *       choke point, and it is where the message, the knowledge update and the fan-out happen.</li>
+ *       choke point, and it is where the message, the knowledge update and the fan-out happen.
+ *       {@link #objectLearnOnWield} is the hook for the moment gear is put on.</li>
  *   <li><b>Propagation</b> writes to the objects. {@link #knowObject} rewrites one object's known
  *       counterpart from the player's standing knowledge, and {@link #updateObjectKnowledge} runs it
  *       over everything in play, so that a rune learned on one sword shows up on every other object
@@ -84,11 +87,19 @@ import java.util.*;
  * @author Rowan Crowther
  */
 public class PlayerKnowledge {
+    /**
+     * The class's log4j logger. C has no equivalent; it stands in for the {@code assert} and the
+     * silent early return C uses where a precondition fails. Written to when a known object that
+     * should exist is missing (as in {@link #objectLearnOnWield}) or a rune that cannot be learned
+     * is passed in ({@link #learnRune}), so that a bad call leaves a trace rather than a crash.
+     *
+     * <p>Field logger commented in full on 261004.
+     */
     private final static Logger logger = LogManager.getLogger(PlayerKnowledge.class);
 
     /**
      * Transfers what the player knows about object properties in general onto one particular object,
-     * the port of C's {@code player_know_object} ({@code obj-knowledge.c:1018}).
+     * the port of C's {@code player_know_object} ({@code obj-knowledge.c}).
      *
      * <p><b>The direction of travel is the thing to hold on to.</b> This does not look at the object
      * and work out what the player has learned; it looks at {@link Player#itemKnowledge} — the player's
@@ -112,20 +123,81 @@ public class PlayerKnowledge {
      * the player can see a sword on the floor across the room and know it is a sword, without being
      * close enough to have formed a view about its enchantment.
      *
-     * <p>The fourth return, after the flags, is the odd one. A curse holds its own bearer-less
-     * {@link ItemObject} to carry the properties it confers, and that object has a null kind. It has
-     * flags and modifiers worth knowing, but no ego, no flavour, no effect and nothing to become
-     * aware of, so it stops there while real objects carry on.
+     * <p>The fourth return, after the flags, is the odd one, and it is dead in practice. C's comment
+     * says "Curse object structures are finished now", as if a curse's bearer-less {@code struct object}
+     * had a null kind and stopped here. At runtime it does not: {@code write_curse_kinds} in
+     * {@code obj-init.c} gives every curse object the {@code <curse object>} kind, creates its known
+     * counterpart and marks it {@code OBJ_NOTICE_ASSESSED}, so a curse object runs the whole function
+     * and the return never fires for it. The port flattens a curse's properties onto {@link Curse} and
+     * hands curses to the private {@code knowObject(Player, Curse)} instead, so this return is only
+     * reached by an {@link ItemObject} that has no kind; it is kept because it is C's.
      *
-     * <p><b>Correctness is not yet established.</b> The audit of 260816 found divergences from C in
-     * the combat-detail, modifier, element, flag, brand, curse and fully-known blocks; several of
-     * them need accessors that do not exist yet. See
-     * {@code docs/implementation/260816_functions_implemented.md} for the block-by-block comparison.
-     * The blocks recorded there as matching C are the slays, the ego/jewellery/special-artifact
-     * branch, the effect, and the guards and early returns described above.
+     * <p>The two tail blocks are the effect gate and the fully-known copy. The effect is made known when
+     * the kind is aware and flavoured, when it is an unflavoured non-wearable, or when it is a wearable
+     * whose kind carries an effect and is aware. An object that is fully known then has its known
+     * element and flag information overwritten with the real information, replacing the masked view the
+     * earlier blocks built.
+     *
+     * <p><b>Brands and slays are rebuilt from the item, not merged with the counterpart.</b> C walks
+     * every brand index and keeps a brand on the counterpart only if the player knows it
+     * <em>and</em> the object carries it; every other slot is switched off. The port walks
+     * {@link ObjectRegistry#getBrands()} (and the slay list) for the same reason — an ego or an
+     * artifact can carry a brand its kind never lists, so looping over the kind's brands would never
+     * let that brand be learned — and removes anything the player cannot read or the item does not
+     * carry, so a stale entry on the counterpart does not survive. The result is always the item's
+     * brands filtered by the player's knowledge.
+     *
+     * <p>Two details differ from C and neither changes an answer a caller can observe. C guards the
+     * whole block with {@code if (obj->brands)}, leaving the counterpart alone when the item has no
+     * brand array at all; {@link ItemObject#getBrands()} answers the same empty set whether the field
+     * is null or empty, so the port cannot ask that question and runs the block, which clears a
+     * counterpart that no longer matches its item. And the counterpart is edited through
+     * {@code addBrand}, {@code removeBrand} and {@code clearBrands}, which create the set on demand,
+     * because the {@code getBrands()} view of a null field is immutable. Slays are handled the same
+     * way.
+     *
+     * <p>Other divergences from C's shape, each with the same result:
+     * <ul>
+     *   <li>modifiers and elements are built over the real ones only, so {@code OM_NONE},
+     *       {@code OM_MAX}, {@code ELEM_NONE} and {@code ELEM_MAX} never appear as entries;</li>
+     *   <li>an element the player can read but the item never names is given a blank
+     *       {@link ElementInfo}, which is what C's zeroed array slot holds;</li>
+     *   <li>a curse the player cannot read, or the item does not carry, is removed from the
+     *       counterpart, where C leaves its slot with a power of zero. The loop is over
+     *       {@link ObjectRegistry#getCurses()} as C's is over every curse slot, not over the item's own
+     *       curses, so a curse that has gone from the item cannot linger on the counterpart while
+     *       another curse stays known.</li>
+     * </ul>
+     *
+     * <p><b>"On the ground" is judged on the real level.</b> C's last report tests the {@code cave}
+     * global — the level as it truly is — not {@code p->cave}, the player's remembered copy. The
+     * remembered copy holds the player's <em>known</em> counterparts, never the object itself, so
+     * asking it would never find the object. The port therefore tests {@link GameState#getCave()},
+     * not {@link Player#getCave()}, and skips the report when no level exists, as C does during birth
+     * and loading.
+     *
+     * <p>The report is only made when something about the object has just become newly seen: an ego
+     * the player can now name, or jewellery whose runes are all known, whose ego or kind has not
+     * been {@code everseen}. A carried object is announced with its inventory letter; a floor object
+     * under the player is announced as lying on the ground; anything else is silent.
+     *
+     * <p>The object's name is cut to 79 characters before it is placed in the message, which is what
+     * C's {@code char o_name[80]} does. It is the name that is capped and not the finished message, so
+     * the closing {@code (a)} or full stop survives however long the name is. The finished text is
+     * passed to {@link Message#message} as the argument of a {@code "%s"} format rather than as the
+     * format itself, as C passes {@code o_name} to {@code msg()}, so a {@code %} in a name is shown
+     * and not interpreted.
+     *
+     * <p>Verified clause by clause against C on 261003 for every block above, again on 261004
+     * after the curse loop and the name cap were corrected, and once more on 261004 for the whole
+     * file. The remaining caveat is outside this method:
+     *
+     * <p><b>Outstanding:</b> {@link ItemObject#description} is still a stub, so both reports name the
+     * object with the placeholder {@code {DESCRIPTION_TAG}}, which is far under the 79-character cap.
+     * The cap is therefore not exercised by any test until real names arrive.
      *
      * <p>Function knowObject coded before 260815 as a stub, implemented on 260816, commented in full
-     * on 260816.
+     * on 261004, null-kind paragraph corrected and tail blocks described on 261004.
      *
      * @param player the player whose standing rune knowledge decides what the counterpart is
      *               allowed to show; nothing here is read off the object itself
@@ -166,6 +238,7 @@ public class PlayerKnowledge {
         Map<ObjectModifier, Integer> modifiers = item.getModifiers();
         Map<ObjectModifier, Integer> newModifiers = new LinkedHashMap<>();
         for (ObjectModifier modifier : ObjectModifier.values()) {
+            if (modifier == ObjectModifier.OM_NONE || modifier == ObjectModifier.OM_MAX) continue;
             newModifiers.put(modifier, 0);
         }
         for (ObjectModifier key : modifiers.keySet()) {
@@ -186,8 +259,13 @@ public class PlayerKnowledge {
             newElInfo.put(element, zero);
         }
         for (ElementEnum key : knownElements.keySet()) {
-            if (knownElements.get(key))
-                newElInfo.put(key, itemElInfo.get(key).copy());
+            if (knownElements.get(key)) {
+                if (itemElInfo.containsKey(key)) {
+                    newElInfo.put(key, itemElInfo.get(key).copy());
+                } else {
+                    newElInfo.put(key, new ElementInfo());
+                }
+            }
         }
         known.setElInfo(newElInfo);
 
@@ -202,48 +280,33 @@ public class PlayerKnowledge {
             return;
 
         // Brands
-        Set<Brand> brands = item.getBrands();
-        if (brands == null) brands = new HashSet<>();
-        Set<Brand> knownBrands = known.getBrands();
-        if (knownBrands == null) knownBrands = new HashSet<>();
-        Set<Brand> union = new HashSet<>(brands);
-        union.addAll(knownBrands);
-
         boolean knownBrand = false;
-        for (Brand brand : union) {
-            if (knowsBrand(player, brand)) {
-                known.addBrand(brand);
+        for (Brand brand : ObjectRegistry.getBrands()) {
+            if (player.playerKnowsBrand(brand) && item.getBrands().contains(brand)) {
+                item.getKnown().addBrand(brand);
                 knownBrand = true;
             } else {
-                known.removeBrand(brand);
+                item.getKnown().removeBrand(brand);
             }
         }
 
-        if (!knownBrand && !known.getBrands().isEmpty()) {
-            known.clearBrands();
+        if (!knownBrand) {
+            item.getKnown().clearBrands();
         }
 
         // Slays
-        Set<Slay> itemSlays = item.getSlays();
-        if (itemSlays == null) itemSlays = new HashSet<>();
-        Set<Slay> knownSlays = known.getSlays();
-        if (knownSlays == null) knownSlays = new HashSet<>();
-        Set<Slay> unionSlays = new HashSet<>(itemSlays);
-        unionSlays.addAll(knownSlays);
-
-        boolean knowSlay = false;
-
-        for (Slay slay : unionSlays) {
-            if (knowsSlay(player, slay)) {
-                known.addSlay(slay);
-                knowSlay = true;
+        boolean knownSlay = false;
+        for (Slay slay : ObjectRegistry.getSlays()) {
+            if (player.playerKnowsSlay(slay) && item.getSlays().contains(slay)) {
+                item.getKnown().addSlay(slay);
+                knownSlay = true;
             } else {
-                known.removeSlay(slay);
+                item.getKnown().removeSlay(slay);
             }
         }
 
-        if (!knowSlay && !known.getSlays().isEmpty()) {
-            known.clearSlays();
+        if (!knownSlay) {
+            item.getKnown().clearSlays();
         }
 
         // Curses - be careful re alignment of knowledge
@@ -251,8 +314,10 @@ public class PlayerKnowledge {
         if (!itemCurses.isEmpty()) {
             boolean knownCursed = false;
 
-            for (Curse curse : itemCurses.keySet()) {
-                if (player.itemKnowledge.curseIsKnown(curse) && itemCurses.get(curse).getPower() != 0) {
+            for (Curse curse : ObjectRegistry.getCurses()) {
+                if (player.itemKnowledge.curseIsKnown(curse)
+                        && itemCurses.containsKey(curse)
+                        && itemCurses.get(curse).getPower() != 0) {
                     knownCursed = true;
                     CurseData oldData = itemCurses.get(curse);
                     CurseData data = new CurseData(oldData.getPower(), 0);
@@ -270,7 +335,7 @@ public class PlayerKnowledge {
         }
 
         // ego type & jewellery type
-        if (knowsEgo(player, item)) {
+        if (knowsEgo(player, item.getEgo(), item)) {
             seen = item.getEgo().isEverSeen();
             known.setEgo(item.getEgo());
         } else {
@@ -290,7 +355,8 @@ public class PlayerKnowledge {
         // Effect is known
         if ((itemKind.isAware() && itemKind.getFlavour() != null) ||
                 (!item.gettValue().isWearable() && itemKind.getFlavour() == null) ||
-                (item.gettValue().isWearable() && itemKind.getEffect() != null && itemKind.isAware())) {
+                (item.gettValue().isWearable() && itemKind.getEffect() != null && !itemKind.getEffect().isEmpty()
+                        && itemKind.isAware())) {
             known.setEffect(item.getEffect());
         }
 
@@ -298,19 +364,24 @@ public class PlayerKnowledge {
         if (!seen) {
             String objectName;
             Flag<ObjectDescription> descriptionFlag = new Flag<>(ObjectDescription.class);
+            Chunk currentCave = GameState.getCave();
 
             if (ObjectUtils.isCarried(player, item)) {
                 descriptionFlag.set(ObjectDescription.ODESC_PREFIX,
                         ObjectDescription.ODESC_COMBAT, ObjectDescription.ODESC_EXTRA);
                 objectName = item.description(descriptionFlag, player);
-                String msg = String.format("You have %s (%c)", objectName, ObjectUtils.gearToLabel(player, item));
-                Message.message(msg);
-            } else if (player.getCave() != null && player.getCave().getSquare(player.getGrid()).holdsObject(item)) {
+                int onLength = Math.min(79, objectName.length());
+                objectName = objectName.substring(0, onLength);
+                String msg = String.format("You have %s (%c).", objectName, ObjectUtils.gearToLabel(player, item));
+                Message.message("%s", msg);
+            } else if (currentCave != null && currentCave.getSquare(player.getGrid()).holdsObject(item)) {
                 descriptionFlag.set(ObjectDescription.ODESC_PREFIX,
                         ObjectDescription.ODESC_COMBAT, ObjectDescription.ODESC_EXTRA);
                 objectName = item.description(descriptionFlag, player);
+                int onLength = Math.min(79, objectName.length());
+                objectName = objectName.substring(0, onLength);
                 String msg = String.format("On the ground: %s.", objectName);
-                Message.message(msg);
+                Message.message("%s", msg);
             }
         }
 
@@ -320,6 +391,7 @@ public class PlayerKnowledge {
                 if (element == ElementEnum.ELEM_NONE || element == ElementEnum.ELEM_MAX) continue;
 
                 ElementInfo eInfo = itemElInfo.get(element).copy();
+
                 known.putElInfo(element, eInfo);
             }
 
@@ -352,8 +424,14 @@ public class PlayerKnowledge {
      * modifiers and elements it actually carries; C can loop over fixed bounds because its arrays
      * have a slot for every one.
      *
+     * <p>C returns false for brands and slays only when the item has the array and the counterpart
+     * lacks it, then tests each entry. Here {@link ItemObject#getBrands()} and
+     * {@link ItemObject#getSlays()} answer an empty set for a missing field, so one {@code containsAll}
+     * covers both of C's tests. The {@code null} guard on the counterpart's slays can therefore never
+     * fire; it is a leftover and changes no answer.
+     *
      * <p>Function nonCurseRunesKnown coded before 260817, made public on 260817 when
-     * {@code ItemObject}'s duplicate was folded into it, commented in full on 260817.
+     * {@code ItemObject}'s duplicate was folded into it, commented in full on 261004.
      *
      * @param item the item to test
      * @return {@code true} if every non-curse rune on the item has been learned
@@ -373,19 +451,27 @@ public class PlayerKnowledge {
         Map<ObjectModifier, Integer> knownModifiers = knownItem.getModifiers();
         Map<ObjectModifier, Integer> itemModifiers = item.getModifiers();
 
-        for (ObjectModifier key : itemModifiers.keySet()) {
+        for (ObjectModifier key : ObjectModifier.values()) {
             if (key == ObjectModifier.OM_MAX || key == ObjectModifier.OM_NONE) continue;
-            if (!knownModifiers.containsKey(key)) return false;
-            if (!Objects.equals(knownModifiers.get(key), itemModifiers.get(key))) return false;
+            if (!knownModifiers.getOrDefault(key, 0).equals(itemModifiers.getOrDefault(key, 0)))
+                return false;
         }
 
         // elements
         Map<ElementEnum, ElementInfo> knownEInfo = knownItem.getElInfo();
         Map<ElementEnum, ElementInfo> itemEInfo = item.getElInfo();
 
-        for (ElementEnum key : itemEInfo.keySet()) {
-            if (!knownEInfo.containsKey(key)) return false;
-            if (itemEInfo.get(key).getResLevel() != 0 && knownEInfo.get(key).getResLevel() == 0) return false;
+        if (!knownEInfo.isEmpty() || !itemEInfo.isEmpty()) {
+            for (ElementEnum key : ElementEnum.values()) {
+                if (key == ElementEnum.ELEM_NONE || key == ElementEnum.ELEM_MAX) continue;
+
+                ElementInfo value = itemEInfo.get(key);
+                ElementInfo knownValue = knownEInfo.get(key);
+
+                if ((knownValue == null || knownValue.getResLevel() == 0)
+                        && value != null && value.getResLevel() != 0)
+                    return false;
+            }
         }
 
         // Brands
@@ -417,11 +503,15 @@ public class PlayerKnowledge {
      * which still has to be learned rune by rune. So the kind-level facts are copied here and the
      * per-object ones are left to {@link PlayerKnowledge#knowObject}.
      *
-     * <p>The dice, armour class and to-hit are copied only where the counterpart still holds
-     * nothing, so that a figure already learned is never overwritten by the kind's generic one. Each
-     * is multiplied by the corresponding 0/1 flag on {@link KnownObject}, which is how C masks a
-     * property the player cannot yet read: an unknown armour class multiplies to zero rather than
-     * being copied.
+     * <p>The dice and armour class are copied only where the counterpart still holds nothing, so that
+     * a figure already learned is never overwritten by the kind's generic one. Each is multiplied by
+     * the corresponding 0/1 flag on {@link KnownObject}, which is how C masks a property the player
+     * cannot yet read: an unknown armour class multiplies to zero rather than being copied.
+     *
+     * <p>The to-hit follows a different rule. It is not multiplied and not gated on the counterpart
+     * being empty: when {@link ItemObject#hasStandardToH} says the item carries only its kind's usual
+     * to-hit, the kind's base figure is written outright, because a figure every item of the kind
+     * shares tells the player nothing to learn. A launcher's pval is copied the same way.
      *
      * <p>The effect is copied in two cases, and both are about whether using the item would have
      * taught it. A flavoured kind the player is aware of has been used before; an unflavoured
@@ -432,7 +522,7 @@ public class PlayerKnowledge {
      * carried object without one is a broken invariant rather than a case to handle: C asserts on
      * the same condition.
      *
-     * <p>Function setBaseKnown coded before 260817, commented in full on 260817.
+     * <p>Function objectSetBaseKnown coded before 260817, commented in full on 261004.
      *
      * @param player the player whose awareness of the item's kind decides how much of the
      *               kind-level detail may be copied across
@@ -474,13 +564,14 @@ public class PlayerKnowledge {
         }
 
         // standard activations
-        if (item.gettValue().isWearable() && itemKind.isAware() && itemKind.getEffect() != null)
+        if (item.gettValue().isWearable() && itemKind.isAware() && itemKind.getEffect() != null
+                && !itemKind.getEffect().isEmpty())
             known.setEffect(item.getEffect());
     }
 
     /**
      * Marks an object's flavour as one the player has become aware of, and propagates the
-     * consequences — the port of C's {@code object_flavor_aware} ({@code obj-knowledge.c:2262}).
+     * consequences — the port of C's {@code object_flavor_aware} ({@code obj-knowledge.c}).
      *
      * <p><b>Awareness is a property of the kind, not of the object.</b> Learning that the pink potion
      * is a Potion of Speed is learning it about every pink potion in the game at once, which is why
@@ -511,7 +602,10 @@ public class PlayerKnowledge {
      * stub deferred to Chapter 4, so the sweep computes the right set of squares and then redraws
      * none of them. Neither is a divergence in this method's own logic.
      *
-     * <p>Function flavourAware coded on 260816, commented in full on 260816.
+     * <p>Where C asserts that the object has a known counterpart, this returns quietly without one,
+     * and it also returns quietly for an object with no kind.
+     *
+     * <p>Function flavourAware coded on 260816, commented in full on 261004.
      *
      * @param player the player who has just become aware of the flavour, and whose ignore
      *               settings and carried objects are brought into step with it
@@ -577,22 +671,24 @@ public class PlayerKnowledge {
      * gives the player nothing to have failed to notice. That is why an unreadable modifier only
      * disqualifies the ego when the range cannot produce zero ({@code modmax * modmin > 0}) or when
      * this particular item did roll a non-zero value. The ranges are evaluated at both extremes at
-     * maximum depth, following C.
+     * maximum depth, following C. C passes {@code MAX_RAND_DEPTH} as that level; this passes the
+     * world's maximum depth, which has the same value in the stock data, and the level is ignored
+     * by the maximising and minimising aspects in any case.
      *
      * <p>The item is a parameter rather than the ego alone for exactly that test: C accepts a null
      * object and skips the concession when it has no specific item to consult.
      *
-     * <p>Function knowsEgo coded before 260817, commented in full on 260817.
+     * <p>Function knowsEgo coded before 260817, commented in full on 261004.
      *
      * @param player the player whose rune knowledge each of the ego's properties is tested
      *               against
-     * @param item   the item whose ego is being tested
+     * @param ego    the ego type being tested; {@code null} means the item has none
+     * @param item   the item whose ego is being tested; may be {@code null} to ask whether the ego
+     *               is known in general, which withholds the zero-range concession
      * @return {@code true} if the ego is one the player could now identify, {@code false} for an
      * item with no ego at all
      */
-    public static boolean knowsEgo(Player player, ItemObject item) {
-        EgoItem ego = item.getEgo();
-
+    public static boolean knowsEgo(Player player, EgoItem ego, ItemObject item) {
         if (ego == null) return false;
 
         Flag<ObjectFlag> knownFlags = player.itemKnowledge.getFlags();
@@ -612,7 +708,8 @@ public class PlayerKnowledge {
             int modMin = egoModifier.randCalc(GameConstants.getWorldMaxDepth(), DamageAspect.MINIMIZE);
 
             if ((modMax > 0 || modMin < 0) && !player.itemKnowledge.modifierIsKnown(modifier))
-                if (modMax * modMin > 0 || item.getModifiers().getOrDefault(modifier, 0) != 0)
+                if (item == null || modMax * modMin > 0
+                        || item.getModifiers().getOrDefault(modifier, 0) != 0)
                     return false;
         }
 
@@ -662,6 +759,11 @@ public class PlayerKnowledge {
      * same case. The knowledge update stays outside that guard in both, running even when the
      * lookup found nothing.
      *
+     * <p>Unlike {@link #learnBrand} and {@link #learnSlay}, this keeps C's trailing
+     * {@code update_player_object_knowledge}, and keeps it outside the rune guard.
+     *
+     * <p>Function learnCurse coded before 261004, commented in full on 261004.
+     *
      * @param player the player who has just had the curse's nature revealed to them
      * @param curse  the curse whose nature has now been revealed
      */
@@ -686,10 +788,11 @@ public class PlayerKnowledge {
      * {@code update_player_object_knowledge}, which this port deliberately drops. It cannot do
      * anything: the guard above means the rune is unknown whenever the call is reached — knowledge
      * of a brand and of its rune move together, since {@link KnownObject#learnBrand} marks every
-     * same-named brand at once — so {@link PlayerKnowledge#learnRune} always learns, and always updates. The
-     * duplicate is boilerplate copied from {@code player_learn_flag}, which has no guard and so is
-     * the one wrapper where the trailing call can be the only one that runs. Even there it changes
-     * nothing, because it recomputes identical values.
+     * same-named brand at once — so {@link PlayerKnowledge#learnRune} always learns, and always
+     * updates. The trailing call is boilerplate shared with {@code player_learn_flag}, where it is
+     * not redundant; see {@link #learnFlag}.
+     *
+     * <p>Function learnBrand coded before 261004, commented in full on 261004.
      *
      * @param player the player who has just seen the brand fire
      * @param brand  any brand of the wanted kind, at any strength
@@ -717,6 +820,8 @@ public class PlayerKnowledge {
      * <p>As with {@link #learnBrand}, C's trailing {@code update_player_object_knowledge} is
      * dropped — the guard means {@link PlayerKnowledge#learnRune} always learns, and so always updates.
      *
+     * <p>Function learnSlay coded before 261004, commented in full on 261004.
+     *
      * @param player the player who has just seen the slay bite
      * @param slay   any slay of the wanted kind, at any strength
      */
@@ -732,6 +837,8 @@ public class PlayerKnowledge {
      * not its group — which is the same thing in practice, because learning any member of a group
      * marks all of them (see {@link KnownObject#learnBrand}).
      *
+     * <p>Function knowsBrand coded before 261004, commented in full on 261004.
+     *
      * @param player the player whose knowledge is being asked about
      * @param brand  the brand to ask about
      * @return true if the player recognises this brand
@@ -743,7 +850,7 @@ public class PlayerKnowledge {
     /**
      * Records that the player has learned to recognise an object flag. The port of C's
      * {@code player_learn_flag}, whose one caller is the failed uncursing that leaves an item
-     * {@code OF_FRAGILE} ({@code effect-handler-general.c:203}).
+     * {@code OF_FRAGILE} ({@code effect-handler-general.c}, function {@code uncurse_object}).
      *
      * <p>Flags need no group resolution — each has its own rune, so unlike {@link PlayerKnowledge#learnBrand} and
      * {@link PlayerKnowledge#learnSlay} there is no equivalence class for {@link Rune#runeIndex(ObjectFlag)} to
@@ -752,26 +859,31 @@ public class PlayerKnowledge {
      * rather than the player, and the curse-only ones. {@link #learnRune} logs that and returns,
      * where C hands {@code rune_index}'s {@code -1} straight to {@code rune_list[-1]}.
      *
-     * <p><b>The already-known guard is this port's, not C's.</b> C's version is unguarded, and
-     * relies on the flag arm of {@code player_learn_rune} using {@code of_on}, which reports
-     * whether it changed anything — so a flag learned twice is silently not announced twice. The
-     * guard here changes no answer (it is the same test one call deeper) and buys consistency with
-     * the other wrappers. It also makes C's trailing {@code update_player_object_knowledge}
-     * unreachable, which matters only in that this was the single wrapper where that call could
-     * have been the one that ran; it recomputed identical values, so nothing is lost.
+     * <p><b>There is no already-known guard, as in C, and the trailing update is load-bearing.</b>
+     * The flag arm of {@code player_learn_rune} uses {@code of_on}, which reports whether it changed
+     * anything, so a flag learned twice is silently not announced twice. What the second call must
+     * still do is the update that follows {@code learnRune}. The caller sets {@code OF_FRAGILE} on
+     * the object <em>before</em> calling here, so when the player already knows the fragile rune
+     * {@link #learnRune} learns nothing and returns without updating, and only this method's own
+     * {@link #updateObjectKnowledge} refreshes the object's known copy to show the new flag. Where
+     * the rune is new, {@code learnRune} has already updated and this call is a repeat of it, which
+     * is C's behaviour too. The sibling wrappers {@link #learnBrand} and {@link #learnSlay} can
+     * drop the trailing call because their guard guarantees the rune is new; this one has no guard.
+     *
+     * <p>Function learnFlag coded before 261004, trailing update added on 261004, commented in full
+     * on 261004.
      *
      * @param player the player to whom the flag has just been shown
      * @param flag   the flag now readable
      */
     public static void learnFlag(Player player, @NotNull ObjectFlag flag) {
-        if (player.itemKnowledge.flagIsKnown(flag)) return;
-
         learnRune(player, Rune.runeIndex(flag), true);
+        updateObjectKnowledge(player);
     }
 
     /**
      * Whether the player can read a rune. The port of C's {@code player_knows_rune}
-     * ({@code obj-knowledge.c:257-306}), and the mirror image of {@link #learnRune}: the same seven
+     * ({@code obj-knowledge.c}), and the mirror image of {@link #learnRune}: the same seven
      * varieties, each asking {@link Player#itemKnowledge} the question the corresponding {@code learn}
      * arm answers.
      *
@@ -783,7 +895,7 @@ public class PlayerKnowledge {
      *
      * <p>Two arms are worth reading against C rather than taken on trust. The curse arm is
      * {@code p->obj_k->curses[index].power == 1}, where {@code power} is a severity everywhere else
-     * in the game but a 0/1 flag on the knowledge side — {@code save.c:661} writes it as
+     * in the game but a 0/1 flag on the knowledge side — {@code save.c} writes it as
      * {@code power ? 1 : 0} — so {@link KnownObject#curseIsKnown} answering from a boolean loses
      * nothing. The combat arm splits three ways on {@link CombatRunes} where C compares
      * {@code r->index} against three constants, and its {@code COMBAT_RUNE_MAX} case is the
@@ -792,6 +904,8 @@ public class PlayerKnowledge {
      * <p>No {@code default}: the switch is over the sealed {@link RuneVariety}, so the compiler
      * proves the seven are covered. An eighth variety would be a compile error here, which is the
      * point — a {@code default} would answer {@code false} for it and say nothing.
+     *
+     * <p>Function knowsRune coded before 261004, commented in full on 261004.
      *
      * @param player the player whose {@link Player#itemKnowledge} answers the question
      * @param rune   the rune to ask about
@@ -830,6 +944,8 @@ public class PlayerKnowledge {
      * same answer either way: {@link KnownObject#learnSlay} marks every slay that kills the same
      * monsters, so the cost of grouping is paid once on the learning side and this stays cheap.
      *
+     * <p>Function knowsSlay coded before 261004, commented in full on 261004.
+     *
      * @param player the player whose knowledge is being asked about
      * @param slay   the slay to ask about
      * @return true if the player recognises this slay
@@ -847,15 +963,17 @@ public class PlayerKnowledge {
      * permanent — but on the knowledge side it only ever holds 0 or 1, because C types
      * {@code p->obj_k} as a whole {@code struct object} and inherits {@code struct curse_data}
      * whether it wants two integers or not. {@code player_learn_rune} writes a literal 1 and
-     * {@code save.c:661} normalises with {@code power ? 1 : 0}. So the port keeps a boolean, and
+     * {@code save.c} normalises with {@code power ? 1 : 0}. So the port keeps a boolean, and
      * the {@code == 1} has nothing to test.
      *
-     * <p>The two meanings meet in {@code player_know_object} ({@code obj-knowledge.c:1131}), where
+     * <p>The two meanings meet in {@code player_know_object} ({@code obj-knowledge.c}), where
      * this answer <em>gates</em> the real severity: a recognised curse shows its true power on the
      * known copy of an object, an unrecognised one reads as zero. That is why the curse-removal
      * menu can offer only what the player has learned.
      *
      * <p>Curses are never grouped, so unlike brands and slays there is no fan-out behind this.
+     *
+     * <p>Function knowsCurse coded before 261004, commented in full on 261004.
      *
      * @param player the player whose knowledge is being asked about
      * @param curse  the curse to ask about
@@ -868,7 +986,7 @@ public class PlayerKnowledge {
     /**
      * Learns a single rune: marks the property it names as readable, announces it if anything was
      * genuinely new, and updates everything the player can now see. The port of C's
-     * {@code player_learn_rune} ({@code src/obj-knowledge.c}), and the one place object knowledge
+     * {@code player_learn_rune} ({@code obj-knowledge.c}), and the one place object knowledge
      * is added.
      *
      * <p><b>This is an internal choke point, not an entry point.</b> C keeps it file-{@code static}
@@ -894,14 +1012,17 @@ public class PlayerKnowledge {
      * <p>Package-private rather than {@code private} because {@code PlayerRuneLearningTest} shares
      * the package and drives this directly, to exercise each of the seven variety arms in isolation.
      *
-     * <p><b>A wrapper does not need to call {@link #updateObjectKnowledge(Player)} ()}.</b> This method
-     * leaves object knowledge propagated on every path that learned anything, and that is the
+     * <p><b>A wrapper does not usually need to call {@link #updateObjectKnowledge(Player)}.</b> This
+     * method leaves object knowledge propagated on every path that learned anything, and that is the
      * invariant the rest of the system is written against: most of C's callers — the
      * {@code equip_learn_*} family, {@code object_learn_on_wield},
      * {@code object_learn_unknown_rune}, {@code missile_learn_on_ranged_attack}, the
      * {@code object_curses_find_*} family, {@code player_learn_all_runes} — have no update call of
-     * their own and rely entirely on this one. Only four of C's wrappers add a second, and it is
-     * redundant in each (see {@link PlayerKnowledge#learnBrand}); this port omits it rather than copy it.
+     * their own and rely entirely on this one. Five of C's wrappers add a second. It is redundant
+     * in {@code player_learn_brand} and {@code player_learn_slay}, whose guard makes the rune new,
+     * and this port omits it there (see {@link PlayerKnowledge#learnBrand}). It is kept in
+     * {@link #learnFlag}, {@link #learnCurse} and {@link #learnInnate}, where nothing guarantees
+     * that {@code learnRune} learned anything and the caller may have changed an object first.
      *
      * <p>The switch is over a sealed interface, so the seven varieties are matched as record
      * patterns and the compiler proves the set is covered — no {@code default} arm, and no cast to
@@ -916,17 +1037,19 @@ public class PlayerKnowledge {
      * <p>The tail order matters and is C's: nothing learned means no message and no update, so a
      * property learned twice is announced once.
      *
+     * <p>Function learnRune coded before 260815, commented in full on 261004, narrowed to
+     * package-private on 260815, briefly public while the curse-finding family lived on
+     * {@link ItemObject}, and narrowed again on 260815 when that family moved here. It had become
+     * {@code public} again by 261004 and was narrowed to package-private once more that day.
+     *
      * @param player       the player learning the rune, and whose object knowledge is
      *                     propagated afterwards on every path that learned anything
      * @param rune         the rune to learn; null is logged and ignored, standing in for C's
      *                     {@code assert} on the rune index
-     *                     <p>Function learnRune coded before 260815, commented in full before 260815, narrowed to
-     *                     package-private on 260815, briefly public while the curse-finding family lived on
-     *                     {@link ItemObject}, and narrowed again on 260815 when that family moved here.
      * @param printMessage whether to announce the discovery, false for the paths that learn in
      *                     bulk and would otherwise bury the player in messages
      */
-    public static void learnRune(Player player, Rune rune, boolean printMessage) {
+    static void learnRune(Player player, Rune rune, boolean printMessage) {
         if (rune == null) {
             logger.warn("Rune is null on entering learnRune");
             return;
@@ -982,15 +1105,18 @@ public class PlayerKnowledge {
      * <p>The work is a recomputation rather than a step, so calling this twice in a row is
      * harmless — which is why C's habit of calling it again in the learning wrappers went
      * unnoticed. It is not free, though: each call sweeps four populations and signals two events,
-     * so the port calls it once, from {@link PlayerKnowledge#learnRune}.
+     * so the port calls it from {@link PlayerKnowledge#learnRune} and, where C's trailing call
+     * is not redundant, from {@link #learnFlag}, {@link #learnCurse} and {@link #learnInnate}.
      *
-     * <p><b>One of the four populations are live.</b> The level and the pack are walked; stores is 
-     * not, and isn't a matter of writing the loop:
+     * <p><b>Three of the four populations are live.</b> The level, the pack and the curse
+     * definitions are walked; the stores are not, and that is not a matter of writing the loop:
      *
      * <ul>
      *   <li><b>Stores</b> wait on the shop subsystem, Chapter 8.</li>
-     *   <li><b>Autoinscribe</b> of ground and pack waits on Chapter 4.</li>
      * </ul>
+     *
+     * <p>The autoinscription of the ground and the pack is live: {@link ObjectIgnore#autoinscribeGround}
+     * runs only when a level exists, and {@link ObjectIgnore#autoinscribePack} always runs.
      *
      * <p><b>The guards are not symmetrical, and only one of them is C's.</b> {@code if (cave)} is
      * real and load-bearing — knowledge is updated during birth and on loading a save, before any
@@ -1008,8 +1134,8 @@ public class PlayerKnowledge {
      * its outcome — deliberately, so that it stays valid however {@code knowObject} changes.
      *
      * <p>Function updateObjectKnowledge coded before 260815 as a stub, implemented as far as the
-     * available subsystems allow on 260815, commented in full on 260815. Stub note on
-     * {@code knowObject} corrected on 260816.
+     * available subsystems allow on 260815, commented in full on 261004, population and
+     * autoinscription notes corrected on 261004.
      *
      * @param player the player whose knowledge has just changed, and whose level and gear are
      *               re-derived from it
@@ -1052,15 +1178,17 @@ public class PlayerKnowledge {
 
     /**
      * Transfers what the player knows about object properties in general onto one curse definition —
-     * the curse half of C's {@code player_know_object} ({@code obj-knowledge.c:1032}), which the
+     * the curse half of C's {@code player_know_object} ({@code obj-knowledge.c}), which the
      * port has to split into a second method because a curse is no longer an object.
      *
      * <p><b>Why there is an overload at all.</b> C hangs a curse's properties on a bearer-less
-     * {@code struct object} with a null {@code kind} ({@code curses[i].obj}) and feeds it to the
-     * same function as a real sword; the null kind is what makes it take the short path.
-     * {@link Curse} flattens those properties onto itself instead — the shape recorded on that
+     * {@code struct object} ({@code curses[i].obj}) and feeds it to the same function as a real
+     * sword. That object has the {@code <curse object>} kind, set by {@code write_curse_kinds} in
+     * {@code obj-init.c}, together with a known counterpart marked {@code OBJ_NOTICE_ASSESSED}, so it
+     * does not take the null-kind short path its "Curse object structures are finished now" comment
+     * suggests. {@link Curse} flattens those properties onto itself instead — the shape recorded on that
      * class — so there is no {@link ItemObject} to hand to
-     * {@link #knowObject(Player, ItemObject)}, and the short path becomes a method of its own. The
+     * {@link #knowObject(Player, ItemObject)}, and the curse case becomes a method of its own. The
      * TODO this discharges is the one described at {@link #updateObjectKnowledge}: the curse
      * population had nowhere to put its answer until {@link Curse} grew the {@code known*} fields.
      *
@@ -1072,11 +1200,15 @@ public class PlayerKnowledge {
      * curse in {@link ObjectRegistry} on each rune learned rather than over the curses on some
      * particular item.
      *
-     * <p><b>What C's short path omits, and this omits with it.</b> There are no early returns: a
-     * curse always exists, always has its known fields, has no kind to mismatch and is never a
-     * distant object, so the three guards at the head of {@link #knowObject(Player, ItemObject)}
-     * have nothing to guard. The dice/sides/base-AC/pval block goes too — a curse has none of them.
-     * What is left is C's four blocks in C's order: combat details, modifiers, elements, flags.
+     * <p><b>What this leaves out, and why C's answer is unchanged.</b> There are no early returns: a
+     * curse always exists, always has its known fields, has a kind that matches its counterpart's
+     * and is never a distant object, so the guards at the head of
+     * {@link #knowObject(Player, ItemObject)} have nothing to guard. The dice/sides/base-AC/pval
+     * block goes too — a curse object's dice and armour class are zero, so C's multiplications
+     * would write zeros over zeros. The brand, slay, curse, ego and jewellery blocks are left out
+     * because a curse object has no brands, slays, curses or ego, is not jewellery and is not a
+     * special artifact kind. What is run is C's combat details, modifiers, elements and flags, then
+     * the effect and the fully-known copy.
      *
      * <p>Within those four, two details differ from the object version and both follow from the
      * flattening:
@@ -1098,17 +1230,14 @@ public class PlayerKnowledge {
      * mutates its receiver — but {@link KnownObject#getFlags()} hands back a fresh copy, so what is
      * narrowed is a throwaway.
      *
-     * <p><b>Outstanding: the last two steps have no counterpart in C.</b> C returns at "Curse object
-     * structures are finished now", immediately after the flags — before the effect assignment and
-     * before the fully-known block — so a curse object never reaches either, and
-     * {@code object_fully_known} is never handed one from anywhere else in the original. This method
-     * carries on into both. The effect assignment is unconditional here, where C's is gated on the
-     * kind's awareness and flavour, neither of which a curse has; the consequence is that
-     * {@link Curse#isFullyKnown()}'s effect test always passes. Whether the port wants these two
-     * steps at all is the open question — see {@link Curse#isFullyKnown()} and
-     * {@link Curse#hasStandardToH()}, where the one behavioural difference they produce is set out.
+     * <p><b>The last two steps are C's.</b> C's "Curse object structures are finished now" return
+     * is never taken for a curse object, because its kind is not null, so C does run the effect
+     * assignment and the fully-known block on it. The effect assignment is unconditional here
+     * where C's is gated, which comes to the same thing: a curse object is not wearable and has no
+     * flavour, so C's second test, an unflavoured non-wearable, always passes.
      *
-     * <p>Function knowObject(Player, Curse) coded before 260901, commented in full on 260901.
+     * <p>Function knowObject(Player, Curse) coded before 260901, commented in full on 261004,
+     * null-kind and outstanding paragraphs corrected on 261004.
      *
      * @param player the player whose standing rune knowledge decides what the curse is allowed to
      *               show; nothing here is read off the curse to decide it
@@ -1130,6 +1259,7 @@ public class PlayerKnowledge {
             newModifiers.put(modifier, 0);
         }
         for (ObjectModifier key : modifiers.keySet()) {
+            if (key == ObjectModifier.OM_MAX || key == ObjectModifier.OM_NONE) continue;
             if (player.itemKnowledge != null && player.itemKnowledge.modifierIsKnown(key))
                 newModifiers.put(key, modifiers.get(key));
         }
@@ -1201,10 +1331,14 @@ public class PlayerKnowledge {
      * <p>The flag loop walks all of {@link ObjectFlag} and asks the race about each, where C walks
      * only the bits actually set, with {@code of_next}. Same set reached, more iterations.
      *
-     * <p>C closes with {@code update_player_object_knowledge}, dropped here as in the other
-     * wrappers. The reasoning differs slightly: there is no guard to make it unreachable, but each
-     * {@link PlayerKnowledge#learnRune} that learned anything has already updated, and if the race knows nothing
-     * innately then C's call recomputes a knowledge state that never changed.
+     * <p>C closes with {@code update_player_object_knowledge}, and so does this method. Each
+     * {@link PlayerKnowledge#learnRune} that learned anything has already updated, so the closing
+     * call repeats that work, but it is not dropped as it is in {@link #learnBrand}: there is no
+     * guard here to guarantee a rune was learned, and keeping C's shape costs one recomputation at
+     * birth.
+     *
+     * <p>Function learnInnate coded before 261004, commented in full on 261004, closing-update
+     * paragraph corrected on 261004.
      *
      * @param player the player whose race's own resistances and flags are made readable, along
      *               with the runes naming them
@@ -1226,6 +1360,8 @@ public class PlayerKnowledge {
                 learnRune(player, rune, false);
             }
         }
+
+        updateObjectKnowledge(player);
     }
 
     /**
@@ -1245,6 +1381,8 @@ public class PlayerKnowledge {
      * falls out at {@link PlayerKnowledge#learnRune}'s own guard and the trailing
      * {@link #updateObjectKnowledge} fires once per rune actually learned.
      *
+     * <p>Function learnAllRunes coded before 261004, commented in full on 261004.
+     *
      * @param player the player handed the whole rune list at once
      */
     public static void learnAllRunes(Player player) {
@@ -1255,7 +1393,7 @@ public class PlayerKnowledge {
 
     /**
      * Learns the to-AC rune from whatever the player is wearing, on the occasion of being
-     * attacked. The port of C's {@code equip_learn_on_defend} ({@code obj-knowledge.c:1970}), the
+     * attacked. The port of C's {@code equip_learn_on_defend} ({@code obj-knowledge.c}), the
      * first of the {@code equip_learn_*} family and the model for the rest.
      *
      * <p>The premise is that a property announces itself when it does its job. A blow that lands
@@ -1290,7 +1428,7 @@ public class PlayerKnowledge {
      * name the definition {@code p->shape} already points at.
      *
      * <p>Function equipLearnOnDefend coded before 260815, commented in full before 260815, updated on
-     * 260815 when the item's own bonus arm stopped being a stub.
+     * 260815 when the item's own bonus arm stopped being a stub, C line number dropped on 261004.
      *
      * @param player the player who has just been struck, and whose equipped items, their curses
      *               and assumed shape are searched for a to-AC bonus
@@ -1316,7 +1454,7 @@ public class PlayerKnowledge {
 
     /**
      * Learns the to-hit rune from whatever the player is wearing, on the occasion of loosing a
-     * missile. The port of C's {@code equip_learn_on_ranged_attack} ({@code obj-knowledge.c:2003}).
+     * missile. The port of C's {@code equip_learn_on_ranged_attack} ({@code obj-knowledge.c}).
      *
      * <p>Same premise as {@link #equipLearnOnDefend}, applied to accuracy: a shot that flies truer
      * than the archer had any right to expect is evidence that something is helping, and only
@@ -1344,7 +1482,7 @@ public class PlayerKnowledge {
      * armour.
      *
      * <p>Function equipLearnOnRangedAttack coded on 260815, commented in full on 260815,
-     * updated on 260815 to test the predicate the right way round.
+     * updated on 260815 to test the predicate the right way round, C line number dropped on 261004.
      *
      * @param player the player who has just loosed a shot, and whose equipped items, their
      *               curses and assumed shape are searched for a to-hit bonus
@@ -1372,7 +1510,7 @@ public class PlayerKnowledge {
     /**
      * Learns the to-hit and to-damage runes from whatever the player is wearing, on the occasion
      * of striking a blow. The port of C's {@code equip_learn_on_melee_attack}
-     * ({@code obj-knowledge.c:2039}), the largest of the {@code equip_learn_*} family because it is
+     * ({@code obj-knowledge.c}), the largest of the {@code equip_learn_*} family because it is
      * the only one that pursues two runes at once.
      *
      * <p>That pairing is what makes the method's guards different in kind from its siblings'. Both
@@ -1398,7 +1536,8 @@ public class PlayerKnowledge {
      * <p>The shape branch tests {@link PlayerShape#getToHit} and {@link PlayerShape#getToDam}
      * independently rather than as alternatives, since a shape may well grant both.
      *
-     * <p>Function equipLearnOnMeleeAttack coded on 260815, commented in full on 260815.
+     * <p>Function equipLearnOnMeleeAttack coded on 260815, commented in full on 260815, C line number
+     * dropped on 261004.
      *
      * @param player the player who has just landed a blow, and whose equipped items, their
      *               curses and assumed shape are searched for to-hit and to-damage bonuses
@@ -1414,16 +1553,16 @@ public class PlayerKnowledge {
             if (slotObject.getToDam() != 0)
                 learnRune(player, Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_D), true);
 
-            cursesFindToD(player, slotObject);
             cursesFindToH(player, slotObject);
+            cursesFindToD(player, slotObject);
             if (player.itemKnowledge.toDIsKnown() && player.itemKnowledge.toHIsKnown()) return;
         }
         if (player.getShape() != null) {
-            if (player.getShape().getToDam() != 0) {
-                learnRune(player, Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_D), true);
-            }
             if (player.getShape().getToHit() != 0) {
                 learnRune(player, Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_H), true);
+            }
+            if (player.getShape().getToDam() != 0) {
+                learnRune(player, Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_D), true);
             }
         }
     }
@@ -1431,7 +1570,7 @@ public class PlayerKnowledge {
     /**
      * Learns one named object flag from whatever the player is wearing, on the occasion of that
      * flag having just done something. The port of C's {@code equip_learn_flag}
-     * ({@code obj-knowledge.c:2084}), and the busiest member of the family — upstream calls it from
+     * ({@code obj-knowledge.c}), and the busiest member of the family — upstream calls it from
      * some thirty places, each naming the flag its own event could have revealed: {@code OF_AFRAID}
      * on failing to attack, {@code OF_FEATHER} on a fall, {@code OF_HOLD_LIFE} on a drain,
      * {@code OF_TRAP_IMMUNE} on a trap that did not fire.
@@ -1474,7 +1613,7 @@ public class PlayerKnowledge {
      * placeholder.
      *
      * <p>Function equipLearnFlag coded on 260815, commented in full on 260815, updated on 260815
-     * once the curse arm stopped being a stub.
+     * once the curse arm stopped being a stub, C line number dropped on 261004.
      *
      * @param player the player whose equipped items and their curses are searched for the flag
      * @param flag   the flag whose moment this is; ignored if null or a sentinel
@@ -1507,7 +1646,7 @@ public class PlayerKnowledge {
     /**
      * Learns the to-AC rune, and the curse's own rune, if any curse on the given item contributes an
      * armour-class change the player has just felt. The port of C's
-     * {@code object_curses_find_to_a} ({@code obj-knowledge.c:1557}), the first of six near-identical
+     * {@code object_curses_find_to_a} ({@code obj-knowledge.c}), the first of six near-identical
      * functions covering to-AC, to-hit, to-damage, flags, modifiers and elements.
      *
      * <p>A curse is a thing the player learns by being bitten by it, which is why this is reached
@@ -1546,7 +1685,8 @@ public class PlayerKnowledge {
      * already known by that point. Hoisting the lookup out makes the bug unexpressible.
      *
      * <p>Function cursesFindToA coded before 260815, commented in full before 260815, moved here
-     * from {@link ItemObject} on 260815 and its arguments turned round to C's order.
+     * from {@link ItemObject} on 260815 and its arguments turned round to C's order, C line number
+     * dropped on 261004.
      *
      * @param player the player doing the learning, and to whom any discovery is announced
      * @param item   the item whose curses are being read
@@ -1570,7 +1710,7 @@ public class PlayerKnowledge {
     /**
      * Learns the to-damage rune, and the curse's own rune, if any curse on the given item
      * contributes a damage change the player has just dealt. The port of C's
-     * {@code object_curses_find_to_d} ({@code obj-knowledge.c:1603}), the to-damage sibling of
+     * {@code object_curses_find_to_d} ({@code obj-knowledge.c}), the to-damage sibling of
      * {@link #cursesFindToA}.
      *
      * <p>Structurally identical to that method, and the reasoning there applies unchanged: why the
@@ -1583,7 +1723,7 @@ public class PlayerKnowledge {
      *
      * <p>Function cursesFindToD coded on 260815, commented in full on 260815, moved here from
      * {@link ItemObject} on 260815 and its arguments turned round to C's order, {@code testFlags}
-     * widened to {@link FlagView} on 260818.
+     * widened to {@link FlagView} on 260818, C line number dropped on 261004.
      *
      * @param player the player doing the learning, and to whom any discovery is announced
      * @param item   the item whose curses are being read
@@ -1606,7 +1746,7 @@ public class PlayerKnowledge {
     /**
      * Learns the to-hit rune, and the curse's own rune, if any curse on the given item contributes
      * an accuracy change the player has just felt. The port of C's {@code object_curses_find_to_h}
-     * ({@code obj-knowledge.c:1580}), the to-hit sibling of {@link #cursesFindToA}.
+     * ({@code obj-knowledge.c}), the to-hit sibling of {@link #cursesFindToA}.
      *
      * <p>Structurally identical to that method — see it for why the family lives here, why the
      * figure is read from the curse definition ({@link Curse#getCombatToHit}, C's
@@ -1623,7 +1763,7 @@ public class PlayerKnowledge {
      *
      * <p>Function cursesFindToH coded on 260815, commented in full on 260815, moved here from
      * {@link ItemObject} on 260815 and its arguments turned round to C's order, {@code testFlags}
-     * widened to {@link FlagView} on 260818.
+     * widened to {@link FlagView} on 260818, C line number dropped on 261004.
      *
      * @param player the player doing the learning, and to whom any discovery is announced
      * @param item   the item whose curses are being read
@@ -1646,7 +1786,7 @@ public class PlayerKnowledge {
     /**
      * Learns any of the given flags that a curse on the given item has just betrayed, together with
      * the rune of the curse betraying them — the port of C's {@code object_curses_find_flags}
-     * ({@code obj-knowledge.c:1634}), the flag member of the same family as {@link #cursesFindToA}
+     * ({@code obj-knowledge.c}), the flag member of the same family as {@link #cursesFindToA}
      * and its two siblings.
      *
      * <p><b>Why this one takes a set where the others take nothing.</b> The to-AC, to-hit and
@@ -1665,8 +1805,8 @@ public class PlayerKnowledge {
      * {@code retainAll} — it mutates the set it is called on. The flags being intersected belong to
      * the {@link Curse} definition parsed once from {@code curse.txt} and shared by every item
      * carrying that curse, so intersecting them in place would permanently delete from the
-     * definition every flag this one occasion happened not to be asking about.
-     * {@link Flag#set(List)} copies element by element into a fresh set, which is what
+     * definition every flag this one occasion happened not to be asking about. The method
+     * {@code union}s the curse's flags into a fresh working set and intersects that, which is what
      * keeps the definition intact. The caller's own set is left alone for the same reason:
      * {@link #equipLearnFlag} builds one and hands it to every slot in turn.
      *
@@ -1684,7 +1824,8 @@ public class PlayerKnowledge {
      *
      * <p>The per-curse guard is on {@link CurseData#getPower}, as in the three sibling finders and
      * as C's {@code if (!obj->curses[i].power)} requires. Power is what says the curse is on the
-     * item at all — {@link CurseData#setPower} with a zero is how a curse is removed, so a zeroed
+     * item at all. {@link ItemObject#removeCurse} deletes the map entry outright, but a
+     * {@link CurseData} whose power was set to zero in place stays in the map, so a zeroed
      * entry can outlive the curse it names. C's second guard, {@code !curses[i].obj}, has no
      * counterpart: it exists to skip the reserved index 0 of a dense array, and a map holding only
      * the curses this item carries has no such hole.
@@ -1694,7 +1835,8 @@ public class PlayerKnowledge {
      *
      * <p>Function cursesFindFlags coded on 260815, commented in full on 260815, moved here from
      * {@link ItemObject} on 260815 and its arguments turned round to C's order, {@code testFlags}
-     * widened to {@link FlagView} on 260818.
+     * widened to {@link FlagView} on 260818, commented in full on 261004 with the copy description
+     * and C line number corrected.
      *
      * @param player    the player doing the learning, and to whom any discovery is announced
      *                  once play has started
@@ -1742,7 +1884,7 @@ public class PlayerKnowledge {
 
     /**
      * Learns the elemental resistances carried by the player's wielded items — the port of C's
-     * {@code equip_learn_element} ({@code src/obj-knowledge.c:2155}).
+     * {@code equip_learn_element} ({@code obj-knowledge.c}).
      *
      * <p>Called whenever something would have shown the player how well they resist an element: a
      * breath weapon landing, a timed resistance running out, a light or dark attack. Every equipped
@@ -1764,15 +1906,16 @@ public class PlayerKnowledge {
      * <p>C reads its element figures out of a fixed {@code el_info[ELEM_MAX]} array, so an element
      * the object's data line never mentioned still reads back as a zero resistance level and an
      * empty flag set. The port holds only the elements an item actually names, so both reads are
-     * guarded by presence: an absent element takes the same branch C's zero takes, and the flag copy
-     * is skipped because the known counterpart's flag set is already the empty one C would have
-     * copied. The resistance level is written either way, which is the half that matters.
+     * defaulted: an absent element takes the same branch C's zero takes, and in the marking branch
+     * the flags are copied from a blank {@link ElementInfo} when the item names none, which is the
+     * empty set C would have copied.
      *
      * <p>Where the element has no resistance rune, {@link Rune#runeIndex(ElementEnum)} answers
      * {@code null} and {@link PlayerKnowledge#learnRune} declines it, in place of C's {@code -1} index — the same
      * treatment recorded at {@link #objectCursesFindElement}.
      *
-     * <p>Function equipLearnElement commented in full on 260831.
+     * <p>Function equipLearnElement commented in full on 261004, flag-copy note and C line number
+     * corrected on 261004.
      *
      * @param player the player who has just been given the chance to notice the element, and
      *               whose equipped items and their curses are searched for it
@@ -1815,7 +1958,7 @@ public class PlayerKnowledge {
 
     /**
      * Learns what a curse on an item teaches about one element — the port of C's
-     * {@code object_curses_find_element} ({@code src/obj-knowledge.c:1748}).
+     * {@code object_curses_find_element} ({@code obj-knowledge.c}).
      *
      * <p>An item's own element figures are not the only thing that can change how the player resists
      * an element: a curse merged onto the item carries element figures of its own. This walks the
@@ -1845,7 +1988,8 @@ public class PlayerKnowledge {
      * cost is paid whether or not anything is found, but it means the message names the item as it
      * read on entry rather than as the first rune learned this call left it.
      *
-     * <p>Function objectCursesFindElement commented in full on 260831.
+     * <p>Function objectCursesFindElement commented in full on 261004, C line number dropped on
+     * 261004.
      *
      * @param player the player doing the learning, and to whom any discovery is announced
      * @param item   the item whose curses to search
@@ -1882,6 +2026,62 @@ public class PlayerKnowledge {
         return newCurse;
     }
 
+    /**
+     * Learns the properties of an item that are obvious the moment it is put on - the port of C's
+     * {@code object_learn_on_wield} ({@code obj-knowledge.c}). Called when gear is wielded or
+     * worn, and from {@code PlayerBirth} when the starting kit is put on.
+     *
+     * <p><b>Once per item.</b> The first call sets {@code OBJ_NOTICE_WORN} on the item's known
+     * counterpart and does the work; every later call returns at once, so taking an item off and
+     * putting it on again teaches nothing new. The item's description is built before that test,
+     * as in C, so the cost is paid even on a return that learns nothing.
+     *
+     * <p>A successful first call then, in this order:
+     * <ol>
+     *   <li>marks the flavour as tried ({@link ObjectKnowledge#objectFlavourTried});</li>
+     *   <li>builds the mask of flags that are obvious on wielding
+     *       ({@code OFID_WIELD}, via {@link #createObjFlagMask}), and switches on the sustain for
+     *       every stat the item has a nonzero modifier for - a ring of Strength is expected to
+     *       reveal {@code SUST_STR} if it has one;</li>
+     *   <li>learns each flag the item has, that is in the mask, and that the player does not
+     *       already know, announcing it if the game is being played;</li>
+     *   <li>learns each nonzero modifier the player does not already know, announcing it likewise;</li>
+     *   <li>asks the curses on the item to reveal themselves through the to-armour, to-hit,
+     *       to-damage, flag and modifier routes, passing the same mask to the flag route;</li>
+     *   <li>runs the element route for every element whose resistance the player can already read.</li>
+     * </ol>
+     *
+     * <p><b>Only what the item has is learned.</b> The mask says what would be obvious; it is
+     * intersected with the item's own flags, so a sustain the item does not carry is never learned
+     * just because a stat modifier put it in the mask. The intersection is taken on a copy
+     * ({@link ItemObject#getFlags()} returns one), so the item's flags are untouched.
+     *
+     * <p><b>The element route is keyed on the player's knowledge, not the item's.</b> The loop
+     * visits an element when {@code getElementResistInfo()} says the player can already read that
+     * resistance, because a curse that touches a known element is then something the player could
+     * notice. The result of {@code objectCursesFindElement} is discarded, as C casts it to void.
+     *
+     * <p>No message is printed unless {@code isPlaying()} is true, so wielding the starting kit at
+     * birth is silent.
+     *
+     * <p><b>Differences from C that are deliberate.</b>
+     * <ul>
+     *   <li>C asserts that the item has a known counterpart. Here a missing one is logged and the
+     *       call returns without learning anything.</li>
+     *   <li>The loops over stats, modifiers and elements skip the {@code *_NONE} and {@code *_MAX}
+     *       sentinels explicitly, because the enums carry them and C's {@code 0 .. MAX - 1} ranges
+     *       do not.</li>
+     *   <li>The obvious-flag mask is built with no {@code OFT_MAX} terminator, as the Java varargs
+     *       list carries its own length.</li>
+     *   <li>C tests {@code p->obj_k->flags} and {@code p->obj_k->modifiers}; the port asks the
+     *       player's {@code KnownObject} through {@code flagIsKnown} and {@code modifierIsKnown}.</li>
+     * </ul>
+     *
+     * <p>Function objectLearnOnWield coded before 261004, commented in full on 261004.
+     *
+     * @param player the player doing the learning, and to whom any discovery is announced
+     * @param obj    the item just wielded or worn; it needs a known counterpart or nothing happens
+     */
     public static void objectLearnOnWield(Player player, ItemObject obj) {
         if (obj.getKnown() == null) {
             String message = "NO known object for learning on wield.";
@@ -1893,13 +2093,212 @@ public class PlayerKnowledge {
         String name = obj.description(flags, player);
 
         // check the worn flag
-        if (obj.getKnown().getNotice().has(ObjectNotice.OBJ_NOTICE_WORN)) return;
+        if (obj.getKnown().getNoticeHas(ObjectNotice.OBJ_NOTICE_WORN)) return;
 
-        obj.getKnown().getNotice().on(ObjectNotice.OBJ_NOTICE_WORN);
+        obj.getKnown().setNoticeOn(ObjectNotice.OBJ_NOTICE_WORN);
 
         // Worn means tried (for flavoured wearables)
         ObjectKnowledge.objectFlavourTried(obj);
 
+        // Get the obvious object flags
+        Flag<ObjectFlag> obviousMask = createObjFlagMask(true, ObjectFlagID.OFID_WIELD);
 
+        // Make sustains obvious for items with that stat bonus
+        for (Stats stat : Stats.values()) {
+            if (stat == Stats.STAT_MAX || stat == Stats.STAT_NONE)
+                continue;
+
+            SustainStat sustainStat = SustainStat.getSustainFromStat(stat);
+            if (obj.getModifierValue(stat) != 0) {
+                ObjectFlag flag = ObjectFlag.getSustainStatFlag(sustainStat);
+                if (flag != null) {
+                    obviousMask.on(flag);
+                }
+            }
+        }
+
+        // Learn about obvious, previously unknown flags
+        Flag<ObjectFlag> objectFlags = obj.getFlags();
+        objectFlags.inter(obviousMask);
+        for (ObjectFlag flag : objectFlags) {
+            if (!player.getItemKnowledge().flagIsKnown(flag)) {
+                learnRune(player, Rune.runeIndex(flag), true);
+                if (player.getPlayerUpkeep().isPlaying()) {
+                    obj.flagMessage(flag, name);
+                }
+            }
+        }
+
+        // Learn all modifiers
+        for (ObjectModifier mod : ObjectModifier.values()) {
+            if (mod == ObjectModifier.OM_MAX || mod == ObjectModifier.OM_NONE) continue;
+
+            if (obj.getModifierValue(mod) != 0 && !player.getItemKnowledge().modifierIsKnown(mod)) {
+                learnRune(player, Rune.runeIndex(mod), true);
+                if (player.getPlayerUpkeep().isPlaying()) {
+                    obj.modMessage(mod);
+                }
+            }
+        }
+
+        // learn curses
+        cursesFindToA(player, obj);
+        cursesFindToH(player, obj);
+        cursesFindToD(player, obj);
+        cursesFindFlags(player, obj, obviousMask);
+        cursesFindModifiers(player, obj);
+        for (ElementEnum elem : ElementEnum.values()) {
+            if (elem == ElementEnum.ELEM_NONE || elem == ElementEnum.ELEM_MAX) continue;
+            if (player.getItemKnowledge().getElementResistInfo().get(elem)) {
+                objectCursesFindElement(player, obj, elem);
+            }
+        }
+    }
+
+    /**
+     * Learns the modifier runes, and the curse's own rune, for every curse on the given item that
+     * confers a modifier. The port of C's {@code object_curses_find_modifiers}
+     * ({@code obj-knowledge.c}), the modifier sibling of {@link #cursesFindToA}.
+     *
+     * <p>For each curse the item carries, every modifier the curse definition sets to a nonzero
+     * value is looked at in turn. If the player cannot yet read that modifier its rune is learned
+     * and, when the game is being played, {@link ItemObject#modMessage} announces it. The curse's
+     * own rune is then learned as well - once for each nonzero modifier, so a curse conferring
+     * three modifiers relearns its rune three times, which {@link #learnRune} absorbs silently
+     * because it announces nothing for a rune already known. Reached from
+     * {@link #objectLearnOnWield}, so a curse that gives a stat bonus or penalty reveals itself the
+     * moment the item is put on.
+     *
+     * <p><b>Where the figures come from.</b> The modifier values belong to the curse definition,
+     * read through {@link Curse#getModifiers()} (C's {@code curses[i].obj->modifiers[j]}), not to
+     * the item. The item contributes only whether it carries the curse at all.
+     *
+     * <p><b>The skip test is about absence as much as power.</b> C walks a dense array indexed by
+     * curse, so a curse the item does not carry is a slot of power zero and {@code continue}
+     * skips it. {@link ItemObject#getCurses()} is a map that holds only the curses present - a
+     * curse removed or set to power zero is deleted outright - so the same curse is a
+     * {@code null} from {@code get}, and the test checks for that before it reads the power. The
+     * test also skips a curse with no item object, which C writes as {@code !curses[i].obj}; the
+     * parser always creates one, so as in C it never fires in practice.
+     *
+     * <p>The loop is over {@link ObjectRegistry#getCurses()}, not over the item's own map, to keep
+     * C's shape. C starts at index 1 because slot 0 is the reserved no-curse slot; the registry
+     * list has no such placeholder, so beginning at its first entry visits the same curses.
+     *
+     * <p><b>Differences from C that are deliberate.</b>
+     * <ul>
+     *   <li>The modifier loop skips the {@code OM_NONE} and {@code OM_MAX} sentinels explicitly,
+     *       because the enum carries both; C's {@code 0 .. OBJ_MOD_MAX - 1} range contains neither.</li>
+     *   <li>A modifier the curse does not mention reads as absent from its map, where C reads a
+     *       zero from a full array, so the test is {@code containsKey} and nonzero.</li>
+     *   <li>The outer {@code getCurses() != null} test stands in for C's {@code if (obj->curses)}.
+     *       The getter answers an empty map for a never-created field, so the test is always true
+     *       and the empty case falls out of the loop having found nothing.</li>
+     *   <li>A curse with no rune ({@code Rune.runeIndex} returns {@code null}) skips the curse
+     *       learning, standing in for C's {@code index >= 0} test on a failed lookup.</li>
+     * </ul>
+     *
+     * <p>Function cursesFindModifiers coded before 261004, commented in full on 261004.
+     *
+     * @param player the player doing the learning, and to whom any discovery is announced
+     * @param obj    the item whose curses are being read
+     */
+    private static void cursesFindModifiers(Player player, ItemObject obj) {
+        if (obj.getCurses() != null) {
+            for (Curse curse : ObjectRegistry.getCurses()) {
+                Rune index = Rune.runeIndex(curse);
+
+                if (obj.getCurses().get(curse) == null
+                        || obj.getCurses().get(curse).getPower() == 0) {
+                    // || curse.getItemObject() == null) {
+                    continue;
+                }
+
+                // learn all modifiers
+                for (ObjectModifier mod : ObjectModifier.values()) {
+                    if (mod == ObjectModifier.OM_NONE || mod == ObjectModifier.OM_MAX) continue;
+
+                    if (curse.getModifiers().containsKey(mod) && curse.getModifiers().get(mod) != 0) {
+                        if (!player.getItemKnowledge().modifierIsKnown(mod)) {
+                            learnRune(player, Rune.runeIndex(mod), true);
+                            if (player.getPlayerUpkeep().isPlaying()) {
+                                obj.modMessage(mod);
+                            }
+                        }
+
+                        // Learn the curse
+                        if (index != null) {
+                            learnRune(player, index, true);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Builds a mask of object flags selected either by the way the player identifies them or by the
+     * group they belong to, the port of C's {@code create_obj_flag_mask} ({@code obj-properties.c}).
+     * Each of {@code flags} names a category; every flag property in the loaded object properties
+     * whose category is one of them is switched on in the result. {@code objectLearnOnWield} asks
+     * for the {@code OFID_WIELD} flags this way, to find the properties that become obvious the
+     * moment an object is wielded.
+     *
+     * <p><b>One method, two meanings of the same argument.</b> {@code maskByID} decides which of an
+     * {@link ObjectProperty}'s two classifications is compared against {@code flags}:
+     * <ul>
+     *   <li>{@code true} - compare {@link ObjectProperty#getIdType()}, so {@code flags} are
+     *       {@link ObjectFlagID} constants ({@code OFID_WIELD}, {@code OFID_TIMED}, ...).</li>
+     *   <li>{@code false} - compare {@link ObjectProperty#getSubtype()}, so {@code flags} are
+     *       {@link ObjectFlagType} constants ({@code OFT_SUST}, {@code OFT_PROT}, ...).</li>
+     * </ul>
+     * C passes both families through the same {@code int} varargs list and trusts the caller to pick
+     * the right one with its {@code id} argument; a {@code OFT_*} value handed over with {@code id}
+     * true would be compared against the id types as a bare number, silently matching whatever
+     * shares that number. Here the comparison is by enum constant, so an entry of the wrong family
+     * simply matches nothing rather than matching by coincidence.
+     *
+     * <p><b>Differences from C that are deliberate.</b>
+     * <ul>
+     *   <li>C fills a caller-supplied array and wipes it first ({@code of_wipe}); this returns a new,
+     *       empty-to-begin-with {@link Flag}, which is the same thing without the caller needing to
+     *       declare the array.</li>
+     *   <li>C's list is terminated by {@code OFT_MAX}, which the caller must remember to append. The
+     *       Java varargs array carries its own length, so no terminator is passed, and an empty
+     *       list yields an empty mask just as an immediate {@code OFT_MAX} does in C.</li>
+     *   <li>C's inner loop starts at index 1 because slot 0 of its property array is a zeroed
+     *       placeholder. The Java list holds only the properties read from the data file, so
+     *       it is scanned from the start; the placeholder's type is {@code OBJ_PROPERTY_NONE}, which
+     *       the flag-type test would have skipped anyway, so the two visit the same properties.</li>
+     *   <li>A flag property with no {@code id-type:} or {@code subtype:} line is stored with
+     *       {@code OFID_NONE} / {@code OFT_NONE}, matching C's zeroed default, so asking for
+     *       {@code OFID_NONE} or {@code OFT_NONE} selects exactly those properties in both versions.</li>
+     * </ul>
+     *
+     * <p>Only properties of type {@code OBJ_PROPERTY_FLAG} are considered; stats, modifiers and
+     * element relations are skipped however their classification compares, because only a flag
+     * property has an {@link ObjectFlag} payload to switch on.
+     *
+     * <p>Function createObjFlagMask coded before 261003, commented in full on 261003.
+     *
+     * @param maskByID {@code true} to match {@code flags} against each property's id type, {@code false}
+     *                 to match against its subtype
+     * @param flags    the {@link ObjectFlagID} constants (if {@code maskByID}) or {@link ObjectFlagType}
+     *                 constants (if not) to select; an entry of the other family selects nothing
+     * @return a new flag set holding every flag whose property matches any entry of {@code flags}
+     */
+    private static Flag<ObjectFlag> createObjFlagMask(boolean maskByID, Enum... flags) {
+        Flag<ObjectFlag> result = new Flag<>(ObjectFlag.class);
+
+        for (Enum flag : flags) {
+            for (ObjectProperty prop : ObjectRegistry.getObjectProperties()) {
+                if (prop.getType() != ObjPropertyType.OBJ_PROPERTY_FLAG) continue;
+                if ((maskByID && flag instanceof ObjectFlagID && prop.getIdType() == flag)
+                        || (!maskByID && flag instanceof ObjectFlagType && prop.getSubtype() == flag))
+                    result.on(prop.getPayload().getFlag(prop.getType()));
+            }
+        }
+
+        return result;
     }
 }

@@ -17,32 +17,90 @@
 
 package uk.co.jackoftradesltd.middle.strings;
 
+/**
+ * The tags that can appear in braces in a custom message, the port of C's {@code msg_tag_t}
+ * ({@code obj-util.c}), as read by {@code ItemObject#printCustomMessage}.
+ *
+ * <p>{@link #MSG_TAG_NONE} stands for any tag that is not recognised; the message printer drops it.
+ * A tag is recognised by its opening letters, not the whole word, which {@link #getTag} implements.
+ * The constants are in C's order, with {@code MSG_TAG_NONE} first as it is there.
+ *
+ * <p>Enum MessageTag coded on 261003 / commented in full on 261005.
+ */
 public enum MessageTag {
+    /**
+     * Any tag that is not recognised.
+     */
     MSG_TAG_NONE(1),
+    /** {@code {name}}: the object's full description, or {@code hands} with no object. */
     MSG_TAG_NAME(5),
+    /** {@code {kind}}: the kind's name alone, or {@code hands} with no object. */
     MSG_TAG_KIND(5),
+    /** {@code {s}}: the verb ending, {@code s} for a single object and nothing for a pile. */
     MSG_TAG_VERB(2),
+    /** {@code {is}}: {@code is} for a single object, {@code are} for a pile or no object. */
     MSG_TAG_VERB_IS(3);
 
+    /**
+     * The length of the whole braced tag, from the first letter to the closing brace, for the
+     * whole-tag matching that used to skip by it. Nothing reads it now: the message printer skips
+     * past the closing brace it found, as C does, because a tag matched by its prefix can be longer
+     * than its name.
+     */
     private final int size;
 
+    /**
+     * Builds one constant with the length of its whole braced tag. C's {@code msg_tag_t} has no
+     * such number; it is the Java port's own, kept for {@link #getSize}.
+     *
+     * <p>Constructor MessageTag coded on 261003 / commented in full on 261005.
+     *
+     * @param size the tag's length from its first letter to its closing brace
+     */
     MessageTag(int size) {
         this.size = size;
     }
 
+    /**
+     * Looks a tag up by its opening letters, the port of C's {@code msg_tag_lookup}
+     * ({@code obj-util.c}).
+     *
+     * <p>Tests {@code name}, then {@code kind}, then {@code s}, then {@code is}, in C's order, with
+     * {@code startsWith} where C uses {@code strncmp} over the length of the name. So
+     * {@code names} is {@link #MSG_TAG_NAME}, {@code sx} and {@code size} are {@link #MSG_TAG_VERB},
+     * and {@code isn} is {@link #MSG_TAG_VERB_IS}, while {@code nam} and the empty string are
+     * {@link #MSG_TAG_NONE}. Matching is case sensitive, as {@code strncmp} is.
+     *
+     * <p>The caller passes the letters only, with no closing brace, where C passes a pointer to the
+     * rest of the whole message. The two agree because C's caller has already checked that the
+     * letters run unbroken to a closing brace, so the brace that ends C's argument can never be
+     * mistaken for a letter of a name, and a tag cut short by it fails in both versions.
+     *
+     * <p>Function getTag coded on 261003 / commented in full on 261005.
+     *
+     * @param tag the letters between the braces
+     * @return the matching tag, or {@link #MSG_TAG_NONE}
+     */
     public static MessageTag getTag(String tag) {
-        if (tag.startsWith("name}"))
+        if (tag.startsWith("name"))
             return MSG_TAG_NAME;
-        if (tag.startsWith("kind}"))
+        if (tag.startsWith("kind"))
             return MSG_TAG_KIND;
-        if (tag.startsWith("s}"))
+        if (tag.startsWith("s"))
             return MSG_TAG_VERB;
-        if (tag.startsWith("is}"))
+        if (tag.startsWith("is"))
             return MSG_TAG_VERB_IS;
 
         return MSG_TAG_NONE;
     }
 
+    /**
+     * Returns the length of the whole braced tag. Not called anywhere now; see {@link #size}.
+     *
+     * <p>Method getSize coded on 261003 / commented in full on 261005.
+     *
+     * @return the tag's length from its first letter to its closing brace
+     */
     public int getSize() {
         return size;
     }

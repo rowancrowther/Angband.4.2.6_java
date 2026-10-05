@@ -18,13 +18,29 @@
 package uk.co.jackoftradesltd.middle.objects.enums;
 
 import org.jetbrains.annotations.Contract;
+import uk.co.jackoftradesltd.middle.player.enums.SustainStat;
 
 /**
  * The boolean property flags an object can carry (sustains, protections,
  * telepathy, free action, light, digging, throwing, curses, …), each with the
- * short label used in the character/equipment resistance display. Mirrors the C
- * original's {@code OF_*} object flags ({@code src/list-object-flags.h}); the
- * constants are self-describing and documented collectively here.
+ * short label C uses in its object flag display. Mirrors the C original's
+ * {@code OF_*} object flags ({@code list-object-flags.h}); the constants are
+ * self-describing and documented collectively here.
+ *
+ * <p>Order matters. C's header warns that changing flag order breaks savefiles, and the
+ * constants here are in exactly the order of that header: {@code OF_NONE} first, standing in
+ * for the zero C's {@code OF_NONE} holds, then the thirty-eight {@code OF()} entries, then
+ * {@code OF_MAX}. {@code OF_NONE} and {@code OF_MAX} are sentinels, not real flags, so a loop
+ * over every flag runs from {@code ordinal() == 1} up to but excluding {@code OF_MAX}, as C's
+ * loops do from {@code 1} to {@code OF_MAX}.
+ *
+ * <p>The first five real flags, {@code OF_SUST_STR} to {@code OF_SUST_CON}, must stay in the
+ * same order as the stats in {@code list-stats.h}, because C's {@code sustain_flag()}
+ * ({@code obj-properties.c}) finds a stat's sustain by adding one to the stat's index.
+ * {@link uk.co.jackoftradesltd.middle.player.enums.SustainStat} records that pairing and
+ * {@link #getSustainStatFlag} reads it.
+ *
+ * <p>Class ObjectFlag coded before 261005, commented in full on 261005.
  *
  * @author Rowan Crowther
  */
@@ -71,12 +87,19 @@ public enum ObjectFlag {
     OF_MAX("");
 
     /**
-     * The short display label for this flag (used in resistance grids).
+     * The short display label for this flag, the second argument of C's {@code OF()} entry in
+     * {@code list-object-flags.h}. C's comment says at most the first five characters are
+     * used; the labels are padded with a leading space where they are shorter, so a column of
+     * them lines up. {@code OF_NONE} and {@code OF_MAX} carry the empty string.
+     *
+     * <p>Field flag coded before 261005, commented in full on 261005.
      */
     private String flag;
 
     /**
      * Bind an object flag to its display label.
+     *
+     * <p>Constructor ObjectFlag coded before 261005, commented in full on 261005.
      *
      * @param flag the display label
      */
@@ -86,6 +109,39 @@ public enum ObjectFlag {
     }
 
     /**
+     * The sustain flag that protects a given stat, the object-flag half of C's
+     * {@code sustain_flag()} ({@code obj-properties.c}). C returns the stat index plus one as
+     * a bare {@code int}; here the {@link SustainStat} already holds that number, and this
+     * method turns it into the {@code OF_SUST_*} constant at that position.
+     *
+     * <p>{@code SUS_STAT_STR}, {@code _INT}, {@code _WIS}, {@code _DEX} and {@code _CON} give
+     * {@code OF_SUST_STR}, {@code _INT}, {@code _WIS}, {@code _DEX} and {@code _CON}. The two
+     * sentinels, {@code SUS_STAT_NONE} and {@code SUS_STAT_MAX}, give {@code null}, which
+     * stands for the {@code -1} C returns when the stat is outside 0 to 4. A caller must test
+     * for {@code null} where C tests {@code flag < 0}.
+     *
+     * <p>Method getSustainStatFlag coded before 261005, commented in full on 261005.
+     *
+     * @param sustainStat the stat whose sustain is wanted
+     * @return the matching {@code OF_SUST_*} flag, or {@code null} for a sentinel
+     */
+    public static ObjectFlag getSustainStatFlag(SustainStat sustainStat) {
+        return switch (sustainStat) {
+            case SUS_STAT_CON -> OF_SUST_CON;
+            case SUS_STAT_INT -> OF_SUST_INT;
+            case SUS_STAT_WIS -> OF_SUST_WIS;
+            case SUS_STAT_DEX -> OF_SUST_DEX;
+            case SUS_STAT_STR -> OF_SUST_STR;
+            default -> null;
+        };
+    }
+
+    /**
+     * The short display label for this flag, as C's {@code OF()} entry in
+     * {@code list-object-flags.h} spells it, leading space included.
+     *
+     * <p>Method getFlag coded before 261005, commented in full on 261005.
+     *
      * @return this flag's short display label
      */
     @Contract(pure = true)

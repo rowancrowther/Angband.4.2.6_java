@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Tests {@link ObjectUtils#objectElementIsKnown(Player, Curse, ElementEnum)}, the curse-shaped
  * counterpart to C's {@code object_element_is_known} ({@code obj-knowledge.c}). C never calls that
- * function with a curse — see {@link Curse#isFullyKnown()} — so this pins the port's own extension
+ * function with a curse — see {@link ItemObject#isFullyKnown()} on the curse's object — so this pins the port's own extension
  * against the same four checks the function makes, in the same order: the sentinel bound, the
  * curse being fully known, the player's own rune knowledge, and the curse's own known-shadow. The
  * "neither knows" case pins the fall-through.
@@ -50,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * <p>Curses are built with the long constructor, following
  * {@link ObjectUtilsCurseObjectFlagIsKnownTest}'s pattern. A "not fully known" fixture moves the
  * curse's real to-hit off the (default zero) known to-hit, which is enough to fail
- * {@link Curse#isFullyKnown()}'s first check without needing the element halves to disagree with
+ * {@link ItemObject#isFullyKnown()} on the curse's object's first check without needing the element halves to disagree with
  * anything.
  *
  * <p>Class ObjectUtilsObjectElementIsKnownTest coded on 260924, commented in full on 260924.
@@ -70,20 +70,17 @@ class ObjectUtilsObjectElementIsKnownTest {
      */
     private static Curse curse(int combatToHit) {
         // The curse's own object, as C's write_curse_kinds leaves it: it has a known counterpart.
-        // The method under test reads the curse's knowledge off this object, not off Curse's own
-        // known* fields.
+        // The method under test reads the curse's knowledge off this object, not off any
+        // field of Curse itself.
         ItemObject curseObject = new ItemObject();
         curseObject.setKnown(new ItemObject());
         curseObject.setToHit(combatToHit);
-        return new Curse("test curse", List.of(), curseObject, 0, null,
-                new Flag<>(ObjectFlag.class), new HashMap<>(), new HashMap<>(),
-                combatToHit, 0, 0, List.of(), new Flag<>(ObjectFlag.class),
-                "test curse", "the test curse fires", 0);
+        return new Curse("test curse", List.of(), curseObject, List.of(), new Flag<>(ObjectFlag.class), "test curse", 0);
     }
 
     /**
      * A fully known curse: real to-hit matches the (zero) known to-hit, and every other field is
-     * at its empty default, which satisfies every clause of {@link Curse#isFullyKnown()}.
+     * at its empty default, which satisfies every clause of {@link ItemObject#isFullyKnown()} on the curse's object.
      */
     private static Curse fullyKnownCurse() {
         return curse(0);
@@ -91,7 +88,7 @@ class ObjectUtilsObjectElementIsKnownTest {
 
     /**
      * A curse that is not fully known: the real to-hit is moved off the known to-hit, which stays
-     * at its default zero, failing {@link Curse#isFullyKnown()}'s first check regardless of what
+     * at its default zero, failing {@link ItemObject#isFullyKnown()} on the curse's object's first check regardless of what
      * the element half says.
      */
     private static Curse notFullyKnownCurse() {
@@ -191,7 +188,7 @@ class ObjectUtilsObjectElementIsKnownTest {
     }
 
     /**
-     * The third route: the curse's own known-shadow, {@link Curse#getKnownElInfo()}, already
+     * The third route: the curse's own known-shadow, {@link ItemObject#getElInfo()} of its known object, already
      * carries a non-zero resistance level for this element — C's {@code if (obj->known->el_info
      * [element].res_level) return true;}. Fires even though the player's own rune knowledge does
      * not cover it.

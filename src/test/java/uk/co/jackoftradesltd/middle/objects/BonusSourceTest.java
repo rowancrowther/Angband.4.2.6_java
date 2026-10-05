@@ -119,8 +119,7 @@ class BonusSourceTest {
         curseObject.setToHit(toHit);
         curseObject.setToDam(toDam);
         curseObject.setToAC(toAc);
-        return new Curse("test curse", List.of(), curseObject, 0, null, flagSet, modifiers, elInfo,
-                toHit, toDam, toAc, List.of(), new Flag<>(ObjectFlag.class), "", "", 0);
+        return new Curse("test curse", List.of(), curseObject, List.of(), new Flag<>(ObjectFlag.class), "", 0);
     }
 
     /**

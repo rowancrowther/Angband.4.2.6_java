@@ -24,8 +24,10 @@ import uk.co.jackoftradesltd.middle.objects.Curse;
 import uk.co.jackoftradesltd.middle.objects.ElementInfo;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
 import uk.co.jackoftradesltd.middle.objects.ObjectBase;
+import uk.co.jackoftradesltd.middle.objects.ObjectKind;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
+import uk.co.jackoftradesltd.middle.objects.enums.ObjectNotice;
 
 import java.util.List;
 import java.util.Map;
@@ -33,22 +35,22 @@ import java.util.Map;
 /**
  * The one place a test builds a {@link Curse}.
  *
- * <p>While {@code docs/Curse_object_unflattening.md} is in progress a curse carries its mechanical
- * properties twice: as the loose fields of the {@link Curse} constructor and on the
- * {@link ItemObject} that stands for C's {@code curse->obj}. A test that fills only the first
- * leaves the second empty, and fails as soon as a reader moves over to the object. {@link #curse}
- * takes the same values the constructor does, minus the object, and fills both from them, so a
- * reader can move without any test noticing.
- *
- * <p>The signature deliberately mirrors the constructor's. When the unflattening reaches the step
- * that removes the loose parameters, this is the one file whose call into {@code new Curse(...)}
- * changes; the roughly forty tests that call {@link #curse} do not.
+ * <p>A curse now holds only C's {@code struct curse} members and its own {@link ItemObject}, C's
+ * {@code curse->obj}; the mechanical properties live on that object. {@link #curse} takes the values the
+ * old loose-field constructor took and writes them onto the object, so the roughly forty tests that call
+ * it did not have to change when the loose parameters went.
  *
  * <p>Every collection argument may be {@code null}, as the constructor allows; a {@code null} is
- * left off the object. The two maps are shared with the curse, not copied, exactly as
- * {@code CurseAssembler} shares them, so a test that adds an entry through either view sees it through
- * the other. The flag set is the exception: {@link ItemObject#setFlagsTo} copies, so flags added to
- * the curse after construction do not reach the object.
+ * left off the object. The two maps are shared with the object, not copied, exactly as
+ * {@code CurseAssembler} shares them. The flag set is the exception: {@link ItemObject#setFlagsTo}
+ * copies, so flags added to the argument afterwards do not reach the object.
+ *
+ * <p>The object also gets a {@code known} twin with {@link ObjectNotice#OBJ_NOTICE_ASSESSED} on,
+ * as {@code ObjectDataLoader.writeCurseKinds} gives every real curse, because
+ * {@code PlayerKnowledge.knowObject(Player, Curse)} writes through {@code getKnown()}. The kind and
+ * kind is a bare {@link ObjectKind} standing in for {@code <curse object>}, on the object and its twin,
+ * because {@link ItemObject#hasStandardToH()} answers true for a null kind whatever the to-hit; the
+ * sval {@code writeCurseKinds} also sets is left off, as no test here loads {@code object.txt}.
  *
  * <p>The object's {@code time} is not filled in. {@code CurseAssembler} does not fill it either,
  * and {@code Effect_time_migration.md} owns that move.
@@ -65,12 +67,12 @@ public final class CurseFixture {
     /**
      * Builds a curse and its object from the same values.
      *
-     * <p>The parameters are the {@link Curse} constructor's, in its order, with the
-     * {@link ItemObject} dropped.
+     * <p>The parameters are the old loose-field constructor's, in its order; they are written onto a
+     * new {@link ItemObject} that is then handed to the slimmed {@link Curse} constructor.
      *
      * @param name          the curse's name
      * @param objectBases   the bases it may attach to
-     * @param weight        the weight adjustment, written to both the curse and its object
+     * @param weight        the weight adjustment, written to the object
      * @param effect        the effect, or {@code null}; the object gets a one-element list, or an
      *                      empty one
      * @param objectFlags   the object flags, or {@code null}
@@ -82,9 +84,9 @@ public final class CurseFixture {
      * @param conflictNames the names of the curses it conflicts with
      * @param conflictFlags the object flags it conflicts with
      * @param description   the description
-     * @param message       the effect message, written to both the curse and its object
+     * @param message       the effect message, written to the object
      * @param index         the curse's index
-     * @return the curse, with {@link Curse#getItemObject()} populated to match
+     * @return the curse, with {@link Curse#getItemObject()} populated
      */
     public static Curse curse(String name,
                               List<ObjectBase> objectBases,
@@ -112,7 +114,15 @@ public final class CurseFixture {
         object.setToAC(combatAC);
         object.setEffectMessage(message);
 
-        return new Curse(name, objectBases, object, weight, effect, objectFlags, modifiers, elInfo,
-                combatToHit, combatDam, combatAC, conflictNames, conflictFlags, description, message, index);
+        // A bare kind stands in for <curse object>, so hasStandardToH reads the figure, not the null-kind hack
+        ObjectKind curseKind = new ObjectKind();
+        object.setKind(curseKind);
+
+        ItemObject known = new ItemObject();
+        known.setKind(curseKind);
+        known.setNoticeOn(ObjectNotice.OBJ_NOTICE_ASSESSED);
+        object.setKnown(known);
+
+        return new Curse(name, objectBases, object, conflictNames, conflictFlags, description, index);
     }
 }

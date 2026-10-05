@@ -32,8 +32,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests that {@link Curse#isFullyKnown()} and the two map getters cope with a curse built with
- * {@code null} modifier and element maps, as the guard on {@link Curse#getElInfo()} promises.
+ * Tests that {@link ItemObject#isFullyKnown()} and the two map getters cope with a curse object
+ * given {@code null} modifier and element maps, as the guard on {@link ItemObject#getElInfo()}
+ * promises.
  *
  * <p>C has no counterpart: its curse object holds full arrays, so there is nothing to be null.
  * The test pins the port's own contract, which is that an absent map reads as an empty one.
@@ -46,8 +47,11 @@ class CurseNullMapsTest {
      */
     private static Curse curse(Map<ObjectModifier, Integer> modifiers,
                                Map<ElementEnum, ElementInfo> elInfo) {
-        return new Curse("test curse", List.of(), new ItemObject(), 0, null, new Flag<>(ObjectFlag.class),
-                modifiers, elInfo, 0, 0, 0, List.of(), new Flag<>(ObjectFlag.class), "", "", 0);
+        ItemObject curseObject = new ItemObject();
+        curseObject.setModifiers(modifiers);
+        curseObject.setElInfo(elInfo);
+        curseObject.setKnown(new ItemObject());
+        return new Curse("test curse", List.of(), curseObject, List.of(), new Flag<>(ObjectFlag.class), "", 0);
     }
 
     @Test
@@ -55,8 +59,8 @@ class CurseNullMapsTest {
     void gettersAbsorbNull() {
         Curse curse = curse(null, null);
 
-        assertTrue(curse.getModifiers().isEmpty());
-        assertTrue(curse.getElInfo().isEmpty());
+        assertTrue(curse.getItemObject().getModifiers().isEmpty());
+        assertTrue(curse.getItemObject().getElInfo().isEmpty());
     }
 
     @Test
@@ -64,8 +68,8 @@ class CurseNullMapsTest {
     void fullyKnownWithNullMaps() {
         Curse curse = curse(null, null);
 
-        assertDoesNotThrow(curse::isFullyKnown);
-        assertTrue(curse.isFullyKnown());
+        assertDoesNotThrow(() -> curse.getItemObject().isFullyKnown());
+        assertTrue(curse.getItemObject().isFullyKnown());
     }
 
     @Test
@@ -75,7 +79,7 @@ class CurseNullMapsTest {
         fire.setResLevel(1);
         Curse curse = curse(null, Map.of(ElementEnum.ELEM_FIRE, fire));
 
-        assertFalse(curse.isFullyKnown());
+        assertFalse(curse.getItemObject().isFullyKnown());
     }
 
     @Test
@@ -84,25 +88,25 @@ class CurseNullMapsTest {
         ElementInfo fire = new ElementInfo();
         fire.setResLevel(1);
         Curse curse = curse(null, Map.of(ElementEnum.ELEM_FIRE, fire));
-        curse.putKnownElementInfo(ElementEnum.ELEM_FIRE, fire.copy());
+        curse.getItemObject().getKnown().putElInfo(ElementEnum.ELEM_FIRE, fire.copy());
 
-        assertTrue(curse.isFullyKnown());
+        assertTrue(curse.getItemObject().isFullyKnown());
     }
 
     @Test
-    @DisplayName("setKnownElInfo(null) empties the known view and leaves the real element map alone")
+    @DisplayName("setElInfo(null) empties the known view and leaves the real element map alone")
     void nullKnownElInfoLeavesRealMapAlone() {
         ElementInfo fire = new ElementInfo();
         fire.setResLevel(1);
         Curse curse = curse(null, Map.of(ElementEnum.ELEM_FIRE, fire));
-        curse.putKnownElementInfo(ElementEnum.ELEM_FIRE, fire.copy());
+        curse.getItemObject().getKnown().putElInfo(ElementEnum.ELEM_FIRE, fire.copy());
 
-        curse.setKnownElInfo(null);
+        curse.getItemObject().getKnown().setElInfo(null);
 
-        assertTrue(curse.getKnownElInfo().isEmpty(), "the known view is reset");
-        assertEquals(1, curse.getElInfo().get(ElementEnum.ELEM_FIRE).getResLevel(),
+        assertTrue(curse.getItemObject().getKnown().getElInfo().isEmpty(), "the known view is reset");
+        assertEquals(1, curse.getItemObject().getElInfo().get(ElementEnum.ELEM_FIRE).getResLevel(),
                 "the curse's real resistance survives");
-        assertFalse(curse.isFullyKnown(), "so the forgotten resistance is unknown again");
+        assertFalse(curse.getItemObject().isFullyKnown(), "so the forgotten resistance is unknown again");
     }
 
     @Test
@@ -110,10 +114,10 @@ class CurseNullMapsTest {
     void modifierKnowledge() {
         Curse curse = curse(Map.of(ObjectModifier.OM_STEALTH, -3), null);
 
-        assertFalse(curse.isFullyKnown());
+        assertFalse(curse.getItemObject().isFullyKnown());
 
-        curse.setKnownModifiers(Map.of(ObjectModifier.OM_STEALTH, -3));
+        curse.getItemObject().getKnown().setModifiers(Map.of(ObjectModifier.OM_STEALTH, -3));
 
-        assertEquals(true, curse.isFullyKnown());
+        assertEquals(true, curse.getItemObject().isFullyKnown());
     }
 }

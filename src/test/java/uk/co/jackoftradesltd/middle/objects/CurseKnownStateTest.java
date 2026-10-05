@@ -22,9 +22,9 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
-import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
+import uk.co.jackoftradesltd.middle.objects.enums.ObjectNotice;
 import uk.co.jackoftradesltd.testsupport.CurseFixture;
 
 import java.util.HashMap;
@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -40,18 +39,20 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests the state a freshly built {@link Curse} starts in and the way its known-view setters store
- * what they are given — the parts of C's {@code curse->obj->known} that {@code CurseIsFullyKnownTest}
- * and {@code CurseNullMapsTest} reach only indirectly.
+ * Tests the state a freshly built {@link Curse} starts in and the way the known half of its own
+ * object stores what it is given — the parts of C's {@code curse->obj->known} that
+ * {@code CurseIsFullyKnownTest} reaches only indirectly.
  *
  * <p>In C {@code write_curse_kinds} ({@code obj-init.c}) gives each curse a zeroed
  * {@code known} object, so a new curse knows nothing: zero combat figures, no modifiers, no elements,
- * no flags, no effect. The port must start the same way, and the three setters differ in what they do
- * with their argument — {@code setKnownObjectFlags} copies into an owned set (C's {@code of_wipe}
- * then copy), while {@code setKnownModifiers} and {@code setKnownElInfo} store the caller's map.
- * Those differences are what these tests pin.
+ * no flags, no effect. The port holds that object as {@code curse.getItemObject().getKnown()}, and the
+ * setters {@code PlayerKnowledge.knowObject(Player, Curse)} writes through differ in what they do
+ * with their argument — {@code setFlagsTo} copies into an owned set (C's {@code of_wipe} then copy),
+ * while {@code setModifiers} and {@code setElInfo} store the caller's map. Those differences are what
+ * these tests pin.
  *
- * <p>Class CurseKnownStateTest coded on 261005, commented in full on 261005.
+ * <p>Class CurseKnownStateTest coded on 261005, commented in full on 261005, moved onto the curse's
+ * object on 261005.
  *
  * @author Rowan Crowther
  */
@@ -75,19 +76,22 @@ class CurseKnownStateTest {
     class Fresh {
 
         /**
-         * The known containers exist and are empty, as C's zeroed {@code known} object is. The
-         * accessors must never answer {@code null}.
+         * The known object exists, is marked assessed as {@code write_curse_kinds} leaves it, and
+         * holds nothing: the accessors must never answer {@code null}.
          */
         @Test
-        @DisplayName("knows no flags and no elements")
+        @DisplayName("has an assessed, empty known object")
         void emptyKnownView() {
-            Curse curse = bare();
+            ItemObject known = bare().getItemObject().getKnown();
 
+            assertNotNull(known);
             assertAll(
-                    () -> assertNotNull(curse.getKnownObjectFlags()),
-                    () -> assertTrue(curse.getKnownObjectFlags().isEmpty()),
-                    () -> assertNotNull(curse.getKnownElInfo()),
-                    () -> assertTrue(curse.getKnownElInfo().isEmpty()));
+                    () -> assertTrue(known.getNoticeHas(ObjectNotice.OBJ_NOTICE_ASSESSED)),
+                    () -> assertTrue(known.getFlags().isEmpty()),
+                    () -> assertTrue(known.getElInfo().isEmpty()),
+                    () -> assertTrue(known.getModifiers().isEmpty()),
+                    () -> assertTrue(known.getEffect().isEmpty()),
+                    () -> assertTrue(known.getToHit() == 0 && known.getToDam() == 0 && known.getToAC() == 0));
         }
 
         /**
@@ -120,41 +124,42 @@ class CurseKnownStateTest {
         }
 
         /**
-         * With no {@code effect:} block the curse has no effect, as C's {@code curse->obj->effect}
-         * is null there.
+         * With no {@code effect:} block the curse's object has no effect: an empty list, as
+         * {@link ItemObject#setEffect} turns a {@code null} into one, where C's
+         * {@code curse->obj->effect} is null.
          */
         @Test
-        @DisplayName("without an effect block it has no effect")
+        @DisplayName("without an effect block its object has an empty effect list")
         void noEffect() {
-            assertNull(bare().getEffect());
+            assertTrue(bare().getItemObject().getEffect().isEmpty());
         }
     }
 
     /**
-     * How the setters take what they are handed.
+     * How the known object's setters take what they are handed.
      */
     @Nested
-    @DisplayName("the known-view setters")
+    @DisplayName("the known object's setters")
     class Setters {
 
         /**
-         * {@code setKnownObjectFlags} copies: switching a flag on in the caller's set afterwards
-         * must not reach the curse, because the known flags are derived afresh and must not alias
-         * the player's own knowledge set.
+         * {@code setFlagsTo} copies: switching a flag on in the caller's set afterwards must not
+         * reach the curse, because the known flags are derived afresh and must not alias the
+         * player's own knowledge set.
          */
         @Test
-        @DisplayName("setKnownObjectFlags copies the flags rather than keeping the caller's set")
+        @DisplayName("setFlagsTo copies the flags rather than keeping the caller's set")
         void flagsAreCopied() {
-            Curse curse = bare();
+            ItemObject known = bare().getItemObject().getKnown();
             Flag<ObjectFlag> given = new Flag<>(ObjectFlag.class);
             given.set(List.of(ObjectFlag.OF_AFRAID));
 
-            curse.setKnownObjectFlags(given);
+            known.setFlagsTo(given);
             given.set(List.of(ObjectFlag.OF_IMPAIR_HP));
 
             assertAll(
-                    () -> assertTrue(curse.getKnownObjectFlags().has(ObjectFlag.OF_AFRAID)),
-                    () -> assertFalse(curse.getKnownObjectFlags().has(ObjectFlag.OF_IMPAIR_HP)));
+                    () -> assertTrue(known.getFlags().has(ObjectFlag.OF_AFRAID)),
+                    () -> assertFalse(known.getFlags().has(ObjectFlag.OF_IMPAIR_HP)));
         }
 
         /**
@@ -162,75 +167,57 @@ class CurseKnownStateTest {
          * adding to it — a flag the player can no longer read must disappear.
          */
         @Test
-        @DisplayName("setKnownObjectFlags wipes before copying, so a flag no longer given disappears")
+        @DisplayName("setFlagsTo wipes before copying, so a flag no longer given disappears")
         void flagsAreWiped() {
-            Curse curse = bare();
+            ItemObject known = bare().getItemObject().getKnown();
             Flag<ObjectFlag> first = new Flag<>(ObjectFlag.class);
             first.set(List.of(ObjectFlag.OF_AFRAID));
             Flag<ObjectFlag> second = new Flag<>(ObjectFlag.class);
             second.set(List.of(ObjectFlag.OF_IMPAIR_HP));
 
-            curse.setKnownObjectFlags(first);
-            curse.setKnownObjectFlags(second);
+            known.setFlagsTo(first);
+            known.setFlagsTo(second);
 
             assertAll(
-                    () -> assertFalse(curse.getKnownObjectFlags().has(ObjectFlag.OF_AFRAID)),
-                    () -> assertTrue(curse.getKnownObjectFlags().has(ObjectFlag.OF_IMPAIR_HP)));
+                    () -> assertFalse(known.getFlags().has(ObjectFlag.OF_AFRAID)),
+                    () -> assertTrue(known.getFlags().has(ObjectFlag.OF_IMPAIR_HP)));
         }
 
         /**
-         * The known flags are the curse's own set for the whole of its life, so a reference taken
-         * before a later call still sees what that call wrote.
+         * {@code setElInfo} stores the map it is given, so {@code putElInfo} afterwards writes into
+         * the caller's map — the documented hand-over.
          */
         @Test
-        @DisplayName("setKnownObjectFlags keeps the same set instance")
-        void flagsKeepInstance() {
-            Curse curse = bare();
-            Flag<ObjectFlag> before = curse.getKnownObjectFlags();
-            Flag<ObjectFlag> given = new Flag<>(ObjectFlag.class);
-            given.set(List.of(ObjectFlag.OF_AFRAID));
-
-            curse.setKnownObjectFlags(given);
-
-            assertSame(before, curse.getKnownObjectFlags());
-        }
-
-        /**
-         * {@code setKnownElInfo} stores the map it is given, so
-         * {@code putKnownElementInfo} afterwards writes into the caller's map — the documented
-         * hand-over.
-         */
-        @Test
-        @DisplayName("setKnownElInfo stores the caller's map, and put writes into it")
+        @DisplayName("setElInfo stores the caller's map, and put writes into it")
         void elInfoIsStored() {
-            Curse curse = bare();
+            ItemObject known = bare().getItemObject().getKnown();
             Map<ElementEnum, ElementInfo> given = new HashMap<>();
             ElementInfo fire = new ElementInfo();
             fire.setResLevel(1);
 
-            curse.setKnownElInfo(given);
-            curse.putKnownElementInfo(ElementEnum.ELEM_FIRE, fire);
+            known.setElInfo(given);
+            known.putElInfo(ElementEnum.ELEM_FIRE, fire);
 
             assertAll(
-                    () -> assertSame(given, curse.getKnownElInfo()),
+                    () -> assertSame(given, known.getElInfo()),
                     () -> assertSame(fire, given.get(ElementEnum.ELEM_FIRE)));
         }
 
         /**
-         * A later {@code setKnownElInfo} replaces the whole view rather than merging, so an element
-         * the player has stopped being able to read goes away.
+         * A later {@code setElInfo} replaces the whole view rather than merging, so an element the
+         * player has stopped being able to read goes away.
          */
         @Test
-        @DisplayName("setKnownElInfo replaces rather than merges")
+        @DisplayName("setElInfo replaces rather than merges")
         void elInfoReplaces() {
-            Curse curse = bare();
+            ItemObject known = bare().getItemObject().getKnown();
             ElementInfo fire = new ElementInfo();
             fire.setResLevel(1);
-            curse.putKnownElementInfo(ElementEnum.ELEM_FIRE, fire);
+            known.putElInfo(ElementEnum.ELEM_FIRE, fire);
 
-            curse.setKnownElInfo(new HashMap<>());
+            known.setElInfo(new HashMap<>());
 
-            assertTrue(curse.getKnownElInfo().isEmpty());
+            assertTrue(known.getElInfo().isEmpty());
         }
 
         /**
@@ -240,46 +227,21 @@ class CurseKnownStateTest {
          * naming it matches.
          */
         @Test
-        @DisplayName("setKnownModifiers stores the map, and replacing it can undo knowledge")
+        @DisplayName("setModifiers stores the map, and replacing it can undo knowledge")
         void modifiersReplace() {
             Curse curse = CurseFixture.curse("weakness", List.of(), 0, null, new Flag<>(ObjectFlag.class),
                     Map.of(ObjectModifier.OM_STR, -2), Map.of(), 0, 0, 0, List.of(),
                     new Flag<>(ObjectFlag.class), "", "", 0);
-            Map<ObjectModifier, Integer> known = new HashMap<>();
-            known.put(ObjectModifier.OM_STR, -2);
+            ItemObject known = curse.getItemObject().getKnown();
+            Map<ObjectModifier, Integer> given = new HashMap<>();
+            given.put(ObjectModifier.OM_STR, -2);
 
-            assertFalse(curse.isFullyKnown());
-            curse.setKnownModifiers(known);
-            assertTrue(curse.isFullyKnown());
-            curse.setKnownModifiers(new HashMap<>());
-            assertFalse(curse.isFullyKnown());
-        }
-    }
-
-    /**
-     * {@link Curse#getTime()} on an effect that lacks timing dice, the case the Javadoc records.
-     */
-    @Nested
-    @DisplayName("getTime on an effect without a time line")
-    class TimeWithoutDice {
-
-        /**
-         * {@code EffectAssembler} leaves an effect's time {@code null} when its block has no
-         * {@code time:} line, and {@code getTime} delegates to it, so the answer is {@code null}
-         * rather than the zero {@link uk.co.jackoftradesltd.middle.numerics.Random} C's zeroed
-         * {@code curse->obj->time} would give. No curse in {@code curse.txt} has an
-         * {@code effect:} block without a {@code time:} line, so the data never exercises it; this
-         * pins the behaviour so a change to it is deliberate.
-         */
-        @Test
-        @DisplayName("answers null, unlike a curse with no effect at all")
-        void nullTime() {
-            Effect effect = new Effect(null, null, "", 0, 0, null, null, 0, 0, null, List.of(), "");
-            Curse curse = CurseFixture.curse("timeless", List.of(), 0, effect, new Flag<>(ObjectFlag.class),
-                    Map.of(), Map.of(), 0, 0, 0, List.of(), new Flag<>(ObjectFlag.class), "", "", 0);
-
-            assertNull(curse.getTime());
-            assertEquals(effect, curse.getEffect());
+            assertFalse(curse.getItemObject().isFullyKnown());
+            known.setModifiers(given);
+            assertSame(given, known.getModifiers());
+            assertTrue(curse.getItemObject().isFullyKnown());
+            known.setModifiers(new HashMap<>());
+            assertFalse(curse.getItemObject().isFullyKnown());
         }
     }
 }

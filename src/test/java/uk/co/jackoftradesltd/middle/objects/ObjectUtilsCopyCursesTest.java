@@ -92,7 +92,7 @@ class ObjectUtilsCopyCursesTest {
      * resolve under {@link uk.co.jackoftradesltd.middle.enums.DamageAspect#RANDOMIZE} —
      * {@code copyCurses} always rolls a curse's timeout under that aspect, and {@code randCalc}
      * reads the global depth tables unconditionally even when the roll itself is deterministic. See
-     * {@link CurseGetTimeTest#seedDepthTables()}, which this mirrors.
+     * {@link CurseObjectTimeTest#seedDepthTables()}, which this mirrors.
      */
     @BeforeAll
     static void seedDepthTables() {
@@ -164,8 +164,8 @@ class ObjectUtilsCopyCursesTest {
     }
 
     /**
-     * A minimal effect carrying only the timing dice under test, following
-     * {@link CurseGetTimeTest#effectWithTime}.
+     * A minimal effect carrying only the timing dice under test, the helper
+     * {@code CurseGetTimeTest} used before the curse unflattening.
      *
      * @param time the timing dice to attach
      * @return the effect
@@ -186,12 +186,11 @@ class ObjectUtilsCopyCursesTest {
      */
     private static Curse curseWithFixedTimeout(String name, int base, int index) {
         // copyCurses reads the dice from the curse's own object (C: curse->obj->time), so they go
-        // there; the effect carries the same dice so the two sources cannot disagree.
+        // there; the object's effect carries the same dice so the two sources cannot disagree.
         ItemObject curseObject = new ItemObject();
         curseObject.setTime(new Random(base, 0, 0, 1, false));
-        return new Curse(name, List.of(), curseObject, 0, effectWithTime(new Random(base, 0, 0, 1, false)),
-                new Flag<>(ObjectFlag.class), Map.of(), Map.of(), 0, 0, 0,
-                List.of(), new Flag<>(ObjectFlag.class), "", "", index);
+        curseObject.setEffect(List.of(effectWithTime(new Random(base, 0, 0, 1, false))));
+        return new Curse(name, List.of(), curseObject, List.of(), new Flag<>(ObjectFlag.class), "", index);
     }
 
     /**

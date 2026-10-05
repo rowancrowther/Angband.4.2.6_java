@@ -579,8 +579,8 @@ class ItemObjectPropertyPowerTest {
             acid.setResLevel(1);
             ElementInfo elec = new ElementInfo();
             elec.setResLevel(1);
-            curse.getElInfo().put(ElementEnum.ELEM_ACID, acid);
-            curse.getElInfo().put(ElementEnum.ELEM_ELEC, elec);
+            curse.getItemObject().getElInfo().put(ElementEnum.ELEM_ACID, acid);
+            curse.getItemObject().getElInfo().put(ElementEnum.ELEM_ELEC, elec);
 
             assertEquals(15, price(cloak(), "elementPower", curse, 0));
         }
@@ -851,7 +851,7 @@ class ItemObjectPropertyPowerTest {
         @DisplayName("the curse overload prices the curse's modifiers without a type multiplier")
         void curseOverload() throws Exception {
             Curse curse = combatCurse(0, 0);
-            curse.getModifiers().put(ObjectModifier.OM_DEX, 3);
+            curse.getItemObject().getModifiers().put(ObjectModifier.OM_DEX, 3);
 
             assertEquals(24, price(item(TValue.TV_GLOVES), "modifierPower", curse, 0));
         }

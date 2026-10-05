@@ -84,9 +84,7 @@ class ObjectDataLoaderCurseKindsTest {
      * A curse that has nothing but an object of its own, built by the current constructor.
      */
     private static Curse curse(String name, ItemObject object, int index) {
-        return new Curse(name, List.of(), object, 0, null, new Flag<>(ObjectFlag.class),
-                Map.of(), Map.of(), 0, 0, 0, List.of(), new Flag<>(ObjectFlag.class),
-                "", "", index);
+        return new Curse(name, List.of(), object, List.of(), new Flag<>(ObjectFlag.class), "", index);
     }
 
     @BeforeEach

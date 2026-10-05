@@ -24,14 +24,9 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.cave.World;
-import uk.co.jackoftradesltd.middle.effect.Effect;
-import uk.co.jackoftradesltd.middle.effect.EffectSubTypeEnum;
-import uk.co.jackoftradesltd.middle.effect.EffectSubTypeWrapper;
 import uk.co.jackoftradesltd.middle.enums.DamageAspect;
-import uk.co.jackoftradesltd.middle.enums.EffectEnum;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.data.GameConstantsData;
 import uk.co.jackoftradesltd.middle.game.globals.data.WorldData;
@@ -41,28 +36,32 @@ import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.testsupport.CurseFixture;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 
 /**
- * Tests {@link Curse#getTime()} — the read of C's {@code curse->obj->time}
- * ({@code object.h:459}), a field the port has no direct home for since a curse holds at most one
- * {@link Effect} rather than the {@code struct object} C nests it in.
+ * Tests the read of C's {@code curse->obj->time}, which the port makes as
+ * {@code curse.getItemObject().getTime()}. {@code Curse} no longer has a {@code getTime} of its own:
+ * the dice live on the curse's object, as C's {@code parse_curse_time} writes them.
  *
- * <p>{@code curse.txt} pairs every {@code time:} line with the {@code effect:} line just above it, and
- * no curse has more than one effect block, so the port folds the timing dice onto that single
- * {@link Effect} instead. A curse with no effect block at all still has a valid — zero — timing value
- * in C, because {@code curse->obj} is a zeroed {@code struct object} regardless of whether it carries
- * an effect. <em>air swing</em> ({@code curse.txt:388-394}) is exactly this case: a combat penalty and
- * nothing else.
+ * <p>A curse with no {@code time:} line still has a valid — zero — timing value in C, because
+ * {@code curse->obj} is a zeroed {@code struct object} whether or not it carries an effect. The
+ * port's object starts with a zero {@link Random} and never holds {@code null}. <em>air swing</em>
+ * ({@code curse.txt}) is the case in the data: a combat penalty and nothing else.
+ *
+ * <p>{@code CurseAssembler} does not yet write the dice onto the object, and
+ * {@code Effect_time_migration.md} owns that move; these tests set them by hand.
+ *
+ * <p>Class CurseObjectTimeTest coded on 261005, replacing {@code CurseGetTimeTest}, which tested
+ * the {@code Curse.getTime} that the unflattening removed.
  *
  * @author Rowan Crowther
  */
-class CurseGetTimeTest {
+class CurseObjectTimeTest {
 
     /**
      * The {@code GameConstants.data} in place before this class replaced it.
@@ -126,70 +125,77 @@ class CurseGetTimeTest {
     }
 
     /**
-     * A minimal effect carrying only the timing dice under test, everything else the placeholder
-     * {@code EF_NONE} identity uses elsewhere in the effect test suite.
+     * A curse with nothing on it but a name.
      *
-     * @param time the timing dice to attach
-     * @return the effect
-     */
-    private static Effect effectWithTime(Random time) {
-        return new Effect(EffectEnum.EF_NONE, new Random(0, 0, 0, 1, false), "", 0, 0,
-                EffectSubTypeEnum.EST_NONE, new EffectSubTypeWrapper(ProjectionEnum.PROJ_ACID),
-                0, 0, time, new ArrayList<>(), "");
-    }
-
-    /**
-     * A curse with the given effect (or {@code null}, mirroring a curse with no {@code effect:}
-     * line), everything else empty.
-     *
-     * @param effect the curse's single effect, or {@code null}
      * @return the curse
      */
-    private static Curse curse(Effect effect) {
-        return CurseFixture.curse("test curse", List.of(), 0, effect, new Flag<>(ObjectFlag.class),
+    private static Curse bare() {
+        return CurseFixture.curse("test curse", List.of(), 0, null, new Flag<>(ObjectFlag.class),
                 Map.of(), Map.of(), 0, 0, 0, List.of(), new Flag<>(ObjectFlag.class), "", "", 0);
     }
 
     /**
-     * The ordinary path: a curse with an effect reads that effect's timing dice.
+     * A curse whose object has been given timing dice, as {@code poison}'s {@code time:1d500} would.
      */
     @Nested
-    @DisplayName("a curse with an effect")
-    class WithEffect {
+    @DisplayName("a curse whose object has timing dice")
+    class WithDice {
 
         /**
-         * {@code getTime} hands back the very {@link Random} the effect carries, not a copy — the
-         * same object {@code poison} ({@code curse.txt:161-181}, {@code time:1d500}) would produce.
+         * {@code getTime} hands back a copy of the dice, as every read of C's {@code obj->time}
+         * copies the {@code random_value} struct, so a caller cannot change the curse's own.
          */
         @Test
-        @DisplayName("delegates to the effect's own timing dice")
-        void delegatesToEffectTime() {
-            Random poisonTime = new Random(0, 0, 1, 500, false);
-            Curse poison = curse(effectWithTime(poisonTime));
+        @DisplayName("answers a copy of the dice that were set")
+        void copyOfDice() {
+            Curse poison = bare();
+            poison.getItemObject().setTime(new Random(0, 0, 1, 500, false));
 
-            assertSame(poisonTime, poison.getTime());
+            Random read = poison.getItemObject().getTime();
+
+            assertEquals(1, read.getDice());
+            assertEquals(500, read.getSides());
+            assertEquals(0, read.getBase());
+            assertNotSame(read, poison.getItemObject().getTime());
+        }
+
+        /**
+         * Changing the {@link Random} after handing it over must not reach the curse: C's struct
+         * assign copies by value.
+         */
+        @Test
+        @DisplayName("is not changed by later changes to the dice that were handed in")
+        void handedInDiceAreCopied() {
+            Curse poison = bare();
+            Random given = new Random(0, 0, 1, 500, false);
+            poison.getItemObject().setTime(given);
+
+            given.setSides(5);
+
+            assertEquals(500, poison.getItemObject().getTime().getSides());
         }
     }
 
     /**
-     * The boundary found in stage 1: a curse with no {@code effect:} line at all.
+     * A curse with no {@code time:} line at all.
      */
     @Nested
-    @DisplayName("a curse with no effect")
-    class WithoutEffect {
+    @DisplayName("a curse with no timing dice")
+    class WithoutDice {
 
         /**
          * C's {@code curse->obj->time} is a zero {@code random_value} here, read unconditionally by
-         * every caller ({@code copy_curses}, {@code obj-curse.c:67,203}, {@code game-world.c:368}).
-         * The port must answer {@code 0} under every {@link DamageAspect} rather than throwing.
+         * every caller ({@code copy_curses}, {@code obj-curse.c}, {@code game-world.c}). The port
+         * must answer {@code 0} under every {@link DamageAspect} rather than throwing.
          */
         @ParameterizedTest
         @DisplayName("answers a zero-valued Random under every damage aspect, rather than throwing")
         @EnumSource(DamageAspect.class)
         void answersZeroForEveryAspect(DamageAspect aspect) {
-            Curse airSwing = curse(null);
+            Random time = bare().getItemObject().getTime();
 
-            assertEquals(0, airSwing.getTime().randCalc(0, aspect));
+            assertNotNull(time);
+            assertEquals(0, time.randCalc(0, aspect));
         }
 
         /**
@@ -199,9 +205,7 @@ class CurseGetTimeTest {
         @Test
         @DisplayName("stays zero at a non-zero dungeon level")
         void staysZeroAtDepth() {
-            Curse airSwing = curse(null);
-
-            assertEquals(0, airSwing.getTime().randCalc(50, DamageAspect.RANDOMIZE));
+            assertEquals(0, bare().getItemObject().getTime().randCalc(50, DamageAspect.RANDOMIZE));
         }
     }
 }

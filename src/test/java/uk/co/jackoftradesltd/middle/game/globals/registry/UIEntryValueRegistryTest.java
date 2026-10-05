@@ -203,8 +203,7 @@ class UIEntryValueRegistryTest {
     private static Curse curseWithFlag(ObjectFlag flag, int index) {
         ItemObject curseObject = new ItemObject();
         curseObject.setFlag(flag);
-        return new Curse("Test Curse " + index, List.of(), curseObject, 0, null, new Flag<>(ObjectFlag.class),
-                Map.of(), Map.of(), 0, 0, 0, List.of(), new Flag<>(ObjectFlag.class), "", "", index);
+        return new Curse("Test Curse " + index, List.of(), curseObject, List.of(), new Flag<>(ObjectFlag.class), "", index);
     }
 
     private static Player newPlayer() {
@@ -583,8 +582,7 @@ class UIEntryValueRegistryTest {
             shadow.setFlag(flag);
             curseObject.setKnown(shadow);
             curseObject.setToHit(3);
-            return new Curse("Test Curse 0", List.of(), curseObject, 0, null, new Flag<>(ObjectFlag.class),
-                    Map.of(), Map.of(), 0, 0, 0, List.of(), new Flag<>(ObjectFlag.class), "", "", 0);
+            return new Curse("Test Curse 0", List.of(), curseObject, List.of(), new Flag<>(ObjectFlag.class), "", 0);
         }
 
         /**

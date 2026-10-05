@@ -2653,9 +2653,9 @@ class PlayerRuneLearningTest {
             PlayerKnowledge.cursesFindFlags(player, itemCursed(cursed(cowardice, 20)),
                     testing(ObjectFlag.OF_AFRAID));
 
-            assertTrue(cowardice.getObjectFlags().has(ObjectFlag.OF_AFRAID));
-            assertTrue(cowardice.getObjectFlags().has(ObjectFlag.OF_IMPAIR_HP));
-            assertEquals(2, cowardice.getObjectFlags().count(),
+            assertTrue(cowardice.getItemObject().getFlags().has(ObjectFlag.OF_AFRAID));
+            assertTrue(cowardice.getItemObject().getFlags().has(ObjectFlag.OF_IMPAIR_HP));
+            assertEquals(2, cowardice.getItemObject().getFlags().count(),
                     "the intersection took a copy rather than narrowing the definition");
 
             PlayerKnowledge.cursesFindFlags(player, itemCursed(cursed(cowardice, 20)),

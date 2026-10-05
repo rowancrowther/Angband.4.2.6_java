@@ -82,11 +82,11 @@ import uk.co.jackoftradesltd.testsupport.CurseFixture;
  * {@code knowObject} moving again, changing signature, or being called through something else
  * entirely.
  *
- * <p><b>The curse population is the exception to the walk-only rule.</b> {@link Curse} now holds
- * its own {@code known*} fields, so the third loop both visits and writes, and there is no known
- * counterpart object to inspect afterwards — {@link Curse#isFullyKnown()} is the only public window
- * onto the result. So that group tests the walk as the other two do, and adds a pair of end-to-end
- * cases that show the visit is a transfer rather than an empty pass.
+ * <p><b>The curse population is the exception to the walk-only rule.</b> The third loop both
+ * visits and writes: each curse's own object carries a known twin that the walk fills in. So that
+ * group tests the walk as the other two do, and adds a pair of end-to-end cases that ask
+ * {@code isFullyKnown} of the curse's object, as C does, to show the visit is a transfer rather
+ * than an empty pass.
  *
  * <p>The curse loop is fed by installing a recording list into {@link ObjectRegistry} for the
  * duration of one test, and putting back whatever was there afterwards. That matters more than the
@@ -113,7 +113,7 @@ import uk.co.jackoftradesltd.testsupport.CurseFixture;
  *
  * <p>Class PlayerUpdateObjectKnowledgeTest coded on 260815, commented in full on 260815, reworked
  * onto the collection seam on 260901, curse population added on 260901, accounted for the
- * autoinscribe pack pass on 260905.
+ * autoinscribe pack pass on 260905, curse recorder limited to the walk's own loop on 261005, curse end-to-end cases moved onto the curse's object on 261005.
  *
  * @author Rowan Crowther
  */
@@ -185,7 +185,7 @@ class PlayerUpdateObjectKnowledgeTest {
 
     /**
      * A curse carrying the given modifiers and nothing else — no flags, no elements, no effect and
-     * no combat figures, so that {@link Curse#isFullyKnown()} turns on the modifiers alone.
+     * no combat figures, so that {@code isFullyKnown} on its object turns on the modifiers alone.
      */
     private static Curse curseWithModifiers(String name, Map<ObjectModifier, Integer> modifiers) {
         return CurseFixture.curse(name, List.of(), 0, null, new Flag<>(ObjectFlag.class), modifiers,
@@ -360,6 +360,13 @@ class PlayerUpdateObjectKnowledgeTest {
      * rather than the field itself, and that view's iterator delegates to this one, so the recording
      * survives the wrapper.
      *
+     * <p><b>Only the walk's own loop is recorded.</b> The registry is also read from inside the
+     * knowledge transfer: {@code ItemObject.isFullyKnown} reaches {@code cursesAreEqual}, which
+     * iterates every curse, and C makes the same nested read. Those iterations are not the third
+     * loop, so counting them would list each curse again for every nested pass. An iterator is
+     * recorded only when {@link #isCalledFromTheWalk} finds {@code updateObjectKnowledge} as the
+     * code that asked for it.
+     *
      * @author Rowan Crowther
      */
     private final class RecordingCurseList extends ArrayList<Curse> {
@@ -367,9 +374,30 @@ class PlayerUpdateObjectKnowledgeTest {
             super(List.of(curses));
         }
 
+        /**
+         * Whether the iterator being created was asked for by {@code updateObjectKnowledge} itself.
+         * The frames skipped are this recorder's own and the JDK's, which sit between the caller and
+         * {@link #iterator()}: the unmodifiable view that {@link ObjectRegistry#getCurses()} wraps
+         * the list in delegates its {@code iterator()} to this one. The first frame left is the
+         * code that really asked.
+         *
+         * @return {@code true} if that code is {@code PlayerKnowledge.updateObjectKnowledge}
+         */
+        private boolean isCalledFromTheWalk() {
+            String recorder = RecordingCurseList.class.getName();
+            return StackWalker.getInstance().walk(frames -> frames
+                    .dropWhile(frame -> frame.getClassName().startsWith(recorder)
+                            || frame.getClassName().startsWith("java."))
+                    .findFirst()
+                    .map(frame -> frame.getClassName().equals(PlayerKnowledge.class.getName())
+                            && frame.getMethodName().equals("updateObjectKnowledge"))
+                    .orElse(false));
+        }
+
         @Override
         public Iterator<Curse> iterator() {
             Iterator<Curse> underlying = super.iterator();
+            boolean recorded = isCalledFromTheWalk();
             return new Iterator<>() {
                 @Override
                 public boolean hasNext() {
@@ -379,7 +407,7 @@ class PlayerUpdateObjectKnowledgeTest {
                 @Override
                 public Curse next() {
                     Curse curse = underlying.next();
-                    visitOrder.add(curse);
+                    if (recorded) visitOrder.add(curse);
                     return curse;
                 }
             };
@@ -720,9 +748,10 @@ class PlayerUpdateObjectKnowledgeTest {
          * fully known before the walk, because nothing has yet been written into its known
          * modifiers, and is afterwards once the player can read that modifier.
          *
-         * <p>{@link Curse#isFullyKnown()} is the only public window onto the result — the
-         * {@code known*} fields have setters but no getters — which is why this asserts on the
-         * predicate rather than on the values.
+         * <p>The question is put to the curse's own object, as C puts it: {@code player_know_object}
+         * calls {@code object_fully_known} on {@code curses[i].obj}, the same function every item
+         * goes through, and there is no curse-specific version. It asks the predicate rather than
+         * reading the known modifiers back, so the test does not depend on how they are stored.
          */
         @Test
         @DisplayName("a curse the player can read becomes fully known")
@@ -732,11 +761,11 @@ class PlayerUpdateObjectKnowledgeTest {
             player.itemKnowledge.learnModifier(ObjectModifier.OM_STR);
             carrying();
 
-            assertFalse(curse.isFullyKnown());
+            assertFalse(curse.getItemObject().isFullyKnown());
 
             PlayerKnowledge.updateObjectKnowledge(player);
 
-            assertTrue(curse.isFullyKnown());
+            assertTrue(curse.getItemObject().isFullyKnown());
         }
 
         /**
@@ -755,7 +784,7 @@ class PlayerUpdateObjectKnowledgeTest {
 
             PlayerKnowledge.updateObjectKnowledge(player);
 
-            assertFalse(curse.isFullyKnown());
+            assertFalse(curse.getItemObject().isFullyKnown());
         }
 
         /**

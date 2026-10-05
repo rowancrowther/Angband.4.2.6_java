@@ -77,7 +77,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p>Two of the cases exist because the port's data shape differs from C's. C reads
  * {@code curse->obj->el_info[elem]} out of an array of length {@code ELEM_MAX}, so the entry is
- * always there with a {@code res_level} of zero by default. {@link Curse#getElInfo()} is a map
+ * always there with a {@code res_level} of zero by default. {@link ItemObject#getElInfo()} on the curse's object is a map
  * carrying only the elements that curse's data lines actually name — and 24 of the curses in
  * {@code curse.txt}, {@code teleportation} and {@code dullness} among them, name none at all. The
  * absent entry has to behave as C's zero, so there is a case for a curse with no element data and a

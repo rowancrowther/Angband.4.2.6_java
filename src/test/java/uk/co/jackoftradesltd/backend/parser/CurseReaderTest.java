@@ -149,9 +149,9 @@ class CurseReaderTest {
         List<Curse> curses = new CurseReader().parseWithResults(REAL_FILE).items();
         Curse vuln = byName(curses, "vulnerability");
 
-        assertEquals(0, vuln.getCombatToHit());
-        assertEquals(0, vuln.getCombatDam());
-        assertEquals(-50, vuln.getCombatAC());
+        assertEquals(0, vuln.getItemObject().getToHit());
+        assertEquals(0, vuln.getItemObject().getToDam());
+        assertEquals(-50, vuln.getItemObject().getToAC());
         assertTrue(vuln.canAfflict(ObjectRegistry.getBaseFromTVal(TValue.TV_CLOAK)));
         assertFalse(vuln.canAfflict(ObjectRegistry.getBaseFromTVal(TValue.TV_BOOTS)));
     }
@@ -162,16 +162,16 @@ class CurseReaderTest {
 
         // 'annoyance' values:SPEED[-10] | STEALTH[-10] -> both additive modifiers, no resistances.
         Curse annoyance = byName(curses, "annoyance");
-        assertEquals(-10, annoyance.getModifiers().get(ObjectModifier.OM_SPEED));
-        assertEquals(-10, annoyance.getModifiers().get(ObjectModifier.OM_STEALTH));
-        assertTrue(annoyance.getElInfo().isEmpty());
-        assertTrue(annoyance.getObjectFlags().has(ObjectFlag.OF_AGGRAVATE));
+        assertEquals(-10, annoyance.getItemObject().getModifiers().get(ObjectModifier.OM_SPEED));
+        assertEquals(-10, annoyance.getItemObject().getModifiers().get(ObjectModifier.OM_STEALTH));
+        assertTrue(annoyance.getItemObject().getElInfo().isEmpty());
+        assertTrue(annoyance.getItemObject().getFlags().has(ObjectFlag.OF_AGGRAVATE));
 
         // 'burning up' values:RES_FIRE[-1] | RES_COLD[1] -> both resistances, no modifiers.
         Curse burning = byName(curses, "burning up");
-        assertTrue(burning.getModifiers().isEmpty());
-        assertEquals(-1, burning.getElInfo().get(ElementEnum.ELEM_FIRE).getResLevel());
-        assertEquals(1, burning.getElInfo().get(ElementEnum.ELEM_COLD).getResLevel());
+        assertTrue(burning.getItemObject().getModifiers().isEmpty());
+        assertEquals(-1, burning.getItemObject().getElInfo().get(ElementEnum.ELEM_FIRE).getResLevel());
+        assertEquals(1, burning.getItemObject().getElInfo().get(ElementEnum.ELEM_COLD).getResLevel());
     }
 
     @Test
@@ -195,10 +195,10 @@ class CurseReaderTest {
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
         Curse c = result.items().get(0);
-        assertEquals(-5, c.getModifiers().get(ObjectModifier.OM_STR));
-        assertEquals(-1, c.getElInfo().get(ElementEnum.ELEM_FIRE).getResLevel());
+        assertEquals(-5, c.getItemObject().getModifiers().get(ObjectModifier.OM_STR));
+        assertEquals(-1, c.getItemObject().getElInfo().get(ElementEnum.ELEM_FIRE).getResLevel());
         // The resistance must NOT have leaked into the additive modifier map.
-        assertEquals(1, c.getModifiers().size());
+        assertEquals(1, c.getItemObject().getModifiers().size());
     }
 
     // ---- Flags two-family split incl. FLAG coverage ----------------------
@@ -211,9 +211,9 @@ class CurseReaderTest {
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
         Curse c = result.items().get(0);
-        assertTrue(c.getObjectFlags().isEmpty());
-        assertTrue(c.getElInfo().get(ElementEnum.ELEM_FIRE).getFlags().has(ElementInfoEnum.EL_INFO_HATES));
-        assertTrue(c.getElInfo().get(ElementEnum.ELEM_ACID).getFlags().has(ElementInfoEnum.EL_INFO_IGNORE));
+        assertTrue(c.getItemObject().getFlags().isEmpty());
+        assertTrue(c.getItemObject().getElInfo().get(ElementEnum.ELEM_FIRE).getFlags().has(ElementInfoEnum.EL_INFO_HATES));
+        assertTrue(c.getItemObject().getElInfo().get(ElementEnum.ELEM_ACID).getFlags().has(ElementInfoEnum.EL_INFO_IGNORE));
     }
 
     @Test
@@ -224,8 +224,8 @@ class CurseReaderTest {
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
         Curse c = result.items().get(0);
-        assertTrue(c.getObjectFlags().has(ObjectFlag.OF_AGGRAVATE));
-        assertTrue(c.getElInfo().isEmpty());
+        assertTrue(c.getItemObject().getFlags().has(ObjectFlag.OF_AGGRAVATE));
+        assertTrue(c.getItemObject().getElInfo().isEmpty());
     }
 
     // ---- Optional weight/combat default to zero (regression) -------------
@@ -239,10 +239,10 @@ class CurseReaderTest {
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
         Curse c = result.items().get(0);
-        assertEquals(0, c.getWeight());
-        assertEquals(0, c.getCombatToHit());
-        assertEquals(0, c.getCombatDam());
-        assertEquals(0, c.getCombatAC());
+        assertEquals(0, c.getItemObject().getWeight());
+        assertEquals(0, c.getItemObject().getToHit());
+        assertEquals(0, c.getItemObject().getToDam());
+        assertEquals(0, c.getItemObject().getToAC());
     }
 
     // ---- Soft errors: dropped record (skip-and-continue) -----------------

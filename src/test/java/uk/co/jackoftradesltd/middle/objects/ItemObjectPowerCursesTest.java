@@ -556,9 +556,9 @@ class ItemObjectPowerCursesTest {
         @DisplayName("modifiers add, appear and saturate")
         void modifiers() throws Exception {
             Curse c = curse(1, 0, false, 0);
-            c.getModifiers().put(ObjectModifier.OM_STEALTH, 3);
-            c.getModifiers().put(ObjectModifier.OM_SPEED, -2);
-            c.getModifiers().put(ObjectModifier.OM_STR, 1);
+            c.getItemObject().getModifiers().put(ObjectModifier.OM_STEALTH, 3);
+            c.getItemObject().getModifiers().put(ObjectModifier.OM_SPEED, -2);
+            c.getItemObject().getModifiers().put(ObjectModifier.OM_STR, 1);
             register(c);
             ItemObject item = cloak(100, 0, c, 50);
             item.getModifiers().put(ObjectModifier.OM_STEALTH, 2);
@@ -590,7 +590,7 @@ class ItemObjectPowerCursesTest {
         })
         void resistanceTable(int object, int curse, int expected) throws Exception {
             Curse c = curse(1, 0, false, 0);
-            c.getElInfo().put(ElementEnum.ELEM_ACID, withLevel(curse));
+            c.getItemObject().getElInfo().put(ElementEnum.ELEM_ACID, withLevel(curse));
             register(c);
             ItemObject item = cloak(100, 0, c, 50);
             item.getElInfo().put(ElementEnum.ELEM_ACID, withLevel(object));
@@ -609,13 +609,13 @@ class ItemObjectPowerCursesTest {
         @DisplayName("both-at-once persists until an immunity or the end")
         void bothPersists() throws Exception {
             Curse vuln = curse(1, 0, false, 0);
-            vuln.getElInfo().put(ElementEnum.ELEM_ACID, withLevel(-1));
+            vuln.getItemObject().getElInfo().put(ElementEnum.ELEM_ACID, withLevel(-1));
             Curse immune = curse(2, 0, false, 0);
-            immune.getElInfo().put(ElementEnum.ELEM_ACID, withLevel(3));
+            immune.getItemObject().getElInfo().put(ElementEnum.ELEM_ACID, withLevel(3));
             Curse resist = curse(2, 0, false, 0);
-            resist.getElInfo().put(ElementEnum.ELEM_ACID, withLevel(1));
+            resist.getItemObject().getElInfo().put(ElementEnum.ELEM_ACID, withLevel(1));
             Curse vuln2 = curse(2, 0, false, 0);
-            vuln2.getElInfo().put(ElementEnum.ELEM_ACID, withLevel(-1));
+            vuln2.getItemObject().getElInfo().put(ElementEnum.ELEM_ACID, withLevel(-1));
 
             register(vuln, immune);
             ItemObject item = cloak(100, 0, vuln, 50, immune, 50);
@@ -644,7 +644,7 @@ class ItemObjectPowerCursesTest {
         @DisplayName("an element the object lacks is created from the curse")
         void absentElement() throws Exception {
             Curse c = curse(1, 0, false, 0);
-            c.getElInfo().put(ElementEnum.ELEM_FIRE, withLevel(-1));
+            c.getItemObject().getElInfo().put(ElementEnum.ELEM_FIRE, withLevel(-1));
             register(c);
             ItemObject item = cloak(100, 0, c, 50);
             item.getElInfo().remove(ElementEnum.ELEM_FIRE);
@@ -663,7 +663,7 @@ class ItemObjectPowerCursesTest {
         @DisplayName("an impossible resistance level throws where C asserts")
         void impossibleLevel() {
             Curse c = curse(1, 0, false, 0);
-            c.getElInfo().put(ElementEnum.ELEM_ACID, withLevel(-1));
+            c.getItemObject().getElInfo().put(ElementEnum.ELEM_ACID, withLevel(-1));
             register(c);
             ItemObject item = cloak(100, 0, c, 50);
             item.getElInfo().put(ElementEnum.ELEM_ACID, withLevel(2));

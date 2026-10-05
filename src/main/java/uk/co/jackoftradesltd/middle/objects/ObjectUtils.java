@@ -46,8 +46,10 @@ import java.util.*;
 
 /**
  * Free-standing helper routines for the object/inventory subsystem — the port's landing spot for
- * the gear-management corners of C's {@code obj-gear.c}, {@code obj-desc.c}, {@code obj-curse.c}
- * and {@code obj-knowledge.c}.
+ * the gear-management corners of C's {@code obj-gear.c}, the kind-lookup, flavour and artifact-marker
+ * helpers of {@code obj-util.c}, {@code object_prep} from {@code obj-make.c}, the slay, brand and
+ * curse merges of {@code obj-slays.c} and {@code obj-curse.c}, and the flag and element knowledge
+ * checks of {@code obj-knowledge.c}. The routines still stubbed also name {@code obj-desc.c}.
  *
  * <p>Static methods that act on objects and the player's pack without belonging to any one object's
  * data model. C reaches the player through a global and so needs no argument for it; the port has
@@ -65,31 +67,79 @@ import java.util.*;
  * {@code Player.slotByName()} named in {@link #slotByName}'s exception message, say — is a leftover
  * of that move rather than a description of where the code is now.
  *
- * <p><b>Status:</b> the gear, slot and capacity routines are ported. {@link #packOverflow},
- * {@link #equipLearnAfterTime}, {@link #objectDesc} and {@link #doCurseEffect} are still the stubs
- * landed to unblock the game loop, and each says so for itself.
+ * <p><b>Gear order.</b> C's {@code p->gear} runs from head to tail: {@code pile_insert} adds at the
+ * head and {@code gear_insert_end} at the tail. {@link Pile} stores that list backwards, with the
+ * head at the last index and the tail at index 0, so its {@code insertEnd} is an {@code addFirst}.
+ * A routine here that must visit the gear in C's order therefore either reads
+ * {@code gear.reversed()}, as {@link #packSlotsUsed} does, or counts its indices the other way
+ * round, as {@link #combinePack} does.
+ *
+ * <p><b>Status:</b> every routine here is ported except {@link #packOverflow},
+ * {@link #equipLearnAfterTime}, {@link #objectDesc} and {@link #doCurseEffect}, which are still the
+ * stubs landed to unblock the game loop, and each says so for itself.
+ *
+ * <p>Class ObjectUtils commented in full on 261005.
  *
  * @author Rowan Crowther
  */
 public class ObjectUtils {
+    /**
+     * Logger for this class. {@link #slotByName}, {@link #quiverAbsorbNum} and
+     * {@link #flavourAssignRandom} write their data-error and impossible-state failures here before
+     * they throw or quit, where C asserts or calls {@code quit_fmt}.
+     *
+     * <p>Field logger commented in full on 261005.
+     */
     private final static Logger logger = LogManager.getLogger(ObjectUtils.class);
 
+    /**
+     * How many scroll titles {@link #flavourInit} generates, the port of {@code MAX_TITLES} in
+     * {@code obj-util.h}. It sizes {@link #scrollAdj}, so it is also the first scroll sval that
+     * {@link #flavourAssignRandom} could index past the end with.
+     *
+     * <p>Field MAX_TITLES commented in full on 261005.
+     */
     private static final int MAX_TITLES = 50;
+
+    /**
+     * The size of one title buffer in C, where {@code scroll_adj} in {@code obj-util.c} is declared
+     * {@code [MAX_TITLES][18]} - eighteen bytes, the terminating NUL included. Java strings have no
+     * NUL, so the figure is kept only for the arithmetic: {@link #flavourInit} stops adding words
+     * once the length so far plus the next word reaches this value less three, which holds a title to
+     * 14 letters plus its two quotes.
+     *
+     * <p>Field maxTitleLength commented in full on 261005.
+     */
     private static final int maxTitleLength = 18;
 
+    /**
+     * This game's scroll titles, each with its quotes, indexed from zero. {@link #flavourInit} fills
+     * every entry, and {@link #flavourAssignRandom} copies one onto a scroll flavour, picking it by
+     * the scroll kind's sval. It is the port of C's static {@code scroll_adj}, so there is one set
+     * per JVM, and every entry is {@code null} until the first {@code flavourInit} has run.
+     *
+     * <p>Field scrollAdj commented in full on 261005.
+     */
     private static String[] scrollAdj;
 
     static {
         scrollAdj = new String[MAX_TITLES];
     }
-    
+
     /**
-     * Handle "pack overflow" — the port of C's {@code pack_overflow} ({@code obj-gear.c}). When the
-     * pack holds more than it can carry, the excess is dropped (or the offending item is), so the
-     * game never proceeds with an over-full inventory. The player-processing pass calls it defensively
-     * at the top of each command, in case a menu action left the pack corrupted.
+     * Drops an item when the pack holds more than it can carry — the port of C's
+     * {@code pack_overflow} ({@code obj-gear.c}).
      *
-     * <p><b>Stub:</b> not yet implemented — takes no action until the gear subsystem is ported.
+     * <p>C returns at once unless {@code pack_slots_used} exceeds {@code carry-cap:pack-size}. When it
+     * does, it disturbs the player and says "Your pack overflows!". It then takes the item named, or
+     * the last occupied inventory slot when none is, describes it, excises it from the gear and drops
+     * it near the player. Last come the "You drop" and "You no longer have" messages and the notice,
+     * update and redraw passes.
+     *
+     * <p><b>Stub:</b> not yet implemented — takes no action until the gear subsystem is ported, so an
+     * over-full pack is left over-full.
+     *
+     * <p>Function packOverflow coded before 261005 as a stub, commented in full on 261005.
      *
      * @param object the specific item to overflow, or {@code null} to overflow the last pack slot as
      *               C does with {@code pack_overflow(NULL)}
@@ -99,11 +149,19 @@ public class ObjectUtils {
     }
 
     /**
-     * Learns the timed/after-time properties of the player's worn equipment — the port of C's
-     * {@code equip_learn_after_time} ({@code obj-knowledge.c}), run periodically so flags that are
-     * only revealed through prolonged wear become known.
+     * Learns the flags that only show themselves after an item has been worn for a while — the port
+     * of C's {@code equip_learn_after_time} ({@code obj-knowledge.c}).
      *
-     * <p><b>Stub:</b> not yet implemented — takes no action until the knowledge subsystem is ported.
+     * <p>C first builds the mask of "timed" flags the player does not yet know, and returns if there
+     * are none. Then, for every worn item, it takes the timed flags that item carries and learns each
+     * one, printing the flag's message first if the rune was not already known. It also lets the
+     * item's curses reveal their timed flags, and, if the item is not yet fully known, marks its
+     * known half as having had its chance to show all of them.
+     *
+     * <p><b>Stub:</b> not yet implemented — takes no action until the knowledge subsystem is ported,
+     * so nothing is learnt from long wear.
+     *
+     * <p>Function equipLearnAfterTime coded before 261005 as a stub, commented in full on 261005.
      *
      * @param player the player whose equipment is checked
      */
@@ -117,7 +175,7 @@ public class ObjectUtils {
      * port returns a string.
      *
      * <p>The {@code description} flags select how much of the name to include. C treats them as a
-     * bit mask ({@code obj-desc.h:26-42}), so an empty set is C's {@code ODESC_BASE == 0x00} — the
+     * bit mask (the anonymous enum in {@code obj-desc.h}), so an empty set is C's {@code ODESC_BASE == 0x00} — the
      * bare name with no combat bonuses, charges or inscription — and callers OR in extras such as
      * {@code ODESC_COMBAT} or {@code ODESC_PREFIX} from there.
      *
@@ -129,6 +187,8 @@ public class ObjectUtils {
      * name belongs. Note that C's {@code ODESC_ALTNUM} passes a count through the high 16 bits of
      * the mode word, which a flag set cannot carry — it will need a separate parameter when this is
      * ported.
+     *
+     * <p>Function objectDesc coded before 261005 as a stub, commented in full on 261005.
      *
      * @param item        the object to name
      * @param description the {@link ObjectDescription} flags selecting how much detail to include
@@ -142,7 +202,7 @@ public class ObjectUtils {
 
     /**
      * Fire a curse's effect against the player, as the source item's curse timeout expires. The
-     * port of C's {@code do_curse_effect} ({@code obj-curse.c:353}); the returned flag drives
+     * port of C's {@code do_curse_effect} ({@code obj-curse.c}); the returned flag drives
      * whether the player then learns the curse's identity.
      *
      * <p>Takes the curse and the item, and nothing else. The curse's per-object
@@ -150,6 +210,10 @@ public class ObjectUtils {
      * template's own object ({@code curse->obj->effect} and its message), while the timeout that
      * brought us here has already been dealt with by the caller. C's signature is the same shape,
      * taking a curse index rather than the instance data.
+     *
+     * <p>C also notes whether the player already knows the curse, picks a random direction from 1 to
+     * 8 that skips 5, prints the curse's effect message if it has one, runs the effect with the item
+     * as its source, copies the curse object's effect onto its known half, and disturbs the player.
      *
      * <p>The return is a discovery, not a success: it reports whether something happened that the
      * player was not already expecting, which is what makes a previously unknown curse worth
@@ -159,7 +223,7 @@ public class ObjectUtils {
      * (nothing happened, so the curse is not revealed).</p>
      *
      * <p>Function doCurseEffect coded before 260817, retyped from taking a {@code CurseEntry} on
-     * 260817, commented in full on 260817.
+     * 260817, commented in full on 261005.
      *
      * @param curse the curse whose effect is firing
      * @param item  the worn item the curse is attached to (the effect's source)
@@ -172,9 +236,11 @@ public class ObjectUtils {
 
     /**
      * Merges every pair of stacks in the gear that can share a slot - the port of C's
-     * {@code combine_pack} ({@code obj-gear.c:1242}). Walks the gear backwards, and for each stack
-     * looks at every earlier stack for one that will take it whole; failing that, for one that will
-     * take part of it.
+     * {@code combine_pack} ({@code obj-gear.c}). Walks the gear from its tail towards its head, and
+     * for each stack looks at the stacks nearer the head, starting with the head itself, for one that
+     * will take it whole; failing that, for one that will take part of it. The stack nearer the head
+     * is always the one that absorbs, so it is the one that survives a whole merge and the one that
+     * is filled up in a partial one.
      *
      * <p>A whole merge, through {@link ItemObject#objectAbsorb}, removes the absorbed stack from
      * both {@code gear} and {@code gearKnown} and is announced to the player. A partial merge,
@@ -182,20 +248,27 @@ public class ObjectUtils {
      * both survive; C leaves that unannounced on the grounds that shuffling items between stacks
      * is not interesting to read about.
      *
-     * <p>Both loops are indexed rather than iterators. C walks a linked list and saves
-     * {@code obj1->prev} before merging, because {@code object_absorb} unlinks the absorbed object
-     * from the gear list; the port cannot borrow that trick, and iterating a live view of
-     * {@code gear} while the body removes from it would fail. Running the outer index down from
-     * the end and bounding the inner one by {@code outerIndex} gives the same visit order as C and
-     * keeps the removal at {@code outerIndex} clear of the positions still to come.
+     * <p>Both loops are indexed rather than iterators, and they run in the order C does once the
+     * gear order described on {@link ObjectUtils} is allowed for. The tail is index 0 and the head
+     * is the last index, so the outer index counts up from 0 and the inner one counts down from the
+     * last index to {@code outerIndex + 1}, which is C's stop at {@code obj1}. C saves
+     * {@code obj1->prev} before merging because {@code object_absorb} unlinks the absorbed object;
+     * the port cannot borrow that trick. A whole merge removes the stack at {@code outerIndex}, which
+     * slides everything after it down one place, so the next stack to visit is now at the same
+     * {@code outerIndex} and the index is advanced only when nothing was removed. A partial merge
+     * removes nothing, so it advances like a miss, as C moves on to {@code prev} after it too.
      *
      * <p>The known objects are absorbed and unlinked before the real ones, so that
      * {@link ItemObject#objectAbsorb} is never handed a stack whose {@code known} half has already
      * gone. The two {@code setNumber} calls afterwards realign the counts; C has no equivalent, and
      * they should never change anything.
      *
-     * <p>Function combinePack coded on 260822, commented in full on 260824, moved here from
-     * {@link Player} and made static on 260901.
+     * <p>A stack with no kind is skipped, as either stack of a pair, where C asserts it never occurs.
+     * A money stack is likewise skipped as the outer stack, where C asserts the same.
+     *
+     * <p>Function combinePack coded on 260822, commented in full on 261005, moved here from
+     * {@link Player} and made static on 260901, walk direction and index advance corrected on
+     * 261005.
      *
      * @param player the player whose gear is to be combined
      */
@@ -206,14 +279,22 @@ public class ObjectUtils {
         boolean displayRepeat = false;
         ObjectStackEnum stackMode2;
 
-        for (int outerIndex = player.getGear().size() - 1; outerIndex >= 0; outerIndex--) {
+        int outerIndex = 0;
+        while (outerIndex < player.getGear().size()) {
             item1 = player.getGear().get(outerIndex);
+            boolean merged = false;
 
-            if (item1.getKind() == null) continue;
-            if (item1.gettValue().isMoney()) continue;
+            if (item1.getKind() == null) {
+                outerIndex++;
+                continue;
+            }
+            if (item1.gettValue().isMoney()) {
+                outerIndex++;
+                continue;
+            }
 
             // use an indexed for loop to ensure that we stop at item1
-            for (int innerIndex = 0; innerIndex < outerIndex; innerIndex++) {
+            for (int innerIndex = player.getGear().size() - 1; innerIndex > outerIndex; innerIndex--) {
                 item2 = player.getGear().get(innerIndex);
                 stackMode2 = item2.objectIsInQuiver(player) ? ObjectStackEnum.OSTACK_QUIVER
                         : ObjectStackEnum.OSTACK_PACK;
@@ -239,6 +320,7 @@ public class ObjectUtils {
 
                     // Ensure numbers align - shouldn't be necessary, but just in case
                     item2.getKnown().setNumber(item2.getNumber());
+                    merged = true;
 
                     break;
                 } else {
@@ -263,6 +345,9 @@ public class ObjectUtils {
                     }
                 }
             }
+
+            if (!merged)
+                outerIndex++;
         }
 
         PlayerCalcs.calcInventory(player);
@@ -283,7 +368,7 @@ public class ObjectUtils {
 
     /**
      * Tests whether at least one item could be moved from {@code item2} onto {@code item1} - the
-     * port of C's {@code inven_can_stack_partial} ({@code obj-gear.c:1183}).
+     * port of C's {@code inven_can_stack_partial} ({@code obj-gear.c}).
      *
      * <p>The two stacks are not interchangeable. {@code item1} is the leading stack, the one whose
      * count the caller means to maximise, and only {@code stackMode1} opens the quiver branch
@@ -304,7 +389,15 @@ public class ObjectUtils {
      *   <li>a pack stack is capped at its kind's {@code max_stack}.</li>
      * </ul>
      *
-     * <p>Function invenCanStackPartial coded on 260822, commented in full on 260824, moved here
+     * <p>C tests the second bullet with {@code mode2 & ~OSTACK_QUIVER}, which is true for any mode
+     * that has a bit other than quiver set; the port tests that {@code stackMode2} lacks
+     * {@code OSTACK_QUIVER}. The two agree for the only modes {@link #combinePack} passes, which
+     * are exactly one of pack or quiver, and differ only for an empty mode set.
+     *
+     * <p>The count handed back by {@link #quiverAbsorbNum} for the free pack slots is read and not
+     * used again, as in C.
+     *
+     * <p>Function invenCanStackPartial coded on 260822, commented in full on 261005, moved here
      * from {@link Player} and made static on 260901.
      *
      * @param player     the player whose pack and quiver capacity the numbers are checked against
@@ -363,7 +456,7 @@ public class ObjectUtils {
 
     /**
      * Works out how many of {@code item} the quiver could take, and how many of the offered pack
-     * slots that would cost - the port of C's {@code quiver_absorb_num} ({@code obj-gear.c:649}).
+     * slots that would cost - the port of C's {@code quiver_absorb_num} ({@code obj-gear.c}).
      *
      * <p>Anything that is neither ammunition nor {@code OF_THROWING} cannot go in the quiver at
      * all, and is answered with nothing to the quiver and the offered pack slots handed back
@@ -490,7 +583,7 @@ public class ObjectUtils {
 
     /**
      * Reads the quiver slot an object's inscription asks for - the port of C's
-     * {@code preferred_quiver_slot} ({@code obj-gear.c:1396}).
+     * {@code preferred_quiver_slot} ({@code obj-gear.c}).
      *
      * <p>The inscription is scanned for an {@code @} followed by the fire or throw command key and
      * a digit, so {@code @f1} asks for slot 1. The fire key is {@code f}, or {@code t} under the
@@ -502,7 +595,15 @@ public class ObjectUtils {
      * {@code s.charAt(2) - '0'}, exactly as C does - a slot number outside the quiver is the
      * caller's problem, and no caller acts on one it cannot match.
      *
-     * <p>Function preferredQuiverSlot coded on 260822, commented in full on 260824, moved here
+     * <p>C takes the keyset from its {@code player} global; the port reads it off the {@code player}
+     * argument.
+     *
+     * <p>One input differs from C. An inscription that ends straight after the key, such as
+     * {@code @f}, makes C read the string's terminating NUL as the digit and answer {@code -48}; the
+     * port stops at a tag shorter than three characters and answers {@code -1}. Neither is a valid
+     * slot, and every caller tests the result against a range of slots or against a slot index.
+     *
+     * <p>Function preferredQuiverSlot coded on 260822, commented in full on 261005, moved here
      * from {@link Player} and made static on 260901.
      *
      * @param player the player whose keyset decides which letter is the fire key
@@ -544,7 +645,7 @@ public class ObjectUtils {
 
     /**
      * Counts the pack slots the player's gear occupies - the port of C's {@code pack_slots_used}
-     * ({@code obj-gear.c:257}).
+     * ({@code obj-gear.c}).
      *
      * <p>Equipped items occupy no pack slot and are skipped. Everything else costs one slot, except
      * what is actually in the quiver: quivered stacks are gathered into {@code quiverAmmo} in
@@ -556,7 +657,11 @@ public class ObjectUtils {
      * quiver itself, which is why the inner loop compares identities rather than acting on the
      * first entry it sees.
      *
-     * <p>Function packSlotsUsed coded on 260822, commented in full on 260824, moved here from
+     * <p>The gear is read through {@code reversed()} so that it is visited head to tail, as C's
+     * {@code for (obj = p->gear; obj; obj = obj->next)} does. The answer is a sum, so the order
+     * makes no difference to it.
+     *
+     * <p>Function packSlotsUsed coded on 260822, commented in full on 261005, moved here from
      * {@link Player} and made static on 260901.
      *
      * @param player the player whose gear is counted
@@ -603,12 +708,14 @@ public class ObjectUtils {
      * Appends an object to the end of the gear, and its known half to the parallel known list - the
      * port of C's {@code gear_insert_end} ({@code obj-gear.c}).
      *
-     * <p>C walks its linked list to the tail and links the object on; a list append is the same
-     * thing. The two lists are kept in step by every gear operation, which is what lets the pack
-     * rebuild address an object and its knowledge by the same position.
+     * <p>C walks its linked list to the tail and links the object on. The port's {@link Pile} keeps
+     * the list backwards, with C's tail at index 0, so {@link Pile#insertEnd(ItemObject)} adds at the
+     * front of its backing list and the result is the same position in C's order. The two lists are
+     * kept in step by every gear operation, which is what lets the pack rebuild address an object
+     * and its knowledge by the same position.
      *
-     * <p>Function gearInsertEnd commented in full on 260827, moved here from {@link Player} and
-     * made static on 260901.
+     * <p>Function gearInsertEnd coded before 261005, commented in full on 261005, moved here from
+     * {@link Player} and made static on 260901.
      *
      * @param player     the player whose gear the object joins
      * @param itemObject the object to append; its known half is appended too
@@ -620,7 +727,7 @@ public class ObjectUtils {
 
     /**
      * Finds an equipment slot of a given type, preferring an empty one - the port of C's
-     * {@code slot_by_type} ({@code obj-gear.c:71}).
+     * {@code slot_by_type} ({@code obj-gear.c}).
      *
      * <p>Walks the body in order and stops at the first slot of the right type that is in the state
      * asked for: empty when {@code full} is {@code false}, occupied when it is {@code true}. Failing
@@ -680,9 +787,13 @@ public class ObjectUtils {
      * so on. Every caller in the power and gear code passes a literal, so a miss means a coding
      * error rather than a runtime condition.
      *
-     * <p><b>Diverges from C on a miss.</b> C returns {@code body.count} - one past the last slot -
-     * and leaves the caller to notice; the port logs and throws. That is deliberate: no caller here
-     * tests for the one-past value, so a wrong name would otherwise be read as a real slot number.
+     * <p><b>A miss is a failure, as in C.</b> C stops at {@code body.count} when the loop finds no
+     * match and then asserts {@code i < p->body.count}, so a wrong name ends the game in a debug
+     * build and would return the one-past-the-end index in a build with asserts off. The port logs
+     * and throws in both cases, because no caller here tests for the one-past value and a wrong name
+     * would otherwise be read as a real slot number.
+     *
+     * <p>Function slotByName coded before 261005, commented in full on 261005.
      *
      * @param player the player whose body is searched
      * @param name   the slot's name as {@code body.txt} spells it
@@ -890,7 +1001,7 @@ public class ObjectUtils {
     /**
      * Looks up the object kind with the given tval and sval <em>name</em> — the port of the C
      * pattern {@code lookup_kind(tval, lookup_sval(tval, name))} (both {@code obj-util.c}), seen at
-     * call sites such as {@code obj-init.c:3086}.
+     * call sites in {@code obj-init.c}.
      *
      * <p>C resolves a name to a numeric sval and looks up the kind as two separate calls; the port
      * fuses both steps into {@link ObjectRegistry#lookupObjectKind(TValue, String)}, whose Javadoc
@@ -901,15 +1012,18 @@ public class ObjectUtils {
      * sval as an unresolved name rather than the numeric value C stores after resolving it once at
      * {@code class.txt} parse time ({@code init.c}, {@code parse_class_equip}). The port defers that
      * resolution to birth time, calling this method where C's already-resolved
-     * {@code lookup_kind(si->tval, si->sval)} runs instead ({@code player-birth.c:609}); a name C
+     * {@code lookup_kind(si->tval, si->sval)} runs instead ({@code player-birth.c}); a name C
      * would have rejected at load as {@code PARSE_ERROR_UNRECOGNISED_SVAL} instead loads cleanly and
      * fails here, at birth, when the caller's own null check runs (see
      * {@link uk.co.jackoftradesltd.middle.player.PlayerBirth}).
      *
      * <p>As with the numeric overload, a miss is reported through {@link Message#message} before
-     * {@code null} is returned.
+     * {@code null} is returned. C matches the name against each kind's name after
+     * {@code obj_desc_name_format} has stripped the {@code &} and {@code ~} markers; the port
+     * matches it against {@link ObjectKind#getsValueName()}, the kind's name with those markers
+     * already stripped.
      *
-     * <p>Function lookupKind coded on 260904, commented in full on 260904.
+     * <p>Function lookupKind coded on 260904, commented in full on 261005.
      *
      * @param tVal the object's base type
      * @param sVal the object's subtype name, or a digit string naming it by number
@@ -925,7 +1039,7 @@ public class ObjectUtils {
 
     /**
      * Wipes an object and makes it a standard object of the given kind, rolling its dice-based
-     * fields to a settled figure — the port of C's {@code object_prep} ({@code obj-make.c:817}).
+     * fields to a settled figure — the port of C's {@code object_prep} ({@code obj-make.c}).
      *
      * <p>{@link ItemObject#wipe} stands in for C's {@code memset(obj, 0, sizeof(*obj))}, after which
      * the kind's plain fields — tval, sval, base AC, damage dice/sides, weight — are copied across,
@@ -968,9 +1082,13 @@ public class ObjectUtils {
      * onto {@code obj} through {@link ItemObject#setElInfo}. That matches C's
      * {@code obj->el_info[i].flags = k->el_info[i].flags; obj->el_info[i].flags |= k->base->el_info[i].flags;}
      * exactly, unlike the object-flags copy above: here the base's contribution is a genuine union
-     * over what the kind already set, not a second assignment that discards it.
+     * over what the kind already set, not a second assignment that discards it. The resistance level
+     * is carried across with the copy.
      *
-     * <p>Function objectPrep coded before 260904, commented in full on 260904.
+     * <p>The dice are rolled in C's order - modifiers, charges or pval, to-hit, to-damage, to-AC, then
+     * the curse timeouts - so a given random stream gives the same values in both.
+     *
+     * <p>Function objectPrep coded before 260904, commented in full on 261005.
      *
      * @param obj          the object to wipe and prepare
      * @param kind         the kind to prepare it as
@@ -1061,7 +1179,7 @@ public class ObjectUtils {
 
     /**
      * Applies every curse in {@code source} onto {@code dest}, overwriting whatever that curse
-     * already held there - the port of C's {@code copy_curses} ({@code obj-curse.c:52}).
+     * already held there - the port of C's {@code copy_curses} ({@code obj-curse.c}).
      *
      * <p>Unlike {@link #copySlays} and {@link #copyBrands} there is no "keep the stronger one"
      * comparison: a curse present in {@code source} always wins, its power taken as-is and its
@@ -1074,21 +1192,25 @@ public class ObjectUtils {
      * {@code dest} at all - not even to reallocate an unset curse map, matching C's own early
      * return before its allocation branch runs.
      *
-     * <p>The merge itself runs against a scratch copy of {@code dest}'s existing curses
-     * ({@code destCurseMap}), so the write to {@code dest} happens once, at the end, through
-     * {@link ItemObject#initCurses} and {@link ItemObject#setCurses}. C instead allocates
-     * {@code obj->curses} lazily and writes straight into it index by index; the port's
-     * {@code initCurses} call is unconditional rather than gated on "was it already allocated",
-     * which C's is - but since every value merged into {@code destCurseMap} is read out of
-     * {@code dest} before that reset (and the port stores each curse's {@link CurseData} as a
-     * shared reference, not a copy, wherever it survives untouched), the reset costs nothing beyond
-     * a new backing {@link Map} object. It is also what makes this method safe to call on an object
-     * whose curse map has never been created, where {@code dest}'s own {@code curses} field is still
-     * {@code null} - a case the pre-{@code initCurses} version of this method did not handle, and
-     * {@link ObjectUtils#objectPrep} never exercises, since it always wipes {@code obj} first.
+     * <p>A source entry whose power is 0 means "no curse" and is skipped, as C's
+     * {@code if (!source[i]) continue;} does: nothing is written for it and no timeout is rolled, so
+     * the random stream is not drawn from either.
      *
-     * <p>Function copyCurses coded before 260904, fixed to call {@link ItemObject#initCurses} on
-     * 260904, commented in full on 260904.
+     * <p>The merge itself runs against a scratch {@link TreeMap} copy of {@code dest}'s existing
+     * curses ({@code destCurseMap}), so the write to {@code dest} happens once, at the end, through
+     * {@link ItemObject#setCurses}. C instead allocates {@code obj->curses} lazily and writes
+     * straight into it index by index. The port needs no allocation step: {@link
+     * ItemObject#getCurses()} answers an empty map for an object whose curse map has never been
+     * created, so the scratch copy simply starts empty, and {@code setCurses} replaces the whole
+     * field afterwards.
+     *
+     * <p>The scratch map is ordered by {@code ItemObject.CURSE_ORDER}, ascending curse index, which is
+     * the order C's array is walked in, so the finished map lists {@code dest}'s old curses and the
+     * newly added ones together in C's order whichever came first.
+     *
+     * <p>Function copyCurses coded before 260904, commented in full on 261005, rewritten on 261003
+     * once the {@code initCurses} call and the power-0 gap were removed, scratch map made a
+     * {@code TreeMap} on 261005.
      *
      * @param dest   the item the curses are being attached to
      * @param source the curses to copy on, keyed by curse and each mapped to its power; {@code null}
@@ -1098,34 +1220,39 @@ public class ObjectUtils {
         if (source == null)
             return;
 
-        Map<Curse, CurseData> destCurseMap = new HashMap<>(dest.getCurses());
+        Map<Curse, CurseData> destCurseMap = new TreeMap<>(ItemObject.CURSE_ORDER);
+        destCurseMap.putAll(dest.getCurses());
 
-        for (Curse sourceCurse : source.keySet()) {
-            boolean found = false;
-            for (Curse destCurse : destCurseMap.keySet()) {
-                if (sourceCurse == destCurse) {
-                    int power = source.get(sourceCurse).getPower();
-                    int timeout = sourceCurse.getTime().randCalc(0, DamageAspect.RANDOMIZE);
-                    CurseData destCD = new CurseData(power, timeout);
-                    destCurseMap.put(destCurse, destCD);
-                    found = true;
+        for (Curse curse : ObjectRegistry.getCurses()) {
+            if (source.containsKey(curse)) {
+                if (source.get(curse).getPower() == 0)
+                    continue;
+
+                boolean found = false;
+                for (Curse destCurse : destCurseMap.keySet()) {
+                    if (curse == destCurse) {
+                        int power = source.get(curse).getPower();
+                        int timeout = curse.getTime().randCalc(0, DamageAspect.RANDOMIZE);
+                        CurseData destCD = new CurseData(power, timeout);
+                        destCurseMap.put(destCurse, destCD);
+                        found = true;
+                    }
                 }
-            }
 
-            if (!found) {
-                int power = source.get(sourceCurse).getPower();
-                int timeout = sourceCurse.getTime().randCalc(0, DamageAspect.RANDOMIZE);
-                destCurseMap.put(sourceCurse, new CurseData(power, timeout));
+                if (!found) {
+                    int power = source.get(curse).getPower();
+                    int timeout = curse.getTime().randCalc(0, DamageAspect.RANDOMIZE);
+                    destCurseMap.put(curse, new CurseData(power, timeout));
+                }
             }
         }
 
-        dest.initCurses();
         dest.setCurses(destCurseMap);
     }
 
     /**
      * Adds every brand in {@code sourceBrands} to {@code destBrands}, keeping only the stronger of
-     * two brands that share a name - the port of C's {@code copy_brands} ({@code obj-slays.c:92}).
+     * two brands that share a name - the port of C's {@code copy_brands} ({@code obj-slays.c}).
      *
      * <p>C stores brands as one {@code bool} per index into a fixed global table, so it first ORs
      * the two arrays together and then walks every pair of set indices, clearing whichever of the
@@ -1139,7 +1266,9 @@ public class ObjectUtils {
      * neither approach can express symmetrically never has to run.
      *
      * <p>The replacement is {@link Brand#copy}, not the source's own reference - see that method's
-     * Javadoc for why a copy is needed here where C only ever flips a bit.
+     * Javadoc for why a copy is needed here where C only ever flips a bit. A source brand with no
+     * same-named partner in {@code destBrands} is added as the kind's own instance, not a copy, so
+     * the two sets then share it.
      *
      * <p>Assumes {@code sourceBrands} is never {@code null}, unlike C's {@code copy_brands}, which
      * guards against a null source before doing anything else. Every {@link ObjectKind} this is
@@ -1147,7 +1276,7 @@ public class ObjectUtils {
      * the guard has nothing to catch under any input {@link #objectPrep} - the method's only
      * caller - can currently produce.
      *
-     * <p>Function copyBrands coded before 260904, commented in full on 260904.
+     * <p>Function copyBrands coded before 260904, commented in full on 261005.
      *
      * @param destBrands   the brand set the merge writes into
      * @param sourceBrands the brands being added
@@ -1178,7 +1307,7 @@ public class ObjectUtils {
 
     /**
      * Adds every slay in {@code slays} to {@code destSlays}, keeping only the stronger of two slays
-     * that kill the same monsters - the port of C's {@code copy_slays} ({@code obj-slays.c:57}).
+     * that kill the same monsters - the port of C's {@code copy_slays} ({@code obj-slays.c}).
      *
      * <p>Same shape as {@link #copyBrands}, and for the same reason: C's array-and-index dedup
      * becomes a scan of {@code destSlays} for a {@link Slay#sameMonsterSlain} match, with the
@@ -1189,9 +1318,11 @@ public class ObjectUtils {
      * the thing deciding the outcome.
      *
      * <p>Assumes {@code slays} is never {@code null}, as {@link #copyBrands} assumes of
-     * {@code sourceBrands} and for the same reason - see that method's Javadoc.
+     * {@code sourceBrands} and for the same reason - see that method's Javadoc. As there, a slay
+     * with no partner is added as the kind's own instance and only a replacement is a
+     * {@link Slay#copy}.
      *
-     * <p>Function copySlays coded before 260904, commented in full on 260904.
+     * <p>Function copySlays coded before 260904, commented in full on 261005.
      *
      * @param destSlays the slay set the merge writes into
      * @param slays     the slays being added
@@ -1245,14 +1376,19 @@ public class ObjectUtils {
      * it - rings, amulets, staffs, wands, rods, mushrooms, potions.
      *
      * <p>Scroll titles are built next, one word at a time via {@link NameCreator#randnameMake},
-     * each 2 to 8 letters. A word is kept only once accepting it would still leave the title
-     * under {@code maxTitleLength - 3} letters, quotes included; the first word that would push
-     * it over is generated and then discarded rather than committed, matching C's
-     * {@code flavor_init}, which writes a candidate word into its buffer speculatively and then
-     * truncates the string back to the last word that fit instead of rejecting the whole title.
-     * A title that collides with one already generated this pass is retried by decrementing the
-     * loop index, matching C's {@code i--}. {@link #flavourAssignRandom} then runs once more for
-     * {@code TV_SCROLL}, binding each title's text onto its flavour.
+     * each 2 to 8 letters. A word is kept only while the running length - the kept words plus one
+     * space after each, the quotes not counted - plus the next word stays under
+     * {@code maxTitleLength - 3}; the first word that would push it over is generated and then
+     * discarded rather than committed, matching C's {@code flavor_init}, which writes a candidate
+     * word into its buffer speculatively and then truncates the string back to the last word that
+     * fit instead of rejecting the whole title.
+     *
+     * <p>Every kept word is followed by a space, so the last space is replaced by the closing quote:
+     * two words "ab" and "cde" give {@code "ab cde"}, as C's {@code buf[titlelen] = '"'} does. That
+     * holds a title to 14 letters and spaces between the quotes. A title that collides with one
+     * already generated this pass is retried by decrementing the loop index, matching C's
+     * {@code i--}. {@link #flavourAssignRandom} then runs once more for {@code TV_SCROLL}, binding
+     * each title's text onto its flavour.
      *
      * <p>Finally, every named {@link ObjectKind} that still has no flavour bound - and is not a
      * special artifact kind, the one case an unflavoured kind is expected - is marked
@@ -1260,7 +1396,8 @@ public class ObjectUtils {
      * {@code kind->kidx < z_info->ordinary_kind_max} check via
      * {@link ObjectKind#isSpecialArtifactKind()}.
      *
-     * <p>Function flavourInit coded on 260908, commented in full on 260908.
+     * <p>Function flavourInit coded on 260908, commented in full on 261005, closing quote of a scroll
+     * title corrected on 261005.
      */
     public static void flavourInit() {
         // Ignore the random stuff - we are never using simple RNG
@@ -1303,18 +1440,19 @@ public class ObjectUtils {
                 wordLen = wordDetails.length();
             }
 
-            buffer.append('"');
+            String name = buffer.toString();
+            name = name.substring(0, name.length() - 1) + "\"";
 
-            // Check to see if hte scroll name has already been generated
+            // Check to see if the scroll name has already been generated
             for (int j = 0; j < index; j++) {
-                if (buffer.toString().equals(scrollAdj[j])) {
+                if (name.equals(scrollAdj[j])) {
                     ok = false;
                     break;
                 }
             }
 
             if (ok) {
-                scrollAdj[index] = buffer.toString();
+                scrollAdj[index] = name;
             } else { // try again
                 index--;
             }
@@ -1511,12 +1649,15 @@ public class ObjectUtils {
      * </ol>
      * Failing all three, the flag is not known and the method answers false.
      *
+     * <p>The third route reads the known half without a null test, as C does, so an item with no
+     * known half throws here where C dereferences a null pointer.
+     *
+     * <p>Function objectFlagIsKnown coded before 260924, commented in full on 261005.
+     *
      * @param player the player asking
      * @param item   the object being asked about
      * @param flag   the flag whose knowledge is in question
      * @return true if the player is currently entitled to see {@code flag} on {@code item}
-     *
-     * <p>Function objectFlagIsKnown coded before 260924, commented in full on 260924.
      */
     public static boolean objectFlagIsKnown(Player player, ItemObject item, ObjectFlag flag) {
         if (item.isFullyKnown()) return true;
@@ -1623,7 +1764,8 @@ public class ObjectUtils {
      * can go to the quiver, and how many of the offered pack slots are left unspent.
      *
      * <p>Exists only because of a difference in how the two languages pass things. C declares two
-     * {@code int}s and passes their addresses ({@code obj-gear.c:649-650}), so
+     * {@code int}s and passes their addresses (the signature of {@code quiver_absorb_num} in
+     * {@code obj-gear.c}), so
      * {@code quiver_absorb_num} writes back into the caller's own storage. The port cannot take an
      * address, so the two travel together as a value in and a value out. Compare {@link PlayerCalcs.Extras},
      * which solves the same problem for {@code calc_shapechange}.

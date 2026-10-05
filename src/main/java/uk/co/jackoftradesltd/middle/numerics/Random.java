@@ -28,72 +28,140 @@ import java.util.List;
 
 /**
  * A parameterised random value of the classic Angband form
- * {@code base + m_bonus + dice 'd' sides}, where the {@code m_bonus} term scales
- * with dungeon level. This is the Java port of the {@code random_value} struct
- * and its {@code randcalc()} helper from the original C source
- * ({@code src/z-rand.h} / {@code src/z-rand.c}); it is used throughout the data
- * files to express things like damage rolls, durations and quantities.
- * <p>
- * Negative ranges are handled by the {@link #negate()} mechanism rather than a
- * negative base, because the data-file grammar cannot itself express a negative
- * base — the value is built positive and then flipped.
+ * {@code base + dice 'd' sides + m_bonus}, where the {@code m_bonus} term is a ceiling on a bonus
+ * that grows with dungeon level. This is the Java port of the {@code random_value} struct from
+ * {@code z-rand.h} and of {@code randcalc()}, {@code randcalc_valid()} and {@code randcalc_varies()}
+ * from {@code z-rand.c}; it is used throughout the data files to express damage rolls, durations
+ * and quantities.
+ *
+ * <p>C's struct is four bare {@code int} fields that any caller assigns directly, and the setters
+ * here follow that: they store what they are given, with only a negative dice or sides count
+ * clamped to 0. The die arithmetic itself ({@code damcalc()}, {@code m_bonus_calc()}) lives in
+ * {@link RandomValueUtils}, and this class composes it.
+ *
+ * <p>A negated value ({@code "-1d4"} in a data file) is built from its positive parts and then has
+ * its base shifted so that the whole range flips sign. C does the same in {@code parse_random()} in
+ * {@code parser.c}, because the random components are always positive; here the shift is
+ * {@link #negate()}, and it happens once.
+ *
+ * <p>Class Random coded before 260815, commented in full on 261005.
  *
  * @author Rowan Crowther
  */
 public class Random {
     /**
-     * Unparsed string form of the base term, used by the constructors that take
-     * the base as an expression rather than a resolved integer.
+     * The shared prototype behind {@link #Zero()}: base 0, no level bonus and zero dice of zero sides,
+     * so it rolls 0 under every {@link DamageAspect}.
+     *
+     * <p>The C original has no named constant for this. It writes the value out as a
+     * {@code random_value} literal {@code { 0, 0, 0, 0 }} wherever a "no dice" starting point is
+     * needed, for example in {@code effects.c} and {@code obj-info.c}. Java hands out copies of this
+     * prototype instead, so a caller that mutates its result through a setter cannot corrupt the
+     * shared instance. This field is private for that reason: callers never see it, only a copy.
+     *
+     * <p>Field ZERO coded on 261003, commented in full on 261003.
+     */
+    private final static Random ZERO = new Random(0, 0, 0, 0, false);
+    /**
+     * The shared prototype behind {@link #One()}: base 0, no level bonus and one die of one side
+     * ({@code 1d1}), so it rolls exactly 1 under every {@link DamageAspect} and never varies.
+     *
+     * <p>The C original has no counterpart; there is no {@code { 0, 0, 1, 1 }} literal anywhere in
+     * {@code src/}. The value is a Java-side convenience, and it follows the {@code NdM} reading of
+     * {@code z-rand.c}, function {@code randcalc()}: the dice contribute {@code 1} when minimised,
+     * maximised or averaged, and {@code damroll(1, 1)} cannot roll anything else. The constructor
+     * takes base, bonus, dice, sides, whereas the C struct orders them base, dice, sides,
+     * {@code m_bonus}; the transposition cannot matter here because the two zeroes and the two ones
+     * are interchangeable.
+     *
+     * <p>Field ONE coded on 261003, commented in full on 261003.
+     */
+    private final static Random ONE = new Random(0, 0, 1, 1, false);
+    /**
+     * Shared logger, used by {@link #parseStr(String)} to report strings it refuses or cannot read.
+     *
+     * <p>Field logger coded before 260815, commented in full on 261005.
+     */
+    private final static Logger logger = LogManager.getLogger(Random.class.getName());
+    /**
+     * The unresolved text of the base term, kept by the constructor that takes the base as an
+     * expression such as a {@code $} variable rather than a number. Nothing in this class reads it
+     * back; the resolved {@link #base} stays 0 for such a value.
+     *
+     * <p>Field baseStr coded before 260815, commented in full on 261005.
      */
     private String baseStr;
     /**
-     * The fixed base (minimum) contribution to the rolled value.
+     * The flat term of the roll, added to the dice and the level bonus. It is negative for a negated
+     * value, as {@link #negate()} shifts it.
+     *
+     * <p>Field base coded before 260815, commented in full on 261005.
      */
     private int base;
     /**
-     * Number of dice rolled (the {@code N} in {@code NdM}).
+     * The number of dice rolled, the {@code N} in {@code NdM}. The count may be 0, as in C's
+     * {@code { 0, 0, 0, 0 }} and in a plain constant such as {@code "5"}.
+     *
+     * <p>Field dice coded before 260815, commented in full on 261005.
      */
     private int dice;
     /**
-     * Unparsed string form of the sides term, for the expression-based constructor.
+     * The unresolved text of the sides term, kept by the constructor that takes the sides as an
+     * expression rather than a number. Nothing in this class reads it back; the resolved
+     * {@link #sides} stays 0 for such a value.
+     *
+     * <p>Field sidesStr coded before 260815, commented in full on 261005.
      */
     private String sidesStr;
     /**
-     * Number of sides on each die (the {@code M} in {@code NdM}).
+     * The number of faces on each die, the {@code M} in {@code NdM}.
+     *
+     * <p>Field sides coded before 260815, commented in full on 261005.
      */
     private int sides;
     /**
-     * Level-scaling bonus multiplier ({@code m_bonus} in the C original); its
-     * contribution grows with the dungeon level passed to {@link #randCalc(int, DamageAspect)}.
+     * C's {@code m_bonus} field: the ceiling of a bonus that scales with level, not a multiplier.
+     * {@link #randCalc(int, DamageAspect)} hands it to {@code m_bonus_calc()} as {@code max}, which
+     * gives the whole of it when maximised, none of it when minimised, and {@code max * level /
+     * MAX_RAND_DEPTH} when averaged. A value of 0 means no bonus. A few effect handlers in
+     * {@code effect-handler-attack.c} borrow the field for a percentage or a count instead.
+     *
+     * <p>Field mBonus coded before 260815, commented in full on 261005.
      */
     private int mBonus;
     /**
-     * Flag set when the constructed value should ultimately represent a negative
-     * range; consumed once by {@link #negate()}.
+     * Set when the value is to represent a negated range; {@link #negate()} acts on it once and
+     * clears it. The public constructor applies it immediately, so it stays true on a finished object
+     * only if {@link #setToNegate(boolean)} was called afterwards.
+     *
+     * <p>Field toNegate coded before 260815, commented in full on 261005.
      */
     private boolean toNegate;
     /**
-     * Guard ensuring {@link #negate()} only flips the value a single time.
+     * Set once {@link #negate()} has shifted the base, so a second call cannot shift it again. C
+     * needs no such flag because {@code parse_random()} negates exactly once, as it builds the value.
+     *
+     * <p>Field negated coded before 260815, commented in full on 261005.
      */
     private boolean negated;
-    /**
-     * Shared logger for parse/calculation diagnostics.
-     */
-    private final static Logger logger = LogManager.getLogger(Random.class.getName());
-    //private final boolean debug = false;
 
     /**
-     * Constructor: four integer parameters
-     * <br><br>
-     * Creates a non negated dice of the form:
-     * base + mBonus * dice 'd' dice
-     * <br><br>
-     * Once this has been created then the dice is negated to deal with negative base values.
-     * @param base the base or minimum value that the die can roll. If this is negative then
-     *             the dice is marked as to negate
-     * @param dice the number of dice to roll
-     * @param sides the sides on each die
-     * @param mBonus the multiplier of the die roll
+     * Builds a random value from its four resolved terms, optionally negating the whole range.
+     *
+     * <p>The value is {@code base + dice 'd' sides + m_bonus}. Note that the parameter order is base,
+     * bonus, dice, sides, whereas C's struct declares base, dice, sides, {@code m_bonus}. When
+     * {@code toNegate} is true the constructor calls {@link #negate()} straight away, so the finished
+     * object already holds the shifted base, exactly as {@code parse_random()} in {@code parser.c}
+     * leaves a struct after a leading {@code -}. The terms are expected to be positive when negating.
+     *
+     * <p>Constructor Random(int, int, int, int, boolean) coded before 260815, commented in full on
+     * 261005.
+     *
+     * @param base     the flat term; for a value to be negated, the positive base before the shift
+     * @param mBonus   the ceiling of the level-scaled bonus, 0 for none
+     * @param dice     the number of dice to roll
+     * @param sides    the number of faces on each die
+     * @param toNegate true to flip the whole range to its negative as the value is built
      */
     @CheckReturnValue
     @Contract(mutates = "this")
@@ -116,14 +184,20 @@ public class Random {
     }
 
     /**
-     * Constructor variant where the base term arrives as an unresolved
-     * expression string (stored in {@link #baseStr}) rather than an integer —
-     * used when the data file gives the base as a formula to evaluate later.
+     * Builds a random value whose base arrives as expression text, such as a {@code $} variable,
+     * rather than a number. The text is kept in {@link #baseStr} and the resolved {@link #base}
+     * is left at 0.
      *
-     * @param base   the base term as a string expression
-     * @param mBonus the level-scaling bonus multiplier
+     * <p>There is no counterpart in C's {@code random_value}, which holds only integers; C resolves
+     * variable dice in {@code z-dice.c} instead. This constructor does not negate, and
+     * {@link #parseStr(String)} refuses a negated value containing a {@code $}.
+     *
+     * <p>Constructor Random(String, int, int, int) coded before 260815, commented in full on 261005.
+     *
+     * @param base   the base term as unresolved expression text
+     * @param mBonus the ceiling of the level-scaled bonus, 0 for none
      * @param dice   the number of dice
-     * @param sides  the sides per die
+     * @param sides  the number of faces on each die
      */
     public Random(String base, int mBonus, int dice, int sides) {
         this.baseStr = base;
@@ -131,15 +205,22 @@ public class Random {
         this.sides = sides;
         this.mBonus = mBonus;
     }
+    //private final boolean debug = false;
 
     /**
-     * Constructor variant where the sides term arrives as an unresolved
-     * expression string (stored in {@link #sidesStr}) rather than an integer.
+     * Builds a random value whose sides arrive as expression text, such as a {@code $} variable,
+     * rather than a number. The text is kept in {@link #sidesStr} and the resolved {@link #sides}
+     * is left at 0.
      *
-     * @param base  the base (minimum) value
-     * @param mBonus the level-scaling bonus multiplier
-     * @param dice  the number of dice
-     * @param sides the sides per die as a string expression
+     * <p>As with the string-base constructor there is no C counterpart in {@code random_value}; see
+     * {@code z-dice.c} for how C resolves variable dice. This constructor does not negate.
+     *
+     * <p>Constructor Random(int, int, int, String) coded before 260815, commented in full on 261005.
+     *
+     * @param base   the flat term
+     * @param mBonus the ceiling of the level-scaled bonus, 0 for none
+     * @param dice   the number of dice
+     * @param sides  the number of faces on each die as unresolved expression text
      */
     public Random(int base, int mBonus, int dice, String sides) {
         this.base = base;
@@ -148,12 +229,50 @@ public class Random {
         this.sidesStr = sides;
     }
 
+    /**
+     * Returns a new random value that always rolls 0, the equivalent of C's {@code { 0, 0, 0, 0 }}
+     * {@code random_value} literal.
+     *
+     * <p>Each call returns an independent copy of {@link #ZERO} via {@link #copy()}, so the caller
+     * may use the setters freely. As {@link #copy()} documents, the copy carries only the resolved
+     * integer terms, which is all this value has.
+     *
+     * <p>Function Zero coded on 261003, commented in full on 261003.
+     *
+     * @return a fresh {@code 0} random value, never {@code null}
+     */
+    public static Random Zero() {
+        return ZERO.copy();
+    }
 
     /**
-     * Turn a string into a Random
+     * Returns a new random value that always rolls 1 ({@code 1d1} with no base or level bonus).
      *
-     * @param randomString the Random string we are trying to turn into a random
-     * @return A Random based on the string, or null if an error occurred
+     * <p>Each call returns an independent copy of {@link #ONE} via {@link #copy()}. There is no C
+     * original for this value; see {@link #ONE}.
+     *
+     * <p>Function One coded on 261003, commented in full on 261003.
+     *
+     * @return a fresh {@code 1} random value, never {@code null}
+     */
+    public static Random One() {
+        return ONE.copy();
+    }
+
+    /**
+     * Turns a data-file random string such as {@code "2+1d4M3"} or {@code "-5"} into a
+     * {@code Random}, the counterpart of {@code parse_random()} in {@code parser.c}.
+     *
+     * <p>A leading {@code -} is stripped before the rest is handed to {@code RandomReader}, then the
+     * result is negated, so the reader only ever sees the positive form, as in C. An empty string, a
+     * lone {@code -}, a reader failure or an empty result all return {@code null}. A negated string
+     * containing {@code $} is refused with a warning, as C has no such form. The grammar rules for the
+     * string itself belong to {@code RandomReader}, not to this method.
+     *
+     * <p>Function parseStr coded before 260815, commented in full on 261005.
+     *
+     * @param randomString the random string to parse
+     * @return the parsed value, or {@code null} if the string was empty or could not be read
      */
     @Nullable
     @CheckReturnValue
@@ -200,53 +319,13 @@ public class Random {
     }
 
     /**
-     * Sets the base value for this Random die. If an invalid value (less than 0) is
-     * passed in, the value is set to 0.
-     * @param base the lowest value that the Random can roll
-     */
-    @Contract(mutates = "this")
-    public void setBase(int base) {
-        if (base < 0) base = 0;
-        this.base = base;
-    }
-
-    /**
-     * Sets the dice value for this Random die. If an invalid value (less than 1) is
-     * passed in, the value is set to 1.
-     * @param dice the number of dice to roll to create this Random value
-     */
-    @Contract(mutates = "this")
-    public void setDice(int dice) {
-        if (dice <= 0) dice = 1;
-        this.dice = dice;
-    }
-
-    /**
-     * Sets the sides of the dice to roll for this Random die. If an invalid value (less than 1) is
-     * passed in, the value is set to 1.
-     * @param sides the type of dice to roll, i.e. d4, d6, d5, etc.
-     */
-    @Contract(mutates = "this")
-    public void setSides(int sides) {
-        if (sides <= 0) sides = 1;
-        this.sides = sides;
-    }
-
-    /**
-     * Sets the multiplier (m) in the 1+m*2d3. If an invalid value (less than 1) is passed
-     * in, the value is set to 1.
-     * @param mBonus the multiplier in the dice formula
-     */
-    @Contract(mutates = "this")
-    public void setMBonus(int mBonus) {
-        if (mBonus <= 0) mBonus = 1;
-        this.mBonus = mBonus;
-    }
-
-    /**
-     * Sets this random to be negatable. This should only be called by the test
+     * Marks this value as due for negation, for tests that need to stage it. The flag does nothing
+     * until {@link #negate()} is called, and it is forced to false once the value has already been
+     * negated, so the base cannot be shifted twice. There is no C counterpart.
      *
-     * @param toNegate whether this random should be negated or not.
+     * <p>Function setToNegate coded before 260815, commented in full on 261005.
+     *
+     * @param toNegate whether this value should be negated by the next call to {@link #negate()}
      */
     @Contract(mutates = "this")
     @TestOnly
@@ -258,8 +337,15 @@ public class Random {
     }
 
     /**
-     * Returns the base of this die
-     * @return The lowest possible number this die can roll
+     * Returns the flat term of the roll.
+     *
+     * <p>This is not the minimum of the roll, since each die adds at least 1; use
+     * {@link #randCalc(int, DamageAspect)} with {@code MINIMIZE} for that. For a negated value it
+     * is the shifted, negative base.
+     *
+     * <p>Function getBase coded before 260815, commented in full on 261005.
+     *
+     * @return the base term, as stored
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -268,8 +354,24 @@ public class Random {
     }
 
     /**
-     * Returns the number of dice this random rolls
-     * @return the number of dice this random rolls
+     * Sets the flat term, storing the value as given. A negative base is legitimate, since a negated
+     * value carries one; C assigns {@code v.base} directly with no check, and so does this.
+     *
+     * <p>Function setBase coded before 260815, commented in full on 261005.
+     *
+     * @param base the new flat term of the roll
+     */
+    @Contract(mutates = "this")
+    public void setBase(int base) {
+        this.base = base;
+    }
+
+    /**
+     * Returns the number of dice this value rolls, C's {@code v.dice}.
+     *
+     * <p>Function getDice coded before 260815, commented in full on 261005.
+     *
+     * @return the number of dice, 0 for a constant
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -278,8 +380,26 @@ public class Random {
     }
 
     /**
-     * Returns the sides on each of the dice that this Random rolls.
-     * @return The sides on each of the dice that this Random rolls.
+     * Sets the number of dice. A negative count is stored as 0; 0 itself is kept, because C allows
+     * it (a constant value, or {@code { 0, 0, 0, 0 }}) and assigns {@code v.dice} directly. C
+     * never produces a negative count, so the clamp is a Java guard with no C counterpart.
+     *
+     * <p>Function setDice coded before 260815, commented in full on 261005.
+     *
+     * @param dice the number of dice to roll
+     */
+    @Contract(mutates = "this")
+    public void setDice(int dice) {
+        if (dice < 0) dice = 0;
+        this.dice = dice;
+    }
+
+    /**
+     * Returns the number of faces on each die, C's {@code v.sides}.
+     *
+     * <p>Function getSides coded before 260815, commented in full on 261005.
+     *
+     * @return the number of faces on each die, 0 for a constant
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -288,8 +408,27 @@ public class Random {
     }
 
     /**
-     * Gets the multiplier for this dice formula
-     * @return the multiplier for this dice formula
+     * Sets the number of faces on each die. A negative count is stored as 0; 0 itself is kept, as in
+     * C, where {@code damroll()} treats a die with no sides as rolling 0. C never produces a negative
+     * count, so the clamp is a Java guard with no C counterpart.
+     *
+     * <p>Function setSides coded before 260815, commented in full on 261005.
+     *
+     * @param sides the number of faces on each die, i.e. 4 for a d4
+     */
+    @Contract(mutates = "this")
+    public void setSides(int sides) {
+        if (sides < 0) sides = 0;
+        this.sides = sides;
+    }
+
+    /**
+     * Returns the ceiling of the level-scaled bonus, C's {@code v.m_bonus}. It is not a multiplier;
+     * see {@link #mBonus}.
+     *
+     * <p>Function getMBonus coded before 260815, commented in full on 261005.
+     *
+     * @return the {@code m_bonus}, 0 for none
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -298,9 +437,28 @@ public class Random {
     }
 
     /**
-     * Negates this random providing the Random.toNegate is set to true, and the
-     * random has not already been negated. This calculates a new base value based
-     * on the entire value rolled being negated
+     * Sets the ceiling of the level-scaled bonus, storing the value as given. C assigns
+     * {@code v.m_bonus} directly, and 0, meaning no bonus, is the usual value.
+     *
+     * <p>Function setMBonus coded before 260815, commented in full on 261005.
+     *
+     * @param mBonus the new {@code m_bonus}
+     */
+    @Contract(mutates = "this")
+    public void setMBonus(int mBonus) {
+        this.mBonus = mBonus;
+    }
+
+    /**
+     * Flips the whole range of this value to its negative, if {@link #toNegate} is set and it has
+     * not been negated already; otherwise it does nothing.
+     *
+     * <p>The new base is {@code -base - m_bonus - dice * (sides + 1)}, which is the negation block of
+     * {@code parse_random()} in {@code parser.c}. The dice and bonus stay positive, so the base must
+     * absorb their maximum. For {@code "-1d4"} the base becomes -5 and the range runs from -4 to -1.
+     * The {@link #negated} flag is Java's addition, since C negates once as it parses.
+     *
+     * <p>Function negate coded before 260815, commented in full on 261005.
      */
     @Contract(mutates = "this")
     public void negate() {
@@ -318,8 +476,13 @@ public class Random {
     }
 
     /**
-     * Return a single line showing the values of the members of this object
-     * @return A string showing the values of the members of this object
+     * Returns a single line showing the negation flags and the four terms, for diagnostics in tests.
+     * There is no C counterpart, and the string form is not the data-file syntax that
+     * {@link #parseStr(String)} reads.
+     *
+     * <p>Function toString coded before 260815, commented in full on 261005.
+     *
+     * @return the flags and terms of this value on one line
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -337,11 +500,22 @@ public class Random {
     }
 
     /**
-     * Calculates a random value based on the level we are on and a damage aspect
+     * Evaluates this value for a level and an aspect, the port of {@code randcalc()} in
+     * {@code z-rand.c}.
      *
-     * @param level  The level we are on
-     * @param aspect The damage aspect to use
-     * @return A random number created by rolling this Random
+     * <p>For every aspect but {@link DamageAspect#EXTREMIFY} the result is the base plus the dice
+     * term plus the level bonus, with each term evaluated for that aspect: {@code RANDOMIZE} rolls,
+     * {@code MINIMIZE} gives the floor, {@code MAXIMIZE} the ceiling and {@code AVERAGE} the mean.
+     * {@code EXTREMIFY} evaluates both ends and returns whichever is further from zero, preferring
+     * the maximum when they are equally far. That matters for a negated value, where the minimum is
+     * the larger magnitude: {@code "-1d4"} extremifies to -4, not -1. The level affects only the
+     * bonus term.
+     *
+     * <p>Function randCalc coded before 260815, commented in full on 261005.
+     *
+     * @param level  the dungeon level, which scales the {@code m_bonus} term
+     * @param aspect how to evaluate each term
+     * @return the base plus the dice and bonus terms for that aspect
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -359,11 +533,16 @@ public class Random {
     }
 
     /**
-     * Check to see if a test value is valid for this Random
+     * Tests whether a value lies within the range this one can produce, the port of
+     * {@code randcalc_valid()} in {@code z-rand.c}.
+     *
+     * <p>Both ends are inclusive, and both are taken at level 0, so the level-scaled bonus counts as
+     * 0 at the bottom of the range and as the whole {@code m_bonus} at the top.
+     *
+     * <p>Function isValid coded before 260815, commented in full on 261005.
      *
      * @param test the value to check
-     * @return true if the value test is within the upper and lower bounds that can be generated by this Random, false
-     * otherwise
+     * @return true if {@code test} is no lower than the minimum and no higher than the maximum
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -372,9 +551,16 @@ public class Random {
     }
 
     /**
-     * Confirms that this random has more than one possible result
+     * Tests whether this value can produce more than one result, the port of
+     * {@code randcalc_varies()} in {@code z-rand.c}.
      *
-     * @return true if there is more than one value that this random can produce, false otherwise
+     * <p>It compares the minimum and maximum at level 0. A single die of one face ({@code 1d1}) or
+     * any constant therefore does not vary, while a value whose only variation is a non-zero
+     * {@code m_bonus} does.
+     *
+     * <p>Function varies coded before 260815, commented in full on 261005.
+     *
+     * @return true if the minimum and maximum differ, false otherwise
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -385,9 +571,13 @@ public class Random {
     }
 
     /**
-     * Determine whether this random has a base or not
+     * Tests whether the flat term is present. C has no such function and tests the field inline,
+     * as in {@code if (value.m_bonus)} in {@code effects-info.c}; the description code uses these
+     * tests to decide which terms are worth printing.
      *
-     * @return True if the value of base is not zero, false otherwise
+     * <p>Function hasBase coded before 260815, commented in full on 261005.
+     *
+     * @return true if the base is not zero, false otherwise
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -396,9 +586,12 @@ public class Random {
     }
 
     /**
-     * Determine whether this random has a die value or not
+     * Tests whether the dice term is present. A constant such as {@code "5"} has no dice, so this
+     * is false for it, and for C's {@code { 0, 0, 0, 0 }}.
      *
-     * @return true if the value of dice is not zero, false otherwise - note, this should always return true
+     * <p>Function hasDice coded before 260815, commented in full on 261005.
+     *
+     * @return true if the dice count is not zero, false otherwise
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -407,9 +600,12 @@ public class Random {
     }
 
     /**
-     * Determine whether this random has a die side value or not
+     * Tests whether the dice have any faces. A constant has none, so this is false for it, and for
+     * a value built with the string-sides constructor, whose resolved {@link #sides} stays 0.
      *
-     * @return true if the count of dice side is not zero, false otherwise - note, this should always return true
+     * <p>Function hasSides coded before 260815, commented in full on 261005.
+     *
+     * @return true if the sides count is not zero, false otherwise
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -418,14 +614,19 @@ public class Random {
     }
 
     /**
-     * Determine whether this random has a bonus value or not
+     * Tests whether the level-scaled bonus is present: the same truthiness test as
+     * {@code if (value.m_bonus)} in {@code effects-info.c} and {@code player-spell.c}. An
+     * {@code m_bonus} of 0 means no bonus, so this is false for {@link #Zero()} and for any
+     * ordinary dice value.
      *
-     * @return true if the value of dice is not one, false otherwise
+     * <p>Function hasBonus coded before 260815, commented in full on 261005.
+     *
+     * @return true if {@code m_bonus} is not zero, false otherwise
      */
     @CheckReturnValue
     @Contract(pure = true)
     public boolean hasBonus() {
-        return mBonus != 1;
+        return mBonus != 0;
     }
 
     /**

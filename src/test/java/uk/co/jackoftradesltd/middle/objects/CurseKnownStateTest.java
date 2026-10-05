@@ -17,16 +17,19 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
+import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectNotice;
 import uk.co.jackoftradesltd.testsupport.CurseFixture;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +60,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * @author Rowan Crowther
  */
 class CurseKnownStateTest {
+
+    /**
+     * Gives {@link ObjectRegistry} an empty curse list. {@code ItemObject.isFullyKnown()} compares
+     * the curses of the object and its known twin by walking the registry's curses, and the registry
+     * holds {@code null} until something loads or sets them, so a test that reached this class
+     * first in the JVM threw a {@link NullPointerException} while one that ran after another test
+     * had seeded it passed. None of these tests puts a curse on an item, so empty is the right list.
+     */
+    @BeforeEach
+    void seedRegistry() {
+        ObjectRegistry.setCurses(new ArrayList<>());
+    }
 
     /**
      * A curse with no properties at all.

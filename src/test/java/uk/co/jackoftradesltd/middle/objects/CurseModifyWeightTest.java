@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Tests {@link Curse#modifyWeightForCurse(int)}, the port of C's
- * {@code modify_weight_for_curse} ({@code obj-curse.c:382-430}).
+ * {@code modify_weight_for_curse()} ({@code obj-curse.c}).
  *
  * <p><b>One field, two meanings.</b> A curse's weight is a flat addend normally and a percentage
  * when the curse carries {@link ObjectFlag#OF_MULTIPLY_WEIGHT}, and nothing but that flag
@@ -146,7 +146,7 @@ class CurseModifyWeightTest {
         /**
          * A weightless item is coerced up to one before a multiplier above 100% is applied, so that
          * making something heavier has an effect even when it started at nothing. C comments the
-         * coercion at {@code obj-curse.c:393-396}; without it, no percentage however large could
+         * coercion in {@code modify_weight_for_curse()}; without it, no percentage however large could
          * move a weightless item.
          */
         @Test

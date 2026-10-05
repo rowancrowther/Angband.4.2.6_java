@@ -63,7 +63,7 @@ class ItemObjectGetCursesTest {
      * is what {@link ItemObject#CURSE_ORDER} sorts on, standing in for the slot number in C's array.
      */
     private static Curse curse(String name, int index) {
-        return new Curse(name, List.of(), 0, null, new Flag<>(ObjectFlag.class), Map.of(), Map.of(), 0, 0, 0,
+        return new Curse(name, List.of(), new ItemObject(), 0, null, new Flag<>(ObjectFlag.class), Map.of(), Map.of(), 0, 0, 0,
                 List.of(), new Flag<>(ObjectFlag.class), "", "", index);
     }
 

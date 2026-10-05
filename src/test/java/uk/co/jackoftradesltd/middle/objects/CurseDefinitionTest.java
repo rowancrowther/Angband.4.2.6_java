@@ -70,7 +70,7 @@ class CurseDefinitionTest {
      * @return the curse
      */
     private static Curse curse(List<ObjectBase> bases, List<String> conflictNames) {
-        return new Curse("test curse", bases, 0, null, new Flag<>(ObjectFlag.class),
+        return new Curse("test curse", bases, new ItemObject(), 0, null, new Flag<>(ObjectFlag.class),
                 Map.of(), Map.of(), 0, 0, 0, conflictNames, new Flag<>(ObjectFlag.class), "", "", 0);
     }
 
@@ -186,7 +186,7 @@ class CurseDefinitionTest {
             Flag<ObjectFlag> flags = new Flag<>(ObjectFlag.class);
             flags.set(List.of(ObjectFlag.OF_AGGRAVATE));
 
-            Curse quiet = new Curse("quiet", List.of(), 0, null, new Flag<>(ObjectFlag.class),
+            Curse quiet = new Curse("quiet", List.of(), new ItemObject(), 0, null, new Flag<>(ObjectFlag.class),
                     Map.of(), Map.of(), 0, 0, 0, new ArrayList<>(), flags, "", "", 0);
 
             assertTrue(quiet.getConflictFlags().has(ObjectFlag.OF_AGGRAVATE));

@@ -193,7 +193,7 @@ class UIEntryValueRegistryTest {
     private static Curse curseWithFlag(ObjectFlag flag) {
         Flag<ObjectFlag> flags = new Flag<>(ObjectFlag.class);
         flags.on(flag);
-        return new Curse("Test Curse", List.of(), 0, null, flags, Map.of(), Map.of(),
+        return new Curse("Test Curse", List.of(), new ItemObject(), 0, null, flags, Map.of(), Map.of(),
                 0, 0, 0, List.of(), new Flag<>(ObjectFlag.class), "", "", 0);
     }
 

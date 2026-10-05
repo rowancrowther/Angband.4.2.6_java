@@ -184,7 +184,7 @@ class PlayerCursesFindElementTest {
      * @param elInfo the element figures, as sparse as the parser would leave them
      */
     private static Curse curse(String name, Map<ElementEnum, ElementInfo> elInfo) {
-        return new Curse(name, List.of(), 0, null, new Flag<>(ObjectFlag.class), Map.of(), elInfo,
+        return new Curse(name, List.of(), new ItemObject(), 0, null, new Flag<>(ObjectFlag.class), Map.of(), elInfo,
                 0, 0, 0, List.of(), new Flag<>(ObjectFlag.class), name, "The curse fires.", 0);
     }
 

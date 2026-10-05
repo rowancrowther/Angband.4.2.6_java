@@ -57,7 +57,7 @@ class CurseWeightBoundariesTest {
     private static Curse curse(int weight, boolean multiply) {
         Flag<ObjectFlag> flags = new Flag<>(ObjectFlag.class);
         if (multiply) flags.set(List.of(ObjectFlag.OF_MULTIPLY_WEIGHT));
-        return new Curse("weighty", List.of(), weight, null, flags,
+        return new Curse("weighty", List.of(), new ItemObject(), weight, null, flags,
                 Map.of(), Map.of(), 0, 0, 0, List.of(), new Flag<>(ObjectFlag.class), "", "", 0);
     }
 

@@ -62,7 +62,7 @@ class CurseKnownStateTest {
      * @return the curse
      */
     private static Curse bare() {
-        return new Curse("bare", List.of(), 0, null, new Flag<>(ObjectFlag.class),
+        return new Curse("bare", List.of(), new ItemObject(), 0, null, new Flag<>(ObjectFlag.class),
                 Map.of(), Map.of(), 0, 0, 0, List.of(), new Flag<>(ObjectFlag.class), "", "", 0);
     }
 
@@ -241,7 +241,7 @@ class CurseKnownStateTest {
         @Test
         @DisplayName("setKnownModifiers stores the map, and replacing it can undo knowledge")
         void modifiersReplace() {
-            Curse curse = new Curse("weakness", List.of(), 0, null, new Flag<>(ObjectFlag.class),
+            Curse curse = new Curse("weakness", List.of(), new ItemObject(), 0, null, new Flag<>(ObjectFlag.class),
                     Map.of(ObjectModifier.OM_STR, -2), Map.of(), 0, 0, 0, List.of(),
                     new Flag<>(ObjectFlag.class), "", "", 0);
             Map<ObjectModifier, Integer> known = new HashMap<>();
@@ -274,7 +274,7 @@ class CurseKnownStateTest {
         @DisplayName("answers null, unlike a curse with no effect at all")
         void nullTime() {
             Effect effect = new Effect(null, null, "", 0, 0, null, null, 0, 0, null, List.of(), "");
-            Curse curse = new Curse("timeless", List.of(), 0, effect, new Flag<>(ObjectFlag.class),
+            Curse curse = new Curse("timeless", List.of(), new ItemObject(), 0, effect, new Flag<>(ObjectFlag.class),
                     Map.of(), Map.of(), 0, 0, 0, List.of(), new Flag<>(ObjectFlag.class), "", "", 0);
 
             assertNull(curse.getTime());

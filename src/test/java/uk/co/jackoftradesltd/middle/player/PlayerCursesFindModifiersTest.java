@@ -190,7 +190,7 @@ class PlayerCursesFindModifiersTest {
      * @param index     the curse's index in {@code curse.txt}, which orders an item's curse map
      */
     private static Curse curse(String name, Map<ObjectModifier, Integer> modifiers, int index) {
-        return new Curse(name, List.of(), 0, null, new Flag<>(ObjectFlag.class), modifiers,
+        return new Curse(name, List.of(), new ItemObject(), 0, null, new Flag<>(ObjectFlag.class), modifiers,
                 Map.<ElementEnum, ElementInfo>of(), 0, 0, 0, List.of(), new Flag<>(ObjectFlag.class),
                 name, "The curse fires.", index);
     }

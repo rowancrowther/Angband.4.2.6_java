@@ -722,7 +722,7 @@ class ObjectKindAccessorsTest {
         @Test
         @DisplayName("getCurses reads back the stored map")
         void getCursesReadsBackStoredMap() throws Exception {
-            Curse curse = new Curse("siren", null, 0, null, null, null, null,
+            Curse curse = new Curse("siren", null, new ItemObject(), 0, null, null, null, null,
                     0, 0, 0, null, null, null, null, 0);
             CurseData data = new CurseData(3, 0);
             Map<Curse, CurseData> curses = new HashMap<>();

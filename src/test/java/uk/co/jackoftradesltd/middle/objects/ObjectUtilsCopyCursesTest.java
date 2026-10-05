@@ -185,7 +185,7 @@ class ObjectUtilsCopyCursesTest {
      * @return the curse
      */
     private static Curse curseWithFixedTimeout(String name, int base, int index) {
-        return new Curse(name, List.of(), 0, effectWithTime(new Random(base, 0, 0, 1, false)),
+        return new Curse(name, List.of(), new ItemObject(), 0, effectWithTime(new Random(base, 0, 0, 1, false)),
                 new Flag<>(ObjectFlag.class), Map.of(), Map.of(), 0, 0, 0,
                 List.of(), new Flag<>(ObjectFlag.class), "", "", index);
     }

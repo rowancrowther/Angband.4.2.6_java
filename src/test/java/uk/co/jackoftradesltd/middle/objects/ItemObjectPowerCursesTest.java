@@ -173,7 +173,7 @@ class ItemObjectPowerCursesTest {
             objectFlags.set(List.of(flags));
         }
 
-        return new Curse("curse" + index, List.of(), weight, null, objectFlags,
+        return new Curse("curse" + index, List.of(), new ItemObject(), weight, null, objectFlags,
                 new HashMap<>(), new HashMap<>(), 0, 0, toAC, List.of(),
                 new Flag<>(ObjectFlag.class), "", "", index);
     }

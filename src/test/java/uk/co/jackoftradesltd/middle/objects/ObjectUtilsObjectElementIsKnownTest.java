@@ -69,7 +69,7 @@ class ObjectUtilsObjectElementIsKnownTest {
      * @return the curse, with its known-shadow figures all still at their zero defaults
      */
     private static Curse curse(int combatToHit) {
-        return new Curse("test curse", List.of(), 0, null,
+        return new Curse("test curse", List.of(), new ItemObject(), 0, null,
                 new Flag<>(ObjectFlag.class), new HashMap<>(), new HashMap<>(),
                 combatToHit, 0, 0, List.of(), new Flag<>(ObjectFlag.class),
                 "test curse", "the test curse fires", 0);

@@ -7353,6 +7353,10 @@ public class ItemObject {
         }
     }
 
+    public void setEffectMessage(String message) {
+        this.effectMessage = message;
+    }
+
     /**
      * A running power total and the shooting multiplier that goes with it, returned together by the
      * extra-might step.

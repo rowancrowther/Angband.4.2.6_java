@@ -187,7 +187,7 @@ class PlayerUpdateObjectKnowledgeTest {
      * no combat figures, so that {@link Curse#isFullyKnown()} turns on the modifiers alone.
      */
     private static Curse curseWithModifiers(String name, Map<ObjectModifier, Integer> modifiers) {
-        return new Curse(name, List.of(), 0, null, new Flag<>(ObjectFlag.class), modifiers,
+        return new Curse(name, List.of(), new ItemObject(), 0, null, new Flag<>(ObjectFlag.class), modifiers,
                 Map.<ElementEnum, ElementInfo>of(), 0, 0, 0,
                 List.of(), new Flag<>(ObjectFlag.class), "", "", 0);
     }
@@ -585,7 +585,7 @@ class PlayerUpdateObjectKnowledgeTest {
         void noItemKnowledgeIsSurvivable() throws Exception {
             Flag<ObjectFlag> flags = new Flag<>(ObjectFlag.class);
             flags.set(ObjectFlag.OF_FEATHER);
-            Curse curse = new Curse("uncursed player", List.of(), 0, null, flags,
+            Curse curse = new Curse("uncursed player", List.of(), new ItemObject(), 0, null, flags,
                     Map.of(ObjectModifier.OM_STR, 3),
                     Map.of(ElementEnum.ELEM_FIRE, new ElementInfo()), 2, 3, 4,
                     List.of(), new Flag<>(ObjectFlag.class), "", "", 0);

@@ -208,7 +208,7 @@ class PlayerKnowledgeObjectLearnOnWieldTest {
     private static Curse curse(String name, Flag<ObjectFlag> curseFlags,
                                Map<ObjectModifier, Integer> modifiers,
                                Map<ElementEnum, ElementInfo> elInfo, int toA, int index) {
-        return new Curse(name, List.of(), 0, null, curseFlags, modifiers, elInfo, 0, 0, toA,
+        return new Curse(name, List.of(), new ItemObject(), 0, null, curseFlags, modifiers, elInfo, 0, 0, toA,
                 List.of(), new Flag<>(ObjectFlag.class), name, "The curse fires.", index);
     }
 

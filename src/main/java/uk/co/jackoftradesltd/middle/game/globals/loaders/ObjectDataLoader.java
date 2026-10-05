@@ -26,6 +26,8 @@ import uk.co.jackoftradesltd.middle.Activation;
 import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.objects.*;
+import uk.co.jackoftradesltd.middle.objects.enums.ObjectNotice;
+import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 
 import java.io.IOException;
 
@@ -43,6 +45,14 @@ import java.io.IOException;
  * registers the ordinary object kinds and {@code loadArtifacts} synthesises the special artifact
  * kinds into the same table, so their order is load-bearing. It was split out of
  * {@code GameConstants} as one domain slice of the loader/registry refactor.
+ *
+ * <p>One member is not a file loader: {@link #parseCurseKinds()} finishes the curses once the kind
+ * table is complete, giving each curse's own object the {@code <curse object>} kind. It runs after
+ * {@link #loadArtifacts()}, where C does the same at the end of {@code finish_parse_artifact} in
+ * {@code obj-init.c}.
+ *
+ * <p>Class ObjectDataLoader coded before 261005, class description updated for the curse-kind pass
+ * on 261005.
  *
  * @author Rowan Crowther
  */
@@ -321,6 +331,70 @@ public class ObjectDataLoader {
         } catch (IOException e) {
             logger.error("Exception while loading file {}", filename, e);
             throw e;
+        }
+    }
+
+    /**
+     * Finishes the curses by giving each one's own object its kind — the port of the tail of C's
+     * {@code finish_parse_artifact} in {@code obj-init.c}, which looks up
+     * {@code curse_object_kind} and then calls {@code write_curse_kinds}.
+     *
+     * <p>The kind is the {@code <curse object>} entry of {@code object.txt}, found by tval
+     * {@link TValue#TV_NONE} and sval name; {@code ObjectUtils.lookupKind} reports a miss as a game
+     * message and answers {@code null}, as C's {@code lookup_kind} does. The work is split from
+     * {@link #writeCurseKinds(ObjectKind)} only so the lookup and the writes are separate steps, as
+     * they are in C.
+     *
+     * <p>This has to run after {@link #loadItemObjects()}, because the kind lives in
+     * {@code object.txt}, and cannot be done while the curses load, because {@link #loadCurses()}
+     * runs first. It is called after {@link #loadArtifacts()} to follow C; nothing between the two
+     * reads a curse's object.
+     *
+     * <p>Function parseCurseKinds coded on 261005, commented in full on 261005.
+     */
+    public static void parseCurseKinds() {
+        ObjectKind curseObjectKind = ObjectUtils.lookupKind(TValue.TV_NONE, "<curse object>");
+        writeCurseKinds(curseObjectKind);
+    }
+
+    /**
+     * Writes the {@code <curse object>} kind onto every curse's object and its known twin — the
+     * port of C's {@code write_curse_kinds} in {@code obj-init.c}.
+     *
+     * <p>For each curse, its {@link Curse#getItemObject() object} takes the kind and the kind's sval.
+     * Its known object is created if the curse has none, takes the same kind and sval, and has
+     * {@link ObjectNotice#OBJ_NOTICE_ASSESSED} switched on "so it can be fully known" (C's comment).
+     * That is what lets {@code player_know_object} treat a curse object as an ordinary item. An
+     * existing known object is kept, as C tolerates one left over from a restart that redoes the
+     * artifacts.
+     *
+     * <p>A {@code null} {@code curseObjectKind} is the kind missing from the kind table, not a
+     * missing curse list. It is carried through as C carries it: every object and known twin gets a
+     * {@code null} kind and an sval of {@code -1}, which is what C's {@code lookup_sval} answers for
+     * a name it cannot find, and nothing throws.
+     *
+     * <p>C's loop starts at 1 because slot 0 of {@code curses[]} is a dummy. The port's curse list
+     * has no dummy, so this walks all of {@link ObjectRegistry#getCurses()}.
+     *
+     * <p>Function writeCurseKinds coded on 261005, commented in full on 261005.
+     *
+     * @param curseObjectKind the {@code <curse object>} kind, or {@code null} if the kind table has none
+     */
+    private static void writeCurseKinds(ObjectKind curseObjectKind) {
+        int sVal = curseObjectKind == null ? -1 : curseObjectKind.getsVal();
+
+        for (Curse curse : ObjectRegistry.getCurses()) {
+            curse.getItemObject().setKind(curseObjectKind);
+            curse.getItemObject().setsValue(sVal);
+            // Tolerate an already allocated known version
+            // restarting without exiting and redoing the
+            // artifacts in doCmdAcceptCharacter()
+            if (curse.getItemObject().getKnown() == null)
+                curse.getItemObject().setKnown(new ItemObject());
+            curse.getItemObject().getKnown().setKind(curseObjectKind);
+            curse.getItemObject().getKnown().setsValue(sVal);
+            // Mark it as tounched, so it can be fully known
+            curse.getItemObject().getKnown().setNoticeOn(ObjectNotice.OBJ_NOTICE_ASSESSED);
         }
     }
 }

@@ -68,7 +68,7 @@ class CurseIsFullyKnownTest {
                                Map<ObjectModifier, Integer> modifiers,
                                Map<ElementEnum, ElementInfo> elements,
                                Flag<ObjectFlag> flags) {
-        return new Curse("test curse", List.of(), 0, effect, flags, modifiers, elements,
+        return new Curse("test curse", List.of(), new ItemObject(), 0, effect, flags, modifiers, elements,
                 toHit, toDam, toAC, List.of(), new Flag<>(ObjectFlag.class), "", "", 0);
     }
 

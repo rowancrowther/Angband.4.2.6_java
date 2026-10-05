@@ -272,7 +272,7 @@ class ItemObjectDamagePowerTest {
         if (modifier != null) {
             modifiers.put(modifier, value);
         }
-        return new Curse("test curse", List.of(), 0, null, new Flag<>(ObjectFlag.class),
+        return new Curse("test curse", List.of(), new ItemObject(), 0, null, new Flag<>(ObjectFlag.class),
                 modifiers, new HashMap<>(), 0, damage, 0, List.of(),
                 new Flag<>(ObjectFlag.class), "", "", 1);
     }

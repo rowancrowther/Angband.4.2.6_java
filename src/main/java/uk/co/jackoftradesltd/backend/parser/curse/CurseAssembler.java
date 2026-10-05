@@ -27,6 +27,7 @@ import uk.co.jackoftradesltd.middle.game.globals.registry.MonsterRegistry;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.objects.Curse;
 import uk.co.jackoftradesltd.middle.objects.ElementInfo;
+import uk.co.jackoftradesltd.middle.objects.ItemObject;
 import uk.co.jackoftradesltd.middle.objects.ObjectBase;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
@@ -255,9 +256,23 @@ public class CurseAssembler implements Assembler<CurseParseRecord, List<Curse>> 
                 sb.append(desc);
             String description = sb.toString();
             String message = record.message();
-            Effect result = effects.isEmpty() ? null : effects.get(0);
+            ItemObject itemObject = new ItemObject();
+            itemObject.setWeight(weightAdjustment);
+            itemObject.setEffect(effects);
+            itemObject.setFlagsTo(objectFlags);
+            itemObject.setModifiers(modifiers);
+            itemObject.setElInfo(elInfo);
+            itemObject.setToHit(toh);
+            itemObject.setToDam(tod);
+            itemObject.setToAC(toa);
+            itemObject.setEffectMessage(message);
+            Effect result;
+            if (effects.isEmpty())
+                result = null;
+            else
+                result = effects.getFirst();
 
-            results.add(new Curse(name, types, weightAdjustment,
+            results.add(new Curse(name, types, itemObject, weightAdjustment,
                     result, objectFlags, modifiers, elInfo,
                     toh, tod, toa, conflictingCurses, cFlags,
                     description, message, curseIndex));

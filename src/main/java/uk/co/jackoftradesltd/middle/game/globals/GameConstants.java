@@ -347,6 +347,7 @@ public class GameConstants {
             file = "artifact.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising artifacts...");
             ObjectDataLoader.loadArtifacts();            // Dependent on Activations, ObjectKind, Brand, Slay & Curse
+            ObjectDataLoader.parseCurseKinds();          // Dependent on ItemObjects & Curse; C does this at the end of artifact loading
             file = "object_property.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising object properties...");
             ObjectDataLoader.loadObjectProperties();     // Dependent on UIEntry

@@ -60,7 +60,7 @@ class CurseModifyWeightTest {
      * @return the curse
      */
     private static Curse curse(int weight, boolean multiply) {
-        return new Curse("weighty", List.of(), weight, null,
+        return new Curse("weighty", List.of(), new ItemObject(), weight, null,
                 multiply ? objectFlags(ObjectFlag.OF_MULTIPLY_WEIGHT) : objectFlags(),
                 Map.of(), Map.of(), 0, 0, 0, List.of(), objectFlags(), "", "", 0);
     }

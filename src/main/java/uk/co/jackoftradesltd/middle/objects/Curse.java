@@ -339,6 +339,7 @@ public class Curse {
      */
     public Curse(String name,
                  List<ObjectBase> objectBases,
+                 ItemObject itemObject,
                  int weight,
                  Effect effect,
                  Flag<ObjectFlag> objectFlags,
@@ -370,7 +371,7 @@ public class Curse {
         knownElInfo = new HashMap<>();
         knownObjectFlags = new Flag<>(ObjectFlag.class);
         knownModifiers = new HashMap<>();
-        this.itemObject = new ItemObject();
+        this.itemObject = itemObject;
     }
 
     /**

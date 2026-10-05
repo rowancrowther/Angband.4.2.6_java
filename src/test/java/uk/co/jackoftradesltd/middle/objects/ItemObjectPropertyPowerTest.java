@@ -238,7 +238,7 @@ class ItemObjectPropertyPowerTest {
      * @return the curse
      */
     private static Curse combatCurse(int toHit, int toAC) {
-        return new Curse("test curse", List.of(), 0, null, new Flag<>(ObjectFlag.class),
+        return new Curse("test curse", List.of(), new ItemObject(), 0, null, new Flag<>(ObjectFlag.class),
                 new HashMap<>(), new HashMap<>(), toHit, 0, toAC, List.of(),
                 new Flag<>(ObjectFlag.class), "", "", 1);
     }
@@ -727,7 +727,7 @@ class ItemObjectPropertyPowerTest {
         @Test
         @DisplayName("the curse overload uses no type multiplier")
         void curseOverload() throws Exception {
-            Curse curse = new Curse("test curse", List.of(), 0, null,
+            Curse curse = new Curse("test curse", List.of(), new ItemObject(), 0, null,
                     flagsOf(ObjectFlag.OF_REGEN), new HashMap<>(), new HashMap<>(), 0, 0, 0, List.of(),
                     new Flag<>(ObjectFlag.class), "", "", 1);
 

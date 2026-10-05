@@ -46,7 +46,7 @@ class CurseNullMapsTest {
      */
     private static Curse curse(Map<ObjectModifier, Integer> modifiers,
                                Map<ElementEnum, ElementInfo> elInfo) {
-        return new Curse("test curse", List.of(), 0, null, new Flag<>(ObjectFlag.class),
+        return new Curse("test curse", List.of(), new ItemObject(), 0, null, new Flag<>(ObjectFlag.class),
                 modifiers, elInfo, 0, 0, 0, List.of(), new Flag<>(ObjectFlag.class), "", "", 0);
     }
 

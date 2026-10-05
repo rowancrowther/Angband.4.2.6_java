@@ -63,7 +63,13 @@ class ObjectUtilsCurseObjectFlagIsKnownTest {
      * @return the curse, with its known-shadow figures all still at their zero defaults
      */
     private static Curse curse(int combatToHit) {
-        return new Curse("test curse", List.of(), new ItemObject(), 0, null,
+        // The curse's own object, as C's write_curse_kinds leaves it: it has a known counterpart.
+        // The method under test reads the curse's knowledge off this object, not off Curse's own
+        // known* fields.
+        ItemObject curseObject = new ItemObject();
+        curseObject.setKnown(new ItemObject());
+        curseObject.setToHit(combatToHit);
+        return new Curse("test curse", List.of(), curseObject, 0, null,
                 new Flag<>(ObjectFlag.class), new HashMap<>(), new HashMap<>(),
                 combatToHit, 0, 0, List.of(), new Flag<>(ObjectFlag.class),
                 "test curse", "the test curse fires", 0);
@@ -145,9 +151,7 @@ class ObjectUtilsCurseObjectFlagIsKnownTest {
         void reportsKnown() {
             Player player = playerWithItemKnowledge();
             Curse curse = notFullyKnownCurse();
-            Flag<ObjectFlag> shadowFlags = new Flag<>(ObjectFlag.class);
-            shadowFlags.on(ObjectFlag.OF_FREE_ACT);
-            curse.setKnownObjectFlags(shadowFlags);
+            curse.getItemObject().getKnown().getObjectFlags().on(ObjectFlag.OF_FREE_ACT);
 
             assertTrue(ObjectUtils.curseObjectFlagIsKnown(player, curse, ObjectFlag.OF_FREE_ACT));
         }
@@ -175,9 +179,7 @@ class ObjectUtilsCurseObjectFlagIsKnownTest {
         void checksOnlyTheNamedFlag() {
             Player player = playerWithItemKnowledge();
             Curse curse = notFullyKnownCurse();
-            Flag<ObjectFlag> shadowFlags = new Flag<>(ObjectFlag.class);
-            shadowFlags.on(ObjectFlag.OF_SEE_INVIS);
-            curse.setKnownObjectFlags(shadowFlags);
+            curse.getItemObject().getKnown().getObjectFlags().on(ObjectFlag.OF_SEE_INVIS);
 
             assertFalse(ObjectUtils.curseObjectFlagIsKnown(player, curse, ObjectFlag.OF_FREE_ACT));
         }

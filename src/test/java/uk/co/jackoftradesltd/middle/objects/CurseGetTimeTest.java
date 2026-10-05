@@ -38,6 +38,7 @@ import uk.co.jackoftradesltd.middle.game.globals.data.WorldData;
 import uk.co.jackoftradesltd.middle.game.globals.registry.WorldRegistry;
 import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
+import uk.co.jackoftradesltd.testsupport.CurseFixture;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -145,7 +146,7 @@ class CurseGetTimeTest {
      * @return the curse
      */
     private static Curse curse(Effect effect) {
-        return new Curse("test curse", List.of(), new ItemObject(), 0, effect, new Flag<>(ObjectFlag.class),
+        return CurseFixture.curse("test curse", List.of(), 0, effect, new Flag<>(ObjectFlag.class),
                 Map.of(), Map.of(), 0, 0, 0, List.of(), new Flag<>(ObjectFlag.class), "", "", 0);
     }
 

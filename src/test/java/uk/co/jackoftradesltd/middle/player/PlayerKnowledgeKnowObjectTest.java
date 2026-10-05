@@ -51,6 +51,7 @@ import uk.co.jackoftradesltd.middle.objects.enums.ObjectNotice;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 import uk.co.jackoftradesltd.testsupport.ItemFixture;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
+import uk.co.jackoftradesltd.testsupport.CurseFixture;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -166,9 +167,9 @@ class PlayerKnowledgeKnowObjectTest {
         evil2 = new Slay("EVIL_2", "evil", null, "smite", "smite", MonsterRaceFlag.RF_EVIL, 2, 2, 1);
         evil3 = new Slay("EVIL_3", "evil", null, "smite", "smite", MonsterRaceFlag.RF_EVIL, 3, 3, 1);
         animal = new Slay("ANIMAL_2", "animal", null, "smite", "smite", MonsterRaceFlag.RF_ANIMAL, 2, 2, 1);
-        siren = new Curse("siren", List.of(), new ItemObject(), 0, null, flags(), Map.of(), Map.of(), 0, 0, 0,
+        siren = CurseFixture.curse("siren", List.of(), 0, null, flags(), Map.of(), Map.of(), 0, 0, 0,
                 List.of(), flags(), "wakes monsters", "The curse fires.", 0);
-        cowardice = new Curse("cowardice", List.of(), new ItemObject(), 0, null, flags(), Map.of(), Map.of(), 0, 0, 0,
+        cowardice = CurseFixture.curse("cowardice", List.of(), 0, null, flags(), Map.of(), Map.of(), 0, 0, 0,
                 List.of(), flags(), "unnerves the wearer", "The curse fires.", 1);
 
         savedBrands = ItemFixture.setStatic(ObjectRegistry.class, "brands",

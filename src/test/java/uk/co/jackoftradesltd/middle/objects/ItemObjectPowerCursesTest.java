@@ -43,6 +43,7 @@ import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 import uk.co.jackoftradesltd.middle.player.Player;
 import uk.co.jackoftradesltd.testsupport.ItemFixture;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
+import uk.co.jackoftradesltd.testsupport.CurseFixture;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -173,7 +174,7 @@ class ItemObjectPowerCursesTest {
             objectFlags.set(List.of(flags));
         }
 
-        return new Curse("curse" + index, List.of(), new ItemObject(), weight, null, objectFlags,
+        return CurseFixture.curse("curse" + index, List.of(), weight, null, objectFlags,
                 new HashMap<>(), new HashMap<>(), 0, 0, toAC, List.of(),
                 new Flag<>(ObjectFlag.class), "", "", index);
     }

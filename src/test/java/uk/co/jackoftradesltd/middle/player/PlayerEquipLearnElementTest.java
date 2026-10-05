@@ -49,6 +49,7 @@ import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.RuneVariety;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
+import uk.co.jackoftradesltd.testsupport.CurseFixture;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -124,7 +125,7 @@ class PlayerEquipLearnElementTest {
             SAVED.put(name, field(name).get(null));
         }
 
-        fireResisting = new Curse("burning", List.of(), new ItemObject(), 0, null, new Flag<>(ObjectFlag.class),
+        fireResisting = CurseFixture.curse("burning", List.of(), 0, null, new Flag<>(ObjectFlag.class),
                 Map.of(), Map.of(ElementEnum.ELEM_FIRE, elementInfo(1)), 0, 0, 0, List.of(),
                 new Flag<>(ObjectFlag.class), "burning", "The curse fires.", 0);
 

@@ -31,6 +31,7 @@ import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 import uk.co.jackoftradesltd.testsupport.ItemFixture;
+import uk.co.jackoftradesltd.testsupport.CurseFixture;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
@@ -722,7 +723,7 @@ class ObjectKindAccessorsTest {
         @Test
         @DisplayName("getCurses reads back the stored map")
         void getCursesReadsBackStoredMap() throws Exception {
-            Curse curse = new Curse("siren", null, new ItemObject(), 0, null, null, null, null,
+            Curse curse = CurseFixture.curse("siren", null, 0, null, null, null, null,
                     0, 0, 0, null, null, null, null, 0);
             CurseData data = new CurseData(3, 0);
             Map<Curse, CurseData> curses = new HashMap<>();

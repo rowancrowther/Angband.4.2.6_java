@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
+import uk.co.jackoftradesltd.testsupport.CurseFixture;
 
 import java.lang.reflect.Field;
 import java.util.LinkedHashMap;
@@ -74,7 +75,7 @@ class ItemObjectWeightTest {
             flags.set(List.of(ObjectFlag.OF_MULTIPLY_WEIGHT));
         }
 
-        return new Curse("weighty", List.of(), new ItemObject(), weight, null, flags,
+        return CurseFixture.curse("weighty", List.of(), weight, null, flags,
                 Map.of(), Map.of(), 0, 0, 0, List.of(),
                 new Flag<>(ObjectFlag.class), "", "", index);
     }

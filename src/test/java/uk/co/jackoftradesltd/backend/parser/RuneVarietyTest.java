@@ -44,7 +44,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import uk.co.jackoftradesltd.middle.objects.ItemObject;
+import uk.co.jackoftradesltd.testsupport.CurseFixture;
 
 /**
  * Unit tests for the types {@link uk.co.jackoftradesltd.middle.objects.Rune} is built out of, needing
@@ -80,7 +80,7 @@ class RuneVarietyTest {
      * read, which is why the shorter helper above leaves it null.
      */
     private static Curse curse(String name, String description) {
-        return new Curse(name, null, new ItemObject(), 0, null, null, null, null, 0, 0, 0, null, null, description,
+        return CurseFixture.curse(name, null, 0, null, null, null, null, 0, 0, 0, null, null, description,
                 null, 0);
     }
 

@@ -69,7 +69,13 @@ class ObjectUtilsObjectElementIsKnownTest {
      * @return the curse, with its known-shadow figures all still at their zero defaults
      */
     private static Curse curse(int combatToHit) {
-        return new Curse("test curse", List.of(), new ItemObject(), 0, null,
+        // The curse's own object, as C's write_curse_kinds leaves it: it has a known counterpart.
+        // The method under test reads the curse's knowledge off this object, not off Curse's own
+        // known* fields.
+        ItemObject curseObject = new ItemObject();
+        curseObject.setKnown(new ItemObject());
+        curseObject.setToHit(combatToHit);
+        return new Curse("test curse", List.of(), curseObject, 0, null,
                 new Flag<>(ObjectFlag.class), new HashMap<>(), new HashMap<>(),
                 combatToHit, 0, 0, List.of(), new Flag<>(ObjectFlag.class),
                 "test curse", "the test curse fires", 0);
@@ -94,12 +100,20 @@ class ObjectUtilsObjectElementIsKnownTest {
 
     /**
      * An {@link ElementInfo} carrying the given resistance level and no flags, for writing onto a
-     * curse's known-shadow through {@link Curse#putKnownElementInfo}.
+     * curse's known counterpart through {@link ItemObject#putElInfo}.
      */
     private static ElementInfo elementInfo(int resLevel) {
         ElementInfo info = new ElementInfo();
         info.setResLevel(resLevel);
         return info;
+    }
+
+    /**
+     * Records {@code info} against {@code element} on the curse's known counterpart, the object
+     * {@link ObjectUtils#objectElementIsKnown(Player, Curse, ElementEnum)} reads.
+     */
+    private static void putShadowElementInfo(Curse curse, ElementEnum element, ElementInfo info) {
+        curse.getItemObject().getKnown().putElInfo(element, info);
     }
 
     private static Player playerWithItemKnowledge() {
@@ -191,7 +205,7 @@ class ObjectUtilsObjectElementIsKnownTest {
         void reportsKnown() {
             Player player = playerWithItemKnowledge();
             Curse curse = notFullyKnownCurse();
-            curse.putKnownElementInfo(ElementEnum.ELEM_FIRE, elementInfo(1));
+            putShadowElementInfo(curse, ElementEnum.ELEM_FIRE, elementInfo(1));
 
             assertTrue(ObjectUtils.objectElementIsKnown(player, curse, ElementEnum.ELEM_FIRE));
         }
@@ -219,7 +233,7 @@ class ObjectUtilsObjectElementIsKnownTest {
         void checksOnlyTheNamedElement() {
             Player player = playerWithItemKnowledge();
             Curse curse = notFullyKnownCurse();
-            curse.putKnownElementInfo(ElementEnum.ELEM_COLD, elementInfo(1));
+            putShadowElementInfo(curse, ElementEnum.ELEM_COLD, elementInfo(1));
 
             assertFalse(ObjectUtils.objectElementIsKnown(player, curse, ElementEnum.ELEM_FIRE));
         }
@@ -229,7 +243,7 @@ class ObjectUtilsObjectElementIsKnownTest {
         void aKnownButZeroShadowEntryReportsUnknown() {
             Player player = playerWithItemKnowledge();
             Curse curse = notFullyKnownCurse();
-            curse.putKnownElementInfo(ElementEnum.ELEM_FIRE, elementInfo(0));
+            putShadowElementInfo(curse, ElementEnum.ELEM_FIRE, elementInfo(0));
 
             assertFalse(ObjectUtils.objectElementIsKnown(player, curse, ElementEnum.ELEM_FIRE));
         }

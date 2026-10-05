@@ -191,10 +191,20 @@ class UIEntryValueRegistryTest {
     }
 
     private static Curse curseWithFlag(ObjectFlag flag) {
-        Flag<ObjectFlag> flags = new Flag<>(ObjectFlag.class);
-        flags.on(flag);
-        return new Curse("Test Curse", List.of(), new ItemObject(), 0, null, flags, Map.of(), Map.of(),
-                0, 0, 0, List.of(), new Flag<>(ObjectFlag.class), "", "", 0);
+        return curseWithFlag(flag, 0);
+    }
+
+    /**
+     * A curse whose flag sits on its own {@link Curse#getItemObject()}, where
+     * {@code computeForObject} reads it. The {@code index} matters whenever one item carries several
+     * curses: {@code ItemObject}'s curse map orders by curse index then name, so two hand-built
+     * curses sharing both are the same key and collapse into one entry.
+     */
+    private static Curse curseWithFlag(ObjectFlag flag, int index) {
+        ItemObject curseObject = new ItemObject();
+        curseObject.setFlag(flag);
+        return new Curse("Test Curse " + index, List.of(), curseObject, 0, null, new Flag<>(ObjectFlag.class),
+                Map.of(), Map.of(), 0, 0, 0, List.of(), new Flag<>(ObjectFlag.class), "", "", index);
     }
 
     private static Player newPlayer() {
@@ -512,6 +522,159 @@ class UIEntryValueRegistryTest {
 
             UIEntryValue result = UIEntryValueRegistry.computeForObject(ENTRY, item, null, new ObjectValueCache());
             assertEquals(0, result.val());
+        }
+
+        @Test
+        @DisplayName("a curse's flag adds to the base item's own flag rather than replacing it")
+        void curseFlagAccumulatesWithTheBaseItem() {
+            UIEntryValueRegistry.addEntryBinding(ENTRY, List.of(flagProperty(ObjectFlag.OF_FREE_ACT, null, false)),
+                    List.of(), CombinerName.ADD, noEntryFlags());
+
+            Flag<ObjectFlag> baseFlags = new Flag<>(ObjectFlag.class);
+            baseFlags.on(ObjectFlag.OF_FREE_ACT);
+            LinkedHashMap<Curse, CurseData> curses = new LinkedHashMap<>();
+            curses.put(curseWithFlag(ObjectFlag.OF_FREE_ACT), new CurseData(1, 0));
+            ItemObject item = rawItem(baseFlags, new HashMap<>(), new HashMap<>(), curses, null);
+
+            UIEntryValue result = UIEntryValueRegistry.computeForObject(ENTRY, item, null, new ObjectValueCache());
+            assertEquals(2, result.val(), "one from the item itself, one from the curse");
+        }
+
+        @Test
+        @DisplayName("only the curses with non-zero power are counted when an item carries several")
+        void onlyPoweredCursesAreCounted() {
+            UIEntryValueRegistry.addEntryBinding(ENTRY, List.of(flagProperty(ObjectFlag.OF_FREE_ACT, null, false)),
+                    List.of(), CombinerName.ADD, noEntryFlags());
+
+            LinkedHashMap<Curse, CurseData> curses = new LinkedHashMap<>();
+            curses.put(curseWithFlag(ObjectFlag.OF_FREE_ACT, 1), new CurseData(0, 0));
+            curses.put(curseWithFlag(ObjectFlag.OF_FREE_ACT, 2), new CurseData(1, 0));
+            curses.put(curseWithFlag(ObjectFlag.OF_FREE_ACT, 3), new CurseData(0, 0));
+            ItemObject item = rawItem(new Flag<>(ObjectFlag.class), new HashMap<>(), new HashMap<>(), curses, null);
+
+            UIEntryValue result = UIEntryValueRegistry.computeForObject(ENTRY, item, null, new ObjectValueCache());
+            assertEquals(1, result.val(), "the unpowered curses on either side of the powered one add nothing");
+        }
+
+        /**
+         * A curse that is not fully known (its real to-hit is off its shadow's, following
+         * {@code ObjectUtilsCurseObjectFlagIsKnownTest}) and whose own object carries a known shadow,
+         * as C's {@code write_curse_kinds} leaves it. The real object always carries {@code flag};
+         * {@code shadowHasFlag} says whether the player has read it off yet.
+         */
+        private Curse partlyKnownCurse(ObjectFlag flag, boolean shadowHasFlag) {
+            Curse curse = curseWithFlag(flag);
+            ItemObject shadow = new ItemObject();
+            if (shadowHasFlag) shadow.setFlag(flag);
+            curse.getItemObject().setKnown(shadow);
+            curse.getItemObject().setToHit(3);
+            return curse;
+        }
+
+        /**
+         * A curse in a state real play never reaches: its known shadow shows {@code flag} but the
+         * real object does not carry it. Built to pin C's {@code object_flags_known}, which returns
+         * the real flags <em>intersected</em> with the known ones, so a flag only the shadow holds
+         * must not count. Not fully known, as {@link #partlyKnownCurse}.
+         */
+        private Curse shadowOnlyCurse(ObjectFlag flag) {
+            ItemObject curseObject = new ItemObject();
+            ItemObject shadow = new ItemObject();
+            shadow.setFlag(flag);
+            curseObject.setKnown(shadow);
+            curseObject.setToHit(3);
+            return new Curse("Test Curse 0", List.of(), curseObject, 0, null, new Flag<>(ObjectFlag.class),
+                    Map.of(), Map.of(), 0, 0, 0, List.of(), new Flag<>(ObjectFlag.class), "", "", 0);
+        }
+
+        /**
+         * A host item that is fully known to the player, so its own flag lookup answers "known, not
+         * present" and contributes nothing: the only thing left to move the total is what the curses
+         * do. Its known shadow carries the same curses, which {@code isFullyKnown} requires.
+         */
+        private ItemObject fullyKnownHost(LinkedHashMap<Curse, CurseData> curses) {
+            ItemObject known = rawItem(new Flag<>(ObjectFlag.class), new HashMap<>(), new HashMap<>(), curses, null);
+            return rawItem(new Flag<>(ObjectFlag.class), new HashMap<>(), new HashMap<>(), curses, known);
+        }
+
+        @Test
+        @DisplayName("with a player, a curse flag its own shadow already shows contributes 1")
+        void playerSeesACurseFlagItsShadowHas() {
+            UIEntryValueRegistry.addEntryBinding(ENTRY, List.of(flagProperty(ObjectFlag.OF_FREE_ACT, null, false)),
+                    List.of(), CombinerName.ADD, noEntryFlags());
+
+            LinkedHashMap<Curse, CurseData> curses = new LinkedHashMap<>();
+            curses.put(partlyKnownCurse(ObjectFlag.OF_FREE_ACT, true), new CurseData(1, 0));
+
+            UIEntryValue result = UIEntryValueRegistry.computeForObject(ENTRY, fullyKnownHost(curses),
+                    newPlayer(), new ObjectValueCache());
+            assertEquals(1, result.val());
+        }
+
+        @Test
+        @DisplayName("with a player, a curse flag the player knows the rune for but its shadow lacks contributes nothing")
+        void playerReadsTheShadowNotTheRealFlag() {
+            UIEntryValueRegistry.addEntryBinding(ENTRY, List.of(flagProperty(ObjectFlag.OF_FREE_ACT, null, false)),
+                    List.of(), CombinerName.ADD, noEntryFlags());
+
+            Player player = newPlayer();
+            player.getItemKnowledge().learnFlag(ObjectFlag.OF_FREE_ACT);
+            LinkedHashMap<Curse, CurseData> curses = new LinkedHashMap<>();
+            curses.put(partlyKnownCurse(ObjectFlag.OF_FREE_ACT, false), new CurseData(1, 0));
+
+            UIEntryValue result = UIEntryValueRegistry.computeForObject(ENTRY, fullyKnownHost(curses),
+                    player, new ObjectValueCache());
+            assertEquals(0, result.val(),
+                    "the rune is known, so the lookup is allowed, but this curse has not shown the flag");
+        }
+
+        @Test
+        @DisplayName("with a player, a flag only the curse's shadow holds, not the real object, contributes nothing")
+        void playerNeedsTheRealFlagAsWellAsTheShadow() {
+            UIEntryValueRegistry.addEntryBinding(ENTRY, List.of(flagProperty(ObjectFlag.OF_FREE_ACT, null, false)),
+                    List.of(), CombinerName.ADD, noEntryFlags());
+
+            LinkedHashMap<Curse, CurseData> curses = new LinkedHashMap<>();
+            curses.put(shadowOnlyCurse(ObjectFlag.OF_FREE_ACT), new CurseData(1, 0));
+
+            UIEntryValue result = UIEntryValueRegistry.computeForObject(ENTRY, fullyKnownHost(curses),
+                    newPlayer(), new ObjectValueCache());
+            assertEquals(0, result.val(),
+                    "C intersects the real flags with the known ones, so a flag the real object lacks never counts");
+        }
+
+        @Test
+        @DisplayName("with a player, a curse object that has no known shadow at all contributes nothing")
+        void playerAssessingACurseWithNoShadow() {
+            UIEntryValueRegistry.addEntryBinding(ENTRY, List.of(flagProperty(ObjectFlag.OF_FREE_ACT, null, false)),
+                    List.of(), CombinerName.ADD, noEntryFlags());
+
+            // The rune is known, so the knowledge gate passes without ever touching the shadow and
+            // the only thing left to meet a missing shadow is computeForObject itself.
+            Player player = newPlayer();
+            player.getItemKnowledge().learnFlag(ObjectFlag.OF_FREE_ACT);
+            Curse curse = curseWithFlag(ObjectFlag.OF_FREE_ACT);
+            curse.getItemObject().setToHit(3);
+            LinkedHashMap<Curse, CurseData> curses = new LinkedHashMap<>();
+            curses.put(curse, new CurseData(1, 0));
+
+            UIEntryValue result = UIEntryValueRegistry.computeForObject(ENTRY, fullyKnownHost(curses),
+                    player, new ObjectValueCache());
+            assertEquals(0, result.val());
+        }
+
+        @Test
+        @DisplayName("with a player, a curse flag nothing has revealed contributes UI_ENTRY_UNKNOWN_VALUE")
+        void playerCannotYetSeeACurseFlag() {
+            UIEntryValueRegistry.addEntryBinding(ENTRY, List.of(flagProperty(ObjectFlag.OF_FREE_ACT, null, false)),
+                    List.of(), CombinerName.ADD, noEntryFlags());
+
+            LinkedHashMap<Curse, CurseData> curses = new LinkedHashMap<>();
+            curses.put(partlyKnownCurse(ObjectFlag.OF_FREE_ACT, false), new CurseData(1, 0));
+
+            UIEntryValue result = UIEntryValueRegistry.computeForObject(ENTRY, fullyKnownHost(curses),
+                    newPlayer(), new ObjectValueCache());
+            assertEquals(Combiner.UI_ENTRY_UNKNOWN_VALUE, result.val());
         }
 
         @Test

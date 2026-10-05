@@ -185,7 +185,11 @@ class ObjectUtilsCopyCursesTest {
      * @return the curse
      */
     private static Curse curseWithFixedTimeout(String name, int base, int index) {
-        return new Curse(name, List.of(), new ItemObject(), 0, effectWithTime(new Random(base, 0, 0, 1, false)),
+        // copyCurses reads the dice from the curse's own object (C: curse->obj->time), so they go
+        // there; the effect carries the same dice so the two sources cannot disagree.
+        ItemObject curseObject = new ItemObject();
+        curseObject.setTime(new Random(base, 0, 0, 1, false));
+        return new Curse(name, List.of(), curseObject, 0, effectWithTime(new Random(base, 0, 0, 1, false)),
                 new Flag<>(ObjectFlag.class), Map.of(), Map.of(), 0, 0, 0,
                 List.of(), new Flag<>(ObjectFlag.class), "", "", index);
     }

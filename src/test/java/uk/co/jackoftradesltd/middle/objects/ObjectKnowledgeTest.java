@@ -32,6 +32,7 @@ import uk.co.jackoftradesltd.middle.objects.enums.ObjectNotice;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.RuneVariety;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
+import uk.co.jackoftradesltd.testsupport.CurseFixture;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
@@ -136,7 +137,7 @@ class ObjectKnowledgeTest {
      * @return a curse with every other field empty
      */
     private static Curse curse(String name) {
-        return new Curse(name, List.of(), new ItemObject(), 0, null, new Flag<>(ObjectFlag.class), java.util.Map.of(),
+        return CurseFixture.curse(name, List.of(), 0, null, new Flag<>(ObjectFlag.class), java.util.Map.of(),
                 java.util.Map.of(), 0, 0, 0, List.of(), new Flag<>(ObjectFlag.class), "", "", 0);
     }
 

@@ -41,7 +41,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import uk.co.jackoftradesltd.middle.objects.ItemObject;
+import uk.co.jackoftradesltd.testsupport.CurseFixture;
 
 /**
  * Tests {@link ObjectRegistry} itself, rather than the readers that fill it: the sval allocation and
@@ -139,7 +139,7 @@ class ObjectRegistryTest {
     }
 
     private static Curse curse(String name) {
-        return new Curse(name, null, new ItemObject(), 0, null, null, null, null, 0, 0, 0, null, null, null, null, 0);
+        return CurseFixture.curse(name, null, 0, null, null, null, null, 0, 0, 0, null, null, null, null, 0);
     }
 
     private static Activation activation(String name) {

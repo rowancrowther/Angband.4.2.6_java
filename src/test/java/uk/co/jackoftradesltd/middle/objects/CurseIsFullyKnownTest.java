@@ -26,6 +26,7 @@ import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.middle.enums.EffectEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
+import uk.co.jackoftradesltd.testsupport.CurseFixture;
 
 import java.util.HashMap;
 import java.util.List;
@@ -68,7 +69,7 @@ class CurseIsFullyKnownTest {
                                Map<ObjectModifier, Integer> modifiers,
                                Map<ElementEnum, ElementInfo> elements,
                                Flag<ObjectFlag> flags) {
-        return new Curse("test curse", List.of(), new ItemObject(), 0, effect, flags, modifiers, elements,
+        return CurseFixture.curse("test curse", List.of(), 0, effect, flags, modifiers, elements,
                 toHit, toDam, toAC, List.of(), new Flag<>(ObjectFlag.class), "", "", 0);
     }
 

@@ -31,6 +31,7 @@ import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectNotice;
+import uk.co.jackoftradesltd.testsupport.CurseFixture;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
@@ -164,7 +165,7 @@ class KnownObjectTest {
     }
 
     private static Curse curse(String name) {
-        return new Curse(name, List.of(), new ItemObject(), 0, null, new Flag<>(ObjectFlag.class), Map.of(), Map.of(), 0, 0, 0,
+        return CurseFixture.curse(name, List.of(), 0, null, new Flag<>(ObjectFlag.class), Map.of(), Map.of(), 0, 0, 0,
                 List.of(), new Flag<>(ObjectFlag.class), "does something unpleasant", "The curse fires.", 0);
     }
 

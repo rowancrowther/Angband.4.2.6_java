@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
+import uk.co.jackoftradesltd.testsupport.CurseFixture;
 
 import java.util.List;
 import java.util.Map;
@@ -60,7 +61,7 @@ class CurseModifyWeightTest {
      * @return the curse
      */
     private static Curse curse(int weight, boolean multiply) {
-        return new Curse("weighty", List.of(), new ItemObject(), weight, null,
+        return CurseFixture.curse("weighty", List.of(), weight, null,
                 multiply ? objectFlags(ObjectFlag.OF_MULTIPLY_WEIGHT) : objectFlags(),
                 Map.of(), Map.of(), 0, 0, 0, List.of(), objectFlags(), "", "", 0);
     }

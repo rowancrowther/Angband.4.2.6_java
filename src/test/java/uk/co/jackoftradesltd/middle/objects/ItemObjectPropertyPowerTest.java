@@ -46,6 +46,7 @@ import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 import uk.co.jackoftradesltd.middle.player.Player;
 import uk.co.jackoftradesltd.testsupport.ItemFixture;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
+import uk.co.jackoftradesltd.testsupport.CurseFixture;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -238,7 +239,7 @@ class ItemObjectPropertyPowerTest {
      * @return the curse
      */
     private static Curse combatCurse(int toHit, int toAC) {
-        return new Curse("test curse", List.of(), new ItemObject(), 0, null, new Flag<>(ObjectFlag.class),
+        return CurseFixture.curse("test curse", List.of(), 0, null, new Flag<>(ObjectFlag.class),
                 new HashMap<>(), new HashMap<>(), toHit, 0, toAC, List.of(),
                 new Flag<>(ObjectFlag.class), "", "", 1);
     }
@@ -727,7 +728,7 @@ class ItemObjectPropertyPowerTest {
         @Test
         @DisplayName("the curse overload uses no type multiplier")
         void curseOverload() throws Exception {
-            Curse curse = new Curse("test curse", List.of(), new ItemObject(), 0, null,
+            Curse curse = CurseFixture.curse("test curse", List.of(), 0, null,
                     flagsOf(ObjectFlag.OF_REGEN), new HashMap<>(), new HashMap<>(), 0, 0, 0, List.of(),
                     new Flag<>(ObjectFlag.class), "", "", 1);
 

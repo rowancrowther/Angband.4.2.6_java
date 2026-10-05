@@ -112,7 +112,14 @@ class BonusSourceTest {
                                Map<ElementEnum, ElementInfo> elInfo, int toHit, int toDam, int toAc) {
         Flag<ObjectFlag> flagSet = new Flag<>(ObjectFlag.class);
         if (!flags.isEmpty()) flagSet.set(flags);
-        return new Curse("test curse", List.of(), new ItemObject(), 0, null, flagSet, modifiers, elInfo,
+        ItemObject curseObject = new ItemObject();
+        curseObject.setFlagsTo(flagSet);
+        curseObject.setModifiers(modifiers);
+        curseObject.setElInfo(elInfo);
+        curseObject.setToHit(toHit);
+        curseObject.setToDam(toDam);
+        curseObject.setToAC(toAc);
+        return new Curse("test curse", List.of(), curseObject, 0, null, flagSet, modifiers, elInfo,
                 toHit, toDam, toAc, List.of(), new Flag<>(ObjectFlag.class), "", "", 0);
     }
 

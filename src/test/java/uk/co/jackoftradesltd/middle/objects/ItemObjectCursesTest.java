@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
+import uk.co.jackoftradesltd.testsupport.CurseFixture;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -72,7 +73,7 @@ class ItemObjectCursesTest {
      * @return a curse with every other field empty
      */
     private static Curse curse(String name) {
-        return new Curse(name, List.of(), new ItemObject(), 0, null, new Flag<>(ObjectFlag.class), Map.of(), Map.of(), 0, 0, 0,
+        return CurseFixture.curse(name, List.of(), 0, null, new Flag<>(ObjectFlag.class), Map.of(), Map.of(), 0, 0, 0,
                 List.of(), new Flag<>(ObjectFlag.class), "", "", 0);
     }
 

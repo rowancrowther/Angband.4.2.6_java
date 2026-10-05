@@ -38,6 +38,7 @@ import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 import uk.co.jackoftradesltd.middle.player.Player;
 import uk.co.jackoftradesltd.testsupport.ItemFixture;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
+import uk.co.jackoftradesltd.testsupport.CurseFixture;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -272,7 +273,7 @@ class ItemObjectDamagePowerTest {
         if (modifier != null) {
             modifiers.put(modifier, value);
         }
-        return new Curse("test curse", List.of(), new ItemObject(), 0, null, new Flag<>(ObjectFlag.class),
+        return CurseFixture.curse("test curse", List.of(), 0, null, new Flag<>(ObjectFlag.class),
                 modifiers, new HashMap<>(), 0, damage, 0, List.of(),
                 new Flag<>(ObjectFlag.class), "", "", 1);
     }

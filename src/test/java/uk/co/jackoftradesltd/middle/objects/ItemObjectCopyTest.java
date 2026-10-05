@@ -32,6 +32,7 @@ import uk.co.jackoftradesltd.middle.objects.enums.ObjectNotice;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 import uk.co.jackoftradesltd.testsupport.ItemFixture;
+import uk.co.jackoftradesltd.testsupport.CurseFixture;
 
 import java.util.List;
 import java.util.Map;
@@ -88,7 +89,7 @@ class ItemObjectCopyTest {
      * @return a curse with every other field empty
      */
     private static Curse curse() {
-        return new Curse("test", List.of(), new ItemObject(), 0, null, new Flag<>(ObjectFlag.class), Map.of(), Map.of(),
+        return CurseFixture.curse("test", List.of(), 0, null, new Flag<>(ObjectFlag.class), Map.of(), Map.of(),
                 0, 0, 0, List.of(), new Flag<>(ObjectFlag.class), "", "", 0);
     }
 

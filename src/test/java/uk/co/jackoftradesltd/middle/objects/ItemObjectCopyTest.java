@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
+import uk.co.jackoftradesltd.middle.numerics.Random;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -350,10 +351,12 @@ class ItemObjectCopyTest {
         }
 
         /**
-         * No recharge dice and no grid arrive as none, rather than failing on the copy of nothing.
+         * A recharge interval that has somehow been left null arrives as a zero one, so the copy
+         * never holds a null that the getter would fail on; no damage dice and no grid arrive as
+         * none, rather than failing on the copy of nothing.
          */
         @Test
-        @DisplayName("null dice and grid stay null")
+        @DisplayName("null dice become a zero recharge interval, and grid stays null")
         void diceAndGridStayNull() {
             set(original, "time", null);
             set(original, "baseDamage", null);
@@ -361,7 +364,11 @@ class ItemObjectCopyTest {
 
             ItemObject copy = original.copy(false);
 
-            assertNull(read(copy, "time"));
+            Random time = (Random) read(copy, "time");
+            assertEquals(0, time.getBase());
+            assertEquals(0, time.getDice());
+            assertEquals(0, time.getSides());
+            assertEquals(0, time.getMBonus());
             assertNull(read(copy, "baseDamage"));
             assertNull(read(copy, "location"));
         }

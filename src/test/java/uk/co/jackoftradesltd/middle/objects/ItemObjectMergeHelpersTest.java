@@ -17,6 +17,8 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -24,6 +26,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.middle.enums.EffectEnum;
+import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
+import uk.co.jackoftradesltd.middle.game.globals.data.GameConstantsData;
+import uk.co.jackoftradesltd.middle.game.globals.data.WorldData;
 import uk.co.jackoftradesltd.middle.monsters.MonsterRace;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftradesltd.middle.numerics.Random;
@@ -32,6 +37,7 @@ import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 import uk.co.jackoftradesltd.testsupport.ItemFixture;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -57,6 +63,52 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @ExtendWith(SeededPlayerRegistry.class)
 class ItemObjectMergeHelpersTest {
+
+    /**
+     * The {@code GameConstants.data} in place before this class added a world section to it.
+     */
+    private static GameConstantsData savedConstants;
+
+    /**
+     * Adds {@code world:max-depth} to the constants table so a rod's recharge dice can be averaged.
+     *
+     * <p>{@code distributeCharges} averages {@code time} through {@code RandomValueUtils.mBonusCalc},
+     * whose AVERAGE branch divides by {@code GameConstants.getWorldMaxDepth()} even when the bonus
+     * term is zero. {@link SeededPlayerRegistry} leaves the world section null, so without this the
+     * rod cases pass only when an earlier class in the same JVM happens to have left one behind.
+     * The sections the extension seeded are carried across unchanged.
+     *
+     * @throws ReflectiveOperationException if the constants field cannot be reached
+     */
+    @BeforeAll
+    static void seedWorldMaxDepth() throws ReflectiveOperationException {
+        Field field = GameConstants.class.getDeclaredField("data");
+        field.setAccessible(true);
+        savedConstants = (GameConstantsData) field.get(null);
+
+        GameConstantsData old = savedConstants;
+        WorldData world = new WorldData(128, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        field.set(null, old == null
+                ? new GameConstantsData(null, null, null, null, world, null, null, null, null, null,
+                null, null, null, null, null, null, null)
+                : new GameConstantsData(old.levelMax(), old.monGen(), old.monPlay(), old.dunGen(),
+                world, old.carryCap(), old.store(), old.objMake(), old.player(),
+                old.meleeCritical(), old.meleeCriticalLevel(), old.rangedCritical(),
+                old.rangedCriticalLevel(), old.oMeleeCritical(), old.oMeleeCriticalLevel(),
+                old.oRangedCritical(), old.oRangedCriticalLevel()));
+    }
+
+    /**
+     * Puts back the table {@link #seedWorldMaxDepth()} replaced.
+     *
+     * @throws ReflectiveOperationException if the constants field cannot be reached
+     */
+    @AfterAll
+    static void restoreConstants() throws ReflectiveOperationException {
+        Field field = GameConstants.class.getDeclaredField("data");
+        field.setAccessible(true);
+        field.set(null, savedConstants);
+    }
 
     private static Object call(ItemObject target, String name, Class<?>[] types, Object... args) {
         try {

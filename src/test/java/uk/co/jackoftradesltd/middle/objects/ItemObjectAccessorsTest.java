@@ -208,14 +208,21 @@ class ItemObjectAccessorsTest {
             assertFalse(new ItemObject().isArtifact());
         }
 
+        /**
+         * A blank item holds a zeroed recharge interval rather than none, as C's zeroed
+         * {@code random_value} does: all four terms read 0, and so does every roll of it.
+         */
         @Test
-        @DisplayName("carries no charges and no timeout")
+        @DisplayName("carries no charges and a zero recharge interval")
         void hasNoCharge() {
             ItemObject item = new ItemObject();
 
             assertEquals(0, item.getTimeout());
             assertEquals(0, item.getNumber());
-            assertNull(item.getTime());
+            assertEquals(0, item.getTime().getBase());
+            assertEquals(0, item.getTime().getDice());
+            assertEquals(0, item.getTime().getSides());
+            assertEquals(0, item.getTime().getMBonus());
         }
 
         /**
@@ -397,9 +404,7 @@ class ItemObjectAccessorsTest {
         @Test
         @DisplayName("getCurses returns an unmodifiable view over the live map")
         void cursesAreAnUnmodifiableView() {
-            Map<Curse, CurseData> curses = new java.util.LinkedHashMap<>();
             ItemObject item = new ItemObject();
-            set(item, "curses", curses);
 
             Map<Curse, CurseData> view = item.getCurses();
             assertThrows(UnsupportedOperationException.class,
@@ -407,7 +412,7 @@ class ItemObjectAccessorsTest {
 
             Curse siren = curse("siren");
             CurseData data = new CurseData(4, 9);
-            curses.put(siren, data);
+            item.addCurse(siren, data);
 
             assertEquals(1, view.size());
             assertSame(data, view.get(siren));

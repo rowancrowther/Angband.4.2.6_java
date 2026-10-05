@@ -33,11 +33,11 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 /**
  * Tests {@link ObjectUtils#flavourResetFixed}, the port of C's {@code flavor_reset_fixed}
- * ({@code obj-util.c:121}).
+ * ({@code obj-util.c}).
  *
  * <p>C walks the flat {@code flavors} list and clears {@code sval} to {@code SV_UNKNOWN} on every
  * entry, skipping only the one ring flavour whose {@code tval} is {@code TV_RING} and whose
- * {@code text} contains {@code "Plain Gold"} ({@code obj-util.c:126}). The port walks
+ * {@code text} contains {@code "Plain Gold"} ({@code obj-util.c}). The port walks
  * {@link uk.co.jackoftradesltd.middle.game.globals.registry.MiscRegistry#getFlavours()}, one
  * {@link FlavourKind} per tval group, and applies the same two-part test —
  * {@link TValue#isRing()} and {@link String#equals} against {@code "Plain Gold"} — before calling

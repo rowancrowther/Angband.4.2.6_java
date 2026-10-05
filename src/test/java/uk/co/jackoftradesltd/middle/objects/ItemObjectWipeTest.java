@@ -230,7 +230,10 @@ class ItemObjectWipeTest {
         assertNull(read(item, "baseDamage"));
         assertEquals(0, item.getToDam());
         assertEquals(0, item.getToHit());
-        assertNull(item.getTime());
+        assertEquals(0, item.getTime().getBase());
+        assertEquals(0, item.getTime().getDice());
+        assertEquals(0, item.getTime().getSides());
+        assertEquals(0, item.getTime().getMBonus());
         assertEquals(0, item.getTimeout());
         assertEquals(0, item.getNumber());
         assertEquals(0, read(item, "heldMIndex"));

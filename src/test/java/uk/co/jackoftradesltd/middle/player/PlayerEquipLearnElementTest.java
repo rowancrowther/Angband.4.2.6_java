@@ -226,7 +226,7 @@ class PlayerEquipLearnElementTest {
     private static void curse(ItemObject item, Curse curse, int power) throws Exception {
         Map<Curse, CurseData> curses = new LinkedHashMap<>();
         curses.put(curse, new CurseData(power, 0));
-        poke(item, "curses", curses);
+        item.clearAndPutCurses(curses);
     }
 
     private static void set(Player target, String name, Object value) throws Exception {

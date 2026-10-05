@@ -25,7 +25,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.middle.cave.Chunk;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
+import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
+import uk.co.jackoftradesltd.middle.game.globals.data.GameConstantsData;
+import uk.co.jackoftradesltd.middle.game.globals.data.WorldData;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum;
+import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 import uk.co.jackoftradesltd.middle.player.Player;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
@@ -183,6 +187,38 @@ class ItemObjectAbsorbTest {
                 .origin(ObjectOriginEnum.ORIGIN_FLOOR, 1, null).build();
         listInLevel(item);
         return item;
+    }
+
+    /**
+     * Installs a constants structure that has a world block, because averaging a recharge dice
+     * divides its level bonus by the maximum depth even when that bonus is zero.
+     *
+     * @return what the constants holder held before, to hand to {@link #restoreConstants}
+     * @throws Exception if the constants holder cannot be reached
+     */
+    private Object seedWorldDepth() throws Exception {
+        Field data = GameConstants.class.getDeclaredField("data");
+        data.setAccessible(true);
+        Object saved = data.get(null);
+        data.set(null, new GameConstantsData(
+                null, null, null, null,
+                new WorldData(128, 10000, 0, 0, 0, 0, 0, 0, 0, 0),
+                null, null, null, null, null, java.util.List.of(),
+                null, java.util.List.of(), null, java.util.List.of(),
+                null, java.util.List.of()));
+        return saved;
+    }
+
+    /**
+     * Puts the constants back.
+     *
+     * @param saved what {@link #seedWorldDepth} returned
+     * @throws Exception if the constants holder cannot be reached
+     */
+    private void restoreConstants(Object saved) throws Exception {
+        Field data = GameConstants.class.getDeclaredField("data");
+        data.setAccessible(true);
+        data.set(null, saved);
     }
 
     /**
@@ -653,6 +689,51 @@ class ItemObjectAbsorbTest {
             assertEquals(8, original.getKnown().getpValue());
             assertEquals(1, split.getKnown().getNumber());
             assertEquals(3, original.getKnown().getNumber());
+        }
+
+        /**
+         * A rod stack whose known half is built bare, as {@code PlayerBirth} builds one, splits
+         * without throwing. {@code distribute_charges} reads the recharge dice of the known half
+         * too, and C's known half holds a zeroed {@code random_value} there; the port's must hold
+         * a zero rather than {@code null}.
+         *
+         * <p>The real half shares its timeout out against its own dice: {@code 10} per rod, one rod
+         * moving, so the new stack takes {@code min(25, 10) = 10} and the original keeps 15. The
+         * known half's dice are zero, so its timeout, which starts at zero, stays at zero on both
+         * stacks.
+         *
+         * @throws Exception if a fixture field cannot be reached
+         */
+        @Test
+        @DisplayName("rods split through a bare known half, which shares no timeout")
+        void rodSplitsThroughBareKnownHalf() throws Exception {
+            ObjectKind rod = ItemFixture.loadedKind(TValue.TV_ROD, "rod", MAX_STACK);
+            ItemObject original = ItemFixture.item(TValue.TV_ROD).kind(rod).number(3).build();
+            original.setTime(new Random(10, 0, 0, 1, false));
+            original.setTimeout(25);
+            Object savedConstants = seedWorldDepth();
+
+            ItemObject counterpart = new ItemObject();
+            counterpart.settValue(TValue.TV_ROD);
+            counterpart.setKind(rod);
+            counterpart.setNumber(3);
+            original.setKnown(counterpart);
+
+            ItemObject split;
+            try {
+                split = original.objectSplit(1);
+            } finally {
+                restoreConstants(savedConstants);
+            }
+
+            assertEquals(1, split.getNumber());
+            assertEquals(2, original.getNumber());
+            assertEquals(10, split.getTimeout());
+            assertEquals(15, original.getTimeout());
+            assertEquals(1, split.getKnown().getNumber());
+            assertEquals(2, original.getKnown().getNumber());
+            assertEquals(0, split.getKnown().getTimeout());
+            assertEquals(0, original.getKnown().getTimeout());
         }
 
         /**

@@ -90,7 +90,7 @@ class ItemObjectWeightTest {
     private static ItemObject item(int weight, Map<Curse, CurseData> curses) throws Exception {
         ItemObject item = new ItemObject();
         set(item, "weight", weight);
-        set(item, "curses", new LinkedHashMap<>(curses));
+        item.clearAndPutCurses(new LinkedHashMap<>(curses));
         return item;
     }
 

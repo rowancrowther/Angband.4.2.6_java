@@ -56,9 +56,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 /**
  * Tests the three capacity helpers behind {@link ObjectUtils#combinePack} —
  * {@link ObjectUtils#packSlotsUsed}, {@link ObjectUtils#preferredQuiverSlot} and
- * {@code quiverAbsorbNum} — the ports of C's {@code pack_slots_used} ({@code obj-gear.c:257}),
- * {@code preferred_quiver_slot} ({@code obj-gear.c:1396}) and {@code quiver_absorb_num}
- * ({@code obj-gear.c:649}).
+ * {@code quiverAbsorbNum} — the ports of C's {@code pack_slots_used} ({@code obj-gear.c}),
+ * {@code preferred_quiver_slot} ({@code obj-gear.c}) and {@code quiver_absorb_num}
+ * ({@code obj-gear.c}).
  *
  * <p>All three used to be instance methods on {@link Player} and were reached here by reflection.
  * They now live on {@link ObjectUtils} as statics taking the player as their first argument, so the

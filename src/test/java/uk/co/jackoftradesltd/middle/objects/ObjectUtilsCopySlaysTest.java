@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@link ObjectUtils#copySlays}, the port of C's {@code copy_slays} ({@code obj-slays.c:57}).
+ * Tests {@link ObjectUtils#copySlays}, the port of C's {@code copy_slays} ({@code obj-slays.c}).
  *
  * <p>C stores a {@code bool} per slot in a fixed global table, ORs source into dest, and then walks
  * every pair of set indices clearing whichever has the lower multiplier when both name the same

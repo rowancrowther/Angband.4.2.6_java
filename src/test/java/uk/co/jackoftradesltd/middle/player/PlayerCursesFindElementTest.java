@@ -243,7 +243,7 @@ class PlayerCursesFindElementTest {
         for (Map.Entry<Curse, CurseData> entry : entries) {
             curses.put(entry.getKey(), entry.getValue());
         }
-        poke(item, "curses", curses);
+        item.clearAndPutCurses(curses);
         return item;
     }
 

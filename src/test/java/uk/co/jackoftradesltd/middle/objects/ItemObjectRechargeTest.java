@@ -131,15 +131,14 @@ class ItemObjectRechargeTest {
      * averages out and the mBonus term vanishes — so a flat base is the interval the code will
      * actually see, stated without indirection.
      *
-     * @param chargeTime the per-item recharge interval, or a negative value for "no interval at
-     *                   all" (a {@code null} {@code time}, which is how a non-rod is stored)
+     * @param chargeTime the per-item recharge interval
      * @param timeout    the pooled timeout counter
      * @param number     the stack size
      * @return the constructed item
      */
     private static ItemObject rod(int chargeTime, int timeout, int number) {
         ItemObject item = new ItemObject();
-        set(item, "time", chargeTime < 0 ? null : new Random(chargeTime, 0, 0, 0, false));
+        set(item, "time", new Random(chargeTime, 0, 0, 0, false));
         set(item, "timeout", timeout);
         set(item, "number", number);
         return item;
@@ -177,15 +176,17 @@ class ItemObjectRechargeTest {
         }
 
         @Test
-        @DisplayName("an item with no recharge interval is left alone")
+        @DisplayName("an item whose recharge interval was never set is left alone")
         void noTimeField() {
-            // C reads obj->time as a struct and so cannot see null; the Java guard is the port's
-            // own, covering every non-rod whose time was never parsed.
-            ItemObject item = rod(-1, 25, 3);
+            // C reads obj->time as a zeroed struct for every non-rod; the Java item starts with a
+            // zero Random for the same reason, so there is no null to guard against.
+            ItemObject item = new ItemObject();
+            set(item, "timeout", 25);
+            set(item, "number", 3);
 
             assertEquals(0, item.numberCharging());
             assertFalse(item.rechargeTimeout());
-            assertEquals(25, item.getTimeout(), "timeout must not be touched when time is absent");
+            assertEquals(25, item.getTimeout(), "timeout must not be touched when time was never set");
         }
 
         @Test

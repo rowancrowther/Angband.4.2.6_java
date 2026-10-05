@@ -21,6 +21,7 @@ import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.FlagView;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
+import uk.co.jackoftradesltd.middle.magic.ClassMagic;
 import uk.co.jackoftradesltd.middle.magic.MagicBook;
 import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
@@ -30,6 +31,7 @@ import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.objects.enums.*;
+import uk.co.jackoftradesltd.middle.player.Player;
 
 import java.util.*;
 
@@ -359,6 +361,15 @@ public class ObjectKind {
         activations = new ArrayList<>();
         effect = new ArrayList<>();
         isSpecialArtifactKind = false;
+
+        this.pVal = Random.Zero();
+        this.toH = Random.Zero();
+        this.toD = Random.Zero();
+        this.toA = Random.Zero();
+        this.baseDamage = Random.Zero();
+        this.time = Random.Zero();
+        this.charge = Random.Zero();
+        this.stackSize = Random.Zero();
     }
 
     /**
@@ -430,7 +441,8 @@ public class ObjectKind {
                       Random stackSize, Flavour flavour,
                       String noteAware, String noteUnaware,
                       boolean aware, boolean tried,
-                      Flag<IgnoreFlag> ignore, boolean everseen, TValue tValue) {
+                      Flag<IgnoreFlag> ignore, boolean everseen,
+                      TValue tValue, int power) {
         this.name = name;
         this.text = text;
         this.base = base;
@@ -478,6 +490,7 @@ public class ObjectKind {
         this.tValue = tValue;
         this.sValueName = stripToRawSval(name);
         this.isSpecialArtifactKind = false;
+        this.power = power;
     }
 
     /**
@@ -493,6 +506,7 @@ public class ObjectKind {
      */
     public ObjectKind(Artifact artifact, String sValName, ObjectBase base) {
         this.flags = new Flag<>(ObjectFlag.class);
+        this.flags.copyFrom(base.getFlags());
         Flag<ObjectKindFlag> copy = new Flag<>(ObjectKindFlag.class);
         copy.copyFrom(base.getKindFlags());
         this.kindFlags = copy;
@@ -514,11 +528,18 @@ public class ObjectKind {
             ElementInfo newEi = oldEi.copy();
             this.elInfo.put(ee, newEi);
         }
-
         this.character = new AngbandDisplayCharacter('*', ColourEnum.COLOUR_RED);
-
         this.base = base;
         this.isSpecialArtifactKind = true;
+
+        this.toH = Random.Zero();
+        this.toD = Random.Zero();
+        this.toA = Random.Zero();
+        this.baseDamage = Random.Zero();
+        this.time = Random.Zero();
+        this.charge = Random.Zero();
+        this.stackSize = Random.Zero();
+        this.pVal = Random.Zero();
     }
 
     /**
@@ -980,7 +1001,9 @@ public class ObjectKind {
         copy.charge = this.charge.copy();
         copy.genMultProb = this.genMultProb;
         copy.stackSize = this.stackSize.copy();
-        copy.flavour = this.flavour.copy();
+        copy.flavour = null;
+        if (this.flavour != null)
+            copy.flavour = this.flavour.copy();
         copy.noteAware = this.noteAware;
         copy.noteUnaware = this.noteUnaware;
         copy.aware = this.aware;
@@ -996,7 +1019,8 @@ public class ObjectKind {
 
     /**
      * Answers whether the player's class can read this kind as a spell book - the port of C's
-     * {@code obj_can_browse} ({@code obj-util.c}).
+     * {@code obj_kind_can_browse} ({@code obj-util.c}). C's {@code obj_can_browse} is a one-line
+     * wrapper that passes an object's kind to it; {@code ItemObject.canBrowse} stands in for that.
      *
      * <p>Walks the class's own list of magic books and matches each on both halves of its
      * {@code (tval, sval)} pair, so the same book is browsable by a mage and not by a priest. Both
@@ -1006,12 +1030,21 @@ public class ObjectKind {
      * <p>Reaches the live player through {@code GameState}, so it answers for whoever is playing
      * rather than taking the player as an argument, unlike its C original.
      *
-     * <p>Function canBrowse commented in full on 260827.
+     * <p>A class with no magic holds {@code ClassMagic.NONE}, whose book list is empty, so the loop
+     * runs zero times and the answer is {@code false}, as C's {@code num_books} of 0 gives. The early
+     * return on {@code ClassMagic.NONE} says the same thing sooner.
+     *
+     * <p>Function canBrowse coded before 260827, commented in full on 261003.
      *
      * @return {@code true} if the current player's class can browse this kind
      */
     public boolean canBrowse() {
-        for (MagicBook mb : GameState.getPlayer().getPlayerClass().getMagic().getMagicBooks()) {
+        Player player = GameState.getPlayer();
+
+        if (player.getPlayerClass().getMagic() == ClassMagic.NONE)
+            return false;
+
+        for (MagicBook mb : player.getPlayerClass().getMagic().getMagicBooks()) {
             if (this.gettValue() == mb.getBookTValue() && this.sVal == mb.getSval())
                 return true;
         }

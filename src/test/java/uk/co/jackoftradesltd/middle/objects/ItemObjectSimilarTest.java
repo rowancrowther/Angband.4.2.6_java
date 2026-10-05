@@ -94,8 +94,9 @@ class ItemObjectSimilarTest {
 
     /**
      * The one curse the curse tests use. {@code cursesAreEqual} walks the registry's curses, as C
-     * walks {@code z_info->curse_max}, so a curse the registry does not hold is invisible to it;
-     * {@link #newPair} therefore seeds the registry with this one before each test.
+     * walks {@code z_info->curse_max}, so the walk never sees a curse the registry does not hold
+     * (only the empty-map check before it does); {@link #newPair} therefore seeds the registry with
+     * this one before each test.
      */
     private static final Curse SIREN = curse("siren");
 
@@ -422,26 +423,45 @@ class ItemObjectSimilarTest {
         }
 
         /**
-         * An element recorded on one item and absent from the other's map must refuse the stack,
-         * and must refuse it whichever way round the two are asked.
+         * An element recorded with a non-default value on one item and absent from the other's map
+         * must refuse the stack, and must refuse it whichever way round the two are asked.
          *
          * <p>This is the case the port has to work for and C gets for free. C indexes full arrays
          * by element, so one loop sees both items' entries; here the map holds only the elements an
-         * item carries, and a loop over one item's keys cannot see an element recorded solely on the
-         * other. {@code similar} answers that by running the comparison twice with the arguments
-         * swapped. Asserting both directions is what would catch a future simplification back down
-         * to a single pass — which would still pass every other test in this class.
+         * item carries, so a comparison that walked one item's keys could not see an element
+         * recorded solely on the other. Asserting both directions is what would catch a regression
+         * to that. The absent side counts as resistance level 0 with no flags, so the recorded side
+         * has to differ from that for the stack to be refused; the next test covers the case where
+         * it does not.
          */
         @Test
-        @DisplayName("an element on one item only refuses in both directions")
+        @DisplayName("a non-default element on one item only refuses in both directions")
         void elementPresentOnOneSideOnly() {
+            Map<ElementEnum, ElementInfo> sparse = new java.util.HashMap<>(elements());
+            sparse.remove(ElementEnum.ELEM_FIRE);
+            set(second, "elInfo", sparse);
+            elementOf(first, ElementEnum.ELEM_FIRE).setResLevel(1);
+
+            assertAll(
+                    () -> assertFalse(first.similar(second, mode())),
+                    () -> assertFalse(second.similar(first, mode())));
+        }
+
+        /**
+         * The other half of the sparse-map case. C's element array is always full, so an element
+         * with nothing recorded reads as resistance level 0 with no flags, and a map that lacks the
+         * key must stack with one holding a default entry for it, whichever way round they are asked.
+         */
+        @Test
+        @DisplayName("an absent element stacks with a default entry, in both directions")
+        void absentElementEqualsDefaultEntry() {
             Map<ElementEnum, ElementInfo> sparse = new java.util.HashMap<>(elements());
             sparse.remove(ElementEnum.ELEM_FIRE);
             set(second, "elInfo", sparse);
 
             assertAll(
-                    () -> assertFalse(first.similar(second, mode())),
-                    () -> assertFalse(second.similar(first, mode())));
+                    () -> assertTrue(first.similar(second, mode())),
+                    () -> assertTrue(second.similar(first, mode())));
         }
 
         @SuppressWarnings("unchecked")
@@ -664,26 +684,54 @@ class ItemObjectSimilarTest {
         }
 
         /**
-         * A curse the object carries at power zero reads as not carrying it, as in C where a zero
-         * power is the whole meaning of "not cursed". So zero against absent, and zero against
-         * zero, stack; only a non-zero power on one side separates them.
+         * C's {@code curses_are_equal} ({@code obj-curse.c}) compares the curse arrays themselves
+         * before any power: exactly one of them null is unequal, even if the other holds nothing
+         * but zeros. The port's empty map stands for C's null array, so a map holding one curse at
+         * power zero, against an item with no curses at all, refuses the stack in both directions.
          */
         @Test
-        @DisplayName("a curse at power zero equals the curse being absent")
-        void zeroPowerCurseEqualsAbsentCurse() {
+        @DisplayName("a zero-power curse against no curses at all refuses the stack")
+        void zeroPowerCurseAgainstNoCurses() {
             Map<Curse, CurseData> zero = new LinkedHashMap<>();
             zero.put(SIREN, new CurseData(0, 0));
-            set(first, "curses", zero);
+            first.clearAndPutCurses(zero);
+
+            assertAll(
+                    () -> assertFalse(first.similar(second, mode())),
+                    () -> assertFalse(second.similar(first, mode())));
+        }
+
+        /**
+         * Once both items carry curses, C walks every slot and compares nothing but power, and a
+         * slot the object is not cursed in holds power zero. So in the port, with both maps
+         * non-empty, a zero-power entry reads the same as the curse being absent, and two zero-power
+         * entries match whatever their countdowns.
+         */
+        @Test
+        @DisplayName("with curses on both items, a zero-power curse equals the curse being absent")
+        void zeroPowerCurseEqualsAbsentCurseWhenBothCursed() {
+            Curse vulnerability = curse("vulnerability");
+            ObjectRegistry.setCurses(new ArrayList<>(List.of(SIREN, vulnerability)));
+
+            Map<Curse, CurseData> sirenZero = new LinkedHashMap<>();
+            sirenZero.put(SIREN, new CurseData(0, 0));
+            first.clearAndPutCurses(sirenZero);
+
+            Map<Curse, CurseData> vulnerabilityZero = new LinkedHashMap<>();
+            vulnerabilityZero.put(vulnerability, new CurseData(0, 0));
+            second.clearAndPutCurses(vulnerabilityZero);
 
             assertAll(
                     () -> assertTrue(first.similar(second, mode())),
                     () -> assertTrue(second.similar(first, mode())));
 
-            Map<Curse, CurseData> alsoZero = new LinkedHashMap<>();
-            alsoZero.put(SIREN, new CurseData(0, 7));
-            set(second, "curses", alsoZero);
+            Map<Curse, CurseData> sirenZeroCountingDown = new LinkedHashMap<>();
+            sirenZeroCountingDown.put(SIREN, new CurseData(0, 7));
+            second.clearAndPutCurses(sirenZeroCountingDown);
 
-            assertTrue(first.similar(second, mode()));
+            assertAll(
+                    () -> assertTrue(first.similar(second, mode())),
+                    () -> assertTrue(second.similar(first, mode())));
         }
 
         /**
@@ -695,7 +743,7 @@ class ItemObjectSimilarTest {
         void curseOnOneSideOnly() {
             Map<Curse, CurseData> curses = new LinkedHashMap<>();
             curses.put(SIREN, new CurseData(2, 0));
-            set(first, "curses", curses);
+            first.clearAndPutCurses(curses);
 
             assertAll(
                     () -> assertFalse(first.similar(second, mode())),
@@ -704,16 +752,36 @@ class ItemObjectSimilarTest {
 
         /**
          * C walks only the curses in its registry ({@code z_info->curse_max}), so a curse the
-         * registry does not hold is never compared.
+         * registry does not hold is never compared. Both items carry it here, at different powers,
+         * so that the walk is reached and the difference goes unseen.
+         *
+         * <p>The second half pins the other side: the null-array check comes before the walk, so
+         * the same curse against an item with no curses refuses the stack. C can't express a curse
+         * outside its registry, so this is the port's reading, by the same rule as any other
+         * one-sided curse map.
          */
         @Test
         @DisplayName("a curse missing from the registry is not compared")
         void unregisteredCurseIsIgnored() {
-            Map<Curse, CurseData> firstCurses = new LinkedHashMap<>();
-            firstCurses.put(curse("unregistered"), new CurseData(2, 0));
-            set(first, "curses", firstCurses);
+            Curse unregistered = curse("unregistered");
 
-            assertTrue(first.similar(second, mode()));
+            Map<Curse, CurseData> firstCurses = new LinkedHashMap<>();
+            firstCurses.put(unregistered, new CurseData(2, 0));
+            first.clearAndPutCurses(firstCurses);
+
+            Map<Curse, CurseData> secondCurses = new LinkedHashMap<>();
+            secondCurses.put(unregistered, new CurseData(5, 0));
+            second.clearAndPutCurses(secondCurses);
+
+            assertAll(
+                    () -> assertTrue(first.similar(second, mode())),
+                    () -> assertTrue(second.similar(first, mode())));
+
+            second.clearAndPutCurses(new LinkedHashMap<Curse, CurseData>());
+
+            assertAll(
+                    () -> assertFalse(first.similar(second, mode())),
+                    () -> assertFalse(second.similar(first, mode())));
         }
 
         /**
@@ -733,7 +801,7 @@ class ItemObjectSimilarTest {
         void differentCurses() {
             Map<Curse, CurseData> curses = new LinkedHashMap<>();
             curses.put(SIREN, new CurseData(1, 0));
-            set(second, "curses", curses);
+            second.clearAndPutCurses(curses);
 
             assertFalse(first.similar(second, mode()));
         }
@@ -754,11 +822,11 @@ class ItemObjectSimilarTest {
             Curse siren = SIREN;
             Map<Curse, CurseData> firstCurses = new LinkedHashMap<>();
             firstCurses.put(siren, new CurseData(3, 1));
-            set(first, "curses", firstCurses);
+            first.clearAndPutCurses(firstCurses);
 
             Map<Curse, CurseData> secondCurses = new LinkedHashMap<>();
             secondCurses.put(siren, new CurseData(3, 40));
-            set(second, "curses", secondCurses);
+            second.clearAndPutCurses(secondCurses);
 
             assertTrue(first.similar(second, mode()));
         }
@@ -773,11 +841,11 @@ class ItemObjectSimilarTest {
             Curse siren = SIREN;
             Map<Curse, CurseData> firstCurses = new LinkedHashMap<>();
             firstCurses.put(siren, new CurseData(3, 0));
-            set(first, "curses", firstCurses);
+            first.clearAndPutCurses(firstCurses);
 
             Map<Curse, CurseData> secondCurses = new LinkedHashMap<>();
             secondCurses.put(siren, new CurseData(5, 0));
-            set(second, "curses", secondCurses);
+            second.clearAndPutCurses(secondCurses);
 
             assertFalse(first.similar(second, mode()));
         }

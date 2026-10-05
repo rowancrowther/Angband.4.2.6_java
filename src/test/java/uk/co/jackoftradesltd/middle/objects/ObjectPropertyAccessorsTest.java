@@ -17,9 +17,11 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import uk.co.jackoftradesltd.backend.parser.ObjectPropertyReader;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjPropertyType;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlagID;
@@ -27,10 +29,13 @@ import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlagType;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -41,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p>The one with behaviour rather than storage is {@link ObjectProperty#getTypeMult(TValue)}, and
  * its default is the point: C fills every slot of its {@code type_mult} array with 1 before parsing
- * any {@code type-mult:} line ({@code obj-init.c:3186}), so a type the data file does not name is
+ * any {@code type-mult:} line ({@code parse_object_property_name} in {@code obj-init.c}), so a type the data file does not name is
  * priced <em>normally</em> rather than at nothing. A default of 0 would silently zero the flag and
  * modifier terms for most objects in the game, and nothing else would report it.
  *
@@ -171,6 +176,153 @@ class ObjectPropertyAccessorsTest {
             assertSame(ObjPropertyType.OBJ_PROPERTY_MOD, blows.getType());
             assertEquals(ObjectModifier.OM_BLOWS,
                     blows.getPayload().getModifier(ObjPropertyType.OBJ_PROPERTY_MOD));
+        }
+    }
+
+    /**
+     * The shipped {@code lib/gamedata/object_property.txt}, loaded through the real reader and
+     * assembler. The expected figures are read off the data file and the C struct's semantics
+     * ({@code struct obj_property} in {@code obj-properties.h}), not off the Java: each test names
+     * the record it relies on.
+     *
+     * <p>Class RealData coded on 261005, commented in full on 261005.
+     */
+    @Nested
+    @DisplayName("loaded from object_property.txt")
+    class RealData {
+
+        private List<ObjectProperty> all;
+
+        /**
+         * Loads the shipped file afresh for each test.
+         *
+         * @throws IOException if the data file cannot be read
+         */
+        @BeforeEach
+        void load() throws IOException {
+            all = new ObjectPropertyReader().parseWithResults("lib/gamedata/object_property.txt").items();
+        }
+
+        /**
+         * Finds a property by the name its record gives, failing loudly if the file has none.
+         *
+         * @param name the {@code name:} text
+         * @return the matching property
+         */
+        private ObjectProperty named(String name) {
+            return all.stream().filter(p -> p.getName().equals(name)).findFirst()
+                    .orElseThrow(() -> new NoSuchElementException(name));
+        }
+
+        /**
+         * "extra blows" is the file's own example of the type-mult table: power 0, mult 50, bows
+         * forced to 0, rings and the armour slots 3, weapons unnamed and so 1. {@code TV_NONE} is
+         * index 0 of C's pre-filled array, so it is also 1.
+         */
+        @Test
+        @DisplayName("extra blows: power 0, mult 50, bow 0, ring 3, others 1")
+        void extraBlows() {
+            ObjectProperty blows = named("extra blows");
+
+            assertSame(ObjPropertyType.OBJ_PROPERTY_MOD, blows.getType());
+            assertEquals(ObjectFlagType.OFT_NONE, blows.getSubtype());
+            assertEquals(ObjectFlagID.OFID_NONE, blows.getIdType());
+            assertEquals(0, blows.getPower());
+            assertEquals(50, blows.getMultiplier());
+            assertEquals(0, blows.getTypeMult(TValue.TV_BOW));
+            assertEquals(3, blows.getTypeMult(TValue.TV_RING));
+            assertEquals(3, blows.getTypeMult(TValue.TV_GLOVES));
+            assertEquals(1, blows.getTypeMult(TValue.TV_SWORD));
+            assertEquals(1, blows.getTypeMult(TValue.TV_NONE));
+        }
+
+        /**
+         * A stat names no type-mult at all, so every type is 1; it carries power 9 and mult 13 in
+         * the file, and no subtype or id-type because those are flag-only.
+         */
+        @Test
+        @DisplayName("strength: a stat with power 9, mult 13 and no type multipliers")
+        void strength() {
+            ObjectProperty str = named("strength");
+
+            assertSame(ObjPropertyType.OBJ_PROPERTY_STAT, str.getType());
+            assertEquals(ObjectModifier.OM_STR,
+                    str.getPayload().getModifier(ObjPropertyType.OBJ_PROPERTY_STAT));
+            assertEquals(9, str.getPower());
+            assertEquals(13, str.getMultiplier());
+            assertEquals(ObjectFlagType.OFT_NONE, str.getSubtype());
+            assertEquals(ObjectFlagID.OFID_NONE, str.getIdType());
+            for (TValue tval : TValue.values()) {
+                assertEquals(1, str.getTypeMult(tval));
+            }
+        }
+
+        /**
+         * "free action" is a misc-ability flag identified on effect, worth 8, doubled on rings and
+         * five times as much on gloves, with a notice message.
+         */
+        @Test
+        @DisplayName("free action: misc ability, on effect, power 8, ring 2, gloves 5")
+        void freeAction() {
+            ObjectProperty fa = named("free action");
+
+            assertSame(ObjPropertyType.OBJ_PROPERTY_FLAG, fa.getType());
+            assertEquals(ObjectFlagType.OFT_MISC, fa.getSubtype());
+            assertEquals(ObjectFlagID.OFID_NORMAL, fa.getIdType());
+            assertEquals(8, fa.getPower());
+            assertEquals(0, fa.getMultiplier());
+            assertEquals(2, fa.getTypeMult(TValue.TV_RING));
+            assertEquals(5, fa.getTypeMult(TValue.TV_GLOVES));
+            assertEquals(1, fa.getTypeMult(TValue.TV_SWORD));
+            assertEquals("Your {name} keeps you moving.", fa.getNoticeMessage());
+        }
+
+        /**
+         * A curse-only flag keeps its subtype, which is what the knowledge code keys on to skip
+         * it, and an explicit 0 type-mult survives as 0 rather than falling back to the default 1.
+         */
+        @Test
+        @DisplayName("multiply weight: curse-only, on wield, sword type-mult 0")
+        void multiplyWeight() {
+            ObjectProperty mw = named("multiply weight");
+
+            assertEquals(ObjectFlagType.OFT_CURSE_ONLY, mw.getSubtype());
+            assertEquals(ObjectFlagID.OFID_WIELD, mw.getIdType());
+            assertEquals(0, mw.getTypeMult(TValue.TV_SWORD));
+        }
+
+        /**
+         * The file's {@code bindui} line is carried as a binding: "sustain strength" binds to
+         * {@code stat_mod_ui_compact_0<STR>} with aux 1 and no explicit {@code uival}, so the value
+         * is absent (C's {@code have_value} false).
+         */
+        @Test
+        @DisplayName("sustain strength: one aux binding to the STR stat entry, no value")
+        void sustainStrengthBinding() {
+            List<ObjectProperty.UIBinding> bound = named("sustain strength").getBoundEntries();
+
+            assertEquals(1, bound.size());
+            assertEquals("stat_mod_ui_compact_0<STR>", bound.get(0).entry());
+            assertNull(bound.get(0).value());
+            assertTrue(bound.get(0).aux());
+        }
+
+        /**
+         * Every record in the shipped file loads, and each has the non-null parts the accessors
+         * hand out unguarded. The count is the file's own {@code record-count}.
+         */
+        @Test
+        @DisplayName("all 79 records load with a name, payload, and non-null collections")
+        void everyRecordIsComplete() {
+            assertEquals(79, all.size());
+            for (ObjectProperty p : all) {
+                assertNotNull(p.getName());
+                assertNotNull(p.getPayload(), p.getName());
+                assertNotNull(p.getBoundEntries(), p.getName());
+                assertNotNull(p.getIdType(), p.getName());
+                assertNotNull(p.getSubtype(), p.getName());
+                assertEquals(1, p.getTypeMult(TValue.TV_NONE), p.getName());
+            }
         }
     }
 

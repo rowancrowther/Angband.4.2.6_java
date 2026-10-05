@@ -90,7 +90,11 @@ public class PlayerClass {
     /** The equipment a character of this class begins with (see {@link StartItem}). */
     private List<StartItem> startItems;
 
-    /** Spellcasting definition for the class, or {@code null} for a non-caster (see {@link ClassMagic}). */
+    /**
+     * Spellcasting definition for the class (see {@link ClassMagic}). Never {@code null}: a class
+     * with no magic holds {@link ClassMagic#NONE}, whose book list is empty, as C's
+     * {@code magic.num_books} of 0 is.
+     */
     private ClassMagic magic;
 
     /**
@@ -110,7 +114,8 @@ public class PlayerClass {
      * @param minWeight     no-penalty weapon weight threshold
      * @param attMultiplier blows-per-round formula multiplier
      * @param startItems    starting equipment
-     * @param magic         spellcasting definition, or {@code null} for a non-caster
+     * @param magic         spellcasting definition; {@code null} is turned into {@link ClassMagic#NONE}
+     *                      for a non-caster
      */
     public PlayerClass(String name, List<String> titles, Map<Stats, Integer> stats,
                        Map<PlayerSkill, Integer> classSkills,
@@ -132,7 +137,10 @@ public class PlayerClass {
         this.minWeight = minWeight;
         this.attMultiplier = attMultiplier;
         this.startItems = startItems;
-        this.magic = magic;
+        if (magic == null)
+            this.magic = ClassMagic.NONE;
+        else
+            this.magic = magic;
     }
 
     /**
@@ -153,7 +161,8 @@ public class PlayerClass {
     }
 
     /**
-     * @return the class's spellcasting definition, or {@code null} for a non-caster
+     * @return the class's spellcasting definition; never {@code null}, a non-caster answers
+     * {@link ClassMagic#NONE}, which has no books
      */
     public ClassMagic getMagic() {
         return magic;

@@ -2933,4 +2933,43 @@ public class Player {
     public int getExpFact() {
         return expFact;
     }
+
+    /**
+     * Asks whether this character can read a brand — the port of C's {@code player_knows_brand},
+     * a bare lookup in {@code p->obj_k->brands}.
+     *
+     * <p>A convenience on the player so that a caller holding a {@link Player} need not reach into
+     * {@link #itemKnowledge} itself; it asks about the exact brand given, which is the same as asking
+     * about its group because learning any member of a group marks every same-named brand. The static
+     * {@link PlayerKnowledge#knowsBrand} answers the same question from the other side.
+     *
+     * <p>Throws a NullPointerException if the knowledge object has not been built yet, as
+     * {@link #getItemKnowledge()} then answers null.
+     *
+     * <p>Function playerKnowsBrand coded before 261003, commented in full on 261003.
+     *
+     * @param brand the brand to ask about
+     * @return true if the character recognises this brand
+     */
+    public boolean playerKnowsBrand(Brand brand) {
+        return getItemKnowledge().brandIsKnown(brand);
+    }
+
+    /**
+     * Asks whether this character can read a slay — the port of C's {@code player_knows_slay}, a
+     * bare lookup in {@code p->obj_k->slays}.
+     *
+     * <p>The sibling of {@link #playerKnowsBrand}, and the same in every respect that matters:
+     * learning any slay that kills the same monsters marks them all, so asking about the exact slay
+     * given gives the same answer as asking about its group, and the knowledge object must exist.
+     * {@link PlayerKnowledge#knowsSlay} is the static counterpart.
+     *
+     * <p>Function playerKnowsSlay coded before 261003, commented in full on 261003.
+     *
+     * @param slay the slay to ask about
+     * @return true if the character recognises this slay
+     */
+    public boolean playerKnowsSlay(Slay slay) {
+        return getItemKnowledge().slayIsKnown(slay);
+    }
 }

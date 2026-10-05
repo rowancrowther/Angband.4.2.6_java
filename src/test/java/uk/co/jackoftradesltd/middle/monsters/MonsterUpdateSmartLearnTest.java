@@ -199,7 +199,7 @@ class MonsterUpdateSmartLearnTest {
         for (ItemObject each : List.of(item, counterpart)) {
             poke(each, "flags", new Flag<>(ObjectFlag.class));
             poke(each, "elInfo", new LinkedHashMap<ElementEnum, ElementInfo>());
-            poke(each, "curses", new LinkedHashMap<>());
+            each.clearAndPutCurses(new LinkedHashMap<>());
             poke(each, "effect", new ArrayList<>());
         }
         poke(item, "known", counterpart);

@@ -18,7 +18,9 @@
 package uk.co.jackoftradesltd.middle.objects;
 
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -31,6 +33,7 @@ import uk.co.jackoftradesltd.middle.enums.EffectEnum;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.data.GameConstantsData;
 import uk.co.jackoftradesltd.middle.game.globals.data.WorldData;
+import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.game.globals.registry.WorldRegistry;
 import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
@@ -43,11 +46,18 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@link ObjectUtils#copyCurses}, the port of C's {@code copy_curses} ({@code obj-curse.c:52}).
+ * Tests {@link ObjectUtils#copyCurses}, the port of C's {@code copy_curses} ({@code obj-curse.c}).
+ *
+ * <p>C's source is an array indexed by curse, so a curse only exists if it is in the global table.
+ * The port walks {@link ObjectRegistry#getCurses()} in the same way, which means every curse these
+ * tests merge has to be registered first; {@link #register} does that and the class restores the
+ * registry afterwards. A curse named by {@code source} but not in the registry is dropped, as C
+ * could not hold it at all, and one test pins that.
  *
  * <p>Two things distinguish this merge from {@link ObjectUtils#copySlays} and
  * {@link ObjectUtils#copyBrands}: a curse named by {@code source} always overwrites whatever
@@ -73,6 +83,11 @@ class ObjectUtilsCopyCursesTest {
     private static Object savedWorlds;
 
     /**
+     * The {@code ObjectRegistry.curses} in place before this class started registering fixtures.
+     */
+    private static Object savedCurses;
+
+    /**
      * Seeds just enough of {@code GameConstants} and {@code WorldRegistry} for a {@link Random} to
      * resolve under {@link uk.co.jackoftradesltd.middle.enums.DamageAspect#RANDOMIZE} —
      * {@code copyCurses} always rolls a curse's timeout under that aspect, and {@code randCalc}
@@ -88,6 +103,7 @@ class ObjectUtilsCopyCursesTest {
         savedConstants = setStatic(GameConstants.class, "data", seed);
         savedWorlds = setStatic(WorldRegistry.class, "worlds",
                 List.of(new World(0, "Town", null, null)));
+        savedCurses = setStatic(ObjectRegistry.class, "curses", null);
     }
 
     /**
@@ -98,6 +114,32 @@ class ObjectUtilsCopyCursesTest {
     static void restoreDepthTables() {
         setStatic(GameConstants.class, "data", savedConstants);
         setStatic(WorldRegistry.class, "worlds", savedWorlds);
+        setStatic(ObjectRegistry.class, "curses", savedCurses);
+    }
+
+    /**
+     * Registers the given curses, in the order given, as the loaded curse table.
+     *
+     * <p>{@code copyCurses} only visits registered curses, as C's loop only visits indices below
+     * {@code curse_max}.
+     *
+     * @param curses the curses to register, in index order
+     */
+    private static void register(Curse... curses) {
+        ObjectRegistry.setCurses(new ArrayList<>(List.of(curses)));
+    }
+
+    /**
+     * A curse whose timing dice always resolve to the given, deterministic value — {@code base}
+     * with no dice ({@code sides:1}) and no level scaling, so
+     * {@code getTime().randCalc(anyLevel, anyAspect)} always answers {@code base}.
+     *
+     * @param name the curse's name, for {@link Object#toString()} only
+     * @param base the fixed value its timeout always rolls to
+     * @return the curse
+     */
+    private static Curse curseWithFixedTimeout(String name, int base) {
+        return curseWithFixedTimeout(name, base, 0);
     }
 
     /**
@@ -135,18 +177,27 @@ class ObjectUtilsCopyCursesTest {
     }
 
     /**
-     * A curse whose timing dice always resolve to the given, deterministic value — {@code base}
-     * with no dice ({@code sides:1}) and no level scaling, so
-     * {@code getTime().randCalc(anyLevel, anyAspect)} always answers {@code base}.
+     * As {@link #curseWithFixedTimeout(String, int)}, with the curse's index in the table.
      *
-     * @param name the curse's name, for {@link Object#toString()} only
-     * @param base the fixed value its timeout always rolls to
+     * @param name  the curse's name, for {@link Object#toString()} only
+     * @param base  the fixed value its timeout always rolls to
+     * @param index the curse's index, which is its position in the registry
      * @return the curse
      */
-    private static Curse curseWithFixedTimeout(String name, int base) {
+    private static Curse curseWithFixedTimeout(String name, int base, int index) {
         return new Curse(name, List.of(), 0, effectWithTime(new Random(base, 0, 0, 1, false)),
                 new Flag<>(ObjectFlag.class), Map.of(), Map.of(), 0, 0, 0,
-                List.of(), new Flag<>(ObjectFlag.class), "", "", 0);
+                List.of(), new Flag<>(ObjectFlag.class), "", "", index);
+    }
+
+    /**
+     * Starts each test with an empty curse registry, so a curse one test registered cannot be
+     * visited by the next.
+     */
+    @BeforeEach
+    @AfterEach
+    void emptyRegistry() {
+        ObjectRegistry.setCurses(new ArrayList<>());
     }
 
     /**
@@ -185,6 +236,7 @@ class ObjectUtilsCopyCursesTest {
             ItemObject dest = new ItemObject();
             dest.wipe();
             Curse fresh = curseWithFixedTimeout("fresh curse", 42);
+            register(fresh);
 
             ObjectUtils.copyCurses(dest, Map.of(fresh, new CurseData(5, 999)));
 
@@ -205,6 +257,7 @@ class ObjectUtilsCopyCursesTest {
             ItemObject dest = new ItemObject();
             dest.wipe();
             Curse shared = curseWithFixedTimeout("shared curse", 7);
+            register(shared);
             dest.addCurse(shared, 99, 1);
 
             ObjectUtils.copyCurses(dest, Map.of(shared, new CurseData(3, 0)));
@@ -223,7 +276,8 @@ class ObjectUtilsCopyCursesTest {
             ItemObject dest = new ItemObject();
             dest.wipe();
             Curse untouched = curseWithFixedTimeout("untouched curse", 1);
-            Curse other = curseWithFixedTimeout("other curse", 2);
+            Curse other = curseWithFixedTimeout("other curse", 2, 1);
+            register(untouched, other);
             dest.addCurse(untouched, 7, 123);
 
             ObjectUtils.copyCurses(dest, Map.of(other, new CurseData(4, 0)));
@@ -231,6 +285,99 @@ class ObjectUtilsCopyCursesTest {
             assertEquals(7, dest.getCurses().get(untouched).getPower());
             assertEquals(123, dest.getCurses().get(untouched).getTimeout(),
                     "an untouched curse's timeout must not be re-rolled either");
+        }
+    }
+
+    /**
+     * What the walk over the registry adds: C's power-zero skip, its index order, and the fact that
+     * a curse outside the table cannot be held.
+     */
+    @Nested
+    @DisplayName("walking the registry")
+    class RegistryWalk {
+
+        /**
+         * C starts each pass with {@code if (!source[i]) continue;}, so a source entry at power zero
+         * is "no curse": it writes neither a power nor a timeout, and leaves whatever dest held.
+         */
+        @Test
+        @DisplayName("a power-zero source entry is skipped and dest keeps what it had")
+        void powerZeroIsSkipped() {
+            ItemObject dest = new ItemObject();
+            dest.wipe();
+            Curse held = curseWithFixedTimeout("held curse", 9, 0);
+            Curse absent = curseWithFixedTimeout("absent curse", 9, 1);
+            register(held, absent);
+            dest.addCurse(held, 4, 77);
+
+            ObjectUtils.copyCurses(dest, Map.of(held, new CurseData(0, 0), absent, new CurseData(0, 0)));
+
+            assertEquals(4, dest.getCurses().get(held).getPower(), "zero in source does not overwrite");
+            assertEquals(77, dest.getCurses().get(held).getTimeout(), "and does not re-roll the timeout");
+            assertFalse(dest.getCurses().containsKey(absent), "a zero entry never adds a curse");
+        }
+
+        /**
+         * C's array is walked by index, so new curses land in index order however the source map
+         * happens to be ordered. A {@code Map.of} has no order of its own to rely on.
+         */
+        @Test
+        @DisplayName("new curses are added in registry order")
+        void addedInRegistryOrder() {
+            ItemObject dest = new ItemObject();
+            dest.wipe();
+            Curse first = curseWithFixedTimeout("first", 1, 0);
+            Curse second = curseWithFixedTimeout("second", 2, 1);
+            Curse third = curseWithFixedTimeout("third", 3, 2);
+            register(first, second, third);
+
+            ObjectUtils.copyCurses(dest, Map.of(
+                    third, new CurseData(1, 0),
+                    first, new CurseData(1, 0),
+                    second, new CurseData(1, 0)));
+
+            assertEquals(List.of(first, second, third), new ArrayList<>(dest.getCurses().keySet()));
+        }
+
+        /**
+         * A curse already on dest does not keep a front place: the map orders by curse index, so a
+         * new curse with a lower index lists ahead of it, lowest first, as C's walk of the array
+         * does.
+         */
+        @Test
+        @DisplayName("a curse added with a lower index lists ahead of one dest already holds")
+        void lowerIndexListsFirst() {
+            ItemObject dest = new ItemObject();
+            dest.wipe();
+            Curse lower = curseWithFixedTimeout("lower", 1, 0);
+            Curse higher = curseWithFixedTimeout("higher", 2, 1);
+            register(lower, higher);
+            dest.addCurse(higher, 3, 5);
+
+            ObjectUtils.copyCurses(dest, Map.of(lower, new CurseData(1, 0)));
+
+            assertEquals(List.of(lower, higher), new ArrayList<>(dest.getCurses().keySet()));
+            assertEquals(3, dest.getCurses().get(higher).getPower(), "the untouched curse is unchanged");
+            assertEquals(1, dest.getCurses().get(lower).getPower());
+        }
+
+        /**
+         * A curse the registry does not hold has no index, and C's array could not hold it. The port
+         * drops it, so a caller that builds a curse by hand has to register it first.
+         */
+        @Test
+        @DisplayName("a curse the registry does not hold is dropped")
+        void unregisteredCurseIsDropped() {
+            ItemObject dest = new ItemObject();
+            dest.wipe();
+            Curse registered = curseWithFixedTimeout("registered", 1, 0);
+            Curse stranger = curseWithFixedTimeout("stranger", 2, 1);
+            register(registered);
+
+            ObjectUtils.copyCurses(dest, Map.of(registered, new CurseData(3, 0), stranger, new CurseData(3, 0)));
+
+            assertTrue(dest.getCurses().containsKey(registered));
+            assertFalse(dest.getCurses().containsKey(stranger));
         }
     }
 
@@ -284,6 +431,7 @@ class ObjectUtilsCopyCursesTest {
             ItemObject dest = new ItemObject();
             assertTrue(rawCurses(dest).isEmpty(), "precondition: a fresh ItemObject has no curses yet");
             Curse curse = curseWithFixedTimeout("regression curse", 11);
+            register(curse);
 
             assertDoesNotThrow(() -> ObjectUtils.copyCurses(dest, Map.of(curse, new CurseData(6, 0))));
 

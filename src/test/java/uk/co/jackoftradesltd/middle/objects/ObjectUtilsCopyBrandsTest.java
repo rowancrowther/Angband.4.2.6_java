@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests {@link ObjectUtils#copyBrands}, the port of C's {@code copy_brands}
- * ({@code obj-slays.c:92}).
+ * ({@code obj-slays.c}).
  *
  * <p>Same shape as {@link ObjectUtilsCopySlaysTest}: C ORs a fixed-index {@code bool} table and
  * dedups by clearing the weaker of any pair sharing a name; the port scans {@code destBrands} for a

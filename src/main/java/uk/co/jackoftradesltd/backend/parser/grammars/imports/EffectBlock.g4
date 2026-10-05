@@ -81,13 +81,15 @@ effect
  * time part of the effect. This is a straight dice string with
  * no '$' variable names present.
  */
+/*
 time
         returns[String timeStr]
         : TIME DICE_SIMPLE_VALUE {
                 $timeStr = $DICE_SIMPLE_VALUE.getText();
             }
         ;
-
+ */
+ 
 /*
  * @author Rowan Crowther
  *

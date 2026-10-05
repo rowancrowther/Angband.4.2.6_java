@@ -23,12 +23,16 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
+import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
 import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 import uk.co.jackoftradesltd.testsupport.ItemFixture;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
+import uk.co.jackoftradesltd.middle.objects.KnownObject;
+
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -68,7 +72,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * {@code player_outfit} always attaches a known half before {@code wield_all} runs, an invariant a
  * test exercising the split branch has to respect rather than paper over. Every other case leaves
  * the known half unset, since {@code objectLearnOnWield} tolerates a missing one by logging and
- * returning ({@code PlayerKnowledge.java:1886-1890}).
+ * returning (the first guard in {@code PlayerKnowledge.objectLearnOnWield}).
+ *
+ * <p>The player is given a {@code KnownObject} for the same reason the split case is given a known
+ * half: {@code objectLearnOnWield} reads {@code p->obj_k} on every run that gets past the guard
+ * (its element loop is unconditional), and in the game birth allocates it before the starting kit
+ * is worn.
  *
  * <p>{@link #splitsAStackAndKeepsTheRemainderInGear} also stands as the regression test for a bug
  * found while writing this suite and fixed separately: {@code Pile.insertEnd(Pile)} used to insert
@@ -98,6 +107,14 @@ class PlayerBirthWieldAllTest {
      * The character under test, fresh for each case.
      */
     private Player player;
+
+    /**
+     * The object-property list and its count as they stood before the test, restored afterwards.
+     * {@code objectLearnOnWield} builds its wield mask from the list, so the list has to exist; an
+     * empty one gives an empty mask, which is all these cases need.
+     */
+    private Object savedProperties;
+    private Object savedPropertyMax;
 
     /**
      * Finds a slot's position in a body by its type, so a test does not depend on
@@ -184,13 +201,27 @@ class PlayerBirthWieldAllTest {
     }
 
     /**
+     * Reaches one of {@link ObjectRegistry}'s private static fields, which are null until a loader
+     * runs and so cannot be read back through the accessors to be restored.
+     */
+    private static Field registryField(String name) throws NoSuchFieldException {
+        Field f = ObjectRegistry.class.getDeclaredField(name);
+        f.setAccessible(true);
+        return f;
+    }
+
+    /**
      * Saves the live player and builds a fresh one with the humanoid body, installing it as current
      * before any item in the test is constructed.
      */
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         savedPlayer = GameState.getPlayer();
         player = new Player();
+        player.setItemKnowledge(new KnownObject());
+        savedProperties = registryField("objectProperties").get(null);
+        savedPropertyMax = registryField("objectPropertyMax").get(null);
+        ObjectRegistry.setObjectProperties(List.of());
         player.setBody(SeededPlayerRegistry.humanoidBody());
         GameState.setPlayer(player);
     }
@@ -199,8 +230,10 @@ class PlayerBirthWieldAllTest {
      * Restores the player that was live before this test.
      */
     @AfterEach
-    void tearDown() {
+    void tearDown() throws Exception {
         GameState.setPlayer(savedPlayer);
+        registryField("objectProperties").set(null, savedProperties);
+        registryField("objectPropertyMax").set(null, savedPropertyMax);
     }
 
     /**

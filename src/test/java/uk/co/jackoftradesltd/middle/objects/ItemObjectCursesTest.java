@@ -226,21 +226,60 @@ class ItemObjectCursesTest {
         }
 
         /**
-         * Setting the power of a curse the object does not carry does nothing at all — it does not
-         * throw, and it does not invent the curse. Inventing it would be the worse of the two: the
-         * object would come away cursed with something it was never given, and by a call whose name
-         * suggests it only adjusts.
+         * Setting the power of a curse the object does not carry switches it on. C's bare
+         * {@code obj->curses[i].power = x} writes into the slot whether or not the curse was active,
+         * and {@code append_object_curse} relies on that to add a curse. The new entry's timeout is
+         * 0, matching the zero-filled slot, and the curse already there is untouched.
          */
         @Test
-        @DisplayName("setCursePower ignores a curse the object does not have")
-        void setPowerIgnoresAbsentCurse() {
-            item.addCurse(siren, 3, 0);
+        @DisplayName("setCursePower adds a curse the object does not have")
+        void setPowerAddsAbsentCurse() {
+            item.addCurse(siren, 3, 7);
 
             item.setCursePower(teleport, 5);
 
             assertAll(
+                    () -> assertEquals(2, item.getCurses().size()),
+                    () -> assertEquals(5, item.getCurses().get(teleport).getPower()),
+                    () -> assertEquals(0, item.getCurses().get(teleport).getTimeout()),
+                    () -> assertEquals(3, item.getCurses().get(siren).getPower()),
+                    () -> assertEquals(7, item.getCurses().get(siren).getTimeout()));
+        }
+
+        /**
+         * Setting a power of zero, or below, on a curse the object does not carry leaves it absent.
+         * In C the slot is already zero, so writing zero changes nothing, and a curse is active only
+         * while its power is non-zero. The map holds an entry only for an active curse, so adding a
+         * zero-power one would make the object look cursed with something it was never given, and
+         * would stop it stacking with an object that simply lacks the curse. The curse already
+         * there is untouched.
+         */
+        @Test
+        @DisplayName("setCursePower with power zero or below does not add an absent curse")
+        void setPowerZeroDoesNotAddAbsentCurse() {
+            item.addCurse(siren, 3, 7);
+
+            item.setCursePower(teleport, 0);
+            item.setCursePower(teleport, -4);
+
+            assertAll(
                     () -> assertEquals(1, item.getCurses().size()),
-                    () -> assertFalse(item.getCurses().containsKey(teleport)));
+                    () -> assertFalse(item.getCurses().containsKey(teleport)),
+                    () -> assertEquals(3, item.getCurses().get(siren).getPower()),
+                    () -> assertEquals(7, item.getCurses().get(siren).getTimeout()));
+        }
+
+        /**
+         * A negative power on a curse the object does carry takes it off, the same as zero does.
+         */
+        @Test
+        @DisplayName("setCursePower with a negative power removes a curse the object has")
+        void setPowerNegativeRemoves() {
+            item.addCurse(siren, 3, 7);
+
+            item.setCursePower(siren, -1);
+
+            assertTrue(item.getCurses().isEmpty());
         }
 
         /**

@@ -29,6 +29,7 @@ import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftradesltd.middle.magic.MagicBook;
 import uk.co.jackoftradesltd.middle.magic.MagicRealm;
 import uk.co.jackoftradesltd.middle.magic.MagicSpell;
+import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.ElementInfo;
 import uk.co.jackoftradesltd.middle.objects.ObjectBase;
 import uk.co.jackoftradesltd.middle.objects.ObjectKind;
@@ -209,15 +210,15 @@ public class ClassSpellBookAssembler implements Assembler<ClassSpellBookParseRec
             Flag<IgnoreFlag> ignoreFlags = new Flag<>(IgnoreFlag.class);
             
             ObjectKind kind = new ObjectKind(bookName, bookName,
-                    base, 0, null, null, null,
-                    null, 0, null, 1, 1,
+                    base, 0, Random.Zero(), Random.Zero(), Random.Zero(),
+                    Random.Zero(), 0, Random.Zero(), 1, 1,
                     30, cost, new Flag<>(ObjectFlag.class),
                     oFlags, new HashMap<>(), eFlags, new HashSet<>(),
                     new HashSet<>(), new HashMap<>(), adc,
                     commonness, min, max, 0, new ArrayList<>(), new ArrayList<>(),
-                    "", "", "", null, 0,
-                    null, null, null, null,
-                    false, false, ignoreFlags, false, tValue);
+                    "", "", "", Random.Zero(), 0,
+                    Random.Zero(), null, null, null,
+                    false, false, ignoreFlags, false, tValue, 0);
 
             ObjectRegistry.addObjectKind(kind);
         }

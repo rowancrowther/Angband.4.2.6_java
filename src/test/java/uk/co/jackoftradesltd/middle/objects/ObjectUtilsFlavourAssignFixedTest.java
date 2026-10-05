@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * Tests {@link ObjectUtils#flavourAssignFixed}, the port of C's {@code flavor_assign_fixed}
- * ({@code obj-util.c:58}).
+ * ({@code obj-util.c}).
  *
  * <p>C walks the flat {@code flavors} list, skips any flavour whose {@code sval} is still
  * {@code SV_UNKNOWN}, and for the rest scans every {@code k_info} entry, binding the flavour onto

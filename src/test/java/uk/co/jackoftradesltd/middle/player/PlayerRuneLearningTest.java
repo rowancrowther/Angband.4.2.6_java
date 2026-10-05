@@ -154,16 +154,16 @@ class PlayerRuneLearningTest {
         // not. The signs are opposite on purpose: the rune names the enchantment, not its direction,
         // so a curse that makes armour worse teaches it exactly as one that makes it better does.
         vulnerability = new Curse("vulnerability", List.of(), 0, null, objectFlags(), Map.of(), Map.of(),
-                0, 0, -50, List.of(), objectFlags(), "weakens armour", "The curse fires.", 0);
+                0, 0, -50, List.of(), objectFlags(), "weakens armour", "The curse fires.", 1);
         enveloping = new Curse("enveloping", List.of(), 0, null, objectFlags(), Map.of(), Map.of(),
-                -5, -5, 20, List.of(), objectFlags(), "restricts movement", "The curse fires.", 0);
+                -5, -5, 20, List.of(), objectFlags(), "restricts movement", "The curse fires.", 2);
 
         // A curse carrying object flags rather than combat figures, for the flag half of the
         // family. Two flags, so a test can name one of them and watch the intersection discard the
         // other.
         cowardice = new Curse("cowardice", List.of(), 0, null,
                 objectFlags(ObjectFlag.OF_AFRAID, ObjectFlag.OF_IMPAIR_HP), Map.of(), Map.of(),
-                0, 0, 0, List.of(), objectFlags(), "unnerves the wearer", "The curse fires.", 0);
+                0, 0, 0, List.of(), objectFlags(), "unnerves the wearer", "The curse fires.", 3);
 
         strengthProperty = new ObjectProperty(null, null, null, null, 0, 0, null,
                 "strength", null, null, null, null, null);
@@ -264,8 +264,8 @@ class PlayerRuneLearningTest {
     }
 
     /**
-     * An item carrying the given curses and nothing else. Order is preserved so a test about two
-     * curses can say which was met first.
+     * An item carrying the given curses and nothing else. The item walks them in curse index order,
+     * which the fixture sets to the registry order: siren, vulnerability, enveloping, cowardice.
      *
      * @param entries the curses, as {@link #cursed} pairs
      */
@@ -276,7 +276,7 @@ class PlayerRuneLearningTest {
         for (Map.Entry<Curse, CurseData> entry : entries) {
             curses.put(entry.getKey(), entry.getValue());
         }
-        poke(item, "curses", curses);
+        item.clearAndPutCurses(curses);
         return item;
     }
 
@@ -324,7 +324,7 @@ class PlayerRuneLearningTest {
      */
     private static ItemObject giveKnownCounterpart(ItemObject item) throws Exception {
         ItemObject known = new ItemObject();
-        poke(known, "curses", new LinkedHashMap<Curse, CurseData>());
+        known.clearAndPutCurses(new LinkedHashMap<Curse, CurseData>());
         poke(known, "flags", new Flag<>(ObjectFlag.class));
         poke(known, "toAC", 99);
         poke(item, "known", known);
@@ -2184,8 +2184,9 @@ class PlayerRuneLearningTest {
 
         /**
          * C's {@code player_learn_flag} is the one wrapper with no already-known guard, relying on
-         * {@code of_on} to report whether anything changed. The guard this port adds must not
-         * change that answer — a flag learned twice is still announced once, either way.
+         * {@code of_on} to report whether anything changed, and so does the port. A flag learned
+         * twice is announced once. The second call still runs the trailing update, which
+         * {@code PlayerKnowledgeLearnFlagTest} covers.
          */
         @Test
         @DisplayName("learnFlag does nothing the second time")

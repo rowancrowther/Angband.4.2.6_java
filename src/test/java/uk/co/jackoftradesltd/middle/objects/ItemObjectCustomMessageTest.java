@@ -51,8 +51,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p>The tags divide on two inputs - whether there is an object at all, and whether it is a single
  * item or a pile - so {@link Tags} walks both for each of the four. {@link Malformed} covers what
- * the loop does with braces the data files should never contain, which is where the port's two
- * deliberate divergences from C show up, both pinned in {@link Divergences}.
+ * the loop does with braces the data files should never contain. {@link Prefixes} pins that a
+ * tag is matched on its opening letters as C does, and the one deliberate divergence from C, the
+ * length cap, is pinned in {@link Divergences}.
  *
  * <p>{@code {name}} substitutes {@link ItemObject#description}, which is still a stub, so the
  * tests that reach it assert against whatever that method returns rather than against a literal.
@@ -461,32 +462,95 @@ class ItemObjectCustomMessageTest {
     }
 
     /**
-     * The two places this deliberately does not match the C. Neither is reachable from the shipped
-     * data files, and both are pinned here so a later change to either has to be a decision.
+     * Tag lookup by opening letters. C's {@code msg_tag_lookup} compares with {@code strncmp}, so a
+     * tag only has to <em>begin</em> with {@code name}, {@code kind}, {@code s} or {@code is}. The
+     * port matches the same way, and the cases here are the ones where a longer tag is hit by
+     * accident.
+     */
+    @Nested
+    @DisplayName("tags match on their opening letters, as in C")
+    class Prefixes {
+
+        /**
+         * {@code {names}} begins with {@code name}, so C reads it as {@code {name}} and prints the
+         * object's description.
+         */
+        @Test
+        @DisplayName("a tag with a valid prefix is the tag")
+        void prefixIsAMatch() {
+            ItemObject item = item(1);
+
+            assertEquals("Your " + descriptionOf(item) + " glows.",
+                    print(item, "Your {names} glows.", false));
+        }
+
+        /**
+         * The same for the one-letter verb tag, where the prefix is easiest to hit by accident:
+         * {@code {so}} begins with {@code s}, so a single item gets the verb ending.
+         */
+        @Test
+        @DisplayName("a longer tag beginning with s is the verb ending")
+        void verbPrefixIsAMatch() {
+            assertEquals("It glows brightly.", print(item(1), "It glow{so} brightly.", false));
+        }
+
+        /**
+         * {@code {size}} also begins with {@code s}. The text after it must resume past its closing
+         * brace, not after a fixed four characters, so nothing of the tag is left behind.
+         */
+        @Test
+        @DisplayName("a long tag beginning with s leaves none of itself behind")
+        void longVerbPrefixLeavesNothing() {
+            assertEquals("It glows.", print(item(1), "It glow{size}.", false));
+        }
+
+        /**
+         * {@code {isn}} begins with {@code is}, and does not begin with {@code s}, so it is the
+         * {@code is} tag rather than the verb ending.
+         */
+        @Test
+        @DisplayName("a tag beginning with is is the is tag")
+        void isPrefixIsAMatch() {
+            assertEquals("It is hot.", print(item(1), "It {isn} hot.", false));
+        }
+
+        /**
+         * The same tag for a pile, where it reads as {@code are}.
+         */
+        @Test
+        @DisplayName("a tag beginning with is reads as are for a pile")
+        void isPrefixIsAMatchForPile() {
+            assertEquals("They are hot.", print(item(2), "They {isn} hot.", false));
+        }
+
+        /**
+         * {@code {kindly}} begins with {@code kind}; the whole tag goes, and the kind name is put
+         * in its place.
+         */
+        @Test
+        @DisplayName("a tag beginning with kind is the kind tag")
+        void kindPrefixIsAMatch() {
+            assertEquals("A hands.", print(item(1), "A {kindly}.", true));
+        }
+
+        /**
+         * A tag that stops short of a name matches nothing: {@code nam} is not {@code name}, and
+         * does not begin with {@code s}, so it is dropped like any unknown tag.
+         */
+        @Test
+        @DisplayName("a tag that is only the start of a name is dropped")
+        void shortPrefixIsNotAMatch() {
+            assertEquals("It is  hot.", print(item(1), "It is {nam} hot.", false));
+        }
+    }
+
+    /**
+     * The one place this deliberately does not match the C. It is not reachable from the shipped
+     * data files, and it is pinned here so a later change has to be a decision.
      */
     @Nested
     @DisplayName("divergences from the C")
     class Divergences {
-
-        /**
-         * Tag lookup matches the whole tag, where C's {@code msg_tag_lookup} uses {@code strncmp}
-         * on its opening letters alone. C would read this as {@code {name}} and print the object's
-         * description; here it is an unknown tag and is dropped.
-         */
-        @Test
-        @DisplayName("a tag with a valid prefix is not the tag, where C says it is")
-        void prefixIsNotAMatch() {
-            assertEquals("Your  glows.", print(item(1), "Your {names} glows.", false));
-        }
-
-        /**
-         * The same for the one-letter verb tag, where the prefix is easiest to hit by accident.
-         */
-        @Test
-        @DisplayName("a longer tag beginning with s is not the verb ending")
-        void verbPrefixIsNotAMatch() {
-            assertEquals("It glow brightly.", print(item(1), "It glow{so} brightly.", false));
-        }
 
         /**
          * C builds the message in a {@code char buf[1024]} and truncates silently at it, so at

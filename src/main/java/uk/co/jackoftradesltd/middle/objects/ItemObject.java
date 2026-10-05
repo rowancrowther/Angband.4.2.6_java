@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
+import org.antlr.v4.runtime.tree.Tree;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
@@ -83,6 +84,10 @@ import static uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum.ORIGIN
  * timeout. The quality table they read for ignoring lives in {@code ObjectInfo}, and the marks
  * a player has put on an ego live on the {@link EgoItem}, not here.
  *
+ * <p>{@link #modMessage} is the message half of learning a modifier by use: it prints the line
+ * for a modifier the player has just noticed, from the sign of this item's value, and changes
+ * nothing. The learning itself is done by the knowledge code that calls it.
+ *
  * <p>The text and placement side turns an item into words and says where it goes.
  * {@link #description} is still a stub, {@link #printCustomMessage} fills the tags of a data-file
  * message from the item, and {@link #objectKindName} and {@link #objDescNameFormat} build a kind's
@@ -94,14 +99,17 @@ import static uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum.ORIGIN
  * item, one blank and one from every parsed field, and each field then has a getter, a setter or
  * both. C reads and assigns these struct members inline wherever it likes, so the port gathers
  * each access into one named method. {@link #getFlags()} and {@link #getNotice()} hand out copies
- * and take changes through named mutators ({@link #getObjectFlags()} is the live exception). The modifier, element, brand, slay and curse collections are edited
+ * and take changes through named mutators ({@link #getObjectFlags()} is the live exception);
+ * {@link #getNoticeHas} tests one notice flag without a copy. The modifier, element, brand, slay and curse collections are edited
  * through add, put, remove and clear methods, because their getters answer an immutable empty
  * collection for a field that was never built. A setter that takes a whole collection stores it
  * as given, except {@link #setCurses} and {@link #clearAndPutCurses}, which copy the map they are
  * handed.
  *
  * <p>Class ItemObject commented in full on 261002, knowledge and recharge note added on 261002,
- * text and placement note added on 261002, constructor and accessor note added on 261002.
+ * text and placement note added on 261002, constructor and accessor note added on 261002, notice
+ * mutator note added on 261003, notice test note added on 261003, modifier message note added
+ * on 261004.
  *
  * @author Rowan Crowther
  * @see KnownObject
@@ -122,6 +130,24 @@ public class ItemObject {
      * <p>Field logger commented in full on 261002, flag message note added on 261002.
      */
     private static final Logger logger = LogManager.getLogger();
+
+    /**
+     * The order an item's {@link #curses} map keeps its entries in: ascending curse index, with the
+     * name as a tie-break. It stands in for the order of C's {@code obj->curses[i]} array, which is
+     * walked from slot 0 up because the array is indexed by curse.
+     *
+     * <p>Every map built by {@link #cursesFactory()} uses it, so {@link #getCurses()} iterates in
+     * C's order whatever order the curses were added in. The name only matters for two curses that
+     * share an index, which a loaded registry never has; the test curses built by hand all carry
+     * index zero, so for them the name decides.
+     *
+     * <p>Package-private so {@link ObjectUtils#copyCurses} can build its merged map with the same
+     * ordering.
+     *
+     * <p>Field CURSE_ORDER commented in full on 261003.
+     */
+    static final Comparator<Curse> CURSE_ORDER = Comparator.comparing(Curse::getIndex)
+            .thenComparing(Curse::getName);
 
     /**
      * The player this object's calculations are asked about - the equipment slots it would be worn
@@ -243,14 +269,14 @@ public class ItemObject {
      * half that route is skipped.
      *
      * <p>{@link #isKnown} reports whether it is present. {@link #flagsKnown} intersects this item's
-     * flags with its flags, and {@link #ignoreLevelOf} reads the jewellery modifiers, the combat
+     * flags with the known half's flags, and {@link #ignoreLevelOf} reads the jewellery modifiers, the combat
      * bonuses and the notice flags from it, so that a figure the player has not learned cannot sway
      * an ignore decision.
      *
      * <p>{@link #wipe} sets it to {@code null} without touching the counterpart itself.
      *
      * <p>Field known commented in full on 261002, pricing added on 261002, knowledge reads added on
-     * 261002, wipe reset added on 261002.
+     * 261002, wipe reset added on 261002, {@code flagsKnown} description corrected on 261003.
      */
     private ItemObject known;
 
@@ -523,9 +549,13 @@ public class ItemObject {
      * {@link #damageDicePower()} treats any of the three above zero as a reason to credit a
      * non-weapon with a flat assumed damage.
      *
+     * <p>{@link #modMessage(ObjectModifier)} reads the sign of one entry through
+     * {@link #getModifierValue(ObjectModifier)}, so a {@code null} map or an absent entry reads as
+     * zero and prints nothing, where C's array would hold a zero.
+     *
      * <p>Comment corrected on 260816, when the field's type changed from the unparsed dice text it
      * had previously held. Field modifiers commented in full on 261002, power added on 261002,
-     * damage steps added on 261002.
+     * damage steps added on 261002, message note added on 261004.
      *
      * <p>{@link #wipe} replaces the map with a fresh empty {@link LinkedHashMap}, the type the
      * constructors build, so the order it is walked in is the order entries were put in.
@@ -537,8 +567,9 @@ public class ItemObject {
      * item has something to say about. C's {@code obj->el_info}.
      *
      * <p>A map holding only the elements recorded, where C keeps an entry for every element.
-     * {@link #checkElementStacking} compares two of these for {@link #similar}, and is stricter than
-     * C when an element is recorded on one item and absent from the other.
+     * {@link #checkElementStacking} compares two of these for {@link #similar}, reading an element
+     * that is absent from one item's map as C reads an untouched array slot: resistance level 0
+     * with no flags.
      *
      * <p>{@link #applyCurseAttributes} merges the active curses' resistance levels into it, creating
      * an entry for an element the item did not mention but a curse does, and temporarily holds the
@@ -634,15 +665,13 @@ public class ItemObject {
      * rod's timeout a moved stack can hold.
      *
      * <p>{@link #numberCharging} evaluates it at its average to find how long one item takes to
-     * recharge, and {@link #getTime} hands it out. It is {@code null} on an item with no recharge
-     * interval, which {@link #numberCharging} reads as nothing charging, as C reads its zeroed
-     * {@code random_value}.
-     *
-     * <p>{@link #wipe} sets it to {@code null}, where C's zeroed {@code random_value} is four zeros;
-     * {@link #numberCharging} reads both as nothing charging.
+     * recharge, and {@link #getTime} hands out a copy of it. It is never {@code null}: an item with
+     * no recharge interval holds a zero {@link Random}, as C holds a zeroed {@code random_value},
+     * which {@link #numberCharging} reads as nothing charging. The constructors, {@link #wipe} and
+     * {@link #setTime} all land on {@link Random#Zero()} rather than {@code null}.
      *
      * <p>Field time commented in full on 261002, recharge reads added on 261002, wipe reset added
-     * on 261002.
+     * on 261002, rewritten for the never-null field on 261003.
      */
     private Random time;
     /**
@@ -695,8 +724,12 @@ public class ItemObject {
      *
      * <p>{@link #wipe} replaces the set with a fresh empty one.
      *
+     * <p>Changes go through {@link #orNotice} and {@link #setNoticeOn} to raise a flag and
+     * {@link #setNoticeOff} to lower one; {@link #getNotice()} only hands out a copy. A single flag
+     * is tested with {@link #getNoticeHas}, which reads this set directly.
+     *
      * <p>Field notice commented in full on 261002, ignore read added on 261002, wipe reset added on
-     * 261002.
+     * 261002, mutators note added on 261003, single-flag read added on 261003.
      */
     private Flag<ObjectNotice> notice;
 
@@ -748,30 +781,88 @@ public class ItemObject {
      * <p>A map holding only the curses the object actually carries, where C keeps an array with a
      * slot for every curse in the game and reads a power of zero as "not cursed with this".
      * Absence is the port's way of saying the same thing, but an entry at power zero can still be
-     * stored (by {@code setCursePower}, for one), so code comparing curses reads a zero-power entry
-     * and an absent one as equal, as {@link #cursesAreEqual} does.
+     * stored: {@link #addCurse(Curse, int, int)} and {@link #addCurse(Curse, CurseData)} keep
+     * whatever they are handed, where {@link #setCursePower} never stores one and
+     * {@link ObjectUtils#copyCurses} skips a zero-power source entry. An empty map stands for C's
+     * null array, and a map of only zero-power entries for C's allocated all-zero array, so {@link #cursesAreEqual} reads
+     * a zero-power entry and an absent one as equal only when both items carry a non-empty map;
+     * against an empty map, any entry at all is a difference.
      *
-     * <p>The no-argument constructor and {@link #wipe} build an empty map. A {@code null} can only
-     * arrive through the full constructor, which stores the map it is given, and the accessors
-     * absorb it rather than pass it on — {@link #getCurses()} reports an empty map and the editing
-     * mutators create the map on demand. {@link #setCurses} and {@link #clearAndPutCurses} replace
-     * the field with a copy of the map they are handed.
+     * <p>Both constructors and {@link #wipe} build a fresh map; the full constructor copies the
+     * entries of the map it is given into it and reads a {@code null} argument as empty. Nothing
+     * assigns {@code null} except {@code copy}, from a source that is itself {@code null}, so
+     * the field is not {@code null} in practice. The accessors still absorb a {@code null} rather
+     * than pass it on — {@link #getCurses()} reports an empty map and the editing mutators create
+     * the map on demand — and that guard is what C's {@code NULL} array would have needed.
+     * {@link #setCurses} and {@link #clearAndPutCurses} replace the field with a copy of the map
+     * they are handed.
      *
-     * <p>Insertion order is the order the curses were added, not their registry order, so code that
-     * must follow C's index order sorts first, as {@link #objectWeightOne()} and
-     * {@link #applyCurseAttributes} do. {@link #cursePower(int, boolean, String)} reads each entry's
+     * <p>The map is a {@link TreeMap} ordered by {@link #CURSE_ORDER}, so it walks in ascending curse
+     * index, as C's loop over {@code obj->curses[i]} does, regardless of the order the curses were
+     * added in. Every path that builds a map for it goes through {@link #cursesFactory()}, which
+     * is what keeps that true; the one exception is a copy of an item whose map was never built,
+     * which stays {@code null} like its source. A copy rebuilds each {@link CurseData} as well, so
+     * the copy's timeouts tick independently of the original's, as C's {@code object_copy}, which
+     * duplicates the whole array ({@code obj-pile.c}), leaves them. The {@link Curse} keys are
+     * shared, being the registry's definitions. {@link #cursePower(int, boolean, String)} reads each entry's
      * power to decide whether a curse is active and how much to discount it, and
      * {@link #freeCurses()} replaces the map on a scratch copy once the curses have been merged in.
      *
+     * <p>{@link #getCurses()} is the only way to read the field from outside, and it answers an
+     * unmodifiable view of it.
+     *
      * <p>Field curses retyped from {@code Map<Curse.CurseEntry, Boolean>} on 260817, commented in
      * full on 260817, comment corrected on 261002, power added on 261002, constructor and setter
-     * note added on 261002.
+     * note added on 261002, comparison note corrected on 261002, power-zero note corrected on 261003,
+     * ordering note rewritten for the {@link TreeMap} on 261003, copy note added on 261003.
      *
-     * <p>{@link #wipe} and {@link #initCurses} each replace the map with a fresh empty
-     * {@link LinkedHashMap}, discarding every curse the item carried. Wipe reset and initialiser
+     * <p>{@link #wipe} and {@link #initCurses} each replace the map with a fresh empty one from
+     * {@link #cursesFactory()}, discarding every curse the item carried. Wipe reset and initialiser
      * added on 261002.
      */
-    private LinkedHashMap<Curse, CurseData> curses;
+    private TreeMap<Curse, CurseData> curses;
+
+    /**
+     * Builds a blank item, the port of C's {@code object_new}, which is {@code mem_zalloc} of one
+     * {@code struct object} and so leaves every member at zero.
+     *
+     * <p>Where C's zero is a value, the port lands on it: {@link #origin} is {@code ORIGIN_NONE},
+     * {@link #tValue} is {@link TValue#TV_NONE} (C's tval 0), and the numeric fields are zero.
+     * Where C's zero is a collection, the port builds an empty one rather than leaving {@code null}:
+     * {@link #flags} and {@link #notice} are empty sets, {@link #modifiers}, {@link #elInfo} and
+     * {@link #curses} are empty {@link LinkedHashMap}s, {@link #brands} and {@link #slays} are
+     * empty sets, and {@link #effect} is an empty list. The maps are insertion-ordered so the order
+     * they are walked in does not depend on how their enum keys hash.
+     *
+     * <p>The rest stay {@code null}: {@link #kind}, {@link #ego}, {@link #artifact}, {@link #known},
+     * {@link #location}, {@link #baseDamage}, {@link #effectMessage}, {@link #activation},
+     * {@link #time}, {@link #originRace} and {@link #note}. Unlike an item that {@link #wipe} has
+     * blanked, this one has no activation list. {@link #location} being {@code null} stands for C's
+     * grid of (0, 0), and {@link #time} for its four zero dice.
+     *
+     * <p>{@link #player} is set from {@link GameState#getPlayer()}, so an item built before a
+     * character exists holds {@code null} there. {@code PlayerBirth} builds the known counterpart
+     * of a starting item this way and fills it in afterwards, and {@link #copy} builds its result
+     * the same way, as C does with the {@code object_new} it makes for {@code obj->known}.
+     *
+     * <p>Constructor ItemObject() coded before 260904, commented in full on 261002, TV_NONE default
+     * added on 261002.
+     */
+    public ItemObject() {
+        player = GameState.getPlayer();
+        origin = ObjectOriginEnum.ORIGIN_NONE;
+        owningPile = null;
+        notice = new Flag<>(ObjectNotice.class);
+        flags = new Flag<>(ObjectFlag.class);
+        modifiers = new LinkedHashMap<>();
+        curses = cursesFactory();
+        elInfo = new LinkedHashMap<>();
+        brands = new HashSet<>();
+        slays = new HashSet<>();
+        effect = new ArrayList<>();
+        tValue = TValue.TV_NONE;
+        time = Random.Zero();
+    }
 
     /**
      * The player's inscription on the item, or {@code null} if it has none. C's {@code obj->note},
@@ -820,47 +911,6 @@ public class ItemObject {
     private Pile owningPile;
 
     /**
-     * Builds a blank item, the port of C's {@code object_new}, which is {@code mem_zalloc} of one
-     * {@code struct object} and so leaves every member at zero.
-     *
-     * <p>Where C's zero is a value, the port lands on it: {@link #origin} is {@code ORIGIN_NONE},
-     * {@link #tValue} is {@link TValue#TV_NONE} (C's tval 0), and the numeric fields are zero.
-     * Where C's zero is a collection, the port builds an empty one rather than leaving {@code null}:
-     * {@link #flags} and {@link #notice} are empty sets, {@link #modifiers}, {@link #elInfo} and
-     * {@link #curses} are empty {@link LinkedHashMap}s, {@link #brands} and {@link #slays} are
-     * empty sets, and {@link #effect} is an empty list. The maps are insertion-ordered so the order
-     * they are walked in does not depend on how their enum keys hash.
-     *
-     * <p>The rest stay {@code null}: {@link #kind}, {@link #ego}, {@link #artifact}, {@link #known},
-     * {@link #location}, {@link #baseDamage}, {@link #effectMessage}, {@link #activation},
-     * {@link #time}, {@link #originRace} and {@link #note}. Unlike an item that {@link #wipe} has
-     * blanked, this one has no activation list. {@link #location} being {@code null} stands for C's
-     * grid of (0, 0), and {@link #time} for its four zero dice.
-     *
-     * <p>{@link #player} is set from {@link GameState#getPlayer()}, so an item built before a
-     * character exists holds {@code null} there. {@code PlayerBirth} builds the known counterpart
-     * of a starting item this way and fills it in afterwards, and {@link #copy} builds its result
-     * the same way, as C does with the {@code object_new} it makes for {@code obj->known}.
-     *
-     * <p>Constructor ItemObject() coded before 260904, commented in full on 261002, TV_NONE default
-     * added on 261002.
-     */
-    public ItemObject() {
-        player = GameState.getPlayer();
-        origin = ObjectOriginEnum.ORIGIN_NONE;
-        owningPile = null;
-        notice = new Flag<>(ObjectNotice.class);
-        flags = new Flag<>(ObjectFlag.class);
-        modifiers = new LinkedHashMap<>();
-        curses = new LinkedHashMap<>();
-        elInfo = new LinkedHashMap<>();
-        brands = new HashSet<>();
-        slays = new HashSet<>();
-        effect = new ArrayList<>();
-        tValue = TValue.TV_NONE;
-    }
-
-    /**
      * Builds an item with every field supplied, assigning each argument to the member of the same
      * name. C has no equivalent: it makes a blank object with {@code object_new} and then fills
      * members in one at a time. No production code calls this form yet; the tests use it to build
@@ -878,8 +928,8 @@ public class ItemObject {
      * anything else goes through {@link Integer#parseInt}, so a {@code null} or a non-number throws.
      * {@code baseDamage} and {@code time} go through {@link Random#parseStr}, which answers
      * {@code null} for the empty string and rejects a {@code null} argument. A {@code time} of
-     * {@code ""} therefore leaves {@link #time} {@code null}, which {@link #numberCharging} reads as
-     * nothing charging.
+     * {@code ""} therefore stores a zero {@link Random} in {@link #time}, which
+     * {@link #numberCharging} reads as nothing charging.
      *
      * <p>{@link #player} is taken from {@link GameState#getPlayer()} at the end, and
      * {@link #owningPile} starts {@code null}: a new item belongs to no pile.
@@ -933,7 +983,7 @@ public class ItemObject {
                       Map<ObjectModifier, Integer> modifiers,
                       Map<ElementEnum, ElementInfo> elInfo,
                       Set<Brand> brands, Set<Slay> slays,
-                      LinkedHashMap<Curse, CurseData> curses,
+                      Map<Curse, CurseData> curses,
                       List<Effect> effect, String effectMessage,
                       List<Activation> activation, String time,
                       int timeout, int number,
@@ -965,11 +1015,14 @@ public class ItemObject {
         this.elInfo = elInfo;
         this.brands = brands;
         this.slays = slays;
-        this.curses = curses;
+        this.curses = cursesFactory();
+        if (curses != null) this.curses.putAll(curses);
         this.effect = effect;
         this.effectMessage = effectMessage;
         this.activation = activation;
         this.time = Random.parseStr(time);
+        if (this.time == null)
+            this.time = Random.Zero();
         this.timeout = timeout;
         this.number = number;
         this.notice = notice;
@@ -981,6 +1034,24 @@ public class ItemObject {
         this.note = note;
         player = GameState.getPlayer();
         owningPile = null;
+    }
+
+    /**
+     * Builds the empty map every curse field starts from and is replaced with, ordered by
+     * {@link #CURSE_ORDER}.
+     *
+     * <p>The single place the field's ordering is decided, so a path that assigned a plain
+     * {@link java.util.HashMap} or {@link LinkedHashMap} to {@link #curses} would change what
+     * {@link #getCurses()} walks in. The field's type is {@link TreeMap}, so the compiler turns
+     * that into an error rather than a quiet change of order.
+     *
+     * <p>Function cursesFactory commented in full on 261003.
+     *
+     * @return a new, empty curse map in C's index order
+     */
+    private TreeMap<Curse, CurseData> cursesFactory() {
+        TreeMap<Curse, CurseData> result = new TreeMap<>(CURSE_ORDER);
+        return result;
     }
 
     /**
@@ -1224,8 +1295,9 @@ public class ItemObject {
      *       of a fixed array. The loop over every modifier therefore treats an absent entry as zero
      *       - one side absent and the other zero stacks - and compares by value when both are
      *       present.</li>
-     *   <li><b>Element info</b> is checked by {@link #checkElementStacking}, which is stricter than
-     *       C in the corner its comment describes.</li>
+     *   <li><b>Element info</b> is held in a map that may omit an element, where C compares every
+     *       slot of a fixed array. {@link #checkElementStacking} reads an absent entry as resistance
+     *       level 0 with no flags, so one side absent and the other at that default stacks.</li>
      *   <li><b>Curses</b> are checked by {@link #cursesAreEqual}.</li>
      *   <li>The explicit {@code tValue} equality test has no C counterpart; the kind test already
      *       implies it.</li>
@@ -1235,7 +1307,8 @@ public class ItemObject {
      * in {@code OSTACK_LIST} mode if either item has no known counterpart. The modifier loop also
      * assumes both modifier maps exist.
      *
-     * <p>Function similar coded before 260822, commented in full on 261002.
+     * <p>Function similar coded before 260822, commented in full on 261002, element note
+     * rewritten on 261003.
      *
      * @param itm2 the other object to compare against
      * @param mode the {@link ObjectStackEnum} flags selecting which stacking rules apply
@@ -1268,7 +1341,6 @@ public class ItemObject {
 
         // Different elements don't stack
         if (!checkElementStacking(this, itm2)) return false;
-        if (!checkElementStacking(itm2, this)) return false;
 
         if (this.artifact != null || itm2.artifact != null) return false;
 
@@ -1329,51 +1401,69 @@ public class ItemObject {
     }
 
     /**
-     * Compares two objects' element info one way round, reporting whether everything the second
-     * records is matched by the first. Extracted from {@link #similar} to carry the element half of
-     * C's {@code object_similar} ({@code obj-pile.c}), which rejects a stack when two objects
-     * differ in either their resistance levels or their {@code EL_INFO_HATES}/{@code EL_INFO_IGNORE}
-     * flags. The {@code ELEM_NONE} and {@code ELEM_MAX} sentinels are skipped.
+     * Compares two objects' element info, reporting whether they agree on every element. Extracted
+     * from {@link #similar} to carry the element half of C's {@code object_similar}
+     * ({@code obj-pile.c}), which rejects a stack when two objects differ in either their
+     * resistance level or their {@code EL_INFO_HATES}/{@code EL_INFO_IGNORE} flags for any element.
+     * The {@code ELEM_NONE} and {@code ELEM_MAX} sentinels are skipped.
      *
-     * <p><b>Why it is one-directional, and called twice.</b> C compares full arrays indexed by
-     * element, so a single loop over {@code 0..ELEM_MAX} sees both objects' entries at once. Here
-     * the info is a map holding only the elements an object actually carries, so a loop over one
-     * object's keys cannot see an element recorded solely on the other. {@link #similar} calls this
-     * with the arguments both ways round, and the pair of passes covers what C's single loop does.
+     * <p><b>Why it walks the enum, not either map.</b> C compares full arrays indexed by element,
+     * so a slot nothing has touched reads as resistance level 0 with no flags. Here the info is a
+     * map holding only the elements an object carries, so the loop runs over every
+     * {@link ElementEnum} value and an element missing from either map is given those same
+     * defaults. A missing entry therefore equals an explicit level-0, no-flags entry, as in C, and
+     * the comparison is symmetric: {@code similar} calls it once, with either argument order.
      *
-     * <p>It is stricter than C in one corner: C treats a missing entry as a resistance level of
-     * zero and would call that equal to an explicit zero, whereas the {@code containsKey} test here
-     * refuses the stack outright. That errs towards keeping two objects apart, which costs the
-     * player a merged pile at worst.
+     * <p>Only the hates and ignores bits are compared, as C masks the flags with
+     * {@code EL_INFO_HATES | EL_INFO_IGNORE}; any other element flag is ignored.
      *
      * <p>Reads through {@link #getElInfo()} rather than the field so that an object built by the
      * no-argument constructor, whose map is still null, compares as carrying no element info rather
      * than throwing.
      *
-     * <p>Function checkElementStacking coded on 260817, commented in full on 261002.
+     * <p>Function checkElementStacking coded on 260817, commented in full on 261003.
      *
-     * @param itm1 the object whose element info must cover the other's
-     * @param itm2 the object whose recorded elements are walked
-     * @return {@code true} if every element {@code itm2} records is matched on {@code itm1}
+     * @param itm1 the first object to compare
+     * @param itm2 the second object to compare
+     * @return {@code true} if the two agree on resistance level, hates and ignores for every element
      */
     private boolean checkElementStacking(ItemObject itm1, ItemObject itm2) {
-        for (ElementEnum e : itm2.getElInfo().keySet()) {
-            if (e == ElementEnum.ELEM_NONE || e == ElementEnum.ELEM_MAX) continue;
+        for (ElementEnum elem : ElementEnum.values()) {
+            if (elem == ElementEnum.ELEM_MAX || elem == ElementEnum.ELEM_NONE) continue;
 
-            if (!itm1.getElInfo().containsKey(e)) return false;
-            if (itm2.getElInfo().get(e).getResLevel() != itm1.getElInfo().get(e).getResLevel()) return false;
+            Map<ElementEnum, ElementInfo> info1 = itm1.getElInfo();
+            Map<ElementEnum, ElementInfo> info2 = itm2.getElInfo();
 
-            Flag<ElementInfoEnum> itm1ELFlags = itm1.getElInfo().get(e).getFlags();
-            Flag<ElementInfoEnum> itm2ELFlags = itm2.getElInfo().get(e).getFlags();
+            int res1;
+            int res2;
+            boolean hates1;
+            boolean hates2;
+            boolean ignores1;
+            boolean ignores2;
 
-            boolean itm1Hates = itm1ELFlags.has(ElementInfoEnum.EL_INFO_HATES);
-            boolean itm1Ignores = itm1ELFlags.has(ElementInfoEnum.EL_INFO_IGNORE);
-            boolean itm2Hates = itm2ELFlags.has(ElementInfoEnum.EL_INFO_HATES);
-            boolean itm2Ignores = itm2ELFlags.has(ElementInfoEnum.EL_INFO_IGNORE);
+            if (info1.containsKey(elem)) {
+                res1 = info1.get(elem).getResLevel();
+                hates1 = info1.get(elem).has(ElementInfoEnum.EL_INFO_HATES);
+                ignores1 = info1.get(elem).has(ElementInfoEnum.EL_INFO_IGNORE);
+            } else {
+                res1 = 0;
+                hates1 = false;
+                ignores1 = false;
+            }
 
-            if (itm1Hates != itm2Hates || itm1Ignores != itm2Ignores) return false;
+            if (info2.containsKey(elem)) {
+                res2 = info2.get(elem).getResLevel();
+                hates2 = info2.get(elem).has(ElementInfoEnum.EL_INFO_HATES);
+                ignores2 = info2.get(elem).has(ElementInfoEnum.EL_INFO_IGNORE);
+            } else {
+                res2 = 0;
+                hates2 = false;
+                ignores2 = false;
+            }
+
+            if (res1 != res2 || hates1 != hates2 || ignores1 != ignores2) return false;
+
         }
-
         return true;
     }
 
@@ -1411,23 +1501,26 @@ public class ItemObject {
      * Checks whether two objects have the exact same curses - the port of C's {@code
      * curses_are_equal} ({@code obj-curse.c}).
      *
-     * <p>Every curse in {@code ObjectRegistry.getCurses()} is visited and only the <em>power</em>
-     * is compared; the countdown to the curse's next effect is ignored, as in C. A curse an object
-     * does not carry reads as power zero, so a curse at power zero on one object matches the curse
-     * being absent from the other, and a curse absent from both matches. Both present means the
-     * powers must be equal.
+     * <p>C begins by comparing the curse arrays themselves: both null is equal, and exactly one
+     * null is not, even if the other array holds only zeros. The port keeps maps rather than
+     * arrays, with an empty map standing for C's null array, so exactly one empty map answers
+     * {@code false} before any power is read. A map holding only zero-power entries is not empty,
+     * and so stands for C's allocated all-zero array: against an item with no curses it does not
+     * match.
      *
-     * <p>C also begins by comparing the curse arrays themselves: both null is equal, and exactly
-     * one null is not, even if the other array holds only zeros. The port keeps maps rather than
-     * arrays and reads a null map as empty, so an empty map and a map of zero-power entries compare
-     * equal. The difference only shows after every curse has been taken off one of two otherwise
-     * identical items.
+     * <p>Otherwise every curse in {@code ObjectRegistry.getCurses()} is visited and only the
+     * <em>power</em> is compared; the countdown to the curse's next effect is ignored, as in C. In
+     * this walk a curse an object does not carry reads as power zero, so once both objects carry
+     * curses, a curse at power zero on one matches the curse being absent from the other, and a
+     * curse absent from both matches. Both present means the powers must be equal. A curse the
+     * registry does not hold is never visited, so it is only ever seen by the empty-map check.
      *
      * <p>Reads through {@link #getCurses()}, so an object whose map has never been created counts
      * as having no curses. Used by {@link #similar} and {@link #runesKnown()}, the latter comparing
      * an object with its own known counterpart.
      *
-     * <p>Function cursesAreEqual coded before 261002, commented in full on 261002.
+     * <p>Function cursesAreEqual coded before 261002, commented in full on 261002, empty-map check
+     * added and comment updated on 261002.
      *
      * @param itm2 the object to compare with this object
      * @return {@code true} if the two objects carry the same curses at the same powers
@@ -1435,6 +1528,9 @@ public class ItemObject {
     @CheckReturnValue
     @Contract(pure = true)
     private boolean cursesAreEqual(@NotNull ItemObject itm2) {
+        if ((this.getCurses().isEmpty() && !itm2.getCurses().isEmpty())
+                || (!this.getCurses().isEmpty() && itm2.getCurses().isEmpty()))
+            return false;
         for (Curse curse : ObjectRegistry.getCurses()) {
             if (this.getCurses().containsKey(curse) && itm2.getCurses().containsKey(curse)) {
                 if (this.getCurses().get(curse).getPower() != itm2.getCurses().get(curse).getPower())
@@ -1624,18 +1720,58 @@ public class ItemObject {
      * to go through {@link #addCurse}, {@link #removeCurse} and their neighbours rather than
      * happening behind this object's back.
      *
-     * <p>An empty map stands for "no curses", including for an object whose backing map has never
-     * been created — the null is absorbed here rather than pushed onto every caller, which is also
-     * how C's {@code curses_are_equal} treats a null curse array.
+     * <p>An empty map stands for "no curses", which is how C's {@code curses_are_equal} treats a
+     * null curse array. C reads the bare pointer and tests it for {@code NULL} before indexing, so
+     * a caller here that checks {@code isEmpty()} first is the port of that test. Both
+     * constructors and {@link #wipe} build the map, so the backing field is not {@code null} in
+     * practice; the {@code null} check here is a guard, and answers an empty map if it ever is,
+     * rather than pushing the null onto every caller.
      *
-     * <p>Function getCurses coded before 260817, commented in full on 260817.
+     * <p>Only the curses the object carries are present, where C's array has a slot for every
+     * curse in the game; see {@link #curses} for how absence, power zero and C's null and
+     * all-zero arrays line up. The entries walk in ascending curse index, which is the order of
+     * C's loop over the array ({@link #CURSE_ORDER}).
      *
-     * @return this object's curses and their instance data, as an unmodifiable view
+     * <p>A lookup by a {@code null} curse has no C counterpart, as C's key is an integer index. It
+     * throws {@link NullPointerException} on a non-empty map, whose comparator reads the key's
+     * index, but answers {@code false} on an empty one. Callers pass curses taken from the
+     * registry or from another curse map.
+     *
+     * <p>Function getCurses coded before 260817, commented in full on 260817, rewritten on 261003
+     * for the ordering and null-key notes.
+     *
+     * @return this object's curses and their instance data, as an unmodifiable view, in curse
+     *         index order
      */
     public Map<Curse, CurseData> getCurses() {
         if (curses == null)
             return Map.of();
+
         return Collections.unmodifiableMap(curses);
+    }
+
+    /**
+     * Replaces this object's curses with a copy of the given map, the port of the loop in C's
+     * {@code copy_curses} ({@code obj-curse.c}) that writes the power and the rolled timeout into
+     * each slot.
+     *
+     * <p>The field is assigned a new {@link LinkedHashMap} built from the argument, so the argument
+     * map is not kept and the curses end up in the argument's order. The {@link CurseData} values
+     * are shared, not copied, and whatever the object carried before is discarded. Because the copy
+     * is made before the assignment, passing this object's own {@link #getCurses()} view is safe.
+     *
+     * <p>C's loop merges into the curses already on the object. This method does not merge: its
+     * only production caller, {@link ObjectUtils#copyCurses}, builds the merged map itself, rolling
+     * each timeout, and hands the result over. A {@code null} argument throws.
+     *
+     * <p>Function setCurses coded before 261002, commented in full on 261002.
+     *
+     * @param destCurseMap the curses this object should carry; the map is copied, the instance data
+     *                     in it is taken by reference
+     */
+    public void setCurses(Map<Curse, CurseData> destCurseMap) {
+        curses = cursesFactory();
+        curses.putAll(destCurseMap);
     }
 
     /**
@@ -1661,8 +1797,12 @@ public class ItemObject {
     public void addCurse(Curse curse, int power, int timeout) {
         CurseData curseData = new CurseData(power, timeout);
         if (this.curses == null) {
-            this.curses = new LinkedHashMap<>();
+            this.curses = cursesFactory();
         }
+
+        if (curse == null)
+            return;
+        
         this.curses.put(curse, curseData);
     }
 
@@ -1683,8 +1823,9 @@ public class ItemObject {
      */
     public void addCurse(Curse curse, CurseData curseData) {
         if (this.curses == null) {
-            this.curses = new LinkedHashMap<>();
+            this.curses = cursesFactory();
         }
+        if (curse == null) return;
         this.curses.put(curse, curseData);
     }
 
@@ -1704,7 +1845,7 @@ public class ItemObject {
      */
     public void addCurses(Map<Curse, CurseData> curses) {
         if (this.curses == null) {
-            this.curses = new LinkedHashMap<>();
+            this.curses = cursesFactory();
         }
         this.curses.putAll(curses);
     }
@@ -1729,7 +1870,8 @@ public class ItemObject {
      *                     in it is taken by reference
      */
     public void clearAndPutCurses(Map<Curse, CurseData> curseEntries) {
-        this.curses = new LinkedHashMap<>(curseEntries);
+        this.curses = cursesFactory();
+        this.curses.putAll(curseEntries);
     }
 
     /**
@@ -1748,7 +1890,7 @@ public class ItemObject {
      */
     public void clearCurses() {
         if (curses == null)
-            curses = new LinkedHashMap<>();
+            curses = cursesFactory();
         curses.clear();
     }
 
@@ -1758,24 +1900,45 @@ public class ItemObject {
      * <p>The port of C's bare {@code obj->curses[i].power = ...} assignment, which appears wherever
      * a curse is weakened or strengthened without being added or taken away.
      *
-     * <p>Does nothing for a curse this object does not carry. That is the safe reading of the
-     * request: in this port an absent curse and a curse of power zero are the same state, so there
-     * is no meaningful power to set on one that is not there, and creating an entry would invent a
-     * curse rather than adjust one. Setting a curse's power to zero is therefore not the way to
-     * remove it — use {@link #removeCurse} for that.
+     * <p>C writes into the slot whether or not the curse was active, and callers rely on that:
+     * {@code append_object_curse} ({@code obj-curse.c}) turns on a curse the object lacked this
+     * way, and {@code obj-knowledge.c} copies power onto the known object, whose slot may be empty.
+     * So a positive power on a curse the object does not carry adds it, with a timeout of zero as
+     * in C's zero-filled slot; callers that need a timeout set it separately.
      *
-     * <p>Function setCursePower coded on 260817, commented in full on 260817.
+     * <p>In C a power of zero means the curse is off, and in this port that means the key is absent
+     * from the map (see {@link #removeCurse}). A power of zero or below therefore removes the
+     * entry if there is one, and adds nothing if there is not, so the map never holds a
+     * power-zero entry from this method.
      *
-     * @param curse the curse to adjust; ignored if {@code null} or not on this object
-     * @param power the curse's new power
+     * <p>Creates the curse map first if the object has none.
+     *
+     * <p>Function setCursePower coded on 260817, commented in full on 261003.
+     *
+     * @param curse the curse to adjust; ignored if {@code null}
+     * @param power the curse's new power; zero or below takes the curse off
      */
     public void setCursePower(Curse curse, int power) {
+        if (curse == null) return;
+        
         if (this.curses == null) {
-            this.curses = new LinkedHashMap<>();
+            this.curses = cursesFactory();
         }
-        if (curse == null || !this.curses.containsKey(curse)) return;
-        CurseData curseData = this.curses.get(curse);
-        curseData.setPower(power);
+
+        if (power <= 0) {
+            if (this.curses.containsKey(curse)) {
+                this.curses.remove(curse);
+            }
+            return;
+        }
+
+        if (this.curses.containsKey(curse)) {
+            this.curses.get(curse).setPower(power);
+            return;
+        }
+
+        CurseData curseData = new CurseData(power, 0);
+        this.curses.put(curse, curseData);
     }
 
     /**
@@ -1783,42 +1946,22 @@ public class ItemObject {
      *
      * <p>The port of C's {@code obj->curses[i].power = 0}. C cannot delete an entry from an array
      * indexed by curse, so it zeroes the power and reads that back as "no curse"; the port holds a
-     * map, where absence says the same thing directly. Removing the entry is the way to take a
-     * curse off: {@link #setCursePower} can leave an entry in the map at power zero, so zeroing
-     * the power does not remove the curse from {@link #getCurses()}.
+     * map, where absence says the same thing directly. {@link #setCursePower} with a power of zero
+     * or below removes the entry too, so either call takes the curse out of {@link #getCurses()}.
      *
      * <p>Silently does nothing for a curse the object does not carry.
      *
      * <p>Function removeCurse coded on 260817, commented in full on 260817, power-zero note
-     * corrected on 261002.
+     * corrected on 261003.
      *
      * @param curse the curse to remove
      */
     public void removeCurse(Curse curse) {
         if (this.curses == null) {
-            this.curses = new LinkedHashMap<>();
+            this.curses = cursesFactory();
         }
+        if (curse == null) return;
         this.curses.remove(curse);
-    }
-
-    /**
-     * Returns this object's recharge interval, the port of reading C's {@code obj->time}.
-     *
-     * <p>The dice, not a rolled figure: a rod's {@code time:} line gives the interval and every
-     * recharge re-rolls from it. {@link #numberCharging} takes its average to work out how many
-     * items in a stack are still charging. For a curse's bare object it is the dice re-rolled into
-     * each cursed object's timeout.
-     *
-     * <p>{@code null} when the object has no recharge interval, where C holds a zeroed
-     * {@code random_value}; a caller must test for it, as {@link #numberCharging} does.
-     *
-     * <p>Function getTime commented in full on 261002.
-     *
-     * @return the random interval between activations of this object's effect, or {@code null} if
-     * it has none
-     */
-    public Random getTime() {
-        return time;
     }
 
     /**
@@ -1881,8 +2024,6 @@ public class ItemObject {
      * @return the number of items currently charging (0 if none)
      */
     public int numberCharging() {
-        if (time == null) return 0;
-
         int chargeTime = time.randCalc(0, DamageAspect.AVERAGE);
 
         // Item has no timeout
@@ -2305,6 +2446,78 @@ public class ItemObject {
     }
 
     /**
+     * Returns this object's recharge interval, the port of reading C's {@code obj->time}.
+     *
+     * <p>The dice, not a rolled figure: a rod's {@code time:} line gives the interval and every
+     * recharge re-rolls from it. {@link #numberCharging} takes its average to work out how many
+     * items in a stack are still charging. For a curse's bare object it is the dice re-rolled into
+     * each cursed object's timeout.
+     *
+     * <p>Returns a copy, as every read of C's {@code obj->time} copies the {@code random_value}
+     * struct, so a caller that changes the result cannot change this item's recharge dice. It is
+     * never {@code null}: an object with no recharge interval holds a zero {@link Random}, as C
+     * holds a zeroed {@code random_value}, and {@link #numberCharging} reads that as nothing
+     * charging.
+     *
+     * <p>Function getTime commented in full on 261002, copy and never-null note rewritten on
+     * 261003.
+     *
+     * @return a copy of the random interval between activations of this object's effect; a zero
+     * value if it has none
+     */
+    public Random getTime() {
+        return time.copy();
+    }
+
+    /**
+     * Sets the recharge-time dice — the port of C's {@code obj->time = k->time;} struct assign
+     * (e.g. {@code object_prep} in {@code obj-make.c}).
+     *
+     * <p>C's {@code random_value} is a plain struct, so assigning it copies the four dice terms by
+     * value; this class's {@link Random} is a mutable reference type, so a bare field assignment
+     * here would instead alias this item's dice with the caller's — a later change to one would leak
+     * into the other. {@link Random#copy()} restores the value semantics C gets for free.
+     *
+     * <p>{@code null} resets the dice to a zero {@link Random}, which C's struct assign cannot
+     * express but which is C's zeroed {@code random_value}; the field is never left {@code null}.
+     * No current caller passes it.
+     *
+     * <p>Function setTime coded before 260904, commented in full on 260904, C line number removed on
+     * 261002, null handling rewritten on 261003.
+     *
+     * @param time the recharge dice to copy in, or {@code null} to reset it to zero
+     */
+    public void setTime(Random time) {
+        if (time == null)
+            this.time = Random.Zero();
+        else
+            this.time = time.copy();
+    }
+
+    /**
+     * Raises a notice flag on this item, the port of C's {@code obj->notice |= flag}.
+     *
+     * <p>C has no function for this: it ORs the bit in wherever it likes, and
+     * {@code ui-wizard.c} does it to {@code known_obj->notice} when it makes an imagined item. Here
+     * it goes through the {@link Flag} set, which adds the one flag and leaves the others alone.
+     * Raising a flag that is already up changes nothing, as with the C bit-OR.
+     *
+     * <p>The boolean return has no C counterpart, because {@code |=} yields no answer. It is the
+     * {@link Flag#on} result passed straight up, so a caller can tell a new notice from a repeat.
+     * {@link #orNotice} does the same job with no return; the two are interchangeable for a caller
+     * that ignores the answer. Only the item's own set changes: {@link #getNotice()} hands out a
+     * copy, so editing that copy marks nothing.
+     *
+     * <p>Function setNoticeOn coded before 261003, commented in full on 261003.
+     *
+     * @param flag the {@link ObjectNotice} flag to raise
+     * @return {@code true} if the flag was newly set, {@code false} if it was already up
+     */
+    public boolean setNoticeOn(ObjectNotice flag) {
+        return notice.on(flag);
+    }
+
+    /**
      * Sets the turns remaining before this item can be used again — the port of C's
      * {@code obj->timeout = ...} field assignment (e.g. {@code object_prep} in {@code obj-make.c},
      * which starts a light's timeout at its fuel).
@@ -2338,24 +2551,27 @@ public class ItemObject {
     }
 
     /**
-     * Returns the live brand set, not a copy, matching how C hands out {@code obj->brands} — an
-     * array on the struct that callers read and write in place.
+     * Lowers a notice flag on this item, the port of C's {@code obj->notice &= ~flag}.
      *
-     * <p>The brands here are the ones the item actually has, each at its own strength. That is a
-     * different question from whether the player can read them, which is
-     * {@link KnownObject#brandIsKnown} and is not per-item at all.
+     * <p>C has no function for this either. The one use in the source is {@code ui-object.c},
+     * where choosing "unignore this item" runs {@code obj->known->notice &= ~(OBJ_NOTICE_IGNORE)}.
+     * Here the {@link Flag} set drops the one flag and leaves the others alone. Lowering a flag
+     * that is already down changes nothing, as with the C mask.
      *
-     * <p>An immutable empty set while the field is {@code null}, which takes no writes; use
-     * {@link #addBrand}, {@link #removeBrand} and {@link #clearBrands} to change the brands.
+     * <p>The boolean return has no C counterpart, because {@code &=} yields no answer. It is the
+     * {@link Flag#off} result passed straight up, so a caller can tell a flag that was cleared from
+     * one that was never up. Only the item's own set changes; {@link #getNotice()} hands out a copy.
+     * Unlike the raising side there is no second name for this: it is the item's only way to lower a
+     * notice flag.
      *
-     * <p>Function getBrands coded before 260817, commented in full on 261002.
+     * <p>Function setNoticeOff coded before 261003, commented in full on 261003.
      *
-     * @return this item's brands, shared with this instance
+     * @param flag the {@link ObjectNotice} flag to lower
+     * @return {@code true} if the flag was up and has been cleared, {@code false} if it was
+     * already down
      */
-    public Set<Brand> getBrands() {
-        if (brands == null)
-            return Set.of();
-        return brands;
+    public boolean setNoticeOff(ObjectNotice flag) {
+        return notice.off(flag);
     }
 
     /**
@@ -2745,20 +2961,29 @@ public class ItemObject {
     }
 
     /**
-     * Returns the slays this item carries, the port of reading C's {@code obj->slays}.
+     * Tests whether one notice flag is up on this item, the port of C's
+     * {@code obj->notice & OBJ_NOTICE_x} read.
      *
-     * <p>The slays the item actually has. Whether the player can read one is a separate question
-     * and not a per-item one — see {@link KnownObject#slayIsKnown}.
+     * <p>C has no function for this: every reader tests the bit inline, as in
+     * {@code obj-desc.c}, {@code obj-ignore.c}, {@code obj-knowledge.c}, {@code cave-square.c} and
+     * {@code ui-object.c}. The C test is a bitwise AND, so it is true for any overlap and could be
+     * handed several flags at once; no C caller does that, and here one {@link ObjectNotice} is
+     * passed, so the question is always "is this one flag up".
      *
-     * <p>Function getSlays commented in full on 260816.
+     * <p>It reads this item's own set. Most C readers test {@code obj->known->notice}, because the
+     * attention paid to an item is kept on the player's known half, so a caller wanting that
+     * answer calls this on {@link #getKnown()}. The exceptions are {@code obj-desc.c}, which tests
+     * {@code obj->notice} for {@code OBJ_NOTICE_ASSESSED}, and {@code cave-square.c}, which tests
+     * it for {@code OBJ_NOTICE_IMAGINED}. It is a read of the live set with no copy, unlike
+     * {@link #getNotice()}, and changes nothing.
      *
-     * @return this item's slays, shared with this instance
+     * <p>Function getNoticeHas coded before 261003, commented in full on 261003.
+     *
+     * @param flag the {@link ObjectNotice} flag to test
+     * @return {@code true} if the flag is up on this item, {@code false} if it is down
      */
-    public Set<Slay> getSlays() {
-        if (slays == null) {
-            return Set.of();
-        }
-        return slays;
+    public boolean getNoticeHas(ObjectNotice flag) {
+        return notice.has(flag);
     }
 
     /**
@@ -3597,62 +3822,24 @@ public class ItemObject {
     }
 
     /**
-     * Carries everything except the counts across from one stack to another - the port of C's
-     * {@code object_absorb_merge} ({@code obj-pile.c}, where it is {@code static}). Shared by the
-     * whole and partial absorbs.
+     * Returns the live brand set, not a copy, matching how C hands out {@code obj->brands} — an
+     * array on the struct that callers read and write in place.
      *
-     * <p>Knowledge first: when both objects have a known half, and the absorbed one's known half
-     * has an effect, the surviving known half takes this object's real effect, and the player is
-     * told about the object again, which is how learning one stack teaches the other. The direction
-     * matters - what is written into the known object is the surviving object's reality, never the
-     * absorbed object's knowledge.
+     * <p>The brands here are the ones the item actually has, each at its own strength. That is a
+     * different question from whether the player can read them, which is
+     * {@link KnownObject#brandIsKnown} and is not per-item at all.
      *
-     * <p>An inscription on the absorbed stack carries over, replacing any note this stack had; the
-     * stacking rules guarantee the two do not conflict. The port also treats an empty note as no
-     * note, which C does not test for, so an empty inscription never overwrites a real one.
+     * <p>An immutable empty set while the field is {@code null}, which takes no writes; use
+     * {@link #addBrand}, {@link #removeBrand} and {@link #clearBrands} to change the brands.
      *
-     * <p>Charges and timeouts are pooled only when the caller asks: rod timeouts add, and wand,
-     * staff and gold values add up to {@code MAX_PVAL}. A partial absorb passes {@code false} for
-     * anything but money, because the charges have already been shared out by
-     * {@code distributeCharges}. Origins are combined last.
+     * <p>Function getBrands coded before 260817, commented in full on 261002.
      *
-     * <p>The player is a parameter, where C reads its global, so the caller decides whose
-     * knowledge is updated; {@link #objectAbsorb} passes the refreshed player.
-     *
-     * <p>Function objectAbsorbMerge coded on 260822, commented in full on 261002.
-     *
-     * @param toAbsorb               the stack being folded in
-     * @param player                 the player whose knowledge is updated
-     * @param combineChargesTimeouts whether to pool charges and timeouts as well
+     * @return this item's brands, shared with this instance
      */
-    private void objectAbsorbMerge(ItemObject toAbsorb, Player player, boolean combineChargesTimeouts) {
-        int total;
-
-        // This object gains extra knowledge from toMerge
-        if (this.getKnown() != null && toAbsorb.getKnown() != null) {
-            if (toAbsorb.getKnown().getEffect() != null && !toAbsorb.getKnown().getEffect().isEmpty())
-                this.getKnown().setEffect(this.getEffect());
-            PlayerKnowledge.knowObject(player, this);
-        }
-
-        if (toAbsorb.getNote() != null)
-            this.note = toAbsorb.getNote();
-
-        // Combine tValues information
-        if (combineChargesTimeouts) {
-            // Rods
-            if (this.gettValue().canHaveTimeout())
-                this.timeout += toAbsorb.getTimeout();
-
-            // wands and staves
-            if (this.gettValue().canHaveCharges() || this.gettValue().isMoney()) {
-                total = this.getpValue() + toAbsorb.getpValue();
-                this.pValue = Math.min(total, GameConstants.MAX_PVAL);
-            }
-        }
-
-        // Combine origin as best we can
-        this.originCombine(toAbsorb);
+    public @NotNull Set<Brand> getBrands() {
+        if (brands == null)
+            return Set.of();
+        return brands;
     }
 
     /**
@@ -3671,97 +3858,20 @@ public class ItemObject {
     }
 
     /**
-     * Moves as much of one stack onto another as the limits allow, leaving both alive - the port of
-     * C's {@code object_absorb_partial} ({@code obj-pile.c:624}).
+     * Returns the slays this item carries, the port of reading C's {@code obj->slays}.
      *
-     * <p>Both new sizes are worked out before either is written, and they always conserve the total
-     * count. Which limit applies depends on where the two stacks are:
+     * <p>The slays the item actually has. Whether the player can read one is a separate question
+     * and not a per-item one — see {@link KnownObject#slayIsKnown}.
      *
-     * <ul>
-     *   <li>both in the quiver - this stack is filled to the per-slot limit and the remainder stays
-     *       with {@code item2};</li>
-     *   <li>this one in the quiver, {@code item2} not - this stack takes exactly the per-slot
-     *       limit, {@code item2} keeps whatever is over;</li>
-     *   <li>{@code item2} in the quiver, this one not - the same the other way round;</li>
-     *   <li>neither in the quiver - this stack is filled to the kind's {@code max_stack}.</li>
-     * </ul>
+     * <p>Function getSlays commented in full on 260816.
      *
-     * <p>The per-slot limit is {@code carry-cap:quiver-slot-size}, divided by
-     * {@code carry-cap:thrown-quiver-mult} for a thrown weapon, and it is taken from whichever of
-     * the two stacks the quiver mode applies to.
-     *
-     * <p>Where C asserts, the port throws. Neither mode may be {@code OSTACK_STORE}, which the
-     * caller is required to guarantee, and in the two mixed-quiver cases the size that ends up in
-     * the pack must fit the kind's {@code max_stack}. These are impossible states rather than
-     * conditions to recover from: returning quietly would leave the caller believing a split had
-     * happened when the counts were never touched.
-     *
-     * <p>Charges are distributed before the counts change, since
-     * {@code distributeCharges} works from the number moving.
-     *
-     * <p>Function objectAbsorbPartial coded on 260822, corrected on 260824, commented in full on
-     * 260824.
-     *
-     * @param item2      the stack being drawn from, which survives with a reduced count
-     * @param stackMode1 the stacking rules in force for this stack
-     * @param stackMode2 the stacking rules in force for {@code item2}
+     * @return this item's slays, shared with this instance
      */
-    public void objectAbsorbPartial(ItemObject item2,
-                                    Flag<ObjectStackEnum> stackMode1,
-                                    Flag<ObjectStackEnum> stackMode2) {
-        int smallest = Math.min(this.getNumber(), item2.getNumber());
-        int largest = Math.max(this.getNumber(), item2.getNumber());
-        int newThisSize;
-        int newItm2Size;
-
-        if (stackMode1.has(ObjectStackEnum.OSTACK_STORE) || stackMode2.has(ObjectStackEnum.OSTACK_STORE)) {
-            String message = "One or other of the stack modes implies this absorb is happening in a store.";
-            logger.error(message);
-            throw new RuntimeException(message);
+    public @NotNull Set<Slay> getSlays() {
+        if (slays == null) {
+            return Set.of();
         }
-
-        // Quivers can have stricter limits
-        if (stackMode1.has(ObjectStackEnum.OSTACK_QUIVER)) {
-            int limit = GameConstants.getCarryCapQuiverSlotSize() /
-                    (this.gettValue().isAmmo() ? 1 : GameConstants.getCarryCapThrownQuiverMult());
-
-            if (stackMode2.has(ObjectStackEnum.OSTACK_QUIVER)) {
-                int difference = limit - largest;
-                newThisSize = largest + difference;
-                newItm2Size = smallest - difference;
-            } else {
-                newThisSize = limit;
-                newItm2Size = largest + smallest - limit;
-                if (newItm2Size >= this.getKind().getBase().getMaxStack()) {
-                    String message = "New size is greater than max stack item on item: " + this.getKind().getName();
-                    logger.error(message);
-                    throw new RuntimeException(message);
-                }
-            }
-        } else if (stackMode2.has(ObjectStackEnum.OSTACK_QUIVER)) {
-            // Handle possible different limits
-            int limit = GameConstants.getCarryCapQuiverSlotSize()
-                    / (item2.gettValue().isAmmo() ? 1 : GameConstants.getCarryCapThrownQuiverMult());
-
-            newThisSize = largest + smallest - limit;
-            newItm2Size = limit;
-            if (newThisSize >= this.getKind().getBase().getMaxStack()) {
-                String message = "New size is greater than max stack item on item: " + this.getKind().getName();
-                logger.error(message);
-                throw new RuntimeException(message);
-            }
-        } else {
-            int difference = this.getKind().getBase().getMaxStack() - largest;
-
-            newThisSize = largest + difference;
-            newItm2Size = smallest - difference;
-        }
-
-        item2.distributeCharges(this, item2.getNumber() - newItm2Size, false);
-        this.setNumber(newThisSize);
-        item2.setNumber(newItm2Size);
-
-        objectAbsorbMerge(item2, player, this.gettValue().isMoney());
+        return slays;
     }
 
     /**
@@ -3826,122 +3936,64 @@ public class ItemObject {
     }
 
     /**
-     * Returns an independent copy of this item - the port of C's {@code object_copy}
-     * ({@code obj-pile.c}).
+     * Carries everything except the counts across from one stack to another - the port of C's
+     * {@code object_absorb_merge} ({@code obj-pile.c}, where it is {@code static}). Shared by the
+     * whole and partial absorbs.
      *
-     * <p>Deep-copied because their contents are mutable: the flag and notice sets, the modifier map,
-     * the element info (each entry copied in turn), the curse map (each {@code CurseData} rebuilt),
-     * the dice, and the brand and slay sets where they exist.
+     * <p>Knowledge first: when both objects have a known half, and the absorbed one's known half
+     * has an effect, the surviving known half takes this object's real effect, and the player is
+     * told about the object again, which is how learning one stack teaches the other. The direction
+     * matters - what is written into the known object is the surviving object's reality, never the
+     * absorbed object's knowledge.
      *
-     * <p>Shared deliberately: the kind, ego and artifact templates, which C shares as pointers and
-     * which every item built on them points at; the origin race, for the same reason - identity is
-     * what tells two origins apart, so copying it would make two items from the same monster look
-     * like items from different ones.
+     * <p>An inscription on the absorbed stack carries over, replacing any note this stack had; the
+     * stacking rules guarantee the two do not conflict. Like C, the port tests only that the absorbed
+     * note exists, not that it has text, so an empty inscription on the absorbed stack replaces a
+     * real one.
      *
-     * <p>Null is preserved rather than normalised for the brand, slay and curse collections, because
-     * elsewhere the class distinguishes "no collection" from "an empty one" - the accessors answer
-     * an immutable empty collection for the former, which takes no writes.
+     * <p>Charges and timeouts are pooled only when the caller asks: rod timeouts add, and wand,
+     * staff and gold values add up to {@code MAX_PVAL}. A partial absorb passes {@code false} for
+     * anything but money, because the charges have already been shared out by
+     * {@code distributeCharges}. Origins are combined last.
      *
-     * <p>The known half is copied only when asked for, and then without its own known half. C's
-     * {@code object_copy} is a {@code memcpy}, so it always copies the {@code known} pointer and the
-     * copy aliases the original's known object; callers there either overwrite it at once, copy an
-     * object that is itself a known half (whose pointer is null), or never read it. The port
-     * instead gives {@code copy(false)} a null known half, which is safer than an alias and gives
-     * the same answer at every call site that exists. A caller splitting a stack passes
-     * {@code true}, as does the object power code that works on a scratch copy; a caller copying a
-     * known half passes {@code false}.
+     * <p>The player is a parameter, where C reads its global, so the caller decides whose
+     * knowledge is updated; {@link #objectAbsorb} passes the refreshed player.
      *
-     * <p>Not carried across, because the port has no such fields: C's {@code prev} and {@code next}
-     * pile pointers, which {@code object_copy} sets to null, and {@code oidx}, which it copies.
-     * {@code object_copy_amt}, the variant that also sets the count and shares out charges, has no
-     * port yet; C uses it only in the store code, which belongs to Chapter 8.
+     * <p>Function objectAbsorbMerge coded on 260822, commented in full on 261002, note rule
+     * corrected on 261003.
      *
-     * <p>Function copy coded before 260827, commented in full on 261002.
-     *
-     * @param includingKnown {@code true} to copy the known half as well
-     * @return a new item that shares no mutable state with this one, bar the noted templates
+     * @param toAbsorb               the stack being folded in
+     * @param player                 the player whose knowledge is updated
+     * @param combineChargesTimeouts whether to pool charges and timeouts as well
      */
-    public ItemObject copy(boolean includingKnown) {
-        ItemObject copy = new ItemObject();
+    private void objectAbsorbMerge(ItemObject toAbsorb, Player player, boolean combineChargesTimeouts) {
+        int total;
 
-        copy.setKind(this.getKind());
-        copy.setEgo(this.getEgo());
-        copy.artifact = this.artifact;
-        // Don't get into infinite recursion
-        if (includingKnown) {
-            if (this.getKnown() == null)
-                copy.known = null;
-            else
-                copy.known = this.known.copy(false);
+        // This object gains extra knowledge from toMerge
+        if (this.getKnown() != null && toAbsorb.getKnown() != null) {
+            if (toAbsorb.getKnown().getEffect() != null && !toAbsorb.getKnown().getEffect().isEmpty())
+                this.getKnown().setEffect(this.getEffect());
+            PlayerKnowledge.knowObject(player, this);
         }
-        if (this.location == null)
-            copy.location = null;
-        else
-            copy.location = this.location.copy();
-        copy.tValue = this.tValue;
-        copy.sValue = this.sValue;
-        copy.pValue = this.pValue;
-        copy.weight = this.weight;
-        copy.damageDice = this.damageDice;
-        copy.damageSides = this.damageSides;
-        if (this.baseDamage == null)
-            copy.baseDamage = null;
-        else
-            copy.baseDamage = this.baseDamage.copy();
-        copy.baseAC = this.baseAC;
-        copy.toAC = this.toAC;
-        copy.toDam = this.toDam;
-        copy.toHit = this.toHit;
-        Flag<ObjectFlag> oFlags = new Flag<>(ObjectFlag.class);
-        oFlags.copyFrom(this.flags);
-        copy.flags = oFlags;
-        Map<ObjectModifier, Integer> newMods = new HashMap<>();
-        for (ObjectModifier mod : this.getModifiers().keySet()) {
-            newMods.put(mod, this.getModifiers().get(mod));
-        }
-        copy.modifiers = newMods;
-        Map<ElementEnum, ElementInfo> eeMap = new HashMap<>();
-        for (ElementEnum ee : this.getElInfo().keySet()) {
-            eeMap.put(ee, this.getElInfo().get(ee).copy());
-        }
-        copy.elInfo = eeMap;
-        if (this.brands == null)
-            copy.brands = null;
-        else
-            copy.brands = new HashSet<>(this.brands);
-        if (this.slays == null)
-            copy.slays = null;
-        else
-            copy.slays = new HashSet<>(this.slays);
-        if (this.curses == null)
-            copy.curses = null;
-        else {
-            LinkedHashMap<Curse, CurseData> newCurses = new LinkedHashMap<>();
-            for (Curse c : this.curses.keySet()) {
-                newCurses.put(c, new CurseData(this.curses.get(c)));
+
+        if (toAbsorb.getNote() != null)
+            this.note = toAbsorb.getNote();
+
+        // Combine tValues information
+        if (combineChargesTimeouts) {
+            // Rods
+            if (this.gettValue().canHaveTimeout())
+                this.timeout += toAbsorb.getTimeout();
+
+            // wands and staves
+            if (this.gettValue().canHaveCharges() || this.gettValue().isMoney()) {
+                total = this.getpValue() + toAbsorb.getpValue();
+                this.pValue = Math.min(total, GameConstants.MAX_PVAL);
             }
-            copy.curses = newCurses;
         }
-        copy.effect = this.effect;
-        copy.effectMessage = this.effectMessage;
-        copy.activation = this.activation;
-        if (this.time == null)
-            copy.time = null;
-        else
-            copy.time = this.time.copy();
-        copy.timeout = this.timeout;
-        copy.number = this.number;
-        Flag<ObjectNotice> nFlags = new Flag<>(ObjectNotice.class);
-        nFlags.copyFrom(this.notice);
-        copy.notice = nFlags;
-        copy.heldMIndex = this.heldMIndex;
-        copy.mimickingMIndex = this.mimickingMIndex;
-        copy.origin = origin;
-        copy.originRace = originRace;
-        copy.originDepth = this.originDepth;
-        copy.note = this.note;
 
-        return copy;
+        // Combine origin as best we can
+        this.originCombine(toAbsorb);
     }
 
     /**
@@ -4637,21 +4689,98 @@ public class ItemObject {
     }
 
     /**
-     * Empties this object's curses - the port of C freeing and nulling {@code obj_local.curses}
-     * after {@code apply_curse_attributes} has folded them in, in {@code curse_power}
-     * ({@code obj-power.c}).
+     * Moves as much of one stack onto another as the limits allow, leaving both alive - the port of
+     * C's {@code object_absorb_partial} ({@code obj-pile.c}).
      *
-     * <p>Necessary rather than tidy: the scratch copy has just had every curse's attributes merged
-     * into its own, so leaving the curses on it as well would price them twice - the copy's own
-     * {@link #cursePower(int, boolean, String)} and {@link #nonStandardWeightPower(int)} would find
-     * them and run again. C clears the curses <em>before</em> pricing the copy and frees the brands
-     * and slays after, and the caller keeps that order. Assigns an empty map, not null; the original
-     * keeps its own, as {@link #copy(boolean)} deep-copied it.
+     * <p>Both new sizes are worked out before either is written, and they always conserve the total
+     * count. Which limit applies depends on where the two stacks are:
      *
-     * <p>Function freeCurses commented in full on 261002.
+     * <ul>
+     *   <li>both in the quiver - this stack is filled to the per-slot limit and the remainder stays
+     *       with {@code item2};</li>
+     *   <li>this one in the quiver, {@code item2} not - this stack takes exactly the per-slot
+     *       limit, {@code item2} keeps whatever is over;</li>
+     *   <li>{@code item2} in the quiver, this one not - the same the other way round;</li>
+     *   <li>neither in the quiver - this stack is filled to the kind's {@code max_stack}.</li>
+     * </ul>
+     *
+     * <p>The per-slot limit is {@code carry-cap:quiver-slot-size}, divided by
+     * {@code carry-cap:thrown-quiver-mult} for a thrown weapon, and it is taken from whichever of
+     * the two stacks the quiver mode applies to.
+     *
+     * <p>Where C asserts, the port throws. Neither mode may be {@code OSTACK_STORE}, which the
+     * caller is required to guarantee, and in the two mixed-quiver cases the size that ends up in
+     * the pack must fit the kind's {@code max_stack}. These are impossible states rather than
+     * conditions to recover from: returning quietly would leave the caller believing a split had
+     * happened when the counts were never touched.
+     *
+     * <p>Charges are distributed before the counts change, since
+     * {@code distributeCharges} works from the number moving.
+     *
+     * <p>Function objectAbsorbPartial coded on 260822, corrected on 260824, commented in full on
+     * 260824, C line number removed on 261003.
+     *
+     * @param item2      the stack being drawn from, which survives with a reduced count
+     * @param stackMode1 the stacking rules in force for this stack
+     * @param stackMode2 the stacking rules in force for {@code item2}
      */
-    private void freeCurses() {
-        this.curses = new LinkedHashMap<>();
+    public void objectAbsorbPartial(ItemObject item2,
+                                    Flag<ObjectStackEnum> stackMode1,
+                                    Flag<ObjectStackEnum> stackMode2) {
+        int smallest = Math.min(this.getNumber(), item2.getNumber());
+        int largest = Math.max(this.getNumber(), item2.getNumber());
+        int newThisSize;
+        int newItm2Size;
+        player = GameState.getPlayer();
+
+        if (stackMode1.has(ObjectStackEnum.OSTACK_STORE) || stackMode2.has(ObjectStackEnum.OSTACK_STORE)) {
+            String message = "One or other of the stack modes implies this absorb is happening in a store.";
+            logger.error(message);
+            throw new RuntimeException(message);
+        }
+
+        // Quivers can have stricter limits
+        if (stackMode1.has(ObjectStackEnum.OSTACK_QUIVER)) {
+            int limit = GameConstants.getCarryCapQuiverSlotSize() /
+                    (this.gettValue().isAmmo() ? 1 : GameConstants.getCarryCapThrownQuiverMult());
+
+            if (stackMode2.has(ObjectStackEnum.OSTACK_QUIVER)) {
+                int difference = limit - largest;
+                newThisSize = largest + difference;
+                newItm2Size = smallest - difference;
+            } else {
+                newThisSize = limit;
+                newItm2Size = largest + smallest - limit;
+                if (newItm2Size >= this.getKind().getBase().getMaxStack()) {
+                    String message = "New size is greater than max stack item on item: " + this.getKind().getName();
+                    logger.error(message);
+                    throw new RuntimeException(message);
+                }
+            }
+        } else if (stackMode2.has(ObjectStackEnum.OSTACK_QUIVER)) {
+            // Handle possible different limits
+            int limit = GameConstants.getCarryCapQuiverSlotSize()
+                    / (item2.gettValue().isAmmo() ? 1 : GameConstants.getCarryCapThrownQuiverMult());
+
+            newThisSize = largest + smallest - limit;
+            newItm2Size = limit;
+            if (newThisSize >= this.getKind().getBase().getMaxStack()) {
+                String message = "New size is greater than max stack item on item: " + this.getKind().getName();
+                logger.error(message);
+                throw new RuntimeException(message);
+            }
+        } else {
+            int difference = this.getKind().getBase().getMaxStack() - largest;
+
+            newThisSize = largest + difference;
+            newItm2Size = smallest - difference;
+        }
+
+        item2.distributeCharges(this, item2.getNumber() - newItm2Size, false);
+        this.setNumber(newThisSize);
+        item2.setNumber(newItm2Size);
+
+        objectAbsorbMerge(item2, player, this.gettValue().isMoney());
     }
 
     /**
@@ -6403,128 +6532,123 @@ public class ItemObject {
     }
 
     /**
-     * Prints a message with the object's own details substituted into it - the port of C's
-     * {@code print_custom_message} ({@code obj-util.c}).
+     * Returns an independent copy of this item - the port of C's {@code object_copy}
+     * ({@code obj-pile.c}).
      *
-     * <p>Messages in the data files are written with tags in braces, so a single line in
-     * {@code activation.txt}, {@code artifact.txt} or {@code player_timed.txt} serves whatever
-     * object triggers it. The tags are replaced here and the
-     * finished text handed to {@link Message#messageType} under the caller's type. Four tags are
-     * understood, looked up by {@link MessageTag#getTag}:
+     * <p>Deep-copied because their contents are mutable: the flag and notice sets, the modifier map,
+     * the element info (each entry copied in turn), the curse map (each {@code CurseData} rebuilt),
+     * the dice, and the brand and slay sets where they exist.
      *
-     * <ul>
-     * <li>{@code {name}} - the object's full name with its quantity prefix, from
-     *     {@link #description} under {@code ODESC_PREFIX | ODESC_BASE}.</li>
-     * <li>{@code {kind}} - the kind's name alone, from {@link #objectKindName} with
-     *     {@code easyKnow} set: no quantity, no ego or artifact name, no runes.</li>
-     * <li>{@code {s}} - the verb ending, written as {@code glow{s}}. It yields an {@code s} for a
-     *     single object and nothing at all for a pile, so the same sentence reads for both.</li>
-     * <li>{@code {is}} - {@code is} for a single object, {@code are} for a pile.</li>
-     * </ul>
+     * <p>Shared deliberately: the kind, ego and artifact templates, which C shares as pointers and
+     * which every item built on them points at; the origin race, for the same reason - identity is
+     * what tells two origins apart, so copying it would make two items from the same monster look
+     * like items from different ones.
      *
-     * <p>A tag in braces that is not one of those is dropped whole, braces included, exactly as
-     * C's {@code default} arm does. A brace with no closing brace after it - either running to the
-     * end of the string or stopped by a non-letter - is itself dropped and the text following it
-     * kept verbatim, which is again what C does by resuming from the character after the brace.
+     * <p>Null is preserved rather than normalised for the brand, slay and curse collections, because
+     * elsewhere the class distinguishes "no collection" from "an empty one" - the accessors answer
+     * an immutable empty collection for the former, which takes no writes.
      *
-     * <p>C reads the object from a pointer that may be {@code null}, which is how the unarmed
-     * player is described: with no object, {@code {name}} and {@code {kind}} both become
-     * {@code hands}, {@code {is}} becomes {@code are}, and {@code {s}} prints nothing. This
-     * version is called on the object itself, so {@code noObject} carries that case instead, and
-     * every place C tests {@code obj} this tests the flag.
+     * <p>The known half is copied only when asked for, and then without its own known half. C's
+     * {@code object_copy} is a {@code memcpy}, so it always copies the {@code known} pointer and the
+     * copy aliases the original's known object; callers there either overwrite it at once, copy an
+     * object that is itself a known half (whose pointer is null), or never read it. The port
+     * instead gives {@code copy(false)} a null known half, which is safer than an alias and gives
+     * the same answer at every call site that exists. A caller splitting a stack passes
+     * {@code true}, as does the object power code that works on a scratch copy; a caller copying a
+     * known half passes {@code false}.
      *
-     * <p>Three divergences from the C, none reachable from the shipped data files. Tag lookup
-     * matches the whole tag where C's {@code msg_tag_lookup} matches only its opening letters, so
-     * a malformed {@code {names}} is dropped here and read as {@code {name}} there. A tag's letters
-     * are tested with {@link Character#isAlphabetic}, which accepts any Unicode letter, where C's
-     * {@code isalpha} takes ASCII only. And C builds the message in a 1024-byte buffer and
-     * truncates at it, where this builds a string of any length and leaves the cut to
-     * {@link Message#messageType}, which makes it at 1023 characters.
+     * <p>Not carried across, because the port has no such fields: C's {@code prev} and {@code next}
+     * pile pointers, which {@code object_copy} sets to null, and {@code oidx}, which it copies.
+     * {@code object_copy_amt}, the variant that also sets the count and shares out charges, has no
+     * port yet; C uses it only in the store code, which belongs to Chapter 8.
      *
-     * <p>One more difference is a fault in C. Its {@code {name}} arm gives
-     * {@code object_desc} the start of its buffer instead of the write position, and
-     * {@code object_desc} begins writing at the start it is given, so text ahead of the tag is
-     * overwritten there. Every message in {@code activation.txt} and {@code artifact.txt} that
-     * carries {@code {name}} begins with it, which hides the fault. Here the name is appended where
-     * the tag stood, as the other three tags are.
+     * <p>Function copy coded before 260827, commented in full on 261002.
      *
-     * <p>Function printCustomMessage coded 260829, commented in full on 261002; the truncation note
-     * was corrected and the data files and the {@code {name}} arm added on 261002.
-     *
-     * @param string   the message template, which may be {@code null} - C is called with the
-     *                 message field of a property that need not have one, and answers by printing
-     *                 nothing
-     * @param msgT     the message type to tag the finished text with, for the front-end to colour
-     *                 and sound it by
-     * @param player   the player the name is described to, passed through to {@link #description}
-     * @param noObject whether to describe the player's bare hands rather than this object
+     * @param includingKnown {@code true} to copy the known half as well
+     * @return a new item that shares no mutable state with this one, bar the noted templates
      */
-    public void printCustomMessage(String string, MessageType msgT, Player player, boolean noObject) {
-        if (string == null) return;
+    public ItemObject copy(boolean includingKnown) {
+        ItemObject copy = new ItemObject();
 
-        StringBuilder sb = new StringBuilder();
-
-        // Strings have tags in surrounded by {}. extract them and replace with appropriate text
-        int next = string.indexOf('{');
-        while (next >= 0) {
-            sb.append(string.substring(0, next));
-            string = string.substring(next + 1);
-
-            StringBuilder tagSB = new StringBuilder();
-            int index = 0;
-            while (index < string.length() && string.charAt(index) != '}'
-                    && Character.isAlphabetic(string.charAt(index))) {
-                tagSB.append(string.charAt(index));
-                index++;
-            }
-
-            if (index == string.length()) {
-                // No closing brace was found - add the opening brace and
-                // the tag in and jump to the next open brace
-                sb.append(tagSB.toString());
-                string = "";
-                break;
-            }
-
-            String tag = tagSB.append("}").toString();
-
-            if (string.charAt(index) == '}') {
-                MessageTag mtag = MessageTag.getTag(tag);
-                switch (mtag) {
-                    case MSG_TAG_NAME -> {
-                        Flag<ObjectDescription> descs = new Flag<>(ObjectDescription.class, ObjectDescription.ODESC_PREFIX,
-                                ObjectDescription.ODESC_BASE);
-                        if (noObject) sb.append("hands");
-                        else sb.append(description(descs, player));
-                        string = string.substring(mtag.getSize());
-                    }
-                    case MSG_TAG_KIND -> {
-                        if (noObject) sb.append("hands");
-                        else sb.append(objectKindName(getKind(), true));
-                        string = string.substring(mtag.getSize());
-                    }
-                    case MSG_TAG_VERB -> {
-                        if (!noObject && getNumber() == 1) {
-                            sb.append("s");
-                        }
-                        string = string.substring(mtag.getSize());
-                    }
-                    case MSG_TAG_VERB_IS -> {
-                        if (noObject || getNumber() > 1) sb.append("are");
-                        else sb.append("is");
-                        string = string.substring(mtag.getSize());
-                    }
-                    default -> string = string.substring(tag.length());
-                }
-
-            }
-
-            next = string.indexOf('{');
+        copy.setKind(this.getKind());
+        copy.setEgo(this.getEgo());
+        copy.artifact = this.artifact;
+        // Don't get into infinite recursion
+        if (includingKnown) {
+            if (this.getKnown() == null)
+                copy.known = null;
+            else
+                copy.known = this.known.copy(false);
         }
+        if (this.location == null)
+            copy.location = null;
+        else
+            copy.location = this.location.copy();
+        copy.tValue = this.tValue;
+        copy.sValue = this.sValue;
+        copy.pValue = this.pValue;
+        copy.weight = this.weight;
+        copy.damageDice = this.damageDice;
+        copy.damageSides = this.damageSides;
+        if (this.baseDamage == null)
+            copy.baseDamage = null;
+        else
+            copy.baseDamage = this.baseDamage.copy();
+        copy.baseAC = this.baseAC;
+        copy.toAC = this.toAC;
+        copy.toDam = this.toDam;
+        copy.toHit = this.toHit;
+        Flag<ObjectFlag> oFlags = new Flag<>(ObjectFlag.class);
+        oFlags.copyFrom(this.flags);
+        copy.flags = oFlags;
+        Map<ObjectModifier, Integer> newMods = new HashMap<>();
+        for (ObjectModifier mod : this.getModifiers().keySet()) {
+            newMods.put(mod, this.getModifiers().get(mod));
+        }
+        copy.modifiers = newMods;
+        Map<ElementEnum, ElementInfo> eeMap = new HashMap<>();
+        for (ElementEnum ee : this.getElInfo().keySet()) {
+            eeMap.put(ee, this.getElInfo().get(ee).copy());
+        }
+        copy.elInfo = eeMap;
+        if (this.brands == null)
+            copy.brands = null;
+        else
+            copy.brands = new HashSet<>(this.brands);
+        if (this.slays == null)
+            copy.slays = null;
+        else
+            copy.slays = new HashSet<>(this.slays);
+        if (this.curses == null)
+            copy.curses = null;
+        else {
+            TreeMap<Curse, CurseData> newCurses = cursesFactory();
+            for (Curse curse : curses.keySet()) {
+                CurseData data = curses.get(curse);
+                newCurses.put(curse, new CurseData(data.getPower(), data.getTimeout()));
+            }
+            copy.curses = newCurses;
+        }
+        copy.effect = this.effect;
+        copy.effectMessage = this.effectMessage;
+        copy.activation = this.activation;
+        if (this.time == null)
+            copy.time = Random.Zero();
+        else
+            copy.time = this.time.copy();
+        copy.timeout = this.timeout;
+        copy.number = this.number;
+        Flag<ObjectNotice> nFlags = new Flag<>(ObjectNotice.class);
+        nFlags.copyFrom(this.notice);
+        copy.notice = nFlags;
+        copy.heldMIndex = this.heldMIndex;
+        copy.mimickingMIndex = this.mimickingMIndex;
+        copy.origin = origin;
+        copy.originRace = originRace;
+        copy.originDepth = this.originDepth;
+        copy.note = this.note;
 
-        sb.append(string);
-
-        Message.messageType(msgT, "%s", sb.toString());
+        return copy;
     }
 
     /**
@@ -6713,6 +6837,155 @@ public class ItemObject {
     }
 
     /**
+     * Empties this object's curses - the port of C freeing and nulling {@code obj_local.curses}
+     * after {@code apply_curse_attributes} has folded them in, in {@code curse_power}
+     * ({@code obj-power.c}).
+     *
+     * <p>Necessary rather than tidy: the scratch copy has just had every curse's attributes merged
+     * into its own, so leaving the curses on it as well would price them twice - the copy's own
+     * {@link #cursePower(int, boolean, String)} and {@link #nonStandardWeightPower(int)} would find
+     * them and run again. C clears the curses <em>before</em> pricing the copy and frees the brands
+     * and slays after, and the caller keeps that order. Assigns an empty map, not null; the original
+     * keeps its own, as {@link #copy(boolean)} deep-copied it.
+     *
+     * <p>Function freeCurses commented in full on 261002.
+     */
+    private void freeCurses() {
+        this.curses = cursesFactory();
+    }
+
+    /**
+     * Prints a message with the object's own details substituted into it - the port of C's
+     * {@code print_custom_message} ({@code obj-util.c}).
+     *
+     * <p>Messages in the data files are written with tags in braces, so a single line in
+     * {@code activation.txt}, {@code artifact.txt} or {@code player_timed.txt} serves whatever
+     * object triggers it. The tags are replaced here and the
+     * finished text handed to {@link Message#messageType} under the caller's type. Four tags are
+     * understood, looked up by {@link MessageTag#getTag}:
+     *
+     * <ul>
+     * <li>{@code {name}} - the object's full name with its quantity prefix, from
+     *     {@link #description} under {@code ODESC_PREFIX | ODESC_BASE}.</li>
+     * <li>{@code {kind}} - the kind's name alone, from {@link #objectKindName} with
+     *     {@code easyKnow} set: no quantity, no ego or artifact name, no runes.</li>
+     * <li>{@code {s}} - the verb ending, written as {@code glow{s}}. It yields an {@code s} for a
+     *     single object and nothing at all for a pile, so the same sentence reads for both.</li>
+     * <li>{@code {is}} - {@code is} for a single object, {@code are} for a pile.</li>
+     * </ul>
+     *
+     * <p>A tag is recognised by its opening letters, as in C's {@code msg_tag_lookup}
+     * ({@code obj-util.c}), tested in this order: {@code name} (four letters), {@code kind} (four),
+     * {@code s} (one), then {@code is} (two). So {@code {names}} is read as {@code {name}},
+     * {@code {sx}} and {@code {size}} as {@code {s}}, and {@code {isn}} as {@code {is}}, while
+     * {@code {nam}} matches nothing. Whatever the tag, recognised or not, the text resumes just
+     * past its closing brace.
+     *
+     * <p>A tag in braces that is not one of those is dropped whole, braces included, exactly as
+     * C's {@code default} arm does. A brace with no closing brace after it - either running to the
+     * end of the string or stopped by a non-letter - is itself dropped and the text following it
+     * kept verbatim, which is again what C does by resuming from the character after the brace.
+     *
+     * <p>C reads the object from a pointer that may be {@code null}, which is how the unarmed
+     * player is described: with no object, {@code {name}} and {@code {kind}} both become
+     * {@code hands}, {@code {is}} becomes {@code are}, and {@code {s}} prints nothing. This
+     * version is called on the object itself, so {@code noObject} carries that case instead, and
+     * every place C tests {@code obj} this tests the flag.
+     *
+     * <p>Two divergences from the C, neither reachable from the shipped data files. A tag's letters
+     * are tested with {@link Character#isAlphabetic}, which accepts any Unicode letter, where C's
+     * {@code isalpha} takes ASCII only. And C builds the message in a 1024-byte buffer and
+     * truncates at it, where this builds a string of any length and leaves the cut to
+     * {@link Message#messageType}, which makes it at 1023 characters.
+     *
+     * <p>One more difference is a fault in C. Its {@code {name}} arm gives
+     * {@code object_desc} the start of its buffer instead of the write position, and
+     * {@code object_desc} begins writing at the start it is given, so text ahead of the tag is
+     * overwritten there. Every message in {@code activation.txt} and {@code artifact.txt} that
+     * carries {@code {name}} begins with it, which hides the fault. Here the name is appended where
+     * the tag stood, as the other three tags are.
+     *
+     * <p>Function printCustomMessage coded 260829, commented in full on 261002; the truncation note
+     * was corrected and the data files and the {@code {name}} arm added on 261002; the tag lookup
+     * rewritten for prefix matching on 261003.
+     *
+     * @param string   the message template, which may be {@code null} - C is called with the
+     *                 message field of a property that need not have one, and answers by printing
+     *                 nothing
+     * @param msgT     the message type to tag the finished text with, for the front-end to colour
+     *                 and sound it by
+     * @param player   the player the name is described to, passed through to {@link #description}
+     * @param noObject whether to describe the player's bare hands rather than this object
+     */
+    public void printCustomMessage(String string, MessageType msgT, Player player, boolean noObject) {
+        if (string == null) return;
+
+        StringBuilder sb = new StringBuilder();
+
+        // Strings have tags in surrounded by {}. extract them and replace with appropriate text
+        int next = string.indexOf('{');
+        while (next >= 0) {
+            sb.append(string.substring(0, next));
+            string = string.substring(next + 1);
+
+            StringBuilder tagSB = new StringBuilder();
+            int index = 0;
+            while (index < string.length() && string.charAt(index) != '}'
+                    && Character.isAlphabetic(string.charAt(index))) {
+                tagSB.append(string.charAt(index));
+                index++;
+            }
+
+            if (index == string.length()) {
+                // No closing brace was found - add the opening brace and
+                // the tag in and jump to the next open brace
+                sb.append(tagSB.toString());
+                string = "";
+                break;
+            }
+
+            String tag = tagSB.toString();
+
+            if (string.charAt(index) == '}') {
+                MessageTag mtag = MessageTag.getTag(tag);
+                switch (mtag) {
+                    case MSG_TAG_NAME -> {
+                        Flag<ObjectDescription> descs = new Flag<>(ObjectDescription.class, ObjectDescription.ODESC_PREFIX,
+                                ObjectDescription.ODESC_BASE);
+                        if (noObject) sb.append("hands");
+                        else sb.append(description(descs, player));
+                        string = string.substring(index + 1);
+                    }
+                    case MSG_TAG_KIND -> {
+                        if (noObject) sb.append("hands");
+                        else sb.append(objectKindName(getKind(), true));
+                        string = string.substring(index + 1);
+                    }
+                    case MSG_TAG_VERB -> {
+                        if (!noObject && getNumber() == 1) {
+                            sb.append("s");
+                        }
+                        string = string.substring(index + 1);
+                    }
+                    case MSG_TAG_VERB_IS -> {
+                        if (noObject || getNumber() > 1) sb.append("are");
+                        else sb.append("is");
+                        string = string.substring(index + 1);
+                    }
+                    default -> string = string.substring(index + 1);
+                }
+
+            }
+
+            next = string.indexOf('{');
+        }
+
+        sb.append(string);
+
+        Message.messageType(msgT, "%s", sb.toString());
+    }
+
+    /**
      * Resets every field of this object to the blank value C's zero fill leaves, whatever it held.
      *
      * <p>The port of C's {@code object_wipe} ({@code obj-pile.c}), which frees {@code slays},
@@ -6734,11 +7007,12 @@ public class ItemObject {
      * convention the no-arg {@link #ItemObject()} constructor already uses. {@code tValue} resets to
      * {@link TValue#TV_NONE}, which is C's tval 0.
      *
-     * <p>Three fields come back as {@code null} where C's zero is a value. {@code location} is
+     * <p>Two fields come back as {@code null} where C's zero is a value. {@code location} is
      * {@code null} where C's grid is (0, 0), and {@link #objectAbsorb} reads both as "not on the
-     * floor". {@code time} is {@code null} where C's recharge dice are all zero, and
-     * {@link #numberCharging} reads that as nothing charging. {@code baseDamage} has no C
-     * counterpart at all. Unlike a freshly built item, a wiped one has an empty {@code activation}
+     * floor". {@code baseDamage} has no C
+     * counterpart at all. {@code time} is not among the three: it comes back as a zero
+     * {@link Random}, which is C's four zeros, and {@link #numberCharging} reads that as nothing
+     * charging. Unlike a freshly built item, a wiped one has an empty {@code activation}
      * list rather than {@code null}.
      *
      * <p>C's {@code memset} also zeroes {@code prev} and {@code next}, the pile pointers, and
@@ -6747,7 +7021,7 @@ public class ItemObject {
      * snapshot the port adds, is left as it was.
      *
      * <p>Function wipe coded before 260904, commented in full on 261002; the pile and map notes and
-     * the C line number were removed on 261002.
+     * the C line number were removed on 261002, the {@code time} note corrected on 261003.
      *
      * @author Rowan Crowther
      */
@@ -6773,11 +7047,11 @@ public class ItemObject {
         elInfo = new LinkedHashMap<>();
         brands = new HashSet<>();
         slays = new HashSet<>();
-        curses = new LinkedHashMap<>();
+        curses = cursesFactory();
         effect = new ArrayList<>();
         effectMessage = null;
         activation = new ArrayList<>();
-        time = null;
+        time = Random.Zero();
         timeout = 0;
         number = 0;
         notice = new Flag<>(ObjectNotice.class);
@@ -6791,62 +7065,15 @@ public class ItemObject {
     }
 
     /**
-     * Sets the recharge-time dice — the port of C's {@code obj->time = k->time;} struct assign
-     * (e.g. {@code object_prep} in {@code obj-make.c}).
-     *
-     * <p>C's {@code random_value} is a plain struct, so assigning it copies the four dice terms by
-     * value; this class's {@link Random} is a mutable reference type, so a bare field assignment
-     * here would instead alias this item's dice with the caller's — a later change to one would leak
-     * into the other. {@link Random#copy()} restores the value semantics C gets for free.
-     *
-     * <p>{@code null} clears the dice outright, which C's struct assign cannot express; no current
-     * caller passes it.
-     *
-     * <p>Function setTime coded before 260904, commented in full on 260904, C line number removed on
-     * 261002.
-     *
-     * @param time the recharge dice to copy in, or {@code null} to clear it
-     */
-    public void setTime(Random time) {
-        if (time == null)
-            this.time = null;
-        else
-            this.time = time.copy();
-    }
-
-    /**
-     * Replaces this object's curses with a copy of the given map, the port of the loop in C's
-     * {@code copy_curses} ({@code obj-curse.c}) that writes the power and the rolled timeout into
-     * each slot.
-     *
-     * <p>The field is assigned a new {@link LinkedHashMap} built from the argument, so the argument
-     * map is not kept and the curses end up in the argument's order. The {@link CurseData} values
-     * are shared, not copied, and whatever the object carried before is discarded. Because the copy
-     * is made before the assignment, passing this object's own {@link #getCurses()} view is safe.
-     *
-     * <p>C's loop merges into the curses already on the object. This method does not merge: its
-     * only production caller, {@link ObjectUtils#copyCurses}, builds the merged map itself, rolling
-     * each timeout, and hands the result over. A {@code null} argument throws.
-     *
-     * <p>Function setCurses coded before 261002, commented in full on 261002.
-     *
-     * @param destCurseMap the curses this object should carry; the map is copied, the instance data
-     *                     in it is taken by reference
-     */
-    public void setCurses(Map<Curse, CurseData> destCurseMap) {
-        curses = new LinkedHashMap<>(destCurseMap);
-    }
-
-    /**
      * Gives this object a fresh, empty curse map, discarding whatever it already held.
      *
      * <p>The port of the allocation branch inside C's {@code copy_curses}
      * ({@code obj-curse.c}), {@code obj->curses = mem_zalloc(z_info->curse_max * sizeof(struct
      * curse_data))}, which C runs only when {@code obj->curses} is still {@code null}. This method
-     * has no such guard and always discards what the item held. {@link ObjectUtils#copyCurses}
-     * calls it unconditionally, and is safe in doing so because it has already copied the item's
-     * curses into a scratch map and puts the merged result back with {@link #setCurses} straight
-     * afterwards.
+     * has no such guard and always discards what the item held. {@link ObjectUtils#copyCurses} no
+     * longer calls it, because that method builds its merged map in a scratch copy and replaces the
+     * field with {@link #setCurses}, so no allocation step is needed. It is kept as the public way
+     * to empty an item's curse map.
      *
      * <p>An empty map is this port's equivalent of the zeroed array {@code mem_zalloc} hands
      * back: {@link #getCurses()} already reads "no entry" the way C reads a curse slot at power
@@ -6854,10 +7081,10 @@ public class ItemObject {
      * {@code curses} field requires.
      *
      * <p>Function initCurses coded before 260904, commented in full on 261002; the line numbers were
-     * removed and the note on {@code copyCurses} corrected on 261002.
+     * removed on 261002 and the note on {@code copyCurses} corrected on 261003.
      */
     public void initCurses() {
-        curses = new LinkedHashMap<>();
+        curses = cursesFactory();
     }
 
     /**
@@ -7034,6 +7261,96 @@ public class ItemObject {
      */
     public void setMimickingMIndex(int mimickingMIndex) {
         this.mimickingMIndex = mimickingMIndex;
+    }
+
+    /**
+     * Prints the message for a modifier the player has just learned by using this item - the port
+     * of C's {@code mod_message} ({@code obj-knowledge.c}), which is {@code static} there and
+     * {@code public} here so the knowledge code in {@code PlayerKnowledge} can call it.
+     *
+     * <p>The message depends on both which modifier it is and the sign of this item's value for it.
+     * Strength, intelligence, wisdom, dexterity, constitution, stealth, speed, blows and shots each
+     * have one line for a positive value ("You feel stronger!") and one for a negative value ("You
+     * feel weaker!"); a value of exactly zero prints nothing. Infravision and light are not
+     * sign-dependent: "Your eyes tingle." and "It glows!" print whenever the modifier is named, even
+     * on an item whose value for it is zero. Every other modifier (searching, tunnelling, might,
+     * moves, damage reduction) has no message and prints nothing, as in C's {@code default} case.
+     *
+     * <p>The value is read through {@link #getModifierValue(ObjectModifier)}, so a modifier the
+     * item does not carry reads as zero, as C's zeroed array does, and an item whose
+     * {@link #modifiers} map is {@code null} is silent for every sign-dependent modifier instead of
+     * throwing. A {@code null} {@code mod} is the port's own addition and returns without printing;
+     * C's {@code int mod} cannot be absent.
+     *
+     * <p>Each line goes out through {@link Message#message}, which C's {@code msg()} corresponds to,
+     * so it is logged and signalled as a generic message. Nothing on the item is changed.
+     *
+     * <p>Function modMessage coded on 261004, commented in full on 261004.
+     *
+     * @param mod the modifier that was just noticed; {@code null} prints nothing
+     */
+    public void modMessage(ObjectModifier mod) {
+        if (mod == null) return;
+        switch (mod) {
+            case OM_STR -> {
+                if (getModifierValue(ObjectModifier.OM_STR) > 0)
+                    Message.message("You feel stronger!");
+                else if (getModifierValue(ObjectModifier.OM_STR) < 0)
+                    Message.message("You feel weaker!");
+            }
+            case OM_INT -> {
+                if (getModifierValue(ObjectModifier.OM_INT) > 0)
+                    Message.message("You feel smarter!");
+                else if (getModifierValue(ObjectModifier.OM_INT) < 0)
+                    Message.message("You feel more stupid!");
+            }
+            case OM_WIS -> {
+                if (getModifierValue(ObjectModifier.OM_WIS) > 0)
+                    Message.message("You feel wiser!");
+                else if (getModifierValue(ObjectModifier.OM_WIS) < 0)
+                    Message.message("You feel more naive!");
+            }
+            case OM_DEX -> {
+                if (getModifierValue(ObjectModifier.OM_DEX) > 0)
+                    Message.message("You feel more dextrous!");
+                else if (getModifierValue(ObjectModifier.OM_DEX) < 0)
+                    Message.message("You feel clumsier!");
+            }
+            case OM_CON -> {
+                if (getModifierValue(ObjectModifier.OM_CON) > 0)
+                    Message.message("You feel healthier!");
+                else if (getModifierValue(ObjectModifier.OM_CON) < 0)
+                    Message.message("You feel sicklier!");
+            }
+            case OM_STEALTH -> {
+                if (getModifierValue(ObjectModifier.OM_STEALTH) > 0)
+                    Message.message("You feel stealthier.");
+                else if (getModifierValue(ObjectModifier.OM_STEALTH) < 0)
+                    Message.message("You feel noisier.");
+            }
+            case OM_SPEED -> {
+                if (getModifierValue(ObjectModifier.OM_SPEED) > 0)
+                    Message.message("You feel strangely quick.");
+                else if (getModifierValue(ObjectModifier.OM_SPEED) < 0)
+                    Message.message("You feel strangely sluggish.");
+            }
+            case OM_BLOWS -> {
+                if (getModifierValue(ObjectModifier.OM_BLOWS) > 0)
+                    Message.message("Your weapon tingles in your hands.");
+                else if (getModifierValue(ObjectModifier.OM_BLOWS) < 0)
+                    Message.message("Your weapon aches in your hands.");
+            }
+            case OM_SHOTS -> {
+                if (getModifierValue(ObjectModifier.OM_SHOTS) > 0)
+                    Message.message("Your missile weapon tingles in your hands.");
+                else if (getModifierValue(ObjectModifier.OM_SHOTS) < 0)
+                    Message.message("Your missile weapon aches in your hands.");
+            }
+            case OM_INFRA -> Message.message("Your eyes tingle.");
+            case OM_LIGHT -> Message.message("It glows!");
+            default -> {
+            }
+        }
     }
 
     /**

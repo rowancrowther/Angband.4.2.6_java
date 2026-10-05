@@ -15,14 +15,11 @@ C sources: `earlier_object` (`player-calcs.c`), `object_similar` (`obj-pile.c`),
 `object_origin_combine` and `distribute_charges` (`obj-util.c` / `obj-pile.c`), `object_fully_known`,
 `object_runes_known`, `object_effect_is_known` (`obj-knowledge.c`).
 
-Open findings:
-
-- `cursesAreEqual` treats a curse stored at power zero as different from the same curse at power zero, and from an
-  absent curse; C treats all three as equal.
-- `similar` compares modifiers by key, so an explicit zero differs from an absent entry; C compares every slot and calls
-  them equal.
-- `earlierObject` and `similar` read the static `player`, which is whatever `GameState.getPlayer()` returned when an
-  `ItemObject` was last constructed, where C reads its `player` global at the moment of the call.
+Fixed: `cursesAreEqual` treats a curse at power zero as equal to an absent one, as C does; `similar` treats an absent
+modifier as zero and compares by value when both are present; `earlierObject` and `similar` refresh `player`
+from `GameState.getPlayer()` on each call, where C reads its `player` global at the moment of the call.
+`checkElementStacking` now reads a missing element as level 0 with no flags, so it matches C's full-array comparison,
+and `similar` calls it once. (The three findings were listed as open until 2026-10-03; they were fixed on 2026-10-02.)
 
 ## Batch 2 - stackability, absorb, split, copy (done 2026-10-02)
 
@@ -39,8 +36,12 @@ Matches C: `objectStackable`, `objectIsInQuiver`, `objectWeightOne`, `checkForIn
 Fixed: `objectAbsorb` now refreshes `player`; `objectSplit` aligns the known count first; `mergeable` tests `this` for
 ammo.
 
-Accepted divergences: `objectAbsorbMerge` ignores an empty absorbed note, which C does not test for (no empty notes
-exist); `copy(false)` leaves `known` null where C's `object_copy` copies the pointer (`includingKnown` stays).
+Matches C: `objectAbsorbMerge` tests only that the absorbed note is not null, as C does, so an empty absorbed note
+replaces a real one. (An earlier version of this doc and of the Javadoc said it ignored empty notes; the code never did,
+and both were corrected on 2026-10-03.)
+
+Accepted divergences: `copy(false)` leaves `known` null where C's `object_copy` copies the pointer (`includingKnown`
+stays).
 
 Deferred: `object_copy_amt` is used only by the store code, so it waits for Chapter 8. `verifyObject` prints a
 placeholder name until `description` is ported in Chapter 7.
@@ -206,7 +207,8 @@ Accepted divergences: C's `print_custom_message` hands `object_desc` the start o
 `artifact.txt` leads with the tag); a tag's letters are tested with `Character.isAlphabetic` where C's `isalpha` is
 ASCII only; `objDescNameFormat` treats a second `~` straight after the first as having nothing before it, where C writes
 a bare `s`; the glyph methods read the parsed data where C reads the pref-remappable `kind_x_char` and `flavor_x_char`
-tables; `wipe` leaves `location` and `time` as `null` where C's zero is a grid of (0, 0) and four zero dice.
+tables; `wipe` leaves `location` as `null` where C's zero is a grid of (0, 0); `time` is reset to a zero `Random`, which
+is C's four zero dice.
 
 Stage 2: the C line numbers were removed from `wipe` and `initCurses`; the `printCustomMessage` block no longer says
 Java cannot truncate (`Message.messageType` cuts at 1023) or that the messages live in `object.txt`; the

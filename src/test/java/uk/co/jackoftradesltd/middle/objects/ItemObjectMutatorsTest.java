@@ -640,16 +640,38 @@ class ItemObjectMutatorsTest {
         }
 
         /**
-         * {@code null} clears the dice outright — an accommodation C's struct assign has no need of,
-         * since C has no equivalent of a null struct.
+         * Every read of C's {@code obj->time} copies the struct, so a caller who changes what it
+         * was handed cannot change the item. {@link Random} is mutable here, so {@code getTime} has
+         * to hand out a copy.
          */
         @Test
-        @DisplayName("setTime(null) clears the dice")
+        @DisplayName("getTime hands out a copy, so changing it leaves the item alone")
+        void getTimeCopiesOut() {
+            item.setTime(new Random(1, 1, 2, 4, false));
+
+            Random read = item.getTime();
+            read.setBase(9);
+            read.setDice(7);
+
+            assertNotSame(read, item.getTime());
+            assertEquals(1, item.getTime().getBase());
+            assertEquals(2, item.getTime().getDice());
+        }
+
+        /**
+         * {@code null} resets the dice to zero — C has no null struct, so the nearest thing to
+         * clearing one is assigning it zeroed, and the getter never answers null.
+         */
+        @Test
+        @DisplayName("setTime(null) resets the dice to zero")
         void setTimeNullClears() {
             item.setTime(new Random(1, 1, 2, 4, false));
             item.setTime(null);
 
-            assertNull(item.getTime());
+            assertEquals(0, item.getTime().getBase());
+            assertEquals(0, item.getTime().getDice());
+            assertEquals(0, item.getTime().getSides());
+            assertEquals(0, item.getTime().getMBonus());
         }
 
         /**

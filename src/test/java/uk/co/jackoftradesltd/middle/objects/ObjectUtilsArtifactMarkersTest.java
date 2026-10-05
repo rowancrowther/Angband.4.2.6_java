@@ -93,7 +93,7 @@ class ObjectUtilsArtifactMarkersTest {
 
     /**
      * {@code markArtifactCreated(art, false)} clears an already-set {@code created} flag — the
-     * overwrite path C's {@code player_init} (player-birth.c:407-410) relies on to reset every
+     * overwrite path C's {@code player_init} (player-birth.c) relies on to reset every
      * artifact at the start of a new game, regardless of what a previous game left behind.
      */
     @Test

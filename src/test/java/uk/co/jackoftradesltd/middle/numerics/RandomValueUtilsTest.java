@@ -53,9 +53,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * <em>not</em> asserted is any particular sequence of draws: that would pin the tests to
  * {@link java.util.Random}'s algorithm rather than to this class's behaviour.
  *
- * <p>{@code mBonus} and {@code mBonusCalc} are absent because they read the world registry
- * and game constants, which puts them outside the reach of a unit test that seeds nothing
- * else; they belong with the registry-backed suites.
+ * <p>The normal-distribution family ({@code normal}, {@code sample}, {@code mBonus} and
+ * {@code mBonusCalc}), the edges of the uniform draws and probabilistic division are tested in
+ * {@link RandomValueUtilsDistributionTest}. {@code mBonus} no longer reads the world registry,
+ * because its depth cap is the literal 128 that C uses, so it needs no registry set-up.
  *
  * @author Rowan Crowther
  */

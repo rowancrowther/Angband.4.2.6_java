@@ -91,7 +91,7 @@ class ObjectKindTest {
                 new HashMap<>(), new HashMap<>(), new HashSet<>(), new HashSet<>(), curses,
                 null, 0, 0, 0, 0, new ArrayList<>(), new ArrayList<>(), "", "", "0", null, 0,
                 null, null, null, null, false, false, new Flag<>(IgnoreFlag.class),
-                false, TValue.TV_SWORD);
+                false, TValue.TV_SWORD, 0);
     }
 
     /**

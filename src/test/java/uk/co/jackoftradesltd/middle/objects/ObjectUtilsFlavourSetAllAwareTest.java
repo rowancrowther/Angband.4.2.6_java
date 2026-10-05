@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests {@link ObjectUtils#flavourSetAllAware}, the port of C's {@code flavor_set_all_aware}
- * ({@code obj-util.c:253}).
+ * ({@code obj-util.c}).
  *
  * <p>C walks every {@code k_info} entry, skips those with no name (the empty slots), and sets
  * {@code kind->aware = true} for the rest only where {@code kind->flavor} is non-null. The port

@@ -372,9 +372,16 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
             Random pVal = null;
             if (!record.pVal().isEmpty()) {
                 pVal = Random.parseStr(record.pVal());
-                if (pVal == null) {
+                if (pVal == null)
+                    pVal = Random.Zero();
+            }
+            int power = 0;
+            if (!record.power().isEmpty()) {
+                try {
+                    power = Integer.parseInt(record.power());
+                } catch (NumberFormatException e) {
                     errors.add("Object kind starting line: " + line + " has " +
-                            "an invalid pVal integer format: " + record.pVal());
+                            "an invalid power format: " + record.power());
                     continue;
                 }
             }
@@ -396,7 +403,7 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
                     level, new ArrayList<>(), effects, record.message(),
                     record.visMessage(), "", charges, pileChance, pileAmount,
                     null, null, null, false, false,
-                    ignoreFlags, false, tValue));
+                    ignoreFlags, false, tValue, power));
         }
 
         return itemObjects;

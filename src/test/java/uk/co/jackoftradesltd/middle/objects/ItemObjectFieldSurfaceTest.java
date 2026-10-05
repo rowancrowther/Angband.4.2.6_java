@@ -27,6 +27,7 @@ import uk.co.jackoftradesltd.middle.cave.Loc;
 import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
+import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectNotice;
@@ -43,6 +44,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -81,8 +83,19 @@ class ItemObjectFieldSurfaceTest {
      * @return a curse with every other field empty
      */
     private static Curse curse(String name) {
+        return curse(name, 0);
+    }
+
+    /**
+     * As {@link #curse(String)}, with the registry index the item's curse map orders by.
+     *
+     * @param name  the curse's name
+     * @param index the curse's index in the registry
+     * @return a curse with every other field empty
+     */
+    private static Curse curse(String name, int index) {
         return new Curse(name, List.of(), 0, null, new Flag<>(ObjectFlag.class), Map.of(), Map.of(), 0, 0, 0,
-                List.of(), new Flag<>(ObjectFlag.class), "", "", 0);
+                List.of(), new Flag<>(ObjectFlag.class), "", "", index);
     }
 
     /**
@@ -263,20 +276,25 @@ class ItemObjectFieldSurfaceTest {
         }
 
         /**
-         * The curse map is shared too, so a curse put on the caller's map afterwards appears on
-         * the item. The Javadoc once said the constructor copied it.
+         * The curse map is copied, unlike the other collections: the item keeps its own map, ordered
+         * by curse index, so a curse put on the caller's map afterwards does not appear on the item.
+         * The {@link CurseData} values are the caller's instances, not copies.
          */
         @Test
-        @DisplayName("shares the curse map rather than copying it")
-        void sharesTheCurseMap() {
+        @DisplayName("copies the entries of the curse map rather than sharing the map")
+        void copiesTheCurseMap() {
+            Curse siren = curse("siren");
+            CurseData given = new CurseData(3, 7);
             LinkedHashMap<Curse, CurseData> curses = new LinkedHashMap<>();
+            curses.put(siren, given);
             ItemObject item = full(new HashMap<>(), new HashMap<>(), new HashSet<>(), new HashSet<>(), curses,
                     new ArrayList<>(), "0", "0");
-            Curse siren = curse("siren");
 
-            curses.put(siren, new CurseData(3, 7));
+            curses.put(curse("itches"), new CurseData(1, 1));
 
-            assertEquals(3, item.getCurses().get(siren).getPower());
+            assertAll(
+                    () -> assertEquals(1, item.getCurses().size()),
+                    () -> assertSame(given, item.getCurses().get(siren)));
         }
 
         /**
@@ -323,13 +341,20 @@ class ItemObjectFieldSurfaceTest {
 
         /**
          * The recharge string goes through the dice parser, which answers null for the empty
-         * string. A null time reads as nothing charging.
+         * string. The constructor swaps that null for a zero value, as C's zeroed
+         * {@code random_value} would be, so the getter never answers null.
          */
         @Test
-        @DisplayName("leaves the recharge dice null for an empty string")
-        void emptyTimeIsNull() {
-            assertNull(full(new HashMap<>(), new HashMap<>(), new HashSet<>(), new HashSet<>(),
-                    new LinkedHashMap<>(), new ArrayList<>(), "0", "").getTime());
+        @DisplayName("gives a zero recharge interval for an empty string")
+        void emptyTimeIsZero() {
+            Random time = full(new HashMap<>(), new HashMap<>(), new HashSet<>(), new HashSet<>(),
+                    new LinkedHashMap<>(), new ArrayList<>(), "0", "").getTime();
+
+            assertAll(
+                    () -> assertEquals(0, time.getBase()),
+                    () -> assertEquals(0, time.getDice()),
+                    () -> assertEquals(0, time.getSides()),
+                    () -> assertEquals(0, time.getMBonus()));
         }
 
         @Test
@@ -640,26 +665,29 @@ class ItemObjectFieldSurfaceTest {
         }
 
         /**
-         * The curses end up in the order of the map handed in.
+         * The curses end up in ascending curse index, as C's loop over {@code obj->curses[i]} walks
+         * them, whatever order the map handed in held them in.
          */
         @Test
-        @DisplayName("the curses keep the order they were handed in")
-        void orderIsKept() {
+        @DisplayName("the curses walk in curse index order, not the order they were handed in")
+        void orderIsByIndex() {
+            Curse low = curse("low", 1);
+            Curse high = curse("high", 2);
             for (boolean viaSetCurses : new boolean[]{true, false}) {
                 item = new ItemObject();
                 LinkedHashMap<Curse, CurseData> given = new LinkedHashMap<>();
-                given.put(teleport, new CurseData(1, 1));
-                given.put(siren, new CurseData(2, 2));
+                given.put(high, new CurseData(1, 1));
+                given.put(low, new CurseData(2, 2));
 
                 replaceWith(viaSetCurses, given);
 
-                assertEquals(List.of(teleport, siren), new ArrayList<>(item.getCurses().keySet()));
+                assertEquals(List.of(low, high), new ArrayList<>(item.getCurses().keySet()));
             }
         }
 
         /**
-         * An item the full constructor built with a null curse map takes a replacement without
-         * throwing.
+         * An item the full constructor built from a null curse map, which it reads as empty, takes a
+         * replacement without throwing.
          */
         @Test
         @DisplayName("works on an item whose curse map is null")
@@ -675,17 +703,18 @@ class ItemObjectFieldSurfaceTest {
         }
 
         /**
-         * Setting a power to zero leaves the entry in the map. Taking a curse off is
-         * {@code removeCurse}.
+         * Setting a power to zero takes the entry out of the map. C's zero power means "off", and in
+         * the map "off" is a missing key, so a zero-power entry is never left behind. Calling
+         * {@code removeCurse} afterwards finds nothing to remove and is quiet about it.
          */
         @Test
-        @DisplayName("a power of zero leaves the entry, and removeCurse takes it out")
-        void zeroPowerIsNotRemoval() {
+        @DisplayName("a power of zero removes the entry, and removeCurse then finds nothing")
+        void zeroPowerRemovesEntry() {
             item.addCurse(siren, 50, 12);
 
             item.setCursePower(siren, 0);
-            assertTrue(item.getCurses().containsKey(siren));
-            assertEquals(0, item.getCurses().get(siren).getPower());
+            assertFalse(item.getCurses().containsKey(siren));
+            assertTrue(item.getCurses().isEmpty());
 
             item.removeCurse(siren);
             assertTrue(item.getCurses().isEmpty());

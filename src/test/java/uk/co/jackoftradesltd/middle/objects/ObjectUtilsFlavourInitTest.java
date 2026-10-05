@@ -56,7 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@link ObjectUtils#flavourInit()}, the port of C's {@code flavor_init} ({@code obj-util.c:156}).
+ * Tests {@link ObjectUtils#flavourInit()}, the port of C's {@code flavor_init} ({@code obj-util.c}).
  *
  * <p>Every test here runs with {@link GameState#setTurn} at 2, skipping C's turn-1 rescrub/reparse
  * branch (which calls {@code cleanup_parser}/{@code run_parser} in C, {@link MiscDataLoader#loadFlavours()}
@@ -188,7 +188,7 @@ class ObjectUtilsFlavourInitTest {
 
     /**
      * The {@code OPT(player, birth_randarts)} gate between {@code flavor_reset_fixed} and
-     * {@code flavor_assign_fixed} ({@code obj-util.c:180-183}) — off, a fixed flavour's sval is
+     * {@code flavor_assign_fixed} ({@code obj-util.c}) — off, a fixed flavour's sval is
      * never touched, so the unconditional {@code flavor_assign_fixed} pass binds it by matching
      * sval; on, {@code flavor_reset_fixed} clears it first, so {@code flavor_assign_fixed} skips it
      * ({@code f->sval == SV_UNKNOWN}) and it falls to {@code flavor_assign_random} instead, whose
@@ -247,13 +247,15 @@ class ObjectUtilsFlavourInitTest {
     }
 
     /**
-     * The scroll-title loop ({@code obj-util.c:194-226}): each of the {@code MAX_TITLES} (50, C's
-     * {@code obj-util.h}) titles is built word by word, and a word is kept only once accepting it
-     * would still leave the title under {@code sizeof(scroll_adj[0]) - 3} letters (15; the array is
-     * 18 bytes, C's {@code maxTitleLength}), quotes included — the very bound this port dropped a
-     * word past before the fix verified earlier this session. So every title's raw length, quotes
-     * included, must be at most 17: one for the opening quote, up to 15 of committed
-     * words-and-spaces, one for the closing quote.
+     * The scroll-title loop ({@code obj-util.c}): each of the {@code MAX_TITLES} (50, C's
+     * {@code obj-util.h}) titles is built word by word, and a word is kept only while the running
+     * length of kept words and their trailing spaces plus the next word stays under
+     * {@code sizeof(scroll_adj[0]) - 3} (15; the array is 18 bytes, C's {@code maxTitleLength}).
+     * C then writes the closing quote over the last trailing space with
+     * {@code buf[titlelen] = '"'}, so a title is the opening quote, the words with single spaces
+     * between them, and the closing quote straight after the last letter. That makes the longest
+     * title 16 characters and the shortest 8: C's own comment gives 6 to 14 letters and spaces
+     * between the quotes. A trailing space before the closing quote is the fault this pins.
      */
     @Nested
     @DisplayName("scroll title generation")
@@ -272,8 +274,13 @@ class ObjectUtilsFlavourInitTest {
                 assertNotNull(title);
                 assertTrue(title.startsWith("\""), () -> "must open with a quote: " + title);
                 assertTrue(title.endsWith("\""), () -> "must close with a quote: " + title);
-                assertTrue(title.length() <= 17,
-                        () -> "title exceeds the 15-letter body bound: " + title);
+                assertTrue(title.length() <= 16,
+                        () -> "title exceeds the 14-character body bound: " + title);
+                assertTrue(title.length() >= 8,
+                        () -> "title is shorter than C can produce: " + title);
+                assertFalse(title.endsWith(" \""),
+                        () -> "C overwrites the trailing space with the closing quote: " + title);
+                assertFalse(title.contains("  "), () -> "words are separated by one space: " + title);
                 assertTrue(seen.add(title), () -> "duplicate title, C's i-- retry should prevent this: " + title);
             }
         }
@@ -281,7 +288,7 @@ class ObjectUtilsFlavourInitTest {
 
     /**
      * The scroll-only text overwrite ({@code f->text = scroll_adj[k_info[i].sval]},
-     * {@code obj-util.c:106}), reached this time through {@code flavourInit}'s own call to
+     * {@code obj-util.c}), reached this time through {@code flavourInit}'s own call to
      * {@code flavourAssignRandom(TV_SCROLL)} rather than invoked directly, proving the titles built
      * earlier in the same pass are what get bound.
      */
@@ -307,7 +314,7 @@ class ObjectUtilsFlavourInitTest {
     }
 
     /**
-     * The final analyse pass ({@code obj-util.c:232-246}): a named, unflavoured, non-artifact kind
+     * The final analyse pass ({@code obj-util.c}): a named, unflavoured, non-artifact kind
      * becomes {@code aware}; a nameless (empty) kind is skipped entirely; a special artifact kind is
      * exempt even though it too has no flavour, matching C's
      * {@code kind->kidx < z_info->ordinary_kind_max} guard via

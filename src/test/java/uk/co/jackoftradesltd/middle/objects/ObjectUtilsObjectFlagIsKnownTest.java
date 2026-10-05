@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests {@link ObjectUtils#objectFlagIsKnown}, the port of C's {@code object_flag_is_known}
- * ({@code obj-knowledge.c:781}).
+ * ({@code obj-knowledge.c}).
  *
  * <p>C tries three routes to "yes" in a fixed order — the object is fully known, the player's own
  * rune knowledge ({@code p->obj_k}, the port's {@link Player#getItemKnowledge()}) has the flag, or

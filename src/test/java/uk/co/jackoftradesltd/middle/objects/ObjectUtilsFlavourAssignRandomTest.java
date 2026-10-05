@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests {@link ObjectUtils#flavourAssignRandom}, the port of C's {@code flavor_assign_random}
- * ({@code obj-util.c:77}).
+ * ({@code obj-util.c}).
  *
  * <p>C counts the flavours of a tval whose {@code sval} is still {@code SV_UNKNOWN}, then for
  * every {@code k_info} entry of that tval with no flavour yet, draws a random index into that

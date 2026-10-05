@@ -55,7 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.co.jackoftradesltd.testsupport.ItemFixture.set;
 
 /**
- * Tests {@link ObjectUtils#objectPrep}, the port of C's {@code object_prep} ({@code obj-make.c:817}).
+ * Tests {@link ObjectUtils#objectPrep}, the port of C's {@code object_prep} ({@code obj-make.c}).
  *
  * <p>Every kind here is built on {@link ItemFixture#kindWithDice}, so {@code toH}/{@code toD}/
  * {@code toA} are never null; each test then overwrites whichever dice it is asking about with a

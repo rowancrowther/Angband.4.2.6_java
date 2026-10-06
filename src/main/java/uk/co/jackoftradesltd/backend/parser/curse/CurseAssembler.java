@@ -75,21 +75,83 @@ import java.util.Map;
  * {@link MonsterRegistry#lookupSummon}. The summon registry must therefore be
  * populated before curse assembly runs (mirroring C's summons-before-curses
  * order).
+ * <p>
+ * <b>Load-time checks carried over from C</b> ({@code obj-init.c}, functions
+ * {@code parse_curse_weight} and {@code finish_parse_curse}):
+ * <ul>
+ *   <li>the {@code weight:} adjustment must fit a signed 16-bit value
+ *       (-32768 to 32767); it is range-checked, never clamped, so a negative
+ *       adjustment is preserved;</li>
+ *   <li>a curse with {@code MULTIPLY_WEIGHT} in its {@code flags:} must not have a
+ *       negative weight adjustment;</li>
+ *   <li>no more than {@value #MAX_CURSES} curses may be loaded.</li>
+ * </ul>
+ * Where C fails the whole load, this assembler skips the offending record and
+ * reports it, except for the curse-count cap, which throws.
+ * <p>
+ * <b>Ordering and index:</b> C builds its curse list by prepending, so
+ * {@code curses[1]} is the <em>last</em> curse in the file. The assembled list is
+ * reversed to match, and each {@link Curse} is then given its position in that
+ * reversed list as its index. C numbers curses from 1 ({@code curses[0]} is an
+ * unused slot and {@code curse_max} is the count plus one); this port numbers from
+ * 0.
+ * <p>
+ * <b>Known divergences from C:</b>
+ * <ul>
+ *   <li>the {@code NONE}/{@code MAX} sentinels of {@link ElementEnum} and
+ *       {@link ObjectModifier} resolve by name, so {@code flags:HATES_MAX} or
+ *       {@code values:MAX[1]} load here where C rejects them as unknown
+ *       (accepted, as the enums carry sentinels C lacks);</li>
+ *   <li>a {@code conflict:} name that matches no curse is reported as an error;
+ *       C never validates it and the name simply never matches.</li>
+ * </ul>
+ * <b>Outstanding:</b> {@code assemble} never sets the curse object's
+ * {@code time}, which C's {@code parse_curse_time} stores in {@code curse->obj->time}.
+ * The {@code time:} line is currently carried on the preceding {@link Effect}
+ * instead; to be picked up separately.
+ *
+ * <p>Class CurseAssembler coded before 260915, commented in full on 261005.
  *
  * @author Rowan Crowther
  */
 public class CurseAssembler implements Assembler<CurseParseRecord, List<Curse>> {
     /**
-     * Assemble the parsed curse records into resolved {@link Curse}s. Malformed
-     * records are reported into {@code errors} and skipped rather than aborting
-     * the whole file; an unresolvable {@code conflict:} name is a soft error that
-     * still leaves the curse loaded (with that one link omitted).
+     * The most curses {@code curse.txt} may define: 254, as in C's
+     * {@code finish_parse_curse}, which fails with {@code PARSE_ERROR_TOO_MANY_ENTRIES}
+     * on the 255th. Exceeding it makes {@link #assemble} throw rather than skip.
      *
-     * <p>Function assemble coded before 260915, commented in full on 260915.
+     * <p>Field MAX_CURSES coded before 260915, commented in full on 261005.
+     */
+    private static final int MAX_CURSES = 254;
+
+    /**
+     * Assemble the parsed curse records into resolved {@link Curse}s (Java port of
+     * the {@code parse_curse_*} functions and {@code finish_parse_curse} in
+     * {@code obj-init.c}). Malformed records are reported into {@code errors} and
+     * skipped rather than aborting the whole file; an unresolvable {@code conflict:}
+     * name is a soft error that still leaves the curse loaded (with that one link
+     * omitted).
+     * <p>
+     * A record is skipped for: an unknown {@code type:} tval; a non-integer or
+     * out-of-range ({@code -32768..32767}) {@code weight:}; an effect that fails to
+     * resolve; an unknown {@code flags:} token; an unknown or non-integer
+     * {@code values:} entry; a non-integer {@code combat:} field; an unknown
+     * {@code conflict-flags:} token; or {@code MULTIPLY_WEIGHT} combined with a
+     * negative weight. An absent {@code weight:} or {@code combat:} means 0.
+     * The {@code desc:} lines are concatenated with no separator, as C does.
+     * <p>
+     * Once every record is processed, the surviving curses are reversed to match C's
+     * prepend-built list and re-indexed from 0 (see the class comment), then each
+     * curse's conflict names are linked to {@link Curse} instances in a second pass.
+     *
+     * <p>Function assemble coded before 260915, commented in full on 261005.
      *
      * @param records the raw parse records from the grammar
      * @param errors  accumulating list of soft (skip-and-continue) error messages
-     * @return the assembled curses, with conflict links resolved
+     * @return the assembled curses in C's order (last curse in the file first), with
+     *         conflict links resolved
+     * @throws IllegalArgumentException if more than {@value #MAX_CURSES} curses survive
+     *                                  the first pass
      */
     @Override
     public List<Curse> assemble(@NotNull List<CurseParseRecord> records, @NotNull List<String> errors) {
@@ -125,6 +187,11 @@ public class CurseAssembler implements Assembler<CurseParseRecord, List<Curse>> 
             if (!record.weightAdjustment().isEmpty()) {
                 try {
                     weightAdjustment = Integer.parseInt(record.weightAdjustment());
+                    if (weightAdjustment < Short.MIN_VALUE || weightAdjustment > Short.MAX_VALUE) {
+                        errors.add("Curse starting at line: " + line + " has " +
+                                "weight out of range: " + record.weightAdjustment());
+                        continue;
+                    }
                 } catch (NumberFormatException e) {
                     errors.add("Curse starting at line: " + line + " has " +
                             "invalid weight adjustment value: " + record.weightAdjustment());
@@ -256,6 +323,13 @@ public class CurseAssembler implements Assembler<CurseParseRecord, List<Curse>> 
                 sb.append(desc);
             String description = sb.toString();
             String message = record.message();
+
+            if (objectFlags.has(ObjectFlag.OF_MULTIPLY_WEIGHT) && weightAdjustment < 0) {
+                errors.add("Curse starting at line: " + line + " has " +
+                        "a negative weight adjustment and a multiply weight flag");
+                continue;
+            }
+            
             ItemObject itemObject = new ItemObject();
             itemObject.setWeight(weightAdjustment);
             itemObject.setEffect(effects);
@@ -266,17 +340,26 @@ public class CurseAssembler implements Assembler<CurseParseRecord, List<Curse>> 
             itemObject.setToDam(tod);
             itemObject.setToAC(toa);
             itemObject.setEffectMessage(message);
-            Effect result;
-            if (effects.isEmpty())
-                result = null;
-            else
-                result = effects.getFirst();
 
-            results.add(new Curse(name, types, itemObject, weightAdjustment,
-                    result, objectFlags, modifiers, elInfo,
-                    toh, tod, toa, conflictingCurses, cFlags,
-                    description, message, curseIndex));
+            results.add(new Curse(name, types, itemObject,
+                    conflictingCurses, cFlags,
+                    description, curseIndex));
             curseIndex++;
+        }
+
+        if (results.size() > MAX_CURSES) {
+            String message = "Too many curses in the curse.txt file, must be less than 255, " + results.size() +
+                    " found";
+            throw new IllegalArgumentException(message);
+        }
+
+        // Reverse the list to make it fit the same order as C
+        results = results.reversed();
+
+        int index = 0;
+        for (Curse curse : results) {
+            curse.setIndex(index);
+            index++;
         }
 
         // Second pass - link the conflicting curses

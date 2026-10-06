@@ -31,9 +31,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * no clamping, no relation to the previous value, and no side effect on the day count or any other
  * field {@link GameState} holds alongside it.
  *
- * <p>{@link GameState#resetTurnForNewPlayer()} and {@link GameState#resetTurnFromSave(int)} write
- * the same field under birth- and load-specific names; this file covers only the general-purpose
- * {@code setTurn}, and does not re-test those siblings.
+ * <p>{@link GameState#resetTurnFromSave(int)} writes the same field under a load-specific name;
+ * this file covers only the general-purpose {@code setTurn}, and does not re-test that sibling.
  *
  * <p>{@code turn} is a static field shared across the JVM, so each test saves the count beforehand
  * and restores it afterwards to avoid leaking state into whichever test runs next.
@@ -76,8 +75,8 @@ class GameStateSetTurnTest {
     }
 
     /**
-     * Zero is not special-cased - {@code resetTurnForNewPlayer}'s value is reachable through the
-     * general setter too, since both are the same bare field write in C.
+     * Zero is not special-cased - it is reachable through the general setter like any other
+     * value, since it is the same bare field write in C.
      */
     @Test
     @DisplayName("zero writes like any other value")

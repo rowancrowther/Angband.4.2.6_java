@@ -69,61 +69,38 @@ import java.util.Map;
  * The game-clock and turn-loop machinery — the port of C's {@code game-world.c}.
  *
  * <p>This is where the passage of game time and the per-turn processing live: how much energy an
- * actor banks each game turn for its speed, the day/night cycle, and (as the port grows) the
- * {@code process_world} / {@code process_player} / {@code run_game_loop} pass that drives every
+ * actor banks each game turn for its speed, the day/night cycle, and the
+ * {@link #processWorld()} / {@link #processPlayer()} / {@link #runGameLoop()} pass that drives every
  * creature's turn. It is deliberately kept separate from {@link GameState}: {@code GameState} owns the mutable
  * "current game" <em>data</em> (the turn counter, day count, RNG seeds, character-stage flags),
  * while {@code GameWorld} owns the <em>behaviour</em> that reads and advances it. In C both sat in
  * one file only because C uses file-scope globals as its singleton.
  *
+ * <p>Every function in {@code game-world.c} that acts on the running game has a counterpart here:
+ * {@code turn_energy}, {@code is_daytime}, {@code recharged_notice}, {@code recharge_objects},
+ * {@code play_ambient_sound}, {@code decrease_timeouts}, {@code make_noise}, {@code update_scent},
+ * {@code process_world}, {@code process_player_cleanup}, {@code process_player},
+ * {@code on_new_level}, {@code on_leave_level} and {@code run_game_loop}. The two lookups over the
+ * world's level list, {@code level_by_name} and {@code level_by_depth}, live in
+ * {@link uk.co.jackoftradesltd.middle.game.globals.registry.WorldRegistry} instead, beside the list
+ * they search. {@code daycount} and {@code character_dungeon} are kept here as static fields; the
+ * turn counter, seeds and the {@code character_generated} flag are {@link GameState}'s.
+ *
  * <p>The one purely constant piece of this subsystem — the speed-to-energy lookup table — is
  * modelled here as {@link #extractEnergy}; unlike the values in {@link GameConstants} it is baked
  * into the source rather than loaded from {@code lib/gamedata}, exactly as in the original.
  *
+ * <p><b>Boundaries.</b> Several collaborators this class calls are still stubs awaiting their own
+ * chapters (the monster turn, level generation, the player-utility upkeep and a number of
+ * {@link Chunk} and effect methods). The control flow, ordering and arguments in this class are
+ * written to C and stand on their own; what each stub will eventually do is that chapter's concern.
+ * The affected methods say so in their own blocks.
+ *
+ * <p>Class GameWorld coded before 261006, commented in full on 261006.
+ *
  * @author Rowan Crowther
  */
 public class GameWorld {
-    /**
-     * The player being driven this game, cached from {@link GameState#getPlayer()} at construction —
-     * the port of C's file-scope {@code player} global. Stands in for the pointer that every
-     * {@code game-world.c} function dereferences.
-     */
-    private Player player;
-
-    /**
-     * The level the player currently occupies, cached from {@link GameState#getCave()} at
-     * construction — the port of C's file-scope {@code cave} global.
-     *
-     * <p><b>Known limitation:</b> C re-reads its {@code cave} global on every loop iteration, so it
-     * always sees the freshly generated level after {@link Generate#prepareNextLevel(Player)}. This
-     * cached copy goes stale across a level regeneration and must be refreshed (or read live from
-     * {@link GameState#getCave()}) once {@link #processWorld()} does real work.
-     */
-    private Chunk currentCave;
-
-    /**
-     * Whether a playable dungeon level currently exists — the port of C's {@code character_dungeon}
-     * global. Guards the level-teardown path in {@link #runGameLoop()} so {@link #onLeaveLevel()}
-     * runs only when there is a level to leave. Set elsewhere (character birth / save load) once
-     * those subsystems are ported; until then it stays {@code false}.
-     */
-    private static boolean characterDungeon;
-
-    /**
-     * How many whole days have passed while the player has been below the town — the port of C's
-     * {@code daycount} global ({@code game-world.c}).
-     *
-     * <p>Counted here and spent elsewhere. The stores restock a day at a time, but doing that while
-     * the player is in the dungeon would let the knowledge menu show tomorrow's stock, so the days
-     * are banked instead and worked off on the return to town: C's {@code store_update}
-     * ({@code store.c:1421}) runs its maintenance loop {@code daycount} times and then zeroes the
-     * counter. Only the dungeon arm of the turn increments it — in town the stores are simply kept
-     * current.
-     *
-     * <p>Field dayCount coded before 260817, commented in full on 260817.
-     */
-    private int dayCount;
-
     /**
      * Energy gained per game turn as a function of speed, indexed directly by the speed value
      * (0–199, with 110 being normal speed) — the port of C's {@code extract_energy[200]}.
@@ -133,6 +110,12 @@ public class GameWorld {
      * a normal actor banks 10 per turn, {@code +10} speed banks 20 (a true doubling), but the
      * gains flatten out and cap at 49 near the top of the table. Values are looked up rather than
      * computed to preserve those hand-tuned break-points exactly.
+     *
+     * <p>The table has 200 entries, so a speed outside {@code 0..199} throws
+     * {@link ArrayIndexOutOfBoundsException}; C would read past the array. Read only through
+     * {@link #turnEnergy(int)}.
+     *
+     * <p>Field extractEnergy coded before 261006, commented in full on 261006.
      */
     private static final int[] extractEnergy = {
             /* Slow */     1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -156,6 +139,83 @@ public class GameWorld {
             /* F+70 */    49, 49, 49, 49, 49, 49, 49, 49, 49, 49,
             /* Fast */    49, 49, 49, 49, 49, 49, 49, 49, 49, 49,
     };
+    /**
+     * Whether a playable dungeon level currently exists — the port of C's {@code character_dungeon}
+     * global. Guards the level-teardown path in {@link #runGameLoop()} so {@link #onLeaveLevel()}
+     * runs only when there is a level to leave, and read by {@link #hasCharacterDungeon()} for the
+     * bonus calculation. It starts {@code false}, and is written only through
+     * {@link #setCharacterDungeon(boolean)}.
+     *
+     * <p>It is {@code static} because the C global is process-wide and the readers
+     * ({@code PlayerCalcs}) have no {@code GameWorld} instance to ask.
+     *
+     * <p>Field characterDungeon coded before 261006, commented in full on 261006.
+     */
+    private static boolean characterDungeon;
+    /**
+     * How many whole days have passed while the player has been below the town — the port of C's
+     * {@code daycount} global ({@code game-world.c}).
+     *
+     * <p>Counted here and spent elsewhere. The stores restock a day at a time, but doing that while
+     * the player is in the dungeon would let the knowledge menu show tomorrow's stock, so the days
+     * are banked instead and worked off on the return to town: C's {@code store_update}
+     * ({@code store.c}) runs its maintenance loop {@code daycount} times and then zeroes the
+     * counter. Only the dungeon arm of {@link #processWorld()} increments it, once every
+     * {@code 10 * store_turns} game turns — in town the stores are simply kept current.
+     *
+     * <p>Zeroed by {@link #GameWorld()}, and read through {@link #getDaycount()} (which
+     * {@link GameState#getDaycount()} forwards to).
+     *
+     * <p>Field dayCount coded before 260817, commented in full on 261006.
+     */
+    private static int dayCount;
+    /**
+     * The player being driven this game, cached from {@link GameState#getPlayer()} at construction —
+     * the port of C's file-scope {@code player} global. Stands in for the pointer that every
+     * {@code game-world.c} function dereferences.
+     *
+     * <p>Assigned once, in {@link #GameWorld()}, and never reassigned afterwards, so a
+     * {@code GameWorld} follows whichever character {@link GameState} held when it was built. Every
+     * method below reads the character through this field rather than calling
+     * {@link GameState#getPlayer()} again.
+     *
+     * <p>Field player coded before 261006, commented in full on 261006.
+     */
+    private Player player;
+    /**
+     * The level the player currently occupies, cached from {@link GameState#getCave()} at
+     * construction — the port of C's file-scope {@code cave} global.
+     *
+     * <p>C re-reads its {@code cave} global on every use, so it always sees the freshly generated
+     * level after {@link Generate#prepareNextLevel(Player)}. This cached copy would go stale across
+     * a level change, so {@link #runGameLoop()} re-reads {@link GameState#getCave()} into it straight
+     * after {@code prepareNextLevel} and before {@link #onNewLevel()} runs; that is the only place
+     * it is reassigned after construction.
+     *
+     * <p>{@link #runGameLoop()} also reads it just before regeneration, to see whether the level
+     * being left is the arena, which is why the refresh has to come after that test.
+     *
+     * <p>Field currentCave coded before 261006, commented in full on 261006.
+     */
+    private Chunk currentCave;
+
+    /**
+     * Binds this world to the current game by caching the live {@link GameState} player and cave —
+     * the two globals ({@code player}, {@code cave}) that C's {@code game-world.c} reaches for
+     * directly.
+     *
+     * <p>Also zeroes {@link #dayCount}, matching C's {@code uint16_t daycount = 0} initialiser, so a
+     * freshly built world starts with no banked store days even though the field is static. It does
+     * not touch {@link #characterDungeon}, which the birth code resets through
+     * {@link #setCharacterDungeon(boolean)}.
+     *
+     * <p>Constructor GameWorld coded before 261006, commented in full on 261006.
+     */
+    public GameWorld() {
+        player = GameState.getPlayer();
+        currentCave = GameState.getCave();
+        dayCount = 0;
+    }
 
     /**
      * The amount of energy gained in one game turn by an actor moving at the given speed — the
@@ -164,7 +224,12 @@ public class GameWorld {
      * <p>Scales the raw table value from {@link #extractEnergy} by the world's move-energy
      * constant ({@link GameConstants#getWorldMoveEnergy}, C's {@code z_info->move_energy}) so the
      * cost of a "move" is data-driven while the speed curve stays fixed. The division is integer
-     * division, matching the C semantics exactly.
+     * division, matching the C semantics exactly. At normal speed (110) with the shipped
+     * {@code move_energy} of 100 that is 10; the same figure is what {@link #processWorld()} uses
+     * as the basis for digestion, and what {@link #runGameLoop()} adds to the player's energy each
+     * game turn.
+     *
+     * <p>Method turnEnergy coded before 261006, commented in full on 261006.
      *
      * @param speed the actor's speed, used directly as the index into {@link #extractEnergy}
      *              (0–199, 110 = normal)
@@ -177,27 +242,16 @@ public class GameWorld {
     }
 
     /**
-     * Binds this world to the current game by caching the live {@link GameState} player and cave —
-     * the two globals ({@code player}, {@code cave}) that C's {@code game-world.c} reaches for
-     * directly.
-     */
-    public GameWorld() {
-        player = GameState.getPlayer();
-        currentCave = GameState.getCave();
-        dayCount = 0;
-    }
-
-    /**
      * Records whether a dungeon level currently exists for the character — the port of the
      * various direct assignments to C's {@code character_dungeon} global (there is no C setter
      * function; C writes the global in place wherever it changes, e.g. {@code true} on level
-     * generation at {@code generate.c:1549} and on save load at {@code load.c:1541}, {@code false}
-     * on birth reset at {@code player-birth.c:1066} and on level teardown at {@code generate.c:1123}).
+     * generation ({@code generate.c}) and on save load ({@code load.c}), {@code false} on birth
+     * reset ({@code player-birth.c}) and on level teardown ({@code generate.c})).
      *
      * <p>The setter counterpart to {@link #hasCharacterDungeon()}; both wrap the same
      * {@link #characterDungeon} field that C reaches for as a bare global.
      *
-     * <p>Method setCharacterDungeon coded before 260907, commented in full on 260907.
+     * <p>Method setCharacterDungeon coded before 260907, commented in full on 261006.
      *
      * @param dungeonExists {@code true} once a level has been generated for the character,
      *                      {@code false} in the gaps either side of one (birth, save load,
@@ -205,6 +259,66 @@ public class GameWorld {
      */
     public static void setCharacterDungeon(boolean dungeonExists) {
         characterDungeon = dungeonExists;
+    }
+
+    /**
+     * How many store-restock days have been banked while the player was below the town — the
+     * read side of C's {@code daycount} global.
+     *
+     * <p>{@link #processWorld()} adds one per {@code 10 * store_turns} game turns spent in the
+     * dungeon; {@link GameState#getDaycount()} forwards here, and
+     * {@link PlayerUtils#dungeonChangeLevel(int)} tests it for non-zero on the way back to town
+     * before calling the store update. There is no setter or reset beyond {@link #GameWorld()}:
+     * in C it is the store maintenance that zeroes the counter, not this file.
+     *
+     * <p>Method getDaycount commented in full on 261006.
+     *
+     * @return the number of whole days waiting to be worked off on the next return to town
+     */
+    public static int getDaycount() {
+        return dayCount;
+    }
+
+    /**
+     * Whether a dungeon level currently exists for the character — the port of reading C's
+     * {@code character_dungeon} global ({@code game-world.h}).
+     *
+     * <p>The flag distinguishes "a character is in play on a level" from the moments either side of
+     * it: character creation, save loading, and the gap between levels. Two of {@code calcBonuses}'
+     * final adjustments are conditioned on it — the {@code PF_UNLIGHT} dark resistance and the
+     * {@code PF_EVIL} nether/holy-orb pair ({@code player-calcs.c}, {@code calc_bonuses()}) — because
+     * both look at the player's surroundings, and there are none to look at before a level exists.
+     * {@link #runGameLoop()} reads the field directly to decide whether there is a level to leave.
+     *
+     * <p>Function hasCharacterDungeon commented in full on 260820, rewritten on 261006.
+     *
+     * @return {@code true} once a level has been generated for the character
+     */
+    public static boolean hasCharacterDungeon() {
+        return characterDungeon;
+    }
+
+    /**
+     * Reports whether it is currently daytime in the game world. Ports C's {@code is_daytime}
+     * ({@code src/game-world.c}).
+     * <p>
+     * A full day is {@code 10 * day_length} game turns. The current turn's position within that
+     * cycle is taken modulo the day length; the first half is day and the second half is night.
+     * The {@code 10L} keeps the arithmetic in {@code long} so the modulus does not overflow as the
+     * turn count grows. This is a pure query on the global turn counter, used across the game (town
+     * lighting, level generation, feature projection) to decide whether the surface is lit.
+     *
+     * <p>With the shipped {@code day_length} of 10000 a day is 100000 game turns: turns
+     * {@code 0..49999} are day, {@code 50000..99999} night, and the cycle starts again at 100000.
+     * The test is strict, so the first night turn is the half-day boundary itself.
+     *
+     * <p>Method isDaytime coded before 261006, commented in full on 261006.
+     *
+     * @return {@code true} during the first half of the day/night cycle, {@code false} otherwise
+     */
+    public static boolean isDaytime() {
+        int turn = GameState.getTurn();
+        return ((turn % (10L * GameConstants.getWorldDayLength())) < ((10L * GameConstants.getWorldDayLength()) / 2));
     }
 
     /**
@@ -228,6 +342,24 @@ public class GameWorld {
      * subtle part: {@code break} means the player spent energy and the world should carry on;
      * {@code return} yields control back to the UI because a player pass used no energy and fresh
      * input is needed.
+     *
+     * <p>Level changes happen at one point in the {@code while (true)} loop. When
+     * {@code generate_level} is set, {@link #onLeaveLevel()} runs first — only if
+     * {@link #characterDungeon} says there is a level to leave — and the outgoing level's name is
+     * tested for {@code "arena"} <em>before</em> {@link Generate#prepareNextLevel(Player)} replaces
+     * it. Then {@link #currentCave} is refreshed, {@link #onNewLevel()} runs, the request flag is
+     * cleared, and a pending arena exit clears {@code arena_level} and kills the tracked arena
+     * monster. The flag is cleared after {@code onNewLevel}, not before, as in C.
+     *
+     * <p>The world is processed when {@code turn % 10 == 0} <em>before</em> the turn counter is
+     * incremented, so turn 0 is processed and the player's energy for that game turn is added
+     * afterwards.
+     *
+     * <p><b>Boundaries:</b> {@link MonsterTurn#processMonsters(int)}, {@link MonsterTurn#resetMonsters()}
+     * and {@link Generate#prepareNextLevel(Player)} are stubs that do nothing yet, so only the
+     * scheduling around them is exercised.
+     *
+     * <p>Method runGameLoop coded before 261006, commented in full on 261006.
      */
     public void runGameLoop() {
         // Tidy up after the player's command
@@ -356,7 +488,8 @@ public class GameWorld {
 
     /**
      * Advances the recharge timers on everything that has one — the port of C's
-     * {@code recharge_objects} ({@code game-world.c:197-251}), run once per game turn.
+     * {@code recharge_objects} ({@code game-world.c}), run once per game turn from
+     * {@link #processWorld()}.
      *
      * <p>Three groups are handled, and the differences between them are the point of the method.
      *
@@ -379,8 +512,14 @@ public class GameWorld {
      *
      * <p>The equipped/carried split is a single pass over the gear list in both trees, because C
      * keeps worn and carried objects on one {@code player->gear} chain and distinguishes them by
-     * asking which slot holds them. Items with no kind are skipped; C asserts on them instead
-     * ({@code game-world.c:206}), the port simply passes over them.
+     * asking which slot holds them. Items with no kind are skipped; C asserts on them instead,
+     * the port simply passes over them.
+     *
+     * <p>The floor pass walks {@link Chunk#getObjects()}, the port of C's {@code cave->objects}
+     * array from index 1 up to {@code obj_max}. C tests each slot for {@code NULL}; the port
+     * dereferences every element, so the list must not hold {@code null}.
+     *
+     * <p>Method rechargeObjects coded before 261006, commented in full on 261006.
      */
     public void rechargeObjects() {
         boolean dischargedStack;
@@ -433,13 +572,13 @@ public class GameWorld {
 
     /**
      * Tells the player that an item has finished recharging — the port of C's
-     * {@code recharged_notice} ({@code game-world.c:147-190}).
+     * {@code recharged_notice} ({@code game-world.c}).
      *
      * <p>The player is only told if they asked to be. Either the {@code notify_recharge} option is
      * on, in which case every recharge is announced, or the item itself carries {@code "!!"}
      * somewhere in its inscription — the long-standing convention for "tell me when this is ready".
-     * C finds it by walking the inscription for a {@code '!'} followed by another
-     * ({@code game-world.c:157-172}); that loop is a substring search, so {@code "@w1!!"} and
+     * C finds it by walking the inscription for a {@code '!'} followed by another; that loop is a
+     * substring search, so {@code "@w1!!"} and
      * {@code "!!kill"} both qualify, not just a bare {@code "!!"}. If neither applies the method
      * returns without describing the item, which is the common case and worth keeping cheap.
      *
@@ -447,6 +586,14 @@ public class GameWorld {
      * running rather than scrolling past unseen. The wording distinguishes three cases: a stack
      * reports whether all of it or only one item recharged (hence {@code all}), a singleton artifact
      * takes "The" because its name is already definite, and any other singleton takes "Your".
+     *
+     * <p>The name is built with no description flags set, which is C's {@code ODESC_BASE}
+     * ({@code 0x00}): the base name only, without quantity, prefix or extra detail, and the
+     * quantity is handled by the message wording instead. The option is read through
+     * {@link PlayerOptionEnum#OP_notify_recharge}, and the inscription through
+     * {@link ItemObject#getNote()}.
+     *
+     * <p>Method rechargedNotice coded before 261006, commented in full on 261006.
      *
      * @param item the object that has just recharged
      * @param all  {@code true} if the whole stack is now charged, {@code false} if a previously
@@ -502,6 +649,18 @@ public class GameWorld {
      * at least {@link GameConstants#getWorldMoveEnergy() move-energy} so they can act on arrival —
      * without ever <em>reducing</em> a higher value carried over from a savefile (hence
      * {@link Math#max}, matching C's {@code if (energy < move_energy) energy = move_energy}).
+     *
+     * <p>The "maximum" tracking is delegated: {@link Player#updateMaxLevel()} raises the maximum
+     * level to the current one, and {@link Player#updateDungeonDepth()} raises the maximum depth
+     * <em>and</em> the recall depth together, only when the current depth is deeper than the
+     * maximum. Both are no-ops otherwise, as in C. The arena flag is tested twice, once to skip the
+     * sound/target/health-bar reset and once to return before the feeling, search and energy floor.
+     *
+     * <p><b>Boundaries:</b> {@link PlayerUtils#disturb()}, {@link PlayerUtils#search()} and
+     * {@link Chunk#displayFeeling(boolean)} are stubs, so the disturb, the surroundings check and the
+     * level feeling are not yet visible.
+     *
+     * <p>Method onNewLevel coded before 261006, commented in full on 261006.
      */
     private void onNewLevel() {
         // Arena levels are not really a level change
@@ -569,6 +728,15 @@ public class GameWorld {
      * passes (needed here because leaving may have changed inventory or state) and flushes queued
      * messages. Note it is deliberately {@code notice → update → redraw}, mirroring C's three separate
      * calls, rather than the bundled {@link PlayerCalcs#noticeStuff(Player)}.
+     *
+     * <p>Only {@link #runGameLoop()} calls it, and only when {@link #characterDungeon} is set, so
+     * it is skipped while there is no level to leave (for example the first generation after birth).
+     *
+     * <p><b>Boundary:</b> the cancel-command call goes to the {@link PlayerTimed#clearTimed} overload
+     * that takes no {@link Player}, which is a stub that reports {@code false} and changes nothing
+     * yet; {@link PlayerTimed#playerClearTimed} is the implemented route.
+     *
+     * <p>Method onLeaveLevel coded before 261006, commented in full on 261006.
      */
     private void onLeaveLevel() {
         // Cancel any command
@@ -587,33 +755,31 @@ public class GameWorld {
     }
 
     /**
-     * Whether a dungeon level currently exists for the character — the port of reading C's
-     * {@code character_dungeon} global ({@code game-world.h:37}).
-     *
-     * <p>The flag distinguishes "a character is in play on a level" from the moments either side of
-     * it: character creation, save loading, and the gap between levels. Two of {@code calcBonuses}'
-     * final adjustments are conditioned on it — the {@code PF_UNLIGHT} dark resistance and the
-     * {@code PF_EVIL} nether/holy-orb pair ({@code player-calcs.c:2042-2051}) — because both look
-     * at the player's surroundings, and there are none to look at before a level exists.
-     *
-     * <p>Function hasCharacterDungeon commented in full on 260820.
-     *
-     * @return {@code true} once a level has been generated for the character
-     */
-    public static boolean hasCharacterDungeon() {
-        return characterDungeon;
-    }
-
-    /**
      * Tidy up after the player's command — the port of C's {@code process_player_cleanup}
      * ({@code game-world.c}), called at the top of {@link #runGameLoop()} and after every dispatched
      * command inside {@link #processPlayer()}.
      *
-     * <p><b>Stub:</b> not yet implemented. When ported it must, if the command actually used energy,
-     * deduct that energy and add it to the running total, decay the bloodlust skip-coercion counter,
-     * apply any terrain damage, and (unless the player auto-dropped) flag the map for hallucination
-     * and refresh multi-hued / marked monsters. In all cases it clears each monster's per-turn
-     * {@code SHOW} flag and the drop status, then runs the update and redraw passes.
+     * <p>If the command used energy, that energy is deducted and added to the running total, the
+     * bloodlust skip-coercion counter is decremented when non-zero, and terrain damage is applied.
+     * Unless the player auto-dropped something, the map is then flagged for redraw while
+     * hallucinating, every multi-hued ({@code RF_ATTR_MULTI}) monster's grid is relit so it shimmers,
+     * and every monster has {@code MFLAG_NICE} cleared; a monster that is {@code MFLAG_MARK}ed but
+     * not {@code MFLAG_SHOW}n loses the mark and is re-evaluated with
+     * {@link MonsterUtils#updateMonster}.
+     *
+     * <p>If the command used <em>no</em> energy, the only effect is on the skip-coercion counter: a
+     * value above one means a background command ran while the bloodlust check was being skipped, and
+     * it is set back to one for the player's next turn. A value of one or zero is left alone.
+     *
+     * <p>In every case, whatever the energy, each monster's {@code MFLAG_SHOW} is cleared, the drop
+     * status is reset, and the update and redraw passes run — update first, because the inventory
+     * may have changed. The two monster loops skip {@code null} slots and, in the shimmer loop,
+     * monsters with no race, where C walks {@code 1 .. cave_monster_max} and tests the race.
+     *
+     * <p><b>Boundaries:</b> {@link PlayerUtils#takeTerrainDamage(Loc)} and
+     * {@link MonsterUtils#updateMonster} are stubs.
+     *
+     * <p>Method processPlayerCleanup coded before 261006, commented in full on 261006.
      */
     private void processPlayerCleanup() {
         // Significant
@@ -696,9 +862,47 @@ public class GameWorld {
      * Process the passage of time on the level — the port of C's {@code process_world}
      * ({@code game-world.c}), run once every ten game turns from {@link #runGameLoop()}.
      *
-     * <p><b>Stub:</b> not yet implemented. When ported it drives the slow, world-scale clock:
-     * day/night and town-store restocking, the recharge of the player's light and regeneration,
-     * timed-effect decay, random monster generation, and the other once-per-ten-turns upkeep.
+     * <p>This is the slow, world-scale clock, and its order is C's and matters. In sequence: the
+     * monster list is compacted if it is near the level limit or too sparse; an ambient sound plays
+     * every quarter day; in town, dawn and dusk announce themselves and relight the level, while in
+     * the dungeon {@link #dayCount} gains one per {@code 10 * store_turns} turns; an
+     * {@code PF_UNLIGHT} player is flagged for a bonus recalculation; a monster may be placed
+     * out of sight, one chance in {@code alloc_monster_chance}.
+     *
+     * <p>Then damage and healing over time, each returning at once if it kills the player: poison
+     * (1), cuts (0 for {@code PF_ROCK}, 3 for Mortal Wound or Deep Gash, 2 for Severe Cut, else 1),
+     * bloodlust withdrawal, timed healing, and the Black Breath's three independent 1-in-2 rolls
+     * (CON loss, STR loss, experience drain). All hits go through the damage-reduction step first.
+     *
+     * <p>Next, food. Unless the counter is in the "Full" grade, every hundredth turn digests an
+     * amount scaled from {@link #turnEnergy(int)} by {@code food_value}, doubled for regeneration,
+     * halved for slow digestion and floored at one; a player with timed healing also burns
+     * {@code 8 * food_value} each turn and loses the healing if they fall below
+     * {@link Food#PY_FOOD_HUNGRY}. A gorged ("Full") player instead burns {@code 5000 / food_value}
+     * and is flagged for a bonus recalculation. The Faint grade may paralyse the player (1 in 10, if
+     * not already paralysed); the Starving grade deals {@code (PY_FOOD_STARVE - food) / 10}.
+     *
+     * <p>The tail runs regeneration, {@link #decreaseTimeouts()}, light, then — unless resting —
+     * {@link #makeNoise()} and {@link #updateScent()}, experience drain, {@link #rechargeObjects()},
+     * equipment learning every hundredth turn, the trap timeouts, and finally the two delayed
+     * teleports: Word of Recall (suspended in arenas) and Deep Descent, whose target depth is
+     * {@code max_depth} advanced by {@code 4 / stair_skip + 1} levels, falling back to a
+     * destruction effect if that is not deeper than the player.
+     *
+     * <p>C takes the chunk as a parameter; the port reads {@link #currentCave}. The local {@code y}
+     * and {@code x} mirror C's declaration and are not used here, because the trap-timeout loop lives
+     * in {@link Chunk#decreaseTrapTimeout()}.
+     *
+     * <p><b>Boundaries:</b> many collaborators are stubs awaiting their chapters, among them
+     * {@link PlayerUtils#takeHit(int, String)}, {@link PlayerUtils#overExert}, {@link PlayerUtils#regenHP()},
+     * {@link PlayerUtils#regenMana()}, {@link PlayerUtils#updateLight()}, {@link EffectUtil#effectSimple},
+     * {@link Chunk#illuminate(boolean)}, {@link Chunk#pickAndPlaceDistantMonster} and
+     * {@link Chunk#resetNoise()}. The faint effect calls the {@link PlayerTimed#incTimed} overload
+     * that takes no {@link Player}, which is also a stub; {@link PlayerTimed#playerIncTimed} is the
+     * implemented route. The starving damage and the {@code Hungry} test read {@link Food}'s fixed
+     * values rather than the figures {@code PlayerRegistry} loads; they agree for the shipped data.
+     *
+     * <p>Method processWorld coded before 261006, commented in full on 261006.
      */
     private void processWorld() {
         int index;
@@ -953,7 +1157,7 @@ public class GameWorld {
                     Message.messageType(MessageType.MSG_TPLEVEL, "The floor opens beneath you!");
                     PlayerUtils.dungeonChangeLevel(targetDepth);
                 } else { // Do something disastrous
-                    Message.messageType(MessageType.MSG_TPLEVEL, "You aer thrown back in an explosion");
+                    Message.messageType(MessageType.MSG_TPLEVEL, "You are thrown back in an explosion!");
                     Source sourceNone = new Source(SourceWhat.SRC_NONE, null);
                     EffectSubTypeWrapper wrapper = new EffectSubTypeWrapper(EffectSubTypeEnum.EST_NONE);
                     EffectUtil.effectSimple(EffectEnum.EF_DESTRUCTION, sourceNone, "0",
@@ -986,6 +1190,23 @@ public class GameWorld {
      *       the curse if it did anything visible) and the timeout is re-rolled
      *       from the curse template's interval.</li>
      * </ol>
+     *
+     * <p>The curse pass visits curses in ascending curse-index order, because
+     * {@link ItemObject#getCurses()} is ordered that way; that is C's walk over its
+     * {@code curses[]} array, and it keeps the order of random rolls the same. Only a curse with
+     * non-zero power takes part.
+     *
+     * <p>For {@code TMD_COMMAND} the commanded monster's own timer is cleared with a notify (out of
+     * sight) or decremented with no flags (in sight), and in either arm the common step that follows
+     * decrements the player's own timer as well.
+     *
+     * <p><b>Boundaries:</b> {@link MonsterUtils#getCommandMonster()} tests each monster's race
+     * without first testing the array element for {@code null}, and the out-of-sight arm calls the 
+     * {@link PlayerTimed#clearTimed} overload that takes no
+     * {@link Player}, a stub that changes nothing yet ({@link PlayerTimed#playerClearTimed} is the
+     * implemented route). {@link ObjectUtils#doCurseEffect} is a stub that answers {@code false}.
+     *
+     * <p>Method decreaseTimeouts coded before 261006, commented in full on 261006.
      */
     private void decreaseTimeouts() {
         int adjust = (StatTables.adjConFix[player.getPlayerState().getStatInd(Stats.STAT_CON)] + 1);
@@ -1042,7 +1263,8 @@ public class GameWorld {
                         if (curseData.getTimeout() == 0) {
                             if (ObjectUtils.doCurseEffect(curse, slot.getItem()))
                                 PlayerKnowledge.learnCurse(player, curse);
-                            curseData.setTimeout(curse.getEffect().getTime().randCalc(0, DamageAspect.RANDOMIZE));
+                            curseData.setTimeout(curse.getItemObject().getTime()
+                                    .randCalc(0, DamageAspect.RANDOMIZE));
                         }
                     }
                 }
@@ -1060,6 +1282,13 @@ public class GameWorld {
      * first band (depth {@code 1}–{@code 20}) up to {@code MSG_AMBIENT_DNG5} beyond depth {@code 80}.
      * Each is emitted through {@link Message#sound}, which the front end hooks to play the audio.
      * This is purely a sound cue — it changes no game state.
+     *
+     * <p>Called from {@link #onNewLevel()} (not for arena levels) and from {@link #processWorld()}
+     * every quarter day. The depth bands are inclusive at the top: depth 20 is still
+     * {@code MSG_AMBIENT_DNG1}, 21 is {@code MSG_AMBIENT_DNG2}, and so on to 81 for
+     * {@code MSG_AMBIENT_DNG5}.
+     *
+     * <p>Method playAmbientSound coded before 261006, commented in full on 261006.
      */
     private void playAmbientSound() {
         if (player.getDepth() == 0) {
@@ -1097,6 +1326,17 @@ public class GameWorld {
      * {@link TimedEffect#TMD_COVERTRACKS} coarsens the increment from 1 to 4, shrinking the
      * range at which the noise stays low enough to be heard. Features that do not transmit
      * sound ({@link Chunk#squareIsNoFlow}) block propagation.
+     *
+     * <p>The eight neighbours are visited in {@link DirectionEnum} order rather than C's
+     * {@code ddgrid_ddd} order. That cannot change the result: a grid gets the noise level current
+     * when it is first reached, and every grid reached from one level is reached at the next, so the
+     * values are the breadth-first distances whatever order ties are taken in. Grids outside the
+     * map are skipped by the bounds test, and the player's own grid is never overwritten.
+     *
+     * <p><b>Boundary:</b> {@link Chunk#resetNoise()} is a stub, so the previous turn's noise is not
+     * yet cleared before the flood starts.
+     *
+     * <p>Method makeNoise coded before 261006, commented in full on 261006.
      */
     private void makeNoise() {
         Loc next = player.getGrid();
@@ -1171,6 +1411,13 @@ public class GameWorld {
      * — the adjacency test that keeps scent spreading along open floor rather than leaking through
      * walls. A player under {@link TimedEffect#TMD_COVERTRACKS} lays no new scent at all, so the
      * method returns after only the aging pass.
+     *
+     * <p>The adjacency test sets {@code addScent} if <em>any</em> in-bounds neighbour holds the next
+     * fresher value, or if the block grid is the player's own (the centre of the template); the
+     * order the neighbours are visited in cannot matter. A grid is then written outright, so a block
+     * grid that already held an older, larger scent value is overwritten with the fresher one.
+     *
+     * <p>Method updateScent coded before 261006, commented in full on 261006.
      */
     private void updateScent() {
         int[][] scentStrength = {
@@ -1229,23 +1476,6 @@ public class GameWorld {
     }
 
     /**
-     * Reports whether it is currently daytime in the game world. Ports C's {@code is_daytime}
-     * ({@code src/game-world.c}).
-     * <p>
-     * A full day is {@code 10 * day_length} game turns. The current turn's position within that
-     * cycle is taken modulo the day length; the first half is day and the second half is night.
-     * The {@code 10L} keeps the arithmetic in {@code long} so the modulus does not overflow as the
-     * turn count grows. This is a pure query on the global turn counter, used across the game (town
-     * lighting, level generation, feature projection) to decide whether the surface is lit.
-     *
-     * @return {@code true} during the first half of the day/night cycle, {@code false} otherwise
-     */
-    public static boolean isDaytime() {
-        int turn = GameState.getTurn();
-        return ((turn % (10L * GameConstants.getWorldDayLength())) < ((10L * GameConstants.getWorldDayLength()) / 2));
-    }
-
-    /**
      * Process player commands from the command queue — the port of C's {@code process_player}
      * ({@code game-world.c}).
      *
@@ -1257,10 +1487,21 @@ public class GameWorld {
      * and dispatches one command via {@link uk.co.jackoftradesltd.middle.game.gameengine.CommandQueue#commandPop}.
      * It loops while no energy was spent and the player is neither dead nor awaiting a new level.
      *
-     * <p>Several steps delegate to subsystems not yet ported and currently call stubs:
-     * {@link PlayerUtils#restingCompleteSpecial()}, {@link ObjectUtils#packOverflow},
-     * {@link EffectUtil#effectSimple} (the ore-detection effect), and
-     * {@link PlayerTimed#timedGradeEq(Player, TimedEffect, String)}.
+     * <p>Dwarves ({@code PF_SEE_ORE}) detect ore only when none of image, confusion, amnesia, stun,
+     * paralysis, terror or fear is running. A player who is paralyzed, or whose stun grade is
+     * "Knocked Out", has {@code CMD_SLEEP} pushed onto the command queue, which is how they "lose"
+     * the turn. If a command is being repeated the repeat event is signalled, otherwise the monster
+     * recall is flagged for redraw (when one is tracked) and a refresh is signalled.
+     *
+     * <p>The loop is left early by {@code break}, not by the loop condition, when the queue has no
+     * command to give or the game has stopped; in the first case the cleanup pass is skipped, which
+     * is deliberate in C too ({@link #runGameLoop()} runs it first on the next call). The final
+     * {@code noticeStuff} runs on every exit.
+     *
+     * <p><b>Boundaries:</b> {@link PlayerUtils#restingCompleteSpecial()}, {@link ObjectUtils#packOverflow}
+     * and {@link EffectUtil#effectSimple} (the ore-detection effect) are stubs.
+     *
+     * <p>Method processPlayer coded before 261006, commented in full on 261006.
      */
     private void processPlayer() {
         // check for interrupts
@@ -1291,7 +1532,8 @@ public class GameWorld {
                         player.getTimedEffect(TimedEffect.TMD_TERROR) == 0 &&
                         player.getTimedEffect(TimedEffect.TMD_AFRAID) == 0) {
                     EffectSubTypeWrapper wrapper = new EffectSubTypeWrapper(EffectSubTypeEnum.EST_NONE);
-                    EffectUtil.effectSimple(EffectEnum.EF_DETECT_ORE, null, "0",
+                    Source sourceNone = new Source(SourceWhat.SRC_NONE, null);
+                    EffectUtil.effectSimple(EffectEnum.EF_DETECT_ORE, sourceNone, "0",
                             wrapper, 0, 0, 3, 3, null);
                 }
             }

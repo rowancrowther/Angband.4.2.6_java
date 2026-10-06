@@ -47,20 +47,22 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p><b>Why this needs a test class at all.</b> The interface has no counterpart in C: there, one
  * pointer is rebound from the slot's item to each curse's template object and a single loop body
- * reads it ({@code player-calcs.c:1929-2020}). The port cannot do that, because a {@link Curse}
- * carries no object of its own, so the two passes became two classes. Everything that could go
+ * reads it in {@code calc_bonuses()} ({@code player-calcs.c}). The port cannot rebind one variable across
+ * two unrelated types — an {@link ItemObject} and a {@link Curse} — so the two passes became two classes. Everything that could go
  * wrong in that translation is invisible at the call site — the loop body compiles and runs
  * whichever implementation it is handed, and a wrong constant simply produces a slightly wrong
  * character.
  *
- * <p>The curse side is where the risk lives, and its answers look like stubs. A curse's template
- * object is built with the {@code <curse object>} kind and a blank known counterpart
- * ({@code obj-init.c:175-195}), so its base armour class, its digger test and every {@code known*}
- * value are constants rather than data. Those constants are C's behaviour, and the tests below pin
- * them as such: their consequence is that a curse under {@code knownOnly} contributes its modifiers
- * and nothing else. If someone later "fixes" {@link CurseSource#knownToAC()} to return the curse's
- * real armour bonus, a cursed item would start showing the player a bonus the original never did,
- * and only these tests would say so.
+ * <p>The curse side is where the risk lives. A curse is read through its own curse object
+ * ({@code curse->obj} in C), and two of its answers are constants because that object never
+ * carries them: base armour class is zero and the digger test is {@code false}. Every {@code known*}
+ * answer is <em>data</em>, read from the curse object's known counterpart, which
+ * {@code player_know_object()} fills from the player's rune knowledge exactly as it does for an
+ * item ({@code write_curse_kinds()} in {@code obj-init.c} marks it assessed so that it can be
+ * fully known). Only a curse with no known counterpart at all, which the port tolerates and C
+ * cannot reach, answers zero and empty. If someone later "fixes" {@link CurseSource#knownToAC()} to
+ * return a constant, a curse's learned armour bonus would vanish under {@code knownOnly}, and
+ * only these tests would say so.
  *
  * <p>Class BonusSourceTest coded on 260820, commented in full on 260820.
  *
@@ -120,6 +122,58 @@ class BonusSourceTest {
         curseObject.setToDam(toDam);
         curseObject.setToAC(toAc);
         return new Curse("test curse", List.of(), curseObject, List.of(), new Flag<>(ObjectFlag.class), "", 0);
+    }
+
+    /**
+     * A curse whose curse object has a known counterpart, as {@code write_curse_kinds()} leaves it
+     * in C. The known object is filled by hand with the values {@code player_know_object()} would
+     * have written, so each test states which runes the player is imagined to know.
+     *
+     * @param flags      the curse object's flags
+     * @param knownFlags the flags the player has learned
+     * @param modifiers  the curse object's modifiers
+     * @param elInfo     the curse object's per-element resistances
+     * @param toHit      the curse's real to-hit
+     * @param toDam      the curse's real to-damage
+     * @param toAc       the curse's real to-armour
+     * @param knownToHit the to-hit the player has learned, zero if the rune is unknown
+     * @param knownToDam the to-damage the player has learned
+     * @param knownToAc  the to-armour the player has learned
+     * @return the curse
+     */
+    private static Curse curseWithKnown(List<ObjectFlag> flags, List<ObjectFlag> knownFlags,
+                                        Map<ObjectModifier, Integer> modifiers,
+                                        Map<ElementEnum, ElementInfo> elInfo,
+                                        int toHit, int toDam, int toAc,
+                                        int knownToHit, int knownToDam, int knownToAc) {
+        return curseWithKnown(flags, knownFlags, modifiers, elInfo, toHit, toDam, toAc,
+                knownToHit, knownToDam, knownToAc, Map.of());
+    }
+
+    /**
+     * As the shorter overload, with the known object's element info given too.
+     *
+     * @param knownElInfo the per-element levels the player has learned
+     * @return the curse
+     * @see #curseWithKnown(List, List, Map, Map, int, int, int, int, int, int)
+     */
+    private static Curse curseWithKnown(List<ObjectFlag> flags, List<ObjectFlag> knownFlags,
+                                        Map<ObjectModifier, Integer> modifiers,
+                                        Map<ElementEnum, ElementInfo> elInfo,
+                                        int toHit, int toDam, int toAc,
+                                        int knownToHit, int knownToDam, int knownToAc,
+                                        Map<ElementEnum, ElementInfo> knownElInfo) {
+        Curse curse = curse(flags, modifiers, elInfo, toHit, toDam, toAc);
+        Flag<ObjectFlag> knownFlagSet = new Flag<>(ObjectFlag.class);
+        if (!knownFlags.isEmpty()) knownFlagSet.set(knownFlags);
+        ItemObject known = new ItemObject();
+        known.setFlagsTo(knownFlagSet);
+        known.setElInfo(knownElInfo);
+        known.setToHit(knownToHit);
+        known.setToDam(knownToDam);
+        known.setToAC(knownToAc);
+        curse.getItemObject().setKnown(known);
+        return curse;
     }
 
     /**
@@ -343,7 +397,7 @@ class BonusSourceTest {
 
         /**
          * The three combat numbers are the three fields of the curse's {@code combat:} line, in
-         * that order ({@code obj-init.c:1089-1091}). Three distinct values, because a transposition
+         * that order. Three distinct values, because a transposition
          * between to-hit and to-damage would pass any test that used the same number twice.
          */
         @Test
@@ -358,15 +412,15 @@ class BonusSourceTest {
         }
 
         /**
-         * Every {@code known*} value is zero, whatever the curse actually carries. This is not a
-         * gap: the curse template's known object is allocated blank and never filled in
-         * ({@code obj-init.c:188-194}), so under {@code knownOnly} the guards in
-         * {@code calcBonuses} drop a curse's combat bonuses and resistances entirely.
+         * A curse object with no known counterpart answers zero for every {@code known*} value and
+         * an empty flag set. C has no such case — {@code write_curse_kinds()} allocates a known
+         * object for every curse — so this pins the port's guard only, and says nothing about what a
+         * player who has learned the runes sees; the tests below cover that.
          */
         @Test
-        @DisplayName("nothing about a curse is ever known")
-        void nothingIsKnown() {
-            BonusSource source = new CurseSource(curse(List.of(), Map.of(),
+        @DisplayName("a curse object with no known counterpart answers zero and empty")
+        void noKnownCounterpart() {
+            BonusSource source = new CurseSource(curse(List.of(ObjectFlag.OF_AGGRAVATE), Map.of(),
                     Map.of(ElementEnum.ELEM_FIRE, res(2)), 1, 2, 3));
 
             assertAll(
@@ -375,6 +429,67 @@ class BonusSourceTest {
                     () -> assertEquals(0, source.knownToDam()),
                     () -> assertEquals(0, source.knownResLevel(ElementEnum.ELEM_FIRE)),
                     () -> assertTrue(source.flagsKnown().isEmpty()));
+        }
+
+        /**
+         * A learned rune makes the known counterpart carry the curse's value. C's
+         * {@code player_know_object()} sets {@code known->to_a/to_h/to_d} to the object's own figure
+         * when the player knows the rune, so the {@code known*} accessors must report it. The three
+         * figures are distinct, so a transposition between them cannot pass.
+         */
+        @Test
+        @DisplayName("known combat values read through from the known counterpart")
+        void knownCombatValuesLearned() {
+            BonusSource source = new CurseSource(curseWithKnown(
+                    List.of(), List.of(), Map.of(), Map.of(), 4, 5, 6, 4, 5, 6));
+
+            assertAll(
+                    () -> assertEquals(6, source.knownToAC()),
+                    () -> assertEquals(4, source.knownToHit()),
+                    () -> assertEquals(5, source.knownToDam()));
+        }
+
+        /**
+         * An unlearned rune leaves the known figure at zero while the real one stays put. C writes
+         * {@code p->obj_k->to_a * obj->to_a}, which is zero until the rune is known, and the caller's
+         * {@code !known_only || obj->known->to_a} test then drops the bonus. The real and known
+         * values must stay independent for that gate to mean anything.
+         */
+        @Test
+        @DisplayName("an unlearned combat rune leaves the known value zero and the real one intact")
+        void knownCombatValuesNotLearned() {
+            BonusSource source = new CurseSource(curseWithKnown(
+                    List.of(), List.of(), Map.of(), Map.of(), 4, 5, 6, 0, 0, 0));
+
+            assertAll(
+                    () -> assertEquals(4, source.toHit()),
+                    () -> assertEquals(5, source.toDam()),
+                    () -> assertEquals(6, source.toAC()),
+                    () -> assertEquals(0, source.knownToAC()),
+                    () -> assertEquals(0, source.knownToHit()),
+                    () -> assertEquals(0, source.knownToDam()));
+        }
+
+        /**
+         * A known element entry is reported, and an element the known object says nothing about is
+         * zero. C copies an element's level into {@code known->el_info} only where the player knows
+         * that element's rune and writes zero elsewhere, so the real level (here vulnerable) and the
+         * known level (here unlearned) can differ for the same element.
+         */
+        @Test
+        @DisplayName("known resistance levels read from the known counterpart only")
+        void knownResistance() {
+            BonusSource source = new CurseSource(curseWithKnown(
+                    List.of(), List.of(), Map.of(),
+                    Map.of(ElementEnum.ELEM_FIRE, res(-1), ElementEnum.ELEM_COLD, res(1)),
+                    0, 0, 0, 0, 0, 0,
+                    Map.of(ElementEnum.ELEM_FIRE, res(-1))));
+
+            assertAll(
+                    () -> assertEquals(-1, source.knownResLevel(ElementEnum.ELEM_FIRE)),
+                    () -> assertEquals(0, source.knownResLevel(ElementEnum.ELEM_COLD),
+                            "the curse resists cold but the player has not learned it"),
+                    () -> assertEquals(1, source.resLevel(ElementEnum.ELEM_COLD)));
         }
 
         /**
@@ -395,7 +510,7 @@ class BonusSourceTest {
 
         /**
          * Modifiers are the one thing a curse really contributes on every pass, because they are
-         * gated on the player's rune knowledge rather than on the blank known object.
+         * gated on the player's rune knowledge in the caller, not on anything held by the curse.
          */
         @Test
         @DisplayName("modifiers are real data")
@@ -460,13 +575,38 @@ class BonusSourceTest {
         }
 
         /**
-         * {@code flagsKnown} must hand back an empty set rather than do nothing at all. The
-         * distinction matters because {@code calcBonuses} keeps one flag variable across the passes
-         * of a slot: a no-op would leave the previous source's flags standing and union them into
-         * the total a second time.
+         * {@code flagsKnown} answers with the known counterpart's flags and not the curse's own. C's
+         * {@code object_flags_known()} intersects the object's flags with the known flags and the
+         * curse kind adds none back, so a flag the curse carries but the player has not learned
+         * must be absent, and the caller must be handed a copy it can change freely.
          */
         @Test
-        @DisplayName("flagsKnown returns a fresh empty set, not the caller's previous one")
+        @DisplayName("flagsKnown returns the learned flags only, as a detached copy")
+        void flagsKnownIsLearnedSubset() {
+            Curse curse = curseWithKnown(List.of(ObjectFlag.OF_AGGRAVATE, ObjectFlag.OF_SEE_INVIS),
+                    List.of(ObjectFlag.OF_AGGRAVATE), Map.of(), Map.of(), 0, 0, 0, 0, 0, 0);
+            BonusSource source = new CurseSource(curse);
+
+            Flag<ObjectFlag> first = source.flagsKnown();
+            first.on(ObjectFlag.OF_FREE_ACT);
+
+            assertAll(
+                    () -> assertTrue(source.flagsKnown().has(ObjectFlag.OF_AGGRAVATE)),
+                    () -> assertFalse(source.flagsKnown().has(ObjectFlag.OF_SEE_INVIS),
+                            "carried by the curse but not yet learned"),
+                    () -> assertFalse(source.flagsKnown().has(ObjectFlag.OF_FREE_ACT),
+                            "the caller's edit must not reach the known object"),
+                    () -> assertNotSame(first, source.flagsKnown()));
+        }
+
+        /**
+         * {@code flagsKnown} must hand back a fresh empty set rather than do nothing at all when the
+         * curse object has no known counterpart. The distinction matters because
+         * {@code calcBonuses} keeps one flag variable across the passes of a slot: a no-op would leave
+         * the previous source's flags standing and union them into the total a second time.
+         */
+        @Test
+        @DisplayName("flagsKnown with no known counterpart is a fresh empty set")
         void flagsKnownIsFreshAndEmpty() {
             BonusSource source = new CurseSource(
                     curse(List.of(ObjectFlag.OF_AGGRAVATE), Map.of(), Map.of(), 0, 0, 0));

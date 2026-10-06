@@ -90,7 +90,7 @@ public class Curse {
      *
      * <p>Field index coded before 261005, commented in full on 261005.
      */
-    private final int index;
+    private int index;
 
     /**
      * The object bases this curse may attach to (C: {@code curse->poss}, the
@@ -386,5 +386,9 @@ public class Curse {
         }
 
         return result;
+    }
+
+    public void setIndex(int index) {
+        this.index = index;
     }
 }

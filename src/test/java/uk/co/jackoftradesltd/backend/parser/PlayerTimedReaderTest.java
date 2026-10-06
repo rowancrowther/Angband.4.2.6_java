@@ -19,6 +19,7 @@ package uk.co.jackoftradesltd.backend.parser;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
@@ -30,8 +31,10 @@ import uk.co.jackoftradesltd.middle.objects.Slay;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.player.PlayerTimedEffect;
+import uk.co.jackoftradesltd.middle.player.TimedFailure;
 import uk.co.jackoftradesltd.middle.player.TimedGrade;
 import uk.co.jackoftradesltd.middle.player.enums.TimedEffect;
+import uk.co.jackoftradesltd.middle.player.enums.TimedEffectReasonType;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -205,6 +208,28 @@ class PlayerTimedReaderTest {
         assertEquals(2, byName(effects, TimedEffect.TMD_POISONED).getFail().size());
         // SLOW has exactly one.
         assertEquals(1, byName(effects, TimedEffect.TMD_SLOW).getFail().size());
+    }
+
+    /**
+     * C's {@code parse_player_timed_fail} links each new condition in at the head of the list
+     * ({@code f->next = t->fail; t->fail = f;}), so the list {@code player_inc_check} walks runs from
+     * the last {@code fail:} line to the first. POISONED declares {@code fail:2:POIS} then
+     * {@code fail:5:OPP_POIS}, so C meets OPP_POIS first. The order is observable: a live resist check
+     * calls {@code equip_learn_element} before it tests, so a poison-resistant item is identified when
+     * the resist is reached, and C never reaches it while OPP_POIS is running.
+     */
+    @Disabled("PlayerTimedAssembler appends fail: lines in file order; C's parser prepends them, so "
+            + "player_inc_check walks the list in reverse file order")
+    @Test
+    void failLinesAreWalkedInTheOrderCBuildsThem() throws IOException {
+        List<PlayerTimedEffect> effects = new PlayerTimedReader().parseWithResults(REAL_FILE).items();
+        List<TimedFailure> fails = byName(effects, TimedEffect.TMD_POISONED).getFail();
+
+        assertEquals(2, fails.size());
+        assertEquals(TimedEffectReasonType.TYPE_TIMED_EFFECT, fails.get(0).getCode());
+        assertEquals(TimedEffect.TMD_OPP_POIS, fails.get(0).getEffectCode());
+        assertEquals(TimedEffectReasonType.TYPE_RESIST, fails.get(1).getCode());
+        assertEquals(ElementEnum.ELEM_POIS, fails.get(1).getElementCode());
     }
 
     @Test

@@ -63,22 +63,29 @@ import java.util.List;
  *
  * <p><b>Three of the methods guard against a table C could not have.</b> {@code p->timed} is a fixed
  * array of {@code TMD_MAX} slots embedded in the player struct, so in C it is always there and every
- * effect always has a slot. The port holds a map, so {@link #incCheck}, {@link #timedGradeEq} and
- * {@link #playerIncTimed} stack {@link Player#playerHasTimed} then
- * {@link Player#playerTimedContains} then a {@code != 0} test where C wrote a single subscript. Only
- * the last of those three is the real question - is the effect running - and a hand-built test
- * character is the only thing the first two ever catch.
+ * effect always has a slot. The port holds a map, so {@link #incCheck} and {@link #timedGradeEq}
+ * stack {@link Player#playerHasTimed} then {@link Player#playerTimedContains} then a
+ * {@code != 0} test where C wrote a single subscript, and {@link #playerIncTimed} stacks
+ * {@code playerTimedContains} then a {@code > 0} test. Only the final test in each is the real
+ * question - is the effect running - and a hand-built test character is the only thing the
+ * earlier ones ever catch.
  *
  * <p><b>{@link #clearTimed} and {@link #incTimed} are not these methods.</b> They are the older
- * stubs, without a {@link Player} parameter, still called from
+ * stubs, without a {@link Player} parameter, called from
  * {@link uk.co.jackoftradesltd.middle.game.GameWorld}; they report no change and do nothing. The
  * implemented routes are the {@code player}-prefixed ones.
  *
- * <p>Class PlayerTimed commented in full on 260901.
+ * <p>Class PlayerTimed commented in full on 261006.
  *
  * @author Rowan Crowther
  */
 public class PlayerTimed {
+    /**
+     * Shared logger; records the missing-definition and malformed-condition errors that
+     * {@link #setTimed} and {@link #incCheck} log before they throw.
+     *
+     * <p>Field logger commented in full on 261006.
+     */
     private final static Logger logger = LogManager.getLogger(PlayerTimed.class);
 
     /**
@@ -86,10 +93,12 @@ public class PlayerTimed {
      *
      * <p><b>Stub: superseded, not implemented.</b> It takes no {@link Player} and so cannot reach a
      * timed-effect table at all; it returns {@code false} without doing anything. The working route is
-     * {@link #playerClearTimed}, and the two remaining callers - {@code GameWorld:553} and
-     * {@code GameWorld:998}, both clearing {@code TMD_COMMAND} - are what keeps this signature alive.
+     * {@link #playerClearTimed}, and the two remaining callers - {@code GameWorld.onLeaveLevel} and
+     * {@code GameWorld.decreaseTimeouts}, both clearing {@code TMD_COMMAND} - are what keeps this signature alive.
      * Both should move across, after which the method and its tripwire tests in
      * {@code PlayerProgressionTest} can go.
+     *
+     * <p>Function clearTimed coded as a stub, commented in full on 261006.
      *
      * @param timedEffect the effect to clear
      * @param notify      whether to announce the effect ending to the player
@@ -135,13 +144,15 @@ public class PlayerTimed {
     }
 
     /**
-     * Extend (or begin) a timed effect by a given amount, delegating to {@link #setTimed} with the
-     * new total. The port of C's {@code player_inc_timed} ({@code player-timed.c}).
+     * Lengthens (or begins) a timed effect by a given amount - the older, player-less signature for
+     * C's {@code player_inc_timed} ({@code player-timed.c}).
      *
      * <p><b>Stub: superseded, not implemented.</b> Like {@link #clearTimed} it takes no
      * {@link Player}, so it cannot reach a timed-effect table; it returns {@code false} without doing
-     * anything. The working route is {@link #playerIncTimed}, and the one remaining caller -
-     * {@code GameWorld:841}, paralysing the player - is what keeps this signature alive.
+     * anything. The working route is {@link #playerIncTimed}, and the one caller -
+     * {@code GameWorld.processWorld}, paralysing a fainting player - is what keeps this signature alive.
+     *
+     * <p>Function incTimed coded as a stub, commented in full on 261006.
      *
      * @param timedEffect the effect to lengthen
      * @param amount      the number of turns to add
@@ -169,8 +180,9 @@ public class PlayerTimed {
      * the character untouched. The live check reads the calculated state from
      * {@link Player#getPlayerState()} instead, and learning is part of its job: being subjected to an
      * effect that one's equipment turns aside is how that equipment's property gets identified, so
-     * the non-lore branches call {@link PlayerKnowledge#equipLearnFlag} and {@link PlayerKnowledge#equipLearnElement} before
-     * testing. The two branches are alternatives, never a sequence - a lore check that fell through
+     * the live object-flag, resist and vulnerability branches call
+     * {@link PlayerKnowledge#equipLearnFlag} and {@link PlayerKnowledge#equipLearnElement} before
+     * testing; the player-flag and timed-effect branches learn nothing. The two branches are alternatives, never a sequence - a lore check that fell through
      * to the live test would both answer the wrong question and identify equipment the player never
      * used.
      *
@@ -198,7 +210,7 @@ public class PlayerTimed {
      * rather than indexing past an array. The unreachable {@code TYPE_NONE} answers C's
      * {@code assert(0)} with a logged throw.
      *
-     * <p>Function incCheck coded on 260831, commented in full on 260831.
+     * <p>Function incCheck coded on 260831, commented in full on 261006.
      *
      * @param player the character the conditions are tested against - their state, equipment,
      *               knowledge and running effects; C's {@code struct player *p}
@@ -487,7 +499,7 @@ public class PlayerTimed {
 
     /**
      * Reports whether an active timed effect is currently at the grade of the given name — the
-     * port of C's {@code player_timed_grade_eq} ({@code player-timed.c:734}).
+     * port of C's {@code player_timed_grade_eq} ({@code player-timed.c}).
      *
      * <p>A timed effect is a single counter, but the player-facing status is a band of that
      * counter: stunning runs "Stun" → "Heavy Stun" → "Knocked Out" as the number climbs. This
@@ -504,10 +516,12 @@ public class PlayerTimed {
      * {@code while} that walks to the band and then a single {@code streq} outside the loop.
      *
      * <p>An effect at zero answers {@code false} without consulting its grades, matching C's
-     * opening {@code if (p->timed[idx])}. The check is needed rather than incidental: the map is
-     * populated with a zero for every effect at construction, and the port's grade list has no
-     * entry for the dormant state, so a zero reaching the loop would be tested against the first
-     * real grade.
+     * opening {@code if (p->timed[idx])}. The map is populated with a zero for every effect at
+     * construction, so a dormant effect is always present and the test is on the counter, not on
+     * presence. The port's grade list opens with the same implicit "off" grade C's parser makes -
+     * maximum {@code 0}, no name, added by {@code PlayerTimedAssembler} - so a zero that reached the
+     * loop would stop at that grade and its null name would answer {@code false} regardless; the
+     * guard states the C condition rather than changing the result.
      *
      * <p>The null definition guard has no counterpart in C, which indexes a static table that is
      * always populated. Here the effects are loaded from {@code player_timed.txt} into
@@ -515,7 +529,7 @@ public class PlayerTimed {
      * an effect with no loaded definition — {@link TimedEffect#TMD_NONE} being the standing
      * example, though its zero value means it never reaches this far.
      *
-     * <p>Function timedGradeEq coded on 260818, commented in full on 260818.
+     * <p>Function timedGradeEq coded on 260818, commented in full on 261006.
      *
      * @param player the character whose current count for the effect decides the grade; C's
      *               {@code struct player *p}
@@ -544,7 +558,7 @@ public class PlayerTimed {
 
     /**
      * Adds {@code amount} to the current duration of a timed effect - the port of C's
-     * {@code player_inc_timed} ({@code player-timed.c:1053}).
+     * {@code player_inc_timed} ({@code player-timed.c}).
      *
      * <p>Three gates stand between the request and the change. The first is the caller's
      * {@code check} flag: when it is set, {@link PlayerTimed#incCheck} is asked whether anything the player
@@ -565,7 +579,8 @@ public class PlayerTimed {
      * player was notified, not whether the stored duration moved. Both refusals - a failed check and
      * a blocked non-stacking increase - answer {@code false}, which is indistinguishable from a
      * silent change that did happen. Callers in C that care about resistance test the return anyway
-     * ({@code mon-blows.c:548}), which is C's own looseness rather than something the port tightens.
+     * ({@code melee_effect_timed} in {@code mon-blows.c}), which is C's own looseness rather than
+     * something the port tightens.
      *
      * <p>C asserts the index is in range, since it is about to subscript {@code timed_effects}; a
      * {@link TimedEffect} makes an out-of-range index unrepresentable, so the assertions have no
@@ -576,10 +591,13 @@ public class PlayerTimed {
      * definition. That is the same class of programming error C's assert catches, reported one call
      * deeper.
      *
-     * <p>The {@code timed.containsKey} test costs nothing and finds nothing: the constructor seeds
-     * the map with every {@link TimedEffect} at zero, so the lookup below it is never null.
+     * <p>The {@link Player#playerTimedContains} test in the non-stacking question costs nothing and
+     * finds nothing: the constructor seeds the map with every {@link TimedEffect} at zero, so the
+     * effect is always present and the real test is the {@code > 0} beside it. Unlike
+     * {@link #incCheck} and {@link #timedGradeEq} there is no {@link Player#playerHasTimed} guard in
+     * front of it, so a character with no table at all throws here.
      *
-     * <p>Function playerIncTimed coded on 260831, commented in full on 260831.
+     * <p>Function playerIncTimed coded on 260831, commented in full on 261006.
      *
      * @param player     the character whose effect is lengthened, passed on to {@link #incCheck} and
      *                   {@link #setTimed}; C's {@code struct player *p}
@@ -621,7 +639,7 @@ public class PlayerTimed {
 
     /**
      * Subtracts {@code amount} from the current duration of a timed effect - the port of C's
-     * {@code player_dec_timed} ({@code player-timed.c:1097}).
+     * {@code player_dec_timed} ({@code player-timed.c}).
      *
      * <p>Almost all of the work belongs to {@link PlayerTimed#setTimed}: the new duration is worked out here
      * as an absolute value and handed over, and every decision about messages, grades, transition
@@ -630,8 +648,8 @@ public class PlayerTimed {
      * leaves anything behind, the caller's {@code notify} is passed on unaltered; if it leaves
      * nothing, {@code notify} is overridden to {@code true} so the "you feel yourself again"
      * message and the accompanying redraw cannot be suppressed. The turn-by-turn decay in
-     * {@code game-world.c:348} relies on exactly this: it decrements every running effect by one
-     * with {@code notify} false, silently, and gets told only about the tick on which an effect
+     * {@code decrease_timeouts} in {@code game-world.c} relies on exactly this: it decrements every
+     * running effect by one with {@code notify} false, silently, and gets told only about the tick on which an effect
      * actually lapses.
      *
      * <p>Nothing is clamped at this level. A subtraction that overshoots produces a negative value
@@ -653,7 +671,7 @@ public class PlayerTimed {
      * analogue here. The {@code getOrDefault} default costs nothing and is never used: the
      * constructor seeds the map with every {@link TimedEffect} at zero.
      *
-     * <p>Function playerDecTimed coded on 260831, commented in full on 260831.
+     * <p>Function playerDecTimed coded on 260831, commented in full on 261006.
      *
      * @param player     the character whose effect is shortened, passed on to {@link #setTimed}; C's
      *                   {@code struct player *p}
@@ -677,7 +695,7 @@ public class PlayerTimed {
 
     /**
      * Cancels a timed effect outright, setting its duration to zero. Ports
-     * {@code player_clear_timed} ({@code player-timed.c:1127}).
+     * {@code player_clear_timed} ({@code player-timed.c}).
      *
      * <p>A one-line delegation to {@link PlayerTimed#setTimed}, which does everything: the lapse messages, the
      * grade transitions, the recalculation and redraw flags, and the decision about whether the
@@ -686,9 +704,9 @@ public class PlayerTimed {
      * <p>Note what it does <em>not</em> do. Unlike {@link #playerDecTimed}, which forces
      * {@code notify} to {@code true} whenever a subtraction takes an effect to its end, this method
      * passes the caller's {@code notify} through untouched. Clearing an effect silently is
-     * therefore possible and is deliberately used: {@code game-world.c:1078} clears
-     * {@code TMD_COMMAND} with {@code notify} false when a level ends, because the player is not to
-     * be told about bookkeeping. The asymmetry is real and is in the C.
+     * therefore possible and is deliberately used: {@code on_leave_level} in {@code game-world.c}
+     * clears {@code TMD_COMMAND} with {@code notify} false when a level ends, because the player is
+     * not to be told about bookkeeping. The asymmetry is real and is in the C.
      *
      * <p>Zero is not a special value to {@code setTimed}; it is an ordinary target that happens to
      * be the floor for most effects. So the usual rules apply - an effect already at zero is
@@ -700,7 +718,7 @@ public class PlayerTimed {
      * {@link TimedEffect} makes an out-of-range index unrepresentable, so the assertions have no
      * analogue here.
      *
-     * <p>Function playerClearTimed coded on 260831, commented in full on 260831.
+     * <p>Function playerClearTimed coded on 260831, commented in full on 261006.
      *
      * @param player     the character whose effect is cancelled, passed on to {@link #setTimed}; C's
      *                   {@code struct player *p}

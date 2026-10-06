@@ -243,6 +243,23 @@ class PlayerIncTimedTest {
     }
 
     /**
+     * C's {@code p->timed} is an array inside the player struct and cannot be absent; the port's is a
+     * map reference that a hand-built character can leave null. Unlike {@code incCheck} and
+     * {@code timedGradeEq}, {@code playerIncTimed} does not ask {@code playerHasTimed} first, so the
+     * non-stacking question reaches the missing map and throws rather than answering.
+     */
+    @Test
+    @DisplayName("a character with no timed-effect table throws, where incCheck and timedGradeEq answer")
+    void aMissingTimedTableThrows() throws Exception {
+        load(true, List.of());
+        Field timed = Player.class.getDeclaredField("timed");
+        timed.setAccessible(true);
+        timed.set(player, null);
+
+        assertThrows(NullPointerException.class, () -> inc(5, true, true, false));
+    }
+
+    /**
      * A bus that swallows the events the notification tail raises.
      */
     private static final class SilentBus implements EventsHandler {

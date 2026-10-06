@@ -24,6 +24,7 @@ import uk.co.jackoftradesltd.channel.enums.ChannelEntryFlag;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.uichannel.UIEntryValue;
 import uk.co.jackoftradesltd.channel.utils.Combiner;
+import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.channel.utils.FlagView;
 import uk.co.jackoftradesltd.channel.utils.UIEntryCombinerState;
 import uk.co.jackoftradesltd.channel.utils.combiners.CombinerName;
@@ -42,46 +43,64 @@ import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerSkill;
 import uk.co.jackoftradesltd.middle.player.enums.TimedEffect;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * The runtime lookup table binding {@link ObjectProperty}/{@link PlayerProperty} pairs to named UI
  * entries and computing each entry's displayed value for an object or a player — the Java port of
  * the entry-bookkeeping half of C's {@code ui-entry.c}: {@code bind_object_property_to_ui_entry_by_name},
  * {@code bind_player_ability_to_ui_entry_by_name}, {@code compute_ui_entry_values_for_object},
- * {@code compute_ui_entry_values_for_player} and {@code is_ui_entry_for_known_rune}.
+ * {@code compute_ui_entry_values_for_player} and {@code is_ui_entry_for_known_rune}, plus the three
+ * file-private helpers the player computation leans on, {@code modifier_to_skill},
+ * {@code get_timed_modifier_effect} and {@code get_timed_element_effect}.
  *
  * <p>C keeps one {@code struct ui_entry} per named entry, each carrying its own growable arrays of
  * bound object properties and player abilities ({@code entry->obj_props}, {@code entry->p_abilities}),
  * appended to one at a time by the two {@code bind_*} functions as {@code object_property.txt} and
  * {@code player_property.txt} are parsed. This class inverts that: {@link EntryBinding} holds the
  * bound {@link ObjectProperty} and {@link PlayerProperty} lists for one entry name, keyed by that
- * name in {@link #bindingByEntry}, and {@link #addEntryBinding} is the single upsert point the
- * assemblers call once an entry's bindings are known, rather than growing the lists incrementally.
+ * name in {@link #bindingByEntry}, and {@link #addEntryBinding} is the single upsert point
+ * {@code GameConstants} calls once an entry's bindings are known, rather than growing the lists
+ * incrementally. C's {@code ui_entry_search} (a binary search of the sorted {@code entries} array)
+ * has no counterpart here; the map lookup replaces it. The display half of {@code struct ui_entry}
+ * — labels, categories, renderer — lives on {@code UIEntry}, not here.
  *
  * <p>The two {@code computeFor*} methods are the boundary's read side: given an entry name they
  * resolve the {@link EntryBinding}, thread the bound properties through the entry's
  * {@link CombinerName}, and hand back a single {@link UIEntryValue} the UI can render, mirroring
- * C's out-parameter pair ({@code *val}, {@code *auxval}).
+ * C's out-parameter pair ({@code *val}, {@code *auxval}). Both expect the registry to have been
+ * loaded or cleared first: until {@link #addEntryBinding} or {@link #clearEntryBindings()} has run,
+ * {@link #bindingByEntry} is {@code null} and the read methods throw {@link NullPointerException}.
+ * C has no such state, since its {@code entries} array exists for the life of the process.
+ *
+ * <p>Class UIEntryValueRegistry coded before 260924, commented in full on 261006.
  *
  * @author Rowan Crowther
  */
 public class UIEntryValueRegistry {
     /**
-     * Logger for the one failure this class treats as fatal: a resolved {@link EntryBinding} with no
-     * configured {@link CombinerName} — see {@link #computeForPlayer}.
+     * Logger for the one failure this class treats as fatal: a resolved {@link EntryBinding} whose
+     * {@link CombinerName} is {@code null} — see {@link #computeForPlayer}. C's equivalent is the
+     * {@code assert(0)} after {@code ui_entry_combiner_get_funcs} in
+     * {@code compute_ui_entry_values_for_player}.
+     *
+     * <p>Field logger coded before 260924, commented in full on 261006.
      */
     private static final Logger logger = LogManager.getLogger(UIEntryValueRegistry.class);
 
     /**
-     * The registry of UI entry bindings, keyed by entry name — the port of C's array of
-     * {@code struct ui_entry}, searched by name via {@code ui_entry_search} ({@code ui-entry.c:1160}).
-     * Populated by {@link #addEntryBinding} and read by {@link #computeForObject},
-     * {@link #computeForPlayer} and {@link #isKnownRune}; {@code null} until the first binding is
-     * added, and reset to an empty map by {@link #clearEntryBindings()} for tests.
+     * The registry of UI entry bindings, keyed by entry name — the port of C's {@code entries} array
+     * of {@code struct ui_entry}, which C searches by name with {@code ui_entry_search}. Populated by
+     * {@link #addEntryBinding} and read by {@link #computeForObject}, {@link #computeForPlayer} and
+     * {@link #isKnownRune}.
+     *
+     * <p>{@code null} until the first {@link #addEntryBinding} call or the first
+     * {@link #clearEntryBindings()}; the three read methods do not guard against that, so reading a
+     * never-initialised registry throws {@link NullPointerException}. Only entries that have at least
+     * one binding are ever stored, so a name that is absent here stands for a C entry whose
+     * {@code obj_props} and {@code p_abilities} arrays are both empty.
+     *
+     * <p>Field bindingByEntry coded before 260924, commented in full on 261006.
      */
     private static Map<String, EntryBinding> bindingByEntry;
 
@@ -89,9 +108,9 @@ public class UIEntryValueRegistry {
      * Resets {@link #bindingByEntry} to an empty map, discarding every previously registered binding.
      * Has no C counterpart — C's {@code entries} array lives for the process and is never cleared —
      * this exists so each test starts from a known-empty registry rather than one carrying bindings a
-     * prior test added.
+     * prior test added. It also gives the map a value where it would otherwise still be {@code null}.
      *
-     * <p>Function clearEntryBindings coded before 260924, commented in full on 260924.
+     * <p>Function clearEntryBindings coded before 260924, commented in full on 261006.
      */
     @TestOnly
     public static void clearEntryBindings() {
@@ -101,11 +120,11 @@ public class UIEntryValueRegistry {
     /**
      * Registers (or updates) the bindings for one named UI entry — the upsert counterpart of C's
      * {@code bind_object_property_to_ui_entry_by_name} and
-     * {@code bind_player_ability_to_ui_entry_by_name} ({@code ui-entry.c:213}, {@code ui-entry.c:270}).
-     * Where C appends one property or one ability at a time to the growable arrays on a
-     * {@code struct ui_entry}, this stores the whole {@link ObjectProperty} and {@link PlayerProperty}
-     * lists for {@code entryName} in one call, replacing whatever {@link EntryBinding} was there
-     * before.
+     * {@code bind_player_ability_to_ui_entry_by_name}, both in {@code ui-entry.c}. Where C appends one
+     * property or one ability at a time to the growable arrays on a {@code struct ui_entry} (doubling
+     * the allocation from four when full), this stores the whole {@link ObjectProperty} and
+     * {@link PlayerProperty} lists for {@code entryName} in one call, replacing whatever
+     * {@link EntryBinding} was there before.
      *
      * <p>A {@code null} list is treated as "leave that half alone": if {@code objProperties} is
      * {@code null} and an {@link EntryBinding} already exists for {@code entryName} with a non-null
@@ -113,8 +132,17 @@ public class UIEntryValueRegistry {
      * the same applies to {@code playerProperties}. This lets a caller that only knows one half of an
      * entry's bindings — object properties from {@code object_property.txt}, player abilities from
      * {@code player_property.txt} — update just that half without erasing the other.
+     * {@code combinerName} and {@code entryFlags} are always replaced, never merged.
      *
-     * <p>Function addEntryBinding coded before 260924, commented in full on 260924.
+     * <p>Two things C's {@code bind_*} functions do are not done here. They return 1 when
+     * {@code name} is not configured in {@code ui_entry.txt}; this method accepts any name, so the
+     * caller must have checked (the one caller, {@code GameConstants}, only registers names it found
+     * among its {@code UIEntrySpec}s). And C copies each property's value, {@code have_value} and
+     * {@code isaux} into the new array slot; here those travel on the properties themselves
+     * ({@link ObjectProperty.UIBinding}, {@link PlayerProperty.BindUI}) and the lists are stored by
+     * reference, not copied.
+     *
+     * <p>Function addEntryBinding coded before 260924, commented in full on 261006.
      *
      * @param entryName        the UI entry name to bind, as configured in {@code ui_entry.txt}
      * @param objProperties    the object properties bound to the entry, or {@code null} to keep the
@@ -147,16 +175,17 @@ public class UIEntryValueRegistry {
 
     /**
      * Computes the combined display value(s) for one named UI entry on a given object — the port of
-     * C's {@code compute_ui_entry_values_for_object} ({@code ui-entry.c:668}).
+     * C's {@code compute_ui_entry_values_for_object} in {@code ui-entry.c}.
      *
      * <p>Walks the object properties bound to {@code entryName} (see {@link #addEntryBinding}) once
      * for the item itself and once more for each curse it carries with non-zero power
-     * ({@code item.getCurses()}'s keys, mirroring C's scan of {@code obj->curses} for entries with a
-     * non-zero {@code power}), feeding every known, non-zero property value through the entry's
-     * {@link Combiner}. For a stat/modifier or flag property, the item's own value is used unless the
-     * caller supplied a fixed {@link ObjectProperty.UIBinding#value()} for that binding, in which case
-     * the fixed value stands in for any non-zero real one — C's {@code entry->obj_props[i].have_value}
-     * check. A property the {@code player} cannot yet identify (per
+     * ({@code item.getCurses()}'s keys, in ascending curse index as C's scan of {@code obj->curses}
+     * visits them, skipping any whose {@link CurseData#getPower()} is zero), feeding every known,
+     * non-zero property value through the entry's {@link Combiner}. For every property family — a
+     * stat/modifier, a flag, an ignore, or a resist/immunity/vulnerability — the item's own value is
+     * used unless the caller supplied a fixed {@link ObjectProperty.UIBinding#value()} for that
+     * binding, in which case the fixed value stands in for any non-zero real one — C's
+     * {@code have_value} check. A property the {@code player} cannot yet identify (per
      * {@link ObjectUtils#objectFlagIsKnown}, {@link ObjectUtils#objectElementIsKnown},
      * {@link ObjectUtils#curseObjectFlagIsKnown} or {@link KnownObject#modifierIsKnown}) contributes
      * {@link Combiner#UI_ENTRY_UNKNOWN_VALUE} instead of its real value; passing a {@code null} player
@@ -170,16 +199,33 @@ public class UIEntryValueRegistry {
      * {@link #computeForPlayer}.
      *
      * <p>{@code cache} caches the item's own flags across repeated calls for the same item/player
-     * knowledge state (C's {@code *cache}, populated once and reused); each curse gets its own fresh
-     * cache while it is processed, mirroring C's {@code cache2} allocated per curse rather than
-     * reusing the base item's.
+     * knowledge state (C's {@code *cache}, populated once and reused). It is populated after the
+     * early return for a missing item or an entry with nothing bound, as in C, and must not be
+     * {@code null}: C allocates the cache through its {@code **cache} out-parameter, but Java cannot
+     * hand a new object back, so the caller supplies it. Only the item's own flag lookup reads it. A
+     * curse's flags are read straight off the curse's object ({@link Curse#getItemObject()})
+     * instead: with a {@code player}, the flags its known shadow shows intersected with its real
+     * flags, then the kind's flags if the kind is aware, then an easy-known ego's flags added and its
+     * suppressed flags removed (C's {@code object_flags_known}); with no player, its real flags (C's
+     * {@code object_flags}). C refills a second cache ({@code cache2}) with each curse's flags
+     * before reading them back, which the port has no use for.
      *
      * <p>Returns {@link Combiner#UI_ENTRY_VALUE_NOT_PRESENT} for both values if {@code entryName} is
-     * not registered, or {@code item} is {@code null}, or nothing is bound to the entry; {@code 0} for
-     * whichever of the main/auxiliary totals has no bound properties of that kind at all; otherwise
-     * the combiner's finished totals.
+     * not registered, or {@code item} is {@code null}, or nothing is bound to the entry. Otherwise
+     * the main total is {@code 0} when every bound property is auxiliary, and the auxiliary total is
+     * {@code 0} when no auxiliary property was walked (auxiliary properties skipped for
+     * {@link ChannelEntryFlag#ENTRY_FLAG_TIMED_AS_AUX} do not count); any other case is the
+     * combiner's finished total, or {@code 0} if no property contributed a non-zero value.
      *
-     * <p>Function computeForObject coded before 260924, commented in full on 260924.
+     * <p>An entry whose {@link CombinerName} is {@link CombinerName#NONE} is the state C stops on
+     * with {@code assert(0)}; the port does not stop here but fails with a
+     * {@link NullPointerException} at the first non-zero contribution, because
+     * {@link CombinerName#NONE} carries no {@link Combiner} to clone. C's {@code hatch_embryo}
+     * rejects a new entry with no combiner and so does {@code UIEntryAssembler}, so loaded data never
+     * reaches this state.
+     *
+     * <p>Function computeForObject coded before 260924, commented in full on 261006, cache note
+     * corrected on 261005.
      *
      * @param entryName the UI entry to compute a value for
      * @param item      the object being assessed, or {@code null}
@@ -245,7 +291,7 @@ public class UIEntryValueRegistry {
                                 a = Combiner.UI_ENTRY_UNKNOWN_VALUE;
                             }
                         } else if (curseList.get(currentCurse).getPower() != 0) {
-                            int curseModifier = currentCurse.getModifiers().getOrDefault(modifier, 0);
+                            int curseModifier = currentCurse.getItemObject().getModifierValue(modifier);
                             if (player == null || player.getItemKnowledge().modifierIsKnown(modifier)
                                     || curseModifier == 0) {
                                 v = curseModifier;
@@ -272,10 +318,24 @@ public class UIEntryValueRegistry {
                             }
                         } else if (curseList.get(currentCurse).getPower() != 0) {
                             if (player == null || ObjectUtils.curseObjectFlagIsKnown(player, currentCurse, flag)) {
-                                if (player != null)
-                                    v = currentCurse.getKnownObjectFlags().has(flag) ? 1 : 0;
+                                if (player != null) {
+                                    Flag<ObjectFlag> flags = new Flag<>(ObjectFlag.class);
+                                    flags.copyFrom(currentCurse.getItemObject().getFlags());
+                                    flags.inter(currentCurse.getItemObject().getKnown().getFlags());
+                                    if (currentCurse.getItemObject().getKind() != null) {
+                                        if (currentCurse.getItemObject().getKind().isAware())
+                                            flags.union(currentCurse.getItemObject().getKind().getFlags());
+                                        if (currentCurse.getItemObject().getEgo() != null
+                                                && currentCurse.getItemObject().easyKnow()) {
+                                            flags.union(currentCurse.getItemObject().getEgo().getFlags());
+                                            flags.diff(currentCurse.getItemObject().getEgo().getOffFlags());
+                                        }
+                                    }
+
+                                    v = flags.has(flag) ? 1 : 0;
+                                }
                                 else
-                                    v = currentCurse.getObjectFlags().has(flag) ? 1 : 0;
+                                    v = currentCurse.getItemObject().hasFlag(flag) ? 1 : 0;
                                 if (v != 0 && binding.value() != null) {
                                     v = binding.value();
                                 }
@@ -289,7 +349,10 @@ public class UIEntryValueRegistry {
                         ElementEnum element = prop.getPayload().getElement(prop.getType());
                         if (currentCurse == null) {
                             if (player == null || player.getItemKnowledge().objectElementIsKnown(player, item, element)) {
-                                v = item.getElInfo().get(element).getFlags().has(ElementInfoEnum.EL_INFO_IGNORE) ? 1 : 0;
+                                ElementInfo elementInfo = item.getElInfo().getOrDefault(element, null);
+
+                                v = elementInfo != null && elementInfo.getFlags().has(ElementInfoEnum.EL_INFO_IGNORE)
+                                        ? 1 : 0;
                                 if (v != 0 && binding.value() != null) {
                                     v = binding.value();
                                 }
@@ -299,7 +362,10 @@ public class UIEntryValueRegistry {
                             }
                         } else if (curseList.get(currentCurse).getPower() != 0) {
                             if (player == null || ObjectUtils.objectElementIsKnown(player, currentCurse, element)) {
-                                v = currentCurse.getElInfo().get(element).getFlags().has(ElementInfoEnum.EL_INFO_IGNORE) ? 1 : 0;
+                                ElementInfo elementInfo = currentCurse.getItemObject().getElInfo()
+                                        .getOrDefault(element, null);
+                                v = elementInfo != null && elementInfo.getFlags().has(ElementInfoEnum.EL_INFO_IGNORE)
+                                        ? 1 : 0;
                                 if (v != 0 && binding.value() != null) {
                                     v = binding.value();
                                 }
@@ -313,7 +379,8 @@ public class UIEntryValueRegistry {
                         ElementEnum element = prop.getPayload().getElement(prop.getType());
                         if (currentCurse == null) {
                             if (player == null || player.getItemKnowledge().objectElementIsKnown(player, item, element)) {
-                                v = item.getElInfo().get(element).getResLevel();
+                                ElementInfo elementInfo = item.getElInfo().getOrDefault(element, null);
+                                v = elementInfo != null ? elementInfo.getResLevel() : 0;
                                 if (v != 0 && binding.value() != null) {
                                     v = binding.value();
                                 }
@@ -323,8 +390,9 @@ public class UIEntryValueRegistry {
                             }
                         } else if (curseList.get(currentCurse).getPower() != 0) {
                             if (player == null || ObjectUtils.objectElementIsKnown(player, currentCurse, element)) {
-                                // player.getItemKnowledge().objectElementIsKnown(player, item, element)) {
-                                v = currentCurse.getElInfo().get(element).getResLevel();
+                                ElementInfo elementInfo = currentCurse.getItemObject().getElInfo()
+                                        .getOrDefault(element, null);
+                                v = elementInfo != null ? elementInfo.getResLevel() : 0;
                                 if (v != 0 && binding.value() != null) {
                                     v = binding.value();
                                 }
@@ -352,19 +420,6 @@ public class UIEntryValueRegistry {
                 }
             }
 
-            if (currentCurse == null) {
-                cache = new ObjectValueCache();
-            } else {
-                CurseData cd = curseList.get(currentCurse);
-                if (cd.getPower() != 0) {
-                    if (player != null) {
-                        cache.setResolvedFlags(currentCurse.getKnownObjectFlags());
-                    } else {
-                        cache.setResolvedFlags(currentCurse.getObjectFlags());
-                    }
-                }
-            }
-
             processedBase = true;
             currentCurse = curseIterator.hasNext() ? curseIterator.next() : null;
         }
@@ -384,7 +439,7 @@ public class UIEntryValueRegistry {
 
     /**
      * Computes the combined display value(s) for one named UI entry on the player themself — the
-     * port of C's {@code compute_ui_entry_values_for_player} ({@code ui-entry.c:870}).
+     * port of C's {@code compute_ui_entry_values_for_player} in {@code ui-entry.c}.
      *
      * <p>Walks the entry's bound {@link PlayerProperty} list first. A {@code PROP_TYPE_PLAYER}
      * property only contributes if the player has the underlying {@link PlayerFlag} (C's
@@ -413,28 +468,38 @@ public class UIEntryValueRegistry {
      * current timed effects, via {@link #getTimedModifierEffect}/{@link #getTimedElementEffect},
      * rather than from {@code cachedPlayerData}'s timed flags alone.
      *
-     * <p>{@code cachedPlayerData} is lazily populated on first use (C's {@code *cache == NULL}
-     * branch), capturing the player's untimed and timed flags, with {@code TMD_TRAPSAFE} folded in as
-     * {@code OF_TRAP_IMMUNE} to match {@code player-timed.c}'s handling of that effect.
+     * <p>{@code cachedPlayerData} is filled by {@link CachedPlayerData#populateFlags(Player)}, which
+     * does the work only on its first call (C's {@code *cache == NULL} branch): the player's untimed
+     * and timed flags, with {@code TMD_TRAPSAFE} folded in as {@code OF_TRAP_IMMUNE}. A
+     * {@code null} {@code cachedPlayerData} is accepted and replaced by a fresh one, but unlike C's
+     * {@code **cache} the replacement cannot be handed back, so a caller that passes {@code null}
+     * on every call recomputes the flags on every call.
      *
      * <p>Returns {@link Combiner#UI_ENTRY_VALUE_NOT_PRESENT} for both values if {@code entryName} is
      * not registered, {@code player} is {@code null}, or no bound property ever contributed;
-     * otherwise the combiner's finished totals. The {@code val}/{@code auxVal} parameters are only
-     * ever overwritten, never read.
+     * otherwise the combiner's finished totals. Unlike {@link #computeForObject}, there is no
+     * {@code 0} substitution for an all-auxiliary or no-auxiliary entry: both values are the
+     * combiner's totals as they stand.
      *
-     * <p>Function computeForPlayer coded before 260924, commented in full on 260924.
+     * <p>C stops with {@code assert(0)} for an entry with no combiner, before it reads any
+     * binding. The port throws only for a {@code null} {@link CombinerName}; the
+     * {@link CombinerName#NONE} sentinel passes the check and fails later with a
+     * {@link NullPointerException} at the first contribution, or not at all if nothing contributes.
+     * {@code hatch_embryo} in C and {@code UIEntryAssembler} here both refuse to finish an entry
+     * with no combiner, so loaded data never reaches either state.
+     *
+     * <p>Function computeForPlayer coded before 260924, commented in full on 261006.
      *
      * @param entryName        the UI entry to compute a value for
      * @param player           the player being assessed, or {@code null}
      * @param cachedPlayerData cached untimed/timed flags for {@code player}, populated on first use
      *                         and reused across calls for the same player state
-     * @param val              unused on entry; overwritten with the computed main value
-     * @param auxVal           unused on entry; overwritten with the computed auxiliary value
      * @return the entry's combined main and auxiliary values for {@code player}
-     * @throws RuntimeException if the resolved entry has no configured combiner
+     * @throws RuntimeException if the resolved entry's {@link CombinerName} is {@code null}
      */
-    public static UIEntryValue computeForPlayer(String entryName, Player player, CachedPlayerData cachedPlayerData,
-                                                int val, int auxVal) {
+    public static UIEntryValue computeForPlayer(String entryName, Player player, CachedPlayerData cachedPlayerData) {
+        int val;
+        int auxVal;
         EntryBinding props = bindingByEntry.getOrDefault(entryName, null);
         if (props == null) return new UIEntryValue(Combiner.UI_ENTRY_VALUE_NOT_PRESENT,
                 Combiner.UI_ENTRY_VALUE_NOT_PRESENT, false);
@@ -450,15 +515,11 @@ public class UIEntryValueRegistry {
             return new UIEntryValue(val, auxVal, false);
         }
 
-        if (cachedPlayerData == null) {
+        if (cachedPlayerData == null)
             cachedPlayerData = new CachedPlayerData();
-            player.playerFlags(player.getPlayerState(), cachedPlayerData.getUntimedFlags());
-            cachedPlayerData.getTimedFlags().wipe();
-            player.flagsTimed(cachedPlayerData.getTimedFlags());
-            if (player.playerTimedContains(TimedEffect.TMD_TRAPSAFE)) {
-                cachedPlayerData.onTimedFlag(ObjectFlag.OF_TRAP_IMMUNE);
-            }
-        }
+
+        cachedPlayerData.populateFlags(player);
+    
         first = true;
 
         CombinerName combinerName = props.combinerName();
@@ -467,7 +528,9 @@ public class UIEntryValueRegistry {
             throw new RuntimeException("Entry found with no valid combiner - exiting game.");
         }
 
-        for (PlayerProperty prop : bound) {
+        List<PlayerProperty> playerProperties = bound;
+        if (playerProperties == null) playerProperties = new ArrayList<>();
+        for (PlayerProperty prop : playerProperties) {
             PlayerFlag pFlag = prop.getpCode();
             ObjectFlag oFlag = prop.getoCode();
             ElementEnum eCode = prop.geteCode();
@@ -604,7 +667,11 @@ public class UIEntryValueRegistry {
                 } else {
                     combiner.accum(v, a);
                 }
-                v = player.getShape().getElementValueModifiers().get(eCode).getResLevel();
+                ElementInfo elementInfo = player.getShape().getElementValueModifiers().get(eCode);
+                if (elementInfo == null)
+                    v = 0;
+                else
+                    v = elementInfo.getResLevel();
                 a = 0;
                 if (v != 0 && player.getItemKnowledge().resistanceIsKnown(eCode)) {
                     if (boundPlayerAbility.isAux()) {
@@ -617,7 +684,9 @@ public class UIEntryValueRegistry {
             }
         }
 
-        for (ObjectProperty prop : props.objectProperties()) {
+        List<ObjectProperty> objectProperties = props.objectProperties();
+        if (objectProperties == null) objectProperties = new ArrayList<>();
+        for (ObjectProperty prop : objectProperties) {
             PlayerSkill skillIndex;
             int skillCnvNum;
             int skillCnvDen;
@@ -634,7 +703,10 @@ public class UIEntryValueRegistry {
 
             switch (prop.getType()) {
                 case OBJ_PROPERTY_STAT, OBJ_PROPERTY_MOD -> {
-                    v = player.getShape().getObjectValueModifiers().get(om);
+                    if (player.getShape().getObjectValueModifiers() != null)
+                        v = player.getShape().getObjectValueModifiers().getOrDefault(om, 0);
+                    else
+                        v = 0;
                     if (props.entryFlags.has(ChannelEntryFlag.ENTRY_FLAG_TIMED_AS_AUX)) {
                         a = getTimedModifierEffect(player, om);
                     } else {
@@ -699,20 +771,23 @@ public class UIEntryValueRegistry {
     /**
      * Maps an {@link ObjectModifier} bound as a stat/mod property to the racial skill it corresponds
      * to and the fraction that converts that skill into the modifier's units — the port of C's
-     * {@code modifier_to_skill} ({@code ui-entry.c:1278}). Only {@code OM_TUNNEL} maps to a skill
+     * {@code modifier_to_skill} in {@code ui-entry.c}. C takes the modifier's index and returns
+     * {@code -1} for no skill; the port takes the property and returns {@link PlayerSkill#SKILL_NONE}.
+     * Only {@code OM_TUNNEL} maps to a skill
      * ({@link PlayerSkill#SKILL_DIGGING}, converted by dividing by 20); every other modifier returns
      * {@link PlayerSkill#SKILL_NONE} with an identity conversion (1/1), matching C's {@code default}
      * branch. C's commented-out {@code OM_STEALTH}/search cases are left out here too, for the same
      * reason C gives: the racial contribution to those was never part of what the second character
      * screen showed.
      *
-     * <p>Function modifierToSkill coded before 260924, commented in full on 260924.
+     * <p>Function modifierToSkill coded before 260924, commented in full on 261006.
      *
      * @param prop the stat/mod {@link ObjectProperty} to map
      * @return the corresponding skill (or {@link PlayerSkill#SKILL_NONE}) and its conversion fraction
      */
     private static PlayerSkillAndTwoInts modifierToSkill(ObjectProperty prop) {
-        return switch (prop.getPayload().getModifier(ObjPropertyType.OBJ_PROPERTY_MOD)) {
+        ObjectPropertyTypeWrapper wrapper = prop.getPayload();
+        return switch (wrapper.getModifier(ObjPropertyType.OBJ_PROPERTY_MOD)) {
             case OM_TUNNEL -> {
                 yield new PlayerSkillAndTwoInts(PlayerSkill.SKILL_DIGGING, 1, 20);
             }
@@ -725,7 +800,7 @@ public class UIEntryValueRegistry {
     /**
      * Computes the timed-effect contribution for a stat/modifier property, used as the auxiliary
      * value when an entry is {@link ChannelEntryFlag#ENTRY_FLAG_TIMED_AS_AUX} — the port of C's
-     * {@code get_timed_modifier_effect} ({@code ui-entry.c:1331}), which the C comment notes mirrors
+     * {@code get_timed_modifier_effect} in {@code ui-entry.c}, which the C comment notes mirrors
      * the equivalent calculations in {@code player-calcs.c}. {@code OM_BLOWS} yields
      * {@link TimedEffect#TMD_BLOODLUST} divided by 20 while active; {@code OM_INFRA} yields 5 while
      * {@link TimedEffect#TMD_SINFRA} is active; {@code OM_SPEED} yields 10 while
@@ -734,7 +809,7 @@ public class UIEntryValueRegistry {
      * {@link TimedEffect#TMD_TERROR}; {@code OM_STEALTH} yields 10 while
      * {@link TimedEffect#TMD_STEALTH} is active. Any other modifier yields 0.
      *
-     * <p>Function getTimedModifierEffect coded before 260924, commented in full on 260924.
+     * <p>Function getTimedModifierEffect coded before 260924, commented in full on 261006.
      *
      * @param player the player whose timed effects are consulted
      * @param om     the modifier to compute the timed contribution for
@@ -784,14 +859,16 @@ public class UIEntryValueRegistry {
     /**
      * Computes the timed-effect contribution for an element resistance property, used as the
      * auxiliary value when an entry is {@link ChannelEntryFlag#ENTRY_FLAG_TIMED_AS_AUX} — the port
-     * of C's {@code get_timed_element_effect} ({@code ui-entry.c:1318}). Scans every
+     * of C's {@code get_timed_element_effect} in {@code ui-entry.c}. Scans every
      * {@link TimedEffect} currently active on {@code player} and returns 1 if any of them temporarily
      * resists {@code eCode} (per {@link PlayerRegistry#getPlayerTimedEffects()}'s recorded
      * {@code getTempResist()}), otherwise 0. {@link TimedEffect#TMD_NONE} is skipped explicitly since
      * it is never itself an active effect; C relies on {@code p->timed[TMD_NONE]} always being zero to
-     * the same end.
+     * the same end. An effect that resists nothing carries {@code ELEM_NONE} here where C stores
+     * {@code -1}; neither equals a real element, so such an effect never matches. A timed effect with
+     * no loaded {@link PlayerTimedEffect} is skipped, where C reads its zeroed table slot.
      *
-     * <p>Function getTimedElementEffect coded before 260924, commented in full on 260924.
+     * <p>Function getTimedElementEffect coded before 260924, commented in full on 261006.
      *
      * @param player the player whose timed effects are consulted
      * @param eCode  the element to check for a temporary resistance
@@ -801,8 +878,9 @@ public class UIEntryValueRegistry {
         for (TimedEffect tmd : TimedEffect.values()) {
             if (tmd == TimedEffect.TMD_NONE) continue;
 
-            List<PlayerTimedEffect> effects = PlayerRegistry.getPlayerTimedEffects();
-            if (player.getTimedEffect(tmd) != 0 && effects.get(tmd.ordinal()).getTempResist() == eCode) {
+            PlayerTimedEffect playerTimedEffect = PlayerRegistry.lookupPlayerTimedEffect(tmd);
+            if (playerTimedEffect == null) continue;
+            if (player.getTimedEffect(tmd) != 0 && playerTimedEffect.getTempResist() == eCode) {
                 return 1;
             }
         }
@@ -812,7 +890,7 @@ public class UIEntryValueRegistry {
 
     /**
      * Reports whether every property or ability bound to a UI entry is currently known to the
-     * player — the port of C's {@code is_ui_entry_for_known_rune} ({@code ui-entry.c:551}). A
+     * player — the port of C's {@code is_ui_entry_for_known_rune} in {@code ui-entry.c}. A
      * stat/mod property is known if {@link KnownObject#modifierIsKnown} says so for its modifier; a
      * flag property if {@link KnownObject#flagIsKnown} says so for its flag; an ignore/resist/vuln/imm
      * property if {@link KnownObject#resistanceIsKnown} says so for its element. Any other object
@@ -821,13 +899,22 @@ public class UIEntryValueRegistry {
      * <p>Of the bound {@link PlayerProperty} list, a {@code PROP_TYPE_PLAYER} property is skipped —
      * C's comment explains it is "not so easy to associate with a rune", so it cannot make the entry
      * read as unknown. A {@code PROP_TYPE_OBJECT} property is known if its {@link ObjectFlag} is
-     * known; a {@code PROP_TYPE_ELEMENT} property is known if its element's resistance is known. Any
-     * other player-property type counts as unknown.
+     * known; a {@code PROP_TYPE_ELEMENT} property is known if its element's resistance is known,
+     * read straight off {@link KnownObject#getElementResistInfo()} (C's
+     * {@code p->obj_k->el_info[ind].res_level}). Any other player-property type counts as unknown.
      *
-     * <p>Returns {@code false} immediately if {@code entryName} has no registered
-     * {@link EntryBinding} — an entry that was never bound cannot be a known rune.
+     * <p>C's two loops stop as soon as {@code result} turns {@code false}; the port keeps walking
+     * to the end. The walk reads state and changes nothing, so the answer is the same.
      *
-     * <p>Function isKnownRune coded before 260924, commented in full on 260924.
+     * <p>Returns {@code true} immediately if {@code entryName} has no registered
+     * {@link EntryBinding}. C's function starts from {@code result = true} and its loops can only
+     * ever set it to {@code false}, so an entry with nothing bound loops zero times and reads as
+     * known. C has no separate "no such entry" state (it is handed an {@code entry} pointer), and
+     * {@link #addEntryBinding} is only called for entries that have at least one binding, so an
+     * unregistered name stands in for C's entry with empty bound arrays. A registered entry whose
+     * lists are empty or {@code null} gives the same answer.
+     *
+     * <p>Function isKnownRune coded before 260924, commented in full on 261006.
      *
      * @param entryName the UI entry to test
      * @param player    the player whose knowledge is consulted
@@ -835,12 +922,15 @@ public class UIEntryValueRegistry {
      */
     public static boolean isKnownRune(String entryName, Player player) {
         boolean result = true;
-        EntryBinding binding = bindingByEntry.getOrDefault(entryName, null);
+        if (!bindingByEntry.containsKey(entryName))
+            return true;
 
-        if (binding == null) return false;
+        EntryBinding binding = bindingByEntry.get(entryName);
 
         // mark it as known if all the properties/abilities bound to the entry are known
-        for (ObjectProperty prop : binding.objectProperties()) {
+        List<ObjectProperty> objectProperties = binding.objectProperties();
+        if (objectProperties == null) objectProperties = new ArrayList<>();
+        for (ObjectProperty prop : objectProperties) {
             switch (prop.getType()) {
                 case OBJ_PROPERTY_STAT,
                      OBJ_PROPERTY_MOD -> {
@@ -861,7 +951,9 @@ public class UIEntryValueRegistry {
                 default -> result = false;
             }
         }
-        for (PlayerProperty prop : binding.playerProperties()) {
+        List<PlayerProperty> playerProperties = binding.playerProperties();
+        if (playerProperties == null) playerProperties = new ArrayList<>();
+        for (PlayerProperty prop : playerProperties) {
             if (prop.getPlayerPropertyType() == PlayerProperty.PlayerPropertyType.PROP_TYPE_PLAYER)
                 continue;
             else if (prop.getPlayerPropertyType() == PlayerProperty.PlayerPropertyType.PROP_TYPE_OBJECT) {
@@ -881,8 +973,10 @@ public class UIEntryValueRegistry {
     /**
      * The result of {@link #modifierToSkill}: the racial skill an object modifier corresponds to, if
      * any, and the numerator/denominator that converts a skill value into the modifier's units — the
-     * port of C's three out-parameters to {@code modifier_to_skill} ({@code ui-entry.c:1278}) bundled
+     * port of C's three out-parameters to {@code modifier_to_skill} in {@code ui-entry.c} bundled
      * into one value.
+     *
+     * <p>Record PlayerSkillAndTwoInts coded before 260924, commented in full on 261006.
      *
      * @param skill         the corresponding racial skill, or {@link PlayerSkill#SKILL_NONE}
      * @param skillToModNum the conversion fraction's numerator
@@ -896,7 +990,9 @@ public class UIEntryValueRegistry {
      * combiner and flags configured for that entry — the value type stored in
      * {@link #bindingByEntry}. The port's counterpart to the bound-property/bound-ability arrays and
      * the combiner/flags fields that together make up C's {@code struct ui_entry}
-     * ({@code ui-entry.c:97}).
+     * in {@code ui-entry.c}.
+     *
+     * <p>Record EntryBinding coded before 260924, commented in full on 261006.
      *
      * @param objectProperties the object properties bound to this entry, or {@code null}
      * @param playerProperties the player properties bound to this entry, or {@code null}

@@ -48,6 +48,7 @@ import uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 import uk.co.jackoftradesltd.middle.player.Player;
 import uk.co.jackoftradesltd.middle.player.PlayerBody;
+import uk.co.jackoftradesltd.middle.player.PlayerClass;
 import uk.co.jackoftradesltd.middle.player.PlayerProperty;
 import uk.co.jackoftradesltd.middle.player.PlayerRace;
 import uk.co.jackoftradesltd.middle.player.PlayerShape;
@@ -206,9 +207,22 @@ class UIEntryValueRegistryTest {
         return new Curse("Test Curse " + index, List.of(), curseObject, List.of(), new Flag<>(ObjectFlag.class), "", index);
     }
 
+    /**
+     * A class that contributes nothing except the given innate object flags.
+     */
+    private static PlayerClass classWithFlags(Flag<ObjectFlag> oFlags) {
+        return new PlayerClass("Test Class", List.of(), Map.of(), Map.of(), Map.of(), 0, 0,
+                oFlags, new Flag<>(PlayerFlag.class), 0, 0, 0, List.of(), null);
+    }
+
     private static Player newPlayer() {
         Player player = new Player();
         player.setItemKnowledge(new KnownObject());
+        // CachedPlayerData.populateFlags unions the class's innate flags, as player_flags() does with
+        // p->class->flags, so a player without a class is a state C never reaches.
+        player.setClass(classWithFlags(new Flag<>(ObjectFlag.class)));
+        // playerFlags() reads PF_BRAVERY_30 off the calculated state, so it needs one even when empty.
+        player.setState(new PlayerState());
         return player;
     }
 
@@ -277,15 +291,29 @@ class UIEntryValueRegistryTest {
         @Test
         @DisplayName("computeForPlayer reports it as not present")
         void computeForPlayerNotPresent() {
-            UIEntryValue result = UIEntryValueRegistry.computeForPlayer(ENTRY, newPlayer(), new CachedPlayerData(), 0, 0);
+            UIEntryValue result = UIEntryValueRegistry.computeForPlayer(ENTRY, newPlayer(), new CachedPlayerData());
             assertEquals(Combiner.UI_ENTRY_VALUE_NOT_PRESENT, result.val());
             assertEquals(Combiner.UI_ENTRY_VALUE_NOT_PRESENT, result.auxVal());
         }
 
         @Test
-        @DisplayName("isKnownRune reports false")
-        void isKnownRuneFalse() {
-            assertFalse(UIEntryValueRegistry.isKnownRune(ENTRY, newPlayer()));
+        @DisplayName("isKnownRune reports true, as C does for an entry with nothing bound")
+        void isKnownRuneTrue() {
+            assertTrue(UIEntryValueRegistry.isKnownRune(ENTRY, newPlayer()));
+        }
+
+        @Test
+        @DisplayName("isKnownRune reports true for a registered entry whose lists are empty")
+        void isKnownRuneTrueForEmptyLists() {
+            UIEntryValueRegistry.addEntryBinding(ENTRY, List.of(), List.of(), CombinerName.ADD, noEntryFlags());
+            assertTrue(UIEntryValueRegistry.isKnownRune(ENTRY, newPlayer()));
+        }
+
+        @Test
+        @DisplayName("isKnownRune reports true for a registered entry whose lists are null")
+        void isKnownRuneTrueForNullLists() {
+            UIEntryValueRegistry.addEntryBinding(ENTRY, null, null, CombinerName.ADD, noEntryFlags());
+            assertTrue(UIEntryValueRegistry.isKnownRune(ENTRY, newPlayer()));
         }
     }
 
@@ -642,23 +670,23 @@ class UIEntryValueRegistryTest {
         }
 
         @Test
-        @DisplayName("with a player, a curse object that has no known shadow at all contributes nothing")
-        void playerAssessingACurseWithNoShadow() {
+        @DisplayName("with a player, a curse whose known shadow is blank contributes nothing once the rune is known")
+        void playerAssessingACurseWithABlankShadow() {
             UIEntryValueRegistry.addEntryBinding(ENTRY, List.of(flagProperty(ObjectFlag.OF_FREE_ACT, null, false)),
                     List.of(), CombinerName.ADD, noEntryFlags());
 
-            // The rune is known, so the knowledge gate passes without ever touching the shadow and
-            // the only thing left to meet a missing shadow is computeForObject itself.
+            // The rune is known, so the knowledge gate passes without reading the shadow, and
+            // computeForObject then intersects the real flags with a shadow that shows none of them.
+            // C's write_curse_kinds always gives a curse object a shadow, so a missing one is not tested.
             Player player = newPlayer();
             player.getItemKnowledge().learnFlag(ObjectFlag.OF_FREE_ACT);
-            Curse curse = curseWithFlag(ObjectFlag.OF_FREE_ACT);
-            curse.getItemObject().setToHit(3);
             LinkedHashMap<Curse, CurseData> curses = new LinkedHashMap<>();
-            curses.put(curse, new CurseData(1, 0));
+            curses.put(partlyKnownCurse(ObjectFlag.OF_FREE_ACT, false), new CurseData(1, 0));
 
             UIEntryValue result = UIEntryValueRegistry.computeForObject(ENTRY, fullyKnownHost(curses),
                     player, new ObjectValueCache());
-            assertEquals(0, result.val());
+            assertEquals(0, result.val(),
+                    "C intersects the real flags with the known ones, so a blank shadow shows nothing");
         }
 
         @Test
@@ -702,7 +730,7 @@ class UIEntryValueRegistryTest {
                     List.of(playerFlagProperty(PlayerFlag.PF_BRAVERY_30, 0, true, false)),
                     CombinerName.ADD, noEntryFlags());
 
-            UIEntryValue result = UIEntryValueRegistry.computeForPlayer(ENTRY, null, new CachedPlayerData(), 0, 0);
+            UIEntryValue result = UIEntryValueRegistry.computeForPlayer(ENTRY, null, new CachedPlayerData());
             assertEquals(Combiner.UI_ENTRY_VALUE_NOT_PRESENT, result.val());
             assertEquals(Combiner.UI_ENTRY_VALUE_NOT_PRESENT, result.auxVal());
         }
@@ -720,7 +748,7 @@ class UIEntryValueRegistryTest {
             state.playerFlagOn(PlayerFlag.PF_FAST_SHOT);
             player.setState(state);
 
-            UIEntryValue result = UIEntryValueRegistry.computeForPlayer(ENTRY, player, new CachedPlayerData(), 0, 0);
+            UIEntryValue result = UIEntryValueRegistry.computeForPlayer(ENTRY, player, new CachedPlayerData());
             assertEquals(0, result.val());
         }
 
@@ -747,7 +775,7 @@ class UIEntryValueRegistryTest {
             player.getPlayerBody().getSlots().stream().filter(s -> "shooting".equals(s.getName()))
                     .findFirst().orElseThrow().setItem(bow);
 
-            UIEntryValue result = UIEntryValueRegistry.computeForPlayer(ENTRY, player, new CachedPlayerData(), 0, 0);
+            UIEntryValue result = UIEntryValueRegistry.computeForPlayer(ENTRY, player, new CachedPlayerData());
             assertEquals(31 / 3, result.val());
         }
 
@@ -763,14 +791,14 @@ class UIEntryValueRegistryTest {
             PlayerState belowState = new PlayerState();
             belowState.playerFlagOn(PlayerFlag.PF_BRAVERY_30);
             below.setState(belowState);
-            assertEquals(0, UIEntryValueRegistry.computeForPlayer(ENTRY, below, new CachedPlayerData(), 0, 0).val());
+            assertEquals(0, UIEntryValueRegistry.computeForPlayer(ENTRY, below, new CachedPlayerData()).val());
 
             Player atThreshold = newPlayer();
             atThreshold.setLevel(30);
             PlayerState atState = new PlayerState();
             atState.playerFlagOn(PlayerFlag.PF_BRAVERY_30);
             atThreshold.setState(atState);
-            assertEquals(1, UIEntryValueRegistry.computeForPlayer(ENTRY, atThreshold, new CachedPlayerData(), 0, 0).val());
+            assertEquals(1, UIEntryValueRegistry.computeForPlayer(ENTRY, atThreshold, new CachedPlayerData()).val());
         }
 
         @Test
@@ -780,16 +808,18 @@ class UIEntryValueRegistryTest {
                     List.of(objectFlagPlayerProperty(ObjectFlag.OF_FREE_ACT, false)),
                     CombinerName.ADD, noEntryFlags());
 
+            // The untimed half comes from player_flags() (race and class flags), which C fills into a
+            // NULL cache; seeding the Java cache by hand would be overwritten by the same fill.
             Player player = newPlayer();
+            Flag<ObjectFlag> classFlags = new Flag<>(ObjectFlag.class);
+            classFlags.on(ObjectFlag.OF_FREE_ACT);
+            player.setClass(classWithFlags(classFlags));
             player.getItemKnowledge().learnFlag(ObjectFlag.OF_FREE_ACT);
             PlayerShape shape = plainShape();
             shape.getFlags().on(ObjectFlag.OF_FREE_ACT);
             player.setShape(shape);
 
-            CachedPlayerData cache = new CachedPlayerData();
-            cache.onUntimedFlag(ObjectFlag.OF_FREE_ACT);
-
-            UIEntryValue result = UIEntryValueRegistry.computeForPlayer(ENTRY, player, cache, 0, 0);
+            UIEntryValue result = UIEntryValueRegistry.computeForPlayer(ENTRY, player, new CachedPlayerData());
             assertEquals(2, result.val(), "untimed cache (1) plus the shape's own known flag (1)");
         }
 
@@ -806,7 +836,7 @@ class UIEntryValueRegistryTest {
             shape.getObjectValueModifiers().put(ObjectModifier.OM_TUNNEL, 3);
             player.setShape(shape);
 
-            UIEntryValue result = UIEntryValueRegistry.computeForPlayer(ENTRY, player, new CachedPlayerData(), 0, 0);
+            UIEntryValue result = UIEntryValueRegistry.computeForPlayer(ENTRY, player, new CachedPlayerData());
             assertEquals(3 + (100 * 1) / 20, result.val(), "shape modifier plus race digging skill / 20");
         }
 
@@ -822,7 +852,7 @@ class UIEntryValueRegistryTest {
             PlayerShape shape = plainShape();
             player.setShape(shape);
 
-            UIEntryValue result = UIEntryValueRegistry.computeForPlayer(ENTRY, player, new CachedPlayerData(), 0, 0);
+            UIEntryValue result = UIEntryValueRegistry.computeForPlayer(ENTRY, player, new CachedPlayerData());
             assertEquals(4, result.val(), "shape modifier (0) plus the race's own infravision (4)");
         }
 
@@ -839,7 +869,7 @@ class UIEntryValueRegistryTest {
             player.setShape(shape);
             player.putTimed(TimedEffect.TMD_BLOODLUST, 40);
 
-            UIEntryValue result = UIEntryValueRegistry.computeForPlayer(ENTRY, player, new CachedPlayerData(), 0, 0);
+            UIEntryValue result = UIEntryValueRegistry.computeForPlayer(ENTRY, player, new CachedPlayerData());
             assertEquals(0, result.val(), "the shape's own OM_BLOWS modifier");
             assertEquals(40 / 20, result.auxVal(), "TMD_BLOODLUST / 20, per get_timed_modifier_effect");
         }

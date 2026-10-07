@@ -86,6 +86,7 @@ Shape follows `docs/ItemObject_stage1_mismatches.md`. File and line references a
 - `ObjectRegistry.java` (about `:188`, `:198`, `:205`, `:328`), `FlagSet.java:24`, `ElementSet.java:24`,
   `ElementPowers.java:26` and `:40`, `Archery.java:24`, `ObjectKind.java:1222`, `PlayerBody.java:191`.
 - The house rule says name the C file only. Strip them when you next touch each file.
+- **Result:** FIXED.
 
 ### 4. `ObjectUtils.copyCurses` with all-power-0 source (Parts A, H baseline)
 

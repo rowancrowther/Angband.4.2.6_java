@@ -187,7 +187,7 @@ public class PlayerBody {
      *
      * <p>The return for "not worn" is {@link #getCount()} — one past the last slot — rather than
      * {@code -1}. That follows C, whose loop simply runs off the end and hands back the index it
-     * stopped at, and callers test for it explicitly: {@code obj-gear.c:1040} guards with
+     * stopped at, and callers test for it explicitly: {@code obj-gear.c} guards with
      * {@code if (slot == player->body.count) return;}. A null item takes the same exit, which is
      * why the size is returned up front rather than falling through the loop.
      *

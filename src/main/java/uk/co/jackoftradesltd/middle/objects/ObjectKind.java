@@ -1219,7 +1219,7 @@ public class ObjectKind {
     /**
      * Reports whether this kind is disguised behind a flavour, the port of C's null check on
      * {@code kind->flavor} — for example the {@code obj->kind->flavor} test in
-     * {@code object_set_base_known} ({@code obj-knowledge.c:856}). See {@link #getFlavour()} for
+     * {@code object_set_base_known} ({@code obj-knowledge.c}). See {@link #getFlavour()} for
      * the flavour itself, and why the field is load-bearing rather than incidental.
      *
      * <p>Function hasFlavour coded before 260904, commented in full on 260904.

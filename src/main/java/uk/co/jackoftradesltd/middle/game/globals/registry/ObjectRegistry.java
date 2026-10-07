@@ -185,7 +185,7 @@ public class ObjectRegistry {
 
     /**
      * The flag families that are worth more held together, keyed by family - the port of C's
-     * {@code flag_sets[]} table ({@code obj-power.c:71}).
+     * {@code flag_sets[]} table ({@code obj-power.c}).
      *
      * <p>Shared mutable state: each row carries a count that the power calculation zeroes and
      * increments in place, exactly as C does on its static table. Two power calculations must
@@ -195,14 +195,14 @@ public class ObjectRegistry {
 
     /**
      * The elemental protection combinations that are worth more held together - the port of C's
-     * {@code element_sets[]} table ({@code obj-power.c:93}). Counted in place like
+     * {@code element_sets[]} table ({@code obj-power.c}). Counted in place like
      * {@link #flagSets}, and with the same caution.
      */
     public static List<ElementSet> elementSets;
 
     /**
      * What each element is worth to an object that ignores, resists, is immune to or is vulnerable
-     * to it - the port of C's {@code el_powers[]} table ({@code obj-power.c:112}). Read only; unlike
+     * to it - the port of C's {@code el_powers[]} table ({@code obj-power.c}). Read only; unlike
      * the two set tables above, nothing writes to these rows.
      */
     public static List<ElementPowers> elementPowers;
@@ -325,7 +325,7 @@ public class ObjectRegistry {
 
     /**
      * Boost ratings for combinations of ability bonuses, indexed by the combined bonus divided by
-     * ten - the port of C's {@code ability_power[]} ({@code obj-power.c:132}).
+     * ten - the port of C's {@code ability_power[]} ({@code obj-power.c}).
      *
      * <p>Rises faster than linearly, so an object with several large modifiers is worth more than
      * the sum of them; the first seven entries are zero, which is what makes a small total worth no

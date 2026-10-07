@@ -21,7 +21,7 @@ import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlagType;
 
 /**
  * One family of object flags that is worth more held together than separately — the port of C's
- * {@code struct flag_set} and its three-row table ({@code obj-power.c:64-75}).
+ * {@code struct flag_set} and its three-row table ({@code obj-power.c}).
  *
  * <p>Three rows: sustains, protections and miscellaneous abilities. An object counts towards a row
  * for every flag it carries whose subtype matches {@link #getType()}, and the count buys a quadratic

@@ -23,7 +23,7 @@ import uk.co.jackoftradesltd.middle.objects.enums.ResType;
 /**
  * What one element is worth to an object that ignores, resists, is immune to, or is vulnerable to it
  * — the port of C's {@code struct element_powers} and its thirteen-row table
- * ({@code obj-power.c:103-127}).
+ * ({@code obj-power.c}).
  *
  * <p>Four separate prices, because the four relationships are worth different amounts and not all of
  * them apply to every element. Acid, electricity, fire and cold can be ignored (the object survives
@@ -37,7 +37,7 @@ import uk.co.jackoftradesltd.middle.objects.enums.ResType;
  *
  * <p><b>An immunity is priced as immunity plus resistance</b>, not immunity alone, because an
  * immunity subsumes the resistance it replaces. {@code ItemObject.elementPower} adds the two
- * together, as C does at {@code obj-power.c:676}.
+ * together, as C does in {@code obj-power.c}.
  *
  * <p><b>Keyed, not indexed.</b> C relies on this table and an object's {@code el_info} array sharing
  * an index. The port keys both by {@link ElementEnum}, so the two cannot silently desynchronise.

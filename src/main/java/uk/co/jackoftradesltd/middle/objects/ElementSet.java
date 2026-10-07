@@ -21,7 +21,7 @@ import uk.co.jackoftradesltd.middle.objects.enums.ResType;
 
 /**
  * One combination of elemental protections that is worth more together than separately — the port of
- * C's {@code struct element_set} and its three-row table ({@code obj-power.c:84-99}).
+ * C's {@code struct element_set} and its three-row table ({@code obj-power.c}).
  *
  * <p>Three rows: immunities, low resists and high resists. Each names a group of elements
  * ({@link #getType()}) and a level of protection ({@link #getResLevel()}), and an object counts

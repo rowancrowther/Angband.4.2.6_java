@@ -54,7 +54,7 @@ import static uk.co.jackoftradesltd.testsupport.ItemFixture.set;
 /**
  * Tests the damage components of the power calculation in {@link ItemObject}: {@code slayPower},
  * {@code extraMightPower}, {@code extraShotsPower}, {@code extraBlowsPower},
- * {@code launcherAmmoDamagePower}, {@code bowMulitplier}, {@code ammoDamagePower},
+ * {@code launcherAmmoDamagePower}, {@code bowMultiplier}, {@code ammoDamagePower},
  * {@code damageDicePower} and {@code toDamagePower}, each with its plain and {@link Curse}
  * overload where it has one. They are the ports of {@code slay_power}, {@code extra_might_power},
  * {@code extra_shots_power}, {@code extra_blows_power}, {@code launcher_ammo_damage_power},
@@ -154,7 +154,7 @@ class ItemObjectDamagePowerTest {
      * @return the running total handed back
      */
     private static int price(ItemObject item, String name, Curse curse, int power) throws Exception {
-        return (int) invoke(item, name, new Class<?>[]{Curse.class, int.class}, curse, power);
+        return (int) invoke(curse.getItemObject(), name, new Class<?>[]{int.class}, power);
     }
 
     /**
@@ -177,7 +177,7 @@ class ItemObjectDamagePowerTest {
      * @return its answer
      */
     private static int priceAlone(ItemObject item, String name, Curse curse) throws Exception {
-        return (int) invoke(item, name, new Class<?>[]{Curse.class}, curse);
+        return (int) invoke(curse.getItemObject(), name, new Class<?>[]{});
     }
 
     /**
@@ -358,14 +358,15 @@ class ItemObjectDamagePowerTest {
         }
 
         /**
-         * A curse object is never a weapon, missile or launcher, so C always reaches the second lot:
-         * 4 is 10 + 20 = 30, 3 is 7 + 15 = 22, -3 is -7 + -15 = -22.
+         * A curse's own object is never a weapon, missile or launcher, so the plain method always
+         * reaches the second lot, as C does for a curse object: 4 is 10 + 20 = 30, 3 is 7 + 15 = 22,
+         * -3 is -7 + -15 = -22.
          */
         @ParameterizedTest(name = "curse to_d {0} is priced at {1}")
         @CsvSource({"4, 30", "3, 22", "-3, -22", "0, 0"})
-        @DisplayName("the curse overload always takes both lots")
+        @DisplayName("a curse's own object always takes both lots")
         void curseOverload(int damage, int expected) throws Exception {
-            assertEquals(expected, priceAlone(item(TValue.TV_SWORD), "toDamagePower", curse(null, 0, damage)));
+            assertEquals(expected, priceAlone(curse(null, 0, damage).getItemObject(), "toDamagePower"));
         }
 
         /**
@@ -655,7 +656,7 @@ class ItemObjectDamagePowerTest {
      * C's {@code bow_multiplier}: a bow's pval, and one for anything else.
      */
     @Nested
-    @DisplayName("bowMulitplier")
+    @DisplayName("bowMultiplier")
     class BowMultiplier {
 
         /**
@@ -668,7 +669,7 @@ class ItemObjectDamagePowerTest {
             ItemObject bow = item(TValue.TV_BOW);
             set(bow, "pValue", pValue);
 
-            assertEquals(pValue, priceAlone(bow, "bowMulitplier"));
+            assertEquals(pValue, priceAlone(bow, "bowMultiplier"));
         }
 
         /**
@@ -681,7 +682,7 @@ class ItemObjectDamagePowerTest {
             ItemObject other = item(tValue);
             set(other, "pValue", 5);
 
-            assertEquals(1, priceAlone(other, "bowMulitplier"));
+            assertEquals(1, priceAlone(other, "bowMultiplier"));
         }
 
         /**
@@ -690,7 +691,7 @@ class ItemObjectDamagePowerTest {
         @Test
         @DisplayName("the curse overload is one")
         void curseOverload() throws Exception {
-            assertEquals(1, priceAlone(item(TValue.TV_BOW), "bowMulitplier", curse(null, 0, 0)));
+            assertEquals(1, priceAlone(item(TValue.TV_BOW), "bowMultiplier", curse(null, 0, 0)));
         }
     }
 
@@ -853,8 +854,8 @@ class ItemObjectDamagePowerTest {
 
         private Object priceCurse(int might, int power, int mult) throws Exception {
             Class<?> type = Class.forName("uk.co.jackoftradesltd.middle.objects.ItemObject$PowerAndMult");
-            return invoke(item(TValue.TV_BOW), "extraMightPower", new Class<?>[]{Curse.class, type},
-                    curse(ObjectModifier.OM_MIGHT, might, 0), pair(power, mult));
+            return invoke(curse(ObjectModifier.OM_MIGHT, might, 0).getItemObject(), "extraMightPower",
+                    new Class<?>[]{type}, pair(power, mult));
         }
 
         /**
@@ -1155,9 +1156,9 @@ class ItemObjectDamagePowerTest {
         @Test
         @DisplayName("the curse overload is unchanged")
         void curseOverload() throws Exception {
-            assertEquals(103, (int) invoke(item(TValue.TV_SWORD), "slayPower",
-                    new Class<?>[]{Curse.class, int.class, boolean.class, int.class},
-                    curse(null, 0, 0), 103, true, 30));
+            assertEquals(103, (int) invoke(curse(null, 0, 0).getItemObject(), "slayPower",
+                    new Class<?>[]{int.class, boolean.class, int.class},
+                    103, true, 30));
         }
     }
 }

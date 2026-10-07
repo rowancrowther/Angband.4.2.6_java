@@ -207,7 +207,7 @@ class ItemObjectPropertyPowerTest {
      * @return the running total handed back
      */
     private static int price(ItemObject item, String name, Curse curse, int power) throws Exception {
-        return (int) invoke(item, name, new Class<?>[]{Curse.class, int.class}, curse, power);
+        return (int) invoke(curse.getItemObject(), name, new Class<?>[]{int.class}, power);
     }
 
     /**

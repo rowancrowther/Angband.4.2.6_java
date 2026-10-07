@@ -369,6 +369,34 @@ class ItemObjectStackingTest {
 
             assertFalse(first.objectStackable(second, packMode));
         }
+
+        /**
+         * C compares inscription quarks with {@code ==}, and {@code quark_add("")} in
+         * {@code z-quark.c} hands back a real non-zero quark, so an empty inscription is a note in
+         * its own right and conflicts with a different one. Only a missing note (quark 0) is
+         * compatible with everything.
+         */
+        @Test
+        @DisplayName("an empty inscription is a real note and conflicts with a different one")
+        void emptyInscriptionConflicts() {
+            first.setNote("");
+            second.setNote("!d");
+
+            assertFalse(first.objectStackable(second, packMode));
+            assertFalse(second.objectStackable(first, packMode));
+        }
+
+        @Test
+        @DisplayName("an empty inscription stacks with no inscription and with another empty one")
+        void emptyInscriptionStacksWithNone() {
+            first.setNote("");
+
+            assertTrue(first.objectStackable(second, packMode));
+            assertTrue(second.objectStackable(first, packMode));
+
+            second.setNote("");
+            assertTrue(first.objectStackable(second, packMode));
+        }
     }
 
     /**

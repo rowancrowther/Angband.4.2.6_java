@@ -17,7 +17,6 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
-import org.antlr.v4.runtime.tree.Tree;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
@@ -73,10 +72,11 @@ import static uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum.ORIGIN
  * this class is shaped around that second role, so do not press it back into service for it.
  *
  * <p>The class also holds the power calculation of {@code obj-power.c}, which prices an item's
- * usefulness ({@code objectPower}) and feeds the gold value. Because the port's {@link Curse} is
- * a flattened record and not an object, most of the calculation exists twice, once for an item and
- * once for a curse; the curse pricing also builds scratch copies of the item with the curses folded
- * in.
+ * usefulness ({@code objectPower}) and feeds the gold value. A {@link Curse} holds an item of its
+ * own ({@link Curse#getItemObject()}), but the calculation is not run over it as C does; most of
+ * it exists twice, once for an item and once for a curse, the curse versions reading the curse's
+ * item and in several cases reduced to an identity. The curse pricing also builds scratch copies of
+ * the item with the curses folded in.
  *
  * <p>The knowledge, ignoring and recharge queries ({@link #isKnown}, {@link #flagsKnown},
  * {@link #ignoreLevelOf}, {@link #numberCharging} and their neighbours) report on an item and
@@ -94,6 +94,8 @@ import static uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum.ORIGIN
  * name. {@link #wieldSlot} answers which equipment slot the item would be worn in, {@link #canBrowse}
  * whether the player's class can read it, and {@link #getItemObjectADC} how it is drawn.
  * {@link #wipe} blanks every field, and {@link #initCurses} gives the item a fresh curse map.
+ * {@link #copy} makes an independent duplicate, rebuilding every mutable container and sharing the
+ * templates the item points at.
  *
  * <p>The rest is the field-by-field surface of {@code struct object}. Two constructors build an
  * item, one blank and one from every parsed field, and each field then has a getter, a setter or
@@ -109,7 +111,7 @@ import static uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum.ORIGIN
  * <p>Class ItemObject commented in full on 261002, knowledge and recharge note added on 261002,
  * text and placement note added on 261002, constructor and accessor note added on 261002, notice
  * mutator note added on 261003, notice test note added on 261003, modifier message note added
- * on 261004.
+ * on 261004, copy note added on 261007, power calculation note corrected on 261007.
  *
  * @author Rowan Crowther
  * @see KnownObject
@@ -281,18 +283,21 @@ public class ItemObject {
     private ItemObject known;
 
     /**
-     * The grid this item lies on, or the origin when it does not lie on the floor. C's
-     * {@code obj->grid}, a {@code struct loc}: "position on map, or (0, 0)".
+     * The grid this item lies on, or {@code null} when it has none. C's {@code obj->grid}, a
+     * {@code struct loc}: "position on map, or (0, 0)".
      *
-     * <p>A grid at the origin means "not on the floor", so {@link #objectAbsorb} skips excising a
-     * known object from a pile when its grid is zero. The test compares coordinates, as C's
-     * {@code loc_is_zero} does, and {@link #copy} copies the {@link Loc} so the copy can move
-     * without moving the original.
+     * <p>{@code null} and the origin both mean "not on the floor", and {@link #getGrid()} reads
+     * them alike: it answers {@link Loc#zero} for a {@code null} field, so no caller sees the
+     * {@code null}. A grid at the origin makes {@link #objectAbsorb} skip excising a known object
+     * from a pile. The test compares coordinates, as C's {@code loc_is_zero} does, and
+     * {@link #copy} copies the {@link Loc} (leaving a {@code null} as {@code null}) so the copy can
+     * move without moving the original.
      *
-     * <p>{@link #wipe} sets it to {@code null}, which reads as "not on the floor" just as the origin
-     * does.
+     * <p>The no-argument constructor and {@link #wipe} leave it {@code null}, which stands for C's
+     * zeroed grid; {@link #setGrid} stores whatever it is given, {@code null} included.
      *
-     * <p>Field location commented in full on 261002, wipe reset added on 261002.
+     * <p>Field location commented in full on 261002, wipe reset added on 261002, {@code Loc.zero}
+     * read through {@link #getGrid()} noted on 261007.
      */
     private Loc location;
 
@@ -314,7 +319,7 @@ public class ItemObject {
      *
      * <p>The damage steps read it as well. {@link #damageDicePower()} and {@link #toDamagePower()}
      * ask whether it is a melee weapon or ammunition, {@link #launcherAmmoDamagePower(int)} takes
-     * its archery row from it, and {@link #bowMulitplier()} treats only {@code TV_BOW} as a
+     * its archery row from it, and {@link #bowMultiplier()} treats only {@code TV_BOW} as a
      * launcher.
      *
      * <p>{@link #getIgnoreTypeOf} matches it against the quality table, {@link #hasStandardToH} asks
@@ -355,7 +360,7 @@ public class ItemObject {
      * one's, capped at {@code MAX_PVAL}, for charged items and gold. {@link #objectValueReal}
      * prices the charges of a wand or staff from it, per item as {@code pValue * quantity / number}.
      *
-     * <p>{@link #bowMulitplier()} reads it as a launcher's damage multiplier, and only for
+     * <p>{@link #bowMultiplier()} reads it as a launcher's damage multiplier, and only for
      * {@code TV_BOW}.
      *
      * <p>{@link #wipe} sets it to zero.
@@ -623,9 +628,13 @@ public class ItemObject {
      * <p>Whether the player knows the effect is a comparison between this list and the one on the
      * {@link #known} counterpart, made by {@link #effectIsKnown()}.
      *
-     * <p>{@link #wipe} replaces the list with a fresh empty one.
+     * <p>{@link #copy} shares the list with the original, as C's {@code object_copy} copies the
+     * {@code struct effect *} pointer and not the chain behind it. Both constructors start with an
+     * empty list, and the full constructor stores the list it is given without copying it.
+     * {@link #wipe} replaces the list with a fresh empty one.
      *
-     * <p>Field effect commented in full on 261002, wipe reset added on 261002.
+     * <p>Field effect commented in full on 261002, wipe reset added on 261002, copy and constructor
+     * note added on 261007.
      */
     private List<Effect> effect;
     /**
@@ -795,7 +804,8 @@ public class ItemObject {
      * than pass it on — {@link #getCurses()} reports an empty map and the editing mutators create
      * the map on demand — and that guard is what C's {@code NULL} array would have needed.
      * {@link #setCurses} and {@link #clearAndPutCurses} replace the field with a copy of the map
-     * they are handed.
+     * they are handed, and leave it untouched when handed {@code null}, as C's {@code copy_curses}
+     * returns early on a {@code NULL} source.
      *
      * <p>The map is a {@link TreeMap} ordered by {@link #CURSE_ORDER}, so it walks in ascending curse
      * index, as C's loop over {@code obj->curses[i]} does, regardless of the order the curses were
@@ -814,7 +824,8 @@ public class ItemObject {
      * <p>Field curses retyped from {@code Map<Curse.CurseEntry, Boolean>} on 260817, commented in
      * full on 260817, comment corrected on 261002, power added on 261002, constructor and setter
      * note added on 261002, comparison note corrected on 261002, power-zero note corrected on 261003,
-     * ordering note rewritten for the {@link TreeMap} on 261003, copy note added on 261003.
+     * ordering note rewritten for the {@link TreeMap} on 261003, copy note added on 261003, null
+     * argument note added on 261007.
      *
      * <p>{@link #wipe} and {@link #initCurses} each replace the map with a fresh empty one from
      * {@link #cursesFactory()}, discarding every curse the item carried. Wipe reset and initialiser
@@ -829,16 +840,20 @@ public class ItemObject {
      * <p>Where C's zero is a value, the port lands on it: {@link #origin} is {@code ORIGIN_NONE},
      * {@link #tValue} is {@link TValue#TV_NONE} (C's tval 0), and the numeric fields are zero.
      * Where C's zero is a collection, the port builds an empty one rather than leaving {@code null}:
-     * {@link #flags} and {@link #notice} are empty sets, {@link #modifiers}, {@link #elInfo} and
-     * {@link #curses} are empty {@link LinkedHashMap}s, {@link #brands} and {@link #slays} are
-     * empty sets, and {@link #effect} is an empty list. The maps are insertion-ordered so the order
-     * they are walked in does not depend on how their enum keys hash.
+     * {@link #flags} and {@link #notice} are empty sets, {@link #modifiers} and {@link #elInfo} are
+     * empty {@link LinkedHashMap}s, {@link #curses} is an empty {@link TreeMap} from
+     * {@link #cursesFactory()}, {@link #brands} and {@link #slays} are empty sets, and
+     * {@link #effect} is an empty list. The first two maps are insertion-ordered so the order they
+     * are walked in does not depend on how their enum keys hash; the curse map walks in ascending
+     * curse index, as C's array does.
+     *
+     * <p>{@link #time} is a zero {@link Random} (C's four zero dice) and is never {@code null}.
      *
      * <p>The rest stay {@code null}: {@link #kind}, {@link #ego}, {@link #artifact}, {@link #known},
      * {@link #location}, {@link #baseDamage}, {@link #effectMessage}, {@link #activation},
-     * {@link #time}, {@link #originRace} and {@link #note}. Unlike an item that {@link #wipe} has
-     * blanked, this one has no activation list. {@link #location} being {@code null} stands for C's
-     * grid of (0, 0), and {@link #time} for its four zero dice.
+     * {@link #originRace} and {@link #note}. Unlike an item that {@link #wipe} has blanked, this one
+     * has no activation list. {@link #location} being {@code null} stands for C's grid of (0, 0),
+     * which is what {@link #getGrid()} answers for it ({@link Loc#zero}).
      *
      * <p>{@link #player} is set from {@link GameState#getPlayer()}, so an item built before a
      * character exists holds {@code null} there. {@code PlayerBirth} builds the known counterpart
@@ -846,7 +861,7 @@ public class ItemObject {
      * the same way, as C does with the {@code object_new} it makes for {@code obj->known}.
      *
      * <p>Constructor ItemObject() coded before 260904, commented in full on 261002, TV_NONE default
-     * added on 261002.
+     * added on 261002, curse map and time notes corrected on 261007.
      */
     public ItemObject() {
         player = GameState.getPlayer();
@@ -916,13 +931,21 @@ public class ItemObject {
      * members in one at a time. No production code calls this form yet; the tests use it to build
      * an item whose every value they hold.
      *
-     * <p><b>Nothing is copied.</b> {@code flags}, {@code modifiers}, {@code elInfo}, {@code brands},
-     * {@code slays}, {@code curses}, {@code effect}, {@code activation}, {@code notice},
+     * <p><b>Only the curse map is copied.</b> {@code flags}, {@code modifiers}, {@code elInfo},
+     * {@code brands}, {@code slays}, {@code effect}, {@code activation}, {@code notice},
      * {@code location}, {@code known} and the rest are stored by reference, so the new item and the
      * caller share them and a change through one shows in the other. Callers that need an
-     * independent item build fresh collections to pass in. A {@code null} collection stays
-     * {@code null}, which the getters for modifiers, element info, brands, slays and curses absorb;
+     * independent item build fresh collections to pass in. A {@code null} modifier map, element
+     * info map, brand set or slay set stays {@code null}, which the getters for those absorb;
      * {@link #getEffect()} is the exception, and hands a {@code null} straight back.
+     *
+     * <p>{@code curses} is the one collection that is copied: its entries are put into a new
+     * {@link #cursesFactory()} map, so adding or removing a key through the caller's map does not
+     * reach the item, and a {@code null} argument gives an empty map. The {@link CurseData}
+     * instances are still shared with the caller's map, so a template's data passed here would be
+     * ticked by the item; C's {@code copy_curses} always makes fresh data and rolls a timeout.
+     * {@code flags} and {@code notice} are never left {@code null}: a {@code null} argument for
+     * either is replaced with an empty set.
      *
      * <p>Three arguments are parsed. {@code pValue} arrives as text: the empty string is zero,
      * anything else goes through {@link Integer#parseInt}, so a {@code null} or a non-number throws.
@@ -935,13 +958,16 @@ public class ItemObject {
      * {@link #owningPile} starts {@code null}: a new item belongs to no pile.
      *
      * <p>Constructor ItemObject(...) coded before 260904, commented in full on 261002; the claim
-     * that it copies the curse map was removed on 261002.
+     * that it copies the curse map was removed on 261002, and the by-reference note rewritten on
+     * 261007 to match the code, which copies that map, and to cover {@code flags} and
+     * {@code notice}.
      *
      * @param kind            object kind
      * @param ego             ego type, if any
      * @param artifact        artifact, if any
      * @param known           known/identified view
-     * @param location        floor location
+     * @param location        floor location; {@code null} reads back from {@link #getGrid()} as
+     *                        {@link Loc#zero}
      * @param tValue          item type value
      * @param sValue          sub-type value
      * @param pValue          extra-parameter value (as string)
@@ -1010,7 +1036,7 @@ public class ItemObject {
         this.baseDamage = Random.parseStr(baseDamage);
         this.toDam = toDam;
         this.toHit = toHit;
-        this.flags = flags;
+        this.flags = Objects.requireNonNullElseGet(flags, () -> new Flag<>(ObjectFlag.class));
         this.modifiers = modifiers;
         this.elInfo = elInfo;
         this.brands = brands;
@@ -1025,7 +1051,7 @@ public class ItemObject {
             this.time = Random.Zero();
         this.timeout = timeout;
         this.number = number;
-        this.notice = notice;
+        this.notice = Objects.requireNonNullElseGet(notice, () -> new Flag<>(ObjectNotice.class));
         this.heldMIndex = heldMIndex;
         this.mimickingMIndex = mimickingMIndex;
         this.origin = origin;
@@ -1160,16 +1186,19 @@ public class ItemObject {
     /**
      * Returns the grid this object lies on, the port of reading C's {@code obj->grid}.
      *
-     * <p>{@code null} for an item that has never been placed or has been wiped, where C holds the
-     * grid (0, 0). A caller that must tell "on the floor" from "not" tests for both, as
-     * {@link #objectAbsorb} does.
+     * <p>Never {@code null}. An item that has never been placed, has been wiped, or was given a
+     * {@code null} by {@link #setGrid} answers {@link Loc#zero}, the (0, 0) grid C holds for an
+     * item that is not on the map. The {@link #location} field itself stays {@code null} in those
+     * cases. A caller that must tell "on the floor" from "not" tests {@code isZero()} on the
+     * result, as {@link #objectAbsorb} does.
      *
-     * <p>Function getGrid coded before 260904, commented in full on 261002.
+     * <p>Function getGrid coded before 260904, commented in full on 261002, rewritten on 261007
+     * for the never-null answer.
      *
-     * @return the grid location this object occupies, or {@code null} if it is not on the floor
+     * @return the grid this object occupies, or {@link Loc#zero} if it is not on the map
      */
     public Loc getGrid() {
-        return location;
+        return location == null ? Loc.zero : location;
     }
 
     /**
@@ -1178,10 +1207,14 @@ public class ItemObject {
      * <p>Stores the {@link Loc} given. {@link Loc} is immutable, so sharing it with the caller is
      * safe where C copies its {@code struct loc} by value. {@code null} and the origin both mean
      * "not on the floor", the reading {@link #objectAbsorb} gives them; see {@link #location}.
+     * A {@code null} is stored as {@code null}, not as {@link Loc#zero}, and {@link #getGrid()}
+     * then answers {@link Loc#zero} for it.
      *
-     * <p>Function setGrid coded before 260904, commented in full on 261002.
+     * <p>Function setGrid coded before 260904, commented in full on 261002, {@code Loc.zero} read
+     * noted on 261007.
      *
-     * @param grid the map location, or {@code null} if the object is not on the floor
+     * @param grid the map location, or {@code null} if the object is not on the floor; read back
+     *             as {@link Loc#zero}
      */
     public void setGrid(Loc grid) {
         location = grid;
@@ -1199,6 +1232,8 @@ public class ItemObject {
      * @param notice the {@link ObjectNotice} flag to set
      */
     public void orNotice(ObjectNotice notice) {
+        if (this.notice == null)
+            this.notice = new Flag<>(ObjectNotice.class);
         this.notice.on(notice);
     }
 
@@ -1755,21 +1790,29 @@ public class ItemObject {
      * {@code copy_curses} ({@code obj-curse.c}) that writes the power and the rolled timeout into
      * each slot.
      *
-     * <p>The field is assigned a new {@link LinkedHashMap} built from the argument, so the argument
-     * map is not kept and the curses end up in the argument's order. The {@link CurseData} values
-     * are shared, not copied, and whatever the object carried before is discarded. Because the copy
-     * is made before the assignment, passing this object's own {@link #getCurses()} view is safe.
+     * <p>The field is assigned a new map from {@link #cursesFactory()} and the argument's entries
+     * are put into it, so the argument map is not kept and the curses end up in curse index order
+     * ({@link #CURSE_ORDER}) whatever order the argument holds them in. The {@link CurseData}
+     * values are shared, not copied, and whatever the object carried before is discarded. Because
+     * the field is reassigned before the entries are read, passing this object's own
+     * {@link #getCurses()} view is safe.
      *
      * <p>C's loop merges into the curses already on the object. This method does not merge: its
      * only production caller, {@link ObjectUtils#copyCurses}, builds the merged map itself, rolling
-     * each timeout, and hands the result over. A {@code null} argument throws.
+     * each timeout, and hands the result over. A {@code null} argument is ignored and the object
+     * keeps the curses it had, as C's {@code copy_curses} returns at once on a {@code NULL}
+     * source.
      *
-     * <p>Function setCurses coded before 261002, commented in full on 261002.
+     * <p>Function setCurses coded before 261002, commented in full on 261002, ordering and null
+     * argument notes corrected on 261007.
      *
      * @param destCurseMap the curses this object should carry; the map is copied, the instance data
      *                     in it is taken by reference
      */
     public void setCurses(Map<Curse, CurseData> destCurseMap) {
+        if (destCurseMap == null)
+            return;
+        
         curses = cursesFactory();
         curses.putAll(destCurseMap);
     }
@@ -1786,11 +1829,21 @@ public class ItemObject {
      *
      * <p>Replaces any data already held for that curse, matching the plain assignment C makes into
      * its curse array. The backing map is created on demand, so this is safe on an object that has
-     * never carried a curse.
+     * never carried a curse. A {@code null} curse adds nothing.
      *
-     * <p>Function addCurse coded before 260817, commented in full on 260817.
+     * <p>This is a deliberate simplification, not a port of C's {@code append_object_curse}
+     * ({@code obj-curse.c}). That function refuses a curse unless its power beats the one already
+     * on the item, refuses one that conflicts with a curse or an object property the item has
+     * ({@code curses_conflict}, the {@code TIMED_INC} failure tests and {@code conflict_flags}),
+     * rolls the timeout itself, and answers whether it applied the curse. This method does none of
+     * that: it writes what it is handed, as the bare {@code obj->curses[i]} assignments in
+     * {@code obj-knowledge.c} do. A port of {@code append_object_curse} belongs with
+     * {@code apply_curse} in {@code obj-make.c}, which has no Java counterpart yet.
      *
-     * @param curse   the curse to apply
+     * <p>Function addCurse coded before 260817, commented in full on 260817, simplification note
+     * added on 261007.
+     *
+     * @param curse   the curse to apply; {@code null} is ignored
      * @param power   the curse's power on this object
      * @param timeout turns until the curse's first effect
      */
@@ -1816,9 +1869,14 @@ public class ItemObject {
      * decrement the template's; {@link ObjectKind}'s constructor copies on the way in for that
      * reason.
      *
-     * <p>Function addCurse coded before 260817, commented in full on 260817.
+     * <p>A {@code null} curse adds nothing. As with the numeric form, this is a plain write, not a
+     * port of C's {@code append_object_curse}: no conflict test, no power comparison, no rolled
+     * timeout.
      *
-     * @param curse     the curse to apply
+     * <p>Function addCurse coded before 260817, commented in full on 260817, null and
+     * simplification notes added on 261007.
+     *
+     * @param curse     the curse to apply; {@code null} is ignored
      * @param curseData the instance data to store, taken by reference
      */
     public void addCurse(Curse curse, CurseData curseData) {
@@ -1839,9 +1897,16 @@ public class ItemObject {
      * <p>Shares the argument's {@link CurseData} instances rather than copying them, with the same
      * caveat as the single-curse form: a map belonging to a template must be copied by the caller.
      *
-     * <p>Function addCurses coded before 260817, commented in full on 260817.
+     * <p>A {@code null} argument throws {@link NullPointerException}. The {@code null} is the
+     * parameter {@code curses}, not the field of the same name, which this method creates on demand.
+     * That differs from {@link #setCurses} and {@link #clearAndPutCurses}, which ignore a
+     * {@code null} as C's {@code copy_curses} does; C has no function for this batch add.
      *
-     * @param curses the curses to add, with their instance data taken by reference
+     * <p>Function addCurses coded before 260817, commented in full on 260817, null argument note
+     * added on 261007.
+     *
+     * @param curses the curses to add, with their instance data taken by reference; must not be
+     *               {@code null}
      */
     public void addCurses(Map<Curse, CurseData> curses) {
         if (this.curses == null) {
@@ -1857,19 +1922,27 @@ public class ItemObject {
      * curses named and no others. That is the operation wanted when an object's curse list is being
      * rebuilt from a source of truth rather than accumulated.
      *
-     * <p>The field is replaced with a new {@link LinkedHashMap} built from the argument, so the
-     * argument map itself is not kept and later changes to it do not reach this object. The
-     * {@link CurseData} values are shared, not copied. Because the copy is made before the field is
-     * assigned, passing this object's own {@link #getCurses()} view is safe and leaves the curses as
-     * they were. The same holds for {@link #setCurses}.
+     * <p>The field is replaced with a new map from {@link #cursesFactory()}, filled from the
+     * argument, so the argument map itself is not kept, later changes to it do not reach this
+     * object, and the curses walk in curse index order ({@link #CURSE_ORDER}). The
+     * {@link CurseData} values are shared, not copied. Because the field is reassigned before the
+     * entries are read, passing this object's own {@link #getCurses()} view is safe and leaves the
+     * curses as they were. The same holds for {@link #setCurses}.
+     *
+     * <p>A {@code null} argument is ignored and the object keeps the curses it had, matching
+     * {@link #setCurses}.
      *
      * <p>Function clearAndPutCurses coded before 260817, renamed from {@code clearAndPut} on 260817,
-     * commented in full on 260817, rewritten on 261002 for the copying replace.
+     * commented in full on 260817, rewritten on 261002 for the copying replace, ordering and null
+     * argument notes corrected on 261007.
      *
      * @param curseEntries the curses this object should carry; the map is copied, the instance data
      *                     in it is taken by reference
      */
     public void clearAndPutCurses(Map<Curse, CurseData> curseEntries) {
+        if (curseEntries == null)
+            return;
+        
         this.curses = cursesFactory();
         this.curses.putAll(curseEntries);
     }
@@ -1901,10 +1974,12 @@ public class ItemObject {
      * a curse is weakened or strengthened without being added or taken away.
      *
      * <p>C writes into the slot whether or not the curse was active, and callers rely on that:
-     * {@code append_object_curse} ({@code obj-curse.c}) turns on a curse the object lacked this
-     * way, and {@code obj-knowledge.c} copies power onto the known object, whose slot may be empty.
-     * So a positive power on a curse the object does not carry adds it, with a timeout of zero as
-     * in C's zero-filled slot; callers that need a timeout set it separately.
+     * {@code obj-knowledge.c} copies power onto the known object, whose slot may be empty. So a
+     * positive power on a curse the object does not carry adds it, with a timeout of zero as in
+     * C's zero-filled slot; callers that need a timeout set it separately. {@code append_object_curse}
+     * ({@code obj-curse.c}) is not this write: it also stores a rolled timeout
+     * ({@code randcalc(c->obj->time, 0, RANDOMISE)}) alongside the power, and only after its
+     * conflict tests pass.
      *
      * <p>In C a power of zero means the curse is off, and in this port that means the key is absent
      * from the map (see {@link #removeCurse}). A power of zero or below therefore removes the
@@ -1913,7 +1988,8 @@ public class ItemObject {
      *
      * <p>Creates the curse map first if the object has none.
      *
-     * <p>Function setCursePower coded on 260817, commented in full on 261003.
+     * <p>Function setCursePower coded on 260817, commented in full on 261003, timeout note
+     * corrected on 261007.
      *
      * @param curse the curse to adjust; ignored if {@code null}
      * @param power the curse's new power; zero or below takes the curse off
@@ -1949,12 +2025,18 @@ public class ItemObject {
      * map, where absence says the same thing directly. {@link #setCursePower} with a power of zero
      * or below removes the entry too, so either call takes the curse out of {@link #getCurses()}.
      *
-     * <p>Silently does nothing for a curse the object does not carry.
+     * <p>Silently does nothing for a curse the object does not carry, or for a {@code null} curse.
+     *
+     * <p>This is not a port of C's {@code remove_object_curse} ({@code obj-curse.c}), which
+     * answers whether the object had the curse, prints "The %s curse is removed!" when asked, and
+     * leaves a slot that is already at power zero alone. This method returns nothing, prints
+     * nothing, and removes an entry even if it holds power zero. Removing the last curse leaves an
+     * empty map, which is what C's {@code check_object_curses} achieves by freeing the array.
      *
      * <p>Function removeCurse coded on 260817, commented in full on 260817, power-zero note
-     * corrected on 261003.
+     * corrected on 261003, simplification note added on 261007.
      *
-     * @param curse the curse to remove
+     * @param curse the curse to remove; {@code null} is ignored
      */
     public void removeCurse(Curse curse) {
         if (this.curses == null) {
@@ -2257,7 +2339,15 @@ public class ItemObject {
      * the flag may teach it, an item that does not gets the flag marked on its counterpart as having
      * been ruled out.
      *
-     * <p>Function hasFlag coded on 260815, commented in full on 260815. Corrected on 260816: the
+     * <p><b>Where this differs from C.</b> C's {@code obj_has_flag} also looks at the object flags of
+     * every curse on the item; this method reads only the item's own set, which is the
+     * {@code of_has(obj->flags, flag)} every current caller corresponds to. C's one caller of
+     * {@code obj_has_flag}, {@code obj_can_takeoff} (the {@code OF_STICKY} test), has no Java port
+     * yet, and it will need a curse-aware method when it arrives. Curse flags reach the player
+     * calculations through {@code CurseSource} entries instead. An item whose flag set was never
+     * allocated gets an empty one here rather than failing.
+     *
+     * <p>Function hasFlag coded on 260815, commented in full on 261007. Corrected on 260816: the
      * previous version placed an item's readable flags on {@link KnownObject}, which is a different
      * store, and routed them through {@code getKnownFlags}, since withdrawn. Checked against C
      * again on 261002.
@@ -2266,6 +2356,9 @@ public class ItemObject {
      * @return whether this item carries it
      */
     public boolean hasFlag(ObjectFlag flag) {
+        if (flags == null) {
+            flags = new Flag<>(ObjectFlag.class);
+        }
         return flags.has(flag);
     }
 
@@ -2286,10 +2379,13 @@ public class ItemObject {
      * {@code obj-desc.c}, which build the base name, the quantity prefix, the combat, charge and
      * light details and the inscription in turn. Of those, only {@link #objDescNameFormat} and
      * {@link #objectKindName} exist so far. Today the stub reaches the player through
-     * {@link #printCustomMessage}'s {@code {name}} tag, {@link #flagMessage} and
-     * {@link #verifyObject}, and none of them can say anything about the item.
+     * {@link #printCustomMessage}'s {@code {name}} tag, {@link #verifyObject}, and the messages
+     * {@code PlayerKnowledge} builds as the player learns a rune or wields an item, which pass the
+     * name on to {@link #flagMessage} and to their own text. None of them can say anything about
+     * the item yet.
      *
-     * <p>Function description coded on 260815, commented in full on 261002.
+     * <p>Function description coded on 260815, commented in full on 261002, callers corrected on
+     * 261007.
      *
      * @param descriptionFlags how much of the name to build, C's {@code mode}
      * @param player           the player whose knowledge decides what may appear in the name
@@ -2318,7 +2414,11 @@ public class ItemObject {
      * distinction preserved between a flag index that could never be valid ({@link ObjectFlag#OF_NONE},
      * {@link ObjectFlag#OF_MAX}) and a real flag that simply has no entry. A property that exists
      * but declares no {@code msg:} is not an error at all — most flags are learned silently — and
-     * returns without a word. The two errors are logged here, where C prints a "Bug:" line to the
+     * returns without a word. C marks that case with a {@code NULL} message; the port's parser holds
+     * {@code ""} for an absent {@code msg:} (see {@link ObjectProperty#getNoticeMessage}), so both
+     * {@code null} and the empty string are treated as "no message" here and nothing reaches the
+     * message log. Wielding a Wooden Torch, whose {@code OF_BURNS_OUT}, {@code OF_TAKES_FUEL} and
+     * {@code OF_LIGHT_2} all lack a {@code msg:}, is the ordinary case. The two errors are logged here, where C prints a "Bug:" line to the
      * player. C numbers its {@code OF_NONE} as zero, which is a valid index, so it would report
      * that one as a missing entry; here it is reported as an invalid index.
      *
@@ -2333,7 +2433,7 @@ public class ItemObject {
      * <p>The finished text goes to {@link Message#message} as a {@code "%s"} argument, never as the
      * pattern, so a percent sign in an item's name cannot be read as a format directive.
      *
-     * <p>Function flagMessage coded on 260815, commented in full on 261002.
+     * <p>Function flagMessage coded on 260815, commented in full on 261007.
      *
      * @param flag the flag that has just shown itself
      * @param name the item's description, as {@link #description} builds it
@@ -2352,7 +2452,7 @@ public class ItemObject {
             return;
         }
         String toSend = property.getNoticeMessage();
-        if (toSend == null) return;
+        if (toSend == null || toSend.isEmpty()) return;
         toSend = toSend.replace("{name}", name);
         Message.message("%s", toSend);
     }
@@ -2376,7 +2476,8 @@ public class ItemObject {
      */
     public Flag<ObjectFlag> getFlags() {
         Flag<ObjectFlag> toReturn = new Flag<>(ObjectFlag.class);
-        toReturn.copyFrom(flags);
+        if (flags != null)
+            toReturn.copyFrom(flags);
         return toReturn;
     }
 
@@ -2392,15 +2493,20 @@ public class ItemObject {
      *
      * <p>The set is wiped before the copy, so whatever the caller had in it is discarded, not
      * merged. That is C's own {@code of_wipe} then {@code of_copy}, and the wipe is what makes a
-     * reused buffer safe. {@link Flag#copyFrom} wipes for itself as well, so the explicit call is
-     * redundant in Java; it stays because it is the clause C writes, and a reader comparing the two
-     * should find them line for line.
+     * reused buffer safe. {@link Flag#copyFrom} wipes for itself as well, so for a distinct set the
+     * explicit call is redundant in Java; it stays because it is the clause C writes, and a reader
+     * comparing the two should find them line for line.
+     *
+     * <p>Passing this item's own live flag set as the argument empties it and leaves it empty,
+     * because the wipe comes before the copy. {@link Flag#copyFrom} survives a self-copy, but the
+     * wipe here has already discarded the source. C's {@code of_wipe} then {@code of_copy} on the
+     * same array does the same, so this matches C; no caller passes the live set.
      *
      * <p>C guards with {@code if (!obj) return}, leaving the wiped set behind for a null item. An
      * instance method has no such case to answer — a caller with no item cannot reach this at all —
      * so a Java caller that could be holding nothing wipes its own set on that path.
      *
-     * <p>Function objectFlags coded on 260829 / commented in full on 261002.
+     * <p>Function objectFlags coded on 260829 / commented in full on 261007.
      *
      * @param flag the set to fill; wiped first, then written with this item's flags
      */
@@ -2441,7 +2547,8 @@ public class ItemObject {
      */
     public Flag<ObjectNotice> getNotice() {
         Flag<ObjectNotice> flags = new Flag<>(ObjectNotice.class);
-        flags.copyFrom(notice);
+        if (notice != null)
+            flags.copyFrom(notice);
         return flags;
     }
 
@@ -2514,6 +2621,8 @@ public class ItemObject {
      * @return {@code true} if the flag was newly set, {@code false} if it was already up
      */
     public boolean setNoticeOn(ObjectNotice flag) {
+        if (notice == null)
+            notice = new Flag<>(ObjectNotice.class);
         return notice.on(flag);
     }
 
@@ -2571,6 +2680,8 @@ public class ItemObject {
      * already down
      */
     public boolean setNoticeOff(ObjectNotice flag) {
+        if (notice == null)
+            notice = new Flag<>(ObjectNotice.class);
         return notice.off(flag);
     }
 
@@ -2983,6 +3094,8 @@ public class ItemObject {
      * @return {@code true} if the flag is up on this item, {@code false} if it is down
      */
     public boolean getNoticeHas(ObjectNotice flag) {
+        if (notice == null)
+            notice = new Flag<>(ObjectNotice.class);
         return notice.has(flag);
     }
 
@@ -3046,6 +3159,8 @@ public class ItemObject {
      * @return {@code true} if any flag was not already set
      */
     public boolean setFlags(Flag<ObjectFlag> mask) {
+        if (flags == null)
+            flags = new Flag<>(ObjectFlag.class);
         return flags.union(mask);
     }
 
@@ -3064,6 +3179,8 @@ public class ItemObject {
      * @return {@code true} if the flag was not already set
      */
     public boolean setFlag(ObjectFlag flag) {
+        if (flags == null)
+            flags = new Flag<>(ObjectFlag.class);
         return flags.set(flag);
     }
 
@@ -3074,15 +3191,25 @@ public class ItemObject {
      * <p>Copies in. The argument stays the caller's and the two sets share nothing afterwards, which
      * is the point: assigning the reference instead would leave a known counterpart holding its
      * item's own set, after which knowledge and truth are the same object and can never diverge.
-     * {@link Flag#copyFrom} wipes before it unions, so the wipe does not need saying twice.
+     * The wipe is said explicitly here even though {@link Flag#copyFrom} snapshots its source before
+     * it unions: {@code copyFrom} leaves a self-copy untouched, so without the wipe
+     * {@code item.setFlagsTo(item.getObjectFlags())} would keep the flags. With it, that call empties
+     * the item's flags, as C's {@code of_wipe} followed by {@code of_copy} on one array does. No
+     * production caller passes the live set; they all pass a freshly built one.
      *
-     * <p>Replaces; it does not add. {@link #setFlags} is the one that adds.
+     * <p>Replaces; it does not add. {@link #setFlags} is the one that adds. A {@code null} argument
+     * is read as an empty set, so the item's flags end up empty.
      *
-     * <p>Function setFlagsTo coded on 260816, commented in full on 260816.
+     * <p>Function setFlagsTo coded on 260816, commented in full on 260816, rewritten on 261007 for
+     * the explicit wipe and the null argument.
      *
      * @param flags the flags this item should end up with; read, never retained
      */
     public void setFlagsTo(Flag<ObjectFlag> flags) {
+        if (flags == null)
+            flags = new Flag<>(ObjectFlag.class);
+
+        // The below is explicit to handl the case of ItemObject obj; obj.setFlagsTo(obj.getFlags);
         this.flags.wipe();
         this.flags.copyFrom(flags);
     }
@@ -3787,15 +3914,17 @@ public class ItemObject {
      *
      * <p>The excise is skipped for a known object at the origin, because a zero grid means it is
      * not on the floor to be excised from - C's {@code loc_is_zero}, which compares coordinates.
-     * The port must compare coordinates too: {@code Loc.zero} is one particular instance, and an
-     * independently constructed {@code Loc(0, 0)} is a different object with the same value.
+     * {@link #getGrid()} answers {@link Loc#zero} for an item with no grid, so the test never meets
+     * a {@code null}. The port must compare coordinates too: {@code Loc.zero} is one particular
+     * instance, and an independently constructed {@code Loc(0, 0)} is a different object with the
+     * same value.
      *
      * <p>Deleting the absorbed object is what removes it from the player's gear, so this must be
      * reached; a caller that leaves it out ends up with the emptied stack still in the pack at its
      * old count.
      *
      * <p>Function objectAbsorb coded on 260822, corrected on 261002 to refresh the player, commented
-     * in full on 261002.
+     * in full on 261002, grid note added on 261007.
      *
      * @param toAbsorb the stack to fold in; it does not survive the call
      */
@@ -3848,10 +3977,14 @@ public class ItemObject {
      *
      * <p>Used where an object is about to be absorbed or deleted and its knowledge has already been
      * dealt with separately; clearing the link first stops the disposal from following it a second
-     * time. {@code ObjectUtils} calls it on both halves when it combines two pack stacks, after
-     * absorbing the known halves and removing the known object from the player's known gear.
+     * time. C does this to the absorbed stack only, in {@code combine_pack} ({@code obj-gear.c}),
+     * after absorbing the known halves. {@code ObjectUtils} calls it on the absorbed stack when it
+     * combines two pack stacks, once the known object has been removed from the player's known
+     * gear. It also calls it on that known object, whose own {@code known} link is already
+     * {@code null}, so that call changes nothing.
      *
-     * <p>Function nullKnown coded before 260827, commented in full on 261002.
+     * <p>Function nullKnown coded before 260827, commented in full on 261002, caller note corrected
+     * on 261007.
      */
     public void nullKnown() {
         this.known = null;
@@ -3910,7 +4043,7 @@ public class ItemObject {
         // Check legality
         if (this.getNumber() <= amount) {
             String message = "Invalid amount passed to objectSplit. Was: " + amount + " should " +
-                    "have been more than " + this.getNumber();
+                    "have been less than " + this.getNumber();
             logger.error(message);
             throw new IllegalArgumentException(message);
         }
@@ -4010,16 +4143,21 @@ public class ItemObject {
      *
      * <p>The routes are tried in that order, and a variable-power object with no {@code known}
      * half falls past the first test. No variable-power type can have a flavour, so it lands on the
-     * base route, which prices an unlisted type at zero: an object the player has never seen is
-     * worth nothing here. C's {@code tval_can_have_flavor_k} takes the kind's type where this reads
+     * base route. That route answers the kind's listed cost when the kind is aware, and a kind with
+     * no flavour is made aware at start-up ({@code ObjectUtils.flavourInit}, as C's
+     * {@code flavor_init} does), so a sword with no known half is priced at its kind's cost, not at
+     * zero. Zero is reached only for an unaware kind of a type {@link #objectValueBase} does not
+     * list, such as a special artifact kind before the player has learned it. C's
+     * {@code tval_can_have_flavor_k} takes the kind's type where this reads
      * the object's own {@link #tValue}; the two agree because an object copies its type from its
      * kind. Unlike C, which would stop on a kindless object, {@link #flavourIsAware()} answers
      * {@code false} for one, though {@link #objectValueBase} then throws.
      *
      * <p>Read by {@link #earlierObject} to order stock by price, and by the shop and wizard-mode
-     * code C routes through {@code object_value}.
+     * code C routes through {@code object_value}. It is {@code private} here because
+     * {@link #earlierObject} is its only caller so far; the store code will need it widened.
      *
-     * <p>Function objectValue coded before 260827, commented in full on 261002.
+     * <p>Function objectValue coded before 260827, commented in full on 261007.
      *
      * @param quantity how many items are being priced
      * @return the price of the stack in gold
@@ -4047,8 +4185,11 @@ public class ItemObject {
      * <p>An object whose flavour is known is worth its kind's listed cost, whatever its type. One
      * that is not is worth a flat figure for its type: 5 for food and mushrooms, 20 for potions and
      * scrolls, 45 for rings and amulets, 50 for wands, 70 for staves and 90 for rods. The player
-     * knows roughly what an unidentified rod is worth without knowing which rod it is. Types not
-     * listed are worth nothing unidentified, which includes every wearable that is not jewellery.
+     * knows roughly what an unidentified rod is worth without knowing which rod it is. A type not
+     * listed is worth nothing, but only while its kind is unaware. A wearable's kind has no flavour
+     * and is made aware at start-up, so the aware branch answers first for every wearable that is
+     * not jewellery; the zero applies to an unaware kind of an unlisted type, such as a special
+     * artifact kind before it is learned.
      *
      * <p>Awareness goes through {@link #objectFlavourIsAware()}, which throws for a kindless
      * object as C's assertion does, so the kind is dereferenced safely on the aware branch. The
@@ -4057,7 +4198,7 @@ public class ItemObject {
      *
      * <p>Only {@link #objectValue} calls it, and it multiplies the result by the count.
      *
-     * <p>Function objectValueBase coded before 260827, commented in full on 261002.
+     * <p>Function objectValueBase coded before 260827, commented in full on 261007.
      *
      * @return the price of one such object in gold
      */
@@ -4083,7 +4224,7 @@ public class ItemObject {
      * <p>Two routes, chosen by whether the type's worth varies with its properties
      * ({@link TValue#hasVariablePower()}).
      *
-     * <p><b>Variable-power objects</b> are priced from {@link #objectPower}, through the quadratic
+     * <p><b>Variable-power objects</b> are priced from {@code #objectPower}, through the quadratic
      * {@code power * (power * a + b)} with {@code a = 1} and {@code b = 5}. The quadratic is what
      * makes a strong object worth disproportionately more than a middling one, rather than merely
      * proportionately more. A negative power - a cursed object - is priced by the mirror of the same
@@ -4250,7 +4391,7 @@ public class ItemObject {
         power += dicePower;
         if (dicePower != 0) logger.info("total is {}", power);
         power += ammoDamagePower(power);
-        int mult = bowMulitplier();
+        int mult = bowMultiplier();
         power = launcherAmmoDamagePower(power);
         power = extraBlowsPower(power);
         if (power > ObjectRegistry.INHIBIT_POWER) return power;
@@ -4279,79 +4420,6 @@ public class ItemObject {
         power = effectsPower(power);
         power = cursePower(power, verbose, logFileName);
         power = nonStandardWeightPower(power);
-
-        logger.info("FINAL POWER IS {}", power);
-
-        return power;
-    }
-
-    /**
-     * Prices a curse's usefulness, mirroring {@link #objectPower(boolean, String)} step for step.
-     *
-     * <p><b>Why there are two of these.</b> In C a curse <em>is</em> an object - {@code curses[i].obj}
-     * is a real {@code struct object} with a tval, flags, modifiers and element info - so
-     * {@code curse_power} in {@code obj-power.c} simply runs {@code object_power} over it. The
-     * port's {@link Curse} is a flattened record instead, so almost every power function has a
-     * second overload taking one, and this method calls them in the same order the object version
-     * calls theirs.
-     *
-     * <p>Many of those overloads return their input unchanged. That is not laziness: running C's
-     * calculation over a curse object reaches the same answer, because a curse object has no base
-     * armour, is not jewellery, is not wielded in the shooting slot, is not ammunition or a bow,
-     * carries no brands or slays in {@code curse.txt}, and has no curses of its own. Each such
-     * overload says which of those facts makes it an identity.
-     *
-     * <p>When the two paths drift, there is no single function to correct - a change on one side
-     * needs the same change considered on the other.
-     *
-     * <p>The early returns on {@code INHIBIT_POWER} and the unused multiplier are as in
-     * {@link #objectPower(boolean, String)}. The callers are the first pass of
-     * {@link #cursePower(int, boolean, String)}, which subtracts a tenth of the curse's strength
-     * from the result.
-     *
-     * <p>Function objectPower commented in full on 261002.
-     *
-     * @param curse       the curse to price
-     * @param verbose     {@code true} to log the breakdown
-     * @param logFileName C's log file name, kept for the signature; no file is written
-     * @return the curse's power
-     */
-    private int objectPower(Curse curse, boolean verbose, String logFileName) {
-        // Get all the attack power
-        int power = toDamagePower(curse);
-        int dicePower = damageDicePower(curse);
-        power += dicePower;
-        if (dicePower != 0) logger.info("total is {}", power);
-        power += ammoDamagePower(curse, power);
-        int mult = bowMulitplier(curse);
-        power = launcherAmmoDamagePower(curse, power);
-        power = extraBlowsPower(curse, power);
-        if (power > ObjectRegistry.INHIBIT_POWER) return power;
-        power = extraShotsPower(curse, power);
-        if (power > ObjectRegistry.INHIBIT_POWER) return power;
-        PowerAndMult pm = new PowerAndMult(power, mult);
-        PowerAndMult outgoing = extraMightPower(curse, pm);
-        power = outgoing.power();
-        mult = outgoing.mult();
-        if (power > ObjectRegistry.INHIBIT_POWER) return power;
-        power = slayPower(curse, power, verbose, dicePower);
-        power = rescaleBowPower(curse, power);
-        power = toHitPower(curse, power);
-
-        // Armour class power
-        power = acPower(curse, power);
-        power = toAcPower(curse, power);
-
-        // Bonus for jewellery
-        power = jewelleryPower(curse, power);
-
-        // Other object properties
-        power = modifierPower(curse, power);
-        power = flagsPower(curse, power);
-        power = elementPower(curse, power);
-        power = effectsPower(curse, power);
-        power = cursePower(curse, power, verbose, logFileName);
-        power = nonStandardWeightPower(curse, power);
 
         logger.info("FINAL POWER IS {}", power);
 
@@ -4414,7 +4482,7 @@ public class ItemObject {
         if (getCurses() != null && !getCurses().isEmpty()) {
             for (Curse c : getCurses().keySet()) {
                 if (getCurses().get(c).getPower() != 0) {
-                    flags.union(c.getObjectFlags());
+                    flags.union(c.getItemObject().getFlags());
                 }
             }
         }
@@ -4478,27 +4546,6 @@ public class ItemObject {
     }
 
     /**
-     * Returns its input: a curse never carries a weight adjustment of its own.
-     *
-     * <p>C reaches {@code nonstandard_weight_power(curses[i].obj, p)}, which compares the curse
-     * object's weight against {@code object_weight_one(curse_obj)}. A curse object has no curses of
-     * its own, so {@code object_weight_one} ({@code obj-util.c}) returns the weight, floored at
-     * zero, unchanged. The standard weight is floored the same way, so even a curse with a negative
-     * additive weight gives two equal figures, and the function's first test returns {@code p}
-     * untouched. Always - including for a {@code MULTIPLY_WEIGHT} curse of weight 100, which means
-     * "no change".
-     *
-     * <p>Function nonStandardWeightPower commented in full on 261002.
-     *
-     * @param curse the curse being priced
-     * @param power the running power total
-     * @return {@code power}, unchanged
-     */
-    private int nonStandardWeightPower(Curse curse, int power) {
-        return power;
-    }
-
-    /**
      * Adjusts power for the curses on this object - the port of C's {@code curse_power}
      * ({@code obj-power.c}).
      *
@@ -4526,11 +4573,12 @@ public class ItemObject {
      * common case, which is C's stated reason for not treating all curses the way the second pass
      * treats these. The log text from C's {@code log_obj} is written at info level.
      *
-     * <p>C visits the curses in registry order and the port in the order they were added to the
-     * object. That cannot change the first pass, which only sums, and could change the second only
-     * when a sum reaches the {@code int} limits.
+     * <p>Both passes walk the curses in C's order. The {@link #curses} map is a {@code TreeMap}
+     * under {@link #CURSE_ORDER}, so iterating it gives ascending curse index whatever order the
+     * curses were added in. C's loop starts at slot 1 because slot 0 is a placeholder; the port's
+     * registry has no placeholder, so nothing is skipped.
      *
-     * <p>Function cursePower commented in full on 261002.
+     * <p>Function cursePower commented in full on 261007.
      *
      * @param power       the running power total
      * @param verbose     {@code true} to log the breakdown
@@ -4556,20 +4604,20 @@ public class ItemObject {
 
                 if (getCurses().get(c).getPower() == 0) continue;
 
-                if (c.getObjectFlags().has(ObjectFlag.OF_MULTIPLY_WEIGHT)) {
-                    if (c.getWeight() != 100) {
+                if (c.getItemObject().getFlags().has(ObjectFlag.OF_MULTIPLY_WEIGHT)) {
+                    if (c.getItemObject().getWeight() != 100) {
                         weightAffecting = true;
                         continue;
                     }
                 } else {
-                    if (c.getWeight() != 0) {
+                    if (c.getItemObject().getWeight() != 0) {
                         weightAffecting = true;
                         continue;
                     }
                 }
 
                 logger.info("Calculating {} curse power...", c.getName());
-                cursePower = objectPower(c, verbose, logFileName);
+                cursePower = c.getItemObject().objectPower(verbose, logFileName);
                 cursePower -= getCurses().get(c).getPower() / 10;
                 logger.info("Adjust for strength of curse, {} for {} curse power", cursePower, c.getName());
                 q += cursePower;
@@ -4602,10 +4650,10 @@ public class ItemObject {
 
                     if (getCurses().get(c).getPower() == 0) continue;
 
-                    if (c.getObjectFlags().has(ObjectFlag.OF_MULTIPLY_WEIGHT)) {
-                        if (c.getWeight() == 100) continue;
+                    if (c.getItemObject().getFlags().has(ObjectFlag.OF_MULTIPLY_WEIGHT)) {
+                        if (c.getItemObject().getWeight() == 100) continue;
                     } else {
-                        if (c.getWeight() == 0) continue;
+                        if (c.getItemObject().getWeight() == 0) continue;
                     }
 
                     ItemObject localItem = this.copy(true);
@@ -4710,7 +4758,8 @@ public class ItemObject {
      *
      * <p>Where C asserts, the port throws. Neither mode may be {@code OSTACK_STORE}, which the
      * caller is required to guarantee, and in the two mixed-quiver cases the size that ends up in
-     * the pack must fit the kind's {@code max_stack}. These are impossible states rather than
+     * the pack must be strictly below the kind's {@code max_stack}, C's {@code assert(size <
+     * max_stack)}, so a size equal to it throws. These are impossible states rather than
      * conditions to recover from: returning quietly would leave the caller believing a split had
      * happened when the counts were never touched.
      *
@@ -4718,7 +4767,7 @@ public class ItemObject {
      * {@code distributeCharges} works from the number moving.
      *
      * <p>Function objectAbsorbPartial coded on 260822, corrected on 260824, commented in full on
-     * 260824, C line number removed on 261003.
+     * 260824, C line number removed on 261003, max-stack bound corrected on 261007.
      *
      * @param item2      the stack being drawn from, which survives with a reduced count
      * @param stackMode1 the stacking rules in force for this stack
@@ -4824,7 +4873,12 @@ public class ItemObject {
      * calls this only on a {@link #copy(boolean)}; on an object whose maps were never created the
      * accessors answer immutable empties and the modifier write would fail.
      *
-     * <p>Function applyCurseAttributes commented in full on 261002.
+     * <p>The held-back curse is compared by identity, where the map lookups beside it go through
+     * {@link #CURSE_ORDER}. That is safe while every curse in a map is the registry's own instance,
+     * which {@code ObjectUtils.copyCurses} guarantees; a different instance that compares equal under
+     * {@link #CURSE_ORDER} would not be held back.
+     *
+     * <p>Function applyCurseAttributes commented in full on 261007.
      *
      * @param curseToIgnore the one curse to leave out, or {@code null} to merge them all
      * @throws RuntimeException if an element is held at an impossible resistance level
@@ -4851,13 +4905,14 @@ public class ItemObject {
                     if (!getCurses().containsKey(curse) || getCurses().get(curse).getPower() == 0)
                         continue;
 
-                    // We have a flattened curse data - so don't look at an object, look directly at the curse
+                    // C reads curses[i].obj; the port's curse holds that object, so read it through
+                    // curse.getItemObject() below. The weight change goes through the curse itself.
                     this.setWeight(curse.modifyWeightForCurse(this.getWeight()));
 
                     // Curses can adjust the ac, hit and dam modifiers
-                    this.setToAC(Guards.addGuardI16(this.getToAC(), curse.getCombatAC()));
-                    this.setToHit(Guards.addGuardI16(this.getToHit(), curse.getCombatToHit()));
-                    this.setToDam(Guards.addGuardI16(this.getToDam(), curse.getCombatDam()));
+                    this.setToAC(Guards.addGuardI16(this.getToAC(), curse.getItemObject().getToAC()));
+                    this.setToHit(Guards.addGuardI16(this.getToHit(), curse.getItemObject().getToHit()));
+                    this.setToDam(Guards.addGuardI16(this.getToDam(), curse.getItemObject().getToDam()));
 
                     // The curse may extend the objects flags - C's of_union(obj->flags, curse_obj->flags).
                     // setFlags is the named mutator for that, and unions into the real set. getFlags() must
@@ -4865,22 +4920,22 @@ public class ItemObject {
                     // and then throw it away, leaving this object's flags untouched and the curse silently
                     // unapplied - a mistake the compiler cannot catch, which prices the object as though the
                     // curse carried no flags at all.
-                    this.setFlags(curse.getObjectFlags());
+                    this.setFlags(curse.getItemObject().getFlags());
 
                     // The curses modifiers combine additively with those from this object;
-                    for (ObjectModifier om : curse.getModifiers().keySet()) {
+                    for (ObjectModifier om : curse.getItemObject().getModifiers().keySet()) {
                         if (this.getModifiers().containsKey(om)) {
                             this.getModifiers().put(om, Guards.addGuardI16(this.getModifiers().getOrDefault(om, 0),
-                                    curse.getModifiers().getOrDefault(om, 0)));
+                                    curse.getItemObject().getModifiers().getOrDefault(om, 0)));
                         } else {
-                            this.getModifiers().put(om, curse.getModifiers().getOrDefault(om, 0));
+                            this.getModifiers().put(om, curse.getItemObject().getModifiers().getOrDefault(om, 0));
                         }
                     }
 
                     // Resistances combine with standard logic for combining them.
                     for (ElementEnum elem : ElementEnum.values()) {
                         if (elem == ElementEnum.ELEM_MAX || elem == ElementEnum.ELEM_NONE) continue;
-                        ElementInfo curseElInfo = curse.getElInfo().getOrDefault(elem, null);
+                        ElementInfo curseElInfo = curse.getItemObject().getElInfo().getOrDefault(elem, null);
                         int curseResLevel = curseElInfo == null ? 0 : curseElInfo.getResLevel();
                         ElementInfo elInfo = getElInfo().getOrDefault(elem, null);
                         int elInfoResLevel = elInfo == null ? 0 : elInfo.getResLevel();
@@ -4954,25 +5009,6 @@ public class ItemObject {
     }
 
     /**
-     * Returns its input: a curse carries no curses of its own.
-     *
-     * <p>C reaches {@code curse_power(curses[i].obj, ...)} through {@code object_power}, whose whole
-     * body sits behind {@code if (obj->curses)} ({@code obj-power.c}), and a curse object's curse
-     * list is empty.
-     *
-     * <p>Function cursePower commented in full on 261002.
-     *
-     * @param curse       the curse being priced
-     * @param power       the running power total
-     * @param verbose     unused
-     * @param logFileName unused
-     * @return {@code power}, unchanged
-     */
-    private int cursePower(Curse curse, int power, boolean verbose, String logFileName) {
-        return power;
-    }
-
-    /**
      * Adds power for what this object does when used - the port of C's {@code effects_power}
      * ({@code obj-power.c}).
      *
@@ -5007,25 +5043,6 @@ public class ItemObject {
             logger.info("Add {} power for item activation, total is {}", q, power);
         }
 
-        return power;
-    }
-
-    /**
-     * Returns its input: curses carry no activation.
-     *
-     * <p>C reaches {@code effects_power(curses[i].obj, p)}, whose first branch tests
-     * {@code obj->activation} and whose second tests {@code obj->kind->power}
-     * ({@code obj-power.c}). A curse object has no activation, and the shared curse object
-     * kind, {@code <curse object>} in {@code object.txt}, carries no power, so both are zero and
-     * {@code p} comes back untouched.
-     *
-     * <p>Function effectsPower coded before 260827, commented in full on 261002.
-     *
-     * @param curse the curse being priced
-     * @param power the running power total
-     * @return {@code power}, unchanged
-     */
-    private int effectsPower(Curse curse, int power) {
         return power;
     }
 
@@ -5075,92 +5092,6 @@ public class ItemObject {
         // Analyse each element for ignore, vulnerability, resistance or immunity
         for (ElementPowers element : ObjectRegistry.elementPowers) {
             ElementInfo elInfo = getElInfo().get(element.getElement());
-            if (elInfo != null && elInfo.getFlags() != null) {
-                if (elInfo.getFlags().has(ElementInfoEnum.EL_INFO_IGNORE)) {
-                    if (element.getIgnorePower() != 0) {
-                        q = element.getIgnorePower();
-                        power += q;
-                        logger.info("Add {} power for ignoring {}, total is {}", q, element.getName(), power);
-                    }
-                }
-            }
-
-            if (elInfo != null) {
-                if (elInfo.getResLevel() == -1) {
-                    if (element.getVulnPower() != 0) {
-                        q = element.getVulnPower();
-                        power += q;
-                        logger.info("Add {} power for vulnerability to {}, total is {}", q, element.getName(), power);
-                    }
-                } else if (elInfo.getResLevel() == 1) {
-                    if (element.getResPower() != 0) {
-                        q = element.getResPower();
-                        power += q;
-                        logger.info("Add {} power for resistance to {}, total is {}", q, element.getName(), power);
-                    }
-                } else if (elInfo.getResLevel() == 3) {
-                    if (element.getImPower() != 0) {
-                        q = element.getImPower() + element.getResPower();
-                        power += q;
-                        logger.info("Add {} power for immunity to {}, total is {}", q, element.getName(), power);
-                    }
-                }
-            }
-
-            // Track combinations of element properties
-            for (ElementSet set : ObjectRegistry.elementSets) {
-                if ((set.getType() == element.getType())
-                        && (elInfo != null && set.getResLevel() <= elInfo.getResLevel())) {
-                    set.setCount(set.getCount() + 1);
-                }
-            }
-        }
-
-        // Add bonus if item has a full set of these flags
-        for (ElementSet set : ObjectRegistry.elementSets) {
-            if (set.getCount() > 1) {
-                q = set.getFactor() * set.getCount() * set.getCount();
-                power += q;
-                logger.info("Add {} power for multiple {}, total is {}", q, set.getDescription(), power);
-            }
-
-            if (set.getCount() == set.getSize()) {
-                q = set.getBonus();
-                power += q;
-                logger.info("Add {} power for full set of {}, total is {}", q, set.getDescription(), power);
-            }
-        }
-
-        return power;
-    }
-
-    /**
-     * Adds power for a curse's elemental protections, mirroring
-     * {@link #elementPower(int)} against the curse's own element info.
-     *
-     * <p>Not an identity, unlike most of the curse overloads: {@code curse.txt} does grant and
-     * withhold resistances, and C prices them by running the same function over the curse object.
-     * The body is {@link #elementPower(int)}'s with the curse's element info in place of the
-     * item's, and it zeroes and fills the same shared combination rows, so the two must not run at
-     * once.
-     *
-     * <p>Function elementPower coded before 260827, commented in full on 261002.
-     *
-     * @param curse the curse being priced
-     * @param power the running power total
-     * @return the total with the curse's elemental terms added
-     */
-    private int elementPower(Curse curse, int power) {
-        int q;
-
-        // zero the counts
-        for (ElementSet elementSet : ObjectRegistry.elementSets) {
-            elementSet.setCount(0);
-        }
-
-        // Analyse each element for ignore, vulnerability, resistance or immunity
-        for (ElementPowers element : ObjectRegistry.elementPowers) {
-            ElementInfo elInfo = curse.getElInfo().get(element.getElement());
             if (elInfo != null && elInfo.getFlags() != null) {
                 if (elInfo.getFlags().has(ElementInfoEnum.EL_INFO_IGNORE)) {
                     if (element.getIgnorePower() != 0) {
@@ -5301,76 +5232,6 @@ public class ItemObject {
     }
 
     /**
-     * Adds power for a curse's flags, mirroring {@link #flagsPower(int)} against the curse's own
-     * flag set.
-     *
-     * <p>The type multiplier is 1 rather than a lookup, and deliberately so: C prices the curse
-     * object, whose tval is never assigned and so is zero - C's {@code TV_NULL}, {@link TValue#TV_NONE}
-     * here - and no property in {@code object_property.txt} names that type, so every one of them
-     * falls back on the table's default of 1.
-     *
-     * <p>The flags come from {@link Curse#getObjectFlags()}. The family rows are the same shared
-     * ones {@link #flagsPower(int)} uses, so the two must not run at once.
-     *
-     * <p>Function flagsPower coded before 260827, commented in full on 261002.
-     *
-     * @param curse the curse being priced
-     * @param power the running power total
-     * @return the total with the curse's flag terms added
-     */
-    private int flagsPower(Curse curse, int power) {
-        Flag<ObjectFlag> flags = new Flag<>(ObjectFlag.class);
-        flags.copyFrom(curse.getObjectFlags());
-        int q;
-
-        // Zero the flag counts
-        for (FlagSet flagSet : ObjectRegistry.flagSets.values()) {
-            flagSet.setCount(0);
-        }
-
-        for (ObjectFlag flag : flags) {
-            ObjectPropertyTypeWrapper wrapper = new ObjectPropertyTypeWrapper(ObjPropertyType.OBJ_PROPERTY_FLAG, flag);
-            ObjectProperty property = ObjectRegistry.lookupObjectProperty(ObjPropertyType.OBJ_PROPERTY_FLAG, wrapper);
-
-            if (property == null) {
-                String message = "Unknown ObjectProperty type in flagsPower.";
-                logger.error(message);
-                throw new RuntimeException(message);
-            }
-
-            if (property.getPower() != 0) {
-                q = property.getPower();
-                power += q;
-                logger.info("Add {} for {}, total is {}", q, property.getName(), power);
-            }
-
-            // Track combinations of flag types
-            for (FlagSet flagSet : ObjectRegistry.flagSets.values()) {
-                if (flagSet.getType() == property.getSubtype())
-                    flagSet.setCount(flagSet.getCount() + 1);
-            }
-        }
-
-        // Add extra power for multiple flags of the same type
-        for (FlagSet flagSet : ObjectRegistry.flagSets.values()) {
-            if (flagSet.getCount() > 1) {
-                q = flagSet.getFactor() * flagSet.getCount() * flagSet.getCount();
-                power += q;
-                logger.info("Add {} power for multiple {}, total {}", q, flagSet.getDescription(), power);
-            }
-
-            // Add bonus if item has a full set of these flags
-            if (flagSet.getCount() == flagSet.getSize()) {
-                q = flagSet.getBonus();
-                power += q;
-                logger.info("Add {} power for full set of {}, total is {}", q, flagSet.getDescription(), power);
-            }
-        }
-
-        return power;
-    }
-
-    /**
      * Adds power for this object's modifiers - the port of C's {@code modifier_power}
      * ({@code obj-power.c}).
      *
@@ -5438,63 +5299,6 @@ public class ItemObject {
     }
 
     /**
-     * Adds power for a curse's modifiers, mirroring {@link #modifierPower(int)} against the curse's
-     * own modifier map.
-     *
-     * <p>Walks the curse's declared modifiers rather than every modifier there is, which reaches the
-     * same answer because an undeclared one contributes nothing.
-     *
-     * <p>No type multiplier, for the reason given on {@link #flagsPower(Curse, int)}: the curse
-     * object's type is one no property names, so the multiplier is always 1. The weighted total and
-     * the ability-table bonus are as in {@link #modifierPower(int)}, and so is the refusal above 249.
-     *
-     * <p>Function modifierPower coded before 260827, commented in full on 261002.
-     *
-     * @param curse the curse being priced
-     * @param power the running power total
-     * @return the total with the curse's modifier terms added
-     */
-    private int modifierPower(Curse curse, int power) {
-        int extraStatBonus = 0;
-        int q;
-
-        for (ObjectModifier om : curse.getModifiers().keySet()) {
-            if (om == ObjectModifier.OM_MAX || om == ObjectModifier.OM_NONE) continue;
-
-            ObjectPropertyTypeWrapper wrapper = new ObjectPropertyTypeWrapper(ObjPropertyType.OBJ_PROPERTY_MOD, om);
-            ObjectProperty mod = ObjectRegistry.lookupObjectProperty(ObjPropertyType.OBJ_PROPERTY_MOD, wrapper);
-            if (mod == null) {
-                String message = "Modifier nonexistent for " + om.name();
-                logger.error(message);
-                throw new RuntimeException(message);
-            }
-
-            int k = curse.getModifiers().getOrDefault(om, 0);
-            extraStatBonus += k * mod.getMultiplier();
-
-            if (mod.getPower() != 0) {
-                q = (k * mod.getPower());
-                power += q;
-                if (q != 0)
-                    logger.info("Add {} power for {} {}, total is {}", q, k, mod.getName(), power);
-            }
-        }
-
-        // Add extra power term if there are a lot of ability bonuses
-        if (extraStatBonus > 249) {
-            logger.info("Inhibiting - Total ability bonus of {} is too high", extraStatBonus);
-            power += ObjectRegistry.INHIBIT_POWER;
-        } else if (extraStatBonus > 0) {
-            q = ObjectRegistry.abilityPower[extraStatBonus / 10];
-            if (q == 0) return power;
-            power += q;
-            logger.info("Add {} power for modifier total of {}. total is {}", q, extraStatBonus, power);
-        }
-
-        return power;
-    }
-
-    /**
      * Adds the flat bonus every piece of jewellery carries - the port of C's {@code jewelry_power}
      * ({@code obj-power.c}).
      *
@@ -5513,22 +5317,6 @@ public class ItemObject {
                     ObjectRegistry.BASE_JEWELERY_POWER, power);
         }
 
-        return power;
-    }
-
-    /**
-     * Returns its input: a curse object is not jewellery.
-     *
-     * <p>C's {@code jewelry_power} tests {@code tval_is_jewelry(obj)} ({@code obj-power.c}), and
-     * a curse object's tval is zero, C's {@code TV_NULL}.
-     *
-     * <p>Function jewelleryPower coded before 260827, commented in full on 261002.
-     *
-     * @param curse the curse being priced
-     * @param power the running power total
-     * @return {@code power}, unchanged
-     */
-    private int jewelleryPower(Curse curse, int power) {
         return power;
     }
 
@@ -5571,45 +5359,6 @@ public class ItemObject {
             logger.info("Add {} power for very high toAC, total is {}", q, power);
         }
         if (getToAC() >= ObjectRegistry.INHIBIT_AC) {
-            power += ObjectRegistry.INHIBIT_POWER;
-            logger.info("INHIBITING: AC bonus too high.");
-        }
-
-        return power;
-    }
-
-    /**
-     * Adds power for a curse's to-armour bonus, mirroring {@link #toAcPower(int)} against the
-     * curse's own figure.
-     *
-     * <p>Not an identity: {@code curse.txt} does grant and withhold armour bonuses, and C prices
-     * them by running the same function over the curse object. The figure is the third value of a
-     * curse's {@code combat:} line in {@code curse.txt}, read through {@link Curse#getCombatAC()};
-     * the bands and the inhibit threshold are those of {@link #toAcPower(int)}.
-     *
-     * <p>Function toAcPower coded before 260827, commented in full on 261002.
-     *
-     * @param curse the curse being priced
-     * @param power the running power total
-     * @return the total with the curse's to-armour terms added
-     */
-    private int toAcPower(Curse curse, int power) {
-        if (curse.getCombatAC() == 0) return power;
-
-        int q = (curse.getCombatAC() * ObjectRegistry.TO_AC_POWER) / 2;
-        power += q;
-        logger.info("Add {} for toAC of {}, total is {}", q, curse.getCombatAC(), power);
-        if (curse.getCombatAC() > ObjectRegistry.HIGH_TO_AC) {
-            q = ((curse.getCombatAC() - (ObjectRegistry.HIGH_TO_AC - 1)) * ObjectRegistry.TO_AC_POWER);
-            power += q;
-            logger.info("Add {} power for high toAC, total is {}", q, power);
-        }
-        if (curse.getCombatAC() > ObjectRegistry.VERYHIGH_TO_AC) {
-            q = (curse.getCombatAC() - (ObjectRegistry.VERYHIGH_TO_AC - 1)) * ObjectRegistry.TO_AC_POWER * 2;
-            power += q;
-            logger.info("Add {} power for very high toAC, total is {}", q, power);
-        }
-        if (curse.getCombatAC() >= ObjectRegistry.INHIBIT_AC) {
             power += ObjectRegistry.INHIBIT_POWER;
             logger.info("INHIBITING: AC bonus too high.");
         }
@@ -5674,23 +5423,6 @@ public class ItemObject {
     }
 
     /**
-     * Returns its input: a curse has no base armour class.
-     *
-     * <p>C's {@code ac_power} sits entirely behind {@code if (obj->ac)} ({@code obj-power.c}),
-     * and {@code curse.txt} has no syntax for giving a curse base armour - {@code obj-curse.c} says
-     * so where it merges the field.
-     *
-     * <p>Function acPower coded before 260827, commented in full on 261002.
-     *
-     * @param curse the curse being priced
-     * @param power the running power total
-     * @return {@code power}, unchanged
-     */
-    private int acPower(Curse curse, int power) {
-        return power;
-    }
-
-    /**
      * Adds power for this object's to-hit bonus - the port of C's {@code to_hit_power}
      * ({@code obj-power.c}).
      *
@@ -5708,30 +5440,6 @@ public class ItemObject {
      */
     private int toHitPower(int power) {
         int q = (toHit * ObjectRegistry.TO_HIT_POWER / 2);
-        power += q;
-        if (power != 0) {
-            logger.info("Add {} power for to hit, total is {}", q, power);
-        }
-
-        return power;
-    }
-
-    /**
-     * Adds power for a curse's to-hit bonus, mirroring {@link #toHitPower(int)} against the curse's
-     * own figure.
-     *
-     * <p>Not an identity: curses adjust to-hit, and C prices that by running the same function over
-     * the curse object. The figure is the first value of a curse's {@code combat:} line in
-     * {@code curse.txt}, read through {@link Curse#getCombatToHit()}.
-     *
-     * <p>Function toHitPower coded before 260827, commented in full on 261002.
-     *
-     * @param curse the curse being priced
-     * @param power the running power total
-     * @return the total with the curse's to-hit term added
-     */
-    private int toHitPower(Curse curse, int power) {
-        int q = curse.getCombatToHit() * ObjectRegistry.TO_HIT_POWER / 2;
         power += q;
         if (power != 0) {
             logger.info("Add {} power for to hit, total is {}", q, power);
@@ -5772,30 +5480,17 @@ public class ItemObject {
     }
 
     /**
-     * Returns its input: a curse is not worn in the shooting slot.
-     *
-     * <p>C's {@code rescale_bow_power} tests {@code wield_slot(obj) == slot_by_name(player,
-     * "shooting")} ({@code obj-power.c}); a curse object is not wielded at all.
-     *
-     * <p>Function rescaleBowPower coded before 260827, commented in full on 261002.
-     *
-     * @param curse the curse being priced
-     * @param power the running power total
-     * @return {@code power}, unchanged
-     */
-    private int rescaleBowPower(Curse curse, int power) {
-        return power;
-    }
-
-    /**
      * Adds power for this object's brands and slays - the port of C's {@code slay_power}
      * ({@code obj-power.c}).
      *
      * <p>Priced from the <em>best</em> brand or slay rather than the sum of them, because only one
      * applies to any given blow. That best figure is a percentage-style number where 100 means "no
      * better than a bare weapon", so subtracting 100 is what turns it into a bonus - and what lets a
-     * weak brand price negatively. The search starts from 1 rather than 0, as C's does, so a set
-     * whose every member scores below 100 still takes the full penalty of 99 below it.
+     * weak brand price negatively. The best figure itself starts at 1 rather than 0, as C's
+     * {@code best_power} does, so a member scoring below 100 prices negatively against the 100
+     * baseline; only a best of 1 would take the full penalty of 99. With the shipped
+     * {@code brand.txt} and {@code slay.txt} every member scores at least 101, so the start value
+     * never becomes the result for a non-empty set.
      *
      * <p>The result is scaled by the damage dice squared and divided by 2500, truncating, so the
      * same brand is worth far more on a heavy weapon than on a light one.
@@ -5807,7 +5502,7 @@ public class ItemObject {
      *
      * <p>Returns early when there is nothing to price, which is the common case.
      *
-     * <p>Function slayPower coded before 260827, commented in full on 261002.
+     * <p>Function slayPower coded before 260827, commented in full on 261007.
      *
      * @param power     the running power total
      * @param verbose   {@code true} to log each brand and slay and the best figure
@@ -5893,25 +5588,6 @@ public class ItemObject {
     }
 
     /**
-     * Returns its input: no curse in {@code curse.txt} carries a brand or a slay.
-     *
-     * <p>C's {@code slay_power} returns {@code p} as soon as the counts come to zero
-     * ({@code obj-power.c}), which is what running it over a curse object does: a curse object has
-     * no brand or slay table, and {@code curse.txt} has no line that could give it one.
-     *
-     * <p>Function slayPower coded before 260827, commented in full on 261002.
-     *
-     * @param curse     the curse being priced
-     * @param power     the running power total
-     * @param verbose   unused
-     * @param dicePower unused
-     * @return {@code power}, unchanged
-     */
-    private int slayPower(Curse curse, int power, boolean verbose, int dicePower) {
-        return power;
-    }
-
-    /**
      * Applies extra shooting might to the running total - the port of C's
      * {@code extra_might_power} ({@code obj-power.c}).
      *
@@ -5945,45 +5621,6 @@ public class ItemObject {
         } else {
             mult += modMight;
         }
-        logger.info("Mult after extra might is {}", mult);
-        power *= mult;
-        logger.info("After multiplying power for might, total is {}", power);
-        return new PowerAndMult(power, mult);
-    }
-
-    /**
-     * Applies a curse's extra shooting might, mirroring {@link #extraMightPower(PowerAndMult)}
-     * against the curse's own modifier.
-     *
-     * <p>Not an identity: curses can carry a might modifier, and C prices it by running the same
-     * function over the curse object. The multiplier it starts from is the one the caller passes,
-     * which is one, since {@link #bowMulitplier(Curse)} answers one for a curse.
-     *
-     * <p>Function extraMightPower coded before 260827, commented in full on 261002.
-     *
-     * @param curse    the curse being priced
-     * @param incoming the running power total and current multiplier
-     * @return the updated total and multiplier
-     */
-    private PowerAndMult extraMightPower(Curse curse, PowerAndMult incoming) {
-        int power = incoming.power();
-        int mult = incoming.mult();
-        int modMight;
-
-        if (curse.getModifiers() != null)
-            modMight = curse.getModifiers().getOrDefault(ObjectModifier.OM_MIGHT, 0);
-        else
-            modMight = 0;
-
-        if (modMight >= ObjectRegistry.INHIBIT_MIGHT) {
-            power += ObjectRegistry.INHIBIT_POWER;
-            logger.info("INHIBITING - too much extra might - quitting");
-            PowerAndMult outgoing = new PowerAndMult(power, mult);
-            return outgoing;
-        } else {
-            mult += modMight;
-        }
-
         logger.info("Mult after extra might is {}", mult);
         power *= mult;
         logger.info("After multiplying power for might, total is {}", power);
@@ -6026,54 +5663,18 @@ public class ItemObject {
     }
 
     /**
-     * Applies a curse's extra shots, mirroring {@link #extraShotsPower(int)} against the curse's own
-     * modifier.
-     *
-     * <p>Not an identity: curses can carry a shots modifier. A curse with no modifiers, or with
-     * none for shots, leaves the total as it was.
-     *
-     * <p>Function extraShotsPower coded before 260827, commented in full on 261002.
-     *
-     * @param curse the curse being priced
-     * @param power the running power total
-     * @return the total, scaled up for any extra shots the curse grants
-     */
-    private int extraShotsPower(Curse curse, int power) {
-        if (curse == null)
-            return power;
-
-        if (curse.getModifiers() != null && (!curse.getModifiers().containsKey(ObjectModifier.OM_SHOTS)
-                || curse.getModifiers().getOrDefault(ObjectModifier.OM_SHOTS, 0) == 0)) {
-            return power;
-        }
-
-        int modShots = curse.getModifiers().getOrDefault(ObjectModifier.OM_SHOTS, 0);
-        if (modShots >= ObjectRegistry.INHIBIT_SHOTS) {
-            power += ObjectRegistry.INHIBIT_POWER;
-            logger.info("INHIBITING - too many extra shots - quitting");
-            return power;
-        } else if (modShots > 0) {
-            power *= (10 + modShots);
-            power /= 10;
-            logger.info("Adding {}% power for extra shots, total is {}", 10 * modShots, power);
-        }
-
-        return power;
-    }
-
-    /**
      * Applies extra blows to the running total - the port of C's {@code extra_blows_power}
      * ({@code obj-power.c}).
      *
      * <p>Two parts. The total is scaled by {@code (MAX_BLOWS + blows) / MAX_BLOWS}, truncating, and
      * then a flat amount is added - {@code NONWEAP_DAMAGE} times the blows times half of
-     * {@code DAMAGE_POWER} - which C describes as a fudge to boost extra blows, standing for damage
-     * the player deals that does not come from the weapon.
+     * {@code DAMAGE_POWER} - which C labels a boost for assumed off-weapon damage, standing for
+     * damage the player deals that does not come from the weapon.
      *
      * <p>Blows at or above the inhibit threshold refuse the object. A negative figure goes through
      * the same scaling and takes power away.
      *
-     * <p>Function extraBlowsPower coded before 260827, commented in full on 261002.
+     * <p>Function extraBlowsPower coded before 260827, commented in full on 261007.
      *
      * @param power the running power total
      * @return the total, scaled and boosted for any extra blows
@@ -6092,42 +5693,6 @@ public class ItemObject {
                     / ObjectRegistry.MAX_BLOWS;
             // Add boost for assumed off-weapon damage
             power += (ObjectRegistry.NONWEAP_DAMAGE * getModifiers().getOrDefault(ObjectModifier.OM_BLOWS, 0)
-                    * ObjectRegistry.DAMAGE_POWER / 2);
-            logger.info("Add {} power for extra blows, total is {}", power - q, power);
-        }
-
-        return power;
-    }
-
-    /**
-     * Applies a curse's extra blows, mirroring {@link #extraBlowsPower(int)} against the curse's own
-     * modifier.
-     *
-     * <p>Not an identity: curses can carry a blows modifier. A curse with none for blows leaves the
-     * total as it was.
-     *
-     * <p>Function extraBlowsPower coded before 260827, commented in full on 261002.
-     *
-     * @param curse the curse being priced
-     * @param power the running power total
-     * @return the total, scaled and boosted for any extra blows the curse grants
-     */
-    private int extraBlowsPower(Curse curse, int power) {
-        int q = power;
-
-        if (curse.getModifiers() != null && curse.getModifiers().getOrDefault(ObjectModifier.OM_BLOWS, 0) == 0)
-            return power;
-
-        if (curse.getModifiers() != null
-                && curse.getModifiers().getOrDefault(ObjectModifier.OM_BLOWS, 0) >= ObjectRegistry.INHIBIT_BLOWS) {
-            power += ObjectRegistry.INHIBIT_POWER;
-            logger.info("INHIBITING - too many extra blows - quitting");
-            return power;
-        } else {
-            power = power * (ObjectRegistry.MAX_BLOWS + curse.getModifiers().getOrDefault(ObjectModifier.OM_BLOWS, 0))
-                    / ObjectRegistry.MAX_BLOWS;
-            // Add boost for assumed off-weapon damage
-            power += (ObjectRegistry.NONWEAP_DAMAGE * curse.getModifiers().getOrDefault(ObjectModifier.OM_BLOWS, 0)
                     * ObjectRegistry.DAMAGE_POWER / 2);
             logger.info("Add {} power for extra blows, total is {}", power - q, power);
         }
@@ -6169,22 +5734,6 @@ public class ItemObject {
     }
 
     /**
-     * Returns its input: a curse is not ammunition.
-     *
-     * <p>C's {@code launcher_ammo_damage_power} does its work only inside {@code tval_is_ammo(obj)}
-     * ({@code obj-power.c}), and a curse object's tval is {@code TV_NONE}.
-     *
-     * <p>Function launcherAmmoDamagePower coded before 260827, commented in full on 261002.
-     *
-     * @param curse the curse being priced
-     * @param power the running power total
-     * @return {@code power}, unchanged
-     */
-    private int launcherAmmoDamagePower(Curse curse, int power) {
-        return power;
-    }
-
-    /**
      * Reports the damage multiplier a launcher gives - the port of C's {@code bow_multiplier}
      * ({@code obj-power.c}).
      *
@@ -6194,11 +5743,11 @@ public class ItemObject {
      * <p>The method name has its letters transposed, which is worth knowing when searching for
      * callers.
      *
-     * <p>Function bowMulitplier coded before 260827, commented in full on 261002.
+     * <p>Function bowMultiplier coded before 260827, commented in full on 261002.
      *
      * @return the launcher's multiplier, or 1 for anything that is not one
      */
-    private int bowMulitplier() {
+    private int bowMultiplier() {
         int mult = 1;
 
         if (gettValue() != TValue.TV_BOW)
@@ -6208,21 +5757,6 @@ public class ItemObject {
 
         logger.info("Base mult for this weapon is {}", mult);
         return mult;
-    }
-
-    /**
-     * Returns 1: a curse is not a bow, so it multiplies nothing.
-     *
-     * <p>C's {@code bow_multiplier} returns its initial {@code mult} of 1 for any object whose tval
-     * is not {@code TV_BOW} ({@code obj-power.c}).
-     *
-     * <p>Function bowMulitplier coded before 260827, commented in full on 261002.
-     *
-     * @param curse the curse being priced
-     * @return {@code 1}
-     */
-    private int bowMulitplier(Curse curse) {
-        return 1;
     }
 
     /**
@@ -6274,22 +5808,6 @@ public class ItemObject {
     }
 
     /**
-     * Returns zero: a curse is not worn in the shooting slot, so there is no ammunition to price.
-     *
-     * <p>C's {@code ammo_damage_power} returns its {@code q} of 0 unless {@code wield_slot} sends
-     * the object to that slot ({@code obj-power.c}), and a curse object has no tval to send.
-     *
-     * <p>Function ammoDamagePower coded before 260827, commented in full on 261002.
-     *
-     * @param curse the curse being priced
-     * @param power unused
-     * @return {@code 0}
-     */
-    private int ammoDamagePower(Curse curse, int power) {
-        return 0;
-    }
-
-    /**
      * Prices what this object's damage dice are worth - the port of C's
      * {@code damage_dice_power} ({@code obj-power.c}).
      *
@@ -6334,36 +5852,6 @@ public class ItemObject {
     }
 
     /**
-     * Prices what a curse's combat modifiers are worth as a damage term, mirroring the second branch
-     * of {@link #damageDicePower()}.
-     *
-     * <p>Only that branch applies: a curse has no dice of its own and is not worn in the shooting
-     * slot, so C reaches the same test - blows, shots or might above zero - and credits the same
-     * flat assumed damage. A curse with no modifiers, or none above zero for those three, takes a
-     * term of zero.
-     *
-     * <p>Function damageDicePower coded before 260827, commented in full on 261002.
-     *
-     * @param curse the curse being priced
-     * @return the damage-dice term for the curse
-     */
-    private int damageDicePower(Curse curse) {
-        int dice = 0;
-
-        // Add damage from dice for any wearable weapon or ammo
-        if (curse.getModifiers() != null) {
-            if (curse.getModifiers().getOrDefault(ObjectModifier.OM_BLOWS, 0) > 0
-                    || curse.getModifiers().getOrDefault(ObjectModifier.OM_SHOTS, 0) > 0
-                    || curse.getModifiers().getOrDefault(ObjectModifier.OM_MIGHT, 0) > 0) {
-                dice = (ObjectRegistry.WEAP_DAMAGE * ObjectRegistry.DAMAGE_POWER);
-                logger.info("Add {} power for non-combat bonuses.", dice);
-            }
-        }
-
-        return dice;
-    }
-
-    /**
      * Adds power for this object's to-damage bonus - the port of C's {@code to_damage_power}
      * ({@code obj-power.c}).
      *
@@ -6394,31 +5882,6 @@ public class ItemObject {
             if (nonWeaponPower != 0)
                 logger.info("Add {} from non-weapon to_dam, total {}", nonWeaponPower, power);
         }
-
-        return power;
-    }
-
-    /**
-     * Adds power for a curse's to-damage bonus, mirroring {@link #toDamagePower()} against the
-     * curse's own figure.
-     *
-     * <p>Takes the second lot of damage power unconditionally, and that is right: a curse object is
-     * not a weapon, not ammunition and not worn in the shooting slot, so C always reaches that
-     * branch. The curse's figure is {@code getCombatDam()}.
-     *
-     * <p>Function toDamagePower coded before 260827, commented in full on 261002.
-     *
-     * @param curse the curse being priced
-     * @return the curse's to-damage term
-     */
-    private int toDamagePower(Curse curse) {
-        int power = curse.getCombatDam() * ObjectRegistry.DAMAGE_POWER / 2;
-        if (power != 0) logger.info("{} power from to_dam", power);
-
-        // add second lot of damage power for non weapons
-        int q = curse.getCombatDam() * ObjectRegistry.DAMAGE_POWER;
-        power += q;
-        if (q != 0) logger.info("Add {} from to_dam, total {}", q, power);
 
         return power;
     }
@@ -6537,12 +6000,17 @@ public class ItemObject {
      *
      * <p>Deep-copied because their contents are mutable: the flag and notice sets, the modifier map,
      * the element info (each entry copied in turn), the curse map (each {@code CurseData} rebuilt),
-     * the dice, and the brand and slay sets where they exist.
+     * the dice, and the brand and slay sets where they exist. The modifier and element maps are
+     * rebuilt as insertion-ordered {@link LinkedHashMap}s and the curse map through
+     * {@link #cursesFactory()}, so the copy walks them in the same order as the original.
      *
      * <p>Shared deliberately: the kind, ego and artifact templates, which C shares as pointers and
      * which every item built on them points at; the origin race, for the same reason - identity is
      * what tells two origins apart, so copying it would make two items from the same monster look
-     * like items from different ones.
+     * like items from different ones. The {@code effect} list and the {@code activation} list are
+     * shared too, as C's {@code memcpy} copies the {@code struct effect *} and
+     * {@code struct activation *} pointers and {@code object_copy} never duplicates the chain
+     * behind them, and so is the {@code effectMessage} string, which is immutable.
      *
      * <p>Null is preserved rather than normalised for the brand, slay and curse collections, because
      * elsewhere the class distinguishes "no collection" from "an empty one" - the accessors answer
@@ -6562,7 +6030,8 @@ public class ItemObject {
      * {@code object_copy_amt}, the variant that also sets the count and shares out charges, has no
      * port yet; C uses it only in the store code, which belongs to Chapter 8.
      *
-     * <p>Function copy coded before 260827, commented in full on 261002.
+     * <p>Function copy coded before 260827, commented in full on 261002, map order and shared
+     * effect notes added on 261007.
      *
      * @param includingKnown {@code true} to copy the known half as well
      * @return a new item that shares no mutable state with this one, bar the noted templates
@@ -6601,12 +6070,12 @@ public class ItemObject {
         Flag<ObjectFlag> oFlags = new Flag<>(ObjectFlag.class);
         oFlags.copyFrom(this.flags);
         copy.flags = oFlags;
-        Map<ObjectModifier, Integer> newMods = new HashMap<>();
+        Map<ObjectModifier, Integer> newMods = new LinkedHashMap<>();
         for (ObjectModifier mod : this.getModifiers().keySet()) {
             newMods.put(mod, this.getModifiers().get(mod));
         }
         copy.modifiers = newMods;
-        Map<ElementEnum, ElementInfo> eeMap = new HashMap<>();
+        Map<ElementEnum, ElementInfo> eeMap = new LinkedHashMap<>();
         for (ElementEnum ee : this.getElInfo().keySet()) {
             eeMap.put(ee, this.getElInfo().get(ee).copy());
         }
@@ -6710,8 +6179,8 @@ public class ItemObject {
      * <p>C walks the template once, left to right, copying bytes into a bounded buffer. This
      * version instead rewrites an immutable string in passes: ampersands, then the modifier, then
      * tildes, then bars. That is a deliberate divergence, and it buys four differences in
-     * behaviour, none of them reachable from the shipped game data (a fifth, for two {@code ~} in a
-     * row, follows the list):
+     * behaviour, none of them reachable from the shipped game data (two more, for two {@code ~} in
+     * a row and for a {@code ~} inside a bar alternative, follow the list):
      *
      * <ul>
      * <li>Because the modifier goes in before the tilde pass, a {@code ~} written directly after a
@@ -6735,7 +6204,18 @@ public class ItemObject {
      * {@code ~} with nothing before it, where C reads the first {@code ~} as the preceding character
      * and writes a bare {@code s}.
      *
-     * <p>Function objDescNameFormat commented in full on 261002.
+     * <p>A {@code ~} inside the alternative that {@code |x|y|} keeps is also read differently. C
+     * copies the chosen alternative raw, so the {@code ~} survives into the output, and it never
+     * looks at the alternative it drops. Here the {@code ~} pass runs over the whole template
+     * before the bar pass, so that {@code ~} is removed when singular and turned into {@code s} or
+     * {@code es} when plural. {@code "A|b~|c|"} singular is {@code Ab~} in C and {@code Ab} here;
+     * {@code "A|b|c~|"} plural is {@code Ac~} in C and {@code Acs} here. A {@code ~} in the
+     * alternative that is dropped changes nothing, because the dropped text is discarded either
+     * way. No template in {@code object.txt}, {@code object_base.txt} or C's hard-coded basenames
+     * has both a bar and a {@code ~}.
+     *
+     * <p>Function objDescNameFormat commented in full on 261002, bar-alternative note added on
+     * 261007.
      *
      * @param string    the name template to format
      * @param modString the text to substitute for {@code #}, or {@code null} to leave any
@@ -6833,6 +6313,8 @@ public class ItemObject {
      * @return this object's flags
      */
     public Flag<ObjectFlag> getObjectFlags() {
+        if (flags == null)
+            flags = new Flag<>(ObjectFlag.class);
         return flags;
     }
 
@@ -7008,12 +6490,11 @@ public class ItemObject {
      * {@link TValue#TV_NONE}, which is C's tval 0.
      *
      * <p>Two fields come back as {@code null} where C's zero is a value. {@code location} is
-     * {@code null} where C's grid is (0, 0), and {@link #objectAbsorb} reads both as "not on the
-     * floor". {@code baseDamage} has no C
-     * counterpart at all. {@code time} is not among the three: it comes back as a zero
-     * {@link Random}, which is C's four zeros, and {@link #numberCharging} reads that as nothing
-     * charging. Unlike a freshly built item, a wiped one has an empty {@code activation}
-     * list rather than {@code null}.
+     * {@code null} where C's grid is (0, 0); {@link #getGrid()} answers {@link Loc#zero} for it, and
+     * {@link #objectAbsorb} reads both as "not on the floor". {@code baseDamage} has no C counterpart at all. {@code time} is not one of the two:
+     * it comes back as a zero {@link Random}, which is C's four zeros, and {@link #numberCharging}
+     * reads that as nothing charging. Unlike a freshly built item, a wiped one has an empty
+     * {@code activation} list rather than {@code null}.
      *
      * <p>C's {@code memset} also zeroes {@code prev} and {@code next}, the pile pointers, and
      * {@code oidx}, the item-list index. The port keeps no index, and {@code owningPile} stands for
@@ -7021,7 +6502,8 @@ public class ItemObject {
      * snapshot the port adds, is left as it was.
      *
      * <p>Function wipe coded before 260904, commented in full on 261002; the pile and map notes and
-     * the C line number were removed on 261002, the {@code time} note corrected on 261003.
+     * the C line number were removed on 261002, the {@code time} note corrected on 261003, the
+     * count of null fields corrected on 261007, {@code Loc.zero} read noted on 261007.
      *
      * @author Rowan Crowther
      */
@@ -7077,11 +6559,12 @@ public class ItemObject {
      *
      * <p>An empty map is this port's equivalent of the zeroed array {@code mem_zalloc} hands
      * back: {@link #getCurses()} already reads "no entry" the way C reads a curse slot at power
-     * zero, so there is no C-side loop to mirror here. The map keeps insertion order, as the
-     * {@code curses} field requires.
+     * zero, so there is no C-side loop to mirror here. The map is built by {@link #cursesFactory()},
+     * so it walks in ascending curse index, as the {@code curses} field requires.
      *
      * <p>Function initCurses coded before 260904, commented in full on 261002; the line numbers were
-     * removed on 261002 and the note on {@code copyCurses} corrected on 261003.
+     * removed on 261002 and the note on {@code copyCurses} corrected on 261003, the ordering note
+     * corrected on 261007.
      */
     public void initCurses() {
         curses = cursesFactory();
@@ -7353,6 +6836,21 @@ public class ItemObject {
         }
     }
 
+    /**
+     * Sets the message shown when this item's effect fires, the port of C's
+     * {@code obj->effect_msg = message}.
+     *
+     * <p>Stores the string as given, {@code null} included, which stands for "no message". A string
+     * is immutable, so sharing it is as safe as C's shared {@code char *}. The only production
+     * caller is {@code CurseAssembler}, which gives a curse object the message of the curse it
+     * stands for. Nothing reads the field back except {@link #copy}; {@code do_curse_effect} in
+     * {@code obj-curse.c} will be the first real reader when {@code ObjectUtils.doCurseEffect} is
+     * ported.
+     *
+     * <p>Function setEffectMessage coded before 261007, commented in full on 261007.
+     *
+     * @param message the effect message, or {@code null} for none
+     */
     public void setEffectMessage(String message) {
         this.effectMessage = message;
     }

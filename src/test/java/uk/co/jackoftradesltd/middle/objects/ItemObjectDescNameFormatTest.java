@@ -28,17 +28,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests {@code ItemObject.objDescNameFormat(String, String, boolean)} — the port of C's
- * {@code obj_desc_name_format} ({@code src/obj-desc.c:231}).
+ * {@code obj_desc_name_format} ({@code obj-desc.c}).
  *
  * <p>Every expected value below was worked out from the C, by hand and by walking the C's
  * single left-to-right pass over each template; none was taken from the Java. The templates
  * themselves are the real ones — the {@code name:} lines of {@code object.txt} and
  * {@code object_base.txt}, and the hard-coded basenames returned by C's
- * {@code obj_desc_get_basename} ({@code obj-desc.c:80}) — so the ordinary cases are the strings
+ * {@code obj_desc_get_basename} ({@code obj-desc.c}) — so the ordinary cases are the strings
  * the game actually formats.
  *
  * <p>The port rewrites an immutable string in passes where C copies bytes once, left to right.
- * That is deliberate, and the four places it shows are covered in {@link Divergences} with the
+ * That is deliberate, and the places it shows are covered in {@link Divergences} with the
  * C behaviour named in each test, so that anyone reading a failure can see which of the two is
  * being asserted.
  *
@@ -305,6 +305,30 @@ class ItemObjectDescNameFormatTest {
         void errorExitKeepsMarkers() throws Exception {
             // The bail-out happens before the bar pass, so the tail still carries its triple.
             assertEquals("as~|b|c|", format("a~~|b|c|", null, true));
+        }
+
+        @Test
+        @DisplayName("a ~ inside the kept singular alternative survives in C and is removed here")
+        void tildeInKeptSingularAlternative() throws Exception {
+            // C copies the chosen alternative raw with "%.*s", so "b~" comes out whole: "Ab~".
+            // The port's tilde pass runs over the whole template first and removes it: "Ab".
+            assertEquals("Ab", format("A|b~|c|", null, false));
+        }
+
+        @Test
+        @DisplayName("a ~ inside the kept plural alternative survives in C and is pluralised here")
+        void tildeInKeptPluralAlternative() throws Exception {
+            // C copies "c~" raw: "Ac~". The port turns the ~ into "s" before the bar pass: "Acs".
+            assertEquals("Acs", format("A|b|c~|", null, true));
+        }
+
+        @Test
+        @DisplayName("a ~ inside the alternative that is dropped changes nothing, as in C")
+        void tildeInDroppedAlternative() throws Exception {
+            // C never reads the dropped alternative: singular "A|b|c~|" is "Ab", plural
+            // "A|b~|c|" is "Ac". The port agrees because the dropped text is discarded either way.
+            assertEquals("Ab", format("A|b|c~|", null, false));
+            assertEquals("Ac", format("A|b~|c|", null, true));
         }
     }
 }

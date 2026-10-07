@@ -316,7 +316,7 @@ class ItemObjectOrderingTest {
          * another realm sharing a sub-type is refused.
          *
          * <p>C compares both: {@code kind->tval == book.tval && kind->sval == book.sval}
-         * ({@code obj-util.c:766}). The sub-type alone cannot separate the realms, because each item
+         * ({@code obj-util.c}, function {@code obj_can_browse}). The sub-type alone cannot separate the realms, because each item
          * type numbers its sub-types from one upwards — so a prayer book with the same sval as the
          * class's magic book exists in any real game, and is the case asserted here.
          *

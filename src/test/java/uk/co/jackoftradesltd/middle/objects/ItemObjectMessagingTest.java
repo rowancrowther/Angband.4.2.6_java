@@ -229,6 +229,24 @@ class ItemObjectMessagingTest {
         }
 
         /**
+         * The state the data path really produces: {@code object_property.txt} records with no
+         * {@code msg:} line reach the property as the empty string, not {@code null}. C's
+         * {@code flag_message} returns at {@code if (!prop->msg)}, so nothing is shown; the port must
+         * not send an empty entry to the message log.
+         *
+         * @throws Exception if the property table cannot be reached
+         */
+        @Test
+        @DisplayName("a property whose message is the empty string says nothing")
+        void emptyMessageIsSilent() throws Exception {
+            registerProperty(ObjectFlag.OF_BURNS_OUT, "");
+
+            new ItemObject().flagMessage(ObjectFlag.OF_BURNS_OUT, "Wooden Torch");
+
+            assertTrue(bus.messages.isEmpty());
+        }
+
+        /**
          * A flag with no property at all is a data error, and is logged rather than announced — the
          * player is told nothing, because there is nothing to tell them.
          */

@@ -431,20 +431,6 @@ class ItemObjectPowerCursesTest {
                     weightPower(cloak(100, 0, curse(1, 80, false, 0), 50), Integer.MIN_VALUE));
         }
 
-        /**
-         * The curse overload returns its input: a curse object has no curses of its own, so its
-         * weight equals {@code object_weight_one} of it, even with a negative or a 100% weight.
-         */
-        @Test
-        @DisplayName("the curse overload returns its input")
-        void curseOverload() throws Exception {
-            ItemObject item = cloak(100, 0);
-
-            for (Curse c : List.of(curse(1, -40, false, 0), curse(1, 100, true, 0), curse(1, 200, true, 0))) {
-                assertEquals(77, (int) invoke(item, "nonStandardWeightPower",
-                        new Class<?>[]{Curse.class, int.class}, c, 77));
-            }
-        }
     }
 
     /**
@@ -849,16 +835,6 @@ class ItemObjectPowerCursesTest {
             assertEquals(1, item.getElInfo().get(ElementEnum.ELEM_ACID).getResLevel());
         }
 
-        /**
-         * The curse overload returns its input: a curse object has no curses of its own.
-         */
-        @Test
-        @DisplayName("the curse overload returns its input")
-        void curseOverload() throws Exception {
-            assertEquals(77, (int) invoke(cloak(100, 0), "cursePower",
-                    new Class<?>[]{Curse.class, int.class, boolean.class, String.class},
-                    curse(1, 30, false, -4), 77, false, null));
-        }
     }
 
     /**
@@ -923,10 +899,10 @@ class ItemObjectPowerCursesTest {
         @DisplayName("the curse overload prices a curse")
         void curseOverload() throws Exception {
             ItemObject item = cloak(100, 0);
-            Class<?>[] types = {Curse.class, boolean.class, String.class};
+            Class<?>[] types = {boolean.class, String.class};
 
-            assertEquals(-3, (int) invoke(item, "objectPower", types, curse(1, 0, false, -3), false, null));
-            assertEquals(0, (int) invoke(item, "objectPower", types, curse(1, 0, false, 0), false, null));
+            assertEquals(-3, (int) invoke(curse(1, 0, false, -3).getItemObject(), "objectPower", types, false, null));
+            assertEquals(0, (int) invoke(curse(1, 0, false, 0).getItemObject(), "objectPower", types, false, null));
         }
     }
 

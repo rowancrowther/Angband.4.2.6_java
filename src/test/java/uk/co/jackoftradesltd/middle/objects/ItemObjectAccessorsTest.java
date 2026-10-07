@@ -190,12 +190,12 @@ class ItemObjectAccessorsTest {
     class Blank {
 
         @Test
-        @DisplayName("has no kind, no location and no inscription")
+        @DisplayName("has no kind, a grid of (0, 0) and no inscription")
         void isEmpty() {
             ItemObject item = new ItemObject();
 
             assertNull(item.getKind());
-            assertNull(item.getGrid());
+            assertTrue(item.getGrid().isZero());
             assertNull(item.getNote());
         }
 
@@ -332,7 +332,7 @@ class ItemObjectAccessorsTest {
     class Accessors {
 
         @Test
-        @DisplayName("the grid round-trips, and null means not on the floor")
+        @DisplayName("the grid round-trips, and null reads as (0, 0), not on the floor")
         void gridRoundTrips() {
             ItemObject item = new ItemObject();
 
@@ -340,7 +340,7 @@ class ItemObjectAccessorsTest {
             assertEquals(Loc.row(7).col(3), item.getGrid());
 
             item.setGrid(null);
-            assertNull(item.getGrid());
+            assertTrue(item.getGrid().isZero());
         }
 
         @Test

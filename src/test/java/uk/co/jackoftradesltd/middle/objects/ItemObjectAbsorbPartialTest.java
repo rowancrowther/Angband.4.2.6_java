@@ -54,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Tests {@link ItemObject#objectAbsorbPartial}, the port of C's {@code object_absorb_partial}
- * ({@code obj-pile.c:624}) — the split that moves as much of one stack onto another as the limits
+ * ({@code obj-pile.c}, function {@code object_absorb_partial}) — the split that moves as much of one stack onto another as the limits
  * allow, leaving both alive.
  *
  * <p><b>Conservation is the property under test.</b> Every case below asserts the two new counts

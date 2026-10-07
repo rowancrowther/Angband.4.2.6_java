@@ -1206,6 +1206,15 @@ public class ObjectUtils {
      * {@code if (!source[i]) continue;} does: nothing is written for it and no timeout is rolled, so
      * the random stream is not drawn from either.
      *
+     * <p><b>Accepted divergence:</b> a non-{@code null} source whose entries are all power 0, copied
+     * onto a {@code dest} with no curses, leaves {@code dest} with an empty map. C has already
+     * allocated {@code obj->curses}, zeroed, by the time it skips those entries, and
+     * {@code curses_are_equal} treats that array as different from {@code NULL}. Java has no value
+     * for "allocated but all zero": {@link ItemObject#cursesAreEqual} reads an empty map as
+     * {@code NULL}, so the two objects compare equal where C says they differ. Shipped data cannot
+     * reach it, since the parser never produces a power-0 curse entry; only a hand-built source
+     * can.
+     *
      * <p>The merge itself runs against a scratch {@link TreeMap} copy of {@code dest}'s existing
      * curses ({@code destCurseMap}), so the write to {@code dest} happens once, at the end, through
      * {@link ItemObject#setCurses}. C instead allocates {@code obj->curses} lazily and writes
@@ -1225,7 +1234,8 @@ public class ObjectUtils {
      *
      * <p>Function copyCurses coded before 260904, commented in full on 261007, rewritten on 261003
      * once the {@code initCurses} call and the power-0 gap were removed, scratch map made a
-     * {@code TreeMap} on 261005, walk order recorded on 261007.
+     * {@code TreeMap} on 261005, walk order recorded on 261007, all-zero source divergence marked
+     * accepted on 261007.
      *
      * @param dest   the item the curses are being attached to
      * @param source the curses to copy on, keyed by curse and each mapped to its power; {@code null}

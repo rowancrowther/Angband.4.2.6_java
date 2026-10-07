@@ -58,6 +58,9 @@ any
 - `copy(false)` leaving `known` null; `flavourIsAware` against `objectFlavourIsAware` on a kindless item (batch lists).
 - The five `objDescNameFormat` cases (Part G), pending your decision on adding them to the batch 8 accepted list.
 - `hasFlag` ignoring curse flags, until `obj_can_takeoff` is ported (Part F).
+- `ObjectUtils.copyCurses` with a non-null all-power-0 source leaves an empty map where C holds an allocated zero array,
+  so `cursesAreEqual` says equal where `curses_are_equal` says different (Parts A, H baseline; accepted 2026-10-07,
+  marked in the `copyCurses` Javadoc).
 
 ## Out-of-scope observations, all parts
 
@@ -92,6 +95,7 @@ Shape follows `docs/ItemObject_stage1_mismatches.md`. File and line references a
 
 - Leaves an empty map where C holds an allocated all-zero array, and `curses_are_equal` treats NULL and all-zero as
   different. Hand-built sources only.
+- **Result:** ACCEPTED 2026-10-07; see the accepted list above and the `copyCurses` Javadoc.
 
 ### 5. `cursesFactory` comparator with a `null` curse name and a tied index (Part A)
 

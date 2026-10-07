@@ -32,7 +32,20 @@ import java.util.*;
  * same operations over a Java enum so callers get the same semantics with
  * compile-time safety instead of raw bit indices.
  *
- * <p>Class Flag coded before 260815, commented in full on 260915.
+ * <p>The read-only half of the operations is declared on {@link FlagView}, which this class
+ * implements; the mutating half lives here. Where C takes a {@code const bitflag *} a port
+ * should take a {@link FlagView}.
+ *
+ * <p>Most of the places this class departs from {@code z-bitflag.c} share one cause: a C
+ * bit array is whole bytes, so it carries padding bits above the last named flag, and an
+ * {@link EnumSet} has none. {@link #isFull}, {@link #count}, {@link #isEmpty} and
+ * {@link #isEqual} each say what that means for them. The other departures are the
+ * {@code FLAG_END} sentinel ({@link #has}, {@link #next}, and the varargs methods), which a
+ * typed enum cannot express, and the "did anything change" return of {@link #inter}.
+ * {@link #iterator}, {@link #toList} and {@link #andNot} are Java-side additions with no
+ * function in {@code z-bitflag.c}.
+ *
+ * <p>Class Flag coded before 260815, commented in full on 261007.
  *
  * @param <E> the enum type whose constants are the individual flags
  * @author Rowan Crowther
@@ -122,7 +135,12 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
      * returning false without touching the array; that sentinel has no Java equivalent since
      * {@code flag} is typed {@code E}, so no such case can be constructed here.
      *
-     * <p>Function has coded before 260815, commented in full on 260915.
+     * <p>C also has {@code flag_has_dbg}, the form the {@code _has} wrapper macros expand to in a
+     * debug build; it adds only a {@code quit_fmt} bounds check on the flag's byte offset, which
+     * an enum-typed argument cannot violate, so it has no separate Java method and this one
+     * stands for both.
+     *
+     * <p>Function has coded before 260815, commented in full on 261007.
      *
      * @param flag The flag we are testing
      * @return true if flag is in set, false otherwise
@@ -134,8 +152,17 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
     }
 
     /**
-     * Gets the next flag which is set in this bitfield. The flags are assumed to be ordered in the order which they are
-     * defined in the relevant enum classes
+     * Gets the next flag which is set in this bitfield, strictly after {@code currentFlag}, in
+     * enum declaration order. A deprecated, approximate port of {@code flag_next}
+     * ({@code z-bitflag.c}); see the {@code @deprecated} note for how it differs and what to use
+     * instead.
+     *
+     * <p>Walk-through: with {A, C, D} on, {@code next(A)} is C and {@code next(C)} is D. When
+     * {@code currentFlag} is the last flag on, or is not on at all, the loop never reaches a
+     * flag to return and the answer is the last constant of the enum, whether or not that
+     * constant is on.
+     *
+     * <p>Function next coded before 260815, commented in full on 261007.
      *
      * @param currentFlag The current flag we are counting from
      * @return The next set flag, or the last flag in the enum if currentFlag isn't set, or there are no more set flags
@@ -149,8 +176,6 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
      * hit. The C idiom this existed to support, {@code for (f = flag_next(fs, sz, FLAG_START);
      * f != FLAG_END; f = flag_next(fs, sz, f + 1))} ({@code datafile.c}), is expressed in this
      * port by iterating the set directly.
-     *
-     * <p>Function next coded before 260815, commented in full on 260915.
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -195,7 +220,12 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
      * one at a time; {@link EnumSet#size()} answers the same question in constant time because
      * an {@link EnumSet} only ever holds the flags that are actually on.
      *
-     * <p>Function count coded before 260815, commented in full on 260915.
+     * <p>Padding divergence: C tallies every bit of every byte, so after {@code flag_setall} or
+     * {@code flag_negate} has set the padding bits above the last named flag, {@code flag_count}
+     * counts those too and can exceed the number of named flags. This port has no padding and
+     * counts named flags only; see {@link #isFull} for the same divergence in full.
+     *
+     * <p>Function count coded before 260815, commented in full on 261007.
      *
      * @return The size of the set of flags which are on
      */
@@ -209,10 +239,14 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
      * Returns true if the set is empty, i.e. no flags are set to on, and false if one or more flags are set to be on.
      * Note, we do not set FLAG_MAX on all flag sets. Ports {@code flag_is_empty}
      * ({@code z-bitflag.c}), which checks every byte of the array for a nonzero value;
-     * {@link EnumSet#isEmpty()} answers the same question directly since there is no padding
-     * byte here that could be nonzero while every named flag is off.
+     * {@link EnumSet#isEmpty()} answers the same question directly.
      *
-     * <p>Function isEmpty coded before 260815, commented in full on 260915.
+     * <p>Padding divergence: C's byte test can read "not empty" while every named flag is off, if
+     * {@code flag_negate} or {@code flag_setall} has left padding bits set above the last named
+     * flag. This port has no padding bits, so it answers on the named flags alone; see
+     * {@link #isFull}.
+     *
+     * <p>Function isEmpty coded before 260815, commented in full on 261007.
      *
      * @return True if there are no flags set on, false otherwise
      */
@@ -403,7 +437,7 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
      * exactly the flags that {@code flag} has. This is the port of {@code flag_copy}
      * ({@code z-bitflag.c}), which is a {@code memcpy} over the destination array — and it
      * is the direction of that copy which decides the shape of this method. C writes into
-     * its first argument, so the twenty-seven call sites of the wrapper macros
+     * its first argument, so the call sites of the wrapper macros
      * ({@code rsf_copy}, {@code of_copy}, {@code pf_copy}, ...) copy into a flag set that
      * lives inside some longer-lived struct. This port holds those in {@code final} fields,
      * so a method returning a new object — a {@code copy()} in the C mould — has nothing the
@@ -425,28 +459,42 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
      * {@link #inter} once read {@code Flag<E> copy = copyFrom(other)}, where the returned "copy" was
      * the receiver itself, silently wiping the set being intersected.
      *
-     * <p>The source is a {@link FlagView}, so "left unmodified" below is now enforced by the type
-     * rather than merely promised by it. That is the nearest this port gets to C's
-     * {@code const bitflag *src}, which is how {@code flag_copy} says the same thing.
+     * <p>The source is a {@link FlagView}, so the {@code @param} promise that it is left unmodified
+     * is enforced by the type rather than merely promised. That is the nearest this port gets to
+     * C's {@code const bitflag *flags2}, which is how {@code flag_copy} says the same thing.
+     *
+     * <p><b>Self-copy.</b> {@code flags.copyFrom(flags)} leaves the set as it was, as the C
+     * {@code memcpy} of an array onto itself does. The body therefore takes a snapshot of the
+     * source into a scratch {@link Flag} <em>before</em> wiping this set; wiping first would
+     * empty the source too when the two are the same object, leaving nothing to copy back.
+     * The snapshot is harmless when the source is a different set, which is the only case
+     * C's callers actually produce.
      *
      * <p>Function copyFrom commented in full on 260816, parameter widened to {@link FlagView} on
-     * 260818.
+     * 260818, snapshot-before-wipe self-copy documented on 261007.
      *
      * @param flag the flag set to copy from, left unmodified
      */
     public void copyFrom(FlagView<E> flag) {
+        Flag<E> flagCopy = new Flag<>(eClass);
+        flagCopy.union(flag);
         wipe();
-        union(flag);
+        union(flagCopy);
     }
 
     /**
-     * Make this set the union of this set and the other set
+     * Make this set the union of this set and the other set. Ports {@code flag_union}
+     * ({@code z-bitflag.c}), whose {@code delta} is raised when {@code flags2} has a bit that
+     * {@code flags1} lacks ({@code ~flags1[i] & flags2[i]}); testing each of {@code other}'s
+     * flags for membership before adding it reports exactly that.
      *
      * <p>Only this set is written to; {@code other} is read, which is why it is typed as a
      * {@link FlagView}. Iterating the view rather than reaching into its backing set is what
-     * makes that possible, and is the same approach {@link #isSubset} takes.
+     * makes that possible, and is the same approach {@link #isSubset} takes. Passing this set as
+     * its own argument adds nothing and answers {@code false}.
      *
-     * <p>Function union commented on 260815, parameter widened to {@link FlagView} on 260818.
+     * <p>Function union commented in full on 261007, parameter widened to {@link FlagView} on
+     * 260818.
      *
      * @param other the set to make this set the union of, left unmodified
      * @return true if any changes were made, false otherwise
@@ -505,11 +553,18 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
 
     /**
      * Compute the difference of two flag sets and store it in this. So for all set flags in other, clear them in this.
+     * Ports {@code flag_diff} ({@code z-bitflag.c}), which raises its {@code delta} when the two
+     * arrays intersect ({@code flags1[i] & flags2[i]}) and then clears {@code flags2}'s bits from
+     * {@code flags1}. A flag of {@code other} that is on here is exactly such an intersecting
+     * bit, so counting the flags actually switched off reports the same answer.
      *
      * <p>As with {@link #union}, the result lands in this set and {@code other} is only read,
-     * hence the {@link FlagView} parameter.
+     * hence the {@link FlagView} parameter. Passing this set as its own argument empties it and
+     * answers true if it was not already empty, as in C; iterating an {@link EnumSet} while
+     * removing from it does not throw.
      *
-     * <p>Function diff commented on 260815, parameter widened to {@link FlagView} on 260818.
+     * <p>Function diff commented in full on 261007, parameter widened to {@link FlagView} on
+     * 260818.
      *
      * @param other the other flag set to compare to this, left unmodified
      * @return true if any changes were made, false otherwise
@@ -846,5 +901,29 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
         }
 
         return flags;
+    }
+
+    /**
+     * Reports whether this set has any flag on other than the one given — whether the set is
+     * non-empty once {@code flag} is taken away. Works on a scratch copy, so this set is not
+     * changed.
+     *
+     * <p>Has no function of its own in {@code z-bitflag.c}. It exists for the C test
+     * {@code mode2 & ~OSTACK_QUIVER} in {@code obj-gear.c}, function {@code inven_can_stack_partial()},
+     * where the flag set is a plain integer mask; this is the same question asked of a
+     * {@link Flag}. Walk-through: {QUIVER} gives false, {QUIVER, PACK} gives true, {PACK} gives
+     * true, the empty set gives false. A flag that is not on makes the call a plain
+     * {@link #isEmpty} negation.
+     *
+     * <p>Function andNot coded on 261007, commented in full on 261007.
+     *
+     * @param flag the flag to ignore
+     * @return true if at least one flag other than {@code flag} is on
+     */
+    public boolean andNot(E flag) {
+        Flag<E> flagList = new Flag<>(eClass);
+        flagList.copyFrom(this);
+        flagList.off(flag);
+        return !flagList.isEmpty();
     }
 }

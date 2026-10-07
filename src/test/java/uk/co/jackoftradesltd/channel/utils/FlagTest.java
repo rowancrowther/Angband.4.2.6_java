@@ -499,6 +499,102 @@ class FlagTest {
             assertFalse(flags.has(TestFlag.ALPHA));
             assertTrue(flags.has(TestFlag.BETA));
         }
+
+        @Test
+        void copyFromItselfLeavesTheSetUnchanged() {
+            flags.set(TestFlag.ALPHA, TestFlag.GAMMA);
+
+            flags.copyFrom(flags);
+
+            assertEquals(List.of(TestFlag.ALPHA, TestFlag.GAMMA), contentsOf(flags));
+        }
+
+        @Test
+        void copyFromAnEmptySetEmptiesTheReceiver() {
+            flags.set(TestFlag.ALPHA, TestFlag.DELTA);
+
+            flags.copyFrom(new Flag<>(TestFlag.class));
+
+            assertTrue(flags.isEmpty());
+        }
+
+        @Test
+        void copyFromAFullSetFillsTheReceiver() {
+            Flag<TestFlag> source = new Flag<>(TestFlag.class);
+            source.setAll();
+            flags.set(TestFlag.BETA);
+
+            flags.copyFrom(source);
+
+            assertTrue(flags.isFull());
+        }
+
+        @Test
+        void unionWithItselfChangesNothingAndSaysSo() {
+            flags.set(TestFlag.ALPHA, TestFlag.GAMMA);
+
+            assertFalse(flags.union(flags));
+            assertEquals(List.of(TestFlag.ALPHA, TestFlag.GAMMA), contentsOf(flags));
+        }
+
+        @Test
+        void diffWithItselfEmptiesTheReceiverAndSaysSo() {
+            flags.set(TestFlag.ALPHA, TestFlag.GAMMA);
+
+            assertTrue(flags.diff(flags));
+            assertTrue(flags.isEmpty());
+        }
+
+        @Test
+        void diffOfAnEmptySetWithItselfReportsNoChange() {
+            assertFalse(flags.diff(flags));
+            assertTrue(flags.isEmpty());
+        }
+    }
+
+    /**
+     * {@link Flag#andNot}, the Java-side stand-in for the C test {@code mode2 & ~OSTACK_QUIVER}
+     * in {@code obj-gear.c}: true when any flag other than the named one is on.
+     *
+     * <p>Class AndNot coded on 261007, commented in full on 261007.
+     */
+    @Nested
+    class AndNot {
+
+        @Test
+        void aSetHoldingOnlyTheNamedFlagGivesFalse() {
+            flags.set(TestFlag.BETA);
+
+            assertFalse(flags.andNot(TestFlag.BETA));
+        }
+
+        @Test
+        void aSetHoldingTheNamedFlagAndAnotherGivesTrue() {
+            flags.set(TestFlag.BETA, TestFlag.DELTA);
+
+            assertTrue(flags.andNot(TestFlag.BETA));
+        }
+
+        @Test
+        void aSetHoldingOnlyOtherFlagsGivesTrue() {
+            flags.set(TestFlag.ALPHA);
+
+            assertTrue(flags.andNot(TestFlag.BETA));
+        }
+
+        @Test
+        void anEmptySetGivesFalse() {
+            assertFalse(flags.andNot(TestFlag.BETA));
+        }
+
+        @Test
+        void theReceiverIsLeftUnchanged() {
+            flags.set(TestFlag.BETA, TestFlag.DELTA);
+
+            assertTrue(flags.andNot(TestFlag.BETA));
+
+            assertEquals(List.of(TestFlag.BETA, TestFlag.DELTA), contentsOf(flags));
+        }
     }
 
     /**

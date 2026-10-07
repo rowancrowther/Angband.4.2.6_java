@@ -4,8 +4,7 @@ Drafted 261005.
 
 ## Prerequisites
 
-1. `docs/Curse_object_unflattening.md` — done.
-2. `docs/Effect_time_migration.md` — done.
+1. `docs/Effect_time_migration.md`
 
 ## Files to port (in order)
 

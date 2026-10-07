@@ -1757,7 +1757,7 @@ public class PlayerKnowledge {
      * ({@code obj-knowledge.c}), the to-hit sibling of {@link #cursesFindToA}.
      *
      * <p>Structurally identical to that method — see it for why the family lives here, why the
-     * figure is read from the curse definition ({@link Curse#getCombatToHit}, C's
+     * figure is read from the curse definition ({@code curse.getItemObject().getToHit()}, C's
      * {@code curses[i].obj->to_h}), why the power test is kept, and why the rune is hoisted above
      * the loop.
      *

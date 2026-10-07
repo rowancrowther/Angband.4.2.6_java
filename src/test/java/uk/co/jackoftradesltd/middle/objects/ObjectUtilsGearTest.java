@@ -458,6 +458,53 @@ class ObjectUtilsGearTest {
     }
 
     /**
+     * C ends each merge with "Ensure numbers align", copying the real stack's count onto its known
+     * half. It is described there as unnecessary, which is only true while the two halves already
+     * agree, so these start them out of step.
+     */
+    @Nested
+    @DisplayName("combinePack, known counts are realigned")
+    class KnownCountsAlign {
+
+        @Test
+        @DisplayName("a whole merge copies the surviving stack's count onto its known half")
+        void wholeMergeRealignsTheSurvivor() throws Exception {
+            // C: object_absorb(obj2->known, obj1->known) first gives the known half 99 + 3 capped at
+            // the stack limit, then obj2->known->number = obj2->number puts it back to 5 + 3.
+            ItemObject first = stack(potionKind, 5);
+            ItemObject second = stack(potionKind, 3);
+            first.getKnown().setNumber(99);
+            ObjectUtils.gearInsertEnd(player, first);
+            ObjectUtils.gearInsertEnd(player, second);
+
+            combine();
+
+            assertEquals(8, first.getNumber());
+            assertEquals(8, first.getKnown().getNumber());
+        }
+
+        @Test
+        @DisplayName("a partial merge copies both stacks' counts onto their known halves")
+        void partialMergeRealignsBoth() throws Exception {
+            // C: after object_absorb_partial on both halves, obj2->known->number = obj2->number and
+            // obj1->known->number = obj1->number, whatever the known halves held before.
+            ItemObject a = stack(potionKind, 35);
+            ItemObject b = stack(potionKind, 10);
+            a.getKnown().setNumber(1);
+            b.getKnown().setNumber(2);
+            ObjectUtils.gearInsertEnd(player, a);
+            ObjectUtils.gearInsertEnd(player, b);
+
+            combine();
+
+            assertEquals(MAX_STACK, a.getNumber());
+            assertEquals(5, b.getNumber());
+            assertEquals(MAX_STACK, a.getKnown().getNumber());
+            assertEquals(5, b.getKnown().getNumber());
+        }
+    }
+
+    /**
      * Cases where nothing merges, which must still finish.
      */
     @Nested

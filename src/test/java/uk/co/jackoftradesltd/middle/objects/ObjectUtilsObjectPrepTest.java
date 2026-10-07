@@ -33,6 +33,7 @@ import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.data.GameConstantsData;
 import uk.co.jackoftradesltd.middle.game.globals.data.ObjMakeData;
+import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
@@ -79,6 +80,11 @@ class ObjectUtilsObjectPrepTest {
     private static Object savedConstants;
 
     /**
+     * The {@code ObjectRegistry.curses} in place before this class replaced it.
+     */
+    private static Object savedCurses;
+
+    /**
      * Seeds just the {@code objMake} fuel constants the light-source branch reads — everything else
      * {@code objectPrep} touches in these tests is {@link DamageAspect#MAXIMIZE}, which never
      * consults {@link GameConstants}.
@@ -90,6 +96,10 @@ class ObjectUtilsObjectPrepTest {
                 null, null, null, null, null, null, null, objMake, null,
                 null, null, null, null, null, null, null, null);
         savedConstants = setStatic(GameConstants.class, "data", seed);
+
+        // objectPrep ends in copyCurses, which walks the loaded curse table as C walks curses[];
+        // the registry's getter throws while that table is still unloaded, so give it an empty one.
+        savedCurses = setStatic(ObjectRegistry.class, "curses", new ArrayList<Curse>());
     }
 
     /**
@@ -98,6 +108,7 @@ class ObjectUtilsObjectPrepTest {
     @AfterAll
     static void restoreConstants() {
         setStatic(GameConstants.class, "data", savedConstants);
+        setStatic(ObjectRegistry.class, "curses", savedCurses);
     }
 
     /**

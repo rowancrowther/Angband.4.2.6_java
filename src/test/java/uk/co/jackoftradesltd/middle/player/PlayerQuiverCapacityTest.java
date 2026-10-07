@@ -28,13 +28,17 @@ import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.data.CarryCapData;
 import uk.co.jackoftradesltd.middle.game.globals.data.GameConstantsData;
+import uk.co.jackoftradesltd.channel.utils.Flag;
+import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
+import uk.co.jackoftradesltd.middle.objects.Curse;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
 import uk.co.jackoftradesltd.middle.objects.ObjectKind;
 import uk.co.jackoftradesltd.middle.objects.ObjectUtils;
 import uk.co.jackoftradesltd.middle.objects.Pile;
 import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
+import uk.co.jackoftradesltd.middle.objects.enums.ObjectStackEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerOptionEnum;
@@ -51,6 +55,8 @@ import static uk.co.jackoftradesltd.testsupport.ItemFixture.set;
 import static uk.co.jackoftradesltd.testsupport.ItemFixture.setStatic;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
@@ -114,6 +120,7 @@ class PlayerQuiverCapacityTest {
     private static Object savedConstants;
     private static Object savedBodies;
     private static Object savedRaces;
+    private static Object savedCurses;
     private static ObjectKind kind;
 
     private Player player;
@@ -135,6 +142,10 @@ class PlayerQuiverCapacityTest {
         savedPlayer = GameState.getPlayer();
 
         kind = ItemFixture.kindWithBase(TValue.TV_ARROW, "arrow", 99);
+
+        // objectStackable reaches cursesAreEqual, which walks the loaded curse table as C walks
+        // curses[]; the registry's getter throws while that table is unloaded, so give it an empty one.
+        savedCurses = setStatic(ObjectRegistry.class, "curses", new ArrayList<Curse>());
     }
 
     @AfterAll
@@ -143,6 +154,7 @@ class PlayerQuiverCapacityTest {
         setStatic(GameConstants.class, "data", savedConstants);
         registryField("playerBodies").set(null, savedBodies);
         registryField("playerRaces").set(null, savedRaces);
+        setStatic(ObjectRegistry.class, "curses", savedCurses);
     }
 
     /**
@@ -455,70 +467,19 @@ class PlayerQuiverCapacityTest {
     }
 
     /**
-     * The inscription that asks for a particular quiver slot.
+     * Calls the private {@code invenCanStackPartial}, which is otherwise reachable only through
+     * {@code combinePack} and so only ever with a single mode apiece.
      *
-     * @author Rowan Crowther
+     * @param item1 the leading stack
+     * @param item2 the stack drawn from
+     * @param mode1 the mode for {@code item1}
+     * @param mode2 the mode for {@code item2}
+     * @return what the method answers
      */
-    @Nested
-    @DisplayName("preferredQuiverSlot")
-    class PreferredSlot {
-
-        @Test
-        @DisplayName("an uninscribed stack prefers no slot")
-        void uninscribedPrefersNothing() {
-            assertEquals(-1, preferredQuiverSlot(arrows(1)));
-        }
-
-        @Test
-        @DisplayName("@f3 asks for slot 3")
-        void fireTagNamesSlot() {
-            assertEquals(3, preferredQuiverSlot(inscribed(arrows(1), "@f3")));
-        }
-
-        @Test
-        @DisplayName("@v2 asks for slot 2, the throw key")
-        void throwTagNamesSlot() {
-            assertEquals(2, preferredQuiverSlot(inscribed(arrows(1), "@v2")));
-        }
-
-        /**
-         * The scan restarts from each {@code @} in turn rather than giving up after the first, so a
-         * quiver tag still counts when an unrelated tag comes before it.
-         */
-        @Test
-        @DisplayName("a quiver tag after another tag is still found")
-        void laterTagIsFound() {
-            assertEquals(4, preferredQuiverSlot(inscribed(arrows(1), "@m1@f4")));
-        }
-
-        @Test
-        @DisplayName("an inscription with no quiver tag asks for nothing")
-        void unrelatedInscriptionPrefersNothing() {
-            assertEquals(-1, preferredQuiverSlot(inscribed(arrows(1), "!d")));
-        }
-
-        /**
-         * Under the roguelike keyset the fire key is {@code t} rather than {@code f}, so the same
-         * inscription means different things to two players.
-         */
-        @Test
-        @DisplayName("the roguelike keyset reads @t as the fire tag and @f as nothing")
-        void roguelikeKeysetSwapsTheFireKey() {
-            switchOn(PlayerOptionEnum.OP_rogue_like_commands);
-
-            assertEquals(5, preferredQuiverSlot(inscribed(arrows(1), "@t5")));
-            assertEquals(-1, preferredQuiverSlot(inscribed(arrows(1), "@f5")));
-        }
-
-        /**
-         * Only ammunition and thrown weapons can ask, since nothing else may go in the quiver at
-         * all. A potion inscribed {@code @f1} is asking for something that cannot happen.
-         */
-        @Test
-        @DisplayName("a non-quiver item prefers no slot however it is inscribed")
-        void nonQuiverItemPrefersNothing() {
-            assertEquals(-1, preferredQuiverSlot(inscribed(potion(1), "@f1")));
-        }
+    private boolean invenCanStackPartial(ItemObject item1, ItemObject item2, ObjectStackEnum mode1,
+                                         ObjectStackEnum mode2) {
+        return invenCanStackPartial(item1, item2, new Flag<>(ObjectStackEnum.class, mode1),
+                new Flag<>(ObjectStackEnum.class, mode2));
     }
 
     /**
@@ -679,6 +640,265 @@ class PlayerQuiverCapacityTest {
             int[] split = quiverAbsorbNum(arrows(1), 0, 0);
 
             assertEquals(0, split[0]);
+        }
+    }
+
+    /**
+     * As above, with the modes given as whole sets so that an empty set, or a quiver bit alongside
+     * another, can be passed - the combinations {@code combinePack} never produces.
+     *
+     * @param item1  the leading stack
+     * @param item2  the stack drawn from
+     * @param modes1 the modes for {@code item1}
+     * @param modes2 the modes for {@code item2}
+     * @return what the method answers
+     */
+    private boolean invenCanStackPartial(ItemObject item1, ItemObject item2, Flag<ObjectStackEnum> modes1,
+                                         Flag<ObjectStackEnum> modes2) {
+        try {
+            Method method = ObjectUtils.class.getDeclaredMethod("invenCanStackPartial", Player.class,
+                    ItemObject.class, ItemObject.class, Flag.class, Flag.class);
+            method.setAccessible(true);
+            return (Boolean) method.invoke(null, player, item1, item2, modes1, modes2);
+        } catch (InvocationTargetException e) {
+            if (e.getCause() instanceof RuntimeException cause) {
+                throw cause;
+            }
+            throw new AssertionError(e.getCause());
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError(
+                    "ObjectUtils.invenCanStackPartial is no longer callable by reflection", e);
+        }
+    }
+
+    /**
+     * The inscription that asks for a particular quiver slot.
+     *
+     * @author Rowan Crowther
+     */
+    @Nested
+    @DisplayName("preferredQuiverSlot")
+    class PreferredSlot {
+
+        @Test
+        @DisplayName("an uninscribed stack prefers no slot")
+        void uninscribedPrefersNothing() {
+            assertEquals(-1, preferredQuiverSlot(arrows(1)));
+        }
+
+        @Test
+        @DisplayName("@f3 asks for slot 3")
+        void fireTagNamesSlot() {
+            assertEquals(3, preferredQuiverSlot(inscribed(arrows(1), "@f3")));
+        }
+
+        @Test
+        @DisplayName("@v2 asks for slot 2, the throw key")
+        void throwTagNamesSlot() {
+            assertEquals(2, preferredQuiverSlot(inscribed(arrows(1), "@v2")));
+        }
+
+        /**
+         * The scan restarts from each {@code @} in turn rather than giving up after the first, so a
+         * quiver tag still counts when an unrelated tag comes before it.
+         */
+        @Test
+        @DisplayName("a quiver tag after another tag is still found")
+        void laterTagIsFound() {
+            assertEquals(4, preferredQuiverSlot(inscribed(arrows(1), "@m1@f4")));
+        }
+
+        @Test
+        @DisplayName("an inscription with no quiver tag asks for nothing")
+        void unrelatedInscriptionPrefersNothing() {
+            assertEquals(-1, preferredQuiverSlot(inscribed(arrows(1), "!d")));
+        }
+
+        /**
+         * Under the roguelike keyset the fire key is {@code t} rather than {@code f}, so the same
+         * inscription means different things to two players.
+         */
+        @Test
+        @DisplayName("the roguelike keyset reads @t as the fire tag and @f as nothing")
+        void roguelikeKeysetSwapsTheFireKey() {
+            switchOn(PlayerOptionEnum.OP_rogue_like_commands);
+
+            assertEquals(5, preferredQuiverSlot(inscribed(arrows(1), "@t5")));
+            assertEquals(-1, preferredQuiverSlot(inscribed(arrows(1), "@f5")));
+        }
+
+        /**
+         * Only ammunition and thrown weapons can ask, since nothing else may go in the quiver at
+         * all. A potion inscribed {@code @f1} is asking for something that cannot happen.
+         */
+        @Test
+        @DisplayName("a non-quiver item prefers no slot however it is inscribed")
+        void nonQuiverItemPrefersNothing() {
+            assertEquals(-1, preferredQuiverSlot(inscribed(potion(1), "@f1")));
+        }
+
+        /**
+         * C's {@code s[2] - '0'} is taken raw, with no range check. {@code "@f@v1"} matches at the
+         * first {@code @}, whose third character is the second {@code @} (ASCII 64), so C answers
+         * 64 - 48 = 16 and never reaches the {@code @v1} behind it.
+         */
+        @Test
+        @DisplayName("the digit is read raw: @f@v1 answers 16, not 1")
+        void digitIsTakenRaw() {
+            assertEquals(16, preferredQuiverSlot(inscribed(arrows(1), "@f@v1")));
+        }
+
+        /**
+         * A tag whose key is neither fire nor throw moves the scan on to the next {@code @}, so a
+         * quiver tag behind it is still found, whichever of the two keys it uses.
+         */
+        @Test
+        @DisplayName("an unrelated tag is skipped, whichever quiver key follows it")
+        void unrelatedTagIsSkipped() {
+            assertEquals(1, preferredQuiverSlot(inscribed(arrows(1), "@x@f1")));
+            assertEquals(6, preferredQuiverSlot(inscribed(arrows(1), "@x@v6")));
+        }
+
+        /**
+         * Where an {@code @} has nothing useful after it, C walks off the end of the string and
+         * answers -1; so does the port.
+         */
+        @Test
+        @DisplayName("a trailing or doubled @ asks for nothing")
+        void danglingAtSignAsksForNothing() {
+            assertEquals(-1, preferredQuiverSlot(inscribed(arrows(1), "@")));
+            assertEquals(-1, preferredQuiverSlot(inscribed(arrows(1), "@@")));
+            assertEquals(-1, preferredQuiverSlot(inscribed(arrows(1), "@x@")));
+        }
+
+        /**
+         * The throw key is {@code v} under both keysets; only the fire key moves.
+         */
+        @Test
+        @DisplayName("the roguelike keyset leaves @v alone")
+        void roguelikeKeysetKeepsTheThrowKey() {
+            switchOn(PlayerOptionEnum.OP_rogue_like_commands);
+
+            assertEquals(5, preferredQuiverSlot(inscribed(arrows(1), "@v5")));
+        }
+    }
+
+    /**
+     * Whether a partial move onto the leading stack is worth making: the numeric limits C applies
+     * once the two stacks are known to stack at all, and the one mode that waives them.
+     *
+     * @author Rowan Crowther
+     */
+    @Nested
+    @DisplayName("invenCanStackPartial, the stacking limits")
+    class PartialStackLimits {
+
+        /**
+         * C: not a store, not the quiver, and {@code obj1->number == max_stack} - nothing to gain.
+         * The fixture kind's base has {@code max_stack} 99.
+         */
+        @Test
+        @DisplayName("a pack stack already at max_stack takes nothing")
+        void fullPackStackTakesNothing() {
+            assertFalse(invenCanStackPartial(arrows(99), arrows(5),
+                    ObjectStackEnum.OSTACK_PACK, ObjectStackEnum.OSTACK_PACK));
+        }
+
+        @Test
+        @DisplayName("a pack stack one short of max_stack can take more")
+        void shortPackStackCanTakeMore() {
+            assertTrue(invenCanStackPartial(arrows(98), arrows(5),
+                    ObjectStackEnum.OSTACK_PACK, ObjectStackEnum.OSTACK_PACK));
+        }
+
+        /**
+         * C skips every count check when the combined mode has {@code OSTACK_STORE}, because stores
+         * have no capacity limits, so a stack at {@code max_stack} still answers true.
+         */
+        @Test
+        @DisplayName("a store stack at max_stack still answers true")
+        void storeWaivesTheLimit() {
+            assertTrue(invenCanStackPartial(arrows(99), arrows(5),
+                    ObjectStackEnum.OSTACK_STORE, ObjectStackEnum.OSTACK_STORE));
+        }
+
+        /**
+         * C: {@code mode1 & OSTACK_QUIVER}, so the cap is the slot size over the thrown multiplier
+         * - 40 for ammunition - and a stack sitting exactly on it takes nothing.
+         */
+        @Test
+        @DisplayName("a quiver stack already at the slot size takes nothing")
+        void fullQuiverStackTakesNothing() {
+            assertFalse(invenCanStackPartial(arrows(SLOT_SIZE), arrows(5),
+                    ObjectStackEnum.OSTACK_QUIVER, ObjectStackEnum.OSTACK_QUIVER));
+        }
+
+        @Test
+        @DisplayName("a quiver stack one short of the slot size can take more")
+        void shortQuiverStackCanTakeMore() {
+            assertTrue(invenCanStackPartial(arrows(SLOT_SIZE - 1), arrows(5),
+                    ObjectStackEnum.OSTACK_QUIVER, ObjectStackEnum.OSTACK_QUIVER));
+        }
+    }
+
+    /**
+     * The one place C writes {@code mode2 & ~OSTACK_QUIVER}: whether a stack being fed into the
+     * quiver from outside has to clear {@code quiver_absorb_num} first. The pack is filled so that
+     * the quiver can claim no extra slot and the check, when it runs, answers no room.
+     *
+     * @author Rowan Crowther
+     */
+    @Nested
+    @DisplayName("invenCanStackPartial, the quiver room check")
+    class PartialQuiverRoomCheck {
+
+        private boolean ask(ObjectStackEnum... modes2) {
+            for (int i = 0; i < PACK_SIZE; i++) {
+                gear().insert(potion(1));
+            }
+            // Flag(Class, E...) refuses an empty list, so build the set up from an empty one
+            Flag<ObjectStackEnum> set2 = new Flag<>(ObjectStackEnum.class);
+            for (ObjectStackEnum mode : modes2) {
+                set2.on(mode);
+            }
+            return invenCanStackPartial(arrows(10), arrows(5),
+                    new Flag<>(ObjectStackEnum.class, ObjectStackEnum.OSTACK_QUIVER), set2);
+        }
+
+        /**
+         * C: {@code OSTACK_QUIVER & ~OSTACK_QUIVER} is zero, so the stack is already in the quiver and
+         * no room check runs.
+         */
+        @Test
+        @DisplayName("quiver alone is not checked for room")
+        void quiverAloneIsNotChecked() {
+            assertTrue(ask(ObjectStackEnum.OSTACK_QUIVER));
+        }
+
+        @Test
+        @DisplayName("pack alone is checked, and a full pack leaves no room")
+        void packAloneIsChecked() {
+            assertFalse(ask(ObjectStackEnum.OSTACK_PACK));
+        }
+
+        /**
+         * C: pack plus quiver leaves the pack bit once the quiver bit is cleared, so the check runs.
+         * Testing only that the quiver bit is absent would skip it.
+         */
+        @Test
+        @DisplayName("pack together with quiver is still checked")
+        void packWithQuiverIsChecked() {
+            assertFalse(ask(ObjectStackEnum.OSTACK_PACK, ObjectStackEnum.OSTACK_QUIVER));
+        }
+
+        /**
+         * C: an empty mode is zero whatever is cleared from it, so no check runs. Testing that the
+         * quiver bit is absent would run it.
+         */
+        @Test
+        @DisplayName("an empty mode is not checked")
+        void emptyModeIsNotChecked() {
+            assertTrue(ask());
         }
     }
 }

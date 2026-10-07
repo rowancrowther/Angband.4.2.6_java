@@ -21,7 +21,7 @@ import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 
 /**
  * One row of the launcher-and-ammo assumptions the power calculation prices missile weapons by —
- * the port of C's {@code struct archery} and its three-row table ({@code obj-power.c:47-57}).
+ * the port of C's {@code struct archery} and its three-row table ({@code obj-power.c}).
  *
  * <p>Power cannot ask what a launcher will actually be fired with, so it assumes: a sling, bow or
  * crossbow is worth whatever damage its matching ammunition would average, and a piece of ammunition
@@ -41,7 +41,7 @@ import uk.co.jackoftradesltd.middle.objects.enums.TValue;
  * {@link #getAmmoDamage()}, and {@code launcherAmmoDamagePower} prices ammunition from
  * {@link #getLaunchDamage()} and {@link #getLaunchMult()}.
  *
- * <p>Class Archery commented in full on 260827.
+ * <p>Class Archery commented in full on 260827; C line number dropped on 261007.
  *
  * @author Rowan Crowther
  */
@@ -49,29 +49,37 @@ public class Archery {
     /**
      * Which ammunition this row describes — {@code TV_SHOT}, {@code TV_ARROW} or {@code TV_BOLT}.
      * C's {@code ammo_tval}, and the port's map key.
+     *
+     * <p>Field ammoType commented in full on 261007.
      */
     private TValue ammoType;
     /**
      * The damage this ammunition is assumed to average, used to price the launcher that fires it.
      * C's {@code ammo_dam}.
+     *
+     * <p>Field ammoDamage commented in full on 261007.
      */
     private int ammoDamage;
     /**
      * The to-damage bonus a launcher is assumed to carry, used to price ego ammunition. C's
      * {@code launch_dam}, and 9 on every row.
+     *
+     * <p>Field launchDamage commented in full on 261007.
      */
     private int launchDamage;
     /**
      * Twice the launcher's damage multiplier, used to price any ammunition. C's
      * {@code launch_mult}; doubled so that half-multipliers survive integer arithmetic, which is why
      * {@code launcherAmmoDamagePower} divides by {@code 2 * MAX_BLOWS} rather than {@code MAX_BLOWS}.
+     *
+     * <p>Field launchMult commented in full on 261007.
      */
     private int launchMult;
 
     /**
      * Build one row of the archery table from its four figures.
      *
-     * <p>Constructor Archery commented in full on 260827.
+     * <p>Constructor Archery commented in full on 260827; refreshed on 261007.
      *
      * @param ammoType     the ammunition tval this row describes
      * @param ammoDamage   assumed average damage of that ammunition
@@ -86,6 +94,11 @@ public class Archery {
     }
 
     /**
+     * Which ammunition this row describes: {@code TV_SHOT}, {@code TV_ARROW} or {@code TV_BOLT}.
+     * This is also the key the row is stored under in {@code ObjectRegistry.archery}.
+     *
+     * <p>Function getAmmoType coded on 260827, commented in full on 261007.
+     *
      * @return the ammunition tval this row describes - C's {@code archery[].ammo_tval}
      */
     public TValue getAmmoType() {
@@ -93,22 +106,37 @@ public class Archery {
     }
 
     /**
-     * @return the assumed average damage of this ammunition, for pricing the launcher that fires it
+     * The damage this ammunition is assumed to average. {@code ItemObject.ammoDamagePower} prices a
+     * launcher from it.
+     *
+     * <p>Function getAmmoDamage coded on 260827, commented in full on 261007.
+     *
+     * @return the assumed average damage of this ammunition - C's {@code archery[].ammo_dam}
      */
     public int getAmmoDamage() {
         return ammoDamage;
     }
 
     /**
-     * @return the assumed to-damage bonus on the launcher, for pricing ego ammunition
+     * The to-damage bonus a launcher is assumed to carry, which is 9 on every row.
+     * {@code launcherAmmoDamagePower} adds it (times {@code DAMAGE_POWER / 2}) when pricing ego
+     * ammunition.
+     *
+     * <p>Function getLaunchDamage coded on 260827, commented in full on 261007.
+     *
+     * @return the assumed to-damage bonus on the launcher - C's {@code archery[].launch_dam}
      */
     public int getLaunchDamage() {
         return launchDamage;
     }
 
     /**
-     * @return twice the launcher's damage multiplier - the doubling is C's, and the callers divide
-     * it back out
+     * Twice the launcher's damage multiplier. The doubling is C's, and
+     * {@code launcherAmmoDamagePower} divides it back out via {@code 2 * MAX_BLOWS}.
+     *
+     * <p>Function getLaunchMult coded on 260827, commented in full on 261007.
+     *
+     * @return twice the launcher's damage multiplier - C's {@code archery[].launch_mult}
      */
     public int getLaunchMult() {
         return launchMult;

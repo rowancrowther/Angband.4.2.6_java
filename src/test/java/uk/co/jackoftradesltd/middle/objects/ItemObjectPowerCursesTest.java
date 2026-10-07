@@ -57,6 +57,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.co.jackoftradesltd.testsupport.ItemFixture.read;
@@ -515,6 +516,42 @@ class ItemObjectPowerCursesTest {
             applyCurses(item, ignored);
 
             assertEquals(46, item.getToAC());
+        }
+
+        /**
+         * C holds the curse back by index, so a different {@code Curse} object with the ignored
+         * curse's index is held back too, where an identity test would let it through.
+         */
+        @Test
+        @DisplayName("the held-back curse is matched by index, not by instance")
+        void ignoredByIndex() throws Exception {
+            Curse ignored = curse(1, 0, false, -1);
+            Curse applied = curse(2, 0, false, -4);
+            register(ignored, applied);
+            ItemObject item = cloak(100, 50, ignored, 50, applied, 50);
+            Curse sameIndexOtherInstance = curse(1, 0, false, -1);
+            assertNotSame(ignored, sameIndexOtherInstance);
+
+            applyCurses(item, sameIndexOtherInstance);
+
+            assertEquals(46, item.getToAC());
+        }
+
+        /**
+         * The null means "merge them all", not "ignore nothing by accident": every active curse
+         * is applied.
+         */
+        @Test
+        @DisplayName("a null held-back curse merges every active curse")
+        void ignoredNull() throws Exception {
+            Curse first = curse(1, 0, false, -1);
+            Curse second = curse(2, 0, false, -4);
+            register(first, second);
+            ItemObject item = cloak(100, 50, first, 50, second, 50);
+
+            applyCurses(item, null);
+
+            assertEquals(45, item.getToAC());
         }
 
         /**

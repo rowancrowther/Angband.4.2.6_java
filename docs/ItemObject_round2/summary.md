@@ -70,17 +70,16 @@ Shape follows `docs/ItemObject_stage1_mismatches.md`. File and line references a
 - **What differs:** `curse == curseToIgnore`, where the neighbouring lookups go through `CURSE_ORDER`.
 - **Reach:** none in production, since `ObjectUtils.copyCurses` draws from the registry. A fixture or a reloaded
   registry would make the "all but c" copy equal the "all curses" copy and silently give `powerCurse` 0.
-- **Decision:** yours.
+- **Result:** FIXED.
 
 ### 2. The `Curse` overloads are a hand-reduced `objectPower` (Parts C, D, E)
 
-- Now that `Curse.getItemObject()` is a real `ItemObject`, `objectPower(Curse ...)`,
-  `nonStandardWeightPower(Curse ...)`,
-  `cursePower(Curse ...)` and the Part D and E curse overloads stand in for calling `objectPower` on that object, as C
-  does.
-- Each identity-overload justification is correct today and drifts if `curse.txt` gains a base armour, a brand or a
-  kind.
-- Design decision, not a mismatch.
+- The parts found `objectPower(Curse ...)`, `nonStandardWeightPower(Curse ...)`, `cursePower(Curse ...)` and the Part D
+  and E curse overloads standing in for calling `objectPower` on `Curse.getItemObject()`, as C does. Each
+  identity-overload justification was correct but would drift if `curse.txt` gained a base armour, a brand or a kind.
+- **Result:** FIXED. Re-read on 2026-10-07: `ItemObject.java` has no `Curse` overloads of the power methods.
+  `cursePower` calls `c.getItemObject().objectPower(verbose, logFileName)` directly, and `nonStandardWeightPower` takes
+  only the running power.
 
 ### 3. C line numbers in Javadoc (Parts B, D, E, G)
 
@@ -136,11 +135,14 @@ Shape follows `docs/ItemObject_stage1_mismatches.md`. File and line references a
 
 ### 13. Dead and redundant code (Parts C, D, E, G)
 
-- `getModifiers() == null` guards at `modifierPower` and the Curse overloads of `extraBlowsPower`, `extraShotsPower`,
-  `extraMightPower` and `damageDicePower`, since `getModifiers()` answers `Map.of()`.
-- The re-sort of curse indices in `objectWeightOne` and `applyCurseAttributes`, now that the map is a `TreeMap`.
-- The copied comment "Add damage from dice for any wearable weapon or ammo" in `damageDicePower(Curse)`.
-- `{@link}` to private `objectKindChar()` and `objectKindAttr()`.
+- The `getModifiers() == null` guard at `modifierPower`, since `getModifiers()` answers `Map.of()`. The guards in the
+  `Curse` overloads of `extraBlowsPower`, `extraShotsPower`, `extraMightPower` and `damageDicePower` went with the
+  overloads (item 2).
+- The re-sort of curse indices in `objectWeightOne`, now that the map is a `TreeMap`. Not re-checked in
+  `applyCurseAttributes`.
+- Gone, re-read 2026-10-07: the copied "Add damage from dice" comment in `damageDicePower(Curse)` (the plain
+  `damageDicePower` keeps its own, which is right) and the `{@link}` to private `objectKindChar()` and
+  `objectKindAttr()`.
 
 ### 14. Visibility to widen later (Parts C, G)
 
@@ -164,6 +166,6 @@ Shape follows `docs/ItemObject_stage1_mismatches.md`. File and line references a
 ## Call to action
 
 - Tick `ItemObject` on `docs/ROADMAP.md` when you are satisfied. That tick is yours.
-- Decide items 1 and 2 above, and whether the five `objDescNameFormat` divergences join the batch 8 accepted list.
+- Decide whether the five `objDescNameFormat` divergences join the batch 8 accepted list.
 - Fix the stale batch 1 heading in `docs/ItemObject_port_batches.md` (item 16).
 - Say "try that" if you want Parts F and H re-verified from scratch; their reports still say "stopped on mismatch".

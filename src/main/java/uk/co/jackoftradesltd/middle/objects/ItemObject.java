@@ -4873,10 +4873,9 @@ public class ItemObject {
      * calls this only on a {@link #copy(boolean)}; on an object whose maps were never created the
      * accessors answer immutable empties and the modifier write would fail.
      *
-     * <p>The held-back curse is compared by identity, where the map lookups beside it go through
-     * {@link #CURSE_ORDER}. That is safe while every curse in a map is the registry's own instance,
-     * which {@code ObjectUtils.copyCurses} guarantees; a different instance that compares equal under
-     * {@link #CURSE_ORDER} would not be held back.
+     * <p>The held-back curse is matched by curse index, as C's {@code j == i} does, so a different
+     * {@link Curse} instance carrying the held-back curse's index is held back too. A {@code null}
+     * argument holds nothing back.
      *
      * <p>Function applyCurseAttributes commented in full on 261007.
      *
@@ -4900,7 +4899,8 @@ public class ItemObject {
             for (Curse curse : ObjectRegistry.getCurses()) {
                 if (curse.getIndex() == index) {
 
-                    if (curse == curseToIgnore) continue;
+                    if (curseToIgnore != null
+                            && curse.getIndex() == curseToIgnore.getIndex()) continue;
 
                     if (!getCurses().containsKey(curse) || getCurses().get(curse).getPower() == 0)
                         continue;

@@ -1211,7 +1211,11 @@ public class PlayerKnowledge {
      * the effect and the fully-known copy.
      *
      * <p>Within those four, two details differ from the object version and both follow from the
-     * flattening:
+     * flattening. A third thing is the same as the object version's, and was not always: the
+     * modifier map is built over the real modifiers only. C's loop runs {@code 0 .. OBJ_MOD_MAX - 1}
+     * and so has no slot for {@link ObjectModifier#OM_NONE} or {@link ObjectModifier#OM_MAX}; both
+     * are skipped here, as they are in {@link #knowObject(Player, ItemObject)}, so neither ever
+     * appears as a key on a curse's known object.
      *
      * <ul>
      *   <li><b>Elements are read with {@code getOrDefault}.</b> C indexes a dense
@@ -1236,8 +1240,9 @@ public class PlayerKnowledge {
      * where C's is gated, which comes to the same thing: a curse object is not wearable and has no
      * flavour, so C's second test, an unflavoured non-wearable, always passes.
      *
-     * <p>Function knowObject(Player, Curse) coded before 260901, commented in full on 261004,
-     * null-kind and outstanding paragraphs corrected on 261004.
+     * <p>Function knowObject(Player, Curse) coded before 260901, commented in full on 261007,
+     * null-kind and outstanding paragraphs corrected on 261004, modifier sentinels described on
+     * 261007.
      *
      * @param player the player whose standing rune knowledge decides what the curse is allowed to
      *               show; nothing here is read off the curse to decide it
@@ -1246,16 +1251,18 @@ public class PlayerKnowledge {
     private static void knowObject(Player player, Curse curse) {
         // combat details
         if (player.itemKnowledge != null) {
-            curse.setKnownCombatToAC(curse.getCombatAC() * player.itemKnowledge.getToA());
-            if (!curse.hasStandardToH())
-                curse.setKnownCombatToHit(curse.getCombatToHit() * player.itemKnowledge.getToH());
-            curse.setKnownCombatToDam(curse.getCombatDam() * player.itemKnowledge.getToD());
+            curse.getItemObject().getKnown().setToAC(curse.getItemObject().getToAC() * player.itemKnowledge.getToA());
+            if (!curse.getItemObject().hasStandardToH())
+                curse.getItemObject().getKnown().setToHit(curse.getItemObject().getToHit() * player.itemKnowledge.getToH());
+            curse.getItemObject().getKnown().setToDam(curse.getItemObject().getToDam() * player.itemKnowledge.getToD());
         }
 
         // modifiers
-        Map<ObjectModifier, Integer> modifiers = curse.getModifiers();
+        Map<ObjectModifier, Integer> modifiers = curse.getItemObject().getModifiers();
         Map<ObjectModifier, Integer> newModifiers = new HashMap<>();
         for (ObjectModifier modifier : ObjectModifier.values()) {
+            if (modifier == ObjectModifier.OM_MAX || modifier == ObjectModifier.OM_NONE)
+                continue;
             newModifiers.put(modifier, 0);
         }
         for (ObjectModifier key : modifiers.keySet()) {
@@ -1263,12 +1270,12 @@ public class PlayerKnowledge {
             if (player.itemKnowledge != null && player.itemKnowledge.modifierIsKnown(key))
                 newModifiers.put(key, modifiers.get(key));
         }
-        curse.setKnownModifiers(newModifiers);
+        curse.getItemObject().getKnown().setModifiers(newModifiers);
 
         // Elements
         Map<ElementEnum, Boolean> knownElements = player.itemKnowledge == null ?
                 new HashMap<>() : player.itemKnowledge.getElementResistInfo();
-        Map<ElementEnum, ElementInfo> itemElInfo = curse.getElInfo();
+        Map<ElementEnum, ElementInfo> itemElInfo = curse.getItemObject().getElInfo();
         Map<ElementEnum, ElementInfo> newElInfo = new HashMap<>();
         for (ElementEnum element : ElementEnum.values()) {
             if (element == ElementEnum.ELEM_NONE || element == ElementEnum.ELEM_MAX) continue;
@@ -1281,29 +1288,29 @@ public class PlayerKnowledge {
             if (knownElements.get(key))
                 newElInfo.put(key, itemElInfo.getOrDefault(key, new ElementInfo()).copy());
         }
-        curse.setKnownElInfo(newElInfo);
+        curse.getItemObject().getKnown().setElInfo(newElInfo);
 
         // ObjectFlags
         Flag<ObjectFlag> knownFlags = player.itemKnowledge != null ? player.itemKnowledge.getFlags()
                 : new Flag<>(ObjectFlag.class);
-        FlagView<ObjectFlag> itemFlags = curse.getObjectFlags();
+        FlagView<ObjectFlag> itemFlags = curse.getItemObject().getFlags();
         knownFlags.inter(itemFlags);
-        curse.setKnownObjectFlags(knownFlags);
+        curse.getItemObject().getKnown().setFlagsTo(knownFlags);
 
-        curse.setKnownEffect(curse.getEffect());
+        curse.getItemObject().getKnown().setEffect(curse.getItemObject().getEffect());
 
         // Fully known objects
-        if (curse.isFullyKnown()) {
-            for (ElementEnum element : curse.getElInfo().keySet()) {
+        if (curse.getItemObject().isFullyKnown()) {
+            for (ElementEnum element : curse.getItemObject().getElInfo().keySet()) {
                 if (element == ElementEnum.ELEM_NONE || element == ElementEnum.ELEM_MAX) continue;
 
                 ElementInfo eInfo = itemElInfo.get(element).copy();
-                curse.putKnownElementInfo(element, eInfo);
+                curse.getItemObject().getKnown().putElInfo(element, eInfo);
             }
 
             Flag<ObjectFlag> copy = new Flag<>(ObjectFlag.class);
-            copy.copyFrom(curse.getObjectFlags());
-            curse.setKnownObjectFlags(copy);
+            copy.copyFrom(curse.getItemObject().getFlags());
+            curse.getItemObject().getKnown().setFlagsTo(copy);
         }
     }
 
@@ -1697,7 +1704,7 @@ public class PlayerKnowledge {
             for (Curse curse : item.getCurses().keySet()) {
                 CurseData value = item.getCurses().get(curse);
                 if (value.getPower() != 0)
-                    if (curse.getCombatAC() != 0) {
+                    if (curse.getItemObject().getToAC() != 0) {
                         // Learn the to AC rune
                         learnRune(player, rune, true);
                         // Learn the to AC Curse rune
@@ -1714,7 +1721,7 @@ public class PlayerKnowledge {
      * {@link #cursesFindToA}.
      *
      * <p>Structurally identical to that method, and the reasoning there applies unchanged: why the
-     * family lives on {@link Player} rather than {@link ItemObject}, why the figure is read from the
+     * family lives in {@link PlayerKnowledge} rather than on {@link ItemObject}, why the figure is read from the
      * curse definition ({@link Curse#getCombatDam}, C's {@code curses[i].obj->to_d}) rather than from
      * the item, why the power test survives, and why the rune is resolved once above the loop.
      *
@@ -1723,7 +1730,8 @@ public class PlayerKnowledge {
      *
      * <p>Function cursesFindToD coded on 260815, commented in full on 260815, moved here from
      * {@link ItemObject} on 260815 and its arguments turned round to C's order, {@code testFlags}
-     * widened to {@link FlagView} on 260818, C line number dropped on 261004.
+     * widened to {@link FlagView} on 260818, C line number dropped on 261004, home of the family
+     * described correctly on 261007.
      *
      * @param player the player doing the learning, and to whom any discovery is announced
      * @param item   the item whose curses are being read
@@ -1733,7 +1741,7 @@ public class PlayerKnowledge {
         if (!item.getCurses().isEmpty()) {
             for (Curse curse : item.getCurses().keySet()) {
                 if (item.getCurses().get(curse).getPower() != 0)
-                    if (curse.getCombatDam() != 0) {
+                    if (curse.getItemObject().getToDam() != 0) {
                         // Learn the to-damage rune
                         learnRune(player, rune, true);
                         // Learn the rune of the curse that caused it
@@ -1773,7 +1781,7 @@ public class PlayerKnowledge {
         if (!item.getCurses().isEmpty()) {
             for (Curse curse : item.getCurses().keySet()) {
                 if (item.getCurses().get(curse).getPower() != 0)
-                    if (curse.getCombatToHit() != 0) {
+                    if (curse.getItemObject().getToHit() != 0) {
                         // Learn the to-hit rune
                         learnRune(player, rune, true);
                         // Learn the rune of the curse that caused it
@@ -1861,7 +1869,7 @@ public class PlayerKnowledge {
             if (value.getPower() == 0) continue;
 
             Flag<ObjectFlag> toTest = new Flag<>(ObjectFlag.class);
-            toTest.union(curse.getObjectFlags());
+            toTest.union(curse.getItemObject().getFlags());
             toTest.inter(testFlags);
 
             for (ObjectFlag testSubject : toTest) {
@@ -1914,8 +1922,12 @@ public class PlayerKnowledge {
      * {@code null} and {@link PlayerKnowledge#learnRune} declines it, in place of C's {@code -1} index — the same
      * treatment recorded at {@link #objectCursesFindElement}.
      *
-     * <p>Function equipLearnElement commented in full on 261004, flag-copy note and C line number
-     * corrected on 261004.
+     * <p>The item is named through {@link ItemObject#description}, as every other message in this
+     * class is, so until the description subsystem arrives in Chapter 7 the message reads
+     * "Your {DESCRIPTION_TAG} glows."
+     *
+     * <p>Function equipLearnElement commented in full on 261007, flag-copy note and C line number
+     * corrected on 261004, naming call moved onto {@link ItemObject#description} on 261007.
      *
      * @param player the player who has just been given the chance to notice the element, and
      *               whose equipped items and their curses are searched for it
@@ -1936,8 +1948,8 @@ public class PlayerKnowledge {
 
             // Does the object affect the player's resistance to the element?
             if (item.getElInfo().containsKey(elem) && item.getElInfo().get(elem).getResLevel() != 0) {
-                String name = ObjectUtils.objectDesc(item,
-                        new Flag<>(ObjectDescription.class, ObjectDescription.ODESC_BASE), player);
+                String name = item.description(new Flag<>(ObjectDescription.class, ObjectDescription.ODESC_BASE),
+                        player);
 
                 // Message
                 Message.message("Your %s glows.", name);
@@ -2009,7 +2021,8 @@ public class PlayerKnowledge {
                 continue;
 
             // Does the object affect the player's resistance to the element?
-            if (curse.getElInfo().get(elem) != null && curse.getElInfo().get(elem).getResLevel() != 0) {
+            if (curse.getItemObject().getElInfo().get(elem) != null
+                    && curse.getItemObject().getElInfo().get(elem).getResLevel() != 0) {
                 // Learn the element property if we don't know it already
                 if (!player.itemKnowledge.getElementResistInfo().get(elem)) {
                     Message.message("Your %s glows.", name);
@@ -2209,8 +2222,8 @@ public class PlayerKnowledge {
                 Rune index = Rune.runeIndex(curse);
 
                 if (obj.getCurses().get(curse) == null
-                        || obj.getCurses().get(curse).getPower() == 0) {
-                    // || curse.getItemObject() == null) {
+                        || obj.getCurses().get(curse).getPower() == 0
+                        || curse.getItemObject() == null) {
                     continue;
                 }
 
@@ -2218,7 +2231,8 @@ public class PlayerKnowledge {
                 for (ObjectModifier mod : ObjectModifier.values()) {
                     if (mod == ObjectModifier.OM_NONE || mod == ObjectModifier.OM_MAX) continue;
 
-                    if (curse.getModifiers().containsKey(mod) && curse.getModifiers().get(mod) != 0) {
+                    if (curse.getItemObject().getModifiers().containsKey(mod)
+                            && curse.getItemObject().getModifierValue(mod) != 0) {
                         if (!player.getItemKnowledge().modifierIsKnown(mod)) {
                             learnRune(player, Rune.runeIndex(mod), true);
                             if (player.getPlayerUpkeep().isPlaying()) {

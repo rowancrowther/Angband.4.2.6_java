@@ -4,7 +4,7 @@ Re-run 2026-10-07 after your edits to `ItemObject.java` (the 14:40 report is rep
 Java declaration and C function named below was read in full this turn. Java: `ItemObject.java` (class and field
 Javadoc, both constructors, `cursesFactory`, `copy`, `wipe`, `initCurses`,
 `freeCurses`, `freeSlays`, `freeBrands`, `getCurses`, `setCurses`, both `addCurse`, `addCurses`, `clearAndPutCurses`,
-`clearCurses`, `setCursePower`, `removeCurse`, `addBrand`, `removeBrand`, `clearBrands`, `getBrands`, `addSlay`,
+`clearCurses`, `setCursePower`, `removeCurse`, `appendBrand`, `removeBrand`, `clearBrands`, `getBrands`, `appendSlay`,
 `removeSlay`, `clearSlays`, `getSlays`, `setSlays`, `getModifiers`, `getElInfo`, `setKind`). Also read: `Flag.copyFrom`
 and
 `Flag.union` (`Flag.java`), `ElementInfo.copy` (`ElementInfo.java`), `Random.copy` (`Random.java`), `CurseData.java`,

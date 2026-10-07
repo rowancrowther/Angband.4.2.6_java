@@ -25,6 +25,7 @@ import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.Activation;
 import uk.co.jackoftradesltd.middle.effect.Effect;
+import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
@@ -93,12 +94,25 @@ class ItemObjectConstructionTest {
                 new Flag<>(ObjectFlag.class), "", "", index);
     }
 
+    /**
+     * A brand named for its element, so two codes with different prefixes are different elements
+     * to {@code appendBrand}'s same-name rule. The multiplier is the code's number.
+     */
     private static Brand brand(String code) {
-        return new Brand(code, "fire", "burns", null, null, 3, 3, 5);
+        String[] parts = code.split("_");
+        return new Brand(code, parts[0].toLowerCase(), "burns", null, null,
+                Integer.parseInt(parts[1]), 3, 5);
     }
 
+    /**
+     * A slay on the monsters its code names, so two codes with different prefixes kill different
+     * monsters to {@code appendSlay}'s {@code sameMonsterSlain} rule. The multiplier is the code's
+     * number.
+     */
     private static Slay slay(String code) {
-        return new Slay(code, "evil", null, "smite", "pierces", null, 2, 2, 5);
+        String[] parts = code.split("_");
+        return new Slay(code, parts[0].toLowerCase(), null, "smite", "pierces",
+                MonsterRaceFlag.valueOf("RF_" + parts[0]), Integer.parseInt(parts[1]), 2, 5);
     }
 
     private static void nullField(ItemObject target, String name) {
@@ -198,8 +212,8 @@ class ItemObjectConstructionTest {
             ItemObject other = new ItemObject();
 
             item.addCurse(low, 1, 0);
-            item.addBrand(brand("FIRE_3"));
-            item.addSlay(slay("EVIL_2"));
+            item.appendBrand(brand("FIRE_3"));
+            item.appendSlay(slay("EVIL_2"));
 
             assertAll(
                     () -> assertTrue(other.getCurses().isEmpty()),
@@ -664,8 +678,8 @@ class ItemObjectConstructionTest {
 
             Brand fire = brand("FIRE_3");
             Slay evil = slay("EVIL_2");
-            item.addBrand(fire);
-            item.addSlay(evil);
+            item.appendBrand(fire);
+            item.appendSlay(evil);
 
             assertAll(
                     () -> assertEquals(Set.of(fire), item.getBrands()),
@@ -677,8 +691,8 @@ class ItemObjectConstructionTest {
         void addingTwiceIsOnce() {
             Brand fire = brand("FIRE_3");
 
-            item.addBrand(fire);
-            item.addBrand(fire);
+            item.appendBrand(fire);
+            item.appendBrand(fire);
 
             assertEquals(1, item.getBrands().size());
         }
@@ -686,7 +700,7 @@ class ItemObjectConstructionTest {
         @Test
         @DisplayName("removing a brand or slay the item does not carry is quiet, as assigning false over false")
         void removingAbsentIsQuiet() {
-            item.addBrand(brand("FIRE_3"));
+            item.appendBrand(brand("FIRE_3"));
 
             item.removeBrand(brand("COLD_3"));
             item.removeSlay(slay("EVIL_2"));
@@ -715,8 +729,8 @@ class ItemObjectConstructionTest {
         void removeLeavesOthers() {
             Brand fire = brand("FIRE_3");
             Brand cold = brand("COLD_3");
-            item.addBrand(fire);
-            item.addBrand(cold);
+            item.appendBrand(fire);
+            item.appendBrand(cold);
 
             item.removeBrand(fire);
 
@@ -726,8 +740,8 @@ class ItemObjectConstructionTest {
         @Test
         @DisplayName("clearBrands and clearSlays empty the sets, and are safe on a null field")
         void clearEmptiesTheSets() {
-            item.addBrand(brand("FIRE_3"));
-            item.addSlay(slay("EVIL_2"));
+            item.appendBrand(brand("FIRE_3"));
+            item.appendSlay(slay("EVIL_2"));
             item.clearBrands();
             item.clearSlays();
 
@@ -757,13 +771,13 @@ class ItemObjectConstructionTest {
         @Test
         @DisplayName("getBrands and getSlays hand out the live set, as C hands out the array pointer")
         void gettersAreLive() {
-            item.addBrand(brand("FIRE_3"));
-            item.addSlay(slay("EVIL_2"));
+            item.appendBrand(brand("FIRE_3"));
+            item.appendSlay(slay("EVIL_2"));
 
             Set<Brand> brands = item.getBrands();
             Set<Slay> slays = item.getSlays();
-            item.addBrand(brand("COLD_3"));
-            item.addSlay(slay("ORC_2"));
+            item.appendBrand(brand("COLD_3"));
+            item.appendSlay(slay("ORC_2"));
 
             assertAll(
                     () -> assertEquals(2, brands.size()),
@@ -802,8 +816,8 @@ class ItemObjectConstructionTest {
         @DisplayName("each helper empties its collection on the copy and leaves the original alone")
         void helpersEmptyTheCopyOnly() throws ReflectiveOperationException {
             item.addCurse(low, 30, 4);
-            item.addBrand(brand("FIRE_3"));
-            item.addSlay(slay("EVIL_2"));
+            item.appendBrand(brand("FIRE_3"));
+            item.appendSlay(slay("EVIL_2"));
             ItemObject scratch = item.copy(true);
 
             call(scratch, "freeCurses");
@@ -828,8 +842,8 @@ class ItemObjectConstructionTest {
             call(scratch, "freeSlays");
 
             scratch.addCurse(high, 1, 0);
-            scratch.addBrand(brand("FIRE_3"));
-            scratch.addSlay(slay("EVIL_2"));
+            scratch.appendBrand(brand("FIRE_3"));
+            scratch.appendSlay(slay("EVIL_2"));
 
             assertAll(
                     () -> assertEquals(1, scratch.getCurses().size()),

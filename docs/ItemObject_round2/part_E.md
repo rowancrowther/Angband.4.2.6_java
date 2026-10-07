@@ -146,10 +146,12 @@ and `curse_power`, plus `obj-power.h`, `obj-gear.c` (`wield_slot`, `slot_by_type
 - `ItemObject.java:6355` has the comment "Add damage from dice for any wearable weapon or ammo" above code in
   `damageDicePower(Curse)` that does neither; it was copied from the plain overload.
 
-- `ItemObject.java:3106` `addBrand` and `ItemObject.java:3160` `addSlay` add to the set without C's `append_brand` /
+- `ItemObject.java:3106` `appendBrand` and `ItemObject.java:3160` `appendSlay` add to the set without C's
+  `append_brand` /
   `append_slay` replace-if-stronger rule (the dedupe by name or monsters slain lives in `ObjectUtils.copyBrands` and
-  `ObjectUtils.copySlays`). `slayPower` counts set members, so two brands of one element added through `addBrand` would
-  count twice where C would hold one. Callers of `addBrand`/`addSlay` outside `ItemObject.java` are the two in
+  `ObjectUtils.copySlays`). `slayPower` counts set members, so two brands of one element added through `appendBrand`
+  would count twice where C would hold one. Callers of `appendBrand`/`appendSlay` outside `ItemObject.java` are the two
+  in
   `PlayerKnowledge.java:286` and `:301`, which fill a known object, not a priced one, so this is not reachable from the
   power calculation today. Part A owns the methods.
 

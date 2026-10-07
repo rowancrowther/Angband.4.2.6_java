@@ -3110,7 +3110,7 @@ public class ItemObject {
      *
      * <p>Stores the set given, without copying it, and drops the old one untouched. A {@code null}
      * is kept and makes {@link #getSlays()} answer an empty set. There is no setter for brands;
-     * {@link #addSlay}, {@link #removeSlay} and {@link #clearSlays} change the set in place.
+     * {@link #appendSlay}, {@link #removeSlay} and {@link #clearSlays} change the set in place.
      *
      * <p>Function setSlays coded before 260904, commented in full on 261002.
      *
@@ -3221,26 +3221,60 @@ public class ItemObject {
     }
 
     /**
-     * Records that this item carries a brand, the port of C's {@code obj->brands[i] = true}.
+     * Offers a brand to this item, the port of C's {@code append_brand} ({@code obj-slays.c}). The
+     * brand goes on only if the item has no brand of the same element, or has a weaker one, which it
+     * then displaces.
      *
-     * <p>The three brand mutators exist because {@link #getBrands()} answers {@code Set.of()} for an
-     * item whose set has never been created, and an immutable empty set takes no writes. The
-     * knowledge code writes brands onto counterpart objects built by the no-argument constructor,
-     * which are exactly those items, so the set is created here on demand — C reaches the same place
-     * with the {@code mem_zalloc} its own brand block performs before its first write.
+     * <p>"The same element" is the same {@link Brand#getName() name}, as C's {@code streq} on
+     * {@code brands[i].name} has it; the code is not looked at, so {@code FIRE_2} and {@code FIRE_3}
+     * are rivals. "Stronger" is {@link Brand#getMultiplier()}, not {@link Brand#getPower()}, which is
+     * the rating the power calculation uses and a different number. The outcomes:
+     * <ul>
+     *   <li>no brand of that name on the item: added, {@code true};</li>
+     *   <li>one present with a lower multiplier: removed, the new one added, {@code true};</li>
+     *   <li>one present with the same or a higher multiplier: item untouched, {@code false}.</li>
+     * </ul>
      *
-     * <p>Membership is the whole of the state, so adding a brand twice is not distinguishable from
-     * adding it once. C's array of {@code bool} says the same thing.
+     * <p>Like C, this relies on the set never holding two brands of one name, which each append
+     * keeps true. A set filled any other way (see {@code ObjectUtils.copyBrands}, which dedupes in
+     * bulk) must already satisfy it, or only the first match found is considered.
      *
-     * <p>Function addBrand coded on 260817, commented in full on 260817.
+     * <p>The set is created here on demand. {@link #getBrands()} answers {@code Set.of()} for an item
+     * whose set has never been created, and an immutable empty set takes no writes. The knowledge
+     * code writes brands onto counterpart objects built by the no-argument constructor, which are
+     * exactly those items; C reaches the same place with the {@code mem_zalloc} its own brand block
+     * performs before its first write.
      *
-     * @param brand the brand this item carries
+     * <p>Appending a brand the item already holds answers {@code false}, not a second member: same
+     * name, equal multiplier. {@code PlayerKnowledge.knowObject} offers a counterpart only brands the
+     * real item carries, so a repeat call finds the brand already there and ignores the {@code false}.
+     *
+     * <p>Function appendBrand coded on 260817 as a plain add, commented in full on 260817, rewritten
+     * on 261007 for the replace-if-stronger rule and the {@code boolean} result.
+     *
+     * @param brand the brand offered to this item
+     * @return {@code true} if the item now carries {@code brand}; {@code false} if it already holds a
+     *         brand of the same name that is at least as strong, and so was left unchanged
      */
-    public void addBrand(Brand brand) {
+    public boolean appendBrand(Brand brand) {
         if (brands == null) {
             brands = new HashSet<>();
         }
-        brands.add(brand);
+
+        Brand oldBrand = brands.stream().filter(b -> b.getName().equals(brand.getName()))
+                .findFirst().orElse(null);
+        if (oldBrand == null) {
+            brands.add(brand);
+            return true;
+        }
+
+        if (oldBrand.getMultiplier() < brand.getMultiplier()) {
+            brands.remove(oldBrand);
+            brands.add(brand);
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -3282,19 +3316,52 @@ public class ItemObject {
     }
 
     /**
-     * Records that this item carries a slay, the port of C's {@code obj->slays[i] = true}. The slay
-     * counterpart of {@link #addBrand}, and there for the same reason: {@link #getSlays()} answers
-     * {@code Set.of()} for an item whose set has never been created.
+     * Offers a slay to this item, the port of C's {@code append_slay} ({@code obj-slays.c}). The slay
+     * counterpart of {@link #appendBrand}, with the same outcomes and the same on-demand set
+     * creation, because {@link #getSlays()} answers {@code Set.of()} for an item whose set has never
+     * been created.
      *
-     * <p>Function addSlay coded on 260817, commented in full on 260817.
+     * <p>Two slays are rivals when {@link Slay#sameMonsterSlain} says they kill the same monsters:
+     * the same race flag and the same base. That is C's {@code same_monsters_slain}, and it is not a
+     * name match. In {@code slay.txt} each name has exactly one race flag, so the two agree on shipped
+     * data; a hand-built slay with a different name for the same race still displaces or is refused.
+     * "Stronger" is {@link Slay#getMultiplier()}.
+     * <ul>
+     *   <li>no rival on the item: added, {@code true};</li>
+     *   <li>a rival with a lower multiplier: removed, the new one added, {@code true};</li>
+     *   <li>a rival with the same or a higher multiplier: item untouched, {@code false}.</li>
+     * </ul>
      *
-     * @param slay the slay this item carries
+     * <p>Replacing relies on {@link Slay#equals} to find the old member in the set, which is why that
+     * method compares every field and not just the grouping C uses.
+     *
+     * <p>Function appendSlay coded on 260817 as a plain add, commented in full on 260817, rewritten
+     * on 261007 for the replace-if-stronger rule and the {@code boolean} result.
+     *
+     * @param slay the slay offered to this item
+     * @return {@code true} if the item now carries {@code slay}; {@code false} if it already holds a
+     *         slay on the same monsters that is at least as strong, and so was left unchanged
      */
-    public void addSlay(Slay slay) {
+    public boolean appendSlay(Slay slay) {
         if (slays == null) {
             slays = new HashSet<>();
         }
-        slays.add(slay);
+
+        Slay oldSlay = slays.stream().filter(s -> s.sameMonsterSlain(slay))
+                .findFirst().orElse(null);
+
+        if (oldSlay == null) {
+            slays.add(slay);
+            return true;
+        }
+
+        if (oldSlay.getMultiplier() < slay.getMultiplier()) {
+            slays.remove(oldSlay);
+            slays.add(slay);
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -3965,7 +4032,7 @@ public class ItemObject {
      * {@link KnownObject#brandIsKnown} and is not per-item at all.
      *
      * <p>An immutable empty set while the field is {@code null}, which takes no writes; use
-     * {@link #addBrand}, {@link #removeBrand} and {@link #clearBrands} to change the brands.
+     * {@link #appendBrand}, {@link #removeBrand} and {@link #clearBrands} to change the brands.
      *
      * <p>Function getBrands coded before 260817, commented in full on 261002.
      *

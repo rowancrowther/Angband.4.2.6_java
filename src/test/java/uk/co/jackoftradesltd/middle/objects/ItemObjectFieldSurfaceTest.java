@@ -527,7 +527,7 @@ class ItemObjectFieldSurfaceTest {
         @DisplayName("the brand editors work on a set the item was built with")
         void brandEditors() {
             Brand fire = brand("FIRE_2");
-            item.addBrand(fire);
+            item.appendBrand(fire);
             assertTrue(item.getBrands().contains(fire));
 
             item.removeBrand(fire);

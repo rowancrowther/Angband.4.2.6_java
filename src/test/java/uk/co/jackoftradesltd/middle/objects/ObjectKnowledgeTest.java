@@ -384,7 +384,7 @@ class ObjectKnowledgeTest {
             ItemObject obj = item(TValue.TV_SWORD, null);
             Brand fireOnRune = new Brand("FIRE", "fire", "burns", null, null, 2, 2, 10);
             Brand fireOnItem = new Brand("FIRE_BRAND_3", "fire", "flares", null, null, 3, 3, 20);
-            obj.addBrand(fireOnItem);
+            obj.appendBrand(fireOnItem);
 
             assertTrue(ObjectKnowledge.objectHasRune(obj, new Rune(new RuneVariety.BrandKey(fireOnRune))));
         }
@@ -394,7 +394,7 @@ class ObjectKnowledgeTest {
         void absentWhenNamesDiffer() {
             ItemObject obj = item(TValue.TV_SWORD, null);
             Brand cold = new Brand("COLD", "cold", "freezes", null, null, 2, 2, 10);
-            obj.addBrand(cold);
+            obj.appendBrand(cold);
             Brand fireOnRune = new Brand("FIRE", "fire", "burns", null, null, 2, 2, 10);
 
             assertFalse(ObjectKnowledge.objectHasRune(obj, new Rune(new RuneVariety.BrandKey(fireOnRune))));
@@ -430,7 +430,7 @@ class ObjectKnowledgeTest {
             ItemObject obj = item(TValue.TV_SWORD, null);
             Slay evilOnRune = slay("EVIL_2", "evil creatures", MonsterRaceFlag.RF_EVIL);
             Slay evilOnItem = slay("EVIL_5", "evil creatures", MonsterRaceFlag.RF_EVIL);
-            obj.addSlay(evilOnItem);
+            obj.appendSlay(evilOnItem);
 
             assertTrue(ObjectKnowledge.objectHasRune(obj, new Rune(new RuneVariety.SlayKey(evilOnRune))));
         }
@@ -439,7 +439,7 @@ class ObjectKnowledgeTest {
         @DisplayName("is absent when the object's slays target different monsters")
         void absentWhenMonstersDiffer() {
             ItemObject obj = item(TValue.TV_SWORD, null);
-            obj.addSlay(slay("ORC_2", "orcs", MonsterRaceFlag.RF_ORC));
+            obj.appendSlay(slay("ORC_2", "orcs", MonsterRaceFlag.RF_ORC));
             Slay evilOnRune = slay("EVIL_2", "evil creatures", MonsterRaceFlag.RF_EVIL);
 
             assertFalse(ObjectKnowledge.objectHasRune(obj, new Rune(new RuneVariety.SlayKey(evilOnRune))));

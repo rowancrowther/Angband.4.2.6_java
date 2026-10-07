@@ -475,8 +475,8 @@ class PlayerKnowledgeKnowObjectTest {
     class Brands {
 
         private Set<String> run(Set<Brand> onItem, Set<Brand> onCounterpart, Set<Brand> playerLearns) {
-            for (Brand b : onItem) item.addBrand(b);
-            for (Brand b : onCounterpart) known.addBrand(b);
+            for (Brand b : onItem) item.appendBrand(b);
+            for (Brand b : onCounterpart) known.appendBrand(b);
             for (Brand b : playerLearns) player.getItemKnowledge().learnBrand(b);
             PlayerKnowledge.knowObject(player, item);
             return brandNames(known);
@@ -561,8 +561,8 @@ class PlayerKnowledgeKnowObjectTest {
     class Slays {
 
         private Set<String> run(Set<Slay> onItem, Set<Slay> onCounterpart, Set<Slay> playerLearns) {
-            for (Slay s : onItem) item.addSlay(s);
-            for (Slay s : onCounterpart) known.addSlay(s);
+            for (Slay s : onItem) item.appendSlay(s);
+            for (Slay s : onCounterpart) known.appendSlay(s);
             for (Slay s : playerLearns) player.getItemKnowledge().learnSlay(s);
             PlayerKnowledge.knowObject(player, item);
             return slayCodes(known);

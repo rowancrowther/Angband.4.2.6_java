@@ -90,18 +90,51 @@ class ItemObjectMutatorsTest {
      * @return the brand
      */
     private static Brand brand(String code) {
-        return new Brand(code, "fire", "burns", MonsterRaceFlag.RF_IM_FIRE,
-                MonsterRaceFlag.RF_HURT_FIRE, 2, 3, 20);
+        String[] parts = code.split("_");
+        return brand(code, parts[0].toLowerCase(), Integer.parseInt(parts[1]), 20);
     }
 
     /**
-     * A slay, likewise.
+     * A brand with every field the append rule looks at spelled out. The name is the element
+     * ({@code appendBrand} treats equal names as rivals), the multiplier is what decides the winner,
+     * and the power is there to show it does not.
+     *
+     * @param code       the brand's code
+     * @param name       the element name
+     * @param multiplier the standard damage multiplier
+     * @param power      the power rating
+     * @return the brand
+     */
+    private static Brand brand(String code, String name, int multiplier, int power) {
+        return new Brand(code, name, "burns", MonsterRaceFlag.RF_IM_FIRE,
+                MonsterRaceFlag.RF_HURT_FIRE, multiplier, 3, power);
+    }
+
+    /**
+     * A slay, likewise: named for the monsters its code names, multiplier the code's number.
      *
      * @param code the slay's code, which it parses its own family and level out of
      * @return the slay
      */
     private static Slay slay(String code) {
-        return new Slay(code, "evil", null, "smites", "smites", MonsterRaceFlag.RF_EVIL, 3, 3, 15);
+        String[] parts = code.split("_");
+        return slay(code, parts[0].toLowerCase(), MonsterRaceFlag.valueOf("RF_" + parts[0]),
+                Integer.parseInt(parts[1]), 15);
+    }
+
+    /**
+     * A slay with every field the append rule looks at spelled out. The race flag (with the base,
+     * always {@code null} here) is what makes two slays rivals; the multiplier decides the winner.
+     *
+     * @param code       the slay's code
+     * @param name       the display name, which the rule must not look at
+     * @param raceFlag   the monsters slain
+     * @param multiplier the standard damage multiplier
+     * @param power      the power rating
+     * @return the slay
+     */
+    private static Slay slay(String code, String name, MonsterRaceFlag raceFlag, int multiplier, int power) {
+        return new Slay(code, name, null, "smites", "smites", raceFlag, multiplier, 3, power);
     }
 
     /**
@@ -148,7 +181,7 @@ class ItemObjectMutatorsTest {
         @DisplayName("adding creates the set")
         void addingCreatesTheSet() {
             Brand fire = brand("FIRE_2");
-            item.addBrand(fire);
+            item.appendBrand(fire);
 
             assertEquals(1, item.getBrands().size());
             assertSame(fire, item.getBrands().iterator().next());
@@ -160,8 +193,8 @@ class ItemObjectMutatorsTest {
         @Test
         @DisplayName("slays are added independently of brands")
         void slaysAreIndependent() {
-            item.addBrand(brand("FIRE_2"));
-            item.addSlay(slay("EVIL_3"));
+            item.appendBrand(brand("FIRE_2"));
+            item.appendSlay(slay("EVIL_3"));
 
             assertEquals(1, item.getBrands().size());
             assertEquals(1, item.getSlays().size());
@@ -175,8 +208,8 @@ class ItemObjectMutatorsTest {
         void removingLeavesTheRest() {
             Brand fire = brand("FIRE_2");
             Brand cold = brand("COLD_2");
-            item.addBrand(fire);
-            item.addBrand(cold);
+            item.appendBrand(fire);
+            item.appendBrand(cold);
 
             item.removeBrand(fire);
 
@@ -191,8 +224,8 @@ class ItemObjectMutatorsTest {
         @Test
         @DisplayName("clearing empties the set")
         void clearingEmptiesTheSet() {
-            item.addBrand(brand("FIRE_2"));
-            item.addSlay(slay("EVIL_3"));
+            item.appendBrand(brand("FIRE_2"));
+            item.appendSlay(slay("EVIL_3"));
 
             item.clearBrands();
             item.clearSlays();
@@ -213,6 +246,223 @@ class ItemObjectMutatorsTest {
             item.clearSlays();
 
             assertTrue(item.getBrands().isEmpty());
+        }
+    }
+
+    /**
+     * The replace-if-stronger rule of C's {@code append_brand} and {@code append_slay}, which the
+     * plain set add it replaced did not have. Brands are rivals by name, slays by
+     * {@code sameMonsterSlain}; both are judged by multiplier, never by power.
+     */
+    @Nested
+    @DisplayName("append rule")
+    class AppendRule {
+
+        @Test
+        @DisplayName("a brand with no rival is added and reported added")
+        void brandWithNoRivalIsAdded() {
+            Brand fire = brand("FIRE_2");
+
+            assertTrue(item.appendBrand(fire));
+            assertEquals(1, item.getBrands().size());
+            assertSame(fire, item.getBrands().iterator().next());
+        }
+
+        @Test
+        @DisplayName("appending to an item with no set creates it and reports added")
+        void brandOnBareItemCreatesTheSet() {
+            ItemObject bare = new ItemObject();
+            Brand fire = brand("FIRE_2");
+
+            assertTrue(bare.appendBrand(fire));
+            assertSame(fire, bare.getBrands().iterator().next());
+        }
+
+        @Test
+        @DisplayName("a stronger brand of the same element replaces the weaker and reports added")
+        void strongerBrandReplaces() {
+            Brand weak = brand("FIRE_2");
+            Brand strong = brand("FIRE_3");
+            item.appendBrand(weak);
+
+            assertTrue(item.appendBrand(strong));
+            assertEquals(1, item.getBrands().size());
+            assertSame(strong, item.getBrands().iterator().next());
+        }
+
+        @Test
+        @DisplayName("a weaker brand of the same element is refused and the item is unchanged")
+        void weakerBrandIsRefused() {
+            Brand strong = brand("FIRE_3");
+            Brand weak = brand("FIRE_2");
+            item.appendBrand(strong);
+
+            assertFalse(item.appendBrand(weak));
+            assertEquals(1, item.getBrands().size());
+            assertSame(strong, item.getBrands().iterator().next());
+        }
+
+        @Test
+        @DisplayName("an equal-strength brand of the same element is refused, and the first one stays")
+        void equalBrandIsRefused() {
+            Brand first = brand("FIRE_2", "fire", 2, 20);
+            Brand second = brand("FIRE_2", "fire", 2, 99);
+            item.appendBrand(first);
+
+            assertFalse(item.appendBrand(second));
+            assertSame(first, item.getBrands().iterator().next());
+        }
+
+        @Test
+        @DisplayName("appending the same brand twice reports refused the second time")
+        void sameBrandTwice() {
+            Brand fire = brand("FIRE_2");
+
+            assertTrue(item.appendBrand(fire));
+            assertFalse(item.appendBrand(fire));
+            assertEquals(1, item.getBrands().size());
+        }
+
+        @Test
+        @DisplayName("brands of different elements sit side by side")
+        void differentElementsCoexist() {
+            assertTrue(item.appendBrand(brand("FIRE_2")));
+            assertTrue(item.appendBrand(brand("COLD_2")));
+
+            assertEquals(2, item.getBrands().size());
+        }
+
+        @Test
+        @DisplayName("replacing one element's brand leaves the other elements alone")
+        void replacementLeavesOthers() {
+            Brand cold = brand("COLD_2");
+            Brand strongFire = brand("FIRE_3");
+            item.appendBrand(brand("FIRE_2"));
+            item.appendBrand(cold);
+
+            assertTrue(item.appendBrand(strongFire));
+            assertEquals(2, item.getBrands().size());
+            assertTrue(item.getBrands().contains(cold));
+            assertTrue(item.getBrands().contains(strongFire));
+        }
+
+        @Test
+        @DisplayName("brands are judged by multiplier, not by power")
+        void brandsJudgedByMultiplier() {
+            Brand highMultiplier = brand("FIRE_3", "fire", 3, 1);
+            Brand highPower = brand("FIRE_2", "fire", 2, 90);
+            item.appendBrand(highMultiplier);
+
+            assertFalse(item.appendBrand(highPower));
+            assertSame(highMultiplier, item.getBrands().iterator().next());
+
+            item = loadedItem();
+            item.appendBrand(highPower);
+
+            assertTrue(item.appendBrand(highMultiplier));
+            assertSame(highMultiplier, item.getBrands().iterator().next());
+        }
+
+        @Test
+        @DisplayName("a slay with no rival is added and reported added")
+        void slayWithNoRivalIsAdded() {
+            Slay evil = slay("EVIL_2");
+
+            assertTrue(item.appendSlay(evil));
+            assertEquals(1, item.getSlays().size());
+            assertSame(evil, item.getSlays().iterator().next());
+        }
+
+        @Test
+        @DisplayName("appending a slay to an item with no set creates it and reports added")
+        void slayOnBareItemCreatesTheSet() {
+            ItemObject bare = new ItemObject();
+            Slay evil = slay("EVIL_2");
+
+            assertTrue(bare.appendSlay(evil));
+            assertSame(evil, bare.getSlays().iterator().next());
+        }
+
+        @Test
+        @DisplayName("a stronger slay on the same monsters replaces the weaker and reports added")
+        void strongerSlayReplaces() {
+            Slay weak = slay("EVIL_2");
+            Slay strong = slay("EVIL_3");
+            item.appendSlay(weak);
+
+            assertTrue(item.appendSlay(strong));
+            assertEquals(1, item.getSlays().size());
+            assertSame(strong, item.getSlays().iterator().next());
+        }
+
+        @Test
+        @DisplayName("a weaker slay on the same monsters is refused and the item is unchanged")
+        void weakerSlayIsRefused() {
+            Slay strong = slay("EVIL_3");
+            Slay weak = slay("EVIL_2");
+            item.appendSlay(strong);
+
+            assertFalse(item.appendSlay(weak));
+            assertEquals(1, item.getSlays().size());
+            assertSame(strong, item.getSlays().iterator().next());
+        }
+
+        @Test
+        @DisplayName("an equal-strength slay on the same monsters is refused, and the first one stays")
+        void equalSlayIsRefused() {
+            Slay first = slay("EVIL_2", "evil", MonsterRaceFlag.RF_EVIL, 2, 15);
+            Slay second = slay("EVIL_2", "evil", MonsterRaceFlag.RF_EVIL, 2, 99);
+            item.appendSlay(first);
+
+            assertFalse(item.appendSlay(second));
+            assertSame(first, item.getSlays().iterator().next());
+        }
+
+        @Test
+        @DisplayName("slays on different monsters sit side by side")
+        void differentMonstersCoexist() {
+            assertTrue(item.appendSlay(slay("EVIL_2")));
+            assertTrue(item.appendSlay(slay("ORC_2")));
+
+            assertEquals(2, item.getSlays().size());
+        }
+
+        @Test
+        @DisplayName("slays are rivals by the monsters they kill, whatever they are called")
+        void slaysAreRivalsByMonstersNotName() {
+            Slay weak = slay("EVIL_2", "evil creatures", MonsterRaceFlag.RF_EVIL, 2, 15);
+            Slay strong = slay("EVIL_3", "wicked things", MonsterRaceFlag.RF_EVIL, 3, 15);
+            item.appendSlay(weak);
+
+            assertTrue(item.appendSlay(strong));
+            assertEquals(1, item.getSlays().size());
+            assertSame(strong, item.getSlays().iterator().next());
+        }
+
+        @Test
+        @DisplayName("slays with the same name on different monsters are not rivals")
+        void sameNameOnDifferentMonstersCoexist() {
+            assertTrue(item.appendSlay(slay("EVIL_2", "monsters", MonsterRaceFlag.RF_EVIL, 2, 15)));
+            assertTrue(item.appendSlay(slay("ORC_3", "monsters", MonsterRaceFlag.RF_ORC, 3, 15)));
+
+            assertEquals(2, item.getSlays().size());
+        }
+
+        @Test
+        @DisplayName("slays are judged by multiplier, not by power")
+        void slaysJudgedByMultiplier() {
+            Slay highMultiplier = slay("EVIL_3", "evil", MonsterRaceFlag.RF_EVIL, 3, 1);
+            Slay highPower = slay("EVIL_2", "evil", MonsterRaceFlag.RF_EVIL, 2, 90);
+            item.appendSlay(highMultiplier);
+
+            assertFalse(item.appendSlay(highPower));
+            assertSame(highMultiplier, item.getSlays().iterator().next());
+
+            item = loadedItem();
+            item.appendSlay(highPower);
+
+            assertTrue(item.appendSlay(highMultiplier));
+            assertSame(highMultiplier, item.getSlays().iterator().next());
         }
     }
 

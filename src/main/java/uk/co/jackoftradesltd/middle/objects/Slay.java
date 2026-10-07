@@ -298,7 +298,7 @@ public class Slay {
     /**
      * Value equality over every field of the slay: code, monster type and level, name, base, both
      * verbs, race flag, both multipliers and power. This lets an {@code ItemObject}'s
-     * {@code Set<Slay>} treat a {@link #copy()} as the same entry, so {@code addSlay} and
+     * {@code Set<Slay>} treat a {@link #copy()} as the same entry, so {@code appendSlay} and
      * {@code removeSlay} work on a copy as on the original.
      *
      * <p>This is deliberately stricter than {@link #sameMonsterSlain}, which is C's grouping and

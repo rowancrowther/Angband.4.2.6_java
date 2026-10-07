@@ -152,7 +152,7 @@ public class PlayerKnowledge {
      * brand array at all; {@link ItemObject#getBrands()} answers the same empty set whether the field
      * is null or empty, so the port cannot ask that question and runs the block, which clears a
      * counterpart that no longer matches its item. And the counterpart is edited through
-     * {@code addBrand}, {@code removeBrand} and {@code clearBrands}, which create the set on demand,
+     * {@code appendBrand}, {@code removeBrand} and {@code clearBrands}, which create the set on demand,
      * because the {@code getBrands()} view of a null field is immutable. Slays are handled the same
      * way.
      *
@@ -283,7 +283,7 @@ public class PlayerKnowledge {
         boolean knownBrand = false;
         for (Brand brand : ObjectRegistry.getBrands()) {
             if (player.playerKnowsBrand(brand) && item.getBrands().contains(brand)) {
-                item.getKnown().addBrand(brand);
+                item.getKnown().appendBrand(brand);
                 knownBrand = true;
             } else {
                 item.getKnown().removeBrand(brand);
@@ -298,7 +298,7 @@ public class PlayerKnowledge {
         boolean knownSlay = false;
         for (Slay slay : ObjectRegistry.getSlays()) {
             if (player.playerKnowsSlay(slay) && item.getSlays().contains(slay)) {
-                item.getKnown().addSlay(slay);
+                item.getKnown().appendSlay(slay);
                 knownSlay = true;
             } else {
                 item.getKnown().removeSlay(slay);

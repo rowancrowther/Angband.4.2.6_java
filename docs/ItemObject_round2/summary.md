@@ -106,11 +106,13 @@ Shape follows `docs/ItemObject_stage1_mismatches.md`. File and line references a
 
 - `initCurses`, `setCursePower`, `addCurses`, `clearAndPutCurses` and the `(Curse, int, int)` `addCurse`.
 - `ObjectMake.java` has no curse code, so C's `apply_curse` has no counterpart yet.
+- **Result:** Callers are to be written in Chapter 8
 
-### 7. `addBrand` and `addSlay` lack C's replace-if-stronger rule (Part E)
+### 7. `appendBrand` and `appendSlay` lack C's replace-if-stronger rule (Part E)
 
 - Dedupe lives in `ObjectUtils.copyBrands` and `copySlays`. The two outside callers (`PlayerKnowledge.java:286`, `:301`)
   fill a known object, so the power calculation cannot reach it.
+- **Result:** FIXED.
 
 ### 8. `activation` has no setter and nothing assigns it (Parts D, H)
 

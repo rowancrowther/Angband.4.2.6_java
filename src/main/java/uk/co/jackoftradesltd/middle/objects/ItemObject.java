@@ -143,13 +143,19 @@ public class ItemObject {
      * share an index, which a loaded registry never has; the test curses built by hand all carry
      * index zero, so for them the name decides.
      *
+     * <p>The name comparison is null-safe ({@code nullsFirst}), so a {@code null} name on a tied
+     * index sorts first rather than throwing from {@link TreeMap#put}. It is a second layer: the
+     * {@link Curse} constructor rejects a {@code null} or empty name, so no {@link Curse} reaches
+     * this comparator with one. C has no counterpart, as its curses are array slots and carry no
+     * comparator.
+     *
      * <p>Package-private so {@link ObjectUtils#copyCurses} can build its merged map with the same
      * ordering.
      *
-     * <p>Field CURSE_ORDER commented in full on 261003.
+     * <p>Field CURSE_ORDER commented in full on 261003, amended on 261007.
      */
     static final Comparator<Curse> CURSE_ORDER = Comparator.comparing(Curse::getIndex)
-            .thenComparing(Curse::getName);
+            .thenComparing(Curse::getName, Comparator.nullsFirst(Comparator.naturalOrder()));
 
     /**
      * The player this object's calculations are asked about - the equipment slots it would be worn

@@ -162,6 +162,11 @@ public class CurseAssembler implements Assembler<CurseParseRecord, List<Curse>> 
         for (CurseParseRecord record : records) {
             int line = record.line();
             String name = record.name();
+            if (name == null || name.isEmpty()) {
+                errors.add("Curse starting at line: " + line + " " +
+                        "has an empty or null name: " + record.name());
+                continue;
+            }
             List<ObjectBase> types = new ArrayList<>();
             boolean badType = false;
             // type: names an object base by its tval (e.g. "cloak", "soft armor"),

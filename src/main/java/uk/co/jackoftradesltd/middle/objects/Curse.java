@@ -177,6 +177,7 @@ public class Curse {
                  Flag<ObjectFlag> conflictFlags,
                  String description,
                  int index) {
+        if (name == null || name.isEmpty()) throw new IllegalArgumentException("name cannot be null or empty");
         this.name = name;
         this.objectBases = objectBases;
         this.conflictNames = conflictNames;

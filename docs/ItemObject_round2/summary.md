@@ -100,6 +100,7 @@ Shape follows `docs/ItemObject_stage1_mismatches.md`. File and line references a
 ### 5. `cursesFactory` comparator with a `null` curse name and a tied index (Part A)
 
 - Throws. Hand-built curses only.
+- **Result:** FIXED.
 
 ### 6. Curse editors with no production caller (Part A)
 

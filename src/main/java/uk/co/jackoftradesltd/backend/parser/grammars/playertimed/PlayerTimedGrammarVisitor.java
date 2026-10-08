@@ -18,13 +18,13 @@
 // Generated from PlayerTimedGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.playertimed;
 
-import uk.co.jackoftradesltd.backend.parser.playertimed.PlayerTimedParseRecord;
-import uk.co.jackoftradesltd.backend.parser.playertimed.PlayerTimedParseRecord.PlayerTimedGradeParseRecord;
-import uk.co.jackoftradesltd.backend.parser.playertimed.PlayerTimedParseRecord.FailureParseRecord;
-import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
+    import uk.co.jackoftradesltd.backend.parser.playertimed.PlayerTimedParseRecord;
+    import uk.co.jackoftradesltd.backend.parser.playertimed.PlayerTimedParseRecord.PlayerTimedGradeParseRecord;
+    import uk.co.jackoftradesltd.backend.parser.playertimed.PlayerTimedParseRecord.FailureParseRecord;
+    import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
 
-import java.util.List;
-import java.util.ArrayList;
+    import java.util.List;
+    import java.util.ArrayList;
 
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
@@ -36,155 +36,118 @@ import org.antlr.v4.runtime.tree.ParseTreeVisitor;
  * operations with no return type.
  */
 public interface PlayerTimedGrammarVisitor<T> extends ParseTreeVisitor<T> {
-    /**
-     * Visit a parse tree produced by {@link PlayerTimedGrammar#recordCount}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitRecordCount(PlayerTimedGrammar.RecordCountContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link PlayerTimedGrammar#name}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitName(PlayerTimedGrammar.NameContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link PlayerTimedGrammar#desc}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitDesc(PlayerTimedGrammar.DescContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link PlayerTimedGrammar#grade}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitGrade(PlayerTimedGrammar.GradeContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link PlayerTimedGrammar#onEnd}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitOnEnd(PlayerTimedGrammar.OnEndContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link PlayerTimedGrammar#onIncrease}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitOnIncrease(PlayerTimedGrammar.OnIncreaseContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link PlayerTimedGrammar#onDecrease}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitOnDecrease(PlayerTimedGrammar.OnDecreaseContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link PlayerTimedGrammar#msgt}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitMsgt(PlayerTimedGrammar.MsgtContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link PlayerTimedGrammar#fail}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitFail(PlayerTimedGrammar.FailContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link PlayerTimedGrammar#onBeginEffect}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitOnBeginEffect(PlayerTimedGrammar.OnBeginEffectContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link PlayerTimedGrammar#onEndEffectBlock}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitOnEndEffectBlock(PlayerTimedGrammar.OnEndEffectBlockContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link PlayerTimedGrammar#resist}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitResist(PlayerTimedGrammar.ResistContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link PlayerTimedGrammar#brand}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitBrand(PlayerTimedGrammar.BrandContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link PlayerTimedGrammar#slay}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitSlay(PlayerTimedGrammar.SlayContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link PlayerTimedGrammar#flagSynonym}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitFlagSynonym(PlayerTimedGrammar.FlagSynonymContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link PlayerTimedGrammar#lowerBound}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitLowerBound(PlayerTimedGrammar.LowerBoundContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link PlayerTimedGrammar#flags}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitFlags(PlayerTimedGrammar.FlagsContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link PlayerTimedGrammar#playerTimed}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitPlayerTimed(PlayerTimedGrammar.PlayerTimedContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link PlayerTimedGrammar#file}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitFile(PlayerTimedGrammar.FileContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PlayerTimedGrammar#recordCount}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitRecordCount(PlayerTimedGrammar.RecordCountContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PlayerTimedGrammar#name}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitName(PlayerTimedGrammar.NameContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PlayerTimedGrammar#desc}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitDesc(PlayerTimedGrammar.DescContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PlayerTimedGrammar#grade}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitGrade(PlayerTimedGrammar.GradeContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PlayerTimedGrammar#onEnd}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitOnEnd(PlayerTimedGrammar.OnEndContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PlayerTimedGrammar#onIncrease}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitOnIncrease(PlayerTimedGrammar.OnIncreaseContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PlayerTimedGrammar#onDecrease}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitOnDecrease(PlayerTimedGrammar.OnDecreaseContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PlayerTimedGrammar#msgt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitMsgt(PlayerTimedGrammar.MsgtContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PlayerTimedGrammar#fail}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFail(PlayerTimedGrammar.FailContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PlayerTimedGrammar#onBeginEffect}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitOnBeginEffect(PlayerTimedGrammar.OnBeginEffectContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PlayerTimedGrammar#onEndEffectBlock}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitOnEndEffectBlock(PlayerTimedGrammar.OnEndEffectBlockContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PlayerTimedGrammar#resist}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitResist(PlayerTimedGrammar.ResistContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PlayerTimedGrammar#brand}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitBrand(PlayerTimedGrammar.BrandContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PlayerTimedGrammar#slay}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitSlay(PlayerTimedGrammar.SlayContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PlayerTimedGrammar#flagSynonym}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFlagSynonym(PlayerTimedGrammar.FlagSynonymContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PlayerTimedGrammar#lowerBound}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitLowerBound(PlayerTimedGrammar.LowerBoundContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PlayerTimedGrammar#flags}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFlags(PlayerTimedGrammar.FlagsContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PlayerTimedGrammar#playerTimed}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPlayerTimed(PlayerTimedGrammar.PlayerTimedContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PlayerTimedGrammar#file}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFile(PlayerTimedGrammar.FileContext ctx);
 }

@@ -24,101 +24,74 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
  * {@link EffectBlock}.
  */
 public interface EffectBlockListener extends ParseTreeListener {
-    /**
-     * Enter a parse tree produced by {@link EffectBlock#effect}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterEffect(EffectBlock.EffectContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link EffectBlock#effect}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitEffect(EffectBlock.EffectContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link EffectBlock#effectYX}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterEffectYX(EffectBlock.EffectYXContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link EffectBlock#effectYX}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitEffectYX(EffectBlock.EffectYXContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link EffectBlock#dice}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterDice(EffectBlock.DiceContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link EffectBlock#dice}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitDice(EffectBlock.DiceContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link EffectBlock#expr}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterExpr(EffectBlock.ExprContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link EffectBlock#expr}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitExpr(EffectBlock.ExprContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link EffectBlock#effectMsg}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterEffectMsg(EffectBlock.EffectMsgContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link EffectBlock#effectMsg}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitEffectMsg(EffectBlock.EffectMsgContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link EffectBlock#time}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterTime(EffectBlock.TimeContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link EffectBlock#time}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitTime(EffectBlock.TimeContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link EffectBlock#effectBlock}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterEffectBlock(EffectBlock.EffectBlockContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link EffectBlock#effectBlock}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitEffectBlock(EffectBlock.EffectBlockContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EffectBlock#effect}.
+	 * @param ctx the parse tree
+	 */
+	void enterEffect(EffectBlock.EffectContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EffectBlock#effect}.
+	 * @param ctx the parse tree
+	 */
+	void exitEffect(EffectBlock.EffectContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EffectBlock#effectYX}.
+	 * @param ctx the parse tree
+	 */
+	void enterEffectYX(EffectBlock.EffectYXContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EffectBlock#effectYX}.
+	 * @param ctx the parse tree
+	 */
+	void exitEffectYX(EffectBlock.EffectYXContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EffectBlock#dice}.
+	 * @param ctx the parse tree
+	 */
+	void enterDice(EffectBlock.DiceContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EffectBlock#dice}.
+	 * @param ctx the parse tree
+	 */
+	void exitDice(EffectBlock.DiceContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EffectBlock#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterExpr(EffectBlock.ExprContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EffectBlock#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitExpr(EffectBlock.ExprContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EffectBlock#effectMsg}.
+	 * @param ctx the parse tree
+	 */
+	void enterEffectMsg(EffectBlock.EffectMsgContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EffectBlock#effectMsg}.
+	 * @param ctx the parse tree
+	 */
+	void exitEffectMsg(EffectBlock.EffectMsgContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EffectBlock#time}.
+	 * @param ctx the parse tree
+	 */
+	void enterTime(EffectBlock.TimeContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EffectBlock#time}.
+	 * @param ctx the parse tree
+	 */
+	void exitTime(EffectBlock.TimeContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EffectBlock#effectBlock}.
+	 * @param ctx the parse tree
+	 */
+	void enterEffectBlock(EffectBlock.EffectBlockContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EffectBlock#effectBlock}.
+	 * @param ctx the parse tree
+	 */
+	void exitEffectBlock(EffectBlock.EffectBlockContext ctx);
 }

@@ -53,10 +53,14 @@ import java.util.*;
  *
  * <p>{@link #index} has no counterpart in {@code struct curse}: C uses the position in
  * {@code curses[]}. The one behaviour on the class is {@link #modifyWeightForCurse(int)}, the
- * port of {@code modify_weight_for_curse()}; the other methods are accessors and
- * {@link #canAfflict(ObjectBase)}.
+ * port of {@code modify_weight_for_curse()}; the other methods are accessors,
+ * {@link #canAfflict(ObjectBase)} and {@link #setIndex(int)}, which {@code CurseAssembler} uses to
+ * renumber the curses once it has put them in C's order.
  *
- * <p>Class Curse coded before 261005, commented in full on 261005.
+ * <p>Unlike {@code struct curse}, the constructor refuses a {@code null} or empty name: C's
+ * {@code parse_curse_name} cannot produce one, so the port makes the impossible case loud.
+ *
+ * <p>Class Curse coded before 261005, commented in full on 261008.
  *
  * @author Rowan Crowther
  */
@@ -82,13 +86,15 @@ public class Curse {
     private final String name;
 
     /**
-     * This curse's index, passed in at construction - the port's counterpart of C's index into
-     * {@code curses[]}. C has no field for it; the position in the array is the index. The numbering
-     * differs: C leaves slot 0 as an unused dummy, so its first real curse is 1, while
-     * {@code CurseAssembler} gives the first curse it builds index 0. Anything that compares an index
-     * against a C-derived value has to allow for that offset.
+     * This curse's index - the port's counterpart of C's index into {@code curses[]}. C has no field
+     * for it; the position in the array is the index. The numbering differs in two ways. C leaves
+     * slot 0 as an unused dummy, so its first real curse is 1, while the port numbers from 0.
+     * And C builds its list by prepending each record as {@code curse.txt} is parsed, so slot 1 holds
+     * the <em>last</em> curse in the file; {@code CurseAssembler} reverses its list to match and then
+     * overwrites the index the constructor was given, through {@link #setIndex(int)}. Anything that
+     * compares an index against a C-derived value has to allow for the offset of one.
      *
-     * <p>Field index coded before 261005, commented in full on 261005.
+     * <p>Field index coded before 261005, commented in full on 261008.
      */
     private int index;
 
@@ -156,11 +162,14 @@ public class Curse {
      * The {@link #conflict} list is left null here and filled by the assembler's second pass from
      * {@code conflictNames}.
      *
-     * <p>No argument is copied or checked: the list, the flag set and the object are stored by
-     * reference, so the caller must not hand in {@code null} for any of them if the curse is later
-     * asked for its weight effect or its bases.
+     * <p>Only the name is checked. The list, the flag set and the object are stored by reference
+     * and never copied, so the caller must not hand in {@code null} for any of them if the curse is
+     * later asked for its weight effect or its bases.
      *
-     * <p>Constructor Curse coded before 261005, commented in full on 261005.
+     * <p>The index is provisional when {@code CurseAssembler} is the caller: it builds the curses in
+     * file order, then reverses them to C's order and renumbers them with {@link #setIndex(int)}.
+     *
+     * <p>Constructor Curse coded before 261005, commented in full on 261008.
      *
      * @param name          curse name
      * @param objectBases   affectable object bases ({@code types:} line)
@@ -169,6 +178,7 @@ public class Curse {
      * @param conflictFlags conflicting object flags
      * @param description   description
      * @param index         the curse's index in the assembled list, 0-based
+     * @throws IllegalArgumentException if {@code name} is {@code null} or empty
      */
     public Curse(String name,
                  List<ObjectBase> objectBases,
@@ -205,9 +215,9 @@ public class Curse {
      * where C's first real curse is 1 (see {@link #index}), so a comparison with a C-derived
      * number has to allow for that offset.
      *
-     * <p>Function getIndex coded before 261003, commented in full on 261005.
+     * <p>Function getIndex coded before 261003, commented in full on 261008.
      *
-     * @return this curse's index, as passed to the constructor
+     * @return this curse's index: the constructor's argument until {@link #setIndex(int)} replaces it
      */
     public int getIndex() {
         return index;
@@ -301,12 +311,31 @@ public class Curse {
     }
 
     /**
+     * Replaces this curse's index. {@code CurseAssembler} calls it once, after reversing its list
+     * into C's order, so that the index each curse ends up with is its position in that list — the
+     * port's counterpart of the slot a C curse occupies in {@code curses[]}, less C's unused slot 0.
+     * Nothing validates the value, and nothing re-sorts anything that already holds this curse as a
+     * key, so it is not safe to call once the curse sits in an {@code ItemObject} curse map ordered
+     * by index.
+     *
+     * <p>Method setIndex coded before 261005, commented in full on 261008.
+     *
+     * @param index the new 0-based index
+     */
+    public void setIndex(int index) {
+        this.index = index;
+    }
+
+    /**
      * Whether this curse may attach to an object of the given base — the port's form of C's
      * {@code curse->poss[obj->tval]} test, made in {@code obj-make.c}, {@code obj-randart.c} and
      * {@code effect-handler-general.c}. The test is by {@link List#contains} on the list built from
-     * the {@code types:} lines, so it depends on {@link ObjectBase} equality.
+     * the {@code types:} lines, so it depends on {@link ObjectBase} equality. {@link ObjectBase} does
+     * not override {@code equals}, so the test is by identity and only the registry's own instances
+     * match; C's {@code poss[tval]} index, by contrast, matches any object of that tval. An empty
+     * list answers {@code false} for every base, as a C curse with no {@code type:} line does.
      *
-     * <p>Function canAfflict coded before 261005, commented in full on 261005.
+     * <p>Function canAfflict coded before 261005, commented in full on 261008.
      *
      * @param objectBase the base to test
      * @return true if this curse may attach to the given object base
@@ -342,7 +371,7 @@ public class Curse {
      * precisely so it can be clamped. The port has no such narrowing, but keeps the ceiling so that
      * a cursed item weighs the same in both.
      *
-     * <p>Function modifyWeightForCurse coded before 260820, commented in full on 261005, C line
+     * <p>Function modifyWeightForCurse coded before 260820, commented in full on 261008, C line
      * number removed on 261005, rewritten for the unflattened curse object on 261005.
      *
      * @param weight the item's weight before this curse is applied, in tenth-pounds
@@ -387,9 +416,5 @@ public class Curse {
         }
 
         return result;
-    }
-
-    public void setIndex(int index) {
-        this.index = index;
     }
 }

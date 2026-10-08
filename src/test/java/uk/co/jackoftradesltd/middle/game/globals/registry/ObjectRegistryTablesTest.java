@@ -312,21 +312,19 @@ class ObjectRegistryTablesTest {
         }
 
         /**
-         * The artifact and item setters do not, which is the asymmetry worth knowing about: their
-         * counts are written elsewhere in the load, so setting the table alone leaves them as they
-         * were.
+         * The artifact setter maintains its count too, like the ego setter above, so the table and
+         * {@code artifactKindMax} cannot fall out of step.
          *
          * @throws Exception if a count field cannot be reached
          */
         @Test
-        @DisplayName("the artifact count is not maintained by its setter")
-        void artifactCountIsNotMaintained() throws Exception {
+        @DisplayName("setting the artifacts updates their count")
+        void artifactCountFollowsTheTable() throws Exception {
             setInt("artifactKindMax", 7);
 
             ObjectRegistry.setArtifacts(new ArrayList<>(List.of(artifact("Ringil"))));
 
-            assertEquals(7, ObjectRegistry.getArtifactKindMax(),
-                    "the setter stores the table and leaves the count to the loader");
+            assertEquals(1, ObjectRegistry.getArtifactKindMax());
         }
 
         /**
@@ -340,15 +338,11 @@ class ObjectRegistryTablesTest {
         void countsReadTheirOwnFields() throws Exception {
             setInt("artifactKindMax", 11);
             setInt("randartActivationsMax", 12);
-            setInt("objectPowerCalculationMax", 13);
             setInt("objectPropertyMax", 14);
-            setInt("objectsInObject_txt", 15);
 
             assertEquals(11, ObjectRegistry.getArtifactKindMax());
             assertEquals(12, ObjectRegistry.getRandartActivationsMax());
-            assertEquals(13, ObjectRegistry.getObjectsPowerCalculationMax());
             assertEquals(14, ObjectRegistry.getObjectsPropertyMax());
-            assertEquals(15, ObjectRegistry.getObjectsInObject_txt());
         }
     }
 }

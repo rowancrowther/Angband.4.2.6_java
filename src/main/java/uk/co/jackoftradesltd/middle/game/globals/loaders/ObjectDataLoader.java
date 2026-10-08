@@ -213,6 +213,7 @@ public class ObjectDataLoader {
             }
 
             ObjectRegistry.updateObjectBaseKindMax();
+            ObjectRegistry.loadUnknownKinds();
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
             throw e;

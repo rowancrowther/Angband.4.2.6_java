@@ -48,60 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/objects/enums/RuneVariety.java`
-
-21 missing, 1 low
-
-- L55: method `group` - LOW
-- L132: method `group` - MISSING
-- L136: method `runeName` - MISSING
-- L141: method `runeDesc` - MISSING
-- L171: method `group` - MISSING
-- L175: method `runeName` - MISSING
-- L180: method `runeDesc` - MISSING
-- L209: method `group` - MISSING
-- L213: method `runeName` - MISSING
-- L218: method `runeDesc` - MISSING
-- L242: method `group` - MISSING
-- L246: method `runeName` - MISSING
-- L251: method `runeDesc` - MISSING
-- L274: method `group` - MISSING
-- L278: method `runeName` - MISSING
-- L283: method `runeDesc` - MISSING
-- L303: method `group` - MISSING
-- L307: method `runeName` - MISSING
-- L312: method `runeDesc` - MISSING
-- L332: method `group` - MISSING
-- L336: method `runeName` - MISSING
-- L341: method `runeDesc` - MISSING
-
-### `middle/game/globals/registry/ObjectRegistry.java`
-
-0 missing, 22 low
-
-- L422: method `getArtifactKindMax` - LOW
-- L431: method `getEgoItemKindMax` - LOW
-- L440: method `getRandartActivationsMax` - LOW
-- L449: method `getCurseMax` - LOW
-- L458: method `getSlayMax` - LOW
-- L467: method `getBrandMax` - LOW
-- L476: method `getObjectsPowerCalculationMax` - LOW
-- L485: method `getObjectsPropertyMax` - LOW
-- L494: method `getObjectsInObject_txt` - LOW
-- L503: method `getObjectKindCount` - LOW
-- L512: method `getObjectKinds` - LOW
-- L522: method `getObjectBaseKindMax` - LOW
-- L531: method `getObjectBases` - LOW
-- L548: method `getSlays` - LOW
-- L566: method `getBrands` - LOW
-- L584: method `getCurses` - LOW
-- L602: method `getItemObjects` - LOW
-- L619: method `getActivations` - LOW
-- L636: method `getEgoItems` - LOW
-- L654: method `getArtifacts` - LOW
-- L671: method `getObjectProperties` - LOW
-- L689: method `getKindsByTvalSval` - LOW
-
 ### `middle/objects/Curse.java`
 
 7 missing, 14 low

@@ -79,7 +79,7 @@ public class KeypadDirectionLoop {
     /**
      * Build the nine direction nodes, link them into the keypad ring in the order of C's
      * {@code ddgrid_ddd[]} (S, N, E, W, SE, SW, NE, NW, centre, back to S) and return the south
-     * node. Called once, to initialise the static ring. Each node takes its offsets from
+     * node. Called once, to initialize the static ring. Each node takes its offsets from
      * {@link DirectionEnum#ddx()} and {@link DirectionEnum#ddy()}; the centre node uses
      * {@link DirectionEnum#DIR_NONE}, whose offsets are (0, 0), matching the last entry
      * {@code {0, 0}} of the C array.

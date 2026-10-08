@@ -288,7 +288,6 @@ class PlayerScalarStateTest {
          *
          * @param name the shape's name
          * @return the shape
-         * @throws Exception if the name field cannot be reached
          */
         private PlayerShape shapeNamed(String name) {
             return new PlayerShape(name, 0, 0, 0, Map.of(),

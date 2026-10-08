@@ -50,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class QuarkTest {
 
     /**
-     * The table under test, freshly initialised before each test.
+     * The table under test, freshly initialized before each test.
      */
     private Quark quark;
 

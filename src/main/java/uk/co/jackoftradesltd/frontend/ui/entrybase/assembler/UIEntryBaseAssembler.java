@@ -162,14 +162,14 @@ public class UIEntryBaseAssembler implements Assembler<UIEntryBaseParseRecord, L
      * entry's own default priority and with {@code priority_set} left {@code false} - matching
      * {@code insert_embryo_category}'s call from {@code parse_entry_category}
      * ({@code [C] ui-entry.c:1447-1561, 2114-2130}). It throws if the incoming entry carries a
-     * non-null parameter, since C's {@code parse_entry_parameter} refuses to parameterise an entry
+     * non-null parameter, since C's {@code parse_entry_parameter} refuses to parameterize an entry
      * that already exists ({@code [C] ui-entry.c:1996-1998}) - a case {@code ui_entry_base.txt} never
      * produces, since no record in it repeats an earlier record's name.
      * <p>
      * The create path builds one {@link EmbryonicCategoryReferencies} per category (mirroring
-     * {@code embryo->categories} before it is parameterised) and then expands the entry once per
+     * {@code embryo->categories} before it is parameterized) and then expands the entry once per
      * element or per stat if the source record's parameter says to, or once outright otherwise -
-     * the same three-way shape as {@code hatch_embryo}'s parameterised-name loop
+     * the same three-way shape as {@code hatch_embryo}'s parameterized-name loop
      * ({@code [C] ui-entry.c:1771-1822}), though {@code ui_entry_base.txt} only ever takes the
      * "otherwise" branch, since none of its records set a {@code parameter:}. It throws if the
      * entry has no combiner, mirroring the required-field check at the top of

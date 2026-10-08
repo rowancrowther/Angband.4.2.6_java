@@ -61,7 +61,7 @@ import java.util.List;
  * resolves to (by {@link ElementEnum#getProjectionEnum()}, since the port has no positional
  * array to index the way C indexes {@code projections[i]}) and builds the display name and
  * description from {@link Projection#getName()} exactly as C builds them from
- * {@code projections[i].name} - capitalising only the string's first character, the way
+ * {@code projections[i].name} - capitalizing only the string's first character, the way
  * {@code my_strcap} ({@code z-util.c:529}) does, not every word. The record's own
  * {@code name:}/{@code desc:} text (e.g. {@code "Resistance"}/{@code "You resist"}) supplies
  * the fixed half of each of the two built strings, so the same template correctly yields
@@ -227,7 +227,7 @@ public class PlayerPropertyAssembler implements Assembler<PlayerPropertyParseRec
      *
      * <p>Builds the finished display name and description the way C does at
      * {@code init.c:1338-1343}: the name is the projection's {@link Projection#getName()} with
-     * only its first character capitalised (C: {@code my_strcap}, {@code z-util.c:529}) followed
+     * only its first character capitalized (C: {@code my_strcap}, {@code z-util.c:529}) followed
      * by {@code pp}'s own name (e.g. {@code "Cold" + " " + "Resistance"}); the description is
      * {@code pp}'s own description followed by the projection name and a trailing period (C:
      * {@code format("%s %s.", ...)}), matching C's asymmetry of putting the period only on the

@@ -77,7 +77,7 @@ public enum ObjPropertyType {
      * exact, mirroring C's {@code streq} dispatch.
      *
      * @param value the token from {@code object_property.txt}
-     * @return the matching category, or {@code null} if the token is unrecognised
+     * @return the matching category, or {@code null} if the token is unrecognized
      * (the caller reports it as a soft error, as C returns
      * {@code PARSE_ERROR_INVALID_PROPERTY})
      */

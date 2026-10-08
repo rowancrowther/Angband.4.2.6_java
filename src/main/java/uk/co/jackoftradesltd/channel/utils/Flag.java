@@ -777,7 +777,7 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
      *
      * <p>Function init(Enum...) coded before 260815, commented in full on 260915.
      *
-     * @param flags The set of flags to initialise the cleared Flag to
+     * @param flags The set of flags to initialize the cleared Flag to
      */
     @SafeVarargs
     @Contract(mutates = "this")
@@ -794,7 +794,7 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
      *
      * <p>Function init(List) coded before 260815, commented in full on 260915.
      *
-     * @param flags The set of flags to initialise the cleared Flag to
+     * @param flags The set of flags to initialize the cleared Flag to
      */
     @Contract(mutates = "this")
     public void init(@NotNull List<E> flags) {

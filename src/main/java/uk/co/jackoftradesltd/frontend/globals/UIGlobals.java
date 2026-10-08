@@ -45,7 +45,7 @@ public class UIGlobals {
      * The current indentation for wrapped text, the Java port of the C original's
      * {@code text_out_indent} ({@code [C] src/z-textblock.c:382}). Read at the start of each
      * output line by whichever hook writes wrapped text to a file, to pad that line's indent; C
-     * default-initialises it to {@code 0}, which this mirrors with an explicit static
+     * default-initializes it to {@code 0}, which this mirrors with an explicit static
      * initializer.
      *
      * <p>Field textOutIndent coded before 260911, commented in full on 260911.

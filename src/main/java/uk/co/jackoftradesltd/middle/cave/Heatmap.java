@@ -43,7 +43,7 @@ public class Heatmap {
     private int height;
 
     /**
-     * Creates a heatmap of the given dimensions, with every grid initialised to {@code 0} (the
+     * Creates a heatmap of the given dimensions, with every grid initialized to {@code 0} (the
      * "no value" / silence baseline). The dimensions are passed in by the owning level, so a
      * heatmap always matches the chunk it belongs to.
      *

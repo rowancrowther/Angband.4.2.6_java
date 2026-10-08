@@ -103,7 +103,7 @@ public class TextOut {
      * {@link #nextSection}: {@code start} is seeded with the freshly formatted {@code buf},
      * each {@link SectionDetails} in turn supplies the colour (via
      * {@link ColourEnum#fromCode(String)}, falling back to {@link ColourEnum#COLOUR_WHITE}
-     * for an empty or unrecognised tag) and text for one {@link #textOutHook} call, and the
+     * for an empty or unrecognized tag) and text for one {@link #textOutHook} call, and the
      * loop re-enters on {@link SectionDetails#next} until {@link SectionDetails#found} is
      * {@code false}.
      *

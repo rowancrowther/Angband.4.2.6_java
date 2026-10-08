@@ -32,7 +32,7 @@ import java.util.*;
 
 /**
  * Runtime holder for the loose "misc" game data that does not belong to any of the larger domain
- * slices — the loading hints, the random name lists, and the object flavours (the randomised
+ * slices — the loading hints, the random name lists, and the object flavours (the randomized
  * appearance descriptions for unidentified potions, rings, and the like).
  *
  * <p>This is the read side of the misc slice: it is populated once at startup by
@@ -43,7 +43,7 @@ import java.util.*;
  * <p>Each getter returns an unmodifiable view of its list and assumes the loader has already run.
  * Because these are whole-list getters rather than searches, a query before load simply throws a
  * {@link NullPointerException} from {@code unmodifiableList} rather than silently masking the
- * missing load — so no explicit "not initialised" guard is carried here (contrast the search-style
+ * missing load — so no explicit "not initialized" guard is carried here (contrast the search-style
  * lookups in the other registries, where an unloaded list would degrade to a false "not found").
  *
  * @author Rowan Crowther
@@ -62,7 +62,7 @@ public class MiscRegistry {
      */
     private static List<Name> names;
     /**
-     * The loaded object flavours (randomised appearances of unidentified items).
+     * The loaded object flavours (randomized appearances of unidentified items).
      */
     private static List<FlavourKind> flavours;
 

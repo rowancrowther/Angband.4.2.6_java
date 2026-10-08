@@ -306,7 +306,7 @@ public class UIEntry {
 
     /**
      * Setter - directly overwrites this entry's numeric display priority. Used both while resolving
-     * a {@code priority:} directive and, for a parameterised entry, while recomputing the priority
+     * a {@code priority:} directive and, for a parameterized entry, while recomputing the priority
      * for each expanded stat/element value, mirroring the assignments to
      * {@code entry->default_priority} throughout {@code hatch_embryo} ({@code [C]
      * ui-entry.c:1762-1869}).
@@ -460,7 +460,7 @@ public class UIEntry {
 
     /**
      * Setter - directly overwrites this entry's internal name. Used when expanding a
-     * parameterised entry, where the per-value name (e.g. {@code name<ACID>}) replaces the
+     * parameterized entry, where the per-value name (e.g. {@code name<ACID>}) replaces the
      * un-suffixed one, mirroring the {@code entry->name} reassignment in {@code hatch_embryo}
      * ({@code [C] ui-entry.c:1838-1842}).
      *

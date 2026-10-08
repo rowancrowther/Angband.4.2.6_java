@@ -90,7 +90,7 @@ public class ClassMagic {
      * counts into {@link #totalSpells}.
      *
      * @param firstSpellLevel level at which casting becomes possible
-     * @param spellWeight     the armour weight allowance before mana is penalised
+     * @param spellWeight     the armour weight allowance before mana is penalized
      * @param numBooks        number of books used
      * @param books           the spellbooks available to the class (defensively copied)
      */

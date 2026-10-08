@@ -23,7 +23,7 @@ import java.util.List;
 
 /**
  * One entry in a class's (or race's) starting-equipment list — a kind of item the
- * character is granted at birth, with a randomised quantity and optional constraints.
+ * character is granted at birth, with a randomized quantity and optional constraints.
  *
  * <p>Ports the C {@code struct start_item} ({@code player.h}), populated from the
  * {@code start-item:} lines in {@code class.txt}. Each entry names an item kind

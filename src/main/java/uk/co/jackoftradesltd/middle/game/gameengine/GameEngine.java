@@ -32,12 +32,12 @@ import uk.co.jackoftradesltd.middle.player.Player;
 /**
  * The top-level game runtime: a singleton that performs middle-end start-up - game
  * state, the event bus and the game constants - roughly the Java counterpart of the C
- * original's initialisation bootstrap, {@code init_angband()} ({@code src/init.c}) as
+ * original's initialization bootstrap, {@code init_angband()} ({@code src/init.c}) as
  * called from {@code main()} ({@code src/main.c}).
  *
  * <p><b>Built once, on the game thread.</b> {@link Core#gameLoop()} reaches
  * {@link #getGame()} as its first act and holds what it gets, so the engine is
- * constructed on {@code angband-core} and everything it initialises is confined to
+ * constructed on {@code angband-core} and everything it initializes is confined to
  * that thread. No other live path builds one, and the front end cannot: it names
  * nothing of the middle end.
  *
@@ -81,31 +81,20 @@ public class GameEngine {
     }
 
     /**
-     * Initialise the middle end far enough that events can be signalled: reset the game state, then
-     * install a fresh event bus. The data load itself is deliberately <em>not</em> here - it waits
-     * in {@link #loadGameConstants(Core)} so the caller gets a window to register handlers first.
+     * Get the game engine singleton, building it - and so running the whole of
+     * {@link #initGame()} - the first time this is called. Later calls just return the
+     * existing instance.
      *
-     * <p><b>Known duplication:</b> {@link GameState#initGameState()} still builds a player, level
-     * and command queue of its own, and this runs before the data load - so every engine creates
-     * that set twice, and the pre-load set is thrown away unread by {@link #loadGameConstants(Core)}.
-     * Only the second set is the port of {@code player_module.init}; the first is left over from
-     * when this was the only place they were made.
+     * <p>Not thread-safe: the check-then-create is unsynchronized, so two threads
+     * calling this at once could each build an engine and load the game data twice.
+     * Safe as long as the call stays confined to the single game thread.
      *
-     * <p>The bus assignment here <em>replaces</em> the one installed at class load, giving each
-     * newly built engine a bus with no handlers left over from before.
-     *
-     * <p>The bus is created <em>before</em> {@link GameConstants#init(Core)} deliberately.
-     * {@code GameConstants.init()} is this port's {@code init_angband()} ({@code [C] src/init.c}),
-     * the step C signals {@code EVENT_ENTER_INIT} from - so any bus created after it would miss
-     * every event raised during loading, exactly as C requires {@code init_display()} to precede
-     * {@code init_angband()} in {@code main()} ({@code [C] src/main.c}).
-     *
-     * <p>The gap C leaves between those two calls for registering handlers now exists here too: it
-     * is the space between an engine being built and {@code loadGameConstants()} being called, and
-     * {@code Core.gameLoop()} is what uses it.
+     * @return the singleton game engine
      */
-    private void initGame() {
-        eventsBusHandler = new EventsBusHandler();
+    @CheckReturnValue
+    public static GameEngine getGame() {
+        if (instance == null) instance = new GameEngine();
+        return instance;
     }
 
     /**
@@ -214,19 +203,30 @@ public class GameEngine {
     }
 
     /**
-     * Get the game engine singleton, building it - and so running the whole of
-     * {@link #initGame()} - the first time this is called. Later calls just return the
-     * existing instance.
+     * initialize the middle end far enough that events can be signalled: reset the game state, then
+     * install a fresh event bus. The data load itself is deliberately <em>not</em> here - it waits
+     * in {@link #loadGameConstants(Core)} so the caller gets a window to register handlers first.
      *
-     * <p>Not thread-safe: the check-then-create is unsynchronised, so two threads
-     * calling this at once could each build an engine and load the game data twice.
-     * Safe as long as the call stays confined to the single game thread.
+     * <p><b>Known duplication:</b> {@link GameState#initGameState()} still builds a player, level
+     * and command queue of its own, and this runs before the data load - so every engine creates
+     * that set twice, and the pre-load set is thrown away unread by {@link #loadGameConstants(Core)}.
+     * Only the second set is the port of {@code player_module.init}; the first is left over from
+     * when this was the only place they were made.
      *
-     * @return the singleton game engine
+     * <p>The bus assignment here <em>replaces</em> the one installed at class load, giving each
+     * newly built engine a bus with no handlers left over from before.
+     *
+     * <p>The bus is created <em>before</em> {@link GameConstants#init(Core)} deliberately.
+     * {@code GameConstants.init()} is this port's {@code init_angband()} ({@code [C] src/init.c}),
+     * the step C signals {@code EVENT_ENTER_INIT} from - so any bus created after it would miss
+     * every event raised during loading, exactly as C requires {@code init_display()} to precede
+     * {@code init_angband()} in {@code main()} ({@code [C] src/main.c}).
+     *
+     * <p>The gap C leaves between those two calls for registering handlers now exists here too: it
+     * is the space between an engine being built and {@code loadGameConstants()} being called, and
+     * {@code Core.gameLoop()} is what uses it.
      */
-    @CheckReturnValue
-    public static GameEngine getGame() {
-        if (instance == null) instance = new GameEngine();
-        return instance;
+    private void initGame() {
+        eventsBusHandler = new EventsBusHandler();
     }
 }

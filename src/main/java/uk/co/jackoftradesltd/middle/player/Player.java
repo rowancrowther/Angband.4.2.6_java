@@ -464,7 +464,7 @@ public class Player {
 
     /**
      * Builds an empty player. The two comments below mark a real division: the first group is what
-     * C's own initialisation does — {@code init_player} ({@code player.c}) allocates the
+     * C's own initialization does — {@code init_player} ({@code player.c}) allocates the
      * upkeep and the timed-effect table and calls {@code options_init_defaults} — while the second
      * group sets fields C leaves to {@code mem_zalloc}. Java has no equivalent blanket zeroing for
      * the reference fields, and writing them out is what makes the starting state readable rather
@@ -482,7 +482,7 @@ public class Player {
      * @throws IllegalStateException if no player race has been loaded
      */
     public Player() {
-        // C initialisation
+        // C initialization
         playerUpkeep = new PlayerUpkeep();
         timed = new HashMap<>();
         for (TimedEffect effect : TimedEffect.values()) {
@@ -492,7 +492,7 @@ public class Player {
         options = new PlayerOptions();
         options.initDefaults();
 
-        // Java initialisation
+        // Java initialization
         body = PlayerRegistry.lookupPlayerBody(0);
         // TO be changed to a chunk on level creation
         cave = null;
@@ -537,8 +537,8 @@ public class Player {
      * overwriting the struct; a Java caller holds a reference that a new object would never reach, so
      * every field is reset on the object it already has.
      *
-     * <p>The body repeats the constructor's initialisation - the C-initialised group, then the
-     * Java-initialised reference fields - and then zeroes every other member: name, history, levels,
+     * <p>The body repeats the constructor's initialization - the C-initialized group, then the
+     * Java-initialized reference fields - and then zeroes every other member: name, history, levels,
      * experience, hit points, spell points, gold, depths and the counters. Fields that have a setter
      * are reset through it, so the UI's status cache in {@link PlayerEventStatusUpdate} is zeroed along
      * with them.
@@ -556,7 +556,7 @@ public class Player {
      * @throws IllegalStateException if no player race has been loaded
      */
     public void wipe() {
-        // C initialisation
+        // C initialization
         playerUpkeep = new PlayerUpkeep();
         timed = new HashMap<>();
         for (TimedEffect effect : TimedEffect.values()) {
@@ -566,7 +566,7 @@ public class Player {
         options = new PlayerOptions();
         options.initDefaults();
 
-        // Java initialisation
+        // Java initialization
         body = PlayerRegistry.lookupPlayerBody(0);
         // TO be changed to a chunk on level creation
         cave = null;
@@ -778,7 +778,7 @@ public class Player {
      * <p><b>Can be {@code null} in the port, where C's cannot.</b> The constructor and {@link #wipe}
      * leave the field null, and the only ported code that assigns one is
      * {@code PlayerBirth.playerInit}, which sets "normal". So a player that has been through birth
-     * initialisation has a shape, and one that has not — a test fixture, or a player just wiped — does
+     * initialization has a shape, and one that has not — a test fixture, or a player just wiped — does
      * not. C only ever sees a null shape while loading a save, and treats that as a corrupt file
      * ({@code load.c}). Callers here have to guard, and the ported readers do — see
      * {@link PlayerCalcs#calcShapechange}, which returns the totals untouched, the shape branches of
@@ -3297,7 +3297,7 @@ public class Player {
      * <p>Function playerKnowsBrand coded before 261003, commented in full on 261003.
      *
      * @param brand the brand to ask about
-     * @return true if the character recognises this brand
+     * @return true if the character recognizes this brand
      */
     public boolean playerKnowsBrand(Brand brand) {
         return getItemKnowledge().brandIsKnown(brand);
@@ -3315,7 +3315,7 @@ public class Player {
      * <p>Function playerKnowsSlay coded before 261003, commented in full on 261003.
      *
      * @param slay the slay to ask about
-     * @return true if the character recognises this slay
+     * @return true if the character recognizes this slay
      */
     public boolean playerKnowsSlay(Slay slay) {
         return getItemKnowledge().slayIsKnown(slay);

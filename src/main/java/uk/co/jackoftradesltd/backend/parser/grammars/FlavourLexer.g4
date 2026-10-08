@@ -15,14 +15,14 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Lexer for lib/gamedata/flavor.txt - the table of randomised "flavours" that
+// Lexer for lib/gamedata/flavor.txt - the table of randomized "flavours" that
 // disguise unidentified objects (a potion's colour, a ring's material, a
 // scroll's nonsense title) until they are identified. Cf. the C directive table
 // in init_parse_flavor() (src/init.c:4242-4249) and struct flavor (src/object.h).
 //
-// The file is organised into blocks: a "kind:" line names an object type and the
+// The file is organized into blocks: a "kind:" line names an object type and the
 // glyph its flavours draw with, and every "flavor:"/"fixed:" line that follows
-// belongs to that block until the next "kind:". This lexer only tokenises; the
+// belongs to that block until the next "kind:". This lexer only tokenizes; the
 // kind/flavour grouping is expressed in FlavourGrammar and the tval/colour/sval
 // interpretation is deferred to the assemblers.
 //
@@ -73,7 +73,7 @@ INTEGER
 
 // Value mode entered after any kind:/fixed:/flavor: keyword. It reads the
 // ':'-separated fields of one line and pops back at end-of-line so the next
-// line's keyword is recognised in the default mode.
+// line's keyword is recognized in the default mode.
 mode DELIM;
 
 // One field's worth of text: everything up to the next ':' or end-of-line.

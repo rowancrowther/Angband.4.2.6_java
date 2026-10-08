@@ -49,7 +49,7 @@ import uk.co.jackoftradesltd.middle.game.event.eventhandlers.RedrawHandlers;
  * entry point, and everything it needs is set up inside it.
  *
  * <p>There is no C counterpart to this class. The C original is single-threaded:
- * {@code main()} ({@code src/main.c}) initialises and then calls
+ * {@code main()} ({@code src/main.c}) initializes and then calls
  * {@code play_game()} ({@code src/ui-game.c}) on that same thread, blocking for
  * input inside the command hook. Splitting the loop onto its own thread is a
  * port-only decision forced by Swing, which reserves the EDT for the UI.
@@ -152,8 +152,8 @@ public class Core {
      * on what the front end sends, until it sends the message that ends the loop.
      *
      * <p>The port of C's {@code play_game()} ({@code src/ui-game.c}), at the stage
-     * where only its skeleton exists. C initialises and then alternates between
-     * fetching a command and running the game world; this initialises and then waits
+     * where only its skeleton exists. C initializes and then alternates between
+     * fetching a command and running the game world; this initializes and then waits
      * for messages, which is the same shape with a queue where C has a blocking call
      * into the display module. The alternation itself is Chapter 5's.
      *

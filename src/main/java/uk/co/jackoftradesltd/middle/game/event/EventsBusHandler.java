@@ -55,7 +55,7 @@ public class EventsBusHandler implements EventsHandler {
      *
      * <p>This is <em>not</em> a thread-safety choice - the game runs single-threaded -
      * but the fit is the same one copy-on-write is built for: an observer registry
-     * whose writes are rare (handlers are registered at initialisation and screen
+     * whose writes are rare (handlers are registered at initialization and screen
      * transitions) but whose reads are frequent and hot ({@code EVENT_MAP} alone
      * fires per changed grid), where copy-on-write reads are lock- and
      * allocation-free. The write cost - copying the backing array on each
@@ -73,7 +73,7 @@ public class EventsBusHandler implements EventsHandler {
      * <p>Calling the overridable {@code init()} from a constructor is safe here because
      * {@link #handlers} is assigned at its declaration, which runs before this body; the
      * class is not designed to be subclassed with an {@code init()} that reads other,
-     * not-yet-initialised fields.
+     * not-yet-initialized fields.
      */
     public EventsBusHandler() {
         init();

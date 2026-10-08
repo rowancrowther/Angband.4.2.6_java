@@ -20,7 +20,7 @@
 // object.txt and player_timed.txt). Cf. the C directive table in
 // init_parse_brand() (src/obj-init.c:959) and struct file_parser brand_parser.
 //
-// A record is a set of "keyword:value" directives. This lexer only tokenises;
+// A record is a set of "keyword:value" directives. This lexer only tokenizes;
 // resolving the resist/vuln race flags and parsing the numeric fields is left to
 // BrandAssembler. Both flag directives share FLAG_MODE, and the free-text values
 // (code, name, verb) each read in FREE_TEXT_MODE; every sub-mode emits a single

@@ -44,7 +44,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * <p><b>Thread-safe on purpose.</b> {@code PhaseEventRoutingTest} drives a real {@code UILoop},
  * so the lines are appended on the loop's thread and read on the test's. The
  * {@link CopyOnWriteArrayList} is what makes that handover safe without the test having to
- * synchronise.
+ * synchronize.
  *
  * @author Rowan Crowther
  */

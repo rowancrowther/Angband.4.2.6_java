@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * A parameterised random value of the classic Angband form
+ * A parameterized random value of the classic Angband form
  * {@code base + dice 'd' sides + m_bonus}, where the {@code m_bonus} term is a ceiling on a bonus
  * that grows with dungeon level. This is the Java port of the {@code random_value} struct from
  * {@code z-rand.h} and of {@code randcalc()}, {@code randcalc_valid()} and {@code randcalc_varies()}
@@ -68,8 +68,8 @@ public class Random {
      *
      * <p>The C original has no counterpart; there is no {@code { 0, 0, 1, 1 }} literal anywhere in
      * {@code src/}. The value is a Java-side convenience, and it follows the {@code NdM} reading of
-     * {@code z-rand.c}, function {@code randcalc()}: the dice contribute {@code 1} when minimised,
-     * maximised or averaged, and {@code damroll(1, 1)} cannot roll anything else. The constructor
+     * {@code z-rand.c}, function {@code randcalc()}: the dice contribute {@code 1} when minimized,
+     * maximized or averaged, and {@code damroll(1, 1)} cannot roll anything else. The constructor
      * takes base, bonus, dice, sides, whereas the C struct orders them base, dice, sides,
      * {@code m_bonus}; the transposition cannot matter here because the two zeroes and the two ones
      * are interchangeable.
@@ -122,7 +122,7 @@ public class Random {
     /**
      * C's {@code m_bonus} field: the ceiling of a bonus that scales with level, not a multiplier.
      * {@link #randCalc(int, DamageAspect)} hands it to {@code m_bonus_calc()} as {@code max}, which
-     * gives the whole of it when maximised, none of it when minimised, and {@code max * level /
+     * gives the whole of it when maximized, none of it when minimized, and {@code max * level /
      * MAX_RAND_DEPTH} when averaged. A value of 0 means no bonus. A few effect handlers in
      * {@code effect-handler-attack.c} borrow the field for a percentage or a count instead.
      *

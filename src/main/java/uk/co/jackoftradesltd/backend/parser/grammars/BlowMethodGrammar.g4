@@ -31,7 +31,7 @@ recordCount
 
 // name: opens a record. The line number is captured here (rather than anywhere else in
 // the block) so that a soft error raised later by the assembler can point at the line
-// the reader would recognise as the start of the offending method.
+// the reader would recognize as the start of the offending method.
 name
         returns[String nameStr, int line]
         :   NAME STRING { $nameStr = $STRING.getText(); $line = $start.getLine(); }

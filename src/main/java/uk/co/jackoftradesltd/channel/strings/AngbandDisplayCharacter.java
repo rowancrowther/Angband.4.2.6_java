@@ -39,7 +39,7 @@ import uk.co.jackoftradesltd.channel.colour.ColourEnum;
  * way {@code [C] src/ui-prefs.c}'s {@code parse_prefs_message()} chooses between
  * {@code color_char_to_attr()} and {@code color_text_to_attr()} based on the length of the
  * string. See {@link ColourEnum#fromCode(String)} for that branch, and for the documented
- * departure from C on an unrecognised colour: C substitutes white, this class lets the
+ * departure from C on an unrecognized colour: C substitutes white, this class lets the
  * caller see {@code null} instead.
  *
  * @author Rowan Crowther
@@ -85,7 +85,7 @@ public final class AngbandDisplayCharacter {
     /**
      * Builds a display cell from a data-file colour code, resolving it the way
      * {@code [C] src/ui-prefs.c}'s {@code parse_prefs_message()} calls
-     * {@code color_char_to_attr()} for a single-character colour spec. An unrecognised code
+     * {@code color_char_to_attr()} for a single-character colour spec. An unrecognized code
      * leaves {@link #attributeColour} {@code null} rather than substituting a default colour -
      * see {@link ColourEnum#fromCode(char)} for why that is a deliberate departure from the C
      * original, which defaults to white.
@@ -174,7 +174,7 @@ public final class AngbandDisplayCharacter {
     /**
      * Hash consistent with {@link #equals(Object)}: both the glyph and the colour
      * contribute when the colour is present, so equal cells always hash alike and can be used
-     * safely as set/map keys - including a cell built from an unrecognised colour code, where
+     * safely as set/map keys - including a cell built from an unrecognized colour code, where
      * {@link #attributeColour} is {@code null} and only the glyph contributes, the same
      * {@code null}-as-ordinary-value treatment {@link #equals(Object)} gives it via {@code ==}.
      *
@@ -182,7 +182,7 @@ public final class AngbandDisplayCharacter {
      *
      * <p>Function hashCode coded before 2026-09-15, commented in full on 2026-09-15, updated
      * on 2026-09-15 to null-check {@link #attributeColour} rather than throwing
-     * {@link NullPointerException} for an unrecognised colour.
+     * {@link NullPointerException} for an unrecognized colour.
      */
     @CheckReturnValue
     @Contract(pure = true)

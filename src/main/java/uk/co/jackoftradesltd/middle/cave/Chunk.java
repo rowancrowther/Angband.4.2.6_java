@@ -94,7 +94,7 @@ public class Chunk {
 
     /**
      * The chunk's name, C's {@code c->name}: the level or vault this chunk represents, or
-     * {@code null} if unnamed. Read through {@link #getName()}, for example to recognise the arena.
+     * {@code null} if unnamed. Read through {@link #getName()}, for example to recognize the arena.
      */
     private String name;
     /**
@@ -1971,7 +1971,7 @@ public class Chunk {
 
     /**
      * Returns this level's name, the port of reading C's {@code c->name}. It is used, for example,
-     * to recognise the arena level.
+     * to recognize the arena level.
      *
      * <p>Function getName coded before 260930, commented in full on 260930.
      *
@@ -2283,10 +2283,10 @@ public class Chunk {
      * ({@code cave-map.c}), whose own comment is "Light or Darken the town".
      *
      * <p>C makes two sweeps. The first visits every grid: a grid with no floor or stairs in its 3x3
-     * neighbourhood is skipped for memorising; by day, or for any grid that is not floor, it sets
-     * {@code SQUARE_GLOW} and memorises the grid if it has floor or stairs near it; at night a floor
+     * neighbourhood is skipped for memorizing; by day, or for any grid that is not floor, it sets
+     * {@code SQUARE_GLOW} and memorizes the grid if it has floor or stairs near it; at night a floor
      * grid that is not bright terrain loses {@code SQUARE_GLOW} and is forgotten. The second sweep
-     * lights and memorises the eight grids around every shop entrance. Both end by asking for a
+     * lights and memorizes the eight grids around every shop entrance. Both end by asking for a
      * full view update and redrawing the map, monster list and item list.
      *
      * <p><b>Stub:</b> not yet implemented; the level is left as it is.
@@ -2345,20 +2345,20 @@ public class Chunk {
     }
 
     /**
-     * Ticks every trap on the level down by one turn, re-memorising and re-lighting any square whose
+     * Ticks every trap on the level down by one turn, re-memorizing and re-lighting any square whose
      * trap just became active again (timeout reaching zero) while it is in view. This is the
      * "Decrease trap timeouts" loop inside C's {@code process_world()} ({@code game-world.c}),
      * lifted out as its own method.
      *
      * <p>Every grid is visited and every trap on it is examined. A trap with a running timeout loses
      * one; a trap whose timeout has just reached zero marks its grid as changed, and a trap that
-     * was already at zero is untouched. A changed grid is only memorised and redrawn if the player
+     * was already at zero is untouched. A changed grid is only memorized and redrawn if the player
      * can currently see it, so a trap re-arming out of sight waits until the player next sees it.
      *
      * <p>The local {@code width} and {@code height} shadow the fields of the same names; they come
      * from the array and equal the fields.
      *
-     * <p><b>Outstanding:</b> {@link #squareMemorizeTraps(Loc)} is a stub, so the memorising step of
+     * <p><b>Outstanding:</b> {@link #squareMemorizeTraps(Loc)} is a stub, so the memorizing step of
      * a change does nothing yet. The countdown and the redraw are complete.
      *
      * <p>Function decreaseTrapTimeout coded before 260930, commented in full on 260930.
@@ -2656,22 +2656,22 @@ public class Chunk {
     }
 
     /**
-     * Memorises whatever is interesting in a grid the player can now see, the port of C's
+     * Memorizes whatever is interesting in a grid the player can now see, the port of C's
      * {@code square_note_spot} ({@code cave-map.c}). Seeing a grid and remembering it are two
      * different things: the view calculation decides what is currently visible, and this is the
      * method that writes what was visible into the player's own memory of the level, so that the
      * map still shows the staircase or the pile of loot after the player has walked away.
      *
      * <p>C guards on two conditions before doing anything. The chunk must be the level the player
-     * is actually on, since memorising into the player's map from a chunk they are not standing in
+     * is actually on, since memorizing into the player's map from a chunk they are not standing in
      * would record a level they have never visited; and the grid must be seen, or else be the
      * player's own grid, which is what lets a blind player still know the square under their feet.
      * What follows is three separate acts of memory: the pile of objects is learned exactly, a
-     * secret trap on the grid is revealed and then the traps are memorised, and finally the terrain
-     * itself is memorised — but only if what is currently remembered about it is wrong, which is
+     * secret trap on the grid is revealed and then the traps are memorized, and finally the terrain
+     * itself is memorized — but only if what is currently remembered about it is wrong, which is
      * the {@code square_ismemorybad} test. The object memory and the terrain memory are kept
-     * deliberately apart so that picking a detected object off a dark floor does not memorise the
-     * floor, and dropping an object into a remembered but unseen grid does not memorise the object.
+     * deliberately apart so that picking a detected object off a dark floor does not memorize the
+     * floor, and dropping an object into a remembered but unseen grid does not memorize the object.
      *
      * <p>The one caller here is {@link #updateOne(Loc, Player)}, on the pass where a grid crosses
      * from unseen to seen, which is C's primary call site too. C calls it from several others —
@@ -2686,7 +2686,7 @@ public class Chunk {
      *
      * <p>Function squareNoteSpot stubbed on 260828, commented in full on 260828.
      *
-     * @param grid the grid whose contents are to be memorised
+     * @param grid the grid whose contents are to be memorized
      */
     private void squareNoteSpot(Loc grid) {
         // STUB function to be implemented in chapter 4 
@@ -2733,8 +2733,8 @@ public class Chunk {
      * <p>C walks the grid's whole trap list rather than stopping at the first hit, skipping the
      * entries that are not player traps and, unless {@code always} is set, the ones whose power
      * outruns the player's searching skill. Each surviving invisible trap is turned visible, and
-     * the grid's traps are then memorised into the player's own map. The count of newly revealed
-     * traps is what drives the tail: if it is non-zero the grid is memorised and redrawn, and if
+     * the grid's traps are then memorized into the player's own map. The count of newly revealed
+     * traps is what drives the tail: if it is non-zero the grid is memorized and redrawn, and if
      * {@code domsg} is set the player is told, with the message choosing singular or plural on that
      * same count. C returns whether anything was found, which lets a caller such as the magic
      * mapping effect report that its detection actually turned something up.

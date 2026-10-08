@@ -78,7 +78,7 @@ public class CharSheetConfig {
      * {@code configure_char_sheet}). A {@link Map} per region stands in for that
      * dynamically-sized C array, since the entry count differs per region and is only known once
      * the matching {@link UIEntry}s have been counted. A position that has not been stored reads
-     * back as {@code null}, where C would hand back uninitialised memory.
+     * back as {@code null}, where C would hand back uninitialized memory.
      *
      * <p>Field resistsByRegion coded on 260925, commented in full on 260929.
      */
@@ -140,7 +140,7 @@ public class CharSheetConfig {
      * be populated. C needs no equivalent step, since its {@code res_regions} array is embedded
      * by value and its {@code resists_by_region} pointers are left null until each region's own
      * {@code mem_alloc} call. The scalar fields start at zero; C's {@code mem_alloc} leaves them
-     * uninitialised, but {@code configure_char_sheet} assigns every one before use, so the
+     * uninitialized, but {@code configure_char_sheet} assigns every one before use, so the
      * difference is invisible.
      *
      * <p>Constructor CharSheetConfig coded on 260925, commented in full on 260929.

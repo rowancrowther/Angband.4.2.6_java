@@ -50,7 +50,7 @@ public class VisualsFlickerAssembler implements Assembler<VisualsFlickerParseRec
      * Build the flicker table from every parsed block.
      * <p>
      * Each step colour and the base-attribute key are resolved through
-     * {@link ColourEnum#fromCode}, which returns {@code null} on an unrecognised code; such a
+     * {@link ColourEnum#fromCode}, which returns {@code null} on an unrecognized code; such a
      * record is flagged into {@code errors} and skipped. In practice the grammar only lexes valid
      * {@code COLOUR_CODE} characters, so this soft-error path is defensive - unreachable from a real,
      * grammar-checked file - but it keeps the assembler safe against a hand-built record.
@@ -58,7 +58,7 @@ public class VisualsFlickerAssembler implements Assembler<VisualsFlickerParseRec
      * <p>Function assemble coded before 260915, commented in full on 260915.
      *
      * @param records the parsed {@code flicker:} blocks
-     * @param errors  the soft-error sink; an unrecognised colour appends here and drops its record
+     * @param errors  the soft-error sink; an unrecognized colour appends here and drops its record
      * @return a one-element list holding the assembled {@link FlickerTable}
      */
     @Override

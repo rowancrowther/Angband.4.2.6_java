@@ -24,7 +24,7 @@ import uk.co.jackoftradesltd.middle.cave.Loc;
  * Builds a moria room — the port of C's {@code build_moria}, taken from Oangband.
  *
  * <p>Uses the starburst room code, giving the large, ragged-edged, roughly oval shape that
- * characterises a {@link uk.co.jackoftradesltd.middle.cave.chunkbuilders.MoriaBuilder} level. Ignores
+ * characterizes a {@link uk.co.jackoftradesltd.middle.cave.chunkbuilders.MoriaBuilder} level. Ignores
  * the rating.
  *
  * <p><b>Stub:</b> not yet implemented; returns {@code false}.

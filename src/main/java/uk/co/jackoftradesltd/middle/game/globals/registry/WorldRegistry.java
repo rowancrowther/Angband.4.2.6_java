@@ -44,7 +44,7 @@ import java.util.Optional;
  *
  * <p>The {@code get*Max}/{@code getMaxRandDepth} accessors report list sizes rather than separate
  * counters — the C {@code z_info} bounds they replace — so they stay in step with the loaded data by
- * construction. The projection lookups are search-style and carry the "not initialised" guard for
+ * construction. The projection lookups are search-style and carry the "not initialized" guard for
  * the reason the object-kind lookups do: an unloaded list would otherwise degrade to a false "not
  * found" rather than a loud failure.
  *
@@ -238,7 +238,7 @@ public class WorldRegistry {
      *
      * @param name the level name to search for
      * @return the matching {@link World}, or {@link Optional#empty()} if no level has that name
-     * @throws IllegalStateException if the world list has not been initialised
+     * @throws IllegalStateException if the world list has not been initialized
      */
     @CheckReturnValue
     public static Optional<World> getLevelByName(String name) {
@@ -259,7 +259,7 @@ public class WorldRegistry {
      *
      * @param depth the dungeon depth to search for
      * @return the matching {@link World}, or {@link Optional#empty()} if no level is at that depth
-     * @throws IllegalStateException if the world list has not been initialised
+     * @throws IllegalStateException if the world list has not been initialized
      */
     @CheckReturnValue
     public static Optional<World> getLevelByDepth(int depth) {

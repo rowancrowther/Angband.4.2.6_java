@@ -21,7 +21,7 @@
 // directive table in init_parse_slay() (src/obj-init.c:786-798) and
 // struct file_parser slay_parser (src/obj-init.c:851).
 //
-// A record is a set of "keyword:value" directives. This lexer only tokenises;
+// A record is a set of "keyword:value" directives. This lexer only tokenizes;
 // all interpretation - resolving the race flag / monster base, and enforcing
 // that a slay names exactly one of race-flag: or base: - is deferred to
 // SlayAssembler, keeping the grammar decoupled from the domain API.
@@ -101,7 +101,7 @@ INTEGER
         ;
 
 // Value mode for race-flag: a single upper-case flag, then pop back so the
-// following directive keyword is recognised in the default mode.
+// following directive keyword is recognized in the default mode.
 mode FLAG_MODE;
 
 FLAG

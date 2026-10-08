@@ -83,7 +83,7 @@ class UIEntryCodeTest {
             UIEntry template = entry("template", templateOnlyFlag());
             UIRegistry.setUIEntries(List.of(real, template));
 
-            UIEntryIterator it = UIEntryCode.initialiseUIEntryIterator((closure, e) -> true, new String[0], "");
+            UIEntryIterator it = UIEntryCode.initializeUIEntryIterator((closure, e) -> true, new String[0], "");
 
             assertEquals(1, it.getEntries().size());
             assertEquals("real", it.getEntries().getFirst().getName());
@@ -96,7 +96,7 @@ class UIEntryCodeTest {
             UIEntry rejected = entry("rejected", noFlags());
             UIRegistry.setUIEntries(List.of(accepted, rejected));
 
-            UIEntryIterator it = UIEntryCode.initialiseUIEntryIterator(
+            UIEntryIterator it = UIEntryCode.initializeUIEntryIterator(
                     (closure, e) -> e.getName().equals("accepted"), new String[0], "");
 
             assertEquals(1, it.getEntries().size());
@@ -110,7 +110,7 @@ class UIEntryCodeTest {
             UIEntry a = entry("a", noFlags());
             UIRegistry.setUIEntries(List.of(b, a));
 
-            UIEntryIterator it = UIEntryCode.initialiseUIEntryIterator((closure, e) -> true, new String[0], "");
+            UIEntryIterator it = UIEntryCode.initializeUIEntryIterator((closure, e) -> true, new String[0], "");
 
             assertEquals(List.of("a", "b"), it.getEntries().stream().map(UIEntry::getName).toList());
         }
@@ -122,7 +122,7 @@ class UIEntryCodeTest {
             UIEntry high = entry("high", noFlags(), new UIEntryCategory("cat", 5, true));
             UIRegistry.setUIEntries(List.of(low, high));
 
-            UIEntryIterator it = UIEntryCode.initialiseUIEntryIterator((closure, e) -> true, new String[0], "cat");
+            UIEntryIterator it = UIEntryCode.initializeUIEntryIterator((closure, e) -> true, new String[0], "cat");
 
             assertEquals(List.of("high", "low"), it.getEntries().stream().map(UIEntry::getName).toList());
         }
@@ -134,7 +134,7 @@ class UIEntryCodeTest {
             UIEntry nonMember = entry("a", noFlags());
             UIRegistry.setUIEntries(List.of(nonMember, member));
 
-            UIEntryIterator it = UIEntryCode.initialiseUIEntryIterator((closure, e) -> true, new String[0], "cat");
+            UIEntryIterator it = UIEntryCode.initializeUIEntryIterator((closure, e) -> true, new String[0], "cat");
 
             assertEquals(List.of("z", "a"), it.getEntries().stream().map(UIEntry::getName).toList());
         }
@@ -146,7 +146,7 @@ class UIEntryCodeTest {
             UIEntry a = entry("a", noFlags(), new UIEntryCategory("cat", 3, true));
             UIRegistry.setUIEntries(List.of(b, a));
 
-            UIEntryIterator it = UIEntryCode.initialiseUIEntryIterator((closure, e) -> true, new String[0], "cat");
+            UIEntryIterator it = UIEntryCode.initializeUIEntryIterator((closure, e) -> true, new String[0], "cat");
 
             assertEquals(List.of("a", "b"), it.getEntries().stream().map(UIEntry::getName).toList());
         }
@@ -158,7 +158,7 @@ class UIEntryCodeTest {
             UIEntry a = entry("a", noFlags());
             UIRegistry.setUIEntries(List.of(b, a));
 
-            UIEntryIterator it = UIEntryCode.initialiseUIEntryIterator((closure, e) -> true, new String[0], "cat");
+            UIEntryIterator it = UIEntryCode.initializeUIEntryIterator((closure, e) -> true, new String[0], "cat");
 
             assertEquals(List.of("a", "b"), it.getEntries().stream().map(UIEntry::getName).toList());
         }
@@ -170,7 +170,7 @@ class UIEntryCodeTest {
             UIRegistry.setUIEntries(List.of(only));
             String[] closure = {"needle"};
 
-            UIEntryIterator it = UIEntryCode.initialiseUIEntryIterator(
+            UIEntryIterator it = UIEntryCode.initializeUIEntryIterator(
                     (c, e) -> c.length == 1 && c[0].equals("needle"), closure, "");
 
             assertTrue(it.getEntries().contains(only));
@@ -181,7 +181,7 @@ class UIEntryCodeTest {
         void emptyRegistryProducesEmptyIterator() {
             UIRegistry.setUIEntries(List.of());
 
-            UIEntryIterator it = UIEntryCode.initialiseUIEntryIterator((closure, e) -> true, new String[0], "");
+            UIEntryIterator it = UIEntryCode.initializeUIEntryIterator((closure, e) -> true, new String[0], "");
 
             assertFalse(it.getEntries().iterator().hasNext());
         }

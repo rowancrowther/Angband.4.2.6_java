@@ -24,7 +24,7 @@ import java.util.List;
  * its optional {@code book-graphics:}/{@code book-properties:} lines and the {@code spell:} blocks
  * that belong to it. {@link ClassSpellBookAssembler} turns this into a
  * {@link uk.co.jackoftradesltd.middle.magic.MagicBook} and, mirroring C's {@code write_book_kind},
- * synthesises the backing {@link uk.co.jackoftradesltd.middle.objects.ObjectKind}.
+ * synthesizes the backing {@link uk.co.jackoftradesltd.middle.objects.ObjectKind}.
  *
  * <p><b>Empty strings, never null:</b> the {@code book-graphics:} and {@code book-properties:} lines
  * are optional (a book re-referenced by a later class omits them), so the grammar seeds

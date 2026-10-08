@@ -133,7 +133,7 @@ desc
  * "msg:<String>" the message shown to the player when the
  * activation is triggered, such as "Your {kind} radiate{s}
  * deep purple...". This message can include {} tags to allow
- * the message to be customised to the item which is being
+ * the message to be customized to the item which is being
  * activated.
  *
  * cf ActivationsLexer.g4 MSG & DESC_STRING tokens

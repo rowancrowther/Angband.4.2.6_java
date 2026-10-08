@@ -216,10 +216,10 @@ public class PlayerProperty {
         /**
          * An object-modifier property; the {@link #getomCode()} carrier is live. C's
          * {@code type} string has no member that maps here — this is what the assembler falls back to
-         * for a {@code type:} value it does not otherwise recognise ({@code player}/{@code object}/
+         * for a {@code type:} value it does not otherwise recognize ({@code player}/{@code object}/
          * {@code element}), which today's {@code player_property.txt} never contains. Wherever this
          * type does occur, {@code UIEntryValueRegistry} does not dispatch on it and so contributes
-         * nothing for it, mirroring C's switch having no default case for an unrecognised
+         * nothing for it, mirroring C's switch having no default case for an unrecognized
          * {@code player_ability.type}.
          */
         PROP_TYPE_OBJECT_MODIFIER

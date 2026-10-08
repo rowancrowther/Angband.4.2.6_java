@@ -199,7 +199,7 @@ public class AngDir {
      * <p>
      * Once the underlying stream is exhausted this closes it itself
      * (see {@link #close()}) before returning {@code ""}, so a caller looping
-     * on {@link #read()} until it sees an empty string needs no explicit
+     * on this until it sees an empty string needs no explicit
      * clean-up call, unlike a C caller of {@code my_dread()}/{@code my_dclose()}.
      *
      * @return the next entry's bare file name, or {@code ""} when the

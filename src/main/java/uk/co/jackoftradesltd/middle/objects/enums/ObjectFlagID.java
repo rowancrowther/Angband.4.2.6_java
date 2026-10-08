@@ -75,7 +75,7 @@ public enum ObjectFlagID {
      * exact, mirroring C's {@code streq} dispatch.
      *
      * @param idMethod the token from {@code object_property.txt}
-     * @return the matching category, or {@code null} if the token is unrecognised
+     * @return the matching category, or {@code null} if the token is unrecognized
      * (C returns {@code PARSE_ERROR_INVALID_ID_TYPE})
      */
     public static ObjectFlagID getFlagID(String idMethod) {

@@ -36,7 +36,7 @@ import uk.co.jackoftradesltd.middle.player.Player;
  *
  * <p>Two details of the C are worth recording:
  * <ul>
- *   <li>C leaves {@code which} entirely uninitialised for {@code SRC_NONE} and {@code SRC_PLAYER}
+ *   <li>C leaves {@code which} entirely uninitialized for {@code SRC_NONE} and {@code SRC_PLAYER}
  *       — those two sources carry a member of the union that is never read. Java has no way to
  *       express "absent" in a sealed reference, so {@code null} stands for it. Nothing consults
  *       {@code which} for either discriminant, so the substitution is not observable.</li>

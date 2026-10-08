@@ -21,7 +21,7 @@ import java.util.Arrays;
 
 /**
  * The grouping of object flags by purpose — sustains, protections, light, melee,
- * "bad" (negative) flags, digging, throwing, curse-only, etc. Used to organise
+ * "bad" (negative) flags, digging, throwing, curse-only, etc. Used to organize
  * flags in displays. Mirrors the C original's {@code OFT_*} flag types
  * ({@code enum object_flag_type} in {@code src/obj-properties.h}). {@code OFT_MAX}
  * is the count sentinel and {@code OFT_NONE} the zero placeholder.
@@ -36,7 +36,7 @@ import java.util.Arrays;
  *
  * <p>{@code subtype:} is only ever set on {@code type:flag} properties; the empty
  * string maps to {@link #OFT_NONE}, which is what a property with no {@code subtype:}
- * line receives (matching C's zero-initialised default).
+ * line receives (matching C's zero-initialized default).
  *
  * @author Rowan Crowther
  */
@@ -85,7 +85,7 @@ public enum ObjectFlagType {
      *
      * @param subtype the token from {@code object_property.txt} (or {@code ""} when
      *                the record has no {@code subtype:} line)
-     * @return the matching grouping, or {@code null} if the token is unrecognised
+     * @return the matching grouping, or {@code null} if the token is unrecognized
      * (C returns {@code PARSE_ERROR_INVALID_SUBTYPE})
      */
     public static ObjectFlagType getFlagTypeFromSubtype(String subtype) {

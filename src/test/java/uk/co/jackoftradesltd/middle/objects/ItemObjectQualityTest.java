@@ -108,7 +108,6 @@ class ItemObjectQualityTest {
      *
      * @param tValue the object type
      * @return the item
-     * @throws Exception if a field cannot be reached
      */
     private static ItemObject knownItem(TValue tValue) {
         return ItemFixture.item(tValue).kind(ItemFixture.kindWithDice(tValue)).fullyKnown().build();
@@ -120,7 +119,6 @@ class ItemObjectQualityTest {
      *
      * @param tValue the object type
      * @return the item
-     * @throws Exception if a field cannot be reached
      */
     private static ItemObject partlyKnown(TValue tValue) {
         ItemObject item = knownItem(tValue);

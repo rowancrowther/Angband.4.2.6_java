@@ -369,7 +369,7 @@ public class ObjectIgnore {
      * a note that already contains the rune's text is left untouched, the same test as C's
      * {@code strstr(quark_str(obj->note), quark_str(rune_note(i)))}; otherwise the rune's note is
      * appended to whatever note the object already carries, with an absent note treated as the
-     * empty string, matching C's zero-initialised {@code current_note} buffer.
+     * empty string, matching C's zero-initialized {@code current_note} buffer.
      *
      * <p>C accumulates the combined note in a fixed 80-byte stack buffer, and
      * {@code my_strcpy}/{@code my_strcat} silently truncate at that limit; this builds an

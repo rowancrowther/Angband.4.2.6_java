@@ -26,7 +26,7 @@ import uk.co.jackoftradesltd.middle.game.enums.CommandCode;
  *
  * <p>{@code CommandProcessor} holds a table of these keyed by {@link #command()}. When a command
  * is executed the engine finds its row, applies the repeat/energy rules, then invokes
- * {@link #function()}. A {@code null} {@link #function()} means the code is recognised but not
+ * {@link #function()}. A {@code null} {@link #function()} means the code is recognized but not
  * dispatched here (handled upstream instead), mirroring the {@code NULL} handlers in C's
  * {@code game_cmds[]}.
  *

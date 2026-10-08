@@ -67,7 +67,7 @@ import java.util.function.Supplier;
  */
 public class UIPlayer {
     /**
-     * One-shot latch guarding {@link #spc}'s initialisation inside {@link #getUIEntryLabel}, mirroring
+     * One-shot latch guarding {@link #spc}'s initialization inside {@link #getUIEntryLabel}, mirroring
      * C's function-static {@code first_call} inside {@code get_ui_entry_label}
      * ({@code [C] ui-entry.c:342,347-352}). Set once and never reset, so {@link #spc} is only ever
      * populated on the first call across the life of the JVM.
@@ -114,7 +114,7 @@ public class UIPlayer {
      * ({@code [C] ui-player.c:142}).
      *
      * <p>{@code null} until the first {@link #configureCharSheet()} call, mirroring C's
-     * {@code static struct char_sheet_config *cached_config = NULL;} initialisation. Once built,
+     * {@code static struct char_sheet_config *cached_config = NULL;} initialization. Once built,
      * it is reused across draws for as long as {@link #haveValidCharSheetConfig()} reports the
      * layout still matches the player's current body shape; when it does not, a fresh
      * {@link CharSheetConfig} replaces this field outright rather than being mutated in place.
@@ -142,7 +142,7 @@ public class UIPlayer {
      * (name/class/title/HP/SP), misc (age/height/weight/etc.), mid-left, combat, and skills.
      * Each {@link PanelRegions} pairs a {@link Region} (position and size) and a
      * flush-left/flush-right alignment flag with a method reference standing in for C's
-     * {@code get_panel_*} function pointer, both read straight off C's brace-initialised rows.
+     * {@code get_panel_*} function pointer, both read straight off C's brace-initialized rows.
      * Stores the five in {@link #panels}, the Java form of the same file-scope array.
      *
      * <p>Constructor UIPlayer coded on 260925, commented in full on 260925.
@@ -268,7 +268,7 @@ public class UIPlayer {
      * {@code mem_zalloc}s a {@code struct panel} and then sets {@code len} to zero, {@code max} to
      * its {@code n} argument, and {@code lines} to a freshly {@code mem_zalloc}'d, {@code max}-element
      * array. This port sets {@link Panel#len} and {@link Panel#max} the same way, field for field,
-     * but initialises {@link Panel#lines} to an empty, growable {@link ArrayList} rather than a
+     * but initializes {@link Panel#lines} to an empty, growable {@link ArrayList} rather than a
      * pre-sized, zero-filled C array. The difference is handled by the row fillers:
      * {@link Panel#panelLine(ColourEnum, String, String, Object...)} appends to that list, and
      * {@link Panel#space()} appends an explicit blank row where C's {@code panel_space} merely walks
@@ -321,7 +321,7 @@ public class UIPlayer {
      * {@code EVENT_PLAYERTITLE} message, so this panel shows the title exactly as it arrived.
      *
      * <p>The {@code topLeft.initLines()} call partway down this method re-runs the same
-     * initialisation {@link #panelAllocate(int)} already performed just above; it replaces one
+     * initialization {@link #panelAllocate(int)} already performed just above; it replaces one
      * empty {@link Panel#lines} list with another, so it has no effect on the panel this method
      * returns.
      *
@@ -336,7 +336,7 @@ public class UIPlayer {
      * @return a freshly built, fully populated six-row {@link Panel} for the top-left name/
      * race/class/title/HP/SP block
      */
-    private Panel getPanelTopLeft() {
+    public Panel getPanelTopLeft() {
         Panel topLeft = panelAllocate(6);
         ColourEnum attr = ColourEnum.COLOUR_LIGHT_BLUE;
 
@@ -1090,7 +1090,7 @@ public class UIPlayer {
      * closing loop.
      *
      * <p>C's {@code initialize_ui_entry_iterator}/{@code release_ui_entry_iterator} pairing has no
-     * explicit release here: {@link UIEntryCode#initialiseUIEntryIterator} returns an ordinary
+     * explicit release here: {@link UIEntryCode#initializeUIEntryIterator} returns an ordinary
      * object that is simply dropped once the pass is done. {@code resNlabel} is fixed at 6 and
      * {@code resCols} is derived from it plus one and the body part count from
      * {@link PlayerEventStatusUpdate#getPlayerCharSheetView()}, which is exactly the sum
@@ -1106,7 +1106,7 @@ public class UIPlayer {
         cachedConfig = new CharSheetConfig();
 
         String[] testCategories = {"CHAR_SCREEN1", "stat_modifiers"};
-        UIEntryIterator uiIter = UIEntryCode.initialiseUIEntryIterator(UIPlayer::checkForTwoCategories, testCategories,
+        UIEntryIterator uiIter = UIEntryCode.initializeUIEntryIterator(UIPlayer::checkForTwoCategories, testCategories,
                 testCategories[1]);
         int num = Math.min(uiIter.getNum(), ChannelRegistry.STAT_MAX);
 
@@ -1128,7 +1128,7 @@ public class UIPlayer {
             cachedConfig.getResRegion(index).setWidth(cachedConfig.getResCols());
 
             testCategories[1] = regionCategories[index];
-            uiIter = UIEntryCode.initialiseUIEntryIterator(UIPlayer::checkForTwoCategories, testCategories,
+            uiIter = UIEntryCode.initializeUIEntryIterator(UIPlayer::checkForTwoCategories, testCategories,
                     regionCategories[index]);
             num = uiIter.getNum();
             // Fit in a 23 row display; leave at least one row blank before prompt on last row.
@@ -1180,7 +1180,7 @@ public class UIPlayer {
      * truncated cases both end up with the same content width.
      *
      * <p>{@link #firstCallOfGetEntryLabel} and {@link #spc} mirror C's function-static one-shot
-     * space initialisation but are not themselves read by this method — the padding here is
+     * space initialization but are not themselves read by this method — the padding here is
      * built with a literal {@code " "} instead.
      *
      * <p>Called from {@link #configureCharSheet()} while laying out the resistance panel.
@@ -1409,7 +1409,7 @@ public class UIPlayer {
         }
 
         /**
-         * Initialises {@link #lines} to an empty, growable list — the Java form of C's
+         * Initializes {@link #lines} to an empty, growable list — the Java form of C's
          * {@code p->lines = mem_zalloc(p->max * sizeof *p->lines)} inside {@code panel_allocate}
          * ({@code ui-player.c}, function {@code panel_allocate}), which instead allocates a
          * {@link #max}-element array of zeroed {@code struct panel_line}s ready to be filled by
@@ -1670,7 +1670,7 @@ public class UIPlayer {
 
         /**
          * Pairs a region, its alignment, and its panel builder into one table entry, storing all
-         * three by reference exactly as assigned — the Java form of C's brace-initialised
+         * three by reference exactly as assigned — the Java form of C's brace-initialized
          * {@code panels[]} element ({@code ui-player.c}).
          *
          * <p>Constructor PanelRegions coded before 260925, commented in full on 260929.

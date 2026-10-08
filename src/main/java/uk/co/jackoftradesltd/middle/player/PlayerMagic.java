@@ -32,7 +32,7 @@ public class PlayerMagic {
      *
      * <p>Function playerSpellsInit coded on 260908, commented in full on 260908.
      *
-     * @param player the player whose spell-tracking lists are (re)initialised
+     * @param player the player whose spell-tracking lists are (re)initialized
      */
     public static void playerSpellsInit(Player player) {
         int numSpells = player.getPlayerClass().getMagic().getTotalSpells();

@@ -104,7 +104,7 @@ public class TextUIHook {
 
     /**
      * Prompts for a direction, seeded with {@code initial} - the port of C's {@code get_string}
-     * flow specialised to a direction answer.
+     * flow specialized to a direction answer.
      *
      * @param prompt  the prompt label
      * @param initial the direction the field starts on

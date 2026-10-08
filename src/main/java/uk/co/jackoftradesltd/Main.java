@@ -60,7 +60,7 @@ import java.util.List;
  * another goes through the {@code channel} package.
  *
  * <p>Two kinds of argument, and the difference decides how the method ends. Most switches only
- * set a value and fall through to the launch at the bottom. {@code -l} and anything unrecognised
+ * set a value and fall through to the launch at the bottom. {@code -l} and anything unrecognized
  * are questions rather than settings: they put their answer in a window and {@code return}, so
  * the game never starts. Those windows close the process themselves through
  * {@code EXIT_ON_CLOSE}, which is why returning is enough.
@@ -80,7 +80,7 @@ public class Main {
      * options stop being a static field read from the EDT and become an ordinary argument.
      *
      * <p><b>Two threads, and the {@code invokeLater} is the join between them.</b> Only the EDT may
-     * touch realised Swing components, so {@link SwingUI#init()} is queued onto it - but
+     * touch realized Swing components, so {@link SwingUI#init()} is queued onto it - but
      * {@link SwingUI#startLoop()} blocks for the whole session, and blocking the EDT would freeze
      * the window it just built. So the bootstrap goes to the EDT and the loop stays here, on the
      * thread this runnable is given to.
@@ -137,9 +137,7 @@ public class Main {
                 logger.fatal("angband-ui died.", e);
                 uiChannel.uiSender().send(new UIMessage.LifecycleUIMessage(UILifecycleEvent.SAVE_AND_STOP));
             } finally {
-                SwingUtilities.invokeLater(() -> {
-                    swingUI.closeDown();
-                });
+                SwingUtilities.invokeLater(swingUI::closeDown);
             }
         };
     }
@@ -283,7 +281,7 @@ public class Main {
                         System.err.println(error);
                         System.exit(1);
                     }
-                    String dirs[] = arg.substring(2).split("=", 2);
+                    String[] dirs = arg.substring(2).split("=", 2);
                     AngbandDirs.setDirectory(dirs[0], dirs[1]);
                 }
 
@@ -357,7 +355,7 @@ public class Main {
             return "Error: empty directory path, expected '-d<dir>=<path>', received '-d<dir>='";
         try {
             if (!AngbandDirs.ANGBAND_DIRS.contains(dirs[0])) {
-                return "Error: unrecognised -d parameter: " + dirs[0];
+                return "Error: unrecognized -d parameter: " + dirs[0];
             }
             if (!Paths.get(dirs[1]).toFile().isDirectory())
                 // Create the new directory
@@ -397,9 +395,11 @@ public class Main {
         }
 
         output.add("                 Multiple -d options are allowed.");
-        //      System.out.println("  -s<mod>        Use sound module <sys>:");
-        //      printSoundHelp();
-        //      System.out.println("  -m<sys>        Use module <sys>, where <sys> can be:");
+        /*
+              System.out.println("  -s<mod>        Use sound module <sys>:");
+              printSoundHelp();
+              System.out.println("  -m<sys>        Use module <sys>, where <sys> can be:");
+        */
 
         displayText(output, false);
     }
@@ -411,10 +411,8 @@ public class Main {
      *
      * <p>Asks {@code ANGBAND_DIRS.SAVE} for its path rather than reading a constant, so a
      * {@code -d} earlier on the same command line is honoured.
-     *
-     * @throws IOException if the save directory cannot be read
      */
-    private static void listSaves() throws IOException {
+    private static void listSaves() {
         List<String> saves = new ArrayList<>();
 
         AngDir saveDirectory = AngDir.angDirFactory(AngbandDirs.ANGBAND_DIRS.SAVE.getPath());

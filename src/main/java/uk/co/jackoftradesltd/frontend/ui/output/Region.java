@@ -87,7 +87,7 @@ public class Region {
 
     /**
      * Builds a region from its four raw field values, stored exactly as given - the port of a C
-     * {@code struct region} literal or field-by-field initialisation. No validation or resolution
+     * {@code struct region} literal or field-by-field initialization. No validation or resolution
      * of relative {@link #width}/{@link #pageRows} values happens here; see the class Javadoc.
      *
      * <p>Constructor Region coded on 260911, commented in full on 260911.

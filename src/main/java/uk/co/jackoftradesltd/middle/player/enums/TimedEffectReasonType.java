@@ -33,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
  * proper enum so the alternative cannot be confused with an unrelated integer.
  *
  * <p><b>Why each constant carries an explicit numeric value:</b> the original codes
- * are stable integers that appear in data/serialisation, so the port pins each
+ * are stable integers that appear in data/serialization, so the port pins each
  * constant to its C value rather than relying on {@link Enum#ordinal()} (which would
  * silently shift if the list were ever reordered). {@link #fromValue(int)} performs
  * the reverse mapping when reading those raw integers back in.
@@ -73,7 +73,7 @@ public enum TimedEffectReasonType {
      * Resolves a raw C reason code back into its enum constant.
      *
      * <p>Used when reading integers that originated from the C {@code timed_failure.code}
-     * field. Returns {@code null} for any unrecognised value rather than throwing, so a
+     * field. Returns {@code null} for any unrecognized value rather than throwing, so a
      * malformed or future code can be handled gracefully by the caller.
      *
      * @param value a {@code TMD_FAIL_FLAG_*} integer

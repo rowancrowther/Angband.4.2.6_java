@@ -96,7 +96,7 @@ name
  * @author Rowan Crowther
  *
  * "code:<CODE>" - the trap's identity, resolved to a ChestTrapCode by the
- * assembler. Captured as raw text so an unrecognised code is reported
+ * assembler. Captured as raw text so an unrecognized code is reported
  * against its line rather than failing to lex.
  */
 code

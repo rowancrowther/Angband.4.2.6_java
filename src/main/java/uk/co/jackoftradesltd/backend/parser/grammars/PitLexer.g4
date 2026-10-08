@@ -3,7 +3,7 @@
 // Cf. the C original's pit parser in src/mon-init.c.
 //
 // Most directives are simple "keyword:value" lines, but three value shapes
-// need their own lexer mode so a value's characters are not mis-tokenised as
+// need their own lexer mode so a value's characters are not mis-tokenized as
 // keywords or flags:
 //   * REST_OF_LINE - free text (names, monster-base names) taken verbatim to
 //                    end of line.

@@ -163,7 +163,7 @@ public class PlayerRegistry {
      * constant array ({@code player.c}), which carries the same fifty values in the same order.
      *
      * <p>Unlike the C array this is mutable and starts empty; it is filled once at startup by
-     * {@link uk.co.jackoftradesltd.middle.game.globals.loaders.PlayerDataLoader#initialiseExpLevel}
+     * {@link uk.co.jackoftradesltd.middle.game.globals.loaders.PlayerDataLoader#initializeExpLevel}
      * rather than being a compile-time constant, but nothing in the running game writes to it
      * afterwards.
      *
@@ -584,7 +584,7 @@ public class PlayerRegistry {
     @CheckReturnValue
     public static PlayerTimedEffect lookupPlayerTimedEffect(@NotNull TimedEffect timedEffect) {
         if (playerTimedEffects == null) {
-            String message = "Invalid attempt to access playerTimedEffects when it hasn't been initialised";
+            String message = "Invalid attempt to access playerTimedEffects when it hasn't been initialized";
             IllegalStateException e = new IllegalStateException(message);
             logger.fatal(message, e);
             throw e;

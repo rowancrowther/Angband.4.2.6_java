@@ -172,7 +172,7 @@ public enum RoomType {
      * {@code get_room_builder_index_from_name}.
      *
      * <p>Like C's {@code streq}, the comparison is case-sensitive, so the names must be written
-     * exactly as in {@code list-rooms.h}. That matters for the seven capitalised names, which are
+     * exactly as in {@code list-rooms.h}. That matters for the seven capitalized names, which are
      * {@code Interesting room} and the six vault types.
      *
      * <p>coded on 2026-08-30 / commented in full on 2026-09-30

@@ -129,7 +129,7 @@ public enum ColourEnum {
      * {@code color_text_to_attr()} ({@code [C] src/z-color.c}) behind one entry point, since a
      * data file may use either.
      *
-     * <p>An unrecognised name yields {@code null}, which is the whole point: it is what lets a
+     * <p>An unrecognized name yields {@code null}, which is the whole point: it is what lets a
      * reader report {@code unknown colour} against the offending line. C's
      * {@code color_text_to_attr()} likewise answers {@code -1} and leaves the decision to its
      * caller - the data-file parsers raise {@code PARSE_ERROR_INVALID_COLOR} rather than

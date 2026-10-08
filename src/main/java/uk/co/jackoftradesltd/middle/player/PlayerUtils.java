@@ -41,7 +41,7 @@ import uk.co.jackoftradesltd.middle.player.enums.TimedEffect;
  * {@code player} global take no player and use the cached {@link #player} field; those ported from
  * C functions that take a {@code struct player *} - and the ones moved here from {@link Player} as
  * the port caught up with C's file layout - take the player as their first parameter. Prefer the
- * parameter form: the cached field is fixed at class-initialisation time and does not follow a
+ * parameter form: the cached field is fixed at class-initialization time and does not follow a
  * later change of character.
  *
  * <p><b>Status:</b> a stub landed to unblock the game loop; individual routines are ported as callers
@@ -70,7 +70,7 @@ public class PlayerUtils {
      * The player these utilities act on, cached from {@link GameState} — the port of C's
      * {@code player} global, which its free functions reach for directly.
      *
-     * <p>Static and resolved once in the initialiser below, so it is fixed for the life of the
+     * <p>Static and resolved once in the initializer below, so it is fixed for the life of the
      * class rather than following a later change of character. Methods that take a {@link Player}
      * parameter should use that instead; this is for the ones ported from C functions that read the
      * global.
@@ -78,7 +78,7 @@ public class PlayerUtils {
     private static Player player;
 
     /**
-     * Caches the current player at class-initialisation time.
+     * Caches the current player at class-initialization time.
      *
      * <p><b>Load-order dependency:</b> this runs the first time anything touches this class, so
      * {@link GameState} must already hold a player by then. Nothing re-runs it, so a character

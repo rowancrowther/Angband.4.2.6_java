@@ -56,12 +56,12 @@ import java.util.List;
  * work - template inheritance, renderer/combiner/label/flag resolution, category/priority placement, and
  * {@code parameter:element}/{@code parameter:stat} expansion into per-value entries - in one pass across
  * {@link #assemble} and {@link #parseEachEntry}. The per-value expansion is the Java form of
- * {@code hatch_embryo}'s parameterised-name loop ({@code ui-entry.c}); folding into an
+ * {@code hatch_embryo}'s parameterized-name loop ({@code ui-entry.c}); folding into an
  * already-registered entry of the same name is the Java form of {@code hatch_embryo}'s
  * {@code embryo->exists} branch - exercised here (unlike in {@code UIEntryBaseAssembler}) whenever a
  * {@code ui_entry.txt} record's name already appears in the registry. Unlike
  * {@code UIEntryBaseAssembler}'s override branch, this one is live: the thirteen
- * {@code resist_ui_compact_0<TAG>} specialisation records (e.g. {@code resist_ui_compact_0<ACID>})
+ * {@code resist_ui_compact_0<TAG>} specialization records (e.g. {@code resist_ui_compact_0<ACID>})
  * match the per-element names the earlier {@code parameter:element} record for
  * {@code resist_ui_compact_0} fanned out, so all thirteen take this branch (see
  * {@code docs/precis/260920.md}, "Correction: the create path is not the common case").
@@ -165,7 +165,7 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
      * stat index, so the {@code parameter:stat} loop stamps it on afterward with
      * {@link UIEntry#setStatParameter(int)} - the Java form of C's
      * {@code entry->param_index = i} assignment in {@code hatch_embryo}'s
-     * parameterised-name loop ({@code ui-entry.c}). Without it, every
+     * parameterized-name loop ({@code ui-entry.c}). Without it, every
      * per-stat entry silently carries Java's default {@code int} value ({@code 0},
      * STR's index) regardless of which of the five stats it actually is - found and
      * fixed 260922, once a regression test for the override-path fix below caught it.
@@ -188,7 +188,7 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
      * <p><b>Outstanding (found 260922):</b> the {@code parameter:stat} expansion loop only creates
      * an entry for stat index {@code i} when
      * {@code PlayerEventStatusUpdate.getPlayerStatusView().statString()[i]} is non-empty - a guard
-     * C's {@code hatch_embryo} has no counterpart for, since it parameterises unconditionally over
+     * C's {@code hatch_embryo} has no counterpart for, since it parameterizes unconditionally over
      * all of {@code get_stat_count()}'s entries ({@code ui-entry.c}) and
      * {@code stat_names[]} is a fixed five-element array that is never empty. Currently inert:
      * {@code statString} is seeded from the same hardcoded {@code {"STR","INT","WIS","DEX","CON"}}
@@ -404,7 +404,7 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
      * thirteen {@code resist_ui_compact_0<TAG>} records reach it, since their names match what the
      * earlier {@code parameter:element resist_ui_compact_0} record's fan-out already inserted. It
      * throws if the incoming entry still carries a stat or element parameter, mirroring
-     * {@code parse_entry_parameter}'s refusal to parameterise an entry that already exists
+     * {@code parse_entry_parameter}'s refusal to parameterize an entry that already exists
      * ({@code ui-entry.c}) - that specific throw is unreached by shipped data, since
      * none of the thirteen records carries its own {@code parameter:} line (and {@link #assemble}
      * rejects such a record before it gets here). It then applies the record's template (if
@@ -428,7 +428,7 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
      * priority is threaded through here. The blank entry's constructor carries across {@code entry}'s
      * resolved element parameter directly, but has no slot for a stat index, so
      * {@link UIEntry#getStatParameter()} is copied across separately with
-     * {@link UIEntry#setStatParameter(int)} - without it, an override targeting a stat-parameterised
+     * {@link UIEntry#setStatParameter(int)} - without it, an override targeting a stat-parameterized
      * entry (see the {@code existing.getStatParameter()} read in the override path) would resolve against the
      * wrong (default {@code 0}) index; found and fixed 260922 via {@code assemble}'s
      * {@code parameter:stat} loop.
@@ -437,7 +437,7 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
      * the whole merged list, so a {@code priority:} written before any category sets that last
      * category's priority where C sets the entry's default priority; a template's flags are never
      * copied onto the existing entry, where C sets {@code flags = template flags & ~TEMPLATE_ONLY};
-     * and an {@code index} or {@code negative_index} scheme on a non-parameterised entry resolves to
+     * and an {@code index} or {@code negative_index} scheme on a non-parameterized entry resolves to
      * {@code 0} where C uses {@code param_index} ({@code -1}).
      * <p>
      * <b>Outstanding (found 260929), create path:</b> the template's own default priority and each

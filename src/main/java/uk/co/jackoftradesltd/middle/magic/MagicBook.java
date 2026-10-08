@@ -37,17 +37,17 @@ import java.util.List;
  */
 public class MagicBook {
     /**
-     * The item type ({@code tval}) of the book. The concrete object kind is synthesised and
+     * The item type ({@code tval}) of the book. The concrete object kind is synthesized and
      * registered separately (see {@link uk.co.jackoftradesltd.backend.parser.playerclass.ClassSpellBookAssembler}),
      * so the book itself only needs to remember its type here.
      */
     private TValue bookType;
 
     /**
-     * The sval of the object kind this book is realised as — the second half of the
+     * The sval of the object kind this book is realized as — the second half of the
      * {@code tval}/{@code sval} pair that identifies a carried book. Resolved from the registry
      * rather than parsed, because the book's data file gives a name and a tval and the concrete kind
-     * is synthesised separately. {@code -1} marks a book whose kind could not be found.
+     * is synthesized separately. {@code -1} marks a book whose kind could not be found.
      */
     private int sVal;
     /**
@@ -136,7 +136,7 @@ public class MagicBook {
      * tval and name.
      *
      * <p>Depends on the object kinds already being loaded, so it cannot run at parse time — the
-     * spellbook kinds are synthesised from the class data and registered before this is called.
+     * spellbook kinds are synthesized from the class data and registered before this is called.
      *
      * <p>Function setSVal commented in full on 260820.
      */

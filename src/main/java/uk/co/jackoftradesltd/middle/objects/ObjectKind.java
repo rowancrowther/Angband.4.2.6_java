@@ -228,7 +228,7 @@ public class ObjectKind {
     private Random stackSize;
 
     /**
-     * The randomised flavour for unidentified instances.
+     * The randomized flavour for unidentified instances.
      */
     private Flavour flavour;
 
@@ -264,7 +264,7 @@ public class ObjectKind {
      * Whether this kind exists solely to back one special (instanced) artifact.
      *
      * <p>C asks the question by position — {@code kidx >= z_info->ordinary_kind_max} — because it
-     * appends the synthesised artifact kinds after the ordinary ones and can then read the answer
+     * appends the synthesized artifact kinds after the ordinary ones and can then read the answer
      * off the index. The port records it instead, so that nothing depends on where a kind sits in
      * the table; the artifact constructor sets it, and the other three clear it.
      *
@@ -518,14 +518,14 @@ public class ObjectKind {
     }
 
     /**
-     * Synthesises the object kind that backs a special (instanced) artifact — the port of C's
+     * Synthesizes the object kind that backs a special (instanced) artifact — the port of C's
      * {@code write_special_kinds}/{@code special_item} handling. An artifact whose base has no
      * ordinary kind gets a fresh kind built here: it copies the base's kind-flags and per-element
      * info, marks itself {@link ObjectKindFlag#KF_INSTA_ART}, takes the artifact's level, and adopts
      * a red {@code '*'} display glyph and a flavour-templated name derived from {@code sValName}.
      *
      * @param artifact the artifact this kind is being created for
-     * @param sValName the subtype name to give the synthesised kind
+     * @param sValName the subtype name to give the synthesized kind
      * @param base     the object base whose defaults (kind-flags, elements, tval) are inherited
      */
     public ObjectKind(Artifact artifact, String sValName, ObjectBase base) {
@@ -568,7 +568,7 @@ public class ObjectKind {
 
     /**
      * Strips the object-name flavour-template markers ({@code "& "} article slot and {@code "~"}
-     * pluralisation slot) from a kind's name to recover the bare sval reference used elsewhere.
+     * pluralization slot) from a kind's name to recover the bare sval reference used elsewhere.
      *
      * @param name the templated kind name
      * @return the name with the {@code &}/{@code ~} markers removed
@@ -807,7 +807,7 @@ public class ObjectKind {
      * Reports whether an item of this kind has ever been seen identified, the port of reading C's
      * {@code kind->everseen}.
      *
-     * <p>Not knowledge but a record of whether the news has been broken, so that recognising a kind
+     * <p>Not knowledge but a record of whether the news has been broken, so that recognizing a kind
      * for the first time is worth a message and the tenth is not. {@link EgoItem#isEverSeen} is its
      * counterpart for ego types.
      *
@@ -902,7 +902,7 @@ public class ObjectKind {
      * <p>A plain count, not a range — unlike {@link #getToD} next door, which is a {@link Random}
      * because it is rolled per item. Every Long Sword has the same {@code 2d5}; what differs between
      * two of them is the bonus on top. That is why {@code object_set_base_known} can copy this onto
-     * a counterpart the moment the kind is recognised: knowing what the item <em>is</em> settles its
+     * a counterpart the moment the kind is recognized: knowing what the item <em>is</em> settles its
      * dice, while its enchantment still has to be learned.
      *
      * <p>Not to be confused with the kind's {@code toD}, whose {@code getDice()} is the dice of the
@@ -1154,7 +1154,7 @@ public class ObjectKind {
      * {@code object.txt} never mentions still reads back as a valid, zero-value {@code random_value}
      * rather than as an absence. This kind keeps modifiers in a {@link Map} instead, populated only
      * for the modifiers a kind's {@code values:} line actually names, so a plain {@code get} would
-     * return {@code null} for the common case of an unmentioned modifier - {@link #getModifier}
+     * return {@code null} for the common case of an unmentioned modifier - {@code getModifier}
      * falls back to a fresh zero dice ({@code base}/{@code dice}/{@code mBonus} all {@code 0}) in that
      * case, whose {@link Random#randCalc} always comes out {@code 0} regardless of aspect, matching
      * what C's zeroed array slot would compute.
@@ -1341,7 +1341,7 @@ public class ObjectKind {
      *
      * <p>Both C functions also raise {@code player->upkeep->notice |= PN_IGNORE} straight after the
      * bit set; that side effect is not this setter's job, the same way {@link #hasIgnoreFlag} carries
-     * none of the side effects belonging to the C reads it generalises. It is the caller's boundary to
+     * none of the side effects belonging to the C reads it generalizes. It is the caller's boundary to
      * cross, the way {@link ObjectIgnore#kindIgnoreWhenAware} takes a {@code Player} for exactly that
      * purpose.
      *

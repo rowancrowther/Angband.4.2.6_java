@@ -374,7 +374,7 @@ public class ObjectUtils {
      * port of C's {@code inven_can_stack_partial} ({@code obj-gear.c}).
      *
      * <p>The two stacks are not interchangeable. {@code item1} is the leading stack, the one whose
-     * count the caller means to maximise, and only {@code stackMode1} opens the quiver branch
+     * count the caller means to maximize, and only {@code stackMode1} opens the quiver branch
      * below; passing the pair the other way round asks a different question.
      *
      * <p>Stackability is settled first by {@link ItemObject#objectStackable}. Then, unless either
@@ -424,7 +424,7 @@ public class ObjectUtils {
         }
 
         // Now verifying numbers
-        // Leading stack, item1, has to have its count maximised
+        // Leading stack, item1, has to have its count maximized
         if (!combinedModes.has(ObjectStackEnum.OSTACK_STORE)) {
             // Quiver has stricter limits
             if (stackMode1.has(ObjectStackEnum.OSTACK_QUIVER)) {
@@ -930,7 +930,7 @@ public class ObjectUtils {
      *
      * <p>The distinction it draws is between an object the player has and an object that is merely
      * nearby — {@code PlayerKnowledge.knowObject} uses it to pick between "You have a Long Sword (c)." and "On the
-     * ground: a Long Sword." when reporting something newly recognised.
+     * ground: a Long Sword." when reporting something newly recognized.
      *
      * <p>Function isCarried coded on 260816, commented in full on 260816, moved here from
      * {@link Player} and made static on 260901.
@@ -1769,7 +1769,7 @@ public class ObjectUtils {
      *   for this element in its {@code getElInfo()} map — meaning this particular curse has had
      *   its own chance to display the resistance even though the player-wide rune is not yet
      *   learned. A missing map entry and an entry whose level is exactly zero answer the same as
-     *   each other, matching C's zero-initialised array read.</li>
+     *   each other, matching C's zero-initialized array read.</li>
      * </ol>
      * Failing all three, the element is not known and the method answers false.
      *

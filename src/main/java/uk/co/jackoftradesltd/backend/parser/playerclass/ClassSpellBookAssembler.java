@@ -53,7 +53,7 @@ import java.util.*;
  * item. Dungeon books additionally gain the {@code KF_GOOD} flag and {@code EL_INFO_IGNORE} on
  * every base element, matching the C treatment.
  *
- * <p>The synthesised kind also carries the defaults C hard-codes into {@code write_book_kind}:
+ * <p>The synthesized kind also carries the defaults C hard-codes into {@code write_book_kind}:
  * damage dice of {@code 1d1}, a weight of 30, and a red {@code '*'} glyph. The glyph and colour are
  * genuine defaults rather than fixed values — a book declaring its own in {@code class.txt}
  * overrides them, which is what C's "graphics should be overwritten" comment anticipates — while
@@ -67,7 +67,7 @@ import java.util.*;
 public class ClassSpellBookAssembler implements Assembler<ClassSpellBookParseRecord, List<MagicBook>> {
     /**
      * Assembles every parsed book into a {@link MagicBook}, parsing its scalars, resolving its
-     * realm and object base, building its spells, and registering the synthesised backing
+     * realm and object base, building its spells, and registering the synthesized backing
      * {@link ObjectKind}.
      *
      * <p>Function assemble coded before 260915, commented in full on 260915.
@@ -181,7 +181,7 @@ public class ClassSpellBookAssembler implements Assembler<ClassSpellBookParseRec
                     noOfSpells, realm, adc, cost, commonness, min,
                     max, spells));
 
-            // Synthesise the object kind that backs this book (C: write_book_kind). Spellbooks are
+            // Synthesize the object kind that backs this book (C: write_book_kind). Spellbooks are
             // not in object.txt, so the kind is built from the base plus this book's properties and
             // registered, making the book an obtainable item. Dungeon books are marked "good" and
             // set to ignore every base element, as in the C original.

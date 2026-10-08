@@ -59,7 +59,7 @@ public class RandomValueUtils {
      * The depth at which {@link #mBonus} stops growing, the port of the C macro
      * {@code MAX_RAND_DEPTH} in {@code z-rand.h}. It is a literal 128 exactly as in C, not a value
      * read from the loaded world data, so this class never depends on the registries being
-     * initialised before first use.
+     * initialized before first use.
      *
      * <p>Field MAX_RAND_DEPTH coded on 261005, commented in full on 261005.
      */

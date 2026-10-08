@@ -20,7 +20,7 @@
 // allowed, the message type, and a fallback type). Cf. the C directive table in
 // init_parse_summon() (src/mon-summon.c:146) and struct file_parser summon_parser.
 //
-// This lexer only tokenises; resolving the message type, monster bases, race
+// This lexer only tokenizes; resolving the message type, monster bases, race
 // flag and the fallback (a reference to a sibling summon by name) is left to
 // SummonAssembler. The free-text values (name, base, fallback, desc) read in
 // FREE_TEXT_MODE; the two upper-case symbolic values (msgt, race-flag) read in

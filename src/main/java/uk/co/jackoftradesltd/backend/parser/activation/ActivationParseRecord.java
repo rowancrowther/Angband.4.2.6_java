@@ -32,7 +32,7 @@ import java.util.List;
  * deferred to the assembler so that a malformed value produces a soft, per-record
  * error instead of aborting the parse. This mirrors the split in the C loader
  * between {@code parse_act_*} (which only stashes strings on the {@code activation}
- * struct) and the later finalisation pass.
+ * struct) and the later finalization pass.
  *
  * @param name    the activation's name (the {@code name:} line)
  * @param aim     the raw {@code aim:} flag; {@code "1"} means the power must be aimed

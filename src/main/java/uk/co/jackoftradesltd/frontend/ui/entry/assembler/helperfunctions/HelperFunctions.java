@@ -80,7 +80,7 @@ public class HelperFunctions {
     /**
      * Returns {@code 1}, the Java form of C's {@code get_dummy_param_count}
      * ({@code [C] ui-entry.c:1565-1568}), used as the {@code count_func} for
-     * {@code UIEntryNameParameter.ENTRY_NAME_PARAMETER_NONE} - an unparameterised record still
+     * {@code UIEntryNameParameter.ENTRY_NAME_PARAMETER_NONE} - an unparameterized record still
      * "expands" into exactly one entry.
      *
      * <p>Function getDummyParamCount coded before 260920, commented in full on 260920.
@@ -190,7 +190,7 @@ public class HelperFunctions {
      * Returns {@code index} unchanged, the Java form of C's {@code get_priority_from_index}
      * ({@code [C] ui-entry.c:1640-1643}), used as the {@code priority} function for
      * {@code UIEntryPriorityScheme.PRIORITY_SCHEME_INDEX} - a {@code priority:index} directive, which
-     * ranks a parameterised entry's rows in the same order as the parameter they were generated from.
+     * ranks a parameterized entry's rows in the same order as the parameter they were generated from.
      *
      * <p>Function getPriorityFromIndex coded before 260920, commented in full on 260920.
      *
@@ -205,7 +205,7 @@ public class HelperFunctions {
      * Returns the negation of {@code index}, the Java form of C's
      * {@code get_priority_from_negative_index} ({@code [C] ui-entry.c:1650-1653}), used as the
      * {@code priority} function for {@code UIEntryPriorityScheme.PRIORITY_SCHEME_NEGATIVE_INDEX} - a
-     * {@code priority:negative_index} directive, which ranks a parameterised entry's rows in the
+     * {@code priority:negative_index} directive, which ranks a parameterized entry's rows in the
      * reverse of the order they were generated in.
      *
      * <p>Function getPriorityFromNegativeIndex coded before 260920, commented in full on 260920.

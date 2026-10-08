@@ -51,7 +51,7 @@ import java.util.List;
 public class HandlersHolder {
     /**
      * The Java equivalent of C's {@code side_handlers[]} array - one {@link SideHandler} per row
-     * that has been ported, built once by the static initialiser calling {@link #initHandlers()}.
+     * that has been ported, built once by the static initializer calling {@link #initHandlers()}.
      *
      * <p>Field sideHandlers coded on 260927, commented in full on 260927.
      */
@@ -97,7 +97,7 @@ public class HandlersHolder {
      *
      * <p>Method initHandlers coded on 260927, commented in full on 260929.
      */
-    private static void initHandlers() {
+    public static void initHandlers() {
         SideHandler handler = new SideHandler(HandlersHolder::prtRace, 19, GameEventType.EVENT_RACE_CLASS);
         sideHandlers.add(handler);
         handler = new SideHandler(HandlersHolder::prtTitle, 18, GameEventType.EVENT_PLAYERTITLE);
@@ -844,14 +844,14 @@ public class HandlersHolder {
      * C reaches with neither a {@code my_strcpy} nor a fall-through: when {@code shortMode} is
      * {@code true} and none of the first three apply, C's chain never reaches its last
      * {@code else if (!short_mode)} clause, so {@code buf} stays the empty string it was
-     * initialised to; this returns {@code ""} for the same case, since the port has no callers that
+     * initialized to; this returns {@code ""} for the same case, since the port has no callers that
      * pass {@code true} today.
      *
      * <p>The winner check ORs in {@code SidebarModel.getLevel() > ChannelRegistry.getPYMaxLevel()},
      * matching C's {@code player->total_winner || (player->lev > PY_MAX_LEVEL)} - a character can be
      * a winner either by the flag or by having somehow exceeded the level cap.
      *
-     * <p>The shapechanged branch capitalises the shape name's first letter with
+     * <p>The shapechanged branch capitalizes the shape name's first letter with
      * {@code toUpperCase()}, the port of C's {@code my_strcap(buf)} ({@code z-util.c}), which
      * uppercases {@code buf[0]} and leaves the rest of the string untouched.
      *

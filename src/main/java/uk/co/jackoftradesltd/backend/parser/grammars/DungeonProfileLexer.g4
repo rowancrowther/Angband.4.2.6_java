@@ -34,7 +34,7 @@
  * no tunnel or room lines at all.
  *
  * Two value shapes need their own lexer mode so their characters are not
- * mis-tokenised:
+ * mis-tokenized:
  *   * REST_OF_LINE    - the profile name, taken verbatim to end of line.
  *   * DELIMITED_TEXT  - a room name, which runs to the next ':' and may hold
  *                       spaces, capitals and parentheses ("Greater vault
@@ -78,7 +78,7 @@ NAME
  *
  * "params:<block_size>:<rooms>:<unusual>:<rarity>" - the four numbers
  * governing how the level is laid out: the size of the blocks rooms are
- * allocated in, how many rooms to aim for, how strongly rarity is penalised,
+ * allocated in, how many rooms to aim for, how strongly rarity is penalized,
  * and the highest room rarity this profile allows.
  * cf DungeonProfileGrammar.g4's 'params' rule.
  */

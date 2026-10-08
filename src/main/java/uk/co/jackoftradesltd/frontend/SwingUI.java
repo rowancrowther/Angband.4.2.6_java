@@ -157,43 +157,6 @@ public class SwingUI {
     private Screen screen;
 
     /**
-     * Build the front end around the channel ends {@code main()} gives it, and make its first
-     * window.
-     *
-     * <p>Only assembles state: nothing is shown until {@link #init()} and nothing is read from the
-     * inbox until {@link #startLoop()}. The three arguments are the whole of what this half is
-     * given - no handle on the core, and no way to obtain one.
-     *
-     * <p><b>Runs on the UI thread, not the EDT</b>, unlike everything it builds. That is the benign
-     * case rather than a violation: the {@link Window} made here is not yet realised, no other
-     * thread has a reference to it, and the {@code invokeLater} that queues {@link #init()}
-     * establishes the happens-before edge the EDT needs before it touches any of it.
-     *
-     * @param uiChannel      this half's pair of channel ends
-     * @param edtChannel     the send-only end the window listener will post on
-     * @param startupOptions the parsed command line
-     */
-    public SwingUI(UIChannel uiChannel, EDTChannel edtChannel, StartupOptions startupOptions) {
-        this.uiChannel = uiChannel;
-        this.edtChannel = edtChannel;
-        this.startupOptions = startupOptions;
-
-        CellGrid mainGrid = new CellGrid(24, 80);
-        screen = new Screen(mainGrid, new ArrayList<>());
-
-        uiLoop = new UILoop(uiChannel, this, screen);
-
-        terms = new ArrayList<>();
-        TermData mainTermData = new TermData(screen);
-        Term mainTerm = new Term();
-        mainTermData.termDataLink(mainTerm);
-        terms.add(mainTermData);
-        mainTermData.setWindow(new Window());
-        activeTermData = mainTermData;
-        UIGlobals.setActiveTermData(activeTermData);
-    }
-
-    /**
      * The game window's window events. Only {@code windowClosing} does anything; the rest are
      * generated overrides that call {@code super} and could go.
      */
@@ -228,7 +191,7 @@ public class SwingUI {
         /**
          * Invoked when a window has been opened.
          *
-         * @param e
+         * @param e the event that has been triggered
          */
         @Override
         public void windowOpened(WindowEvent e) {
@@ -238,7 +201,7 @@ public class SwingUI {
         /**
          * Invoked when a window has been closed.
          *
-         * @param e
+         * @param e the event that has been triggered
          */
         @Override
         public void windowClosed(WindowEvent e) {
@@ -248,7 +211,7 @@ public class SwingUI {
         /**
          * Invoked when a window is iconified.
          *
-         * @param e
+         * @param e the event that has been triggered
          */
         @Override
         public void windowIconified(WindowEvent e) {
@@ -258,7 +221,7 @@ public class SwingUI {
         /**
          * Invoked when a window is de-iconified.
          *
-         * @param e
+         * @param e the event that has been triggered
          */
         @Override
         public void windowDeiconified(WindowEvent e) {
@@ -268,7 +231,7 @@ public class SwingUI {
         /**
          * Invoked when a window is activated.
          *
-         * @param e
+         * @param e the event that has been triggered
          */
         @Override
         public void windowActivated(WindowEvent e) {
@@ -278,7 +241,7 @@ public class SwingUI {
         /**
          * Invoked when a window is de-activated.
          *
-         * @param e
+         * @param e the event that has been triggered
          */
         @Override
         public void windowDeactivated(WindowEvent e) {
@@ -288,7 +251,7 @@ public class SwingUI {
         /**
          * Invoked when a window state is changed.
          *
-         * @param e
+         * @param e the event that has been triggered
          * @since 1.4
          */
         @Override
@@ -301,7 +264,7 @@ public class SwingUI {
          * that the Window, or one of its subcomponents, will receive keyboard
          * events.
          *
-         * @param e
+         * @param e the event that has been triggered the event that has been triggeredv
          * @since 1.4
          */
         @Override
@@ -314,7 +277,7 @@ public class SwingUI {
          * that keyboard events will no longer be delivered to the Window or any of
          * its subcomponents.
          *
-         * @param e
+         * @param e the event that has been triggered
          * @since 1.4
          */
         @Override
@@ -322,6 +285,43 @@ public class SwingUI {
             super.windowLostFocus(e);
         }
     };
+
+    /**
+     * Build the front end around the channel ends {@code main()} gives it, and make its first
+     * window.
+     *
+     * <p>Only assembles state: nothing is shown until {@link #init()} and nothing is read from the
+     * inbox until {@link #startLoop()}. The three arguments are the whole of what this half is
+     * given - no handle on the core, and no way to obtain one.
+     *
+     * <p><b>Runs on the UI thread, not the EDT</b>, unlike everything it builds. That is the benign
+     * case rather than a violation: the {@link Window} made here is not yet realized, no other
+     * thread has a reference to it, and the {@code invokeLater} that queues {@link #init()}
+     * establishes the happens-before edge the EDT needs before it touches any of it.
+     *
+     * @param uiChannel      this half's pair of channel ends
+     * @param edtChannel     the send-only end the window listener will post on
+     * @param startupOptions the parsed command line
+     */
+    public SwingUI(UIChannel uiChannel, EDTChannel edtChannel, StartupOptions startupOptions) {
+        this.uiChannel = uiChannel;
+        this.edtChannel = edtChannel;
+        this.startupOptions = startupOptions;
+
+        CellGrid mainGrid = new CellGrid(24, 80);
+        screen = new Screen(mainGrid, new ArrayList<>());
+
+        uiLoop = new UILoop(uiChannel, this, screen);
+
+        terms = new ArrayList<>();
+        TermData mainTermData = new TermData(screen);
+        Term mainTerm = new Term();
+        mainTermData.termDataLink(mainTerm);
+        terms.add(mainTermData);
+        mainTermData.setWindow(new Window());
+        activeTermData = mainTermData;
+        UIGlobals.setActiveTermData(activeTermData);
+    }
 
     /**
      * Dispose every window. The last step of the shutdown handshake, and now the whole of it that
@@ -412,7 +412,7 @@ public class SwingUI {
      *
      * <p><b>Runs on the EDT.</b> {@code main()} queues it there with {@code invokeLater} rather
      * than calling it on the UI thread, because every line below touches a Swing component and the
-     * window is realised part-way through.
+     * window is realized part-way through.
      *
      * <p>The metrics drive everything. Angband is written against a character grid, so the window
      * is sized as 80x24 cells of whatever the font's {@code 'M'} measures - the port's equivalent
@@ -618,7 +618,7 @@ public class SwingUI {
          * runs that changed and this redraws everything.
          *
          * <p>One {@code drawString} per cell - 1,920 of them - which is more calls than needed but
-         * not enough to matter at this size. The optimisation, when it is wanted, is the one C's
+         * not enough to matter at this size. The optimization, when it is wanted, is the one C's
          * interface already implies: batch each run of same-coloured cells into a single call.
          *
          * <p>Null cells are tolerated and drawn as dark spaces, which covers a grid handed in by
@@ -636,7 +636,7 @@ public class SwingUI {
          * continuing would fix both.
          *
          * @param g the graphics context, which Swing may pass as {@code null} before the panel is
-         *          realised
+         *          realized
          */
         @Override
         public void paintComponent(Graphics g) {

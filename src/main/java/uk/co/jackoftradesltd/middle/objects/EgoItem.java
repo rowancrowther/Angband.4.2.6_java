@@ -260,7 +260,7 @@ public class EgoItem {
      * Reports whether the player has ever seen an ego of this type identified, the port of reading
      * C's {@code ego->everseen}.
      *
-     * <p>Not knowledge, but a record of whether the news has been broken. Recognising a Long Sword of
+     * <p>Not knowledge, but a record of whether the news has been broken. Recognizing a Long Sword of
      * Extra Attacks for the first time is worth a message; the tenth is not, and this flag is how
      * {@link PlayerKnowledge#knowObject} tells the two apart.
      *
@@ -292,7 +292,7 @@ public class EgoItem {
      * {@code ego->modifiers[i]}.
      *
      * <p>A {@link Random}, not an {@code int}, because an ego's modifiers are rolled per object: a
-     * Ring of the Mouse gives some amount of stealth, not a fixed amount. That is why recognising an
+     * Ring of the Mouse gives some amount of stealth, not a fixed amount. That is why recognizing an
      * ego by its modifiers takes the trouble of evaluating the range at both extremes — a range that
      * spans zero can be present on an object showing nothing.
      *

@@ -32,7 +32,8 @@ import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
  * {@code curses[index].obj}, the template object of a curse the item carries with non-zero power.
  * One variable, one body, {@code n + 1} passes. The port cannot follow that shape directly because
  * {@link Curse} has no object of its own — the parser flattens the C {@code curse->obj} into
- * {@link Curse#getObjectFlags}, {@link Curse#getModifiers}, {@link Curse#getElInfo} and the three
+ * {@link Curse#getItemObject().getFlags()}, {@link Curse#getItemObject().getModifiers()},
+ * {@link Curse#getItemObject().getElInfo()} and the three
  * {@code getCombat*} accessors. This interface restores the single variable: the loop body asks the
  * source, and the two implementations answer from an item or from a curse.
  *

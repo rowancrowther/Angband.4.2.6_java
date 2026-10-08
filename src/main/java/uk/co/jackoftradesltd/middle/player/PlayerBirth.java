@@ -116,7 +116,7 @@ public class PlayerBirth {
      *
      * <p>Function embody commented in full on 260820.
      *
-     * @param player
+     * @param player the player who we are embodying
      */
     public static void embody(Player player) {
         if (player.getRace() == null)
@@ -393,7 +393,7 @@ public class PlayerBirth {
      * {@code 7 * STAT_MAX} and {@code 9 * STAT_MAX} - 36 to 44 inclusive, against a possible range
      * of 15 to 60. Both comparisons are strict, so 35 and 45 are both rejected. The accumulator is
      * declared inside the loop precisely so that it starts at zero on every attempt; C resets it in
-     * the {@code for} initialiser, {@code for (j = i = 0; ...)} ({@code player-birth.c:239}). A
+     * the {@code for} initializer, {@code for (j = i = 0; ...)} ({@code player-birth.c:239}). A
      * total carried between attempts could never fall back inside the window, and the loop would
      * never terminate.
      *
@@ -674,7 +674,7 @@ public class PlayerBirth {
      * Drives a whole birth through the command queue in one call, as if a player had picked a
      * race, a class and a name at the birth screen and accepted the result - the port of C's
      * {@code player_make_simple} ({@code player-birth.c:523}). Angband's test suite and its
-     * spoiler-file generator both use this to get a fully-initialised player without a UI.
+     * spoiler-file generator both use this to get a fully-initialized player without a UI.
      *
      * <p>{@code raceName} and {@code className} are resolved to the index of the matching entry
      * in {@link PlayerRegistry#getPlayerRaces()} / {@link PlayerRegistry#getPlayerClasses()},
@@ -1291,7 +1291,7 @@ public class PlayerBirth {
      *   <li>spend up to half of what's left on each of {@code spellStat} and {@code STAT_CON} - or
      *   all of what's left, for a warrior class, which has no {@code spellStat} to split against -
      *   capped at a base of 16/18 unless the class is a pure caster or warrior;</li>
-     *   <li>spend whatever remains maximising {@code STAT_DEX}, then {@code STAT_INT} and
+     *   <li>spend whatever remains maximizing {@code STAT_DEX}, then {@code STAT_INT} and
      *   {@code STAT_WIS} in turn, skipping whichever of those two is {@code spellStat}.</li>
      * </ol>
      *
@@ -1491,7 +1491,7 @@ public class PlayerBirth {
      * @param toSave the birther record to fill in
      * @return {@code toSave}, for the caller's convenience
      */
-    private static Birther saveRollerData(Birther toSave) {
+    public static Birther saveRollerData(Birther toSave) {
         Player player = GameState.getPlayer();
 
         // save the data
@@ -1561,7 +1561,7 @@ public class PlayerBirth {
      * @return {@code prevPlayer}, now holding the state displaced from the live player, or
      * {@code null} if {@code prevPlayer} was {@code null}
      */
-    private static Birther LoadRollerData(Birther saved, Birther prevPlayer) {
+    public static Birther LoadRollerData(Birther saved, Birther prevPlayer) {
         Player player = GameState.getPlayer();
 
         Birther temp = new Birther();
@@ -1829,7 +1829,7 @@ public class PlayerBirth {
      * the numeral suffix on a reused character name.
      *
      * <p>Walks the string left to right. Each position's letter is looked up with {@link #value};
-     * an unrecognised letter - including a lowercase one, since neither version does case-folding
+     * an unrecognized letter - including a lowercase one, since neither version does case-folding
      * - answers {@code -1} immediately, matching a failed {@code strchr} in C. An empty string
      * likewise answers {@code -1} outright, matching C's own {@code strlen(roman) == 0} check.
      *
@@ -1856,9 +1856,9 @@ public class PlayerBirth {
      * <p>Function romanToInt coded on 260907, commented in full on 260907.
      *
      * @param roman the Roman numeral to convert; only the uppercase letters {@code I V X L C D M}
-     *              are recognised
+     *              are recognized
      * @return the numeral's arabic value, or {@code -1} if {@code roman} is empty or contains a
-     * letter that is not a recognised Roman numeral
+     * letter that is not a recognized Roman numeral
      */
     private static int romanToInt(String roman) {
         int result = 0;
@@ -2073,7 +2073,7 @@ public class PlayerBirth {
      * <p>C hands its raw {@code int} straight to {@code buy_stat}, whose own bounds check ({@code
      * choice >= STAT_MAX || choice < 0}) absorbs every out-of-range value as a silent no-op. This
      * method instead converts the arg to a {@link Stats} with {@link Stats#getStats} first, and
-     * that conversion only recognises the two sentinels {@link Stats#STAT_NONE} and
+     * that conversion only recognizes the two sentinels {@link Stats#STAT_NONE} and
      * {@link Stats#STAT_MAX} - anything further out of range comes back {@code null}, which {@link
      * #buyStat}'s own sentinel check does not catch. The explicit {@code chosenStat == null} guard
      * below stands in for the missing half of C's range test, so an invalid index still falls
@@ -2122,7 +2122,7 @@ public class PlayerBirth {
      * <p>C hands its raw {@code int} straight to {@code sell_stat}, whose own bounds check ({@code
      * choice >= STAT_MAX || choice < 0}) absorbs every out-of-range value as a silent no-op. This
      * method instead converts the arg to a {@link Stats} with {@link Stats#getStats} first, and
-     * that conversion only recognises the two sentinels {@link Stats#STAT_NONE} and
+     * that conversion only recognizes the two sentinels {@link Stats#STAT_NONE} and
      * {@link Stats#STAT_MAX} - anything further out of range comes back {@code null}, which {@link
      * #sellStat}'s own sentinel check does not catch. The explicit {@code chosenStat == null} guard
      * below stands in for the missing half of C's range test, so an invalid index still falls
@@ -2360,7 +2360,7 @@ public class PlayerBirth {
      *
      * <p>C fetches the argument with {@code cmd_get_arg_string(cmd, "name", &str)} but never checks
      * its return value ({@code player-birth.c:1237}): if the argument were absent, {@code str} would
-     * be left uninitialised and the following {@code my_strcpy(player->full_name, str, ...)}
+     * be left uninitialized and the following {@code my_strcpy(player->full_name, str, ...)}
      * ({@code player-birth.c:1240}) would read through a garbage pointer - undefined behaviour, not a
      * designed fallback. The port's {@link Command#getArgString} returns an {@link Optional} instead,
      * and this method guards on {@link Optional#isEmpty()} to return without touching the player's
@@ -2392,7 +2392,7 @@ public class PlayerBirth {
      *
      * <p>C fetches the argument with {@code cmd_get_arg_string(cmd, "history", &str)} but never
      * checks its return value ({@code player-birth.c:1253}): if the argument were absent, {@code str}
-     * would be left uninitialised and the following {@code string_make(str)} ({@code
+     * would be left uninitialized and the following {@code string_make(str)} ({@code
      * player-birth.c:1254}) would read through a garbage pointer - undefined behaviour, not a
      * designed fallback. The port's {@link Command#getArgString} returns an {@link Optional} instead,
      * and this method guards on {@link Optional#isEmpty()} to return without touching the player's
@@ -2425,7 +2425,7 @@ public class PlayerBirth {
      * The port of C's {@code do_cmd_accept_character} ({@code player-birth.c:1258}) - the final step
      * of character creation, run once the player has finished rolling or buying stats and choosing a
      * name and history. It rolls hit points, opens the message log with the "began the quest" line,
-     * embodies and outfits the player, initialises spells and known runes, restores the standard
+     * embodies and outfits the player, initializes spells and known runes, restores the standard
      * artifact table, seeds flavours, then flips the game to "playing" and fires
      * {@link GameEventType#EVENT_LEAVE_BIRTH}.
      *
@@ -2494,7 +2494,7 @@ public class PlayerBirth {
         // Give the player some money
         getMoney(player);
 
-        // Initialise the spells
+        // Initialize the spells
         PlayerMagic.playerSpellsInit(player);
 
         // Know all runes for ID on walkover
@@ -2506,7 +2506,7 @@ public class PlayerBirth {
         player.getItemKnowledge().setToD(1);
         player.getItemKnowledge().setToH(1);
 
-        // Initialise the stores & dungeon
+        // Initialize the stores & dungeon
         Store.storeReset();
         GenChunk.setChunkListMax(0);
 

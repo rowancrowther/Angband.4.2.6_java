@@ -23,7 +23,7 @@ import uk.co.jackoftradesltd.middle.enums.MessageType;
  * The set of templated messages describing what happens to a monster (dies,
  * resists, wakes up, flees, is held, …), each with its {@link MessageType}
  * category, whether the monster's name is omitted, and a template using
- * {@code [is|are]}/{@code [s]} pluralisation markers. Mirrors the C original's
+ * {@code [is|are]}/{@code [s]} pluralization markers. Mirrors the C original's
  * {@code MON_MSG_*} list ({@code src/list-mon-message.h}); the constants are
  * self-describing and documented collectively here.
  *
@@ -104,7 +104,7 @@ public enum MonsterMessage {
      */
     private boolean omitMonsterName;
     /**
-     * The message template, with pluralisation markers.
+     * The message template, with pluralization markers.
      */
     private String message;
 

@@ -404,7 +404,7 @@ public class ArtifactSetData {
         this.baseItemProb = new HashMap<>();
         this.baseArtAlloc = new HashMap<>();
 
-        // Initialise the maps
+        // Initialize the maps
         for (ArtifactIndex index : ArtifactIndex.values()) {
             artProbs.put(index, 0);
         }

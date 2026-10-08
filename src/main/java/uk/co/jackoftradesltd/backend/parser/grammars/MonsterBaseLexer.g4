@@ -21,7 +21,7 @@
 // table in init_parse_mon_base() (src/mon-init.c:1069) and struct file_parser
 // mon_base_parser (src/mon-init.c:1105).
 //
-// This lexer only tokenises; resolving the RF_ race flags, the glyph and the
+// This lexer only tokenizes; resolving the RF_ race flags, the glyph and the
 // pain: index is left to MonsterBaseAssembler. The glyph, free-text and flag
 // values each read in a dedicated sub-mode so their contents never collide
 // with the default-mode directive keywords.

@@ -71,7 +71,7 @@ public class UIEntryEmbryo {
      */
     private List<EmbryonicCategoryReferencies> categories;
     /**
-     * Which name-parameterisation scheme (none, {@code element} or {@code stat}) this record's
+     * Which name-parameterization scheme (none, {@code element} or {@code stat}) this record's
      * {@code parameter:} directive selected, resolved to the {@link UIEntryNameParameter} constant
      * itself. The Java form of C's {@code embryonic_ui_entry.param_index}
      * ({@code [C] ui-entry.c:173}), an index into {@code name_parameters[]}.
@@ -118,7 +118,7 @@ public class UIEntryEmbryo {
      *
      * @param uiEntry           the entry being assembled
      * @param categories        the categories accumulated for this entry so far
-     * @param parmIndex         the name-parameterisation scheme selected for this record
+     * @param parmIndex         the name-parameterization scheme selected for this record
      * @param pSourceIndex      the priority scheme selected for this record
      * @param lastCategoryIndex the category most recently inserted, or {@code null} if none has been
      *                          yet
@@ -193,23 +193,23 @@ public class UIEntryEmbryo {
     }
 
     /**
-     * Returns which name-parameterisation scheme this record's {@code parameter:} directive
+     * Returns which name-parameterization scheme this record's {@code parameter:} directive
      * selected.
      *
      * <p>Function getParmIndex coded before 260920, commented in full on 260920.
      *
-     * @return this embryo's name-parameterisation scheme
+     * @return this embryo's name-parameterization scheme
      */
     public UIEntryNameParameter getParmIndex() {
         return parmIndex;
     }
 
     /**
-     * Sets which name-parameterisation scheme this record's {@code parameter:} directive selected.
+     * Sets which name-parameterization scheme this record's {@code parameter:} directive selected.
      *
      * <p>Function setParmIndex coded before 260920, commented in full on 260920.
      *
-     * @param parmIndex the name-parameterisation scheme to select
+     * @param parmIndex the name-parameterization scheme to select
      */
     public void setParmIndex(UIEntryNameParameter parmIndex) {
         this.parmIndex = parmIndex;

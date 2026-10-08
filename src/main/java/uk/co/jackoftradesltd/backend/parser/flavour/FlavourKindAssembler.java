@@ -37,7 +37,7 @@ import java.util.List;
  * {@code lookup_sval}).
  *
  * <p>Because the sval lookup needs the object-kind table populated, flavours must
- * be loaded after object kinds and their artifact-synthesised special kinds
+ * be loaded after object kinds and their artifact-synthesized special kinds
  * (the {@code fixed:} svals point exclusively at those); {@code init()} orders
  * {@code loadFlavours()} after {@code loadArtifacts()} for exactly this reason.
  *

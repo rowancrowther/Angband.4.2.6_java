@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
  * utilities ({@code src/z-util.c} / {@code src/z-form.c}). Because the C game
  * works with raw {@code char *} buffers it needs explicit helpers for
  * formatting, length-bounded copies/concatenation, prefix/suffix tests,
- * case-insensitive comparison, pluralisation and so on; these methods provide
+ * case-insensitive comparison, pluralization and so on; these methods provide
  * the same behaviour over Java {@link String}s so ported code can keep its
  * original shape. Abstract because it is a pure utility holder.
  *
@@ -117,8 +117,8 @@ public abstract class StringUtils {
     }
 
     /**
-     * Pluralise a verb based on the number of them
-     * @param number The number of items we are pluralising
+     * Pluralize a verb based on the number of them
+     * @param number The number of items we are pluralizing
      * @return nothing in number is one, the string "s" if it is more than that
      */
     @CheckReturnValue
@@ -285,14 +285,14 @@ public abstract class StringUtils {
     }
 
     /**
-     * Return a string with a capitalised first character
-     * @param toCapitalise The string to capitalise
+     * Return a string with a capitalized first character
+     * @param toCapitalize The string to capitalize
      * @return The incoming string with a capital first letter
      */
     @CheckReturnValue
     @Contract(pure = true)
-    public static @NotNull String strCap(@NotNull String toCapitalise) {
-        return toCapitalise.isEmpty() ? "" : Character.toUpperCase(toCapitalise.charAt(0)) + toCapitalise.substring(1);
+    public static @NotNull String strCap(@NotNull String toCapitalize) {
+        return toCapitalize.isEmpty() ? "" : Character.toUpperCase(toCapitalize.charAt(0)) + toCapitalize.substring(1);
     }
 
     /**
@@ -544,9 +544,9 @@ public abstract class StringUtils {
      * character (code point 0x0B). {@link Character#isWhitespace} is not used because it is
      * wider than that set — it also treats the four ASCII separator controls (0x1C-0x1F) and
      * the Unicode line and paragraph separators as whitespace, none of which C's {@code isspace}
-     * recognises. (The vertical tab is spelled here as a code point rather than a Java escape,
+     * recognizes. (The vertical tab is spelled here as a code point rather than a Java escape,
      * because Unicode escapes are resolved everywhere in a source file, comments included,
-     * before javac even recognises what is a comment — writing the escape literally in this
+     * before javac even recognizes what is a comment — writing the escape literally in this
      * prose would leave a raw control byte here instead of the six visible characters.)
      *
      * <p>Method isSpace coded on 260910, commented in full on 260910.

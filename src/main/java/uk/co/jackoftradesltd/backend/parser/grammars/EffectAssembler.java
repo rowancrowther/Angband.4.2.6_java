@@ -122,7 +122,7 @@ public class EffectAssembler {
             return null;
         }
         // An effect with no subtype token normally resolves to EST_NONE, and the EST_NONE seed
-        // below is what it keeps - it also avoids a may-not-be-initialised error on the branch.
+        // below is what it keeps - it also avoids a may-not-be-initialized error on the branch.
         //
         // TELEPORT and TELEPORT_TO are the exception, and the || below exists solely for them.
         // Their subtype is a flag rather than a kind, and its absent value carries meaning: [C]
@@ -284,7 +284,7 @@ public class EffectAssembler {
      * @return the resolved wrapper, or {@code null} if {@code value} did not resolve against
      * {@code type}
      */
-    private static EffectSubTypeWrapper getWrapperSubType(EffectSubTypeEnum type, String value,
+    static EffectSubTypeWrapper getWrapperSubType(EffectSubTypeEnum type, String value,
                                                           List<String> errors, int line) {
         switch (type) {
             case EST_PROJ -> {

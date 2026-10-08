@@ -52,7 +52,7 @@ public class VisualsCycleAssembler implements Assembler<VisualsCycleParseRecord,
      * <p>
      * <strong>Reachability of the error paths.</strong> The grammar only lexes valid
      * {@code COLOUR_CODE} characters, so neither soft-error branch fires on real file input: an empty
-     * colour string cannot be produced, and an unrecognised code is a hard parse error upstream. Both
+     * colour string cannot be produced, and an unrecognized code is a hard parse error upstream. Both
      * guards are therefore defensive (reachable only by a hand-built record): an empty colour, or a
      * code that {@link ColourEnum#fromCode} cannot resolve (it returns {@code null} on a miss),
      * is flagged into {@code errors} and the whole record dropped. The lingering

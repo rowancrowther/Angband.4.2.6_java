@@ -244,7 +244,7 @@ public enum GameEventType {
     EVENT_CHEAT_DEATH,
 
     /**
-     * New status message for initialisation. Carries the line to show as an
+     * New status message for initialization. Carries the line to show as an
      * {@link uk.co.jackoftradesltd.channel.messages.data.EventDataString}.
      */
     EVENT_INITSTATUS,

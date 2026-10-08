@@ -18,7 +18,7 @@
 /*
  * @author Rowan Crowther
  *
- * Lexer for lib/gamedata/ui_entry.txt - tokenises the UI-element definitions
+ * Lexer for lib/gamedata/ui_entry.txt - tokenizes the UI-element definitions
  * parsed by UIEntryGrammar.g4: the record-count header, the directive keywords
  * (name:/parameter:/renderer:/combine:/priority:/category:/flags:/desc:/label:/
  * label5:/label2:/template:), the '<TAG>' punctuation with its upper-case

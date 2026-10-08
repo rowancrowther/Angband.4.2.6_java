@@ -260,7 +260,7 @@ public class PlayerRace {
      * <p>Three-way, not a scale of goodness: {@code -1} is a vulnerability, {@code 0} no opinion,
      * positive values successive grades of resistance. {@code calcBonuses} treats the vulnerability
      * specially, remembering it and applying it only after every other source has had its say, so
-     * that a resistance from elsewhere is compared against the unpenalised level
+     * that a resistance from elsewhere is compared against the unpenalized level
      * ({@code player-calcs.c:1908-1913}).
      *
      * <p>An element the race says nothing about reads as {@code 0}, matching C's zeroed array.

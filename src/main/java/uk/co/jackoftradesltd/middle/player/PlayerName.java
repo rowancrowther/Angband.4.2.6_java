@@ -104,7 +104,7 @@ public class PlayerName {
      * <p>The alphanumeric test is C's {@code isalpha}/{@code isdigit}, which {@code main.c:483}
      * runs under the user's locale. That locale is required to be UTF-8, but the tests are
      * still single-byte, and no byte above {@code 0x7F} is alphabetic in a UTF-8 locale — so C
-     * sanitises every byte of a multi-byte character. {@link StringUtils#isAlpha} and
+     * sanitizes every byte of a multi-byte character. {@link StringUtils#isAlpha} and
      * {@link StringUtils#isDigit} are the same ASCII ranges, applied to a {@code char}. The
      * remaining difference is one of units, not of rules: an accented letter costs C two
      * underscores and two places of the limit where it costs one of each here. Java strings are
@@ -128,12 +128,12 @@ public class PlayerName {
      *
      * <p>Method playerSafeName coded on 260831, commented in full on 260901.
      *
-     * @param safeLen     the size of the buffer C would have been given; a sanitised name is cut to
+     * @param safeLen     the size of the buffer C would have been given; a sanitized name is cut to
      *                    {@code safeLen} characters, while the {@code PLAYER} fallback fits itself
      *                    into {@code safeLen - 1}, exactly as C's two paths do
      * @param name        the player's full name, which may be {@code null}
      * @param stripSuffix ignored, as it is in C; see above
-     * @return the sanitised name, or {@code PLAYER} cut to fit if nothing of the name survived
+     * @return the sanitized name, or {@code PLAYER} cut to fit if nothing of the name survived
      */
     public String playerSafeName(int safeLen, String name, boolean stripSuffix) {
         String suffix = "";

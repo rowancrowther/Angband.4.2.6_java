@@ -151,7 +151,7 @@ public class ItemObject {
      * index zero, so for them the name decides.
      *
      * <p>The name comparison is null-safe ({@code nullsFirst}), so a {@code null} name on a tied
-     * index sorts first rather than throwing from {@link TreeMap#put}. It is a second layer: the
+     * index sorts first rather than throwing from {@link TreeMap#put(Object, Object)}. It is a second layer: the
      * {@link Curse} constructor rejects a {@code null} or empty name, so no {@link Curse} reaches
      * this comparator with one. C has no counterpart, as its curses are array slots and carry no
      * comparator.
@@ -540,7 +540,7 @@ public class ItemObject {
      * The item's object flags. C's {@code obj->flags}, a bitflag array.
      *
      * <p>{@link #similar} requires the whole set to be equal, so two items differing in a single
-     * flag never stack. {@link #objectValueReal} reads {@code OF_BURNS_OUT} from it to recognise a
+     * flag never stack. {@link #objectValueReal} reads {@code OF_BURNS_OUT} from it to recognize a
      * light that is consumed as it is used. {@link #nonStandardWeightPower(int)} merges it with the
      * active curses' flags to see whether the object is throwable, and
      * {@link #applyCurseAttributes} unions the curses' flags into it through {@link #setFlags}
@@ -563,7 +563,7 @@ public class ItemObject {
      *
      * <p>Values already rolled for this particular object, not the dice they came from: an ego's
      * {@code +1d4} stealth becomes a {@code 3} here when the object is generated. The dice live on
-     * {@link ObjectKind} and {@link EgoItem}, which is what makes recognising an ego by its
+     * {@link ObjectKind} and {@link EgoItem}, which is what makes recognizing an ego by its
      * modifiers a question about ranges rather than about this number.
      *
      * <p>A map that may omit a modifier, where C's array has a slot for every one and a slot that
@@ -855,7 +855,7 @@ public class ItemObject {
      * argument note added on 261007.
      *
      * <p>{@link #wipe} and {@link #initCurses} each replace the map with a fresh empty one from
-     * {@link #cursesFactory()}, discarding every curse the item carried. Wipe reset and initialiser
+     * {@link #cursesFactory()}, discarding every curse the item carried. Wipe reset and initializer
      * added on 261002.
      */
     private TreeMap<Curse, CurseData> curses;
@@ -1614,7 +1614,7 @@ public class ItemObject {
      */
     @CheckReturnValue
     @Contract(pure = true)
-    private boolean cursesAreEqual(@NotNull ItemObject itm2) {
+    public boolean cursesAreEqual(@NotNull ItemObject itm2) {
         if ((this.getCurses().isEmpty() && !itm2.getCurses().isEmpty())
                 || (!this.getCurses().isEmpty() && itm2.getCurses().isEmpty()))
             return false;
@@ -2005,7 +2005,7 @@ public class ItemObject {
      * <p>The port of what C achieves by freeing the curse array and setting the pointer to null —
      * {@code mem_free(obj->known->curses); obj->known->curses = NULL;} in
      * {@code player_know_object}, which uses it to wipe a known counterpart's curses when the real
-     * object turns out to have none the player recognises.
+     * object turns out to have none the player recognizes.
      *
      * <p>Exists as a method because {@link #getCurses()} hands back an unmodifiable view, so a
      * caller cannot clear the map through it. Leaves an empty map rather than a null one; the two
@@ -2458,7 +2458,7 @@ public class ItemObject {
      * <p>The wording belongs to the property, not to this class. {@code object_property.txt} gives
      * each flag a {@code msg:} line — {@code Your {name} glows.} and the like — and the
      * {@code {name}} tag is where the item's description goes. C walks the string looking for
-     * braces and silently drops any tag it does not recognise; a plain replace is equivalent here
+     * braces and silently drops any tag it does not recognize; a plain replace is equivalent here
      * because {@code {name}} is the only tag the data file uses.
      *
      * <p><b>Two ways to have no message, and they are not the same.</b> A property that is missing
@@ -3347,7 +3347,7 @@ public class ItemObject {
      * Takes every brand off this item, the port of C freeing the brand array and nulling the pointer.
      *
      * <p>{@code knowObject} uses it on a counterpart whose item turned out to carry no brand the
-     * player recognises — C's {@code if (!known_brand) { mem_free(...); obj->known->brands = NULL; }}.
+     * player recognizes — C's {@code if (!known_brand) { mem_free(...); obj->known->brands = NULL; }}.
      *
      * <p>Leaves an empty set rather than a null one. Callers cannot tell the two apart, {@link
      * #getBrands()} reporting empty for both, which is why the null field never needs restoring.
@@ -3466,7 +3466,7 @@ public class ItemObject {
      *
      * <p>Both halves are required: the kind must be one the player is aware of, and it must carry
      * {@code KF_EASY_KNOW}. The flag marks kinds with nothing hidden to discover — a scroll's
-     * properties are wholly determined by which scroll it is — so once the player recognises the
+     * properties are wholly determined by which scroll it is — so once the player recognizes the
      * kind there is no further identification to do. {@code flagsKnown} uses it to decide whether an
      * ego's flags may be folded in without the player having learned the individual runes.
      *
@@ -3477,7 +3477,7 @@ public class ItemObject {
      *
      * <p>Function easyKnow commented in full on 261002.
      *
-     * @return {@code true} if recognising this object's kind reveals all of its properties
+     * @return {@code true} if recognizing this object's kind reveals all of its properties
      */
     public boolean easyKnow() {
         if (kind == null) return false;
@@ -3491,7 +3491,7 @@ public class ItemObject {
      * <p>Built in three movements, and the order matters. The object's real flags are copied, then
      * <em>intersected</em> with the known counterpart's, which is the whole of the restriction: a
      * flag the player has not learned the rune for drops out here. Awareness then adds back what
-     * recognising the kind reveals, and an easy-know ego adds its own flags and removes the ones it
+     * recognizing the kind reveals, and an easy-know ego adds its own flags and removes the ones it
      * suppresses — additions after a restriction, because knowing what something <em>is</em> can
      * tell the player more than they learned by carrying it.
      *
@@ -6119,7 +6119,7 @@ public class ItemObject {
      * {@code struct activation *} pointers and {@code object_copy} never duplicates the chain
      * behind them, and so is the {@code effectMessage} string, which is immutable.
      *
-     * <p>Null is preserved rather than normalised for the brand, slay and curse collections, because
+     * <p>Null is preserved rather than normalized for the brand, slay and curse collections, because
      * elsewhere the class distinguishes "no collection" from "an empty one" - the accessors answer
      * an immutable empty collection for the former, which takes no writes.
      *
@@ -6277,13 +6277,13 @@ public class ItemObject {
      * <li>{@code &} and the spaces following it are dropped. The article they stand for is chosen
      *     further out, by the quantity prefix, which looks for the {@code &} in the unformatted
      *     template.</li>
-     * <li>{@code ~} at the end of a word pluralises it when {@code pluralise} is set, as
+     * <li>{@code ~} at the end of a word pluralizes it when {@code pluralize} is set, as
      *     {@code es} after {@code s}, {@code x} or {@code h} and {@code s} otherwise.</li>
      * <li>{@code |x|y|} yields {@code x} when singular and {@code y} when plural, which is how
      *     {@code Sta|ff|ves|} becomes either staff or staves.</li>
      * <li>{@code #} is replaced by {@code modString} - a flavour for flavoured kinds, the book's
      *     own name for books - formatted first by a recursive call that carries the same
-     *     pluralisation but no further modifier of its own.</li>
+     *     pluralization but no further modifier of its own.</li>
      * </ul>
      *
      * <p>C walks the template once, left to right, copying bytes into a bounded buffer. This
@@ -6294,7 +6294,7 @@ public class ItemObject {
      *
      * <ul>
      * <li>Because the modifier goes in before the tilde pass, a {@code ~} written directly after a
-     *     {@code #} pluralises against the last character of the substituted modifier, where C
+     *     {@code #} pluralizes against the last character of the substituted modifier, where C
      *     sees the {@code #} itself and so always adds a bare {@code s}. No basename puts the two
      *     in that order.</li>
      * <li>A template whose bar count is not a multiple of three is rejected whole and returned
@@ -6309,7 +6309,7 @@ public class ItemObject {
      * <p>Both error exits hand back the text with any unconsumed bars and tildes still in it, so a
      * malformed template shows up in the game rather than being quietly swallowed.
      *
-     * <p>Two {@code ~} in a row take the same exit when pluralising. After the first is replaced the
+     * <p>Two {@code ~} in a row take the same exit when pluralizing. After the first is replaced the
      * rest of the template is treated afresh, so the second sits at the front of it and is read as a
      * {@code ~} with nothing before it, where C reads the first {@code ~} as the preceding character
      * and writes a bare {@code s}.
@@ -6335,10 +6335,10 @@ public class ItemObject {
      * @param string    the name template to format
      * @param modString the text to substitute for {@code #}, or {@code null} to leave any
      *                  {@code #} in place
-     * @param pluralise whether to take the plural form of every {@code ~} and {@code |x|y|}
+     * @param pluralize whether to take the plural form of every {@code ~} and {@code |x|y|}
      * @return the formatted name
      */
-    public String objDescNameFormat(@NotNull String string, @Nullable String modString, boolean pluralise) {
+    public String objDescNameFormat(@NotNull String string, @Nullable String modString, boolean pluralize) {
         StringBuilder result = new StringBuilder();
 
         // Trim '&'
@@ -6354,7 +6354,7 @@ public class ItemObject {
 
         // Swap in ModString if we need to
         if (string.contains("#") && modString != null) {
-            string = string.replace("#", objDescNameFormat(modString, null, pluralise));
+            string = string.replace("#", objDescNameFormat(modString, null, pluralize));
         }
 
         // Check that the number of | in the string is strictly divisible by 3.
@@ -6365,8 +6365,8 @@ public class ItemObject {
             return string;
         }
 
-        // Find words we need to pluralise and do so
-        if (pluralise) {
+        // Find words we need to pluralize and do so
+        if (pluralize) {
             while (string.contains("~")) {
                 int plural = string.indexOf('~');
                 if (plural == 0) {
@@ -6385,7 +6385,7 @@ public class ItemObject {
             }
             string = result.toString() + string;
 
-            // Pluralise special plurals
+            // Pluralize special plurals
             // Remove the bits |SINGLE|plural| bits
             while (string.contains("|")) {
                 int first = string.indexOf('|');
@@ -6471,11 +6471,11 @@ public class ItemObject {
      * <li>{@code {is}} - {@code is} for a single object, {@code are} for a pile.</li>
      * </ul>
      *
-     * <p>A tag is recognised by its opening letters, as in C's {@code msg_tag_lookup}
+     * <p>A tag is recognized by its opening letters, as in C's {@code msg_tag_lookup}
      * ({@code obj-util.c}), tested in this order: {@code name} (four letters), {@code kind} (four),
      * {@code s} (one), then {@code is} (two). So {@code {names}} is read as {@code {name}},
      * {@code {sx}} and {@code {size}} as {@code {s}}, and {@code {isn}} as {@code {is}}, while
-     * {@code {nam}} matches nothing. Whatever the tag, recognised or not, the text resumes just
+     * {@code {nam}} matches nothing. Whatever the tag, recognized or not, the text resumes just
      * past its closing brace.
      *
      * <p>A tag in braces that is not one of those is dropped whole, braces included, exactly as
@@ -6806,7 +6806,7 @@ public class ItemObject {
      *
      * @return the glyph this item is drawn as
      */
-    private char objectKindChar() {
+    public char objectKindChar() {
         return useFlavourGlyph() ? kind.getFlavour().getFlavourKind().getGlyph()
                 : kind.getCharacter().getCharacter();
     }
@@ -6823,7 +6823,7 @@ public class ItemObject {
      *
      * @return the colour this item is drawn in
      */
-    private ColourEnum objectKindAttr() {
+    public ColourEnum objectKindAttr() {
         return useFlavourGlyph() ? kind.getFlavour().getColour()
                 : kind.getCharacter().getAttributeColour();
     }

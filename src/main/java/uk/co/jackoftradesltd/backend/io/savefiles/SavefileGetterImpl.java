@@ -111,7 +111,7 @@ public class SavefileGetterImpl {
      * inside {@code got_savefile()} ({@code ui-game.c:1191-1210}). If the
      * directory cannot be opened, {@link #directory} is left {@code null}
      * and {@link #haveSaveDir} {@code false}, matching the C original
-     * leaving {@code have_savedir} at its zero-initialised value when
+     * leaving {@code have_savedir} at its zero-initialized value when
      * {@code my_dopen()} fails ({@code ui-game.c:1198-1201}); {@link
      * #gotSavefile()} reports that failure on its first call rather than
      * here, since the C original has no separate construction step to

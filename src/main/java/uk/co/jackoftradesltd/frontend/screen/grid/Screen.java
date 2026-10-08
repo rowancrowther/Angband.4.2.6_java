@@ -33,7 +33,7 @@ import java.util.List;
  * <p>{@link #live} is mutated freely by whatever holds this {@code Screen} — through
  * {@link #root()} and the {@link Region} it returns — on the composing thread only. Nothing
  * about that mutation is thread-safe, by design: safety comes from a single owner, not from
- * synchronisation, per {@code docs/UIPanelArchitecture.md}'s "Option B" ("Who owns the grid").
+ * synchronization, per {@code docs/UIPanelArchitecture.md}'s "Option B" ("Who owns the grid").
  *
  * <p>{@link #frame()} is the one crossing point. It publishes an immutable {@link Frame} —
  * a defensive copy of both {@link #live} and {@link #hotspots} — for handing to the event

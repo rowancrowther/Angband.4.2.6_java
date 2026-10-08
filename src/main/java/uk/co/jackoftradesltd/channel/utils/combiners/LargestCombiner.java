@@ -73,7 +73,7 @@ public class LargestCombiner implements Cloneable, Combiner {
      *
      * <p>A combiner that has not been {@link #init(int, int) init}-ed yet has no
      * state to copy, so the clone is a fresh instance - which is the case
-     * {@code CombinerName} actually exercises, since it clones an un-initialised
+     * {@code CombinerName} actually exercises, since it clones an un-initialized
      * prototype per fold.
      *
      * <p>coded on 2026-09-02 / commented in full on 2026-09-16

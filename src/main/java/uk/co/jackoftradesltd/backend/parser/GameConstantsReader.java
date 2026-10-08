@@ -70,7 +70,8 @@ public class GameConstantsReader {
     /**
      * Parses {@code constants.txt} and returns the full {@link GameConstantsParseResult}: the
      * assembled {@link GameConstantsData} together with any soft errors collected during assembly.
-     * Unlike the other readers in this package, this does not delegate to {@link GrammarDriver} -
+     * Unlike the other readers in this package, this does not delegate to 
+     * {@link uk.co.jackoftradesltd.channel.parser.GrammarDriver} -
      * {@code GameConstantsAssembler} produces a single aggregate rather than a {@code List}, so the
      * lex/parse/assemble ritual is inlined here instead.
      *

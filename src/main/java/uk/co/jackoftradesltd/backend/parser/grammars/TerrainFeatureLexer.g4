@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Lexer for lib/gamedata/terrain.txt - tokenises every terrain feature (floor,
+// Lexer for lib/gamedata/terrain.txt - tokenizes every terrain feature (floor,
 // walls, doors, staircases, shop entrances, rubble, lava, ...) into the
 // directive keywords, integers, flag names and free text that its paired parser
 // TerrainFeatureGrammar assembles. Cf. src/init.c struct file_parser feat_parser,

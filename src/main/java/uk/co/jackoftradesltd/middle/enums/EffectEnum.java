@@ -957,14 +957,14 @@ public enum EffectEnum {
     EF_TOUCH_AWARE(EffectSubTypeEnum.EST_PROJ, false, "", 1, EffectInfoEnum.EFINFO_TOUCH, "%s on all adjacent squares", "%s all adjacent"),
     /**
      * Effect {@code CURSE_ARMOR} from {@code list-effects.h}. Description template: {@code "curses your
-     * worn armor"}.
+     * worn armour"}.
      * <p>
      * Aimed: no. Arguments: 0. Info label: none. Info category: {@link EffectInfoEnum#EFINFO_NONE}.
-     * Sub-type: {@link EffectSubTypeEnum#EST_NONE}. Menu format: {@code "curse armor"}.
+     * Sub-type: {@link EffectSubTypeEnum#EST_NONE}. Menu format: {@code "curse armour"}.
      * <p>
      * Constant EF_CURSE_ARMOR coded before 260815, commented in full on 261001.
      */
-    EF_CURSE_ARMOR(EffectSubTypeEnum.EST_NONE, false, "", 0, EffectInfoEnum.EFINFO_NONE, "curses your worn armor", "curse armor"),
+    EF_CURSE_ARMOR(EffectSubTypeEnum.EST_NONE, false, "", 0, EffectInfoEnum.EFINFO_NONE, "curses your worn armour", "curse armour"),
     /**
      * Effect {@code CURSE_WEAPON} from {@code list-effects.h}. Description template: {@code "curses your
      * wielded melee weapon"}.

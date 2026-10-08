@@ -151,7 +151,7 @@ public class GameConstants {
     /**
      * True once the data files have been loaded and the registries filled.
      */
-    public boolean initialised = false;
+    public boolean initialized = false;
     /**
      * True while the game is running itself as a screensaver - a mode C's Windows front end offers.
      */
@@ -266,13 +266,13 @@ public class GameConstants {
             ObjectRegistry.reset();
 
             file = "constants.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising game constants...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing game constants...");
             loadGameConstants();
             file = "world.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising world...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing world...");
             WorldDataLoader.loadWorld();                // world arraylist size determines maxRandDepth
             file = "projection.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising game projections...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing game projections...");
             WorldDataLoader.loadProjections();          // projections arrayList size determines projectionTypeMax
 
             file = "ui_entry files";
@@ -291,65 +291,65 @@ public class GameConstants {
             }
 
             file = "player_property.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising player properties...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing player properties...");
             PlayerDataLoader.loadPlayerProperties();     // Dependent on UIEntry
             file = "terrain.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising terrain features...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing terrain features...");
             TerrainDataLoader.loadTerrainFeatures();
             file = "object_base.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising object bases...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing object bases...");
             ObjectDataLoader.loadObjectBases();
             file = "pain.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising pain messages...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing pain messages...");
             MonsterDataLoader.loadPain();
             file = "monster_base.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising monster bases...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing monster bases...");
             MonsterDataLoader.loadMonsterBases();         // Dependent on MonsterPain
             file = "slay.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising object slays...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing object slays...");
             ObjectDataLoader.loadSlays();                // Dependent on MonsterBases
             file = "brand.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising object brands...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing object brands...");
             ObjectDataLoader.loadBrands();
             file = "summon.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising monster summons...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing monster summons...");
             MonsterDataLoader.loadSummons();              // Dependent on MonsterBases
             file = "curse.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising curses...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing curses...");
             ObjectDataLoader.loadCurses();               // Dependent on ObjectBases, & Summons
             file = "shape.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising player shapes...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing player shapes...");
             PlayerDataLoader.loadPlayerShapes();
             file = "object.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising objects...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing objects...");
             ObjectDataLoader.loadItemObjects();          // Dependent on Summons, Curse, Brand, Slay & ObjectBase
             file = "activation.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising activations...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing activations...");
             ObjectDataLoader.loadActivations();
             file = "ego_item.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising ego items...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing ego items...");
             ObjectDataLoader.loadEgoItems();             // Dependent on Activations, Brand, Slay & Curse
             file = "history.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising player histories...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing player histories...");
             PlayerDataLoader.loadPlayerHistories();
             file = "body.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising player bodies...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing player bodies...");
             PlayerDataLoader.loadBodies();
             file = "p_race.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising player races...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing player races...");
             PlayerDataLoader.loadPlayerRaces();          // Dependent on PlayerBodies & PlayerHistories
             file = "realm.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising magic...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing magic...");
             PlayerDataLoader.loadMagicRealms();
             file = "class.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising player classes...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing player classes...");
             PlayerDataLoader.loadPlayerClasses();        // Dependent on ItemObjects, Summons, MagicRealms
             file = "artifact.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising artifacts...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing artifacts...");
             ObjectDataLoader.loadArtifacts();            // Dependent on Activations, ObjectKind, Brand, Slay & Curse
             ObjectDataLoader.parseCurseKinds();          // Dependent on ItemObjects & Curse; C does this at the end of artifact loading
             file = "object_property.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising object properties...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing object properties...");
             ObjectDataLoader.loadObjectProperties();     // Dependent on UIEntry
 
             // Deal with UIEntry bindings here
@@ -403,50 +403,50 @@ public class GameConstants {
             }
 
             file = "player_timed.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising player times properties...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing player times properties...");
             PlayerDataLoader.loadPlayerTimedProperties();
             file = "blow_methods.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising blow methods...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing blow methods...");
             MonsterDataLoader.loadBlowMethods();
             file = "blow_effects.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising blow effects...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing blow effects...");
             MonsterDataLoader.loadBlowEffects();          // Dependent on Projections
             file = "monster_spell.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising monster spell types...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing monster spell types...");
             MonsterDataLoader.loadMonsterSpellTypes();
             file = "visuals.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising colour tables...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing colour tables...");
             MonsterDataLoader.loadVisualTables();
             file = "monster.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising monsters...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing monsters...");
             MonsterDataLoader.loadMonsters();             // Dependent on MonsterBase, VisualsCyclerTable, BlowMethods & VisualColours
             file = "pit.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising pit profiles...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing pit profiles...");
             MonsterDataLoader.loadPitProfiles();          // Dependent on Monsters, MonsterBase & MonsterSpellTypes
             // TODO: Add in lore parsing and uncomment below two lines
-            //bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising lore...");
+            //bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing lore...");
 //            loadMonsterLore();          // Dependent on MonsterKind, MonsterBase & ObjectKind (amongst others)
             file = "trap.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising traps...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing traps...");
             TerrainDataLoader.loadTraps();
             file = "quest.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising quests...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing quests...");
             WorldDataLoader.loadQuests();               // Dependent on Monster
             file = "hints.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising hints...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing hints...");
             MiscDataLoader.loadHints();
             file = "names.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising names...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing names...");
             MiscDataLoader.loadNames();
             file = "flavor.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising flavours...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing flavours...");
             MiscDataLoader.loadFlavours();
             file = "chest_trap.txt";
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising chest traps...");
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing chest traps...");
             ObjectDataLoader.loadChestTraps();
 
             // Load global tables
-            PlayerDataLoader.initialiseExpLevel();
+            PlayerDataLoader.initializeExpLevel();
         } catch (Exception e) {
             String message = "Unable to load data from " + AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + file
                     + " error message: " + e.getMessage();
@@ -524,7 +524,7 @@ public class GameConstants {
     public static void runTemplateParser() {
         // Signal EVENT_ENTER_INIT
         EventsHandler bus = GameEngine.getEventsBusHandler();
-        bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising arrays... (dungeon profiles)");
+        bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing arrays... (dungeon profiles)");
         DungeonLoader.loadDungeonProfiles();
 
     }

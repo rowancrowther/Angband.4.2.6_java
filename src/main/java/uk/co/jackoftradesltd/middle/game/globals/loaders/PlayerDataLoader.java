@@ -58,9 +58,9 @@ public class PlayerDataLoader {
      * {@link PlayerEventStatusUpdate#updatePlayerCharSheetExpToLevel} to keep the cached
      * character-sheet view in step.
      *
-     * <p>Method initialiseExpLevel coded on 260925, commented in full on 260925.
+     * <p>Method initializeExpLevel coded on 260925, commented in full on 260925.
      */
-    public static void initialiseExpLevel() {
+    public static void initializeExpLevel() {
         long[] playerExp = new long[50];
         PlayerRegistry.playerExperience.clear();
         PlayerRegistry.playerExperience.put(0, 10L);

@@ -20,7 +20,7 @@ package uk.co.jackoftradesltd.middle.objects;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 
 /**
- * A randomised "flavour" for an unidentified object kind — the disguising name
+ * A randomized "flavour" for an unidentified object kind — the disguising name
  * (e.g. a potion's colour) and the glyph/colour it is shown with until
  * identified. This is the Java port of the C original's {@code struct flavor}
  * ({@code src/object.h}).

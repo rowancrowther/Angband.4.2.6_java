@@ -405,7 +405,7 @@ public class TermData {
 
     /**
      * Bind a logical {@link Term} to this window and wire up its hooks. Uses {@code term} if
-     * one is given, or creates a fresh {@link Term} otherwise, initialises it to this window's
+     * one is given, or creates a fresh {@link Term} otherwise, initializes it to this window's
      * column/row/key sizes, enables soft-cursor / complex-input / higher-pict modes, and
      * installs the {@link TermXtraWin} event handlers for the drawing hooks. This is the Java
      * port of the C original's {@code term_data_link} ({@code [C] src/main-win.c}), which always

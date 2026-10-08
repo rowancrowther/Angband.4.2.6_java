@@ -36,12 +36,12 @@ import java.util.*;
  * <p>Unlike the other registries, the object-kind table is a live, mutable registry rather than a
  * load-once list: {@link #addObjectKind} appends a kind and indexes it in {@link #kindsByTvalSval}
  * (the tval&rarr;sval&rarr;kind index kept in sync with {@code objectKinds}), and {@link #reset}
- * clears both so a re-initialisation does not double-register. {@link #unknownGoldKind} and
+ * clears both so a re-initialization does not double-register. {@link #unknownGoldKind} and
  * {@link #unknownItemKind} are the sentinel kinds for unidentified gold and items.
  *
  * <p>This is the read side of the object slice: it is populated at startup by
  * {@link uk.co.jackoftradesltd.middle.game.globals.loaders.ObjectDataLoader} — ordinary kinds
- * registered by {@code loadItemObjects} and special artifact kinds synthesised into the same table
+ * registered by {@code loadItemObjects} and special artifact kinds synthesized into the same table
  * by {@code loadArtifacts}. It was split out of {@code GameConstants} as one domain slice of the
  * loader/registry refactor.
  *
@@ -498,7 +498,7 @@ public class ObjectRegistry {
     }
 
     /**
-     * @return the current number of registered object kinds (ordinary plus synthesised)
+     * @return the current number of registered object kinds (ordinary plus synthesized)
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -703,7 +703,7 @@ public class ObjectRegistry {
 
     /**
      * Clears the object-kind table and its {@link #kindsByTvalSval} index together, so a
-     * re-initialisation ({@code GameConstants.init()}) starts from an empty registry rather than
+     * re-initialization ({@code GameConstants.init()}) starts from an empty registry rather than
      * double-registering kinds.
      */
     public static void reset() {
@@ -863,7 +863,7 @@ public class ObjectRegistry {
      * Register an object kind: allocate it the next sval under its base (svals are 1-based per base),
      * append it to {@link #objectKinds}, and index it in {@link #kindsByTvalSval} for fast
      * (tval, sval) lookup. This is the single choke-point that keeps a kind's numeric sval and the
-     * lookup index in step, so synthesised kinds (e.g. spellbooks) register exactly like file-loaded
+     * lookup index in step, so synthesized kinds (e.g. spellbooks) register exactly like file-loaded
      * ones.
      *
      * @param toAdd the ObjectKind to register

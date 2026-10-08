@@ -42,7 +42,7 @@ import java.util.List;
  * the pending notice ({@code PN_*}), update ({@code PU_*}) and redraw ({@code PR_*}) flag sets,
  * the current trackees (health-bar target, recalled monster race, examined object), inventory and
  * quiver contents and counts, the resting/running/pathfinding counters, and the floor object pile
- * under the player. All of it is volatile — rebuilt rather than serialised — which is exactly what
+ * under the player. All of it is volatile — rebuilt rather than serialized — which is exactly what
  * lets the engine discard the upkeep and recompute it on load.
  *
  * <p><b>Status:</b> the full field set is modelled; accessors are being added as callers need

@@ -53,7 +53,7 @@ public class Quark implements AngbandModule {
      */
     private Map<Integer, String> quarks;
     /**
-     * Logger used to report misuse (e.g. operating on an uninitialised table).
+     * Logger used to report misuse (e.g. operating on an uninitialized table).
      */
     private final Logger logger = LogManager.getLogger();
 

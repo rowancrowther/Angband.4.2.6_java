@@ -290,7 +290,7 @@ public class CommandProcessor {
     /**
      * Returns the human-readable verb for a command code, or {@code null} if the code has no
      * dispatch-table row - the port of C's {@code cmd_verb}, which likewise returns {@code NULL}
-     * for an unrecognised code.
+     * for an unrecognized code.
      *
      * @param code the command code to look up
      * @return the code's verb, or {@code null} if it is not dispatchable

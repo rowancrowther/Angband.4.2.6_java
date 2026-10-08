@@ -33,7 +33,7 @@ import java.util.List;
  * defaults), while a directive that was <em>present but malformed</em> arrives as {@code null},
  * because ANTLR's error recovery leaves the sub-rule's return unset.
  *
- * <p>There is no {@code pval} component. C synthesises that field while parsing, one bit per record
+ * <p>There is no {@code pval} component. C synthesizes that field while parsing, one bit per record
  * in file order ({@code obj-chest.c:64-72}); here it belongs to
  * {@link uk.co.jackoftradesltd.middle.objects.enums.ChestTrapCode}, so nothing at parse time needs it.
  *

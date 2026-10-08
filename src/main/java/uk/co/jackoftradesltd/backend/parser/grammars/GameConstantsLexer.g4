@@ -27,7 +27,7 @@
  * critical-hit-level ones, which instead carry several int fields plus a
  * trailing str message.
  *
- * This lexer is deliberately structure-agnostic: it tokenises every line
+ * This lexer is deliberately structure-agnostic: it tokenizes every line
  * uniformly as a category name (GC_NAME) followed by colon-separated fields
  * (GC_MSG / INTEGER, split by COLON), without distinguishing the directive
  * variants. Paired with GameConstantsGrammar.g4, whose 'line' rule collects

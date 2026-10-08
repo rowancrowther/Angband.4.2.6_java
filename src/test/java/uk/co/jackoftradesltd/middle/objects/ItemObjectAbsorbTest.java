@@ -162,7 +162,6 @@ class ItemObjectAbsorbTest {
      *
      * @param number the stack size
      * @return the stack
-     * @throws Exception if a field cannot be reached
      */
     private ItemObject bareStack(int number) {
         // The split copies the item, and the copy calls copy() on the base damage and the recharge

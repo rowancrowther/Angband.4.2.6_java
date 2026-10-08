@@ -21,7 +21,7 @@ package uk.co.jackoftradesltd.channel.messages.data;
  * {@link GameEventData} payload carrying one map square. The port of C's {@code struct loc}
  * where it appears in the {@code game_event_data} union ({@code src/game-event.h}) — but only
  * the coordinate pair, not the arithmetic: {@link uk.co.jackoftradesltd.middle.cave.Loc} keeps the
- * movement and randomisation helpers the core needs and the display never asks for.
+ * movement and randomization helpers the core needs and the display never asks for.
  *
  * <p>Doubles as the component other payloads use wherever they carry positions, so an explosion's
  * blast grids and a bolt's endpoints are the same type as a bare point.

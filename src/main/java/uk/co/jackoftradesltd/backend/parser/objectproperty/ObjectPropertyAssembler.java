@@ -70,7 +70,7 @@ public class ObjectPropertyAssembler implements Assembler<ObjectPropertyParseRec
 
             // type: selects both the property's category and the table its code resolves
             // against, so it must resolve first (C errors PARSE_ERROR_MISSING_OBJ_PROP_TYPE
-            // if code precedes type). An unrecognised type makes the record meaningless.
+            // if code precedes type). An unrecognized type makes the record meaningless.
             String type = record.type();
             ObjPropertyType objPropertyType = ObjPropertyType.fromValue(type);
             if (objPropertyType == null) {
@@ -81,7 +81,7 @@ public class ObjectPropertyAssembler implements Assembler<ObjectPropertyParseRec
 
             // subtype: only ever appears on flags; reject it on any other category. An empty
             // token resolves to OFT_NONE (the no-subtype case), so getFlagTypeFromSubtype
-            // returns null only for a genuinely unrecognised token.
+            // returns null only for a genuinely unrecognized token.
             String subtype = record.subtype();
             if (!subtype.isEmpty() && objPropertyType != ObjPropertyType.OBJ_PROPERTY_FLAG) {
                 errors.add("Object Property at line: " + line + " has " +

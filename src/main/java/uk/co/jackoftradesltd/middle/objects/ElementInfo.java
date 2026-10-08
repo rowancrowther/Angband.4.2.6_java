@@ -95,7 +95,7 @@ public class ElementInfo {
     /**
      * Returns a deep copy of this element info — the flag set is itself copied, so the returned
      * instance shares no mutable state with this one. Used when a base's per-element defaults are
-     * folded onto a derived kind (e.g. a synthesised spellbook) that must then be free to diverge.
+     * folded onto a derived kind (e.g. a synthesized spellbook) that must then be free to diverge.
      *
      * @return an independent copy of this element info
      */

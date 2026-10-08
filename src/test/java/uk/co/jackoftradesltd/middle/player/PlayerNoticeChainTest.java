@@ -175,7 +175,6 @@ class PlayerNoticeChainTest {
      * A plain item, with the collections the gear walkers read.
      *
      * @return the item
-     * @throws Exception if a field cannot be reached
      */
     private static ItemObject item() {
         return ItemFixture.item(TValue.TV_POTION).build();

@@ -62,7 +62,7 @@ public record DungeonProfileParseRecord(String profileName,
      * @param blockSize the edge of the square block rooms are allocated in, which sets how densely
      *                  rooms can pack and how many will fit
      * @param rooms     how many rooms to aim for
-     * @param unusual   how strongly high-rarity rooms are penalised; higher makes them rarer
+     * @param unusual   how strongly high-rarity rooms are penalized; higher makes them rarer
      * @param rarity    the highest room rarity this profile allows
      * @author Rowan Crowther
      */

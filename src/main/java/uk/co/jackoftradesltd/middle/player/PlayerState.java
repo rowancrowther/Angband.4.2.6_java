@@ -45,7 +45,7 @@ import java.util.Map;
  *
  * <p>A {@link Player} carries two of these: {@code state}, the true calculated state, and {@code known_state},
  * the version restricted to what the player has actually learned. Because everything here is recomputed from
- * the character and its gear, it is never serialised - it is rebuilt on demand.
+ * the character and its gear, it is never serialized - it is rebuilt on demand.
  *
  * <p>This is a work in progress: the field set mirrors C's {@code struct player_state}, but only the
  * accessors that current callers need are exposed so far.

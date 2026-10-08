@@ -216,8 +216,7 @@ public class SidebarModel {
      * <p>Written by {@link RedrawRouter#setRaceClass} from the third element of the
      * {@code EVENT_RACE_CLASS} payload, which {@code PlayerCalcs.redrawStuff}'s {@code PR_MISC} arm
      * packs from {@code player.isShapeChanged()}. Read by
-     * {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder#prtRace(int, int)} and
-     * {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder#prtClass(int, int)} to
+     * {@code HandlersHolder.prtRace(int, int)} and {@code HandlersHolder.prtClass(int, int)} to
      * decide whether to blank those rows.
      *
      * <p>Field playerIsShapechanged coded on 260927, commented in full on 260927.
@@ -1004,7 +1003,7 @@ public class SidebarModel {
 
     /**
      * Read the armour class last written by {@link #setAc(int)}, for the sidebar's AC row -
-     * {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder#prtAc(int, int)}'s port
+     * {@code HandlersHolder.prtAc(int, int)}'s port
      * of C's {@code prt_ac} ({@code [C] ui-display.c}) is today's only reader.
      *
      * <p>Method getAc coded on 260927, commented in full on 260928.
@@ -1030,7 +1029,7 @@ public class SidebarModel {
     /**
      * Read a stat's recorded maximum last written by {@link #setMaxStat(int, int)}, for the
      * sidebar's stat rows -
-     * {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder#prtStat(int, int, int)}'s
+     * {@code HandlersHolder.prtStat(int, int, int)}'s
      * port of C's {@code prt_stat} ({@code [C] ui-display.c}) is today's only reader. Returns
      * {@code 0} and logs an error for an {@code index} outside the five stats, rather than
      * throwing.
@@ -1051,8 +1050,7 @@ public class SidebarModel {
 
     /**
      * Read a stat's current value last written by {@link #setCurrentStat(int, int)}, for the
-     * sidebar's stat rows -
-     * {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder#prtStat(int, int, int)}'s
+     * sidebar's stat rows - {@code HandlersHolder.prtStat(int, int, int)}'s
      * port of C's {@code prt_stat} ({@code [C] ui-display.c}) is today's only reader. Returns
      * {@code 0} and logs an error for an {@code index} outside the five stats, rather than
      * throwing.
@@ -1074,7 +1072,7 @@ public class SidebarModel {
     /**
      * Read a stat's displayed value last written by {@link #setUseStat(int, int)}, for the
      * sidebar's stat rows -
-     * {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder#prtStat(int, int, int)}'s
+     * {@code HandlersHolder.prtStat(int, int, int)}'s
      * port of C's {@code prt_stat} ({@code [C] ui-display.c}) is today's only reader. Returns
      * {@code 0} and logs an error for an {@code index} outside the five stats, rather than
      * throwing.
@@ -1608,8 +1606,7 @@ public class SidebarModel {
     /**
      * Reads the shapechanged flag last written by {@link #setPlayerIsShapechanged(boolean)}, for
      * the sidebar's race and class rows —
-     * {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder#prtRace(int, int)} and
-     * {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder#prtClass(int, int)},
+     * {@code HandlersHolder.prtRace(int, int)} and {@code HandlersHolder.prtClass(int, int)},
      * both ports of C's {@code prt_race}/{@code prt_class} ({@code [C] ui-display.c}), are today's
      * readers.
      *

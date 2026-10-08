@@ -70,7 +70,7 @@ public class BirthEvents {
      * menus yet, so the wire stays simple until the menus need it.
      */
     public void enterBirth(GameEventData data) {
-        logger.info("Executing EVENT_ENTER_BIRTH\nEvent data: " + data.toString());
+        logger.info("Executing EVENT_ENTER_BIRTH\nEvent data: {}", data.toString());
     }
 
     /**

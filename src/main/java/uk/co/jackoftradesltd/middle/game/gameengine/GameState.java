@@ -76,7 +76,7 @@ public class GameState {
     /**
      * The game-turn counter — C's {@code turn} global ({@code int32_t}, {@code game-world.c}).
      * It is incremented once per game turn by the world loop, set to 1 when a new player is
-     * initialised ({@code player_init()} in {@code player-birth.c}) and overwritten from the save
+     * initialized ({@code player_init()} in {@code player-birth.c}) and overwritten from the save
      * by {@code rd_misc()} in {@code load.c}. Java's {@code int} is 32-bit two's complement, so an
      * overflow wraps exactly as C's {@code int32_t} does in practice. Starts at 0, as a C global
      * does.

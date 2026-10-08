@@ -52,7 +52,7 @@ import java.util.List;
  * across any number of concurrent folds. The port instead lets an implementing instance hold its own
  * fold state directly (see, for instance, {@code Resist0Combiner}'s {@code state} field), which is
  * why this interface extends {@link Cloneable} and declares {@link #clone()}: taking an independent
- * copy of an un-initialised prototype is how a caller gets a fresh, isolated fold without sharing
+ * copy of an un-initialized prototype is how a caller gets a fresh, isolated fold without sharing
  * mutable state the way the C's stateless functions can.
  *
  * @author Rowan Crowther

@@ -204,7 +204,7 @@ public class GameWorld {
      * the two globals ({@code player}, {@code cave}) that C's {@code game-world.c} reaches for
      * directly.
      *
-     * <p>Also zeroes {@link #dayCount}, matching C's {@code uint16_t daycount = 0} initialiser, so a
+     * <p>Also zeroes {@link #dayCount}, matching C's {@code uint16_t daycount = 0} initializer, so a
      * freshly built world starts with no banked store days even though the field is static. It does
      * not touch {@link #characterDungeon}, which the birth code resets through
      * {@link #setCharacterDungeon(boolean)}.

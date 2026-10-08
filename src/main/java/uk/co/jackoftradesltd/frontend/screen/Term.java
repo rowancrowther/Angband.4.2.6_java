@@ -202,7 +202,7 @@ public class Term {
     private int saved;
 
     /**
-     * Hook invoked when the terminal is initialised.
+     * Hook invoked when the terminal is initialized.
      */
     private Object initHook;
     /**
@@ -262,7 +262,7 @@ public class Term {
     private TermData owner;
 
     /**
-     * Initialise this terminal to the given size and key-queue capacity: reset
+     * initialize this terminal to the given size and key-queue capacity: reset
      * all behaviour flags, allocate the {@link #old}/{@link #scr} content buffers
      * and the per-row change bounds, and clear all hooks. This is the Java port
      * of the C original's {@code term_init}.
@@ -465,7 +465,7 @@ public class Term {
      * <p>Bounds are checked against {@link #wid}/{@link #hgt}, this terminal's own stored
      * dimensions from {@link #termInit}, matching C's {@code Term->wid}/{@code Term->hgt} -
      * not the front end's live window size, which can differ from what this terminal was
-     * initialised to.
+     * initialized to.
      *
      * <p>On success, writes the new column and row into {@link #scr} via
      * {@link TermWin#setCx}/{@link TermWin#setCy}, then clears the cursor's "unused" flag
@@ -588,7 +588,7 @@ public class Term {
      * C's {@code if (Term_gotoxy(x, y)) return (-1);} guard. That guard was missing on
      * first port - an out-of-range column fell through to {@link #outputHook}, which
      * clipped it rather than rejecting it, so a row could still end up written to for a
-     * call meant to touch nothing; {@link uk.co.jackoftradesltd.frontend.screen.TermPrtTest}
+     * call meant to touch nothing; {@code uk.co.jackoftradesltd.frontend.screen.TermPrtTest}
      * caught it and the guard was added on 260916.
      *
      * <p>On success, writes {@code n} spaces in {@link ColourEnum#COLOUR_WHITE} through

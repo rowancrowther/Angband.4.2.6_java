@@ -178,7 +178,7 @@ public class UILoop {
      * rather than silently doing nothing when the message arrives. That is the whole reason the
      * protocol is sealed records. The inner switches over {@code GameEventType} are the opposite
      * case and are deliberately partial - 65 constants, most of which the core never sends here -
-     * so an unrecognised event is ignored rather than being an error.
+     * so an unrecognized event is ignored rather than being an error.
      *
      * <p><b>The splash screen is a local, and that is the protocol.</b> Notes are painted onto the
      * same character grid the title screen was parsed into, so a note needs the instance that holds
@@ -303,11 +303,11 @@ public class UILoop {
                                 swingUI.getActiveWindow().show(screen.frame());
 
                                 try {
-                                    writeInitString("Initialising UI Entry Renderers...");
+                                    writeInitString("Initializing UI Entry Renderers...");
                                     UIDataLoader.loadUIEntryRenderers();
-                                    writeInitString("Initialising UI Entry Bases...");
+                                    writeInitString("Initializing UI Entry Bases...");
                                     UIDataLoader.loadUIEntryBases();         // Dependent on UIEntryRenderers
-                                    writeInitString("Initialising UI Entries...");
+                                    writeInitString("Initializing UI Entries...");
                                     UIDataLoader.loadUIEntries();            // Dependent on UIEntryBase & UIEntryRenderers
 
                                     List<UIEntrySpec> result = new ArrayList<>();

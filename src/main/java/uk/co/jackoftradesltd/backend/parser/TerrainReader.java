@@ -83,7 +83,7 @@ public class TerrainReader implements Reader<Feature> {
     }
 
     /**
-     * The per-grammar residue the {@link GrammarDriver} cannot generalise: run the top-level
+     * The per-grammar residue the {@link GrammarDriver} cannot generalize: run the top-level
      * {@code file} rule and hand back the raw parse records. Ordering is load-bearing -
      * {@link ParseErrors#throwIfAny()} must fire <em>after</em> {@code file()} (so lexer/parser
      * syntax errors abort before any record is trusted) but the driver owns the surrounding

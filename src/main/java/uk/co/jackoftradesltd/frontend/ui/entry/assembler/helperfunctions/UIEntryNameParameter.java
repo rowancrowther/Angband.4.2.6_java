@@ -21,7 +21,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
- * The name-parameterisation schemes a {@code ui_entry.txt} record's {@code parameter:} directive can
+ * The name-parameterization schemes a {@code ui_entry.txt} record's {@code parameter:} directive can
  * select, one constant per row of C's {@code name_parameters[]} table
  * ({@code [C] ui-entry.c:142-146}), matched by the directive's raw text against {@link #getName()}.
  * C's table holds a {@code count_func}/{@code ith_name_func} function-pointer pair per row; this port
@@ -37,7 +37,7 @@ public enum UIEntryNameParameter {
     /**
      * No {@code parameter:} directive at all - the Java form of C's {@code name_parameters[0]}
      * ({@code [C] ui-entry.c:143}: {@code { "", get_dummy_param_count, get_dummy_param_name }}). An
-     * unparameterised record still "expands" into exactly one entry, named as written.
+     * unparameterized record still "expands" into exactly one entry, named as written.
      */
     ENTRY_NAME_PARAMETER_NONE("", HelperFunctions::getDummyParamCount,
             HelperFunctions::getDummyParamName),
@@ -79,7 +79,7 @@ public enum UIEntryNameParameter {
     private final Supplier<Integer> countResolver;
 
     /**
-     * Build a name-parameterisation scheme from its {@code parameter:} text and its count/name
+     * Build a name-parameterization scheme from its {@code parameter:} text and its count/name
      * resolvers. The Java form of one row of C's {@code name_parameters[]} table
      * ({@code [C] ui-entry.c:142-146}).
      *

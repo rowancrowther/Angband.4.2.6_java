@@ -35,7 +35,7 @@ import java.util.Map;
 
 /**
  * The top-level assembler for {@code class.txt}: it turns each raw {@link PlayerClassParseRecord}
- * into a domain {@link PlayerClass}, delegating the nested structures to the specialised
+ * into a domain {@link PlayerClass}, delegating the nested structures to the specialized
  * assemblers — {@link ClassEquipAssembler} for starting gear and {@link ClassMagicAssembler} (which
  * fans out to books, spells and effects) for casters.
  *
@@ -43,7 +43,7 @@ import java.util.Map;
  * {@link ObjectFlag}, {@link PlayerFlag}) and parses every scalar. Following the shared soft-error
  * contract, any record with an unknown enum name or a malformed integer is reported to
  * {@code errors} and skipped with {@code continue}, so one broken class never sinks the rest of the
- * file. A non-caster's {@link ClassMagic} is normalised to the {@link ClassMagic#NONE} sentinel
+ * file. A non-caster's {@link ClassMagic} is normalized to the {@link ClassMagic#NONE} sentinel
  * rather than left null.
  *
  * @author Rowan Crowther

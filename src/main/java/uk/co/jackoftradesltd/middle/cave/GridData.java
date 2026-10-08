@@ -117,7 +117,7 @@ public class GridData {
 
     /**
      * Populate this grid-data from the live caves for the given location: resolve
-     * the feature (handling mimics), determine visibility and lighting, memorise
+     * the feature (handling mimics), determine visibility and lighting, memorize
      * the grid, then gather the displayed trap, object(s) and monster — applying
      * the player's ignore settings and, if hallucinating, occasionally
      * substituting random contents. Mirrors the C original's {@code map_info()}.

@@ -105,7 +105,7 @@ public class Command {
     /**
      * This command's arguments, matched by {@link CommandArgument#getName() name} rather than by
      * position (C used a fixed {@code arg[CMD_MAX_ARGS]} array of four; a list is used here since
-     * lookup is by name). Initialised empty so arguments can be added before the command runs.
+     * lookup is by name). initialized empty so arguments can be added before the command runs.
      *
      * <p>Field args coded on 260830, commented in full on 261001.
      */

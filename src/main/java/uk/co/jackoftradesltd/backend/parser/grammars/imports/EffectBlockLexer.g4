@@ -159,7 +159,7 @@ FREE_TEXT
 /*
  * @author Rowan Crowther
  *
- * Entered after dice: to tokenise a dice as either a single or complex
+ * Entered after dice: to tokenize a dice as either a single or complex
  * string token. Used as a wrapper to the DiceStrings.g4 grammar
  */
 mode DICE_STRING_MODE;
@@ -187,7 +187,7 @@ DICE_COMPLEX_VALUE
 /*
  * @author Rowan Crowther
  *
- * Entered after expr: to tokenise "letter:BASE_NAME:operation"
+ * Entered after expr: to tokenize "letter:BASE_NAME:operation"
  */
 mode EXPR_MODE;
 

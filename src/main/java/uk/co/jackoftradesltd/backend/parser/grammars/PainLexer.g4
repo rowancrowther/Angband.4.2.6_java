@@ -21,7 +21,7 @@
 // (src/mon-init.c:516) and struct file_parser pain_parser (src/mon-init.c:569).
 //
 // Each record is a "type:<n>" header followed by seven "message:<text>" lines.
-// This lexer only tokenises; peeling the type number off and validating the
+// This lexer only tokenizes; peeling the type number off and validating the
 // message count is left to the reader/assembler.
 //
 // @author Rowan Crowther

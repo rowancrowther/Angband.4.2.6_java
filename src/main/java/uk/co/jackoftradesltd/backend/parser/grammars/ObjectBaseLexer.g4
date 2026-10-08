@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Lexer for lib/gamedata/object_base.txt - tokenises the tval-level defaults
+// Lexer for lib/gamedata/object_base.txt - tokenizes the tval-level defaults
 // every object kind of a base type inherits (display colour, breakage chance,
 // max stack size, base-level flags like HATES_ACID/SHOW_DICE) into the directive
 // keywords, integers, flag names and free text that its paired parser

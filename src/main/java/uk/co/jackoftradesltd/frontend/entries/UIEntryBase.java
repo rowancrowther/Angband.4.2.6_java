@@ -57,8 +57,7 @@ import java.util.List;
  */
 public class UIEntryBase {
     /**
-     * Logger for this class, used by {@link #parseFlags(String)} to warn
-     * when a {@code flags:} token does not match a known {@link ChannelEntryFlag}.
+     * Logger for this class.
      *
      * <p>Field logger coded before 260916, commented in full on 260916.
      */
@@ -103,15 +102,14 @@ public class UIEntryBase {
      */
     private final List<String> categories;
     /**
-     * Behavioural flags applied to entries built from this template, resolved
-     * and validated from the raw {@code flags:} text by
-     * {@link #parseFlags(String)}. The Java form of C's {@code entry->flags}
+     * Behavioural flags applied to entries built from this template.
+     * The Java form of C's {@code entry->flags}
      * bitmask ({@code [C] ui-entry.c:111}), built by {@code parse_entry_flags}
      * ({@code [C] ui-entry.c:2187-2221}) against the {@code entry_flags[]}
      * table ({@code [C] ui-entry.c:86-88}).
      *
      * <p>Field flags retyped from String to {@code Flag<ChannelEntryFlag>} on
-     * 260916 so an unrecognised flag name is rejected the way C's
+     * 260916 so an unrecognized flag name is rejected the way C's
      * {@code PARSE_ERROR_INVALID_FLAG} rejects it, rather than carried
      * through unchecked; commented in full on 260916.
      */
@@ -122,8 +120,7 @@ public class UIEntryBase {
      * accepted only to guard against a {@code null} coming from the
      * assembler - it is never stored, matching {@code parse_entry_desc}
      * ({@code [C] ui-entry.c:2224-2233}), whose own comment says "don't
-     * bother to store the description". {@code flags} is resolved via
-     * {@link #parseFlags(String)}; an unrecognised token throws
+     * bother to store the description". an unrecognized token throws
      * {@link IllegalArgumentException}, mirroring the
      * {@code PARSE_ERROR_INVALID_FLAG} C's {@code parse_entry_flags}
      * ({@code [C] ui-entry.c:2187-2221}) raises for the same case.

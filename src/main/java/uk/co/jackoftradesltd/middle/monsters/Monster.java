@@ -321,7 +321,7 @@ public class Monster {
     }
 
     /**
-     * Report whether the player fails to recognise this monster as a monster. The port of C's
+     * Report whether the player fails to recognize this monster as a monster. The port of C's
      * {@code monster_is_camouflaged}, a one-line read of the transient {@code MFLAG_CAMOUFLAGE}
      * flag.
      *
@@ -333,7 +333,7 @@ public class Monster {
      *
      * <p>Function monsterIsCamouflaged coded on 260828, commented in full on 260828.
      *
-     * @return {@code true} if the monster is camouflaged and so not recognisable as a monster
+     * @return {@code true} if the monster is camouflaged and so not recognizable as a monster
      */
     public boolean monsterIsCamouflaged() {
         return monsterFlag.has(MonsterFlag.MFLAG_CAMOUFLAGE);

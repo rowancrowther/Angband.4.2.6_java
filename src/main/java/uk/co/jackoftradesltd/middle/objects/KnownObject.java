@@ -110,16 +110,16 @@ public class KnownObject {
      */
     private int toA;
     /**
-     * Which curses the player recognises, C's {@code obj_k->curses[].power}.
+     * Which curses the player recognizes, C's {@code obj_k->curses[].power}.
      *
      * <p>C's {@code curse_data} carries a power and a timeout, but the knowledge copy uses only
      * power, and only as 0/1 — {@code player_knows_curse} is {@code curses[index].power == 1}.
      * Held as a map rather than a set because, unlike brands and slays, it is populated up front
-     * from the registry so that an unrecognised curse is distinguishable from a known-false one.
+     * from the registry so that an unrecognized curse is distinguishable from a known-false one.
      */
     private Map<Curse, Boolean> curses;
     /**
-     * Which brands the player recognises, C's {@code obj_k->brands[]}.
+     * Which brands the player recognizes, C's {@code obj_k->brands[]}.
      *
      * <p>A set rather than a map, because membership is the whole of the state: C's array is
      * indexed by registry position and holds nothing but a bool. Membership stands for the brand's
@@ -127,7 +127,7 @@ public class KnownObject {
      */
     private Set<Brand> brands;
     /**
-     * Which slays the player recognises, C's {@code obj_k->slays[]}. As {@link #brands}, with the
+     * Which slays the player recognizes, C's {@code obj_k->slays[]}. As {@link #brands}, with the
      * class defined by monsters slain rather than by name — see {@link #learnSlay(Slay)}.
      */
     private Set<Slay> slays;
@@ -142,7 +142,7 @@ public class KnownObject {
     private int ac = 0;
     /**
      * Whether the player can read damage dice, C's {@code obj_k->dd}. See {@link #ac} for the
-     * multiplier convention and the birth-time initialisation; {@code obj-desc.c} prints the dice
+     * multiplier convention and the birth-time initialization; {@code obj-desc.c} prints the dice
      * only when this and {@link #ds} are both set.
      */
     private int dd = 0;
@@ -174,7 +174,7 @@ public class KnownObject {
     }
 
     /**
-     * Populates the curse map with every registered curse, all unrecognised. C reaches the same
+     * Populates the curse map with every registered curse, all unrecognized. C reaches the same
      * state with {@code mem_zalloc(z_info->curse_max * sizeof(struct curse_data))}.
      */
     public void initCurses() {
@@ -188,10 +188,10 @@ public class KnownObject {
      * The port of C's {@code player_knows_curse}, which is a bare {@code curses[index].power == 1}
      * on an array guaranteed to be long enough. This has to allow for a curse that is not in the
      * map at all — one built outside the registry — and answers false for it, on the grounds that
-     * a curse the player's knowledge has never heard of cannot be one they recognise.
+     * a curse the player's knowledge has never heard of cannot be one they recognize.
      *
      * @param curse the curse to ask about
-     * @return true if the player recognises this curse
+     * @return true if the player recognizes this curse
      */
     public boolean curseIsKnown(Curse curse) {
         if (curses.containsKey(curse))
@@ -200,11 +200,11 @@ public class KnownObject {
     }
 
     /**
-     * Records that the player now recognises a curse. Curses are the one property with no
+     * Records that the player now recognizes a curse. Curses are the one property with no
      * equivalence class — each has its own rune — so this marks exactly the curse it is given.
      *
-     * @param curse the curse now recognised
-     * @return true if this was new knowledge, false if the curse was already recognised
+     * @param curse the curse now recognized
+     * @return true if this was new knowledge, false if the curse was already recognized
      */
     public boolean learnCurse(Curse curse) {
         boolean learned = !curseIsKnown(curse);
@@ -214,7 +214,7 @@ public class KnownObject {
 
     /**
      * Clears the three combat bonuses to unknown. Written out rather than left to Java's default
-     * field initialisation so that the constructor's list of {@code init} calls reads as the
+     * field initialization so that the constructor's list of {@code init} calls reads as the
      * complete account of the starting state.
      */
     private void initToValues() {
@@ -404,14 +404,14 @@ public class KnownObject {
      * {@link #learnBrand(Brand)} — and this port keeps the same division of labour.
      *
      * @param brand the brand to ask about
-     * @return true if the player recognises this brand
+     * @return true if the player recognizes this brand
      */
     public boolean brandIsKnown(Brand brand) {
         return brands.contains(brand);
     }
 
     /**
-     * Records that the player now recognises a brand — and every other brand of the same name.
+     * Records that the player now recognizes a brand — and every other brand of the same name.
      *
      * <p>The fan-out is the point. Brands come in strengths: {@code brand.txt} holds ten entries
      * that are five names twice over, so a lightning brand and a strong lightning brand are
@@ -454,7 +454,7 @@ public class KnownObject {
 
     /**
      * Creates the empty brand set. Nothing is pre-populated from the registry, because membership
-     * is the state: an absent brand is an unrecognised one.
+     * is the state: an absent brand is an unrecognized one.
      */
     public void initBrands() {
         brands = new HashSet<>();
@@ -465,14 +465,14 @@ public class KnownObject {
      * membership test made cheap by the grouping happening on the learning side.
      *
      * @param slay the slay to ask about
-     * @return true if the player recognises this slay
+     * @return true if the player recognizes this slay
      */
     public boolean slayIsKnown(Slay slay) {
         return slays.contains(slay);
     }
 
     /**
-     * Records that the player now recognises a slay — and every other slay that kills the same
+     * Records that the player now recognizes a slay — and every other slay that kills the same
      * monsters. The slay counterpart of {@link #learnBrand(Brand)}, with one difference: the
      * equivalence is {@link Slay#sameMonsterSlain} rather than a name match, following C's
      * {@code same_monsters_slain} in the slay arm of {@code player_learn_rune}. Names would be too
@@ -709,7 +709,7 @@ public class KnownObject {
      *   {@code obj->known}), already carries a non-zero {@link ElementInfo#getResLevel()} for this
      *   element — C's {@code obj->known->el_info[element].res_level}. A missing map entry defaults to
      *   a fresh {@link ElementInfo}, whose resistance level is zero, so it answers the same as C's
-     *   zero-initialised array read.</li>
+     *   zero-initialized array read.</li>
      * </ol>
      * Failing all three, the element is not known and the method answers false.
      *

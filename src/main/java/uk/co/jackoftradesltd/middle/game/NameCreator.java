@@ -198,11 +198,11 @@ public class NameCreator {
     /**
      * Rolls a random name for the player at birth — the port of C's {@code player_random_name}
      * ({@code player.c}). The word is drawn from the Tolkien section of the name file, between
-     * four and eight letters, and comes back with its first letter capitalised.
+     * four and eight letters, and comes back with its first letter capitalized.
      *
      * <p>The three constants are C's, not choices made here: {@code RANDNAME_TOLKIEN} is the
      * setting-appropriate section, and {@code 4} and {@code 8} are the length bounds C passes.
-     * {@link NameCreator#randnameMake} returns a word of lower-case letters, so the capitalisation is a
+     * {@link NameCreator#randnameMake} returns a word of lower-case letters, so the capitalization is a
      * separate step — C's {@code my_strcap}, ported as {@link StringUtils#strCap}, which
      * leaves an empty string alone exactly as C's {@code buf[0]} guard does. That case cannot
      * arise from a four-letter minimum, but the two versions agree on it regardless.
@@ -213,7 +213,7 @@ public class NameCreator {
      *
      * <p>Method playerRandomName coded on 260831, commented in full on 260831.
      *
-     * @return a fresh random name of four to eight letters, capitalised
+     * @return a fresh random name of four to eight letters, capitalized
      */
     public static String playerRandomName() {
         return StringUtils.strCap(randnameMake(RandnameType.RANDNAME_TOLKIEN, 4, 8));

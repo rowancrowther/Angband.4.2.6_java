@@ -89,7 +89,7 @@ class KnownObjectTest {
 
     /**
      * Three slays: two that kill the same monsters at different strengths, and one that does not.
-     * Grouped by race flag and base rather than by name, so {@link #evil3} and {@link #evil5} share
+     * Grouped by race flag and base rather than by name, so {@code evil3} and {@link #evil5} share
      * a group while {@link #undead3} stands alone.
      */
     private static Slay evil3;

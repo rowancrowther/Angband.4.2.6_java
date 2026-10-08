@@ -494,7 +494,7 @@ public class PlayerKnowledge {
     }
 
     /**
-     * Copies onto an item's known counterpart everything that follows from simply recognising what
+     * Copies onto an item's known counterpart everything that follows from simply recognizing what
      * the item is, the port of C's {@code object_set_base_known} ({@code obj-knowledge.c}).
      *
      * <p>The division this draws is between what an item <em>is</em> and what has been done to it.
@@ -658,7 +658,7 @@ public class PlayerKnowledge {
     }
 
     /**
-     * Reports whether the player could recognise an item's ego type from the properties they can
+     * Reports whether the player could recognize an item's ego type from the properties they can
      * already read, the port of C's {@code player_knows_ego} ({@code obj-knowledge.c}).
      *
      * <p>An ego is not learned directly; it is deduced. Every flag, modifier, resistance, brand,
@@ -673,7 +673,7 @@ public class PlayerKnowledge {
      * this particular item did roll a non-zero value. The ranges are evaluated at both extremes at
      * maximum depth, following C. C passes {@code MAX_RAND_DEPTH} as that level; this passes the
      * world's maximum depth, which has the same value in the stock data, and the level is ignored
-     * by the maximising and minimising aspects in any case.
+     * by the maximizing and minimizing aspects in any case.
      *
      * <p>The item is a parameter rather than the ego alone for exactly that test: C accepts a null
      * object and skips the concession when it has no specific item to consult.
@@ -752,7 +752,7 @@ public class PlayerKnowledge {
      * <p>C resolves the curse to a rune by name — {@code rune_index(RUNE_VAR_CURSE,
      * lookup_curse(curse->name))} — rather than by identity, which is why
      * {@link Rune#runeIndex(Curse)} matches on the name too. A curse reconstructed from a savefile
-     * or built by a test is then still recognised.
+     * or built by a test is then still recognized.
      *
      * <p>A curse with no rune yields null here, where C's guard is {@code index >= 0}; the null is
      * handled inside {@link PlayerKnowledge#learnRune}, so the two guards sit in different places but reject the
@@ -774,7 +774,7 @@ public class PlayerKnowledge {
     }
 
     /**
-     * Records that the player has learned to recognise a brand, typically because they just saw it
+     * Records that the player has learned to recognize a brand, typically because they just saw it
      * fire in combat. The port of C's {@code player_learn_brand}.
      *
      * <p>One of the wrapper functions that {@link PlayerKnowledge#learnRune} exists to serve, and it shows the
@@ -806,7 +806,7 @@ public class PlayerKnowledge {
     }
 
     /**
-     * Records that the player has learned to recognise a slay, typically because they just saw it
+     * Records that the player has learned to recognize a slay, typically because they just saw it
      * bite. The port of C's {@code player_learn_slay}, and the sibling of {@link #learnBrand}.
      *
      * <p>Same three steps — guard on already-knowing, resolve the property to its rune, learn the
@@ -841,14 +841,14 @@ public class PlayerKnowledge {
      *
      * @param player the player whose knowledge is being asked about
      * @param brand  the brand to ask about
-     * @return true if the player recognises this brand
+     * @return true if the player recognizes this brand
      */
     public static boolean knowsBrand(Player player, Brand brand) {
         return player.itemKnowledge.brandIsKnown(brand);
     }
 
     /**
-     * Records that the player has learned to recognise an object flag. The port of C's
+     * Records that the player has learned to recognize an object flag. The port of C's
      * {@code player_learn_flag}, whose one caller is the failed uncursing that leaves an item
      * {@code OF_FRAGILE} ({@code effect-handler-general.c}, function {@code uncurse_object}).
      *
@@ -948,7 +948,7 @@ public class PlayerKnowledge {
      *
      * @param player the player whose knowledge is being asked about
      * @param slay   the slay to ask about
-     * @return true if the player recognises this slay
+     * @return true if the player recognizes this slay
      */
     public static boolean knowsSlay(Player player, @NotNull Slay slay) {
         return player.itemKnowledge.slayIsKnown(slay);
@@ -963,12 +963,12 @@ public class PlayerKnowledge {
      * permanent — but on the knowledge side it only ever holds 0 or 1, because C types
      * {@code p->obj_k} as a whole {@code struct object} and inherits {@code struct curse_data}
      * whether it wants two integers or not. {@code player_learn_rune} writes a literal 1 and
-     * {@code save.c} normalises with {@code power ? 1 : 0}. So the port keeps a boolean, and
+     * {@code save.c} normalizes with {@code power ? 1 : 0}. So the port keeps a boolean, and
      * the {@code == 1} has nothing to test.
      *
      * <p>The two meanings meet in {@code player_know_object} ({@code obj-knowledge.c}), where
-     * this answer <em>gates</em> the real severity: a recognised curse shows its true power on the
-     * known copy of an object, an unrecognised one reads as zero. That is why the curse-removal
+     * this answer <em>gates</em> the real severity: a recognized curse shows its true power on the
+     * known copy of an object, an unrecognized one reads as zero. That is why the curse-removal
      * menu can offer only what the player has learned.
      *
      * <p>Curses are never grouped, so unlike brands and slays there is no fan-out behind this.
@@ -977,7 +977,7 @@ public class PlayerKnowledge {
      *
      * @param player the player whose knowledge is being asked about
      * @param curse  the curse to ask about
-     * @return true if the player recognises this curse
+     * @return true if the player recognizes this curse
      */
     public static boolean knowsCurse(Player player, @NotNull Curse curse) {
         return player.itemKnowledge.curseIsKnown(curse);
@@ -1220,7 +1220,7 @@ public class PlayerKnowledge {
      * <ul>
      *   <li><b>Elements are read with {@code getOrDefault}.</b> C indexes a dense
      *       {@code el_info[ELEM_MAX]} where an unmentioned element is simply zero;
-     *       {@link Curse#getElInfo()} holds only the elements the curse's data lines name, so an
+     *       {@link Curse#getItemObject()}{@code .getElInfo()} holds only the elements the curse's data lines name, so an
      *       element the player can read but the curse never mentions has to be defaulted rather than
      *       fetched. Same treatment as {@link #objectCursesFindElement}.</li>
      *   <li><b>The new element map starts empty</b> rather than from the existing known one, because
@@ -1248,7 +1248,7 @@ public class PlayerKnowledge {
      *               show; nothing here is read off the curse to decide it
      * @param curse  the curse definition whose {@code known*} fields should be brought up to date
      */
-    private static void knowObject(Player player, Curse curse) {
+    public static void knowObject(Player player, Curse curse) {
         // combat details
         if (player.itemKnowledge != null) {
             curse.getItemObject().getKnown().setToAC(curse.getItemObject().getToAC() * player.itemKnowledge.getToA());
@@ -1670,7 +1670,7 @@ public class PlayerKnowledge {
      * public surface.
      *
      * <p><b>Where the numbers come from.</b> The armour-class figure belongs to the curse
-     * definition, not to the item — {@link Curse#getCombatAC}, the port of {@code curses[i].obj->to_a},
+     * definition, not to the item — {@link Curse#getItemObject()}{@code .getToAC()}, the port of {@code curses[i].obj->to_a},
      * parsed once from {@code curse.txt}. What the item holds is the instance data: the power and
      * timeout in {@link CurseData}. C keeps those in two arrays indexed alike, so every one of these
      * functions has to walk {@code 1 .. curse_max} and read {@code obj->curses[i].power} and
@@ -1722,8 +1722,8 @@ public class PlayerKnowledge {
      *
      * <p>Structurally identical to that method, and the reasoning there applies unchanged: why the
      * family lives in {@link PlayerKnowledge} rather than on {@link ItemObject}, why the figure is read from the
-     * curse definition ({@link Curse#getCombatDam}, C's {@code curses[i].obj->to_d}) rather than from
-     * the item, why the power test survives, and why the rune is resolved once above the loop.
+     * curse definition ({@link Curse#getItemObject()}{@code .getToDam()}, C's {@code curses[i].obj->to_d})
+     * rather than from the item, why the power test survives, and why the rune is resolved once above the loop.
      *
      * <p>What differs is the occasion. This is reached from {@link #equipLearnOnMeleeAttack} — a
      * curse that saps damage announces itself when a blow lands softly, not when one is taken.
@@ -1986,7 +1986,7 @@ public class PlayerKnowledge {
      *
      * <p>The null check on the element entry is where the two data shapes part company. C indexes an
      * array of length {@code ELEM_MAX}, so every element always has a {@code res_level}, defaulting
-     * to zero; {@link Curse#getElInfo()} holds only the elements that curse's data lines name, and
+     * to zero; {@link Curse#getItemObject()}{@code .getElInfo()} holds only the elements that curse's data lines name, and
      * most of the curses in {@code curse.txt} name none at all. A missing entry therefore means what
      * C's zero means — this curse does not touch that element — and is passed over rather than
      * treated as a fault.
@@ -2183,7 +2183,7 @@ public class PlayerKnowledge {
      * moment the item is put on.
      *
      * <p><b>Where the figures come from.</b> The modifier values belong to the curse definition,
-     * read through {@link Curse#getModifiers()} (C's {@code curses[i].obj->modifiers[j]}), not to
+     * read through {@link Curse#getItemObject()}{@code .getModifiers()} (C's {@code curses[i].obj->modifiers[j]}), not to
      * the item. The item contributes only whether it carries the curse at all.
      *
      * <p><b>The skip test is about absence as much as power.</b> C walks a dense array indexed by

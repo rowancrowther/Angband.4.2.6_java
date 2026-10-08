@@ -80,7 +80,7 @@ public interface AngbandModule {
 
     /**
      * Release this module's resources so it can be safely discarded or
-     * re-initialised - the port of calling C's {@code init_module.cleanup}
+     * re-initialized - the port of calling C's {@code init_module.cleanup}
      * function pointer ({@code src/init.h:217}).
      * <p>
      * In the running game this is invoked once per module, in the same

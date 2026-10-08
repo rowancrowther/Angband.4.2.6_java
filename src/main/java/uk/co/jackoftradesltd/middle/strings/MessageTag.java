@@ -21,15 +21,15 @@ package uk.co.jackoftradesltd.middle.strings;
  * The tags that can appear in braces in a custom message, the port of C's {@code msg_tag_t}
  * ({@code obj-util.c}), as read by {@code ItemObject#printCustomMessage}.
  *
- * <p>{@link #MSG_TAG_NONE} stands for any tag that is not recognised; the message printer drops it.
- * A tag is recognised by its opening letters, not the whole word, which {@link #getTag} implements.
+ * <p>{@link #MSG_TAG_NONE} stands for any tag that is not recognized; the message printer drops it.
+ * A tag is recognized by its opening letters, not the whole word, which {@link #getTag} implements.
  * The constants are in C's order, with {@code MSG_TAG_NONE} first as it is there.
  *
  * <p>Enum MessageTag coded on 261003 / commented in full on 261005.
  */
 public enum MessageTag {
     /**
-     * Any tag that is not recognised.
+     * Any tag that is not recognized.
      */
     MSG_TAG_NONE(1),
     /** {@code {name}}: the object's full description, or {@code hands} with no object. */

@@ -32,7 +32,7 @@ import java.util.Arrays;
  *
  * <p><b>The enum is the store.</b> {@link ANGBAND_DIRS} holds the live path for each directory and
  * is what the rest of the port reads; the private constants below only supply the start-up
- * defaults, copied into the constants once when the enum initialises. Nothing else may hold a
+ * defaults, copied into the constants once when the enum initializes. Nothing else may hold a
  * path, and that is the whole design: an earlier version had the mapping written in three places -
  * these fields, the enum, and a {@code switch} in {@link #setDirectory} - and produced two bugs of
  * the same shape. One name was spelled {@code "archives"} in the switch and {@code "archive"} in
@@ -128,7 +128,7 @@ public class AngbandDirs {
      */
     public static final String ANGBAND_DIR_GAMEDATA = BASE_DIR + libPath + "gamedata" + File.separator;
     /**
-     * Default location of the user-editable customisation files (pref files and the like) - C's
+     * Default location of the user-editable customization files (pref files and the like) - C's
      * {@code ANGBAND_DIR_CUSTOMIZE} ({@code [C] src/init.c}), matched on the command line by
      * {@link ANGBAND_DIRS#PREF}'s data-file name, {@code "pref"}.
      *
@@ -213,7 +213,7 @@ public class AngbandDirs {
      *
      * <p>The {@code name} is the data-file spelling, not the constant's, and the two differ where
      * C's history left them differing - {@code PREF} is written {@code "pref"} but points at the
-     * customise directory. Always match on {@link #getName()}, never {@link #name()}.
+     * customize directory. Always match on {@link #getName()}, never {@link #name()}.
      *
      * <p>Class ANGBAND_DIRS commented in full before 260915, provenance stamp added on 260915.
      *

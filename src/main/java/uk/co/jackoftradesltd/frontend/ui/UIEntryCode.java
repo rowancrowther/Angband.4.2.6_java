@@ -43,7 +43,7 @@ public class UIEntryCode {
     /**
      * The category whose priority the in-progress sort orders entries by, or the empty string when
      * sorting by name alone. The Java form of C's file-scope {@code category_for_cmp_desc_prio}
-     * ({@code [C] ui-entry.c:392}), set for the duration of one {@link #initialiseUIEntryIterator}
+     * ({@code [C] ui-entry.c:392}), set for the duration of one {@link #initializeUIEntryIterator}
      * call and cleared to {@code ""} immediately after, since {@link #sortFunction} has no other way
      * to reach it.
      *
@@ -66,7 +66,7 @@ public class UIEntryCode {
      * {@code ui_entry_base.txt}-derived entry is never a candidate for any iterator, regardless of
      * what the predicate would have said.
      *
-     * <p>Function initialiseUIEntryIterator coded before 260924, commented in full on 260924.
+     * <p>Function initializeUIEntryIterator coded before 260924, commented in full on 260924.
      *
      * @param categoryCheck the predicate an entry must satisfy to be included, called with
      *                      {@code closure} first and the candidate entry second
@@ -75,7 +75,7 @@ public class UIEntryCode {
      *                      empty to sort by name alone
      * @return an iterator over the matching entries, in descending {@code sortCategory} priority order
      */
-    public static UIEntryIterator initialiseUIEntryIterator(BiPredicate<String[], UIEntry> categoryCheck,
+    public static UIEntryIterator initializeUIEntryIterator(BiPredicate<String[], UIEntry> categoryCheck,
                                                             String[] closure, String sortCategory) {
         List<UIEntry> entries = UIRegistry.getUIEntries();
 
@@ -96,7 +96,7 @@ public class UIEntryCode {
     }
 
     /**
-     * Compares two entries for {@link #initialiseUIEntryIterator}'s sort - the port of C's
+     * Compares two entries for {@link #initializeUIEntryIterator}'s sort - the port of C's
      * {@code cmp_desc_prio} ({@code [C] ui-entry.c:393-442}). When {@link #sortCategoryName} is unset,
      * both entries sort by name alone, matching C falling through to {@code strcmp} when neither side
      * is found in the sort category (C reaches the same {@code strcmp} branch whenever

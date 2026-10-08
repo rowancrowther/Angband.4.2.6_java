@@ -27,7 +27,7 @@ import java.util.List;
  * Everything the UI side can say, to the core and to itself.
  * <p>
  * Same rule as {@link CoreMessage} — one record per payload shape, not one per occasion — but the
- * population is organised on a different axis, because the UI side has two senders rather than
+ * population is organized on a different axis, because the UI side has two senders rather than
  * one:
  * <ul>
  *   <li><b>Raw input</b> from the EDT: keypresses and mouse clicks, the port of C's

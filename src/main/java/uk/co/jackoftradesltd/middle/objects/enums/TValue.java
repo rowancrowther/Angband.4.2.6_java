@@ -1031,7 +1031,7 @@ public enum TValue {
     }
 
     /**
-     * Whether kinds of this tval get a randomised flavour, such as an unidentified potion's
+     * Whether kinds of this tval get a randomized flavour, such as an unidentified potion's
      * colour: amulets, rings, staves, wands, rods, potions, mushrooms and scrolls. Port of C's
      * {@code tval_can_have_flavor_k} ({@code obj-tval.c}).
      *

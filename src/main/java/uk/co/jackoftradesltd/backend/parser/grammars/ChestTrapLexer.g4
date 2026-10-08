@@ -34,7 +34,7 @@
  * convention the other gamedata files follow here.
  *
  * The C struct's pval field (object.h:73) has no directive either: it is
- * synthesised while parsing, one bit per record in file order
+ * synthesized while parsing, one bit per record in file order
  * ("t->pval = h->pval * 2", obj-chest.c:64-72). Nothing in this grammar
  * can see it; ChestTrapCode carries it instead, as 1 << ordinal().
  */

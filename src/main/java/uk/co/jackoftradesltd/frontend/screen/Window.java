@@ -112,7 +112,7 @@ public class Window extends JFrame {
      * written to again once published ({@code CellGrid.getCells()}'s own Javadoc names this method
      * as the one caller that discipline covers). Deferred onto the event dispatch thread with
      * {@link SwingUtilities#invokeLater}, since every caller today runs on a channel-processing
-     * thread, not the EDT - the hop {@link #clear()}'s caller skips.
+     * thread, not the EDT - the hop {@code clear()}'s caller skips.
      *
      * <p>Function show coded before 260916, commented in full on 260916.
      *

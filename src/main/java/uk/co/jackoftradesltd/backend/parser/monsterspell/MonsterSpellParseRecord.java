@@ -31,7 +31,7 @@ import java.util.List;
  * reported soft error naming the file line rather than an exception thrown mid-parse.
  * <p>
  * An absent optional directive arrives as an empty string rather than null, because the grammar
- * initialises each accumulator before the alternation that fills it. {@code messageType} is the
+ * initializes each accumulator before the alternation that fills it. {@code messageType} is the
  * one that matters: it is empty for the 49 shipped records that carry no {@code msgt:} line.
  *
  * @param name        the spell's name, without its {@code RSF_} prefix

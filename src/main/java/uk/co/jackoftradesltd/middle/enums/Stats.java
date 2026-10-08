@@ -106,7 +106,7 @@ public enum Stats {
      *
      * <p>{@code NONE} does not resolve, because C's list has no such entry and would return its
      * not-found answer for it. That answer is {@code -1} in C and {@code null} here, and it is also
-     * what an empty or unrecognised name gives.
+     * what an empty or unrecognized name gives.
      *
      * <p>Method statNameToIdx coded on 260831, commented in full on 260831.
      *
@@ -207,7 +207,7 @@ public enum Stats {
      * <p>{@code STAT_MAX} carries 5, the value C's {@code STAT_MAX} takes as the last member of the
      * enum, so it counts the real stats. {@code STAT_NONE} carries -1, which is the port's own: C
      * has no {@code STAT_NONE} in the stat enum at all, and -1 is instead what its
-     * {@code stat_name_to_idx} returns for a name it does not recognise.
+     * {@code stat_name_to_idx} returns for a name it does not recognize.
      *
      * <p>Method getValue coded on 260831, commented in full on 260831.
      *

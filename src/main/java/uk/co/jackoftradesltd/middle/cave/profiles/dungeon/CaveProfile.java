@@ -79,7 +79,7 @@ public class CaveProfile {
     private int dunRooms;
 
     /**
-     * How strongly rare rooms are penalised; larger values make them rarer still.
+     * How strongly rare rooms are penalized; larger values make them rarer still.
      *
      * <p>Read from the {@code unusual} value of the {@code params:} line ({@code dun_unusual} in
      * C). Used together with the level depth when the builder rolls how unusual a room may be,
@@ -173,7 +173,7 @@ public class CaveProfile {
      * @param name         the profile's name, matching a level builder
      * @param blockSize    the edge of the square block rooms are allocated in
      * @param dunRooms     how many rooms to aim for
-     * @param dunUnusual   how strongly rare rooms are penalised
+     * @param dunUnusual   how strongly rare rooms are penalized
      * @param maxRarity    the highest room rarity allowed
      * @param tun          how corridors are dug, or {@code null} if the file gave no tunnel line
      * @param str          the mineral veins, or {@code null} if the file gave no streamer line
@@ -234,7 +234,7 @@ public class CaveProfile {
      *
      * <p>Function getDunUnusual coded before 260930, commented in full on 260930.
      *
-     * @return how strongly rare rooms are penalised
+     * @return how strongly rare rooms are penalized
      */
     public int getDunUnusual() {
         return dunUnusual;

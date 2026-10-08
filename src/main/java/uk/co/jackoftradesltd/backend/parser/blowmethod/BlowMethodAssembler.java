@@ -63,7 +63,7 @@ public class BlowMethodAssembler implements Assembler<BlowMethodParseRecord, Lis
      * absent message (see {@link BlowMethodParseRecord}). Order matters: testing
      * {@code isEmpty()} first would dereference the null, and a null reaching
      * {@link MessageType#valueOf} would silently look up {@code "MSG_null"} and drop the
-     * record as unrecognised.
+     * record as unrecognized.
      *
      * <p>Function assemble coded before 260915, commented in full on 260915.
      *

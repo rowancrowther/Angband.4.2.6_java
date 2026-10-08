@@ -35,7 +35,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  * <p>
  * Written to from the EDT and read from the UI thread, so the queue is doing the thread-safety
  * work as well as the delivery: {@link java.util.concurrent.LinkedBlockingQueue} publishes the
- * message safely, which is why a window event needs no synchronisation of its own on the way
+ * message safely, which is why a window event needs no synchronization of its own on the way
  * across.
  * <p>
  * Class EDTSender commented in full before 260902, provenance stamp added on 260915.

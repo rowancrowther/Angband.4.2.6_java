@@ -175,7 +175,7 @@ public class Summon {
     }
 
     /**
-     * @return a debug string summarising this summon type
+     * @return a debug string summarizing this summon type
      */
     @Override
     public String toString() {

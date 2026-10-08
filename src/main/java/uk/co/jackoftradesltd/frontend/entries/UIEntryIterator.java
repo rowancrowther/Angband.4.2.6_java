@@ -31,7 +31,7 @@ import java.util.List;
  * predicate and sorting it by descending category priority. This class splits that in two:
  * it is the plain data holder (the filtered, sorted list plus a cursor), while the filtering
  * and sorting themselves live in {@link uk.co.jackoftradesltd.frontend.ui.UIEntryCode
- * UIEntryCode}, whose {@code initialiseUIEntryIterator} is this project's analogue of
+ * UIEntryCode}, whose {@code initializeUIEntryIterator} is this project's analogue of
  * {@code initialize_ui_entry_iterator}. There is no equivalent of
  * {@code release_ui_entry_iterator}; the JVM reclaims the backing list once the iterator is
  * unreachable.
@@ -91,7 +91,7 @@ public class UIEntryIterator {
     /**
      * Builds an empty iterator to be populated with {@link #addEntry(UIEntry)} before
      * iteration begins. This is the constructor {@link
-     * uk.co.jackoftradesltd.frontend.ui.UIEntryCode#initialiseUIEntryIterator} uses, filling
+     * uk.co.jackoftradesltd.frontend.ui.UIEntryCode#initializeUIEntryIterator} uses, filling
      * the list and sorting it in place of the array-fill loop in
      * {@code initialize_ui_entry_iterator} ({@code ui-entry.c:470-476}).
      *
@@ -141,7 +141,7 @@ public class UIEntryIterator {
 
     /**
      * Appends an entry to the backing list. Used during construction (see {@link
-     * uk.co.jackoftradesltd.frontend.ui.UIEntryCode#initialiseUIEntryIterator}) to build up
+     * uk.co.jackoftradesltd.frontend.ui.UIEntryCode#initializeUIEntryIterator}) to build up
      * the filtered set before iteration begins, standing in for the array-fill loop in
      * {@code initialize_ui_entry_iterator} ({@code ui-entry.c:470-476}).
      *

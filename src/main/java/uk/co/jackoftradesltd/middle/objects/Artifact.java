@@ -250,7 +250,7 @@ public class Artifact {
      * an independent one.
      *
      * <p>The artifact's {@link ArtifactUpkeep} is not a parameter: the constructor attaches a
-     * fresh one, with created, seen and ever-seen all clear, as C's zero-initialised
+     * fresh one, with created, seen and ever-seen all clear, as C's zero-initialized
      * {@code aup_info} slot starts. {@link #copy()} therefore resets it rather than carrying it
      * across.
      *

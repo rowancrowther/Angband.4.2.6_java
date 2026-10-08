@@ -63,7 +63,7 @@ import java.util.Scanner;
  * <p>Writes character by character straight into the live grid rather than building a separate
  * buffer to swap in - there is nothing on screen yet worth preserving this early in start-up, so
  * overwriting cell by cell is safe. A cell no news line reaches is left however {@link CellGrid}
- * initialised it - {@code null}, since nothing paints anything before this runs - so a short news
+ * initialized it - {@code null}, since nothing paints anything before this runs - so a short news
  * line does not need padding.
  *
  * <p>Class SplashScreen coded on 260813, commented in full on 260917.

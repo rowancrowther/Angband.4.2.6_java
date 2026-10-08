@@ -40,7 +40,7 @@ import uk.co.jackoftradesltd.middle.objects.enums.ResType;
  * together, as C does in {@code obj-power.c}.
  *
  * <p><b>Keyed, not indexed.</b> C relies on this table and an object's {@code el_info} array sharing
- * an index. The port keys both by {@link ElementEnum}, so the two cannot silently desynchronise.
+ * an index. The port keys both by {@link ElementEnum}, so the two cannot silently desynchronize.
  *
  * <p>Class ElementPowers commented in full on 260827.
  *

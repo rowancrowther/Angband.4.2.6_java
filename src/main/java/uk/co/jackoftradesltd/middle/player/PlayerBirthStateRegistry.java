@@ -52,7 +52,7 @@ import java.util.Map;
  * {@code age} at its own default of zero, which is exactly the sentinel C's own comment on
  * {@code prev} relies on ("We rely on prev.age being zero to determine whether there is a stored
  * character or not", {@code player-birth.c:127-129}) - so the port's lazily-created instance and
- * C's zero-initialised static answer that check identically, even though one exists from process
+ * C's zero-initialized static answer that check identically, even though one exists from process
  * start and the other only from first read.
  *
  * <p>The class is static state, as the C globals it replaces are: nothing here is ported from a
@@ -72,7 +72,7 @@ public class PlayerBirthStateRegistry {
     /**
      * Whether the three per-stat maps below have been created yet - see {@link
      * #initPlayerBirthStateRegistry()}. Has no C equivalent: C's file-scope arrays are zeroed
-     * once by the loader and always exist, so nothing there needs a "have I initialised this"
+     * once by the loader and always exist, so nothing there needs a "have I initialized this"
      * flag.
      *
      * <p>Field inited coded on 260907, commented in full on 260907.
@@ -128,7 +128,7 @@ public class PlayerBirthStateRegistry {
     /**
      * Whether the current stats came from the dice roller rather than point-buy - the port of
      * C's {@code rolled_stats = false} ({@code player-birth.c:124}), the one field of the six C
-     * initialises explicitly rather than leaving to implicit zero. See {@link
+     * initializes explicitly rather than leaving to implicit zero. See {@link
      * #isRolledStats()}/{@link #setRolledStats(boolean)}.
      *
      * <p>Field rolledStats coded on 260907, commented in full on 260907.
@@ -270,7 +270,7 @@ public class PlayerBirthStateRegistry {
      *
      * <p>Never answers {@code null}: a read before anything has been {@link #setPrev(Birther) set}
      * lazily backfills a fresh {@link Birther}, whose default {@code age} of zero is the same
-     * sentinel C's own zero-initialised static gives - see the class Javadoc.
+     * sentinel C's own zero-initialized static gives - see the class Javadoc.
      *
      * <p>Method getPrev coded on 260907, commented in full on 260907.
      *
@@ -476,7 +476,7 @@ public class PlayerBirthStateRegistry {
      * Whether the previously-saved roller data is eligible for quickstart - the port of reading
      * C's {@code quickstart_allowed} ({@code player-birth.c:123}).
      *
-     * <p>Defaults to {@code false}, matching C's implicit zero-initialised {@code bool}.
+     * <p>Defaults to {@code false}, matching C's implicit zero-initialized {@code bool}.
      *
      * <p>Method isQuickstartAllowed coded on 260907, commented in full on 260907.
      *
@@ -506,7 +506,7 @@ public class PlayerBirthStateRegistry {
      * no point-buy budget to spend.
      *
      * <p>Defaults to {@code false}, matching C's own explicit {@code static bool rolled_stats =
-     * false} - the one field of the six given an initialiser rather than left to implicit zero.
+     * false} - the one field of the six given an initializer rather than left to implicit zero.
      *
      * <p>Method isRolledStats coded on 260907, commented in full on 260907.
      *

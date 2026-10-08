@@ -40,7 +40,7 @@ package uk.co.jackoftradesltd.channel.messages.data;
  * in-place field write available, unlike C's direct mutation of the live {@code player} struct.
  * The static initializer seeds an all-default snapshot of both caches at class load, before any
  * {@code Player} exists to read values from; C needs no equivalent step, since its {@code player}
- * global is zero-initialised static storage from program start.
+ * global is zero-initialized static storage from program start.
  *
  * <p>Class PlayerEventStatusUpdate coded before 260912, commented in full on 260925.
  */
@@ -74,7 +74,7 @@ public class PlayerEventStatusUpdate {
     /*
      * Seeds {@link #cachedPlayerStatusView} and {@link #cachedPlayerCharSheetView} with an
      * all-default snapshot at class load, before any {@code Player} exists to read values from. C
-     * needs no equivalent step: its {@code player} global is zero-initialised static storage from
+     * needs no equivalent step: its {@code player} global is zero-initialized static storage from
      * program start, so a stray {@code prt_*}/{@code display_panel} call before birth simply reads
      * zeros and null strings; this block reproduces that "nothing has happened yet" state
      * explicitly, one {@code 0}/{@code null}/{@code false} per field in declaration order, so

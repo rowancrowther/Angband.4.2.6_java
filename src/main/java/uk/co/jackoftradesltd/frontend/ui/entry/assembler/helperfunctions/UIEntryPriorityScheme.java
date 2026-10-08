@@ -41,13 +41,13 @@ public enum UIEntryPriorityScheme {
     /**
      * {@code priority:index} - the Java form of C's {@code priority_schemes[1]}
      * ({@code [C] ui-entry.c:159}: {@code { "index", get_priority_from_index }}), which ranks a
-     * parameterised entry's rows in the same order as the parameter they were generated from.
+     * parameterized entry's rows in the same order as the parameter they were generated from.
      */
     PRIORITY_SCHEME_INDEX("index", HelperFunctions::getPriorityFromIndex),
     /**
      * {@code priority:negative_index} - the Java form of C's {@code priority_schemes[2]}
      * ({@code [C] ui-entry.c:160}: {@code { "negative_index", get_priority_from_negative_index }}),
-     * which ranks a parameterised entry's rows in the reverse of the order they were generated in.
+     * which ranks a parameterized entry's rows in the reverse of the order they were generated in.
      */
     PRIORITY_SCHEME_NEGATIVE_INDEX("negative_index", HelperFunctions::getPriorityFromNegativeIndex);
 

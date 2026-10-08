@@ -102,7 +102,7 @@ public class Colour {
             new Color(40, 40, 40)};
     /**
      * The colours as originally defined, indexed by {@link ColourEnum} and
-     * kept so customised colours can be reset. Populated once by
+     * kept so customized colours can be reset. Populated once by
      * {@link #init()} from {@link #colourTable} and never written to again;
      * the C original has no equivalent, since it overwrites
      * {@code angband_color_table} in place and keeps no separate copy of the
@@ -160,7 +160,7 @@ public class Colour {
      * form of indexing the C original's {@code angband_color_table}
      * ({@code [C] src/z-color.c}) by attribute number. Always reads
      * {@link #currentColours}, never {@link #originalColours}, so a
-     * customised palette is reflected immediately.
+     * customized palette is reflected immediately.
      *
      * <p>Function getColour(ColourEnum) coded on 260902, commented in full on
      * 260916.

@@ -26,7 +26,7 @@ package uk.co.jackoftradesltd.backend.io.savefiles;
  * behaviour of its own &mdash; it is populated field-by-field by {@code
  * got_savefile()} in {@code src/ui-game.c} &mdash; so this class mirrors that
  * shape as a plain JavaBean rather than porting any control flow. Where the C
- * struct leaves its fields zero-initialised (via {@code mem_zalloc}) until
+ * struct leaves its fields zero-initialized (via {@code mem_zalloc}) until
  * populated, this class starts {@link #fileName} and {@link #description} as
  * empty strings instead of {@code null}, since Java code at the boundary should
  * not need to null-check a details object it has already been handed.

@@ -96,7 +96,7 @@ public class UIEntryValueRegistry {
      *
      * <p>{@code null} until the first {@link #addEntryBinding} call or the first
      * {@link #clearEntryBindings()}; the three read methods do not guard against that, so reading a
-     * never-initialised registry throws {@link NullPointerException}. Only entries that have at least
+     * never-initialized registry throws {@link NullPointerException}. Only entries that have at least
      * one binding are ever stored, so a name that is absent here stands for a C entry whose
      * {@code obj_props} and {@code p_abilities} arrays are both empty.
      *

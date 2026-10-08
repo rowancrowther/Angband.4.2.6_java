@@ -1,4 +1,4 @@
-// Lexer for class.txt (feeds PlayerClassGrammar). The default mode tokenises the line-leading
+// Lexer for class.txt (feeds PlayerClassGrammar). The default mode tokenizes the line-leading
 // directives (name:, stats:, equip:, book:, spell:, ...); most directives switch into a purpose-
 // built sub-mode so the remainder of the line lexes under the right rules — free text (names,
 // titles, descriptions), colon-delimited fields (equip/book/spell), flag lists, book graphics and

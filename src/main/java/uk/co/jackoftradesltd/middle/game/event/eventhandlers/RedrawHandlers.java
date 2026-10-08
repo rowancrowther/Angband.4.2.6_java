@@ -57,7 +57,7 @@ import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
  */
 public class RedrawHandlers {
     /**
-     * The core's writing end of the UI thread's inbox, exactly as {@link InitHandlers#coreSender}
+     * The core's writing end of the UI thread's inbox, exactly as {@code InitHandlers.coreSender}
      * is: the one thing every handler in this class needs in order to put a
      * {@link CoreMessage.GameEventCoreMessage} on the queue.
      *

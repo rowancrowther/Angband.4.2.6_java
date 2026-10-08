@@ -208,7 +208,7 @@ class BoundaryTest {
     /**
      * Every source file under {@code src/main}, read and blanked once for the whole class. Parsed
      * lazily so that a missing source tree fails one test with a clear message rather than every
-     * test with an initialiser error.
+     * test with an initializer error.
      */
     private static List<SourceFile> sources;
 

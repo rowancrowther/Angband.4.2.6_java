@@ -70,7 +70,7 @@ public class PitAssembler implements Assembler<PitParseRecord, List<PitProfile>>
             int line = record.line();
             String name = record.name();
             // room: is a bare digit in the file (C's room_type 1/2/3); map it to the enum. An
-            // absent room: leaves PIT_TYPE_NONE, and an unrecognised digit falls through to NONE
+            // absent room: leaves PIT_TYPE_NONE, and an unrecognized digit falls through to NONE
             // rather than erroring, since the digit is already constrained by the lexer.
             String roomType = record.pitRoomType();
             PitRoomType pitRoomType = PitRoomType.PIT_TYPE_NONE;
@@ -183,7 +183,7 @@ public class PitAssembler implements Assembler<PitParseRecord, List<PitProfile>>
             }
             if (badBannedSpell) continue;
             // color: each entry is a single-character colour code; ColourEnum.fromCode resolves a
-            // one-char string via the colour table and returns null for anything unrecognised.
+            // one-char string via the colour table and returns null for anything unrecognized.
             List<ColourEnum> colours = new ArrayList<>();
             boolean badColour = false;
             for (String colourString : record.colours()) {

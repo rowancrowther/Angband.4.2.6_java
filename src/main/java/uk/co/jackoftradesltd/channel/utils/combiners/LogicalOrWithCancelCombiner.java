@@ -303,7 +303,7 @@ public class LogicalOrWithCancelCombiner implements Combiner, Cloneable {
      *
      * <p>A combiner that has not been {@link #init(int, int) init}-ed yet has no
      * state to copy, so the clone is a fresh instance - which is the case
-     * {@code CombinerName} actually exercises, since it clones an un-initialised
+     * {@code CombinerName} actually exercises, since it clones an un-initialized
      * prototype per fold.
      *
      * @return an independent copy of this combiner

@@ -123,7 +123,7 @@ public class ObjectPropertyTypeWrapper {
      * <p>Constructor ObjectPropertyTypeWrapper(ObjPropertyType, ObjectFlag) coded before 260827, commented in full on
      * 261005.
      *
-     * @param typemust be {@code OBJ_PROPERTY_FLAG}
+     * @param type must be {@code OBJ_PROPERTY_FLAG}
      * @param flag the flag payload
      * @throws InvalidParameterException if {@code type} is not {@code OBJ_PROPERTY_FLAG}
      */

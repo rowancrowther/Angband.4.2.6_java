@@ -27,7 +27,7 @@ import java.util.Map;
  * {@code struct birther} ({@code player-birth.c:93-109}). C keeps two static instances of it,
  * {@code prev} and {@code quickstart_prev}, for the "flick between two rolls" undo and for restoring a
  * save file's character at the quickstart screen; neither static instance is ported yet - only the
- * struct shape and {@link PlayerBirth#saveRollerData}, the method that fills one, exist so far.
+ * struct shape and {@link PlayerBirth#saveRollerData(Birther)} saveRollerData(Birther)}, the method that fills one, exist so far.
  *
  * <p>Fields correspond one-for-one with C's, with the renames Java forces: {@code class} becomes
  * {@link #playerClass} (a reserved word), and {@code wt}/{@code ht} become {@link #weight}/
@@ -119,7 +119,7 @@ public class Birther {
      * instance ({@code player-birth.c:93-109}).
      *
      * <p>C leaves a fresh struct's fields as whatever memory already held, except where an instance is
-     * a zero-initialised {@code static} ({@code prev}, {@code quickstart_prev}); the port always starts
+     * a zero-initialized {@code static} ({@code prev}, {@code quickstart_prev}); the port always starts
      * {@link #stat} as an empty map and every other field at Java's own default ({@code null} or zero),
      * regardless of which C behaviour a given call site would otherwise have relied on. No caller of
      * this constructor exists yet beyond the test suite, so the difference has nothing to trip over so

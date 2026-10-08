@@ -42,7 +42,7 @@ import java.io.IOException;
  * <p>This is the write side of the object slice, paired with {@code ObjectRegistry} (the read
  * side). Its loaders are invoked by {@code GameConstants.init()} in dependency order — bases before
  * slays/brands/curses; curses and item objects before ego items and artifacts. {@code loadItemObjects}
- * registers the ordinary object kinds and {@code loadArtifacts} synthesises the special artifact
+ * registers the ordinary object kinds and {@code loadArtifacts} synthesizes the special artifact
  * kinds into the same table, so their order is load-bearing. It was split out of
  * {@code GameConstants} as one domain slice of the loader/registry refactor.
  *
@@ -112,7 +112,7 @@ public class ObjectDataLoader {
     }
 
     /**
-     * Load the artifacts from {@code artifact.txt} into {@link ObjectRegistry}, synthesising a special
+     * Load the artifacts from {@code artifact.txt} into {@link ObjectRegistry}, synthesizing a special
      * {@link uk.co.jackoftradesltd.middle.objects.ObjectKind} for each into the shared object-kind table.
      * Must run after item objects (so the ordinary kinds are already registered) and after
      * activations, brands, slays and curses, which artifacts reference.

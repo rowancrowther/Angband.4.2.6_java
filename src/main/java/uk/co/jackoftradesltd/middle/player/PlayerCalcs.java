@@ -110,7 +110,7 @@ public class PlayerCalcs {
      *       combat bonuses.</li>
      *   <li>The shape, which adds to all of the above.</li>
      *   <li>Vulnerabilities, held back until now so that a resistance from any source is compared
-     *       against the unpenalised level rather than a lowered one.</li>
+     *       against the unpenalized level rather than a lowered one.</li>
      *   <li>Light, the environment-dependent resistances, and the stats — converted here from raw
      *       values into the compressed table indices everything downstream subscripts with.</li>
      *   <li>Hunger, then the timed statuses, then fear.</li>
@@ -1186,7 +1186,7 @@ public class PlayerCalcs {
         // determine max weight allowance
         int maxWeight = player.getPlayerClass().getMagic().getSpellWeight();
 
-        // Heavy armour penalises mana
+        // Heavy armour penalizes mana
         if (((currentWeight - maxWeight) / 10) > 0) {
             // Encumbered
             state.setCumberArmour(true);
@@ -1700,9 +1700,9 @@ public class PlayerCalcs {
             // Has armour state changed
             if (state.isCumberArmour() != player.getPlayerState().isCumberArmour()) {
                 if (state.isCumberArmour())
-                    Message.message("The weight of your armor reduces your maximum SP.");
+                    Message.message("The weight of your armour reduces your maximum SP.");
                 else
-                    Message.message("Your maximum SP is no longer reduced by armor weight.");
+                    Message.message("Your maximum SP is no longer reduced by armour weight.");
             }
         }
 

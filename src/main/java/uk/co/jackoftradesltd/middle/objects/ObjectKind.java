@@ -570,6 +570,14 @@ public class ObjectKind {
     }
 
     /**
+     * Returns the kind's name - the port of reading C's {@code kind->name}, such as "Dagger" or
+     * "Black Dragon Scale Mail".
+     *
+     * <p>The ignore machinery matches against this, not the ego's name: {@code egoHasIgnoreType} looks
+     * for a {@code qualityMapping} identifier inside it.
+     *
+     * <p>Function getName commented in full on 261008.
+     *
      * @return the kind's name
      */
     public String getName() {
@@ -633,6 +641,13 @@ public class ObjectKind {
     }
 
     /**
+     * Returns the kind's item type - the port of reading C's {@code kind->tval}.
+     *
+     * <p>The first test {@code egoHasIgnoreType} applies to each {@code qualityMapping} row: the row's
+     * tval must equal this one before its identifier is even looked for.
+     *
+     * <p>Function gettValue commented in full on 261008.
+     *
      * @return the item type value (tval)
      */
     public TValue gettValue() {

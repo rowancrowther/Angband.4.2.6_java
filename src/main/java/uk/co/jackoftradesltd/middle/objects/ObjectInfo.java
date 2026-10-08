@@ -24,7 +24,27 @@ import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Static tables for the object-ignore machinery, the Java home of the data C keeps at the top of
+ * {@code obj-ignore.c}.
+ *
+ * <p>Class ObjectInfo commented in full on 261008.
+ */
 public class ObjectInfo {
+    /**
+     * Which ignore category each kind of item falls under - the port of C's {@code quality_mapping[]}
+     * in {@code obj-ignore.c}.
+     *
+     * <p>Each row says: an item of this tval whose kind name contains this identifier belongs to this
+     * ignore category. An empty identifier matches every kind of the tval. Order matters where one tval
+     * has several rows, because C stops at the first match: "Elven" is tried before the catch-all
+     * cloak row, and the "Chaos" dragon armour row sits in the high group.
+     *
+     * <p>Read by {@code EgoItem.egoHasIgnoreType}. The rows are copied from C in the same order, 37 in
+     * all.
+     *
+     * <p>Field qualityMapping commented in full on 261008.
+     */
     public static final QualityMapping[] qualityMapping = {
             new QualityMapping(IgnoreType.ITYPE_GREAT, TValue.TV_SWORD, "Chaos"),
             new QualityMapping(IgnoreType.ITYPE_GREAT, TValue.TV_POLEARM, "Slicing"),
@@ -75,6 +95,18 @@ public class ObjectInfo {
         }
     }
 
+    /**
+     * One row of {@link #qualityMapping} - the port of C's {@code quality_ignore_struct}.
+     *
+     * <p>Declared as a record rather than the C struct's three fields so that the row is immutable and
+     * read through accessors.
+     *
+     * <p>Record QualityMapping commented in full on 261008.
+     *
+     * @param ignoreType the ignore category the row assigns
+     * @param tval       the item type the row applies to
+     * @param identifier a substring the kind's name must contain; empty to match any kind of the tval
+     */
     public record QualityMapping(IgnoreType ignoreType, TValue tval, String identifier) {
     }
 }

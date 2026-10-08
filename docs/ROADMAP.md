@@ -127,6 +127,24 @@ Pick up, wield, use; runes get *learned*. C: `obj-make.c`, `obj-pile.c`, `obj-ge
 
 - [ ] Map: object lifecycle
 - [ ] Object generation & piles
+    - [ ] Decide `ItemObject.activation`'s shape before porting the `obj-make.c` activation copies and adding its
+      setter:
+      `ItemObject.activation` is a `List<Activation>` (`ItemObject.java`), `ObjectKind.activations` is a list, but
+      `EgoItem.activation` and `Artifact.activation` are single `Activation`s, and C holds one pointer in all four. The
+      setter's parameter type depends on the answer. Nothing assigns the field today, so `effectsPower` prices every
+      generated item at the kind's power. Source: `docs/ItemObject_round2/summary.md`, out-of-scope point 8 (recorded
+        261007)
+- [ ] Port `object_to_hit`, `object_to_dam` and `object_to_ac` (`obj-util.c`) as `objectToHit`, `objectToDam` and
+  `objectToAc` on `ItemObject`, before porting `object_desc`, and route `object_desc` and the attack code through them.
+  Each adds the curse bonuses (`curses[i].obj->to_h`, `->to_d`, `->to_a`, curse indices from 1, non-zero power only) to
+  the bare field. They are also called on the known half in `obj-info.c`, `ui-player.c` and `cmd-wizard.c`, so each must
+  read `known.curses` when handed a known half. `getToHit`, `getToDam` and `getToAC` stay as they are, since every
+  current caller ports a C site that reads the field directly. Source: `docs/ItemObject_round2/summary.md`, out-of-scope
+  point 9 (recorded 261007)
+- [ ] Port `object_effect` (`obj-util.c`) as `objectEffect` once the activation shape above is settled. It answers
+  `obj->activation->effect` when there is an activation and `obj->effect` otherwise, so it cannot be written until
+  `activation` has its setter. Callers: `use_aux`, `obj_needs_aim` and the `obj-info.c` effect description. Same source
+  (recorded 261007)
 - [ ] Inventory/equipment
 - [ ] Rune learning end-to-end (closes Chapter 2's deferred half)
 - [ ] Call `MagicBook.setSVal()` where the spellbook kinds are registered — C does the lookup and the synthesis together

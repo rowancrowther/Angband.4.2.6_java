@@ -120,12 +120,14 @@ Shape follows `docs/ItemObject_stage1_mismatches.md`. File and line references a
   `kind->activation` and `ego->activation`. Part H adds that `activation` is a `List<Activation>` where C holds one
   pointer, and that `artifact`, `originDepth`, `originRace` and the origin have no getters or setters.
 - No caller has worked around a missing getter.
+- **Result:** Callers are to be written in Chapter 7
 
 ### 9. `object_to_hit`, `object_to_dam`, `object_to_ac`, `object_effect` have no Java counterpart (Part H)
 
 - Every current caller wants the bare field. The first caller that doesn't is `object_desc` (Chapter 7), then the attack
   code, `obj-info.c` and `use_aux`.
 - The port must work on the known half as well, where it reads `obj->known->curses`.
+- **Result:** To be written in Chapter 7
 
 ### 10. `ego_has_ignore_type` is not ported (Part F)
 

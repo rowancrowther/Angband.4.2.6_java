@@ -19,6 +19,7 @@ package uk.co.jackoftradesltd.middle.objects;
 
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.FlagView;
+import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.Activation;
@@ -47,7 +48,13 @@ public class EgoItem {
      */
     private String text;
     /**
-     * The item type this ego applies to.
+     * The object kinds this ego may be applied to - the port of walking C's {@code ego->poss_items}
+     * list (each {@code poss_item} resolved from its {@code kidx} to the kind itself).
+     *
+     * <p>Read by {@link #egoHasIgnoreType(IgnoreType)} to decide which ignore categories are valid for
+     * this ego.
+     *
+     * <p>Field possItems commented in full on 261008.
      */
     private List<ObjectKind> possItems;
 
@@ -478,5 +485,43 @@ public class EgoItem {
                 time, newEverSeen);
         copy.ignoreTypes = newIgnoreTypes;
         return copy;
+    }
+
+    /**
+     * Answers whether an ignore category is a valid one for this ego - the port of C's
+     * {@code ego_has_ignore_type} in {@code obj-ignore.c}.
+     *
+     * <p>Walks every kind this ego may be applied to ({@link #possItems}) and, for each, every row of
+     * {@link ObjectInfo#qualityMapping}. It answers {@code true} on the first row where all three hold:
+     * the row's tval is the kind's tval, the row's ignore type is the one asked for, and the row's
+     * identifier occurs somewhere inside the <em>kind's</em> name (C's {@code strstr}, here
+     * {@link String#contains}). The identifier is matched against the kind, not the ego: "Chaos" is
+     * looked for in "Chaos Dragon Scale Mail", never in "of Slaying". An empty identifier occurs in every
+     * name, so a row with {@code ""} means "any kind of this tval".
+     *
+     * <p>The match is case sensitive in both languages, so {@code "Bow"} does not hit "Light Crossbow".
+     * An ego with no possible kinds, or none whose tval and name fit a row for that category, answers
+     * {@code false}.
+     *
+     * <p>Used to decide which ignore categories the options menu offers for an ego; it does not read
+     * {@link #ignoreTypes}, which records what the player has chosen rather than what is valid.
+     *
+     * <p>Function egoHasIgnoreType commented in full on 261008.
+     *
+     * @param ignoreType the ignore category to test
+     * @return {@code true} if some possible kind of this ego falls under that category
+     */
+    public boolean egoHasIgnoreType(IgnoreType ignoreType) {
+        // Go through all possible item kinds
+        for (ObjectKind egoKind : possItems) {
+            for (ObjectInfo.QualityMapping mapping : ObjectInfo.qualityMapping) {
+                if (mapping.tval() == egoKind.gettValue()
+                        && mapping.ignoreType() == ignoreType
+                        && egoKind.getName().contains(mapping.identifier()))
+                    return true;
+            }
+        }
+
+        return false;
     }
 }

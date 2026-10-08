@@ -473,11 +473,15 @@ public class ItemObject {
      * <p>{@link #toDamagePower()} prices it at half of {@code DAMAGE_POWER} a point, and again at
      * the full figure for an object that is not a weapon, missile or launcher.
      *
+     * <p>{@link #applyCurseAttributes} adds each active curse's figure to it with the saturating
+     * 16-bit add, on a scratch copy only.
+     *
      * <p>{@link #isGood} weighs it against the kind's worst roll at four times the weight of
      * {@link #toAC}, so a weapon is judged chiefly on this bonus.
      *
      * <p>Field toDam coded before 260815, retyped from {@code Random} to {@code int} on 260815.
-     * Commented in full on 260815, damage pricing added on 261002, ignore read added on 261002.
+     * Commented in full on 260815, damage pricing added on 261002, ignore read added on 261002,
+     * curse note added on 261008.
      * {@link #wipe} sets it to zero, added on 261002.
      */
     private int toDam;
@@ -490,6 +494,8 @@ public class ItemObject {
      * is the test that knows the difference.
      *
      * <p>{@link #toHitPower(int)} prices it linearly, at one and a half power a point.
+     * {@link #applyCurseAttributes} adds each active curse's figure to it with the saturating
+     * 16-bit add, on a scratch copy only.
      *
      * <p>{@link #hasStandardToH} compares it with the kind's fixed figure for body armour and with
      * zero for everything else. {@link #isGood} weighs it against the kind's worst roll at twice the
@@ -497,7 +503,7 @@ public class ItemObject {
      *
      * <p>Field toHit coded before 260815, retyped from {@code Random} to {@code int} on 260815.
      * Commented in full on 260815, power read added on 261002, knowledge and ignore reads added on
-     * 261002. {@link #wipe} sets it to zero, added on 261002.
+     * 261002, curse note added on 261008. {@link #wipe} sets it to zero, added on 261002.
      */
     private int toHit;
     /**
@@ -3574,31 +3580,29 @@ public class ItemObject {
      * the last one winning. A curse present at zero power is skipped — it is recorded on the object
      * but not active. The base weight is floored at zero before any curse sees it.
      *
-     * <p>The curses are applied in ascending curse index, as C's loop over its curse array does.
-     * C starts that loop at index 1 because slot 0 of its array is a placeholder; the port numbers
-     * its curses from 0 and has no placeholder, so it skips nothing. The map the curses live in
-     * keeps insertion order, which is why the indices are sorted first.
+     * <p>The curses are applied in ascending curse index, as C's loop over its curse array does, and
+     * that order matters because the weight changes do not commute (adding ten then doubling is not
+     * doubling then adding ten). Nothing here sorts: {@link #getCurses()} walks a {@link TreeMap}
+     * ordered by {@link #CURSE_ORDER}, so the order is the map's own whatever order the curses were
+     * added in. C starts its loop at index 1 because slot 0 of its array is a placeholder; the port
+     * numbers its curses from 0 and has no placeholder, so it skips nothing.
      *
-     * <p>Function objectWeightOne coded on 260820, commented in full on 261002.
+     * <p>Each step goes through {@link Curse#modifyWeightForCurse(int)}, which clamps to
+     * [0, {@link Short#MAX_VALUE}], so a cursed weight stays inside C's {@code int16_t} range. With
+     * no active curse the answer is the base weight floored at zero, and an item whose curse map was
+     * never created reads as having none, because {@link #getCurses()} answers an empty map.
+     *
+     * <p>Function objectWeightOne coded on 260820, commented in full on 261002, curse order
+     * corrected on 261008.
      *
      * @return this object's individual weight in tenth-pounds, never negative
      */
     public int objectWeightOne() {
         int result = Math.max(weight, 0);
 
-        List<Integer> sortedIndex = new ArrayList<>();
-        for (Curse c : getCurses().keySet()) {
-            sortedIndex.add(c.getIndex());
-        }
-        sortedIndex.sort(Comparator.naturalOrder());
-
-        for (int index : sortedIndex) {
-            for (Curse curse : getCurses().keySet()) {
-                if (curse != null && curse.getIndex() == index && getCurses().get(curse).getPower() != 0) {
-                    result = curse.modifyWeightForCurse(result);
-                }
-            }
-        }
+        for (Map.Entry<Curse, CurseData> curse : getCurses().entrySet())
+            if (curse.getValue().getPower() != 0)
+                result = curse.getKey().modifyWeightForCurse(result);
 
         return result;
     }
@@ -4944,10 +4948,14 @@ public class ItemObject {
      *
      * <p>Called on a scratch copy by the curse pricing, which then prices the merged object as a
      * whole. One curse may be held back, which is how the pricing takes the difference a single
-     * curse makes; passing {@code null} merges them all. An object with no curses is left as it is.
+     * curse makes; passing {@code null} merges them all. An object with no curses is left as it is:
+     * C returns early only on a {@code NULL} curse array, while the port also returns on an empty
+     * map, which changes nothing because C's pass over an all-zero array would find no active curse
+     * and its clean-up loop nothing to flatten.
      *
      * <p>The curses are applied in ascending registry index, which is C's order and matters because
-     * the weight changes do not commute. Each active curse - present, with a power other than zero -
+     * the weight changes do not commute. {@link #getCurses()} walks a {@link TreeMap} ordered by
+     * {@link #CURSE_ORDER}, so that order needs no sorting here. Each active curse - present, with a power other than zero -
      * first changes the weight through {@link Curse#modifyWeightForCurse(int)}. Its to-armour,
      * to-hit and to-damage figures are then added to the object's through the saturating 16-bit
      * add, so a long chain cannot wrap round; its flags are unioned in; and its modifiers are added
@@ -4983,7 +4991,8 @@ public class ItemObject {
      * {@link Curse} instance carrying the held-back curse's index is held back too. A {@code null}
      * argument holds nothing back.
      *
-     * <p>Function applyCurseAttributes commented in full on 261007.
+     * <p>Function applyCurseAttributes coded before 261007, commented in full on 261007, curse order
+     * and empty-map notes added on 261008.
      *
      * @param curseToIgnore the one curse to leave out, or {@code null} to merge them all
      * @throws RuntimeException if an element is held at an impossible resistance level
@@ -4994,113 +5003,100 @@ public class ItemObject {
             return;
         }
 
-        List<Integer> curseIndices = new ArrayList<>();
-        for (Curse curse : ObjectRegistry.getCurses()) {
-            curseIndices.add(curse.getIndex());
-        }
+        for (Curse curse : getCurses().keySet()) {
+            if (curseToIgnore != null && curse.getIndex() == curseToIgnore.getIndex()) continue;
 
-        curseIndices.sort(Comparator.naturalOrder());
+            if (getCurses().get(curse).getPower() == 0)
+                continue;
 
-        for (Integer index : curseIndices) {
-            for (Curse curse : ObjectRegistry.getCurses()) {
-                if (curse.getIndex() == index) {
+            // C reads curses[i].obj; the port's curse holds that object, so read it through
+            // curse.getItemObject() below. The weight change goes through the curse itself.
+            this.setWeight(curse.modifyWeightForCurse(this.getWeight()));
 
-                    if (curseToIgnore != null
-                            && curse.getIndex() == curseToIgnore.getIndex()) continue;
+            // Curses can adjust the ac, hit and dam modifiers
+            this.setToAC(Guards.addGuardI16(this.getToAC(), curse.getItemObject().getToAC()));
+            this.setToHit(Guards.addGuardI16(this.getToHit(), curse.getItemObject().getToHit()));
+            this.setToDam(Guards.addGuardI16(this.getToDam(), curse.getItemObject().getToDam()));
 
-                    if (!getCurses().containsKey(curse) || getCurses().get(curse).getPower() == 0)
+            // The curse may extend the objects flags - C's of_union(obj->flags, curse_obj->flags).
+            // setFlags is the named mutator for that, and unions into the real set. getFlags() must
+            // NOT be used here: it hands back a copy, so unioning into it would build the merged set
+            // and then throw it away, leaving this object's flags untouched and the curse silently
+            // unapplied - a mistake the compiler cannot catch, which prices the object as though the
+            // curse carried no flags at all.
+            this.setFlags(curse.getItemObject().getFlags());
+
+            // The curses modifiers combine additively with those from this object;
+            for (ObjectModifier om : curse.getItemObject().getModifiers().keySet()) {
+                if (this.getModifiers().containsKey(om)) {
+                    this.getModifiers().put(om, Guards.addGuardI16(this.getModifiers().getOrDefault(om, 0),
+                            curse.getItemObject().getModifiers().getOrDefault(om, 0)));
+                } else {
+                    this.getModifiers().put(om, curse.getItemObject().getModifiers().getOrDefault(om, 0));
+                }
+            }
+
+            // Resistances combine with standard logic for combining them.
+            for (ElementEnum elem : ElementEnum.values()) {
+                if (elem == ElementEnum.ELEM_MAX || elem == ElementEnum.ELEM_NONE) continue;
+                ElementInfo curseElInfo = curse.getItemObject().getElInfo().getOrDefault(elem, null);
+                int curseResLevel = curseElInfo == null ? 0 : curseElInfo.getResLevel();
+                ElementInfo elInfo = getElInfo().getOrDefault(elem, null);
+                int elInfoResLevel = elInfo == null ? 0 : elInfo.getResLevel();
+                if (elInfo != null) {
+                    if (elInfoResLevel >= 3) {
+                        // Already immune
                         continue;
-
-                    // C reads curses[i].obj; the port's curse holds that object, so read it through
-                    // curse.getItemObject() below. The weight change goes through the curse itself.
-                    this.setWeight(curse.modifyWeightForCurse(this.getWeight()));
-
-                    // Curses can adjust the ac, hit and dam modifiers
-                    this.setToAC(Guards.addGuardI16(this.getToAC(), curse.getItemObject().getToAC()));
-                    this.setToHit(Guards.addGuardI16(this.getToHit(), curse.getItemObject().getToHit()));
-                    this.setToDam(Guards.addGuardI16(this.getToDam(), curse.getItemObject().getToDam()));
-
-                    // The curse may extend the objects flags - C's of_union(obj->flags, curse_obj->flags).
-                    // setFlags is the named mutator for that, and unions into the real set. getFlags() must
-                    // NOT be used here: it hands back a copy, so unioning into it would build the merged set
-                    // and then throw it away, leaving this object's flags untouched and the curse silently
-                    // unapplied - a mistake the compiler cannot catch, which prices the object as though the
-                    // curse carried no flags at all.
-                    this.setFlags(curse.getItemObject().getFlags());
-
-                    // The curses modifiers combine additively with those from this object;
-                    for (ObjectModifier om : curse.getItemObject().getModifiers().keySet()) {
-                        if (this.getModifiers().containsKey(om)) {
-                            this.getModifiers().put(om, Guards.addGuardI16(this.getModifiers().getOrDefault(om, 0),
-                                    curse.getItemObject().getModifiers().getOrDefault(om, 0)));
-                        } else {
-                            this.getModifiers().put(om, curse.getItemObject().getModifiers().getOrDefault(om, 0));
+                    } else if (elInfoResLevel == 1) {
+                        /*
+                         * Has resistance.  An immunity will override
+                         * that.  A resistance or no resistance on
+                         * the curse will do nothing.  A vulnerability
+                         * will convert the resistance to
+                         * vulnerability + resistance.
+                         */
+                        if (curseResLevel >= 3) {
+                            elInfo.setResLevel(3);
+                        } else if (curseResLevel < 0) {
+                            elInfo.setResLevel(VULN_AND_RES);
                         }
+                    } else if (elInfoResLevel == VULN_AND_RES) {
+                        // Combined result so far is vulnerability and resistance.
+                        // Only change if there is an immunity
+                        if (curseResLevel >= 3) {
+                            elInfo.setResLevel(3);
+                        }
+                    } else if (elInfoResLevel < 0) {
+                        /*
+                         * Has vulnerability.  An immunity will override
+                         * that.  A vulnerability or no resistance on
+                         * the curse will do nothing.  A resistance will
+                         * convert the vulnerability to vulnerability +
+                         * resistance.
+                         */
+                        if (curseResLevel >= 3) {
+                            elInfo.setResLevel(3);
+                        } else if (curseResLevel == 1) {
+                            elInfo.setResLevel(VULN_AND_RES);
+                        }
+                    } else {
+                        /*
+                         * With no resistance in the base attributes,
+                         * the merged result will be the same as
+                         * whatever is in the curse.
+                         */
+                        if (elInfoResLevel != 0) {
+                            String message = "Invalid Resistance Level. Was " + elInfoResLevel + " expecting 0";
+                            logger.error(message);
+                            throw new RuntimeException(message);
+                        }
+                        elInfo.setResLevel(curseResLevel);
                     }
-
-                    // Resistances combine with standard logic for combining them.
-                    for (ElementEnum elem : ElementEnum.values()) {
-                        if (elem == ElementEnum.ELEM_MAX || elem == ElementEnum.ELEM_NONE) continue;
-                        ElementInfo curseElInfo = curse.getItemObject().getElInfo().getOrDefault(elem, null);
-                        int curseResLevel = curseElInfo == null ? 0 : curseElInfo.getResLevel();
-                        ElementInfo elInfo = getElInfo().getOrDefault(elem, null);
-                        int elInfoResLevel = elInfo == null ? 0 : elInfo.getResLevel();
-                        if (elInfo != null) {
-                            if (elInfoResLevel >= 3) {
-                                // Already immune
-                                continue;
-                            } else if (elInfoResLevel == 1) {
-                                /*
-                                 * Has resistance.  An immunity will override
-                                 * that.  A resistance or no resistance on
-                                 * the curse will do nothing.  A vulnerability
-                                 * will convert the resistance to
-                                 * vulnerability + resistance.
-                                 */
-                                if (curseResLevel >= 3) {
-                                    elInfo.setResLevel(3);
-                                } else if (curseResLevel < 0) {
-                                    elInfo.setResLevel(VULN_AND_RES);
-                                }
-                            } else if (elInfoResLevel == VULN_AND_RES) {
-                                // Combined result so far is vulnerability and resistance.
-                                // Only change if there is an immunity
-                                if (curseResLevel >= 3) {
-                                    elInfo.setResLevel(3);
-                                }
-                            } else if (elInfoResLevel < 0) {
-                                /*
-                                 * Has vulnerability.  An immunity will override
-                                 * that.  A vulnerability or no resistance on
-                                 * the curse will do nothing.  A resistance will
-                                 * convert the vulnerability to vulnerability +
-                                 * resistance.
-                                 */
-                                if (curseResLevel >= 3) {
-                                    elInfo.setResLevel(3);
-                                } else if (curseResLevel == 1) {
-                                    elInfo.setResLevel(VULN_AND_RES);
-                                }
-                            } else {
-                                /*
-                                 * With no resistance in the base attributes,
-                                 * the merged result will be the same as
-                                 * whatever is in the curse.
-                                 */
-                                if (elInfoResLevel != 0) {
-                                    String message = "Invalid Resistance Level. Was " + elInfoResLevel + " expecting 0";
-                                    logger.error(message);
-                                    throw new RuntimeException(message);
-                                }
-                                elInfo.setResLevel(curseResLevel);
-                            }
-                        } else {
-                            if (curseElInfo != null) {
-                                ElementInfo newElInfo = new ElementInfo();
-                                newElInfo.setResLevel(curseResLevel);
-                                putElInfo(elem, newElInfo);
-                            }
-                        }
+                } else {
+                    if (curseElInfo != null) {
+                        ElementInfo newElInfo = new ElementInfo();
+                        newElInfo.setResLevel(curseResLevel);
+                        putElInfo(elem, newElInfo);
                     }
                 }
             }
@@ -5376,10 +5372,7 @@ public class ItemObject {
             }
 
             int k;
-            if (getModifiers() == null)
-                k = 0;
-            else
-                k = getModifiers().getOrDefault(om, 0);
+            k = getModifiers().getOrDefault(om, 0);
             extraStatBonus += k * mod.getMultiplier();
 
             if (mod.getPower() != 0) {

@@ -286,6 +286,18 @@ class ItemObjectWeightTest {
         }
 
         /**
+         * The port numbers its curses from 0, where C leaves slot 0 empty and starts its loop at 1.
+         * A curse at index 0 is therefore a real curse here and must still apply: 50 + 20 = 70.
+         *
+         * @throws Exception if a field cannot be reached
+         */
+        @Test
+        @DisplayName("a curse at index zero applies")
+        void indexZeroApplies() throws Exception {
+            assertEquals(70, item(50, Map.of(curse(20, false, 0), new CurseData(10, 0))).objectWeightOne());
+        }
+
+        /**
          * A curse recorded at zero power is inactive: it is on the object but has no effect, which
          * is how a curse that has been suppressed is represented.
          *

@@ -695,6 +695,72 @@ class ItemObjectPowerCursesTest {
         }
 
         /**
+         * C passes -1 for "hold nothing back", so curse 0 can be held back like any other; the port
+         * passes {@code null} for nothing and must therefore treat an index of 0 as a real curse.
+         * Holding back curse 0 leaves only curse 1's -4: 50 - 4 = 46.
+         */
+        @Test
+        @DisplayName("curse index zero can be held back")
+        void ignoredIndexZero() throws Exception {
+            Curse zero = curse(0, 0, false, -1);
+            Curse one = curse(1, 0, false, -4);
+            register(zero, one);
+            ItemObject item = cloak(100, 50, zero, 50, one, 50);
+
+            applyCurses(item, zero);
+
+            assertEquals(46, item.getToAC());
+        }
+
+        /**
+         * To-hit and to-damage add like to-armour does, and saturate at the 16-bit limits:
+         * 5 + -4 is 1, 32760 + 10 stops at 32767 and -32760 + -10 stops at -32768.
+         */
+        @Test
+        @DisplayName("to-hit and to-damage add and saturate")
+        void hitAndDamageAdd() throws Exception {
+            Curse c = curse(1, 0, false, 0);
+            set(c.getItemObject(), "toHit", -4);
+            set(c.getItemObject(), "toDam", 10);
+            register(c);
+            ItemObject item = cloak(100, 0, c, 50);
+            set(item, "toHit", 5);
+            set(item, "toDam", 32760);
+
+            applyCurses(item, null);
+
+            assertEquals(1, item.getToHit());
+            assertEquals(32767, item.getToDam());
+
+            Curse low = curse(1, 0, false, 0);
+            set(low.getItemObject(), "toHit", -10);
+            register(low);
+            ItemObject deep = cloak(100, 0, low, 50);
+            set(deep, "toHit", -32760);
+
+            applyCurses(deep, null);
+
+            assertEquals(-32768, deep.getToHit());
+        }
+
+        /**
+         * The weight the curse gives is stored on the object, and clamped at the 16-bit ceiling:
+         * 32760 + 30 would pass 32767, so C's {@code weight < 32767 - 30} test fails and it settles
+         * on 32767.
+         */
+        @Test
+        @DisplayName("the stored weight saturates at the 16-bit ceiling")
+        void weightSaturates() throws Exception {
+            Curse c = curse(1, 30, false, 0);
+            register(c);
+            ItemObject item = cloak(32760, 0, c, 50);
+
+            applyCurses(item, null);
+
+            assertEquals(32767, item.getWeight());
+        }
+
+        /**
          * The curse list is left as it was, for the caller to clear, and the base armour class is
          * untouched.
          */

@@ -20,14 +20,21 @@ package uk.co.jackoftradesltd.middle.player;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
+import uk.co.jackoftradesltd.middle.enums.MessageType;
+import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerRedraw;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerUpdateEnum;
 import uk.co.jackoftradesltd.middle.player.enums.TimedEffect;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -52,7 +59,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * uk.co.jackoftradesltd.channel.utils.FlagView} return type stands between that and a caller who
  * mutates it, which makes the identity worth asserting rather than assuming.
  *
- * <p>Class PlayerTimedEffectTest coded on 260818, commented in full on 260818.
+ * <p>Two further groups, added on 261008, pin the whole {@code list-player-timed.h} table against
+ * the C header (all 53 rows, not a sample) and the defaults C's parser leaves for the fields
+ * the data file omits.
+ *
+ * <p>Class PlayerTimedEffectTest coded on 260818, commented in full on 261008.
  *
  * @author Rowan Crowther
  */
@@ -135,6 +146,102 @@ class PlayerTimedEffectTest {
             PlayerTimedEffect second = definitionFor(TimedEffect.TMD_SINVIS);
 
             assertEquals(contentsOf(first.getFlagUpdate()), contentsOf(second.getFlagUpdate()));
+        }
+    }
+
+    /**
+     * The whole {@code list-player-timed.h} table, checked effect by effect.
+     *
+     * <p>Expected values come from that header, not from {@link TimedEffect}: of its 53 rows, 49
+     * are {@code PR_STATUS} / {@code PU_BONUS} and four are exceptions.
+     */
+    @Nested
+    class CTable {
+
+        @Test
+        void everyEffectOutsideTheFourExceptionsRaisesStatusAndBonus() {
+            Set<TimedEffect> exceptions = EnumSet.of(TimedEffect.TMD_NONE, TimedEffect.TMD_BLIND,
+                    TimedEffect.TMD_IMAGE, TimedEffect.TMD_SINVIS, TimedEffect.TMD_SINFRA);
+            int checked = 0;
+            for (TimedEffect effect : TimedEffect.values()) {
+                if (exceptions.contains(effect)) {
+                    continue;
+                }
+                PlayerTimedEffect definition = definitionFor(effect);
+                assertEquals(List.of(PlayerRedraw.PR_STATUS), contentsOf(definition.getFlagRedraw()),
+                        effect + " redraw");
+                assertEquals(List.of(PlayerUpdateEnum.PU_BONUS), contentsOf(definition.getFlagUpdate()),
+                        effect + " update");
+                checked++;
+            }
+            assertEquals(49, checked);
+        }
+
+        @Test
+        void seeInvisibleAndInfravisionAlsoRefreshMonsterVisibility() {
+            for (TimedEffect effect : List.of(TimedEffect.TMD_SINVIS, TimedEffect.TMD_SINFRA)) {
+                PlayerTimedEffect definition = definitionFor(effect);
+
+                assertEquals(List.of(PlayerRedraw.PR_STATUS), contentsOf(definition.getFlagRedraw()));
+                assertEquals(List.of(PlayerUpdateEnum.PU_BONUS, PlayerUpdateEnum.PU_MONSTERS),
+                        contentsOf(definition.getFlagUpdate()));
+            }
+        }
+
+        @Test
+        void hallucinationRaisesOnlyTheBonusRecalculation() {
+            assertEquals(List.of(PlayerUpdateEnum.PU_BONUS),
+                    contentsOf(definitionFor(TimedEffect.TMD_IMAGE).getFlagUpdate()));
+        }
+    }
+
+    /**
+     * The fields the data file supplies and the constructor stores untouched, including the
+     * defaults C's parser leaves for a line the file omits.
+     */
+    @Nested
+    class StoredFields {
+
+        @Test
+        void aFullySpecifiedDefinitionRoundTrips() {
+            PlayerTimedEffect definition = new PlayerTimedEffect(TimedEffect.TMD_OPP_FIRE, "d",
+                    "e", "i", "x", MessageType.MSG_RECOVER, List.of(), List.of(), null, null,
+                    false, 0, ObjectFlag.OF_PROT_CONF, true, ElementEnum.ELEM_FIRE, null, null);
+
+            assertEquals(MessageType.MSG_RECOVER, definition.getMsgT());
+            assertEquals(ObjectFlag.OF_PROT_CONF, definition.getoFlagDup());
+            assertTrue(definition.isoFlagExactlySyn());
+            assertEquals(ElementEnum.ELEM_FIRE, definition.getTempResist());
+        }
+
+        /**
+         * C's cleanup resets {@code flags}, {@code lower_bound}, {@code oflag_dup},
+         * {@code oflag_syn} and the three temporary-property indices to these values.
+         */
+        @Test
+        void theDefaultsMatchWhatCLeavesForAnOmittedLine() {
+            PlayerTimedEffect definition = new PlayerTimedEffect(TimedEffect.TMD_FAST, null,
+                    null, null, null, MessageType.MSG_NONE, List.of(), List.of(), null, null,
+                    false, 0, ObjectFlag.OF_NONE, false, ElementEnum.ELEM_NONE, null, null);
+
+            assertFalse(definition.isNonStacking());
+            assertEquals(0, definition.getLowerBound());
+            assertEquals(ObjectFlag.OF_NONE, definition.getoFlagDup());
+            assertFalse(definition.isoFlagExactlySyn());
+            assertEquals(ElementEnum.ELEM_NONE, definition.getTempResist());
+            assertNull(definition.getTempBrand());
+            assertNull(definition.getTempSlay());
+            assertNull(definition.getOnBeginEffect());
+            assertNull(definition.getOnEndEffect());
+        }
+
+        @Test
+        void theLowerBoundAcceptsCsUpperLimit() {
+            PlayerTimedEffect definition = new PlayerTimedEffect(TimedEffect.TMD_FAST, "", "", "",
+                    "", MessageType.MSG_NONE, List.of(), List.of(), null, null, false, 32767,
+                    ObjectFlag.OF_NONE, false, ElementEnum.ELEM_NONE, null, null);
+
+            assertEquals(32767, definition.getLowerBound());
         }
     }
 

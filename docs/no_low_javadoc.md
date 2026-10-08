@@ -48,51 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/objects/ObjectKind.java`
-
-0 missing, 18 low
-
-- L538: method `getsVal` - LOW
-- L554: method `getName` - LOW
-- L561: method `getBase` - LOW
-- L568: method `setAlloc_prob` - LOW
-- L575: method `setAlloc_min` - LOW
-- L582: method `setAlloc_max` - LOW
-- L589: method `setCost` - LOW
-- L596: method `setWeight` - LOW
-- L603: method `getActivations` - LOW
-- L610: method `setTime` - LOW
-- L617: method `gettValue` - LOW
-- L624: method `getsValueName` - LOW
-- L631: method `getKindFlags` - LOW
-- L638: method `getKindIndex` - LOW
-- L645: method `setKindIndex` - LOW
-- L685: method `getAc` - LOW
-- L742: method `getEffect` - LOW
-- L1058: method `getWeight` - LOW
-
-### `middle/player/PlayerTimedEffect.java`
-
-0 missing, 17 low
-
-- L161: method `getName` - LOW
-- L200: method `getDescription` - LOW
-- L207: method `getOnEnd` - LOW
-- L214: method `getOnIncrease` - LOW
-- L221: method `getOnDecrease` - LOW
-- L228: method `getMsgT` - LOW
-- L235: method `getFail` - LOW
-- L242: method `getGrade` - LOW
-- L249: method `getOnBeginEffect` - LOW
-- L256: method `getOnEndEffect` - LOW
-- L263: method `isNonStacking` - LOW
-- L270: method `getLowerBound` - LOW
-- L277: method `getoFlagDup` - LOW
-- L284: method `isoFlagExactlySyn` - LOW
-- L291: method `getTempResist` - LOW
-- L298: method `getTempBrand` - LOW
-- L305: method `getTempSlay` - LOW
-
 ### `middle/player/enums/PlayerHistoryType.java`
 
 16 missing, 0 low

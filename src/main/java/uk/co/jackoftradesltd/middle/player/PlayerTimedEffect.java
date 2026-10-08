@@ -46,53 +46,189 @@ import java.util.List;
  * tuning a status is an edit to {@code player_timed.txt}, not to code — so every behavioural
  * knob a status can need is gathered here, keyed by its {@link TimedEffect} identity.
  *
+ * <p><b>Two sources feed one record.</b> In C the {@code timed_effects[]} array is initialized
+ * at compile time from {@code list-player-timed.h} (name, redraw flags, update flags) with every
+ * other field left at a default, and the parser for {@code player_timed.txt} then overwrites the
+ * defaults. Here the {@link TimedEffect} constant supplies the identity and both flag sets, and
+ * the constructor receives everything the data file supplies. The defaults the parser leaves
+ * behind for a line the file omits are: no messages, no failures, no grades, no effects, not
+ * non-stacking, a lower bound of 0, no duplicated object flag and no exact synonym. C marks "no
+ * temporary resist, brand or slay" with an index of {@code -1}; the Java assembler passes
+ * {@link ElementEnum#ELEM_NONE} for the resist and {@code null} for the brand and slay, so a
+ * consumer tests those rather than comparing with {@code -1}.
+ *
+ * <p>C's {@code flags} bitfield has the single bit {@code TMD_FLAG_NONSTACKING}; it is held here
+ * as the boolean {@link #nonStacking}, and any further bit added to that field in C would need a
+ * field of its own.
+ *
+ * <p>Class PlayerTimedEffect coded before 260815, commented in full on 261008.
+ *
  * @author Rowan Crowther
  */
 public class PlayerTimedEffect {
     /**
      * Which {@code TMD_*} status this record defines.
+     *
+     * <p>C holds a {@code const char *name} here and looks it up by case-insensitive comparison
+     * ({@code timed_name_to_idx()}); the port holds the {@link TimedEffect} constant itself, so
+     * the identity is checked by the compiler and doubles as the source of both flag sets.
+     *
+     * <p>Field name coded before 260815, commented in full on 261008.
      */
     private TimedEffect name;
-    /** Packed redraw ({@code PR_*}) flags to raise when this effect changes (C: {@code flag_redraw}). */
+    /**
+     * Redraw ({@code PR_*}) flags to raise when this effect changes (C: {@code flag_redraw}).
+     *
+     * <p>Not parsed from the data file: taken from {@link TimedEffect#getRedrawFlags} by the
+     * constructor, as C takes it from the {@code list-player-timed.h} table. C raises
+     * {@code PR_STATUS} in addition to these on every notified change
+     * ({@code player_set_timed()}); the table already carries it for every effect except
+     * {@code TMD_BLIND} and {@code TMD_IMAGE}.
+     *
+     * <p>Field flagRedraw coded before 260815, commented in full on 261008.
+     */
     private FlagView<PlayerRedraw> flagRedraw;
-    /** Packed update ({@code PU_*}) flags to raise when this effect changes (C: {@code flag_update}). */
+    /**
+     * Update ({@code PU_*}) flags to raise when this effect changes (C: {@code flag_update}).
+     *
+     * <p>Not parsed from the data file: taken from {@link TimedEffect#getUpdateFlags} by the
+     * constructor, as C takes it from the {@code list-player-timed.h} table.
+     *
+     * <p>Field flagUpdate coded before 260815, commented in full on 261008.
+     */
     private FlagView<PlayerUpdateEnum> flagUpdate;
 
-    /** Human-readable description of the status. */
+    /**
+     * Human-readable description of the status (C: {@code desc}, from the {@code desc:} line).
+     *
+     * <p>Field description coded before 260815, commented in full on 261008.
+     */
     private String description;
-    /** Message shown when the status ends. */
+    /**
+     * Message shown when the status ends (C: {@code on_end}, from the {@code on-end:} line).
+     *
+     * <p>Printed with the {@code MSG_RECOVER} message type rather than {@link #msgT} when a notified
+     * change takes the counter to zero.
+     *
+     * <p>Field onEnd coded before 260815, commented in full on 261008.
+     */
     private String onEnd;
-    /** Message shown when the status's level increases. */
+    /**
+     * Message shown when the status's counter rises without crossing into a stronger grade
+     * (C: {@code on_increase}, from the {@code on-increase:} line).
+     *
+     * <p>Crossing a grade boundary uses that grade's own {@link TimedGrade#upMsg()} instead.
+     *
+     * <p>Field onIncrease coded before 260815, commented in full on 261008.
+     */
     private String onIncrease;
-    /** Message shown when the status's level decreases. */
+    /**
+     * Message shown when the status's counter falls without crossing into a weaker grade
+     * (C: {@code on_decrease}, from the {@code on-decrease:} line).
+     *
+     * <p>Crossing a grade boundary uses that grade's own {@link TimedGrade#downMsg()} instead.
+     *
+     * <p>Field onDecrease coded before 260815, commented in full on 261008.
+     */
     private String onDecrease;
-    /** Message type/channel used for the messages above. */
+    /**
+     * Message type used for the grade-change, increase and decrease messages (C: {@code msgt},
+     * from the {@code msgt:} line). The end message does not use it.
+     *
+     * <p>Field msgT coded before 260815, commented in full on 261008.
+     */
     private MessageType msgT;
     /**
-     * Conditions under which the status fails to take hold (resisted element, required flag, …).
+     * Conditions under which the status fails to take hold — a blocking object flag, resist,
+     * vulnerability, player flag or other timed effect (C: the {@code fail} list, from the
+     * {@code fail:} lines). Checked in order by {@code player_inc_check()}.
+     *
+     * <p>Field fail coded before 260815, commented in full on 261008.
      */
     private List<TimedFailure> fail;
-    /** Ordered severity bands of the status (see {@link TimedGrade}). */
+    /**
+     * Ordered severity bands of the status (C: the {@code grade} list, from the {@code grade:}
+     * lines — see {@link TimedGrade}). The last band's {@code max} is the highest value the
+     * counter can reach.
+     *
+     * <p>Field grade coded before 260815, commented in full on 261008.
+     */
     private List<TimedGrade> grade;
-    /** Effect fired when the status begins. */
+    /**
+     * Effect fired when the status begins (C: {@code on_begin_effect}); null when the data file
+     * gives none.
+     *
+     * <p>Field onBeginEffect coded before 260815, commented in full on 261008.
+     */
     private Effect onBeginEffect;
-    /** Effect fired when the status ends. */
+    /**
+     * Effect fired when the status lapses (C: {@code on_end_effect}); null when the data file
+     * gives none.
+     *
+     * <p>Field onEndEffect coded before 260815, commented in full on 261008.
+     */
     private Effect onEndEffect;
-    /** Whether re-applying the status refuses to stack with an existing instance. */
+    /**
+     * Whether an increase is blocked while the status is already active — the C
+     * {@code TMD_FLAG_NONSTACKING} bit of {@code flags}, from the {@code flags:} line.
+     *
+     * <p>Field nonStacking coded before 260815, commented in full on 261008.
+     */
     private boolean nonStacking;
-    /** Minimum value the status can be reduced to while still active. */
+    /**
+     * Minimum value the counter is clamped up to when it is set (C: {@code lower_bound}, from the
+     * {@code lower-bound:} line); 0 when the data file gives none.
+     *
+     * <p>C's parser rejects a bound below 0 or above 32767, because the counter is stored in 16
+     * bits and a negative bound would break the "is this effect active" test.
+     *
+     * <p>Field lowerBound coded before 260815, commented in full on 261008.
+     */
     private int lowerBound;
-    /** Object flag whose presence duplicates/implies this status (C: object-flag duplicate). */
+    /**
+     * Object flag this status confers while it is active (C: {@code oflag_dup}, from the
+     * {@code flag-synonym:} line); {@code OF_NONE} when there is none.
+     *
+     * <p>While the counter is non-zero, the player's timed-effect flag set is given this flag as
+     * though an item carried it ({@code player_flags_timed()}, which skips {@code TMD_TRAPSAFE}).
+     * See also {@link #oFlagExactlySyn}.
+     *
+     * <p>Field oFlagDup coded before 260815, commented in full on 261008.
+     */
     private ObjectFlag oFlagDup;
     /**
-     * Object flag treated as synonymous with this status.
+     * Whether the status is an <em>exact</em> synonym of {@link #oFlagDup} (C: {@code oflag_syn},
+     * the second argument of the {@code flag-synonym:} line, non-zero meaning exact).
+     *
+     * <p>When true, and the player already knows the flag and has it from something other than a
+     * timed effect, a change to the status is not announced — the player has nothing new to learn
+     * from it ({@code player_set_timed()}).
+     *
+     * <p>Field oFlagExactlySyn coded before 260815, commented in full on 261008.
      */
     private boolean oFlagExactlySyn;
-    /** Element temporarily resisted while the status is active. */
+    /**
+     * Element temporarily resisted while the status is active (C: {@code temp_resist}, from the
+     * {@code resist:} line); {@link ElementEnum#ELEM_NONE} where C holds {@code -1}.
+     *
+     * <p>Field tempResist coded before 260815, commented in full on 261008.
+     */
     private ElementEnum tempResist;
-    /** Brand temporarily added to the player's attacks while the status is active. */
+    /**
+     * Brand temporarily added to the player's attacks while the status is active (C:
+     * {@code temp_brand}, from the {@code brand:} line, consulted by
+     * {@code player_has_temporary_brand()}); null where C holds {@code -1}.
+     *
+     * <p>Field tempBrand coded before 260815, commented in full on 261008.
+     */
     private Brand tempBrand;
-    /** Slay temporarily added to the player's attacks while the status is active. */
+    /**
+     * Slay temporarily added to the player's attacks while the status is active (C:
+     * {@code temp_slay}, from the {@code slay:} line, consulted by
+     * {@code player_has_temporary_slay()}); null where C holds {@code -1}.
+     *
+     * <p>Field tempSlay coded before 260815, commented in full on 261008.
+     */
     private Slay tempSlay;
 
     /**
@@ -100,7 +236,9 @@ public class PlayerTimedEffect {
      *
      * <p>Each parameter populates the like-named field; see those fields for the detailed meaning
      * of each. Note the redraw/update flags are derived from the {@link TimedEffect} identity and
-     * so are not passed here.
+     * so are not passed here. The list and effect parameters are stored as given, not copied.
+     *
+     * <p>Constructor PlayerTimedEffect coded before 260815, commented in full on 261008.
      *
      * @param name          the {@link TimedEffect} this defines
      * @param description   human-readable description
@@ -156,6 +294,10 @@ public class PlayerTimedEffect {
     }
 
     /**
+     * Returns the {@link TimedEffect} identity this record defines.
+     *
+     * <p>Function getName coded before 260815, commented in full on 261008.
+     *
      * @return the {@link TimedEffect} identity this record defines
      */
     public TimedEffect getName() {
@@ -173,7 +315,7 @@ public class PlayerTimedEffect {
      * anywhere along the chain would put a JVM-lifetime singleton within a caller's reach.
      *
      * <p>Function getFlagRedraw return type narrowed to {@link FlagView} on 260818, when the
-     * backing field was narrowed with it.
+     * backing field was narrowed with it. Commented in full on 261008.
      *
      * @return a read-only view of the {@code PR_*} redraw flags to raise on a change
      */
@@ -186,7 +328,8 @@ public class PlayerTimedEffect {
      *
      * <p>Read-only for the same reason as {@link #getFlagRedraw}.
      *
-     * <p>Function getFlagUpdate return type narrowed to {@link FlagView} on 260818.
+     * <p>Function getFlagUpdate return type narrowed to {@link FlagView} on 260818. Commented in
+     * full on 261008.
      *
      * @return a read-only view of the {@code PU_*} update flags to raise on a change
      */
@@ -195,6 +338,10 @@ public class PlayerTimedEffect {
     }
 
     /**
+     * Returns the human-readable description of the status.
+     *
+     * <p>Function getDescription coded before 260815, commented in full on 261008.
+     *
      * @return the human-readable description of the status
      */
     public String getDescription() {
@@ -202,6 +349,10 @@ public class PlayerTimedEffect {
     }
 
     /**
+     * Returns the message shown when the status ends.
+     *
+     * <p>Function getOnEnd coded before 260815, commented in full on 261008.
+     *
      * @return the message shown when the status ends
      */
     public String getOnEnd() {
@@ -209,6 +360,10 @@ public class PlayerTimedEffect {
     }
 
     /**
+     * Returns the message shown when the status's level rises within a grade.
+     *
+     * <p>Function getOnIncrease coded before 260815, commented in full on 261008.
+     *
      * @return the message shown when the status's level rises
      */
     public String getOnIncrease() {
@@ -216,6 +371,10 @@ public class PlayerTimedEffect {
     }
 
     /**
+     * Returns the message shown when the status's level falls within a grade.
+     *
+     * <p>Function getOnDecrease coded before 260815, commented in full on 261008.
+     *
      * @return the message shown when the status's level falls
      */
     public String getOnDecrease() {
@@ -223,6 +382,10 @@ public class PlayerTimedEffect {
     }
 
     /**
+     * Returns the message channel used for the change messages.
+     *
+     * <p>Function getMsgT coded before 260815, commented in full on 261008.
+     *
      * @return the message channel used for the change messages
      */
     public MessageType getMsgT() {
@@ -230,6 +393,10 @@ public class PlayerTimedEffect {
     }
 
     /**
+     * Returns the conditions under which the status fails to apply.
+     *
+     * <p>Function getFail coded before 260815, commented in full on 261008.
+     *
      * @return the conditions under which the status fails to apply
      */
     public List<TimedFailure> getFail() {
@@ -237,6 +404,10 @@ public class PlayerTimedEffect {
     }
 
     /**
+     * Returns the ordered severity grades of the status.
+     *
+     * <p>Function getGrade coded before 260815, commented in full on 261008.
+     *
      * @return the ordered severity grades of the status
      */
     public List<TimedGrade> getGrade() {
@@ -244,6 +415,10 @@ public class PlayerTimedEffect {
     }
 
     /**
+     * Returns the effect fired when the status begins.
+     *
+     * <p>Function getOnBeginEffect coded before 260815, commented in full on 261008.
+     *
      * @return the effect fired when the status begins, or null if none
      */
     public Effect getOnBeginEffect() {
@@ -251,6 +426,10 @@ public class PlayerTimedEffect {
     }
 
     /**
+     * Returns the effect fired when the status ends.
+     *
+     * <p>Function getOnEndEffect coded before 260815, commented in full on 261008.
+     *
      * @return the effect fired when the status ends, or null if none
      */
     public Effect getOnEndEffect() {
@@ -258,6 +437,10 @@ public class PlayerTimedEffect {
     }
 
     /**
+     * Returns whether re-applying the status is blocked while it is already active.
+     *
+     * <p>Function isNonStacking coded before 260815, commented in full on 261008.
+     *
      * @return whether re-applying the status refuses to stack
      */
     public boolean isNonStacking() {
@@ -265,6 +448,10 @@ public class PlayerTimedEffect {
     }
 
     /**
+     * Returns the minimum value the counter is clamped up to when set.
+     *
+     * <p>Function getLowerBound coded before 260815, commented in full on 261008.
+     *
      * @return the minimum value the status can be reduced to while active
      */
     public int getLowerBound() {
@@ -272,13 +459,21 @@ public class PlayerTimedEffect {
     }
 
     /**
-     * @return the object flag this status duplicates (C {@code oflag_dup})
+     * Returns the object flag this status confers while active.
+     *
+     * <p>Function getoFlagDup coded before 260815, commented in full on 261008.
+     *
+     * @return the object flag this status duplicates (C {@code oflag_dup}), or {@code OF_NONE}
      */
     public ObjectFlag getoFlagDup() {
         return oFlagDup;
     }
 
     /**
+     * Returns whether the status is an exact synonym of {@link #getoFlagDup()}.
+     *
+     * <p>Function isoFlagExactlySyn coded before 260815, commented in full on 261008.
+     *
      * @return whether the status is an exact synonym of {@link #getoFlagDup()} (C {@code oflag_syn})
      */
     public boolean isoFlagExactlySyn() {
@@ -286,6 +481,10 @@ public class PlayerTimedEffect {
     }
 
     /**
+     * Returns the element temporarily resisted while the status is active.
+     *
+     * <p>Function getTempResist coded before 260815, commented in full on 261008.
+     *
      * @return the element temporarily resisted while active, or {@code ELEM_NONE}
      */
     public ElementEnum getTempResist() {
@@ -293,6 +492,10 @@ public class PlayerTimedEffect {
     }
 
     /**
+     * Returns the brand temporarily granted while the status is active.
+     *
+     * <p>Function getTempBrand coded before 260815, commented in full on 261008.
+     *
      * @return the brand temporarily granted while active, or null
      */
     public Brand getTempBrand() {
@@ -300,6 +503,10 @@ public class PlayerTimedEffect {
     }
 
     /**
+     * Returns the slay temporarily granted while the status is active.
+     *
+     * <p>Function getTempSlay coded before 260815, commented in full on 261008.
+     *
      * @return the slay temporarily granted while active, or null
      */
     public Slay getTempSlay() {

@@ -153,6 +153,12 @@ public class Message {
      * A warning is also written to the logger. See the class comment for the accepted format
      * vocabulary.
      *
+     * <p><b>Port divergence:</b> C's {@code msg} returns silently while {@code messages} is still
+     * {@code NULL}, before {@code messages_init} has run or after {@code messages_free}. This port
+     * has no such guard: {@link #messageLog} is created with the class and never replaced, so
+     * there is no "store not loaded" state to check for. It cannot bite in play, where the log
+     * exists before any message is sent. See {@code docs/Accepted_Deviations.md}.
+     *
      * <p>Method message commented in full on 260929.
      *
      * @param message the message text, or a {@link String#format} pattern when {@code args} is given
@@ -202,6 +208,13 @@ public class Message {
      * rejects: the text becomes {@code ""}, and the empty message is logged, sounded and signalled
      * in the usual order. A warning is also written to the logger. See the class comment for the
      * accepted format vocabulary.
+     *
+     * <p><b>Port divergence:</b> C's {@code msgt} returns silently while {@code messages} is still
+     * {@code NULL}, before {@code messages_init} has run or after {@code messages_free}, and so
+     * makes no sound either. This port has no such guard: {@link #messageLog} is created with the
+     * class and never replaced, so there is no "store not loaded" state to check for. It cannot
+     * bite in play, where the log exists before any message is sent. See
+     * {@code docs/Accepted_Deviations.md}.
      *
      * <p>Method messageType commented in full on 260929.
      *

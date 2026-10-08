@@ -44,6 +44,22 @@ recorded here as the summary states them; fill in the detail when you next touch
 - **Reach:** C's only caller is `obj_can_takeoff`, which is not ported.
 - **Revisit:** when `obj_can_takeoff` is ported.
 
+## Message
+
+### The message log always exists, so C's `if (!messages) return;` has no counterpart
+
+- **Java:** `Message.message`, `Message.messageType`. **C:** `msg`, `msgt` (`message.c`).
+- **Differs:** C's `messages` pointer starts `NULL`, is allocated by `messages_init` and freed by `messages_free`, and
+  `msg` and `msgt` return silently while it is `NULL`. Java's `messageLog` is a `static` field initialised at
+  declaration and never reassigned, so there is no "store not loaded" state, and neither `message` nor `messageType`
+  guards on it. There is no port of `messages_init` or `messages_free`.
+- **Reach:** none in play. Messages load at startup, before any item can be learned, so `modMessage` and every other
+  caller run with the log present in both languages.
+- **Revisit:** if `messages_init` and `messages_free` are ported with the init modules. Then `messageLog` starts `null`
+  and both `message` and `messageType` guard on it.
+- **Accepted:** 2026-10-08. From `docs/ItemObject_round2/summary.md` item 12 (Part G). Marked in the `message` and
+  `messageType` Javadoc.
+
 ## Pending your decision
 
 - The five `objDescNameFormat` divergences (Part G; `docs/ItemObject_round2/part_G.md`). All unreachable from shipped

@@ -144,6 +144,7 @@ Shape follows `docs/ItemObject_stage1_mismatches.md`. File and line references a
 ### 12. `Message.message` has no `if (!messages) return;` (Part G)
 
 - `modMessage` would log where C stays silent before the message store loads. Not reachable in play.
+- **Result:** ACCEPTED 2026-10-08.
 
 ### 13. Dead and redundant code (Parts C, D, E, G)
 

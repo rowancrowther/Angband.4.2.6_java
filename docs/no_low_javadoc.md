@@ -48,23 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/objects/enums/ChestTrapCode.java`
-
-12 missing, 0 low
-
-- L20: enum `ChestTrapCode` - MISSING
-- L21: enum-const `NO_TRAP` - MISSING
-- L22: enum-const `POISON` - MISSING
-- L23: enum-const `LOSE_STR` - MISSING
-- L24: enum-const `LOSE_CON` - MISSING
-- L25: enum-const `SUMMON` - MISSING
-- L26: enum-const `PARALYZE` - MISSING
-- L27: enum-const `EXPLODE` - MISSING
-- L29: field `MAX_TRAPS` - MISSING
-- L30: field `pval` - MISSING
-- L36: method `getMaxTraps` - MISSING
-- L40: method `getPval` - MISSING
-
 ### `middle/objects/enums/GetItemFlags.java`
 
 12 missing, 0 low

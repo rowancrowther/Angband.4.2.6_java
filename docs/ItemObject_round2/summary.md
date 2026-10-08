@@ -182,6 +182,7 @@ Shape follows `docs/ItemObject_stage1_mismatches.md`. File and line references a
 ### 17. `effectMessage` and `heldMIndex` are written but barely read (Part H)
 
 - Only `copy` reads them. `ObjectUtils.doCurseEffect` (a stub) will be the first real reader of `effectMessage`.
+- **Result:** Callers are to be written in later Chapter
 
 ## Call to action
 

@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * Tests {@link PlayerDataLoader#initialiseExpLevel()} — the port of C's
+ * Tests {@link PlayerDataLoader#initializeExpLevel()} — the port of C's
  * {@code player_exp[PY_MAX_LEVEL]} constant array ({@code player.c:48-100}).
  *
  * <p><b>Where the expected values come from.</b> Every assertion below is transcribed directly
@@ -45,11 +45,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * {@code uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistryFoodThresholdsTest} does
  * for the {@code PY_FOOD_*} thresholds.
  *
- * <p>Class PlayerDataLoaderInitialiseExpLevelTest coded on 260925, commented in full on 260925.
+ * <p>Class PlayerDataLoaderInitializeExpLevelTest coded on 260925, commented in full on 260925.
  *
  * @author Rowan Crowther
  */
-class PlayerDataLoaderInitialiseExpLevelTest {
+class PlayerDataLoaderInitializeExpLevelTest {
 
     /**
      * The table's fifty values in level order, transcribed from {@code player.c:50-99}.
@@ -99,7 +99,7 @@ class PlayerDataLoaderInitialiseExpLevelTest {
     void fillsAllFiftyLevels() {
         PlayerRegistry.playerExperience.clear();
 
-        PlayerDataLoader.initialiseExpLevel();
+        PlayerDataLoader.initializeExpLevel();
 
         assertEquals(50, PlayerRegistry.playerExperience.size(), "entry count");
         for (int level = 0; level < EXPECTED.length; level++) {
@@ -117,7 +117,7 @@ class PlayerDataLoaderInitialiseExpLevelTest {
     void matchesBothEnds() {
         PlayerRegistry.playerExperience.clear();
 
-        PlayerDataLoader.initialiseExpLevel();
+        PlayerDataLoader.initializeExpLevel();
 
         assertEquals(10L, PlayerRegistry.playerExperience.get(0), "level 1");
         assertEquals(5000000L, PlayerRegistry.playerExperience.get(49), "level 50");
@@ -134,7 +134,7 @@ class PlayerDataLoaderInitialiseExpLevelTest {
         PlayerRegistry.playerExperience.clear();
         PlayerRegistry.playerExperience.put(99, 123456789L);
 
-        PlayerDataLoader.initialiseExpLevel();
+        PlayerDataLoader.initializeExpLevel();
 
         assertEquals(50, PlayerRegistry.playerExperience.size(), "entry count");
         assertEquals(false, PlayerRegistry.playerExperience.containsKey(99), "stale key 99");
@@ -150,7 +150,7 @@ class PlayerDataLoaderInitialiseExpLevelTest {
         PlayerRegistry.playerExperience.clear();
         PlayerRegistry.playerExperience.put(10, -1L);
 
-        PlayerDataLoader.initialiseExpLevel();
+        PlayerDataLoader.initializeExpLevel();
 
         assertEquals(650L, PlayerRegistry.playerExperience.get(10), "level 11");
     }
@@ -166,7 +166,7 @@ class PlayerDataLoaderInitialiseExpLevelTest {
     void pushesTableToCharSheetCache() {
         PlayerRegistry.playerExperience.clear();
 
-        PlayerDataLoader.initialiseExpLevel();
+        PlayerDataLoader.initializeExpLevel();
 
         assertArrayEquals(EXPECTED,
                 PlayerEventStatusUpdate.getPlayerCharSheetView().expToLevel(),
@@ -194,7 +194,7 @@ class PlayerDataLoaderInitialiseExpLevelTest {
                 42, 43, 44, 45, 46, 47, 48, 49, true);
         PlayerEventStatusUpdate.updatePlayerCharSheetView(distinct);
 
-        PlayerDataLoader.initialiseExpLevel();
+        PlayerDataLoader.initializeExpLevel();
 
         PlayerCharSheetView result = PlayerEventStatusUpdate.getPlayerCharSheetView();
         assertEquals(7, result.bodyCount(), "bodyCount");

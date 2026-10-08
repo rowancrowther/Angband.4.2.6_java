@@ -245,7 +245,7 @@ class PlayerKnowledgeKnowObjectTest {
         @Test
         @DisplayName("a null object is nothing to do")
         void nullItem() {
-            assertDoesNotThrow(() -> PlayerKnowledge.knowObject(player, null));
+            assertDoesNotThrow(() -> PlayerKnowledge.knowObject(player, (ItemObject) null));
         }
 
         @Test

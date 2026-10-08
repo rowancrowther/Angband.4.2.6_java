@@ -73,7 +73,7 @@ class PlayerAdjustLevelTest {
      */
     @BeforeEach
     void newPlayer() throws Exception {
-        PlayerDataLoader.initialiseExpLevel();
+        PlayerDataLoader.initializeExpLevel();
         player = CalcBonusesFixture.plainCharacter().player();
 
         // calcHitpoints reads playerHP[level - 1] for whatever level the arithmetic lands on, so

@@ -79,7 +79,7 @@ class PlayerExpLoseTest {
      */
     @BeforeEach
     void newPlayer() throws Exception {
-        PlayerDataLoader.initialiseExpLevel();
+        PlayerDataLoader.initializeExpLevel();
         player = CalcBonusesFixture.plainCharacter().player();
         set("playerHP", new int[PlayerRegistry.PY_MAX_LEVEL]);
         set("expFact", 100);

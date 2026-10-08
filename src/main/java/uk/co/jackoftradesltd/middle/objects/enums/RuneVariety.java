@@ -45,11 +45,27 @@ import uk.co.jackoftradesltd.middle.objects.Slay;
  * C original flattens each name to a {@code const char *} at init, which is why {@code rune_desc}
  * has to reach back into {@code curses[]} for the one field it did not copy.
  *
+ * <p>The group each variety is listed under ports the {@code rune_group_text[]} table in
+ * {@code ui-knowledge.c}, which C indexes with the variety's enum value; here each record names its
+ * {@link RuneGroup} directly. The seven records follow the order of C's {@code enum rune_variety}
+ * in {@code obj-knowledge.h}.
+ *
+ * <p>Type RuneVariety coded before 260814, commented in full on 261008.
+ *
  * @author Rowan Crowther
  */
 public sealed interface RuneVariety permits RuneVariety.CombatKey, RuneVariety.ModKey,
         RuneVariety.ResistKey, RuneVariety.BrandKey, RuneVariety.SlayKey, RuneVariety.CurseKey, RuneVariety.FlagKey {
     /**
+     * The knowledge-menu heading this variety is listed under — "Combat", "Modifiers", "Resists",
+     * "Brands", "Slays", "Curses" or "Other". C gets the same answer by casting
+     * {@code rune_variety(i)} to an index into {@code rune_group_text[]} ({@code ui-knowledge.c},
+     * functions {@code rune_var} and {@code rune_var_name}); the enum order is what makes that cast
+     * valid there, whereas each record here states its group outright, so reordering the records
+     * cannot move a rune under the wrong heading.
+     *
+     * <p>Method group coded before 260814, commented in full on 261008.
+     *
      * @return the knowledge-menu heading this variety is listed under
      */
     RuneGroup group();
@@ -72,6 +88,8 @@ public sealed interface RuneVariety permits RuneVariety.CombatKey, RuneVariety.M
      * {@code struct rune}'s {@code name} field, which is why {@code rune_desc} has to reach back
      * into {@code curses[]} for the description it did not copy; holding the subject itself makes
      * that second lookup unnecessary and keeps the two in step if the underlying data changes.
+     *
+     * <p>Method runeName coded before 260814, commented in full on 261008.
      *
      * @return the rune's name as the player sees it
      */
@@ -101,6 +119,8 @@ public sealed interface RuneVariety permits RuneVariety.CombatKey, RuneVariety.M
      * into {@code curses[]} with the rune's stored index. Holding the {@link Curse} itself makes that
      * a plain accessor.
      *
+     * <p>Method runeDesc coded before 260814, commented in full on 261008.
+     *
      * @return the rune's description as the player sees it
      */
     String runeDesc();
@@ -125,19 +145,46 @@ public sealed interface RuneVariety permits RuneVariety.CombatKey, RuneVariety.M
      * that line from any unhandled variety, here it is reachable only by constructing a
      * {@code CombatKey} around the sentinel, which callers are required not to do.
      *
+     * <p>Record CombatKey coded before 260814, commented in full on 261008.
+     *
      * @param key which combat enchantment
      * @author Rowan Crowther
      */
     record CombatKey(CombatRunes key) implements RuneVariety {
+        /**
+         * Lists the rune under "Combat", the first of C's {@code rune_group_text[]} headings.
+         *
+         * <p>Method group coded before 260814, commented in full on 261008.
+         *
+         * @return {@link RuneGroup#COMBAT}
+         */
         public RuneGroup group() {
             return RuneGroup.COMBAT;
         }
 
+        /**
+         * The enchantment's own text — "enchantment to armour", "enchantment to hit" or
+         * "enchantment to damage" — with no wrapper, as C's {@code rune_name} returns the
+         * {@code c_rune[]} string through its final {@code else}. The "armour" spelling is the
+         * port's; C reads "armor".
+         *
+         * <p>Method runeName coded before 260814, commented in full on 261008.
+         *
+         * @return the enchantment's name
+         */
         @Override
         public String runeName() {
             return key.getDescription();
         }
 
+        /**
+         * One of C's three literal combat sentences, none ending in a full stop; the sentinel gets
+         * {@code null}, as C's {@code rune_desc} does when its index matches no case.
+         *
+         * <p>Method runeDesc coded before 260814, commented in full on 261008.
+         *
+         * @return the rune's description, or {@code null} for {@link CombatRunes#COMBAT_RUNE_MAX}
+         */
         @Override
         public String runeDesc() {
             return switch (key) {
@@ -163,20 +210,43 @@ public sealed interface RuneVariety permits RuneVariety.CombatKey, RuneVariety.M
      * rather than a dependency between the two methods, and adding a prefix to the name later cannot
      * silently reword the description.
      *
+     * <p>Record ModKey coded before 260814, commented in full on 261008.
+     *
      * @param key      which modifier
      * @param property the modifier's property definition, held for its name and power
      * @author Rowan Crowther
      */
     record ModKey(ObjectModifier key, ObjectProperty property) implements RuneVariety {
+        /**
+         * Lists the rune under "Modifiers".
+         *
+         * <p>Method group coded before 260814, commented in full on 261008.
+         *
+         * @return {@link RuneGroup#MODIFIERS}
+         */
         public RuneGroup group() {
             return RuneGroup.MODIFIERS;
         }
 
+        /**
+         * The property's name, unwrapped — C's {@code format("%s", r->name)} fall-through.
+         *
+         * <p>Method runeName coded before 260814, commented in full on 261008.
+         *
+         * @return the modifier's name
+         */
         @Override
         public String runeName() {
             return property.getName();
         }
 
+        /**
+         * "Object gives the player a magical bonus to %s." over the property's name.
+         *
+         * <p>Method runeDesc coded before 260814, commented in full on 261008.
+         *
+         * @return the rune's description
+         */
         @Override
         public String runeDesc() {
             return String.format("Object gives the player a magical bonus to %s.", property.getName());
@@ -201,20 +271,43 @@ public sealed interface RuneVariety permits RuneVariety.CombatKey, RuneVariety.M
      * {@link Projection#getName()} directly, because building the description out of the name would
      * repeat the prefix inside the sentence.
      *
+     * <p>Record ResistKey coded before 260814, commented in full on 261008.
+     *
      * @param key        which element
      * @param projection the element's projection, held for its name
      * @author Rowan Crowther
      */
     record ResistKey(ElementEnum key, Projection projection) implements RuneVariety {
+        /**
+         * Lists the rune under "Resists".
+         *
+         * <p>Method group coded before 260814, commented in full on 261008.
+         *
+         * @return {@link RuneGroup#RESIST}
+         */
         public RuneGroup group() {
             return RuneGroup.RESIST;
         }
 
+        /**
+         * "resist " followed by the projection's name, as in C's {@code "resist %s"}.
+         *
+         * <p>Method runeName coded before 260814, commented in full on 261008.
+         *
+         * @return the rune's name, e.g. "resist lightning"
+         */
         @Override
         public String runeName() {
             return String.format("resist %s", projection.getName());
         }
 
+        /**
+         * "Object affects the player's resistance to %s." over the projection's bare name.
+         *
+         * <p>Method runeDesc coded before 260814, commented in full on 261008.
+         *
+         * @return the rune's description
+         */
         @Override
         public String runeDesc() {
             return String.format("Object affects the player's resistance to %s.", projection.getName());
@@ -235,19 +328,42 @@ public sealed interface RuneVariety permits RuneVariety.CombatKey, RuneVariety.M
      * heading, "…attacks with acid." in the sentence — so it too stays clear of the fields the
      * grouping makes ambiguous.
      *
+     * <p>Record BrandKey coded before 260814, commented in full on 261008.
+     *
      * @param key a brand representing all brands with the same name
      * @author Rowan Crowther
      */
     record BrandKey(Brand key) implements RuneVariety {
+        /**
+         * Lists the rune under "Brands".
+         *
+         * <p>Method group coded before 260814, commented in full on 261008.
+         *
+         * @return {@link RuneGroup#BRAND}
+         */
         public RuneGroup group() {
             return RuneGroup.BRAND;
         }
 
+        /**
+         * The brand's name followed by " brand", as in C's {@code "%s brand"}.
+         *
+         * <p>Method runeName coded before 260814, commented in full on 261008.
+         *
+         * @return the rune's name, e.g. "acid brand"
+         */
         @Override
         public String runeName() {
             return String.format("%s brand", key.getName());
         }
 
+        /**
+         * "Object brands the player's attacks with %s." over the brand's bare name.
+         *
+         * <p>Method runeDesc coded before 260814, commented in full on 261008.
+         *
+         * @return the rune's description
+         */
         @Override
         public String runeDesc() {
             return String.format("Object brands the player's attacks with %s.", key.getName());
@@ -267,19 +383,42 @@ public sealed interface RuneVariety permits RuneVariety.CombatKey, RuneVariety.M
      * "evil creatures" — which is what lets the same string serve "slay animals" as a heading and
      * "…attacks against animals more powerful." as a sentence.
      *
+     * <p>Record SlayKey coded before 260814, commented in full on 261008.
+     *
      * @param key a slay representing all slays that kill the same monsters
      * @author Rowan Crowther
      */
     record SlayKey(Slay key) implements RuneVariety {
+        /**
+         * Lists the rune under "Slays".
+         *
+         * <p>Method group coded before 260814, commented in full on 261008.
+         *
+         * @return {@link RuneGroup#SLAY}
+         */
         public RuneGroup group() {
             return RuneGroup.SLAY;
         }
 
+        /**
+         * "slay " followed by the slay's name, as in C's {@code "slay %s"}.
+         *
+         * <p>Method runeName coded before 260814, commented in full on 261008.
+         *
+         * @return the rune's name, e.g. "slay animals"
+         */
         @Override
         public String runeName() {
             return String.format("slay %s", key.getName());
         }
 
+        /**
+         * "Object makes the player's attacks against %s more powerful." over the slay's bare name.
+         *
+         * <p>Method runeDesc coded before 260814, commented in full on 261008.
+         *
+         * @return the rune's description
+         */
         @Override
         public String runeDesc() {
             return String.format("Object makes the player's attacks against %s more powerful.", key.getName());
@@ -296,19 +435,42 @@ public sealed interface RuneVariety permits RuneVariety.CombatKey, RuneVariety.M
      * only the name at init — so {@code rune_desc} indexes back into {@code curses[]} with the rune's
      * stored index. Holding the curse makes both a plain accessor and keeps them in step.
      *
+     * <p>Record CurseKey coded before 260814, commented in full on 261008.
+     *
      * @param key which curse
      * @author Rowan Crowther
      */
     record CurseKey(Curse key) implements RuneVariety {
+        /**
+         * Lists the rune under "Curses".
+         *
+         * <p>Method group coded before 260814, commented in full on 261008.
+         *
+         * @return {@link RuneGroup#CURSE}
+         */
         public RuneGroup group() {
             return RuneGroup.CURSE;
         }
 
+        /**
+         * The curse's name followed by " curse", as in C's {@code "%s curse"}.
+         *
+         * <p>Method runeName coded before 260814, commented in full on 261008.
+         *
+         * @return the rune's name, e.g. "siren curse"
+         */
         @Override
         public String runeName() {
             return String.format("%s curse", key.getName());
         }
 
+        /**
+         * "Object %s." over the curse's description, not its name.
+         *
+         * <p>Method runeDesc coded before 260814, commented in full on 261008.
+         *
+         * @return the rune's description
+         */
         @Override
         public String runeDesc() {
             return String.format("Object %s.", key.getDescription());
@@ -324,20 +486,43 @@ public sealed interface RuneVariety permits RuneVariety.CombatKey, RuneVariety.M
      * The sentence differs — a flag is something the object <em>gives</em> rather than a bonus it
      * adds to.
      *
+     * <p>Record FlagKey coded before 260814, commented in full on 261008.
+     *
      * @param key      which flag
      * @param property the flag's property definition, held for its name and subtype
      * @author Rowan Crowther
      */
     record FlagKey(ObjectFlag key, ObjectProperty property) implements RuneVariety {
+        /**
+         * Lists the rune under "Other", the last of C's {@code rune_group_text[]} headings.
+         *
+         * <p>Method group coded before 260814, commented in full on 261008.
+         *
+         * @return {@link RuneGroup#OTHER}
+         */
         public RuneGroup group() {
             return RuneGroup.OTHER;
         }
 
+        /**
+         * The property's name, unwrapped — C's {@code format("%s", r->name)} fall-through.
+         *
+         * <p>Method runeName coded before 260814, commented in full on 261008.
+         *
+         * @return the flag's name
+         */
         @Override
         public String runeName() {
             return property.getName();
         }
 
+        /**
+         * "Object gives the player the property of %s." over the property's name.
+         *
+         * <p>Method runeDesc coded before 260814, commented in full on 261008.
+         *
+         * @return the rune's description
+         */
         @Override
         public String runeDesc() {
             return String.format("Object gives the player the property of %s.", property.getName());

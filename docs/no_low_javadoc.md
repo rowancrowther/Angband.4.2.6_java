@@ -48,34 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/player/Player.java`
-
-4 missing, 19 low
-
-- L431: method `wipe` - MISSING
-- L565: method `getCurSp` - LOW
-- L698: method `getCave` - LOW
-- L705: method `getPlayerUpkeep` - LOW
-- L712: method `getPlayerBody` - LOW
-- L753: method `hasObjectFlag` - LOW
-- L930: method `getPlayerClass` - LOW
-- L937: method `getEnergy` - LOW
-- L953: method `isDead` - LOW
-- L998: method `getPlayerState` - LOW
-- L1024: method `getGrid` - LOW
-- L1031: method `getDepth` - LOW
-- L1038: method `getCurrentHP` - LOW
-- L1280: method `getMaxHP` - LOW
-- L1295: method `getWordRecall` - LOW
-- L1321: method `getRecallDepth` - LOW
-- L1328: method `getDeepDescent` - LOW
-- L1342: method `getMaxDepth` - LOW
-- L1349: method `getGear` - LOW
-- L1356: method `getPlayerOptions` - LOW
-- L2836: method `setExp` - MISSING
-- L2843: method `getMaxExp` - MISSING
-- L2847: method `setMaxExp` - MISSING
-
 ### `middle/objects/enums/RuneVariety.java`
 
 21 missing, 1 low

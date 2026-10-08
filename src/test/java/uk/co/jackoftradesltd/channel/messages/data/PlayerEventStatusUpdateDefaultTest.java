@@ -173,7 +173,7 @@ class PlayerEventStatusUpdateDefaultTest {
      * {@code stealthSkill}, {@code disarmPhysSkill}, {@code disarmMagicSkill}, {@code deviceSkill},
      * {@code searchSkill}, {@code infra} and {@code calcSpeed}), an empty array for
      * {@code expToLevel} (not yet filled by
-     * {@link uk.co.jackoftradesltd.middle.game.globals.loaders.PlayerDataLoader#initialiseExpLevel}
+     * {@link uk.co.jackoftradesltd.middle.game.globals.loaders.PlayerDataLoader#initializeExpLevel}
      * at class load), and {@code true} for {@code playerIsPlaying} — the one numeric/boolean field
      * here that does not start at its zero-equivalent, since nothing has ended the session at class
      * load, mirroring the same choice {@link PlayerStatusView}'s own {@code playerIsPlaying} field

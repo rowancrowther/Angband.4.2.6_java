@@ -39,9 +39,10 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * read from the C header itself, so the expected values never pass through the port. The sub-type
  * column is not in the header; its expected values are transcribed from the {@code switch} in
  * {@code effect_subtype()} in {@code effects.c}. The whole-table comparison is skipped when the C
- * tree is not on this machine; the hand-written cases below it always run.
+ * tree is not on this machine; the hand-written cases below it always run. The description and
+ * menu-format columns are compared after normalizing C's US spelling to the port's Oxford spelling.
  *
- * <p>Class EffectEnumTest coded on 261001, commented in full on 261001.
+ * <p>Class EffectEnumTest coded on 261001, commented in full on 261008.
  */
 class EffectEnumTest {
 
@@ -53,6 +54,21 @@ class EffectEnumTest {
     private static final Pattern ROW = Pattern.compile(
             "EFFECT\\((\\w+),\\s*(true|false),\\s*(NULL|\"[^\"]*\"),\\s*(\\d+),\\s*(\\w+),\\s*"
                     + "\"((?:[^\"\\\\]|\\\\.)*)\",\\s*\"((?:[^\"\\\\]|\\\\.)*)\"\\)");
+
+    /**
+     * Normalizes C's US spelling in player-visible text to the port's Oxford spelling, so the
+     * header's strings can be compared with the enum's. Only the words {@code list-effects.h}
+     * actually uses are listed ("armor", in the {@code CURSE_ARMOR} description); extend the
+     * replacements if a later C release adds another.
+     *
+     * <p>Method oxford coded on 261008, commented in full on 261008.
+     *
+     * @param cText a description or menu format as written in the C header
+     * @return the same text with US spellings replaced
+     */
+    private static String oxford(String cText) {
+        return cText.replace("armor", "armour");
+    }
 
     @Test
     @DisplayName("every list-effects.h row matches its Java constant on all six columns")
@@ -69,8 +85,8 @@ class EffectEnumTest {
             assertEquals(label, e.getInfoLabel(), e + " info label");
             assertEquals(Integer.parseInt(m.group(4)), e.getNumberOfArguments(), e + " args");
             assertEquals(EffectInfoEnum.valueOf(m.group(5)), e.getEffectInfo(), e + " info flags");
-            assertEquals(m.group(6), e.getDescription(), e + " description");
-            assertEquals(m.group(7), e.getMenuFormat(), e + " menu format");
+            assertEquals(oxford(m.group(6)), e.getDescription(), e + " description");
+            assertEquals(oxford(m.group(7)), e.getMenuFormat(), e + " menu format");
         }
         assertEquals(112, rows, "rows parsed from list-effects.h");
     }

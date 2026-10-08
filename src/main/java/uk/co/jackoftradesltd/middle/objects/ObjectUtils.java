@@ -1193,8 +1193,8 @@ public class ObjectUtils {
      *
      * <p>Unlike {@link #copySlays} and {@link #copyBrands} there is no "keep the stronger one"
      * comparison: a curse present in {@code source} always wins, its power taken as-is and its
-     * timeout re-rolled from the curse's own {@link Curse#getTime()} dice rather than carried over
-     * from any prior value - C's comment on the equivalent line reads "Timeouts need to be set for
+     * timeout re-rolled from the dice on the curse's own object ({@code curse.getItemObject().getTime()},
+     * C's {@code curse->obj->time}) rather than carried over from any prior value - C's comment on the equivalent line reads "Timeouts need to be set for
      * new objects". A curse on {@code dest} that {@code source} does not name is left exactly as it
      * was.
      *
@@ -1235,7 +1235,9 @@ public class ObjectUtils {
      * <p>Function copyCurses coded before 260904, commented in full on 261007, rewritten on 261003
      * once the {@code initCurses} call and the power-0 gap were removed, scratch map made a
      * {@code TreeMap} on 261005, walk order recorded on 261007, all-zero source divergence marked
-     * accepted on 261007.
+     * accepted on 261007, timeout link repointed at the curse object's {@code getTime()} on 261008
+     * once {@code Curse#getTime()} was gone and {@code CurseAssembler} began filling that object's
+     * time.
      *
      * @param dest   the item the curses are being attached to
      * @param source the curses to copy on, keyed by curse and each mapped to its power; {@code null}

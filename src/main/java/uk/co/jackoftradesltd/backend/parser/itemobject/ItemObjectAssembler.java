@@ -53,7 +53,10 @@ import java.util.*;
  *       parsed power and a timeout of 0 at kind level; a curse declared at power 0 is dropped
  *       rather than stored, absence being how this port says "not cursed with this";</li>
  *   <li>base damage dice/sides ({@code dd}/{@code ds}) are derived from the attack {@code hd},
- *       and effects are delegated to {@link EffectAssembler}.</li>
+ *       and effects are delegated to {@link EffectAssembler};</li>
+ *   <li>the record's own {@code time:} dice string becomes the kind's {@code time} {@link Random}
+ *       (zero if the line is absent, a soft error dropping the kind if it does not parse), so the
+ *       kind carries C's {@code kind->time} and the effects carry none.</li>
  * </ul>
  *
  * <p><b>Error policy:</b> soft errors follow the suite's skip-and-continue contract — an

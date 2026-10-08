@@ -45,7 +45,6 @@ public class MonsterSpellGrammarBaseListener implements MonsterSpellGrammarListe
 	@Override
 	public void enterRecordCount(MonsterSpellGrammar.RecordCountContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -60,287 +59,328 @@ public class MonsterSpellGrammarBaseListener implements MonsterSpellGrammarListe
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void enterName(MonsterSpellGrammar.NameContext ctx) { }
+	public void enterName(MonsterSpellGrammar.NameContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void exitName(MonsterSpellGrammar.NameContext ctx) { }
+	public void exitName(MonsterSpellGrammar.NameContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void enterMsgt(MonsterSpellGrammar.MsgtContext ctx) { }
+	public void enterMsgt(MonsterSpellGrammar.MsgtContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void exitMsgt(MonsterSpellGrammar.MsgtContext ctx) { }
+	public void exitMsgt(MonsterSpellGrammar.MsgtContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void enterHit(MonsterSpellGrammar.HitContext ctx) { }
+	public void enterHit(MonsterSpellGrammar.HitContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void exitHit(MonsterSpellGrammar.HitContext ctx) { }
+	public void exitHit(MonsterSpellGrammar.HitContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void enterPowerCutoff(MonsterSpellGrammar.PowerCutoffContext ctx) { }
+	public void enterPowerCutoff(MonsterSpellGrammar.PowerCutoffContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void exitPowerCutoff(MonsterSpellGrammar.PowerCutoffContext ctx) { }
+	public void exitPowerCutoff(MonsterSpellGrammar.PowerCutoffContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void enterLore(MonsterSpellGrammar.LoreContext ctx) { }
+	public void enterLore(MonsterSpellGrammar.LoreContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void exitLore(MonsterSpellGrammar.LoreContext ctx) { }
+	public void exitLore(MonsterSpellGrammar.LoreContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void enterLoreColourBase(MonsterSpellGrammar.LoreColourBaseContext ctx) { }
+	public void enterLoreColourBase(MonsterSpellGrammar.LoreColourBaseContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void exitLoreColourBase(MonsterSpellGrammar.LoreColourBaseContext ctx) { }
+	public void exitLoreColourBase(MonsterSpellGrammar.LoreColourBaseContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void enterLoreColourResist(MonsterSpellGrammar.LoreColourResistContext ctx) { }
+	public void enterLoreColourResist(MonsterSpellGrammar.LoreColourResistContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void exitLoreColourResist(MonsterSpellGrammar.LoreColourResistContext ctx) { }
+	public void exitLoreColourResist(MonsterSpellGrammar.LoreColourResistContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void enterLoreColourImmune(MonsterSpellGrammar.LoreColourImmuneContext ctx) { }
+	public void enterLoreColourImmune(MonsterSpellGrammar.LoreColourImmuneContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void exitLoreColourImmune(MonsterSpellGrammar.LoreColourImmuneContext ctx) { }
+	public void exitLoreColourImmune(MonsterSpellGrammar.LoreColourImmuneContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void enterMessageSave(MonsterSpellGrammar.MessageSaveContext ctx) { }
+	public void enterMessageSave(MonsterSpellGrammar.MessageSaveContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void exitMessageSave(MonsterSpellGrammar.MessageSaveContext ctx) { }
+	public void exitMessageSave(MonsterSpellGrammar.MessageSaveContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void enterMessageVis(MonsterSpellGrammar.MessageVisContext ctx) { }
+	public void enterMessageVis(MonsterSpellGrammar.MessageVisContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void exitMessageVis(MonsterSpellGrammar.MessageVisContext ctx) { }
+	public void exitMessageVis(MonsterSpellGrammar.MessageVisContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void enterMessageInvis(MonsterSpellGrammar.MessageInvisContext ctx) { }
+	public void enterMessageInvis(MonsterSpellGrammar.MessageInvisContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void exitMessageInvis(MonsterSpellGrammar.MessageInvisContext ctx) { }
+	public void exitMessageInvis(MonsterSpellGrammar.MessageInvisContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void enterMessageMiss(MonsterSpellGrammar.MessageMissContext ctx) { }
+	public void enterMessageMiss(MonsterSpellGrammar.MessageMissContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void exitMessageMiss(MonsterSpellGrammar.MessageMissContext ctx) { }
+	public void exitMessageMiss(MonsterSpellGrammar.MessageMissContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void enterPowerCutoffBlock(MonsterSpellGrammar.PowerCutoffBlockContext ctx) { }
+	public void enterPowerCutoffBlock(MonsterSpellGrammar.PowerCutoffBlockContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void exitPowerCutoffBlock(MonsterSpellGrammar.PowerCutoffBlockContext ctx) { }
+	public void exitPowerCutoffBlock(MonsterSpellGrammar.PowerCutoffBlockContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void enterMonsterSpell(MonsterSpellGrammar.MonsterSpellContext ctx) { }
+	public void enterMonsterSpell(MonsterSpellGrammar.MonsterSpellContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void exitMonsterSpell(MonsterSpellGrammar.MonsterSpellContext ctx) { }
+	public void exitMonsterSpell(MonsterSpellGrammar.MonsterSpellContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void enterFile(MonsterSpellGrammar.FileContext ctx) { }
+	public void enterFile(MonsterSpellGrammar.FileContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void exitFile(MonsterSpellGrammar.FileContext ctx) { }
+	public void exitFile(MonsterSpellGrammar.FileContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void enterEffect(MonsterSpellGrammar.EffectContext ctx) { }
+	public void enterEffect(MonsterSpellGrammar.EffectContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void exitEffect(MonsterSpellGrammar.EffectContext ctx) { }
+	public void exitEffect(MonsterSpellGrammar.EffectContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void enterEffectYX(MonsterSpellGrammar.EffectYXContext ctx) { }
+	public void enterEffectYX(MonsterSpellGrammar.EffectYXContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void exitEffectYX(MonsterSpellGrammar.EffectYXContext ctx) { }
+	public void exitEffectYX(MonsterSpellGrammar.EffectYXContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void enterDice(MonsterSpellGrammar.DiceContext ctx) { }
+	public void enterDice(MonsterSpellGrammar.DiceContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void exitDice(MonsterSpellGrammar.DiceContext ctx) { }
+	public void exitDice(MonsterSpellGrammar.DiceContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void enterExpr(MonsterSpellGrammar.ExprContext ctx) { }
+	public void enterExpr(MonsterSpellGrammar.ExprContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void exitExpr(MonsterSpellGrammar.ExprContext ctx) { }
+	public void exitExpr(MonsterSpellGrammar.ExprContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void enterEffectMsg(MonsterSpellGrammar.EffectMsgContext ctx) { }
+	public void enterEffectMsg(MonsterSpellGrammar.EffectMsgContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void exitEffectMsg(MonsterSpellGrammar.EffectMsgContext ctx) { }
+	public void exitEffectMsg(MonsterSpellGrammar.EffectMsgContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override
-	public void enterTime(MonsterSpellGrammar.TimeContext ctx) { }
+	public void enterTime(MonsterSpellGrammar.TimeContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
@@ -349,7 +389,6 @@ public class MonsterSpellGrammarBaseListener implements MonsterSpellGrammarListe
 	@Override
 	public void exitTime(MonsterSpellGrammar.TimeContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -358,7 +397,6 @@ public class MonsterSpellGrammarBaseListener implements MonsterSpellGrammarListe
 	@Override
 	public void enterEffectBlock(MonsterSpellGrammar.EffectBlockContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *

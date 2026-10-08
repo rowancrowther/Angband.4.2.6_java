@@ -14,17 +14,24 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
+
 // Generated from ChestTrapLexer.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.chesttrap;
-
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.atn.*;
 import org.antlr.v4.runtime.dfa.DFA;
+import org.antlr.v4.runtime.misc.*;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue", "this-escape"})
 public class ChestTrapLexer extends Lexer {
+    protected static final DFA[] _decisionToDFA;
+    protected static final PredictionContextCache _sharedContextCache =
+            new PredictionContextCache();
+    private static final String[] _LITERAL_NAMES = makeLiteralNames();
     public static final int
             RECORD_COUNT = 1, NAME = 2, CODE = 3, LEVEL = 4, DESTROY = 5, MAGIC = 6, MSG = 7, MSG_DEATH = 8,
             COMMENT = 9, EOL = 10, EFFECT = 11, EFFECT_MESSAGE = 12, DICE = 13, TIME = 14, EFFECT_YX = 15,
@@ -33,12 +40,120 @@ public class ChestTrapLexer extends Lexer {
             EXPR_CHAR = 27, EXPR_COLON = 28, EXPR_UCASE = 29, EXPR_OP = 30, EXPR_EOL = 31;
     public static final int
             REST_OF_LINE = 1, FREE_TEXT_MODE = 2, DICE_STRING_MODE = 3, EXPR_MODE = 4;
+    private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
+    public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
+    public static String[] channelNames = {
+            "DEFAULT_TOKEN_CHANNEL", "HIDDEN"
+    };
+
     public static final String[] ruleNames = makeRuleNames();
+    public static String[] modeNames = {
+            "DEFAULT_MODE", "REST_OF_LINE", "FREE_TEXT_MODE", "DICE_STRING_MODE",
+            "EXPR_MODE"
+    };
+
+    static {
+        RuntimeMetaData.checkVersion("4.13.2", RuntimeMetaData.VERSION);
+    }
+
+    static {
+        tokenNames = new String[_SYMBOLIC_NAMES.length];
+        for (int i = 0; i < tokenNames.length; i++) {
+            tokenNames[i] = VOCABULARY.getLiteralName(i);
+            if (tokenNames[i] == null) {
+                tokenNames[i] = VOCABULARY.getSymbolicName(i);
+            }
+
+            if (tokenNames[i] == null) {
+                tokenNames[i] = "<INVALID>";
+            }
+        }
+    }
+
+    public ChestTrapLexer(CharStream input) {
+        super(input);
+        _interp = new LexerATNSimulator(this, _ATN, _decisionToDFA, _sharedContextCache);
+    }
+
+    private static String[] makeRuleNames() {
+        return new String[]{
+                "RECORD_COUNT", "NAME", "CODE", "LEVEL", "DESTROY", "MAGIC", "MSG", "MSG_DEATH",
+                "COMMENT", "EOL", "EFFECT", "EFFECT_MESSAGE", "DICE", "TIME", "EFFECT_YX",
+                "EXPR", "COLON", "UCASE", "INTEGER", "DICE_D", "DICE_M", "DICE_INTEGER",
+                "DICE_DOLLAR_LETTER", "DICE_SIMPLE_NUMBER", "DICE_ANY_NUMBER", "COMPLEX_DICE_STRING_BODY",
+                "SIMPLE_DICE_STRING_BODY", "SIMPLE_DICE_STRING", "COMPLEX_DICE_STRING",
+                "STRING", "ROL_EOL", "FREE_TEXT", "DICE_SIMPLE_VALUE", "DICE_COMPLEX_VALUE",
+                "EXPR_CHAR", "EXPR_COLON", "EXPR_UCASE", "EXPR_OP", "EXPR_EOL"
+        };
+    }
+
     /**
      * @deprecated Use {@link #VOCABULARY} instead.
      */
     @Deprecated
     public static final String[] tokenNames;
+
+    private static String[] makeLiteralNames() {
+        return new String[]{
+                null, "'record-count:'", "'name:'", "'code:'", "'level:'", "'destroy:'",
+                "'magic:'", "'msg:'", "'msg-death:'", null, null, "'effect:'", "'effect-msg:'",
+                "'dice:'", "'time:'", "'effect-yx:'", "'expr:'"
+        };
+    }
+
+    private static String[] makeSymbolicNames() {
+        return new String[]{
+                null, "RECORD_COUNT", "NAME", "CODE", "LEVEL", "DESTROY", "MAGIC", "MSG",
+                "MSG_DEATH", "COMMENT", "EOL", "EFFECT", "EFFECT_MESSAGE", "DICE", "TIME",
+                "EFFECT_YX", "EXPR", "COLON", "UCASE", "INTEGER", "SIMPLE_DICE_STRING",
+                "COMPLEX_DICE_STRING", "STRING", "ROL_EOL", "FREE_TEXT", "DICE_SIMPLE_VALUE",
+                "DICE_COMPLEX_VALUE", "EXPR_CHAR", "EXPR_COLON", "EXPR_UCASE", "EXPR_OP",
+                "EXPR_EOL"
+        };
+    }
+
+    @Override
+    @Deprecated
+    public String[] getTokenNames() {
+        return tokenNames;
+    }
+
+    @Override
+
+    public Vocabulary getVocabulary() {
+        return VOCABULARY;
+    }
+
+    @Override
+    public String getGrammarFileName() {
+        return "ChestTrapLexer.g4";
+    }
+
+    @Override
+    public String[] getRuleNames() {
+        return ruleNames;
+    }
+
+    @Override
+    public String getSerializedATN() {
+        return _serializedATN;
+    }
+
+    @Override
+    public String[] getChannelNames() {
+        return channelNames;
+    }
+
+    @Override
+    public String[] getModeNames() {
+        return modeNames;
+    }
+
+    @Override
+    public ATN getATN() {
+        return _ATN;
+    }
+
     public static final String _serializedATN =
             "\u0004\u0000\u001f\u01a2\u0006\uffff\uffff\u0006\uffff\uffff\u0006\uffff" +
                     "\uffff\u0006\uffff\uffff\u0006\uffff\uffff\u0002\u0000\u0007\u0000\u0002" +
@@ -315,120 +430,11 @@ public class ChestTrapLexer extends Lexer {
                     "\u0000\u0005\u0003\u0000\u0005\u0004\u0000\u0004\u0000\u0000";
     public static final ATN _ATN =
             new ATNDeserializer().deserialize(_serializedATN.toCharArray());
-    protected static final DFA[] _decisionToDFA;
-    protected static final PredictionContextCache _sharedContextCache =
-            new PredictionContextCache();
-    private static final String[] _LITERAL_NAMES = makeLiteralNames();
-    private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
-    public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
-    public static String[] channelNames = {
-            "DEFAULT_TOKEN_CHANNEL", "HIDDEN"
-    };
-    public static String[] modeNames = {
-            "DEFAULT_MODE", "REST_OF_LINE", "FREE_TEXT_MODE", "DICE_STRING_MODE",
-            "EXPR_MODE"
-    };
-
-    static {
-        RuntimeMetaData.checkVersion("4.13.2", RuntimeMetaData.VERSION);
-    }
-
-    static {
-        tokenNames = new String[_SYMBOLIC_NAMES.length];
-        for (int i = 0; i < tokenNames.length; i++) {
-            tokenNames[i] = VOCABULARY.getLiteralName(i);
-            if (tokenNames[i] == null) {
-                tokenNames[i] = VOCABULARY.getSymbolicName(i);
-            }
-
-            if (tokenNames[i] == null) {
-                tokenNames[i] = "<INVALID>";
-            }
-        }
-    }
 
     static {
         _decisionToDFA = new DFA[_ATN.getNumberOfDecisions()];
         for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
             _decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
         }
-    }
-
-    public ChestTrapLexer(CharStream input) {
-        super(input);
-        _interp = new LexerATNSimulator(this, _ATN, _decisionToDFA, _sharedContextCache);
-    }
-
-    private static String[] makeRuleNames() {
-        return new String[]{
-                "RECORD_COUNT", "NAME", "CODE", "LEVEL", "DESTROY", "MAGIC", "MSG", "MSG_DEATH",
-                "COMMENT", "EOL", "EFFECT", "EFFECT_MESSAGE", "DICE", "TIME", "EFFECT_YX",
-                "EXPR", "COLON", "UCASE", "INTEGER", "DICE_D", "DICE_M", "DICE_INTEGER",
-                "DICE_DOLLAR_LETTER", "DICE_SIMPLE_NUMBER", "DICE_ANY_NUMBER", "COMPLEX_DICE_STRING_BODY",
-                "SIMPLE_DICE_STRING_BODY", "SIMPLE_DICE_STRING", "COMPLEX_DICE_STRING",
-                "STRING", "ROL_EOL", "FREE_TEXT", "DICE_SIMPLE_VALUE", "DICE_COMPLEX_VALUE",
-                "EXPR_CHAR", "EXPR_COLON", "EXPR_UCASE", "EXPR_OP", "EXPR_EOL"
-        };
-    }
-
-    private static String[] makeLiteralNames() {
-        return new String[]{
-                null, "'record-count:'", "'name:'", "'code:'", "'level:'", "'destroy:'",
-                "'magic:'", "'msg:'", "'msg-death:'", null, null, "'effect:'", "'effect-msg:'",
-                "'dice:'", "'time:'", "'effect-yx:'", "'expr:'"
-        };
-    }
-
-    private static String[] makeSymbolicNames() {
-        return new String[]{
-                null, "RECORD_COUNT", "NAME", "CODE", "LEVEL", "DESTROY", "MAGIC", "MSG",
-                "MSG_DEATH", "COMMENT", "EOL", "EFFECT", "EFFECT_MESSAGE", "DICE", "TIME",
-                "EFFECT_YX", "EXPR", "COLON", "UCASE", "INTEGER", "SIMPLE_DICE_STRING",
-                "COMPLEX_DICE_STRING", "STRING", "ROL_EOL", "FREE_TEXT", "DICE_SIMPLE_VALUE",
-                "DICE_COMPLEX_VALUE", "EXPR_CHAR", "EXPR_COLON", "EXPR_UCASE", "EXPR_OP",
-                "EXPR_EOL"
-        };
-    }
-
-    @Override
-    @Deprecated
-    public String[] getTokenNames() {
-        return tokenNames;
-    }
-
-    @Override
-
-    public Vocabulary getVocabulary() {
-        return VOCABULARY;
-    }
-
-    @Override
-    public String getGrammarFileName() {
-        return "ChestTrapLexer.g4";
-    }
-
-    @Override
-    public String[] getRuleNames() {
-        return ruleNames;
-    }
-
-    @Override
-    public String getSerializedATN() {
-        return _serializedATN;
-    }
-
-    @Override
-    public String[] getChannelNames() {
-        return channelNames;
-    }
-
-    @Override
-    public String[] getModeNames() {
-        return modeNames;
-    }
-
-    @Override
-    public ATN getATN() {
-        return _ATN;
     }
 }

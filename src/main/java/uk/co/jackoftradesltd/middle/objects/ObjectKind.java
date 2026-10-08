@@ -278,7 +278,16 @@ public class ObjectKind {
     private boolean isSpecialArtifactKind;
 
     /**
-     * Recharge/effect timing, as a dice expression.
+     * The recharge/effect timing dice from the kind's {@code time:} line — C's {@code kind->time}.
+     * Dice rather than a settled figure: {@link ObjectUtils#objectPrep} rolls each item's own value
+     * from it. A kind with no {@code time:} line holds a zero {@link Random}, as C's zeroed
+     * {@code random_value} does: the loader passes one, and so do the partly-specified and artifact
+     * constructors. The fully-specified constructor stores what it is given, so passing a zero
+     * {@link Random} rather than {@code null} is the caller's job; the no-argument constructor
+     * leaves the field {@code null} until {@link #setTime} is called.
+     *
+     * <p>Field time retyped from a dice string to {@link Random} and moved off {@link Effect} onto the
+     * kind on 261008.
      */
     private Random time;
 
@@ -375,9 +384,21 @@ public class ObjectKind {
     }
 
     /**
-     * Build a fully-specified object kind from parsed data-file fields, resolving
-     * the various dice strings into {@link Random}s and copying the brand/slay/
-     * curse maps.
+     * Build a fully-specified object kind from fields the object loader has already resolved.
+     *
+     * <p>Nothing is parsed here: every dice argument ({@code pVal}, {@code toH}, {@code toD},
+     * {@code toA}, {@code baseDamage}, {@code time}, {@code charge}, {@code stackSize}) arrives as
+     * a {@link Random} and is stored as given, so the caller supplies a zero {@link Random} where
+     * the data file has no line, never {@code null}. {@code time} in particular is the kind's own
+     * {@code time:} dice, which the loader reads from the record rather than from the kind's last
+     * {@link Effect}. Every other argument except {@code curses} is stored as given too, the brand
+     * and slay sets and the effect list included. The one deep copy is the curse map: each
+     * {@link CurseData} is copied into a fresh map, so the kind's template never shares an
+     * instance with the caller or with an item (see {@link #curses}).
+     *
+     * <p>Constructor ObjectKind coded before 261008, commented in full on 261008 (the wrong "dice
+     * string" and "copying the brand/slay" wording corrected, {@code time} retyped from a dice string
+     * to {@link Random}, {@code power} documented).
      *
      * @param name          kind name
      * @param text          flavour text
@@ -409,7 +430,7 @@ public class ObjectKind {
      * @param effect        effects
      * @param effectMessage effect message
      * @param visMessage    seen-effect message
-     * @param time          timing dice string
+     * @param time          recharge/effect timing dice, zero if the kind has no {@code time:} line
      * @param charge        charge dice string
      * @param genMultProb   multi-generation probability
      * @param stackSize     stack-size dice string
@@ -421,6 +442,7 @@ public class ObjectKind {
      * @param ignore        ignore setting
      * @param everseen      whether ever seen
      * @param tValue        item type value
+     * @param power         the kind's power rating, from {@code power:}
      */
     public ObjectKind(String name, String text, ObjectBase base,
                       int kindIndex, Random pVal, Random toH,

@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from EffectBlock.g4 by ANTLR 4.13.2
+// Generated from imports/EffectBlock.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.imports.effectblock;
 import org.antlr.v4.runtime.atn.*;
 import org.antlr.v4.runtime.dfa.DFA;
@@ -796,12 +796,12 @@ public class EffectBlock extends Parser {
             super(parent, invokingState);
         }
 
-        public TerminalNode TIME() {
-            return getToken(EffectBlock.TIME, 0);
-        }
-
         public TerminalNode DICE_SIMPLE_VALUE() {
             return getToken(EffectBlock.DICE_SIMPLE_VALUE, 0);
+        }
+
+        public TerminalNode TIME() {
+            return getToken(EffectBlock.TIME, 0);
         }
 
         @Override

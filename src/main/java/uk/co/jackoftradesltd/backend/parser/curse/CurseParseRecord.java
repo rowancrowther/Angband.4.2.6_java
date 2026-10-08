@@ -46,6 +46,10 @@ import java.util.Map;
  * @param conflict         the names of curses this one conflicts with, resolved to instances
  *                         by the assembler's second pass
  * @param cFlag            the object flags applied when this curse conflicts with another
+ * @param time             raw dice string from the record's own {@code time:} line (C's
+ *                         {@code curse->obj->time}), or {@code ""} if absent; the assembler parses
+ *                         it into the {@code Random} set on the curse's object, zero when empty. It
+ *                         belongs to the record, not to the last {@link EffectParseRecord}
  * @param line             the source line the record begins on, for error reporting
  * @author Rowan Crowther
  */

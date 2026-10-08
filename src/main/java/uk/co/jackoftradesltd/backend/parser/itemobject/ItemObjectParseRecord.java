@@ -66,6 +66,10 @@ import java.util.Map;
  * @param curse            {@code curse:} entries as name -> power-string
  * @param pVal             raw extra-parameter dice from {@code pval:}
  * @param desc             accumulated {@code desc:} text
+ * @param time             raw dice string from the record's own {@code time:} line (C's
+ *                         {@code kind->time}), or {@code ""} if absent; the assembler parses it
+ *                         into the kind's {@link Random}, zero when empty. It belongs to the record,
+ *                         not to the last {@link EffectParseRecord}
  * @param line             1-based source line of the {@code name:} header, for error reporting
  * @author Rowan Crowther
  */

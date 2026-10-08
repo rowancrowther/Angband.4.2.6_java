@@ -785,238 +785,6 @@ public class ChestTrapGrammar extends Parser {
         }
     }
 
-    public final MagicContext magic() throws RecognitionException {
-        MagicContext _localctx = new MagicContext(_ctx, getState());
-        enterRule(_localctx, 10, RULE_magic);
-        try {
-            enterOuterAlt(_localctx, 1);
-            {
-                setState(54);
-                match(MAGIC);
-                setState(55);
-                ((MagicContext) _localctx).m = match(INTEGER);
-                ((MagicContext) _localctx).magicStr = ((MagicContext) _localctx).m.getText();
-            }
-        } catch (RecognitionException re) {
-            _localctx.exception = re;
-            _errHandler.reportError(this, re);
-            _errHandler.recover(this, re);
-        } finally {
-            exitRule();
-        }
-        return _localctx;
-    }
-
-    @SuppressWarnings("CheckReturnValue")
-    public static class FileContext extends ParserRuleContext {
-        public String declaredRecordCount;
-        public List<ChestTrapParseRecord> chestTraps;
-        public RecordCountContext recordCount;
-        public ChestTrapContext chestTrap;
-
-        public RecordCountContext recordCount() {
-            return getRuleContext(RecordCountContext.class, 0);
-        }
-
-        public TerminalNode EOF() {
-            return getToken(ChestTrapGrammar.EOF, 0);
-        }
-
-        public List<ChestTrapContext> chestTrap() {
-            return getRuleContexts(ChestTrapContext.class);
-        }
-
-        public ChestTrapContext chestTrap(int i) {
-            return getRuleContext(ChestTrapContext.class, i);
-        }
-
-        public FileContext(ParserRuleContext parent, int invokingState) {
-            super(parent, invokingState);
-        }
-
-        @Override
-        public int getRuleIndex() {
-            return RULE_file;
-        }
-
-        @Override
-        public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ChestTrapGrammarListener) ((ChestTrapGrammarListener) listener).enterFile(this);
-        }
-
-        @Override
-        public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ChestTrapGrammarListener) ((ChestTrapGrammarListener) listener).exitFile(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof ChestTrapGrammarVisitor)
-                return ((ChestTrapGrammarVisitor<? extends T>) visitor).visitFile(this);
-            else return visitor.visitChildren(this);
-        }
-    }
-
-    public final MsgContext msg() throws RecognitionException {
-        MsgContext _localctx = new MsgContext(_ctx, getState());
-        enterRule(_localctx, 12, RULE_msg);
-        try {
-            enterOuterAlt(_localctx, 1);
-            {
-                setState(58);
-                match(MSG);
-                setState(59);
-                ((MsgContext) _localctx).m = match(STRING);
-                ((MsgContext) _localctx).msgStr = ((MsgContext) _localctx).m.getText();
-            }
-        } catch (RecognitionException re) {
-            _localctx.exception = re;
-            _errHandler.reportError(this, re);
-            _errHandler.recover(this, re);
-        } finally {
-            exitRule();
-        }
-        return _localctx;
-    }
-
-    @SuppressWarnings("CheckReturnValue")
-    public static class EffectContext extends ParserRuleContext {
-        public String type;
-        public String wrapper;
-        public String radius;
-        public String other;
-        public Token t;
-        public Token st;
-        public Token rad;
-        public Token oth;
-
-        public TerminalNode EFFECT() {
-            return getToken(ChestTrapGrammar.EFFECT, 0);
-        }
-
-        public List<TerminalNode> UCASE() {
-            return getTokens(ChestTrapGrammar.UCASE);
-        }
-
-        public TerminalNode UCASE(int i) {
-            return getToken(ChestTrapGrammar.UCASE, i);
-        }
-
-        public List<TerminalNode> COLON() {
-            return getTokens(ChestTrapGrammar.COLON);
-        }
-
-        public TerminalNode COLON(int i) {
-            return getToken(ChestTrapGrammar.COLON, i);
-        }
-
-        public List<TerminalNode> INTEGER() {
-            return getTokens(ChestTrapGrammar.INTEGER);
-        }
-
-        public TerminalNode INTEGER(int i) {
-            return getToken(ChestTrapGrammar.INTEGER, i);
-        }
-
-        public EffectContext(ParserRuleContext parent, int invokingState) {
-            super(parent, invokingState);
-        }
-
-        @Override
-        public int getRuleIndex() {
-            return RULE_effect;
-        }
-
-        @Override
-        public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ChestTrapGrammarListener) ((ChestTrapGrammarListener) listener).enterEffect(this);
-        }
-
-        @Override
-        public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ChestTrapGrammarListener) ((ChestTrapGrammarListener) listener).exitEffect(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof ChestTrapGrammarVisitor)
-                return ((ChestTrapGrammarVisitor<? extends T>) visitor).visitEffect(this);
-            else return visitor.visitChildren(this);
-        }
-    }
-
-    public final MsgDeathContext msgDeath() throws RecognitionException {
-        MsgDeathContext _localctx = new MsgDeathContext(_ctx, getState());
-        enterRule(_localctx, 14, RULE_msgDeath);
-        try {
-            enterOuterAlt(_localctx, 1);
-            {
-                setState(62);
-                match(MSG_DEATH);
-                setState(63);
-                ((MsgDeathContext) _localctx).m = match(STRING);
-                ((MsgDeathContext) _localctx).msgDeathStr = ((MsgDeathContext) _localctx).m.getText();
-            }
-        } catch (RecognitionException re) {
-            _localctx.exception = re;
-            _errHandler.reportError(this, re);
-            _errHandler.recover(this, re);
-        } finally {
-            exitRule();
-        }
-        return _localctx;
-    }
-
-    @SuppressWarnings("CheckReturnValue")
-    public static class EffectYXContext extends ParserRuleContext {
-        public String y;
-        public String x;
-        public Token yVal;
-        public Token xVal;
-
-        public TerminalNode EFFECT_YX() {
-            return getToken(ChestTrapGrammar.EFFECT_YX, 0);
-        }
-
-        public TerminalNode COLON() {
-            return getToken(ChestTrapGrammar.COLON, 0);
-        }
-
-        public List<TerminalNode> INTEGER() {
-            return getTokens(ChestTrapGrammar.INTEGER);
-        }
-
-        public TerminalNode INTEGER(int i) {
-            return getToken(ChestTrapGrammar.INTEGER, i);
-        }
-
-        public EffectYXContext(ParserRuleContext parent, int invokingState) {
-            super(parent, invokingState);
-        }
-
-        @Override
-        public int getRuleIndex() {
-            return RULE_effectYX;
-        }
-
-        @Override
-        public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ChestTrapGrammarListener) ((ChestTrapGrammarListener) listener).enterEffectYX(this);
-        }
-
-        @Override
-        public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ChestTrapGrammarListener) ((ChestTrapGrammarListener) listener).exitEffectYX(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof ChestTrapGrammarVisitor)
-                return ((ChestTrapGrammarVisitor<? extends T>) visitor).visitEffectYX(this);
-            else return visitor.visitChildren(this);
-        }
-    }
-
     public final ChestTrapContext chestTrap() throws RecognitionException {
         ChestTrapContext _localctx = new ChestTrapContext(_ctx, getState());
         enterRule(_localctx, 16, RULE_chestTrap);
@@ -1116,60 +884,26 @@ public class ChestTrapGrammar extends Parser {
         return _localctx;
     }
 
-    @SuppressWarnings("CheckReturnValue")
-    public static class DiceContext extends ParserRuleContext {
-        public String diceString;
-        public String exprChar;
-        public String baseName;
-        public String operation;
-        public Token val;
-        public ExprContext expr;
-
-        public TerminalNode DICE() {
-            return getToken(ChestTrapGrammar.DICE, 0);
+    public final MagicContext magic() throws RecognitionException {
+        MagicContext _localctx = new MagicContext(_ctx, getState());
+        enterRule(_localctx, 10, RULE_magic);
+        try {
+            enterOuterAlt(_localctx, 1);
+            {
+                setState(54);
+                match(MAGIC);
+                setState(55);
+                ((MagicContext) _localctx).m = match(INTEGER);
+                ((MagicContext) _localctx).magicStr = ((MagicContext) _localctx).m.getText();
+            }
+        } catch (RecognitionException re) {
+            _localctx.exception = re;
+            _errHandler.reportError(this, re);
+            _errHandler.recover(this, re);
+        } finally {
+            exitRule();
         }
-
-        public TerminalNode DICE_SIMPLE_VALUE() {
-            return getToken(ChestTrapGrammar.DICE_SIMPLE_VALUE, 0);
-        }
-
-        public TerminalNode DICE_COMPLEX_VALUE() {
-            return getToken(ChestTrapGrammar.DICE_COMPLEX_VALUE, 0);
-        }
-
-        public List<ExprContext> expr() {
-            return getRuleContexts(ExprContext.class);
-        }
-
-        public ExprContext expr(int i) {
-            return getRuleContext(ExprContext.class, i);
-        }
-
-        public DiceContext(ParserRuleContext parent, int invokingState) {
-            super(parent, invokingState);
-        }
-
-        @Override
-        public int getRuleIndex() {
-            return RULE_dice;
-        }
-
-        @Override
-        public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ChestTrapGrammarListener) ((ChestTrapGrammarListener) listener).enterDice(this);
-        }
-
-        @Override
-        public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ChestTrapGrammarListener) ((ChestTrapGrammarListener) listener).exitDice(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof ChestTrapGrammarVisitor)
-                return ((ChestTrapGrammarVisitor<? extends T>) visitor).visitDice(this);
-            else return visitor.visitChildren(this);
-        }
+        return _localctx;
     }
 
     public final FileContext file() throws RecognitionException {
@@ -1211,64 +945,26 @@ public class ChestTrapGrammar extends Parser {
         return _localctx;
     }
 
-    @SuppressWarnings("CheckReturnValue")
-    public static class ExprContext extends ParserRuleContext {
-        public String exprChar;
-        public String baseName;
-        public String operation;
-        public Token ch;
-        public Token base;
-        public Token op;
-
-        public TerminalNode EXPR() {
-            return getToken(ChestTrapGrammar.EXPR, 0);
+    public final MsgContext msg() throws RecognitionException {
+        MsgContext _localctx = new MsgContext(_ctx, getState());
+        enterRule(_localctx, 12, RULE_msg);
+        try {
+            enterOuterAlt(_localctx, 1);
+            {
+                setState(58);
+                match(MSG);
+                setState(59);
+                ((MsgContext) _localctx).m = match(STRING);
+                ((MsgContext) _localctx).msgStr = ((MsgContext) _localctx).m.getText();
+            }
+        } catch (RecognitionException re) {
+            _localctx.exception = re;
+            _errHandler.reportError(this, re);
+            _errHandler.recover(this, re);
+        } finally {
+            exitRule();
         }
-
-        public List<TerminalNode> EXPR_COLON() {
-            return getTokens(ChestTrapGrammar.EXPR_COLON);
-        }
-
-        public TerminalNode EXPR_COLON(int i) {
-            return getToken(ChestTrapGrammar.EXPR_COLON, i);
-        }
-
-        public TerminalNode EXPR_CHAR() {
-            return getToken(ChestTrapGrammar.EXPR_CHAR, 0);
-        }
-
-        public TerminalNode EXPR_UCASE() {
-            return getToken(ChestTrapGrammar.EXPR_UCASE, 0);
-        }
-
-        public TerminalNode EXPR_OP() {
-            return getToken(ChestTrapGrammar.EXPR_OP, 0);
-        }
-
-        public ExprContext(ParserRuleContext parent, int invokingState) {
-            super(parent, invokingState);
-        }
-
-        @Override
-        public int getRuleIndex() {
-            return RULE_expr;
-        }
-
-        @Override
-        public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ChestTrapGrammarListener) ((ChestTrapGrammarListener) listener).enterExpr(this);
-        }
-
-        @Override
-        public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ChestTrapGrammarListener) ((ChestTrapGrammarListener) listener).exitExpr(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof ChestTrapGrammarVisitor)
-                return ((ChestTrapGrammarVisitor<? extends T>) visitor).visitExpr(this);
-            else return visitor.visitChildren(this);
-        }
+        return _localctx;
     }
 
     public final EffectContext effect() throws RecognitionException {
@@ -1346,45 +1042,26 @@ public class ChestTrapGrammar extends Parser {
         return _localctx;
     }
 
-    @SuppressWarnings("CheckReturnValue")
-    public static class EffectMsgContext extends ParserRuleContext {
-        public String message;
-        public Token FREE_TEXT;
-
-        public TerminalNode EFFECT_MESSAGE() {
-            return getToken(ChestTrapGrammar.EFFECT_MESSAGE, 0);
+    public final MsgDeathContext msgDeath() throws RecognitionException {
+        MsgDeathContext _localctx = new MsgDeathContext(_ctx, getState());
+        enterRule(_localctx, 14, RULE_msgDeath);
+        try {
+            enterOuterAlt(_localctx, 1);
+            {
+                setState(62);
+                match(MSG_DEATH);
+                setState(63);
+                ((MsgDeathContext) _localctx).m = match(STRING);
+                ((MsgDeathContext) _localctx).msgDeathStr = ((MsgDeathContext) _localctx).m.getText();
+            }
+        } catch (RecognitionException re) {
+            _localctx.exception = re;
+            _errHandler.reportError(this, re);
+            _errHandler.recover(this, re);
+        } finally {
+            exitRule();
         }
-
-        public TerminalNode FREE_TEXT() {
-            return getToken(ChestTrapGrammar.FREE_TEXT, 0);
-        }
-
-        public EffectMsgContext(ParserRuleContext parent, int invokingState) {
-            super(parent, invokingState);
-        }
-
-        @Override
-        public int getRuleIndex() {
-            return RULE_effectMsg;
-        }
-
-        @Override
-        public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ChestTrapGrammarListener)
-                ((ChestTrapGrammarListener) listener).enterEffectMsg(this);
-        }
-
-        @Override
-        public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ChestTrapGrammarListener) ((ChestTrapGrammarListener) listener).exitEffectMsg(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof ChestTrapGrammarVisitor)
-                return ((ChestTrapGrammarVisitor<? extends T>) visitor).visitEffectMsg(this);
-            else return visitor.visitChildren(this);
-        }
+        return _localctx;
     }
 
     public final EffectYXContext effectYX() throws RecognitionException {
@@ -1414,6 +1091,56 @@ public class ChestTrapGrammar extends Parser {
             exitRule();
         }
         return _localctx;
+    }
+
+    @SuppressWarnings("CheckReturnValue")
+    public static class FileContext extends ParserRuleContext {
+        public String declaredRecordCount;
+        public List<ChestTrapParseRecord> chestTraps;
+        public RecordCountContext recordCount;
+        public ChestTrapContext chestTrap;
+
+        public FileContext(ParserRuleContext parent, int invokingState) {
+            super(parent, invokingState);
+        }
+
+        public RecordCountContext recordCount() {
+            return getRuleContext(RecordCountContext.class, 0);
+        }
+
+        public TerminalNode EOF() {
+            return getToken(ChestTrapGrammar.EOF, 0);
+        }
+
+        public List<ChestTrapContext> chestTrap() {
+            return getRuleContexts(ChestTrapContext.class);
+        }
+
+        public ChestTrapContext chestTrap(int i) {
+            return getRuleContext(ChestTrapContext.class, i);
+        }
+
+        @Override
+        public int getRuleIndex() {
+            return RULE_file;
+        }
+
+        @Override
+        public void enterRule(ParseTreeListener listener) {
+            if (listener instanceof ChestTrapGrammarListener) ((ChestTrapGrammarListener) listener).enterFile(this);
+        }
+
+        @Override
+        public void exitRule(ParseTreeListener listener) {
+            if (listener instanceof ChestTrapGrammarListener) ((ChestTrapGrammarListener) listener).exitFile(this);
+        }
+
+        @Override
+        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+            if (visitor instanceof ChestTrapGrammarVisitor)
+                return ((ChestTrapGrammarVisitor<? extends T>) visitor).visitFile(this);
+            else return visitor.visitChildren(this);
+        }
     }
 
     public final DiceContext dice() throws RecognitionException {
@@ -1500,6 +1227,72 @@ public class ChestTrapGrammar extends Parser {
         return _localctx;
     }
 
+    @SuppressWarnings("CheckReturnValue")
+    public static class EffectContext extends ParserRuleContext {
+        public String type;
+        public String wrapper;
+        public String radius;
+        public String other;
+        public Token t;
+        public Token st;
+        public Token rad;
+        public Token oth;
+
+        public EffectContext(ParserRuleContext parent, int invokingState) {
+            super(parent, invokingState);
+        }
+
+        public TerminalNode EFFECT() {
+            return getToken(ChestTrapGrammar.EFFECT, 0);
+        }
+
+        public List<TerminalNode> UCASE() {
+            return getTokens(ChestTrapGrammar.UCASE);
+        }
+
+        public TerminalNode UCASE(int i) {
+            return getToken(ChestTrapGrammar.UCASE, i);
+        }
+
+        public List<TerminalNode> COLON() {
+            return getTokens(ChestTrapGrammar.COLON);
+        }
+
+        public TerminalNode COLON(int i) {
+            return getToken(ChestTrapGrammar.COLON, i);
+        }
+
+        public List<TerminalNode> INTEGER() {
+            return getTokens(ChestTrapGrammar.INTEGER);
+        }
+
+        public TerminalNode INTEGER(int i) {
+            return getToken(ChestTrapGrammar.INTEGER, i);
+        }
+
+        @Override
+        public int getRuleIndex() {
+            return RULE_effect;
+        }
+
+        @Override
+        public void enterRule(ParseTreeListener listener) {
+            if (listener instanceof ChestTrapGrammarListener) ((ChestTrapGrammarListener) listener).enterEffect(this);
+        }
+
+        @Override
+        public void exitRule(ParseTreeListener listener) {
+            if (listener instanceof ChestTrapGrammarListener) ((ChestTrapGrammarListener) listener).exitEffect(this);
+        }
+
+        @Override
+        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+            if (visitor instanceof ChestTrapGrammarVisitor)
+                return ((ChestTrapGrammarVisitor<? extends T>) visitor).visitEffect(this);
+            else return visitor.visitChildren(this);
+        }
+    }
+
     public final ExprContext expr() throws RecognitionException {
         ExprContext _localctx = new ExprContext(_ctx, getState());
         enterRule(_localctx, 26, RULE_expr);
@@ -1535,65 +1328,51 @@ public class ChestTrapGrammar extends Parser {
     }
 
     @SuppressWarnings("CheckReturnValue")
-    public static class EffectBlockContext extends ParserRuleContext {
-        public String typeInit;
-        public String subtypeWrapperInit;
-        public String radius;
-        public String other;
-        public String diceString;
-        public String yVal;
-        public String xVal;
-        public String expressionChars;
-        public String expressionBase;
-        public String expressionOperation;
-        public String effectMessage;
-        public int lineNo;
-        public EffectContext effect;
-        public EffectYXContext effectYX;
-        public DiceContext dice;
-        public EffectMsgContext effectMsg;
+    public static class EffectYXContext extends ParserRuleContext {
+        public String y;
+        public String x;
+        public Token yVal;
+        public Token xVal;
 
-        public EffectContext effect() {
-            return getRuleContext(EffectContext.class, 0);
-        }
-
-        public EffectMsgContext effectMsg() {
-            return getRuleContext(EffectMsgContext.class, 0);
-        }
-
-        public EffectYXContext effectYX() {
-            return getRuleContext(EffectYXContext.class, 0);
-        }
-
-        public DiceContext dice() {
-            return getRuleContext(DiceContext.class, 0);
-        }
-
-        public EffectBlockContext(ParserRuleContext parent, int invokingState) {
+        public EffectYXContext(ParserRuleContext parent, int invokingState) {
             super(parent, invokingState);
+        }
+
+        public TerminalNode EFFECT_YX() {
+            return getToken(ChestTrapGrammar.EFFECT_YX, 0);
+        }
+
+        public TerminalNode COLON() {
+            return getToken(ChestTrapGrammar.COLON, 0);
+        }
+
+        public List<TerminalNode> INTEGER() {
+            return getTokens(ChestTrapGrammar.INTEGER);
+        }
+
+        public TerminalNode INTEGER(int i) {
+            return getToken(ChestTrapGrammar.INTEGER, i);
         }
 
         @Override
         public int getRuleIndex() {
-            return RULE_effectBlock;
+            return RULE_effectYX;
         }
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ChestTrapGrammarListener)
-                ((ChestTrapGrammarListener) listener).enterEffectBlock(this);
+            if (listener instanceof ChestTrapGrammarListener) ((ChestTrapGrammarListener) listener).enterEffectYX(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ChestTrapGrammarListener)
-                ((ChestTrapGrammarListener) listener).exitEffectBlock(this);
+            if (listener instanceof ChestTrapGrammarListener) ((ChestTrapGrammarListener) listener).exitEffectYX(this);
         }
 
         @Override
         public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
             if (visitor instanceof ChestTrapGrammarVisitor)
-                return ((ChestTrapGrammarVisitor<? extends T>) visitor).visitEffectBlock(this);
+                return ((ChestTrapGrammarVisitor<? extends T>) visitor).visitEffectYX(this);
             else return visitor.visitChildren(this);
         }
     }
@@ -1620,6 +1399,62 @@ public class ChestTrapGrammar extends Parser {
         return _localctx;
     }
 
+    @SuppressWarnings("CheckReturnValue")
+    public static class DiceContext extends ParserRuleContext {
+        public String diceString;
+        public String exprChar;
+        public String baseName;
+        public String operation;
+        public Token val;
+        public ExprContext expr;
+
+        public DiceContext(ParserRuleContext parent, int invokingState) {
+            super(parent, invokingState);
+        }
+
+        public TerminalNode DICE() {
+            return getToken(ChestTrapGrammar.DICE, 0);
+        }
+
+        public TerminalNode DICE_SIMPLE_VALUE() {
+            return getToken(ChestTrapGrammar.DICE_SIMPLE_VALUE, 0);
+        }
+
+        public TerminalNode DICE_COMPLEX_VALUE() {
+            return getToken(ChestTrapGrammar.DICE_COMPLEX_VALUE, 0);
+        }
+
+        public List<ExprContext> expr() {
+            return getRuleContexts(ExprContext.class);
+        }
+
+        public ExprContext expr(int i) {
+            return getRuleContext(ExprContext.class, i);
+        }
+
+        @Override
+        public int getRuleIndex() {
+            return RULE_dice;
+        }
+
+        @Override
+        public void enterRule(ParseTreeListener listener) {
+            if (listener instanceof ChestTrapGrammarListener) ((ChestTrapGrammarListener) listener).enterDice(this);
+        }
+
+        @Override
+        public void exitRule(ParseTreeListener listener) {
+            if (listener instanceof ChestTrapGrammarListener) ((ChestTrapGrammarListener) listener).exitDice(this);
+        }
+
+        @Override
+        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+            if (visitor instanceof ChestTrapGrammarVisitor)
+                return ((ChestTrapGrammarVisitor<? extends T>) visitor).visitDice(this);
+            else return visitor.visitChildren(this);
+        }
+    }
+
     public final TimeContext time() throws RecognitionException {
         TimeContext _localctx = new TimeContext(_ctx, getState());
         enterRule(_localctx, 30, RULE_time);
@@ -1640,6 +1475,66 @@ public class ChestTrapGrammar extends Parser {
             exitRule();
         }
         return _localctx;
+    }
+
+    @SuppressWarnings("CheckReturnValue")
+    public static class ExprContext extends ParserRuleContext {
+        public String exprChar;
+        public String baseName;
+        public String operation;
+        public Token ch;
+        public Token base;
+        public Token op;
+
+        public ExprContext(ParserRuleContext parent, int invokingState) {
+            super(parent, invokingState);
+        }
+
+        public TerminalNode EXPR() {
+            return getToken(ChestTrapGrammar.EXPR, 0);
+        }
+
+        public List<TerminalNode> EXPR_COLON() {
+            return getTokens(ChestTrapGrammar.EXPR_COLON);
+        }
+
+        public TerminalNode EXPR_COLON(int i) {
+            return getToken(ChestTrapGrammar.EXPR_COLON, i);
+        }
+
+        public TerminalNode EXPR_CHAR() {
+            return getToken(ChestTrapGrammar.EXPR_CHAR, 0);
+        }
+
+        public TerminalNode EXPR_UCASE() {
+            return getToken(ChestTrapGrammar.EXPR_UCASE, 0);
+        }
+
+        public TerminalNode EXPR_OP() {
+            return getToken(ChestTrapGrammar.EXPR_OP, 0);
+        }
+
+        @Override
+        public int getRuleIndex() {
+            return RULE_expr;
+        }
+
+        @Override
+        public void enterRule(ParseTreeListener listener) {
+            if (listener instanceof ChestTrapGrammarListener) ((ChestTrapGrammarListener) listener).enterExpr(this);
+        }
+
+        @Override
+        public void exitRule(ParseTreeListener listener) {
+            if (listener instanceof ChestTrapGrammarListener) ((ChestTrapGrammarListener) listener).exitExpr(this);
+        }
+
+        @Override
+        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+            if (visitor instanceof ChestTrapGrammarVisitor)
+                return ((ChestTrapGrammarVisitor<? extends T>) visitor).visitExpr(this);
+            else return visitor.visitChildren(this);
+        }
     }
 
     public final EffectBlockContext effectBlock() throws RecognitionException {
@@ -1743,9 +1638,54 @@ public class ChestTrapGrammar extends Parser {
     }
 
     @SuppressWarnings("CheckReturnValue")
+    public static class EffectMsgContext extends ParserRuleContext {
+        public String message;
+        public Token FREE_TEXT;
+
+        public EffectMsgContext(ParserRuleContext parent, int invokingState) {
+            super(parent, invokingState);
+        }
+
+        public TerminalNode EFFECT_MESSAGE() {
+            return getToken(ChestTrapGrammar.EFFECT_MESSAGE, 0);
+        }
+
+        public TerminalNode FREE_TEXT() {
+            return getToken(ChestTrapGrammar.FREE_TEXT, 0);
+        }
+
+        @Override
+        public int getRuleIndex() {
+            return RULE_effectMsg;
+        }
+
+        @Override
+        public void enterRule(ParseTreeListener listener) {
+            if (listener instanceof ChestTrapGrammarListener)
+                ((ChestTrapGrammarListener) listener).enterEffectMsg(this);
+        }
+
+        @Override
+        public void exitRule(ParseTreeListener listener) {
+            if (listener instanceof ChestTrapGrammarListener) ((ChestTrapGrammarListener) listener).exitEffectMsg(this);
+        }
+
+        @Override
+        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+            if (visitor instanceof ChestTrapGrammarVisitor)
+                return ((ChestTrapGrammarVisitor<? extends T>) visitor).visitEffectMsg(this);
+            else return visitor.visitChildren(this);
+        }
+    }
+
+    @SuppressWarnings("CheckReturnValue")
     public static class TimeContext extends ParserRuleContext {
         public String timeStr;
         public Token DICE_SIMPLE_VALUE;
+
+        public TimeContext(ParserRuleContext parent, int invokingState) {
+            super(parent, invokingState);
+        }
 
         public TerminalNode TIME() {
             return getToken(ChestTrapGrammar.TIME, 0);
@@ -1753,10 +1693,6 @@ public class ChestTrapGrammar extends Parser {
 
         public TerminalNode DICE_SIMPLE_VALUE() {
             return getToken(ChestTrapGrammar.DICE_SIMPLE_VALUE, 0);
-        }
-
-        public TimeContext(ParserRuleContext parent, int invokingState) {
-            super(parent, invokingState);
         }
 
         @Override
@@ -1778,6 +1714,70 @@ public class ChestTrapGrammar extends Parser {
         public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
             if (visitor instanceof ChestTrapGrammarVisitor)
                 return ((ChestTrapGrammarVisitor<? extends T>) visitor).visitTime(this);
+            else return visitor.visitChildren(this);
+        }
+    }
+
+    @SuppressWarnings("CheckReturnValue")
+    public static class EffectBlockContext extends ParserRuleContext {
+        public String typeInit;
+        public String subtypeWrapperInit;
+        public String radius;
+        public String other;
+        public String diceString;
+        public String yVal;
+        public String xVal;
+        public String expressionChars;
+        public String expressionBase;
+        public String expressionOperation;
+        public String effectMessage;
+        public int lineNo;
+        public EffectContext effect;
+        public EffectYXContext effectYX;
+        public DiceContext dice;
+        public EffectMsgContext effectMsg;
+
+        public EffectBlockContext(ParserRuleContext parent, int invokingState) {
+            super(parent, invokingState);
+        }
+
+        public EffectContext effect() {
+            return getRuleContext(EffectContext.class, 0);
+        }
+
+        public EffectMsgContext effectMsg() {
+            return getRuleContext(EffectMsgContext.class, 0);
+        }
+
+        public EffectYXContext effectYX() {
+            return getRuleContext(EffectYXContext.class, 0);
+        }
+
+        public DiceContext dice() {
+            return getRuleContext(DiceContext.class, 0);
+        }
+
+        @Override
+        public int getRuleIndex() {
+            return RULE_effectBlock;
+        }
+
+        @Override
+        public void enterRule(ParseTreeListener listener) {
+            if (listener instanceof ChestTrapGrammarListener)
+                ((ChestTrapGrammarListener) listener).enterEffectBlock(this);
+        }
+
+        @Override
+        public void exitRule(ParseTreeListener listener) {
+            if (listener instanceof ChestTrapGrammarListener)
+                ((ChestTrapGrammarListener) listener).exitEffectBlock(this);
+        }
+
+        @Override
+        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+            if (visitor instanceof ChestTrapGrammarVisitor)
+                return ((ChestTrapGrammarVisitor<? extends T>) visitor).visitEffectBlock(this);
             else return visitor.visitChildren(this);
         }
     }

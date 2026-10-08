@@ -40,11 +40,18 @@ import java.util.List;
  * {@code effect_desc}.
  *
  * <p>C chains effects through {@code ->next}; the port has no {@code next} field and holds effects
- * in a {@link List} owned by whatever uses them. {@code time}, {@code diceString} and
- * {@code expression} are port additions with no field in C's {@code struct effect}. C's
- * {@code free_effect} is not ported, as the garbage collector does that work.
+ * in a {@link List} owned by whatever uses them. {@code diceString} and {@code expression} are
+ * port additions with no field in C's {@code struct effect}. C's {@code free_effect} is not
+ * ported, as the garbage collector does that work.
  *
- * <p>Class Effect coded before 261001, commented in full on 261001.
+ * <p>Like C's {@code struct effect}, an effect carries no {@code time}. The {@code time:} line of
+ * {@code object.txt} and {@code curse.txt} belongs to the object kind or curse object that owns
+ * the effects, and is held there ({@code ObjectKind#getTime()}, or {@code getTime()} on the
+ * curse's {@code ItemObject}). The port once hung it on the last effect of the block; that field
+ * was removed on 261008.
+ *
+ * <p>Class Effect coded before 261001, commented in full on 261001, {@code time} field removed on
+ * 261008.
  *
  * @author Rowan Crowther
  */
@@ -245,8 +252,7 @@ public class Effect {
      * Returns an independent copy of this effect.
      *
      * <p>Deep-copied because their contents are mutable: the expression list (each
-     * {@link Expression} copied in turn), the magnitude dice, the sub-type payload and the time
-     * dice. Everything else is a primitive, an immutable {@link String} or an enum constant and goes
+     * {@link Expression} copied in turn), the magnitude dice and the sub-type payload. Everything else is a primitive, an immutable {@link String} or an enum constant and goes
      * through the constructor unchanged.
      *
      * <p>Note that {@code index} is shared rather than copied. It identifies which effect this is,
@@ -256,7 +262,7 @@ public class Effect {
      * the port holds effects in a {@link java.util.List} owned by the object, so a copy here is one
      * effect and the caller copies the list.
      *
-     * <p>Function copy coded before 261001, commented in full on 261001 (first commented 260827).
+     * <p>Function copy coded before 261001, commented in full on 261001 (first commented 260827), time dice dropped from the copy on 261008.
      *
      * @return a new effect that shares no mutable state with this one
      */

@@ -106,12 +106,13 @@ import java.util.Map;
  *   <li>a {@code conflict:} name that matches no curse is reported as an error;
  *       C never validates it and the name simply never matches.</li>
  * </ul>
- * <b>Outstanding:</b> {@code assemble} never sets the curse object's
- * {@code time}, which C's {@code parse_curse_time} stores in {@code curse->obj->time}.
- * The {@code time:} line is currently carried on the preceding {@link Effect}
- * instead; to be picked up separately.
+ * <b>Time:</b> the record's own {@code time:} dice string is parsed and set on the curse's
+ * {@link ItemObject}, where C's {@code parse_curse_time} stores it in {@code curse->obj->time}. An
+ * absent line gives a zero {@link Random}, and an unparseable one skips the record. The {@link Effect}s
+ * carry no time of their own.
  *
- * <p>Class CurseAssembler coded before 260915, commented in full on 261005.
+ * <p>Class CurseAssembler coded before 260915, commented in full on 261005, {@code time} handling
+ * documented and the "Outstanding" note removed on 261008.
  *
  * @author Rowan Crowther
  */
@@ -137,15 +138,17 @@ public class CurseAssembler implements Assembler<CurseParseRecord, List<Curse>> 
      * out-of-range ({@code -32768..32767}) {@code weight:}; an effect that fails to
      * resolve; an unknown {@code flags:} token; an unknown or non-integer
      * {@code values:} entry; a non-integer {@code combat:} field; an unknown
-     * {@code conflict-flags:} token; or {@code MULTIPLY_WEIGHT} combined with a
-     * negative weight. An absent {@code weight:} or {@code combat:} means 0.
+     * {@code conflict-flags:} token; an unparseable {@code time:} dice string; or
+     * {@code MULTIPLY_WEIGHT} combined with a negative weight. An absent {@code weight:} or
+     * {@code combat:} means 0, and an absent {@code time:} means a zero {@link Random}.
      * The {@code desc:} lines are concatenated with no separator, as C does.
      * <p>
      * Once every record is processed, the surviving curses are reversed to match C's
      * prepend-built list and re-indexed from 0 (see the class comment), then each
      * curse's conflict names are linked to {@link Curse} instances in a second pass.
      *
-     * <p>Function assemble coded before 260915, commented in full on 261005.
+     * <p>Function assemble coded before 260915, commented in full on 261005, {@code time:} added to
+     * the skip reasons on 261008 once the record carried it.
      *
      * @param records the raw parse records from the grammar
      * @param errors  accumulating list of soft (skip-and-continue) error messages

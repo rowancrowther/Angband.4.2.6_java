@@ -409,6 +409,9 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
 
             Flag<IgnoreFlag> ignoreFlags = new Flag<>(IgnoreFlag.class);
             
+            if (base != null)
+                oKindFlags.union(base.getKindFlags());
+            
             itemObjects.add(new ObjectKind(name, description, base, 0, pVal,
                     attToh, attTod, acToa, ac, attBase, dd, ds,
                     weight, cost, oFlags, oKindFlags, modifiers, elInfo,

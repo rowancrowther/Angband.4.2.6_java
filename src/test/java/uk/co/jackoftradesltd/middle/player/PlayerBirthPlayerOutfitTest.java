@@ -29,11 +29,13 @@ import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.magic.ClassMagic;
 import uk.co.jackoftradesltd.middle.numerics.Random;
+import uk.co.jackoftradesltd.middle.objects.Brand;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
 import uk.co.jackoftradesltd.middle.objects.ObjectBase;
 import uk.co.jackoftradesltd.middle.objects.ObjectKind;
 import uk.co.jackoftradesltd.middle.objects.ObjectProperty;
 import uk.co.jackoftradesltd.middle.objects.ObjectPropertyTypeWrapper;
+import uk.co.jackoftradesltd.middle.objects.Slay;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjPropertyType;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
@@ -92,7 +94,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(SeededPlayerRegistry.class)
 class PlayerBirthPlayerOutfitTest {
 
-    private static final List<String> TOUCHED = List.of("objectKinds", "kindsByTvalSval", "objectProperties");
+    private static final List<String> TOUCHED = List.of("objectKinds", "kindsByTvalSval", "objectProperties",
+            "brands", "slays");
     private static final Map<String, Object> saved = new HashMap<>();
 
     private Player savedGamePlayer;
@@ -205,6 +208,10 @@ class PlayerBirthPlayerOutfitTest {
         field("objectKinds").set(null, new ArrayList<ObjectKind>());
         field("kindsByTvalSval").set(null, new HashMap<TValue, Map<Integer, ObjectKind>>());
         ObjectRegistry.setObjectProperties(new ArrayList<>());
+        // PlayerKnowledge.knowObject walks the brand and slay lists for every kitted item, so they
+        // must exist (empty is enough: no start item here carries either).
+        field("brands").set(null, new ArrayList<Brand>());
+        field("slays").set(null, new ArrayList<Slay>());
 
         savedGamePlayer = GameState.getPlayer();
     }

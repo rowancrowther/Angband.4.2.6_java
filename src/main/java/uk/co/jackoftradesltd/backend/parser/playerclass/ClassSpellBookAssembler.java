@@ -209,14 +209,14 @@ public class ClassSpellBookAssembler implements Assembler<ClassSpellBookParseRec
 
             Flag<IgnoreFlag> ignoreFlags = new Flag<>(IgnoreFlag.class);
             
-            ObjectKind kind = new ObjectKind(bookName, bookName,
+            ObjectKind kind = new ObjectKind(bookName, null,
                     base, 0, Random.Zero(), Random.Zero(), Random.Zero(),
                     Random.Zero(), 0, Random.Zero(), 1, 1,
                     30, cost, new Flag<>(ObjectFlag.class),
                     oFlags, new HashMap<>(), eFlags, new HashSet<>(),
                     new HashSet<>(), new HashMap<>(), adc,
                     commonness, min, max, 0, new ArrayList<>(), new ArrayList<>(),
-                    "", "", Random.Zero(), Random.Zero(), 0,
+                    null, null, Random.Zero(), Random.Zero(), 0,
                     Random.Zero(), null, null, null,
                     false, false, ignoreFlags, false, tValue, 0);
 

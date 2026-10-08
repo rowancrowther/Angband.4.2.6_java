@@ -31,7 +31,6 @@ import uk.co.jackoftradesltd.middle.player.enums.PlayerSkill;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -953,13 +952,14 @@ class PlayerStateTest {
     class AmmoType {
 
         /**
-         * With no launcher wielded there is no ammunition type, so the field is nothing rather than
-         * a zero — {@code TV_NONE} would be a type, and this is the absence of one.
+         * With no launcher wielded the ammunition type is {@code TV_NONE}: C's {@code ammo_tval} is
+         * an {@code int} that a {@code memset} leaves at {@code 0}, and tval {@code 0} is
+         * {@code TV_NONE}. It is never {@code null}.
          */
         @Test
-        @DisplayName("a fresh state names no ammunition")
+        @DisplayName("a fresh state names TV_NONE as its ammunition")
         void freshStateNamesNoAmmo() {
-            assertNull(new PlayerState().getAmmoTval());
+            assertEquals(TValue.TV_NONE, new PlayerState().getAmmoTval());
         }
 
         /**
@@ -975,18 +975,42 @@ class PlayerStateTest {
         }
 
         /**
-         * Wiping clears it back to nothing rather than to {@code TV_NONE}, which matters because the
-         * two mean different things: no launcher at all, versus a launcher that fires nothing.
+         * Wiping resets it to {@code TV_NONE}, the value C's {@code memset(state, 0, ...)} leaves in
+         * {@code ammo_tval}, not to {@code null}.
          */
         @Test
-        @DisplayName("a wipe clears the ammunition type to nothing")
+        @DisplayName("a wipe resets the ammunition type to TV_NONE")
         void wipeClearsAmmoType() {
             PlayerState state = new PlayerState();
             state.setAmmoTValue(TValue.TV_BOLT);
 
             state.wipe();
 
-            assertNull(state.getAmmoTval());
+            assertEquals(TValue.TV_NONE, state.getAmmoTval());
+        }
+
+        /**
+         * A copy of a fresh state carries {@code TV_NONE} too, so no path through {@code copy()}
+         * can introduce a {@code null}.
+         */
+        @Test
+        @DisplayName("a copy of a fresh state has TV_NONE, not null")
+        void copyOfFreshStateHasTvNone() {
+            assertEquals(TValue.TV_NONE, new PlayerState().copy().getAmmoTval());
+        }
+
+        /**
+         * Setting {@code TV_NONE} explicitly, as {@code calcBonuses} does for a launcher with no
+         * kind, reads back the same as a state that was never told anything.
+         */
+        @Test
+        @DisplayName("setting TV_NONE explicitly equals the wiped default")
+        void explicitTvNoneEqualsDefault() {
+            PlayerState state = new PlayerState();
+            state.setAmmoTValue(TValue.TV_ARROW);
+            state.setAmmoTValue(TValue.TV_NONE);
+
+            assertEquals(new PlayerState().getAmmoTval(), state.getAmmoTval());
         }
 
         /**

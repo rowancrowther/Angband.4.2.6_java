@@ -20,7 +20,6 @@ package uk.co.jackoftradesltd.middle.player;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftradesltd.channel.messages.data.PlayerEventStatusUpdate;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.channel.utils.FlagView;
 import uk.co.jackoftradesltd.middle.enums.Stats;
@@ -50,75 +49,192 @@ import java.util.Map;
  * <p>This is a work in progress: the field set mirrors C's {@code struct player_state}, but only the
  * accessors that current callers need are exposed so far.
  *
+ * <p>Class PlayerState commented in full on 261008.
+ *
  * @author Rowan Crowther
  */
 public class PlayerState {
     /**
      * Equipment stat bonuses added to each stat - the port of C's {@code state.stat_add}.
+     *
+     * <p>Field statAdd commented in full on 261008.
      */
     private Map<Stats, Integer> statAdd;
-    /** Indexes into the internal stat tables - the port of C's {@code state.stat_ind}. */
+    /**
+     * Indexes into the internal stat tables - the port of C's {@code state.stat_ind}.
+     *
+     * <p>Field statInd commented in full on 261008.
+     */
     private Map<Stats, Integer> statInd;
-    /** Current modified (in-use) stat values - the port of C's {@code state.stat_use}. */
+    /**
+     * Current modified (in-use) stat values - the port of C's {@code state.stat_use}.
+     *
+     * <p>Field statUse commented in full on 261008.
+     */
     private Map<Stats, Integer> statUse;
-    /** Maximal modified stat values - the port of C's {@code state.stat_top}. */
+    /**
+     * Maximal modified stat values - the port of C's {@code state.stat_top}.
+     *
+     * <p>Field statTop commented in full on 261008.
+     */
     private Map<Stats, Integer> statTop;
 
-    /** The player's calculated skill values - the port of C's {@code state.skills}. */
+    /**
+     * The player's calculated skill values - the port of C's {@code state.skills}.
+     *
+     * <p>Left empty by {@link #wipe()} rather than filled with zeroes; {@link #getPlayerSkill} treats a
+     * missing key as zero.
+     *
+     * <p>Field skills commented in full on 261008.
+     */
     private Map<PlayerSkill, Integer> skills;
 
-    /** Current speed - the port of C's {@code state.speed}. */
+    /**
+     * Current speed - the port of C's {@code state.speed}.
+     *
+     * <p>Field speed commented in full on 261008.
+     */
     private int speed;
 
-    /** Number of blows per turn, scaled x100 - the port of C's {@code state.num_blows}. */
+    /**
+     * Number of blows per turn, scaled x100 - the port of C's {@code state.num_blows}.
+     *
+     * <p>Field numBlows commented in full on 261008.
+     */
     private int numBlows;
-    /** Number of shots per turn, scaled x10 - the port of C's {@code state.num_shots}. */
+    /**
+     * Number of shots per turn, scaled x10 - the port of C's {@code state.num_shots}.
+     *
+     * <p>Field numShots commented in full on 261008.
+     */
     private int numShots;
-    /** Number of extra movement actions - the port of C's {@code state.num_moves}. */
+    /**
+     * Number of extra movement actions - the port of C's {@code state.num_moves}.
+     *
+     * <p>Field numMoves commented in full on 261008.
+     */
     private int numMoves;
 
-    /** Ammo damage multiplier from the launcher - the port of C's {@code state.ammo_mult}. */
+    /**
+     * Ammo damage multiplier from the launcher - the port of C's {@code state.ammo_mult}.
+     *
+     * <p>Field ammoMult commented in full on 261008.
+     */
     private int ammoMult;
-    /** The variety of ammo the wielded launcher fires - the port of C's {@code state.ammo_tval}. */
+    /**
+     * The variety of ammo the wielded launcher fires - the port of C's {@code state.ammo_tval}.
+     *
+     * <p>Never {@code null}: with no launcher wielded it holds {@link TValue#TV_NONE}, which is C's
+     * tval {@code 0} and what {@link #wipe()} leaves behind, so C's {@code !state.ammo_tval} test
+     * becomes {@code == TValue.TV_NONE}.
+     *
+     * <p>Field ammoTVal commented in full on 261008.
+     */
     private TValue ammoTVal;
 
-    /** Base armour class - the port of C's {@code state.ac}. */
+    /**
+     * Base armour class - the port of C's {@code state.ac}.
+     *
+     * <p>Field ac commented in full on 261008.
+     */
     private int ac;
-    /** Flat damage reduction - the port of C's {@code state.dam_red}. */
+    /**
+     * Flat damage reduction - the port of C's {@code state.dam_red}.
+     *
+     * <p>Field damRed commented in full on 261008.
+     */
     private int damRed;
-    /** Percentage damage reduction - the port of C's {@code state.perc_dam_red}. */
+    /**
+     * Percentage damage reduction - the port of C's {@code state.perc_dam_red}.
+     *
+     * <p>Only ever zero in the port, as in C: nothing in C assigns {@code perc_dam_red}, so the field has no
+     * setter and is read by the damage-reduction code alone.
+     *
+     * <p>Field perDamRed commented in full on 261008.
+     */
     private int perDamRed;
-    /** Bonus to armour class - the port of C's {@code state.to_a}. */
+    /**
+     * Bonus to armour class - the port of C's {@code state.to_a}.
+     *
+     * <p>Field toA commented in full on 261008.
+     */
     private int toA;
-    /** Bonus to hit - the port of C's {@code state.to_h}. */
+    /**
+     * Bonus to hit - the port of C's {@code state.to_h}.
+     *
+     * <p>Field toH commented in full on 261008.
+     */
     private int toH;
-    /** Bonus to damage - the port of C's {@code state.to_d}. */
+    /**
+     * Bonus to damage - the port of C's {@code state.to_d}.
+     *
+     * <p>Field toD commented in full on 261008.
+     */
     private int toD;
 
-    /** Infravision range - the port of C's {@code state.see_infra}. */
+    /**
+     * Infravision range - the port of C's {@code state.see_infra}.
+     *
+     * <p>Field seeInfra commented in full on 261008.
+     */
     private int seeInfra;
-    /** Radius of the light the player sheds, if any - the port of C's {@code state.cur_light}. */
+    /**
+     * Radius of the light the player sheds, if any - the port of C's {@code state.cur_light}.
+     *
+     * <p>Field curLight commented in full on 261008.
+     */
     private int curLight;
 
-    /** True when the wielded weapon is too heavy for the player - the port of C's {@code state.heavy_wield}. */
+    /**
+     * True when the wielded weapon is too heavy for the player - the port of C's {@code state.heavy_wield}.
+     *
+     * <p>Field heavyWield commented in full on 261008.
+     */
     private boolean heavyWield;
-    /** True when the wielded launcher is too heavy for the player - the port of C's {@code state.heavy_shoot}. */
+    /**
+     * True when the wielded launcher is too heavy for the player - the port of C's {@code state.heavy_shoot}.
+     *
+     * <p>Field heavyShoot commented in full on 261008.
+     */
     private boolean heavyShoot;
-    /** True when the wielded weapon is blessed (or blunt) - the port of C's {@code state.bless_wield}. */
+    /**
+     * True when the wielded weapon is blessed (or blunt) - the port of C's {@code state.bless_wield}.
+     *
+     * <p>Field blessWield commented in full on 261008.
+     */
     private boolean blessWield;
-    /** True when worn armour is heavy enough to drain mana - the port of C's {@code state.cumber_armor}. */
+    /**
+     * True when worn armour is heavy enough to drain mana - the port of C's {@code state.cumber_armor}.
+     *
+     * <p>Field cumberArmour commented in full on 261008. The spelling follows the port's Oxford
+     * convention; the C field name keeps the US {@code armor}.
+     */
     private boolean cumberArmour;
 
-    /** Status flags folded in from race and items - the port of C's {@code state.flags}. */
+    /**
+     * Status flags folded in from race and items - the port of C's {@code state.flags}.
+     *
+     * <p>Field flags commented in full on 261008.
+     */
     private Flag<ObjectFlag> flags;
-    /** The player's intrinsic flags - the port of C's {@code state.pflags}. */
+    /**
+     * The player's intrinsic flags - the port of C's {@code state.pflags}.
+     *
+     * <p>Field pflags commented in full on 261008.
+     */
     private Flag<PlayerFlag> pflags;
-    /** Elemental resistances folded in from race and items - the port of C's {@code state.el_info}. */
+    /**
+     * Elemental resistances folded in from race and items - the port of C's {@code state.el_info}.
+     *
+     * <p>Field elInfo commented in full on 261008.
+     */
     private HashMap<ElementEnum, ElementInfo> elInfo;
 
     /**
      * Creates an empty state: the collections are made and then {@link #wipe()} sets every field to
      * its zero. The port of C's {@code struct player_state} being a zeroed value.
+     *
+     * <p>Function PlayerState commented in full on 261008.
      */
     public PlayerState() {
         statAdd = new HashMap<>();
@@ -136,7 +252,7 @@ public class PlayerState {
     /**
      * Resets every field to zero, ready to be filled from scratch — the port of C's
      * {@code memset(state, 0, sizeof *state)} at the head of {@code calc_bonuses}
-     * ({@code player-calcs.c:1895}).
+     * ({@code player-calcs.c}).
      *
      * <p>{@code calcBonuses} derives the whole state on every call rather than updating it, so this
      * is what guarantees no contribution outlives the gear that made it.
@@ -151,14 +267,19 @@ public class PlayerState {
      *
      * <p>The skills map is the deliberate exception. It is cleared and left empty, because
      * {@code calcBonuses} sets a value for every real skill from race and class within a few lines
-     * of calling this ({@code Player.java:1241-1244}), and {@link #getPlayerSkill} defaults a
-     * missing key to zero in any case.
+     * of calling this, and {@link #getPlayerSkill} defaults a missing key to zero in any case.
      *
      * <p>Both loops skip their enum's {@code NONE} and {@code MAX} guard values. Those exist to
      * bound iteration and stand in for C's absent-value sentinel; they are not real stats or
      * elements and nothing ever reads one.
      *
-     * <p>Function wipe commented in full on 260820.
+     * <p><b>The ammunition type is reset to {@link TValue#TV_NONE}, not {@code null}.</b> C's
+     * {@code ammo_tval} is an {@code int}, so after the {@code memset} it reads {@code 0}, which
+     * is {@code TV_NONE}. Resetting to {@code TV_NONE} keeps "no launcher" to a single
+     * representation, the one {@code calcBonuses} also writes for a launcher that has no kind, and
+     * lets a Java comparison against an object's tval behave as C's does.
+     *
+     * <p>Function wipe commented in full on 261008.
      */
     public void wipe() {
         statAdd.clear();
@@ -191,7 +312,7 @@ public class PlayerState {
         numShots = 0;
         numMoves = 0;
         ammoMult = 0;
-        ammoTVal = null;
+        ammoTVal = TValue.TV_NONE;
         ac = 0;
         damRed = 0;
         perDamRed = 0;
@@ -199,7 +320,7 @@ public class PlayerState {
         toH = 0;
         toD = 0;
         seeInfra = 0;
-        setCurLight(0);
+        curLight = 0;
         heavyWield = false;
         heavyShoot = false;
         blessWield = false;
@@ -207,7 +328,10 @@ public class PlayerState {
     }
 
     /**
-     * Test to see if a given flag is set on this player state
+     * Test to see if a given flag is set on this player state - C's {@code pf_has(state.pflags, flag)},
+     * and the body of the {@code player_has} macro.
+     *
+     * <p>Function hasPFlag commented in full on 261008.
      *
      * @param flag the player flag to test for
      * @return true if the player flag is set
@@ -219,6 +343,10 @@ public class PlayerState {
     }
 
     /**
+     * Tests an object flag on the calculated state - C's {@code of_has(state.flags, flag)}.
+     *
+     * <p>Function hasOFlag commented in full on 261008.
+     *
      * @param flag the object flag to test
      * @return {@code true} if the player's calculated state carries the given object flag
      */
@@ -231,6 +359,10 @@ public class PlayerState {
      * {@code adj_*} stat tables, not the raw stat value. The port of indexing C's
      * {@code state.stat_ind[stat]}.
      *
+     * <p>A stat with no entry reads {@code 0}, as C's zeroed array does.
+     *
+     * <p>Function getStatInd commented in full on 261008.
+     *
      * @param stat the stat to look up
      * @return the stat's index into the stat-adjustment tables
      */
@@ -239,7 +371,9 @@ public class PlayerState {
     }
 
     /**
-     * Get the current light value
+     * Get the current light value - C's {@code state.cur_light}, the radius of the light the player sheds.
+     *
+     * <p>Function getCurLight commented in full on 261008.
      *
      * @return the current light value
      */
@@ -250,36 +384,55 @@ public class PlayerState {
     }
 
     /**
-     * @return the player's current calculated speed - the port of C's {@code state.speed}
+     * Sets the radius of light the player sheds — C's {@code state.cur_light = n}.
+     *
+     * <p>Function setCurLight commented in full on 261008.
+     *
+     * @param i the radius of light the player sheds
+     */
+    public void setCurLight(int i) {
+        curLight = i;
+    }
+
+    /**
+     * Reads the calculated speed - the port of C's {@code state.speed}.
+     *
+     * <p>Function getSpeed commented in full on 261008.
+     *
+     * @return the player's current calculated speed
      */
     public int getSpeed() {
         return speed;
     }
 
     /**
-     * @return the player's percentage damage reduction (C: {@code state.perc_dam_red})
-     */
-    public int perDamRed() {
-        return perDamRed;
-    }
-
-    /**
-     * @param speed the new speed, on the scale where 110 is normal — C's {@code state.speed}
+     * Sets the calculated speed - C's {@code state.speed = n}.
+     *
+     * <p>Function setSpeed commented in full on 261008.
+     *
+     * @param speed the new speed, on the scale where 110 is normal
      */
     public void setSpeed(int speed) {
         this.speed = speed;
     }
 
     /**
-     * @param numBlows blows per turn multiplied by 100 — C's {@code state.num_blows}
+     * Reads the percentage damage reduction - C's {@code state.perc_dam_red}. The accessor is named for the
+     * field rather than {@code get...}.
+     *
+     * <p>Function perDamRed commented in full on 261008.
+     *
+     * @return the player's percentage damage reduction, always {@code 0} while nothing sets it
      */
-    public void setNumBlows(int numBlows) {
-        this.numBlows = numBlows;
+    public int perDamRed() {
+        return perDamRed;
     }
 
     /**
      * Replaces the infravision range outright. Used once, to seed the range from the race; every
      * later contribution goes through {@link #infraAdd(int)}.
+     *
+     * <p>Function setSeeInfra commented in full on 261008.
      *
      * @param seeInfra the infravision range in units of ten feet — C's {@code state.see_infra}
      */
@@ -290,6 +443,9 @@ public class PlayerState {
     /**
      * Replaces one skill's value outright — for the many places {@code calcBonuses} recomputes a
      * skill from its own previous value. {@link #skillAdd(PlayerSkill, int)} is the additive form.
+     * C's {@code state.skills[skill] = n}.
+     *
+     * <p>Function setStateSkill commented in full on 261008.
      *
      * @param skill the skill to set
      * @param value its new value
@@ -304,7 +460,9 @@ public class PlayerState {
      * <p>The tolerant of the two setters: {@link #setResLevel(ElementEnum, int)} requires the entry
      * to exist already. After {@link #wipe()} every real element has one, so the difference only
      * shows for {@code ELEM_NONE}, {@code ELEM_MAX} or a null key — none of which should reach
-     * either method.
+     * either method. C's {@code state.el_info[element].res_level = n}.
+     *
+     * <p>Function setElInfo commented in full on 261008.
      *
      * @param element the element to set
      * @param level   the resistance level: {@code -1} vulnerable, {@code 0} neutral, higher values
@@ -323,8 +481,10 @@ public class PlayerState {
      * Replaces the player flags wholesale, discarding what was there — C's {@code pf_copy}.
      *
      * <p>Paired with {@link #unionPlayerFlags}: the race's flags are copied to establish the set and
-     * the class's are unioned on top ({@code player-calcs.c:1917-1919}), which is why one of the two
-     * needs to be a replacement.
+     * the class's are unioned on top (both in {@code calc_bonuses}, {@code player-calcs.c}), which is
+     * why one of the two needs to be a replacement.
+     *
+     * <p>Function copyPlayerFlag commented in full on 261008.
      *
      * @param newFlags the flags to copy in
      */
@@ -334,6 +494,8 @@ public class PlayerState {
 
     /**
      * Adds player flags to those already held — C's {@code pf_union}. Never removes one.
+     *
+     * <p>Function unionPlayerFlags commented in full on 261008.
      *
      * @param newFlags the flags to add
      * @return {@code true} if the set changed
@@ -346,6 +508,8 @@ public class PlayerState {
      * Adds object flags to those already held — C's {@code of_union}. Never removes one, which is
      * what lets the gear's flags, the race's and the running statuses' be folded into one set that
      * consumers can ask a single question of.
+     *
+     * <p>Function unionObjectFlags commented in full on 261008.
      *
      * @param newFlags the flags to add
      * @return {@code true} if the set changed
@@ -360,6 +524,8 @@ public class PlayerState {
      * <p>Points, not stat values: the total is applied through {@code modifyStatValue} at the end of
      * the calculation, because a point is worth one below 18 and ten above it.
      *
+     * <p>Function statAdd commented in full on 261008.
+     *
      * @param stat   the stat to adjust
      * @param amount the points to add, which may be negative
      */
@@ -369,15 +535,23 @@ public class PlayerState {
     }
 
     /**
+     * Reads the accumulated stat bonus - C's {@code state.stat_add[stat]}. A stat with no entry reads
+     * {@code 0}.
+     *
+     * <p>Function getStatAdd commented in full on 261008.
+     *
      * @param stat the stat to read
-     * @return the accumulated bonus in points for that stat — C's {@code state.stat_add[stat]}
+     * @return the accumulated bonus in points for that stat
      */
     public int getStatAdd(Stats stat) {
         return statAdd.getOrDefault(stat, 0);
     }
 
     /**
-     * Adds to one skill — C's {@code state.skills[skill] += n}.
+     * Adds to one skill — C's {@code state.skills[skill] += n}. A skill with no value yet starts from
+     * {@code 0}, as in C's zeroed array.
+     *
+     * <p>Function skillAdd commented in full on 261008.
      *
      * @param skill  the skill to adjust
      * @param amount the amount to add, which may be negative
@@ -390,6 +564,8 @@ public class PlayerState {
     /**
      * Adds to the infravision range — C's {@code state.see_infra += n}.
      *
+     * <p>Function infraAdd commented in full on 261008.
+     *
      * @param amount the range to add, in units of ten feet
      */
     public void infraAdd(int amount) {
@@ -397,15 +573,22 @@ public class PlayerState {
     }
 
     /**
-     * @return flat damage reduction — C's {@code state.dam_red}, subtracted from incoming damage
-     * before any percentage reduction
+     * Reads the flat damage reduction — C's {@code state.dam_red}.
+     *
+     * <p>Function getDamRed commented in full on 261008.
+     *
+     * @return flat damage reduction, subtracted from incoming damage before any percentage reduction
      */
     public int getDamRed() {
         return damRed;
     }
 
     /**
-     * @param damRed the new flat damage reduction — C's {@code state.dam_red}
+     * Sets the flat damage reduction — C's {@code state.dam_red = n}.
+     *
+     * <p>Function setDamRed commented in full on 261008.
+     *
+     * @param damRed the new flat damage reduction
      */
     public void setDamRed(int damRed) {
         this.damRed = damRed;
@@ -419,6 +602,8 @@ public class PlayerState {
      * through it. Use {@link #getResLevel} and {@link #setResLevel} for a single element; this is
      * for callers that need to iterate.
      *
+     * <p>Function getElInfo commented in full on 261008.
+     *
      * @return an unmodifiable view of the resistance map
      */
     public Map<ElementEnum, ElementInfo> getElInfo() {
@@ -429,6 +614,8 @@ public class PlayerState {
      * Adds to the armour-class bonus — C's {@code state.to_a}, the enchantment total, kept separate
      * from the base armour {@link #setBaseAc(int)} holds.
      *
+     * <p>Function toAcAdd commented in full on 261008.
+     *
      * @param amount the bonus to add, which may be negative
      */
     public void toAcAdd(int amount) {
@@ -437,6 +624,8 @@ public class PlayerState {
 
     /**
      * Adds to the to-hit bonus — C's {@code state.to_h}.
+     *
+     * <p>Function toHitAdd commented in full on 261008.
      *
      * @param amount the bonus to add, which may be negative
      */
@@ -447,6 +636,8 @@ public class PlayerState {
     /**
      * Adds to the to-damage bonus — C's {@code state.to_d}.
      *
+     * <p>Function toDamAdd commented in full on 261008.
+     *
      * @param amount the bonus to add, which may be negative
      */
     public void toDamAdd(int amount) {
@@ -454,14 +645,10 @@ public class PlayerState {
     }
 
     /**
-     * @param i the radius of light the player sheds — C's {@code state.cur_light}
-     */
-    public void setCurLight(int i) {
-        curLight = i;
-        updateLightLevel();
-    }
-
-    /**
+     * Sets a stat's maximal modified value — C's {@code state.stat_top[stat] = n}.
+     *
+     * <p>Function setStatTop commented in full on 261008.
+     *
      * @param stat the stat to set
      * @param top  the stat's maximum value with bonuses applied — C's {@code state.stat_top}, what
      *             the stat would be if nothing had drained it
@@ -471,6 +658,10 @@ public class PlayerState {
     }
 
     /**
+     * Sets a stat's current modified value — C's {@code state.stat_use[stat] = n}.
+     *
+     * <p>Function setStatUse commented in full on 261008.
+     *
      * @param stat the stat to set
      * @param use  the stat's current value with bonuses applied — C's {@code state.stat_use}, the
      *             number the player actually has the use of
@@ -480,6 +671,10 @@ public class PlayerState {
     }
 
     /**
+     * Sets a stat's compressed table index — C's {@code state.stat_ind[stat] = n}.
+     *
+     * <p>Function setStatInd commented in full on 261008.
+     *
      * @param stat the stat to set
      * @param ind  the stat's compressed table index — C's {@code state.stat_ind}, derived from
      *             {@link #setStatUse} and used to subscript every {@code adj_*} table
@@ -489,9 +684,13 @@ public class PlayerState {
     }
 
     /**
+     * Reads one skill's calculated value — C's {@code state.skills[skill]}. {@link #wipe()} leaves the
+     * skills map empty, so a skill nothing has set reads zero, which is what C's zeroed array gives.
+     *
+     * <p>Function getPlayerSkill commented in full on 261008.
+     *
      * @param skill the skill to read
-     * @return its calculated value, or zero if nothing has set it — C's
-     * {@code state.skills[skill]}
+     * @return its calculated value, or zero if nothing has set it
      */
     public int getPlayerSkill(PlayerSkill skill) {
         return skills.getOrDefault(skill, 0);
@@ -504,6 +703,8 @@ public class PlayerState {
      * {@link #hasPFlag(PlayerFlag)} and callers setting one {@link #playerFlagOn(PlayerFlag)};
      * this is for whole-set work.
      *
+     * <p>Function getPlayerFlag commented in full on 261008.
+     *
      * @return the player flags, shared with this state
      */
     public Flag<PlayerFlag> getPlayerFlag() {
@@ -512,15 +713,15 @@ public class PlayerState {
 
     /**
      * Switches one player flag on in this state — the port of C's {@code pf_on}
-     * ({@code player.h:60}), which is {@code flag_on_dbg} over {@code state.pflags}
-     * ({@code z-bitflag.c:213-229}).
+     * ({@code player.h}), which is {@code flag_on_dbg} over {@code state.pflags}
+     * ({@code z-bitflag.c}).
      *
      * <p>The return value is C's, and it reports change rather than success: {@code false} when
      * the flag was already on and nothing was written, {@code true} when this call is what turned
-     * it on. Most callers have no use for it — {@code calcBonuses} raising {@code PF_NO_MANA}
-     * ({@code Player.java:1720}) and the monster-knowledge sweep copying flags across
-     * ({@code Monster.java:353}) both set unconditionally and drop the answer — but a caller that
-     * wants to act only on a genuine transition can test it without reading the flag first.
+     * it on. Most callers have no use for it — {@code calcBonuses} raising {@code PF_NO_MANA} and
+     * the monster-knowledge sweep copying flags across both set unconditionally and drop the
+     * answer — but a caller that wants to act only on a genuine transition can test it without
+     * reading the flag first.
      *
      * <p>C reaches {@code flag_on_dbg} rather than {@code flag_on} so that a flag index past the
      * end of the bit array aborts with a diagnostic instead of corrupting the neighbouring bytes.
@@ -537,8 +738,8 @@ public class PlayerState {
 
     /**
      * Switches one player flag off in this state — the port of C's {@code pf_off}
-     * ({@code player.h:61}), which is {@code flag_off} over {@code state.pflags}
-     * ({@code z-bitflag.c:240-252}).
+     * ({@code player.h}), which is {@code flag_off} over {@code state.pflags}
+     * ({@code z-bitflag.c}).
      *
      * <p>The mirror of {@link #playerFlagOn(PlayerFlag)}, and its return value reads the same way
      * round: {@code true} when the flag was on and this call cleared it, {@code false} when it was
@@ -564,7 +765,9 @@ public class PlayerState {
      *
      * <p>Live and mutable, and deliberately so: {@code calcBonuses} hands it straight to
      * {@code flagsTimed}, which adds the flags the running statuses duplicate to whatever the
-     * equipment already contributed ({@code player-calcs.c:2135}).
+     * equipment already contributed ({@code calc_bonuses}, {@code player-calcs.c}).
+     *
+     * <p>Function getObjectFlag commented in full on 261008.
      *
      * @return the object flags, shared with this state
      */
@@ -575,11 +778,18 @@ public class PlayerState {
 
     /**
      * The weight the player can carry before slowing down — the port of C's {@code weight_limit}
-     * ({@code player-calcs.c:1741-1750}).
+     * ({@code player-calcs.c}).
      *
      * <p>Strength alone decides it: the strength table's value at the player's index, times 100. The
      * limit is not a hard ceiling — the penalty starts at half of it and grows by a point of speed
-     * for every further tenth ({@code player-calcs.c:2222-2227}).
+     * for every further tenth (applied in {@code calc_bonuses}, {@code player-calcs.c}).
+     *
+     * <p>C takes the {@code player_state} as a parameter; here it is the receiver, so
+     * {@code weight_limit(&p->state)} becomes {@code p.getPlayerState().weightLimit()}. A state
+     * with no strength index set reads index {@code 0}, as C's zeroed array does, and gives
+     * {@code 500}.
+     *
+     * <p>Function weightLimit commented in full on 261008.
      *
      * @return the carrying limit in tenth-pounds
      */
@@ -588,104 +798,140 @@ public class PlayerState {
     }
 
     /**
-     * @param tValue the kind of ammunition the wielded launcher fires — C's
-     *               {@code state.ammo_tval}
+     * Sets the variety of ammunition the wielded launcher fires — C's {@code state.ammo_tval}.
+     *
+     * <p>Pass {@link TValue#TV_NONE} for "nothing to fire", never {@code null}: that is the value
+     * C holds after its {@code memset} and the one {@link #wipe()} restores, so a state that has
+     * been told "no ammunition" and a state that has never been told anything compare alike.
+     *
+     * <p>Function setAmmoTValue commented in full on 261008.
+     *
+     * @param tValue the kind of ammunition the wielded launcher fires, or
+     *               {@link TValue#TV_NONE} for none
      */
     public void setAmmoTValue(TValue tValue) {
         this.ammoTVal = tValue;
     }
 
     /**
-     * @return shots per turn multiplied by 10 — C's {@code state.num_shots}
+     * Reads the shots per turn — C's {@code state.num_shots}.
+     *
+     * <p>Function getNumShots commented in full on 261008.
+     *
+     * @return shots per turn multiplied by 10
      */
     public int getNumShots() {
         return numShots;
     }
 
     /**
-     * @param numShots shots per turn multiplied by 10 — C's {@code state.num_shots}
+     * Sets the shots per turn — C's {@code state.num_shots = n}.
+     *
+     * <p>Function setNumShots commented in full on 261008.
+     *
+     * @param numShots shots per turn multiplied by 10
      */
     public void setNumShots(int numShots) {
         this.numShots = numShots;
     }
 
     /**
-     * @param wield {@code true} if a priestly class is wielding a weapon its god approves of — C's
-     *              {@code state.bless_wield}
-     */
-    public void setBlessWield(boolean wield) {
-        this.blessWield = wield;
-    }
-
-    /**
-     * @return {@code true} if the wielded weapon is too heavy — C's {@code state.heavy_wield}
+     * Reads the heavy-weapon flag — C's {@code state.heavy_wield}.
+     *
+     * <p>Function isHeavyWield commented in full on 261008.
+     *
+     * @return {@code true} if the wielded weapon is too heavy
      */
     public boolean isHeavyWield() {
         return heavyWield;
     }
 
     /**
-     * @param wield {@code true} if the wielded weapon is too heavy for the player's strength — C's
-     *              {@code state.heavy_wield}, which also costs the blow calculation entirely
+     * Sets the heavy-weapon flag — C's {@code state.heavy_wield}.
+     *
+     * <p>Function setHeavyWield commented in full on 261008.
+     *
+     * @param wield {@code true} if the wielded weapon is too heavy for the player's strength, which also
+     *              costs the blow calculation entirely
      */
     public void setHeavyWield(boolean wield) {
         this.heavyWield = wield;
     }
 
     /**
-     * @param cumber {@code true} if worn armour exceeds the class's allowance and is costing mana —
-     *               C's {@code state.cumber_armor}
-     */
-    public void setCumberArmour(boolean cumber) {
-        this.cumberArmour = cumber;
-    }
-
-    /**
-     * @param extraMoves extra movement actions per turn — C's {@code state.num_moves}
+     * Sets the extra movement actions — C's {@code state.num_moves = n}.
+     *
+     * <p>Function setNumMoves commented in full on 261008.
+     *
+     * @param extraMoves extra movement actions per turn
      */
     public void setNumMoves(int extraMoves) {
         this.numMoves = extraMoves;
     }
 
     /**
-     * @return {@code true} if the wielded launcher is too heavy — C's {@code state.heavy_shoot}
+     * Reads the heavy-launcher flag — C's {@code state.heavy_shoot}.
+     *
+     * <p>Function isHeavyShoot commented in full on 261008.
+     *
+     * @return {@code true} if the wielded launcher is too heavy
      */
     public boolean isHeavyShoot() {
         return heavyShoot;
     }
 
     /**
-     * @param heavyshoot {@code true} if the wielded launcher is too heavy for the player's strength
-     *                   — C's {@code state.heavy_shoot}, which also suppresses extra shots and might
+     * Sets the heavy-launcher flag — C's {@code state.heavy_shoot}.
+     *
+     * <p>Function setHeavyShoot commented in full on 261008.
+     *
+     * @param heavyshoot {@code true} if the wielded launcher is too heavy for the player's strength,
+     *                   which also suppresses extra shots and might
      */
     public void setHeavyShoot(boolean heavyshoot) {
         this.heavyShoot = heavyshoot;
     }
 
     /**
-     * @return the launcher's damage multiplier — C's {@code state.ammo_mult}
+     * Reads the launcher's damage multiplier — C's {@code state.ammo_mult}.
+     *
+     * <p>Function getAmmoMult commented in full on 261008.
+     *
+     * @return the launcher's damage multiplier
      */
     public int getAmmoMult() {
         return ammoMult;
     }
 
     /**
-     * @param mult the launcher's damage multiplier — C's {@code state.ammo_mult}
+     * Sets the launcher's damage multiplier — C's {@code state.ammo_mult = n}.
+     *
+     * <p>Function setAmmoMult commented in full on 261008.
+     *
+     * @param mult the launcher's damage multiplier
      */
     public void setAmmoMult(int mult) {
         this.ammoMult = mult;
     }
 
     /**
-     * @return the base armour class — C's {@code state.ac}, the armour the worn gear is worth
-     * before enchantment, which {@link #toAcAdd(int)} accumulates separately
+     * Reads the base armour class — C's {@code state.ac}.
+     *
+     * <p>Function getBaseAc commented in full on 261008.
+     *
+     * @return the armour the worn gear is worth before enchantment, which {@link #toAcAdd(int)}
+     * accumulates separately
      */
     public int getBaseAc() {
         return ac;
     }
 
     /**
-     * @param ac the new base armour class — C's {@code state.ac}
+     * Sets the base armour class — C's {@code state.ac = n}.
+     *
+     * <p>Function setBaseAc commented in full on 261008.
+     *
+     * @param ac the new base armour class
      */
     public void setBaseAc(int ac) {
         this.ac = ac;
@@ -693,7 +939,9 @@ public class PlayerState {
 
     /**
      * Sets one element's resistance level, requiring the element to have an entry already — which
-     * after {@link #wipe()} every real element has.
+     * after {@link #wipe()} every real element has. C's {@code state.el_info[element].res_level = n}.
+     *
+     * <p>Function setResLevel commented in full on 261008.
      *
      * @param element  the element to set
      * @param resLevel the resistance level: {@code -1} vulnerable, {@code 0} neutral, higher values
@@ -706,12 +954,50 @@ public class PlayerState {
     }
 
     /**
+     * Reads one element's resistance level — C's {@code state.el_info[element].res_level}.
+     *
+     * <p>Function getResLevel commented in full on 261008.
+     *
      * @param element the element to read
-     * @return its resistance level — C's {@code state.el_info[element].res_level}
+     * @return its resistance level
      * @throws NullPointerException if the state has no entry for that element
      */
     public int getResLevel(ElementEnum element) {
         return elInfo.get(element).getResLevel();
+    }
+
+    /**
+     * Reads the armour-class bonus - C's {@code state.to_a}, separate from {@link #getBaseAc()}.
+     *
+     * <p>Function getToAc commented in full on 261008.
+     *
+     * @return the bonus to armour class from equipment and effects
+     */
+    public int getToAc() {
+        return this.toA;
+    }
+
+    /**
+     * Reads the blessed-weapon flag - C's {@code state.bless_wield}, which decides whether a priest
+     * suffers for their weapon.
+     *
+     * <p>Function isBlessWield commented in full on 261008.
+     *
+     * @return {@code true} when the wielded weapon is blessed, or blunt enough not to offend
+     */
+    public boolean isBlessWield() {
+        return blessWield;
+    }
+
+    /**
+     * Sets whether the wielded weapon is blessed (or blunt) — C's {@code state.bless_wield}.
+     *
+     * <p>Function setBlessWield commented in full on 261008.
+     *
+     * @param wield {@code true} if a priestly class is wielding a weapon its god approves of
+     */
+    public void setBlessWield(boolean wield) {
+        this.blessWield = wield;
     }
 
     /**
@@ -748,33 +1034,31 @@ public class PlayerState {
     }
 
     /**
-     * @return the bonus to armour class from equipment and effects - C's {@code state.to_a}, and
-     * separate from {@link #getBaseAc()}, which is the base
-     */
-    public int getToAc() {
-        return this.toA;
-    }
-
-    /**
-     * @return {@code true} when the wielded weapon is blessed, or blunt enough not to offend - C's
-     *         {@code state.bless_wield}, which decides whether a priest suffers for their weapon
-     */
-    public boolean isBlessWield() {
-        return blessWield;
-    }
-
-    /**
-     * @return {@code true} when the armour worn is heavy enough to drain mana - C's
-     *         {@code state.cumber_armor}
+     * Reads the mana-draining-armour flag - C's {@code state.cumber_armor}.
+     *
+     * <p>Function isCumberArmour commented in full on 261008.
+     *
+     * @return {@code true} when the armour worn is heavy enough to drain mana
      */
     public boolean isCumberArmour() {
         return cumberArmour;
     }
 
     /**
+     * Sets the mana-draining-armour flag — C's {@code state.cumber_armor}.
+     *
+     * <p>Function setCumberArmour commented in full on 261008.
+     *
+     * @param cumber {@code true} if worn armour exceeds the class's allowance and is costing mana
+     */
+    public void setCumberArmour(boolean cumber) {
+        this.cumberArmour = cumber;
+    }
+
+    /**
      * Returns an independent duplicate of this state — the port of C assigning one
-     * {@code struct player_state} to another, as {@code update_bonuses} does at
-     * {@code player-calcs.c:2340-2341}.
+     * {@code struct player_state} to another, as {@code update_bonuses} does
+     * ({@code player-calcs.c}).
      *
      * <p>C gets this for nothing: {@code struct player_state state = p->state;} copies every byte,
      * so the local and the field are thereafter separate values. Java would bind a second name to
@@ -789,14 +1073,14 @@ public class PlayerState {
      * is a mutable object and handing over the same instance would let a later calculation reach
      * back through the duplicate and alter the original's resistances. The primitives are copied by
      * value, and {@code ammoTVal} is copied by reference only because it is an enum constant and so
-     * has nothing to alter.
+     * has nothing to alter. It is never {@code null}, so the copy needs no guard for that.
      *
      * <p>The stat maps are read unguarded, which is safe because {@link #wipe()} guarantees an entry
      * for every real stat and the constructor calls it. The skills map is guarded on the key being
      * present, because {@code wipe} leaves that one empty by design and a state that has not yet
      * been through {@code calcBonuses} genuinely has no skills in it.
      *
-     * <p>Function copy commented in full on 260820.
+     * <p>Function copy commented in full on 261008.
      *
      * @return a new state holding the same values, sharing no mutable structure with this one
      */
@@ -840,7 +1124,7 @@ public class PlayerState {
         result.toH = this.toH;
         result.toD = this.toD;
         result.seeInfra = this.seeInfra;
-        result.setCurLight(this.curLight);
+        result.curLight = this.curLight;
         result.heavyWield = this.heavyWield;
         result.heavyShoot = this.heavyShoot;
         result.blessWield = this.blessWield;
@@ -850,8 +1134,18 @@ public class PlayerState {
     }
 
     /**
-     * @return the variety of ammunition the wielded launcher fires, or {@code null} with no launcher
-     *         wielded - C's {@code state.ammo_tval}
+     * Reads the variety of ammunition the wielded launcher fires — C's {@code state.ammo_tval}.
+     *
+     * <p>Never {@code null}. With no launcher wielded, or one whose kind fires no recognised ammo,
+     * the answer is {@link TValue#TV_NONE}, C's tval {@code 0}. C tests this with
+     * {@code !state.ammo_tval} in {@code player-attack.c} and {@code player-util.c}; the port
+     * writes it {@code == TValue.TV_NONE}. A direct comparison against an object's tval, as
+     * {@code earlier_object} makes, needs no special case: both sides are enum constants and the
+     * "none" value is the same one on each.
+     *
+     * <p>Function getAmmoTval commented in full on 261008.
+     *
+     * @return the ammunition variety, or {@link TValue#TV_NONE} when there is none to fire
      */
     public TValue getAmmoTval() {
         return ammoTVal;
@@ -865,13 +1159,24 @@ public class PlayerState {
      * {@code flag_on} answers the same way, which is what lets the calculation fold the same flag in
      * from race, class, shape and every piece of gear without the order of the folds mattering.
      *
-     * <p>Function setOFlag commented in full on 260831.
+     * <p>Function oFlagOn commented in full on 260831.
      *
      * @param objFlag the object flag to set
      * @return {@code true} if the flag was not already set
      */
     public boolean oFlagOn(ObjectFlag objFlag) {
         return flags.on(objFlag);
+    }
+
+    /**
+     * Reads the blows per turn, multiplied by 100 — C's {@code state.num_blows}.
+     *
+     * <p>Function getNumBlows commented in full on 260906.
+     *
+     * @return the player's blows per turn, multiplied by 100
+     */
+    public int getNumBlows() {
+        return numBlows;
     }
 
     /**
@@ -897,17 +1202,13 @@ public class PlayerState {
     }
 
     /**
-     * @return the player's blows per turn, multiplied by 100 — C's {@code state.num_blows}
+     * Sets the blows per turn - C's {@code state.num_blows = n}.
      *
-     * <p>Function getNumBlows commented in full on 260906.
+     * <p>Function setNumBlows commented in full on 261008.
+     *
+     * @param numBlows blows per turn multiplied by 100
      */
-    public int getNumBlows() {
-        return numBlows;
-    }
-
-    public void updateLightLevel() {
-        // Update light level cached value
-        // TODO: Insert correct light level string
-        PlayerEventStatusUpdate.updatePlayerStatusLightLevel("Light level string goes here");
+    public void setNumBlows(int numBlows) {
+        this.numBlows = numBlows;
     }
 }

@@ -48,53 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/game/globals/registry/PlayerRegistry.java`
-
-8 missing, 11 low
-
-- L57: field `PY_MAX_LEVEL` - MISSING
-- L58: field `PY_KNOW_LEVEL` - MISSING
-- L78: field `PY_FOOD_FAINT` - MISSING
-- L79: field `PY_FOOD_WEAK` - MISSING
-- L80: field `PY_FOOD_HUNGRY` - MISSING
-- L81: field `PY_FOOD_FULL` - MISSING
-- L82: field `PY_FOOD_MAX` - MISSING
-- L159: field `playerExperience` - MISSING
-- L222: method `getPlayerProperties` - LOW
-- L237: method `getPlayerShapes` - LOW
-- L251: method `getPlayerHistoryCharts` - LOW
-- L265: method `getPlayerBodies` - LOW
-- L279: method `getPlayerRaces` - LOW
-- L293: method `getMagicRealms` - LOW
-- L307: method `getPlayerClasses` - LOW
-- L366: method `getPlayerTimedEffects` - LOW
-- L531: method `getMagicSpellMax` - LOW
-- L538: method `getPlayerEquipmentSlotsMax` - LOW
-- L545: method `getPlayerShapeMax` - LOW
-
-### `middle/player/PlayerState.java`
-
-1 missing, 17 low
-
-- L225: method `hasOFlag` - LOW
-- L255: method `getSpeed` - LOW
-- L262: method `perDamRed` - LOW
-- L269: method `setSpeed` - LOW
-- L276: method `setNumBlows` - LOW
-- L375: method `getStatAdd` - LOW
-- L410: method `setDamRed` - LOW
-- L459: method `setCurLight` - LOW
-- L601: method `getNumShots` - LOW
-- L608: method `setNumShots` - LOW
-- L623: method `isHeavyWield` - LOW
-- L646: method `setNumMoves` - LOW
-- L653: method `isHeavyShoot` - LOW
-- L668: method `getAmmoMult` - LOW
-- L675: method `setAmmoMult` - LOW
-- L690: method `setBaseAc` - LOW
-- L713: method `getResLevel` - LOW
-- L908: method `updateLightLevel` - MISSING
-
 ### `middle/objects/ObjectKind.java`
 
 0 missing, 18 low

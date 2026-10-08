@@ -1996,13 +1996,8 @@ public class ItemObjectGrammar extends Parser {
         }
         return _localctx;
     }
-
-    static {
-        _decisionToDFA = new DFA[_ATN.getNumberOfDecisions()];
-        for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
-            _decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
-        }
-	}
+    public static final ATN _ATN =
+            new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 
     public final TimeContext time() throws RecognitionException {
         TimeContext _localctx = new TimeContext(_ctx, getState());
@@ -2028,15 +2023,12 @@ public class ItemObjectGrammar extends Parser {
         return _localctx;
     }
 
-    private static String[] makeRuleNames() {
-        return new String[]{
-                "recordCount", "name", "tval", "graphics", "level", "weight", "cost",
-                "attack", "armour", "alloc", "charges", "pile", "power", "msg", "visMsg",
-                "flags", "values", "brand", "slay", "curse", "pval", "desc", "time",
-                "itemObject", "file", "effect", "effectYX", "dice", "expr", "effectMsg",
-                "effectBlock"
-        };
-    }
+    static {
+        _decisionToDFA = new DFA[_ATN.getNumberOfDecisions()];
+        for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
+            _decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
+        }
+	}
 
     public final ItemObjectContext itemObject() throws RecognitionException {
         ItemObjectContext _localctx = new ItemObjectContext(_ctx, getState());
@@ -2268,6 +2260,55 @@ public class ItemObjectGrammar extends Parser {
         return _localctx;
     }
 
+    private static String[] makeRuleNames() {
+        return new String[]{
+                "recordCount", "name", "tval", "graphics", "level", "weight", "cost",
+                "attack", "armour", "alloc", "charges", "pile", "power", "msg", "visMsg",
+                "flags", "values", "brand", "slay", "curse", "pval", "desc", "time",
+                "itemObject", "file", "effect", "effectYX", "dice", "expr", "effectMsg",
+                "effectBlock"
+        };
+    }
+
+    public final FileContext file() throws RecognitionException {
+        FileContext _localctx = new FileContext(_ctx, getState());
+        enterRule(_localctx, 48, RULE_file);
+        int _la;
+        try {
+            enterOuterAlt(_localctx, 1);
+            {
+                setState(267);
+                ((FileContext) _localctx).recordCount = recordCount();
+                ((FileContext) _localctx).itemObjects = new ArrayList<>();
+                ((FileContext) _localctx).declaredRecordCount = ((FileContext) _localctx).recordCount.count;
+                setState(272);
+                _errHandler.sync(this);
+                _la = _input.LA(1);
+                do {
+                    {
+                        {
+                            setState(269);
+                            ((FileContext) _localctx).itemObject = itemObject();
+                            _localctx.itemObjects.add(((FileContext) _localctx).itemObject.object);
+                        }
+                    }
+                    setState(274);
+                    _errHandler.sync(this);
+                    _la = _input.LA(1);
+                } while (_la == NAME);
+                setState(276);
+                match(EOF);
+            }
+        } catch (RecognitionException re) {
+            _localctx.exception = re;
+            _errHandler.reportError(this, re);
+            _errHandler.recover(this, re);
+        } finally {
+            exitRule();
+        }
+        return _localctx;
+    }
+
     public final EffectBlockContext effectBlock() throws RecognitionException {
         EffectBlockContext _localctx = new EffectBlockContext(_ctx, getState());
         enterRule(_localctx, 60, RULE_effectBlock);
@@ -2384,85 +2425,6 @@ public class ItemObjectGrammar extends Parser {
         return _localctx;
     }
 
-    public final FileContext file() throws RecognitionException {
-        FileContext _localctx = new FileContext(_ctx, getState());
-        enterRule(_localctx, 48, RULE_file);
-        int _la;
-        try {
-            enterOuterAlt(_localctx, 1);
-            {
-                setState(267);
-                ((FileContext) _localctx).recordCount = recordCount();
-                ((FileContext) _localctx).itemObjects = new ArrayList<>();
-                ((FileContext) _localctx).declaredRecordCount = ((FileContext) _localctx).recordCount.count;
-                setState(272);
-                _errHandler.sync(this);
-                _la = _input.LA(1);
-                do {
-                    {
-                        {
-                            setState(269);
-                            ((FileContext) _localctx).itemObject = itemObject();
-                            _localctx.itemObjects.add(((FileContext) _localctx).itemObject.object);
-                        }
-                    }
-                    setState(274);
-                    _errHandler.sync(this);
-                    _la = _input.LA(1);
-                } while (_la == NAME);
-                setState(276);
-                match(EOF);
-            }
-        } catch (RecognitionException re) {
-            _localctx.exception = re;
-            _errHandler.reportError(this, re);
-            _errHandler.recover(this, re);
-        } finally {
-            exitRule();
-        }
-        return _localctx;
-    }
-
-    @SuppressWarnings("CheckReturnValue")
-    public static class TimeContext extends ParserRuleContext {
-        public String timeStr;
-        public Token DICE_SIMPLE_VALUE;
-
-        public TimeContext(ParserRuleContext parent, int invokingState) {
-            super(parent, invokingState);
-        }
-
-        public TerminalNode TIME() {
-            return getToken(ItemObjectGrammar.TIME, 0);
-        }
-
-        public TerminalNode DICE_SIMPLE_VALUE() {
-            return getToken(ItemObjectGrammar.DICE_SIMPLE_VALUE, 0);
-        }
-
-        @Override
-        public int getRuleIndex() {
-            return RULE_time;
-        }
-
-        @Override
-        public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ItemObjectGrammarListener) ((ItemObjectGrammarListener) listener).enterTime(this);
-        }
-
-        @Override
-        public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ItemObjectGrammarListener) ((ItemObjectGrammarListener) listener).exitTime(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof ItemObjectGrammarVisitor)
-                return ((ItemObjectGrammarVisitor<? extends T>) visitor).visitTime(this);
-            else return visitor.visitChildren(this);
-        }
-    }
-
     public final EffectContext effect() throws RecognitionException {
         EffectContext _localctx = new EffectContext(_ctx, getState());
         enterRule(_localctx, 50, RULE_effect);
@@ -2526,6 +2488,75 @@ public class ItemObjectGrammar extends Parser {
 
                     }
                 }
+
+            }
+        } catch (RecognitionException re) {
+            _localctx.exception = re;
+            _errHandler.reportError(this, re);
+            _errHandler.recover(this, re);
+        } finally {
+            exitRule();
+        }
+        return _localctx;
+    }
+
+    @SuppressWarnings("CheckReturnValue")
+    public static class TimeContext extends ParserRuleContext {
+        public String timeStr;
+        public Token DICE_SIMPLE_VALUE;
+
+        public TimeContext(ParserRuleContext parent, int invokingState) {
+            super(parent, invokingState);
+        }
+
+        public TerminalNode TIME() {
+            return getToken(ItemObjectGrammar.TIME, 0);
+        }
+
+        public TerminalNode DICE_SIMPLE_VALUE() {
+            return getToken(ItemObjectGrammar.DICE_SIMPLE_VALUE, 0);
+        }
+
+        @Override
+        public int getRuleIndex() {
+            return RULE_time;
+        }
+
+        @Override
+        public void enterRule(ParseTreeListener listener) {
+            if (listener instanceof ItemObjectGrammarListener) ((ItemObjectGrammarListener) listener).enterTime(this);
+        }
+
+        @Override
+        public void exitRule(ParseTreeListener listener) {
+            if (listener instanceof ItemObjectGrammarListener) ((ItemObjectGrammarListener) listener).exitTime(this);
+        }
+
+        @Override
+        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+            if (visitor instanceof ItemObjectGrammarVisitor)
+                return ((ItemObjectGrammarVisitor<? extends T>) visitor).visitTime(this);
+            else return visitor.visitChildren(this);
+        }
+    }
+
+    public final EffectYXContext effectYX() throws RecognitionException {
+        EffectYXContext _localctx = new EffectYXContext(_ctx, getState());
+        enterRule(_localctx, 52, RULE_effectYX);
+        try {
+            enterOuterAlt(_localctx, 1);
+            {
+                setState(296);
+                match(EFFECT_YX);
+                setState(297);
+                ((EffectYXContext) _localctx).yVal = match(INTEGER);
+                setState(298);
+                match(COLON);
+                setState(299);
+                ((EffectYXContext) _localctx).xVal = match(INTEGER);
+
+                ((EffectYXContext) _localctx).y = ((EffectYXContext) _localctx).yVal.getText();
+                ((EffectYXContext) _localctx).x = ((EffectYXContext) _localctx).xVal.getText();
 
             }
         } catch (RecognitionException re) {
@@ -2774,85 +2805,6 @@ public class ItemObjectGrammar extends Parser {
         }
     }
 
-    public final EffectYXContext effectYX() throws RecognitionException {
-        EffectYXContext _localctx = new EffectYXContext(_ctx, getState());
-        enterRule(_localctx, 52, RULE_effectYX);
-        try {
-            enterOuterAlt(_localctx, 1);
-            {
-                setState(296);
-                match(EFFECT_YX);
-                setState(297);
-                ((EffectYXContext) _localctx).yVal = match(INTEGER);
-                setState(298);
-                match(COLON);
-                setState(299);
-                ((EffectYXContext) _localctx).xVal = match(INTEGER);
-
-                ((EffectYXContext) _localctx).y = ((EffectYXContext) _localctx).yVal.getText();
-                ((EffectYXContext) _localctx).x = ((EffectYXContext) _localctx).xVal.getText();
-
-            }
-        } catch (RecognitionException re) {
-            _localctx.exception = re;
-            _errHandler.reportError(this, re);
-            _errHandler.recover(this, re);
-        } finally {
-            exitRule();
-        }
-        return _localctx;
-    }
-
-    @SuppressWarnings("CheckReturnValue")
-    public static class FileContext extends ParserRuleContext {
-        public String declaredRecordCount;
-        public List<ItemObjectParseRecord> itemObjects;
-        public RecordCountContext recordCount;
-        public ItemObjectContext itemObject;
-
-        public FileContext(ParserRuleContext parent, int invokingState) {
-            super(parent, invokingState);
-        }
-
-        public RecordCountContext recordCount() {
-            return getRuleContext(RecordCountContext.class, 0);
-        }
-
-        public TerminalNode EOF() {
-            return getToken(ItemObjectGrammar.EOF, 0);
-        }
-
-        public List<ItemObjectContext> itemObject() {
-            return getRuleContexts(ItemObjectContext.class);
-        }
-
-        public ItemObjectContext itemObject(int i) {
-            return getRuleContext(ItemObjectContext.class, i);
-        }
-
-        @Override
-        public int getRuleIndex() {
-            return RULE_file;
-        }
-
-        @Override
-        public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ItemObjectGrammarListener) ((ItemObjectGrammarListener) listener).enterFile(this);
-        }
-
-        @Override
-        public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ItemObjectGrammarListener) ((ItemObjectGrammarListener) listener).exitFile(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof ItemObjectGrammarVisitor)
-                return ((ItemObjectGrammarVisitor<? extends T>) visitor).visitFile(this);
-            else return visitor.visitChildren(this);
-        }
-    }
-
     public final DiceContext dice() throws RecognitionException {
         DiceContext _localctx = new DiceContext(_ctx, getState());
         enterRule(_localctx, 54, RULE_dice);
@@ -2938,6 +2890,90 @@ public class ItemObjectGrammar extends Parser {
     }
 
     @SuppressWarnings("CheckReturnValue")
+    public static class FileContext extends ParserRuleContext {
+        public String declaredRecordCount;
+        public List<ItemObjectParseRecord> itemObjects;
+        public RecordCountContext recordCount;
+        public ItemObjectContext itemObject;
+
+        public FileContext(ParserRuleContext parent, int invokingState) {
+            super(parent, invokingState);
+        }
+
+        public RecordCountContext recordCount() {
+            return getRuleContext(RecordCountContext.class, 0);
+        }
+
+        public TerminalNode EOF() {
+            return getToken(ItemObjectGrammar.EOF, 0);
+        }
+
+        public List<ItemObjectContext> itemObject() {
+            return getRuleContexts(ItemObjectContext.class);
+        }
+
+        public ItemObjectContext itemObject(int i) {
+            return getRuleContext(ItemObjectContext.class, i);
+        }
+
+        @Override
+        public int getRuleIndex() {
+            return RULE_file;
+        }
+
+        @Override
+        public void enterRule(ParseTreeListener listener) {
+            if (listener instanceof ItemObjectGrammarListener) ((ItemObjectGrammarListener) listener).enterFile(this);
+        }
+
+        @Override
+        public void exitRule(ParseTreeListener listener) {
+            if (listener instanceof ItemObjectGrammarListener) ((ItemObjectGrammarListener) listener).exitFile(this);
+        }
+
+        @Override
+        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+            if (visitor instanceof ItemObjectGrammarVisitor)
+                return ((ItemObjectGrammarVisitor<? extends T>) visitor).visitFile(this);
+            else return visitor.visitChildren(this);
+        }
+    }
+
+    public final ExprContext expr() throws RecognitionException {
+        ExprContext _localctx = new ExprContext(_ctx, getState());
+        enterRule(_localctx, 56, RULE_expr);
+        try {
+            enterOuterAlt(_localctx, 1);
+            {
+                setState(316);
+                match(EXPR);
+                setState(317);
+                ((ExprContext) _localctx).ch = match(EXPR_CHAR);
+                setState(318);
+                match(EXPR_COLON);
+                setState(319);
+                ((ExprContext) _localctx).base = match(EXPR_UCASE);
+                setState(320);
+                match(EXPR_COLON);
+                setState(321);
+                ((ExprContext) _localctx).op = match(EXPR_OP);
+
+                ((ExprContext) _localctx).exprChar = ((ExprContext) _localctx).ch.getText();
+                ((ExprContext) _localctx).baseName = ((ExprContext) _localctx).base.getText();
+                ((ExprContext) _localctx).operation = ((ExprContext) _localctx).op.getText();
+
+            }
+        } catch (RecognitionException re) {
+            _localctx.exception = re;
+            _errHandler.reportError(this, re);
+            _errHandler.recover(this, re);
+        } finally {
+            exitRule();
+        }
+        return _localctx;
+    }
+
+    @SuppressWarnings("CheckReturnValue")
     public static class EffectContext extends ParserRuleContext {
         public String type;
         public String wrapper;
@@ -3003,29 +3039,17 @@ public class ItemObjectGrammar extends Parser {
         }
     }
 
-    public final ExprContext expr() throws RecognitionException {
-        ExprContext _localctx = new ExprContext(_ctx, getState());
-        enterRule(_localctx, 56, RULE_expr);
+    public final EffectMsgContext effectMsg() throws RecognitionException {
+        EffectMsgContext _localctx = new EffectMsgContext(_ctx, getState());
+        enterRule(_localctx, 58, RULE_effectMsg);
         try {
             enterOuterAlt(_localctx, 1);
             {
-                setState(316);
-                match(EXPR);
-                setState(317);
-                ((ExprContext) _localctx).ch = match(EXPR_CHAR);
-                setState(318);
-                match(EXPR_COLON);
-                setState(319);
-                ((ExprContext) _localctx).base = match(EXPR_UCASE);
-                setState(320);
-                match(EXPR_COLON);
-                setState(321);
-                ((ExprContext) _localctx).op = match(EXPR_OP);
-
-                ((ExprContext) _localctx).exprChar = ((ExprContext) _localctx).ch.getText();
-                ((ExprContext) _localctx).baseName = ((ExprContext) _localctx).base.getText();
-                ((ExprContext) _localctx).operation = ((ExprContext) _localctx).op.getText();
-
+                setState(324);
+                match(EFFECT_MESSAGE);
+                setState(325);
+                ((EffectMsgContext) _localctx).FREE_TEXT = match(FREE_TEXT);
+                ((EffectMsgContext) _localctx).message = ((EffectMsgContext) _localctx).FREE_TEXT.getText();
             }
         } catch (RecognitionException re) {
             _localctx.exception = re;
@@ -3052,16 +3076,16 @@ public class ItemObjectGrammar extends Parser {
             return getToken(ItemObjectGrammar.EFFECT_YX, 0);
         }
 
+        public TerminalNode COLON() {
+            return getToken(ItemObjectGrammar.COLON, 0);
+        }
+
         public List<TerminalNode> INTEGER() {
             return getTokens(ItemObjectGrammar.INTEGER);
         }
 
         public TerminalNode INTEGER(int i) {
             return getToken(ItemObjectGrammar.INTEGER, i);
-        }
-
-        public TerminalNode COLON() {
-            return getToken(ItemObjectGrammar.COLON, 0);
         }
 
         @Override
@@ -3087,28 +3111,6 @@ public class ItemObjectGrammar extends Parser {
                 return ((ItemObjectGrammarVisitor<? extends T>) visitor).visitEffectYX(this);
             else return visitor.visitChildren(this);
         }
-    }
-
-    public final EffectMsgContext effectMsg() throws RecognitionException {
-        EffectMsgContext _localctx = new EffectMsgContext(_ctx, getState());
-        enterRule(_localctx, 58, RULE_effectMsg);
-        try {
-            enterOuterAlt(_localctx, 1);
-            {
-                setState(324);
-                match(EFFECT_MESSAGE);
-                setState(325);
-                ((EffectMsgContext) _localctx).FREE_TEXT = match(FREE_TEXT);
-                ((EffectMsgContext) _localctx).message = ((EffectMsgContext) _localctx).FREE_TEXT.getText();
-            }
-        } catch (RecognitionException re) {
-            _localctx.exception = re;
-            _errHandler.reportError(this, re);
-            _errHandler.recover(this, re);
-        } finally {
-            exitRule();
-        }
-        return _localctx;
     }
 
     @SuppressWarnings("CheckReturnValue")
@@ -3268,8 +3270,6 @@ public class ItemObjectGrammar extends Parser {
             else return visitor.visitChildren(this);
         }
     }
-    public static final ATN _ATN =
-            new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 
     @SuppressWarnings("CheckReturnValue")
     public static class EffectBlockContext extends ParserRuleContext {
@@ -3290,10 +3290,6 @@ public class ItemObjectGrammar extends Parser {
         public DiceContext dice;
         public EffectMsgContext effectMsg;
 
-        public EffectBlockContext(ParserRuleContext parent, int invokingState) {
-            super(parent, invokingState);
-        }
-
         public EffectContext effect() {
             return getRuleContext(EffectContext.class, 0);
         }
@@ -3308,6 +3304,10 @@ public class ItemObjectGrammar extends Parser {
 
         public DiceContext dice() {
             return getRuleContext(DiceContext.class, 0);
+        }
+
+        public EffectBlockContext(ParserRuleContext parent, int invokingState) {
+            super(parent, invokingState);
         }
 
         @Override

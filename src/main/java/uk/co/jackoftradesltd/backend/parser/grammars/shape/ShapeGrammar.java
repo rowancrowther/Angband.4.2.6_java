@@ -30,7 +30,6 @@ import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.misc.*;
 import org.antlr.v4.runtime.tree.*;
-
 import java.util.List;
 import java.util.Iterator;
 import java.util.ArrayList;
@@ -61,6 +60,7 @@ public class ShapeGrammar extends Parser {
             RULE_playerFlags = 12, RULE_values = 13, RULE_blow = 14, RULE_shape = 15,
             RULE_file = 16, RULE_effect = 17, RULE_effectYX = 18, RULE_dice = 19,
             RULE_expr = 20, RULE_effectMsg = 21, RULE_time = 22, RULE_effectBlock = 23;
+
     public static final String _serializedATN =
             "\u0004\u0001.\u0112\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002" +
                     "\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002" +
@@ -1597,7 +1597,7 @@ public class ShapeGrammar extends Parser {
         _decisionToDFA = new DFA[_ATN.getNumberOfDecisions()];
         for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
             _decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
-		}
+        }
 	}
 
     @SuppressWarnings("CheckReturnValue")
@@ -2437,28 +2437,6 @@ public class ShapeGrammar extends Parser {
         }
     }
 
-    public final TimeContext time() throws RecognitionException {
-        TimeContext _localctx = new TimeContext(_ctx, getState());
-        enterRule(_localctx, 44, RULE_time);
-        try {
-            enterOuterAlt(_localctx, 1);
-            {
-                setState(252);
-                match(TIME);
-                setState(253);
-                ((TimeContext) _localctx).SIMPLE_DICE_STRING = match(SIMPLE_DICE_STRING);
-                ((TimeContext) _localctx).timeStr = ((TimeContext) _localctx).SIMPLE_DICE_STRING.getText();
-            }
-        } catch (RecognitionException re) {
-            _localctx.exception = re;
-            _errHandler.reportError(this, re);
-            _errHandler.recover(this, re);
-        } finally {
-            exitRule();
-        }
-        return _localctx;
-    }
-
     public final EffectBlockContext effectBlock() throws RecognitionException {
         EffectBlockContext _localctx = new EffectBlockContext(_ctx, getState());
         enterRule(_localctx, 46, RULE_effectBlock);
@@ -2557,6 +2535,28 @@ public class ShapeGrammar extends Parser {
             ((EffectBlockContext) _localctx).expressionBase = baseString;
             ((EffectBlockContext) _localctx).expressionOperation = opString;
 
+        } catch (RecognitionException re) {
+            _localctx.exception = re;
+            _errHandler.reportError(this, re);
+            _errHandler.recover(this, re);
+        } finally {
+            exitRule();
+        }
+        return _localctx;
+    }
+
+    public final TimeContext time() throws RecognitionException {
+        TimeContext _localctx = new TimeContext(_ctx, getState());
+        enterRule(_localctx, 44, RULE_time);
+        try {
+            enterOuterAlt(_localctx, 1);
+            {
+                setState(252);
+                match(TIME);
+                setState(253);
+                ((TimeContext) _localctx).SIMPLE_DICE_STRING = match(SIMPLE_DICE_STRING);
+                ((TimeContext) _localctx).timeStr = ((TimeContext) _localctx).SIMPLE_DICE_STRING.getText();
+            }
         } catch (RecognitionException re) {
             _localctx.exception = re;
             _errHandler.reportError(this, re);

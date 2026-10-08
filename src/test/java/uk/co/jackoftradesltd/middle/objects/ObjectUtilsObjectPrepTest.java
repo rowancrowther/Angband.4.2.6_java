@@ -141,7 +141,7 @@ class ObjectUtilsObjectPrepTest {
     private static Effect anEffect() {
         return new Effect(EffectEnum.EF_NONE, new Random(0, 0, 0, 1, false), "", 0, 0,
                 EffectSubTypeEnum.EST_NONE, new EffectSubTypeWrapper(ProjectionEnum.PROJ_ACID),
-                0, 0, new Random(0, 0, 0, 1, false), new ArrayList<>(), "");
+                0, 0, new ArrayList<>(), "");
     }
 
     /**

@@ -68,6 +68,7 @@ public class PlayerClassGrammar extends Parser {
             RULE_spell = 28, RULE_desc = 29, RULE_spellBlock = 30, RULE_playerClass = 31,
             RULE_file = 32, RULE_effect = 33, RULE_effectYX = 34, RULE_dice = 35,
             RULE_expr = 36, RULE_effectMsg = 37, RULE_time = 38, RULE_effectBlock = 39;
+
     public static final String _serializedATN =
             "\u0004\u0001E\u01d4\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002" +
                     "\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002" +
@@ -3576,185 +3577,6 @@ public class PlayerClassGrammar extends Parser {
         }
     }
 
-    private static String[] makeRuleNames() {
-        return new String[]{
-                "recordCount", "name", "stats", "skillDisarmPhys", "skillDisarmMagic",
-                "skillDevice", "skillSave", "skillStealth", "skillSearch", "skillMelee",
-                "skillShoot", "skillThrow", "skillDig", "hitdie", "maxAttacks", "minWeight",
-                "strengthMultiplier", "title", "equip", "objFlag", "playerFlags", "exp",
-                "magic", "magicBlock", "book", "bookGraphics", "bookProperties", "bookBlock",
-                "spell", "desc", "spellBlock", "playerClass", "file", "effect", "effectYX",
-                "dice", "expr", "effectMsg", "time", "effectBlock"
-        };
-    }
-
-    @SuppressWarnings("CheckReturnValue")
-    public static class DiceContext extends ParserRuleContext {
-        public String diceString;
-        public String exprChar;
-        public String baseName;
-        public String operation;
-        public Token val;
-        public ExprContext expr;
-
-        public TerminalNode DICE() {
-            return getToken(PlayerClassGrammar.DICE, 0);
-        }
-
-        public TerminalNode DICE_SIMPLE_VALUE() {
-            return getToken(PlayerClassGrammar.DICE_SIMPLE_VALUE, 0);
-        }
-
-        public TerminalNode DICE_COMPLEX_VALUE() {
-            return getToken(PlayerClassGrammar.DICE_COMPLEX_VALUE, 0);
-        }
-
-        public List<ExprContext> expr() {
-            return getRuleContexts(ExprContext.class);
-        }
-
-        public ExprContext expr(int i) {
-            return getRuleContext(ExprContext.class, i);
-        }
-
-        public DiceContext(ParserRuleContext parent, int invokingState) {
-            super(parent, invokingState);
-        }
-
-        @Override
-        public int getRuleIndex() {
-            return RULE_dice;
-        }
-
-        @Override
-        public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof PlayerClassGrammarListener) ((PlayerClassGrammarListener) listener).enterDice(this);
-        }
-
-        @Override
-        public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof PlayerClassGrammarListener) ((PlayerClassGrammarListener) listener).exitDice(this);
-        }
-    }
-
-    public final SpellBlockContext spellBlock() throws RecognitionException {
-        SpellBlockContext _localctx = new SpellBlockContext(_ctx, getState());
-        enterRule(_localctx, 60, RULE_spellBlock);
-        int _la;
-        try {
-            enterOuterAlt(_localctx, 1);
-            {
-                setState(303);
-                ((SpellBlockContext) _localctx).spell = spell();
-                ((SpellBlockContext) _localctx).spellDesc = "";
-                ((SpellBlockContext) _localctx).effects = new ArrayList<>();
-                ((SpellBlockContext) _localctx).spellName = ((SpellBlockContext) _localctx).spell.spellname;
-                ((SpellBlockContext) _localctx).level = ((SpellBlockContext) _localctx).spell.level;
-                ((SpellBlockContext) _localctx).mana = ((SpellBlockContext) _localctx).spell.mana;
-                ((SpellBlockContext) _localctx).fail = ((SpellBlockContext) _localctx).spell.fail;
-                ((SpellBlockContext) _localctx).exper = ((SpellBlockContext) _localctx).spell.exper;
-                ((SpellBlockContext) _localctx).line = ((SpellBlockContext) _localctx).spell.line;
-                setState(313);
-                _errHandler.sync(this);
-                _la = _input.LA(1);
-                while (_la == DESC || _la == EFFECT) {
-                    {
-                        setState(311);
-                        _errHandler.sync(this);
-                        switch (_input.LA(1)) {
-                            case EFFECT: {
-                                {
-                                    setState(305);
-                                    ((SpellBlockContext) _localctx).effectBlock = effectBlock();
-                                    _localctx.effects.add(new EffectParseRecord(((SpellBlockContext) _localctx).effectBlock.typeInit,
-                                            ((SpellBlockContext) _localctx).effectBlock.subtypeWrapperInit, ((SpellBlockContext) _localctx).effectBlock.radius, ((SpellBlockContext) _localctx).effectBlock.other,
-                                            ((SpellBlockContext) _localctx).effectBlock.diceString, ((SpellBlockContext) _localctx).effectBlock.yVal, ((SpellBlockContext) _localctx).effectBlock.xVal,
-                                            ((SpellBlockContext) _localctx).effectBlock.expressionChars, ((SpellBlockContext) _localctx).effectBlock.expressionBase,
-                                            ((SpellBlockContext) _localctx).effectBlock.expressionOperation,
-                                            ((SpellBlockContext) _localctx).effectBlock.effectMessage, (((SpellBlockContext) _localctx).effectBlock != null ? (((SpellBlockContext) _localctx).effectBlock.start) : null).getLine()));
-                                }
-                            }
-                            break;
-                            case DESC: {
-                                {
-                                    setState(308);
-                                    ((SpellBlockContext) _localctx).desc = desc();
-                                    ((SpellBlockContext) _localctx).spellDesc = _localctx.spellDesc + ((SpellBlockContext) _localctx).desc.description;
-                                }
-                            }
-                            break;
-                            default:
-                                throw new NoViableAltException(this);
-                        }
-                    }
-                    setState(315);
-                    _errHandler.sync(this);
-                    _la = _input.LA(1);
-                }
-            }
-        } catch (RecognitionException re) {
-            _localctx.exception = re;
-            _errHandler.reportError(this, re);
-            _errHandler.recover(this, re);
-        } finally {
-            exitRule();
-        }
-        return _localctx;
-    }
-
-    @SuppressWarnings("CheckReturnValue")
-    public static class ExprContext extends ParserRuleContext {
-        public String exprChar;
-        public String baseName;
-        public String operation;
-        public Token ch;
-        public Token base;
-        public Token op;
-
-        public TerminalNode EXPR() {
-            return getToken(PlayerClassGrammar.EXPR, 0);
-        }
-
-        public List<TerminalNode> EXPR_COLON() {
-            return getTokens(PlayerClassGrammar.EXPR_COLON);
-        }
-
-        public TerminalNode EXPR_COLON(int i) {
-            return getToken(PlayerClassGrammar.EXPR_COLON, i);
-        }
-
-        public TerminalNode EXPR_CHAR() {
-            return getToken(PlayerClassGrammar.EXPR_CHAR, 0);
-        }
-
-        public TerminalNode EXPR_UCASE() {
-            return getToken(PlayerClassGrammar.EXPR_UCASE, 0);
-        }
-
-        public TerminalNode EXPR_OP() {
-            return getToken(PlayerClassGrammar.EXPR_OP, 0);
-        }
-
-        public ExprContext(ParserRuleContext parent, int invokingState) {
-            super(parent, invokingState);
-        }
-
-        @Override
-        public int getRuleIndex() {
-            return RULE_expr;
-        }
-
-        @Override
-        public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof PlayerClassGrammarListener) ((PlayerClassGrammarListener) listener).enterExpr(this);
-        }
-
-        @Override
-        public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof PlayerClassGrammarListener) ((PlayerClassGrammarListener) listener).exitExpr(this);
-        }
-    }
-
     public final EffectYXContext effectYX() throws RecognitionException {
         EffectYXContext _localctx = new EffectYXContext(_ctx, getState());
         enterRule(_localctx, 68, RULE_effectYX);
@@ -3784,39 +3606,16 @@ public class PlayerClassGrammar extends Parser {
         return _localctx;
     }
 
-    @SuppressWarnings("CheckReturnValue")
-    public static class EffectMsgContext extends ParserRuleContext {
-        public String message;
-        public Token FREE_TEXT;
-
-        public TerminalNode EFFECT_MESSAGE() {
-            return getToken(PlayerClassGrammar.EFFECT_MESSAGE, 0);
-        }
-
-        public TerminalNode FREE_TEXT() {
-            return getToken(PlayerClassGrammar.FREE_TEXT, 0);
-        }
-
-        public EffectMsgContext(ParserRuleContext parent, int invokingState) {
-            super(parent, invokingState);
-        }
-
-        @Override
-        public int getRuleIndex() {
-            return RULE_effectMsg;
-        }
-
-        @Override
-        public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof PlayerClassGrammarListener)
-                ((PlayerClassGrammarListener) listener).enterEffectMsg(this);
-        }
-
-        @Override
-        public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof PlayerClassGrammarListener)
-                ((PlayerClassGrammarListener) listener).exitEffectMsg(this);
-        }
+    private static String[] makeRuleNames() {
+        return new String[]{
+                "recordCount", "name", "stats", "skillDisarmPhys", "skillDisarmMagic",
+                "skillDevice", "skillSave", "skillStealth", "skillSearch", "skillMelee",
+                "skillShoot", "skillThrow", "skillDig", "hitdie", "maxAttacks", "minWeight",
+                "strengthMultiplier", "title", "equip", "objFlag", "playerFlags", "exp",
+                "magic", "magicBlock", "book", "bookGraphics", "bookProperties", "bookBlock",
+                "spell", "desc", "spellBlock", "playerClass", "file", "effect", "effectYX",
+                "dice", "expr", "effectMsg", "time", "effectBlock"
+        };
     }
 
     public final DiceContext dice() throws RecognitionException {
@@ -3903,6 +3702,71 @@ public class PlayerClassGrammar extends Parser {
         return _localctx;
     }
 
+    public final SpellBlockContext spellBlock() throws RecognitionException {
+        SpellBlockContext _localctx = new SpellBlockContext(_ctx, getState());
+        enterRule(_localctx, 60, RULE_spellBlock);
+        int _la;
+        try {
+            enterOuterAlt(_localctx, 1);
+            {
+                setState(303);
+                ((SpellBlockContext) _localctx).spell = spell();
+                ((SpellBlockContext) _localctx).spellDesc = "";
+                ((SpellBlockContext) _localctx).effects = new ArrayList<>();
+                ((SpellBlockContext) _localctx).spellName = ((SpellBlockContext) _localctx).spell.spellname;
+                ((SpellBlockContext) _localctx).level = ((SpellBlockContext) _localctx).spell.level;
+                ((SpellBlockContext) _localctx).mana = ((SpellBlockContext) _localctx).spell.mana;
+                ((SpellBlockContext) _localctx).fail = ((SpellBlockContext) _localctx).spell.fail;
+                ((SpellBlockContext) _localctx).exper = ((SpellBlockContext) _localctx).spell.exper;
+                ((SpellBlockContext) _localctx).line = ((SpellBlockContext) _localctx).spell.line;
+                setState(313);
+                _errHandler.sync(this);
+                _la = _input.LA(1);
+                while (_la == DESC || _la == EFFECT) {
+                    {
+                        setState(311);
+                        _errHandler.sync(this);
+                        switch (_input.LA(1)) {
+                            case EFFECT: {
+                                {
+                                    setState(305);
+                                    ((SpellBlockContext) _localctx).effectBlock = effectBlock();
+                                    _localctx.effects.add(new EffectParseRecord(((SpellBlockContext) _localctx).effectBlock.typeInit,
+                                            ((SpellBlockContext) _localctx).effectBlock.subtypeWrapperInit, ((SpellBlockContext) _localctx).effectBlock.radius, ((SpellBlockContext) _localctx).effectBlock.other,
+                                            ((SpellBlockContext) _localctx).effectBlock.diceString, ((SpellBlockContext) _localctx).effectBlock.yVal, ((SpellBlockContext) _localctx).effectBlock.xVal,
+                                            ((SpellBlockContext) _localctx).effectBlock.expressionChars, ((SpellBlockContext) _localctx).effectBlock.expressionBase,
+                                            ((SpellBlockContext) _localctx).effectBlock.expressionOperation,
+                                            ((SpellBlockContext) _localctx).effectBlock.effectMessage, (((SpellBlockContext) _localctx).effectBlock != null ? (((SpellBlockContext) _localctx).effectBlock.start) : null).getLine()));
+                                }
+                            }
+                            break;
+                            case DESC: {
+                                {
+                                    setState(308);
+                                    ((SpellBlockContext) _localctx).desc = desc();
+                                    ((SpellBlockContext) _localctx).spellDesc = _localctx.spellDesc + ((SpellBlockContext) _localctx).desc.description;
+                                }
+                            }
+                            break;
+                            default:
+                                throw new NoViableAltException(this);
+                        }
+                    }
+                    setState(315);
+                    _errHandler.sync(this);
+                    _la = _input.LA(1);
+                }
+            }
+        } catch (RecognitionException re) {
+            _localctx.exception = re;
+            _errHandler.reportError(this, re);
+            _errHandler.recover(this, re);
+        } finally {
+            exitRule();
+        }
+        return _localctx;
+    }
+
     public final ExprContext expr() throws RecognitionException {
         ExprContext _localctx = new ExprContext(_ctx, getState());
         enterRule(_localctx, 72, RULE_expr);
@@ -3937,6 +3801,28 @@ public class PlayerClassGrammar extends Parser {
         return _localctx;
     }
 
+    public final TimeContext time() throws RecognitionException {
+        TimeContext _localctx = new TimeContext(_ctx, getState());
+        enterRule(_localctx, 76, RULE_time);
+        try {
+            enterOuterAlt(_localctx, 1);
+            {
+                setState(446);
+                match(TIME);
+                setState(447);
+                ((TimeContext) _localctx).SIMPLE_DICE_STRING = match(SIMPLE_DICE_STRING);
+                ((TimeContext) _localctx).timeStr = ((TimeContext) _localctx).SIMPLE_DICE_STRING.getText();
+            }
+        } catch (RecognitionException re) {
+            _localctx.exception = re;
+            _errHandler.reportError(this, re);
+            _errHandler.recover(this, re);
+        } finally {
+            exitRule();
+        }
+        return _localctx;
+    }
+
     public final EffectMsgContext effectMsg() throws RecognitionException {
         EffectMsgContext _localctx = new EffectMsgContext(_ctx, getState());
         enterRule(_localctx, 74, RULE_effectMsg);
@@ -3957,6 +3843,108 @@ public class PlayerClassGrammar extends Parser {
             exitRule();
         }
         return _localctx;
+    }
+
+    @SuppressWarnings("CheckReturnValue")
+    public static class DiceContext extends ParserRuleContext {
+        public String diceString;
+        public String exprChar;
+        public String baseName;
+        public String operation;
+        public Token val;
+        public ExprContext expr;
+
+        public DiceContext(ParserRuleContext parent, int invokingState) {
+            super(parent, invokingState);
+        }
+
+        public TerminalNode DICE() {
+            return getToken(PlayerClassGrammar.DICE, 0);
+        }
+
+        public TerminalNode DICE_SIMPLE_VALUE() {
+            return getToken(PlayerClassGrammar.DICE_SIMPLE_VALUE, 0);
+        }
+
+        public TerminalNode DICE_COMPLEX_VALUE() {
+            return getToken(PlayerClassGrammar.DICE_COMPLEX_VALUE, 0);
+        }
+
+        public List<ExprContext> expr() {
+            return getRuleContexts(ExprContext.class);
+        }
+
+        public ExprContext expr(int i) {
+            return getRuleContext(ExprContext.class, i);
+        }
+
+        @Override
+        public int getRuleIndex() {
+            return RULE_dice;
+        }
+
+        @Override
+        public void enterRule(ParseTreeListener listener) {
+            if (listener instanceof PlayerClassGrammarListener) ((PlayerClassGrammarListener) listener).enterDice(this);
+        }
+
+        @Override
+        public void exitRule(ParseTreeListener listener) {
+            if (listener instanceof PlayerClassGrammarListener) ((PlayerClassGrammarListener) listener).exitDice(this);
+        }
+    }
+
+    @SuppressWarnings("CheckReturnValue")
+    public static class ExprContext extends ParserRuleContext {
+        public String exprChar;
+        public String baseName;
+        public String operation;
+        public Token ch;
+        public Token base;
+        public Token op;
+
+        public ExprContext(ParserRuleContext parent, int invokingState) {
+            super(parent, invokingState);
+        }
+
+        public TerminalNode EXPR() {
+            return getToken(PlayerClassGrammar.EXPR, 0);
+        }
+
+        public List<TerminalNode> EXPR_COLON() {
+            return getTokens(PlayerClassGrammar.EXPR_COLON);
+        }
+
+        public TerminalNode EXPR_COLON(int i) {
+            return getToken(PlayerClassGrammar.EXPR_COLON, i);
+        }
+
+        public TerminalNode EXPR_CHAR() {
+            return getToken(PlayerClassGrammar.EXPR_CHAR, 0);
+        }
+
+        public TerminalNode EXPR_UCASE() {
+            return getToken(PlayerClassGrammar.EXPR_UCASE, 0);
+        }
+
+        public TerminalNode EXPR_OP() {
+            return getToken(PlayerClassGrammar.EXPR_OP, 0);
+        }
+
+        @Override
+        public int getRuleIndex() {
+            return RULE_expr;
+        }
+
+        @Override
+        public void enterRule(ParseTreeListener listener) {
+            if (listener instanceof PlayerClassGrammarListener) ((PlayerClassGrammarListener) listener).enterExpr(this);
+        }
+
+        @Override
+        public void exitRule(ParseTreeListener listener) {
+            if (listener instanceof PlayerClassGrammarListener) ((PlayerClassGrammarListener) listener).exitExpr(this);
+        }
     }
 
     @SuppressWarnings("CheckReturnValue")
@@ -4014,28 +4002,6 @@ public class PlayerClassGrammar extends Parser {
             if (listener instanceof PlayerClassGrammarListener)
                 ((PlayerClassGrammarListener) listener).exitEffectBlock(this);
         }
-    }
-
-    public final TimeContext time() throws RecognitionException {
-        TimeContext _localctx = new TimeContext(_ctx, getState());
-        enterRule(_localctx, 76, RULE_time);
-        try {
-            enterOuterAlt(_localctx, 1);
-            {
-                setState(446);
-                match(TIME);
-                setState(447);
-                ((TimeContext) _localctx).SIMPLE_DICE_STRING = match(SIMPLE_DICE_STRING);
-                ((TimeContext) _localctx).timeStr = ((TimeContext) _localctx).SIMPLE_DICE_STRING.getText();
-            }
-        } catch (RecognitionException re) {
-            _localctx.exception = re;
-            _errHandler.reportError(this, re);
-            _errHandler.recover(this, re);
-        } finally {
-            exitRule();
-        }
-        return _localctx;
     }
 
     public final EffectBlockContext effectBlock() throws RecognitionException {
@@ -4155,6 +4121,41 @@ public class PlayerClassGrammar extends Parser {
             exitRule();
         }
         return _localctx;
+    }
+
+    @SuppressWarnings("CheckReturnValue")
+    public static class EffectMsgContext extends ParserRuleContext {
+        public String message;
+        public Token FREE_TEXT;
+
+        public EffectMsgContext(ParserRuleContext parent, int invokingState) {
+            super(parent, invokingState);
+        }
+
+        public TerminalNode EFFECT_MESSAGE() {
+            return getToken(PlayerClassGrammar.EFFECT_MESSAGE, 0);
+        }
+
+        public TerminalNode FREE_TEXT() {
+            return getToken(PlayerClassGrammar.FREE_TEXT, 0);
+        }
+
+        @Override
+        public int getRuleIndex() {
+            return RULE_effectMsg;
+        }
+
+        @Override
+        public void enterRule(ParseTreeListener listener) {
+            if (listener instanceof PlayerClassGrammarListener)
+                ((PlayerClassGrammarListener) listener).enterEffectMsg(this);
+        }
+
+        @Override
+        public void exitRule(ParseTreeListener listener) {
+            if (listener instanceof PlayerClassGrammarListener)
+                ((PlayerClassGrammarListener) listener).exitEffectMsg(this);
+        }
     }
     public static final ATN _ATN =
             new ATNDeserializer().deserialize(_serializedATN.toCharArray());

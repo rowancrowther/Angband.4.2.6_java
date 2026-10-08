@@ -53,8 +53,9 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
  * port's object starts with a zero {@link Random} and never holds {@code null}. <em>air swing</em>
  * ({@code curse.txt}) is the case in the data: a combat penalty and nothing else.
  *
- * <p>{@code CurseAssembler} does not yet write the dice onto the object, and
- * {@code Effect_time_migration.md} owns that move; these tests set them by hand.
+ * <p>These tests set the dice by hand, to isolate the object's own accessors. That
+ * {@code CurseAssembler} writes them onto the object when it loads a record is covered by
+ * {@code CurseReaderTest} and {@code CurseDataFileConformanceTest}.
  *
  * <p>Class CurseObjectTimeTest coded on 261005, replacing {@code CurseGetTimeTest}, which tested
  * the {@code Curse.getTime} that the unflattening removed.

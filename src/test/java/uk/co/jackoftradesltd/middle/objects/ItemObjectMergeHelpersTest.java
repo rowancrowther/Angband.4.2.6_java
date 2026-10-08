@@ -153,7 +153,7 @@ class ItemObjectMergeHelpersTest {
     }
 
     private static Effect effect() {
-        return new Effect(EffectEnum.EF_NONE, null, null, 0, 0, null, null, 0, 0, null, List.of(), null);
+        return new Effect(EffectEnum.EF_NONE, null, null, 0, 0, null, null, 0, 0, List.of(), null);
     }
 
     /**

@@ -26,10 +26,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.cave.World;
-import uk.co.jackoftradesltd.middle.effect.Effect;
-import uk.co.jackoftradesltd.middle.effect.EffectSubTypeEnum;
-import uk.co.jackoftradesltd.middle.effect.EffectSubTypeWrapper;
-import uk.co.jackoftradesltd.middle.enums.EffectEnum;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.data.GameConstantsData;
 import uk.co.jackoftradesltd.middle.game.globals.data.WorldData;
@@ -37,7 +33,6 @@ import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.game.globals.registry.WorldRegistry;
 import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -164,19 +159,6 @@ class ObjectUtilsCopyCursesTest {
     }
 
     /**
-     * A minimal effect carrying only the timing dice under test, the helper
-     * {@code CurseGetTimeTest} used before the curse unflattening.
-     *
-     * @param time the timing dice to attach
-     * @return the effect
-     */
-    private static Effect effectWithTime(Random time) {
-        return new Effect(EffectEnum.EF_NONE, new Random(0, 0, 0, 1, false), "", 0, 0,
-                EffectSubTypeEnum.EST_NONE, new EffectSubTypeWrapper(ProjectionEnum.PROJ_ACID),
-                0, 0, time, new ArrayList<>(), "");
-    }
-
-    /**
      * As {@link #curseWithFixedTimeout(String, int)}, with the curse's index in the table.
      *
      * @param name  the curse's name, for {@link Object#toString()} only
@@ -185,11 +167,9 @@ class ObjectUtilsCopyCursesTest {
      * @return the curse
      */
     private static Curse curseWithFixedTimeout(String name, int base, int index) {
-        // copyCurses reads the dice from the curse's own object (C: curse->obj->time), so they go
-        // there; the object's effect carries the same dice so the two sources cannot disagree.
+        // copyCurses reads the dice from the curse's own object (C: curse->obj->time).
         ItemObject curseObject = new ItemObject();
         curseObject.setTime(new Random(base, 0, 0, 1, false));
-        curseObject.setEffect(List.of(effectWithTime(new Random(base, 0, 0, 1, false))));
         return new Curse(name, List.of(), curseObject, List.of(), new Flag<>(ObjectFlag.class), "", index);
     }
 

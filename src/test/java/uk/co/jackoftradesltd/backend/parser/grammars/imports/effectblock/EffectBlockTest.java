@@ -68,14 +68,13 @@ class EffectBlockTest {
     }
 
     @Test
-    void complexDiceWithTwoExprsAndTime() {
+    void complexDiceWithTwoExprs() {
         Errors errors = new Errors();
         EffectBlock.EffectBlockContext ctx = parser(
                 "effect:BALL:FIRE:2\n"
                         + "dice:$Dd$S\n"
                         + "expr:D:PLAYER_LEVEL:* 2\n"
-                        + "expr:S:DUNGEON_LEVEL:/ 2\n"
-                        + "time:5+1d5\n",
+                        + "expr:S:DUNGEON_LEVEL:/ 2\n",
                 errors).effectBlock();
 
         assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
@@ -87,7 +86,6 @@ class EffectBlockTest {
         assertEquals("D^S", ctx.expressionChars);
         assertEquals("PLAYER_LEVEL^DUNGEON_LEVEL", ctx.expressionBase);
         assertEquals("* 2^/ 2", ctx.expressionOperation);
-        assertEquals("5+1d5", ctx.timeDiceString);
     }
 
     @Test
@@ -98,8 +96,24 @@ class EffectBlockTest {
         assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
         assertEquals("TELEPORT", ctx.typeInit);
         assertEquals("10", ctx.diceString);
-        assertNull(ctx.timeDiceString);
         assertEquals("", ctx.expressionChars);
+    }
+
+    /**
+     * {@code time:} belongs to the record that owns the effect, not to the effect, so
+     * {@code effectBlock} stops at it: the block parses the {@code effect:} and {@code dice:}
+     * lines and leaves the {@code time:} token for the calling grammar.
+     */
+    @Test
+    void effectBlockStopsBeforeTime() {
+        Errors errors = new Errors();
+        EffectBlock parser = parser("effect:DAMAGE\ndice:5+1d5\ntime:5+1d5\n", errors);
+        EffectBlock.EffectBlockContext ctx = parser.effectBlock();
+
+        assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
+        assertEquals("5+1d5", ctx.diceString);
+        assertEquals(EffectBlockLexer.TIME, parser.getCurrentToken().getType(),
+                "the time: line must be left unconsumed for the owning record");
     }
 
     @Test

@@ -28,6 +28,7 @@ import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.monsters.MonsterBase;
 import uk.co.jackoftradesltd.middle.monsters.MonsterPain;
 import uk.co.jackoftradesltd.middle.monsters.Summon;
+import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.Curse;
 import uk.co.jackoftradesltd.middle.objects.ObjectBase;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
@@ -243,6 +244,56 @@ class CurseReaderTest {
         assertEquals(0, c.getItemObject().getToHit());
         assertEquals(0, c.getItemObject().getToDam());
         assertEquals(0, c.getItemObject().getToAC());
+    }
+
+    // ---- time: belongs to the curse's object, not to an effect ------------
+
+    /**
+     * C's {@code parse_curse_time} writes {@code curse->obj->time}. A {@code time:} line after the
+     * curse's effect must land on {@code getItemObject().getTime()}.
+     */
+    @Test
+    void timeAfterTheEffectReachesTheCurseObject() throws IOException {
+        ParseResult<Curse> result = load("timed.txt", withHeader(1,
+                curse("timed", "type:cloak\ndesc:test\neffect:WAKE\ntime:100+1d50\n")));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        Random time = result.items().get(0).getItemObject().getTime();
+        assertNotNull(time);
+        assertEquals(100, time.getBase());
+        assertEquals(1, time.getDice());
+        assertEquals(50, time.getSides());
+    }
+
+    /**
+     * {@code time:} is a record-level line: before the effect it reaches the object just the same.
+     */
+    @Test
+    void timeBeforeTheEffectReachesTheCurseObject() throws IOException {
+        ParseResult<Curse> result = load("timed-first.txt", withHeader(1,
+                curse("timed first", "type:cloak\ndesc:test\ntime:1d500\neffect:WAKE\n")));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        Random time = result.items().get(0).getItemObject().getTime();
+        assertEquals(0, time.getBase());
+        assertEquals(1, time.getDice());
+        assertEquals(500, time.getSides());
+    }
+
+    /**
+     * A curse with no {@code time:} line holds a zero {@link Random}, never {@code null}.
+     */
+    @Test
+    void absentTimeIsZeroNotNull() throws IOException {
+        ParseResult<Curse> result = load("untimed.txt", withHeader(1,
+                curse("untimed", "type:cloak\ndesc:test\neffect:WAKE\n")));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        Random time = result.items().get(0).getItemObject().getTime();
+        assertNotNull(time);
+        assertEquals(0, time.getBase());
+        assertEquals(0, time.getDice());
+        assertEquals(0, time.getSides());
     }
 
     // ---- Soft errors: dropped record (skip-and-continue) -----------------

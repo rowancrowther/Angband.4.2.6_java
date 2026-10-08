@@ -24,12 +24,15 @@ import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.objects.Curse;
 import uk.co.jackoftradesltd.middle.objects.CurseData;
+import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.ObjectKind;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -253,6 +256,102 @@ class ItemObjectReaderTest {
         assertEquals(1, result.items().size(), "a zero-power curse is not an error; the kind loads");
         Map<Curse, CurseData> curses = kindField(result.items().get(0), "curses");
         assertTrue(curses.isEmpty(), () -> "power 0 must not be recorded, got: " + curses);
+    }
+
+    // ---- time: belongs to the kind, not to an effect -----------------------
+
+    /**
+     * Asserts that two dice agree on every component.
+     *
+     * @param expected the dice the data file's {@code time:} line spells
+     * @param actual   the dice the kind holds
+     */
+    private static void assertSameDice(Random expected, Random actual) {
+        assertNotNull(actual, "a kind's time is never null");
+        assertEquals(expected.getBase(), actual.getBase(), "time base");
+        assertEquals(expected.getDice(), actual.getDice(), "time dice");
+        assertEquals(expected.getSides(), actual.getSides(), "time sides");
+        assertEquals(expected.getMBonus(), actual.getMBonus(), "time m-bonus");
+    }
+
+    /**
+     * C's {@code parse_object_time} writes {@code kind->time}; {@code struct effect} has no time.
+     * A {@code time:} line after the kind's effect must therefore land on the {@link ObjectKind}.
+     */
+    @Test
+    void timeAfterTheEffectReachesTheKind() throws IOException {
+        ParseResult<ObjectKind> result = load("timed.txt", withHeader(1,
+                obj("rod of waking", HEAD + "effect:WAKE\ntime:100+1d50\n")));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertSameDice(Random.parseStr("100+1d50"), result.items().get(0).getTime());
+    }
+
+    /**
+     * With several effects the old design hung the time on the last one only. The kind holds it
+     * once, whatever the number of effects.
+     */
+    @Test
+    void timeWithSeveralEffectsReachesTheKindOnce() throws IOException {
+        ParseResult<ObjectKind> result = load("timed-two.txt", withHeader(1,
+                obj("rod of two things", HEAD + "effect:WAKE\neffect:ACQUIRE\ntime:1d500\n")));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        ObjectKind kind = result.items().get(0);
+        assertEquals(2, kind.getEffect().size());
+        assertSameDice(Random.parseStr("1d500"), kind.getTime());
+    }
+
+    /**
+     * {@code time:} is a record-level line, so its position among the record's other lines does not
+     * matter; before the effect it still reaches the kind.
+     */
+    @Test
+    void timeBeforeTheEffectReachesTheKind() throws IOException {
+        ParseResult<ObjectKind> result = load("timed-first.txt", withHeader(1,
+                obj("rod of early time", HEAD + "time:d100\neffect:WAKE\n")));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertSameDice(Random.parseStr("d100"), result.items().get(0).getTime());
+    }
+
+    /**
+     * A kind with no {@code time:} line holds a zero {@link Random}, as C's zeroed
+     * {@code random_value}, and never {@code null}.
+     */
+    @Test
+    void absentTimeIsZeroNotNull() throws IOException {
+        ParseResult<ObjectKind> result = load("untimed.txt", withHeader(1,
+                obj("plain blade", HEAD + "effect:WAKE\n")));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertSameDice(Random.Zero(), result.items().get(0).getTime());
+    }
+
+    /**
+     * Every kind in {@code object.txt} holds exactly the dice its own {@code time:} line spells, and
+     * a zero {@link Random} where it has none. The expected values come from the data file's text,
+     * read record by record, not from the reader under test.
+     */
+    @Test
+    void everyKindInTheRealFileHoldsItsOwnTime() throws IOException {
+        List<String> expected = new ArrayList<>();
+        for (String line : Files.readAllLines(Path.of(REAL_FILE))) {
+            if (line.startsWith("name:")) expected.add("");
+            else if (line.startsWith("time:")) expected.set(expected.size() - 1, line.substring(5).trim());
+        }
+
+        ParseResult<ObjectKind> result = new ItemObjectReader().parseWithResults(REAL_FILE);
+
+        assertEquals(expected.size(), result.items().size(), "one kind per name: line");
+        int timed = 0;
+        for (int i = 0; i < expected.size(); i++) {
+            ObjectKind kind = result.items().get(i);
+            Random want = expected.get(i).isEmpty() ? Random.Zero() : Random.parseStr(expected.get(i));
+            if (!expected.get(i).isEmpty()) timed++;
+            assertSameDice(want, kind.getTime());
+        }
+        assertEquals(43, timed, "object.txt carries 43 time: lines");
     }
 
     @Test

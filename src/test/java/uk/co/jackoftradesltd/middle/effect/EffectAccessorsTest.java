@@ -60,7 +60,7 @@ class EffectAccessorsTest {
         return new Effect(index, new Random(0, 1, 1, 1, false), "1d1", 0, 0,
                 EffectSubTypeEnum.EST_PROJ,
                 new EffectSubTypeWrapper(ProjectionEnum.PROJ_ACID),
-                0, 0, new Random(0, 1, 1, 1, false), new ArrayList<>(), "a message");
+                0, 0, new ArrayList<>(), "a message");
     }
 
     /**
@@ -240,27 +240,32 @@ class EffectAccessorsTest {
      * The copy, which duplicates the mutable parts and shares the identity.
      *
      * <p>{@link Effect} exposes few accessors — the fields are read by the effect handlers rather
-     * than from outside — so what a test can observe is the recharge dice, which is its own object,
-     * and the identity-backed answers, which must survive the copy unchanged.
+     * than from outside — so what a test can observe is the magnitude dice, which is reached by
+     * reflection, and the identity-backed answers, which must survive the copy unchanged.
      */
     @Nested
     @DisplayName("copy")
     class Copy {
 
         /**
-         * The recharge dice are copied rather than shared, so the two effects can be re-diced
-         * independently. That is the visible half of a copy that also duplicates the magnitude dice
-         * and the sub-type payload.
+         * The magnitude dice are copied rather than shared, so the two effects can be re-diced
+         * independently. {@link Effect} has no accessor for them, so the field is read by
+         * reflection; the effect no longer holds recharge or duration dice, which belong to its
+         * owner.
+         *
+         * @throws Exception if the field cannot be reached
          */
         @Test
-        @DisplayName("the recharge dice are duplicated")
-        void diceDuplicated() {
+        @DisplayName("the magnitude dice are duplicated")
+        void diceDuplicated() throws Exception {
             Effect original = effect(EffectEnum.EF_BOLT);
             Effect duplicate = original.copy();
+            Field dice = Effect.class.getDeclaredField("dice");
+            dice.setAccessible(true);
 
             assertNotSame(original, duplicate);
-            assertNotSame(original.getTime(), duplicate.getTime());
-            assertEquals(original.getTime().getSides(), duplicate.getTime().getSides());
+            assertNotSame(dice.get(original), dice.get(duplicate));
+            assertEquals(((Random) dice.get(original)).getSides(), ((Random) dice.get(duplicate)).getSides());
         }
 
         /**

@@ -178,7 +178,7 @@ effectMsg
 
 time
         returns[String timeStr]
-        :   TIME SIMPLE_DICE_STRING { $timeStr = $SIMPLE_DICE_STRING.getText(); }
+        :   TIME DICE_SIMPLE_VALUE { $timeStr = $DICE_SIMPLE_VALUE.getText(); }
         ;
 
 /*

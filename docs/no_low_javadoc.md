@@ -48,23 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/objects/enums/GetItemFlags.java`
-
-12 missing, 0 low
-
-- L20: enum `GetItemFlags` - MISSING
-- L21: enum-const `USE_EQUIP` - MISSING
-- L22: enum-const `USE_INVEN` - MISSING
-- L23: enum-const `USE_FLOOR` - MISSING
-- L24: enum-const `USE_QUIVER` - MISSING
-- L25: enum-const `IS_HARMLESS` - MISSING
-- L26: enum-const `SHOW_PRICES` - MISSING
-- L27: enum-const `SHOW_FAIL` - MISSING
-- L28: enum-const `SHOW_QUIVER` - MISSING
-- L29: enum-const `SHOW_EMPTY` - MISSING
-- L30: enum-const `QUIVER_TAGS` - MISSING
-- L31: enum-const `SHOW_RECHARGE` - MISSING
-
 ### `middle/objects/enums/ObjectDescription.java`
 
 12 missing, 0 low

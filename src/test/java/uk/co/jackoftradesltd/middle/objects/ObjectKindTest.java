@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
+import uk.co.jackoftradesltd.middle.numerics.Random;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -90,7 +91,7 @@ class ObjectKindTest {
         return new ObjectKind("& Test Sword~", "", base(), 0, null, null, null, null, 0, null,
                 1, 1, 30, 0, new Flag<>(ObjectFlag.class), new Flag<>(ObjectKindFlag.class),
                 new HashMap<>(), new HashMap<>(), new HashSet<>(), new HashSet<>(), curses,
-                null, 0, 0, 0, 0, new ArrayList<>(), new ArrayList<>(), "", "", "0", null, 0,
+                null, 0, 0, 0, 0, new ArrayList<>(), new ArrayList<>(), "", "", Random.Zero(), null, 0,
                 null, null, null, null, false, false, new Flag<>(IgnoreFlag.class),
                 false, TValue.TV_SWORD, 0);
     }

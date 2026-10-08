@@ -212,10 +212,7 @@ public class ObjectKind {
      * Message shown when the effect is seen.
      */
     private String visMessage;
-    /**
-     * Recharge/effect timing, as a dice expression.
-     */
-    private Random time;
+
     /**
      * Charge count (for wands/staves), as a dice expression.
      */
@@ -279,6 +276,11 @@ public class ObjectKind {
      * <p>Field isSpecialArtifactKind coded before 260817, commented in full on 260817.
      */
     private boolean isSpecialArtifactKind;
+
+    /**
+     * Recharge/effect timing, as a dice expression.
+     */
+    private Random time;
 
     /**
      * Build an empty object kind with fresh collections.
@@ -436,7 +438,7 @@ public class ObjectKind {
                       int alloc_max, int level,
                       List<Activation> activations,
                       List<Effect> effect, String effectMessage,
-                      String visMessage, String time,
+                      String visMessage, Random time,
                       Random charge, int genMultProb,
                       Random stackSize, Flavour flavour,
                       String noteAware, String noteUnaware,
@@ -476,7 +478,7 @@ public class ObjectKind {
         this.effect = effect;
         this.effectMessage = effectMessage;
         this.visMessage = visMessage;
-        this.time = Random.parseStr(time);
+        this.time = time;
         this.charge = charge;
         this.genMultProb = genMultProb;
         this.stackSize = stackSize;

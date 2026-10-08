@@ -216,7 +216,7 @@ public class ClassSpellBookAssembler implements Assembler<ClassSpellBookParseRec
                     oFlags, new HashMap<>(), eFlags, new HashSet<>(),
                     new HashSet<>(), new HashMap<>(), adc,
                     commonness, min, max, 0, new ArrayList<>(), new ArrayList<>(),
-                    "", "", "", Random.Zero(), 0,
+                    "", "", Random.Zero(), Random.Zero(), 0,
                     Random.Zero(), null, null, null,
                     false, false, ignoreFlags, false, tValue, 0);
 

@@ -25,6 +25,7 @@ import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
 import uk.co.jackoftradesltd.middle.game.globals.registry.MonsterRegistry;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
+import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.Curse;
 import uk.co.jackoftradesltd.middle.objects.ElementInfo;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
@@ -334,6 +335,16 @@ public class CurseAssembler implements Assembler<CurseParseRecord, List<Curse>> 
                         "a negative weight adjustment and a multiply weight flag");
                 continue;
             }
+            String timeString = record.time();
+            Random time = Random.Zero();
+            if (!timeString.isEmpty()) {
+                time = Random.parseStr(timeString);
+                if (time == null) {
+                    errors.add("Curse starting at line: " + line + " has " +
+                            "an invalid time value: " + timeString);
+                    continue;
+                }
+            }
             
             ItemObject itemObject = new ItemObject();
             itemObject.setWeight(weightAdjustment);
@@ -345,6 +356,7 @@ public class CurseAssembler implements Assembler<CurseParseRecord, List<Curse>> 
             itemObject.setToDam(tod);
             itemObject.setToAC(toa);
             itemObject.setEffectMessage(message);
+            itemObject.setTime(time);
 
             results.add(new Curse(name, types, itemObject,
                     conflictingCurses, cFlags,

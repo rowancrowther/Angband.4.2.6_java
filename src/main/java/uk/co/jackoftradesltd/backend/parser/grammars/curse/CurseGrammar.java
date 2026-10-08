@@ -14,6 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
+
 // Generated from CurseGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.curse;
 
@@ -30,7 +31,6 @@ import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.misc.*;
 import org.antlr.v4.runtime.tree.*;
-
 import java.util.List;
 import java.util.Iterator;
 import java.util.ArrayList;
@@ -59,6 +59,7 @@ public class CurseGrammar extends Parser {
             RULE_conflict = 9, RULE_conflictFlags = 10, RULE_time = 11, RULE_curseRecord = 12,
             RULE_file = 13, RULE_effect = 14, RULE_effectYX = 15, RULE_dice = 16,
             RULE_expr = 17, RULE_effectMsg = 18, RULE_effectBlock = 19;
+
     public static final String _serializedATN =
             "\u0004\u0001)\u00f5\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002" +
                     "\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002" +
@@ -1153,15 +1154,7 @@ public class CurseGrammar extends Parser {
         for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
             _decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
         }
-    }
-
-    private static String[] makeRuleNames() {
-        return new String[]{
-                "recordCount", "name", "curseType", "weight", "combat", "flags", "values",
-                "msg", "desc", "conflict", "conflictFlags", "time", "curseRecord", "file",
-                "effect", "effectYX", "dice", "expr", "effectMsg", "effectBlock"
-        };
-    }
+	}
 
     public final TimeContext time() throws RecognitionException {
         TimeContext _localctx = new TimeContext(_ctx, getState());
@@ -1185,6 +1178,14 @@ public class CurseGrammar extends Parser {
             exitRule();
         }
         return _localctx;
+    }
+
+    private static String[] makeRuleNames() {
+        return new String[]{
+                "recordCount", "name", "curseType", "weight", "combat", "flags", "values",
+                "msg", "desc", "conflict", "conflictFlags", "time", "curseRecord", "file",
+                "effect", "effectYX", "dice", "expr", "effectMsg", "effectBlock"
+        };
     }
 
     public final CurseRecordContext curseRecord() throws RecognitionException {
@@ -2170,6 +2171,10 @@ public class CurseGrammar extends Parser {
         public ConflictFlagsContext conflictFlags;
         public TimeContext time;
 
+        public CurseRecordContext(ParserRuleContext parent, int invokingState) {
+            super(parent, invokingState);
+        }
+
         public NameContext name() {
             return getRuleContext(NameContext.class, 0);
         }
@@ -2260,10 +2265,6 @@ public class CurseGrammar extends Parser {
 
         public TimeContext time(int i) {
             return getRuleContext(TimeContext.class, i);
-        }
-
-        public CurseRecordContext(ParserRuleContext parent, int invokingState) {
-            super(parent, invokingState);
         }
 
         @Override

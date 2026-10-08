@@ -394,6 +394,16 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
             int dd = attBase == null ? 0 : attBase.getDice();
             int ds = attBase == null ? 0 : attBase.getSides();
 
+            Random time = Random.Zero();
+            if (!record.time().isEmpty()) {
+                time = Random.parseStr(record.time());
+                if (time == null) {
+                    errors.add("Object kind starting line: " + line + " has " +
+                            "an invalid time string: " + record.time());
+                    continue;
+                }
+            }
+
             Flag<IgnoreFlag> ignoreFlags = new Flag<>(IgnoreFlag.class);
             
             itemObjects.add(new ObjectKind(name, description, base, 0, pVal,
@@ -401,7 +411,7 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
                     weight, cost, oFlags, oKindFlags, modifiers, elInfo,
                     brands, slays, curses, adc, allocComm, allocLower, allocUpper,
                     level, new ArrayList<>(), effects, record.message(),
-                    record.visMessage(), "", charges, pileChance, pileAmount,
+                    record.visMessage(), time, charges, pileChance, pileAmount,
                     null, null, null, false, false,
                     ignoreFlags, false, tValue, power));
         }

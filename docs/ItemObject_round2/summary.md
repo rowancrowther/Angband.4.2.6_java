@@ -177,6 +177,7 @@ Shape follows `docs/ItemObject_stage1_mismatches.md`. File and line references a
 
 - The batch 1 heading in `docs/ItemObject_port_batches.md` still says FAILED, and its C sources line files
   `object_origin_combine` and `distribute_charges` under the wrong C files.
+- **Result:** only dealt with docs file - no code/javadoc change needed.
 
 ### 17. `effectMessage` and `heldMIndex` are written but barely read (Part H)
 

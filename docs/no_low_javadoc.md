@@ -48,47 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/player/enums/PlayerHistoryType.java`
-
-16 missing, 0 low
-
-- L20: enum `PlayerHistoryType` - MISSING
-- L22: method `HIST_MAX` - MISSING
-- L22: enum-const `HIST_NONE` - MISSING
-- L23: enum-const `HIST_PLAYER_BIRTH` - MISSING
-- L24: enum-const `HIST_ARTIFACT_UNKNOWN` - MISSING
-- L25: enum-const `HIST_ARTIFACT_KNOWN` - MISSING
-- L26: enum-const `HIST_ARTIFACT_LOST` - MISSING
-- L27: enum-const `HIST_PLAYER_DEATH` - MISSING
-- L28: enum-const `HIST_SLAY_UNIQUE` - MISSING
-- L29: enum-const `HIST_USER_INPUT` - MISSING
-- L30: enum-const `HIST_SAVEFILE_IMPORT` - MISSING
-- L31: enum-const `HIST_GAIN_LEVEL` - MISSING
-- L32: enum-const `HIST_GENERIC` - MISSING
-- L33: enum-const `HIST_MAX` - MISSING
-- L35: field `description` - MISSING
-- L41: method `getDescription` - MISSING
-
-### `middle/monsters/enums/MonsterRaceCategory.java`
-
-15 missing, 0 low
-
-- L30: enum-const `RFT_NONE` - MISSING
-- L31: enum-const `RFT_OBV` - MISSING
-- L32: enum-const `RFT_DISP` - MISSING
-- L33: enum-const `RFT_GEN` - MISSING
-- L34: enum-const `RFT_NOTE` - MISSING
-- L35: enum-const `RFT_BEHAV` - MISSING
-- L36: enum-const `RFT_DROP` - MISSING
-- L37: enum-const `RFT_DET` - MISSING
-- L38: enum-const `RFT_ALTER` - MISSING
-- L39: enum-const `RFT_RACE_N` - MISSING
-- L40: enum-const `RFT_RACE_A` - MISSING
-- L41: enum-const `RFT_VULN` - MISSING
-- L42: enum-const `RFT_VULN_I` - MISSING
-- L43: enum-const `RFT_RES` - MISSING
-- L44: enum-const `RFT_PROT` - MISSING
-
 ### `middle/objects/enums/ObjectFlagType.java`
 
 12 missing, 1 low

@@ -14,6 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
+
 // Generated from ActivationsGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.activations;
 
@@ -139,7 +140,7 @@ public class ActivationsGrammar extends Parser {
                     "\u001d\u0000\u0000\u008c\u008d\u0006\f\uffff\uffff\u0000\u008d\u0019\u0001" +
                     "\u0000\u0000\u0000\u008e\u008f\u0005\t\u0000\u0000\u008f\u0090\u0005\u0017" +
                     "\u0000\u0000\u0090\u0091\u0006\r\uffff\uffff\u0000\u0091\u001b\u0001\u0000" +
-                    "\u0000\u0000\u0092\u0093\u0005\u000b\u0000\u0000\u0093\u0094\u0005\u0011" +
+                    "\u0000\u0000\u0092\u0093\u0005\u000b\u0000\u0000\u0093\u0094\u0005\u0018" +
                     "\u0000\u0000\u0094\u0095\u0006\u000e\uffff\uffff\u0000\u0095\u001d\u0001" +
                     "\u0000\u0000\u0000\u0096\u0097\u0003\u0012\t\u0000\u0097\u00a0\u0006\u000f" +
                     "\uffff\uffff\u0000\u0098\u0099\u0003\u0014\n\u0000\u0099\u009a\u0006\u000f" +
@@ -1244,8 +1245,8 @@ public class ActivationsGrammar extends Parser {
                 setState(146);
                 match(TIME);
                 setState(147);
-                ((TimeContext) _localctx).SIMPLE_DICE_STRING = match(SIMPLE_DICE_STRING);
-                ((TimeContext) _localctx).timeStr = ((TimeContext) _localctx).SIMPLE_DICE_STRING.getText();
+                ((TimeContext) _localctx).DICE_SIMPLE_VALUE = match(DICE_SIMPLE_VALUE);
+                ((TimeContext) _localctx).timeStr = ((TimeContext) _localctx).DICE_SIMPLE_VALUE.getText();
             }
         } catch (RecognitionException re) {
             _localctx.exception = re;
@@ -1578,18 +1579,18 @@ public class ActivationsGrammar extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class TimeContext extends ParserRuleContext {
         public String timeStr;
-        public Token SIMPLE_DICE_STRING;
+        public Token DICE_SIMPLE_VALUE;
 
         public TimeContext(ParserRuleContext parent, int invokingState) {
             super(parent, invokingState);
         }
 
-        public TerminalNode TIME() {
-            return getToken(ActivationsGrammar.TIME, 0);
+        public TerminalNode DICE_SIMPLE_VALUE() {
+            return getToken(ActivationsGrammar.DICE_SIMPLE_VALUE, 0);
         }
 
-        public TerminalNode SIMPLE_DICE_STRING() {
-            return getToken(ActivationsGrammar.SIMPLE_DICE_STRING, 0);
+        public TerminalNode TIME() {
+            return getToken(ActivationsGrammar.TIME, 0);
         }
 
         @Override

@@ -14,6 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
+
 // Generated from EffectBlock.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.imports.effectblock;
 
@@ -160,16 +161,13 @@ public class EffectBlockBaseListener implements EffectBlockListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterEveryRule(ParserRuleContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void exitEveryRule(ParserRuleContext ctx) { }
+    public void enterEveryRule(ParserRuleContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitEveryRule(ParserRuleContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

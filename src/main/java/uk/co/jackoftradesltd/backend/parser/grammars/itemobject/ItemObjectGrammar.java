@@ -14,6 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
+
 // Generated from ItemObjectGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.itemobject;
 
@@ -3062,6 +3063,70 @@ public class ItemObjectGrammar extends Parser {
     }
 
     @SuppressWarnings("CheckReturnValue")
+    public static class EffectBlockContext extends ParserRuleContext {
+        public String typeInit;
+        public String subtypeWrapperInit;
+        public String radius;
+        public String other;
+        public String diceString;
+        public String yVal;
+        public String xVal;
+        public String expressionChars;
+        public String expressionBase;
+        public String expressionOperation;
+        public String effectMessage;
+        public int lineNo;
+        public EffectContext effect;
+        public EffectYXContext effectYX;
+        public DiceContext dice;
+        public EffectMsgContext effectMsg;
+
+        public EffectContext effect() {
+            return getRuleContext(EffectContext.class, 0);
+        }
+
+        public EffectMsgContext effectMsg() {
+            return getRuleContext(EffectMsgContext.class, 0);
+        }
+
+        public EffectYXContext effectYX() {
+            return getRuleContext(EffectYXContext.class, 0);
+        }
+
+        public DiceContext dice() {
+            return getRuleContext(DiceContext.class, 0);
+        }
+
+        public EffectBlockContext(ParserRuleContext parent, int invokingState) {
+            super(parent, invokingState);
+        }
+
+        @Override
+        public int getRuleIndex() {
+            return RULE_effectBlock;
+        }
+
+        @Override
+        public void enterRule(ParseTreeListener listener) {
+            if (listener instanceof ItemObjectGrammarListener)
+                ((ItemObjectGrammarListener) listener).enterEffectBlock(this);
+        }
+
+        @Override
+        public void exitRule(ParseTreeListener listener) {
+            if (listener instanceof ItemObjectGrammarListener)
+                ((ItemObjectGrammarListener) listener).exitEffectBlock(this);
+        }
+
+        @Override
+        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+            if (visitor instanceof ItemObjectGrammarVisitor)
+                return ((ItemObjectGrammarVisitor<? extends T>) visitor).visitEffectBlock(this);
+            else return visitor.visitChildren(this);
+        }
+    }
+
+    @SuppressWarnings("CheckReturnValue")
     public static class EffectYXContext extends ParserRuleContext {
         public String y;
         public String x;
@@ -3267,70 +3332,6 @@ public class ItemObjectGrammar extends Parser {
         public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
             if (visitor instanceof ItemObjectGrammarVisitor)
                 return ((ItemObjectGrammarVisitor<? extends T>) visitor).visitEffectMsg(this);
-            else return visitor.visitChildren(this);
-        }
-    }
-
-    @SuppressWarnings("CheckReturnValue")
-    public static class EffectBlockContext extends ParserRuleContext {
-        public String typeInit;
-        public String subtypeWrapperInit;
-        public String radius;
-        public String other;
-        public String diceString;
-        public String yVal;
-        public String xVal;
-        public String expressionChars;
-        public String expressionBase;
-        public String expressionOperation;
-        public String effectMessage;
-        public int lineNo;
-        public EffectContext effect;
-        public EffectYXContext effectYX;
-        public DiceContext dice;
-        public EffectMsgContext effectMsg;
-
-        public EffectContext effect() {
-            return getRuleContext(EffectContext.class, 0);
-        }
-
-        public EffectMsgContext effectMsg() {
-            return getRuleContext(EffectMsgContext.class, 0);
-        }
-
-        public EffectYXContext effectYX() {
-            return getRuleContext(EffectYXContext.class, 0);
-        }
-
-        public DiceContext dice() {
-            return getRuleContext(DiceContext.class, 0);
-        }
-
-        public EffectBlockContext(ParserRuleContext parent, int invokingState) {
-            super(parent, invokingState);
-        }
-
-        @Override
-        public int getRuleIndex() {
-            return RULE_effectBlock;
-        }
-
-        @Override
-        public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ItemObjectGrammarListener)
-                ((ItemObjectGrammarListener) listener).enterEffectBlock(this);
-        }
-
-        @Override
-        public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ItemObjectGrammarListener)
-                ((ItemObjectGrammarListener) listener).exitEffectBlock(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof ItemObjectGrammarVisitor)
-                return ((ItemObjectGrammarVisitor<? extends T>) visitor).visitEffectBlock(this);
             else return visitor.visitChildren(this);
         }
     }

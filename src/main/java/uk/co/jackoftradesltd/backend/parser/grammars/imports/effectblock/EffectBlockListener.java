@@ -14,6 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
+
 // Generated from EffectBlock.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.imports.effectblock;
 import org.antlr.v4.runtime.tree.ParseTreeListener;

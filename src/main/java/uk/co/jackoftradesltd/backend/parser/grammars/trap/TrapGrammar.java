@@ -14,6 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
+
 // Generated from TrapGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.trap;
 
@@ -234,19 +235,19 @@ public class TrapGrammar extends Parser {
                     "\u0000\u0109+\u0001\u0000\u0000\u0000\u010a\u010b\u0005\u0012\u0000\u0000" +
                     "\u010b\u010c\u0005-\u0000\u0000\u010c\u010d\u0006\u0016\uffff\uffff\u0000" +
                     "\u010d-\u0001\u0000\u0000\u0000\u010e\u010f\u0005\u0014\u0000\u0000\u010f" +
-                    "\u0110\u0005\u001a\u0000\u0000\u0110\u0111\u0006\u0017\uffff\uffff\u0000" +
-                    "\u0111/\u0001\u0000\u0000\u0000\u0112\u0113\u0003$\u0012\u0000\u0113\u011c" +
-                    "\u0006\u0018\uffff\uffff\u0000\u0114\u0115\u0003&\u0013\u0000\u0115\u0116" +
-                    "\u0006\u0018\uffff\uffff\u0000\u0116\u011d\u0001\u0000\u0000\u0000\u0117" +
-                    "\u0118\u0003(\u0014\u0000\u0118\u0119\u0006\u0018\uffff\uffff\u0000\u0119" +
-                    "\u011b\u0001\u0000\u0000\u0000\u011a\u0117\u0001\u0000\u0000\u0000\u011a" +
-                    "\u011b\u0001\u0000\u0000\u0000\u011b\u011d\u0001\u0000\u0000\u0000\u011c" +
-                    "\u0114\u0001\u0000\u0000\u0000\u011c\u011a\u0001\u0000\u0000\u0000\u011d" +
-                    "\u0121\u0001\u0000\u0000\u0000\u011e\u011f\u0003,\u0016\u0000\u011f\u0120" +
-                    "\u0006\u0018\uffff\uffff\u0000\u0120\u0122\u0001\u0000\u0000\u0000\u0121" +
-                    "\u011e\u0001\u0000\u0000\u0000\u0121\u0122\u0001\u0000\u0000\u0000\u0122" +
-                    "1\u0001\u0000\u0000\u0000\u0012[k\u0087\u0089\u008b\u009f\u00a4\u00cc" +
-                    "\u00ce\u00d8\u00e8\u00ea\u00ec\u00fc\u0100\u011a\u011c\u0121";
+                    "\u0110\u0005.\u0000\u0000\u0110\u0111\u0006\u0017\uffff\uffff\u0000\u0111" +
+                    "/\u0001\u0000\u0000\u0000\u0112\u0113\u0003$\u0012\u0000\u0113\u011c\u0006" +
+                    "\u0018\uffff\uffff\u0000\u0114\u0115\u0003&\u0013\u0000\u0115\u0116\u0006" +
+                    "\u0018\uffff\uffff\u0000\u0116\u011d\u0001\u0000\u0000\u0000\u0117\u0118" +
+                    "\u0003(\u0014\u0000\u0118\u0119\u0006\u0018\uffff\uffff\u0000\u0119\u011b" +
+                    "\u0001\u0000\u0000\u0000\u011a\u0117\u0001\u0000\u0000\u0000\u011a\u011b" +
+                    "\u0001\u0000\u0000\u0000\u011b\u011d\u0001\u0000\u0000\u0000\u011c\u0114" +
+                    "\u0001\u0000\u0000\u0000\u011c\u011a\u0001\u0000\u0000\u0000\u011d\u0121" +
+                    "\u0001\u0000\u0000\u0000\u011e\u011f\u0003,\u0016\u0000\u011f\u0120\u0006" +
+                    "\u0018\uffff\uffff\u0000\u0120\u0122\u0001\u0000\u0000\u0000\u0121\u011e" +
+                    "\u0001\u0000\u0000\u0000\u0121\u0122\u0001\u0000\u0000\u0000\u01221\u0001" +
+                    "\u0000\u0000\u0000\u0012[k\u0087\u0089\u008b\u009f\u00a4\u00cc\u00ce\u00d8" +
+                    "\u00e8\u00ea\u00ec\u00fc\u0100\u011a\u011c\u0121";
 
     public static final String[] ruleNames = makeRuleNames();
 
@@ -2723,8 +2724,8 @@ public class TrapGrammar extends Parser {
                 setState(270);
                 match(TIME);
                 setState(271);
-                ((TimeContext) _localctx).SIMPLE_DICE_STRING = match(SIMPLE_DICE_STRING);
-                ((TimeContext) _localctx).timeStr = ((TimeContext) _localctx).SIMPLE_DICE_STRING.getText();
+                ((TimeContext) _localctx).DICE_SIMPLE_VALUE = match(DICE_SIMPLE_VALUE);
+                ((TimeContext) _localctx).timeStr = ((TimeContext) _localctx).DICE_SIMPLE_VALUE.getText();
             }
         } catch (RecognitionException re) {
             _localctx.exception = re;
@@ -2741,7 +2742,7 @@ public class TrapGrammar extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class TimeContext extends ParserRuleContext {
         public String timeStr;
-        public Token SIMPLE_DICE_STRING;
+        public Token DICE_SIMPLE_VALUE;
 
         public TimeContext(ParserRuleContext parent, int invokingState) {
             super(parent, invokingState);
@@ -2751,8 +2752,8 @@ public class TrapGrammar extends Parser {
             return getToken(TrapGrammar.TIME, 0);
         }
 
-        public TerminalNode SIMPLE_DICE_STRING() {
-            return getToken(TrapGrammar.SIMPLE_DICE_STRING, 0);
+        public TerminalNode DICE_SIMPLE_VALUE() {
+            return getToken(TrapGrammar.DICE_SIMPLE_VALUE, 0);
         }
 
         @Override

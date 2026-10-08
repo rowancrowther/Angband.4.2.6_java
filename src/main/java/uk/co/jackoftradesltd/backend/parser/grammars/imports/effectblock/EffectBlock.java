@@ -14,6 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
+
 // Generated from EffectBlock.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.imports.effectblock;
 import org.antlr.v4.runtime.atn.*;
@@ -86,16 +87,16 @@ public class EffectBlock extends Parser {
                     "9:\u0005\u0014\u0000\u0000:;\u0006\u0003\uffff\uffff\u0000;\u0007\u0001" +
                     "\u0000\u0000\u0000<=\u0005\u0002\u0000\u0000=>\u0005\u000e\u0000\u0000" +
                     ">?\u0006\u0004\uffff\uffff\u0000?\t\u0001\u0000\u0000\u0000@A\u0005\u0004" +
-                    "\u0000\u0000AB\u0005\n\u0000\u0000BC\u0006\u0005\uffff\uffff\u0000C\u000b" +
-                    "\u0001\u0000\u0000\u0000DE\u0003\u0000\u0000\u0000EN\u0006\u0006\uffff" +
-                    "\uffff\u0000FG\u0003\u0002\u0001\u0000GH\u0006\u0006\uffff\uffff\u0000" +
-                    "HO\u0001\u0000\u0000\u0000IJ\u0003\u0004\u0002\u0000JK\u0006\u0006\uffff" +
-                    "\uffff\u0000KM\u0001\u0000\u0000\u0000LI\u0001\u0000\u0000\u0000LM\u0001" +
-                    "\u0000\u0000\u0000MO\u0001\u0000\u0000\u0000NF\u0001\u0000\u0000\u0000" +
-                    "NL\u0001\u0000\u0000\u0000OS\u0001\u0000\u0000\u0000PQ\u0003\b\u0004\u0000" +
-                    "QR\u0006\u0006\uffff\uffff\u0000RT\u0001\u0000\u0000\u0000SP\u0001\u0000" +
-                    "\u0000\u0000ST\u0001\u0000\u0000\u0000T\r\u0001\u0000\u0000\u0000\b\u001a" +
-                    "\u001c\u001e.2LNS";
+                    "\u0000\u0000AB\u0005\u000f\u0000\u0000BC\u0006\u0005\uffff\uffff\u0000" +
+                    "C\u000b\u0001\u0000\u0000\u0000DE\u0003\u0000\u0000\u0000EN\u0006\u0006" +
+                    "\uffff\uffff\u0000FG\u0003\u0002\u0001\u0000GH\u0006\u0006\uffff\uffff" +
+                    "\u0000HO\u0001\u0000\u0000\u0000IJ\u0003\u0004\u0002\u0000JK\u0006\u0006" +
+                    "\uffff\uffff\u0000KM\u0001\u0000\u0000\u0000LI\u0001\u0000\u0000\u0000" +
+                    "LM\u0001\u0000\u0000\u0000MO\u0001\u0000\u0000\u0000NF\u0001\u0000\u0000" +
+                    "\u0000NL\u0001\u0000\u0000\u0000OS\u0001\u0000\u0000\u0000PQ\u0003\b\u0004" +
+                    "\u0000QR\u0006\u0006\uffff\uffff\u0000RT\u0001\u0000\u0000\u0000SP\u0001" +
+                    "\u0000\u0000\u0000ST\u0001\u0000\u0000\u0000T\r\u0001\u0000\u0000\u0000" +
+                    "\b\u001a\u001c\u001e.2LNS";
 
     public static final String[] ruleNames = makeRuleNames();
 
@@ -437,6 +438,62 @@ public class EffectBlock extends Parser {
         return _localctx;
     }
 
+    public final TimeContext time() throws RecognitionException {
+        TimeContext _localctx = new TimeContext(_ctx, getState());
+        enterRule(_localctx, 10, RULE_time);
+        try {
+            enterOuterAlt(_localctx, 1);
+            {
+                setState(64);
+                match(TIME);
+                setState(65);
+                ((TimeContext) _localctx).DICE_SIMPLE_VALUE = match(DICE_SIMPLE_VALUE);
+                ((TimeContext) _localctx).timeStr = ((TimeContext) _localctx).DICE_SIMPLE_VALUE.getText();
+            }
+        } catch (RecognitionException re) {
+            _localctx.exception = re;
+            _errHandler.reportError(this, re);
+            _errHandler.recover(this, re);
+        } finally {
+            exitRule();
+        }
+        return _localctx;
+    }
+
+    public final ExprContext expr() throws RecognitionException {
+        ExprContext _localctx = new ExprContext(_ctx, getState());
+        enterRule(_localctx, 6, RULE_expr);
+        try {
+            enterOuterAlt(_localctx, 1);
+            {
+                setState(52);
+                match(EXPR);
+                setState(53);
+                ((ExprContext) _localctx).ch = match(EXPR_CHAR);
+                setState(54);
+                match(EXPR_COLON);
+                setState(55);
+                ((ExprContext) _localctx).base = match(EXPR_UCASE);
+                setState(56);
+                match(EXPR_COLON);
+                setState(57);
+                ((ExprContext) _localctx).op = match(EXPR_OP);
+
+                ((ExprContext) _localctx).exprChar = ((ExprContext) _localctx).ch.getText();
+                ((ExprContext) _localctx).baseName = ((ExprContext) _localctx).base.getText();
+                ((ExprContext) _localctx).operation = ((ExprContext) _localctx).op.getText();
+
+            }
+        } catch (RecognitionException re) {
+            _localctx.exception = re;
+            _errHandler.reportError(this, re);
+            _errHandler.recover(this, re);
+        } finally {
+            exitRule();
+        }
+        return _localctx;
+    }
+
     @SuppressWarnings("CheckReturnValue")
     public static class EffectYXContext extends ParserRuleContext {
         public String y;
@@ -480,29 +537,17 @@ public class EffectBlock extends Parser {
         }
     }
 
-    public final ExprContext expr() throws RecognitionException {
-        ExprContext _localctx = new ExprContext(_ctx, getState());
-        enterRule(_localctx, 6, RULE_expr);
+    public final EffectMsgContext effectMsg() throws RecognitionException {
+        EffectMsgContext _localctx = new EffectMsgContext(_ctx, getState());
+        enterRule(_localctx, 8, RULE_effectMsg);
         try {
             enterOuterAlt(_localctx, 1);
             {
-                setState(52);
-                match(EXPR);
-                setState(53);
-                ((ExprContext) _localctx).ch = match(EXPR_CHAR);
-                setState(54);
-                match(EXPR_COLON);
-                setState(55);
-                ((ExprContext) _localctx).base = match(EXPR_UCASE);
-                setState(56);
-                match(EXPR_COLON);
-                setState(57);
-                ((ExprContext) _localctx).op = match(EXPR_OP);
-
-                ((ExprContext) _localctx).exprChar = ((ExprContext) _localctx).ch.getText();
-                ((ExprContext) _localctx).baseName = ((ExprContext) _localctx).base.getText();
-                ((ExprContext) _localctx).operation = ((ExprContext) _localctx).op.getText();
-
+                setState(60);
+                match(EFFECT_MESSAGE);
+                setState(61);
+                ((EffectMsgContext) _localctx).FREE_TEXT = match(FREE_TEXT);
+                ((EffectMsgContext) _localctx).message = ((EffectMsgContext) _localctx).FREE_TEXT.getText();
             }
         } catch (RecognitionException re) {
             _localctx.exception = re;
@@ -563,28 +608,6 @@ public class EffectBlock extends Parser {
         }
     }
 
-    public final EffectMsgContext effectMsg() throws RecognitionException {
-        EffectMsgContext _localctx = new EffectMsgContext(_ctx, getState());
-        enterRule(_localctx, 8, RULE_effectMsg);
-        try {
-            enterOuterAlt(_localctx, 1);
-            {
-                setState(60);
-                match(EFFECT_MESSAGE);
-                setState(61);
-                ((EffectMsgContext) _localctx).FREE_TEXT = match(FREE_TEXT);
-                ((EffectMsgContext) _localctx).message = ((EffectMsgContext) _localctx).FREE_TEXT.getText();
-            }
-        } catch (RecognitionException re) {
-            _localctx.exception = re;
-            _errHandler.reportError(this, re);
-            _errHandler.recover(this, re);
-        } finally {
-            exitRule();
-        }
-        return _localctx;
-    }
-
     @SuppressWarnings("CheckReturnValue")
     public static class ExprContext extends ParserRuleContext {
         public String exprChar;
@@ -636,28 +659,6 @@ public class EffectBlock extends Parser {
         public void exitRule(ParseTreeListener listener) {
             if (listener instanceof EffectBlockListener) ((EffectBlockListener) listener).exitExpr(this);
         }
-    }
-
-    public final TimeContext time() throws RecognitionException {
-        TimeContext _localctx = new TimeContext(_ctx, getState());
-        enterRule(_localctx, 10, RULE_time);
-        try {
-            enterOuterAlt(_localctx, 1);
-            {
-                setState(64);
-                match(TIME);
-                setState(65);
-                ((TimeContext) _localctx).SIMPLE_DICE_STRING = match(SIMPLE_DICE_STRING);
-                ((TimeContext) _localctx).timeStr = ((TimeContext) _localctx).SIMPLE_DICE_STRING.getText();
-            }
-        } catch (RecognitionException re) {
-            _localctx.exception = re;
-            _errHandler.reportError(this, re);
-            _errHandler.recover(this, re);
-        } finally {
-            exitRule();
-        }
-        return _localctx;
     }
 
     @SuppressWarnings("CheckReturnValue")
@@ -789,7 +790,7 @@ public class EffectBlock extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class TimeContext extends ParserRuleContext {
         public String timeStr;
-        public Token SIMPLE_DICE_STRING;
+        public Token DICE_SIMPLE_VALUE;
 
         public TimeContext(ParserRuleContext parent, int invokingState) {
             super(parent, invokingState);
@@ -799,8 +800,8 @@ public class EffectBlock extends Parser {
             return getToken(EffectBlock.TIME, 0);
         }
 
-        public TerminalNode SIMPLE_DICE_STRING() {
-            return getToken(EffectBlock.SIMPLE_DICE_STRING, 0);
+        public TerminalNode DICE_SIMPLE_VALUE() {
+            return getToken(EffectBlock.DICE_SIMPLE_VALUE, 0);
         }
 
         @Override

@@ -116,6 +116,18 @@ class EffectBlockTest {
                 "the time: line must be left unconsumed for the owning record");
     }
 
+    /**
+     * The standalone {@code time} rule is still there for importing grammars that want it.
+     */
+    @Test
+    void standaloneTimeRuleCapturesDice() {
+        Errors errors = new Errors();
+        EffectBlock.TimeContext ctx = parser("time:5+1d5\n", errors).time();
+
+        assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
+        assertEquals("5+1d5", ctx.timeStr);
+    }
+
     @Test
     void complexDiceWithoutExprIsRejected() {
         Errors errors = new Errors();

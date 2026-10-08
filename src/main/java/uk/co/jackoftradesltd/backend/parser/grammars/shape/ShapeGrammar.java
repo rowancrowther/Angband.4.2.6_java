@@ -14,6 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
+
 // Generated from ShapeGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.shape;
 
@@ -221,19 +222,19 @@ public class ShapeGrammar extends Parser {
                     "\u00f6\u00f7\u0006\u0014\uffff\uffff\u0000\u00f7)\u0001\u0000\u0000\u0000" +
                     "\u00f8\u00f9\u0005\u0011\u0000\u0000\u00f9\u00fa\u0005\'\u0000\u0000\u00fa" +
                     "\u00fb\u0006\u0015\uffff\uffff\u0000\u00fb+\u0001\u0000\u0000\u0000\u00fc" +
-                    "\u00fd\u0005\u0013\u0000\u0000\u00fd\u00fe\u0005\u0019\u0000\u0000\u00fe" +
-                    "\u00ff\u0006\u0016\uffff\uffff\u0000\u00ff-\u0001\u0000\u0000\u0000\u0100" +
-                    "\u0101\u0003\"\u0011\u0000\u0101\u010a\u0006\u0017\uffff\uffff\u0000\u0102" +
-                    "\u0103\u0003$\u0012\u0000\u0103\u0104\u0006\u0017\uffff\uffff\u0000\u0104" +
-                    "\u010b\u0001\u0000\u0000\u0000\u0105\u0106\u0003&\u0013\u0000\u0106\u0107" +
-                    "\u0006\u0017\uffff\uffff\u0000\u0107\u0109\u0001\u0000\u0000\u0000\u0108" +
-                    "\u0105\u0001\u0000\u0000\u0000\u0108\u0109\u0001\u0000\u0000\u0000\u0109" +
-                    "\u010b\u0001\u0000\u0000\u0000\u010a\u0102\u0001\u0000\u0000\u0000\u010a" +
-                    "\u0108\u0001\u0000\u0000\u0000\u010b\u010f\u0001\u0000\u0000\u0000\u010c" +
-                    "\u010d\u0003*\u0015\u0000\u010d\u010e\u0006\u0017\uffff\uffff\u0000\u010e" +
-                    "\u0110\u0001\u0000\u0000\u0000\u010f\u010c\u0001\u0000\u0000\u0000\u010f" +
-                    "\u0110\u0001\u0000\u0000\u0000\u0110/\u0001\u0000\u0000\u0000\u000eiu" +
-                    "\u0087\u00ba\u00bc\u00c6\u00d6\u00d8\u00da\u00ea\u00ee\u0108\u010a\u010f";
+                    "\u00fd\u0005\u0013\u0000\u0000\u00fd\u00fe\u0005(\u0000\u0000\u00fe\u00ff" +
+                    "\u0006\u0016\uffff\uffff\u0000\u00ff-\u0001\u0000\u0000\u0000\u0100\u0101" +
+                    "\u0003\"\u0011\u0000\u0101\u010a\u0006\u0017\uffff\uffff\u0000\u0102\u0103" +
+                    "\u0003$\u0012\u0000\u0103\u0104\u0006\u0017\uffff\uffff\u0000\u0104\u010b" +
+                    "\u0001\u0000\u0000\u0000\u0105\u0106\u0003&\u0013\u0000\u0106\u0107\u0006" +
+                    "\u0017\uffff\uffff\u0000\u0107\u0109\u0001\u0000\u0000\u0000\u0108\u0105" +
+                    "\u0001\u0000\u0000\u0000\u0108\u0109\u0001\u0000\u0000\u0000\u0109\u010b" +
+                    "\u0001\u0000\u0000\u0000\u010a\u0102\u0001\u0000\u0000\u0000\u010a\u0108" +
+                    "\u0001\u0000\u0000\u0000\u010b\u010f\u0001\u0000\u0000\u0000\u010c\u010d" +
+                    "\u0003*\u0015\u0000\u010d\u010e\u0006\u0017\uffff\uffff\u0000\u010e\u0110" +
+                    "\u0001\u0000\u0000\u0000\u010f\u010c\u0001\u0000\u0000\u0000\u010f\u0110" +
+                    "\u0001\u0000\u0000\u0000\u0110/\u0001\u0000\u0000\u0000\u000eiu\u0087" +
+                    "\u00ba\u00bc\u00c6\u00d6\u00d8\u00da\u00ea\u00ee\u0108\u010a\u010f";
 
     public static final String[] ruleNames = makeRuleNames();
 
@@ -2554,8 +2555,8 @@ public class ShapeGrammar extends Parser {
                 setState(252);
                 match(TIME);
                 setState(253);
-                ((TimeContext) _localctx).SIMPLE_DICE_STRING = match(SIMPLE_DICE_STRING);
-                ((TimeContext) _localctx).timeStr = ((TimeContext) _localctx).SIMPLE_DICE_STRING.getText();
+                ((TimeContext) _localctx).DICE_SIMPLE_VALUE = match(DICE_SIMPLE_VALUE);
+                ((TimeContext) _localctx).timeStr = ((TimeContext) _localctx).DICE_SIMPLE_VALUE.getText();
             }
         } catch (RecognitionException re) {
             _localctx.exception = re;
@@ -2572,7 +2573,7 @@ public class ShapeGrammar extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class TimeContext extends ParserRuleContext {
         public String timeStr;
-        public Token SIMPLE_DICE_STRING;
+        public Token DICE_SIMPLE_VALUE;
 
         public TimeContext(ParserRuleContext parent, int invokingState) {
             super(parent, invokingState);
@@ -2582,8 +2583,8 @@ public class ShapeGrammar extends Parser {
             return getToken(ShapeGrammar.TIME, 0);
         }
 
-        public TerminalNode SIMPLE_DICE_STRING() {
-            return getToken(ShapeGrammar.SIMPLE_DICE_STRING, 0);
+        public TerminalNode DICE_SIMPLE_VALUE() {
+            return getToken(ShapeGrammar.DICE_SIMPLE_VALUE, 0);
         }
 
         @Override

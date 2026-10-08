@@ -14,6 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
+
 // Generated from MonsterSpellGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.monsterspell;
 
@@ -190,7 +191,7 @@ public class MonsterSpellGrammar extends Parser {
                     "\uffff\uffff\u0000\u00ce\'\u0001\u0000\u0000\u0000\u00cf\u00d0\u0005\u0011" +
                     "\u0000\u0000\u00d0\u00d1\u0005\u001d\u0000\u0000\u00d1\u00d2\u0006\u0014" +
                     "\uffff\uffff\u0000\u00d2)\u0001\u0000\u0000\u0000\u00d3\u00d4\u0005\u0013" +
-                    "\u0000\u0000\u00d4\u00d5\u0005\u0019\u0000\u0000\u00d5\u00d6\u0006\u0015" +
+                    "\u0000\u0000\u00d4\u00d5\u0005\u001e\u0000\u0000\u00d5\u00d6\u0006\u0015" +
                     "\uffff\uffff\u0000\u00d6+\u0001\u0000\u0000\u0000\u00d7\u00d8\u0003 \u0010" +
                     "\u0000\u00d8\u00e1\u0006\u0016\uffff\uffff\u0000\u00d9\u00da\u0003\"\u0011" +
                     "\u0000\u00da\u00db\u0006\u0016\uffff\uffff\u0000\u00db\u00e2\u0001\u0000" +
@@ -1849,8 +1850,8 @@ public class MonsterSpellGrammar extends Parser {
                 setState(211);
                 match(TIME);
                 setState(212);
-                ((TimeContext) _localctx).SIMPLE_DICE_STRING = match(SIMPLE_DICE_STRING);
-                ((TimeContext) _localctx).timeStr = ((TimeContext) _localctx).SIMPLE_DICE_STRING.getText();
+                ((TimeContext) _localctx).DICE_SIMPLE_VALUE = match(DICE_SIMPLE_VALUE);
+                ((TimeContext) _localctx).timeStr = ((TimeContext) _localctx).DICE_SIMPLE_VALUE.getText();
             }
         } catch (RecognitionException re) {
             _localctx.exception = re;
@@ -2193,18 +2194,18 @@ public class MonsterSpellGrammar extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class TimeContext extends ParserRuleContext {
         public String timeStr;
-        public Token SIMPLE_DICE_STRING;
+        public Token DICE_SIMPLE_VALUE;
 
         public TimeContext(ParserRuleContext parent, int invokingState) {
             super(parent, invokingState);
         }
 
-        public TerminalNode TIME() {
-            return getToken(MonsterSpellGrammar.TIME, 0);
+        public TerminalNode DICE_SIMPLE_VALUE() {
+            return getToken(MonsterSpellGrammar.DICE_SIMPLE_VALUE, 0);
         }
 
-        public TerminalNode SIMPLE_DICE_STRING() {
-            return getToken(MonsterSpellGrammar.SIMPLE_DICE_STRING, 0);
+        public TerminalNode TIME() {
+            return getToken(MonsterSpellGrammar.TIME, 0);
         }
 
         @Override

@@ -91,7 +91,8 @@ import static uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum.ORIGIN
  * <p>The text and placement side turns an item into words and says where it goes.
  * {@link #description} is still a stub, {@link #printCustomMessage} fills the tags of a data-file
  * message from the item, and {@link #objectKindName} and {@link #objDescNameFormat} build a kind's
- * name. {@link #wieldSlot} answers which equipment slot the item would be worn in, {@link #canBrowse}
+ * name. Those two and {@link #objectValue}, which prices a stack for the shops and for ordering
+ * the pack, are {@code public} as in C. {@link #wieldSlot} answers which equipment slot the item would be worn in, {@link #canBrowse}
  * whether the player's class can read it, and {@link #getItemObjectADC} how it is drawn.
  * {@link #wipe} blanks every field, and {@link #initCurses} gives the item a fresh curse map.
  * {@link #copy} makes an independent duplicate, rebuilding every mutable container and sharing the
@@ -111,7 +112,8 @@ import static uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum.ORIGIN
  * <p>Class ItemObject commented in full on 261002, knowledge and recharge note added on 261002,
  * text and placement note added on 261002, constructor and accessor note added on 261002, notice
  * mutator note added on 261003, notice test note added on 261003, modifier message note added
- * on 261004, copy note added on 261007, power calculation note corrected on 261007.
+ * on 261004, copy note added on 261007, power calculation note corrected on 261007, public
+ * pricing and name methods noted on 261008.
  *
  * @author Rowan Crowther
  * @see KnownObject
@@ -129,7 +131,12 @@ public class ItemObject {
      * {@code object_property.txt} and a flag index that could never be valid, where C prints a
      * "Bug:" line to the player.
      *
-     * <p>Field logger commented in full on 261002, flag message note added on 261002.
+     * <p>{@link #objDescNameFormat} reports its two malformed-template exits here, a bar count that
+     * is not a multiple of three and a {@code ~} with no character before it, where C either
+     * truncates the name or reads off the front of the template.
+     *
+     * <p>Field logger commented in full on 261002, flag message note added on 261002, name template
+     * note added on 261008.
      */
     private static final Logger logger = LogManager.getLogger();
 
@@ -4264,15 +4271,16 @@ public class ItemObject {
      * {@code false} for one, though {@link #objectValueBase} then throws.
      *
      * <p>Read by {@link #earlierObject} to order stock by price, and by the shop and wizard-mode
-     * code C routes through {@code object_value}. It is {@code private} here because
-     * {@link #earlierObject} is its only caller so far; the store code will need it widened.
+     * code C routes through {@code object_value}. It is {@code public}, as C's is, so that the
+     * store code can call it; {@link #earlierObject} is its only caller so far.
      *
-     * <p>Function objectValue coded before 260827, commented in full on 261007.
+     * <p>Function objectValue coded before 260827, commented in full on 261007, visibility note
+     * corrected on 261008.
      *
      * @param quantity how many items are being priced
      * @return the price of the stack in gold
      */
-    private int objectValue(int quantity) {
+    public int objectValue(int quantity) {
         int value;
 
         // Variable power items are assess by what is known about them
@@ -6233,7 +6241,9 @@ public class ItemObject {
      * by what they are showing, not by a property of the object: the message tags and the wizard-mode
      * object picker pass {@code true}, the ignore menus pass the kind's own awareness, and the
      * knowledge menu passes the {@code cheat_xtra} option. The only caller here is
-     * {@link #printCustomMessage}, which always passes {@code true}.
+     * {@link #printCustomMessage}, which always passes {@code true}, so the flavour-text branch is
+     * reached only by the unit tests until the ignore and knowledge menus are ported. The method is
+     * {@code public}, as C's is, ready for them.
      *
      * <p>Note this is the kind's name, not an object's: there is no quantity prefix, no ego or
      * artifact name, and no runes.
@@ -6242,13 +6252,14 @@ public class ItemObject {
      * string and so cannot truncate, matching the divergence already recorded on
      * {@link #objDescNameFormat}.
      *
-     * <p>Function objectKindName commented in full on 261002; the C callers were corrected on 261002.
+     * <p>Function objectKindName commented in full on 261002; the C callers were corrected on 261002;
+     * visibility note added on 261008.
      *
      * @param kind     the kind to name
      * @param easyKnow whether to use the identified name even when the player is unaware
      * @return the flavour text for an unaware flavoured kind, otherwise the formatted kind name
      */
-    private String objectKindName(@NotNull ObjectKind kind, boolean easyKnow) {
+    public String objectKindName(@NotNull ObjectKind kind, boolean easyKnow) {
         if (!easyKnow && !kind.isAware() && kind.getFlavour() != null)
             return kind.getFlavour().getText();
 
@@ -6313,8 +6324,13 @@ public class ItemObject {
      * way. No template in {@code object.txt}, {@code object_base.txt} or C's hard-coded basenames
      * has both a bar and a {@code ~}.
      *
+     * <p>The method is {@code public}, as C's is. Its only caller outside the class's own recursion
+     * is {@link #objectKindName}, which passes no modifier and the singular, so the {@code #} and
+     * plural paths are exercised only by the unit tests until {@code object_desc}, the save code and
+     * the object-kind comparison are ported.
+     *
      * <p>Function objDescNameFormat commented in full on 261002, bar-alternative note added on
-     * 261007.
+     * 261007, visibility and caller note added on 261008.
      *
      * @param string    the name template to format
      * @param modString the text to substitute for {@code #}, or {@code null} to leave any
@@ -6322,7 +6338,7 @@ public class ItemObject {
      * @param pluralise whether to take the plural form of every {@code ~} and {@code |x|y|}
      * @return the formatted name
      */
-    private String objDescNameFormat(@NotNull String string, @Nullable String modString, boolean pluralise) {
+    public String objDescNameFormat(@NotNull String string, @Nullable String modString, boolean pluralise) {
         StringBuilder result = new StringBuilder();
 
         // Trim '&'

@@ -156,11 +156,13 @@ Shape follows `docs/ItemObject_stage1_mismatches.md`. File and line references a
 - Gone, re-read 2026-10-07: the copied "Add damage from dice" comment in `damageDicePower(Curse)` (the plain
   `damageDicePower` keeps its own, which is right) and the `{@link}` to private `objectKindChar()` and
   `objectKindAttr()`.
+- **Result:** FIXED.
 
 ### 14. Visibility to widen later (Parts C, G)
 
 - `objectValue` is private where C's is public (needed by Chapter 8). `objectKindName` and `objDescNameFormat` have no
   caller for the unaware-flavour, `pluralise` and `modString` paths until Chapter 7.
+- **Result:** FIXED.
 
 ### 15. Stale test comments (Part A)
 

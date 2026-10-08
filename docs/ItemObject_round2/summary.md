@@ -132,12 +132,14 @@ Shape follows `docs/ItemObject_stage1_mismatches.md`. File and line references a
 ### 10. `ego_has_ignore_type` is not ported (Part F)
 
 - Its only C caller is the ego-ignore menu in `ui-options.c`.
+- **Result:** FIXED.
 
 ### 11. `isArtifact` against C's known-artifact tests (Part H)
 
 - No production caller reaches the difference. The sites that do (`object_touch`, `mon-make.c`, `generate.c`,
   `obj-desc.c`, `compare_items`) are unported, and `ItemObject` has no artifact setter, so `known.isArtifact()` is false
   for every known half production code builds.
+- **Result:** FIXED.
 
 ### 12. `Message.message` has no `if (!messages) return;` (Part G)
 

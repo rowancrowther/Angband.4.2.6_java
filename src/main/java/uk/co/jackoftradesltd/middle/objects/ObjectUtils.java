@@ -1805,6 +1805,33 @@ public class ObjectUtils {
     }
 
     /**
+     * Reports whether an object is an artifact that the player knows to be one, the port of
+     * {@code obj_is_known_artifact} in {@code obj-util.c}.
+     *
+     * <p>Both halves must agree. The real object must carry an artifact
+     * ({@link ItemObject#isArtifact}), it must have a known half, and that known half must
+     * itself carry an artifact ({@link ItemObject#isKnownArtifact}). An artifact the player has not yet
+     * identified is therefore not a known artifact, and nor is a known half whose real object has
+     * no artifact.
+     *
+     * <p>This is not {@link ItemObject#isKnownArtifact}, which is the port of
+     * {@code object_is_known_artifact} in {@code obj-knowledge.c} and looks only at the known half.
+     * The two C functions are used at different sites, so the port keeps them apart. The
+     * {@code null} test on the known half is redundant with the one inside
+     * {@link ItemObject#isKnownArtifact}, and is kept so the clauses read in C's order.
+     *
+     * <p>Function objIsKnownArtifact coded on 261008 / commented in full on 261008.
+     *
+     * @param obj the object to test; not {@code null}, as C dereferences it
+     * @return {@code true} if {@code obj} is an artifact and its known half records that artifact
+     */
+    public static boolean objIsKnownArtifact(ItemObject obj) {
+        if (!obj.isArtifact()) return false;
+        if (obj.getKnown() == null) return false;
+        return obj.isKnownArtifact();
+    }
+
+    /**
      * The pair of counts {@link ObjectUtils#quiverAbsorbNum} takes in and hands back - how many of an object
      * can go to the quiver, and how many of the offered pack slots are left unspent.
      *

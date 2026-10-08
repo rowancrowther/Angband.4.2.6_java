@@ -246,8 +246,12 @@ public class ItemObject {
      *
      * <p>{@link #wipe} sets it to {@code null}.
      *
+     * <p>On the known half the same field records that the player has learned the item is an
+     * artifact, which is what {@link #isKnownArtifact} reads and
+     * {@link ObjectUtils#objIsKnownArtifact} compares against the real object's.
+     *
      * <p>Field artifact commented in full on 261002, ignore read added on 261002, wipe reset added
-     * on 261002.
+     * on 261002, known-artifact reads added on 261008.
      */
     private Artifact artifact;
 
@@ -283,8 +287,12 @@ public class ItemObject {
      *
      * <p>{@link #wipe} sets it to {@code null} without touching the counterpart itself.
      *
+     * <p>{@link #isKnownArtifact} and {@link ObjectUtils#objIsKnownArtifact} read its
+     * {@link #artifact} to tell whether the player has identified this item as an artifact.
+     *
      * <p>Field known commented in full on 261002, pricing added on 261002, knowledge reads added on
-     * 261002, wipe reset added on 261002, {@code flagsKnown} description corrected on 261003.
+     * 261002, wipe reset added on 261002, {@code flagsKnown} description corrected on 261003,
+     * known-artifact reads added on 261008.
      */
     private ItemObject known;
 
@@ -1243,6 +1251,31 @@ public class ItemObject {
         this.notice.on(notice);
     }
 
+    /**
+     * Reports whether the player knows this object to be an artifact, the port of
+     * {@code object_is_known_artifact} in {@code obj-knowledge.c}.
+     *
+     * <p>Reads the known half only: {@code true} when {@link #known} is present and itself carries
+     * an artifact. It never looks at this object's own artifact, so it answers {@code false} for an
+     * item with no known half and {@code false} when the known half's artifact is {@code null}.
+     * Compare {@link ObjectUtils#objIsKnownArtifact}, the port of {@code obj_is_known_artifact} in
+     * {@code obj-util.c}, which also requires the real object to be an artifact.
+     *
+     * <p>C sets the known half's artifact in {@code object_touch}. This class has no artifact setter
+     * yet, so a known half answers {@code true} here only if it was built with an artifact through
+     * the full constructor.
+     *
+     * <p>Function isKnownArtifact coded on 261008 / commented in full on 261008.
+     *
+     * @return {@code true} if this object has a known half that records an artifact
+     */
+    public boolean isKnownArtifact() {
+        if (getKnown() == null)
+            return false;
+
+        return getKnown().isArtifact();
+    }
+    
     /**
      * Reports whether this object is an artifact, the port of testing C's {@code obj->artifact}
      * against {@code NULL}.

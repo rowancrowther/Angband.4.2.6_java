@@ -41,309 +41,445 @@ import uk.co.jackoftradesltd.middle.player.enums.*;
 
 import java.util.*;
 
-/**
- * The player - the port of C's {@code struct player} (player.h), and the central mutable object of a
- * game in progress. It gathers everything about the current character: identity (race, class, name,
- * history), the birth and derived statistics, position and depth, resources (HP, SP, gold, food,
- * energy), the timed effects and options in force, the body plan and any assumed shape, the carried
- * gear, and the transient per-turn bookkeeping held in {@link PlayerUpkeep}.
- *
- * <p>The middle layer reaches the live player through the swappable
- * {@link uk.co.jackoftradesltd.middle.game.gameengine.GameState#getPlayer()} boundary rather than a global,
- * so there is exactly one player during play and a test can install its own.
- *
- * <p>This is a work in progress: many fields of C's {@code struct player} are present but not yet
- * wired up, and several methods below are deliberate stubs - individually noted - awaiting the
- * subsystems they depend on.
- *
- * @author Rowan Crowther
- */
+    /**
+     * The player - the port of C's {@code struct player} (player.h), and the central mutable object of a
+     * game in progress. It gathers everything about the current character: identity (race, class, name,
+     * history), the birth and derived statistics, position and depth, resources (HP, SP, gold, food,
+     * energy), the timed effects and options in force, the body plan and any assumed shape, the carried
+     * gear, and the transient per-turn bookkeeping held in {@link PlayerUpkeep}.
+     *
+     * <p>The middle layer reaches the live player through the swappable
+     * {@link uk.co.jackoftradesltd.middle.game.gameengine.GameState#getPlayer()} boundary rather than a global,
+     * so there is exactly one player during play and a test can install its own.
+     *
+     * <p>Every field of C's {@code struct player} has a counterpart here, but not every one has an
+     * accessor yet. {@code oldGrid}, {@code expFrac}, {@code food}, {@code diedFrom} and {@code noScore}
+     * are set up by the constructor and cleared by {@link #wipe}, and nothing else reads or writes them,
+     * because no ported code does either; they get their accessors when the code that uses them arrives.
+     * No method in this class is a stub.
+     *
+     * <p>Several writers - {@link #setCurrentHP}, {@link #setExp} and {@link #setDepth} among them -
+     * also forward the new value to {@link PlayerEventStatusUpdate}, the status cache the UI reads. C
+     * has no counterpart, since its UI redraws from the struct. That cache is being replaced by messages
+     * sent at redraw time (see {@code docs/implementation/260926_change_in_architecture_from_cache_to_messages.md}),
+     * so those forwarding calls are expected to go.
+     *
+     * <p>Class Player coded before 260815, commented in full on 261008.
+     *
+     * @author Rowan Crowther
+     */
 public class Player {
     /**
-     * Current spell points (mana) - the port of C's {@code p->csp}.
-     */
-    private int curSp;
-    
-    /**
-     * Log destination for the conditions C asserts on. Ported asserts become a warning and an
-     * early return rather than a crash, so that a data file with an unexpected shape spoils one
-     * action instead of the session.
+     * Log destination for this class. It is used for one thing only: the fatal record written just
+     * before the constructor and {@link #wipe} throw because no player race is loaded. C's
+     * {@code player_init} points {@code p->race} at the head of the race list without checking it, so
+     * this is the one condition where the port stops where C would carry on with a null race.
+     *
+     * <p>Field logger coded before 260815, commented in full on 261008.
      */
     private static final Logger logger = LogManager.getLogger(Player.class);
-    
+    /**
+     * The player's accumulated object knowledge ("runes") - the port of C's {@code p->obj_k}.
+     *
+     * <p>C types that field as a whole {@code struct object}, having nowhere else to hang a bag of
+     * learned properties; this port gives it {@link KnownObject}, which carries the twelve fields
+     * {@code obj_k} actually uses and none of the several dozen it does not. See that class for
+     * why the split is safe.
+     *
+     * <p>Null until the data files are parsed, matching C, which allocates {@code p->obj_k} in
+     * {@code init_player} rather than with the player struct because the knowledge is sized from
+     * the registries.
+     *
+     * <p>Field itemKnowledge coded before 260815, commented in full on 261008.
+     */
+    KnownObject itemKnowledge;
+    /**
+     * Current spell points (mana) - the port of C's {@code p->csp}.
+     *
+     * <p>Field curSp coded before 260815, commented in full on 261008.
+     */
+    private int curSp;
     /**
      * The player's race - the port of C's {@code p->race}.
+     *
+     * <p>Field race coded before 260815, commented in full on 261008.
      */
     private PlayerRace race;
     /**
      * The player's class - the port of C's {@code p->class}.
+     *
+     * <p>Field playerClass coded before 260815, commented in full on 261008.
      */
     private PlayerClass playerClass;
-
     /**
      * The player's current grid on the level - the port of C's {@code p->grid}.
+     *
+     * <p>Field grid coded before 260815, commented in full on 261008.
      */
     private Loc grid;
     /**
      * The player's grid before leaving for an arena - the port of C's {@code p->old_grid}.
+     *
+     * <p>Field oldGrid coded before 260815, commented in full on 261008.
      */
     private Loc oldGrid;
-
     /**
      * Number of sides on the player's hit die - the port of C's {@code p->hitdie}.
+     *
+     * <p>Field hitDie coded before 260815, commented in full on 261008.
      */
     private int hitDie;
     /**
      * Experience factor: the class/race multiplier applied to experience - the port of C's {@code p->expfact}.
+     *
+     * <p>Field expFact coded before 260815, commented in full on 261008.
      */
     private int expFact;
-
     /**
      * The character's age in years - the port of C's {@code p->age}.
+     *
+     * <p>Field age coded before 260815, commented in full on 261008.
      */
     private int age;
     /**
      * The character's height - the port of C's {@code p->ht}.
+     *
+     * <p>Field height coded before 260815, commented in full on 261008.
      */
     private int height;
     /**
      * The character's weight - the port of C's {@code p->wt}.
+     *
+     * <p>Field weight coded before 260815, commented in full on 261008.
      */
     private int weight;
-
     /**
      * Current gold - the port of C's {@code p->au}.
+     *
+     * <p>Field au coded before 260815, commented in full on 261008.
      */
     private long au;
-
     /**
      * Deepest dungeon level yet reached - the port of C's {@code p->max_depth}.
+     *
+     * <p>Field maxDepth coded before 260815, commented in full on 261008.
      */
     private int maxDepth;
     /**
      * Level that Word of Recall will return the player to - the port of C's {@code p->recall_depth}.
+     *
+     * <p>Field recallDepth coded before 260815, commented in full on 261008.
      */
     private int recallDepth;
     /**
      * Current dungeon depth - the port of C's {@code p->depth}.
+     *
+     * <p>Field depth coded before 260815, commented in full on 261008.
      */
     private int depth;
-
     /**
      * Highest character level yet attained - the port of C's {@code p->max_lev}.
+     *
+     * <p>Field maxLevel coded before 260815, commented in full on 261008.
      */
     private int maxLevel;
     /**
      * Current character level - the port of C's {@code p->lev}.
+     *
+     * <p>Field level coded before 260815, commented in full on 261008.
      */
     private int level;
-
     /**
      * Highest experience total yet held (never drained below) - the port of C's {@code p->max_exp}.
+     *
+     * <p>Field maxExp coded before 260815, commented in full on 261008.
      */
     private long maxExp;
     /**
      * Current experience - the port of C's {@code p->exp}.
+     *
+     * <p>Field exp coded before 260815, commented in full on 261008.
      */
     private long exp;
     /**
      * Fractional part of the current experience, scaled by 2^16 - the port of C's {@code p->exp_frac}.
+     *
+     * <p>Field expFrac coded before 260815, commented in full on 261008.
      */
     private int expFrac;
-
     /**
      * Maximum hit points - the port of C's {@code p->mhp}.
+     *
+     * <p>Field maxHP coded before 260815, commented in full on 261008.
      */
     private int maxHP;
     /**
      * Current hit points - the port of C's {@code p->chp}.
+     *
+     * <p>Field currentHP coded before 260815, commented in full on 261008.
      */
     private int currentHP;
     /**
      * Fractional part of the current hit points, scaled by 2^16 - the port of C's {@code p->chp_frac}.
+     *
+     * <p>Field chpFrac coded before 260815, commented in full on 261008.
      */
     private int chpFrac;
-
     /**
      * Maximum spell points (mana) - the port of C's {@code p->msp}.
+     *
+     * <p>Field maxSP coded before 260815, commented in full on 261008.
      */
     private int maxSP;
     /**
      * The player's real carried gear - the port of C's {@code p->gear}.
+     *
+     * <p>Field gear coded before 260815, commented in full on 261008.
      */
     private Pile gear;
     /**
      * Fractional part of the current spell points, scaled by 2^16 - the port of C's {@code p->csp_frac}.
+     *
+     * <p>Field cspFrac coded before 260815, commented in full on 261008.
      */
     private int cspFrac;
-
     /**
      * Current "maximal" stat values, before drain - the port of C's {@code p->stat_max}.
+     *
+     * <p>Field statMax coded before 260815, commented in full on 261008.
      */
     private HashMap<Stats, Integer> statMax;
     /**
      * Current "natural" stat values - the port of C's {@code p->stat_cur}.
+     *
+     * <p>Field statCur coded before 260815, commented in full on 261008.
      */
     private HashMap<Stats, Integer> statCur;
     /**
      * Tracks stats remapped by a temporary stat swap - the port of C's {@code p->stat_map}.
+     *
+     * <p>Field statMap coded before 260815, commented in full on 261008.
      */
     private HashMap<Stats, Stats> statMap;
-
     /**
      * Turns remaining on each timed effect - the port of C's {@code p->timed}.
+     *
+     * <p>Field timed coded before 260815, commented in full on 261008.
      */
     private Map<TimedEffect, Integer> timed;
-
     /**
      * Turns until a pending Word of Recall fires - the port of C's {@code p->word_recall}.
+     *
+     * <p>Field wordRecall coded before 260815, commented in full on 261008.
      */
     private int wordRecall;
     /**
      * Turns until a pending Deep Descent fires - the port of C's {@code p->deep_descent}.
+     *
+     * <p>Field deepDescent coded before 260815, commented in full on 261008.
      */
     private int deepDescent;
-
     /**
      * Current energy; the player acts once it reaches the action threshold - the port of C's {@code p->energy}.
+     *
+     * <p>Field energy coded before 260815, commented in full on 261008.
      */
     private int energy;
     /**
      * Total energy ever used, including resting - the port of C's {@code p->total_energy}.
+     *
+     * <p>Field totalEnergy coded before 260815, commented in full on 261008.
      */
     private int totalEnergy;
     /**
      * Number of player turns spent resting - the port of C's {@code p->resting_turn}.
+     *
+     * <p>Field restingTurn coded before 260815, commented in full on 261008.
      */
     private int restingTurn;
-
     /**
      * Current nutrition - the port of C's {@code p->food}.
+     *
+     * <p>Field food coded before 260815, commented in full on 261008.
      */
     private int food;
-
     /**
      * Non-zero while the player is temporarily showing ignored items - the port of C's {@code p->unignoring}.
+     *
+     * <p>Field unignoring coded before 260815, commented in full on 261008.
      */
     private int unignoring;
-
     /**
      * Bloodlust-coercion skip state for the next command - the port of C's {@code p->skip_cmd_coercion}.
      *
      * @see #getSkipCmdCoercion()
+     *
+     * <p>Field skipCmdCoercion coded before 260815, commented in full on 261008.
      */
     private int skipCmdCoercion;
-
     /**
      * Per-spell knowledge/learning flags - the port of C's {@code p->spell_flags}.
+     *
+     * <p>Field spellFlags coded before 260815, commented in full on 261008.
      */
     private List<Integer> spellFlags; // TODO: Change this once we know what we are dealing with
-
     /**
      * Order in which spells were learned - the port of C's {@code p->spell_order}.
+     *
+     * <p>Field spellOrder coded before 260815, commented in full on 261008.
      */
     private List<Integer> spellOrder; // TODO: Change this once we know what we are dealing with
-
     /**
      * The character's full name - the port of C's {@code p->full_name}.
+     *
+     * <p>Field fullName coded before 260815, commented in full on 261008.
      */
     private String fullName;
-
     /**
      * Cause of death - the port of C's {@code p->died_from}.
+     *
+     * <p>Field diedFrom coded before 260815, commented in full on 261008.
      */
     private String diedFrom;
-
     /**
      * The character's background history text - the port of C's {@code p->history}.
+     *
+     * <p>Field historyBirth coded before 260815, commented in full on 261008.
      */
     private String historyBirth;
-
     /**
      * The character's quest history - the port of C's {@code p->quests}.
+     *
+     * <p>Field quests coded before 260815, commented in full on 261008.
      */
     private ArrayList<Quest> quests;
-
     /**
      * Total-winner flag: set once the player has won the game - the port of C's {@code p->total_winner}.
+     *
+     * <p>Field totalWinner coded before 260815, commented in full on 261008.
      */
     private boolean totalWinner;
-
     /**
      * Cheating flags that disqualify the character from the score list - the port of C's {@code p->noscore}.
+     *
+     * <p>Field noScore coded before 260815, commented in full on 261008.
      */
     private int noScore;
-
     /**
      * True once the player has died - the port of C's {@code p->is_dead}.
+     *
+     * <p>Field isDead coded before 260815, commented in full on 261008.
      */
     private boolean isDead;
-
     /**
      * True while the player is in wizard mode - the port of C's {@code p->wizard}.
+     *
+     * <p>Field isWizard coded before 260815, commented in full on 261008.
      */
     private boolean isWizard;
-
     /**
      * Hit points gained at each level, one entry per level - the port of C's {@code p->player_hp}.
+     *
+     * <p>Field playerHP coded before 260815, commented in full on 261008.
      */
     private int[] playerHP;
-
     /**
      * Saved birth gold, used by quickstart when {@code birth_money} is off - the port of C's {@code p->au_birth}.
+     *
+     * <p>Field auBirth coded before 260815, commented in full on 261008.
      */
     private long auBirth;
-
     /**
      * Saved birth "natural" stat values, for quickstart - the port of C's {@code p->stat_birth}.
+     *
+     * <p>Field statsBirth coded before 260815, commented in full on 261008.
      */
     private HashMap<Stats, Integer> statsBirth;
-
     /**
      * Saved birth height, for quickstart - the port of C's {@code p->ht_birth}.
+     *
+     * <p>Field htBirth coded before 260815, commented in full on 261008.
      */
     private int htBirth;
-
     /**
      * Saved birth weight, for quickstart - the port of C's {@code p->wt_birth}.
+     *
+     * <p>Field wtBirth coded before 260815, commented in full on 261008.
      */
     private int wtBirth;
-
     /**
      * The player's option settings - the port of C's {@code p->opts}.
+     *
+     * <p>Field options coded before 260815, commented in full on 261008.
      */
     private PlayerOptions options;
-
     /**
      * The player's structured history log (see {@code player-history.c}) - the port of C's {@code p->hist}.
+     *
+     * <p>Field playerHistory coded before 260815, commented in full on 261008.
      */
     private PlayerHistory playerHistory;
-
     /**
      * The player's body plan, i.e. the equipment slots available - the port of C's {@code p->body}.
+     *
+     * <p>Field body coded before 260815, commented in full on 261008.
      */
     private PlayerBody body;
-
     /**
      * The player's current shape, if shapechanged - the port of C's {@code p->shape}.
+     *
+     * <p>Field shape coded before 260815, commented in full on 261008.
      */
     private PlayerShape shape;
     /**
      * The player's gear as currently known to the player - the port of C's {@code p->gear_k}.
+     *
+     * <p>Field gearKnown coded before 260815, commented in full on 261008.
      */
     private Pile gearKnown;
+    /**
+     * The player's known version of the current level - the port of C's {@code p->cave}.
+     *
+     * <p>Field cave coded before 260815, commented in full on 261008.
+     */
+    private Chunk cave;
+    /**
+     * The player's fully calculated state - the port of C's {@code p->state}.
+     *
+     * <p>Field state coded before 260815, commented in full on 261008.
+     */
+    private PlayerState state;
+    /**
+     * What the player can know of the calculated state - the port of C's {@code p->known_state}.
+     *
+     * <p>Field knownState coded before 260815, commented in full on 261008.
+     */
+    private PlayerState knownState;
+    /**
+     * Transient per-turn bookkeeping - the port of C's {@code p->upkeep}.
+     *
+     * <p>Field playerUpkeep coded before 260815, commented in full on 261008.
+     */
+    private PlayerUpkeep playerUpkeep;
 
     /**
      * Builds an empty player. The two comments below mark a real division: the first group is what
-     * C's own initialisation does — {@code player_init} ({@code src/player.c}) allocates the
+     * C's own initialisation does — {@code init_player} ({@code player.c}) allocates the
      * upkeep and the timed-effect table and calls {@code options_init_defaults} — while the second
      * group sets fields C leaves to {@code mem_zalloc}. Java has no equivalent blanket zeroing for
      * the reference fields, and writing them out is what makes the starting state readable rather
      * than implied.
      *
-     * <p>A player built here is not yet playable: race, class, body, state and level are all null
-     * or empty, and {@link #itemKnowledge} is null until the registries exist to size it against.
-     * Birth fills them in.
+     * <p>A player built here is not yet playable: the class, state, known state and shape are
+     * null, the level is zero, and {@link #itemKnowledge} is null until the registries exist to size it
+     * against. Birth fills them in.
+     *
+     * <p>The race is the first one the registry holds, as {@code player_init} leaves C's, so a
+     * player cannot be built before the player races have been loaded.
+     *
+     * <p>Constructor Player coded before 260815, commented in full on 261008.
+     *
+     * @throws IllegalStateException if no player race has been loaded
      */
     public Player() {
         // C initialisation
@@ -395,39 +531,30 @@ public class Player {
     }
 
     /**
-     * The player's accumulated object knowledge ("runes") - the port of C's {@code p->obj_k}.
+     * Returns this player to a blank slate in place - the Java stand-in for the
+     * {@code memset(p, 0, sizeof(struct player))} at the head of C's {@code player_init}
+     * ({@code player-birth.c}), which {@code PlayerBirth.playerInit} calls first. C can wipe by
+     * overwriting the struct; a Java caller holds a reference that a new object would never reach, so
+     * every field is reset on the object it already has.
      *
-     * <p>C types that field as a whole {@code struct object}, having nowhere else to hang a bag of
-     * learned properties; this port gives it {@link KnownObject}, which carries the twelve fields
-     * {@code obj_k} actually uses and none of the several dozen it does not. See that class for
-     * why the split is safe.
+     * <p>The body repeats the constructor's initialisation - the C-initialised group, then the
+     * Java-initialised reference fields - and then zeroes every other member: name, history, levels,
+     * experience, hit points, spell points, gold, depths and the counters. Fields that have a setter
+     * are reset through it, so the UI's status cache in {@link PlayerEventStatusUpdate} is zeroed along
+     * with them.
      *
-     * <p>Null until the data files are parsed, matching C, which allocates {@code p->obj_k} in
-     * {@code init_player} rather than with the player struct because the knowledge is sized from
-     * the registries.
+     * <p>The result is blank rather than ready. {@code playerInit} goes on to put the saved options
+     * back, size the upkeep, the timed-effect table and the object knowledge, reset the quests, and
+     * point the player at the first race and class and the "normal" shape. Until then the class and
+     * the shape are {@code null} and the options are the defaults rather than the player's own.
+     *
+     * <p>Like the constructor, this throws if no player race is loaded, where C would carry on with a
+     * null race.
+     *
+     * <p>Function wipe coded before 260815, commented in full on 261008.
+     *
+     * @throws IllegalStateException if no player race has been loaded
      */
-    KnownObject itemKnowledge;
-
-    /**
-     * The player's known version of the current level - the port of C's {@code p->cave}.
-     */
-    private Chunk cave;
-
-    /**
-     * The player's fully calculated state - the port of C's {@code p->state}.
-     */
-    private PlayerState state;
-
-    /**
-     * What the player can know of the calculated state - the port of C's {@code p->known_state}.
-     */
-    private PlayerState knownState;
-
-    /**
-     * Transient per-turn bookkeeping - the port of C's {@code p->upkeep}.
-     */
-    private PlayerUpkeep playerUpkeep;
-
     public void wipe() {
         // C initialisation
         playerUpkeep = new PlayerUpkeep();
@@ -481,6 +608,7 @@ public class Player {
         level = 0;
         maxLevel = 0;
         this.setExp(0L);
+        this.setMaxExp(0L);
         this.setMaxLevel(0);
         expFrac = 0;
 
@@ -560,7 +688,16 @@ public class Player {
     }
 
     /**
-     * @return the player's current spell points - the port of C's {@code p->csp}
+     * Returns the player's current spell points - the port of reading C's {@code p->csp}: the mana
+     * available to cast with now, against the ceiling of {@link #getMaxSP}. The fractional remainder
+     * is held separately (see {@link #setCspFrac}) and is not included.
+     *
+     * <p>C holds the field as {@code int16_t} and the port as {@code int}; the writer is
+     * {@link #setCurSp}.
+     *
+     * <p>Function getCurSp coded before 260815, commented in full on 261008.
+     *
+     * @return the player's current spell points
      */
     public int getCurSp() {
         return curSp;
@@ -633,21 +770,23 @@ public class Player {
      * {@link PlayerCalcs#calcShapechange}, never stored back.
      *
      * <p><b>"Normal" is a shape, not the absence of one.</b> C gives every character
-     * {@code lookup_player_shape("normal")} in {@code player_init} ({@code player-birth.c:457}) and
-     * returns them to it in {@code player_resume_normal_shape} ({@code player-util.c:1053}), so the
+     * {@code lookup_player_shape("normal")} in {@code player_init} ({@code player-birth.c}) and
+     * returns them to it in {@code player_resume_normal_shape} ({@code player-util.c}), so the
      * question "is this player shapechanged?" is a name comparison and not a null test — ask
      * {@link #isShapeChanged}, which does exactly that.
      *
-     * <p><b>Can be {@code null} in the port, where C's cannot.</b> The constructor leaves the field
-     * null and nothing assigns it yet: the shapechange effect that sets it in C
-     * ({@code effect-handler-general.c:3453}) is not ported, and neither is the birth assignment
-     * above. C only ever sees a null shape while loading a save, and treats that as a corrupt file
-     * ({@code load.c:691}). So callers here have to guard, and the ported readers do — see
-     * {@link PlayerCalcs#calcShapechange}, which returns the totals untouched, and the shape branches of
+     * <p><b>Can be {@code null} in the port, where C's cannot.</b> The constructor and {@link #wipe}
+     * leave the field null, and the only ported code that assigns one is
+     * {@code PlayerBirth.playerInit}, which sets "normal". So a player that has been through birth
+     * initialisation has a shape, and one that has not — a test fixture, or a player just wiped — does
+     * not. C only ever sees a null shape while loading a save, and treats that as a corrupt file
+     * ({@code load.c}). Callers here have to guard, and the ported readers do — see
+     * {@link PlayerCalcs#calcShapechange}, which returns the totals untouched, the shape branches of
      * {@code PlayerKnowledge.equipLearnOnDefend}, {@code equipLearnOnRangedAttack} and
-     * {@code equipLearnOnMeleeAttack}.
+     * {@code equipLearnOnMeleeAttack}, and {@link #isShapeChanged}.
      *
-     * <p>Function getShape commented in full on 260901.
+     * <p>Function getShape commented in full on 260901, rewritten on 261008 now that
+     * {@code PlayerBirth.playerInit} assigns the normal shape.
      *
      * @return the player's current shape, or {@code null} while none has been set
      */
@@ -683,6 +822,8 @@ public class Player {
      * Returns how many turns remain on a timed effect - the port of reading C's {@code p->timed[idx]}.
      * An effect the player is not under reads as {@code 0}, matching C's zeroed slot.
      *
+     * <p>Function getTimedEffect coded before 260815, commented in full on 261008.
+     *
      * @param timedEffect the timed effect to query
      * @return the turns remaining on the effect, or {@code 0} if the player is not under it
      */
@@ -693,21 +834,46 @@ public class Player {
     }
 
     /**
-     * @return the {@link Chunk} (level) the player is currently in - the port of C's {@code p->cave}
+     * Returns the player's known version of the current level - the port of reading C's
+     * {@code p->cave}. It is what the player has seen and remembers, not the real level the monsters
+     * and objects live in; the real one is held by
+     * {@link uk.co.jackoftradesltd.middle.game.gameengine.GameState}.
+     *
+     * <p>Null until level generation assigns one with {@link #setCave}, which nothing does yet, so
+     * code that reads it has to cope with that.
+     *
+     * <p>Function getCave coded before 260815, commented in full on 261008.
+     *
+     * @return the player's remembered level, or {@code null} before one has been assigned
      */
     public Chunk getCave() {
         return cave;
     }
 
     /**
-     * @return the player's transient per-turn bookkeeping - the port of C's {@code p->upkeep}
+     * Returns the player's transient per-turn bookkeeping - the port of reading C's {@code p->upkeep}:
+     * the pending update and redraw flags, the resting counter, the running state, and the pack and
+     * quiver arrays. C's own comment calls these temporary player-related values.
+     *
+     * <p>Never null after construction. The object is mutable and live, and {@link #setUpkeep}
+     * replaces it wholesale.
+     *
+     * <p>Function getPlayerUpkeep coded before 260815, commented in full on 261008.
+     *
+     * @return the player's per-turn bookkeeping, shared with this instance
      */
     public PlayerUpkeep getPlayerUpkeep() {
         return playerUpkeep;
     }
 
     /**
-     * @return the player's body plan, i.e. its equipment slots - the port of C's {@code p->body}
+     * Returns the player's body plan - the port of reading C's {@code p->body}: the equipment slots
+     * the character can wear things in. C embeds the struct in the player; the port holds a reference,
+     * so what comes back is this player's own body and not a shared template (see {@link #setBody}).
+     *
+     * <p>Function getPlayerBody coded before 260815, commented in full on 261008.
+     *
+     * @return the player's body plan
      */
     public PlayerBody getPlayerBody() {
         return body;
@@ -715,13 +881,21 @@ public class Player {
 
     /**
      * Reports whether the player is currently in a non-normal shape - the port of C's
-     * {@code player_is_shapechanged}, which tests {@code p->shape && !streq(p->shape->name, "normal")}.
-     * A shapechanged player is confined to floor items during item selection (see
+     * {@code player_is_shapechanged} ({@code player-util.c}), which is
+     * {@code streq(p->shape->name, "normal") ? false : true}. A shapechanged player is confined to
+     * floor items during item selection (see
      * {@link uk.co.jackoftradesltd.middle.game.gameengine.Command#getItem}).
      *
-     * <p>A player with no shape set counts as <em>not</em> shapechanged: the {@code null} check
-     * mirrors C's leading {@code p->shape &&} guard, so this returns {@code false} rather than
-     * throwing when {@link #shape} is absent.
+     * <p><b>Deliberate divergence: a null shape answers {@code false}.</b> C reads
+     * {@code p->shape->name} with no guard, because every C player has a shape from {@code player_init}
+     * onwards and a missing one is a corrupt savefile. The port's player can lack one: the constructor
+     * and {@link #wipe} leave the field null and only {@code PlayerBirth.playerInit} assigns
+     * "normal" (see {@link #getShape}). Without the guard this would throw on a player that has not
+     * been through that call; with it, "no shape" reads as "not shapechanged", which is what a
+     * normal-shaped player answers.
+     *
+     * <p>Function isShapeChanged coded before 260815, commented in full on 261008, rewritten after the
+     * earlier text attributed a {@code p->shape &&} guard to C.
      *
      * @return {@code true} when the player has a shape whose name is anything other than
      * {@code "normal"}; {@code false} when the shape is {@code "normal"} or unset
@@ -734,8 +908,14 @@ public class Player {
 
     /**
      * Tests whether a player flag is set on the player's calculated {@link PlayerState} - the port of
-     * reading C's {@code p->state.pflags}. Because the flags live on the derived state, this reflects
-     * the player after race, class and equipment contributions have been folded in.
+     * C's {@code player_has(p, flag)} macro, which is {@code pf_has(p->state.pflags, flag)}. Because the
+     * flags live on the derived state, this reflects the player after race, class and equipment
+     * contributions have been folded in.
+     *
+     * <p>Throws a {@link NullPointerException} while the state is {@code null}, that is before the
+     * first bonus calculation; C's embedded state is zero-filled by then and would answer false.
+     *
+     * <p>Function hasPlayerFlag coded before 260815, commented in full on 261008.
      *
      * @param flag the player flag to test for
      * @return {@code true} if the flag is set on the current player state
@@ -747,6 +927,17 @@ public class Player {
     }
 
     /**
+     * Tests whether an object flag is set on the player's calculated {@link PlayerState} - the port of
+     * C's {@code player_of_has} ({@code player-util.c}), which is {@code of_has(p->state.flags, flag)}.
+     * The flags are the ones {@code calc_bonuses} gathered: the innate flags from {@link #playerFlags},
+     * those the carried gear grants, and those duplicated by running timed effects
+     * ({@link #flagsTimed}).
+     *
+     * <p>Throws a {@link NullPointerException} while the state is {@code null}, that is before the
+     * first bonus calculation.
+     *
+     * <p>Function hasObjectFlag coded before 260815, commented in full on 261008.
+     *
      * @param flag the object flag to test
      * @return {@code true} if the player's calculated state carries the given object flag
      */
@@ -757,6 +948,11 @@ public class Player {
     /**
      * Returns the radius of the light the player currently sheds, read from the calculated
      * {@link PlayerState} - the port of C's {@code p->state.cur_light}.
+     *
+     * <p>Throws a {@link NullPointerException} while the state is {@code null}, that is before the
+     * first bonus calculation.
+     *
+     * <p>Function getStateLight coded before 260815, commented in full on 261008.
      *
      * @return the current light radius
      */
@@ -792,20 +988,27 @@ public class Player {
     }
 
     /**
-     * Writes a timed effect's turn count directly - the port of C's bare {@code p->timed[idx] = value}
-     * assignment, as at {@code player-calcs.c:2154} and {@code player-calcs.c:2161}, where a stun
-     * cancels fast casting, {@code mon-util.c:1287}, and {@code player-birth.c:1021}.
+     * Writes a timed effect's turn count directly - the port of C's bare
+     * {@code p->timed[idx] = value} assignment, as made by {@code calc_bonuses}
+     * ({@code player-calcs.c}) when a stun cancels fast casting, by {@code mon-util.c} when a hit on a
+     * monster ends covered tracks, and by {@code player_generate} ({@code player-birth.c}) to start a
+     * character well fed.
      *
-     * <p>This is deliberately not {@link PlayerTimed#setTimed}. The C sites that assign the slot outright are the
-     * ones that must not run the timed-effects machinery: no grade message, no notification, no
-     * disturb, and none of the redraw or update flags the effect declares. {@code calc_bonuses} is the
-     * clearest case - it is already inside an update, so announcing the change or asking for another
-     * recalculation would be wrong. Every ordinary route into an effect goes through
-     * {@link PlayerTimed#setTimed}, {@link PlayerTimed#incTimed} or
-     * {@link PlayerTimed#playerDecTimed(Player, TimedEffect, int, boolean, boolean)}, which do all of that.
+     * <p>This is deliberately not {@link PlayerTimed#setTimed}. The C sites that assign the slot
+     * outright are the ones that must not run the timed-effects machinery: no grade message, no
+     * notification, no disturb, and none of the redraw or update flags the effect declares.
+     * {@code calc_bonuses} is the clearest case - it is already inside an update, so announcing the
+     * change or asking for another recalculation would be wrong. Every ordinary route into an effect
+     * goes through {@link PlayerTimed#setTimed}, {@link PlayerTimed#incTimed} or
+     * {@link PlayerTimed#playerDecTimed(Player, TimedEffect, int, boolean, boolean)}, which do all of
+     * that.
      *
      * <p>Nothing is validated here, exactly as in C: the count is stored as given, and the caller owns
-     * the decision that it is a sensible one.
+     * the decision that it is a sensible one. The one side effect is not C's: storing
+     * {@link TimedEffect#TMD_IMAGE} also refreshes the UI's cached hallucination flag in
+     * {@link PlayerEventStatusUpdate}, and no other effect has a cache entry.
+     *
+     * <p>Function putTimed coded before 260815, commented in full on 261008.
      *
      * @param timedEffect the timed effect to write
      * @param value       the turn count to store
@@ -834,6 +1037,8 @@ public class Player {
      * a difference in failure mode, not in behaviour; the same applies to {@code STAT_NONE} and
      * {@code STAT_MAX}, which have no slot in C either.
      *
+     * <p>Function getCurStatValue coded before 260815, commented in full on 261008.
+     *
      * @param stat the stat to read; one of the five real stats, not {@code STAT_NONE} or
      *             {@code STAT_MAX}
      * @return the current natural value of that stat
@@ -845,6 +1050,8 @@ public class Player {
     /**
      * Tests whether one of the player's options is enabled - the port of C's {@code OPT(player, opt)}
      * macro, which reads the player's option table.
+     *
+     * <p>Function opt coded before 260815, commented in full on 261008.
      *
      * @param type the option to test
      * @return {@code true} if the option is set
@@ -862,6 +1069,8 @@ public class Player {
      * bloodlust attack substitution on the player's next energy-using command: {@code 1} marks it
      * tentatively (pending whether the command is cancelled), {@code 2} confirms it.
      *
+     * <p>Function getSkipCmdCoercion coded before 260815, commented in full on 261008.
+     *
      * @return the current skip state (0 none, 1 tentative, 2 confirmed)
      */
     public int getSkipCmdCoercion() {
@@ -871,6 +1080,8 @@ public class Player {
     /**
      * Sets the bloodlust-coercion skip state (see {@link #getSkipCmdCoercion()}) - the port of writing
      * C's {@code p->skip_cmd_coercion}.
+     *
+     * <p>Function setSkipCmdCoercion coded before 260815, commented in full on 261008.
      *
      * @param skipCmdCoercion the new skip state (0 none, 1 tentative, 2 confirmed)
      */
@@ -889,6 +1100,8 @@ public class Player {
      * {@code 18 + percentile} up to {@code 18 + 100}, and the same map-versus-array caveat applies
      * to an unwritten stat.
      *
+     * <p>Function getMaxStatValue coded before 260815, commented in full on 261008.
+     *
      * @param stat the stat to read; one of the five real stats, not {@code STAT_NONE} or
      *             {@code STAT_MAX}
      * @return the maximal value of that stat, before drain
@@ -898,9 +1111,14 @@ public class Player {
     }
 
     /**
-     * @return the player's maximum spell points - the port of C's {@code p->msp}; zero for a
-     * character with no spell realm, which is how C tests for one ({@code p->msp} guards
-     * {@code player-calcs.c:2335})
+     * Returns the player's maximum spell points - the port of reading C's {@code p->msp}. Zero for a
+     * character with no spell realm, which is how C tests for one: {@code calc_bonuses}
+     * ({@code player-calcs.c}) raises {@code PF_NO_MANA} when it is zero. The writer is
+     * {@link #setMaxSP}.
+     *
+     * <p>Function getMaxSP coded before 260815, commented in full on 261008.
+     *
+     * @return the player's maximum spell points
      */
     public int getMaxSP() {
         return maxSP;
@@ -925,21 +1143,40 @@ public class Player {
     }
 
     /**
-     * @return the player's class - the port of C's {@code p->class}
+     * Returns the player's class - the port of reading C's {@code p->class}. C holds a pointer into
+     * the shared class list; the port holds whatever {@link #setClass} was given, normally a private
+     * copy (see {@link PlayerClass#copy}).
+     *
+     * <p>Null on a player that has just been constructed or wiped, until {@code PlayerBirth.playerInit}
+     * or {@link #setClass} assigns one.
+     *
+     * <p>Function getPlayerClass coded before 260815, commented in full on 261008.
+     *
+     * @return the player's class, or {@code null} before one has been assigned
      */
     public PlayerClass getPlayerClass() {
         return playerClass;
     }
 
     /**
-     * @return the player's current energy - the port of C's {@code p->energy}
+     * Returns the player's current energy - the port of reading C's {@code p->energy}. It builds up
+     * with the player's speed each game turn, and the player acts once it reaches
+     * {@code z_info->move_energy}, the test in {@code run_game_loop} ({@code game-world.c}). C holds
+     * the field as {@code int16_t} and the port as {@code int}; the writer is {@link #setEnergy}.
+     *
+     * <p>Function getEnergy coded before 260815, commented in full on 261008.
+     *
+     * @return the player's current energy
      */
     public int getEnergy() {
         return energy;
     }
 
     /**
-     * Sets the player's current energy - the port of writing C's {@code p->energy}.
+     * Sets the player's current energy - the port of writing C's {@code p->energy}. Nothing is clamped
+     * here, as in C; the game loop and the commands that spend energy own the arithmetic.
+     *
+     * <p>Function setEnergy coded before 260815, commented in full on 261008.
      *
      * @param energy the new energy value
      */
@@ -948,7 +1185,12 @@ public class Player {
     }
 
     /**
-     * @return {@code true} once the player has died - the port of C's {@code p->is_dead}
+     * Returns whether the player has died - the port of reading C's {@code p->is_dead}. The writer is
+     * {@link #setIsDead}; a new or wiped player is alive.
+     *
+     * <p>Function isDead coded before 260815, commented in full on 261008.
+     *
+     * @return {@code true} once the player has died
      */
     public boolean isDead() {
         return isDead;
@@ -993,16 +1235,40 @@ public class Player {
     }
 
     /**
-     * @return the player's derived/calculated state - the port of C's {@code p->state}
+     * Returns the player's calculated state - the port of reading C's {@code p->state}: the figures
+     * play is resolved with (blows, skills, speed, resistances, flags), as opposed to the base values
+     * held on the player itself. The pass that computes it is {@link PlayerCalcs}, and the writer is
+     * {@link #setState}.
+     *
+     * <p>Null until the first bonus calculation.
+     *
+     * <p>Function getPlayerState coded before 260815, commented in full on 261008.
+     *
+     * @return the player's calculated state, or {@code null} before the first calculation
      */
     public PlayerState getPlayerState() {
         return state;
     }
 
     /**
+     * Returns the running total of energy the player has ever used - the port of reading C's
+     * {@code p->total_energy}, which counts resting as well. C holds it as {@code uint32_t} and the
+     * port as {@code int}; the writer is {@link #setTotalEnergy}.
+     *
+     * <p>Function getTotalEnergy coded before 260815, commented in full on 261008.
+     *
+     * @return the running total of energy the player has ever used
+     */
+    public int getTotalEnergy() {
+        return totalEnergy;
+    }
+
+    /**
      * Sets the running total of energy the player has ever used - the port of writing C's
-     * {@code p->total_energy}. The per-turn cleanup adds each command's energy cost here, tracking the
-     * game's overall pace.
+     * {@code p->total_energy}. C adds each command's energy cost to it in
+     * {@code process_player_cleanup} ({@code game-world.c}), which tracks the game's overall pace.
+     *
+     * <p>Function setTotalEnergy coded before 260815, commented in full on 261008.
      *
      * @param totalEnergy the new cumulative energy total
      */
@@ -1011,21 +1277,23 @@ public class Player {
     }
 
     /**
-     * @return the running total of energy the player has ever used - the port of C's
-     * {@code p->total_energy}
-     */
-    public int getTotalEnergy() {
-        return totalEnergy;
-    }
-
-    /**
-     * @return the player's current grid on the level - the port of C's {@code p->grid}
+     * Returns the player's current grid on the level - the port of reading C's {@code p->grid}. It
+     * starts at {@code Loc.zero}, which means nothing until a level has placed the player.
+     *
+     * <p>Function getGrid coded before 260815, commented in full on 261008.
+     *
+     * @return the player's current grid
      */
     public Loc getGrid() {
         return grid;
     }
 
     /**
+     * Returns the player's current dungeon depth - the port of reading C's {@code p->depth}, in
+     * levels, with {@code 0} the town. The writer is {@link #setDepth}.
+     *
+     * <p>Function getDepth coded before 260815, commented in full on 261008.
+     *
      * @return the player's current dungeon depth (0 = town)
      */
     public int getDepth() {
@@ -1033,10 +1301,20 @@ public class Player {
     }
 
     /**
-     * @return the player's current hit points
+     * Sets the player's current dungeon depth - the port of writing C's {@code p->depth}. Nothing is
+     * clamped, as in C; {@link #updateDungeonDepth} is what raises the deepest-reached mark once the
+     * new level has been entered. The new depth is also forwarded to the UI's status cache in
+     * {@link PlayerEventStatusUpdate}, which C has no counterpart for.
+     *
+     * <p>Function setDepth coded before 260815, commented in full on 261008.
+     *
+     * @param depth the new depth (0 = town)
      */
-    public int getCurrentHP() {
-        return currentHP;
+    public void setDepth(int depth) {
+        this.depth = depth;
+
+        // Update cached value
+        PlayerEventStatusUpdate.updatePlayerStatusDepth(depth);
     }
 
     /**
@@ -1111,6 +1389,75 @@ public class Player {
     }
 
     /**
+     * Returns the player's current hit points - the port of reading C's {@code p->chp}, against the
+     * ceiling of {@link #getMaxHP}. The fractional remainder is held separately (see
+     * {@link #setChpFrac}) and is not included. The writer is {@link #setCurrentHP}.
+     *
+     * <p>Function getCurrentHP coded before 260815, commented in full on 261008.
+     *
+     * @return the player's current hit points
+     */
+    public int getCurrentHP() {
+        return currentHP;
+    }
+
+    /**
+     * Returns the player's current experience total, the port of C's {@code p->exp}. This is the
+     * drainable figure: it is what {@link #playerExpLose} reduces and what {@link #adjustLevel} clamps
+     * to {@link PlayerRegistry#PY_MAX_EXP}, and it may sit below {@code maxExp} after a drain.
+     *
+     * <p>The fractional part held in {@code expFrac} is not included.</p>
+     *
+     * <p>Function getExp coded before 260831, commented in full on 260831.</p>
+     *
+     * @return the player's current experience points
+     */
+    public long getExp() {
+        return exp;
+    }
+    
+    /**
+     * Returns the player's history ledger, the port of C's {@code p->hist}. This is the running log
+     * of notable events - birth, levels gained, uniques slain, artifacts found or missed, and the
+     * player's own notes - and not the block of background text rolled at birth, which is C's
+     * {@code p->history} and a different thing entirely.
+     *
+     * <p>The ledger is built by the constructor and never replaced, so this never answers
+     * {@code null}; C reaches the same state the long way round, {@code history_add_full} calling
+     * {@code history_init} whenever it finds no array. The ledger itself is mutable, and
+     * {@link PlayerHistory#addEntry} is the only thing that writes to it.</p>
+     *
+     * <p>Function getPlayerHistory coded before 260901, commented in full on 260901.</p>
+     *
+     * @return the player's history ledger, never {@code null}
+     */
+    public PlayerHistory getPlayerHistory() {
+        return playerHistory;
+    }
+
+    /**
+     * Returns the known counterparts of the player's carried gear, the port of C's
+     * {@code p->gear_k}. Each entry is the known half of an object in {@link #getGear} - the picture
+     * of it the player's rune knowledge entitles them to see - and the two lists are held in step,
+     * so an object and its knowledge are found at the same position.
+     *
+     * <p>The list is built by the constructor and never replaced, so this never answers
+     * {@code null}. It is the live list rather than a copy, and the gear operations in
+     * {@link uk.co.jackoftradesltd.middle.objects.ObjectUtils} write to it through this accessor:
+     * {@code gearInsertEnd} appends the object's known half beside it, and the absorbing half of
+     * {@code combinePack} removes a merged object's known half before dropping the object. Adding
+     * to it anywhere else would put the two lists out of step, which is what C's
+     * {@code obj->known} pointer makes impossible and this pairing does not.</p>
+     *
+     * <p>Function getGearKnown coded before 260901, commented in full on 260901.</p>
+     *
+     * @return the known counterparts of the carried gear, never {@code null}
+     */
+    public Pile getGearKnown() {
+        return gearKnown;
+    }
+
+    /**
      * Re-evaluates the character level from the experience totals, the port of C's
      * {@code adjust_level} ({@code player.c}). Every route that changes experience - a gain, a
      * drain, a restore - ends here, so this is the single place the level, the maximum level and
@@ -1143,10 +1490,11 @@ public class Player {
      * {@code MSG_LEVEL} message.
      *
      * <p><b>Outstanding.</b> {@link EffectUtil#effectSimple} is a stub
-     * ({@code EffectUtil.java:54}), so the stat restores currently do nothing; the calls are in
-     * place and will start working when the effect subsystem is ported.
+     * (its body is a placeholder {@code TODO}), so the stat restores currently do nothing; the calls
+     * are in place and will start working when the effect subsystem is ported.
      *
-     * <p>Function adjustLevel coded on 260831, commented in full on 260831.
+     * <p>Function adjustLevel coded on 260831, commented in full on 260831, Outstanding note re-checked
+     * against the code on 261008.
      *
      * @param verbose whether a level gain is announced to the player and written to their history
      */
@@ -1157,7 +1505,7 @@ public class Player {
 
         if (getExp() > PlayerRegistry.PY_MAX_EXP) setExp(PlayerRegistry.PY_MAX_EXP);
 
-        if (getMaxExp() > PlayerRegistry.PY_MAX_EXP) maxExp = PlayerRegistry.PY_MAX_EXP;
+        if (getMaxExp() > PlayerRegistry.PY_MAX_EXP) setMaxExp(PlayerRegistry.PY_MAX_EXP);
 
         if (getExp() > getMaxExp()) setMaxExp(getExp());
 
@@ -1219,62 +1567,12 @@ public class Player {
     }
 
     /**
-     * Returns the player's current experience total, the port of C's {@code p->exp}. This is the
-     * drainable figure: it is what {@link #playerExpLose} reduces and what {@link #adjustLevel} clamps
-     * to {@link PlayerRegistry#PY_MAX_EXP}, and it may sit below {@code maxExp} after a drain.
+     * Returns the player's maximum hit points - the port of reading C's {@code p->mhp}. It is derived,
+     * not rolled: {@code calc_hitpoints} ({@code player-calcs.c}) rebuilds it from the rolled table
+     * (see {@link #getPlayerHP}), and the writer is {@link #setPlayerMaxHP}.
      *
-     * <p>The fractional part held in {@code expFrac} is not included.</p>
+     * <p>Function getMaxHP coded before 260815, commented in full on 261008.
      *
-     * <p>Function getExp coded before 260831, commented in full on 260831.</p>
-     *
-     * @return the player's current experience points
-     */
-    public long getExp() {
-        return exp;
-    }
-    
-    /**
-     * Returns the player's history ledger, the port of C's {@code p->hist}. This is the running log
-     * of notable events - birth, levels gained, uniques slain, artifacts found or missed, and the
-     * player's own notes - and not the block of background text rolled at birth, which is C's
-     * {@code p->history} and a different thing entirely.
-     *
-     * <p>The ledger is built by the constructor and never replaced, so this never answers
-     * {@code null}; C reaches the same state the long way round, {@code history_add_full} calling
-     * {@code history_init} whenever it finds no array. The ledger itself is mutable, and
-     * {@link PlayerHistory#addEntry} is the only thing that writes to it.</p>
-     *
-     * <p>Function getPlayerHistory coded before 260901, commented in full on 260901.</p>
-     *
-     * @return the player's history ledger, never {@code null}
-     */
-    public PlayerHistory getPlayerHistory() {
-        return playerHistory;
-    }
-
-    /**
-     * Returns the known counterparts of the player's carried gear, the port of C's
-     * {@code p->gear_k}. Each entry is the known half of an object in {@link #getGear} - the picture
-     * of it the player's rune knowledge entitles them to see - and the two lists are held in step,
-     * so an object and its knowledge are found at the same position.
-     *
-     * <p>The list is built by the constructor and never replaced, so this never answers
-     * {@code null}. It is the live list rather than a copy, and the gear operations in
-     * {@link uk.co.jackoftradesltd.middle.objects.ObjectUtils} write to it through this accessor:
-     * {@code gearInsertEnd} appends the object's known half beside it, and the absorbing half of
-     * {@code combinePack} removes a merged object's known half before dropping the object. Adding
-     * to it anywhere else would put the two lists out of step, which is what C's
-     * {@code obj->known} pointer makes impossible and this pairing does not.</p>
-     *
-     * <p>Function getGearKnown coded before 260901, commented in full on 260901.</p>
-     *
-     * @return the known counterparts of the carried gear, never {@code null}
-     */
-    public Pile getGearKnown() {
-        return gearKnown;
-    }
-
-    /**
      * @return the player's maximum hit points
      */
     public int getMaxHP() {
@@ -1282,14 +1580,31 @@ public class Player {
     }
 
     /**
-     * @return {@code true} if the player is currently resting — either the resting counter is still
-     * running or a special stop-condition rest is in progress
+     * Reports whether the player is resting - the port of C's {@code player_is_resting}
+     * ({@code player-util.c}), which is
+     * {@code resting > 0 || player_resting_is_special(resting)} on the upkeep's counter: either a
+     * counted rest is still running or a rest until some condition is
+     * met is in progress, the latter being a negative sentinel in the same field.
+     *
+     * <p><b>Outstanding.</b> {@code PlayerUtils.restingIsSpecial} is a stub that always answers
+     * {@code false}, so for now only a positive counter counts as resting.
+     *
+     * <p>Function isResting coded before 260815, commented in full on 261008.
+     *
+     * @return {@code true} if the player is resting, by count or by a special stop-condition rest
      */
     public boolean isResting() {
         return (playerUpkeep.getRestingCounter() > 0 || PlayerUtils.restingIsSpecial(playerUpkeep.getRestingCounter()));
     }
 
     /**
+     * Returns the turns remaining until Word of Recall fires - the port of reading C's
+     * {@code p->word_recall}. Zero means no recall is pending. C counts it down in
+     * {@code process_world} ({@code game-world.c}), and not while the player is in an arena; see
+     * {@link #decrementWordRecall}.
+     *
+     * <p>Function getWordRecall coded before 260815, commented in full on 261008.
+     *
      * @return the turns remaining until Word of Recall activates (0 = inactive)
      */
     public int getWordRecall() {
@@ -1297,25 +1612,26 @@ public class Player {
     }
 
     /**
-     * Ticks the Word of Recall countdown down by one turn.
+     * Ticks the Word of Recall countdown down by one turn - the port of the
+     * {@code player->word_recall--} in {@code process_world} ({@code game-world.c}).
+     *
+     * <p>There is no floor and no activation test here. C only decrements while the counter is
+     * non-zero and the player is not in an arena, and tests for zero afterwards to fire the recall;
+     * all of that belongs to the caller.
+     *
+     * <p>Function decrementWordRecall coded before 260815, commented in full on 261008.
      */
     public void decrementWordRecall() {
         wordRecall--;
     }
 
     /**
-     * Sets the player's current dungeon depth.
+     * Returns the depth Word of Recall will return the player to - the port of reading C's
+     * {@code p->recall_depth}. After construction or a wipe the only method here that changes it is
+     * {@link #updateDungeonDepth}, which moves it with the deepest-reached mark.
      *
-     * @param depth the new depth (0 = town)
-     */
-    public void setDepth(int depth) {
-        this.depth = depth;
-
-        // Update cached value
-        PlayerEventStatusUpdate.updatePlayerStatusDepth(depth);
-    }
-
-    /**
+     * <p>Function getRecallDepth coded before 260815, commented in full on 261008.
+     *
      * @return the depth Word of Recall will return the player to
      */
     public int getRecallDepth() {
@@ -1323,6 +1639,12 @@ public class Player {
     }
 
     /**
+     * Returns the turns remaining until a Deep Descent triggers - the port of reading C's
+     * {@code p->deep_descent}. Zero means none is pending. C counts it down in {@code process_world}
+     * ({@code game-world.c}); see {@link #decrementDeepDescent}.
+     *
+     * <p>Function getDeepDescent coded before 260815, commented in full on 261008.
+     *
      * @return the turns remaining until a Deep Descent triggers (0 = inactive)
      */
     public int getDeepDescent() {
@@ -1330,13 +1652,25 @@ public class Player {
     }
 
     /**
-     * Ticks the Deep Descent countdown down by one turn.
+     * Ticks the Deep Descent countdown down by one turn - the port of the
+     * {@code player->deep_descent--} in {@code process_world} ({@code game-world.c}).
+     *
+     * <p>As with {@link #decrementWordRecall} there is no floor and no activation test here: C only
+     * decrements while the counter is non-zero and tests for zero afterwards to start the descent,
+     * and both belong to the caller.
+     *
+     * <p>Function decrementDeepDescent coded before 260815, commented in full on 261008.
      */
     public void decrementDeepDescent() {
         deepDescent--;
     }
 
     /**
+     * Returns the deepest dungeon level the player has reached - the port of reading C's
+     * {@code p->max_depth}. {@link #updateDungeonDepth} is the method here that raises it.
+     *
+     * <p>Function getMaxDepth coded before 260815, commented in full on 261008.
+     *
      * @return the deepest dungeon level the player has reached
      */
     public int getMaxDepth() {
@@ -1344,14 +1678,26 @@ public class Player {
     }
 
     /**
-     * @return the player's carried gear (inventory and equipment)
+     * Returns the player's carried gear - the port of reading C's {@code p->gear}, the "real" list of
+     * every object carried: the pack, the equipment and the quiver. The list is live, not a copy.
+     * {@link #getGearKnown} holds the known counterparts, kept in step with this one.
+     *
+     * <p>Function getGear coded before 260815, commented in full on 261008.
+     *
+     * @return the player's carried gear (inventory, equipment and quiver)
      */
     public Pile getGear() {
         return gear;
     }
 
     /**
-     * @return this player's option settings, the port of C's {@code player->opts}
+     * Returns this player's option settings - the port of reading C's {@code player->opts}. C embeds
+     * the struct; the port holds a reference to the player's own object. {@link #opt} is the shorthand
+     * for testing a single option, and {@link #setOptions} replaces the lot.
+     *
+     * <p>Function getPlayerOptions coded before 260815, commented in full on 261008.
+     *
+     * @return this player's option settings, shared with this instance
      */
     public PlayerOptions getPlayerOptions() {
         return options;
@@ -1359,7 +1705,10 @@ public class Player {
 
     /**
      * Raises the high-water mark of experience level to the current level, if the current level is
-     * higher. C writes this inline wherever the level changes.
+     * higher - the port of the "Track maximum player level" lines of C's {@code on_new_level}
+     * ({@code game-world.c}), which are written inline there.
+     *
+     * <p>Function updateMaxLevel coded before 260815, commented in full on 261008.
      */
     public void updateMaxLevel() {
         this.maxLevel = Math.max(this.maxLevel, this.level);
@@ -1367,9 +1716,13 @@ public class Player {
 
     /**
      * Raises the deepest-reached mark to the current depth, and moves the word-of-recall depth
-     * down with it. The two travel together deliberately: reaching new depth is what re-targets
-     * recall, so a player who then climbs back up still recalls to the deepest point rather than
-     * to wherever they happen to be standing.
+     * down with it - the port of the "Track maximum dungeon level" lines of C's {@code on_new_level}
+     * ({@code game-world.c}), where {@code player->max_depth = player->recall_depth = player->depth}
+     * is written inline. The two travel together deliberately: reaching new depth is what re-targets
+     * recall, so a player who then climbs back up still recalls to the deepest point rather than to
+     * wherever they happen to be standing.
+     *
+     * <p>Function updateDungeonDepth coded before 260815, commented in full on 261008.
      */
     public void updateDungeonDepth() {
         if (maxDepth < depth) {
@@ -1631,10 +1984,10 @@ public class Player {
     /**
      * Returns the player's current character level - the port of reading C's {@code p->lev}.
      *
-     * <p>Distinct from , C's {@code p->max_lev}: experience drain can lower
-     * the current level, but never the highest one attained.
+     * <p>Distinct from {@link #getMaxLevel}, C's {@code p->max_lev}: experience drain can lower the
+     * current level, but never the highest one attained.
      *
-     * <p>Function getLevel commented in full on 260828.
+     * <p>Function getLevel commented in full on 260828, link repaired on 261008.
      *
      * @return the player's current character level
      */
@@ -1982,28 +2335,29 @@ public class Player {
     }
 
     /**
-     * The character's current gold - the port of C's {@code p->au} ({@code player.h:522}).
+     * The character's current gold - the port of C's {@code p->au} ({@code player.h}).
      *
      * <p>The unit is the gold piece, and the field is the whole of the character's purse: Angband
      * has no bank and no second currency, so this one number is what the stores price against
-     * ({@code store.c:1693}) and what the tombstone and the high-score table print
-     * ({@code ui-death.c:100}, {@code score.c:206}).
+     * ({@code store.c}) and what the tombstone and the high-score table print
+     * ({@code ui-death.c}, {@code score.c}).
      *
      * <p>Birth opens it at {@code player:start-gold}, which the shipped {@code constants.txt} sets
      * to 600, and the starting kit is then bought out of it - {@code player_outfit} subtracts each
      * item's {@code object_value_real} and floors the result at zero
-     * ({@code player-birth.c:655}, {@code player-birth.c:663}), so a character can walk into the
+     * ({@code player-birth.c}, {@code player-birth.c}), so a character can walk into the
      * dungeon penniless but never in debt. In play it rises on gold picked up
-     * ({@code cmd-pickup.c:117}), on a monster's dropped coin ({@code mon-util.c:1483}) and on a
-     * sale ({@code store.c:1919}), and falls on a purchase ({@code store.c:1700}) and on a thieving
+     * ({@code cmd-pickup.c}), on a monster's dropped coin ({@code mon-util.c}) and on a
+     * sale ({@code store.c}), and falls on a purchase ({@code store.c}) and on a thieving
      * monster's touch, which takes {@code au / 10 + randint1(25)} and can take no more than is
-     * there ({@code mon-blows.c:797}).
+     * there ({@code mon-blows.c}).
      *
-     * <p>C holds it as {@code int32_t} and the port holds it as {@code int}, which is the same
-     * width, so the ceiling is the same one C's own wizard command names when it clamps a typed
-     * amount to {@code (1 << 31) - 1} ({@code cmd-wizard.c:1240}).
+     * <p>C holds it as {@code int32_t} and the port holds it as {@code long}, so the port can hold
+     * sums C's field would wrap. C's own wizard command clamps a typed amount to
+     * {@code (1 << 31) - 1} ({@code cmd-wizard.c}); nothing in this class applies that clamp, so a
+     * port of the command has to.
      *
-     * <p>Function getAU commented in full on 260902.
+     * <p>Function getAU commented in full on 260902, field width corrected on 261008.
      *
      * @return the current gold, never negative once birth has finished
      */
@@ -2032,64 +2386,52 @@ public class Player {
     }
 
     /**
-     * Sets the saved birth gold, the quickstart copy - the port of C's {@code p->au_birth}
-     * ({@code player.h:586}).
-     *
-     * <p>Birth writes it from the same figure that opens the working purse, in one statement -
-     * {@code p->birthAU = p->au_birth = z_info->start_gold} ({@code player-birth.c:393}) - and nothing
-     * in play touches it afterwards, so it keeps the sum the character was born with however much
-     * the working total is later spent down.
-     *
-     * <p>Quickstart is the reader, and it treats the two fields differently from the way it treats
-     * the height and weight pair. It copies this field out to the saved character
-     * ({@code player-birth.c:156}), but coming back in it restores only the birth copy from the
-     * saved value and re-opens the working purse from the data file:
-     * {@code player->au_birth = saved->birthAU; player->birthAU = z_info->start_gold}
-     * ({@code player-birth.c:199}). The save file carries the two separately
-     * ({@code save.c:451}, {@code load.c:737}).
-     *
-     * <p>The point-based roller writes this field a second way while the character is being built,
-     * as {@code z_info->start_gold + (50 * points_left)}, so that unspent stat points show as gold
-     * ({@code player-birth.c:694}). That figure does not reach the started game: every caller of
-     * {@code recalculate_stats} sits in the point-based birth commands, and accepting the character
-     * runs {@code get_money} afterwards ({@code player-birth.c:1256}), which overwrites both fields
-     * with the plain starting sum.
-     *
-     * <p>C holds it as {@code int32_t}; see {@link #getAU()} for why {@code int} is interchangeable
-     * here.
-     *
-     * <p>Function setAUBirth commented in full on 260902.
-     *
-     * @param birthAU the birth gold in gold pieces
-     */
-    public void setAUBirth(long birthAU) {
-        this.auBirth = birthAU;
-    }
-
-    /**
      * Returns the number of sides on the player's hit die - the port of reading C's {@code p->hitdie}
-     * ({@code player.h:582}).
+     * ({@code player.h}).
      *
      * <p>It is a property of the character rather than of the moment: birth adds the race's and the
      * class's contributions once, as {@code p->hitdie = p->race->r_mhp + p->class->c_mhp}
-     * ({@code player-birth.c:998}), and nothing in play changes it afterwards. So the die a
+     * ({@code player-birth.c}), and nothing in play changes it afterwards. So the die a
      * character rolls at level fifty is the die they rolled at level two.
      *
      * <p>It is a die size, not a hit point total. The rolling code reads it twice over: once as the
      * bound of the per-level roll, {@code randint1(player->hitdie)}, and once inside the window the
-     * finished table has to land in, both in {@code roll_hp} ({@code player-birth.c:284-296}) - see
+     * finished table has to land in, both in {@code roll_hp} ({@code player-birth.c}) - see
      * {@link PlayerBirth#rollHP(Player)}. The wizard command that re-rates a character
-     * ({@code cmd-wizard.c:2271-2288}) reads it the same two ways.
+     * ({@code cmd-wizard.c}) reads it the same two ways.
      *
-     * <p>C holds it as {@code int16_t}; the sum of two data-file figures cannot approach either
-     * type's ceiling, so {@code int} is interchangeable here.
+     * <p>C holds it as {@code uint8_t} and the port as {@code int}; the sum of two data-file figures
+     * cannot approach a byte's ceiling, so {@code int} is interchangeable here.
      *
-     * <p>Function getHitDie commented in full on 260902.
+     * <p>Function getHitDie commented in full on 260902, field width corrected on 261008.
      *
      * @return the number of sides on the player's hit die
      */
     public int getHitDie() {
         return hitDie;
+    }
+
+    /**
+     * Sets the number of sides on the player's hit die.
+     *
+     * <p>C computes the value at birth rather than storing it per source:
+     * {@code p->hitdie = p->race->r_mhp + p->class->c_mhp} ({@code player-birth.c}), summing
+     * {@link PlayerRace#getMaxHitDie} and {@link PlayerClass#getMaxHitDie}. Nothing else writes it
+     * — a character's die is fixed for life the moment race and class are settled, so the only
+     * caller is {@link PlayerBirth#playerGenerate}, which runs again for each choice made on the
+     * birth screen.
+     *
+     * <p>C's field is {@code uint8_t} and the port's is an {@code int}. Both hold the shipped data
+     * comfortably — the largest race and class figures (12 and 9) sum to 21 — and
+     * nothing here range-checks the value, so a caller that invents one outside that range gets a
+     * character C could not represent. See {@link #getHitDie} for how the die is read.
+     *
+     * <p>Function setHitDie commented in full on 260902, field width corrected on 261008.
+     *
+     * @param hitDie the summed race and class hit-die contributions
+     */
+    public void setHitDie(int hitDie) {
+        this.hitDie = hitDie;
     }
 
     /**
@@ -2402,48 +2744,43 @@ public class Player {
     }
 
     /**
-     * Sets the number of sides on the player's hit die.
+     * Replaces the character's structured history ledger - the port of writing C's {@code p->hist},
+     * the {@code struct player_history} that holds the log of notable events: birth, levels gained,
+     * uniques slain, artifacts found. This is not the background text rolled at birth, which is C's
+     * {@code p->history} and is written by {@link #setHistoryBirth}; see {@link #getPlayerHistory}.
      *
-     * <p>C computes the value at birth rather than storing it per source:
-     * {@code p->hitdie = p->race->r_mhp + p->class->c_mhp} ({@code player-birth.c:1000}), summing
-     * {@link PlayerRace#getMaxHitDie} and {@link PlayerClass#getMaxHitDie}. Nothing else writes it
-     * — a character's die is fixed for life the moment race and class are settled, so the only
-     * caller is {@link PlayerBirth#playerGenerate}, which runs again for each choice made on the
-     * birth screen.
+     * <p>No ported code calls this. The constructor and {@link #wipe} each build a fresh ledger, and
+     * every ported writer adds to the existing one through {@link PlayerHistory#addEntry}. C embeds the
+     * struct, so the nearest thing it has to this write is {@code history_clear}
+     * ({@code player-history.c}), which empties the ledger rather than replacing it.
      *
-     * <p>C's field is {@code int16_t} ({@code player.h:583}) and the port's is an {@code int}. The
-     * widening is safe for the shipped data — the largest race and class figures sum to 21 — and
-     * nothing here range-checks the value, so a caller that invents one outside that range gets a
-     * character C could not represent. See {@link #getHitDie} for how the die is read.
+     * <p>Function setPlayerHistory commented in full on 260902, rewritten on 261008 after the earlier
+     * text described the background-text setter.
      *
-     * <p>Function setHitDie commented in full on 260902.
-     *
-     * @param hitDie the summed race and class hit-die contributions
-     */
-    public void setHitDie(int hitDie) {
-        this.hitDie = hitDie;
-    }
-
-    /**
-     * Sets the character's background history text - the port of writing C's {@code p->history}
-     * ({@code player.h}).
-     *
-     * <p>The string is the finished, rolled background, not a template: {@code get_history} walks
-     * the race's chart chain and assembles the lines before this is called
-     * ({@code player-birth.c:1027}). It is display text — the character sheet and the tombstone
-     * read it — and nothing in the game derives behaviour from it.
-     *
-     * <p>C frees the previous string before assigning the new one ({@code player-birth.c:1024}).
-     * The port has nothing to do there; the old value is simply unreferenced. Writing is
-     * unconditional in both, so the caller owns the decision not to overwrite a history that
-     * should survive, which is what {@code player_generate}'s {@code old_history} flag is for.
-     *
-     * <p>Function setPlayerHistory commented in full on 260902.
-     *
-     * @param history the generated background text
+     * @param history the ledger to install, kept by reference
      */
     public void setPlayerHistory(PlayerHistory history) {
         this.playerHistory = history;
+    }
+
+    /**
+     * Returns the saved birth gold, the quickstart copy - the port of reading C's
+     * {@code p->au_birth} ({@code player.h}), and the counterpart of {@link #setAUBirth}. See
+     * that method for who writes it and when.
+     *
+     * <p>C reads the field directly at every call site; {@code save_roller_data} is the one that
+     * matters here, copying it into the birther record the roller keeps for undo and quickstart
+     * ({@code player-birth.c}). {@code PlayerBirth.saveRollerData}
+     * is that method's port. The accessor returns {@code long}, as the field and
+     * {@link #setAUBirth} hold it, and {@link Birther#setAu} takes a {@code long}, so the value passes
+     * through without a conversion.
+     *
+     * <p>Function getAUBirth commented in full on 260906, field width corrected on 261008.
+     *
+     * @return the birth gold in gold pieces
+     */
+    public long getAUBirth() {
+        return auBirth;
     }
 
     /**
@@ -2605,23 +2942,37 @@ public class Player {
     }
 
     /**
-     * Returns the saved birth gold, the quickstart copy - the port of reading C's
-     * {@code p->au_birth} ({@code player.h:586}), and the counterpart of {@link #setAUBirth}. See
-     * that method for who writes it and when.
+     * Sets the saved birth gold, the quickstart copy - the port of C's {@code p->au_birth}
+     * ({@code player.h}).
      *
-     * <p>C reads the field directly at every call site; {@code save_roller_data} is the one that
-     * matters here, copying it into the birther record the roller keeps for undo and quickstart
-     * ({@code player-birth.c:156}). {@code PlayerBirth.saveRollerData}
-     * is that method's port, and it is the reason this accessor returns {@code long} rather than the
-     * {@code int} the field and {@link #setAUBirth} use: {@link Birther#setAu} takes a {@code long},
-     * so the widening happens here rather than at every call site.
+     * <p>Birth writes it from the same figure that opens the working purse, in one statement -
+     * {@code p->birthAU = p->au_birth = z_info->start_gold} ({@code player-birth.c}) - and nothing
+     * in play touches it afterwards, so it keeps the sum the character was born with however much
+     * the working total is later spent down.
      *
-     * <p>Function getAUBirth commented in full on 260906.
+     * <p>Quickstart is the reader, and it treats the two fields differently from the way it treats
+     * the height and weight pair. It copies this field out to the saved character
+     * ({@code player-birth.c}), but coming back in it restores only the birth copy from the
+     * saved value and re-opens the working purse from the data file:
+     * {@code player->au_birth = saved->birthAU; player->birthAU = z_info->start_gold}
+     * ({@code player-birth.c}). The save file carries the two separately
+     * ({@code save.c}, {@code load.c}).
      *
-     * @return the birth gold in gold pieces
+     * <p>The point-based roller writes this field a second way while the character is being built,
+     * as {@code z_info->start_gold + (50 * points_left)}, so that unspent stat points show as gold
+     * ({@code player-birth.c}). That figure does not reach the started game: every caller of
+     * {@code recalculate_stats} sits in the point-based birth commands, and accepting the character
+     * runs {@code get_money} afterwards ({@code player-birth.c}), which overwrites both fields
+     * with the plain starting sum.
+     *
+     * <p>C holds it as {@code int32_t} and the port as {@code long}; see {@link #getAU()}.
+     *
+     * <p>Function setAUBirth commented in full on 260902, field width corrected on 261008.
+     *
+     * @param birthAU the birth gold in gold pieces
      */
-    public long getAUBirth() {
-        return auBirth;
+    public void setAUBirth(long birthAU) {
+        this.auBirth = birthAU;
     }
 
     /**
@@ -2684,27 +3035,23 @@ public class Player {
 
     /**
      * Returns the character's full name - the port of reading C's {@code p->full_name}
-     * ({@code player.h:571}).
+     * ({@code player.h}).
      *
      * <p>C holds the name as a fixed {@code char[PLAYER_NAME_LEN]} and writes it with
-     * {@code my_strcpy} at each of its several sites - birth naming ({@code ui-birth.c:712},
-     * {@code ui-birth.c:1305}), the in-play rename command ({@code ui-player.c:1254}), quickstart's
-     * roller restore ({@code player-birth.c:214}) and the save-file loader
-     * ({@code load.c:661}). The port's {@code String} field has no fixed size of its own, so
-     * {@link #setFullName} reproduces {@code my_strcpy}'s effective 31-character cap by truncating
-     * on write instead.
+     * {@code my_strcpy} at each of its several sites - birth naming ({@code ui-birth.c}), the in-play
+     * rename command ({@code ui-player.c}), quickstart's roller restore ({@code player-birth.c}) and
+     * the save-file loader ({@code load.c}). The port's {@code String} field has no fixed size of its
+     * own, so {@link #setFullName} reproduces {@code my_strcpy}'s effective 31-character cap by
+     * truncating on write instead.
      *
-     * <p>{@code save_roller_data} is the read this class has a ported counterpart for -
-     * {@code my_strcpy(tosave->name, player->full_name, ...)} ({@code player-birth.c:167}), ported as
-     * {@code toSave.setName(player.getFullName())} in
-     * {@code PlayerBirth.saveRollerData}. Of the four C write sites, only quickstart's roller
-     * restore ({@code player-birth.c:214-215}) has a ported counterpart so far -
-     * {@code player.setFullName(saved.getName())} in {@code PlayerBirth.LoadRollerData}
-     * ({@code PlayerBirth.java:1546}); birth naming, the in-play rename command and the save-file
-     * loader have no write path onto {@link #fullName} yet.
+     * <p>{@code save_roller_data} is a read this class has a ported counterpart for -
+     * {@code my_strcpy(tosave->name, player->full_name, ...)} ({@code player-birth.c}), ported as
+     * {@code toSave.setName(player.getFullName())} in {@code PlayerBirth.saveRollerData} - and
+     * {@code PlayerBirth.doCmdBirthInit} reads the name to bump a dynastic suffix. The writers that
+     * reach {@link #setFullName} are listed on that method.
      *
-     * <p>Function getFullName commented in full on 260906, updated on 260907 when
-     * {@link #setFullName} gained a write path.
+     * <p>Function getFullName commented in full on 260906, updated on 260907 when {@link #setFullName}
+     * gained a write path, callers refreshed on 261008.
      *
      * @return the character's full name, truncated to 31 characters by {@link #setFullName}, or
      *         {@code null} before it has been set
@@ -2733,52 +3080,28 @@ public class Player {
     }
 
     /**
-     * Sets the character's background history text - the port of writing C's {@code p->history}
-     * ({@code player.h:573}).
-     *
-     * <p>Written from two places so far. {@code PlayerBirth.playerGenerate} rolls a fresh one from the
-     * race's history chart whenever the caller has not asked to keep the existing text -
-     * {@code player.setHistoryBirth(getHistory(player.getRace().getHistory()))}
-     * ({@code PlayerBirth.java:557}), matching C's {@code p->history = get_history(p->race->history)}
-     * ({@code player-birth.c:1036}). {@code PlayerBirth.saveRollerData} hands the current text to the
-     * birther snapshot and then nulls this field, {@code player.setHistoryBirth(null)}
-     * ({@code PlayerBirth.java:1508}), matching C's {@code player->history = NULL;}
-     * ({@code player-birth.c:167}).
-     *
-     * <p>C frees the string it is about to overwrite first, guarding the write with
-     * {@code if (p->history) string_free(p->history)} ({@code player-birth.c:1033-1034}); the port
-     * needs no equivalent guard, since the old reference is simply replaced and left for the garbage
-     * collector rather than leaked.
-     *
-     * <p>Function setHistoryBirth commented in full on 260906.
-     *
-     * @param historyBirth the background history text, or {@code null} to clear it
-     */
-    public void setHistoryBirth(String historyBirth) {
-        this.historyBirth = historyBirth;
-    }
-
-    /**
      * Sets the character's full name - the port of writing C's {@code p->full_name}
-     * ({@code player.h:571}), truncating the way C's {@code my_strcpy} does when it copies into the
+     * ({@code player.h}), truncating the way C's {@code my_strcpy} does when it copies into the
      * fixed {@code char[PLAYER_NAME_LEN]} buffer.
      *
-     * <p>C's {@code my_strcpy(buf, src, bufsize)} ({@code z-util.c:480}) only shortens {@code src}
+     * <p>C's {@code my_strcpy(buf, src, bufsize)} ({@code z-util.c}) only shortens {@code src}
      * when its length reaches {@code bufsize}, in which case it keeps the first {@code bufsize - 1}
      * characters and terminates the buffer; a shorter {@code src} is copied unchanged. With
-     * {@code PLAYER_NAME_LEN} at 32 ({@code option.h:23}), that means names up to 31 characters pass
+     * {@code PLAYER_NAME_LEN} at 32 ({@code option.h}), that means names up to 31 characters pass
      * through untouched and anything from 32 characters up is cut to the first 31. The port's
      * {@code String} has no buffer to terminate, so {@code Math.min(31, name.length())} picks out
      * the same cutover directly: the full length below it, 31 at and above it.
      *
-     * <p>Called so far from {@code PlayerBirth.LoadRollerData} ({@code PlayerBirth.java:1546}),
-     * {@code player.setFullName(saved.getName())}, the port of quickstart's roller restore -
-     * {@code my_strcpy(player->full_name, saved->name, sizeof(player->full_name))}
-     * ({@code player-birth.c:215}). C's other three write sites - birth naming
-     * ({@code ui-birth.c:712}, {@code ui-birth.c:1305}) and the in-play rename command
-     * ({@code ui-player.c:1254}) - have no caller here yet.
+     * <p>The ported callers are {@code PlayerBirth.doCmdChooseName} (the name typed at the birth
+     * screen), {@code PlayerBirth.LoadRollerData} (quickstart's roller restore, C's
+     * {@code my_strcpy(player->full_name, saved->name, sizeof(player->full_name))}) and
+     * {@code PlayerBirth.doCmdBirthInit} (the dynastic suffix bump, which C performs by writing through
+     * the name buffer). C's in-play rename command ({@code ui-player.c}) and the save-file loader
+     * ({@code load.c}) have no caller here yet.
      *
-     * <p>Function setFullName coded on 260907, commented in full on 260907.
+     * <p>The new name is also forwarded to the UI's status cache in {@link PlayerEventStatusUpdate}.
+     *
+     * <p>Function setFullName coded on 260907, commented in full on 260907, callers refreshed on 261008.
      *
      * @param name the character's full name; lengths of 31 characters or fewer are stored as given,
      *             longer ones are truncated to the first 31 characters
@@ -2787,6 +3110,31 @@ public class Player {
         int length = Math.min(31, name.length());
         this.fullName = name.substring(0, length);
         PlayerEventStatusUpdate.updatePlayerStatusPlayerName(this.fullName);
+    }
+
+    /**
+     * Sets the character's background history text - the port of writing C's {@code p->history}
+     * ({@code player.h}).
+     *
+     * <p>The ported writers are all in {@code PlayerBirth}. {@code playerGenerate} rolls a fresh text
+     * from the race's history chart whenever the caller has not asked to keep the existing one, as C's
+     * {@code p->history = get_history(p->race->history)} does ({@code player-birth.c}), and
+     * {@code doCmdRollStats} re-rolls it the same way. {@code doCmdChooseHistory} stores text the
+     * player typed. {@code saveRollerData} hands the current text to the birther snapshot and then
+     * nulls this field, matching C's {@code player->history = NULL;}, and {@code LoadRollerData}
+     * restores it from a snapshot.
+     *
+     * <p>C frees the string it is about to overwrite first, guarding the write with
+     * {@code if (p->history) string_free(p->history)} ({@code player-birth.c}); the port needs no
+     * equivalent guard, since the old reference is simply replaced and left for the garbage collector
+     * rather than leaked.
+     *
+     * <p>Function setHistoryBirth commented in full on 260906, callers refreshed on 261008.
+     *
+     * @param historyBirth the background history text, or {@code null} to clear it
+     */
+    public void setHistoryBirth(String historyBirth) {
+        this.historyBirth = historyBirth;
     }
 
     /**

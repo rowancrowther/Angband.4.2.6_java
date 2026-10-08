@@ -254,10 +254,11 @@ class PlayerScalarStateTest {
         }
 
         /**
-         * A fresh player has no shape at all, which is a state C never reaches: {@code player_init}
-         * ({@code player-birth.c:457}) assigns the "normal" shape at birth, and that assignment is
-         * not ported. So {@code getShape} answering null is the port's normal condition, not an
-         * error case, and everything that reads it has to cope.
+         * A freshly constructed player has no shape at all, which is a state C never reaches:
+         * {@code player_init} ({@code player-birth.c}) assigns the "normal" shape. In the port that
+         * assignment is {@code PlayerBirth.playerInit}'s, not the constructor's, so {@code getShape}
+         * answering null on a player that has not been through it is the port's normal condition, not
+         * an error case, and everything that reads it has to cope.
          */
         @Test
         @DisplayName("a new player has no shape")

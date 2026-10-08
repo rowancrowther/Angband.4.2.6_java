@@ -48,39 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/objects/Artifact.java`
-
-2 missing, 26 low
-
-- L87: field `weight` - LOW - "Weight."
-- L92: field `cost` - LOW - "Cost/value."
-- L153: field `aupInfo` - MISSING
-- L228: method `getName` - LOW
-- L235: method `getText` - LOW
-- L242: method `gettValue` - LOW
-- L249: method `getsValue` - LOW
-- L256: method `getToHit` - LOW
-- L263: method `getToDam` - LOW
-- L270: method `getToAC` - LOW
-- L277: method `getAc` - LOW
-- L284: method `getDiceString` - LOW
-- L291: method `getWeight` - LOW
-- L298: method `getCost` - LOW
-- L305: method `getFlags` - LOW
-- L312: method `getModifiers` - LOW
-- L319: method `getElInfo` - LOW
-- L326: method `getBrands` - LOW
-- L333: method `getSlays` - LOW
-- L340: method `getCurses` - LOW
-- L347: method `getLevel` - LOW
-- L354: method `getAllocProb` - LOW
-- L361: method `getAllocMin` - LOW
-- L368: method `getAllocMax` - LOW
-- L375: method `getActivation` - LOW
-- L382: method `getActivationMessage` - LOW
-- L389: method `getTime` - LOW
-- L457: method `getAup` - MISSING
-
 ### `middle/player/Player.java`
 
 4 missing, 19 low

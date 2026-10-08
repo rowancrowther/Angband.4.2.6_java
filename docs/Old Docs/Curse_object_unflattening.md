@@ -106,7 +106,7 @@ scope.
 
 ## Files that change
 
-### Domain (`src/main/java/uk/co/jackoftradesltd/middle/`)
+### Domain (`../../src/main/java/uk/co/jackoftradesltd/middle`)
 
 | File                                              | Change                                                                                                                                                                                                                                       | Call sites (approx.) |
 |---------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------|
@@ -121,7 +121,7 @@ scope.
 Call-site counts are a grep for `curse.<accessor>` patterns. A few `ItemObject.java` hits may turn out to be the item's
 own accessor on a curse-named variable; confirm with the IDE's find-usages before editing.
 
-### Loading (`src/main/java/uk/co/jackoftradesltd/`)
+### Loading (`../../src/main/java/uk/co/jackoftradesltd`)
 
 | File                                                                                            | Change                                                                                                                                                         |
 |-------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|

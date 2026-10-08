@@ -28,7 +28,7 @@ unchanged.
 
 ## Data affected
 
-Only three data files carry `time:` lines (`lib/gamedata/`):
+Only three data files carry `time:` lines (`../../lib/gamedata`):
 
 | File           | `time:` lines | Parsed via      | Affected?                               |
 |----------------|---------------|-----------------|-----------------------------------------|
@@ -104,7 +104,7 @@ properties already are, and `Curse`'s constructor does not change.
 
 ### Generated parsers — regenerate, don't edit
 
-Generation is IDE-driven from `.idea/misc.xml`. All nine grammars above have an entry. Regenerate:
+Generation is IDE-driven from `../../.idea/misc.xml`. All nine grammars above have an entry. Regenerate:
 
 - `activations/ActivationsGrammar.java`
 - `chesttrap/ChestTrapGrammar.java`
@@ -115,7 +115,7 @@ Generation is IDE-driven from `.idea/misc.xml`. All nine grammars above have an 
 - `playertimed/PlayerTimedGrammar.java`
 - `shape/ShapeGrammar.java`
 - `trap/TrapGrammar.java`
-- `imports/effectblock/EffectBlock.java` — **note:** `.idea/misc.xml` has an entry for
+- `imports/effectblock/EffectBlock.java` — **note:** `../../.idea/misc.xml` has an entry for
   `EffectBlockLexer.g4` only, not for `EffectBlock.g4`; check how this file was produced before relying on a regenerate.
 
 A stale generated parser will keep passing `timeDiceString` and fail to compile against the new

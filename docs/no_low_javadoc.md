@@ -48,42 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-
-### `middle/objects/ItemObject.java`
-
-4 missing, 26 low
-
-- L311: field `owningPile` - MISSING
-- L528: method `getGrid` - LOW
-- L545: method `isArtifact` - LOW
-- L552: method `getKind` - LOW
-- L1113: method `getNumber` - LOW
-- L1120: method `gettValue` - LOW
-- L1127: method `getTimeout` - LOW
-- L1468: method `getsValue` - LOW
-- L1475: method `setsValue` - LOW
-- L1482: method `getWeight` - LOW
-- L1489: method `setWeight` - LOW
-- L1508: method `settValue` - LOW
-- L1515: method `setNumber` - LOW
-- L1522: method `getDamageDice` - LOW
-- L1539: method `getDamageSides` - LOW
-- L1546: method `setDamageSides` - LOW
-- L1553: method `getBaseAC` - LOW
-- L1583: method `getpValue` - LOW
-- L1590: method `setpValue` - LOW
-- L1597: method `setToAC` - LOW
-- L1604: method `setToDam` - LOW
-- L1630: method `setModifiers` - LOW
-- L1658: method `setElInfo` - LOW
-- L1768: method `setEffect` - LOW
-- L1792: method `setSlays` - LOW
-- L1813: method `setEgo` - LOW
-- L2242: method `isEgo` - LOW - "{@code obj->ego}"
-- L5429: method `setCurses` - MISSING
-- L5462: method `getOwningPile` - MISSING
-- L5466: method `setOwningPile` - MISSING
-
 ### `middle/objects/Artifact.java`
 
 2 missing, 26 low

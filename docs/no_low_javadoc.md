@@ -48,24 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/objects/enums/ObjectFlagType.java`
-
-12 missing, 1 low
-
-- L44: method `OFT_MAX` - MISSING
-- L44: enum-const `OFT_NONE` - MISSING
-- L45: enum-const `OFT_SUST` - MISSING
-- L46: enum-const `OFT_PROT` - MISSING
-- L47: enum-const `OFT_MISC` - MISSING
-- L48: enum-const `OFT_LIGHT` - MISSING
-- L49: enum-const `OFT_MELEE` - MISSING
-- L50: enum-const `OFT_BAD` - MISSING
-- L51: enum-const `OFT_DIG` - MISSING
-- L52: enum-const `OFT_THROW` - MISSING
-- L53: enum-const `OFT_CURSE_ONLY` - MISSING
-- L54: enum-const `OFT_MAX` - MISSING
-- L74: method `getSubtypeText` - LOW
-
 ### `middle/objects/enums/ChestTrapCode.java`
 
 12 missing, 0 low

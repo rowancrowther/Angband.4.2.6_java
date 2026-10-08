@@ -28,7 +28,12 @@ import java.util.Map;
 import org.antlr.v4.runtime.atn.*;
 import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.misc.*;
 import org.antlr.v4.runtime.tree.*;
+
+import java.util.List;
+import java.util.Iterator;
+import java.util.ArrayList;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue", "this-escape"})
 public class ItemObjectGrammar extends Parser {
@@ -58,18 +63,235 @@ public class ItemObjectGrammar extends Parser {
             RULE_level = 4, RULE_weight = 5, RULE_cost = 6, RULE_attack = 7, RULE_armour = 8,
             RULE_alloc = 9, RULE_charges = 10, RULE_pile = 11, RULE_power = 12, RULE_msg = 13,
             RULE_visMsg = 14, RULE_flags = 15, RULE_values = 16, RULE_brand = 17,
-            RULE_slay = 18, RULE_curse = 19, RULE_pval = 20, RULE_desc = 21, RULE_itemObject = 22,
-            RULE_file = 23, RULE_effect = 24, RULE_time = 25, RULE_effectYX = 26,
+            RULE_slay = 18, RULE_curse = 19, RULE_pval = 20, RULE_desc = 21, RULE_time = 22,
+            RULE_itemObject = 23, RULE_file = 24, RULE_effect = 25, RULE_effectYX = 26,
             RULE_dice = 27, RULE_expr = 28, RULE_effectMsg = 29, RULE_effectBlock = 30;
-
-    private static String[] makeRuleNames() {
-        return new String[]{
-                "recordCount", "name", "tval", "graphics", "level", "weight", "cost",
-                "attack", "armour", "alloc", "charges", "pile", "power", "msg", "visMsg",
-                "flags", "values", "brand", "slay", "curse", "pval", "desc", "itemObject",
-                "file", "effect", "time", "effectYX", "dice", "expr", "effectMsg", "effectBlock"
-        };
-    }
+    public static final String _serializedATN =
+            "\u0004\u0001F\u015f\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002" +
+                    "\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002" +
+                    "\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007\u0002" +
+                    "\b\u0007\b\u0002\t\u0007\t\u0002\n\u0007\n\u0002\u000b\u0007\u000b\u0002" +
+                    "\f\u0007\f\u0002\r\u0007\r\u0002\u000e\u0007\u000e\u0002\u000f\u0007\u000f" +
+                    "\u0002\u0010\u0007\u0010\u0002\u0011\u0007\u0011\u0002\u0012\u0007\u0012" +
+                    "\u0002\u0013\u0007\u0013\u0002\u0014\u0007\u0014\u0002\u0015\u0007\u0015" +
+                    "\u0002\u0016\u0007\u0016\u0002\u0017\u0007\u0017\u0002\u0018\u0007\u0018" +
+                    "\u0002\u0019\u0007\u0019\u0002\u001a\u0007\u001a\u0002\u001b\u0007\u001b" +
+                    "\u0002\u001c\u0007\u001c\u0002\u001d\u0007\u001d\u0002\u001e\u0007\u001e" +
+                    "\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0001\u0001\u0001" +
+                    "\u0001\u0001\u0001\u0001\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0002" +
+                    "\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0003" +
+                    "\u0001\u0004\u0001\u0004\u0001\u0004\u0001\u0004\u0001\u0005\u0001\u0005" +
+                    "\u0001\u0005\u0001\u0005\u0001\u0006\u0001\u0006\u0001\u0006\u0001\u0006" +
+                    "\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007" +
+                    "\u0001\u0007\u0001\u0007\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001" +
+                    "\b\u0001\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001" +
+                    "\n\u0001\n\u0001\n\u0001\n\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b" +
+                    "\u0001\u000b\u0001\u000b\u0001\f\u0001\f\u0001\f\u0001\f\u0001\r\u0001" +
+                    "\r\u0001\r\u0001\r\u0001\u000e\u0001\u000e\u0001\u000e\u0001\u000e\u0001" +
+                    "\u000f\u0001\u000f\u0001\u000f\u0001\u000f\u0001\u000f\u0001\u000f\u0001" +
+                    "\u000f\u0005\u000f\u0090\b\u000f\n\u000f\f\u000f\u0093\t\u000f\u0001\u000f" +
+                    "\u0003\u000f\u0096\b\u000f\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010" +
+                    "\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010" +
+                    "\u0001\u0010\u0001\u0010\u0001\u0010\u0005\u0010\u00a5\b\u0010\n\u0010" +
+                    "\f\u0010\u00a8\t\u0010\u0001\u0011\u0001\u0011\u0001\u0011\u0001\u0011" +
+                    "\u0001\u0012\u0001\u0012\u0001\u0012\u0001\u0012\u0001\u0013\u0001\u0013" +
+                    "\u0001\u0013\u0001\u0013\u0001\u0013\u0001\u0013\u0001\u0014\u0001\u0014" +
+                    "\u0001\u0014\u0001\u0014\u0001\u0015\u0001\u0015\u0001\u0015\u0001\u0015" +
+                    "\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0017\u0001\u0017" +
+                    "\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017" +
+                    "\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017" +
+                    "\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017" +
+                    "\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017" +
+                    "\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017" +
+                    "\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017" +
+                    "\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017" +
+                    "\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017" +
+                    "\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017" +
+                    "\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017" +
+                    "\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017" +
+                    "\u0004\u0017\u0108\b\u0017\u000b\u0017\f\u0017\u0109\u0001\u0018\u0001" +
+                    "\u0018\u0001\u0018\u0001\u0018\u0001\u0018\u0004\u0018\u0111\b\u0018\u000b" +
+                    "\u0018\f\u0018\u0112\u0001\u0018\u0001\u0018\u0001\u0019\u0001\u0019\u0001" +
+                    "\u0019\u0001\u0019\u0001\u0019\u0001\u0019\u0001\u0019\u0001\u0019\u0001" +
+                    "\u0019\u0001\u0019\u0001\u0019\u0001\u0019\u0003\u0019\u0123\b\u0019\u0003" +
+                    "\u0019\u0125\b\u0019\u0003\u0019\u0127\b\u0019\u0001\u001a\u0001\u001a" +
+                    "\u0001\u001a\u0001\u001a\u0001\u001a\u0001\u001a\u0001\u001b\u0001\u001b" +
+                    "\u0001\u001b\u0001\u001b\u0001\u001b\u0001\u001b\u0004\u001b\u0135\b\u001b" +
+                    "\u000b\u001b\f\u001b\u0136\u0001\u001b\u0001\u001b\u0003\u001b\u013b\b" +
+                    "\u001b\u0001\u001c\u0001\u001c\u0001\u001c\u0001\u001c\u0001\u001c\u0001" +
+                    "\u001c\u0001\u001c\u0001\u001c\u0001\u001d\u0001\u001d\u0001\u001d\u0001" +
+                    "\u001d\u0001\u001e\u0001\u001e\u0001\u001e\u0001\u001e\u0001\u001e\u0001" +
+                    "\u001e\u0001\u001e\u0001\u001e\u0003\u001e\u0151\b\u001e\u0003\u001e\u0153" +
+                    "\b\u001e\u0001\u001e\u0001\u001e\u0001\u001e\u0003\u001e\u0158\b\u001e" +
+                    "\u0001\u001e\u0001\u001e\u0001\u001e\u0003\u001e\u015d\b\u001e\u0001\u001e" +
+                    "\u0000\u0000\u001f\u0000\u0002\u0004\u0006\b\n\f\u000e\u0010\u0012\u0014" +
+                    "\u0016\u0018\u001a\u001c\u001e \"$&(*,.02468:<\u0000\u0000\u0162\u0000" +
+                    ">\u0001\u0000\u0000\u0000\u0002B\u0001\u0000\u0000\u0000\u0004F\u0001" +
+                    "\u0000\u0000\u0000\u0006J\u0001\u0000\u0000\u0000\bP\u0001\u0000\u0000" +
+                    "\u0000\nT\u0001\u0000\u0000\u0000\fX\u0001\u0000\u0000\u0000\u000e\\\u0001" +
+                    "\u0000\u0000\u0000\u0010d\u0001\u0000\u0000\u0000\u0012j\u0001\u0000\u0000" +
+                    "\u0000\u0014r\u0001\u0000\u0000\u0000\u0016v\u0001\u0000\u0000\u0000\u0018" +
+                    "|\u0001\u0000\u0000\u0000\u001a\u0080\u0001\u0000\u0000\u0000\u001c\u0084" +
+                    "\u0001\u0000\u0000\u0000\u001e\u0088\u0001\u0000\u0000\u0000 \u0097\u0001" +
+                    "\u0000\u0000\u0000\"\u00a9\u0001\u0000\u0000\u0000$\u00ad\u0001\u0000" +
+                    "\u0000\u0000&\u00b1\u0001\u0000\u0000\u0000(\u00b7\u0001\u0000\u0000\u0000" +
+                    "*\u00bb\u0001\u0000\u0000\u0000,\u00bf\u0001\u0000\u0000\u0000.\u00c3" +
+                    "\u0001\u0000\u0000\u00000\u010b\u0001\u0000\u0000\u00002\u0116\u0001\u0000" +
+                    "\u0000\u00004\u0128\u0001\u0000\u0000\u00006\u012e\u0001\u0000\u0000\u0000" +
+                    "8\u013c\u0001\u0000\u0000\u0000:\u0144\u0001\u0000\u0000\u0000<\u0148" +
+                    "\u0001\u0000\u0000\u0000>?\u0005\u0001\u0000\u0000?@\u0005 \u0000\u0000" +
+                    "@A\u0006\u0000\uffff\uffff\u0000A\u0001\u0001\u0000\u0000\u0000BC\u0005" +
+                    "\u0002\u0000\u0000CD\u00051\u0000\u0000DE\u0006\u0001\uffff\uffff\u0000" +
+                    "E\u0003\u0001\u0000\u0000\u0000FG\u0005\u0003\u0000\u0000GH\u00051\u0000" +
+                    "\u0000HI\u0006\u0002\uffff\uffff\u0000I\u0005\u0001\u0000\u0000\u0000" +
+                    "JK\u0005#\u0000\u0000KL\u0005D\u0000\u0000LM\u0005E\u0000\u0000MN\u0005" +
+                    "C\u0000\u0000NO\u0006\u0003\uffff\uffff\u0000O\u0007\u0001\u0000\u0000" +
+                    "\u0000PQ\u0005\u0004\u0000\u0000QR\u0005 \u0000\u0000RS\u0006\u0004\uffff" +
+                    "\uffff\u0000S\t\u0001\u0000\u0000\u0000TU\u0005\u0005\u0000\u0000UV\u0005" +
+                    " \u0000\u0000VW\u0006\u0005\uffff\uffff\u0000W\u000b\u0001\u0000\u0000" +
+                    "\u0000XY\u0005\u0006\u0000\u0000YZ\u0005 \u0000\u0000Z[\u0006\u0006\uffff" +
+                    "\uffff\u0000[\r\u0001\u0000\u0000\u0000\\]\u0005\u0007\u0000\u0000]^\u0005" +
+                    "8\u0000\u0000^_\u00059\u0000\u0000_`\u00058\u0000\u0000`a\u00059\u0000" +
+                    "\u0000ab\u00058\u0000\u0000bc\u0006\u0007\uffff\uffff\u0000c\u000f\u0001" +
+                    "\u0000\u0000\u0000de\u0005\b\u0000\u0000ef\u00058\u0000\u0000fg\u0005" +
+                    "9\u0000\u0000gh\u00058\u0000\u0000hi\u0006\b\uffff\uffff\u0000i\u0011" +
+                    "\u0001\u0000\u0000\u0000jk\u0005\t\u0000\u0000kl\u0005-\u0000\u0000lm" +
+                    "\u0005.\u0000\u0000mn\u0005-\u0000\u0000no\u0005/\u0000\u0000op\u0005" +
+                    "-\u0000\u0000pq\u0006\t\uffff\uffff\u0000q\u0013\u0001\u0000\u0000\u0000" +
+                    "rs\u0005\n\u0000\u0000st\u00058\u0000\u0000tu\u0006\n\uffff\uffff\u0000" +
+                    "u\u0015\u0001\u0000\u0000\u0000vw\u0005\u000b\u0000\u0000wx\u00058\u0000" +
+                    "\u0000xy\u00059\u0000\u0000yz\u00058\u0000\u0000z{\u0006\u000b\uffff\uffff" +
+                    "\u0000{\u0017\u0001\u0000\u0000\u0000|}\u0005\f\u0000\u0000}~\u0005 \u0000" +
+                    "\u0000~\u007f\u0006\f\uffff\uffff\u0000\u007f\u0019\u0001\u0000\u0000" +
+                    "\u0000\u0080\u0081\u0005\r\u0000\u0000\u0081\u0082\u00051\u0000\u0000" +
+                    "\u0082\u0083\u0006\r\uffff\uffff\u0000\u0083\u001b\u0001\u0000\u0000\u0000" +
+                    "\u0084\u0085\u0005\u000e\u0000\u0000\u0085\u0086\u00051\u0000\u0000\u0086" +
+                    "\u0087\u0006\u000e\uffff\uffff\u0000\u0087\u001d\u0001\u0000\u0000\u0000" +
+                    "\u0088\u0089\u0006\u000f\uffff\uffff\u0000\u0089\u008a\u0005\u000f\u0000" +
+                    "\u0000\u008a\u008b\u0005*\u0000\u0000\u008b\u0091\u0006\u000f\uffff\uffff" +
+                    "\u0000\u008c\u008d\u0005+\u0000\u0000\u008d\u008e\u0005*\u0000\u0000\u008e" +
+                    "\u0090\u0006\u000f\uffff\uffff\u0000\u008f\u008c\u0001\u0000\u0000\u0000" +
+                    "\u0090\u0093\u0001\u0000\u0000\u0000\u0091\u008f\u0001\u0000\u0000\u0000" +
+                    "\u0091\u0092\u0001\u0000\u0000\u0000\u0092\u0095\u0001\u0000\u0000\u0000" +
+                    "\u0093\u0091\u0001\u0000\u0000\u0000\u0094\u0096\u0005+\u0000\u0000\u0095" +
+                    "\u0094\u0001\u0000\u0000\u0000\u0095\u0096\u0001\u0000\u0000\u0000\u0096" +
+                    "\u001f\u0001\u0000\u0000\u0000\u0097\u0098\u0006\u0010\uffff\uffff\u0000" +
+                    "\u0098\u0099\u0005\u0010\u0000\u0000\u0099\u009a\u00052\u0000\u0000\u009a" +
+                    "\u009b\u00054\u0000\u0000\u009b\u009c\u00055\u0000\u0000\u009c\u009d\u0005" +
+                    "6\u0000\u0000\u009d\u00a6\u0006\u0010\uffff\uffff\u0000\u009e\u009f\u0005" +
+                    "3\u0000\u0000\u009f\u00a0\u00052\u0000\u0000\u00a0\u00a1\u00054\u0000" +
+                    "\u0000\u00a1\u00a2\u00055\u0000\u0000\u00a2\u00a3\u00056\u0000\u0000\u00a3" +
+                    "\u00a5\u0006\u0010\uffff\uffff\u0000\u00a4\u009e\u0001\u0000\u0000\u0000" +
+                    "\u00a5\u00a8\u0001\u0000\u0000\u0000\u00a6\u00a4\u0001\u0000\u0000\u0000" +
+                    "\u00a6\u00a7\u0001\u0000\u0000\u0000\u00a7!\u0001\u0000\u0000\u0000\u00a8" +
+                    "\u00a6\u0001\u0000\u0000\u0000\u00a9\u00aa\u0005\u0011\u0000\u0000\u00aa" +
+                    "\u00ab\u00051\u0000\u0000\u00ab\u00ac\u0006\u0011\uffff\uffff\u0000\u00ac" +
+                    "#\u0001\u0000\u0000\u0000\u00ad\u00ae\u0005\u0012\u0000\u0000\u00ae\u00af" +
+                    "\u00051\u0000\u0000\u00af\u00b0\u0006\u0012\uffff\uffff\u0000\u00b0%\u0001" +
+                    "\u0000\u0000\u0000\u00b1\u00b2\u0005\u0013\u0000\u0000\u00b2\u00b3\u0005" +
+                    "&\u0000\u0000\u00b3\u00b4\u0005\'\u0000\u0000\u00b4\u00b5\u0005(\u0000" +
+                    "\u0000\u00b5\u00b6\u0006\u0013\uffff\uffff\u0000\u00b6\'\u0001\u0000\u0000" +
+                    "\u0000\u00b7\u00b8\u0005\u0014\u0000\u0000\u00b8\u00b9\u00058\u0000\u0000" +
+                    "\u00b9\u00ba\u0006\u0014\uffff\uffff\u0000\u00ba)\u0001\u0000\u0000\u0000" +
+                    "\u00bb\u00bc\u0005\u0015\u0000\u0000\u00bc\u00bd\u00051\u0000\u0000\u00bd" +
+                    "\u00be\u0006\u0015\uffff\uffff\u0000\u00be+\u0001\u0000\u0000\u0000\u00bf" +
+                    "\u00c0\u0005\u001b\u0000\u0000\u00c0\u00c1\u0005<\u0000\u0000\u00c1\u00c2" +
+                    "\u0006\u0016\uffff\uffff\u0000\u00c2-\u0001\u0000\u0000\u0000\u00c3\u00c4" +
+                    "\u0003\u0002\u0001\u0000\u00c4\u0107\u0006\u0017\uffff\uffff\u0000\u00c5" +
+                    "\u00c6\u0003\u0004\u0002\u0000\u00c6\u00c7\u0006\u0017\uffff\uffff\u0000" +
+                    "\u00c7\u0108\u0001\u0000\u0000\u0000\u00c8\u00c9\u0003\u0006\u0003\u0000" +
+                    "\u00c9\u00ca\u0006\u0017\uffff\uffff\u0000\u00ca\u0108\u0001\u0000\u0000" +
+                    "\u0000\u00cb\u00cc\u0003\b\u0004\u0000\u00cc\u00cd\u0006\u0017\uffff\uffff" +
+                    "\u0000\u00cd\u0108\u0001\u0000\u0000\u0000\u00ce\u00cf\u0003\n\u0005\u0000" +
+                    "\u00cf\u00d0\u0006\u0017\uffff\uffff\u0000\u00d0\u0108\u0001\u0000\u0000" +
+                    "\u0000\u00d1\u00d2\u0003\f\u0006\u0000\u00d2\u00d3\u0006\u0017\uffff\uffff" +
+                    "\u0000\u00d3\u0108\u0001\u0000\u0000\u0000\u00d4\u00d5\u0003\u000e\u0007" +
+                    "\u0000\u00d5\u00d6\u0006\u0017\uffff\uffff\u0000\u00d6\u0108\u0001\u0000" +
+                    "\u0000\u0000\u00d7\u00d8\u0003\u0010\b\u0000\u00d8\u00d9\u0006\u0017\uffff" +
+                    "\uffff\u0000\u00d9\u0108\u0001\u0000\u0000\u0000\u00da\u00db\u0003\u0012" +
+                    "\t\u0000\u00db\u00dc\u0006\u0017\uffff\uffff\u0000\u00dc\u0108\u0001\u0000" +
+                    "\u0000\u0000\u00dd\u00de\u0003\u0014\n\u0000\u00de\u00df\u0006\u0017\uffff" +
+                    "\uffff\u0000\u00df\u0108\u0001\u0000\u0000\u0000\u00e0\u00e1\u0003\u0016" +
+                    "\u000b\u0000\u00e1\u00e2\u0006\u0017\uffff\uffff\u0000\u00e2\u0108\u0001" +
+                    "\u0000\u0000\u0000\u00e3\u00e4\u0003\u0018\f\u0000\u00e4\u00e5\u0006\u0017" +
+                    "\uffff\uffff\u0000\u00e5\u0108\u0001\u0000\u0000\u0000\u00e6\u00e7\u0003" +
+                    "\u001a\r\u0000\u00e7\u00e8\u0006\u0017\uffff\uffff\u0000\u00e8\u0108\u0001" +
+                    "\u0000\u0000\u0000\u00e9\u00ea\u0003\u001c\u000e\u0000\u00ea\u00eb\u0006" +
+                    "\u0017\uffff\uffff\u0000\u00eb\u0108\u0001\u0000\u0000\u0000\u00ec\u00ed" +
+                    "\u0003<\u001e\u0000\u00ed\u00ee\u0006\u0017\uffff\uffff\u0000\u00ee\u0108" +
+                    "\u0001\u0000\u0000\u0000\u00ef\u00f0\u0003\u001e\u000f\u0000\u00f0\u00f1" +
+                    "\u0006\u0017\uffff\uffff\u0000\u00f1\u0108\u0001\u0000\u0000\u0000\u00f2" +
+                    "\u00f3\u0003 \u0010\u0000\u00f3\u00f4\u0006\u0017\uffff\uffff\u0000\u00f4" +
+                    "\u0108\u0001\u0000\u0000\u0000\u00f5\u00f6\u0003\"\u0011\u0000\u00f6\u00f7" +
+                    "\u0006\u0017\uffff\uffff\u0000\u00f7\u0108\u0001\u0000\u0000\u0000\u00f8" +
+                    "\u00f9\u0003$\u0012\u0000\u00f9\u00fa\u0006\u0017\uffff\uffff\u0000\u00fa" +
+                    "\u0108\u0001\u0000\u0000\u0000\u00fb\u00fc\u0003&\u0013\u0000\u00fc\u00fd" +
+                    "\u0006\u0017\uffff\uffff\u0000\u00fd\u0108\u0001\u0000\u0000\u0000\u00fe" +
+                    "\u00ff\u0003(\u0014\u0000\u00ff\u0100\u0006\u0017\uffff\uffff\u0000\u0100" +
+                    "\u0108\u0001\u0000\u0000\u0000\u0101\u0102\u0003*\u0015\u0000\u0102\u0103" +
+                    "\u0006\u0017\uffff\uffff\u0000\u0103\u0108\u0001\u0000\u0000\u0000\u0104" +
+                    "\u0105\u0003,\u0016\u0000\u0105\u0106\u0006\u0017\uffff\uffff\u0000\u0106" +
+                    "\u0108\u0001\u0000\u0000\u0000\u0107\u00c5\u0001\u0000\u0000\u0000\u0107" +
+                    "\u00c8\u0001\u0000\u0000\u0000\u0107\u00cb\u0001\u0000\u0000\u0000\u0107" +
+                    "\u00ce\u0001\u0000\u0000\u0000\u0107\u00d1\u0001\u0000\u0000\u0000\u0107" +
+                    "\u00d4\u0001\u0000\u0000\u0000\u0107\u00d7\u0001\u0000\u0000\u0000\u0107" +
+                    "\u00da\u0001\u0000\u0000\u0000\u0107\u00dd\u0001\u0000\u0000\u0000\u0107" +
+                    "\u00e0\u0001\u0000\u0000\u0000\u0107\u00e3\u0001\u0000\u0000\u0000\u0107" +
+                    "\u00e6\u0001\u0000\u0000\u0000\u0107\u00e9\u0001\u0000\u0000\u0000\u0107" +
+                    "\u00ec\u0001\u0000\u0000\u0000\u0107\u00ef\u0001\u0000\u0000\u0000\u0107" +
+                    "\u00f2\u0001\u0000\u0000\u0000\u0107\u00f5\u0001\u0000\u0000\u0000\u0107" +
+                    "\u00f8\u0001\u0000\u0000\u0000\u0107\u00fb\u0001\u0000\u0000\u0000\u0107" +
+                    "\u00fe\u0001\u0000\u0000\u0000\u0107\u0101\u0001\u0000\u0000\u0000\u0107" +
+                    "\u0104\u0001\u0000\u0000\u0000\u0108\u0109\u0001\u0000\u0000\u0000\u0109" +
+                    "\u0107\u0001\u0000\u0000\u0000\u0109\u010a\u0001\u0000\u0000\u0000\u010a" +
+                    "/\u0001\u0000\u0000\u0000\u010b\u010c\u0003\u0000\u0000\u0000\u010c\u0110" +
+                    "\u0006\u0018\uffff\uffff\u0000\u010d\u010e\u0003.\u0017\u0000\u010e\u010f" +
+                    "\u0006\u0018\uffff\uffff\u0000\u010f\u0111\u0001\u0000\u0000\u0000\u0110" +
+                    "\u010d\u0001\u0000\u0000\u0000\u0111\u0112\u0001\u0000\u0000\u0000\u0112" +
+                    "\u0110\u0001\u0000\u0000\u0000\u0112\u0113\u0001\u0000\u0000\u0000\u0113" +
+                    "\u0114\u0001\u0000\u0000\u0000\u0114\u0115\u0005\u0000\u0000\u0001\u0115" +
+                    "1\u0001\u0000\u0000\u0000\u0116\u0117\u0005\u0018\u0000\u0000\u0117\u0118" +
+                    "\u0005\u001f\u0000\u0000\u0118\u0126\u0006\u0019\uffff\uffff\u0000\u0119" +
+                    "\u011a\u0005\u001e\u0000\u0000\u011a\u011b\u0005\u001f\u0000\u0000\u011b" +
+                    "\u0124\u0006\u0019\uffff\uffff\u0000\u011c\u011d\u0005\u001e\u0000\u0000" +
+                    "\u011d\u011e\u0005 \u0000\u0000\u011e\u0122\u0006\u0019\uffff\uffff\u0000" +
+                    "\u011f\u0120\u0005\u001e\u0000\u0000\u0120\u0121\u0005 \u0000\u0000\u0121" +
+                    "\u0123\u0006\u0019\uffff\uffff\u0000\u0122\u011f\u0001\u0000\u0000\u0000" +
+                    "\u0122\u0123\u0001\u0000\u0000\u0000\u0123\u0125\u0001\u0000\u0000\u0000" +
+                    "\u0124\u011c\u0001\u0000\u0000\u0000\u0124\u0125\u0001\u0000\u0000\u0000" +
+                    "\u0125\u0127\u0001\u0000\u0000\u0000\u0126\u0119\u0001\u0000\u0000\u0000" +
+                    "\u0126\u0127\u0001\u0000\u0000\u0000\u01273\u0001\u0000\u0000\u0000\u0128" +
+                    "\u0129\u0005\u001c\u0000\u0000\u0129\u012a\u0005 \u0000\u0000\u012a\u012b" +
+                    "\u0005\u001e\u0000\u0000\u012b\u012c\u0005 \u0000\u0000\u012c\u012d\u0006" +
+                    "\u001a\uffff\uffff\u0000\u012d5\u0001\u0000\u0000\u0000\u012e\u013a\u0005" +
+                    "\u001a\u0000\u0000\u012f\u0130\u0005=\u0000\u0000\u0130\u0134\u0006\u001b" +
+                    "\uffff\uffff\u0000\u0131\u0132\u00038\u001c\u0000\u0132\u0133\u0006\u001b" +
+                    "\uffff\uffff\u0000\u0133\u0135\u0001\u0000\u0000\u0000\u0134\u0131\u0001" +
+                    "\u0000\u0000\u0000\u0135\u0136\u0001\u0000\u0000\u0000\u0136\u0134\u0001" +
+                    "\u0000\u0000\u0000\u0136\u0137\u0001\u0000\u0000\u0000\u0137\u013b\u0001" +
+                    "\u0000\u0000\u0000\u0138\u0139\u0005<\u0000\u0000\u0139\u013b\u0006\u001b" +
+                    "\uffff\uffff\u0000\u013a\u012f\u0001\u0000\u0000\u0000\u013a\u0138\u0001" +
+                    "\u0000\u0000\u0000\u013b7\u0001\u0000\u0000\u0000\u013c\u013d\u0005\u001d" +
+                    "\u0000\u0000\u013d\u013e\u0005>\u0000\u0000\u013e\u013f\u0005?\u0000\u0000" +
+                    "\u013f\u0140\u0005@\u0000\u0000\u0140\u0141\u0005?\u0000\u0000\u0141\u0142" +
+                    "\u0005A\u0000\u0000\u0142\u0143\u0006\u001c\uffff\uffff\u0000\u01439\u0001" +
+                    "\u0000\u0000\u0000\u0144\u0145\u0005\u0019\u0000\u0000\u0145\u0146\u0005" +
+                    ";\u0000\u0000\u0146\u0147\u0006\u001d\uffff\uffff\u0000\u0147;\u0001\u0000" +
+                    "\u0000\u0000\u0148\u0149\u00032\u0019\u0000\u0149\u0152\u0006\u001e\uffff" +
+                    "\uffff\u0000\u014a\u014b\u00034\u001a\u0000\u014b\u014c\u0006\u001e\uffff" +
+                    "\uffff\u0000\u014c\u0153\u0001\u0000\u0000\u0000\u014d\u014e\u00036\u001b" +
+                    "\u0000\u014e\u014f\u0006\u001e\uffff\uffff\u0000\u014f\u0151\u0001\u0000" +
+                    "\u0000\u0000\u0150\u014d\u0001\u0000\u0000\u0000\u0150\u0151\u0001\u0000" +
+                    "\u0000\u0000\u0151\u0153\u0001\u0000\u0000\u0000\u0152\u014a\u0001\u0000" +
+                    "\u0000\u0000\u0152\u0150\u0001\u0000\u0000\u0000\u0153\u0157\u0001\u0000" +
+                    "\u0000\u0000\u0154\u0155\u0003,\u0016\u0000\u0155\u0156\u0006\u001e\uffff" +
+                    "\uffff\u0000\u0156\u0158\u0001\u0000\u0000\u0000\u0157\u0154\u0001\u0000" +
+                    "\u0000\u0000\u0157\u0158\u0001\u0000\u0000\u0000\u0158\u015c\u0001\u0000" +
+                    "\u0000\u0000\u0159\u015a\u0003:\u001d\u0000\u015a\u015b\u0006\u001e\uffff" +
+                    "\uffff\u0000\u015b\u015d\u0001\u0000\u0000\u0000\u015c\u0159\u0001\u0000" +
+                    "\u0000\u0000\u015c\u015d\u0001\u0000\u0000\u0000\u015d=\u0001\u0000\u0000" +
+                    "\u0000\u000f\u0091\u0095\u00a6\u0107\u0109\u0112\u0122\u0124\u0126\u0136" +
+                    "\u013a\u0150\u0152\u0157\u015c";
 
     public static final String[] ruleNames = makeRuleNames();
 
@@ -1779,6 +2001,1118 @@ public class ItemObjectGrammar extends Parser {
         return _localctx;
     }
 
+    private static String[] makeRuleNames() {
+        return new String[]{
+                "recordCount", "name", "tval", "graphics", "level", "weight", "cost",
+                "attack", "armour", "alloc", "charges", "pile", "power", "msg", "visMsg",
+                "flags", "values", "brand", "slay", "curse", "pval", "desc", "time",
+                "itemObject", "file", "effect", "effectYX", "dice", "expr", "effectMsg",
+                "effectBlock"
+        };
+    }
+
+    public final TimeContext time() throws RecognitionException {
+        TimeContext _localctx = new TimeContext(_ctx, getState());
+        enterRule(_localctx, 44, RULE_time);
+        try {
+            enterOuterAlt(_localctx, 1);
+            {
+                setState(191);
+                match(TIME);
+                setState(192);
+                ((TimeContext) _localctx).DICE_SIMPLE_VALUE = match(DICE_SIMPLE_VALUE);
+
+                ((TimeContext) _localctx).timeStr = ((TimeContext) _localctx).DICE_SIMPLE_VALUE.getText();
+
+            }
+        } catch (RecognitionException re) {
+            _localctx.exception = re;
+            _errHandler.reportError(this, re);
+            _errHandler.recover(this, re);
+        } finally {
+            exitRule();
+        }
+        return _localctx;
+    }
+
+    public final ItemObjectContext itemObject() throws RecognitionException {
+        ItemObjectContext _localctx = new ItemObjectContext(_ctx, getState());
+        enterRule(_localctx, 46, RULE_itemObject);
+
+        String nameInit = "";
+        int line = 0;
+        String typeInit = "";
+        String glyphInit = "";
+        String colourInit = "";
+        String levelInit = "";
+        String weightInit = "";
+        String costInit = "";
+        String atBaseInit = "";
+        String atTohInit = "";
+        String atTodInit = "";
+        String arBaseInit = "";
+        String arToaInit = "";
+        String alCommonInit = "";
+        String alLowerInit = "";
+        String alUpperInit = "";
+        String chargesInit = "";
+        String pileChanceInit = "";
+        String pileItemsInit = "";
+        String powerInit = "";
+        String msgInit = "";
+        String visMsgInit = "";
+        List<EffectParseRecord> effectsInit = new ArrayList<>();
+        List<String> flagListInit = new ArrayList<>();
+        Map<String, String> valuesInit = new HashMap<>();
+        List<String> brandInit = new ArrayList<>();
+        List<String> slayInit = new ArrayList<>();
+        Map<String, String> curseInit = new HashMap<>();
+        String pValInit = "";
+        StringBuilder dsb = new StringBuilder();
+        StringBuilder msb = new StringBuilder();
+        StringBuilder vsb = new StringBuilder();
+        String descInit = "";
+        String timeInit = "";
+
+        int _la;
+        try {
+            enterOuterAlt(_localctx, 1);
+            {
+                setState(195);
+                ((ItemObjectContext) _localctx).name = name();
+                nameInit = ((ItemObjectContext) _localctx).name.nameStr;
+                line = ((ItemObjectContext) _localctx).name.line;
+                setState(263);
+                _errHandler.sync(this);
+                _la = _input.LA(1);
+                do {
+                    {
+                        setState(263);
+                        _errHandler.sync(this);
+                        switch (_input.LA(1)) {
+                            case TYPE: {
+                                setState(197);
+                                ((ItemObjectContext) _localctx).tval = tval();
+                                typeInit = ((ItemObjectContext) _localctx).tval.tvalStr;
+                            }
+                            break;
+                            case GRAPHICS: {
+                                setState(200);
+                                ((ItemObjectContext) _localctx).graphics = graphics();
+                                glyphInit = ((ItemObjectContext) _localctx).graphics.glyph;
+                                colourInit = ((ItemObjectContext) _localctx).graphics.colour;
+                            }
+                            break;
+                            case LEVEL: {
+                                setState(203);
+                                ((ItemObjectContext) _localctx).level = level();
+                                levelInit = ((ItemObjectContext) _localctx).level.levelStr;
+                            }
+                            break;
+                            case WEIGHT: {
+                                setState(206);
+                                ((ItemObjectContext) _localctx).weight = weight();
+                                weightInit = ((ItemObjectContext) _localctx).weight.weightStr;
+                            }
+                            break;
+                            case COST: {
+                                setState(209);
+                                ((ItemObjectContext) _localctx).cost = cost();
+                                costInit = ((ItemObjectContext) _localctx).cost.costStr;
+                            }
+                            break;
+                            case ATTACK: {
+                                setState(212);
+                                ((ItemObjectContext) _localctx).attack = attack();
+                                atBaseInit = ((ItemObjectContext) _localctx).attack.base;
+                                atTohInit = ((ItemObjectContext) _localctx).attack.toh;
+                                atTodInit = ((ItemObjectContext) _localctx).attack.tod;
+                            }
+                            break;
+                            case ARMOUR: {
+                                setState(215);
+                                ((ItemObjectContext) _localctx).armour = armour();
+                                arBaseInit = ((ItemObjectContext) _localctx).armour.base;
+                                arToaInit = ((ItemObjectContext) _localctx).armour.toa;
+                            }
+                            break;
+                            case ALLOC: {
+                                setState(218);
+                                ((ItemObjectContext) _localctx).alloc = alloc();
+                                alCommonInit = ((ItemObjectContext) _localctx).alloc.common;
+                                alLowerInit = ((ItemObjectContext) _localctx).alloc.lower;
+                                alUpperInit = ((ItemObjectContext) _localctx).alloc.upper;
+                            }
+                            break;
+                            case CHARGES: {
+                                setState(221);
+                                ((ItemObjectContext) _localctx).charges = charges();
+                                chargesInit = ((ItemObjectContext) _localctx).charges.chargesRnd;
+                            }
+                            break;
+                            case PILE: {
+                                setState(224);
+                                ((ItemObjectContext) _localctx).pile = pile();
+                                pileChanceInit = ((ItemObjectContext) _localctx).pile.chance;
+                                pileItemsInit = ((ItemObjectContext) _localctx).pile.noOfItems;
+                            }
+                            break;
+                            case POWER: {
+                                setState(227);
+                                ((ItemObjectContext) _localctx).power = power();
+                                powerInit = ((ItemObjectContext) _localctx).power.powerInt;
+                            }
+                            break;
+                            case MSG: {
+                                setState(230);
+                                ((ItemObjectContext) _localctx).msg = msg();
+                                msb.append(((ItemObjectContext) _localctx).msg.message);
+                            }
+                            break;
+                            case VIS_MSG: {
+                                setState(233);
+                                ((ItemObjectContext) _localctx).visMsg = visMsg();
+                                vsb.append(((ItemObjectContext) _localctx).visMsg.vMessage);
+                            }
+                            break;
+                            case EFFECT: {
+                                setState(236);
+                                ((ItemObjectContext) _localctx).effectBlock = effectBlock();
+                                effectsInit.add(new EffectParseRecord(((ItemObjectContext) _localctx).effectBlock.typeInit,
+                                        ((ItemObjectContext) _localctx).effectBlock.subtypeWrapperInit, ((ItemObjectContext) _localctx).effectBlock.radius, ((ItemObjectContext) _localctx).effectBlock.other,
+                                        ((ItemObjectContext) _localctx).effectBlock.diceString, ((ItemObjectContext) _localctx).effectBlock.yVal, ((ItemObjectContext) _localctx).effectBlock.xVal,
+                                        ((ItemObjectContext) _localctx).effectBlock.expressionChars, ((ItemObjectContext) _localctx).effectBlock.expressionBase,
+                                        ((ItemObjectContext) _localctx).effectBlock.expressionOperation, ((ItemObjectContext) _localctx).effectBlock.timeDiceString,
+                                        ((ItemObjectContext) _localctx).effectBlock.effectMessage, (((ItemObjectContext) _localctx).effectBlock != null ? (((ItemObjectContext) _localctx).effectBlock.start) : null).getLine()));
+                            }
+                            break;
+                            case FLAGS: {
+                                setState(239);
+                                ((ItemObjectContext) _localctx).flags = flags();
+                                flagListInit.addAll(((ItemObjectContext) _localctx).flags.flagList);
+                            }
+                            break;
+                            case VALUES: {
+                                setState(242);
+                                ((ItemObjectContext) _localctx).values = values();
+                                valuesInit.putAll(((ItemObjectContext) _localctx).values.valueMap);
+                            }
+                            break;
+                            case BRAND: {
+                                setState(245);
+                                ((ItemObjectContext) _localctx).brand = brand();
+                                brandInit.add(((ItemObjectContext) _localctx).brand.brandStr);
+                            }
+                            break;
+                            case SLAY: {
+                                setState(248);
+                                ((ItemObjectContext) _localctx).slay = slay();
+                                slayInit.add(((ItemObjectContext) _localctx).slay.slayStr);
+                            }
+                            break;
+                            case CURSE: {
+                                setState(251);
+                                ((ItemObjectContext) _localctx).curse = curse();
+                                curseInit.put(((ItemObjectContext) _localctx).curse.curseName, ((ItemObjectContext) _localctx).curse.cursePower);
+                            }
+                            break;
+                            case PVAL: {
+                                setState(254);
+                                ((ItemObjectContext) _localctx).pval = pval();
+                                pValInit = ((ItemObjectContext) _localctx).pval.pvalInt;
+                            }
+                            break;
+                            case DESC: {
+                                setState(257);
+                                ((ItemObjectContext) _localctx).desc = desc();
+                                dsb.append(((ItemObjectContext) _localctx).desc.descStr);
+                            }
+                            break;
+                            case TIME: {
+                                setState(260);
+                                ((ItemObjectContext) _localctx).time = time();
+                                timeInit = ((ItemObjectContext) _localctx).time.timeStr;
+                            }
+                            break;
+                            default:
+                                throw new NoViableAltException(this);
+                        }
+                    }
+                    setState(265);
+                    _errHandler.sync(this);
+                    _la = _input.LA(1);
+                } while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 34514927608L) != 0));
+            }
+            _ctx.stop = _input.LT(-1);
+
+            descInit = dsb.toString();
+            msgInit = msb.toString();
+            visMsgInit = vsb.toString();
+            ((ItemObjectContext) _localctx).object = new ItemObjectParseRecord(nameInit, glyphInit, colourInit, typeInit,
+                    levelInit, weightInit, costInit, atBaseInit, atTohInit, atTodInit,
+                    arBaseInit, arToaInit, alCommonInit, alLowerInit, alUpperInit,
+                    chargesInit, pileChanceInit, pileItemsInit, powerInit, msgInit,
+                    visMsgInit, effectsInit, flagListInit, valuesInit, brandInit, slayInit,
+                    curseInit, pValInit, descInit, timeInit, line);
+
+        } catch (RecognitionException re) {
+            _localctx.exception = re;
+            _errHandler.reportError(this, re);
+            _errHandler.recover(this, re);
+        } finally {
+            exitRule();
+        }
+        return _localctx;
+    }
+
+    public final FileContext file() throws RecognitionException {
+        FileContext _localctx = new FileContext(_ctx, getState());
+        enterRule(_localctx, 48, RULE_file);
+        int _la;
+        try {
+            enterOuterAlt(_localctx, 1);
+            {
+                setState(267);
+                ((FileContext) _localctx).recordCount = recordCount();
+                ((FileContext) _localctx).itemObjects = new ArrayList<>();
+                ((FileContext) _localctx).declaredRecordCount = ((FileContext) _localctx).recordCount.count;
+                setState(272);
+                _errHandler.sync(this);
+                _la = _input.LA(1);
+                do {
+                    {
+                        {
+                            setState(269);
+                            ((FileContext) _localctx).itemObject = itemObject();
+                            _localctx.itemObjects.add(((FileContext) _localctx).itemObject.object);
+                        }
+                    }
+                    setState(274);
+                    _errHandler.sync(this);
+                    _la = _input.LA(1);
+                } while (_la == NAME);
+                setState(276);
+                match(EOF);
+            }
+        } catch (RecognitionException re) {
+            _localctx.exception = re;
+            _errHandler.reportError(this, re);
+            _errHandler.recover(this, re);
+        } finally {
+            exitRule();
+        }
+        return _localctx;
+    }
+
+    @SuppressWarnings("CheckReturnValue")
+    public static class FileContext extends ParserRuleContext {
+        public String declaredRecordCount;
+        public List<ItemObjectParseRecord> itemObjects;
+        public RecordCountContext recordCount;
+        public ItemObjectContext itemObject;
+
+        public RecordCountContext recordCount() {
+            return getRuleContext(RecordCountContext.class, 0);
+        }
+
+        public TerminalNode EOF() {
+            return getToken(ItemObjectGrammar.EOF, 0);
+        }
+
+        public List<ItemObjectContext> itemObject() {
+            return getRuleContexts(ItemObjectContext.class);
+        }
+
+        public ItemObjectContext itemObject(int i) {
+            return getRuleContext(ItemObjectContext.class, i);
+        }
+
+        public FileContext(ParserRuleContext parent, int invokingState) {
+            super(parent, invokingState);
+        }
+
+        @Override
+        public int getRuleIndex() {
+            return RULE_file;
+        }
+
+        @Override
+        public void enterRule(ParseTreeListener listener) {
+            if (listener instanceof ItemObjectGrammarListener) ((ItemObjectGrammarListener) listener).enterFile(this);
+        }
+
+        @Override
+        public void exitRule(ParseTreeListener listener) {
+            if (listener instanceof ItemObjectGrammarListener) ((ItemObjectGrammarListener) listener).exitFile(this);
+        }
+
+        @Override
+        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+            if (visitor instanceof ItemObjectGrammarVisitor)
+                return ((ItemObjectGrammarVisitor<? extends T>) visitor).visitFile(this);
+            else return visitor.visitChildren(this);
+        }
+    }
+
+    public final EffectContext effect() throws RecognitionException {
+        EffectContext _localctx = new EffectContext(_ctx, getState());
+        enterRule(_localctx, 50, RULE_effect);
+
+        ((EffectContext) _localctx).wrapper = "";
+        ((EffectContext) _localctx).radius = "";
+        ((EffectContext) _localctx).other = "";
+
+        int _la;
+        try {
+            enterOuterAlt(_localctx, 1);
+            {
+                setState(278);
+                match(EFFECT);
+                setState(279);
+                ((EffectContext) _localctx).t = match(UCASE);
+
+                ((EffectContext) _localctx).type = ((EffectContext) _localctx).t.getText();
+
+                setState(294);
+                _errHandler.sync(this);
+                _la = _input.LA(1);
+                if (_la == COLON) {
+                    {
+                        setState(281);
+                        match(COLON);
+                        setState(282);
+                        ((EffectContext) _localctx).st = match(UCASE);
+
+                        ((EffectContext) _localctx).wrapper = ((EffectContext) _localctx).st.getText().toUpperCase();
+
+                        setState(292);
+                        _errHandler.sync(this);
+                        _la = _input.LA(1);
+                        if (_la == COLON) {
+                            {
+                                setState(284);
+                                match(COLON);
+                                setState(285);
+                                ((EffectContext) _localctx).rad = match(INTEGER);
+
+                                ((EffectContext) _localctx).radius = ((EffectContext) _localctx).rad.getText();
+
+                                setState(290);
+                                _errHandler.sync(this);
+                                _la = _input.LA(1);
+                                if (_la == COLON) {
+                                    {
+                                        setState(287);
+                                        match(COLON);
+                                        setState(288);
+                                        ((EffectContext) _localctx).oth = match(INTEGER);
+
+                                        ((EffectContext) _localctx).other = ((EffectContext) _localctx).oth.getText();
+
+                                    }
+                                }
+
+                            }
+                        }
+
+                    }
+                }
+
+            }
+        } catch (RecognitionException re) {
+            _localctx.exception = re;
+            _errHandler.reportError(this, re);
+            _errHandler.recover(this, re);
+        } finally {
+            exitRule();
+        }
+        return _localctx;
+    }
+
+    @SuppressWarnings("CheckReturnValue")
+    public static class EffectContext extends ParserRuleContext {
+        public String type;
+        public String wrapper;
+        public String radius;
+        public String other;
+        public Token t;
+        public Token st;
+        public Token rad;
+        public Token oth;
+
+        public TerminalNode EFFECT() {
+            return getToken(ItemObjectGrammar.EFFECT, 0);
+        }
+
+        public List<TerminalNode> UCASE() {
+            return getTokens(ItemObjectGrammar.UCASE);
+        }
+
+        public TerminalNode UCASE(int i) {
+            return getToken(ItemObjectGrammar.UCASE, i);
+        }
+
+        public List<TerminalNode> COLON() {
+            return getTokens(ItemObjectGrammar.COLON);
+        }
+
+        public TerminalNode COLON(int i) {
+            return getToken(ItemObjectGrammar.COLON, i);
+        }
+
+        public List<TerminalNode> INTEGER() {
+            return getTokens(ItemObjectGrammar.INTEGER);
+        }
+
+        public TerminalNode INTEGER(int i) {
+            return getToken(ItemObjectGrammar.INTEGER, i);
+        }
+
+        public EffectContext(ParserRuleContext parent, int invokingState) {
+            super(parent, invokingState);
+        }
+
+        @Override
+        public int getRuleIndex() {
+            return RULE_effect;
+        }
+
+        @Override
+        public void enterRule(ParseTreeListener listener) {
+            if (listener instanceof ItemObjectGrammarListener) ((ItemObjectGrammarListener) listener).enterEffect(this);
+        }
+
+        @Override
+        public void exitRule(ParseTreeListener listener) {
+            if (listener instanceof ItemObjectGrammarListener) ((ItemObjectGrammarListener) listener).exitEffect(this);
+        }
+
+        @Override
+        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+            if (visitor instanceof ItemObjectGrammarVisitor)
+                return ((ItemObjectGrammarVisitor<? extends T>) visitor).visitEffect(this);
+            else return visitor.visitChildren(this);
+        }
+    }
+
+    public final EffectYXContext effectYX() throws RecognitionException {
+        EffectYXContext _localctx = new EffectYXContext(_ctx, getState());
+        enterRule(_localctx, 52, RULE_effectYX);
+        try {
+            enterOuterAlt(_localctx, 1);
+            {
+                setState(296);
+                match(EFFECT_YX);
+                setState(297);
+                ((EffectYXContext) _localctx).yVal = match(INTEGER);
+                setState(298);
+                match(COLON);
+                setState(299);
+                ((EffectYXContext) _localctx).xVal = match(INTEGER);
+
+                ((EffectYXContext) _localctx).y = ((EffectYXContext) _localctx).yVal.getText();
+                ((EffectYXContext) _localctx).x = ((EffectYXContext) _localctx).xVal.getText();
+
+            }
+        } catch (RecognitionException re) {
+            _localctx.exception = re;
+            _errHandler.reportError(this, re);
+            _errHandler.recover(this, re);
+        } finally {
+            exitRule();
+        }
+        return _localctx;
+    }
+
+    @SuppressWarnings("CheckReturnValue")
+    public static class EffectYXContext extends ParserRuleContext {
+        public String y;
+        public String x;
+        public Token yVal;
+        public Token xVal;
+
+        public TerminalNode EFFECT_YX() {
+            return getToken(ItemObjectGrammar.EFFECT_YX, 0);
+        }
+
+        public TerminalNode COLON() {
+            return getToken(ItemObjectGrammar.COLON, 0);
+        }
+
+        public List<TerminalNode> INTEGER() {
+            return getTokens(ItemObjectGrammar.INTEGER);
+        }
+
+        public TerminalNode INTEGER(int i) {
+            return getToken(ItemObjectGrammar.INTEGER, i);
+        }
+
+        public EffectYXContext(ParserRuleContext parent, int invokingState) {
+            super(parent, invokingState);
+        }
+
+        @Override
+        public int getRuleIndex() {
+            return RULE_effectYX;
+        }
+
+        @Override
+        public void enterRule(ParseTreeListener listener) {
+            if (listener instanceof ItemObjectGrammarListener)
+                ((ItemObjectGrammarListener) listener).enterEffectYX(this);
+        }
+
+        @Override
+        public void exitRule(ParseTreeListener listener) {
+            if (listener instanceof ItemObjectGrammarListener)
+                ((ItemObjectGrammarListener) listener).exitEffectYX(this);
+        }
+
+        @Override
+        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+            if (visitor instanceof ItemObjectGrammarVisitor)
+                return ((ItemObjectGrammarVisitor<? extends T>) visitor).visitEffectYX(this);
+            else return visitor.visitChildren(this);
+        }
+    }
+
+    public final DiceContext dice() throws RecognitionException {
+        DiceContext _localctx = new DiceContext(_ctx, getState());
+        enterRule(_localctx, 54, RULE_dice);
+
+        String charHolder = "";
+        String baseHolder = "";
+        String operHolder = "";
+        ((DiceContext) _localctx).diceString = "";
+        ((DiceContext) _localctx).exprChar = "";
+        ((DiceContext) _localctx).baseName = "";
+        ((DiceContext) _localctx).operation = "";
+
+        int _la;
+        try {
+            enterOuterAlt(_localctx, 1);
+            {
+                setState(302);
+                match(DICE);
+                setState(314);
+                _errHandler.sync(this);
+                switch (_input.LA(1)) {
+                    case DICE_COMPLEX_VALUE: {
+                        {
+                            setState(303);
+                            ((DiceContext) _localctx).val = match(DICE_COMPLEX_VALUE);
+
+                            ((DiceContext) _localctx).diceString = ((DiceContext) _localctx).val.getText();
+
+                            setState(308);
+                            _errHandler.sync(this);
+                            _la = _input.LA(1);
+                            do {
+                                {
+                                    {
+                                        setState(305);
+                                        ((DiceContext) _localctx).expr = expr();
+
+                                        if (charHolder.isEmpty()) {
+                                            charHolder = ((DiceContext) _localctx).expr.exprChar;
+                                            baseHolder = ((DiceContext) _localctx).expr.baseName;
+                                            operHolder = ((DiceContext) _localctx).expr.operation;
+                                        } else {
+                                            charHolder = charHolder + "^" + ((DiceContext) _localctx).expr.exprChar;
+                                            baseHolder = baseHolder + "^" + ((DiceContext) _localctx).expr.baseName;
+                                            operHolder = operHolder + "^" + ((DiceContext) _localctx).expr.operation;
+                                        }
+
+                                    }
+                                }
+                                setState(310);
+                                _errHandler.sync(this);
+                                _la = _input.LA(1);
+                            } while (_la == EXPR);
+                        }
+                    }
+                    break;
+                    case DICE_SIMPLE_VALUE: {
+                        setState(312);
+                        ((DiceContext) _localctx).val = match(DICE_SIMPLE_VALUE);
+
+                        ((DiceContext) _localctx).diceString = ((DiceContext) _localctx).val.getText();
+
+                    }
+                    break;
+                    default:
+                        throw new NoViableAltException(this);
+                }
+            }
+            _ctx.stop = _input.LT(-1);
+
+            ((DiceContext) _localctx).exprChar = charHolder;
+            ((DiceContext) _localctx).baseName = baseHolder;
+            ((DiceContext) _localctx).operation = operHolder;
+
+        } catch (RecognitionException re) {
+            _localctx.exception = re;
+            _errHandler.reportError(this, re);
+            _errHandler.recover(this, re);
+        } finally {
+            exitRule();
+        }
+        return _localctx;
+    }
+
+    @SuppressWarnings("CheckReturnValue")
+    public static class DiceContext extends ParserRuleContext {
+        public String diceString;
+        public String exprChar;
+        public String baseName;
+        public String operation;
+        public Token val;
+        public ExprContext expr;
+
+        public TerminalNode DICE() {
+            return getToken(ItemObjectGrammar.DICE, 0);
+        }
+
+        public TerminalNode DICE_SIMPLE_VALUE() {
+            return getToken(ItemObjectGrammar.DICE_SIMPLE_VALUE, 0);
+        }
+
+        public TerminalNode DICE_COMPLEX_VALUE() {
+            return getToken(ItemObjectGrammar.DICE_COMPLEX_VALUE, 0);
+        }
+
+        public List<ExprContext> expr() {
+            return getRuleContexts(ExprContext.class);
+        }
+
+        public ExprContext expr(int i) {
+            return getRuleContext(ExprContext.class, i);
+        }
+
+        public DiceContext(ParserRuleContext parent, int invokingState) {
+            super(parent, invokingState);
+        }
+
+        @Override
+        public int getRuleIndex() {
+            return RULE_dice;
+        }
+
+        @Override
+        public void enterRule(ParseTreeListener listener) {
+            if (listener instanceof ItemObjectGrammarListener) ((ItemObjectGrammarListener) listener).enterDice(this);
+        }
+
+        @Override
+        public void exitRule(ParseTreeListener listener) {
+            if (listener instanceof ItemObjectGrammarListener) ((ItemObjectGrammarListener) listener).exitDice(this);
+        }
+
+        @Override
+        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+            if (visitor instanceof ItemObjectGrammarVisitor)
+                return ((ItemObjectGrammarVisitor<? extends T>) visitor).visitDice(this);
+            else return visitor.visitChildren(this);
+        }
+    }
+
+    public final ExprContext expr() throws RecognitionException {
+        ExprContext _localctx = new ExprContext(_ctx, getState());
+        enterRule(_localctx, 56, RULE_expr);
+        try {
+            enterOuterAlt(_localctx, 1);
+            {
+                setState(316);
+                match(EXPR);
+                setState(317);
+                ((ExprContext) _localctx).ch = match(EXPR_CHAR);
+                setState(318);
+                match(EXPR_COLON);
+                setState(319);
+                ((ExprContext) _localctx).base = match(EXPR_UCASE);
+                setState(320);
+                match(EXPR_COLON);
+                setState(321);
+                ((ExprContext) _localctx).op = match(EXPR_OP);
+
+                ((ExprContext) _localctx).exprChar = ((ExprContext) _localctx).ch.getText();
+                ((ExprContext) _localctx).baseName = ((ExprContext) _localctx).base.getText();
+                ((ExprContext) _localctx).operation = ((ExprContext) _localctx).op.getText();
+
+            }
+        } catch (RecognitionException re) {
+            _localctx.exception = re;
+            _errHandler.reportError(this, re);
+            _errHandler.recover(this, re);
+        } finally {
+            exitRule();
+        }
+        return _localctx;
+    }
+
+    @SuppressWarnings("CheckReturnValue")
+    public static class ExprContext extends ParserRuleContext {
+        public String exprChar;
+        public String baseName;
+        public String operation;
+        public Token ch;
+        public Token base;
+        public Token op;
+
+        public TerminalNode EXPR() {
+            return getToken(ItemObjectGrammar.EXPR, 0);
+        }
+
+        public List<TerminalNode> EXPR_COLON() {
+            return getTokens(ItemObjectGrammar.EXPR_COLON);
+        }
+
+        public TerminalNode EXPR_COLON(int i) {
+            return getToken(ItemObjectGrammar.EXPR_COLON, i);
+        }
+
+        public TerminalNode EXPR_CHAR() {
+            return getToken(ItemObjectGrammar.EXPR_CHAR, 0);
+        }
+
+        public TerminalNode EXPR_UCASE() {
+            return getToken(ItemObjectGrammar.EXPR_UCASE, 0);
+        }
+
+        public TerminalNode EXPR_OP() {
+            return getToken(ItemObjectGrammar.EXPR_OP, 0);
+        }
+
+        public ExprContext(ParserRuleContext parent, int invokingState) {
+            super(parent, invokingState);
+        }
+
+        @Override
+        public int getRuleIndex() {
+            return RULE_expr;
+        }
+
+        @Override
+        public void enterRule(ParseTreeListener listener) {
+            if (listener instanceof ItemObjectGrammarListener) ((ItemObjectGrammarListener) listener).enterExpr(this);
+        }
+
+        @Override
+        public void exitRule(ParseTreeListener listener) {
+            if (listener instanceof ItemObjectGrammarListener) ((ItemObjectGrammarListener) listener).exitExpr(this);
+        }
+
+        @Override
+        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+            if (visitor instanceof ItemObjectGrammarVisitor)
+                return ((ItemObjectGrammarVisitor<? extends T>) visitor).visitExpr(this);
+            else return visitor.visitChildren(this);
+        }
+    }
+
+    public final EffectMsgContext effectMsg() throws RecognitionException {
+        EffectMsgContext _localctx = new EffectMsgContext(_ctx, getState());
+        enterRule(_localctx, 58, RULE_effectMsg);
+        try {
+            enterOuterAlt(_localctx, 1);
+            {
+                setState(324);
+                match(EFFECT_MESSAGE);
+                setState(325);
+                ((EffectMsgContext) _localctx).FREE_TEXT = match(FREE_TEXT);
+                ((EffectMsgContext) _localctx).message = ((EffectMsgContext) _localctx).FREE_TEXT.getText();
+            }
+        } catch (RecognitionException re) {
+            _localctx.exception = re;
+            _errHandler.reportError(this, re);
+            _errHandler.recover(this, re);
+        } finally {
+            exitRule();
+        }
+        return _localctx;
+    }
+
+    @SuppressWarnings("CheckReturnValue")
+    public static class EffectMsgContext extends ParserRuleContext {
+        public String message;
+        public Token FREE_TEXT;
+
+        public TerminalNode EFFECT_MESSAGE() {
+            return getToken(ItemObjectGrammar.EFFECT_MESSAGE, 0);
+        }
+
+        public TerminalNode FREE_TEXT() {
+            return getToken(ItemObjectGrammar.FREE_TEXT, 0);
+        }
+
+        public EffectMsgContext(ParserRuleContext parent, int invokingState) {
+            super(parent, invokingState);
+        }
+
+        @Override
+        public int getRuleIndex() {
+            return RULE_effectMsg;
+        }
+
+        @Override
+        public void enterRule(ParseTreeListener listener) {
+            if (listener instanceof ItemObjectGrammarListener)
+                ((ItemObjectGrammarListener) listener).enterEffectMsg(this);
+        }
+
+        @Override
+        public void exitRule(ParseTreeListener listener) {
+            if (listener instanceof ItemObjectGrammarListener)
+                ((ItemObjectGrammarListener) listener).exitEffectMsg(this);
+        }
+
+        @Override
+        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+            if (visitor instanceof ItemObjectGrammarVisitor)
+                return ((ItemObjectGrammarVisitor<? extends T>) visitor).visitEffectMsg(this);
+            else return visitor.visitChildren(this);
+        }
+    }
+
+    public final EffectBlockContext effectBlock() throws RecognitionException {
+        EffectBlockContext _localctx = new EffectBlockContext(_ctx, getState());
+        enterRule(_localctx, 60, RULE_effectBlock);
+
+        String expressionString = "";
+        String baseString = "";
+        String opString = "";
+        ((EffectBlockContext) _localctx).diceString = "";
+        ((EffectBlockContext) _localctx).timeDiceString = "";
+        ((EffectBlockContext) _localctx).yVal = "";
+        ((EffectBlockContext) _localctx).xVal = "";
+        ((EffectBlockContext) _localctx).effectMessage = "";
+
+        int _la;
+        try {
+            enterOuterAlt(_localctx, 1);
+            {
+                setState(328);
+                ((EffectBlockContext) _localctx).effect = effect();
+
+                ((EffectBlockContext) _localctx).lineNo = _localctx.start.getLine();
+                ((EffectBlockContext) _localctx).typeInit = ((EffectBlockContext) _localctx).effect.type;
+                ((EffectBlockContext) _localctx).subtypeWrapperInit = ((EffectBlockContext) _localctx).effect.wrapper;
+                ((EffectBlockContext) _localctx).radius = ((EffectBlockContext) _localctx).effect.radius;
+                ((EffectBlockContext) _localctx).other = ((EffectBlockContext) _localctx).effect.other;
+
+                setState(338);
+                _errHandler.sync(this);
+                switch (_input.LA(1)) {
+                    case EFFECT_YX: {
+                        {
+                            setState(330);
+                            ((EffectBlockContext) _localctx).effectYX = effectYX();
+
+                            ((EffectBlockContext) _localctx).yVal = ((EffectBlockContext) _localctx).effectYX.y;
+                            ((EffectBlockContext) _localctx).xVal = ((EffectBlockContext) _localctx).effectYX.x;
+
+                        }
+                    }
+                    break;
+                    case EOF:
+                    case NAME:
+                    case TYPE:
+                    case LEVEL:
+                    case WEIGHT:
+                    case COST:
+                    case ATTACK:
+                    case ARMOUR:
+                    case ALLOC:
+                    case CHARGES:
+                    case PILE:
+                    case POWER:
+                    case MSG:
+                    case VIS_MSG:
+                    case FLAGS:
+                    case VALUES:
+                    case BRAND:
+                    case SLAY:
+                    case CURSE:
+                    case PVAL:
+                    case DESC:
+                    case EFFECT:
+                    case EFFECT_MESSAGE:
+                    case DICE:
+                    case TIME:
+                    case GRAPHICS: {
+                        {
+                            setState(336);
+                            _errHandler.sync(this);
+                            _la = _input.LA(1);
+                            if (_la == DICE) {
+                                {
+                                    setState(333);
+                                    ((EffectBlockContext) _localctx).dice = dice();
+
+                                    ((EffectBlockContext) _localctx).diceString = ((EffectBlockContext) _localctx).dice.diceString;
+                                    expressionString = ((EffectBlockContext) _localctx).dice.exprChar;
+                                    baseString = ((EffectBlockContext) _localctx).dice.baseName;
+                                    opString = ((EffectBlockContext) _localctx).dice.operation;
+
+                                }
+                            }
+
+                        }
+                    }
+                    break;
+                    default:
+                        throw new NoViableAltException(this);
+                }
+                setState(343);
+                _errHandler.sync(this);
+                switch (getInterpreter().adaptivePredict(_input, 13, _ctx)) {
+                    case 1: {
+                        setState(340);
+                        ((EffectBlockContext) _localctx).time = time();
+
+                        ((EffectBlockContext) _localctx).timeDiceString = ((EffectBlockContext) _localctx).time.timeStr;
+
+                    }
+                    break;
+                }
+                setState(348);
+                _errHandler.sync(this);
+                _la = _input.LA(1);
+                if (_la == EFFECT_MESSAGE) {
+                    {
+                        setState(345);
+                        ((EffectBlockContext) _localctx).effectMsg = effectMsg();
+                        ((EffectBlockContext) _localctx).effectMessage = ((EffectBlockContext) _localctx).effectMsg.message;
+                    }
+                }
+
+            }
+            _ctx.stop = _input.LT(-1);
+
+            ((EffectBlockContext) _localctx).expressionChars = expressionString;
+            ((EffectBlockContext) _localctx).expressionBase = baseString;
+            ((EffectBlockContext) _localctx).expressionOperation = opString;
+
+        } catch (RecognitionException re) {
+            _localctx.exception = re;
+            _errHandler.reportError(this, re);
+            _errHandler.recover(this, re);
+        } finally {
+            exitRule();
+        }
+        return _localctx;
+    }
+
+    @SuppressWarnings("CheckReturnValue")
+    public static class EffectBlockContext extends ParserRuleContext {
+        public String typeInit;
+        public String subtypeWrapperInit;
+        public String radius;
+        public String other;
+        public String diceString;
+        public String yVal;
+        public String xVal;
+        public String expressionChars;
+        public String expressionBase;
+        public String expressionOperation;
+        public String timeDiceString;
+        public String effectMessage;
+        public int lineNo;
+        public EffectContext effect;
+        public EffectYXContext effectYX;
+        public DiceContext dice;
+        public TimeContext time;
+        public EffectMsgContext effectMsg;
+
+        public EffectContext effect() {
+            return getRuleContext(EffectContext.class, 0);
+        }
+
+        public TimeContext time() {
+            return getRuleContext(TimeContext.class, 0);
+        }
+
+        public EffectMsgContext effectMsg() {
+            return getRuleContext(EffectMsgContext.class, 0);
+        }
+
+        public EffectYXContext effectYX() {
+            return getRuleContext(EffectYXContext.class, 0);
+        }
+
+        public DiceContext dice() {
+            return getRuleContext(DiceContext.class, 0);
+        }
+
+        public EffectBlockContext(ParserRuleContext parent, int invokingState) {
+            super(parent, invokingState);
+        }
+
+        @Override
+        public int getRuleIndex() {
+            return RULE_effectBlock;
+        }
+
+        @Override
+        public void enterRule(ParseTreeListener listener) {
+            if (listener instanceof ItemObjectGrammarListener)
+                ((ItemObjectGrammarListener) listener).enterEffectBlock(this);
+        }
+
+        @Override
+        public void exitRule(ParseTreeListener listener) {
+            if (listener instanceof ItemObjectGrammarListener)
+                ((ItemObjectGrammarListener) listener).exitEffectBlock(this);
+        }
+
+        @Override
+        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+            if (visitor instanceof ItemObjectGrammarVisitor)
+                return ((ItemObjectGrammarVisitor<? extends T>) visitor).visitEffectBlock(this);
+            else return visitor.visitChildren(this);
+        }
+    }
+
+    @SuppressWarnings("CheckReturnValue")
+    public static class TimeContext extends ParserRuleContext {
+        public String timeStr;
+        public Token DICE_SIMPLE_VALUE;
+
+        public TimeContext(ParserRuleContext parent, int invokingState) {
+            super(parent, invokingState);
+        }
+
+        public TerminalNode TIME() {
+            return getToken(ItemObjectGrammar.TIME, 0);
+        }
+
+        public TerminalNode DICE_SIMPLE_VALUE() {
+            return getToken(ItemObjectGrammar.DICE_SIMPLE_VALUE, 0);
+        }
+
+        @Override
+        public int getRuleIndex() {
+            return RULE_time;
+        }
+
+        @Override
+        public void enterRule(ParseTreeListener listener) {
+            if (listener instanceof ItemObjectGrammarListener) ((ItemObjectGrammarListener) listener).enterTime(this);
+        }
+
+        @Override
+        public void exitRule(ParseTreeListener listener) {
+            if (listener instanceof ItemObjectGrammarListener) ((ItemObjectGrammarListener) listener).exitTime(this);
+        }
+
+        @Override
+        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+            if (visitor instanceof ItemObjectGrammarVisitor)
+                return ((ItemObjectGrammarVisitor<? extends T>) visitor).visitTime(this);
+            else return visitor.visitChildren(this);
+        }
+    }
+
     @SuppressWarnings("CheckReturnValue")
     public static class ItemObjectContext extends ParserRuleContext {
         public ItemObjectParseRecord object;
@@ -1804,6 +3138,7 @@ public class ItemObjectGrammar extends Parser {
         public CurseContext curse;
         public PvalContext pval;
         public DescContext desc;
+        public TimeContext time;
 
         public NameContext name() {
             return getRuleContext(NameContext.class, 0);
@@ -1977,6 +3312,14 @@ public class ItemObjectGrammar extends Parser {
             return getRuleContext(DescContext.class, i);
         }
 
+        public List<TimeContext> time() {
+            return getRuleContexts(TimeContext.class);
+        }
+
+        public TimeContext time(int i) {
+            return getRuleContext(TimeContext.class, i);
+        }
+
         public ItemObjectContext(ParserRuleContext parent, int invokingState) {
             super(parent, invokingState);
         }
@@ -2005,1327 +3348,6 @@ public class ItemObjectGrammar extends Parser {
             else return visitor.visitChildren(this);
         }
     }
-
-    public final ItemObjectContext itemObject() throws RecognitionException {
-        ItemObjectContext _localctx = new ItemObjectContext(_ctx, getState());
-        enterRule(_localctx, 44, RULE_itemObject);
-
-        String nameInit = "";
-        int line = 0;
-        String typeInit = "";
-        String glyphInit = "";
-        String colourInit = "";
-        String levelInit = "";
-        String weightInit = "";
-        String costInit = "";
-        String atBaseInit = "";
-        String atTohInit = "";
-        String atTodInit = "";
-        String arBaseInit = "";
-        String arToaInit = "";
-        String alCommonInit = "";
-        String alLowerInit = "";
-        String alUpperInit = "";
-        String chargesInit = "";
-        String pileChanceInit = "";
-        String pileItemsInit = "";
-        String powerInit = "";
-        String msgInit = "";
-        String visMsgInit = "";
-        List<EffectParseRecord> effectsInit = new ArrayList<>();
-        List<String> flagListInit = new ArrayList<>();
-        Map<String, String> valuesInit = new HashMap<>();
-        List<String> brandInit = new ArrayList<>();
-        List<String> slayInit = new ArrayList<>();
-        Map<String, String> curseInit = new HashMap<>();
-        String pValInit = "";
-        StringBuilder dsb = new StringBuilder();
-        StringBuilder msb = new StringBuilder();
-        StringBuilder vsb = new StringBuilder();
-        String descInit = "";
-
-        int _la;
-        try {
-            enterOuterAlt(_localctx, 1);
-            {
-                setState(191);
-                ((ItemObjectContext) _localctx).name = name();
-                nameInit = ((ItemObjectContext) _localctx).name.nameStr;
-                line = ((ItemObjectContext) _localctx).name.line;
-                setState(256);
-                _errHandler.sync(this);
-                _la = _input.LA(1);
-                do {
-                    {
-                        setState(256);
-                        _errHandler.sync(this);
-                        switch (_input.LA(1)) {
-                            case TYPE: {
-                                setState(193);
-                                ((ItemObjectContext) _localctx).tval = tval();
-                                typeInit = ((ItemObjectContext) _localctx).tval.tvalStr;
-                            }
-                            break;
-                            case GRAPHICS: {
-                                setState(196);
-                                ((ItemObjectContext) _localctx).graphics = graphics();
-                                glyphInit = ((ItemObjectContext) _localctx).graphics.glyph;
-                                colourInit = ((ItemObjectContext) _localctx).graphics.colour;
-                            }
-                            break;
-                            case LEVEL: {
-                                setState(199);
-                                ((ItemObjectContext) _localctx).level = level();
-                                levelInit = ((ItemObjectContext) _localctx).level.levelStr;
-                            }
-                            break;
-                            case WEIGHT: {
-                                setState(202);
-                                ((ItemObjectContext) _localctx).weight = weight();
-                                weightInit = ((ItemObjectContext) _localctx).weight.weightStr;
-                            }
-                            break;
-                            case COST: {
-                                setState(205);
-                                ((ItemObjectContext) _localctx).cost = cost();
-                                costInit = ((ItemObjectContext) _localctx).cost.costStr;
-                            }
-                            break;
-                            case ATTACK: {
-                                setState(208);
-                                ((ItemObjectContext) _localctx).attack = attack();
-                                atBaseInit = ((ItemObjectContext) _localctx).attack.base;
-                                atTohInit = ((ItemObjectContext) _localctx).attack.toh;
-                                atTodInit = ((ItemObjectContext) _localctx).attack.tod;
-                            }
-                            break;
-                            case ARMOUR: {
-                                setState(211);
-                                ((ItemObjectContext) _localctx).armour = armour();
-                                arBaseInit = ((ItemObjectContext) _localctx).armour.base;
-                                arToaInit = ((ItemObjectContext) _localctx).armour.toa;
-                            }
-                            break;
-                            case ALLOC: {
-                                setState(214);
-                                ((ItemObjectContext) _localctx).alloc = alloc();
-                                alCommonInit = ((ItemObjectContext) _localctx).alloc.common;
-                                alLowerInit = ((ItemObjectContext) _localctx).alloc.lower;
-                                alUpperInit = ((ItemObjectContext) _localctx).alloc.upper;
-                            }
-                            break;
-                            case CHARGES: {
-                                setState(217);
-                                ((ItemObjectContext) _localctx).charges = charges();
-                                chargesInit = ((ItemObjectContext) _localctx).charges.chargesRnd;
-                            }
-                            break;
-                            case PILE: {
-                                setState(220);
-                                ((ItemObjectContext) _localctx).pile = pile();
-                                pileChanceInit = ((ItemObjectContext) _localctx).pile.chance;
-                                pileItemsInit = ((ItemObjectContext) _localctx).pile.noOfItems;
-                            }
-                            break;
-                            case POWER: {
-                                setState(223);
-                                ((ItemObjectContext) _localctx).power = power();
-                                powerInit = ((ItemObjectContext) _localctx).power.powerInt;
-                            }
-                            break;
-                            case MSG: {
-                                setState(226);
-                                ((ItemObjectContext) _localctx).msg = msg();
-                                msb.append(((ItemObjectContext) _localctx).msg.message);
-                            }
-                            break;
-                            case VIS_MSG: {
-                                setState(229);
-                                ((ItemObjectContext) _localctx).visMsg = visMsg();
-                                vsb.append(((ItemObjectContext) _localctx).visMsg.vMessage);
-                            }
-                            break;
-                            case EFFECT: {
-                                setState(232);
-                                ((ItemObjectContext) _localctx).effectBlock = effectBlock();
-                                effectsInit.add(new EffectParseRecord(((ItemObjectContext) _localctx).effectBlock.typeInit,
-                                        ((ItemObjectContext) _localctx).effectBlock.subtypeWrapperInit, ((ItemObjectContext) _localctx).effectBlock.radius, ((ItemObjectContext) _localctx).effectBlock.other,
-                                        ((ItemObjectContext) _localctx).effectBlock.diceString, ((ItemObjectContext) _localctx).effectBlock.yVal, ((ItemObjectContext) _localctx).effectBlock.xVal,
-                                        ((ItemObjectContext) _localctx).effectBlock.expressionChars, ((ItemObjectContext) _localctx).effectBlock.expressionBase,
-                                        ((ItemObjectContext) _localctx).effectBlock.expressionOperation, ((ItemObjectContext) _localctx).effectBlock.timeDiceString,
-                                        ((ItemObjectContext) _localctx).effectBlock.effectMessage, (((ItemObjectContext) _localctx).effectBlock != null ? (((ItemObjectContext) _localctx).effectBlock.start) : null).getLine()));
-                            }
-                            break;
-                            case FLAGS: {
-                                setState(235);
-                                ((ItemObjectContext) _localctx).flags = flags();
-                                flagListInit.addAll(((ItemObjectContext) _localctx).flags.flagList);
-                            }
-                            break;
-                            case VALUES: {
-                                setState(238);
-                                ((ItemObjectContext) _localctx).values = values();
-                                valuesInit.putAll(((ItemObjectContext) _localctx).values.valueMap);
-                            }
-                            break;
-                            case BRAND: {
-                                setState(241);
-                                ((ItemObjectContext) _localctx).brand = brand();
-                                brandInit.add(((ItemObjectContext) _localctx).brand.brandStr);
-                            }
-                            break;
-                            case SLAY: {
-                                setState(244);
-                                ((ItemObjectContext) _localctx).slay = slay();
-                                slayInit.add(((ItemObjectContext) _localctx).slay.slayStr);
-                            }
-                            break;
-                            case CURSE: {
-                                setState(247);
-                                ((ItemObjectContext) _localctx).curse = curse();
-                                curseInit.put(((ItemObjectContext) _localctx).curse.curseName, ((ItemObjectContext) _localctx).curse.cursePower);
-                            }
-                            break;
-                            case PVAL: {
-                                setState(250);
-                                ((ItemObjectContext) _localctx).pval = pval();
-                                pValInit = ((ItemObjectContext) _localctx).pval.pvalInt;
-                            }
-                            break;
-                            case DESC: {
-                                setState(253);
-                                ((ItemObjectContext) _localctx).desc = desc();
-                                dsb.append(((ItemObjectContext) _localctx).desc.descStr);
-                            }
-                            break;
-                            default:
-                                throw new NoViableAltException(this);
-                        }
-                    }
-                    setState(258);
-                    _errHandler.sync(this);
-                    _la = _input.LA(1);
-                } while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 34380709880L) != 0));
-            }
-            _ctx.stop = _input.LT(-1);
-
-            descInit = dsb.toString();
-            msgInit = msb.toString();
-            visMsgInit = vsb.toString();
-            ((ItemObjectContext) _localctx).object = new ItemObjectParseRecord(nameInit, glyphInit, colourInit, typeInit,
-                    levelInit, weightInit, costInit, atBaseInit, atTohInit, atTodInit,
-                    arBaseInit, arToaInit, alCommonInit, alLowerInit, alUpperInit,
-                    chargesInit, pileChanceInit, pileItemsInit, powerInit, msgInit,
-                    visMsgInit, effectsInit, flagListInit, valuesInit, brandInit, slayInit,
-                    curseInit, pValInit, descInit, line);
-
-        } catch (RecognitionException re) {
-            _localctx.exception = re;
-            _errHandler.reportError(this, re);
-            _errHandler.recover(this, re);
-        } finally {
-            exitRule();
-        }
-        return _localctx;
-    }
-
-    @SuppressWarnings("CheckReturnValue")
-    public static class FileContext extends ParserRuleContext {
-        public String declaredRecordCount;
-        public List<ItemObjectParseRecord> itemObjects;
-        public RecordCountContext recordCount;
-        public ItemObjectContext itemObject;
-
-        public RecordCountContext recordCount() {
-            return getRuleContext(RecordCountContext.class, 0);
-        }
-
-        public TerminalNode EOF() {
-            return getToken(ItemObjectGrammar.EOF, 0);
-        }
-
-        public List<ItemObjectContext> itemObject() {
-            return getRuleContexts(ItemObjectContext.class);
-        }
-
-        public ItemObjectContext itemObject(int i) {
-            return getRuleContext(ItemObjectContext.class, i);
-        }
-
-        public FileContext(ParserRuleContext parent, int invokingState) {
-            super(parent, invokingState);
-        }
-
-        @Override
-        public int getRuleIndex() {
-            return RULE_file;
-        }
-
-        @Override
-        public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ItemObjectGrammarListener) ((ItemObjectGrammarListener) listener).enterFile(this);
-        }
-
-        @Override
-        public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ItemObjectGrammarListener) ((ItemObjectGrammarListener) listener).exitFile(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof ItemObjectGrammarVisitor)
-                return ((ItemObjectGrammarVisitor<? extends T>) visitor).visitFile(this);
-            else return visitor.visitChildren(this);
-        }
-    }
-
-    public final FileContext file() throws RecognitionException {
-        FileContext _localctx = new FileContext(_ctx, getState());
-        enterRule(_localctx, 46, RULE_file);
-        int _la;
-        try {
-            enterOuterAlt(_localctx, 1);
-            {
-                setState(260);
-                ((FileContext) _localctx).recordCount = recordCount();
-                ((FileContext) _localctx).itemObjects = new ArrayList<>();
-                ((FileContext) _localctx).declaredRecordCount = ((FileContext) _localctx).recordCount.count;
-                setState(265);
-                _errHandler.sync(this);
-                _la = _input.LA(1);
-                do {
-                    {
-                        {
-                            setState(262);
-                            ((FileContext) _localctx).itemObject = itemObject();
-                            _localctx.itemObjects.add(((FileContext) _localctx).itemObject.object);
-                        }
-                    }
-                    setState(267);
-                    _errHandler.sync(this);
-                    _la = _input.LA(1);
-                } while (_la == NAME);
-                setState(269);
-                match(EOF);
-            }
-        } catch (RecognitionException re) {
-            _localctx.exception = re;
-            _errHandler.reportError(this, re);
-            _errHandler.recover(this, re);
-        } finally {
-            exitRule();
-        }
-        return _localctx;
-    }
-
-    @SuppressWarnings("CheckReturnValue")
-    public static class EffectContext extends ParserRuleContext {
-        public String type;
-        public String wrapper;
-        public String radius;
-        public String other;
-        public Token t;
-        public Token st;
-        public Token rad;
-        public Token oth;
-
-        public TerminalNode EFFECT() {
-            return getToken(ItemObjectGrammar.EFFECT, 0);
-        }
-
-        public List<TerminalNode> UCASE() {
-            return getTokens(ItemObjectGrammar.UCASE);
-        }
-
-        public TerminalNode UCASE(int i) {
-            return getToken(ItemObjectGrammar.UCASE, i);
-        }
-
-        public List<TerminalNode> COLON() {
-            return getTokens(ItemObjectGrammar.COLON);
-        }
-
-        public TerminalNode COLON(int i) {
-            return getToken(ItemObjectGrammar.COLON, i);
-        }
-
-        public List<TerminalNode> INTEGER() {
-            return getTokens(ItemObjectGrammar.INTEGER);
-        }
-
-        public TerminalNode INTEGER(int i) {
-            return getToken(ItemObjectGrammar.INTEGER, i);
-        }
-
-        public EffectContext(ParserRuleContext parent, int invokingState) {
-            super(parent, invokingState);
-        }
-
-        @Override
-        public int getRuleIndex() {
-            return RULE_effect;
-        }
-
-        @Override
-        public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ItemObjectGrammarListener) ((ItemObjectGrammarListener) listener).enterEffect(this);
-        }
-
-        @Override
-        public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ItemObjectGrammarListener) ((ItemObjectGrammarListener) listener).exitEffect(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof ItemObjectGrammarVisitor)
-                return ((ItemObjectGrammarVisitor<? extends T>) visitor).visitEffect(this);
-            else return visitor.visitChildren(this);
-        }
-    }
-
-    public final EffectContext effect() throws RecognitionException {
-        EffectContext _localctx = new EffectContext(_ctx, getState());
-        enterRule(_localctx, 48, RULE_effect);
-
-        ((EffectContext) _localctx).wrapper = "";
-        ((EffectContext) _localctx).radius = "";
-        ((EffectContext) _localctx).other = "";
-
-        int _la;
-        try {
-            enterOuterAlt(_localctx, 1);
-            {
-                setState(271);
-                match(EFFECT);
-                setState(272);
-                ((EffectContext) _localctx).t = match(UCASE);
-
-                ((EffectContext) _localctx).type = ((EffectContext) _localctx).t.getText();
-
-                setState(287);
-                _errHandler.sync(this);
-                _la = _input.LA(1);
-                if (_la == COLON) {
-                    {
-                        setState(274);
-                        match(COLON);
-                        setState(275);
-                        ((EffectContext) _localctx).st = match(UCASE);
-
-                        ((EffectContext) _localctx).wrapper = ((EffectContext) _localctx).st.getText().toUpperCase();
-
-                        setState(285);
-                        _errHandler.sync(this);
-                        _la = _input.LA(1);
-                        if (_la == COLON) {
-                            {
-                                setState(277);
-                                match(COLON);
-                                setState(278);
-                                ((EffectContext) _localctx).rad = match(INTEGER);
-
-                                ((EffectContext) _localctx).radius = ((EffectContext) _localctx).rad.getText();
-
-                                setState(283);
-                                _errHandler.sync(this);
-                                _la = _input.LA(1);
-                                if (_la == COLON) {
-                                    {
-                                        setState(280);
-                                        match(COLON);
-                                        setState(281);
-                                        ((EffectContext) _localctx).oth = match(INTEGER);
-
-                                        ((EffectContext) _localctx).other = ((EffectContext) _localctx).oth.getText();
-
-                                    }
-                                }
-
-                            }
-                        }
-
-                    }
-                }
-
-            }
-        } catch (RecognitionException re) {
-            _localctx.exception = re;
-            _errHandler.reportError(this, re);
-            _errHandler.recover(this, re);
-        } finally {
-            exitRule();
-        }
-        return _localctx;
-    }
-
-    @SuppressWarnings("CheckReturnValue")
-    public static class TimeContext extends ParserRuleContext {
-        public String timeStr;
-        public Token DICE_SIMPLE_VALUE;
-
-        public TerminalNode TIME() {
-            return getToken(ItemObjectGrammar.TIME, 0);
-        }
-
-        public TerminalNode DICE_SIMPLE_VALUE() {
-            return getToken(ItemObjectGrammar.DICE_SIMPLE_VALUE, 0);
-        }
-
-        public TimeContext(ParserRuleContext parent, int invokingState) {
-            super(parent, invokingState);
-        }
-
-        @Override
-        public int getRuleIndex() {
-            return RULE_time;
-        }
-
-        @Override
-        public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ItemObjectGrammarListener) ((ItemObjectGrammarListener) listener).enterTime(this);
-        }
-
-        @Override
-        public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ItemObjectGrammarListener) ((ItemObjectGrammarListener) listener).exitTime(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof ItemObjectGrammarVisitor)
-                return ((ItemObjectGrammarVisitor<? extends T>) visitor).visitTime(this);
-            else return visitor.visitChildren(this);
-        }
-    }
-
-    public final TimeContext time() throws RecognitionException {
-        TimeContext _localctx = new TimeContext(_ctx, getState());
-        enterRule(_localctx, 50, RULE_time);
-        try {
-            enterOuterAlt(_localctx, 1);
-            {
-                setState(289);
-                match(TIME);
-                setState(290);
-                ((TimeContext) _localctx).DICE_SIMPLE_VALUE = match(DICE_SIMPLE_VALUE);
-
-                ((TimeContext) _localctx).timeStr = ((TimeContext) _localctx).DICE_SIMPLE_VALUE.getText();
-
-            }
-        } catch (RecognitionException re) {
-            _localctx.exception = re;
-            _errHandler.reportError(this, re);
-            _errHandler.recover(this, re);
-        } finally {
-            exitRule();
-        }
-        return _localctx;
-    }
-
-    @SuppressWarnings("CheckReturnValue")
-    public static class EffectYXContext extends ParserRuleContext {
-        public String y;
-        public String x;
-        public Token yVal;
-        public Token xVal;
-
-        public TerminalNode EFFECT_YX() {
-            return getToken(ItemObjectGrammar.EFFECT_YX, 0);
-        }
-
-        public TerminalNode COLON() {
-            return getToken(ItemObjectGrammar.COLON, 0);
-        }
-
-        public List<TerminalNode> INTEGER() {
-            return getTokens(ItemObjectGrammar.INTEGER);
-        }
-
-        public TerminalNode INTEGER(int i) {
-            return getToken(ItemObjectGrammar.INTEGER, i);
-        }
-
-        public EffectYXContext(ParserRuleContext parent, int invokingState) {
-            super(parent, invokingState);
-        }
-
-        @Override
-        public int getRuleIndex() {
-            return RULE_effectYX;
-        }
-
-        @Override
-        public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ItemObjectGrammarListener)
-                ((ItemObjectGrammarListener) listener).enterEffectYX(this);
-        }
-
-        @Override
-        public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ItemObjectGrammarListener)
-                ((ItemObjectGrammarListener) listener).exitEffectYX(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof ItemObjectGrammarVisitor)
-                return ((ItemObjectGrammarVisitor<? extends T>) visitor).visitEffectYX(this);
-            else return visitor.visitChildren(this);
-        }
-    }
-
-    public final EffectYXContext effectYX() throws RecognitionException {
-        EffectYXContext _localctx = new EffectYXContext(_ctx, getState());
-        enterRule(_localctx, 52, RULE_effectYX);
-        try {
-            enterOuterAlt(_localctx, 1);
-            {
-                setState(293);
-                match(EFFECT_YX);
-                setState(294);
-                ((EffectYXContext) _localctx).yVal = match(INTEGER);
-                setState(295);
-                match(COLON);
-                setState(296);
-                ((EffectYXContext) _localctx).xVal = match(INTEGER);
-
-                ((EffectYXContext) _localctx).y = ((EffectYXContext) _localctx).yVal.getText();
-                ((EffectYXContext) _localctx).x = ((EffectYXContext) _localctx).xVal.getText();
-
-            }
-        } catch (RecognitionException re) {
-            _localctx.exception = re;
-            _errHandler.reportError(this, re);
-            _errHandler.recover(this, re);
-        } finally {
-            exitRule();
-        }
-        return _localctx;
-    }
-
-    @SuppressWarnings("CheckReturnValue")
-    public static class DiceContext extends ParserRuleContext {
-        public String diceString;
-        public String exprChar;
-        public String baseName;
-        public String operation;
-        public Token val;
-        public ExprContext expr;
-
-        public TerminalNode DICE() {
-            return getToken(ItemObjectGrammar.DICE, 0);
-        }
-
-        public TerminalNode DICE_SIMPLE_VALUE() {
-            return getToken(ItemObjectGrammar.DICE_SIMPLE_VALUE, 0);
-        }
-
-        public TerminalNode DICE_COMPLEX_VALUE() {
-            return getToken(ItemObjectGrammar.DICE_COMPLEX_VALUE, 0);
-        }
-
-        public List<ExprContext> expr() {
-            return getRuleContexts(ExprContext.class);
-        }
-
-        public ExprContext expr(int i) {
-            return getRuleContext(ExprContext.class, i);
-        }
-
-        public DiceContext(ParserRuleContext parent, int invokingState) {
-            super(parent, invokingState);
-        }
-
-        @Override
-        public int getRuleIndex() {
-            return RULE_dice;
-        }
-
-        @Override
-        public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ItemObjectGrammarListener) ((ItemObjectGrammarListener) listener).enterDice(this);
-        }
-
-        @Override
-        public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ItemObjectGrammarListener) ((ItemObjectGrammarListener) listener).exitDice(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof ItemObjectGrammarVisitor)
-                return ((ItemObjectGrammarVisitor<? extends T>) visitor).visitDice(this);
-            else return visitor.visitChildren(this);
-        }
-    }
-
-    public final DiceContext dice() throws RecognitionException {
-        DiceContext _localctx = new DiceContext(_ctx, getState());
-        enterRule(_localctx, 54, RULE_dice);
-
-        String charHolder = "";
-        String baseHolder = "";
-        String operHolder = "";
-        ((DiceContext) _localctx).diceString = "";
-        ((DiceContext) _localctx).exprChar = "";
-        ((DiceContext) _localctx).baseName = "";
-        ((DiceContext) _localctx).operation = "";
-
-        int _la;
-        try {
-            enterOuterAlt(_localctx, 1);
-            {
-                setState(299);
-                match(DICE);
-                setState(311);
-                _errHandler.sync(this);
-                switch (_input.LA(1)) {
-                    case DICE_COMPLEX_VALUE: {
-                        {
-                            setState(300);
-                            ((DiceContext) _localctx).val = match(DICE_COMPLEX_VALUE);
-
-                            ((DiceContext) _localctx).diceString = ((DiceContext) _localctx).val.getText();
-
-                            setState(305);
-                            _errHandler.sync(this);
-                            _la = _input.LA(1);
-                            do {
-                                {
-                                    {
-                                        setState(302);
-                                        ((DiceContext) _localctx).expr = expr();
-
-                                        if (charHolder.isEmpty()) {
-                                            charHolder = ((DiceContext) _localctx).expr.exprChar;
-                                            baseHolder = ((DiceContext) _localctx).expr.baseName;
-                                            operHolder = ((DiceContext) _localctx).expr.operation;
-                                        } else {
-                                            charHolder = charHolder + "^" + ((DiceContext) _localctx).expr.exprChar;
-                                            baseHolder = baseHolder + "^" + ((DiceContext) _localctx).expr.baseName;
-                                            operHolder = operHolder + "^" + ((DiceContext) _localctx).expr.operation;
-                                        }
-
-                                    }
-                                }
-                                setState(307);
-                                _errHandler.sync(this);
-                                _la = _input.LA(1);
-                            } while (_la == EXPR);
-                        }
-                    }
-                    break;
-                    case DICE_SIMPLE_VALUE: {
-                        setState(309);
-                        ((DiceContext) _localctx).val = match(DICE_SIMPLE_VALUE);
-
-                        ((DiceContext) _localctx).diceString = ((DiceContext) _localctx).val.getText();
-
-                    }
-                    break;
-                    default:
-                        throw new NoViableAltException(this);
-                }
-            }
-            _ctx.stop = _input.LT(-1);
-
-            ((DiceContext) _localctx).exprChar = charHolder;
-            ((DiceContext) _localctx).baseName = baseHolder;
-            ((DiceContext) _localctx).operation = operHolder;
-
-        } catch (RecognitionException re) {
-            _localctx.exception = re;
-            _errHandler.reportError(this, re);
-            _errHandler.recover(this, re);
-        } finally {
-            exitRule();
-        }
-        return _localctx;
-    }
-
-    @SuppressWarnings("CheckReturnValue")
-    public static class ExprContext extends ParserRuleContext {
-        public String exprChar;
-        public String baseName;
-        public String operation;
-        public Token ch;
-        public Token base;
-        public Token op;
-
-        public TerminalNode EXPR() {
-            return getToken(ItemObjectGrammar.EXPR, 0);
-        }
-
-        public List<TerminalNode> EXPR_COLON() {
-            return getTokens(ItemObjectGrammar.EXPR_COLON);
-        }
-
-        public TerminalNode EXPR_COLON(int i) {
-            return getToken(ItemObjectGrammar.EXPR_COLON, i);
-        }
-
-        public TerminalNode EXPR_CHAR() {
-            return getToken(ItemObjectGrammar.EXPR_CHAR, 0);
-        }
-
-        public TerminalNode EXPR_UCASE() {
-            return getToken(ItemObjectGrammar.EXPR_UCASE, 0);
-        }
-
-        public TerminalNode EXPR_OP() {
-            return getToken(ItemObjectGrammar.EXPR_OP, 0);
-        }
-
-        public ExprContext(ParserRuleContext parent, int invokingState) {
-            super(parent, invokingState);
-        }
-
-        @Override
-        public int getRuleIndex() {
-            return RULE_expr;
-        }
-
-        @Override
-        public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ItemObjectGrammarListener) ((ItemObjectGrammarListener) listener).enterExpr(this);
-        }
-
-        @Override
-        public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ItemObjectGrammarListener) ((ItemObjectGrammarListener) listener).exitExpr(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof ItemObjectGrammarVisitor)
-                return ((ItemObjectGrammarVisitor<? extends T>) visitor).visitExpr(this);
-            else return visitor.visitChildren(this);
-        }
-    }
-
-    public final ExprContext expr() throws RecognitionException {
-        ExprContext _localctx = new ExprContext(_ctx, getState());
-        enterRule(_localctx, 56, RULE_expr);
-        try {
-            enterOuterAlt(_localctx, 1);
-            {
-                setState(313);
-                match(EXPR);
-                setState(314);
-                ((ExprContext) _localctx).ch = match(EXPR_CHAR);
-                setState(315);
-                match(EXPR_COLON);
-                setState(316);
-                ((ExprContext) _localctx).base = match(EXPR_UCASE);
-                setState(317);
-                match(EXPR_COLON);
-                setState(318);
-                ((ExprContext) _localctx).op = match(EXPR_OP);
-
-                ((ExprContext) _localctx).exprChar = ((ExprContext) _localctx).ch.getText();
-                ((ExprContext) _localctx).baseName = ((ExprContext) _localctx).base.getText();
-                ((ExprContext) _localctx).operation = ((ExprContext) _localctx).op.getText();
-
-            }
-        } catch (RecognitionException re) {
-            _localctx.exception = re;
-            _errHandler.reportError(this, re);
-            _errHandler.recover(this, re);
-        } finally {
-            exitRule();
-        }
-        return _localctx;
-    }
-
-    @SuppressWarnings("CheckReturnValue")
-    public static class EffectMsgContext extends ParserRuleContext {
-        public String message;
-        public Token FREE_TEXT;
-
-        public TerminalNode EFFECT_MESSAGE() {
-            return getToken(ItemObjectGrammar.EFFECT_MESSAGE, 0);
-        }
-
-        public TerminalNode FREE_TEXT() {
-            return getToken(ItemObjectGrammar.FREE_TEXT, 0);
-        }
-
-        public EffectMsgContext(ParserRuleContext parent, int invokingState) {
-            super(parent, invokingState);
-        }
-
-        @Override
-        public int getRuleIndex() {
-            return RULE_effectMsg;
-        }
-
-        @Override
-        public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ItemObjectGrammarListener)
-                ((ItemObjectGrammarListener) listener).enterEffectMsg(this);
-        }
-
-        @Override
-        public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ItemObjectGrammarListener)
-                ((ItemObjectGrammarListener) listener).exitEffectMsg(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof ItemObjectGrammarVisitor)
-                return ((ItemObjectGrammarVisitor<? extends T>) visitor).visitEffectMsg(this);
-            else return visitor.visitChildren(this);
-        }
-    }
-
-    public final EffectMsgContext effectMsg() throws RecognitionException {
-        EffectMsgContext _localctx = new EffectMsgContext(_ctx, getState());
-        enterRule(_localctx, 58, RULE_effectMsg);
-        try {
-            enterOuterAlt(_localctx, 1);
-            {
-                setState(321);
-                match(EFFECT_MESSAGE);
-                setState(322);
-                ((EffectMsgContext) _localctx).FREE_TEXT = match(FREE_TEXT);
-                ((EffectMsgContext) _localctx).message = ((EffectMsgContext) _localctx).FREE_TEXT.getText();
-            }
-        } catch (RecognitionException re) {
-            _localctx.exception = re;
-            _errHandler.reportError(this, re);
-            _errHandler.recover(this, re);
-        } finally {
-            exitRule();
-        }
-        return _localctx;
-    }
-
-    @SuppressWarnings("CheckReturnValue")
-    public static class EffectBlockContext extends ParserRuleContext {
-        public String typeInit;
-        public String subtypeWrapperInit;
-        public String radius;
-        public String other;
-        public String diceString;
-        public String yVal;
-        public String xVal;
-        public String expressionChars;
-        public String expressionBase;
-        public String expressionOperation;
-        public String timeDiceString;
-        public String effectMessage;
-        public int lineNo;
-        public EffectContext effect;
-        public EffectYXContext effectYX;
-        public DiceContext dice;
-        public TimeContext time;
-        public EffectMsgContext effectMsg;
-
-        public EffectContext effect() {
-            return getRuleContext(EffectContext.class, 0);
-        }
-
-        public TimeContext time() {
-            return getRuleContext(TimeContext.class, 0);
-        }
-
-        public EffectMsgContext effectMsg() {
-            return getRuleContext(EffectMsgContext.class, 0);
-        }
-
-        public EffectYXContext effectYX() {
-            return getRuleContext(EffectYXContext.class, 0);
-        }
-
-        public DiceContext dice() {
-            return getRuleContext(DiceContext.class, 0);
-        }
-
-        public EffectBlockContext(ParserRuleContext parent, int invokingState) {
-            super(parent, invokingState);
-        }
-
-        @Override
-        public int getRuleIndex() {
-            return RULE_effectBlock;
-        }
-
-        @Override
-        public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ItemObjectGrammarListener)
-                ((ItemObjectGrammarListener) listener).enterEffectBlock(this);
-        }
-
-        @Override
-        public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ItemObjectGrammarListener)
-                ((ItemObjectGrammarListener) listener).exitEffectBlock(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof ItemObjectGrammarVisitor)
-                return ((ItemObjectGrammarVisitor<? extends T>) visitor).visitEffectBlock(this);
-            else return visitor.visitChildren(this);
-        }
-    }
-
-    public final EffectBlockContext effectBlock() throws RecognitionException {
-        EffectBlockContext _localctx = new EffectBlockContext(_ctx, getState());
-        enterRule(_localctx, 60, RULE_effectBlock);
-
-        String expressionString = "";
-        String baseString = "";
-        String opString = "";
-        ((EffectBlockContext) _localctx).diceString = "";
-        ((EffectBlockContext) _localctx).timeDiceString = "";
-        ((EffectBlockContext) _localctx).yVal = "";
-        ((EffectBlockContext) _localctx).xVal = "";
-        ((EffectBlockContext) _localctx).effectMessage = "";
-
-        int _la;
-        try {
-            enterOuterAlt(_localctx, 1);
-            {
-                setState(325);
-                ((EffectBlockContext) _localctx).effect = effect();
-
-                ((EffectBlockContext) _localctx).lineNo = _localctx.start.getLine();
-                ((EffectBlockContext) _localctx).typeInit = ((EffectBlockContext) _localctx).effect.type;
-                ((EffectBlockContext) _localctx).subtypeWrapperInit = ((EffectBlockContext) _localctx).effect.wrapper;
-                ((EffectBlockContext) _localctx).radius = ((EffectBlockContext) _localctx).effect.radius;
-                ((EffectBlockContext) _localctx).other = ((EffectBlockContext) _localctx).effect.other;
-
-                setState(335);
-                _errHandler.sync(this);
-                switch (_input.LA(1)) {
-                    case EFFECT_YX: {
-                        {
-                            setState(327);
-                            ((EffectBlockContext) _localctx).effectYX = effectYX();
-
-                            ((EffectBlockContext) _localctx).yVal = ((EffectBlockContext) _localctx).effectYX.y;
-                            ((EffectBlockContext) _localctx).xVal = ((EffectBlockContext) _localctx).effectYX.x;
-
-                        }
-                    }
-                    break;
-                    case EOF:
-                    case NAME:
-                    case TYPE:
-                    case LEVEL:
-                    case WEIGHT:
-                    case COST:
-                    case ATTACK:
-                    case ARMOUR:
-                    case ALLOC:
-                    case CHARGES:
-                    case PILE:
-                    case POWER:
-                    case MSG:
-                    case VIS_MSG:
-                    case FLAGS:
-                    case VALUES:
-                    case BRAND:
-                    case SLAY:
-                    case CURSE:
-                    case PVAL:
-                    case DESC:
-                    case EFFECT:
-                    case EFFECT_MESSAGE:
-                    case DICE:
-                    case TIME:
-                    case GRAPHICS: {
-                        {
-                            setState(333);
-                            _errHandler.sync(this);
-                            _la = _input.LA(1);
-                            if (_la == DICE) {
-                                {
-                                    setState(330);
-                                    ((EffectBlockContext) _localctx).dice = dice();
-
-                                    ((EffectBlockContext) _localctx).diceString = ((EffectBlockContext) _localctx).dice.diceString;
-                                    expressionString = ((EffectBlockContext) _localctx).dice.exprChar;
-                                    baseString = ((EffectBlockContext) _localctx).dice.baseName;
-                                    opString = ((EffectBlockContext) _localctx).dice.operation;
-
-                                }
-                            }
-
-                        }
-                    }
-                    break;
-                    default:
-                        throw new NoViableAltException(this);
-                }
-                setState(340);
-                _errHandler.sync(this);
-                _la = _input.LA(1);
-                if (_la == TIME) {
-                    {
-                        setState(337);
-                        ((EffectBlockContext) _localctx).time = time();
-
-                        ((EffectBlockContext) _localctx).timeDiceString = ((EffectBlockContext) _localctx).time.timeStr;
-
-                    }
-                }
-
-                setState(345);
-                _errHandler.sync(this);
-                _la = _input.LA(1);
-                if (_la == EFFECT_MESSAGE) {
-                    {
-                        setState(342);
-                        ((EffectBlockContext) _localctx).effectMsg = effectMsg();
-                        ((EffectBlockContext) _localctx).effectMessage = ((EffectBlockContext) _localctx).effectMsg.message;
-                    }
-                }
-
-            }
-            _ctx.stop = _input.LT(-1);
-
-            ((EffectBlockContext) _localctx).expressionChars = expressionString;
-            ((EffectBlockContext) _localctx).expressionBase = baseString;
-            ((EffectBlockContext) _localctx).expressionOperation = opString;
-
-        } catch (RecognitionException re) {
-            _localctx.exception = re;
-            _errHandler.reportError(this, re);
-            _errHandler.recover(this, re);
-        } finally {
-            exitRule();
-        }
-        return _localctx;
-    }
-
-    public static final String _serializedATN =
-            "\u0004\u0001F\u015c\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002" +
-                    "\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002" +
-                    "\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007\u0002" +
-                    "\b\u0007\b\u0002\t\u0007\t\u0002\n\u0007\n\u0002\u000b\u0007\u000b\u0002" +
-                    "\f\u0007\f\u0002\r\u0007\r\u0002\u000e\u0007\u000e\u0002\u000f\u0007\u000f" +
-                    "\u0002\u0010\u0007\u0010\u0002\u0011\u0007\u0011\u0002\u0012\u0007\u0012" +
-                    "\u0002\u0013\u0007\u0013\u0002\u0014\u0007\u0014\u0002\u0015\u0007\u0015" +
-                    "\u0002\u0016\u0007\u0016\u0002\u0017\u0007\u0017\u0002\u0018\u0007\u0018" +
-                    "\u0002\u0019\u0007\u0019\u0002\u001a\u0007\u001a\u0002\u001b\u0007\u001b" +
-                    "\u0002\u001c\u0007\u001c\u0002\u001d\u0007\u001d\u0002\u001e\u0007\u001e" +
-                    "\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0001\u0001\u0001" +
-                    "\u0001\u0001\u0001\u0001\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0002" +
-                    "\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0003" +
-                    "\u0001\u0004\u0001\u0004\u0001\u0004\u0001\u0004\u0001\u0005\u0001\u0005" +
-                    "\u0001\u0005\u0001\u0005\u0001\u0006\u0001\u0006\u0001\u0006\u0001\u0006" +
-                    "\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007" +
-                    "\u0001\u0007\u0001\u0007\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001" +
-                    "\b\u0001\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001" +
-                    "\n\u0001\n\u0001\n\u0001\n\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b" +
-                    "\u0001\u000b\u0001\u000b\u0001\f\u0001\f\u0001\f\u0001\f\u0001\r\u0001" +
-                    "\r\u0001\r\u0001\r\u0001\u000e\u0001\u000e\u0001\u000e\u0001\u000e\u0001" +
-                    "\u000f\u0001\u000f\u0001\u000f\u0001\u000f\u0001\u000f\u0001\u000f\u0001" +
-                    "\u000f\u0005\u000f\u0090\b\u000f\n\u000f\f\u000f\u0093\t\u000f\u0001\u000f" +
-                    "\u0003\u000f\u0096\b\u000f\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010" +
-                    "\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010" +
-                    "\u0001\u0010\u0001\u0010\u0001\u0010\u0005\u0010\u00a5\b\u0010\n\u0010" +
-                    "\f\u0010\u00a8\t\u0010\u0001\u0011\u0001\u0011\u0001\u0011\u0001\u0011" +
-                    "\u0001\u0012\u0001\u0012\u0001\u0012\u0001\u0012\u0001\u0013\u0001\u0013" +
-                    "\u0001\u0013\u0001\u0013\u0001\u0013\u0001\u0013\u0001\u0014\u0001\u0014" +
-                    "\u0001\u0014\u0001\u0014\u0001\u0015\u0001\u0015\u0001\u0015\u0001\u0015" +
-                    "\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016" +
-                    "\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016" +
-                    "\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016" +
-                    "\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016" +
-                    "\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016" +
-                    "\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016" +
-                    "\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016" +
-                    "\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016" +
-                    "\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016" +
-                    "\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016" +
-                    "\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016\u0004\u0016" +
-                    "\u0101\b\u0016\u000b\u0016\f\u0016\u0102\u0001\u0017\u0001\u0017\u0001" +
-                    "\u0017\u0001\u0017\u0001\u0017\u0004\u0017\u010a\b\u0017\u000b\u0017\f" +
-                    "\u0017\u010b\u0001\u0017\u0001\u0017\u0001\u0018\u0001\u0018\u0001\u0018" +
-                    "\u0001\u0018\u0001\u0018\u0001\u0018\u0001\u0018\u0001\u0018\u0001\u0018" +
-                    "\u0001\u0018\u0001\u0018\u0001\u0018\u0003\u0018\u011c\b\u0018\u0003\u0018" +
-                    "\u011e\b\u0018\u0003\u0018\u0120\b\u0018\u0001\u0019\u0001\u0019\u0001" +
-                    "\u0019\u0001\u0019\u0001\u001a\u0001\u001a\u0001\u001a\u0001\u001a\u0001" +
-                    "\u001a\u0001\u001a\u0001\u001b\u0001\u001b\u0001\u001b\u0001\u001b\u0001" +
-                    "\u001b\u0001\u001b\u0004\u001b\u0132\b\u001b\u000b\u001b\f\u001b\u0133" +
-                    "\u0001\u001b\u0001\u001b\u0003\u001b\u0138\b\u001b\u0001\u001c\u0001\u001c" +
-                    "\u0001\u001c\u0001\u001c\u0001\u001c\u0001\u001c\u0001\u001c\u0001\u001c" +
-                    "\u0001\u001d\u0001\u001d\u0001\u001d\u0001\u001d\u0001\u001e\u0001\u001e" +
-                    "\u0001\u001e\u0001\u001e\u0001\u001e\u0001\u001e\u0001\u001e\u0001\u001e" +
-                    "\u0003\u001e\u014e\b\u001e\u0003\u001e\u0150\b\u001e\u0001\u001e\u0001" +
-                    "\u001e\u0001\u001e\u0003\u001e\u0155\b\u001e\u0001\u001e\u0001\u001e\u0001" +
-                    "\u001e\u0003\u001e\u015a\b\u001e\u0001\u001e\u0000\u0000\u001f\u0000\u0002" +
-                    "\u0004\u0006\b\n\f\u000e\u0010\u0012\u0014\u0016\u0018\u001a\u001c\u001e" +
-                    " \"$&(*,.02468:<\u0000\u0000\u015e\u0000>\u0001\u0000\u0000\u0000\u0002" +
-                    "B\u0001\u0000\u0000\u0000\u0004F\u0001\u0000\u0000\u0000\u0006J\u0001" +
-                    "\u0000\u0000\u0000\bP\u0001\u0000\u0000\u0000\nT\u0001\u0000\u0000\u0000" +
-                    "\fX\u0001\u0000\u0000\u0000\u000e\\\u0001\u0000\u0000\u0000\u0010d\u0001" +
-                    "\u0000\u0000\u0000\u0012j\u0001\u0000\u0000\u0000\u0014r\u0001\u0000\u0000" +
-                    "\u0000\u0016v\u0001\u0000\u0000\u0000\u0018|\u0001\u0000\u0000\u0000\u001a" +
-                    "\u0080\u0001\u0000\u0000\u0000\u001c\u0084\u0001\u0000\u0000\u0000\u001e" +
-                    "\u0088\u0001\u0000\u0000\u0000 \u0097\u0001\u0000\u0000\u0000\"\u00a9" +
-                    "\u0001\u0000\u0000\u0000$\u00ad\u0001\u0000\u0000\u0000&\u00b1\u0001\u0000" +
-                    "\u0000\u0000(\u00b7\u0001\u0000\u0000\u0000*\u00bb\u0001\u0000\u0000\u0000" +
-                    ",\u00bf\u0001\u0000\u0000\u0000.\u0104\u0001\u0000\u0000\u00000\u010f" +
-                    "\u0001\u0000\u0000\u00002\u0121\u0001\u0000\u0000\u00004\u0125\u0001\u0000" +
-                    "\u0000\u00006\u012b\u0001\u0000\u0000\u00008\u0139\u0001\u0000\u0000\u0000" +
-                    ":\u0141\u0001\u0000\u0000\u0000<\u0145\u0001\u0000\u0000\u0000>?\u0005" +
-                    "\u0001\u0000\u0000?@\u0005 \u0000\u0000@A\u0006\u0000\uffff\uffff\u0000" +
-                    "A\u0001\u0001\u0000\u0000\u0000BC\u0005\u0002\u0000\u0000CD\u00051\u0000" +
-                    "\u0000DE\u0006\u0001\uffff\uffff\u0000E\u0003\u0001\u0000\u0000\u0000" +
-                    "FG\u0005\u0003\u0000\u0000GH\u00051\u0000\u0000HI\u0006\u0002\uffff\uffff" +
-                    "\u0000I\u0005\u0001\u0000\u0000\u0000JK\u0005#\u0000\u0000KL\u0005D\u0000" +
-                    "\u0000LM\u0005E\u0000\u0000MN\u0005C\u0000\u0000NO\u0006\u0003\uffff\uffff" +
-                    "\u0000O\u0007\u0001\u0000\u0000\u0000PQ\u0005\u0004\u0000\u0000QR\u0005" +
-                    " \u0000\u0000RS\u0006\u0004\uffff\uffff\u0000S\t\u0001\u0000\u0000\u0000" +
-                    "TU\u0005\u0005\u0000\u0000UV\u0005 \u0000\u0000VW\u0006\u0005\uffff\uffff" +
-                    "\u0000W\u000b\u0001\u0000\u0000\u0000XY\u0005\u0006\u0000\u0000YZ\u0005" +
-                    " \u0000\u0000Z[\u0006\u0006\uffff\uffff\u0000[\r\u0001\u0000\u0000\u0000" +
-                    "\\]\u0005\u0007\u0000\u0000]^\u00058\u0000\u0000^_\u00059\u0000\u0000" +
-                    "_`\u00058\u0000\u0000`a\u00059\u0000\u0000ab\u00058\u0000\u0000bc\u0006" +
-                    "\u0007\uffff\uffff\u0000c\u000f\u0001\u0000\u0000\u0000de\u0005\b\u0000" +
-                    "\u0000ef\u00058\u0000\u0000fg\u00059\u0000\u0000gh\u00058\u0000\u0000" +
-                    "hi\u0006\b\uffff\uffff\u0000i\u0011\u0001\u0000\u0000\u0000jk\u0005\t" +
-                    "\u0000\u0000kl\u0005-\u0000\u0000lm\u0005.\u0000\u0000mn\u0005-\u0000" +
-                    "\u0000no\u0005/\u0000\u0000op\u0005-\u0000\u0000pq\u0006\t\uffff\uffff" +
-                    "\u0000q\u0013\u0001\u0000\u0000\u0000rs\u0005\n\u0000\u0000st\u00058\u0000" +
-                    "\u0000tu\u0006\n\uffff\uffff\u0000u\u0015\u0001\u0000\u0000\u0000vw\u0005" +
-                    "\u000b\u0000\u0000wx\u00058\u0000\u0000xy\u00059\u0000\u0000yz\u00058" +
-                    "\u0000\u0000z{\u0006\u000b\uffff\uffff\u0000{\u0017\u0001\u0000\u0000" +
-                    "\u0000|}\u0005\f\u0000\u0000}~\u0005 \u0000\u0000~\u007f\u0006\f\uffff" +
-                    "\uffff\u0000\u007f\u0019\u0001\u0000\u0000\u0000\u0080\u0081\u0005\r\u0000" +
-                    "\u0000\u0081\u0082\u00051\u0000\u0000\u0082\u0083\u0006\r\uffff\uffff" +
-                    "\u0000\u0083\u001b\u0001\u0000\u0000\u0000\u0084\u0085\u0005\u000e\u0000" +
-                    "\u0000\u0085\u0086\u00051\u0000\u0000\u0086\u0087\u0006\u000e\uffff\uffff" +
-                    "\u0000\u0087\u001d\u0001\u0000\u0000\u0000\u0088\u0089\u0006\u000f\uffff" +
-                    "\uffff\u0000\u0089\u008a\u0005\u000f\u0000\u0000\u008a\u008b\u0005*\u0000" +
-                    "\u0000\u008b\u0091\u0006\u000f\uffff\uffff\u0000\u008c\u008d\u0005+\u0000" +
-                    "\u0000\u008d\u008e\u0005*\u0000\u0000\u008e\u0090\u0006\u000f\uffff\uffff" +
-                    "\u0000\u008f\u008c\u0001\u0000\u0000\u0000\u0090\u0093\u0001\u0000\u0000" +
-                    "\u0000\u0091\u008f\u0001\u0000\u0000\u0000\u0091\u0092\u0001\u0000\u0000" +
-                    "\u0000\u0092\u0095\u0001\u0000\u0000\u0000\u0093\u0091\u0001\u0000\u0000" +
-                    "\u0000\u0094\u0096\u0005+\u0000\u0000\u0095\u0094\u0001\u0000\u0000\u0000" +
-                    "\u0095\u0096\u0001\u0000\u0000\u0000\u0096\u001f\u0001\u0000\u0000\u0000" +
-                    "\u0097\u0098\u0006\u0010\uffff\uffff\u0000\u0098\u0099\u0005\u0010\u0000" +
-                    "\u0000\u0099\u009a\u00052\u0000\u0000\u009a\u009b\u00054\u0000\u0000\u009b" +
-                    "\u009c\u00055\u0000\u0000\u009c\u009d\u00056\u0000\u0000\u009d\u00a6\u0006" +
-                    "\u0010\uffff\uffff\u0000\u009e\u009f\u00053\u0000\u0000\u009f\u00a0\u0005" +
-                    "2\u0000\u0000\u00a0\u00a1\u00054\u0000\u0000\u00a1\u00a2\u00055\u0000" +
-                    "\u0000\u00a2\u00a3\u00056\u0000\u0000\u00a3\u00a5\u0006\u0010\uffff\uffff" +
-                    "\u0000\u00a4\u009e\u0001\u0000\u0000\u0000\u00a5\u00a8\u0001\u0000\u0000" +
-                    "\u0000\u00a6\u00a4\u0001\u0000\u0000\u0000\u00a6\u00a7\u0001\u0000\u0000" +
-                    "\u0000\u00a7!\u0001\u0000\u0000\u0000\u00a8\u00a6\u0001\u0000\u0000\u0000" +
-                    "\u00a9\u00aa\u0005\u0011\u0000\u0000\u00aa\u00ab\u00051\u0000\u0000\u00ab" +
-                    "\u00ac\u0006\u0011\uffff\uffff\u0000\u00ac#\u0001\u0000\u0000\u0000\u00ad" +
-                    "\u00ae\u0005\u0012\u0000\u0000\u00ae\u00af\u00051\u0000\u0000\u00af\u00b0" +
-                    "\u0006\u0012\uffff\uffff\u0000\u00b0%\u0001\u0000\u0000\u0000\u00b1\u00b2" +
-                    "\u0005\u0013\u0000\u0000\u00b2\u00b3\u0005&\u0000\u0000\u00b3\u00b4\u0005" +
-                    "\'\u0000\u0000\u00b4\u00b5\u0005(\u0000\u0000\u00b5\u00b6\u0006\u0013" +
-                    "\uffff\uffff\u0000\u00b6\'\u0001\u0000\u0000\u0000\u00b7\u00b8\u0005\u0014" +
-                    "\u0000\u0000\u00b8\u00b9\u00058\u0000\u0000\u00b9\u00ba\u0006\u0014\uffff" +
-                    "\uffff\u0000\u00ba)\u0001\u0000\u0000\u0000\u00bb\u00bc\u0005\u0015\u0000" +
-                    "\u0000\u00bc\u00bd\u00051\u0000\u0000\u00bd\u00be\u0006\u0015\uffff\uffff" +
-                    "\u0000\u00be+\u0001\u0000\u0000\u0000\u00bf\u00c0\u0003\u0002\u0001\u0000" +
-                    "\u00c0\u0100\u0006\u0016\uffff\uffff\u0000\u00c1\u00c2\u0003\u0004\u0002" +
-                    "\u0000\u00c2\u00c3\u0006\u0016\uffff\uffff\u0000\u00c3\u0101\u0001\u0000" +
-                    "\u0000\u0000\u00c4\u00c5\u0003\u0006\u0003\u0000\u00c5\u00c6\u0006\u0016" +
-                    "\uffff\uffff\u0000\u00c6\u0101\u0001\u0000\u0000\u0000\u00c7\u00c8\u0003" +
-                    "\b\u0004\u0000\u00c8\u00c9\u0006\u0016\uffff\uffff\u0000\u00c9\u0101\u0001" +
-                    "\u0000\u0000\u0000\u00ca\u00cb\u0003\n\u0005\u0000\u00cb\u00cc\u0006\u0016" +
-                    "\uffff\uffff\u0000\u00cc\u0101\u0001\u0000\u0000\u0000\u00cd\u00ce\u0003" +
-                    "\f\u0006\u0000\u00ce\u00cf\u0006\u0016\uffff\uffff\u0000\u00cf\u0101\u0001" +
-                    "\u0000\u0000\u0000\u00d0\u00d1\u0003\u000e\u0007\u0000\u00d1\u00d2\u0006" +
-                    "\u0016\uffff\uffff\u0000\u00d2\u0101\u0001\u0000\u0000\u0000\u00d3\u00d4" +
-                    "\u0003\u0010\b\u0000\u00d4\u00d5\u0006\u0016\uffff\uffff\u0000\u00d5\u0101" +
-                    "\u0001\u0000\u0000\u0000\u00d6\u00d7\u0003\u0012\t\u0000\u00d7\u00d8\u0006" +
-                    "\u0016\uffff\uffff\u0000\u00d8\u0101\u0001\u0000\u0000\u0000\u00d9\u00da" +
-                    "\u0003\u0014\n\u0000\u00da\u00db\u0006\u0016\uffff\uffff\u0000\u00db\u0101" +
-                    "\u0001\u0000\u0000\u0000\u00dc\u00dd\u0003\u0016\u000b\u0000\u00dd\u00de" +
-                    "\u0006\u0016\uffff\uffff\u0000\u00de\u0101\u0001\u0000\u0000\u0000\u00df" +
-                    "\u00e0\u0003\u0018\f\u0000\u00e0\u00e1\u0006\u0016\uffff\uffff\u0000\u00e1" +
-                    "\u0101\u0001\u0000\u0000\u0000\u00e2\u00e3\u0003\u001a\r\u0000\u00e3\u00e4" +
-                    "\u0006\u0016\uffff\uffff\u0000\u00e4\u0101\u0001\u0000\u0000\u0000\u00e5" +
-                    "\u00e6\u0003\u001c\u000e\u0000\u00e6\u00e7\u0006\u0016\uffff\uffff\u0000" +
-                    "\u00e7\u0101\u0001\u0000\u0000\u0000\u00e8\u00e9\u0003<\u001e\u0000\u00e9" +
-                    "\u00ea\u0006\u0016\uffff\uffff\u0000\u00ea\u0101\u0001\u0000\u0000\u0000" +
-                    "\u00eb\u00ec\u0003\u001e\u000f\u0000\u00ec\u00ed\u0006\u0016\uffff\uffff" +
-                    "\u0000\u00ed\u0101\u0001\u0000\u0000\u0000\u00ee\u00ef\u0003 \u0010\u0000" +
-                    "\u00ef\u00f0\u0006\u0016\uffff\uffff\u0000\u00f0\u0101\u0001\u0000\u0000" +
-                    "\u0000\u00f1\u00f2\u0003\"\u0011\u0000\u00f2\u00f3\u0006\u0016\uffff\uffff" +
-                    "\u0000\u00f3\u0101\u0001\u0000\u0000\u0000\u00f4\u00f5\u0003$\u0012\u0000" +
-                    "\u00f5\u00f6\u0006\u0016\uffff\uffff\u0000\u00f6\u0101\u0001\u0000\u0000" +
-                    "\u0000\u00f7\u00f8\u0003&\u0013\u0000\u00f8\u00f9\u0006\u0016\uffff\uffff" +
-                    "\u0000\u00f9\u0101\u0001\u0000\u0000\u0000\u00fa\u00fb\u0003(\u0014\u0000" +
-                    "\u00fb\u00fc\u0006\u0016\uffff\uffff\u0000\u00fc\u0101\u0001\u0000\u0000" +
-                    "\u0000\u00fd\u00fe\u0003*\u0015\u0000\u00fe\u00ff\u0006\u0016\uffff\uffff" +
-                    "\u0000\u00ff\u0101\u0001\u0000\u0000\u0000\u0100\u00c1\u0001\u0000\u0000" +
-                    "\u0000\u0100\u00c4\u0001\u0000\u0000\u0000\u0100\u00c7\u0001\u0000\u0000" +
-                    "\u0000\u0100\u00ca\u0001\u0000\u0000\u0000\u0100\u00cd\u0001\u0000\u0000" +
-                    "\u0000\u0100\u00d0\u0001\u0000\u0000\u0000\u0100\u00d3\u0001\u0000\u0000" +
-                    "\u0000\u0100\u00d6\u0001\u0000\u0000\u0000\u0100\u00d9\u0001\u0000\u0000" +
-                    "\u0000\u0100\u00dc\u0001\u0000\u0000\u0000\u0100\u00df\u0001\u0000\u0000" +
-                    "\u0000\u0100\u00e2\u0001\u0000\u0000\u0000\u0100\u00e5\u0001\u0000\u0000" +
-                    "\u0000\u0100\u00e8\u0001\u0000\u0000\u0000\u0100\u00eb\u0001\u0000\u0000" +
-                    "\u0000\u0100\u00ee\u0001\u0000\u0000\u0000\u0100\u00f1\u0001\u0000\u0000" +
-                    "\u0000\u0100\u00f4\u0001\u0000\u0000\u0000\u0100\u00f7\u0001\u0000\u0000" +
-                    "\u0000\u0100\u00fa\u0001\u0000\u0000\u0000\u0100\u00fd\u0001\u0000\u0000" +
-                    "\u0000\u0101\u0102\u0001\u0000\u0000\u0000\u0102\u0100\u0001\u0000\u0000" +
-                    "\u0000\u0102\u0103\u0001\u0000\u0000\u0000\u0103-\u0001\u0000\u0000\u0000" +
-                    "\u0104\u0105\u0003\u0000\u0000\u0000\u0105\u0109\u0006\u0017\uffff\uffff" +
-                    "\u0000\u0106\u0107\u0003,\u0016\u0000\u0107\u0108\u0006\u0017\uffff\uffff" +
-                    "\u0000\u0108\u010a\u0001\u0000\u0000\u0000\u0109\u0106\u0001\u0000\u0000" +
-                    "\u0000\u010a\u010b\u0001\u0000\u0000\u0000\u010b\u0109\u0001\u0000\u0000" +
-                    "\u0000\u010b\u010c\u0001\u0000\u0000\u0000\u010c\u010d\u0001\u0000\u0000" +
-                    "\u0000\u010d\u010e\u0005\u0000\u0000\u0001\u010e/\u0001\u0000\u0000\u0000" +
-                    "\u010f\u0110\u0005\u0018\u0000\u0000\u0110\u0111\u0005\u001f\u0000\u0000" +
-                    "\u0111\u011f\u0006\u0018\uffff\uffff\u0000\u0112\u0113\u0005\u001e\u0000" +
-                    "\u0000\u0113\u0114\u0005\u001f\u0000\u0000\u0114\u011d\u0006\u0018\uffff" +
-                    "\uffff\u0000\u0115\u0116\u0005\u001e\u0000\u0000\u0116\u0117\u0005 \u0000" +
-                    "\u0000\u0117\u011b\u0006\u0018\uffff\uffff\u0000\u0118\u0119\u0005\u001e" +
-                    "\u0000\u0000\u0119\u011a\u0005 \u0000\u0000\u011a\u011c\u0006\u0018\uffff" +
-                    "\uffff\u0000\u011b\u0118\u0001\u0000\u0000\u0000\u011b\u011c\u0001\u0000" +
-                    "\u0000\u0000\u011c\u011e\u0001\u0000\u0000\u0000\u011d\u0115\u0001\u0000" +
-                    "\u0000\u0000\u011d\u011e\u0001\u0000\u0000\u0000\u011e\u0120\u0001\u0000" +
-                    "\u0000\u0000\u011f\u0112\u0001\u0000\u0000\u0000\u011f\u0120\u0001\u0000" +
-                    "\u0000\u0000\u01201\u0001\u0000\u0000\u0000\u0121\u0122\u0005\u001b\u0000" +
-                    "\u0000\u0122\u0123\u0005<\u0000\u0000\u0123\u0124\u0006\u0019\uffff\uffff" +
-                    "\u0000\u01243\u0001\u0000\u0000\u0000\u0125\u0126\u0005\u001c\u0000\u0000" +
-                    "\u0126\u0127\u0005 \u0000\u0000\u0127\u0128\u0005\u001e\u0000\u0000\u0128" +
-                    "\u0129\u0005 \u0000\u0000\u0129\u012a\u0006\u001a\uffff\uffff\u0000\u012a" +
-                    "5\u0001\u0000\u0000\u0000\u012b\u0137\u0005\u001a\u0000\u0000\u012c\u012d" +
-                    "\u0005=\u0000\u0000\u012d\u0131\u0006\u001b\uffff\uffff\u0000\u012e\u012f" +
-                    "\u00038\u001c\u0000\u012f\u0130\u0006\u001b\uffff\uffff\u0000\u0130\u0132" +
-                    "\u0001\u0000\u0000\u0000\u0131\u012e\u0001\u0000\u0000\u0000\u0132\u0133" +
-                    "\u0001\u0000\u0000\u0000\u0133\u0131\u0001\u0000\u0000\u0000\u0133\u0134" +
-                    "\u0001\u0000\u0000\u0000\u0134\u0138\u0001\u0000\u0000\u0000\u0135\u0136" +
-                    "\u0005<\u0000\u0000\u0136\u0138\u0006\u001b\uffff\uffff\u0000\u0137\u012c" +
-                    "\u0001\u0000\u0000\u0000\u0137\u0135\u0001\u0000\u0000\u0000\u01387\u0001" +
-                    "\u0000\u0000\u0000\u0139\u013a\u0005\u001d\u0000\u0000\u013a\u013b\u0005" +
-                    ">\u0000\u0000\u013b\u013c\u0005?\u0000\u0000\u013c\u013d\u0005@\u0000" +
-                    "\u0000\u013d\u013e\u0005?\u0000\u0000\u013e\u013f\u0005A\u0000\u0000\u013f" +
-                    "\u0140\u0006\u001c\uffff\uffff\u0000\u01409\u0001\u0000\u0000\u0000\u0141" +
-                    "\u0142\u0005\u0019\u0000\u0000\u0142\u0143\u0005;\u0000\u0000\u0143\u0144" +
-                    "\u0006\u001d\uffff\uffff\u0000\u0144;\u0001\u0000\u0000\u0000\u0145\u0146" +
-                    "\u00030\u0018\u0000\u0146\u014f\u0006\u001e\uffff\uffff\u0000\u0147\u0148" +
-                    "\u00034\u001a\u0000\u0148\u0149\u0006\u001e\uffff\uffff\u0000\u0149\u0150" +
-                    "\u0001\u0000\u0000\u0000\u014a\u014b\u00036\u001b\u0000\u014b\u014c\u0006" +
-                    "\u001e\uffff\uffff\u0000\u014c\u014e\u0001\u0000\u0000\u0000\u014d\u014a" +
-                    "\u0001\u0000\u0000\u0000\u014d\u014e\u0001\u0000\u0000\u0000\u014e\u0150" +
-                    "\u0001\u0000\u0000\u0000\u014f\u0147\u0001\u0000\u0000\u0000\u014f\u014d" +
-                    "\u0001\u0000\u0000\u0000\u0150\u0154\u0001\u0000\u0000\u0000\u0151\u0152" +
-                    "\u00032\u0019\u0000\u0152\u0153\u0006\u001e\uffff\uffff\u0000\u0153\u0155" +
-                    "\u0001\u0000\u0000\u0000\u0154\u0151\u0001\u0000\u0000\u0000\u0154\u0155" +
-                    "\u0001\u0000\u0000\u0000\u0155\u0159\u0001\u0000\u0000\u0000\u0156\u0157" +
-                    "\u0003:\u001d\u0000\u0157\u0158\u0006\u001e\uffff\uffff\u0000\u0158\u015a" +
-                    "\u0001\u0000\u0000\u0000\u0159\u0156\u0001\u0000\u0000\u0000\u0159\u015a" +
-                    "\u0001\u0000\u0000\u0000\u015a=\u0001\u0000\u0000\u0000\u000f\u0091\u0095" +
-                    "\u00a6\u0100\u0102\u010b\u011b\u011d\u011f\u0133\u0137\u014d\u014f\u0154" +
-                    "\u0159";
     public static final ATN _ATN =
             new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 

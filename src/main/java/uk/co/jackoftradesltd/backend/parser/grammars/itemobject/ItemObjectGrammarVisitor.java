@@ -17,6 +17,14 @@
 // Generated from ItemObjectGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.itemobject;
 
+import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
+import uk.co.jackoftradesltd.backend.parser.itemobject.ItemObjectParseRecord;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
 /**
@@ -204,6 +212,14 @@ public interface ItemObjectGrammarVisitor<T> extends ParseTreeVisitor<T> {
     T visitDesc(ItemObjectGrammar.DescContext ctx);
 
     /**
+     * Visit a parse tree produced by {@link ItemObjectGrammar#time}.
+     *
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    T visitTime(ItemObjectGrammar.TimeContext ctx);
+
+    /**
      * Visit a parse tree produced by {@link ItemObjectGrammar#itemObject}.
      *
      * @param ctx the parse tree
@@ -226,14 +242,6 @@ public interface ItemObjectGrammarVisitor<T> extends ParseTreeVisitor<T> {
      * @return the visitor result
      */
     T visitEffect(ItemObjectGrammar.EffectContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link ItemObjectGrammar#time}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitTime(ItemObjectGrammar.TimeContext ctx);
 
     /**
      * Visit a parse tree produced by {@link ItemObjectGrammar#effectYX}.

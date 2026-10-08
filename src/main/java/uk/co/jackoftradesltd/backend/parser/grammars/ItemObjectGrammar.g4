@@ -154,6 +154,13 @@ desc
         :   DESC OBJECT_STRING { $descStr = $OBJECT_STRING.getText(); }
         ;
 
+time
+        returns[String timeStr]
+        :   TIME DICE_SIMPLE_VALUE {
+                $timeStr = $DICE_SIMPLE_VALUE.getText();
+            }
+        ;
+
 itemObject
         returns[ItemObjectParseRecord object]
         @init {
@@ -190,6 +197,7 @@ itemObject
             StringBuilder msb = new StringBuilder();
             StringBuilder vsb = new StringBuilder();
             String descInit = "";
+            String timeInit = "";
         }
         @after {
             descInit = dsb.toString();
@@ -200,7 +208,7 @@ itemObject
                     arBaseInit, arToaInit, alCommonInit, alLowerInit, alUpperInit,
                     chargesInit, pileChanceInit, pileItemsInit, powerInit, msgInit,
                     visMsgInit, effectsInit, flagListInit, valuesInit, brandInit, slayInit,
-                    curseInit, pValInit, descInit, line);
+                    curseInit, pValInit, descInit, timeInit, line);
         }
         :   name { nameInit = $name.nameStr;
                    line = $name.line; }
@@ -237,6 +245,7 @@ itemObject
         |   curse { curseInit.put($curse.curseName, $curse.cursePower); }
         |   pval { pValInit = $pval.pvalInt; }
         |   desc { dsb.append($desc.descStr); }
+        |   time { timeInit = $time.timeStr; }
         )+
         ;
 

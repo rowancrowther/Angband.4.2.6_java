@@ -80,11 +80,9 @@ DICE
  *
  * cf EffectBlock.g4's 'time' rule.
  */
- /*
 TIME
         :   'time:' -> pushMode(DICE_STRING_MODE)
         ;
- */
 
 /*
  * @author Rowan Crowther

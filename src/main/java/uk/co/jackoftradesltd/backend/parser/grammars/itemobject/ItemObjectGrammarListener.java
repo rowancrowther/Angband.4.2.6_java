@@ -17,6 +17,14 @@
 // Generated from ItemObjectGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.itemobject;
 
+import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
+import uk.co.jackoftradesltd.backend.parser.itemobject.ItemObjectParseRecord;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
 /**
@@ -333,6 +341,20 @@ public interface ItemObjectGrammarListener extends ParseTreeListener {
     void exitDesc(ItemObjectGrammar.DescContext ctx);
 
     /**
+     * Enter a parse tree produced by {@link ItemObjectGrammar#time}.
+     *
+     * @param ctx the parse tree
+     */
+    void enterTime(ItemObjectGrammar.TimeContext ctx);
+
+    /**
+     * Exit a parse tree produced by {@link ItemObjectGrammar#time}.
+     *
+     * @param ctx the parse tree
+     */
+    void exitTime(ItemObjectGrammar.TimeContext ctx);
+
+    /**
      * Enter a parse tree produced by {@link ItemObjectGrammar#itemObject}.
      *
      * @param ctx the parse tree
@@ -373,20 +395,6 @@ public interface ItemObjectGrammarListener extends ParseTreeListener {
      * @param ctx the parse tree
      */
     void exitEffect(ItemObjectGrammar.EffectContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link ItemObjectGrammar#time}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterTime(ItemObjectGrammar.TimeContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link ItemObjectGrammar#time}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitTime(ItemObjectGrammar.TimeContext ctx);
 
     /**
      * Enter a parse tree produced by {@link ItemObjectGrammar#effectYX}.

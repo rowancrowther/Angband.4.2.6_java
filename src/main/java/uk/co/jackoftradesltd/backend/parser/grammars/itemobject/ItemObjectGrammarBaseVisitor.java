@@ -17,6 +17,14 @@
 // Generated from ItemObjectGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.itemobject;
 
+import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
+import uk.co.jackoftradesltd.backend.parser.itemobject.ItemObjectParseRecord;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
@@ -278,6 +286,17 @@ public class ItemObjectGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T>
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
+    public T visitTime(ItemObjectGrammar.TimeContext ctx) {
+        return visitChildren(ctx);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
     public T visitItemObject(ItemObjectGrammar.ItemObjectContext ctx) {
         return visitChildren(ctx);
     }
@@ -301,17 +320,6 @@ public class ItemObjectGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T>
      */
     @Override
     public T visitEffect(ItemObjectGrammar.EffectContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitTime(ItemObjectGrammar.TimeContext ctx) {
         return visitChildren(ctx);
     }
 

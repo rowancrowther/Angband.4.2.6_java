@@ -386,6 +386,7 @@ class CurseAssemblerTest {
         List<String> desc = List.of();
         List<String> conflict = List.of();
         List<String> cFlag = List.of();
+        String time = "";
         int line = 1;
 
         Rec(String name) {
@@ -436,7 +437,7 @@ class CurseAssemblerTest {
 
         CurseParseRecord build() {
             return new CurseParseRecord(name, type, weight, toh, tod, toa, List.of(), flags, values,
-                    message, desc, conflict, cFlag, line);
+                    message, desc, conflict, cFlag, time, line);
         }
     }
 }

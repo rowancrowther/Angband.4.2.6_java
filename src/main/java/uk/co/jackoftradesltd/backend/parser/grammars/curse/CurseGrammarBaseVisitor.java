@@ -17,6 +17,14 @@
 // Generated from CurseGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.curse;
 
+import uk.co.jackoftradesltd.backend.parser.curse.CurseParseRecord;
+import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
+
+import java.util.Map;
+import java.util.List;
+import java.util.HashMap;
+import java.util.ArrayList;
+
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
@@ -25,7 +33,7 @@ import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
  * of the available methods.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
- * operations with no return type.
+ *            operations with no return type.
  */
 @SuppressWarnings("CheckReturnValue")
 public class CurseGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements CurseGrammarVisitor<T> {
@@ -157,6 +165,17 @@ public class CurseGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T> impl
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
+    public T visitTime(CurseGrammar.TimeContext ctx) {
+        return visitChildren(ctx);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
     public T visitCurseRecord(CurseGrammar.CurseRecordContext ctx) {
         return visitChildren(ctx);
     }
@@ -180,17 +199,6 @@ public class CurseGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T> impl
      */
     @Override
     public T visitEffect(CurseGrammar.EffectContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitTime(CurseGrammar.TimeContext ctx) {
         return visitChildren(ctx);
     }
 

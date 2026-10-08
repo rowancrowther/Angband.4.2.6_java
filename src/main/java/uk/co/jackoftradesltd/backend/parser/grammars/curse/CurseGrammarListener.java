@@ -17,6 +17,14 @@
 // Generated from CurseGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.curse;
 
+import uk.co.jackoftradesltd.backend.parser.curse.CurseParseRecord;
+import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
+
+import java.util.Map;
+import java.util.List;
+import java.util.HashMap;
+import java.util.ArrayList;
+
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
 /**
@@ -179,6 +187,20 @@ public interface CurseGrammarListener extends ParseTreeListener {
     void exitConflictFlags(CurseGrammar.ConflictFlagsContext ctx);
 
     /**
+     * Enter a parse tree produced by {@link CurseGrammar#time}.
+     *
+     * @param ctx the parse tree
+     */
+    void enterTime(CurseGrammar.TimeContext ctx);
+
+    /**
+     * Exit a parse tree produced by {@link CurseGrammar#time}.
+     *
+     * @param ctx the parse tree
+     */
+    void exitTime(CurseGrammar.TimeContext ctx);
+
+    /**
      * Enter a parse tree produced by {@link CurseGrammar#curseRecord}.
      *
      * @param ctx the parse tree
@@ -219,20 +241,6 @@ public interface CurseGrammarListener extends ParseTreeListener {
      * @param ctx the parse tree
      */
     void exitEffect(CurseGrammar.EffectContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link CurseGrammar#time}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterTime(CurseGrammar.TimeContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link CurseGrammar#time}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitTime(CurseGrammar.TimeContext ctx);
 
     /**
      * Enter a parse tree produced by {@link CurseGrammar#effectYX}.

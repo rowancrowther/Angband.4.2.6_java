@@ -17,6 +17,14 @@
 // Generated from CurseGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.curse;
 
+import uk.co.jackoftradesltd.backend.parser.curse.CurseParseRecord;
+import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
+
+import java.util.Map;
+import java.util.List;
+import java.util.HashMap;
+import java.util.ArrayList;
+
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
 /**
@@ -24,7 +32,7 @@ import org.antlr.v4.runtime.tree.ParseTreeVisitor;
  * by {@link CurseGrammar}.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
- * operations with no return type.
+ *            operations with no return type.
  */
 public interface CurseGrammarVisitor<T> extends ParseTreeVisitor<T> {
     /**
@@ -116,6 +124,14 @@ public interface CurseGrammarVisitor<T> extends ParseTreeVisitor<T> {
     T visitConflictFlags(CurseGrammar.ConflictFlagsContext ctx);
 
     /**
+     * Visit a parse tree produced by {@link CurseGrammar#time}.
+     *
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    T visitTime(CurseGrammar.TimeContext ctx);
+
+    /**
      * Visit a parse tree produced by {@link CurseGrammar#curseRecord}.
      *
      * @param ctx the parse tree
@@ -138,14 +154,6 @@ public interface CurseGrammarVisitor<T> extends ParseTreeVisitor<T> {
      * @return the visitor result
      */
     T visitEffect(CurseGrammar.EffectContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link CurseGrammar#time}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitTime(CurseGrammar.TimeContext ctx);
 
     /**
      * Visit a parse tree produced by {@link CurseGrammar#effectYX}.

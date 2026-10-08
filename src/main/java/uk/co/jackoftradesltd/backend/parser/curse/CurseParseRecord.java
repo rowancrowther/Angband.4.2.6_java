@@ -62,5 +62,6 @@ public record CurseParseRecord(String name,
                                List<String> desc,
                                List<String> conflict,
                                List<String> cFlag,
+                               String time,
                                int line) {
 }

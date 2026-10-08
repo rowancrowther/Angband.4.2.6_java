@@ -86,6 +86,13 @@ conflictFlags
             (FLAG_OR f2=FLAG { $cFlags.add($f2.getText()); })*
         ;
 
+time
+        returns[String timeStr]
+        :   TIME DICE_SIMPLE_VALUE {
+                $timeStr = $DICE_SIMPLE_VALUE.getText();
+            }
+        ;
+
 curseRecord
         returns[CurseParseRecord record]
         @init {
@@ -103,11 +110,12 @@ curseRecord
             List<String> conflictInit = new ArrayList<>();
             List<String> cFlagsInit = new ArrayList<>();
             String weightAdjustmentInit = "";
+            String timeInit = "";
         }
         @after {
             $record = new CurseParseRecord(nameInit, curseTypeInit, weightAdjustmentInit,
                         tohInit, todInit, toaInit, effects, flagsListInit, valuesInit,
-                        msgInit, descInit, conflictInit, cFlagsInit, blockLine);
+                        msgInit, descInit, conflictInit, cFlagsInit, timeInit, blockLine);
         }
         :   name { nameInit = $name.nameStr;
                    blockLine = $name.line; }
@@ -127,7 +135,8 @@ curseRecord
         |   msg { msgInit = $msg.msgStr; }
         |   desc { descInit.add($desc.description); }
         |   conflict { conflictInit.add($conflict.conflictingCurses); }
-        |   conflictFlags { cFlagsInit.addAll($conflictFlags.cFlags); })+
+        |   conflictFlags { cFlagsInit.addAll($conflictFlags.cFlags); }
+        |   time { timeInit = $time.timeStr; })+
         ;
 
 file

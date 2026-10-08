@@ -17,6 +17,14 @@
 // Generated from ItemObjectGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.itemobject;
 
+import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
+import uk.co.jackoftradesltd.backend.parser.itemobject.ItemObjectParseRecord;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
@@ -431,6 +439,24 @@ public class ItemObjectGrammarBaseListener implements ItemObjectGrammarListener 
      * <p>The default implementation does nothing.</p>
      */
     @Override
+    public void enterTime(ItemObjectGrammar.TimeContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitTime(ItemObjectGrammar.TimeContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
     public void enterItemObject(ItemObjectGrammar.ItemObjectContext ctx) {
     }
 
@@ -477,24 +503,6 @@ public class ItemObjectGrammarBaseListener implements ItemObjectGrammarListener 
      */
     @Override
     public void exitEffect(ItemObjectGrammar.EffectContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void enterTime(ItemObjectGrammar.TimeContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void exitTime(ItemObjectGrammar.TimeContext ctx) {
     }
 
     /**

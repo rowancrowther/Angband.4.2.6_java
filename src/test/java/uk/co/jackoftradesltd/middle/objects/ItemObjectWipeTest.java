@@ -310,6 +310,11 @@ class ItemObjectWipeTest {
      * {@code modifiers} and {@code elInfo} come back as the insertion-ordered maps the constructors
      * build, not as plain hash maps. Enum keys hash by identity, so a {@link java.util.HashMap}
      * would walk them in an order that changes from run to run, where C walks its arrays by index.
+     *
+     * <p>These two maps only. The wiped item's curse map is a {@link java.util.TreeMap} in curse
+     * index order, not insertion-ordered, and is not what this test looks at.
+     *
+     * <p>Test resetsMapsToInsertionOrderedType scope note added on 261008.
      */
     @Test
     @DisplayName("modifiers and elInfo become insertion-ordered maps, as the constructors build them")
@@ -322,6 +327,11 @@ class ItemObjectWipeTest {
      * Puts every modifier and every element into a wiped item in reverse declaration order and
      * reads them back. A map that kept insertion order answers exactly the reversed list; a hash
      * map of enum keys would not, except by a one-in-many accident.
+     *
+     * <p>As above, this covers {@code modifiers} and {@code elInfo} only; the curse map walks in
+     * curse index order whatever order its entries were put in.
+     *
+     * <p>Test wipedMapsKeepInsertionOrder scope note added on 261008.
      */
     @Test
     @DisplayName("a wiped item walks its modifiers and elements in the order they were put in")

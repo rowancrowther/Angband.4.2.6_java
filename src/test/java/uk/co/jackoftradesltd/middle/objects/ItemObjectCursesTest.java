@@ -25,7 +25,6 @@ import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.testsupport.CurseFixture;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -49,11 +48,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * <em>is</em> power zero: C cannot delete from an array indexed by curse so it zeroes the power and
  * reads that back as "not cursed", while the port removes the entry. The two only agree as long as
  * nothing stores a curse at power zero, which is what makes {@code cursesAreEqual} able to compare
- * two maps directly. The second is that the backing map starts null and is created on demand, so
- * every one of these has to work on an object that has never carried a curse — the counterpart
- * objects the knowledge code writes into are exactly that.
+ * two maps directly. The second is that every one of these has to work on an object that has never
+ * carried a curse — the counterpart objects the knowledge code writes into are exactly that. Such
+ * an object's backing map is already there and empty (the no-argument constructor builds it as a
+ * {@link java.util.TreeMap} in curse index order), so the writers are tested against that starting
+ * state rather than against a missing map.
  *
- * <p>Class ItemObjectCursesTest coded on 260817, commented in full on 260817.
+ * <p>Class ItemObjectCursesTest coded on 260817, commented in full on 260817, stale null-map
+ * wording corrected on 261008.
  *
  * @author Rowan Crowther
  */
@@ -73,14 +75,31 @@ class ItemObjectCursesTest {
      * @return a curse with every other field empty
      */
     private static Curse curse(String name) {
-        return CurseFixture.curse(name, List.of(), 0, null, new Flag<>(ObjectFlag.class), Map.of(), Map.of(), 0, 0, 0,
-                List.of(), new Flag<>(ObjectFlag.class), "", "", 0);
+        return curse(name, 0);
     }
 
     /**
-     * A fresh item straight from the no-argument constructor, whose curse map is still null. That is
-     * the starting state every test here needs — creating the map first would hide the on-demand
-     * behaviour that half of them are about.
+     * The same minimal curse with a chosen index, for the tests that depend on the order the curse
+     * map walks in.
+     *
+     * <p>Function curse coded on 261008.
+     *
+     * @param name  the curse's name
+     * @param index the curse's index, which the curse map orders by
+     * @return a curse with every other field empty
+     */
+    private static Curse curse(String name, int index) {
+        return CurseFixture.curse(name, List.of(), 0, null, new Flag<>(ObjectFlag.class), Map.of(), Map.of(), 0, 0, 0,
+                List.of(), new Flag<>(ObjectFlag.class), "", "", index);
+    }
+
+    /**
+     * A fresh item straight from the no-argument constructor, whose curse map is empty and has never
+     * held a curse. That is the starting state every test here needs — adding a curse first would
+     * hide what the writers do on an object that has never been cursed.
+     *
+     * <p>Function setUp coded on 260817, commented in full on 260817, stale null-map wording
+     * corrected on 261008.
      */
     @BeforeEach
     void setUp() {
@@ -180,14 +199,20 @@ class ItemObjectCursesTest {
         }
 
         /**
-         * Every writer has to cope with the null map, because the objects the knowledge code writes
-         * into come from the no-argument constructor and have never held a curse. Each is exercised
-         * from that state in turn — one of them missing the guard would be a null pointer on a path
-         * that only fires for uncursed items, which is the common case and so the least likely to be
-         * met in casual play.
+         * Every writer has to work on an object that has never held a curse, because the objects the
+         * knowledge code writes into come from the no-argument constructor and are exactly that.
+         * Each is exercised on a fresh object in turn — one of them failing there would be an
+         * exception on a path that only fires for uncursed items, which is the common case and so
+         * the least likely to be met in casual play.
+         *
+         * <p>The no-argument constructor builds the map, so this no longer exercises the writers'
+         * own guards for a missing one; the method name predates that.
+         *
+         * <p>Test writersCreateTheMapOnDemand coded on 260817, stale null-map wording corrected on
+         * 261008.
          */
         @Test
-        @DisplayName("every writer copes with a map that does not exist yet")
+        @DisplayName("every writer copes with an object that has never held a curse")
         void writersCreateTheMapOnDemand() {
             assertAll(
                     () -> new ItemObject().addCurse(curse("a"), 1, 0),
@@ -228,9 +253,14 @@ class ItemObjectCursesTest {
 
         /**
          * Setting the power of a curse the object does not carry switches it on. C's bare
-         * {@code obj->curses[i].power = x} writes into the slot whether or not the curse was active,
-         * and {@code append_object_curse} relies on that to add a curse. The new entry's timeout is
-         * 0, matching the zero-filled slot, and the curse already there is untouched.
+         * {@code obj->curses[i].power = x} writes into the slot whether or not the curse was active.
+         * The bare write touches only the power, so the new entry's timeout is 0, matching the
+         * zero-filled slot, and the curse already there is untouched. {@code append_object_curse}
+         * does not leave it there: it rolls {@code randcalc(c->obj->time, 0, RANDOMISE)} into the
+         * timeout straight after the power write. Only the {@code obj-knowledge.c} write stops at
+         * zero, and the port's {@code addCurse} never rolls a timeout.
+         *
+         * <p>Test setPowerAddsAbsentCurse coded on 260817, zero-timeout claim corrected on 261008.
          */
         @Test
         @DisplayName("setCursePower adds a curse the object does not have")
@@ -328,9 +358,11 @@ class ItemObjectCursesTest {
 
         /**
          * The port of C freeing the array and nulling the pointer. What the object is left holding is
-         * an empty map rather than a null one, which callers cannot tell apart — {@link
-         * ItemObject#getCurses} reports empty for both — and that indistinguishability is the reason
-         * the null field never needs to be restored.
+         * a fresh empty map rather than a null one, which is the same state the no-argument
+         * constructor starts it in, so the field never needs to be nulled to match C. A caller cannot
+         * tell the two apart anyway: {@link ItemObject#getCurses} reports empty for both.
+         *
+         * <p>Test clearEmpties coded on 260817, null-field wording corrected on 261008.
          */
         @Test
         @DisplayName("clearCurses empties the set")
@@ -355,11 +387,12 @@ class ItemObjectCursesTest {
     class Initializing {
 
         /**
-         * A fresh object's map is already reported as empty by {@link ItemObject#getCurses} — that
-         * is the null-absorbing behaviour {@code writersCreateTheMapOnDemand} exists to pin. This
-         * checks the allocation itself does not disturb that: after {@code initCurses} the map is
-         * real (not still null under the covers) and still empty, the Java analogue of C's
-         * {@code mem_zalloc} handing back curse_max zeroed slots.
+         * A fresh object's map is already empty, because the no-argument constructor builds it. This
+         * checks the allocation does not disturb that: after {@code initCurses} the map is still
+         * there and still empty, the Java analogue of C's {@code mem_zalloc} handing back curse_max
+         * zeroed slots.
+         *
+         * <p>Test freshObjectGetsEmptyMap coded on 260817, null-map wording corrected on 261008.
          */
         @Test
         @DisplayName("gives a fresh object an empty map")
@@ -415,19 +448,36 @@ class ItemObjectCursesTest {
         }
 
         /**
-         * Insertion order is not promised. The mutators create a {@link java.util.HashMap}, so
-         * anything depending on the order two curses were added in is depending on a hash. Stated
-         * here so that a test elsewhere written against an accidental ordering has something to point
-         * at — and so that a later switch to a {@link LinkedHashMap} is a deliberate widening of the
-         * contract rather than a silent one.
+         * The map walks in ascending curse index, whatever order the curses were added in. It is a
+         * {@link java.util.TreeMap} under {@code ItemObject.CURSE_ORDER}, which is C's array order:
+         * {@code obj->curses[i]} is walked by index. Three curses go in as 9, 2, 5 and must come out
+         * as 2, 5, 9.
+         *
+         * <p>Two curses sharing an index fall through to their names, so the walk is still fully
+         * determined when the index ties: "alpha" goes in after "beta" and comes out before it.
+         *
+         * <p>Test curseMapWalksInIndexOrder coded on 260817 as {@code noOrderingIsPromised}, when
+         * the map was a {@link java.util.HashMap} and checked only the size; rewritten to pin the
+         * {@code TreeMap} order and renamed on 261008.
          */
         @Test
-        @DisplayName("the curse map promises no ordering")
-        void noOrderingIsPromised() {
-            item.addCurse(siren, 3, 0);
-            item.addCurse(teleport, 1, 0);
+        @DisplayName("the curse map walks in ascending curse index, not insertion order")
+        void curseMapWalksInIndexOrder() {
+            Curse nine = curse("nine", 9);
+            Curse two = curse("two", 2);
+            Curse five = curse("five", 5);
+            item.addCurse(nine, 1, 0);
+            item.addCurse(two, 1, 0);
+            item.addCurse(five, 1, 0);
 
-            assertEquals(2, item.getCurses().keySet().size());
+            assertEquals(List.of(two, five, nine), List.copyOf(item.getCurses().keySet()));
+
+            Curse beta = curse("beta", 20);
+            Curse alpha = curse("alpha", 20);
+            item.addCurse(beta, 1, 0);
+            item.addCurse(alpha, 1, 0);
+
+            assertEquals(List.of(two, five, nine, alpha, beta), List.copyOf(item.getCurses().keySet()));
         }
     }
 }

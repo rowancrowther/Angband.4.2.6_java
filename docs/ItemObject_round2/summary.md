@@ -168,6 +168,10 @@ Shape follows `docs/ItemObject_stage1_mismatches.md`. File and line references a
 
 - `ItemObjectCursesTest.java` says the curse map starts `null` and repeats the `append_object_curse` zero-timeout claim;
   `ItemObjectWipeTest.java` names insertion order for the wiped maps.
+- **Result:** FIXED 2026-10-08. The comment pass changed no assertion. It also corrected
+  `ItemObjectCursesTest.java`'s `clearEmpties` / `freshObjectGetsEmptyMap` null wording and added scope notes to the two
+  `ItemObjectWipeTest.java` tests. `noOrderingIsPromised` (which still said `HashMap` and checked only the size) was
+  then rewritten as `curseMapWalksInIndexOrder`, which pins ascending curse index and the name tie-break.
 
 ### 16. Stale docs (Part B)
 

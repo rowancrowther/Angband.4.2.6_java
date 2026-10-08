@@ -80,13 +80,27 @@ class PlayerRaceBodyAccessorTest {
     class Race {
 
         /**
-         * The constructor takes the registry's first race, and the accessor hands back that very
-         * object rather than a copy — which is what makes it read-only to callers.
+         * The constructor leaves the race unset, as C's {@code init_player} does by
+         * {@code mem_zalloc}ing the player; the race is first given in {@code player_init}.
          */
         @Test
-        @DisplayName("the race is the registry's own entry, shared not copied")
-        void raceIsTheRegistryEntry() {
-            assertSame(PlayerRegistry.getFirstPlayerRace(), player.getRace());
+        @DisplayName("a freshly built player has no race yet")
+        void freshPlayerHasNoRace() {
+            assertNull(new Player().getRace());
+        }
+
+        /**
+         * The accessor hands back the very object the race was set to, not a copy of it.
+         *
+         * @throws Exception if the field cannot be reached
+         */
+        @Test
+        @DisplayName("the race read back is the object that was set")
+        void raceReadBackIsTheObjectSet() throws Exception {
+            PlayerRace race = PlayerRegistry.getPlayerRaces().getFirst();
+            set(player, "race", race);
+
+            assertSame(race, player.getRace());
         }
 
         /**

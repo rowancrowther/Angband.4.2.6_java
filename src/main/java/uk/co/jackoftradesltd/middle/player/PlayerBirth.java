@@ -565,7 +565,7 @@ public class PlayerBirth {
 
     /**
      * Resets a player to Angband's blank starting state - the port of C's {@code player_init}
-     * ({@code player-birth.c:396}). This runs before {@link #playerGenerate} does the actual
+     * ({@code player-birth.c}). This runs before {@link #playerGenerate} does the actual
      * character build, so what a fresh character inherits from here is the baseline every
      * race/class combination starts from: no artifacts made, no quests underway, every object
      * kind untried and every monster race unkilled.
@@ -576,7 +576,7 @@ public class PlayerBirth {
      * C's pointer write, the caller would never see it.
      *
      * <p>The object-kind and monster-race loops both start one element past the port's own
-     * index 0, matching C's {@code for (i = 1; ...)} bound at {@code player-birth.c:415,421}.
+     * index 0, matching the {@code for (i = 1; ...)} bound on both of C's loops.
      * C's tables carry a synthetic zeroth entry - {@code k_info[0]} is the {@code <pile>}
      * sentinel kind, {@code r_info[0]} is the {@code <player>} sentinel race used only to hold
      * the minimap glyph colour - and {@code player_init} explicitly skips both. The port's kind
@@ -586,14 +586,22 @@ public class PlayerBirth {
      * <p>The player's options are saved before the wipe and restored after it, matching C's
      * {@code opts_save}/{@code p->opts = opts_save}: a fresh player still keeps whatever options
      * were already in force. The upkeep, timed-effect table and item-knowledge (brand/slay/curse)
-     * records are then rebuilt to size, and the player is left pointed at the first race and
-     * class in the edit files with an unshapechanged {@code "normal"} shape, exactly as C leaves
-     * {@code p->race}, {@code p->class} and {@code p->shape}.
+     * records are then rebuilt to size.
      *
-     * <p>Outstanding: nothing calls this yet. C's {@code player_init} runs once at game start,
-     * before the birth screen; nothing in the port's birth flow reaches this method.
+     * <p>Last, the player is given a default race and class and the unshapechanged
+     * {@code "normal"} shape. C sets {@code p->race = races} and {@code p->class = classes}, the
+     * heads of its lists, and its comment calls them "the first race/class in the edit file". They
+     * are not: C builds both lists by prepending and never reverses them, so each head is the
+     * <em>last</em> entry in its file, Kobold and Blackguard with the shipped data. The port keeps
+     * the registry in file order, so that a list position is C's {@code ridx}/{@code cidx}, and
+     * takes the last entry instead. It hands the player a copy of each rather than the registry's
+     * own record, as {@link Player#setRace} and {@link Player#setClass} expect, so nothing the
+     * player does writes through to the template shared by every character.
      *
-     * <p>Function playerInit coded on 260903, commented in full on 260903.
+     * <p>{@link #doCmdBirthReset} calls this first, as C's {@code do_cmd_birth_reset} calls
+     * {@code player_init}. Until then a player's race and class are {@code null}, as C's are.
+     *
+     * <p>Function playerInit coded on 260903, commented in full on 261008.
      *
      * @param player the character to reset to Angband's starting baseline
      */
@@ -660,9 +668,9 @@ public class PlayerBirth {
         player.setTotalEnergy(0);
         player.setRestingTurn(0);
 
-        // Default ot the first race/class in the edit file
-        PlayerRace race = PlayerRegistry.getPlayerRaces().getFirst();
-        PlayerClass playerClass = PlayerRegistry.getPlayerClasses().getFirst();
+        // Default to C's list heads, which are the last race/class in the edit file
+        PlayerRace race = PlayerRegistry.getPlayerRaces().getLast().copy();
+        PlayerClass playerClass = PlayerRegistry.getPlayerClasses().getLast().copy();
         player.setClass(playerClass);
         player.setRace(race);
 

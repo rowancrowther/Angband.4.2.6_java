@@ -37,23 +37,6 @@ import java.util.ArrayList;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue", "this-escape"})
 public class ShapeGrammar extends Parser {
-	public static final int
-		RECORD_COUNT=1, NAME=2, COMBAT=3, SKILL_D_P=4, SKILL_D_M=5, SKILL_SAVE=6, 
-		SKILL_STEALTH=7, SKILL_SEARCH=8, SKILL_MELEE=9, SKILL_THROW=10, SKILL_DIG=11, 
-		OBJ_FLAGS=12, PLAYER_FLAGS=13, VALUES=14, BLOW=15, EFFECT=16, EFFECT_MESSAGE=17, 
-		DICE=18, TIME=19, EFFECT_YX=20, EXPR=21, COLON=22, UCASE=23, INTEGER=24, 
-		SIMPLE_DICE_STRING=25, COMPLEX_DICE_STRING=26, COMMENT=27, EOL=28, FLAG=29, 
-		FLAG_OR=30, FLAG_EOL=31, VALUE_MOD=32, LBRACKET=33, RBRACKET=34, VALUE_INT=35, 
-		VALUE_OR=36, VALUE_EOL=37, STRING=38, FREE_TEXT=39, DICE_SIMPLE_VALUE=40, 
-		DICE_COMPLEX_VALUE=41, EXPR_CHAR=42, EXPR_COLON=43, EXPR_UCASE=44, EXPR_OP=45, 
-		EXPR_EOL=46;
-	public static final int
-		RULE_recordCount = 0, RULE_name = 1, RULE_combat = 2, RULE_skillDisarmP = 3, 
-		RULE_skillDisarmM = 4, RULE_skillSave = 5, RULE_skillStealth = 6, RULE_skillSearch = 7, 
-		RULE_skillMelee = 8, RULE_skillThrow = 9, RULE_skillDig = 10, RULE_objFlags = 11, 
-		RULE_playerFlags = 12, RULE_values = 13, RULE_blow = 14, RULE_shape = 15, 
-		RULE_file = 16, RULE_effect = 17, RULE_effectYX = 18, RULE_dice = 19, 
-		RULE_expr = 20, RULE_effectMsg = 21, RULE_time = 22, RULE_effectBlock = 23;
 	public static final String[] ruleNames = makeRuleNames();
 	/**
 	 * @deprecated Use {@link #VOCABULARY} instead.
@@ -233,43 +216,23 @@ public class ShapeGrammar extends Parser {
 		"\u0001\u0000\u0000\u0000\u010f\u010c\u0001\u0000\u0000\u0000\u010f\u0110"+
 		"\u0001\u0000\u0000\u0000\u0110/\u0001\u0000\u0000\u0000\u000eiu\u0087"+
 		"\u00ba\u00bc\u00c6\u00d6\u00d8\u00da\u00ea\u00ee\u0108\u010a\u010f";
-	public static final ATN _ATN =
-		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
-	protected static final DFA[] _decisionToDFA;
-	protected static final PredictionContextCache _sharedContextCache =
-		new PredictionContextCache();
-	private static final String[] _LITERAL_NAMES = makeLiteralNames();
-	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
-	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
-
-	static { RuntimeMetaData.checkVersion("4.13.2", RuntimeMetaData.VERSION); }
-
-	static {
-		tokenNames = new String[_SYMBOLIC_NAMES.length];
-		for (int i = 0; i < tokenNames.length; i++) {
-			tokenNames[i] = VOCABULARY.getLiteralName(i);
-			if (tokenNames[i] == null) {
-				tokenNames[i] = VOCABULARY.getSymbolicName(i);
-			}
-
-			if (tokenNames[i] == null) {
-				tokenNames[i] = "<INVALID>";
-			}
-		}
-	}
-
-	static {
-		_decisionToDFA = new DFA[_ATN.getNumberOfDecisions()];
-		for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
-			_decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
-		}
-	}
-
-	public ShapeGrammar(TokenStream input) {
-		super(input);
-		_interp = new ParserATNSimulator(this,_ATN,_decisionToDFA,_sharedContextCache);
-	}
-
+	public static final int
+		RECORD_COUNT=1, NAME=2, COMBAT=3, SKILL_D_P=4, SKILL_D_M=5, SKILL_SAVE=6, 
+		SKILL_STEALTH=7, SKILL_SEARCH=8, SKILL_MELEE=9, SKILL_THROW=10, SKILL_DIG=11, 
+		OBJ_FLAGS=12, PLAYER_FLAGS=13, VALUES=14, BLOW=15, EFFECT=16, EFFECT_MESSAGE=17, 
+		DICE=18, TIME=19, EFFECT_YX=20, EXPR=21, COLON=22, UCASE=23, INTEGER=24, 
+		SIMPLE_DICE_STRING=25, COMPLEX_DICE_STRING=26, COMMENT=27, EOL=28, FLAG=29, 
+		FLAG_OR=30, FLAG_EOL=31, VALUE_MOD=32, LBRACKET=33, RBRACKET=34, VALUE_INT=35, 
+		VALUE_OR=36, VALUE_EOL=37, STRING=38, FREE_TEXT=39, DICE_SIMPLE_VALUE=40, 
+		DICE_COMPLEX_VALUE=41, EXPR_CHAR=42, EXPR_COLON=43, EXPR_UCASE=44, EXPR_OP=45, 
+		EXPR_EOL=46;
+	public static final int
+		RULE_recordCount = 0, RULE_name = 1, RULE_combat = 2, RULE_skillDisarmP = 3, 
+		RULE_skillDisarmM = 4, RULE_skillSave = 5, RULE_skillStealth = 6, RULE_skillSearch = 7, 
+		RULE_skillMelee = 8, RULE_skillThrow = 9, RULE_skillDig = 10, RULE_objFlags = 11, 
+		RULE_playerFlags = 12, RULE_values = 13, RULE_blow = 14, RULE_shape = 15, 
+		RULE_file = 16, RULE_effect = 17, RULE_effectYX = 18, RULE_dice = 19, 
+		RULE_expr = 20, RULE_effectMsg = 21, RULE_time = 22, RULE_effectBlock = 23;
 	private static String[] makeRuleNames() {
 		return new String[] {
 			"recordCount", "name", "combat", "skillDisarmP", "skillDisarmM", "skillSave", 
@@ -278,6 +241,8 @@ public class ShapeGrammar extends Parser {
 			"effectYX", "dice", "expr", "effectMsg", "time", "effectBlock"
 		};
 	}
+	public static final ATN _ATN =
+		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 
 	private static String[] makeLiteralNames() {
 		return new String[] {
@@ -289,7 +254,7 @@ public class ShapeGrammar extends Parser {
 			null, null, null, null, "'['", "']'"
 		};
 	}
-
+	protected static final DFA[] _decisionToDFA;
 	private static String[] makeSymbolicNames() {
 		return new String[] {
 			null, "RECORD_COUNT", "NAME", "COMBAT", "SKILL_D_P", "SKILL_D_M", "SKILL_SAVE", 
@@ -302,6 +267,11 @@ public class ShapeGrammar extends Parser {
 			"EXPR_COLON", "EXPR_UCASE", "EXPR_OP", "EXPR_EOL"
 		};
 	}
+	protected static final PredictionContextCache _sharedContextCache =
+		new PredictionContextCache();
+	private static final String[] _LITERAL_NAMES = makeLiteralNames();
+	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
+	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
 
 	@Override
 	@Deprecated
@@ -327,6 +297,22 @@ public class ShapeGrammar extends Parser {
 	@Override
 	public ATN getATN() { return _ATN; }
 
+	static { RuntimeMetaData.checkVersion("4.13.2", RuntimeMetaData.VERSION); }
+
+	static {
+		tokenNames = new String[_SYMBOLIC_NAMES.length];
+		for (int i = 0; i < tokenNames.length; i++) {
+			tokenNames[i] = VOCABULARY.getLiteralName(i);
+			if (tokenNames[i] == null) {
+				tokenNames[i] = VOCABULARY.getSymbolicName(i);
+			}
+
+			if (tokenNames[i] == null) {
+				tokenNames[i] = "<INVALID>";
+			}
+		}
+	}
+
 	public final RecordCountContext recordCount() throws RecognitionException {
 		RecordCountContext _localctx = new RecordCountContext(_ctx, getState());
 		enterRule(_localctx, 0, RULE_recordCount);
@@ -349,6 +335,13 @@ public class ShapeGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	static {
+		_decisionToDFA = new DFA[_ATN.getNumberOfDecisions()];
+		for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
+			_decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
+		}
 	}
 
 	public final NameContext name() throws RecognitionException {
@@ -374,6 +367,11 @@ public class ShapeGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	public ShapeGrammar(TokenStream input) {
+		super(input);
+		_interp = new ParserATNSimulator(this,_ATN,_decisionToDFA,_sharedContextCache);
 	}
 
 	public final CombatContext combat() throws RecognitionException {
@@ -412,6 +410,83 @@ public class ShapeGrammar extends Parser {
 		return _localctx;
 	}
 
+	public final EffectContext effect() throws RecognitionException {
+		EffectContext _localctx = new EffectContext(_ctx, getState());
+		enterRule(_localctx, 34, RULE_effect);
+
+		            ((EffectContext)_localctx).wrapper =  "";
+		            ((EffectContext)_localctx).radius =  "";
+		            ((EffectContext)_localctx).other =  "";
+		        
+		int _la;
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(202);
+			match(EFFECT);
+			setState(203);
+			((EffectContext)_localctx).t = match(UCASE);
+
+			                ((EffectContext)_localctx).type =  ((EffectContext)_localctx).t.getText();
+			            
+			setState(218);
+			_errHandler.sync(this);
+			_la = _input.LA(1);
+			if (_la==COLON) {
+				{
+				setState(205);
+				match(COLON);
+				setState(206);
+				((EffectContext)_localctx).st = match(UCASE);
+
+				                ((EffectContext)_localctx).wrapper =  ((EffectContext)_localctx).st.getText();
+				            
+				setState(216);
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+				if (_la==COLON) {
+					{
+					setState(208);
+					match(COLON);
+					setState(209);
+					((EffectContext)_localctx).rad = match(INTEGER);
+
+					                ((EffectContext)_localctx).radius =  ((EffectContext)_localctx).rad.getText();
+					            
+					setState(214);
+					_errHandler.sync(this);
+					_la = _input.LA(1);
+					if (_la==COLON) {
+						{
+						setState(211);
+						match(COLON);
+						setState(212);
+						((EffectContext)_localctx).oth = match(INTEGER);
+
+						                ((EffectContext)_localctx).other =  ((EffectContext)_localctx).oth.getText();
+						            
+						}
+					}
+
+					}
+				}
+
+				}
+			}
+
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
 	public final SkillDisarmPContext skillDisarmP() throws RecognitionException {
 		SkillDisarmPContext _localctx = new SkillDisarmPContext(_ctx, getState());
 		enterRule(_localctx, 6, RULE_skillDisarmP);
@@ -434,6 +509,34 @@ public class ShapeGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class RecordCountContext extends ParserRuleContext {
+		public String count;
+		public Token INTEGER;
+		public RecordCountContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode RECORD_COUNT() { return getToken(ShapeGrammar.RECORD_COUNT, 0); }
+
+		public TerminalNode INTEGER() { return getToken(ShapeGrammar.INTEGER, 0); }
+
+		@Override public int getRuleIndex() { return RULE_recordCount; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).enterRecordCount(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).exitRecordCount(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof ShapeGrammarVisitor ) return ((ShapeGrammarVisitor<? extends T>)visitor).visitRecordCount(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final SkillDisarmMContext skillDisarmM() throws RecognitionException {
@@ -460,6 +563,35 @@ public class ShapeGrammar extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class NameContext extends ParserRuleContext {
+		public String nameStr;
+		public int lineNo;
+		public Token STRING;
+		public NameContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode NAME() { return getToken(ShapeGrammar.NAME, 0); }
+
+		public TerminalNode STRING() { return getToken(ShapeGrammar.STRING, 0); }
+
+		@Override public int getRuleIndex() { return RULE_name; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).enterName(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).exitName(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof ShapeGrammarVisitor ) return ((ShapeGrammarVisitor<? extends T>)visitor).visitName(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final SkillSaveContext skillSave() throws RecognitionException {
 		SkillSaveContext _localctx = new SkillSaveContext(_ctx, getState());
 		enterRule(_localctx, 10, RULE_skillSave);
@@ -482,6 +614,48 @@ public class ShapeGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class CombatContext extends ParserRuleContext {
+		public String toh;
+		public String tod;
+		public String toa;
+		public Token h;
+		public Token d;
+		public Token a;
+		public CombatContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode COMBAT() { return getToken(ShapeGrammar.COMBAT, 0); }
+
+		public List<TerminalNode> COLON() { return getTokens(ShapeGrammar.COLON); }
+
+		public TerminalNode COLON(int i) {
+			return getToken(ShapeGrammar.COLON, i);
+		}
+
+		public List<TerminalNode> INTEGER() { return getTokens(ShapeGrammar.INTEGER); }
+
+		public TerminalNode INTEGER(int i) {
+			return getToken(ShapeGrammar.INTEGER, i);
+		}
+
+		@Override public int getRuleIndex() { return RULE_combat; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).enterCombat(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).exitCombat(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof ShapeGrammarVisitor ) return ((ShapeGrammarVisitor<? extends T>)visitor).visitCombat(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final SkillStealthContext skillStealth() throws RecognitionException {
@@ -508,6 +682,34 @@ public class ShapeGrammar extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class SkillDisarmPContext extends ParserRuleContext {
+		public String skillVal;
+		public Token INTEGER;
+		public SkillDisarmPContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode SKILL_D_P() { return getToken(ShapeGrammar.SKILL_D_P, 0); }
+
+		public TerminalNode INTEGER() { return getToken(ShapeGrammar.INTEGER, 0); }
+
+		@Override public int getRuleIndex() { return RULE_skillDisarmP; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).enterSkillDisarmP(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).exitSkillDisarmP(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof ShapeGrammarVisitor ) return ((ShapeGrammarVisitor<? extends T>)visitor).visitSkillDisarmP(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final SkillSearchContext skillSearch() throws RecognitionException {
 		SkillSearchContext _localctx = new SkillSearchContext(_ctx, getState());
 		enterRule(_localctx, 14, RULE_skillSearch);
@@ -530,6 +732,34 @@ public class ShapeGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class SkillDisarmMContext extends ParserRuleContext {
+		public String skillVal;
+		public Token INTEGER;
+		public SkillDisarmMContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode SKILL_D_M() { return getToken(ShapeGrammar.SKILL_D_M, 0); }
+
+		public TerminalNode INTEGER() { return getToken(ShapeGrammar.INTEGER, 0); }
+
+		@Override public int getRuleIndex() { return RULE_skillDisarmM; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).enterSkillDisarmM(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).exitSkillDisarmM(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof ShapeGrammarVisitor ) return ((ShapeGrammarVisitor<? extends T>)visitor).visitSkillDisarmM(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final SkillMeleeContext skillMelee() throws RecognitionException {
@@ -556,6 +786,34 @@ public class ShapeGrammar extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class SkillSaveContext extends ParserRuleContext {
+		public String skillVal;
+		public Token INTEGER;
+		public SkillSaveContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode SKILL_SAVE() { return getToken(ShapeGrammar.SKILL_SAVE, 0); }
+
+		public TerminalNode INTEGER() { return getToken(ShapeGrammar.INTEGER, 0); }
+
+		@Override public int getRuleIndex() { return RULE_skillSave; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).enterSkillSave(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).exitSkillSave(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof ShapeGrammarVisitor ) return ((ShapeGrammarVisitor<? extends T>)visitor).visitSkillSave(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final SkillThrowContext skillThrow() throws RecognitionException {
 		SkillThrowContext _localctx = new SkillThrowContext(_ctx, getState());
 		enterRule(_localctx, 18, RULE_skillThrow);
@@ -580,6 +838,34 @@ public class ShapeGrammar extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class SkillStealthContext extends ParserRuleContext {
+		public String skillVal;
+		public Token INTEGER;
+		public SkillStealthContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode SKILL_STEALTH() { return getToken(ShapeGrammar.SKILL_STEALTH, 0); }
+
+		public TerminalNode INTEGER() { return getToken(ShapeGrammar.INTEGER, 0); }
+
+		@Override public int getRuleIndex() { return RULE_skillStealth; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).enterSkillStealth(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).exitSkillStealth(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof ShapeGrammarVisitor ) return ((ShapeGrammarVisitor<? extends T>)visitor).visitSkillStealth(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final SkillDigContext skillDig() throws RecognitionException {
 		SkillDigContext _localctx = new SkillDigContext(_ctx, getState());
 		enterRule(_localctx, 20, RULE_skillDig);
@@ -602,6 +888,34 @@ public class ShapeGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class SkillSearchContext extends ParserRuleContext {
+		public String skillVal;
+		public Token INTEGER;
+		public SkillSearchContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode SKILL_SEARCH() { return getToken(ShapeGrammar.SKILL_SEARCH, 0); }
+
+		public TerminalNode INTEGER() { return getToken(ShapeGrammar.INTEGER, 0); }
+
+		@Override public int getRuleIndex() { return RULE_skillSearch; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).enterSkillSearch(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).exitSkillSearch(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof ShapeGrammarVisitor ) return ((ShapeGrammarVisitor<? extends T>)visitor).visitSkillSearch(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final ObjFlagsContext objFlags() throws RecognitionException {
@@ -651,6 +965,34 @@ public class ShapeGrammar extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class SkillMeleeContext extends ParserRuleContext {
+		public String skillVal;
+		public Token INTEGER;
+		public SkillMeleeContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode SKILL_MELEE() { return getToken(ShapeGrammar.SKILL_MELEE, 0); }
+
+		public TerminalNode INTEGER() { return getToken(ShapeGrammar.INTEGER, 0); }
+
+		@Override public int getRuleIndex() { return RULE_skillMelee; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).enterSkillMelee(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).exitSkillMelee(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof ShapeGrammarVisitor ) return ((ShapeGrammarVisitor<? extends T>)visitor).visitSkillMelee(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final PlayerFlagsContext playerFlags() throws RecognitionException {
 		PlayerFlagsContext _localctx = new PlayerFlagsContext(_ctx, getState());
 		enterRule(_localctx, 24, RULE_playerFlags);
@@ -696,6 +1038,34 @@ public class ShapeGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class SkillThrowContext extends ParserRuleContext {
+		public String skillVal;
+		public Token INTEGER;
+		public SkillThrowContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode SKILL_THROW() { return getToken(ShapeGrammar.SKILL_THROW, 0); }
+
+		public TerminalNode INTEGER() { return getToken(ShapeGrammar.INTEGER, 0); }
+
+		@Override public int getRuleIndex() { return RULE_skillThrow; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).enterSkillThrow(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).exitSkillThrow(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof ShapeGrammarVisitor ) return ((ShapeGrammarVisitor<? extends T>)visitor).visitSkillThrow(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final ValuesContext values() throws RecognitionException {
@@ -759,6 +1129,34 @@ public class ShapeGrammar extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class SkillDigContext extends ParserRuleContext {
+		public String skillVal;
+		public Token INTEGER;
+		public SkillDigContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode SKILL_DIG() { return getToken(ShapeGrammar.SKILL_DIG, 0); }
+
+		public TerminalNode INTEGER() { return getToken(ShapeGrammar.INTEGER, 0); }
+
+		@Override public int getRuleIndex() { return RULE_skillDig; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).enterSkillDig(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).exitSkillDig(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof ShapeGrammarVisitor ) return ((ShapeGrammarVisitor<? extends T>)visitor).visitSkillDig(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final BlowContext blow() throws RecognitionException {
 		BlowContext _localctx = new BlowContext(_ctx, getState());
 		enterRule(_localctx, 28, RULE_blow);
@@ -781,6 +1179,45 @@ public class ShapeGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class ObjFlagsContext extends ParserRuleContext {
+		public List<String> flags;
+		public Token f1;
+		public Token f2;
+		public ObjFlagsContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode OBJ_FLAGS() { return getToken(ShapeGrammar.OBJ_FLAGS, 0); }
+
+		public List<TerminalNode> FLAG() { return getTokens(ShapeGrammar.FLAG); }
+
+		public TerminalNode FLAG(int i) {
+			return getToken(ShapeGrammar.FLAG, i);
+		}
+
+		public List<TerminalNode> FLAG_OR() { return getTokens(ShapeGrammar.FLAG_OR); }
+
+		public TerminalNode FLAG_OR(int i) {
+			return getToken(ShapeGrammar.FLAG_OR, i);
+		}
+
+		@Override public int getRuleIndex() { return RULE_objFlags; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).enterObjFlags(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).exitObjFlags(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof ShapeGrammarVisitor ) return ((ShapeGrammarVisitor<? extends T>)visitor).visitObjFlags(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final ShapeContext shape() throws RecognitionException {
@@ -960,6 +1397,45 @@ public class ShapeGrammar extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class PlayerFlagsContext extends ParserRuleContext {
+		public List<String> flags;
+		public Token f1;
+		public Token f2;
+		public PlayerFlagsContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode PLAYER_FLAGS() { return getToken(ShapeGrammar.PLAYER_FLAGS, 0); }
+
+		public List<TerminalNode> FLAG() { return getTokens(ShapeGrammar.FLAG); }
+
+		public TerminalNode FLAG(int i) {
+			return getToken(ShapeGrammar.FLAG, i);
+		}
+
+		public List<TerminalNode> FLAG_OR() { return getTokens(ShapeGrammar.FLAG_OR); }
+
+		public TerminalNode FLAG_OR(int i) {
+			return getToken(ShapeGrammar.FLAG_OR, i);
+		}
+
+		@Override public int getRuleIndex() { return RULE_playerFlags; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).enterPlayerFlags(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).exitPlayerFlags(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof ShapeGrammarVisitor ) return ((ShapeGrammarVisitor<? extends T>)visitor).visitPlayerFlags(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final FileContext file() throws RecognitionException {
 		FileContext _localctx = new FileContext(_ctx, getState());
 		enterRule(_localctx, 32, RULE_file);
@@ -999,799 +1475,6 @@ public class ShapeGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
-	}
-
-	public final EffectContext effect() throws RecognitionException {
-		EffectContext _localctx = new EffectContext(_ctx, getState());
-		enterRule(_localctx, 34, RULE_effect);
-
-		            ((EffectContext)_localctx).wrapper =  "";
-		            ((EffectContext)_localctx).radius =  "";
-		            ((EffectContext)_localctx).other =  "";
-		        
-		int _la;
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(202);
-			match(EFFECT);
-			setState(203);
-			((EffectContext)_localctx).t = match(UCASE);
-
-			                ((EffectContext)_localctx).type =  ((EffectContext)_localctx).t.getText();
-			            
-			setState(218);
-			_errHandler.sync(this);
-			_la = _input.LA(1);
-			if (_la==COLON) {
-				{
-				setState(205);
-				match(COLON);
-				setState(206);
-				((EffectContext)_localctx).st = match(UCASE);
-
-				                ((EffectContext)_localctx).wrapper =  ((EffectContext)_localctx).st.getText().toUpperCase();
-				            
-				setState(216);
-				_errHandler.sync(this);
-				_la = _input.LA(1);
-				if (_la==COLON) {
-					{
-					setState(208);
-					match(COLON);
-					setState(209);
-					((EffectContext)_localctx).rad = match(INTEGER);
-
-					                ((EffectContext)_localctx).radius =  ((EffectContext)_localctx).rad.getText();
-					            
-					setState(214);
-					_errHandler.sync(this);
-					_la = _input.LA(1);
-					if (_la==COLON) {
-						{
-						setState(211);
-						match(COLON);
-						setState(212);
-						((EffectContext)_localctx).oth = match(INTEGER);
-
-						                ((EffectContext)_localctx).other =  ((EffectContext)_localctx).oth.getText();
-						            
-						}
-					}
-
-					}
-				}
-
-				}
-			}
-
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	public final EffectYXContext effectYX() throws RecognitionException {
-		EffectYXContext _localctx = new EffectYXContext(_ctx, getState());
-		enterRule(_localctx, 36, RULE_effectYX);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(220);
-			match(EFFECT_YX);
-			setState(221);
-			((EffectYXContext)_localctx).yVal = match(INTEGER);
-			setState(222);
-			match(COLON);
-			setState(223);
-			((EffectYXContext)_localctx).xVal = match(INTEGER);
-
-			                ((EffectYXContext)_localctx).y =  ((EffectYXContext)_localctx).yVal.getText();
-			                ((EffectYXContext)_localctx).x =  ((EffectYXContext)_localctx).xVal.getText();
-			            
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	public final DiceContext dice() throws RecognitionException {
-		DiceContext _localctx = new DiceContext(_ctx, getState());
-		enterRule(_localctx, 38, RULE_dice);
-
-		            String charHolder = "";
-		            String baseHolder = "";
-		            String operHolder = "";
-		            ((DiceContext)_localctx).diceString =  "";
-		            ((DiceContext)_localctx).exprChar =  "";
-		            ((DiceContext)_localctx).baseName =  "";
-		            ((DiceContext)_localctx).operation =  "";
-		        
-		int _la;
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(226);
-			match(DICE);
-			setState(238);
-			_errHandler.sync(this);
-			switch (_input.LA(1)) {
-			case DICE_COMPLEX_VALUE:
-				{
-				{
-				setState(227);
-				((DiceContext)_localctx).val = match(DICE_COMPLEX_VALUE);
-
-				                ((DiceContext)_localctx).diceString =  ((DiceContext)_localctx).val.getText();
-				            
-				setState(232); 
-				_errHandler.sync(this);
-				_la = _input.LA(1);
-				do {
-					{
-					{
-					setState(229);
-					((DiceContext)_localctx).expr = expr();
-
-					                if (charHolder.isEmpty()) {
-					                    charHolder = ((DiceContext)_localctx).expr.exprChar;
-					                    baseHolder = ((DiceContext)_localctx).expr.baseName;
-					                    operHolder = ((DiceContext)_localctx).expr.operation;
-					                } else {
-					                    charHolder = charHolder + "^" + ((DiceContext)_localctx).expr.exprChar;
-					                    baseHolder = baseHolder + "^" + ((DiceContext)_localctx).expr.baseName;
-					                    operHolder = operHolder + "^" + ((DiceContext)_localctx).expr.operation;
-					                }
-					            
-					}
-					}
-					setState(234); 
-					_errHandler.sync(this);
-					_la = _input.LA(1);
-				} while ( _la==EXPR );
-				}
-				}
-				break;
-			case DICE_SIMPLE_VALUE:
-				{
-				setState(236);
-				((DiceContext)_localctx).val = match(DICE_SIMPLE_VALUE);
-
-				                ((DiceContext)_localctx).diceString =  ((DiceContext)_localctx).val.getText();
-				            
-				}
-				break;
-			default:
-				throw new NoViableAltException(this);
-			}
-			}
-			_ctx.stop = _input.LT(-1);
-
-			            ((DiceContext)_localctx).exprChar =  charHolder;
-			            ((DiceContext)_localctx).baseName =  baseHolder;
-			            ((DiceContext)_localctx).operation =  operHolder;
-			        
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	public final ExprContext expr() throws RecognitionException {
-		ExprContext _localctx = new ExprContext(_ctx, getState());
-		enterRule(_localctx, 40, RULE_expr);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(240);
-			match(EXPR);
-			setState(241);
-			((ExprContext)_localctx).ch = match(EXPR_CHAR);
-			setState(242);
-			match(EXPR_COLON);
-			setState(243);
-			((ExprContext)_localctx).base = match(EXPR_UCASE);
-			setState(244);
-			match(EXPR_COLON);
-			setState(245);
-			((ExprContext)_localctx).op = match(EXPR_OP);
-
-			                ((ExprContext)_localctx).exprChar =  ((ExprContext)_localctx).ch.getText();
-			                ((ExprContext)_localctx).baseName =  ((ExprContext)_localctx).base.getText();
-			                ((ExprContext)_localctx).operation =  ((ExprContext)_localctx).op.getText();
-			            
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	public final EffectMsgContext effectMsg() throws RecognitionException {
-		EffectMsgContext _localctx = new EffectMsgContext(_ctx, getState());
-		enterRule(_localctx, 42, RULE_effectMsg);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(248);
-			match(EFFECT_MESSAGE);
-			setState(249);
-			((EffectMsgContext)_localctx).FREE_TEXT = match(FREE_TEXT);
-			 ((EffectMsgContext)_localctx).message =  ((EffectMsgContext)_localctx).FREE_TEXT.getText(); 
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	public final TimeContext time() throws RecognitionException {
-		TimeContext _localctx = new TimeContext(_ctx, getState());
-		enterRule(_localctx, 44, RULE_time);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(252);
-			match(TIME);
-			setState(253);
-			((TimeContext)_localctx).DICE_SIMPLE_VALUE = match(DICE_SIMPLE_VALUE);
-			 ((TimeContext)_localctx).timeStr =  ((TimeContext)_localctx).DICE_SIMPLE_VALUE.getText(); 
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	public final EffectBlockContext effectBlock() throws RecognitionException {
-		EffectBlockContext _localctx = new EffectBlockContext(_ctx, getState());
-		enterRule(_localctx, 46, RULE_effectBlock);
-
-		            String expressionString = "";
-		            String baseString = "";
-		            String opString = "";
-		            ((EffectBlockContext)_localctx).diceString =  "";
-		            ((EffectBlockContext)_localctx).yVal =  "";
-		            ((EffectBlockContext)_localctx).xVal =  "";
-		            ((EffectBlockContext)_localctx).effectMessage =  "";
-		        
-		int _la;
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(256);
-			((EffectBlockContext)_localctx).effect = effect();
-
-			                ((EffectBlockContext)_localctx).lineNo =  _localctx.start.getLine();
-			                ((EffectBlockContext)_localctx).typeInit =  ((EffectBlockContext)_localctx).effect.type;
-			                ((EffectBlockContext)_localctx).subtypeWrapperInit =  ((EffectBlockContext)_localctx).effect.wrapper;
-			                ((EffectBlockContext)_localctx).radius =  ((EffectBlockContext)_localctx).effect.radius;
-			                ((EffectBlockContext)_localctx).other =  ((EffectBlockContext)_localctx).effect.other;
-			            
-			setState(266);
-			_errHandler.sync(this);
-			switch (_input.LA(1)) {
-			case EFFECT_YX:
-				{
-				{
-				setState(258);
-				((EffectBlockContext)_localctx).effectYX = effectYX();
-
-				                ((EffectBlockContext)_localctx).yVal =  ((EffectBlockContext)_localctx).effectYX.y;
-				                ((EffectBlockContext)_localctx).xVal =  ((EffectBlockContext)_localctx).effectYX.x;
-				            
-				}
-				}
-				break;
-			case EOF:
-			case NAME:
-			case COMBAT:
-			case SKILL_D_P:
-			case SKILL_D_M:
-			case SKILL_SAVE:
-			case SKILL_STEALTH:
-			case SKILL_SEARCH:
-			case SKILL_MELEE:
-			case SKILL_THROW:
-			case SKILL_DIG:
-			case OBJ_FLAGS:
-			case PLAYER_FLAGS:
-			case VALUES:
-			case BLOW:
-			case EFFECT:
-			case EFFECT_MESSAGE:
-			case DICE:
-				{
-				{
-				setState(264);
-				_errHandler.sync(this);
-				_la = _input.LA(1);
-				if (_la==DICE) {
-					{
-					setState(261);
-					((EffectBlockContext)_localctx).dice = dice();
-
-					                ((EffectBlockContext)_localctx).diceString =  ((EffectBlockContext)_localctx).dice.diceString;
-					                expressionString = ((EffectBlockContext)_localctx).dice.exprChar;
-					                baseString = ((EffectBlockContext)_localctx).dice.baseName;
-					                opString = ((EffectBlockContext)_localctx).dice.operation;
-					            
-					}
-				}
-
-				}
-				}
-				break;
-			default:
-				throw new NoViableAltException(this);
-			}
-			setState(271);
-			_errHandler.sync(this);
-			_la = _input.LA(1);
-			if (_la==EFFECT_MESSAGE) {
-				{
-				setState(268);
-				((EffectBlockContext)_localctx).effectMsg = effectMsg();
-				 ((EffectBlockContext)_localctx).effectMessage =  ((EffectBlockContext)_localctx).effectMsg.message; 
-				}
-			}
-
-			}
-			_ctx.stop = _input.LT(-1);
-
-			            ((EffectBlockContext)_localctx).expressionChars =  expressionString;
-			            ((EffectBlockContext)_localctx).expressionBase =  baseString;
-			            ((EffectBlockContext)_localctx).expressionOperation =  opString;
-			        
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class RecordCountContext extends ParserRuleContext {
-		public String count;
-		public Token INTEGER;
-		public RecordCountContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode RECORD_COUNT() { return getToken(ShapeGrammar.RECORD_COUNT, 0); }
-
-		public TerminalNode INTEGER() { return getToken(ShapeGrammar.INTEGER, 0); }
-
-		@Override public int getRuleIndex() { return RULE_recordCount; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).enterRecordCount(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).exitRecordCount(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ShapeGrammarVisitor ) return ((ShapeGrammarVisitor<? extends T>)visitor).visitRecordCount(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class NameContext extends ParserRuleContext {
-		public String nameStr;
-		public int lineNo;
-		public Token STRING;
-		public NameContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode NAME() { return getToken(ShapeGrammar.NAME, 0); }
-
-		public TerminalNode STRING() { return getToken(ShapeGrammar.STRING, 0); }
-
-		@Override public int getRuleIndex() { return RULE_name; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).enterName(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).exitName(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ShapeGrammarVisitor ) return ((ShapeGrammarVisitor<? extends T>)visitor).visitName(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class CombatContext extends ParserRuleContext {
-		public String toh;
-		public String tod;
-		public String toa;
-		public Token h;
-		public Token d;
-		public Token a;
-		public CombatContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode COMBAT() { return getToken(ShapeGrammar.COMBAT, 0); }
-
-		public List<TerminalNode> COLON() { return getTokens(ShapeGrammar.COLON); }
-
-		public TerminalNode COLON(int i) {
-			return getToken(ShapeGrammar.COLON, i);
-		}
-
-		public List<TerminalNode> INTEGER() { return getTokens(ShapeGrammar.INTEGER); }
-
-		public TerminalNode INTEGER(int i) {
-			return getToken(ShapeGrammar.INTEGER, i);
-		}
-
-		@Override public int getRuleIndex() { return RULE_combat; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).enterCombat(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).exitCombat(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ShapeGrammarVisitor ) return ((ShapeGrammarVisitor<? extends T>)visitor).visitCombat(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class SkillDisarmPContext extends ParserRuleContext {
-		public String skillVal;
-		public Token INTEGER;
-		public SkillDisarmPContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode SKILL_D_P() { return getToken(ShapeGrammar.SKILL_D_P, 0); }
-
-		public TerminalNode INTEGER() { return getToken(ShapeGrammar.INTEGER, 0); }
-
-		@Override public int getRuleIndex() { return RULE_skillDisarmP; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).enterSkillDisarmP(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).exitSkillDisarmP(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ShapeGrammarVisitor ) return ((ShapeGrammarVisitor<? extends T>)visitor).visitSkillDisarmP(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class SkillDisarmMContext extends ParserRuleContext {
-		public String skillVal;
-		public Token INTEGER;
-		public SkillDisarmMContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode SKILL_D_M() { return getToken(ShapeGrammar.SKILL_D_M, 0); }
-
-		public TerminalNode INTEGER() { return getToken(ShapeGrammar.INTEGER, 0); }
-
-		@Override public int getRuleIndex() { return RULE_skillDisarmM; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).enterSkillDisarmM(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).exitSkillDisarmM(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ShapeGrammarVisitor ) return ((ShapeGrammarVisitor<? extends T>)visitor).visitSkillDisarmM(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class SkillSaveContext extends ParserRuleContext {
-		public String skillVal;
-		public Token INTEGER;
-		public SkillSaveContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode SKILL_SAVE() { return getToken(ShapeGrammar.SKILL_SAVE, 0); }
-
-		public TerminalNode INTEGER() { return getToken(ShapeGrammar.INTEGER, 0); }
-
-		@Override public int getRuleIndex() { return RULE_skillSave; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).enterSkillSave(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).exitSkillSave(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ShapeGrammarVisitor ) return ((ShapeGrammarVisitor<? extends T>)visitor).visitSkillSave(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class SkillStealthContext extends ParserRuleContext {
-		public String skillVal;
-		public Token INTEGER;
-		public SkillStealthContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode SKILL_STEALTH() { return getToken(ShapeGrammar.SKILL_STEALTH, 0); }
-
-		public TerminalNode INTEGER() { return getToken(ShapeGrammar.INTEGER, 0); }
-
-		@Override public int getRuleIndex() { return RULE_skillStealth; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).enterSkillStealth(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).exitSkillStealth(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ShapeGrammarVisitor ) return ((ShapeGrammarVisitor<? extends T>)visitor).visitSkillStealth(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class SkillSearchContext extends ParserRuleContext {
-		public String skillVal;
-		public Token INTEGER;
-		public SkillSearchContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode SKILL_SEARCH() { return getToken(ShapeGrammar.SKILL_SEARCH, 0); }
-
-		public TerminalNode INTEGER() { return getToken(ShapeGrammar.INTEGER, 0); }
-
-		@Override public int getRuleIndex() { return RULE_skillSearch; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).enterSkillSearch(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).exitSkillSearch(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ShapeGrammarVisitor ) return ((ShapeGrammarVisitor<? extends T>)visitor).visitSkillSearch(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class SkillMeleeContext extends ParserRuleContext {
-		public String skillVal;
-		public Token INTEGER;
-		public SkillMeleeContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode SKILL_MELEE() { return getToken(ShapeGrammar.SKILL_MELEE, 0); }
-
-		public TerminalNode INTEGER() { return getToken(ShapeGrammar.INTEGER, 0); }
-
-		@Override public int getRuleIndex() { return RULE_skillMelee; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).enterSkillMelee(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).exitSkillMelee(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ShapeGrammarVisitor ) return ((ShapeGrammarVisitor<? extends T>)visitor).visitSkillMelee(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class SkillThrowContext extends ParserRuleContext {
-		public String skillVal;
-		public Token INTEGER;
-		public SkillThrowContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode SKILL_THROW() { return getToken(ShapeGrammar.SKILL_THROW, 0); }
-
-		public TerminalNode INTEGER() { return getToken(ShapeGrammar.INTEGER, 0); }
-
-		@Override public int getRuleIndex() { return RULE_skillThrow; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).enterSkillThrow(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).exitSkillThrow(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ShapeGrammarVisitor ) return ((ShapeGrammarVisitor<? extends T>)visitor).visitSkillThrow(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class SkillDigContext extends ParserRuleContext {
-		public String skillVal;
-		public Token INTEGER;
-		public SkillDigContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode SKILL_DIG() { return getToken(ShapeGrammar.SKILL_DIG, 0); }
-
-		public TerminalNode INTEGER() { return getToken(ShapeGrammar.INTEGER, 0); }
-
-		@Override public int getRuleIndex() { return RULE_skillDig; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).enterSkillDig(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).exitSkillDig(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ShapeGrammarVisitor ) return ((ShapeGrammarVisitor<? extends T>)visitor).visitSkillDig(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class ObjFlagsContext extends ParserRuleContext {
-		public List<String> flags;
-		public Token f1;
-		public Token f2;
-		public ObjFlagsContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode OBJ_FLAGS() { return getToken(ShapeGrammar.OBJ_FLAGS, 0); }
-
-		public List<TerminalNode> FLAG() { return getTokens(ShapeGrammar.FLAG); }
-
-		public TerminalNode FLAG(int i) {
-			return getToken(ShapeGrammar.FLAG, i);
-		}
-
-		public List<TerminalNode> FLAG_OR() { return getTokens(ShapeGrammar.FLAG_OR); }
-
-		public TerminalNode FLAG_OR(int i) {
-			return getToken(ShapeGrammar.FLAG_OR, i);
-		}
-
-		@Override public int getRuleIndex() { return RULE_objFlags; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).enterObjFlags(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).exitObjFlags(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ShapeGrammarVisitor ) return ((ShapeGrammarVisitor<? extends T>)visitor).visitObjFlags(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class PlayerFlagsContext extends ParserRuleContext {
-		public List<String> flags;
-		public Token f1;
-		public Token f2;
-		public PlayerFlagsContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode PLAYER_FLAGS() { return getToken(ShapeGrammar.PLAYER_FLAGS, 0); }
-
-		public List<TerminalNode> FLAG() { return getTokens(ShapeGrammar.FLAG); }
-
-		public TerminalNode FLAG(int i) {
-			return getToken(ShapeGrammar.FLAG, i);
-		}
-
-		public List<TerminalNode> FLAG_OR() { return getTokens(ShapeGrammar.FLAG_OR); }
-
-		public TerminalNode FLAG_OR(int i) {
-			return getToken(ShapeGrammar.FLAG_OR, i);
-		}
-
-		@Override public int getRuleIndex() { return RULE_playerFlags; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).enterPlayerFlags(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof ShapeGrammarListener ) ((ShapeGrammarListener)listener).exitPlayerFlags(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ShapeGrammarVisitor ) return ((ShapeGrammarVisitor<? extends T>)visitor).visitPlayerFlags(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	@SuppressWarnings("CheckReturnValue")
@@ -2035,6 +1718,37 @@ public class ShapeGrammar extends Parser {
 		}
 	}
 
+	public final EffectYXContext effectYX() throws RecognitionException {
+		EffectYXContext _localctx = new EffectYXContext(_ctx, getState());
+		enterRule(_localctx, 36, RULE_effectYX);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(220);
+			match(EFFECT_YX);
+			setState(221);
+			((EffectYXContext)_localctx).yVal = match(INTEGER);
+			setState(222);
+			match(COLON);
+			setState(223);
+			((EffectYXContext)_localctx).xVal = match(INTEGER);
+
+			                ((EffectYXContext)_localctx).y =  ((EffectYXContext)_localctx).yVal.getText();
+			                ((EffectYXContext)_localctx).x =  ((EffectYXContext)_localctx).xVal.getText();
+			            
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
 	@SuppressWarnings("CheckReturnValue")
 	public static class FileContext extends ParserRuleContext {
 		public List<ShapeParseRecord> shapes;
@@ -2073,6 +1787,94 @@ public class ShapeGrammar extends Parser {
 			if ( visitor instanceof ShapeGrammarVisitor ) return ((ShapeGrammarVisitor<? extends T>)visitor).visitFile(this);
 			else return visitor.visitChildren(this);
 		}
+	}
+
+	public final DiceContext dice() throws RecognitionException {
+		DiceContext _localctx = new DiceContext(_ctx, getState());
+		enterRule(_localctx, 38, RULE_dice);
+
+		            String charHolder = "";
+		            String baseHolder = "";
+		            String operHolder = "";
+		            ((DiceContext)_localctx).diceString =  "";
+		            ((DiceContext)_localctx).exprChar =  "";
+		            ((DiceContext)_localctx).baseName =  "";
+		            ((DiceContext)_localctx).operation =  "";
+		        
+		int _la;
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(226);
+			match(DICE);
+			setState(238);
+			_errHandler.sync(this);
+			switch (_input.LA(1)) {
+			case DICE_COMPLEX_VALUE:
+				{
+				{
+				setState(227);
+				((DiceContext)_localctx).val = match(DICE_COMPLEX_VALUE);
+
+				                ((DiceContext)_localctx).diceString =  ((DiceContext)_localctx).val.getText();
+				            
+				setState(232); 
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+				do {
+					{
+					{
+					setState(229);
+					((DiceContext)_localctx).expr = expr();
+
+					                if (charHolder.isEmpty()) {
+					                    charHolder = ((DiceContext)_localctx).expr.exprChar;
+					                    baseHolder = ((DiceContext)_localctx).expr.baseName;
+					                    operHolder = ((DiceContext)_localctx).expr.operation;
+					                } else {
+					                    charHolder = charHolder + "^" + ((DiceContext)_localctx).expr.exprChar;
+					                    baseHolder = baseHolder + "^" + ((DiceContext)_localctx).expr.baseName;
+					                    operHolder = operHolder + "^" + ((DiceContext)_localctx).expr.operation;
+					                }
+					            
+					}
+					}
+					setState(234); 
+					_errHandler.sync(this);
+					_la = _input.LA(1);
+				} while ( _la==EXPR );
+				}
+				}
+				break;
+			case DICE_SIMPLE_VALUE:
+				{
+				setState(236);
+				((DiceContext)_localctx).val = match(DICE_SIMPLE_VALUE);
+
+				                ((DiceContext)_localctx).diceString =  ((DiceContext)_localctx).val.getText();
+				            
+				}
+				break;
+			default:
+				throw new NoViableAltException(this);
+			}
+			}
+			_ctx.stop = _input.LT(-1);
+
+			            ((DiceContext)_localctx).exprChar =  charHolder;
+			            ((DiceContext)_localctx).baseName =  baseHolder;
+			            ((DiceContext)_localctx).operation =  operHolder;
+			        
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
 	}
 
 	@SuppressWarnings("CheckReturnValue")
@@ -2125,6 +1927,42 @@ public class ShapeGrammar extends Parser {
 		}
 	}
 
+	public final ExprContext expr() throws RecognitionException {
+		ExprContext _localctx = new ExprContext(_ctx, getState());
+		enterRule(_localctx, 40, RULE_expr);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(240);
+			match(EXPR);
+			setState(241);
+			((ExprContext)_localctx).ch = match(EXPR_CHAR);
+			setState(242);
+			match(EXPR_COLON);
+			setState(243);
+			((ExprContext)_localctx).base = match(EXPR_UCASE);
+			setState(244);
+			match(EXPR_COLON);
+			setState(245);
+			((ExprContext)_localctx).op = match(EXPR_OP);
+
+			                ((ExprContext)_localctx).exprChar =  ((ExprContext)_localctx).ch.getText();
+			                ((ExprContext)_localctx).baseName =  ((ExprContext)_localctx).base.getText();
+			                ((ExprContext)_localctx).operation =  ((ExprContext)_localctx).op.getText();
+			            
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
 	@SuppressWarnings("CheckReturnValue")
 	public static class EffectYXContext extends ParserRuleContext {
 		public String y;
@@ -2159,6 +1997,30 @@ public class ShapeGrammar extends Parser {
 			if ( visitor instanceof ShapeGrammarVisitor ) return ((ShapeGrammarVisitor<? extends T>)visitor).visitEffectYX(this);
 			else return visitor.visitChildren(this);
 		}
+	}
+
+	public final EffectMsgContext effectMsg() throws RecognitionException {
+		EffectMsgContext _localctx = new EffectMsgContext(_ctx, getState());
+		enterRule(_localctx, 42, RULE_effectMsg);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(248);
+			match(EFFECT_MESSAGE);
+			setState(249);
+			((EffectMsgContext)_localctx).FREE_TEXT = match(FREE_TEXT);
+			 ((EffectMsgContext)_localctx).message =  ((EffectMsgContext)_localctx).FREE_TEXT.getText(); 
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
 	}
 
 	@SuppressWarnings("CheckReturnValue")
@@ -2203,6 +2065,30 @@ public class ShapeGrammar extends Parser {
 		}
 	}
 
+	public final TimeContext time() throws RecognitionException {
+		TimeContext _localctx = new TimeContext(_ctx, getState());
+		enterRule(_localctx, 44, RULE_time);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(252);
+			match(TIME);
+			setState(253);
+			((TimeContext)_localctx).DICE_SIMPLE_VALUE = match(DICE_SIMPLE_VALUE);
+			 ((TimeContext)_localctx).timeStr =  ((TimeContext)_localctx).DICE_SIMPLE_VALUE.getText(); 
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
 	@SuppressWarnings("CheckReturnValue")
 	public static class ExprContext extends ParserRuleContext {
 		public String exprChar;
@@ -2243,6 +2129,118 @@ public class ShapeGrammar extends Parser {
 			if ( visitor instanceof ShapeGrammarVisitor ) return ((ShapeGrammarVisitor<? extends T>)visitor).visitExpr(this);
 			else return visitor.visitChildren(this);
 		}
+	}
+
+	public final EffectBlockContext effectBlock() throws RecognitionException {
+		EffectBlockContext _localctx = new EffectBlockContext(_ctx, getState());
+		enterRule(_localctx, 46, RULE_effectBlock);
+
+		            String expressionString = "";
+		            String baseString = "";
+		            String opString = "";
+		            ((EffectBlockContext)_localctx).diceString =  "";
+		            ((EffectBlockContext)_localctx).yVal =  "";
+		            ((EffectBlockContext)_localctx).xVal =  "";
+		            ((EffectBlockContext)_localctx).effectMessage =  "";
+		        
+		int _la;
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(256);
+			((EffectBlockContext)_localctx).effect = effect();
+
+			                ((EffectBlockContext)_localctx).lineNo =  _localctx.start.getLine();
+			                ((EffectBlockContext)_localctx).typeInit =  ((EffectBlockContext)_localctx).effect.type;
+			                ((EffectBlockContext)_localctx).subtypeWrapperInit =  ((EffectBlockContext)_localctx).effect.wrapper;
+			                ((EffectBlockContext)_localctx).radius =  ((EffectBlockContext)_localctx).effect.radius;
+			                ((EffectBlockContext)_localctx).other =  ((EffectBlockContext)_localctx).effect.other;
+			            
+			setState(266);
+			_errHandler.sync(this);
+			switch (_input.LA(1)) {
+			case EFFECT_YX:
+				{
+				{
+				setState(258);
+				((EffectBlockContext)_localctx).effectYX = effectYX();
+
+				                ((EffectBlockContext)_localctx).yVal =  ((EffectBlockContext)_localctx).effectYX.y;
+				                ((EffectBlockContext)_localctx).xVal =  ((EffectBlockContext)_localctx).effectYX.x;
+				            
+				}
+				}
+				break;
+			case EOF:
+			case NAME:
+			case COMBAT:
+			case SKILL_D_P:
+			case SKILL_D_M:
+			case SKILL_SAVE:
+			case SKILL_STEALTH:
+			case SKILL_SEARCH:
+			case SKILL_MELEE:
+			case SKILL_THROW:
+			case SKILL_DIG:
+			case OBJ_FLAGS:
+			case PLAYER_FLAGS:
+			case VALUES:
+			case BLOW:
+			case EFFECT:
+			case EFFECT_MESSAGE:
+			case DICE:
+				{
+				{
+				setState(264);
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+				if (_la==DICE) {
+					{
+					setState(261);
+					((EffectBlockContext)_localctx).dice = dice();
+
+					                ((EffectBlockContext)_localctx).diceString =  ((EffectBlockContext)_localctx).dice.diceString;
+					                expressionString = ((EffectBlockContext)_localctx).dice.exprChar;
+					                baseString = ((EffectBlockContext)_localctx).dice.baseName;
+					                opString = ((EffectBlockContext)_localctx).dice.operation;
+					            
+					}
+				}
+
+				}
+				}
+				break;
+			default:
+				throw new NoViableAltException(this);
+			}
+			setState(271);
+			_errHandler.sync(this);
+			_la = _input.LA(1);
+			if (_la==EFFECT_MESSAGE) {
+				{
+				setState(268);
+				((EffectBlockContext)_localctx).effectMsg = effectMsg();
+				 ((EffectBlockContext)_localctx).effectMessage =  ((EffectBlockContext)_localctx).effectMsg.message; 
+				}
+			}
+
+			}
+			_ctx.stop = _input.LT(-1);
+
+			            ((EffectBlockContext)_localctx).expressionChars =  expressionString;
+			            ((EffectBlockContext)_localctx).expressionBase =  baseString;
+			            ((EffectBlockContext)_localctx).expressionOperation =  opString;
+			        
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
 	}
 
 	@SuppressWarnings("CheckReturnValue")

@@ -571,8 +571,8 @@ public class PlayerRace {
      * counting down from the list head once parsing finishes; because the list is built by
      * prepending, that count-down lands the data file's first race at {@code ridx} 0 and its last
      * at {@code ridx count - 1} ({@code init.c:2821-2832}) — ascending file order.
-     * {@link PlayerRegistry#getPlayerRaces()} keeps its list in that same file order (see
-     * {@link PlayerRegistry#getFirstPlayerRace()}), so indexing straight into it reaches the race
+     * {@link PlayerRegistry#getPlayerRaces()} keeps its list in that same file order ,
+     * so indexing straight into it reaches the race
      * C's linked-list search would have found, without needing to walk anything.
      *
      * <p>An index at or past the loaded race count returns {@code null}, matching the C loop

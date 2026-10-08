@@ -53,8 +53,10 @@ import java.util.Map;
  * on another suite having run first.
  *
  * <p><b>The problem it solves.</b> {@code Player}'s constructor calls
- * {@code PlayerRegistry.lookupPlayerBody(0)} and {@code getFirstPlayerRace()}, both of which throw
- * when their list has never been loaded. The registry is global static state, so a test class that
+ * {@code PlayerRegistry.lookupPlayerBody(0)}, which throws when the body list has never been loaded,
+ * and anything that calculates with a player reads its race, which the constructor leaves
+ * {@code null} as C does; a test gives the player {@link #plainRace(PlayerBody)} for that. The
+ * registry is global static state, so a test class that
  * constructs a player passes when the whole suite runs — some reader test loaded the real data files
  * first — and throws when run on its own. That is a false green: the suite's result depends on
  * execution order, and a developer running one class from the IDE sees a failure that has nothing to

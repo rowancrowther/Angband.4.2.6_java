@@ -36,21 +36,6 @@ import java.util.ArrayList;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue", "this-escape"})
 public class MonsterSpellGrammar extends Parser {
-	public static final int
-		RECORD_COUNT=1, NAME=2, MSGT=3, HIT=4, POWER_CUTOFF=5, LORE=6, LORE_COLOUR_BASE=7, 
-		LORE_COLOUR_RESIST=8, LORE_COLOUR_IMMUNE=9, MESSAGE_SAVE=10, MESSAGE_VIS=11, 
-		MESSAGE_INVIS=12, MESSAGE_MISS=13, COMMENT=14, EOL=15, EFFECT=16, EFFECT_MESSAGE=17, 
-		DICE=18, TIME=19, EFFECT_YX=20, EXPR=21, COLON=22, UCASE=23, INTEGER=24, 
-		SIMPLE_DICE_STRING=25, COMPLEX_DICE_STRING=26, STRING=27, FREE_TEXT_EOL=28, 
-		FREE_TEXT=29, DICE_SIMPLE_VALUE=30, DICE_COMPLEX_VALUE=31, EXPR_CHAR=32, 
-		EXPR_COLON=33, EXPR_UCASE=34, EXPR_OP=35, EXPR_EOL=36;
-	public static final int
-		RULE_recordCount = 0, RULE_name = 1, RULE_msgt = 2, RULE_hit = 3, RULE_powerCutoff = 4, 
-		RULE_lore = 5, RULE_loreColourBase = 6, RULE_loreColourResist = 7, RULE_loreColourImmune = 8, 
-		RULE_messageSave = 9, RULE_messageVis = 10, RULE_messageInvis = 11, RULE_messageMiss = 12, 
-		RULE_powerCutoffBlock = 13, RULE_monsterSpell = 14, RULE_file = 15, RULE_effect = 16, 
-		RULE_effectYX = 17, RULE_dice = 18, RULE_expr = 19, RULE_effectMsg = 20, 
-		RULE_time = 21, RULE_effectBlock = 22;
 	public static final String[] ruleNames = makeRuleNames();
 	/**
 	 * @deprecated Use {@link #VOCABULARY} instead.
@@ -202,43 +187,21 @@ public class MonsterSpellGrammar extends Parser {
 		"\u0000\u0000\u00e6\u00e3\u0001\u0000\u0000\u0000\u00e6\u00e7\u0001\u0000"+
 		"\u0000\u0000\u00e7-\u0001\u0000\u0000\u0000\u000ef\u0080\u0082\u0092\u0094"+
 		"\u009d\u00ad\u00af\u00b1\u00c1\u00c5\u00df\u00e1\u00e6";
-	public static final ATN _ATN =
-		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
-	protected static final DFA[] _decisionToDFA;
-	protected static final PredictionContextCache _sharedContextCache =
-		new PredictionContextCache();
-	private static final String[] _LITERAL_NAMES = makeLiteralNames();
-	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
-	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
-
-	static { RuntimeMetaData.checkVersion("4.13.2", RuntimeMetaData.VERSION); }
-
-	static {
-		tokenNames = new String[_SYMBOLIC_NAMES.length];
-		for (int i = 0; i < tokenNames.length; i++) {
-			tokenNames[i] = VOCABULARY.getLiteralName(i);
-			if (tokenNames[i] == null) {
-				tokenNames[i] = VOCABULARY.getSymbolicName(i);
-			}
-
-			if (tokenNames[i] == null) {
-				tokenNames[i] = "<INVALID>";
-			}
-		}
-	}
-
-	static {
-		_decisionToDFA = new DFA[_ATN.getNumberOfDecisions()];
-		for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
-			_decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
-		}
-	}
-
-	public MonsterSpellGrammar(TokenStream input) {
-		super(input);
-		_interp = new ParserATNSimulator(this,_ATN,_decisionToDFA,_sharedContextCache);
-	}
-
+	public static final int
+		RECORD_COUNT=1, NAME=2, MSGT=3, HIT=4, POWER_CUTOFF=5, LORE=6, LORE_COLOUR_BASE=7, 
+		LORE_COLOUR_RESIST=8, LORE_COLOUR_IMMUNE=9, MESSAGE_SAVE=10, MESSAGE_VIS=11, 
+		MESSAGE_INVIS=12, MESSAGE_MISS=13, COMMENT=14, EOL=15, EFFECT=16, EFFECT_MESSAGE=17, 
+		DICE=18, TIME=19, EFFECT_YX=20, EXPR=21, COLON=22, UCASE=23, INTEGER=24, 
+		SIMPLE_DICE_STRING=25, COMPLEX_DICE_STRING=26, STRING=27, FREE_TEXT_EOL=28, 
+		FREE_TEXT=29, DICE_SIMPLE_VALUE=30, DICE_COMPLEX_VALUE=31, EXPR_CHAR=32, 
+		EXPR_COLON=33, EXPR_UCASE=34, EXPR_OP=35, EXPR_EOL=36;
+	public static final int
+		RULE_recordCount = 0, RULE_name = 1, RULE_msgt = 2, RULE_hit = 3, RULE_powerCutoff = 4, 
+		RULE_lore = 5, RULE_loreColourBase = 6, RULE_loreColourResist = 7, RULE_loreColourImmune = 8, 
+		RULE_messageSave = 9, RULE_messageVis = 10, RULE_messageInvis = 11, RULE_messageMiss = 12, 
+		RULE_powerCutoffBlock = 13, RULE_monsterSpell = 14, RULE_file = 15, RULE_effect = 16, 
+		RULE_effectYX = 17, RULE_dice = 18, RULE_expr = 19, RULE_effectMsg = 20, 
+		RULE_time = 21, RULE_effectBlock = 22;
 	private static String[] makeRuleNames() {
 		return new String[] {
 			"recordCount", "name", "msgt", "hit", "powerCutoff", "lore", "loreColourBase", 
@@ -247,6 +210,8 @@ public class MonsterSpellGrammar extends Parser {
 			"effect", "effectYX", "dice", "expr", "effectMsg", "time", "effectBlock"
 		};
 	}
+	public static final ATN _ATN =
+		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 
 	private static String[] makeLiteralNames() {
 		return new String[] {
@@ -257,7 +222,7 @@ public class MonsterSpellGrammar extends Parser {
 			"'expr:'"
 		};
 	}
-
+	protected static final DFA[] _decisionToDFA;
 	private static String[] makeSymbolicNames() {
 		return new String[] {
 			null, "RECORD_COUNT", "NAME", "MSGT", "HIT", "POWER_CUTOFF", "LORE", 
@@ -269,6 +234,11 @@ public class MonsterSpellGrammar extends Parser {
 			"EXPR_COLON", "EXPR_UCASE", "EXPR_OP", "EXPR_EOL"
 		};
 	}
+	protected static final PredictionContextCache _sharedContextCache =
+		new PredictionContextCache();
+	private static final String[] _LITERAL_NAMES = makeLiteralNames();
+	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
+	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
 
 	@Override
 	@Deprecated
@@ -294,6 +264,22 @@ public class MonsterSpellGrammar extends Parser {
 	@Override
 	public ATN getATN() { return _ATN; }
 
+	static { RuntimeMetaData.checkVersion("4.13.2", RuntimeMetaData.VERSION); }
+
+	static {
+		tokenNames = new String[_SYMBOLIC_NAMES.length];
+		for (int i = 0; i < tokenNames.length; i++) {
+			tokenNames[i] = VOCABULARY.getLiteralName(i);
+			if (tokenNames[i] == null) {
+				tokenNames[i] = VOCABULARY.getSymbolicName(i);
+			}
+
+			if (tokenNames[i] == null) {
+				tokenNames[i] = "<INVALID>";
+			}
+		}
+	}
+
 	public final RecordCountContext recordCount() throws RecognitionException {
 		RecordCountContext _localctx = new RecordCountContext(_ctx, getState());
 		enterRule(_localctx, 0, RULE_recordCount);
@@ -316,6 +302,13 @@ public class MonsterSpellGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	static {
+		_decisionToDFA = new DFA[_ATN.getNumberOfDecisions()];
+		for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
+			_decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
+		}
 	}
 
 	public final NameContext name() throws RecognitionException {
@@ -342,6 +335,11 @@ public class MonsterSpellGrammar extends Parser {
 		return _localctx;
 	}
 
+	public MonsterSpellGrammar(TokenStream input) {
+		super(input);
+		_interp = new ParserATNSimulator(this,_ATN,_decisionToDFA,_sharedContextCache);
+	}
+
 	public final MsgtContext msgt() throws RecognitionException {
 		MsgtContext _localctx = new MsgtContext(_ctx, getState());
 		enterRule(_localctx, 4, RULE_msgt);
@@ -353,6 +351,83 @@ public class MonsterSpellGrammar extends Parser {
 			setState(55);
 			((MsgtContext)_localctx).STRING = match(STRING);
 			 ((MsgtContext)_localctx).msgTStr =  ((MsgtContext)_localctx).STRING.getText(); 
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	public final EffectContext effect() throws RecognitionException {
+		EffectContext _localctx = new EffectContext(_ctx, getState());
+		enterRule(_localctx, 32, RULE_effect);
+
+		            ((EffectContext)_localctx).wrapper =  "";
+		            ((EffectContext)_localctx).radius =  "";
+		            ((EffectContext)_localctx).other =  "";
+		        
+		int _la;
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(161);
+			match(EFFECT);
+			setState(162);
+			((EffectContext)_localctx).t = match(UCASE);
+
+			                ((EffectContext)_localctx).type =  ((EffectContext)_localctx).t.getText();
+			            
+			setState(177);
+			_errHandler.sync(this);
+			_la = _input.LA(1);
+			if (_la==COLON) {
+				{
+				setState(164);
+				match(COLON);
+				setState(165);
+				((EffectContext)_localctx).st = match(UCASE);
+
+				                ((EffectContext)_localctx).wrapper =  ((EffectContext)_localctx).st.getText();
+				            
+				setState(175);
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+				if (_la==COLON) {
+					{
+					setState(167);
+					match(COLON);
+					setState(168);
+					((EffectContext)_localctx).rad = match(INTEGER);
+
+					                ((EffectContext)_localctx).radius =  ((EffectContext)_localctx).rad.getText();
+					            
+					setState(173);
+					_errHandler.sync(this);
+					_la = _input.LA(1);
+					if (_la==COLON) {
+						{
+						setState(170);
+						match(COLON);
+						setState(171);
+						((EffectContext)_localctx).oth = match(INTEGER);
+
+						                ((EffectContext)_localctx).other =  ((EffectContext)_localctx).oth.getText();
+						            
+						}
+					}
+
+					}
+				}
+
+				}
+			}
+
 			}
 		}
 		catch (RecognitionException re) {
@@ -390,6 +465,34 @@ public class MonsterSpellGrammar extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class RecordCountContext extends ParserRuleContext {
+		public String count;
+		public Token INTEGER;
+		public RecordCountContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode RECORD_COUNT() { return getToken(MonsterSpellGrammar.RECORD_COUNT, 0); }
+
+		public TerminalNode INTEGER() { return getToken(MonsterSpellGrammar.INTEGER, 0); }
+
+		@Override public int getRuleIndex() { return RULE_recordCount; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).enterRecordCount(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).exitRecordCount(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof MonsterSpellGrammarVisitor ) return ((MonsterSpellGrammarVisitor<? extends T>)visitor).visitRecordCount(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final PowerCutoffContext powerCutoff() throws RecognitionException {
 		PowerCutoffContext _localctx = new PowerCutoffContext(_ctx, getState());
 		enterRule(_localctx, 8, RULE_powerCutoff);
@@ -412,6 +515,35 @@ public class MonsterSpellGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class NameContext extends ParserRuleContext {
+		public String nameStr;
+		public int line;
+		public Token STRING;
+		public NameContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode NAME() { return getToken(MonsterSpellGrammar.NAME, 0); }
+
+		public TerminalNode STRING() { return getToken(MonsterSpellGrammar.STRING, 0); }
+
+		@Override public int getRuleIndex() { return RULE_name; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).enterName(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).exitName(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof MonsterSpellGrammarVisitor ) return ((MonsterSpellGrammarVisitor<? extends T>)visitor).visitName(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final LoreContext lore() throws RecognitionException {
@@ -438,6 +570,34 @@ public class MonsterSpellGrammar extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class MsgtContext extends ParserRuleContext {
+		public String msgTStr;
+		public Token STRING;
+		public MsgtContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode MSGT() { return getToken(MonsterSpellGrammar.MSGT, 0); }
+
+		public TerminalNode STRING() { return getToken(MonsterSpellGrammar.STRING, 0); }
+
+		@Override public int getRuleIndex() { return RULE_msgt; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).enterMsgt(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).exitMsgt(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof MonsterSpellGrammarVisitor ) return ((MonsterSpellGrammarVisitor<? extends T>)visitor).visitMsgt(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final LoreColourBaseContext loreColourBase() throws RecognitionException {
 		LoreColourBaseContext _localctx = new LoreColourBaseContext(_ctx, getState());
 		enterRule(_localctx, 12, RULE_loreColourBase);
@@ -460,6 +620,34 @@ public class MonsterSpellGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class HitContext extends ParserRuleContext {
+		public String hitVal;
+		public Token INTEGER;
+		public HitContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode HIT() { return getToken(MonsterSpellGrammar.HIT, 0); }
+
+		public TerminalNode INTEGER() { return getToken(MonsterSpellGrammar.INTEGER, 0); }
+
+		@Override public int getRuleIndex() { return RULE_hit; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).enterHit(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).exitHit(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof MonsterSpellGrammarVisitor ) return ((MonsterSpellGrammarVisitor<? extends T>)visitor).visitHit(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final LoreColourResistContext loreColourResist() throws RecognitionException {
@@ -486,6 +674,34 @@ public class MonsterSpellGrammar extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class PowerCutoffContext extends ParserRuleContext {
+		public String cutoffVal;
+		public Token INTEGER;
+		public PowerCutoffContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode POWER_CUTOFF() { return getToken(MonsterSpellGrammar.POWER_CUTOFF, 0); }
+
+		public TerminalNode INTEGER() { return getToken(MonsterSpellGrammar.INTEGER, 0); }
+
+		@Override public int getRuleIndex() { return RULE_powerCutoff; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).enterPowerCutoff(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).exitPowerCutoff(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof MonsterSpellGrammarVisitor ) return ((MonsterSpellGrammarVisitor<? extends T>)visitor).visitPowerCutoff(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final LoreColourImmuneContext loreColourImmune() throws RecognitionException {
 		LoreColourImmuneContext _localctx = new LoreColourImmuneContext(_ctx, getState());
 		enterRule(_localctx, 16, RULE_loreColourImmune);
@@ -508,6 +724,34 @@ public class MonsterSpellGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class LoreContext extends ParserRuleContext {
+		public String loreStr;
+		public Token STRING;
+		public LoreContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode LORE() { return getToken(MonsterSpellGrammar.LORE, 0); }
+
+		public TerminalNode STRING() { return getToken(MonsterSpellGrammar.STRING, 0); }
+
+		@Override public int getRuleIndex() { return RULE_lore; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).enterLore(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).exitLore(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof MonsterSpellGrammarVisitor ) return ((MonsterSpellGrammarVisitor<? extends T>)visitor).visitLore(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final MessageSaveContext messageSave() throws RecognitionException {
@@ -534,6 +778,34 @@ public class MonsterSpellGrammar extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class LoreColourBaseContext extends ParserRuleContext {
+		public String colourBase;
+		public Token STRING;
+		public LoreColourBaseContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode LORE_COLOUR_BASE() { return getToken(MonsterSpellGrammar.LORE_COLOUR_BASE, 0); }
+
+		public TerminalNode STRING() { return getToken(MonsterSpellGrammar.STRING, 0); }
+
+		@Override public int getRuleIndex() { return RULE_loreColourBase; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).enterLoreColourBase(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).exitLoreColourBase(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof MonsterSpellGrammarVisitor ) return ((MonsterSpellGrammarVisitor<? extends T>)visitor).visitLoreColourBase(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final MessageVisContext messageVis() throws RecognitionException {
 		MessageVisContext _localctx = new MessageVisContext(_ctx, getState());
 		enterRule(_localctx, 20, RULE_messageVis);
@@ -556,6 +828,34 @@ public class MonsterSpellGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class LoreColourResistContext extends ParserRuleContext {
+		public String colourResist;
+		public Token STRING;
+		public LoreColourResistContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode LORE_COLOUR_RESIST() { return getToken(MonsterSpellGrammar.LORE_COLOUR_RESIST, 0); }
+
+		public TerminalNode STRING() { return getToken(MonsterSpellGrammar.STRING, 0); }
+
+		@Override public int getRuleIndex() { return RULE_loreColourResist; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).enterLoreColourResist(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).exitLoreColourResist(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof MonsterSpellGrammarVisitor ) return ((MonsterSpellGrammarVisitor<? extends T>)visitor).visitLoreColourResist(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final MessageInvisContext messageInvis() throws RecognitionException {
@@ -582,6 +882,34 @@ public class MonsterSpellGrammar extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class LoreColourImmuneContext extends ParserRuleContext {
+		public String colourImmune;
+		public Token STRING;
+		public LoreColourImmuneContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode LORE_COLOUR_IMMUNE() { return getToken(MonsterSpellGrammar.LORE_COLOUR_IMMUNE, 0); }
+
+		public TerminalNode STRING() { return getToken(MonsterSpellGrammar.STRING, 0); }
+
+		@Override public int getRuleIndex() { return RULE_loreColourImmune; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).enterLoreColourImmune(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).exitLoreColourImmune(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof MonsterSpellGrammarVisitor ) return ((MonsterSpellGrammarVisitor<? extends T>)visitor).visitLoreColourImmune(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final MessageMissContext messageMiss() throws RecognitionException {
 		MessageMissContext _localctx = new MessageMissContext(_ctx, getState());
 		enterRule(_localctx, 24, RULE_messageMiss);
@@ -604,6 +932,34 @@ public class MonsterSpellGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class MessageSaveContext extends ParserRuleContext {
+		public String saveMsg;
+		public Token STRING;
+		public MessageSaveContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode MESSAGE_SAVE() { return getToken(MonsterSpellGrammar.MESSAGE_SAVE, 0); }
+
+		public TerminalNode STRING() { return getToken(MonsterSpellGrammar.STRING, 0); }
+
+		@Override public int getRuleIndex() { return RULE_messageSave; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).enterMessageSave(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).exitMessageSave(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof MonsterSpellGrammarVisitor ) return ((MonsterSpellGrammarVisitor<? extends T>)visitor).visitMessageSave(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final PowerCutoffBlockContext powerCutoffBlock() throws RecognitionException {
@@ -725,6 +1081,34 @@ public class MonsterSpellGrammar extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class MessageVisContext extends ParserRuleContext {
+		public String visMsg;
+		public Token STRING;
+		public MessageVisContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode MESSAGE_VIS() { return getToken(MonsterSpellGrammar.MESSAGE_VIS, 0); }
+
+		public TerminalNode STRING() { return getToken(MonsterSpellGrammar.STRING, 0); }
+
+		@Override public int getRuleIndex() { return RULE_messageVis; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).enterMessageVis(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).exitMessageVis(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof MonsterSpellGrammarVisitor ) return ((MonsterSpellGrammarVisitor<? extends T>)visitor).visitMessageVis(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final MonsterSpellContext monsterSpell() throws RecognitionException {
 		MonsterSpellContext _localctx = new MonsterSpellContext(_ctx, getState());
 		enterRule(_localctx, 28, RULE_monsterSpell);
@@ -823,6 +1207,34 @@ public class MonsterSpellGrammar extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class MessageInvisContext extends ParserRuleContext {
+		public String invisMsg;
+		public Token STRING;
+		public MessageInvisContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode MESSAGE_INVIS() { return getToken(MonsterSpellGrammar.MESSAGE_INVIS, 0); }
+
+		public TerminalNode STRING() { return getToken(MonsterSpellGrammar.STRING, 0); }
+
+		@Override public int getRuleIndex() { return RULE_messageInvis; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).enterMessageInvis(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).exitMessageInvis(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof MonsterSpellGrammarVisitor ) return ((MonsterSpellGrammarVisitor<? extends T>)visitor).visitMessageInvis(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final FileContext file() throws RecognitionException {
 		FileContext _localctx = new FileContext(_ctx, getState());
 		enterRule(_localctx, 30, RULE_file);
@@ -862,733 +1274,6 @@ public class MonsterSpellGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
-	}
-
-	public final EffectContext effect() throws RecognitionException {
-		EffectContext _localctx = new EffectContext(_ctx, getState());
-		enterRule(_localctx, 32, RULE_effect);
-
-		            ((EffectContext)_localctx).wrapper =  "";
-		            ((EffectContext)_localctx).radius =  "";
-		            ((EffectContext)_localctx).other =  "";
-		        
-		int _la;
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(161);
-			match(EFFECT);
-			setState(162);
-			((EffectContext)_localctx).t = match(UCASE);
-
-			                ((EffectContext)_localctx).type =  ((EffectContext)_localctx).t.getText();
-			            
-			setState(177);
-			_errHandler.sync(this);
-			_la = _input.LA(1);
-			if (_la==COLON) {
-				{
-				setState(164);
-				match(COLON);
-				setState(165);
-				((EffectContext)_localctx).st = match(UCASE);
-
-				                ((EffectContext)_localctx).wrapper =  ((EffectContext)_localctx).st.getText().toUpperCase();
-				            
-				setState(175);
-				_errHandler.sync(this);
-				_la = _input.LA(1);
-				if (_la==COLON) {
-					{
-					setState(167);
-					match(COLON);
-					setState(168);
-					((EffectContext)_localctx).rad = match(INTEGER);
-
-					                ((EffectContext)_localctx).radius =  ((EffectContext)_localctx).rad.getText();
-					            
-					setState(173);
-					_errHandler.sync(this);
-					_la = _input.LA(1);
-					if (_la==COLON) {
-						{
-						setState(170);
-						match(COLON);
-						setState(171);
-						((EffectContext)_localctx).oth = match(INTEGER);
-
-						                ((EffectContext)_localctx).other =  ((EffectContext)_localctx).oth.getText();
-						            
-						}
-					}
-
-					}
-				}
-
-				}
-			}
-
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	public final EffectYXContext effectYX() throws RecognitionException {
-		EffectYXContext _localctx = new EffectYXContext(_ctx, getState());
-		enterRule(_localctx, 34, RULE_effectYX);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(179);
-			match(EFFECT_YX);
-			setState(180);
-			((EffectYXContext)_localctx).yVal = match(INTEGER);
-			setState(181);
-			match(COLON);
-			setState(182);
-			((EffectYXContext)_localctx).xVal = match(INTEGER);
-
-			                ((EffectYXContext)_localctx).y =  ((EffectYXContext)_localctx).yVal.getText();
-			                ((EffectYXContext)_localctx).x =  ((EffectYXContext)_localctx).xVal.getText();
-			            
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	public final DiceContext dice() throws RecognitionException {
-		DiceContext _localctx = new DiceContext(_ctx, getState());
-		enterRule(_localctx, 36, RULE_dice);
-
-		            String charHolder = "";
-		            String baseHolder = "";
-		            String operHolder = "";
-		            ((DiceContext)_localctx).diceString =  "";
-		            ((DiceContext)_localctx).exprChar =  "";
-		            ((DiceContext)_localctx).baseName =  "";
-		            ((DiceContext)_localctx).operation =  "";
-		        
-		int _la;
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(185);
-			match(DICE);
-			setState(197);
-			_errHandler.sync(this);
-			switch (_input.LA(1)) {
-			case DICE_COMPLEX_VALUE:
-				{
-				{
-				setState(186);
-				((DiceContext)_localctx).val = match(DICE_COMPLEX_VALUE);
-
-				                ((DiceContext)_localctx).diceString =  ((DiceContext)_localctx).val.getText();
-				            
-				setState(191); 
-				_errHandler.sync(this);
-				_la = _input.LA(1);
-				do {
-					{
-					{
-					setState(188);
-					((DiceContext)_localctx).expr = expr();
-
-					                if (charHolder.isEmpty()) {
-					                    charHolder = ((DiceContext)_localctx).expr.exprChar;
-					                    baseHolder = ((DiceContext)_localctx).expr.baseName;
-					                    operHolder = ((DiceContext)_localctx).expr.operation;
-					                } else {
-					                    charHolder = charHolder + "^" + ((DiceContext)_localctx).expr.exprChar;
-					                    baseHolder = baseHolder + "^" + ((DiceContext)_localctx).expr.baseName;
-					                    operHolder = operHolder + "^" + ((DiceContext)_localctx).expr.operation;
-					                }
-					            
-					}
-					}
-					setState(193); 
-					_errHandler.sync(this);
-					_la = _input.LA(1);
-				} while ( _la==EXPR );
-				}
-				}
-				break;
-			case DICE_SIMPLE_VALUE:
-				{
-				setState(195);
-				((DiceContext)_localctx).val = match(DICE_SIMPLE_VALUE);
-
-				                ((DiceContext)_localctx).diceString =  ((DiceContext)_localctx).val.getText();
-				            
-				}
-				break;
-			default:
-				throw new NoViableAltException(this);
-			}
-			}
-			_ctx.stop = _input.LT(-1);
-
-			            ((DiceContext)_localctx).exprChar =  charHolder;
-			            ((DiceContext)_localctx).baseName =  baseHolder;
-			            ((DiceContext)_localctx).operation =  operHolder;
-			        
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	public final ExprContext expr() throws RecognitionException {
-		ExprContext _localctx = new ExprContext(_ctx, getState());
-		enterRule(_localctx, 38, RULE_expr);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(199);
-			match(EXPR);
-			setState(200);
-			((ExprContext)_localctx).ch = match(EXPR_CHAR);
-			setState(201);
-			match(EXPR_COLON);
-			setState(202);
-			((ExprContext)_localctx).base = match(EXPR_UCASE);
-			setState(203);
-			match(EXPR_COLON);
-			setState(204);
-			((ExprContext)_localctx).op = match(EXPR_OP);
-
-			                ((ExprContext)_localctx).exprChar =  ((ExprContext)_localctx).ch.getText();
-			                ((ExprContext)_localctx).baseName =  ((ExprContext)_localctx).base.getText();
-			                ((ExprContext)_localctx).operation =  ((ExprContext)_localctx).op.getText();
-			            
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	public final EffectMsgContext effectMsg() throws RecognitionException {
-		EffectMsgContext _localctx = new EffectMsgContext(_ctx, getState());
-		enterRule(_localctx, 40, RULE_effectMsg);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(207);
-			match(EFFECT_MESSAGE);
-			setState(208);
-			((EffectMsgContext)_localctx).FREE_TEXT = match(FREE_TEXT);
-			 ((EffectMsgContext)_localctx).message =  ((EffectMsgContext)_localctx).FREE_TEXT.getText(); 
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	public final TimeContext time() throws RecognitionException {
-		TimeContext _localctx = new TimeContext(_ctx, getState());
-		enterRule(_localctx, 42, RULE_time);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(211);
-			match(TIME);
-			setState(212);
-			((TimeContext)_localctx).DICE_SIMPLE_VALUE = match(DICE_SIMPLE_VALUE);
-			 ((TimeContext)_localctx).timeStr =  ((TimeContext)_localctx).DICE_SIMPLE_VALUE.getText(); 
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	public final EffectBlockContext effectBlock() throws RecognitionException {
-		EffectBlockContext _localctx = new EffectBlockContext(_ctx, getState());
-		enterRule(_localctx, 44, RULE_effectBlock);
-
-		            String expressionString = "";
-		            String baseString = "";
-		            String opString = "";
-		            ((EffectBlockContext)_localctx).diceString =  "";
-		            ((EffectBlockContext)_localctx).yVal =  "";
-		            ((EffectBlockContext)_localctx).xVal =  "";
-		            ((EffectBlockContext)_localctx).effectMessage =  "";
-		        
-		int _la;
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(215);
-			((EffectBlockContext)_localctx).effect = effect();
-
-			                ((EffectBlockContext)_localctx).lineNo =  _localctx.start.getLine();
-			                ((EffectBlockContext)_localctx).typeInit =  ((EffectBlockContext)_localctx).effect.type;
-			                ((EffectBlockContext)_localctx).subtypeWrapperInit =  ((EffectBlockContext)_localctx).effect.wrapper;
-			                ((EffectBlockContext)_localctx).radius =  ((EffectBlockContext)_localctx).effect.radius;
-			                ((EffectBlockContext)_localctx).other =  ((EffectBlockContext)_localctx).effect.other;
-			            
-			setState(225);
-			_errHandler.sync(this);
-			switch (_input.LA(1)) {
-			case EFFECT_YX:
-				{
-				{
-				setState(217);
-				((EffectBlockContext)_localctx).effectYX = effectYX();
-
-				                ((EffectBlockContext)_localctx).yVal =  ((EffectBlockContext)_localctx).effectYX.y;
-				                ((EffectBlockContext)_localctx).xVal =  ((EffectBlockContext)_localctx).effectYX.x;
-				            
-				}
-				}
-				break;
-			case EOF:
-			case NAME:
-			case MSGT:
-			case HIT:
-			case POWER_CUTOFF:
-			case LORE:
-			case LORE_COLOUR_BASE:
-			case LORE_COLOUR_RESIST:
-			case LORE_COLOUR_IMMUNE:
-			case MESSAGE_SAVE:
-			case MESSAGE_VIS:
-			case MESSAGE_INVIS:
-			case MESSAGE_MISS:
-			case EFFECT:
-			case EFFECT_MESSAGE:
-			case DICE:
-				{
-				{
-				setState(223);
-				_errHandler.sync(this);
-				_la = _input.LA(1);
-				if (_la==DICE) {
-					{
-					setState(220);
-					((EffectBlockContext)_localctx).dice = dice();
-
-					                ((EffectBlockContext)_localctx).diceString =  ((EffectBlockContext)_localctx).dice.diceString;
-					                expressionString = ((EffectBlockContext)_localctx).dice.exprChar;
-					                baseString = ((EffectBlockContext)_localctx).dice.baseName;
-					                opString = ((EffectBlockContext)_localctx).dice.operation;
-					            
-					}
-				}
-
-				}
-				}
-				break;
-			default:
-				throw new NoViableAltException(this);
-			}
-			setState(230);
-			_errHandler.sync(this);
-			_la = _input.LA(1);
-			if (_la==EFFECT_MESSAGE) {
-				{
-				setState(227);
-				((EffectBlockContext)_localctx).effectMsg = effectMsg();
-				 ((EffectBlockContext)_localctx).effectMessage =  ((EffectBlockContext)_localctx).effectMsg.message; 
-				}
-			}
-
-			}
-			_ctx.stop = _input.LT(-1);
-
-			            ((EffectBlockContext)_localctx).expressionChars =  expressionString;
-			            ((EffectBlockContext)_localctx).expressionBase =  baseString;
-			            ((EffectBlockContext)_localctx).expressionOperation =  opString;
-			        
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class RecordCountContext extends ParserRuleContext {
-		public String count;
-		public Token INTEGER;
-		public RecordCountContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode RECORD_COUNT() { return getToken(MonsterSpellGrammar.RECORD_COUNT, 0); }
-
-		public TerminalNode INTEGER() { return getToken(MonsterSpellGrammar.INTEGER, 0); }
-
-		@Override public int getRuleIndex() { return RULE_recordCount; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).enterRecordCount(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).exitRecordCount(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof MonsterSpellGrammarVisitor ) return ((MonsterSpellGrammarVisitor<? extends T>)visitor).visitRecordCount(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class NameContext extends ParserRuleContext {
-		public String nameStr;
-		public int line;
-		public Token STRING;
-		public NameContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode NAME() { return getToken(MonsterSpellGrammar.NAME, 0); }
-
-		public TerminalNode STRING() { return getToken(MonsterSpellGrammar.STRING, 0); }
-
-		@Override public int getRuleIndex() { return RULE_name; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).enterName(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).exitName(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof MonsterSpellGrammarVisitor ) return ((MonsterSpellGrammarVisitor<? extends T>)visitor).visitName(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class MsgtContext extends ParserRuleContext {
-		public String msgTStr;
-		public Token STRING;
-		public MsgtContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode MSGT() { return getToken(MonsterSpellGrammar.MSGT, 0); }
-
-		public TerminalNode STRING() { return getToken(MonsterSpellGrammar.STRING, 0); }
-
-		@Override public int getRuleIndex() { return RULE_msgt; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).enterMsgt(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).exitMsgt(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof MonsterSpellGrammarVisitor ) return ((MonsterSpellGrammarVisitor<? extends T>)visitor).visitMsgt(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class HitContext extends ParserRuleContext {
-		public String hitVal;
-		public Token INTEGER;
-		public HitContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode HIT() { return getToken(MonsterSpellGrammar.HIT, 0); }
-
-		public TerminalNode INTEGER() { return getToken(MonsterSpellGrammar.INTEGER, 0); }
-
-		@Override public int getRuleIndex() { return RULE_hit; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).enterHit(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).exitHit(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof MonsterSpellGrammarVisitor ) return ((MonsterSpellGrammarVisitor<? extends T>)visitor).visitHit(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class PowerCutoffContext extends ParserRuleContext {
-		public String cutoffVal;
-		public Token INTEGER;
-		public PowerCutoffContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode POWER_CUTOFF() { return getToken(MonsterSpellGrammar.POWER_CUTOFF, 0); }
-
-		public TerminalNode INTEGER() { return getToken(MonsterSpellGrammar.INTEGER, 0); }
-
-		@Override public int getRuleIndex() { return RULE_powerCutoff; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).enterPowerCutoff(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).exitPowerCutoff(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof MonsterSpellGrammarVisitor ) return ((MonsterSpellGrammarVisitor<? extends T>)visitor).visitPowerCutoff(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class LoreContext extends ParserRuleContext {
-		public String loreStr;
-		public Token STRING;
-		public LoreContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode LORE() { return getToken(MonsterSpellGrammar.LORE, 0); }
-
-		public TerminalNode STRING() { return getToken(MonsterSpellGrammar.STRING, 0); }
-
-		@Override public int getRuleIndex() { return RULE_lore; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).enterLore(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).exitLore(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof MonsterSpellGrammarVisitor ) return ((MonsterSpellGrammarVisitor<? extends T>)visitor).visitLore(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class LoreColourBaseContext extends ParserRuleContext {
-		public String colourBase;
-		public Token STRING;
-		public LoreColourBaseContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode LORE_COLOUR_BASE() { return getToken(MonsterSpellGrammar.LORE_COLOUR_BASE, 0); }
-
-		public TerminalNode STRING() { return getToken(MonsterSpellGrammar.STRING, 0); }
-
-		@Override public int getRuleIndex() { return RULE_loreColourBase; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).enterLoreColourBase(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).exitLoreColourBase(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof MonsterSpellGrammarVisitor ) return ((MonsterSpellGrammarVisitor<? extends T>)visitor).visitLoreColourBase(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class LoreColourResistContext extends ParserRuleContext {
-		public String colourResist;
-		public Token STRING;
-		public LoreColourResistContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode LORE_COLOUR_RESIST() { return getToken(MonsterSpellGrammar.LORE_COLOUR_RESIST, 0); }
-
-		public TerminalNode STRING() { return getToken(MonsterSpellGrammar.STRING, 0); }
-
-		@Override public int getRuleIndex() { return RULE_loreColourResist; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).enterLoreColourResist(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).exitLoreColourResist(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof MonsterSpellGrammarVisitor ) return ((MonsterSpellGrammarVisitor<? extends T>)visitor).visitLoreColourResist(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class LoreColourImmuneContext extends ParserRuleContext {
-		public String colourImmune;
-		public Token STRING;
-		public LoreColourImmuneContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode LORE_COLOUR_IMMUNE() { return getToken(MonsterSpellGrammar.LORE_COLOUR_IMMUNE, 0); }
-
-		public TerminalNode STRING() { return getToken(MonsterSpellGrammar.STRING, 0); }
-
-		@Override public int getRuleIndex() { return RULE_loreColourImmune; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).enterLoreColourImmune(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).exitLoreColourImmune(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof MonsterSpellGrammarVisitor ) return ((MonsterSpellGrammarVisitor<? extends T>)visitor).visitLoreColourImmune(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class MessageSaveContext extends ParserRuleContext {
-		public String saveMsg;
-		public Token STRING;
-		public MessageSaveContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode MESSAGE_SAVE() { return getToken(MonsterSpellGrammar.MESSAGE_SAVE, 0); }
-
-		public TerminalNode STRING() { return getToken(MonsterSpellGrammar.STRING, 0); }
-
-		@Override public int getRuleIndex() { return RULE_messageSave; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).enterMessageSave(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).exitMessageSave(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof MonsterSpellGrammarVisitor ) return ((MonsterSpellGrammarVisitor<? extends T>)visitor).visitMessageSave(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class MessageVisContext extends ParserRuleContext {
-		public String visMsg;
-		public Token STRING;
-		public MessageVisContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode MESSAGE_VIS() { return getToken(MonsterSpellGrammar.MESSAGE_VIS, 0); }
-
-		public TerminalNode STRING() { return getToken(MonsterSpellGrammar.STRING, 0); }
-
-		@Override public int getRuleIndex() { return RULE_messageVis; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).enterMessageVis(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).exitMessageVis(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof MonsterSpellGrammarVisitor ) return ((MonsterSpellGrammarVisitor<? extends T>)visitor).visitMessageVis(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class MessageInvisContext extends ParserRuleContext {
-		public String invisMsg;
-		public Token STRING;
-		public MessageInvisContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode MESSAGE_INVIS() { return getToken(MonsterSpellGrammar.MESSAGE_INVIS, 0); }
-
-		public TerminalNode STRING() { return getToken(MonsterSpellGrammar.STRING, 0); }
-
-		@Override public int getRuleIndex() { return RULE_messageInvis; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).enterMessageInvis(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).exitMessageInvis(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof MonsterSpellGrammarVisitor ) return ((MonsterSpellGrammarVisitor<? extends T>)visitor).visitMessageInvis(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	@SuppressWarnings("CheckReturnValue")
@@ -1792,6 +1477,37 @@ public class MonsterSpellGrammar extends Parser {
 		}
 	}
 
+	public final EffectYXContext effectYX() throws RecognitionException {
+		EffectYXContext _localctx = new EffectYXContext(_ctx, getState());
+		enterRule(_localctx, 34, RULE_effectYX);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(179);
+			match(EFFECT_YX);
+			setState(180);
+			((EffectYXContext)_localctx).yVal = match(INTEGER);
+			setState(181);
+			match(COLON);
+			setState(182);
+			((EffectYXContext)_localctx).xVal = match(INTEGER);
+
+			                ((EffectYXContext)_localctx).y =  ((EffectYXContext)_localctx).yVal.getText();
+			                ((EffectYXContext)_localctx).x =  ((EffectYXContext)_localctx).xVal.getText();
+			            
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
 	@SuppressWarnings("CheckReturnValue")
 	public static class FileContext extends ParserRuleContext {
 		public String declaredRecordCount;
@@ -1830,6 +1546,94 @@ public class MonsterSpellGrammar extends Parser {
 			if ( visitor instanceof MonsterSpellGrammarVisitor ) return ((MonsterSpellGrammarVisitor<? extends T>)visitor).visitFile(this);
 			else return visitor.visitChildren(this);
 		}
+	}
+
+	public final DiceContext dice() throws RecognitionException {
+		DiceContext _localctx = new DiceContext(_ctx, getState());
+		enterRule(_localctx, 36, RULE_dice);
+
+		            String charHolder = "";
+		            String baseHolder = "";
+		            String operHolder = "";
+		            ((DiceContext)_localctx).diceString =  "";
+		            ((DiceContext)_localctx).exprChar =  "";
+		            ((DiceContext)_localctx).baseName =  "";
+		            ((DiceContext)_localctx).operation =  "";
+		        
+		int _la;
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(185);
+			match(DICE);
+			setState(197);
+			_errHandler.sync(this);
+			switch (_input.LA(1)) {
+			case DICE_COMPLEX_VALUE:
+				{
+				{
+				setState(186);
+				((DiceContext)_localctx).val = match(DICE_COMPLEX_VALUE);
+
+				                ((DiceContext)_localctx).diceString =  ((DiceContext)_localctx).val.getText();
+				            
+				setState(191); 
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+				do {
+					{
+					{
+					setState(188);
+					((DiceContext)_localctx).expr = expr();
+
+					                if (charHolder.isEmpty()) {
+					                    charHolder = ((DiceContext)_localctx).expr.exprChar;
+					                    baseHolder = ((DiceContext)_localctx).expr.baseName;
+					                    operHolder = ((DiceContext)_localctx).expr.operation;
+					                } else {
+					                    charHolder = charHolder + "^" + ((DiceContext)_localctx).expr.exprChar;
+					                    baseHolder = baseHolder + "^" + ((DiceContext)_localctx).expr.baseName;
+					                    operHolder = operHolder + "^" + ((DiceContext)_localctx).expr.operation;
+					                }
+					            
+					}
+					}
+					setState(193); 
+					_errHandler.sync(this);
+					_la = _input.LA(1);
+				} while ( _la==EXPR );
+				}
+				}
+				break;
+			case DICE_SIMPLE_VALUE:
+				{
+				setState(195);
+				((DiceContext)_localctx).val = match(DICE_SIMPLE_VALUE);
+
+				                ((DiceContext)_localctx).diceString =  ((DiceContext)_localctx).val.getText();
+				            
+				}
+				break;
+			default:
+				throw new NoViableAltException(this);
+			}
+			}
+			_ctx.stop = _input.LT(-1);
+
+			            ((DiceContext)_localctx).exprChar =  charHolder;
+			            ((DiceContext)_localctx).baseName =  baseHolder;
+			            ((DiceContext)_localctx).operation =  operHolder;
+			        
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
 	}
 
 	@SuppressWarnings("CheckReturnValue")
@@ -1882,6 +1686,42 @@ public class MonsterSpellGrammar extends Parser {
 		}
 	}
 
+	public final ExprContext expr() throws RecognitionException {
+		ExprContext _localctx = new ExprContext(_ctx, getState());
+		enterRule(_localctx, 38, RULE_expr);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(199);
+			match(EXPR);
+			setState(200);
+			((ExprContext)_localctx).ch = match(EXPR_CHAR);
+			setState(201);
+			match(EXPR_COLON);
+			setState(202);
+			((ExprContext)_localctx).base = match(EXPR_UCASE);
+			setState(203);
+			match(EXPR_COLON);
+			setState(204);
+			((ExprContext)_localctx).op = match(EXPR_OP);
+
+			                ((ExprContext)_localctx).exprChar =  ((ExprContext)_localctx).ch.getText();
+			                ((ExprContext)_localctx).baseName =  ((ExprContext)_localctx).base.getText();
+			                ((ExprContext)_localctx).operation =  ((ExprContext)_localctx).op.getText();
+			            
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
 	@SuppressWarnings("CheckReturnValue")
 	public static class EffectYXContext extends ParserRuleContext {
 		public String y;
@@ -1916,6 +1756,30 @@ public class MonsterSpellGrammar extends Parser {
 			if ( visitor instanceof MonsterSpellGrammarVisitor ) return ((MonsterSpellGrammarVisitor<? extends T>)visitor).visitEffectYX(this);
 			else return visitor.visitChildren(this);
 		}
+	}
+
+	public final EffectMsgContext effectMsg() throws RecognitionException {
+		EffectMsgContext _localctx = new EffectMsgContext(_ctx, getState());
+		enterRule(_localctx, 40, RULE_effectMsg);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(207);
+			match(EFFECT_MESSAGE);
+			setState(208);
+			((EffectMsgContext)_localctx).FREE_TEXT = match(FREE_TEXT);
+			 ((EffectMsgContext)_localctx).message =  ((EffectMsgContext)_localctx).FREE_TEXT.getText(); 
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
 	}
 
 	@SuppressWarnings("CheckReturnValue")
@@ -1960,6 +1824,30 @@ public class MonsterSpellGrammar extends Parser {
 		}
 	}
 
+	public final TimeContext time() throws RecognitionException {
+		TimeContext _localctx = new TimeContext(_ctx, getState());
+		enterRule(_localctx, 42, RULE_time);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(211);
+			match(TIME);
+			setState(212);
+			((TimeContext)_localctx).DICE_SIMPLE_VALUE = match(DICE_SIMPLE_VALUE);
+			 ((TimeContext)_localctx).timeStr =  ((TimeContext)_localctx).DICE_SIMPLE_VALUE.getText(); 
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
 	@SuppressWarnings("CheckReturnValue")
 	public static class ExprContext extends ParserRuleContext {
 		public String exprChar;
@@ -2000,6 +1888,116 @@ public class MonsterSpellGrammar extends Parser {
 			if ( visitor instanceof MonsterSpellGrammarVisitor ) return ((MonsterSpellGrammarVisitor<? extends T>)visitor).visitExpr(this);
 			else return visitor.visitChildren(this);
 		}
+	}
+
+	public final EffectBlockContext effectBlock() throws RecognitionException {
+		EffectBlockContext _localctx = new EffectBlockContext(_ctx, getState());
+		enterRule(_localctx, 44, RULE_effectBlock);
+
+		            String expressionString = "";
+		            String baseString = "";
+		            String opString = "";
+		            ((EffectBlockContext)_localctx).diceString =  "";
+		            ((EffectBlockContext)_localctx).yVal =  "";
+		            ((EffectBlockContext)_localctx).xVal =  "";
+		            ((EffectBlockContext)_localctx).effectMessage =  "";
+		        
+		int _la;
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(215);
+			((EffectBlockContext)_localctx).effect = effect();
+
+			                ((EffectBlockContext)_localctx).lineNo =  _localctx.start.getLine();
+			                ((EffectBlockContext)_localctx).typeInit =  ((EffectBlockContext)_localctx).effect.type;
+			                ((EffectBlockContext)_localctx).subtypeWrapperInit =  ((EffectBlockContext)_localctx).effect.wrapper;
+			                ((EffectBlockContext)_localctx).radius =  ((EffectBlockContext)_localctx).effect.radius;
+			                ((EffectBlockContext)_localctx).other =  ((EffectBlockContext)_localctx).effect.other;
+			            
+			setState(225);
+			_errHandler.sync(this);
+			switch (_input.LA(1)) {
+			case EFFECT_YX:
+				{
+				{
+				setState(217);
+				((EffectBlockContext)_localctx).effectYX = effectYX();
+
+				                ((EffectBlockContext)_localctx).yVal =  ((EffectBlockContext)_localctx).effectYX.y;
+				                ((EffectBlockContext)_localctx).xVal =  ((EffectBlockContext)_localctx).effectYX.x;
+				            
+				}
+				}
+				break;
+			case EOF:
+			case NAME:
+			case MSGT:
+			case HIT:
+			case POWER_CUTOFF:
+			case LORE:
+			case LORE_COLOUR_BASE:
+			case LORE_COLOUR_RESIST:
+			case LORE_COLOUR_IMMUNE:
+			case MESSAGE_SAVE:
+			case MESSAGE_VIS:
+			case MESSAGE_INVIS:
+			case MESSAGE_MISS:
+			case EFFECT:
+			case EFFECT_MESSAGE:
+			case DICE:
+				{
+				{
+				setState(223);
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+				if (_la==DICE) {
+					{
+					setState(220);
+					((EffectBlockContext)_localctx).dice = dice();
+
+					                ((EffectBlockContext)_localctx).diceString =  ((EffectBlockContext)_localctx).dice.diceString;
+					                expressionString = ((EffectBlockContext)_localctx).dice.exprChar;
+					                baseString = ((EffectBlockContext)_localctx).dice.baseName;
+					                opString = ((EffectBlockContext)_localctx).dice.operation;
+					            
+					}
+				}
+
+				}
+				}
+				break;
+			default:
+				throw new NoViableAltException(this);
+			}
+			setState(230);
+			_errHandler.sync(this);
+			_la = _input.LA(1);
+			if (_la==EFFECT_MESSAGE) {
+				{
+				setState(227);
+				((EffectBlockContext)_localctx).effectMsg = effectMsg();
+				 ((EffectBlockContext)_localctx).effectMessage =  ((EffectBlockContext)_localctx).effectMsg.message; 
+				}
+			}
+
+			}
+			_ctx.stop = _input.LT(-1);
+
+			            ((EffectBlockContext)_localctx).expressionChars =  expressionString;
+			            ((EffectBlockContext)_localctx).expressionBase =  baseString;
+			            ((EffectBlockContext)_localctx).expressionOperation =  opString;
+			        
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
 	}
 
 	@SuppressWarnings("CheckReturnValue")

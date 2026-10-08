@@ -221,6 +221,9 @@ class UIEntryValueRegistryTest {
         // CachedPlayerData.populateFlags unions the class's innate flags, as player_flags() does with
         // p->class->flags, so a player without a class is a state C never reaches.
         player.setClass(classWithFlags(new Flag<>(ObjectFlag.class)));
+        // Likewise with p->race->flags: the constructor leaves the race null, as C's init_player
+        // does, so the player needs one before playerFlags() can read it.
+        player.setRace(SeededPlayerRegistry.plainRace(player.getPlayerBody()));
         // playerFlags() reads PF_BRAVERY_30 off the calculated state, so it needs one even when empty.
         player.setState(new PlayerState());
         return player;

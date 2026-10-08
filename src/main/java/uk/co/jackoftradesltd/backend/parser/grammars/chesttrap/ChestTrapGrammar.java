@@ -35,17 +35,6 @@ import java.util.ArrayList;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue", "this-escape"})
 public class ChestTrapGrammar extends Parser {
-	public static final int
-		RECORD_COUNT=1, NAME=2, CODE=3, LEVEL=4, DESTROY=5, MAGIC=6, MSG=7, MSG_DEATH=8, 
-		COMMENT=9, EOL=10, EFFECT=11, EFFECT_MESSAGE=12, DICE=13, TIME=14, EFFECT_YX=15, 
-		EXPR=16, COLON=17, UCASE=18, INTEGER=19, SIMPLE_DICE_STRING=20, COMPLEX_DICE_STRING=21, 
-		STRING=22, ROL_EOL=23, FREE_TEXT=24, DICE_SIMPLE_VALUE=25, DICE_COMPLEX_VALUE=26, 
-		EXPR_CHAR=27, EXPR_COLON=28, EXPR_UCASE=29, EXPR_OP=30, EXPR_EOL=31;
-	public static final int
-		RULE_recordCount = 0, RULE_name = 1, RULE_code = 2, RULE_level = 3, RULE_destroy = 4, 
-		RULE_magic = 5, RULE_msg = 6, RULE_msgDeath = 7, RULE_chestTrap = 8, RULE_file = 9, 
-		RULE_effect = 10, RULE_effectYX = 11, RULE_dice = 12, RULE_expr = 13, 
-		RULE_effectMsg = 14, RULE_time = 15, RULE_effectBlock = 16;
 	public static final String[] ruleNames = makeRuleNames();
 	/**
 	 * @deprecated Use {@link #VOCABULARY} instead.
@@ -154,43 +143,17 @@ public class ChestTrapGrammar extends Parser {
 		"\u0000\u00ad\u00aa\u0001\u0000\u0000\u0000\u00ad\u00ae\u0001\u0000\u0000"+
 		"\u0000\u00ae!\u0001\u0000\u0000\u0000\u000bXZdtvx\u0088\u008c\u00a6\u00a8"+
 		"\u00ad";
-	public static final ATN _ATN =
-		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
-	protected static final DFA[] _decisionToDFA;
-	protected static final PredictionContextCache _sharedContextCache =
-		new PredictionContextCache();
-	private static final String[] _LITERAL_NAMES = makeLiteralNames();
-	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
-	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
-
-	static { RuntimeMetaData.checkVersion("4.13.2", RuntimeMetaData.VERSION); }
-
-	static {
-		tokenNames = new String[_SYMBOLIC_NAMES.length];
-		for (int i = 0; i < tokenNames.length; i++) {
-			tokenNames[i] = VOCABULARY.getLiteralName(i);
-			if (tokenNames[i] == null) {
-				tokenNames[i] = VOCABULARY.getSymbolicName(i);
-			}
-
-			if (tokenNames[i] == null) {
-				tokenNames[i] = "<INVALID>";
-			}
-		}
-	}
-
-	static {
-		_decisionToDFA = new DFA[_ATN.getNumberOfDecisions()];
-		for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
-			_decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
-		}
-	}
-
-	public ChestTrapGrammar(TokenStream input) {
-		super(input);
-		_interp = new ParserATNSimulator(this,_ATN,_decisionToDFA,_sharedContextCache);
-	}
-
+	public static final int
+		RECORD_COUNT=1, NAME=2, CODE=3, LEVEL=4, DESTROY=5, MAGIC=6, MSG=7, MSG_DEATH=8, 
+		COMMENT=9, EOL=10, EFFECT=11, EFFECT_MESSAGE=12, DICE=13, TIME=14, EFFECT_YX=15, 
+		EXPR=16, COLON=17, UCASE=18, INTEGER=19, SIMPLE_DICE_STRING=20, COMPLEX_DICE_STRING=21, 
+		STRING=22, ROL_EOL=23, FREE_TEXT=24, DICE_SIMPLE_VALUE=25, DICE_COMPLEX_VALUE=26, 
+		EXPR_CHAR=27, EXPR_COLON=28, EXPR_UCASE=29, EXPR_OP=30, EXPR_EOL=31;
+	public static final int
+		RULE_recordCount = 0, RULE_name = 1, RULE_code = 2, RULE_level = 3, RULE_destroy = 4, 
+		RULE_magic = 5, RULE_msg = 6, RULE_msgDeath = 7, RULE_chestTrap = 8, RULE_file = 9, 
+		RULE_effect = 10, RULE_effectYX = 11, RULE_dice = 12, RULE_expr = 13, 
+		RULE_effectMsg = 14, RULE_time = 15, RULE_effectBlock = 16;
 	private static String[] makeRuleNames() {
 		return new String[] {
 			"recordCount", "name", "code", "level", "destroy", "magic", "msg", "msgDeath", 
@@ -198,6 +161,8 @@ public class ChestTrapGrammar extends Parser {
 			"time", "effectBlock"
 		};
 	}
+	public static final ATN _ATN =
+		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 
 	private static String[] makeLiteralNames() {
 		return new String[] {
@@ -206,7 +171,7 @@ public class ChestTrapGrammar extends Parser {
 			"'dice:'", "'time:'", "'effect-yx:'", "'expr:'"
 		};
 	}
-
+	protected static final DFA[] _decisionToDFA;
 	private static String[] makeSymbolicNames() {
 		return new String[] {
 			null, "RECORD_COUNT", "NAME", "CODE", "LEVEL", "DESTROY", "MAGIC", "MSG", 
@@ -217,6 +182,11 @@ public class ChestTrapGrammar extends Parser {
 			"EXPR_EOL"
 		};
 	}
+	protected static final PredictionContextCache _sharedContextCache =
+		new PredictionContextCache();
+	private static final String[] _LITERAL_NAMES = makeLiteralNames();
+	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
+	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
 
 	@Override
 	@Deprecated
@@ -242,6 +212,22 @@ public class ChestTrapGrammar extends Parser {
 	@Override
 	public ATN getATN() { return _ATN; }
 
+	static { RuntimeMetaData.checkVersion("4.13.2", RuntimeMetaData.VERSION); }
+
+	static {
+		tokenNames = new String[_SYMBOLIC_NAMES.length];
+		for (int i = 0; i < tokenNames.length; i++) {
+			tokenNames[i] = VOCABULARY.getLiteralName(i);
+			if (tokenNames[i] == null) {
+				tokenNames[i] = VOCABULARY.getSymbolicName(i);
+			}
+
+			if (tokenNames[i] == null) {
+				tokenNames[i] = "<INVALID>";
+			}
+		}
+	}
+
 	public final RecordCountContext recordCount() throws RecognitionException {
 		RecordCountContext _localctx = new RecordCountContext(_ctx, getState());
 		enterRule(_localctx, 0, RULE_recordCount);
@@ -264,6 +250,13 @@ public class ChestTrapGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	static {
+		_decisionToDFA = new DFA[_ATN.getNumberOfDecisions()];
+		for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
+			_decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
+		}
 	}
 
 	public final NameContext name() throws RecognitionException {
@@ -293,6 +286,11 @@ public class ChestTrapGrammar extends Parser {
 		return _localctx;
 	}
 
+	public ChestTrapGrammar(TokenStream input) {
+		super(input);
+		_interp = new ParserATNSimulator(this,_ATN,_decisionToDFA,_sharedContextCache);
+	}
+
 	public final CodeContext code() throws RecognitionException {
 		CodeContext _localctx = new CodeContext(_ctx, getState());
 		enterRule(_localctx, 4, RULE_code);
@@ -304,6 +302,83 @@ public class ChestTrapGrammar extends Parser {
 			setState(43);
 			((CodeContext)_localctx).c = match(STRING);
 			 ((CodeContext)_localctx).codeStr =  ((CodeContext)_localctx).c.getText(); 
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	public final EffectContext effect() throws RecognitionException {
+		EffectContext _localctx = new EffectContext(_ctx, getState());
+		enterRule(_localctx, 20, RULE_effect);
+
+		            ((EffectContext)_localctx).wrapper =  "";
+		            ((EffectContext)_localctx).radius =  "";
+		            ((EffectContext)_localctx).other =  "";
+		        
+		int _la;
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(104);
+			match(EFFECT);
+			setState(105);
+			((EffectContext)_localctx).t = match(UCASE);
+
+			                ((EffectContext)_localctx).type =  ((EffectContext)_localctx).t.getText();
+			            
+			setState(120);
+			_errHandler.sync(this);
+			_la = _input.LA(1);
+			if (_la==COLON) {
+				{
+				setState(107);
+				match(COLON);
+				setState(108);
+				((EffectContext)_localctx).st = match(UCASE);
+
+				                ((EffectContext)_localctx).wrapper =  ((EffectContext)_localctx).st.getText();
+				            
+				setState(118);
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+				if (_la==COLON) {
+					{
+					setState(110);
+					match(COLON);
+					setState(111);
+					((EffectContext)_localctx).rad = match(INTEGER);
+
+					                ((EffectContext)_localctx).radius =  ((EffectContext)_localctx).rad.getText();
+					            
+					setState(116);
+					_errHandler.sync(this);
+					_la = _input.LA(1);
+					if (_la==COLON) {
+						{
+						setState(113);
+						match(COLON);
+						setState(114);
+						((EffectContext)_localctx).oth = match(INTEGER);
+
+						                ((EffectContext)_localctx).other =  ((EffectContext)_localctx).oth.getText();
+						            
+						}
+					}
+
+					}
+				}
+
+				}
+			}
+
 			}
 		}
 		catch (RecognitionException re) {
@@ -341,6 +416,34 @@ public class ChestTrapGrammar extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class RecordCountContext extends ParserRuleContext {
+		public String count;
+		public Token c;
+		public RecordCountContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode RECORD_COUNT() { return getToken(ChestTrapGrammar.RECORD_COUNT, 0); }
+
+		public TerminalNode INTEGER() { return getToken(ChestTrapGrammar.INTEGER, 0); }
+
+		@Override public int getRuleIndex() { return RULE_recordCount; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof ChestTrapGrammarListener ) ((ChestTrapGrammarListener)listener).enterRecordCount(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof ChestTrapGrammarListener ) ((ChestTrapGrammarListener)listener).exitRecordCount(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof ChestTrapGrammarVisitor ) return ((ChestTrapGrammarVisitor<? extends T>)visitor).visitRecordCount(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final DestroyContext destroy() throws RecognitionException {
 		DestroyContext _localctx = new DestroyContext(_ctx, getState());
 		enterRule(_localctx, 8, RULE_destroy);
@@ -363,6 +466,35 @@ public class ChestTrapGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class NameContext extends ParserRuleContext {
+		public String nameStr;
+		public int line;
+		public Token n;
+		public NameContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode NAME() { return getToken(ChestTrapGrammar.NAME, 0); }
+
+		public TerminalNode STRING() { return getToken(ChestTrapGrammar.STRING, 0); }
+
+		@Override public int getRuleIndex() { return RULE_name; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof ChestTrapGrammarListener ) ((ChestTrapGrammarListener)listener).enterName(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof ChestTrapGrammarListener ) ((ChestTrapGrammarListener)listener).exitName(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof ChestTrapGrammarVisitor ) return ((ChestTrapGrammarVisitor<? extends T>)visitor).visitName(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final MagicContext magic() throws RecognitionException {
@@ -389,6 +521,34 @@ public class ChestTrapGrammar extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class CodeContext extends ParserRuleContext {
+		public String codeStr;
+		public Token c;
+		public CodeContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode CODE() { return getToken(ChestTrapGrammar.CODE, 0); }
+
+		public TerminalNode STRING() { return getToken(ChestTrapGrammar.STRING, 0); }
+
+		@Override public int getRuleIndex() { return RULE_code; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof ChestTrapGrammarListener ) ((ChestTrapGrammarListener)listener).enterCode(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof ChestTrapGrammarListener ) ((ChestTrapGrammarListener)listener).exitCode(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof ChestTrapGrammarVisitor ) return ((ChestTrapGrammarVisitor<? extends T>)visitor).visitCode(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final MsgContext msg() throws RecognitionException {
 		MsgContext _localctx = new MsgContext(_ctx, getState());
 		enterRule(_localctx, 12, RULE_msg);
@@ -413,6 +573,34 @@ public class ChestTrapGrammar extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class LevelContext extends ParserRuleContext {
+		public String levelStr;
+		public Token l;
+		public LevelContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode LEVEL() { return getToken(ChestTrapGrammar.LEVEL, 0); }
+
+		public TerminalNode INTEGER() { return getToken(ChestTrapGrammar.INTEGER, 0); }
+
+		@Override public int getRuleIndex() { return RULE_level; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof ChestTrapGrammarListener ) ((ChestTrapGrammarListener)listener).enterLevel(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof ChestTrapGrammarListener ) ((ChestTrapGrammarListener)listener).exitLevel(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof ChestTrapGrammarVisitor ) return ((ChestTrapGrammarVisitor<? extends T>)visitor).visitLevel(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final MsgDeathContext msgDeath() throws RecognitionException {
 		MsgDeathContext _localctx = new MsgDeathContext(_ctx, getState());
 		enterRule(_localctx, 14, RULE_msgDeath);
@@ -435,6 +623,34 @@ public class ChestTrapGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class DestroyContext extends ParserRuleContext {
+		public String destroyStr;
+		public Token d;
+		public DestroyContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode DESTROY() { return getToken(ChestTrapGrammar.DESTROY, 0); }
+
+		public TerminalNode INTEGER() { return getToken(ChestTrapGrammar.INTEGER, 0); }
+
+		@Override public int getRuleIndex() { return RULE_destroy; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof ChestTrapGrammarListener ) ((ChestTrapGrammarListener)listener).enterDestroy(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof ChestTrapGrammarListener ) ((ChestTrapGrammarListener)listener).exitDestroy(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof ChestTrapGrammarVisitor ) return ((ChestTrapGrammarVisitor<? extends T>)visitor).visitDestroy(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final ChestTrapContext chestTrap() throws RecognitionException {
@@ -544,6 +760,34 @@ public class ChestTrapGrammar extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class MagicContext extends ParserRuleContext {
+		public String magicStr;
+		public Token m;
+		public MagicContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode MAGIC() { return getToken(ChestTrapGrammar.MAGIC, 0); }
+
+		public TerminalNode INTEGER() { return getToken(ChestTrapGrammar.INTEGER, 0); }
+
+		@Override public int getRuleIndex() { return RULE_magic; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof ChestTrapGrammarListener ) ((ChestTrapGrammarListener)listener).enterMagic(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof ChestTrapGrammarListener ) ((ChestTrapGrammarListener)listener).exitMagic(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof ChestTrapGrammarVisitor ) return ((ChestTrapGrammarVisitor<? extends T>)visitor).visitMagic(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final FileContext file() throws RecognitionException {
 		FileContext _localctx = new FileContext(_ctx, getState());
 		enterRule(_localctx, 18, RULE_file);
@@ -583,559 +827,6 @@ public class ChestTrapGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
-	}
-
-	public final EffectContext effect() throws RecognitionException {
-		EffectContext _localctx = new EffectContext(_ctx, getState());
-		enterRule(_localctx, 20, RULE_effect);
-
-		            ((EffectContext)_localctx).wrapper =  "";
-		            ((EffectContext)_localctx).radius =  "";
-		            ((EffectContext)_localctx).other =  "";
-		        
-		int _la;
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(104);
-			match(EFFECT);
-			setState(105);
-			((EffectContext)_localctx).t = match(UCASE);
-
-			                ((EffectContext)_localctx).type =  ((EffectContext)_localctx).t.getText();
-			            
-			setState(120);
-			_errHandler.sync(this);
-			_la = _input.LA(1);
-			if (_la==COLON) {
-				{
-				setState(107);
-				match(COLON);
-				setState(108);
-				((EffectContext)_localctx).st = match(UCASE);
-
-				                ((EffectContext)_localctx).wrapper =  ((EffectContext)_localctx).st.getText().toUpperCase();
-				            
-				setState(118);
-				_errHandler.sync(this);
-				_la = _input.LA(1);
-				if (_la==COLON) {
-					{
-					setState(110);
-					match(COLON);
-					setState(111);
-					((EffectContext)_localctx).rad = match(INTEGER);
-
-					                ((EffectContext)_localctx).radius =  ((EffectContext)_localctx).rad.getText();
-					            
-					setState(116);
-					_errHandler.sync(this);
-					_la = _input.LA(1);
-					if (_la==COLON) {
-						{
-						setState(113);
-						match(COLON);
-						setState(114);
-						((EffectContext)_localctx).oth = match(INTEGER);
-
-						                ((EffectContext)_localctx).other =  ((EffectContext)_localctx).oth.getText();
-						            
-						}
-					}
-
-					}
-				}
-
-				}
-			}
-
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	public final EffectYXContext effectYX() throws RecognitionException {
-		EffectYXContext _localctx = new EffectYXContext(_ctx, getState());
-		enterRule(_localctx, 22, RULE_effectYX);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(122);
-			match(EFFECT_YX);
-			setState(123);
-			((EffectYXContext)_localctx).yVal = match(INTEGER);
-			setState(124);
-			match(COLON);
-			setState(125);
-			((EffectYXContext)_localctx).xVal = match(INTEGER);
-
-			                ((EffectYXContext)_localctx).y =  ((EffectYXContext)_localctx).yVal.getText();
-			                ((EffectYXContext)_localctx).x =  ((EffectYXContext)_localctx).xVal.getText();
-			            
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	public final DiceContext dice() throws RecognitionException {
-		DiceContext _localctx = new DiceContext(_ctx, getState());
-		enterRule(_localctx, 24, RULE_dice);
-
-		            String charHolder = "";
-		            String baseHolder = "";
-		            String operHolder = "";
-		            ((DiceContext)_localctx).diceString =  "";
-		            ((DiceContext)_localctx).exprChar =  "";
-		            ((DiceContext)_localctx).baseName =  "";
-		            ((DiceContext)_localctx).operation =  "";
-		        
-		int _la;
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(128);
-			match(DICE);
-			setState(140);
-			_errHandler.sync(this);
-			switch (_input.LA(1)) {
-			case DICE_COMPLEX_VALUE:
-				{
-				{
-				setState(129);
-				((DiceContext)_localctx).val = match(DICE_COMPLEX_VALUE);
-
-				                ((DiceContext)_localctx).diceString =  ((DiceContext)_localctx).val.getText();
-				            
-				setState(134); 
-				_errHandler.sync(this);
-				_la = _input.LA(1);
-				do {
-					{
-					{
-					setState(131);
-					((DiceContext)_localctx).expr = expr();
-
-					                if (charHolder.isEmpty()) {
-					                    charHolder = ((DiceContext)_localctx).expr.exprChar;
-					                    baseHolder = ((DiceContext)_localctx).expr.baseName;
-					                    operHolder = ((DiceContext)_localctx).expr.operation;
-					                } else {
-					                    charHolder = charHolder + "^" + ((DiceContext)_localctx).expr.exprChar;
-					                    baseHolder = baseHolder + "^" + ((DiceContext)_localctx).expr.baseName;
-					                    operHolder = operHolder + "^" + ((DiceContext)_localctx).expr.operation;
-					                }
-					            
-					}
-					}
-					setState(136); 
-					_errHandler.sync(this);
-					_la = _input.LA(1);
-				} while ( _la==EXPR );
-				}
-				}
-				break;
-			case DICE_SIMPLE_VALUE:
-				{
-				setState(138);
-				((DiceContext)_localctx).val = match(DICE_SIMPLE_VALUE);
-
-				                ((DiceContext)_localctx).diceString =  ((DiceContext)_localctx).val.getText();
-				            
-				}
-				break;
-			default:
-				throw new NoViableAltException(this);
-			}
-			}
-			_ctx.stop = _input.LT(-1);
-
-			            ((DiceContext)_localctx).exprChar =  charHolder;
-			            ((DiceContext)_localctx).baseName =  baseHolder;
-			            ((DiceContext)_localctx).operation =  operHolder;
-			        
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	public final ExprContext expr() throws RecognitionException {
-		ExprContext _localctx = new ExprContext(_ctx, getState());
-		enterRule(_localctx, 26, RULE_expr);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(142);
-			match(EXPR);
-			setState(143);
-			((ExprContext)_localctx).ch = match(EXPR_CHAR);
-			setState(144);
-			match(EXPR_COLON);
-			setState(145);
-			((ExprContext)_localctx).base = match(EXPR_UCASE);
-			setState(146);
-			match(EXPR_COLON);
-			setState(147);
-			((ExprContext)_localctx).op = match(EXPR_OP);
-
-			                ((ExprContext)_localctx).exprChar =  ((ExprContext)_localctx).ch.getText();
-			                ((ExprContext)_localctx).baseName =  ((ExprContext)_localctx).base.getText();
-			                ((ExprContext)_localctx).operation =  ((ExprContext)_localctx).op.getText();
-			            
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	public final EffectMsgContext effectMsg() throws RecognitionException {
-		EffectMsgContext _localctx = new EffectMsgContext(_ctx, getState());
-		enterRule(_localctx, 28, RULE_effectMsg);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(150);
-			match(EFFECT_MESSAGE);
-			setState(151);
-			((EffectMsgContext)_localctx).FREE_TEXT = match(FREE_TEXT);
-			 ((EffectMsgContext)_localctx).message =  ((EffectMsgContext)_localctx).FREE_TEXT.getText(); 
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	public final TimeContext time() throws RecognitionException {
-		TimeContext _localctx = new TimeContext(_ctx, getState());
-		enterRule(_localctx, 30, RULE_time);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(154);
-			match(TIME);
-			setState(155);
-			((TimeContext)_localctx).DICE_SIMPLE_VALUE = match(DICE_SIMPLE_VALUE);
-			 ((TimeContext)_localctx).timeStr =  ((TimeContext)_localctx).DICE_SIMPLE_VALUE.getText(); 
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	public final EffectBlockContext effectBlock() throws RecognitionException {
-		EffectBlockContext _localctx = new EffectBlockContext(_ctx, getState());
-		enterRule(_localctx, 32, RULE_effectBlock);
-
-		            String expressionString = "";
-		            String baseString = "";
-		            String opString = "";
-		            ((EffectBlockContext)_localctx).diceString =  "";
-		            ((EffectBlockContext)_localctx).yVal =  "";
-		            ((EffectBlockContext)_localctx).xVal =  "";
-		            ((EffectBlockContext)_localctx).effectMessage =  "";
-		        
-		int _la;
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(158);
-			((EffectBlockContext)_localctx).effect = effect();
-
-			                ((EffectBlockContext)_localctx).lineNo =  _localctx.start.getLine();
-			                ((EffectBlockContext)_localctx).typeInit =  ((EffectBlockContext)_localctx).effect.type;
-			                ((EffectBlockContext)_localctx).subtypeWrapperInit =  ((EffectBlockContext)_localctx).effect.wrapper;
-			                ((EffectBlockContext)_localctx).radius =  ((EffectBlockContext)_localctx).effect.radius;
-			                ((EffectBlockContext)_localctx).other =  ((EffectBlockContext)_localctx).effect.other;
-			            
-			setState(168);
-			_errHandler.sync(this);
-			switch (_input.LA(1)) {
-			case EFFECT_YX:
-				{
-				{
-				setState(160);
-				((EffectBlockContext)_localctx).effectYX = effectYX();
-
-				                ((EffectBlockContext)_localctx).yVal =  ((EffectBlockContext)_localctx).effectYX.y;
-				                ((EffectBlockContext)_localctx).xVal =  ((EffectBlockContext)_localctx).effectYX.x;
-				            
-				}
-				}
-				break;
-			case EOF:
-			case NAME:
-			case LEVEL:
-			case DESTROY:
-			case MAGIC:
-			case MSG:
-			case MSG_DEATH:
-			case EFFECT:
-			case EFFECT_MESSAGE:
-			case DICE:
-				{
-				{
-				setState(166);
-				_errHandler.sync(this);
-				_la = _input.LA(1);
-				if (_la==DICE) {
-					{
-					setState(163);
-					((EffectBlockContext)_localctx).dice = dice();
-
-					                ((EffectBlockContext)_localctx).diceString =  ((EffectBlockContext)_localctx).dice.diceString;
-					                expressionString = ((EffectBlockContext)_localctx).dice.exprChar;
-					                baseString = ((EffectBlockContext)_localctx).dice.baseName;
-					                opString = ((EffectBlockContext)_localctx).dice.operation;
-					            
-					}
-				}
-
-				}
-				}
-				break;
-			default:
-				throw new NoViableAltException(this);
-			}
-			setState(173);
-			_errHandler.sync(this);
-			_la = _input.LA(1);
-			if (_la==EFFECT_MESSAGE) {
-				{
-				setState(170);
-				((EffectBlockContext)_localctx).effectMsg = effectMsg();
-				 ((EffectBlockContext)_localctx).effectMessage =  ((EffectBlockContext)_localctx).effectMsg.message; 
-				}
-			}
-
-			}
-			_ctx.stop = _input.LT(-1);
-
-			            ((EffectBlockContext)_localctx).expressionChars =  expressionString;
-			            ((EffectBlockContext)_localctx).expressionBase =  baseString;
-			            ((EffectBlockContext)_localctx).expressionOperation =  opString;
-			        
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class RecordCountContext extends ParserRuleContext {
-		public String count;
-		public Token c;
-		public RecordCountContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode RECORD_COUNT() { return getToken(ChestTrapGrammar.RECORD_COUNT, 0); }
-
-		public TerminalNode INTEGER() { return getToken(ChestTrapGrammar.INTEGER, 0); }
-
-		@Override public int getRuleIndex() { return RULE_recordCount; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof ChestTrapGrammarListener ) ((ChestTrapGrammarListener)listener).enterRecordCount(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof ChestTrapGrammarListener ) ((ChestTrapGrammarListener)listener).exitRecordCount(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ChestTrapGrammarVisitor ) return ((ChestTrapGrammarVisitor<? extends T>)visitor).visitRecordCount(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class NameContext extends ParserRuleContext {
-		public String nameStr;
-		public int line;
-		public Token n;
-		public NameContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode NAME() { return getToken(ChestTrapGrammar.NAME, 0); }
-
-		public TerminalNode STRING() { return getToken(ChestTrapGrammar.STRING, 0); }
-
-		@Override public int getRuleIndex() { return RULE_name; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof ChestTrapGrammarListener ) ((ChestTrapGrammarListener)listener).enterName(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof ChestTrapGrammarListener ) ((ChestTrapGrammarListener)listener).exitName(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ChestTrapGrammarVisitor ) return ((ChestTrapGrammarVisitor<? extends T>)visitor).visitName(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class CodeContext extends ParserRuleContext {
-		public String codeStr;
-		public Token c;
-		public CodeContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode CODE() { return getToken(ChestTrapGrammar.CODE, 0); }
-
-		public TerminalNode STRING() { return getToken(ChestTrapGrammar.STRING, 0); }
-
-		@Override public int getRuleIndex() { return RULE_code; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof ChestTrapGrammarListener ) ((ChestTrapGrammarListener)listener).enterCode(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof ChestTrapGrammarListener ) ((ChestTrapGrammarListener)listener).exitCode(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ChestTrapGrammarVisitor ) return ((ChestTrapGrammarVisitor<? extends T>)visitor).visitCode(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class LevelContext extends ParserRuleContext {
-		public String levelStr;
-		public Token l;
-		public LevelContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode LEVEL() { return getToken(ChestTrapGrammar.LEVEL, 0); }
-
-		public TerminalNode INTEGER() { return getToken(ChestTrapGrammar.INTEGER, 0); }
-
-		@Override public int getRuleIndex() { return RULE_level; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof ChestTrapGrammarListener ) ((ChestTrapGrammarListener)listener).enterLevel(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof ChestTrapGrammarListener ) ((ChestTrapGrammarListener)listener).exitLevel(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ChestTrapGrammarVisitor ) return ((ChestTrapGrammarVisitor<? extends T>)visitor).visitLevel(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class DestroyContext extends ParserRuleContext {
-		public String destroyStr;
-		public Token d;
-		public DestroyContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode DESTROY() { return getToken(ChestTrapGrammar.DESTROY, 0); }
-
-		public TerminalNode INTEGER() { return getToken(ChestTrapGrammar.INTEGER, 0); }
-
-		@Override public int getRuleIndex() { return RULE_destroy; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof ChestTrapGrammarListener ) ((ChestTrapGrammarListener)listener).enterDestroy(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof ChestTrapGrammarListener ) ((ChestTrapGrammarListener)listener).exitDestroy(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ChestTrapGrammarVisitor ) return ((ChestTrapGrammarVisitor<? extends T>)visitor).visitDestroy(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class MagicContext extends ParserRuleContext {
-		public String magicStr;
-		public Token m;
-		public MagicContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode MAGIC() { return getToken(ChestTrapGrammar.MAGIC, 0); }
-
-		public TerminalNode INTEGER() { return getToken(ChestTrapGrammar.INTEGER, 0); }
-
-		@Override public int getRuleIndex() { return RULE_magic; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof ChestTrapGrammarListener ) ((ChestTrapGrammarListener)listener).enterMagic(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof ChestTrapGrammarListener ) ((ChestTrapGrammarListener)listener).exitMagic(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ChestTrapGrammarVisitor ) return ((ChestTrapGrammarVisitor<? extends T>)visitor).visitMagic(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	@SuppressWarnings("CheckReturnValue")
@@ -1281,6 +972,37 @@ public class ChestTrapGrammar extends Parser {
 		}
 	}
 
+	public final EffectYXContext effectYX() throws RecognitionException {
+		EffectYXContext _localctx = new EffectYXContext(_ctx, getState());
+		enterRule(_localctx, 22, RULE_effectYX);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(122);
+			match(EFFECT_YX);
+			setState(123);
+			((EffectYXContext)_localctx).yVal = match(INTEGER);
+			setState(124);
+			match(COLON);
+			setState(125);
+			((EffectYXContext)_localctx).xVal = match(INTEGER);
+
+			                ((EffectYXContext)_localctx).y =  ((EffectYXContext)_localctx).yVal.getText();
+			                ((EffectYXContext)_localctx).x =  ((EffectYXContext)_localctx).xVal.getText();
+			            
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
 	@SuppressWarnings("CheckReturnValue")
 	public static class FileContext extends ParserRuleContext {
 		public String declaredRecordCount;
@@ -1319,6 +1041,94 @@ public class ChestTrapGrammar extends Parser {
 			if ( visitor instanceof ChestTrapGrammarVisitor ) return ((ChestTrapGrammarVisitor<? extends T>)visitor).visitFile(this);
 			else return visitor.visitChildren(this);
 		}
+	}
+
+	public final DiceContext dice() throws RecognitionException {
+		DiceContext _localctx = new DiceContext(_ctx, getState());
+		enterRule(_localctx, 24, RULE_dice);
+
+		            String charHolder = "";
+		            String baseHolder = "";
+		            String operHolder = "";
+		            ((DiceContext)_localctx).diceString =  "";
+		            ((DiceContext)_localctx).exprChar =  "";
+		            ((DiceContext)_localctx).baseName =  "";
+		            ((DiceContext)_localctx).operation =  "";
+		        
+		int _la;
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(128);
+			match(DICE);
+			setState(140);
+			_errHandler.sync(this);
+			switch (_input.LA(1)) {
+			case DICE_COMPLEX_VALUE:
+				{
+				{
+				setState(129);
+				((DiceContext)_localctx).val = match(DICE_COMPLEX_VALUE);
+
+				                ((DiceContext)_localctx).diceString =  ((DiceContext)_localctx).val.getText();
+				            
+				setState(134); 
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+				do {
+					{
+					{
+					setState(131);
+					((DiceContext)_localctx).expr = expr();
+
+					                if (charHolder.isEmpty()) {
+					                    charHolder = ((DiceContext)_localctx).expr.exprChar;
+					                    baseHolder = ((DiceContext)_localctx).expr.baseName;
+					                    operHolder = ((DiceContext)_localctx).expr.operation;
+					                } else {
+					                    charHolder = charHolder + "^" + ((DiceContext)_localctx).expr.exprChar;
+					                    baseHolder = baseHolder + "^" + ((DiceContext)_localctx).expr.baseName;
+					                    operHolder = operHolder + "^" + ((DiceContext)_localctx).expr.operation;
+					                }
+					            
+					}
+					}
+					setState(136); 
+					_errHandler.sync(this);
+					_la = _input.LA(1);
+				} while ( _la==EXPR );
+				}
+				}
+				break;
+			case DICE_SIMPLE_VALUE:
+				{
+				setState(138);
+				((DiceContext)_localctx).val = match(DICE_SIMPLE_VALUE);
+
+				                ((DiceContext)_localctx).diceString =  ((DiceContext)_localctx).val.getText();
+				            
+				}
+				break;
+			default:
+				throw new NoViableAltException(this);
+			}
+			}
+			_ctx.stop = _input.LT(-1);
+
+			            ((DiceContext)_localctx).exprChar =  charHolder;
+			            ((DiceContext)_localctx).baseName =  baseHolder;
+			            ((DiceContext)_localctx).operation =  operHolder;
+			        
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
 	}
 
 	@SuppressWarnings("CheckReturnValue")
@@ -1371,6 +1181,42 @@ public class ChestTrapGrammar extends Parser {
 		}
 	}
 
+	public final ExprContext expr() throws RecognitionException {
+		ExprContext _localctx = new ExprContext(_ctx, getState());
+		enterRule(_localctx, 26, RULE_expr);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(142);
+			match(EXPR);
+			setState(143);
+			((ExprContext)_localctx).ch = match(EXPR_CHAR);
+			setState(144);
+			match(EXPR_COLON);
+			setState(145);
+			((ExprContext)_localctx).base = match(EXPR_UCASE);
+			setState(146);
+			match(EXPR_COLON);
+			setState(147);
+			((ExprContext)_localctx).op = match(EXPR_OP);
+
+			                ((ExprContext)_localctx).exprChar =  ((ExprContext)_localctx).ch.getText();
+			                ((ExprContext)_localctx).baseName =  ((ExprContext)_localctx).base.getText();
+			                ((ExprContext)_localctx).operation =  ((ExprContext)_localctx).op.getText();
+			            
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
 	@SuppressWarnings("CheckReturnValue")
 	public static class EffectYXContext extends ParserRuleContext {
 		public String y;
@@ -1405,6 +1251,30 @@ public class ChestTrapGrammar extends Parser {
 			if ( visitor instanceof ChestTrapGrammarVisitor ) return ((ChestTrapGrammarVisitor<? extends T>)visitor).visitEffectYX(this);
 			else return visitor.visitChildren(this);
 		}
+	}
+
+	public final EffectMsgContext effectMsg() throws RecognitionException {
+		EffectMsgContext _localctx = new EffectMsgContext(_ctx, getState());
+		enterRule(_localctx, 28, RULE_effectMsg);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(150);
+			match(EFFECT_MESSAGE);
+			setState(151);
+			((EffectMsgContext)_localctx).FREE_TEXT = match(FREE_TEXT);
+			 ((EffectMsgContext)_localctx).message =  ((EffectMsgContext)_localctx).FREE_TEXT.getText(); 
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
 	}
 
 	@SuppressWarnings("CheckReturnValue")
@@ -1449,6 +1319,30 @@ public class ChestTrapGrammar extends Parser {
 		}
 	}
 
+	public final TimeContext time() throws RecognitionException {
+		TimeContext _localctx = new TimeContext(_ctx, getState());
+		enterRule(_localctx, 30, RULE_time);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(154);
+			match(TIME);
+			setState(155);
+			((TimeContext)_localctx).DICE_SIMPLE_VALUE = match(DICE_SIMPLE_VALUE);
+			 ((TimeContext)_localctx).timeStr =  ((TimeContext)_localctx).DICE_SIMPLE_VALUE.getText(); 
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
 	@SuppressWarnings("CheckReturnValue")
 	public static class ExprContext extends ParserRuleContext {
 		public String exprChar;
@@ -1489,6 +1383,110 @@ public class ChestTrapGrammar extends Parser {
 			if ( visitor instanceof ChestTrapGrammarVisitor ) return ((ChestTrapGrammarVisitor<? extends T>)visitor).visitExpr(this);
 			else return visitor.visitChildren(this);
 		}
+	}
+
+	public final EffectBlockContext effectBlock() throws RecognitionException {
+		EffectBlockContext _localctx = new EffectBlockContext(_ctx, getState());
+		enterRule(_localctx, 32, RULE_effectBlock);
+
+		            String expressionString = "";
+		            String baseString = "";
+		            String opString = "";
+		            ((EffectBlockContext)_localctx).diceString =  "";
+		            ((EffectBlockContext)_localctx).yVal =  "";
+		            ((EffectBlockContext)_localctx).xVal =  "";
+		            ((EffectBlockContext)_localctx).effectMessage =  "";
+		        
+		int _la;
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(158);
+			((EffectBlockContext)_localctx).effect = effect();
+
+			                ((EffectBlockContext)_localctx).lineNo =  _localctx.start.getLine();
+			                ((EffectBlockContext)_localctx).typeInit =  ((EffectBlockContext)_localctx).effect.type;
+			                ((EffectBlockContext)_localctx).subtypeWrapperInit =  ((EffectBlockContext)_localctx).effect.wrapper;
+			                ((EffectBlockContext)_localctx).radius =  ((EffectBlockContext)_localctx).effect.radius;
+			                ((EffectBlockContext)_localctx).other =  ((EffectBlockContext)_localctx).effect.other;
+			            
+			setState(168);
+			_errHandler.sync(this);
+			switch (_input.LA(1)) {
+			case EFFECT_YX:
+				{
+				{
+				setState(160);
+				((EffectBlockContext)_localctx).effectYX = effectYX();
+
+				                ((EffectBlockContext)_localctx).yVal =  ((EffectBlockContext)_localctx).effectYX.y;
+				                ((EffectBlockContext)_localctx).xVal =  ((EffectBlockContext)_localctx).effectYX.x;
+				            
+				}
+				}
+				break;
+			case EOF:
+			case NAME:
+			case LEVEL:
+			case DESTROY:
+			case MAGIC:
+			case MSG:
+			case MSG_DEATH:
+			case EFFECT:
+			case EFFECT_MESSAGE:
+			case DICE:
+				{
+				{
+				setState(166);
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+				if (_la==DICE) {
+					{
+					setState(163);
+					((EffectBlockContext)_localctx).dice = dice();
+
+					                ((EffectBlockContext)_localctx).diceString =  ((EffectBlockContext)_localctx).dice.diceString;
+					                expressionString = ((EffectBlockContext)_localctx).dice.exprChar;
+					                baseString = ((EffectBlockContext)_localctx).dice.baseName;
+					                opString = ((EffectBlockContext)_localctx).dice.operation;
+					            
+					}
+				}
+
+				}
+				}
+				break;
+			default:
+				throw new NoViableAltException(this);
+			}
+			setState(173);
+			_errHandler.sync(this);
+			_la = _input.LA(1);
+			if (_la==EFFECT_MESSAGE) {
+				{
+				setState(170);
+				((EffectBlockContext)_localctx).effectMsg = effectMsg();
+				 ((EffectBlockContext)_localctx).effectMessage =  ((EffectBlockContext)_localctx).effectMsg.message; 
+				}
+			}
+
+			}
+			_ctx.stop = _input.LT(-1);
+
+			            ((EffectBlockContext)_localctx).expressionChars =  expressionString;
+			            ((EffectBlockContext)_localctx).expressionBase =  baseString;
+			            ((EffectBlockContext)_localctx).expressionOperation =  opString;
+			        
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
 	}
 
 	@SuppressWarnings("CheckReturnValue")

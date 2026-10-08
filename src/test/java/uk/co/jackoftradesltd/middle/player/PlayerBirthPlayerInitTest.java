@@ -434,13 +434,32 @@ class PlayerBirthPlayerInitTest {
         assertEquals(0, readInstance(player, "restingTurn"));
     }
 
+    /**
+     * C's {@code player_init} sets {@code p->race = races} and {@code p->class = classes}, the list
+     * heads. C builds both lists by prepending and never reverses them, so each head is the
+     * <em>last</em> entry in its data file (Kobold and Blackguard with the shipped data). The port
+     * keeps file order, so the default is the last entry, handed over as a copy rather than the
+     * registry's shared record. Two entries per list keep "first" and "last" apart.
+     */
     @Test
-    @DisplayName("race, class and shape default to the first entries and the normal shape")
-    void defaultsAssigned() {
-        assertSame(PlayerRegistry.getPlayerRaces().getFirst(), player.getRace(),
-                "race not set to the first entry in the edit file");
-        assertSame(PlayerRegistry.getPlayerClasses().getFirst(), player.getPlayerClass(),
-                "class not set to the first entry in the edit file");
+    @DisplayName("race and class default to copies of the last entries (C's list heads), shape to normal")
+    void defaultsAssigned() throws Exception {
+        PlayerBody body = SeededPlayerRegistry.humanoidBody();
+        PlayerRace first = new PlayerRace("Human", 0, 10, 100, 14, 6, 69, 10, 165, 35, 0, body,
+                Map.of(), Map.of(), new Flag<>(ObjectFlag.class), new Flag<>(PlayerFlag.class), null, Map.of());
+        PlayerRace last = new PlayerRace("Kobold", 1, 8, 125, 11, 3, 36, 2, 60, 5, 5, body,
+                Map.of(), Map.of(), new Flag<>(ObjectFlag.class), new Flag<>(PlayerFlag.class), null, Map.of());
+        writeStatic(PlayerRegistry.class, "playerRaces", List.of(first, last));
+        writeStatic(PlayerRegistry.class, "playerClasses",
+                List.of(plainClass("Warrior"), plainClass("Blackguard")));
+
+        invokePlayerInit(player);
+
+        assertEquals("Kobold", player.getRace().getName(), "race not set to C's list head");
+        assertNotSame(last, player.getRace(), "race is the registry's shared record, not a copy");
+        assertEquals("Blackguard", player.getPlayerClass().getName(), "class not set to C's list head");
+        assertNotSame(PlayerRegistry.getPlayerClasses().getLast(), player.getPlayerClass(),
+                "class is the registry's shared record, not a copy");
         assertSame(PlayerRegistry.lookupPlayerShape("normal"), player.getShape(),
                 "shape not set to \"normal\"");
     }

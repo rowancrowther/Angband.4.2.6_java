@@ -48,32 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/objects/Curse.java`
-
-7 missing, 14 low
-
-- L169: field `knownCombatToHit` - MISSING
-- L170: field `knownCombatToDam` - MISSING
-- L171: field `knownCombatToAC` - MISSING
-- L173: field `knownModifiers` - MISSING
-- L175: field `knownElInfo` - MISSING
-- L177: field `knownObjectFlags` - MISSING
-- L179: field `knownEffect` - MISSING
-- L241: method `getName` - LOW
-- L248: method `getObjectBases` - LOW
-- L255: method `getWeight` - LOW
-- L262: method `getEffect` - LOW
-- L269: method `getObjectFlags` - LOW
-- L292: method `getCombatToHit` - LOW
-- L299: method `getCombatDam` - LOW
-- L306: method `getCombatAC` - LOW
-- L321: method `getConflictFlags` - LOW
-- L328: method `getDescription` - LOW
-- L335: method `getMessage` - LOW
-- L343: method `getConflictNames` - LOW - "resolution"
-- L361: method `canAfflict` - LOW
-- L368: method `toString` - LOW
-
 ### `middle/game/globals/registry/PlayerRegistry.java`
 
 8 missing, 11 low

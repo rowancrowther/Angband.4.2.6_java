@@ -407,9 +407,9 @@ class PlayerClassReaderTest {
                         + "spell:S:1:1:1:1\n"
                         + "effect:SHAPECHANGE:notashape\n"));
 
-        // The grammar upper-cases every effect sub-type token, so the target reaches the (case-
-        // insensitive) shape lookup as NOTASHAPE — hence the upper-cased name in the message.
-        assertTrue(hasError(r, "unknown player shape: NOTASHAPE"), r.errors()::toString);
+        // As in C, the sub-type token reaches the case-exact shape lookup as written in the file,
+        // so the message carries the name in its original case.
+        assertTrue(hasError(r, "unknown player shape: notashape"), r.errors()::toString);
     }
 
     @Test

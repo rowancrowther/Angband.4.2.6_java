@@ -470,16 +470,22 @@ public class Player {
      * the reference fields, and writing them out is what makes the starting state readable rather
      * than implied.
      *
-     * <p>A player built here is not yet playable: the class, state, known state and shape are
-     * null, the level is zero, and {@link #itemKnowledge} is null until the registries exist to size it
-     * against. Birth fills them in.
+     * <p>A player built here is not yet playable: the race, class, state, known state and shape
+     * are null, the level is zero, and {@link #itemKnowledge} is null until the registries exist to
+     * size it against. Birth fills them in.
      *
-     * <p>The race is the first one the registry holds, as {@code player_init} leaves C's, so a
-     * player cannot be built before the player races have been loaded.
+     * <p>The race is null because C's is: {@code mem_zalloc} leaves {@code player->race} as
+     * {@code NULL}, and C first sets it in {@code player_init} ({@code player-birth.c}), which
+     * {@code PlayerBirth.playerInit} ports. So building a player does not depend on the race list
+     * being loaded. Anything that reads the race, {@link #playerFlags} among them, needs a race set
+     * first, exactly as C's {@code player_flags} needs {@code p->race}.
+     *
+     * <p>The body is the one exception to that independence: it is looked up in the registry, so a
+     * player cannot be built before the bodies have been loaded.
      *
      * <p>Constructor Player coded before 260815, commented in full on 261008.
      *
-     * @throws IllegalStateException if no player race has been loaded
+     * @throws IllegalStateException if the player bodies have not been loaded
      */
     public Player() {
         // C initialization
@@ -506,12 +512,7 @@ public class Player {
         playerClass = null;
         playerHistory = new PlayerHistory();
         quests = new ArrayList<>();
-        race = PlayerRegistry.getFirstPlayerRace();
-        // Crash if there are no races
-        if (race == null) {
-            logger.fatal("No player races loaded - game crashing.");
-            throw new IllegalStateException("No player races loaded - game crashing.");
-        }
+        race = null;
         shape = null;
         statCur = new HashMap<>();
         statMax = new HashMap<>();
@@ -545,15 +546,17 @@ public class Player {
      *
      * <p>The result is blank rather than ready. {@code playerInit} goes on to put the saved options
      * back, size the upkeep, the timed-effect table and the object knowledge, reset the quests, and
-     * point the player at the first race and class and the "normal" shape. Until then the class and
-     * the shape are {@code null} and the options are the defaults rather than the player's own.
+     * point the player at copies of C's default race and class and at the "normal" shape. Until then
+     * the race, the class and the shape are {@code null} and the options are the defaults rather
+     * than the player's own.
      *
-     * <p>Like the constructor, this throws if no player race is loaded, where C would carry on with a
-     * null race.
+     * <p>Clearing the race matches C, whose {@code memset} leaves {@code p->race} as {@code NULL}
+     * for {@code player_init} to fill a few lines later. As with the constructor, the wipe does not
+     * read the race list, but it does look up the body.
      *
      * <p>Function wipe coded before 260815, commented in full on 261008.
      *
-     * @throws IllegalStateException if no player race has been loaded
+     * @throws IllegalStateException if the player bodies have not been loaded
      */
     public void wipe() {
         // C initialization
@@ -580,12 +583,7 @@ public class Player {
         playerClass = null;
         playerHistory = new PlayerHistory();
         quests = new ArrayList<>();
-        race = PlayerRegistry.getFirstPlayerRace();
-        // Crash if there are no races
-        if (race == null) {
-            logger.fatal("No player races loaded - game crashing.");
-            throw new IllegalStateException("No player races loaded - game crashing.");
-        }
+        race = null;
         shape = null;
         statCur = new HashMap<>();
         statMax = new HashMap<>();

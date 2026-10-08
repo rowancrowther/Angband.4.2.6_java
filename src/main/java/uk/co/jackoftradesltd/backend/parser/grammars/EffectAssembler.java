@@ -288,7 +288,7 @@ public class EffectAssembler {
                                                           List<String> errors, int line) {
         switch (type) {
             case EST_PROJ -> {
-                ProjectionEnum pe = ProjectionEnum.PROJ_NONE;
+                ProjectionEnum pe;
                 try {
                     pe = ProjectionEnum.valueOf("PROJ_" + value);
                     return new EffectSubTypeWrapper(pe);
@@ -298,7 +298,7 @@ public class EffectAssembler {
                 }
             }
             case EST_TMD -> {
-                TimedEffect te = TimedEffect.TMD_NONE;
+                TimedEffect te;
                 try {
                     te = TimedEffect.valueOf("TMD_" + value);
                     return new EffectSubTypeWrapper(te);
@@ -308,7 +308,7 @@ public class EffectAssembler {
                 }
             }
             case EST_NOURISH -> {
-                EffectNourish ne = EffectNourish.EN_NONE;
+                EffectNourish ne;
                 try {
                     ne = EffectNourish.valueOf("EN_" + value);
                     return new EffectSubTypeWrapper(ne);
@@ -318,7 +318,7 @@ public class EffectAssembler {
                 }
             }
             case EST_MON_TMD -> {
-                MonTimed mt = MonTimed.MON_TMD_NONE;
+                MonTimed mt;
                 try {
                     mt = MonTimed.valueOf("MON_TMD_" + value);
                     return new EffectSubTypeWrapper(mt);
@@ -330,10 +330,10 @@ public class EffectAssembler {
             case EST_SHAPECHANGE -> {
                 // Unlike the enum-backed sub-types above, a shapechange target is a
                 // shape *name* resolved against the loaded shape registry (C's
-                // shape_name_to_idx). The grammar upper-cases every sub-type token,
-                // whereas shape names are stored mixed-case (e.g. "Pukel-man"), so the
-                // registry lookup is deliberately case-insensitive. This therefore
-                // requires the shapes to already be loaded when effects are assembled.
+                // shape_name_to_idx). The grammar passes the sub-type token through as
+                // written, and the lookup matches it case-exactly as C's streq does, so
+                // the data must spell the shape as shape.txt does (e.g. "Pukel-man").
+                // This requires the shapes to already be loaded when effects are assembled.
                 PlayerShape sp = PlayerRegistry.lookupPlayerShape(value);
                 if (sp != null)
                     return new EffectSubTypeWrapper(sp);

@@ -28,14 +28,6 @@ import java.util.ArrayList;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue", "this-escape"})
 public class EffectBlock extends Parser {
-	public static final int
-		EFFECT=1, EFFECT_MESSAGE=2, DICE=3, TIME=4, EFFECT_YX=5, EXPR=6, COLON=7, 
-		UCASE=8, INTEGER=9, SIMPLE_DICE_STRING=10, COMPLEX_DICE_STRING=11, COMMENT=12, 
-		EOL=13, FREE_TEXT=14, DICE_SIMPLE_VALUE=15, DICE_COMPLEX_VALUE=16, EXPR_CHAR=17, 
-		EXPR_COLON=18, EXPR_UCASE=19, EXPR_OP=20, EXPR_EOL=21;
-	public static final int
-		RULE_effect = 0, RULE_effectYX = 1, RULE_dice = 2, RULE_expr = 3, RULE_effectMsg = 4, 
-		RULE_time = 5, RULE_effectBlock = 6;
 	public static final String[] ruleNames = makeRuleNames();
 	/**
 	 * @deprecated Use {@link #VOCABULARY} instead.
@@ -95,14 +87,66 @@ public class EffectBlock extends Parser {
 		"\u0000QR\u0006\u0006\uffff\uffff\u0000RT\u0001\u0000\u0000\u0000SP\u0001"+
 		"\u0000\u0000\u0000ST\u0001\u0000\u0000\u0000T\r\u0001\u0000\u0000\u0000"+
 		"\b\u001a\u001c\u001e.2LNS";
+	public static final int
+		EFFECT=1, EFFECT_MESSAGE=2, DICE=3, TIME=4, EFFECT_YX=5, EXPR=6, COLON=7, 
+		UCASE=8, INTEGER=9, SIMPLE_DICE_STRING=10, COMPLEX_DICE_STRING=11, COMMENT=12, 
+		EOL=13, FREE_TEXT=14, DICE_SIMPLE_VALUE=15, DICE_COMPLEX_VALUE=16, EXPR_CHAR=17, 
+		EXPR_COLON=18, EXPR_UCASE=19, EXPR_OP=20, EXPR_EOL=21;
+	public static final int
+		RULE_effect = 0, RULE_effectYX = 1, RULE_dice = 2, RULE_expr = 3, RULE_effectMsg = 4, 
+		RULE_time = 5, RULE_effectBlock = 6;
+	private static String[] makeRuleNames() {
+		return new String[] {
+			"effect", "effectYX", "dice", "expr", "effectMsg", "time", "effectBlock"
+		};
+	}
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
+
+	private static String[] makeLiteralNames() {
+		return new String[] {
+			null, "'effect:'", "'effect-msg:'", "'dice:'", "'time:'", "'effect-yx:'", 
+			"'expr:'"
+		};
+	}
 	protected static final DFA[] _decisionToDFA;
+	private static String[] makeSymbolicNames() {
+		return new String[] {
+			null, "EFFECT", "EFFECT_MESSAGE", "DICE", "TIME", "EFFECT_YX", "EXPR", 
+			"COLON", "UCASE", "INTEGER", "SIMPLE_DICE_STRING", "COMPLEX_DICE_STRING", 
+			"COMMENT", "EOL", "FREE_TEXT", "DICE_SIMPLE_VALUE", "DICE_COMPLEX_VALUE", 
+			"EXPR_CHAR", "EXPR_COLON", "EXPR_UCASE", "EXPR_OP", "EXPR_EOL"
+		};
+	}
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
 	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
+
+	@Override
+	@Deprecated
+	public String[] getTokenNames() {
+		return tokenNames;
+	}
+
+	@Override
+
+	public Vocabulary getVocabulary() {
+		return VOCABULARY;
+	}
+
+	@Override
+	public String getGrammarFileName() { return "EffectBlock.g4"; }
+
+	@Override
+	public String[] getRuleNames() { return ruleNames; }
+
+	@Override
+	public String getSerializedATN() { return _serializedATN; }
+
+	@Override
+	public ATN getATN() { return _ATN; }
 
 	static { RuntimeMetaData.checkVersion("4.13.2", RuntimeMetaData.VERSION); }
 
@@ -132,51 +176,36 @@ public class EffectBlock extends Parser {
 		_interp = new ParserATNSimulator(this,_ATN,_decisionToDFA,_sharedContextCache);
 	}
 
-	private static String[] makeRuleNames() {
-		return new String[] {
-			"effect", "effectYX", "dice", "expr", "effectMsg", "time", "effectBlock"
-		};
+	public final EffectYXContext effectYX() throws RecognitionException {
+		EffectYXContext _localctx = new EffectYXContext(_ctx, getState());
+		enterRule(_localctx, 2, RULE_effectYX);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(32);
+			match(EFFECT_YX);
+			setState(33);
+			((EffectYXContext)_localctx).yVal = match(INTEGER);
+			setState(34);
+			match(COLON);
+			setState(35);
+			((EffectYXContext)_localctx).xVal = match(INTEGER);
+
+			                ((EffectYXContext)_localctx).y =  ((EffectYXContext)_localctx).yVal.getText();
+			                ((EffectYXContext)_localctx).x =  ((EffectYXContext)_localctx).xVal.getText();
+			            
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
 	}
-
-	private static String[] makeLiteralNames() {
-		return new String[] {
-			null, "'effect:'", "'effect-msg:'", "'dice:'", "'time:'", "'effect-yx:'", 
-			"'expr:'"
-		};
-	}
-
-	private static String[] makeSymbolicNames() {
-		return new String[] {
-			null, "EFFECT", "EFFECT_MESSAGE", "DICE", "TIME", "EFFECT_YX", "EXPR", 
-			"COLON", "UCASE", "INTEGER", "SIMPLE_DICE_STRING", "COMPLEX_DICE_STRING", 
-			"COMMENT", "EOL", "FREE_TEXT", "DICE_SIMPLE_VALUE", "DICE_COMPLEX_VALUE", 
-			"EXPR_CHAR", "EXPR_COLON", "EXPR_UCASE", "EXPR_OP", "EXPR_EOL"
-		};
-	}
-
-	@Override
-	@Deprecated
-	public String[] getTokenNames() {
-		return tokenNames;
-	}
-
-	@Override
-
-	public Vocabulary getVocabulary() {
-		return VOCABULARY;
-	}
-
-	@Override
-	public String getGrammarFileName() { return "EffectBlock.g4"; }
-
-	@Override
-	public String[] getRuleNames() { return ruleNames; }
-
-	@Override
-	public String getSerializedATN() { return _serializedATN; }
-
-	@Override
-	public ATN getATN() { return _ATN; }
 
 	public final EffectContext effect() throws RecognitionException {
 		EffectContext _localctx = new EffectContext(_ctx, getState());
@@ -207,7 +236,7 @@ public class EffectBlock extends Parser {
 				setState(18);
 				((EffectContext)_localctx).st = match(UCASE);
 
-				                ((EffectContext)_localctx).wrapper =  ((EffectContext)_localctx).st.getText().toUpperCase();
+				                ((EffectContext)_localctx).wrapper =  ((EffectContext)_localctx).st.getText();
 				            
 				setState(28);
 				_errHandler.sync(this);
@@ -242,37 +271,6 @@ public class EffectBlock extends Parser {
 				}
 			}
 
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	public final EffectYXContext effectYX() throws RecognitionException {
-		EffectYXContext _localctx = new EffectYXContext(_ctx, getState());
-		enterRule(_localctx, 2, RULE_effectYX);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(32);
-			match(EFFECT_YX);
-			setState(33);
-			((EffectYXContext)_localctx).yVal = match(INTEGER);
-			setState(34);
-			match(COLON);
-			setState(35);
-			((EffectYXContext)_localctx).xVal = match(INTEGER);
-
-			                ((EffectYXContext)_localctx).y =  ((EffectYXContext)_localctx).yVal.getText();
-			                ((EffectYXContext)_localctx).x =  ((EffectYXContext)_localctx).xVal.getText();
-			            
 			}
 		}
 		catch (RecognitionException re) {
@@ -374,6 +372,56 @@ public class EffectBlock extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class EffectContext extends ParserRuleContext {
+		public String type;
+		public String wrapper;
+		public String radius;
+		public String other;
+		public Token t;
+		public Token st;
+		public Token rad;
+		public Token oth;
+		public EffectContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode EFFECT() { return getToken(EffectBlock.EFFECT, 0); }
+
+		public List<TerminalNode> UCASE() { return getTokens(EffectBlock.UCASE); }
+
+		public TerminalNode UCASE(int i) {
+			return getToken(EffectBlock.UCASE, i);
+		}
+
+		public List<TerminalNode> COLON() { return getTokens(EffectBlock.COLON); }
+
+		public TerminalNode COLON(int i) {
+			return getToken(EffectBlock.COLON, i);
+		}
+
+		public List<TerminalNode> INTEGER() { return getTokens(EffectBlock.INTEGER); }
+
+		public TerminalNode INTEGER(int i) {
+			return getToken(EffectBlock.INTEGER, i);
+		}
+
+		@Override public int getRuleIndex() { return RULE_effect; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof EffectBlockListener ) ((EffectBlockListener)listener).enterEffect(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof EffectBlockListener ) ((EffectBlockListener)listener).exitEffect(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectBlockVisitor ) return ((EffectBlockVisitor<? extends T>)visitor).visitEffect(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final ExprContext expr() throws RecognitionException {
 		ExprContext _localctx = new ExprContext(_ctx, getState());
 		enterRule(_localctx, 6, RULE_expr);
@@ -410,6 +458,42 @@ public class EffectBlock extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class EffectYXContext extends ParserRuleContext {
+		public String y;
+		public String x;
+		public Token yVal;
+		public Token xVal;
+		public EffectYXContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode EFFECT_YX() { return getToken(EffectBlock.EFFECT_YX, 0); }
+
+		public TerminalNode COLON() { return getToken(EffectBlock.COLON, 0); }
+
+		public List<TerminalNode> INTEGER() { return getTokens(EffectBlock.INTEGER); }
+
+		public TerminalNode INTEGER(int i) {
+			return getToken(EffectBlock.INTEGER, i);
+		}
+
+		@Override public int getRuleIndex() { return RULE_effectYX; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof EffectBlockListener ) ((EffectBlockListener)listener).enterEffectYX(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof EffectBlockListener ) ((EffectBlockListener)listener).exitEffectYX(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectBlockVisitor ) return ((EffectBlockVisitor<? extends T>)visitor).visitEffectYX(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final EffectMsgContext effectMsg() throws RecognitionException {
 		EffectMsgContext _localctx = new EffectMsgContext(_ctx, getState());
 		enterRule(_localctx, 8, RULE_effectMsg);
@@ -434,6 +518,48 @@ public class EffectBlock extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class DiceContext extends ParserRuleContext {
+		public String diceString;
+		public String exprChar;
+		public String baseName;
+		public String operation;
+		public Token val;
+		public ExprContext expr;
+		public DiceContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode DICE() { return getToken(EffectBlock.DICE, 0); }
+
+		public TerminalNode DICE_SIMPLE_VALUE() { return getToken(EffectBlock.DICE_SIMPLE_VALUE, 0); }
+
+		public TerminalNode DICE_COMPLEX_VALUE() { return getToken(EffectBlock.DICE_COMPLEX_VALUE, 0); }
+
+		public List<ExprContext> expr() {
+			return getRuleContexts(ExprContext.class);
+		}
+
+		public ExprContext expr(int i) {
+			return getRuleContext(ExprContext.class,i);
+		}
+
+		@Override public int getRuleIndex() { return RULE_dice; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof EffectBlockListener ) ((EffectBlockListener)listener).enterDice(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof EffectBlockListener ) ((EffectBlockListener)listener).exitDice(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectBlockVisitor ) return ((EffectBlockVisitor<? extends T>)visitor).visitDice(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final TimeContext time() throws RecognitionException {
 		TimeContext _localctx = new TimeContext(_ctx, getState());
 		enterRule(_localctx, 10, RULE_time);
@@ -456,6 +582,48 @@ public class EffectBlock extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class ExprContext extends ParserRuleContext {
+		public String exprChar;
+		public String baseName;
+		public String operation;
+		public Token ch;
+		public Token base;
+		public Token op;
+		public ExprContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode EXPR() { return getToken(EffectBlock.EXPR, 0); }
+
+		public List<TerminalNode> EXPR_COLON() { return getTokens(EffectBlock.EXPR_COLON); }
+
+		public TerminalNode EXPR_COLON(int i) {
+			return getToken(EffectBlock.EXPR_COLON, i);
+		}
+
+		public TerminalNode EXPR_CHAR() { return getToken(EffectBlock.EXPR_CHAR, 0); }
+
+		public TerminalNode EXPR_UCASE() { return getToken(EffectBlock.EXPR_UCASE, 0); }
+
+		public TerminalNode EXPR_OP() { return getToken(EffectBlock.EXPR_OP, 0); }
+
+		@Override public int getRuleIndex() { return RULE_expr; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof EffectBlockListener ) ((EffectBlockListener)listener).enterExpr(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof EffectBlockListener ) ((EffectBlockListener)listener).exitExpr(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectBlockVisitor ) return ((EffectBlockVisitor<? extends T>)visitor).visitExpr(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final EffectBlockContext effectBlock() throws RecognitionException {
@@ -553,176 +721,6 @@ public class EffectBlock extends Parser {
 			exitRule();
 		}
 		return _localctx;
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class EffectContext extends ParserRuleContext {
-		public String type;
-		public String wrapper;
-		public String radius;
-		public String other;
-		public Token t;
-		public Token st;
-		public Token rad;
-		public Token oth;
-		public EffectContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode EFFECT() { return getToken(EffectBlock.EFFECT, 0); }
-
-		public List<TerminalNode> UCASE() { return getTokens(EffectBlock.UCASE); }
-
-		public TerminalNode UCASE(int i) {
-			return getToken(EffectBlock.UCASE, i);
-		}
-
-		public List<TerminalNode> COLON() { return getTokens(EffectBlock.COLON); }
-
-		public TerminalNode COLON(int i) {
-			return getToken(EffectBlock.COLON, i);
-		}
-
-		public List<TerminalNode> INTEGER() { return getTokens(EffectBlock.INTEGER); }
-
-		public TerminalNode INTEGER(int i) {
-			return getToken(EffectBlock.INTEGER, i);
-		}
-
-		@Override public int getRuleIndex() { return RULE_effect; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof EffectBlockListener ) ((EffectBlockListener)listener).enterEffect(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof EffectBlockListener ) ((EffectBlockListener)listener).exitEffect(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof EffectBlockVisitor ) return ((EffectBlockVisitor<? extends T>)visitor).visitEffect(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class EffectYXContext extends ParserRuleContext {
-		public String y;
-		public String x;
-		public Token yVal;
-		public Token xVal;
-		public EffectYXContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode EFFECT_YX() { return getToken(EffectBlock.EFFECT_YX, 0); }
-
-		public TerminalNode COLON() { return getToken(EffectBlock.COLON, 0); }
-
-		public List<TerminalNode> INTEGER() { return getTokens(EffectBlock.INTEGER); }
-
-		public TerminalNode INTEGER(int i) {
-			return getToken(EffectBlock.INTEGER, i);
-		}
-
-		@Override public int getRuleIndex() { return RULE_effectYX; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof EffectBlockListener ) ((EffectBlockListener)listener).enterEffectYX(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof EffectBlockListener ) ((EffectBlockListener)listener).exitEffectYX(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof EffectBlockVisitor ) return ((EffectBlockVisitor<? extends T>)visitor).visitEffectYX(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class DiceContext extends ParserRuleContext {
-		public String diceString;
-		public String exprChar;
-		public String baseName;
-		public String operation;
-		public Token val;
-		public ExprContext expr;
-		public DiceContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode DICE() { return getToken(EffectBlock.DICE, 0); }
-
-		public TerminalNode DICE_SIMPLE_VALUE() { return getToken(EffectBlock.DICE_SIMPLE_VALUE, 0); }
-
-		public TerminalNode DICE_COMPLEX_VALUE() { return getToken(EffectBlock.DICE_COMPLEX_VALUE, 0); }
-
-		public List<ExprContext> expr() {
-			return getRuleContexts(ExprContext.class);
-		}
-
-		public ExprContext expr(int i) {
-			return getRuleContext(ExprContext.class,i);
-		}
-
-		@Override public int getRuleIndex() { return RULE_dice; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof EffectBlockListener ) ((EffectBlockListener)listener).enterDice(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof EffectBlockListener ) ((EffectBlockListener)listener).exitDice(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof EffectBlockVisitor ) return ((EffectBlockVisitor<? extends T>)visitor).visitDice(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class ExprContext extends ParserRuleContext {
-		public String exprChar;
-		public String baseName;
-		public String operation;
-		public Token ch;
-		public Token base;
-		public Token op;
-		public ExprContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode EXPR() { return getToken(EffectBlock.EXPR, 0); }
-
-		public List<TerminalNode> EXPR_COLON() { return getTokens(EffectBlock.EXPR_COLON); }
-
-		public TerminalNode EXPR_COLON(int i) {
-			return getToken(EffectBlock.EXPR_COLON, i);
-		}
-
-		public TerminalNode EXPR_CHAR() { return getToken(EffectBlock.EXPR_CHAR, 0); }
-
-		public TerminalNode EXPR_UCASE() { return getToken(EffectBlock.EXPR_UCASE, 0); }
-
-		public TerminalNode EXPR_OP() { return getToken(EffectBlock.EXPR_OP, 0); }
-
-		@Override public int getRuleIndex() { return RULE_expr; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof EffectBlockListener ) ((EffectBlockListener)listener).enterExpr(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof EffectBlockListener ) ((EffectBlockListener)listener).exitExpr(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof EffectBlockVisitor ) return ((EffectBlockVisitor<? extends T>)visitor).visitExpr(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	@SuppressWarnings("CheckReturnValue")

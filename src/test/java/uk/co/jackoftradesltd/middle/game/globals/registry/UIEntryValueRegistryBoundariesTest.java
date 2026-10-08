@@ -200,6 +200,9 @@ class UIEntryValueRegistryBoundariesTest {
         player.setItemKnowledge(new KnownObject());
         player.setClass(new PlayerClass("Test Class", List.of(), Map.of(), Map.of(), Map.of(), 0, 0,
                 new Flag<>(ObjectFlag.class), new Flag<>(PlayerFlag.class), 0, 0, 0, List.of(), null));
+        // playerFlags() reads the race's flags, as C's player_flags reads p->race->flags, and the
+        // constructor leaves the race null, as C's init_player does.
+        player.setRace(SeededPlayerRegistry.plainRace(player.getPlayerBody()));
         player.setState(new PlayerState());
         return player;
     }

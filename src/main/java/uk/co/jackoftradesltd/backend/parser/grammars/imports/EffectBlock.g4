@@ -66,7 +66,7 @@ effect
                 $type = $t.getText();
             }
             (COLON st=UCASE {
-                $wrapper = $st.getText().toUpperCase();
+                $wrapper = $st.getText();
             } (COLON rad=INTEGER {
                 $radius = $rad.getText();
             } (COLON oth=INTEGER {

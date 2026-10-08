@@ -37,31 +37,6 @@ import java.util.ArrayList;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue", "this-escape"})
 public class PlayerClassGrammar extends Parser {
-	public static final int
-		RECORD_COUNT=1, NAME=2, STATS=3, SKILL_DISARM_PHYS=4, SKILL_DISARM_MAGIC=5, 
-		SKILL_DEVICE=6, SKILL_SAVE=7, SKILL_STEALTH=8, SKILL_SEARCH=9, SKILL_MELEE=10, 
-		SKILL_SHOOT=11, SKILL_THROW=12, SKILL_DIG=13, HITDIE=14, EXP=15, MAX_ATTACKS=16, 
-		MIN_WEIGHT=17, STRENGTH=18, TITLE=19, EQUIP=20, OBJ_FLAGS=21, PLAYER_FLAGS=22, 
-		MAGIC=23, BOOK=24, BOOK_GRAPHICS=25, BOOK_PROPERTIES=26, SPELL=27, DESC=28, 
-		COLON=29, INTEGER=30, COMMENT=31, EOL=32, EFFECT=33, EFFECT_MESSAGE=34, 
-		DICE=35, TIME=36, EFFECT_YX=37, EXPR=38, UCASE=39, SIMPLE_DICE_STRING=40, 
-		COMPLEX_DICE_STRING=41, GRAPHICS=42, COLOUR_ONLY=43, GLYPH_ONLY=44, PROP_INT=45, 
-		PROP_COLON=46, PROP_TO=47, PROP_EOL=48, DELIM_INTEGER=49, STRING_BETWEEN_COLONS=50, 
-		DELIM_COLON=51, END_SKIP=52, FLAG=53, FLAG_OR=54, FLAG_EOL=55, STRING=56, 
-		FREE_TEXT_EOL=57, FREE_TEXT=58, DICE_SIMPLE_VALUE=59, DICE_COMPLEX_VALUE=60, 
-		EXPR_CHAR=61, EXPR_COLON=62, EXPR_UCASE=63, EXPR_OP=64, EXPR_EOL=65, COLOUR_VALUES=66, 
-		GLYPH_VALUES=67, GLYPH_COLON_SWITCH=68, GLYPH_EOL=69;
-	public static final int
-		RULE_recordCount = 0, RULE_name = 1, RULE_stats = 2, RULE_skillDisarmPhys = 3, 
-		RULE_skillDisarmMagic = 4, RULE_skillDevice = 5, RULE_skillSave = 6, RULE_skillStealth = 7, 
-		RULE_skillSearch = 8, RULE_skillMelee = 9, RULE_skillShoot = 10, RULE_skillThrow = 11, 
-		RULE_skillDig = 12, RULE_hitdie = 13, RULE_maxAttacks = 14, RULE_minWeight = 15, 
-		RULE_strengthMultiplier = 16, RULE_title = 17, RULE_equip = 18, RULE_objFlag = 19, 
-		RULE_playerFlags = 20, RULE_exp = 21, RULE_magic = 22, RULE_magicBlock = 23, 
-		RULE_book = 24, RULE_bookGraphics = 25, RULE_bookProperties = 26, RULE_bookBlock = 27, 
-		RULE_spell = 28, RULE_desc = 29, RULE_spellBlock = 30, RULE_playerClass = 31, 
-		RULE_file = 32, RULE_effect = 33, RULE_effectYX = 34, RULE_dice = 35, 
-		RULE_expr = 36, RULE_effectMsg = 37, RULE_time = 38, RULE_effectBlock = 39;
 	public static final String[] ruleNames = makeRuleNames();
 	/**
 	 * @deprecated Use {@link #VOCABULARY} instead.
@@ -363,43 +338,31 @@ public class PlayerClassGrammar extends Parser {
 		"\u0001\u0000\u0000\u0000\u01d2O\u0001\u0000\u0000\u0000\u0014\u00c8\u00d3"+
 		"\u00e9\u010c\u0111\u0116\u011d\u0137\u0139\u017d\u017f\u0188\u0198\u019a"+
 		"\u019c\u01ac\u01b0\u01ca\u01cc\u01d1";
-	public static final ATN _ATN =
-		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
-	protected static final DFA[] _decisionToDFA;
-	protected static final PredictionContextCache _sharedContextCache =
-		new PredictionContextCache();
-	private static final String[] _LITERAL_NAMES = makeLiteralNames();
-	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
-	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
-
-	static { RuntimeMetaData.checkVersion("4.13.2", RuntimeMetaData.VERSION); }
-
-	static {
-		tokenNames = new String[_SYMBOLIC_NAMES.length];
-		for (int i = 0; i < tokenNames.length; i++) {
-			tokenNames[i] = VOCABULARY.getLiteralName(i);
-			if (tokenNames[i] == null) {
-				tokenNames[i] = VOCABULARY.getSymbolicName(i);
-			}
-
-			if (tokenNames[i] == null) {
-				tokenNames[i] = "<INVALID>";
-			}
-		}
-	}
-
-	static {
-		_decisionToDFA = new DFA[_ATN.getNumberOfDecisions()];
-		for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
-			_decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
-		}
-	}
-
-	public PlayerClassGrammar(TokenStream input) {
-		super(input);
-		_interp = new ParserATNSimulator(this,_ATN,_decisionToDFA,_sharedContextCache);
-	}
-
+	public static final int
+		RECORD_COUNT=1, NAME=2, STATS=3, SKILL_DISARM_PHYS=4, SKILL_DISARM_MAGIC=5, 
+		SKILL_DEVICE=6, SKILL_SAVE=7, SKILL_STEALTH=8, SKILL_SEARCH=9, SKILL_MELEE=10, 
+		SKILL_SHOOT=11, SKILL_THROW=12, SKILL_DIG=13, HITDIE=14, EXP=15, MAX_ATTACKS=16, 
+		MIN_WEIGHT=17, STRENGTH=18, TITLE=19, EQUIP=20, OBJ_FLAGS=21, PLAYER_FLAGS=22, 
+		MAGIC=23, BOOK=24, BOOK_GRAPHICS=25, BOOK_PROPERTIES=26, SPELL=27, DESC=28, 
+		COLON=29, INTEGER=30, COMMENT=31, EOL=32, EFFECT=33, EFFECT_MESSAGE=34, 
+		DICE=35, TIME=36, EFFECT_YX=37, EXPR=38, UCASE=39, SIMPLE_DICE_STRING=40, 
+		COMPLEX_DICE_STRING=41, GRAPHICS=42, COLOUR_ONLY=43, GLYPH_ONLY=44, PROP_INT=45, 
+		PROP_COLON=46, PROP_TO=47, PROP_EOL=48, DELIM_INTEGER=49, STRING_BETWEEN_COLONS=50, 
+		DELIM_COLON=51, END_SKIP=52, FLAG=53, FLAG_OR=54, FLAG_EOL=55, STRING=56, 
+		FREE_TEXT_EOL=57, FREE_TEXT=58, DICE_SIMPLE_VALUE=59, DICE_COMPLEX_VALUE=60, 
+		EXPR_CHAR=61, EXPR_COLON=62, EXPR_UCASE=63, EXPR_OP=64, EXPR_EOL=65, COLOUR_VALUES=66, 
+		GLYPH_VALUES=67, GLYPH_COLON_SWITCH=68, GLYPH_EOL=69;
+	public static final int
+		RULE_recordCount = 0, RULE_name = 1, RULE_stats = 2, RULE_skillDisarmPhys = 3, 
+		RULE_skillDisarmMagic = 4, RULE_skillDevice = 5, RULE_skillSave = 6, RULE_skillStealth = 7, 
+		RULE_skillSearch = 8, RULE_skillMelee = 9, RULE_skillShoot = 10, RULE_skillThrow = 11, 
+		RULE_skillDig = 12, RULE_hitdie = 13, RULE_maxAttacks = 14, RULE_minWeight = 15, 
+		RULE_strengthMultiplier = 16, RULE_title = 17, RULE_equip = 18, RULE_objFlag = 19, 
+		RULE_playerFlags = 20, RULE_exp = 21, RULE_magic = 22, RULE_magicBlock = 23, 
+		RULE_book = 24, RULE_bookGraphics = 25, RULE_bookProperties = 26, RULE_bookBlock = 27, 
+		RULE_spell = 28, RULE_desc = 29, RULE_spellBlock = 30, RULE_playerClass = 31, 
+		RULE_file = 32, RULE_effect = 33, RULE_effectYX = 34, RULE_dice = 35, 
+		RULE_expr = 36, RULE_effectMsg = 37, RULE_time = 38, RULE_effectBlock = 39;
 	private static String[] makeRuleNames() {
 		return new String[] {
 			"recordCount", "name", "stats", "skillDisarmPhys", "skillDisarmMagic", 
@@ -411,6 +374,8 @@ public class PlayerClassGrammar extends Parser {
 			"dice", "expr", "effectMsg", "time", "effectBlock"
 		};
 	}
+	public static final ATN _ATN =
+		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 
 	private static String[] makeLiteralNames() {
 		return new String[] {
@@ -425,7 +390,7 @@ public class PlayerClassGrammar extends Parser {
 			"'color:'", "'glyph:'"
 		};
 	}
-
+	protected static final DFA[] _decisionToDFA;
 	private static String[] makeSymbolicNames() {
 		return new String[] {
 			null, "RECORD_COUNT", "NAME", "STATS", "SKILL_DISARM_PHYS", "SKILL_DISARM_MAGIC", 
@@ -443,6 +408,11 @@ public class PlayerClassGrammar extends Parser {
 			"GLYPH_COLON_SWITCH", "GLYPH_EOL"
 		};
 	}
+	protected static final PredictionContextCache _sharedContextCache =
+		new PredictionContextCache();
+	private static final String[] _LITERAL_NAMES = makeLiteralNames();
+	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
+	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
 
 	@Override
 	@Deprecated
@@ -468,6 +438,22 @@ public class PlayerClassGrammar extends Parser {
 	@Override
 	public ATN getATN() { return _ATN; }
 
+	static { RuntimeMetaData.checkVersion("4.13.2", RuntimeMetaData.VERSION); }
+
+	static {
+		tokenNames = new String[_SYMBOLIC_NAMES.length];
+		for (int i = 0; i < tokenNames.length; i++) {
+			tokenNames[i] = VOCABULARY.getLiteralName(i);
+			if (tokenNames[i] == null) {
+				tokenNames[i] = VOCABULARY.getSymbolicName(i);
+			}
+
+			if (tokenNames[i] == null) {
+				tokenNames[i] = "<INVALID>";
+			}
+		}
+	}
+
 	public final RecordCountContext recordCount() throws RecognitionException {
 		RecordCountContext _localctx = new RecordCountContext(_ctx, getState());
 		enterRule(_localctx, 0, RULE_recordCount);
@@ -492,6 +478,13 @@ public class PlayerClassGrammar extends Parser {
 		return _localctx;
 	}
 
+	static {
+		_decisionToDFA = new DFA[_ATN.getNumberOfDecisions()];
+		for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
+			_decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
+		}
+	}
+
 	public final NameContext name() throws RecognitionException {
 		NameContext _localctx = new NameContext(_ctx, getState());
 		enterRule(_localctx, 2, RULE_name);
@@ -514,6 +507,11 @@ public class PlayerClassGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	public PlayerClassGrammar(TokenStream input) {
+		super(input);
+		_interp = new ParserATNSimulator(this,_ATN,_decisionToDFA,_sharedContextCache);
 	}
 
 	public final StatsContext stats() throws RecognitionException {
@@ -562,6 +560,83 @@ public class PlayerClassGrammar extends Parser {
 		return _localctx;
 	}
 
+	public final EffectContext effect() throws RecognitionException {
+		EffectContext _localctx = new EffectContext(_ctx, getState());
+		enterRule(_localctx, 66, RULE_effect);
+
+		            ((EffectContext)_localctx).wrapper =  "";
+		            ((EffectContext)_localctx).radius =  "";
+		            ((EffectContext)_localctx).other =  "";
+		        
+		int _la;
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(396);
+			match(EFFECT);
+			setState(397);
+			((EffectContext)_localctx).t = match(UCASE);
+
+			                ((EffectContext)_localctx).type =  ((EffectContext)_localctx).t.getText();
+			            
+			setState(412);
+			_errHandler.sync(this);
+			_la = _input.LA(1);
+			if (_la==COLON) {
+				{
+				setState(399);
+				match(COLON);
+				setState(400);
+				((EffectContext)_localctx).st = match(UCASE);
+
+				                ((EffectContext)_localctx).wrapper =  ((EffectContext)_localctx).st.getText();
+				            
+				setState(410);
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+				if (_la==COLON) {
+					{
+					setState(402);
+					match(COLON);
+					setState(403);
+					((EffectContext)_localctx).rad = match(INTEGER);
+
+					                ((EffectContext)_localctx).radius =  ((EffectContext)_localctx).rad.getText();
+					            
+					setState(408);
+					_errHandler.sync(this);
+					_la = _input.LA(1);
+					if (_la==COLON) {
+						{
+						setState(405);
+						match(COLON);
+						setState(406);
+						((EffectContext)_localctx).oth = match(INTEGER);
+
+						                ((EffectContext)_localctx).other =  ((EffectContext)_localctx).oth.getText();
+						            
+						}
+					}
+
+					}
+				}
+
+				}
+			}
+
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
 	public final SkillDisarmPhysContext skillDisarmPhys() throws RecognitionException {
 		SkillDisarmPhysContext _localctx = new SkillDisarmPhysContext(_ctx, getState());
 		enterRule(_localctx, 6, RULE_skillDisarmPhys);
@@ -591,6 +666,34 @@ public class PlayerClassGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class RecordCountContext extends ParserRuleContext {
+		public String count;
+		public Token INTEGER;
+		public RecordCountContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode RECORD_COUNT() { return getToken(PlayerClassGrammar.RECORD_COUNT, 0); }
+
+		public TerminalNode INTEGER() { return getToken(PlayerClassGrammar.INTEGER, 0); }
+
+		@Override public int getRuleIndex() { return RULE_recordCount; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterRecordCount(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitRecordCount(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitRecordCount(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final SkillDisarmMagicContext skillDisarmMagic() throws RecognitionException {
@@ -624,6 +727,35 @@ public class PlayerClassGrammar extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class NameContext extends ParserRuleContext {
+		public String nameStr;
+		public int lineNo;
+		public Token STRING;
+		public NameContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode NAME() { return getToken(PlayerClassGrammar.NAME, 0); }
+
+		public TerminalNode STRING() { return getToken(PlayerClassGrammar.STRING, 0); }
+
+		@Override public int getRuleIndex() { return RULE_name; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterName(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitName(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitName(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final SkillDeviceContext skillDevice() throws RecognitionException {
 		SkillDeviceContext _localctx = new SkillDeviceContext(_ctx, getState());
 		enterRule(_localctx, 10, RULE_skillDevice);
@@ -653,6 +785,52 @@ public class PlayerClassGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class StatsContext extends ParserRuleContext {
+		public String strs;
+		public String ints;
+		public String wiss;
+		public String dexs;
+		public String cons;
+		public Token s;
+		public Token i;
+		public Token w;
+		public Token d;
+		public Token c;
+		public StatsContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode STATS() { return getToken(PlayerClassGrammar.STATS, 0); }
+
+		public List<TerminalNode> COLON() { return getTokens(PlayerClassGrammar.COLON); }
+
+		public TerminalNode COLON(int i) {
+			return getToken(PlayerClassGrammar.COLON, i);
+		}
+
+		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
+
+		public TerminalNode INTEGER(int i) {
+			return getToken(PlayerClassGrammar.INTEGER, i);
+		}
+
+		@Override public int getRuleIndex() { return RULE_stats; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterStats(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitStats(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitStats(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final SkillSaveContext skillSave() throws RecognitionException {
@@ -686,6 +864,42 @@ public class PlayerClassGrammar extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class SkillDisarmPhysContext extends ParserRuleContext {
+		public String skillVal;
+		public String skillInc;
+		public Token v;
+		public Token i;
+		public SkillDisarmPhysContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode SKILL_DISARM_PHYS() { return getToken(PlayerClassGrammar.SKILL_DISARM_PHYS, 0); }
+
+		public TerminalNode COLON() { return getToken(PlayerClassGrammar.COLON, 0); }
+
+		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
+
+		public TerminalNode INTEGER(int i) {
+			return getToken(PlayerClassGrammar.INTEGER, i);
+		}
+
+		@Override public int getRuleIndex() { return RULE_skillDisarmPhys; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterSkillDisarmPhys(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitSkillDisarmPhys(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitSkillDisarmPhys(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final SkillStealthContext skillStealth() throws RecognitionException {
 		SkillStealthContext _localctx = new SkillStealthContext(_ctx, getState());
 		enterRule(_localctx, 14, RULE_skillStealth);
@@ -715,6 +929,42 @@ public class PlayerClassGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class SkillDisarmMagicContext extends ParserRuleContext {
+		public String skillVal;
+		public String skillInc;
+		public Token v;
+		public Token i;
+		public SkillDisarmMagicContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode SKILL_DISARM_MAGIC() { return getToken(PlayerClassGrammar.SKILL_DISARM_MAGIC, 0); }
+
+		public TerminalNode COLON() { return getToken(PlayerClassGrammar.COLON, 0); }
+
+		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
+
+		public TerminalNode INTEGER(int i) {
+			return getToken(PlayerClassGrammar.INTEGER, i);
+		}
+
+		@Override public int getRuleIndex() { return RULE_skillDisarmMagic; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterSkillDisarmMagic(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitSkillDisarmMagic(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitSkillDisarmMagic(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final SkillSearchContext skillSearch() throws RecognitionException {
@@ -748,6 +998,42 @@ public class PlayerClassGrammar extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class SkillDeviceContext extends ParserRuleContext {
+		public String skillVal;
+		public String skillInc;
+		public Token v;
+		public Token i;
+		public SkillDeviceContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode SKILL_DEVICE() { return getToken(PlayerClassGrammar.SKILL_DEVICE, 0); }
+
+		public TerminalNode COLON() { return getToken(PlayerClassGrammar.COLON, 0); }
+
+		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
+
+		public TerminalNode INTEGER(int i) {
+			return getToken(PlayerClassGrammar.INTEGER, i);
+		}
+
+		@Override public int getRuleIndex() { return RULE_skillDevice; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterSkillDevice(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitSkillDevice(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitSkillDevice(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final SkillMeleeContext skillMelee() throws RecognitionException {
 		SkillMeleeContext _localctx = new SkillMeleeContext(_ctx, getState());
 		enterRule(_localctx, 18, RULE_skillMelee);
@@ -777,6 +1063,42 @@ public class PlayerClassGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class SkillSaveContext extends ParserRuleContext {
+		public String skillVal;
+		public String skillInc;
+		public Token v;
+		public Token i;
+		public SkillSaveContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode SKILL_SAVE() { return getToken(PlayerClassGrammar.SKILL_SAVE, 0); }
+
+		public TerminalNode COLON() { return getToken(PlayerClassGrammar.COLON, 0); }
+
+		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
+
+		public TerminalNode INTEGER(int i) {
+			return getToken(PlayerClassGrammar.INTEGER, i);
+		}
+
+		@Override public int getRuleIndex() { return RULE_skillSave; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterSkillSave(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitSkillSave(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitSkillSave(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final SkillShootContext skillShoot() throws RecognitionException {
@@ -810,6 +1132,42 @@ public class PlayerClassGrammar extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class SkillStealthContext extends ParserRuleContext {
+		public String skillVal;
+		public String skillInc;
+		public Token v;
+		public Token i;
+		public SkillStealthContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode SKILL_STEALTH() { return getToken(PlayerClassGrammar.SKILL_STEALTH, 0); }
+
+		public TerminalNode COLON() { return getToken(PlayerClassGrammar.COLON, 0); }
+
+		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
+
+		public TerminalNode INTEGER(int i) {
+			return getToken(PlayerClassGrammar.INTEGER, i);
+		}
+
+		@Override public int getRuleIndex() { return RULE_skillStealth; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterSkillStealth(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitSkillStealth(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitSkillStealth(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final SkillThrowContext skillThrow() throws RecognitionException {
 		SkillThrowContext _localctx = new SkillThrowContext(_ctx, getState());
 		enterRule(_localctx, 22, RULE_skillThrow);
@@ -839,6 +1197,42 @@ public class PlayerClassGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class SkillSearchContext extends ParserRuleContext {
+		public String skillVal;
+		public String skillInc;
+		public Token v;
+		public Token i;
+		public SkillSearchContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode SKILL_SEARCH() { return getToken(PlayerClassGrammar.SKILL_SEARCH, 0); }
+
+		public TerminalNode COLON() { return getToken(PlayerClassGrammar.COLON, 0); }
+
+		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
+
+		public TerminalNode INTEGER(int i) {
+			return getToken(PlayerClassGrammar.INTEGER, i);
+		}
+
+		@Override public int getRuleIndex() { return RULE_skillSearch; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterSkillSearch(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitSkillSearch(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitSkillSearch(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final SkillDigContext skillDig() throws RecognitionException {
@@ -872,6 +1266,42 @@ public class PlayerClassGrammar extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class SkillMeleeContext extends ParserRuleContext {
+		public String skillVal;
+		public String skillInc;
+		public Token v;
+		public Token i;
+		public SkillMeleeContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode SKILL_MELEE() { return getToken(PlayerClassGrammar.SKILL_MELEE, 0); }
+
+		public TerminalNode COLON() { return getToken(PlayerClassGrammar.COLON, 0); }
+
+		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
+
+		public TerminalNode INTEGER(int i) {
+			return getToken(PlayerClassGrammar.INTEGER, i);
+		}
+
+		@Override public int getRuleIndex() { return RULE_skillMelee; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterSkillMelee(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitSkillMelee(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitSkillMelee(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final HitdieContext hitdie() throws RecognitionException {
 		HitdieContext _localctx = new HitdieContext(_ctx, getState());
 		enterRule(_localctx, 26, RULE_hitdie);
@@ -894,6 +1324,42 @@ public class PlayerClassGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class SkillShootContext extends ParserRuleContext {
+		public String skillVal;
+		public String skillInc;
+		public Token v;
+		public Token i;
+		public SkillShootContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode SKILL_SHOOT() { return getToken(PlayerClassGrammar.SKILL_SHOOT, 0); }
+
+		public TerminalNode COLON() { return getToken(PlayerClassGrammar.COLON, 0); }
+
+		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
+
+		public TerminalNode INTEGER(int i) {
+			return getToken(PlayerClassGrammar.INTEGER, i);
+		}
+
+		@Override public int getRuleIndex() { return RULE_skillShoot; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterSkillShoot(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitSkillShoot(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitSkillShoot(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final MaxAttacksContext maxAttacks() throws RecognitionException {
@@ -920,6 +1386,42 @@ public class PlayerClassGrammar extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class SkillThrowContext extends ParserRuleContext {
+		public String skillVal;
+		public String skillInc;
+		public Token v;
+		public Token i;
+		public SkillThrowContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode SKILL_THROW() { return getToken(PlayerClassGrammar.SKILL_THROW, 0); }
+
+		public TerminalNode COLON() { return getToken(PlayerClassGrammar.COLON, 0); }
+
+		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
+
+		public TerminalNode INTEGER(int i) {
+			return getToken(PlayerClassGrammar.INTEGER, i);
+		}
+
+		@Override public int getRuleIndex() { return RULE_skillThrow; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterSkillThrow(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitSkillThrow(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitSkillThrow(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final MinWeightContext minWeight() throws RecognitionException {
 		MinWeightContext _localctx = new MinWeightContext(_ctx, getState());
 		enterRule(_localctx, 30, RULE_minWeight);
@@ -942,6 +1444,42 @@ public class PlayerClassGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class SkillDigContext extends ParserRuleContext {
+		public String skillVal;
+		public String skillInc;
+		public Token v;
+		public Token i;
+		public SkillDigContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode SKILL_DIG() { return getToken(PlayerClassGrammar.SKILL_DIG, 0); }
+
+		public TerminalNode COLON() { return getToken(PlayerClassGrammar.COLON, 0); }
+
+		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
+
+		public TerminalNode INTEGER(int i) {
+			return getToken(PlayerClassGrammar.INTEGER, i);
+		}
+
+		@Override public int getRuleIndex() { return RULE_skillDig; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterSkillDig(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitSkillDig(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitSkillDig(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final StrengthMultiplierContext strengthMultiplier() throws RecognitionException {
@@ -968,6 +1506,34 @@ public class PlayerClassGrammar extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class HitdieContext extends ParserRuleContext {
+		public String increment;
+		public Token INTEGER;
+		public HitdieContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode HITDIE() { return getToken(PlayerClassGrammar.HITDIE, 0); }
+
+		public TerminalNode INTEGER() { return getToken(PlayerClassGrammar.INTEGER, 0); }
+
+		@Override public int getRuleIndex() { return RULE_hitdie; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterHitdie(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitHitdie(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitHitdie(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final TitleContext title() throws RecognitionException {
 		TitleContext _localctx = new TitleContext(_ctx, getState());
 		enterRule(_localctx, 34, RULE_title);
@@ -990,6 +1556,34 @@ public class PlayerClassGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class MaxAttacksContext extends ParserRuleContext {
+		public String maxAtt;
+		public Token INTEGER;
+		public MaxAttacksContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode MAX_ATTACKS() { return getToken(PlayerClassGrammar.MAX_ATTACKS, 0); }
+
+		public TerminalNode INTEGER() { return getToken(PlayerClassGrammar.INTEGER, 0); }
+
+		@Override public int getRuleIndex() { return RULE_maxAttacks; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterMaxAttacks(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitMaxAttacks(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitMaxAttacks(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final EquipContext equip() throws RecognitionException {
@@ -1039,6 +1633,34 @@ public class PlayerClassGrammar extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class MinWeightContext extends ParserRuleContext {
+		public String minWgt;
+		public Token INTEGER;
+		public MinWeightContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode MIN_WEIGHT() { return getToken(PlayerClassGrammar.MIN_WEIGHT, 0); }
+
+		public TerminalNode INTEGER() { return getToken(PlayerClassGrammar.INTEGER, 0); }
+
+		@Override public int getRuleIndex() { return RULE_minWeight; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterMinWeight(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitMinWeight(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitMinWeight(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final ObjFlagContext objFlag() throws RecognitionException {
 		ObjFlagContext _localctx = new ObjFlagContext(_ctx, getState());
 		enterRule(_localctx, 38, RULE_objFlag);
@@ -1084,6 +1706,34 @@ public class PlayerClassGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class StrengthMultiplierContext extends ParserRuleContext {
+		public String strMult;
+		public Token INTEGER;
+		public StrengthMultiplierContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode STRENGTH() { return getToken(PlayerClassGrammar.STRENGTH, 0); }
+
+		public TerminalNode INTEGER() { return getToken(PlayerClassGrammar.INTEGER, 0); }
+
+		@Override public int getRuleIndex() { return RULE_strengthMultiplier; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterStrengthMultiplier(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitStrengthMultiplier(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitStrengthMultiplier(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final PlayerFlagsContext playerFlags() throws RecognitionException {
@@ -1133,6 +1783,34 @@ public class PlayerClassGrammar extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class TitleContext extends ParserRuleContext {
+		public String titleStr;
+		public Token STRING;
+		public TitleContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode TITLE() { return getToken(PlayerClassGrammar.TITLE, 0); }
+
+		public TerminalNode STRING() { return getToken(PlayerClassGrammar.STRING, 0); }
+
+		@Override public int getRuleIndex() { return RULE_title; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterTitle(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitTitle(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitTitle(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final ExpContext exp() throws RecognitionException {
 		ExpContext _localctx = new ExpContext(_ctx, getState());
 		enterRule(_localctx, 42, RULE_exp);
@@ -1155,6 +1833,59 @@ public class PlayerClassGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class EquipContext extends ParserRuleContext {
+		public String tValue;
+		public String sValue;
+		public String min;
+		public String max;
+		public String eopts;
+		public int line;
+		public Token t;
+		public Token s;
+		public Token mn;
+		public Token mx;
+		public Token e;
+		public EquipContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode EQUIP() { return getToken(PlayerClassGrammar.EQUIP, 0); }
+
+		public List<TerminalNode> DELIM_COLON() { return getTokens(PlayerClassGrammar.DELIM_COLON); }
+
+		public TerminalNode DELIM_COLON(int i) {
+			return getToken(PlayerClassGrammar.DELIM_COLON, i);
+		}
+
+		public List<TerminalNode> STRING_BETWEEN_COLONS() { return getTokens(PlayerClassGrammar.STRING_BETWEEN_COLONS); }
+
+		public TerminalNode STRING_BETWEEN_COLONS(int i) {
+			return getToken(PlayerClassGrammar.STRING_BETWEEN_COLONS, i);
+		}
+
+		public List<TerminalNode> DELIM_INTEGER() { return getTokens(PlayerClassGrammar.DELIM_INTEGER); }
+
+		public TerminalNode DELIM_INTEGER(int i) {
+			return getToken(PlayerClassGrammar.DELIM_INTEGER, i);
+		}
+
+		@Override public int getRuleIndex() { return RULE_equip; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterEquip(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitEquip(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitEquip(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final MagicContext magic() throws RecognitionException {
@@ -1192,6 +1923,45 @@ public class PlayerClassGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class ObjFlagContext extends ParserRuleContext {
+		public List<String> oFlags;
+		public Token f1;
+		public Token f2;
+		public ObjFlagContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode OBJ_FLAGS() { return getToken(PlayerClassGrammar.OBJ_FLAGS, 0); }
+
+		public List<TerminalNode> FLAG() { return getTokens(PlayerClassGrammar.FLAG); }
+
+		public TerminalNode FLAG(int i) {
+			return getToken(PlayerClassGrammar.FLAG, i);
+		}
+
+		public List<TerminalNode> FLAG_OR() { return getTokens(PlayerClassGrammar.FLAG_OR); }
+
+		public TerminalNode FLAG_OR(int i) {
+			return getToken(PlayerClassGrammar.FLAG_OR, i);
+		}
+
+		@Override public int getRuleIndex() { return RULE_objFlag; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterObjFlag(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitObjFlag(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitObjFlag(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final MagicBlockContext magicBlock(List<ClassEquipParseRecord> equipInit) throws RecognitionException {
@@ -1241,6 +2011,45 @@ public class PlayerClassGrammar extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class PlayerFlagsContext extends ParserRuleContext {
+		public List<String> pFlags;
+		public Token f1;
+		public Token f2;
+		public PlayerFlagsContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode PLAYER_FLAGS() { return getToken(PlayerClassGrammar.PLAYER_FLAGS, 0); }
+
+		public List<TerminalNode> FLAG() { return getTokens(PlayerClassGrammar.FLAG); }
+
+		public TerminalNode FLAG(int i) {
+			return getToken(PlayerClassGrammar.FLAG, i);
+		}
+
+		public List<TerminalNode> FLAG_OR() { return getTokens(PlayerClassGrammar.FLAG_OR); }
+
+		public TerminalNode FLAG_OR(int i) {
+			return getToken(PlayerClassGrammar.FLAG_OR, i);
+		}
+
+		@Override public int getRuleIndex() { return RULE_playerFlags; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterPlayerFlags(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitPlayerFlags(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitPlayerFlags(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final BookContext book() throws RecognitionException {
 		BookContext _localctx = new BookContext(_ctx, getState());
 		enterRule(_localctx, 48, RULE_book);
@@ -1288,6 +2097,34 @@ public class PlayerClassGrammar extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class ExpContext extends ParserRuleContext {
+		public String expStr;
+		public Token INTEGER;
+		public ExpContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode EXP() { return getToken(PlayerClassGrammar.EXP, 0); }
+
+		public TerminalNode INTEGER() { return getToken(PlayerClassGrammar.INTEGER, 0); }
+
+		@Override public int getRuleIndex() { return RULE_exp; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterExp(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitExp(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitExp(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final BookGraphicsContext bookGraphics() throws RecognitionException {
 		BookGraphicsContext _localctx = new BookGraphicsContext(_ctx, getState());
 		enterRule(_localctx, 50, RULE_bookGraphics);
@@ -1317,6 +2154,49 @@ public class PlayerClassGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class MagicContext extends ParserRuleContext {
+		public String firstSpell;
+		public String spellWeight;
+		public String noOfBooks;
+		public int line;
+		public Token f;
+		public Token s;
+		public Token n;
+		public MagicContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode MAGIC() { return getToken(PlayerClassGrammar.MAGIC, 0); }
+
+		public List<TerminalNode> COLON() { return getTokens(PlayerClassGrammar.COLON); }
+
+		public TerminalNode COLON(int i) {
+			return getToken(PlayerClassGrammar.COLON, i);
+		}
+
+		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
+
+		public TerminalNode INTEGER(int i) {
+			return getToken(PlayerClassGrammar.INTEGER, i);
+		}
+
+		@Override public int getRuleIndex() { return RULE_magic; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterMagic(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitMagic(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitMagic(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final BookPropertiesContext bookProperties() throws RecognitionException {
@@ -1358,6 +2238,50 @@ public class PlayerClassGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class MagicBlockContext extends ParserRuleContext {
+		public List<ClassEquipParseRecord> equipInit;
+		public String firstSpell;
+		public String spellWeight;
+		public String noOfBooks;
+		public int line;
+		public List<ClassSpellBookParseRecord> spellBooks;
+		public MagicContext magic;
+		public BookBlockContext bookBlock;
+		public MagicBlockContext(ParserRuleContext parent, int invokingState) { super(parent, invokingState); }
+		public MagicBlockContext(ParserRuleContext parent, int invokingState, List<ClassEquipParseRecord> equipInit) {
+			super(parent, invokingState);
+			this.equipInit = equipInit;
+		}
+
+		public MagicContext magic() {
+			return getRuleContext(MagicContext.class,0);
+		}
+
+		public List<BookBlockContext> bookBlock() {
+			return getRuleContexts(BookBlockContext.class);
+		}
+
+		public BookBlockContext bookBlock(int i) {
+			return getRuleContext(BookBlockContext.class,i);
+		}
+
+		@Override public int getRuleIndex() { return RULE_magicBlock; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterMagicBlock(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitMagicBlock(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitMagicBlock(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final BookBlockContext bookBlock(List<ClassEquipParseRecord> equipInit) throws RecognitionException {
@@ -1451,6 +2375,55 @@ public class PlayerClassGrammar extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class BookContext extends ParserRuleContext {
+		public String oBase;
+		public String location;
+		public String bookName;
+		public String noOfSpells;
+		public String realm;
+		public int line;
+		public Token t;
+		public Token l;
+		public Token n;
+		public Token s;
+		public Token r;
+		public BookContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode BOOK() { return getToken(PlayerClassGrammar.BOOK, 0); }
+
+		public List<TerminalNode> DELIM_COLON() { return getTokens(PlayerClassGrammar.DELIM_COLON); }
+
+		public TerminalNode DELIM_COLON(int i) {
+			return getToken(PlayerClassGrammar.DELIM_COLON, i);
+		}
+
+		public List<TerminalNode> STRING_BETWEEN_COLONS() { return getTokens(PlayerClassGrammar.STRING_BETWEEN_COLONS); }
+
+		public TerminalNode STRING_BETWEEN_COLONS(int i) {
+			return getToken(PlayerClassGrammar.STRING_BETWEEN_COLONS, i);
+		}
+
+		public TerminalNode DELIM_INTEGER() { return getToken(PlayerClassGrammar.DELIM_INTEGER, 0); }
+
+		@Override public int getRuleIndex() { return RULE_book; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterBook(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitBook(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitBook(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final SpellContext spell() throws RecognitionException {
 		SpellContext _localctx = new SpellContext(_ctx, getState());
 		enterRule(_localctx, 56, RULE_spell);
@@ -1498,6 +2471,40 @@ public class PlayerClassGrammar extends Parser {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
+	public static class BookGraphicsContext extends ParserRuleContext {
+		public String glyph;
+		public String colour;
+		public Token g;
+		public Token c;
+		public BookGraphicsContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode BOOK_GRAPHICS() { return getToken(PlayerClassGrammar.BOOK_GRAPHICS, 0); }
+
+		public TerminalNode GLYPH_COLON_SWITCH() { return getToken(PlayerClassGrammar.GLYPH_COLON_SWITCH, 0); }
+
+		public TerminalNode GLYPH_VALUES() { return getToken(PlayerClassGrammar.GLYPH_VALUES, 0); }
+
+		public TerminalNode COLOUR_VALUES() { return getToken(PlayerClassGrammar.COLOUR_VALUES, 0); }
+
+		@Override public int getRuleIndex() { return RULE_bookGraphics; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterBookGraphics(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitBookGraphics(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitBookGraphics(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
 	public final DescContext desc() throws RecognitionException {
 		DescContext _localctx = new DescContext(_ctx, getState());
 		enterRule(_localctx, 58, RULE_desc);
@@ -1520,6 +2527,52 @@ public class PlayerClassGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class BookPropertiesContext extends ParserRuleContext {
+		public String cost;
+		public String commonness;
+		public String min;
+		public String max;
+		public Token c;
+		public Token comm;
+		public Token mn;
+		public Token mx;
+		public BookPropertiesContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode BOOK_PROPERTIES() { return getToken(PlayerClassGrammar.BOOK_PROPERTIES, 0); }
+
+		public List<TerminalNode> PROP_COLON() { return getTokens(PlayerClassGrammar.PROP_COLON); }
+
+		public TerminalNode PROP_COLON(int i) {
+			return getToken(PlayerClassGrammar.PROP_COLON, i);
+		}
+
+		public TerminalNode PROP_TO() { return getToken(PlayerClassGrammar.PROP_TO, 0); }
+
+		public List<TerminalNode> PROP_INT() { return getTokens(PlayerClassGrammar.PROP_INT); }
+
+		public TerminalNode PROP_INT(int i) {
+			return getToken(PlayerClassGrammar.PROP_INT, i);
+		}
+
+		@Override public int getRuleIndex() { return RULE_bookProperties; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterBookProperties(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitBookProperties(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitBookProperties(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final SpellBlockContext spellBlock() throws RecognitionException {
@@ -1589,6 +2642,73 @@ public class PlayerClassGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class BookBlockContext extends ParserRuleContext {
+		public List<ClassEquipParseRecord> equipInit;
+		public String oBase;
+		public String locFrom;
+		public String nameStr;
+		public String noOfSpells;
+		public String realm;
+		public String glyph;
+		public String colour;
+		public String cost;
+		public String commonness;
+		public String min;
+		public String max;
+		public List<ClassSpellParseRecord> spells;
+		public int line;
+		public BookContext book;
+		public BookGraphicsContext bookGraphics;
+		public BookPropertiesContext bookProperties;
+		public EquipContext equip;
+		public SpellBlockContext spellBlock;
+		public BookBlockContext(ParserRuleContext parent, int invokingState) { super(parent, invokingState); }
+		public BookBlockContext(ParserRuleContext parent, int invokingState, List<ClassEquipParseRecord> equipInit) {
+			super(parent, invokingState);
+			this.equipInit = equipInit;
+		}
+
+		public BookContext book() {
+			return getRuleContext(BookContext.class,0);
+		}
+
+		public BookGraphicsContext bookGraphics() {
+			return getRuleContext(BookGraphicsContext.class,0);
+		}
+
+		public BookPropertiesContext bookProperties() {
+			return getRuleContext(BookPropertiesContext.class,0);
+		}
+
+		public EquipContext equip() {
+			return getRuleContext(EquipContext.class,0);
+		}
+
+		public List<SpellBlockContext> spellBlock() {
+			return getRuleContexts(SpellBlockContext.class);
+		}
+
+		public SpellBlockContext spellBlock(int i) {
+			return getRuleContext(SpellBlockContext.class,i);
+		}
+
+		@Override public int getRuleIndex() { return RULE_bookBlock; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterBookBlock(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitBookBlock(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitBookBlock(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final PlayerClassContext playerClass() throws RecognitionException {
@@ -1823,1495 +2943,6 @@ public class PlayerClassGrammar extends Parser {
 		return _localctx;
 	}
 
-	public final FileContext file() throws RecognitionException {
-		FileContext _localctx = new FileContext(_ctx, getState());
-		enterRule(_localctx, 64, RULE_file);
-		int _la;
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(385);
-			((FileContext)_localctx).recordCount = recordCount();
-			 ((FileContext)_localctx).playerClasses =  new ArrayList<>();
-			                          ((FileContext)_localctx).declaredRecordCount =  ((FileContext)_localctx).recordCount.count; 
-			setState(390); 
-			_errHandler.sync(this);
-			_la = _input.LA(1);
-			do {
-				{
-				{
-				setState(387);
-				((FileContext)_localctx).playerClass = playerClass();
-				 _localctx.playerClasses.add(((FileContext)_localctx).playerClass.pClass); 
-				}
-				}
-				setState(392); 
-				_errHandler.sync(this);
-				_la = _input.LA(1);
-			} while ( _la==NAME );
-			setState(394);
-			match(EOF);
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	public final EffectContext effect() throws RecognitionException {
-		EffectContext _localctx = new EffectContext(_ctx, getState());
-		enterRule(_localctx, 66, RULE_effect);
-
-		            ((EffectContext)_localctx).wrapper =  "";
-		            ((EffectContext)_localctx).radius =  "";
-		            ((EffectContext)_localctx).other =  "";
-		        
-		int _la;
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(396);
-			match(EFFECT);
-			setState(397);
-			((EffectContext)_localctx).t = match(UCASE);
-
-			                ((EffectContext)_localctx).type =  ((EffectContext)_localctx).t.getText();
-			            
-			setState(412);
-			_errHandler.sync(this);
-			_la = _input.LA(1);
-			if (_la==COLON) {
-				{
-				setState(399);
-				match(COLON);
-				setState(400);
-				((EffectContext)_localctx).st = match(UCASE);
-
-				                ((EffectContext)_localctx).wrapper =  ((EffectContext)_localctx).st.getText().toUpperCase();
-				            
-				setState(410);
-				_errHandler.sync(this);
-				_la = _input.LA(1);
-				if (_la==COLON) {
-					{
-					setState(402);
-					match(COLON);
-					setState(403);
-					((EffectContext)_localctx).rad = match(INTEGER);
-
-					                ((EffectContext)_localctx).radius =  ((EffectContext)_localctx).rad.getText();
-					            
-					setState(408);
-					_errHandler.sync(this);
-					_la = _input.LA(1);
-					if (_la==COLON) {
-						{
-						setState(405);
-						match(COLON);
-						setState(406);
-						((EffectContext)_localctx).oth = match(INTEGER);
-
-						                ((EffectContext)_localctx).other =  ((EffectContext)_localctx).oth.getText();
-						            
-						}
-					}
-
-					}
-				}
-
-				}
-			}
-
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	public final EffectYXContext effectYX() throws RecognitionException {
-		EffectYXContext _localctx = new EffectYXContext(_ctx, getState());
-		enterRule(_localctx, 68, RULE_effectYX);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(414);
-			match(EFFECT_YX);
-			setState(415);
-			((EffectYXContext)_localctx).yVal = match(INTEGER);
-			setState(416);
-			match(COLON);
-			setState(417);
-			((EffectYXContext)_localctx).xVal = match(INTEGER);
-
-			                ((EffectYXContext)_localctx).y =  ((EffectYXContext)_localctx).yVal.getText();
-			                ((EffectYXContext)_localctx).x =  ((EffectYXContext)_localctx).xVal.getText();
-			            
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	public final DiceContext dice() throws RecognitionException {
-		DiceContext _localctx = new DiceContext(_ctx, getState());
-		enterRule(_localctx, 70, RULE_dice);
-
-		            String charHolder = "";
-		            String baseHolder = "";
-		            String operHolder = "";
-		            ((DiceContext)_localctx).diceString =  "";
-		            ((DiceContext)_localctx).exprChar =  "";
-		            ((DiceContext)_localctx).baseName =  "";
-		            ((DiceContext)_localctx).operation =  "";
-		        
-		int _la;
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(420);
-			match(DICE);
-			setState(432);
-			_errHandler.sync(this);
-			switch (_input.LA(1)) {
-			case DICE_COMPLEX_VALUE:
-				{
-				{
-				setState(421);
-				((DiceContext)_localctx).val = match(DICE_COMPLEX_VALUE);
-
-				                ((DiceContext)_localctx).diceString =  ((DiceContext)_localctx).val.getText();
-				            
-				setState(426); 
-				_errHandler.sync(this);
-				_la = _input.LA(1);
-				do {
-					{
-					{
-					setState(423);
-					((DiceContext)_localctx).expr = expr();
-
-					                if (charHolder.isEmpty()) {
-					                    charHolder = ((DiceContext)_localctx).expr.exprChar;
-					                    baseHolder = ((DiceContext)_localctx).expr.baseName;
-					                    operHolder = ((DiceContext)_localctx).expr.operation;
-					                } else {
-					                    charHolder = charHolder + "^" + ((DiceContext)_localctx).expr.exprChar;
-					                    baseHolder = baseHolder + "^" + ((DiceContext)_localctx).expr.baseName;
-					                    operHolder = operHolder + "^" + ((DiceContext)_localctx).expr.operation;
-					                }
-					            
-					}
-					}
-					setState(428); 
-					_errHandler.sync(this);
-					_la = _input.LA(1);
-				} while ( _la==EXPR );
-				}
-				}
-				break;
-			case DICE_SIMPLE_VALUE:
-				{
-				setState(430);
-				((DiceContext)_localctx).val = match(DICE_SIMPLE_VALUE);
-
-				                ((DiceContext)_localctx).diceString =  ((DiceContext)_localctx).val.getText();
-				            
-				}
-				break;
-			default:
-				throw new NoViableAltException(this);
-			}
-			}
-			_ctx.stop = _input.LT(-1);
-
-			            ((DiceContext)_localctx).exprChar =  charHolder;
-			            ((DiceContext)_localctx).baseName =  baseHolder;
-			            ((DiceContext)_localctx).operation =  operHolder;
-			        
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	public final ExprContext expr() throws RecognitionException {
-		ExprContext _localctx = new ExprContext(_ctx, getState());
-		enterRule(_localctx, 72, RULE_expr);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(434);
-			match(EXPR);
-			setState(435);
-			((ExprContext)_localctx).ch = match(EXPR_CHAR);
-			setState(436);
-			match(EXPR_COLON);
-			setState(437);
-			((ExprContext)_localctx).base = match(EXPR_UCASE);
-			setState(438);
-			match(EXPR_COLON);
-			setState(439);
-			((ExprContext)_localctx).op = match(EXPR_OP);
-
-			                ((ExprContext)_localctx).exprChar =  ((ExprContext)_localctx).ch.getText();
-			                ((ExprContext)_localctx).baseName =  ((ExprContext)_localctx).base.getText();
-			                ((ExprContext)_localctx).operation =  ((ExprContext)_localctx).op.getText();
-			            
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	public final EffectMsgContext effectMsg() throws RecognitionException {
-		EffectMsgContext _localctx = new EffectMsgContext(_ctx, getState());
-		enterRule(_localctx, 74, RULE_effectMsg);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(442);
-			match(EFFECT_MESSAGE);
-			setState(443);
-			((EffectMsgContext)_localctx).FREE_TEXT = match(FREE_TEXT);
-			 ((EffectMsgContext)_localctx).message =  ((EffectMsgContext)_localctx).FREE_TEXT.getText(); 
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	public final TimeContext time() throws RecognitionException {
-		TimeContext _localctx = new TimeContext(_ctx, getState());
-		enterRule(_localctx, 76, RULE_time);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(446);
-			match(TIME);
-			setState(447);
-			((TimeContext)_localctx).DICE_SIMPLE_VALUE = match(DICE_SIMPLE_VALUE);
-			 ((TimeContext)_localctx).timeStr =  ((TimeContext)_localctx).DICE_SIMPLE_VALUE.getText(); 
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	public final EffectBlockContext effectBlock() throws RecognitionException {
-		EffectBlockContext _localctx = new EffectBlockContext(_ctx, getState());
-		enterRule(_localctx, 78, RULE_effectBlock);
-
-		            String expressionString = "";
-		            String baseString = "";
-		            String opString = "";
-		            ((EffectBlockContext)_localctx).diceString =  "";
-		            ((EffectBlockContext)_localctx).yVal =  "";
-		            ((EffectBlockContext)_localctx).xVal =  "";
-		            ((EffectBlockContext)_localctx).effectMessage =  "";
-		        
-		int _la;
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(450);
-			((EffectBlockContext)_localctx).effect = effect();
-
-			                ((EffectBlockContext)_localctx).lineNo =  _localctx.start.getLine();
-			                ((EffectBlockContext)_localctx).typeInit =  ((EffectBlockContext)_localctx).effect.type;
-			                ((EffectBlockContext)_localctx).subtypeWrapperInit =  ((EffectBlockContext)_localctx).effect.wrapper;
-			                ((EffectBlockContext)_localctx).radius =  ((EffectBlockContext)_localctx).effect.radius;
-			                ((EffectBlockContext)_localctx).other =  ((EffectBlockContext)_localctx).effect.other;
-			            
-			setState(460);
-			_errHandler.sync(this);
-			switch (_input.LA(1)) {
-			case EFFECT_YX:
-				{
-				{
-				setState(452);
-				((EffectBlockContext)_localctx).effectYX = effectYX();
-
-				                ((EffectBlockContext)_localctx).yVal =  ((EffectBlockContext)_localctx).effectYX.y;
-				                ((EffectBlockContext)_localctx).xVal =  ((EffectBlockContext)_localctx).effectYX.x;
-				            
-				}
-				}
-				break;
-			case EOF:
-			case NAME:
-			case STATS:
-			case SKILL_DISARM_PHYS:
-			case SKILL_DISARM_MAGIC:
-			case SKILL_DEVICE:
-			case SKILL_SAVE:
-			case SKILL_STEALTH:
-			case SKILL_SEARCH:
-			case SKILL_MELEE:
-			case SKILL_SHOOT:
-			case SKILL_THROW:
-			case SKILL_DIG:
-			case HITDIE:
-			case EXP:
-			case MAX_ATTACKS:
-			case MIN_WEIGHT:
-			case STRENGTH:
-			case TITLE:
-			case EQUIP:
-			case OBJ_FLAGS:
-			case PLAYER_FLAGS:
-			case MAGIC:
-			case BOOK:
-			case SPELL:
-			case DESC:
-			case EFFECT:
-			case EFFECT_MESSAGE:
-			case DICE:
-				{
-				{
-				setState(458);
-				_errHandler.sync(this);
-				_la = _input.LA(1);
-				if (_la==DICE) {
-					{
-					setState(455);
-					((EffectBlockContext)_localctx).dice = dice();
-
-					                ((EffectBlockContext)_localctx).diceString =  ((EffectBlockContext)_localctx).dice.diceString;
-					                expressionString = ((EffectBlockContext)_localctx).dice.exprChar;
-					                baseString = ((EffectBlockContext)_localctx).dice.baseName;
-					                opString = ((EffectBlockContext)_localctx).dice.operation;
-					            
-					}
-				}
-
-				}
-				}
-				break;
-			default:
-				throw new NoViableAltException(this);
-			}
-			setState(465);
-			_errHandler.sync(this);
-			_la = _input.LA(1);
-			if (_la==EFFECT_MESSAGE) {
-				{
-				setState(462);
-				((EffectBlockContext)_localctx).effectMsg = effectMsg();
-				 ((EffectBlockContext)_localctx).effectMessage =  ((EffectBlockContext)_localctx).effectMsg.message; 
-				}
-			}
-
-			}
-			_ctx.stop = _input.LT(-1);
-
-			            ((EffectBlockContext)_localctx).expressionChars =  expressionString;
-			            ((EffectBlockContext)_localctx).expressionBase =  baseString;
-			            ((EffectBlockContext)_localctx).expressionOperation =  opString;
-			        
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class RecordCountContext extends ParserRuleContext {
-		public String count;
-		public Token INTEGER;
-		public RecordCountContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode RECORD_COUNT() { return getToken(PlayerClassGrammar.RECORD_COUNT, 0); }
-
-		public TerminalNode INTEGER() { return getToken(PlayerClassGrammar.INTEGER, 0); }
-
-		@Override public int getRuleIndex() { return RULE_recordCount; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterRecordCount(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitRecordCount(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitRecordCount(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class NameContext extends ParserRuleContext {
-		public String nameStr;
-		public int lineNo;
-		public Token STRING;
-		public NameContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode NAME() { return getToken(PlayerClassGrammar.NAME, 0); }
-
-		public TerminalNode STRING() { return getToken(PlayerClassGrammar.STRING, 0); }
-
-		@Override public int getRuleIndex() { return RULE_name; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterName(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitName(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitName(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class StatsContext extends ParserRuleContext {
-		public String strs;
-		public String ints;
-		public String wiss;
-		public String dexs;
-		public String cons;
-		public Token s;
-		public Token i;
-		public Token w;
-		public Token d;
-		public Token c;
-		public StatsContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode STATS() { return getToken(PlayerClassGrammar.STATS, 0); }
-
-		public List<TerminalNode> COLON() { return getTokens(PlayerClassGrammar.COLON); }
-
-		public TerminalNode COLON(int i) {
-			return getToken(PlayerClassGrammar.COLON, i);
-		}
-
-		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
-
-		public TerminalNode INTEGER(int i) {
-			return getToken(PlayerClassGrammar.INTEGER, i);
-		}
-
-		@Override public int getRuleIndex() { return RULE_stats; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterStats(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitStats(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitStats(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class SkillDisarmPhysContext extends ParserRuleContext {
-		public String skillVal;
-		public String skillInc;
-		public Token v;
-		public Token i;
-		public SkillDisarmPhysContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode SKILL_DISARM_PHYS() { return getToken(PlayerClassGrammar.SKILL_DISARM_PHYS, 0); }
-
-		public TerminalNode COLON() { return getToken(PlayerClassGrammar.COLON, 0); }
-
-		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
-
-		public TerminalNode INTEGER(int i) {
-			return getToken(PlayerClassGrammar.INTEGER, i);
-		}
-
-		@Override public int getRuleIndex() { return RULE_skillDisarmPhys; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterSkillDisarmPhys(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitSkillDisarmPhys(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitSkillDisarmPhys(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class SkillDisarmMagicContext extends ParserRuleContext {
-		public String skillVal;
-		public String skillInc;
-		public Token v;
-		public Token i;
-		public SkillDisarmMagicContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode SKILL_DISARM_MAGIC() { return getToken(PlayerClassGrammar.SKILL_DISARM_MAGIC, 0); }
-
-		public TerminalNode COLON() { return getToken(PlayerClassGrammar.COLON, 0); }
-
-		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
-
-		public TerminalNode INTEGER(int i) {
-			return getToken(PlayerClassGrammar.INTEGER, i);
-		}
-
-		@Override public int getRuleIndex() { return RULE_skillDisarmMagic; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterSkillDisarmMagic(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitSkillDisarmMagic(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitSkillDisarmMagic(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class SkillDeviceContext extends ParserRuleContext {
-		public String skillVal;
-		public String skillInc;
-		public Token v;
-		public Token i;
-		public SkillDeviceContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode SKILL_DEVICE() { return getToken(PlayerClassGrammar.SKILL_DEVICE, 0); }
-
-		public TerminalNode COLON() { return getToken(PlayerClassGrammar.COLON, 0); }
-
-		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
-
-		public TerminalNode INTEGER(int i) {
-			return getToken(PlayerClassGrammar.INTEGER, i);
-		}
-
-		@Override public int getRuleIndex() { return RULE_skillDevice; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterSkillDevice(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitSkillDevice(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitSkillDevice(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class SkillSaveContext extends ParserRuleContext {
-		public String skillVal;
-		public String skillInc;
-		public Token v;
-		public Token i;
-		public SkillSaveContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode SKILL_SAVE() { return getToken(PlayerClassGrammar.SKILL_SAVE, 0); }
-
-		public TerminalNode COLON() { return getToken(PlayerClassGrammar.COLON, 0); }
-
-		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
-
-		public TerminalNode INTEGER(int i) {
-			return getToken(PlayerClassGrammar.INTEGER, i);
-		}
-
-		@Override public int getRuleIndex() { return RULE_skillSave; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterSkillSave(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitSkillSave(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitSkillSave(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class SkillStealthContext extends ParserRuleContext {
-		public String skillVal;
-		public String skillInc;
-		public Token v;
-		public Token i;
-		public SkillStealthContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode SKILL_STEALTH() { return getToken(PlayerClassGrammar.SKILL_STEALTH, 0); }
-
-		public TerminalNode COLON() { return getToken(PlayerClassGrammar.COLON, 0); }
-
-		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
-
-		public TerminalNode INTEGER(int i) {
-			return getToken(PlayerClassGrammar.INTEGER, i);
-		}
-
-		@Override public int getRuleIndex() { return RULE_skillStealth; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterSkillStealth(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitSkillStealth(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitSkillStealth(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class SkillSearchContext extends ParserRuleContext {
-		public String skillVal;
-		public String skillInc;
-		public Token v;
-		public Token i;
-		public SkillSearchContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode SKILL_SEARCH() { return getToken(PlayerClassGrammar.SKILL_SEARCH, 0); }
-
-		public TerminalNode COLON() { return getToken(PlayerClassGrammar.COLON, 0); }
-
-		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
-
-		public TerminalNode INTEGER(int i) {
-			return getToken(PlayerClassGrammar.INTEGER, i);
-		}
-
-		@Override public int getRuleIndex() { return RULE_skillSearch; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterSkillSearch(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitSkillSearch(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitSkillSearch(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class SkillMeleeContext extends ParserRuleContext {
-		public String skillVal;
-		public String skillInc;
-		public Token v;
-		public Token i;
-		public SkillMeleeContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode SKILL_MELEE() { return getToken(PlayerClassGrammar.SKILL_MELEE, 0); }
-
-		public TerminalNode COLON() { return getToken(PlayerClassGrammar.COLON, 0); }
-
-		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
-
-		public TerminalNode INTEGER(int i) {
-			return getToken(PlayerClassGrammar.INTEGER, i);
-		}
-
-		@Override public int getRuleIndex() { return RULE_skillMelee; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterSkillMelee(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitSkillMelee(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitSkillMelee(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class SkillShootContext extends ParserRuleContext {
-		public String skillVal;
-		public String skillInc;
-		public Token v;
-		public Token i;
-		public SkillShootContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode SKILL_SHOOT() { return getToken(PlayerClassGrammar.SKILL_SHOOT, 0); }
-
-		public TerminalNode COLON() { return getToken(PlayerClassGrammar.COLON, 0); }
-
-		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
-
-		public TerminalNode INTEGER(int i) {
-			return getToken(PlayerClassGrammar.INTEGER, i);
-		}
-
-		@Override public int getRuleIndex() { return RULE_skillShoot; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterSkillShoot(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitSkillShoot(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitSkillShoot(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class SkillThrowContext extends ParserRuleContext {
-		public String skillVal;
-		public String skillInc;
-		public Token v;
-		public Token i;
-		public SkillThrowContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode SKILL_THROW() { return getToken(PlayerClassGrammar.SKILL_THROW, 0); }
-
-		public TerminalNode COLON() { return getToken(PlayerClassGrammar.COLON, 0); }
-
-		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
-
-		public TerminalNode INTEGER(int i) {
-			return getToken(PlayerClassGrammar.INTEGER, i);
-		}
-
-		@Override public int getRuleIndex() { return RULE_skillThrow; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterSkillThrow(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitSkillThrow(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitSkillThrow(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class SkillDigContext extends ParserRuleContext {
-		public String skillVal;
-		public String skillInc;
-		public Token v;
-		public Token i;
-		public SkillDigContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode SKILL_DIG() { return getToken(PlayerClassGrammar.SKILL_DIG, 0); }
-
-		public TerminalNode COLON() { return getToken(PlayerClassGrammar.COLON, 0); }
-
-		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
-
-		public TerminalNode INTEGER(int i) {
-			return getToken(PlayerClassGrammar.INTEGER, i);
-		}
-
-		@Override public int getRuleIndex() { return RULE_skillDig; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterSkillDig(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitSkillDig(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitSkillDig(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class HitdieContext extends ParserRuleContext {
-		public String increment;
-		public Token INTEGER;
-		public HitdieContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode HITDIE() { return getToken(PlayerClassGrammar.HITDIE, 0); }
-
-		public TerminalNode INTEGER() { return getToken(PlayerClassGrammar.INTEGER, 0); }
-
-		@Override public int getRuleIndex() { return RULE_hitdie; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterHitdie(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitHitdie(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitHitdie(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class MaxAttacksContext extends ParserRuleContext {
-		public String maxAtt;
-		public Token INTEGER;
-		public MaxAttacksContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode MAX_ATTACKS() { return getToken(PlayerClassGrammar.MAX_ATTACKS, 0); }
-
-		public TerminalNode INTEGER() { return getToken(PlayerClassGrammar.INTEGER, 0); }
-
-		@Override public int getRuleIndex() { return RULE_maxAttacks; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterMaxAttacks(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitMaxAttacks(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitMaxAttacks(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class MinWeightContext extends ParserRuleContext {
-		public String minWgt;
-		public Token INTEGER;
-		public MinWeightContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode MIN_WEIGHT() { return getToken(PlayerClassGrammar.MIN_WEIGHT, 0); }
-
-		public TerminalNode INTEGER() { return getToken(PlayerClassGrammar.INTEGER, 0); }
-
-		@Override public int getRuleIndex() { return RULE_minWeight; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterMinWeight(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitMinWeight(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitMinWeight(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class StrengthMultiplierContext extends ParserRuleContext {
-		public String strMult;
-		public Token INTEGER;
-		public StrengthMultiplierContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode STRENGTH() { return getToken(PlayerClassGrammar.STRENGTH, 0); }
-
-		public TerminalNode INTEGER() { return getToken(PlayerClassGrammar.INTEGER, 0); }
-
-		@Override public int getRuleIndex() { return RULE_strengthMultiplier; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterStrengthMultiplier(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitStrengthMultiplier(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitStrengthMultiplier(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class TitleContext extends ParserRuleContext {
-		public String titleStr;
-		public Token STRING;
-		public TitleContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode TITLE() { return getToken(PlayerClassGrammar.TITLE, 0); }
-
-		public TerminalNode STRING() { return getToken(PlayerClassGrammar.STRING, 0); }
-
-		@Override public int getRuleIndex() { return RULE_title; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterTitle(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitTitle(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitTitle(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class EquipContext extends ParserRuleContext {
-		public String tValue;
-		public String sValue;
-		public String min;
-		public String max;
-		public String eopts;
-		public int line;
-		public Token t;
-		public Token s;
-		public Token mn;
-		public Token mx;
-		public Token e;
-		public EquipContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode EQUIP() { return getToken(PlayerClassGrammar.EQUIP, 0); }
-
-		public List<TerminalNode> DELIM_COLON() { return getTokens(PlayerClassGrammar.DELIM_COLON); }
-
-		public TerminalNode DELIM_COLON(int i) {
-			return getToken(PlayerClassGrammar.DELIM_COLON, i);
-		}
-
-		public List<TerminalNode> STRING_BETWEEN_COLONS() { return getTokens(PlayerClassGrammar.STRING_BETWEEN_COLONS); }
-
-		public TerminalNode STRING_BETWEEN_COLONS(int i) {
-			return getToken(PlayerClassGrammar.STRING_BETWEEN_COLONS, i);
-		}
-
-		public List<TerminalNode> DELIM_INTEGER() { return getTokens(PlayerClassGrammar.DELIM_INTEGER); }
-
-		public TerminalNode DELIM_INTEGER(int i) {
-			return getToken(PlayerClassGrammar.DELIM_INTEGER, i);
-		}
-
-		@Override public int getRuleIndex() { return RULE_equip; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterEquip(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitEquip(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitEquip(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class ObjFlagContext extends ParserRuleContext {
-		public List<String> oFlags;
-		public Token f1;
-		public Token f2;
-		public ObjFlagContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode OBJ_FLAGS() { return getToken(PlayerClassGrammar.OBJ_FLAGS, 0); }
-
-		public List<TerminalNode> FLAG() { return getTokens(PlayerClassGrammar.FLAG); }
-
-		public TerminalNode FLAG(int i) {
-			return getToken(PlayerClassGrammar.FLAG, i);
-		}
-
-		public List<TerminalNode> FLAG_OR() { return getTokens(PlayerClassGrammar.FLAG_OR); }
-
-		public TerminalNode FLAG_OR(int i) {
-			return getToken(PlayerClassGrammar.FLAG_OR, i);
-		}
-
-		@Override public int getRuleIndex() { return RULE_objFlag; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterObjFlag(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitObjFlag(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitObjFlag(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class PlayerFlagsContext extends ParserRuleContext {
-		public List<String> pFlags;
-		public Token f1;
-		public Token f2;
-		public PlayerFlagsContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode PLAYER_FLAGS() { return getToken(PlayerClassGrammar.PLAYER_FLAGS, 0); }
-
-		public List<TerminalNode> FLAG() { return getTokens(PlayerClassGrammar.FLAG); }
-
-		public TerminalNode FLAG(int i) {
-			return getToken(PlayerClassGrammar.FLAG, i);
-		}
-
-		public List<TerminalNode> FLAG_OR() { return getTokens(PlayerClassGrammar.FLAG_OR); }
-
-		public TerminalNode FLAG_OR(int i) {
-			return getToken(PlayerClassGrammar.FLAG_OR, i);
-		}
-
-		@Override public int getRuleIndex() { return RULE_playerFlags; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterPlayerFlags(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitPlayerFlags(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitPlayerFlags(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class ExpContext extends ParserRuleContext {
-		public String expStr;
-		public Token INTEGER;
-		public ExpContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode EXP() { return getToken(PlayerClassGrammar.EXP, 0); }
-
-		public TerminalNode INTEGER() { return getToken(PlayerClassGrammar.INTEGER, 0); }
-
-		@Override public int getRuleIndex() { return RULE_exp; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterExp(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitExp(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitExp(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class MagicContext extends ParserRuleContext {
-		public String firstSpell;
-		public String spellWeight;
-		public String noOfBooks;
-		public int line;
-		public Token f;
-		public Token s;
-		public Token n;
-		public MagicContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode MAGIC() { return getToken(PlayerClassGrammar.MAGIC, 0); }
-
-		public List<TerminalNode> COLON() { return getTokens(PlayerClassGrammar.COLON); }
-
-		public TerminalNode COLON(int i) {
-			return getToken(PlayerClassGrammar.COLON, i);
-		}
-
-		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
-
-		public TerminalNode INTEGER(int i) {
-			return getToken(PlayerClassGrammar.INTEGER, i);
-		}
-
-		@Override public int getRuleIndex() { return RULE_magic; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterMagic(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitMagic(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitMagic(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class MagicBlockContext extends ParserRuleContext {
-		public List<ClassEquipParseRecord> equipInit;
-		public String firstSpell;
-		public String spellWeight;
-		public String noOfBooks;
-		public int line;
-		public List<ClassSpellBookParseRecord> spellBooks;
-		public MagicContext magic;
-		public BookBlockContext bookBlock;
-		public MagicBlockContext(ParserRuleContext parent, int invokingState) { super(parent, invokingState); }
-		public MagicBlockContext(ParserRuleContext parent, int invokingState, List<ClassEquipParseRecord> equipInit) {
-			super(parent, invokingState);
-			this.equipInit = equipInit;
-		}
-
-		public MagicContext magic() {
-			return getRuleContext(MagicContext.class,0);
-		}
-
-		public List<BookBlockContext> bookBlock() {
-			return getRuleContexts(BookBlockContext.class);
-		}
-
-		public BookBlockContext bookBlock(int i) {
-			return getRuleContext(BookBlockContext.class,i);
-		}
-
-		@Override public int getRuleIndex() { return RULE_magicBlock; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterMagicBlock(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitMagicBlock(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitMagicBlock(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class BookContext extends ParserRuleContext {
-		public String oBase;
-		public String location;
-		public String bookName;
-		public String noOfSpells;
-		public String realm;
-		public int line;
-		public Token t;
-		public Token l;
-		public Token n;
-		public Token s;
-		public Token r;
-		public BookContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode BOOK() { return getToken(PlayerClassGrammar.BOOK, 0); }
-
-		public List<TerminalNode> DELIM_COLON() { return getTokens(PlayerClassGrammar.DELIM_COLON); }
-
-		public TerminalNode DELIM_COLON(int i) {
-			return getToken(PlayerClassGrammar.DELIM_COLON, i);
-		}
-
-		public List<TerminalNode> STRING_BETWEEN_COLONS() { return getTokens(PlayerClassGrammar.STRING_BETWEEN_COLONS); }
-
-		public TerminalNode STRING_BETWEEN_COLONS(int i) {
-			return getToken(PlayerClassGrammar.STRING_BETWEEN_COLONS, i);
-		}
-
-		public TerminalNode DELIM_INTEGER() { return getToken(PlayerClassGrammar.DELIM_INTEGER, 0); }
-
-		@Override public int getRuleIndex() { return RULE_book; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterBook(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitBook(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitBook(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class BookGraphicsContext extends ParserRuleContext {
-		public String glyph;
-		public String colour;
-		public Token g;
-		public Token c;
-		public BookGraphicsContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode BOOK_GRAPHICS() { return getToken(PlayerClassGrammar.BOOK_GRAPHICS, 0); }
-
-		public TerminalNode GLYPH_COLON_SWITCH() { return getToken(PlayerClassGrammar.GLYPH_COLON_SWITCH, 0); }
-
-		public TerminalNode GLYPH_VALUES() { return getToken(PlayerClassGrammar.GLYPH_VALUES, 0); }
-
-		public TerminalNode COLOUR_VALUES() { return getToken(PlayerClassGrammar.COLOUR_VALUES, 0); }
-
-		@Override public int getRuleIndex() { return RULE_bookGraphics; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterBookGraphics(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitBookGraphics(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitBookGraphics(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class BookPropertiesContext extends ParserRuleContext {
-		public String cost;
-		public String commonness;
-		public String min;
-		public String max;
-		public Token c;
-		public Token comm;
-		public Token mn;
-		public Token mx;
-		public BookPropertiesContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode BOOK_PROPERTIES() { return getToken(PlayerClassGrammar.BOOK_PROPERTIES, 0); }
-
-		public List<TerminalNode> PROP_COLON() { return getTokens(PlayerClassGrammar.PROP_COLON); }
-
-		public TerminalNode PROP_COLON(int i) {
-			return getToken(PlayerClassGrammar.PROP_COLON, i);
-		}
-
-		public TerminalNode PROP_TO() { return getToken(PlayerClassGrammar.PROP_TO, 0); }
-
-		public List<TerminalNode> PROP_INT() { return getTokens(PlayerClassGrammar.PROP_INT); }
-
-		public TerminalNode PROP_INT(int i) {
-			return getToken(PlayerClassGrammar.PROP_INT, i);
-		}
-
-		@Override public int getRuleIndex() { return RULE_bookProperties; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterBookProperties(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitBookProperties(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitBookProperties(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class BookBlockContext extends ParserRuleContext {
-		public List<ClassEquipParseRecord> equipInit;
-		public String oBase;
-		public String locFrom;
-		public String nameStr;
-		public String noOfSpells;
-		public String realm;
-		public String glyph;
-		public String colour;
-		public String cost;
-		public String commonness;
-		public String min;
-		public String max;
-		public List<ClassSpellParseRecord> spells;
-		public int line;
-		public BookContext book;
-		public BookGraphicsContext bookGraphics;
-		public BookPropertiesContext bookProperties;
-		public EquipContext equip;
-		public SpellBlockContext spellBlock;
-		public BookBlockContext(ParserRuleContext parent, int invokingState) { super(parent, invokingState); }
-		public BookBlockContext(ParserRuleContext parent, int invokingState, List<ClassEquipParseRecord> equipInit) {
-			super(parent, invokingState);
-			this.equipInit = equipInit;
-		}
-
-		public BookContext book() {
-			return getRuleContext(BookContext.class,0);
-		}
-
-		public BookGraphicsContext bookGraphics() {
-			return getRuleContext(BookGraphicsContext.class,0);
-		}
-
-		public BookPropertiesContext bookProperties() {
-			return getRuleContext(BookPropertiesContext.class,0);
-		}
-
-		public EquipContext equip() {
-			return getRuleContext(EquipContext.class,0);
-		}
-
-		public List<SpellBlockContext> spellBlock() {
-			return getRuleContexts(SpellBlockContext.class);
-		}
-
-		public SpellBlockContext spellBlock(int i) {
-			return getRuleContext(SpellBlockContext.class,i);
-		}
-
-		@Override public int getRuleIndex() { return RULE_bookBlock; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).enterBookBlock(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof PlayerClassGrammarListener ) ((PlayerClassGrammarListener)listener).exitBookBlock(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitBookBlock(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
 	@SuppressWarnings("CheckReturnValue")
 	public static class SpellContext extends ParserRuleContext {
 		public String spellname;
@@ -3359,6 +2990,47 @@ public class PlayerClassGrammar extends Parser {
 			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitSpell(this);
 			else return visitor.visitChildren(this);
 		}
+	}
+
+	public final FileContext file() throws RecognitionException {
+		FileContext _localctx = new FileContext(_ctx, getState());
+		enterRule(_localctx, 64, RULE_file);
+		int _la;
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(385);
+			((FileContext)_localctx).recordCount = recordCount();
+			 ((FileContext)_localctx).playerClasses =  new ArrayList<>();
+			                          ((FileContext)_localctx).declaredRecordCount =  ((FileContext)_localctx).recordCount.count; 
+			setState(390); 
+			_errHandler.sync(this);
+			_la = _input.LA(1);
+			do {
+				{
+				{
+				setState(387);
+				((FileContext)_localctx).playerClass = playerClass();
+				 _localctx.playerClasses.add(((FileContext)_localctx).playerClass.pClass); 
+				}
+				}
+				setState(392); 
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+			} while ( _la==NAME );
+			setState(394);
+			match(EOF);
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
 	}
 
 	@SuppressWarnings("CheckReturnValue")
@@ -3659,6 +3331,37 @@ public class PlayerClassGrammar extends Parser {
 		}
 	}
 
+	public final EffectYXContext effectYX() throws RecognitionException {
+		EffectYXContext _localctx = new EffectYXContext(_ctx, getState());
+		enterRule(_localctx, 68, RULE_effectYX);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(414);
+			match(EFFECT_YX);
+			setState(415);
+			((EffectYXContext)_localctx).yVal = match(INTEGER);
+			setState(416);
+			match(COLON);
+			setState(417);
+			((EffectYXContext)_localctx).xVal = match(INTEGER);
+
+			                ((EffectYXContext)_localctx).y =  ((EffectYXContext)_localctx).yVal.getText();
+			                ((EffectYXContext)_localctx).x =  ((EffectYXContext)_localctx).xVal.getText();
+			            
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
 	@SuppressWarnings("CheckReturnValue")
 	public static class FileContext extends ParserRuleContext {
 		public String declaredRecordCount;
@@ -3697,6 +3400,94 @@ public class PlayerClassGrammar extends Parser {
 			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitFile(this);
 			else return visitor.visitChildren(this);
 		}
+	}
+
+	public final DiceContext dice() throws RecognitionException {
+		DiceContext _localctx = new DiceContext(_ctx, getState());
+		enterRule(_localctx, 70, RULE_dice);
+
+		            String charHolder = "";
+		            String baseHolder = "";
+		            String operHolder = "";
+		            ((DiceContext)_localctx).diceString =  "";
+		            ((DiceContext)_localctx).exprChar =  "";
+		            ((DiceContext)_localctx).baseName =  "";
+		            ((DiceContext)_localctx).operation =  "";
+		        
+		int _la;
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(420);
+			match(DICE);
+			setState(432);
+			_errHandler.sync(this);
+			switch (_input.LA(1)) {
+			case DICE_COMPLEX_VALUE:
+				{
+				{
+				setState(421);
+				((DiceContext)_localctx).val = match(DICE_COMPLEX_VALUE);
+
+				                ((DiceContext)_localctx).diceString =  ((DiceContext)_localctx).val.getText();
+				            
+				setState(426); 
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+				do {
+					{
+					{
+					setState(423);
+					((DiceContext)_localctx).expr = expr();
+
+					                if (charHolder.isEmpty()) {
+					                    charHolder = ((DiceContext)_localctx).expr.exprChar;
+					                    baseHolder = ((DiceContext)_localctx).expr.baseName;
+					                    operHolder = ((DiceContext)_localctx).expr.operation;
+					                } else {
+					                    charHolder = charHolder + "^" + ((DiceContext)_localctx).expr.exprChar;
+					                    baseHolder = baseHolder + "^" + ((DiceContext)_localctx).expr.baseName;
+					                    operHolder = operHolder + "^" + ((DiceContext)_localctx).expr.operation;
+					                }
+					            
+					}
+					}
+					setState(428); 
+					_errHandler.sync(this);
+					_la = _input.LA(1);
+				} while ( _la==EXPR );
+				}
+				}
+				break;
+			case DICE_SIMPLE_VALUE:
+				{
+				setState(430);
+				((DiceContext)_localctx).val = match(DICE_SIMPLE_VALUE);
+
+				                ((DiceContext)_localctx).diceString =  ((DiceContext)_localctx).val.getText();
+				            
+				}
+				break;
+			default:
+				throw new NoViableAltException(this);
+			}
+			}
+			_ctx.stop = _input.LT(-1);
+
+			            ((DiceContext)_localctx).exprChar =  charHolder;
+			            ((DiceContext)_localctx).baseName =  baseHolder;
+			            ((DiceContext)_localctx).operation =  operHolder;
+			        
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
 	}
 
 	@SuppressWarnings("CheckReturnValue")
@@ -3749,6 +3540,42 @@ public class PlayerClassGrammar extends Parser {
 		}
 	}
 
+	public final ExprContext expr() throws RecognitionException {
+		ExprContext _localctx = new ExprContext(_ctx, getState());
+		enterRule(_localctx, 72, RULE_expr);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(434);
+			match(EXPR);
+			setState(435);
+			((ExprContext)_localctx).ch = match(EXPR_CHAR);
+			setState(436);
+			match(EXPR_COLON);
+			setState(437);
+			((ExprContext)_localctx).base = match(EXPR_UCASE);
+			setState(438);
+			match(EXPR_COLON);
+			setState(439);
+			((ExprContext)_localctx).op = match(EXPR_OP);
+
+			                ((ExprContext)_localctx).exprChar =  ((ExprContext)_localctx).ch.getText();
+			                ((ExprContext)_localctx).baseName =  ((ExprContext)_localctx).base.getText();
+			                ((ExprContext)_localctx).operation =  ((ExprContext)_localctx).op.getText();
+			            
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
 	@SuppressWarnings("CheckReturnValue")
 	public static class EffectYXContext extends ParserRuleContext {
 		public String y;
@@ -3783,6 +3610,30 @@ public class PlayerClassGrammar extends Parser {
 			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitEffectYX(this);
 			else return visitor.visitChildren(this);
 		}
+	}
+
+	public final EffectMsgContext effectMsg() throws RecognitionException {
+		EffectMsgContext _localctx = new EffectMsgContext(_ctx, getState());
+		enterRule(_localctx, 74, RULE_effectMsg);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(442);
+			match(EFFECT_MESSAGE);
+			setState(443);
+			((EffectMsgContext)_localctx).FREE_TEXT = match(FREE_TEXT);
+			 ((EffectMsgContext)_localctx).message =  ((EffectMsgContext)_localctx).FREE_TEXT.getText(); 
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
 	}
 
 	@SuppressWarnings("CheckReturnValue")
@@ -3827,6 +3678,30 @@ public class PlayerClassGrammar extends Parser {
 		}
 	}
 
+	public final TimeContext time() throws RecognitionException {
+		TimeContext _localctx = new TimeContext(_ctx, getState());
+		enterRule(_localctx, 76, RULE_time);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(446);
+			match(TIME);
+			setState(447);
+			((TimeContext)_localctx).DICE_SIMPLE_VALUE = match(DICE_SIMPLE_VALUE);
+			 ((TimeContext)_localctx).timeStr =  ((TimeContext)_localctx).DICE_SIMPLE_VALUE.getText(); 
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
 	@SuppressWarnings("CheckReturnValue")
 	public static class ExprContext extends ParserRuleContext {
 		public String exprChar;
@@ -3867,6 +3742,129 @@ public class PlayerClassGrammar extends Parser {
 			if ( visitor instanceof PlayerClassGrammarVisitor ) return ((PlayerClassGrammarVisitor<? extends T>)visitor).visitExpr(this);
 			else return visitor.visitChildren(this);
 		}
+	}
+
+	public final EffectBlockContext effectBlock() throws RecognitionException {
+		EffectBlockContext _localctx = new EffectBlockContext(_ctx, getState());
+		enterRule(_localctx, 78, RULE_effectBlock);
+
+		            String expressionString = "";
+		            String baseString = "";
+		            String opString = "";
+		            ((EffectBlockContext)_localctx).diceString =  "";
+		            ((EffectBlockContext)_localctx).yVal =  "";
+		            ((EffectBlockContext)_localctx).xVal =  "";
+		            ((EffectBlockContext)_localctx).effectMessage =  "";
+		        
+		int _la;
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(450);
+			((EffectBlockContext)_localctx).effect = effect();
+
+			                ((EffectBlockContext)_localctx).lineNo =  _localctx.start.getLine();
+			                ((EffectBlockContext)_localctx).typeInit =  ((EffectBlockContext)_localctx).effect.type;
+			                ((EffectBlockContext)_localctx).subtypeWrapperInit =  ((EffectBlockContext)_localctx).effect.wrapper;
+			                ((EffectBlockContext)_localctx).radius =  ((EffectBlockContext)_localctx).effect.radius;
+			                ((EffectBlockContext)_localctx).other =  ((EffectBlockContext)_localctx).effect.other;
+			            
+			setState(460);
+			_errHandler.sync(this);
+			switch (_input.LA(1)) {
+			case EFFECT_YX:
+				{
+				{
+				setState(452);
+				((EffectBlockContext)_localctx).effectYX = effectYX();
+
+				                ((EffectBlockContext)_localctx).yVal =  ((EffectBlockContext)_localctx).effectYX.y;
+				                ((EffectBlockContext)_localctx).xVal =  ((EffectBlockContext)_localctx).effectYX.x;
+				            
+				}
+				}
+				break;
+			case EOF:
+			case NAME:
+			case STATS:
+			case SKILL_DISARM_PHYS:
+			case SKILL_DISARM_MAGIC:
+			case SKILL_DEVICE:
+			case SKILL_SAVE:
+			case SKILL_STEALTH:
+			case SKILL_SEARCH:
+			case SKILL_MELEE:
+			case SKILL_SHOOT:
+			case SKILL_THROW:
+			case SKILL_DIG:
+			case HITDIE:
+			case EXP:
+			case MAX_ATTACKS:
+			case MIN_WEIGHT:
+			case STRENGTH:
+			case TITLE:
+			case EQUIP:
+			case OBJ_FLAGS:
+			case PLAYER_FLAGS:
+			case MAGIC:
+			case BOOK:
+			case SPELL:
+			case DESC:
+			case EFFECT:
+			case EFFECT_MESSAGE:
+			case DICE:
+				{
+				{
+				setState(458);
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+				if (_la==DICE) {
+					{
+					setState(455);
+					((EffectBlockContext)_localctx).dice = dice();
+
+					                ((EffectBlockContext)_localctx).diceString =  ((EffectBlockContext)_localctx).dice.diceString;
+					                expressionString = ((EffectBlockContext)_localctx).dice.exprChar;
+					                baseString = ((EffectBlockContext)_localctx).dice.baseName;
+					                opString = ((EffectBlockContext)_localctx).dice.operation;
+					            
+					}
+				}
+
+				}
+				}
+				break;
+			default:
+				throw new NoViableAltException(this);
+			}
+			setState(465);
+			_errHandler.sync(this);
+			_la = _input.LA(1);
+			if (_la==EFFECT_MESSAGE) {
+				{
+				setState(462);
+				((EffectBlockContext)_localctx).effectMsg = effectMsg();
+				 ((EffectBlockContext)_localctx).effectMessage =  ((EffectBlockContext)_localctx).effectMsg.message; 
+				}
+			}
+
+			}
+			_ctx.stop = _input.LT(-1);
+
+			            ((EffectBlockContext)_localctx).expressionChars =  expressionString;
+			            ((EffectBlockContext)_localctx).expressionBase =  baseString;
+			            ((EffectBlockContext)_localctx).expressionOperation =  opString;
+			        
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
 	}
 
 	@SuppressWarnings("CheckReturnValue")

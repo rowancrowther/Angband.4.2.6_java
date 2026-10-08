@@ -480,14 +480,15 @@ class PlayerWipeTest {
         }
 
         /**
-         * The race is the first loaded one, matching {@code p->race = races} in {@code player_init}.
+         * The wipe clears the race, as C's {@code memset} in {@code player_init} does; setting
+         * {@code p->race = races} is {@code playerInit}'s job, after the wipe.
          */
         @Test
-        @DisplayName("the race is the first one loaded")
-        void raceIsFirstLoaded() {
+        @DisplayName("the race is cleared")
+        void raceIsCleared() {
             player.wipe();
 
-            assertSame(PlayerRegistry.getFirstPlayerRace(), player.getRace());
+            assertNull(player.getRace());
         }
 
         /**
@@ -533,16 +534,27 @@ class PlayerWipeTest {
             }
         }
 
+        /**
+         * C's {@code init_player} reads no race, so building a player does not depend on the race
+         * list; the race is simply left unset.
+         */
         @Test
-        @DisplayName("the constructor throws when the race list is empty")
-        void constructorThrowsOnEmptyList() throws Exception {
-            withRaces(List.of(), () -> assertThrows(IllegalStateException.class, Player::new));
+        @DisplayName("the constructor builds a raceless player even when the race list is empty")
+        void constructorToleratesAnEmptyList() throws Exception {
+            withRaces(List.of(), () -> assertNull(new Player().getRace()));
         }
 
+        /**
+         * Nor does C's {@code memset} in {@code player_init}; the wipe clears the race without
+         * looking at the list.
+         */
         @Test
-        @DisplayName("wipe throws when the race list is empty, as the constructor does")
-        void wipeThrowsOnEmptyList() throws Exception {
-            withRaces(List.of(), () -> assertThrows(IllegalStateException.class, () -> player.wipe()));
+        @DisplayName("wipe clears the race even when the race list is empty")
+        void wipeToleratesAnEmptyList() throws Exception {
+            withRaces(List.of(), () -> {
+                player.wipe();
+                assertNull(player.getRace());
+            });
         }
     }
 }

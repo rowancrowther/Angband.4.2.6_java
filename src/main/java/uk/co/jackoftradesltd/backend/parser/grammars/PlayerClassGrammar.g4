@@ -316,7 +316,7 @@ spellBlock
                         $effectBlock.subtypeWrapperInit, $effectBlock.radius, $effectBlock.other,
                         $effectBlock.diceString, $effectBlock.yVal, $effectBlock.xVal,
                         $effectBlock.expressionChars, $effectBlock.expressionBase,
-                        $effectBlock.expressionOperation, $effectBlock.timeDiceString,
+                        $effectBlock.expressionOperation,
                         $effectBlock.effectMessage, $effectBlock.start.getLine())); })
         |   (desc { $spellDesc = $spellDesc + $desc.description; }))*
         ;

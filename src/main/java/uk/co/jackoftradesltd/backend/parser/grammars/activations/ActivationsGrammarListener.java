@@ -14,9 +14,14 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
-// Generated from src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ActivationsGrammar.g4 by ANTLR 4.13.2
+// Generated from ActivationsGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.activations;
+
+import uk.co.jackoftradesltd.backend.parser.activation.ActivationParseRecord;
+import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
+
+import java.util.List;
+import java.util.ArrayList;
 
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
@@ -166,20 +171,6 @@ public interface ActivationsGrammarListener extends ParseTreeListener {
     void exitEffect(ActivationsGrammar.EffectContext ctx);
 
     /**
-     * Enter a parse tree produced by {@link ActivationsGrammar#time}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterTime(ActivationsGrammar.TimeContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link ActivationsGrammar#time}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitTime(ActivationsGrammar.TimeContext ctx);
-
-    /**
      * Enter a parse tree produced by {@link ActivationsGrammar#effectYX}.
      *
      * @param ctx the parse tree
@@ -234,6 +225,20 @@ public interface ActivationsGrammarListener extends ParseTreeListener {
      * @param ctx the parse tree
      */
     void exitEffectMsg(ActivationsGrammar.EffectMsgContext ctx);
+
+    /**
+     * Enter a parse tree produced by {@link ActivationsGrammar#time}.
+     *
+     * @param ctx the parse tree
+     */
+    void enterTime(ActivationsGrammar.TimeContext ctx);
+
+    /**
+     * Exit a parse tree produced by {@link ActivationsGrammar#time}.
+     *
+     * @param ctx the parse tree
+     */
+    void exitTime(ActivationsGrammar.TimeContext ctx);
 
     /**
      * Enter a parse tree produced by {@link ActivationsGrammar#effectBlock}.

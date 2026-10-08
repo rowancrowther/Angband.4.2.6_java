@@ -14,7 +14,6 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
 // Generated from CurseGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.curse;
 
@@ -61,7 +60,7 @@ public class CurseGrammar extends Parser {
             RULE_expr = 17, RULE_effectMsg = 18, RULE_effectBlock = 19;
 
     public static final String _serializedATN =
-            "\u0004\u0001)\u00f5\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002" +
+            "\u0004\u0001)\u00f0\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002" +
                     "\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002" +
                     "\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007\u0002" +
                     "\b\u0007\b\u0002\t\u0007\t\u0002\n\u0007\n\u0002\u000b\u0007\u000b\u0002" +
@@ -96,63 +95,62 @@ public class CurseGrammar extends Parser {
                     "\u0001\u0012\u0001\u0012\u0001\u0012\u0001\u0012\u0001\u0013\u0001\u0013" +
                     "\u0001\u0013\u0001\u0013\u0001\u0013\u0001\u0013\u0001\u0013\u0001\u0013" +
                     "\u0003\u0013\u00e7\b\u0013\u0003\u0013\u00e9\b\u0013\u0001\u0013\u0001" +
-                    "\u0013\u0001\u0013\u0003\u0013\u00ee\b\u0013\u0001\u0013\u0001\u0013\u0001" +
-                    "\u0013\u0003\u0013\u00f3\b\u0013\u0001\u0013\u0000\u0000\u0014\u0000\u0002" +
-                    "\u0004\u0006\b\n\f\u000e\u0010\u0012\u0014\u0016\u0018\u001a\u001c\u001e" +
-                    " \"$&\u0000\u0000\u00f8\u0000(\u0001\u0000\u0000\u0000\u0002,\u0001\u0000" +
-                    "\u0000\u0000\u00040\u0001\u0000\u0000\u0000\u00064\u0001\u0000\u0000\u0000" +
-                    "\b8\u0001\u0000\u0000\u0000\n@\u0001\u0000\u0000\u0000\fL\u0001\u0000" +
-                    "\u0000\u0000\u000e^\u0001\u0000\u0000\u0000\u0010b\u0001\u0000\u0000\u0000" +
-                    "\u0012f\u0001\u0000\u0000\u0000\u0014j\u0001\u0000\u0000\u0000\u0016v" +
-                    "\u0001\u0000\u0000\u0000\u0018z\u0001\u0000\u0000\u0000\u001a\u00a1\u0001" +
-                    "\u0000\u0000\u0000\u001c\u00ac\u0001\u0000\u0000\u0000\u001e\u00be\u0001" +
-                    "\u0000\u0000\u0000 \u00c4\u0001\u0000\u0000\u0000\"\u00d2\u0001\u0000" +
-                    "\u0000\u0000$\u00da\u0001\u0000\u0000\u0000&\u00de\u0001\u0000\u0000\u0000" +
-                    "()\u0005\u0001\u0000\u0000)*\u0005\u0016\u0000\u0000*+\u0006\u0000\uffff" +
-                    "\uffff\u0000+\u0001\u0001\u0000\u0000\u0000,-\u0005\u0002\u0000\u0000" +
-                    "-.\u0005\"\u0000\u0000./\u0006\u0001\uffff\uffff\u0000/\u0003\u0001\u0000" +
-                    "\u0000\u000001\u0005\u0003\u0000\u000012\u0005\"\u0000\u000023\u0006\u0002" +
-                    "\uffff\uffff\u00003\u0005\u0001\u0000\u0000\u000045\u0005\u0004\u0000" +
-                    "\u000056\u0005\u0016\u0000\u000067\u0006\u0003\uffff\uffff\u00007\u0007" +
-                    "\u0001\u0000\u0000\u000089\u0005\u0005\u0000\u00009:\u0005\u0016\u0000" +
-                    "\u0000:;\u0005\u0014\u0000\u0000;<\u0005\u0016\u0000\u0000<=\u0005\u0014" +
-                    "\u0000\u0000=>\u0005\u0016\u0000\u0000>?\u0006\u0004\uffff\uffff\u0000" +
-                    "?\t\u0001\u0000\u0000\u0000@A\u0006\u0005\uffff\uffff\u0000AB\u0005\u0006" +
-                    "\u0000\u0000BC\u0005\u001f\u0000\u0000CI\u0006\u0005\uffff\uffff\u0000" +
-                    "DE\u0005 \u0000\u0000EF\u0005\u001f\u0000\u0000FH\u0006\u0005\uffff\uffff" +
-                    "\u0000GD\u0001\u0000\u0000\u0000HK\u0001\u0000\u0000\u0000IG\u0001\u0000" +
-                    "\u0000\u0000IJ\u0001\u0000\u0000\u0000J\u000b\u0001\u0000\u0000\u0000" +
-                    "KI\u0001\u0000\u0000\u0000LM\u0006\u0006\uffff\uffff\u0000MN\u0005\u0007" +
-                    "\u0000\u0000NO\u0005\u001b\u0000\u0000OP\u0005\u0019\u0000\u0000PQ\u0005" +
-                    "\u001e\u0000\u0000QR\u0005\u001a\u0000\u0000R[\u0006\u0006\uffff\uffff" +
-                    "\u0000ST\u0005\u001c\u0000\u0000TU\u0005\u001b\u0000\u0000UV\u0005\u0019" +
-                    "\u0000\u0000VW\u0005\u001e\u0000\u0000WX\u0005\u001a\u0000\u0000XZ\u0006" +
-                    "\u0006\uffff\uffff\u0000YS\u0001\u0000\u0000\u0000Z]\u0001\u0000\u0000" +
-                    "\u0000[Y\u0001\u0000\u0000\u0000[\\\u0001\u0000\u0000\u0000\\\r\u0001" +
-                    "\u0000\u0000\u0000][\u0001\u0000\u0000\u0000^_\u0005\b\u0000\u0000_`\u0005" +
-                    "\"\u0000\u0000`a\u0006\u0007\uffff\uffff\u0000a\u000f\u0001\u0000\u0000" +
-                    "\u0000bc\u0005\t\u0000\u0000cd\u0005\"\u0000\u0000de\u0006\b\uffff\uffff" +
-                    "\u0000e\u0011\u0001\u0000\u0000\u0000fg\u0005\n\u0000\u0000gh\u0005\"" +
-                    "\u0000\u0000hi\u0006\t\uffff\uffff\u0000i\u0013\u0001\u0000\u0000\u0000" +
-                    "jk\u0006\n\uffff\uffff\u0000kl\u0005\u000b\u0000\u0000lm\u0005\u001f\u0000" +
-                    "\u0000ms\u0006\n\uffff\uffff\u0000no\u0005 \u0000\u0000op\u0005\u001f" +
-                    "\u0000\u0000pr\u0006\n\uffff\uffff\u0000qn\u0001\u0000\u0000\u0000ru\u0001" +
-                    "\u0000\u0000\u0000sq\u0001\u0000\u0000\u0000st\u0001\u0000\u0000\u0000" +
-                    "t\u0015\u0001\u0000\u0000\u0000us\u0001\u0000\u0000\u0000vw\u0005\u0011" +
-                    "\u0000\u0000wx\u0005#\u0000\u0000xy\u0006\u000b\uffff\uffff\u0000y\u0017" +
-                    "\u0001\u0000\u0000\u0000z{\u0003\u0002\u0001\u0000{\u009d\u0006\f\uffff" +
-                    "\uffff\u0000|}\u0003\u0004\u0002\u0000}~\u0006\f\uffff\uffff\u0000~\u009e" +
-                    "\u0001\u0000\u0000\u0000\u007f\u0080\u0003\u0006\u0003\u0000\u0080\u0081" +
-                    "\u0006\f\uffff\uffff\u0000\u0081\u009e\u0001\u0000\u0000\u0000\u0082\u0083" +
-                    "\u0003\b\u0004\u0000\u0083\u0084\u0006\f\uffff\uffff\u0000\u0084\u009e" +
-                    "\u0001\u0000\u0000\u0000\u0085\u0086\u0003&\u0013\u0000\u0086\u0087\u0006" +
-                    "\f\uffff\uffff\u0000\u0087\u009e\u0001\u0000\u0000\u0000\u0088\u0089\u0003" +
-                    "\n\u0005\u0000\u0089\u008a\u0006\f\uffff\uffff\u0000\u008a\u009e\u0001" +
-                    "\u0000\u0000\u0000\u008b\u008c\u0003\f\u0006\u0000\u008c\u008d\u0006\f" +
-                    "\uffff\uffff\u0000\u008d\u009e\u0001\u0000\u0000\u0000\u008e\u008f\u0003" +
-                    "\u000e\u0007\u0000\u008f\u0090\u0006\f\uffff\uffff\u0000\u0090\u009e\u0001" +
-                    "\u0000\u0000\u0000\u0091\u0092\u0003\u0010\b\u0000\u0092\u0093\u0006\f" +
-                    "\uffff\uffff\u0000\u0093\u009e\u0001\u0000\u0000\u0000\u0094\u0095\u0003" +
+                    "\u0013\u0001\u0013\u0003\u0013\u00ee\b\u0013\u0001\u0013\u0000\u0000\u0014" +
+                    "\u0000\u0002\u0004\u0006\b\n\f\u000e\u0010\u0012\u0014\u0016\u0018\u001a" +
+                    "\u001c\u001e \"$&\u0000\u0000\u00f2\u0000(\u0001\u0000\u0000\u0000\u0002" +
+                    ",\u0001\u0000\u0000\u0000\u00040\u0001\u0000\u0000\u0000\u00064\u0001" +
+                    "\u0000\u0000\u0000\b8\u0001\u0000\u0000\u0000\n@\u0001\u0000\u0000\u0000" +
+                    "\fL\u0001\u0000\u0000\u0000\u000e^\u0001\u0000\u0000\u0000\u0010b\u0001" +
+                    "\u0000\u0000\u0000\u0012f\u0001\u0000\u0000\u0000\u0014j\u0001\u0000\u0000" +
+                    "\u0000\u0016v\u0001\u0000\u0000\u0000\u0018z\u0001\u0000\u0000\u0000\u001a" +
+                    "\u00a1\u0001\u0000\u0000\u0000\u001c\u00ac\u0001\u0000\u0000\u0000\u001e" +
+                    "\u00be\u0001\u0000\u0000\u0000 \u00c4\u0001\u0000\u0000\u0000\"\u00d2" +
+                    "\u0001\u0000\u0000\u0000$\u00da\u0001\u0000\u0000\u0000&\u00de\u0001\u0000" +
+                    "\u0000\u0000()\u0005\u0001\u0000\u0000)*\u0005\u0016\u0000\u0000*+\u0006" +
+                    "\u0000\uffff\uffff\u0000+\u0001\u0001\u0000\u0000\u0000,-\u0005\u0002" +
+                    "\u0000\u0000-.\u0005\"\u0000\u0000./\u0006\u0001\uffff\uffff\u0000/\u0003" +
+                    "\u0001\u0000\u0000\u000001\u0005\u0003\u0000\u000012\u0005\"\u0000\u0000" +
+                    "23\u0006\u0002\uffff\uffff\u00003\u0005\u0001\u0000\u0000\u000045\u0005" +
+                    "\u0004\u0000\u000056\u0005\u0016\u0000\u000067\u0006\u0003\uffff\uffff" +
+                    "\u00007\u0007\u0001\u0000\u0000\u000089\u0005\u0005\u0000\u00009:\u0005" +
+                    "\u0016\u0000\u0000:;\u0005\u0014\u0000\u0000;<\u0005\u0016\u0000\u0000" +
+                    "<=\u0005\u0014\u0000\u0000=>\u0005\u0016\u0000\u0000>?\u0006\u0004\uffff" +
+                    "\uffff\u0000?\t\u0001\u0000\u0000\u0000@A\u0006\u0005\uffff\uffff\u0000" +
+                    "AB\u0005\u0006\u0000\u0000BC\u0005\u001f\u0000\u0000CI\u0006\u0005\uffff" +
+                    "\uffff\u0000DE\u0005 \u0000\u0000EF\u0005\u001f\u0000\u0000FH\u0006\u0005" +
+                    "\uffff\uffff\u0000GD\u0001\u0000\u0000\u0000HK\u0001\u0000\u0000\u0000" +
+                    "IG\u0001\u0000\u0000\u0000IJ\u0001\u0000\u0000\u0000J\u000b\u0001\u0000" +
+                    "\u0000\u0000KI\u0001\u0000\u0000\u0000LM\u0006\u0006\uffff\uffff\u0000" +
+                    "MN\u0005\u0007\u0000\u0000NO\u0005\u001b\u0000\u0000OP\u0005\u0019\u0000" +
+                    "\u0000PQ\u0005\u001e\u0000\u0000QR\u0005\u001a\u0000\u0000R[\u0006\u0006" +
+                    "\uffff\uffff\u0000ST\u0005\u001c\u0000\u0000TU\u0005\u001b\u0000\u0000" +
+                    "UV\u0005\u0019\u0000\u0000VW\u0005\u001e\u0000\u0000WX\u0005\u001a\u0000" +
+                    "\u0000XZ\u0006\u0006\uffff\uffff\u0000YS\u0001\u0000\u0000\u0000Z]\u0001" +
+                    "\u0000\u0000\u0000[Y\u0001\u0000\u0000\u0000[\\\u0001\u0000\u0000\u0000" +
+                    "\\\r\u0001\u0000\u0000\u0000][\u0001\u0000\u0000\u0000^_\u0005\b\u0000" +
+                    "\u0000_`\u0005\"\u0000\u0000`a\u0006\u0007\uffff\uffff\u0000a\u000f\u0001" +
+                    "\u0000\u0000\u0000bc\u0005\t\u0000\u0000cd\u0005\"\u0000\u0000de\u0006" +
+                    "\b\uffff\uffff\u0000e\u0011\u0001\u0000\u0000\u0000fg\u0005\n\u0000\u0000" +
+                    "gh\u0005\"\u0000\u0000hi\u0006\t\uffff\uffff\u0000i\u0013\u0001\u0000" +
+                    "\u0000\u0000jk\u0006\n\uffff\uffff\u0000kl\u0005\u000b\u0000\u0000lm\u0005" +
+                    "\u001f\u0000\u0000ms\u0006\n\uffff\uffff\u0000no\u0005 \u0000\u0000op" +
+                    "\u0005\u001f\u0000\u0000pr\u0006\n\uffff\uffff\u0000qn\u0001\u0000\u0000" +
+                    "\u0000ru\u0001\u0000\u0000\u0000sq\u0001\u0000\u0000\u0000st\u0001\u0000" +
+                    "\u0000\u0000t\u0015\u0001\u0000\u0000\u0000us\u0001\u0000\u0000\u0000" +
+                    "vw\u0005\u0011\u0000\u0000wx\u0005#\u0000\u0000xy\u0006\u000b\uffff\uffff" +
+                    "\u0000y\u0017\u0001\u0000\u0000\u0000z{\u0003\u0002\u0001\u0000{\u009d" +
+                    "\u0006\f\uffff\uffff\u0000|}\u0003\u0004\u0002\u0000}~\u0006\f\uffff\uffff" +
+                    "\u0000~\u009e\u0001\u0000\u0000\u0000\u007f\u0080\u0003\u0006\u0003\u0000" +
+                    "\u0080\u0081\u0006\f\uffff\uffff\u0000\u0081\u009e\u0001\u0000\u0000\u0000" +
+                    "\u0082\u0083\u0003\b\u0004\u0000\u0083\u0084\u0006\f\uffff\uffff\u0000" +
+                    "\u0084\u009e\u0001\u0000\u0000\u0000\u0085\u0086\u0003&\u0013\u0000\u0086" +
+                    "\u0087\u0006\f\uffff\uffff\u0000\u0087\u009e\u0001\u0000\u0000\u0000\u0088" +
+                    "\u0089\u0003\n\u0005\u0000\u0089\u008a\u0006\f\uffff\uffff\u0000\u008a" +
+                    "\u009e\u0001\u0000\u0000\u0000\u008b\u008c\u0003\f\u0006\u0000\u008c\u008d" +
+                    "\u0006\f\uffff\uffff\u0000\u008d\u009e\u0001\u0000\u0000\u0000\u008e\u008f" +
+                    "\u0003\u000e\u0007\u0000\u008f\u0090\u0006\f\uffff\uffff\u0000\u0090\u009e" +
+                    "\u0001\u0000\u0000\u0000\u0091\u0092\u0003\u0010\b\u0000\u0092\u0093\u0006" +
+                    "\f\uffff\uffff\u0000\u0093\u009e\u0001\u0000\u0000\u0000\u0094\u0095\u0003" +
                     "\u0012\t\u0000\u0095\u0096\u0006\f\uffff\uffff\u0000\u0096\u009e\u0001" +
                     "\u0000\u0000\u0000\u0097\u0098\u0003\u0014\n\u0000\u0098\u0099\u0006\f" +
                     "\uffff\uffff\u0000\u0099\u009e\u0001\u0000\u0000\u0000\u009a\u009b\u0003" +
@@ -205,14 +203,11 @@ public class CurseGrammar extends Parser {
                     "\u0000\u0000\u0000\u00e6\u00e3\u0001\u0000\u0000\u0000\u00e6\u00e7\u0001" +
                     "\u0000\u0000\u0000\u00e7\u00e9\u0001\u0000\u0000\u0000\u00e8\u00e0\u0001" +
                     "\u0000\u0000\u0000\u00e8\u00e6\u0001\u0000\u0000\u0000\u00e9\u00ed\u0001" +
-                    "\u0000\u0000\u0000\u00ea\u00eb\u0003\u0016\u000b\u0000\u00eb\u00ec\u0006" +
-                    "\u0013\uffff\uffff\u0000\u00ec\u00ee\u0001\u0000\u0000\u0000\u00ed\u00ea" +
-                    "\u0001\u0000\u0000\u0000\u00ed\u00ee\u0001\u0000\u0000\u0000\u00ee\u00f2" +
-                    "\u0001\u0000\u0000\u0000\u00ef\u00f0\u0003$\u0012\u0000\u00f0\u00f1\u0006" +
-                    "\u0013\uffff\uffff\u0000\u00f1\u00f3\u0001\u0000\u0000\u0000\u00f2\u00ef" +
-                    "\u0001\u0000\u0000\u0000\u00f2\u00f3\u0001\u0000\u0000\u0000\u00f3\'\u0001" +
-                    "\u0000\u0000\u0000\u000fI[s\u009d\u009f\u00a8\u00b8\u00ba\u00bc\u00cc" +
-                    "\u00d0\u00e6\u00e8\u00ed\u00f2";
+                    "\u0000\u0000\u0000\u00ea\u00eb\u0003$\u0012\u0000\u00eb\u00ec\u0006\u0013" +
+                    "\uffff\uffff\u0000\u00ec\u00ee\u0001\u0000\u0000\u0000\u00ed\u00ea\u0001" +
+                    "\u0000\u0000\u0000\u00ed\u00ee\u0001\u0000\u0000\u0000\u00ee\'\u0001\u0000" +
+                    "\u0000\u0000\u000eI[s\u009d\u009f\u00a8\u00b8\u00ba\u00bc\u00cc\u00d0" +
+                    "\u00e6\u00e8\u00ed";
 
     public static final String[] ruleNames = makeRuleNames();
 
@@ -1251,7 +1246,7 @@ public class CurseGrammar extends Parser {
                                         ((CurseRecordContext) _localctx).effectBlock.subtypeWrapperInit, ((CurseRecordContext) _localctx).effectBlock.radius, ((CurseRecordContext) _localctx).effectBlock.other,
                                         ((CurseRecordContext) _localctx).effectBlock.diceString, ((CurseRecordContext) _localctx).effectBlock.yVal, ((CurseRecordContext) _localctx).effectBlock.xVal,
                                         ((CurseRecordContext) _localctx).effectBlock.expressionChars, ((CurseRecordContext) _localctx).effectBlock.expressionBase,
-                                        ((CurseRecordContext) _localctx).effectBlock.expressionOperation, ((CurseRecordContext) _localctx).effectBlock.timeDiceString,
+                                        ((CurseRecordContext) _localctx).effectBlock.expressionOperation,
                                         ((CurseRecordContext) _localctx).effectBlock.effectMessage, (((CurseRecordContext) _localctx).effectBlock != null ? (((CurseRecordContext) _localctx).effectBlock.start) : null).getLine()));
                             }
                             break;
@@ -1939,21 +1934,15 @@ public class CurseGrammar extends Parser {
         public String expressionChars;
         public String expressionBase;
         public String expressionOperation;
-        public String timeDiceString;
         public String effectMessage;
         public int lineNo;
         public EffectContext effect;
         public EffectYXContext effectYX;
         public DiceContext dice;
-        public TimeContext time;
         public EffectMsgContext effectMsg;
 
         public EffectContext effect() {
             return getRuleContext(EffectContext.class, 0);
-        }
-
-        public TimeContext time() {
-            return getRuleContext(TimeContext.class, 0);
         }
 
         public EffectMsgContext effectMsg() {
@@ -2003,7 +1992,6 @@ public class CurseGrammar extends Parser {
         String baseString = "";
         String opString = "";
         ((EffectBlockContext) _localctx).diceString = "";
-        ((EffectBlockContext) _localctx).timeDiceString = "";
         ((EffectBlockContext) _localctx).yVal = "";
         ((EffectBlockContext) _localctx).xVal = "";
         ((EffectBlockContext) _localctx).effectMessage = "";
@@ -2075,22 +2063,10 @@ public class CurseGrammar extends Parser {
                 }
                 setState(237);
                 _errHandler.sync(this);
-                switch (getInterpreter().adaptivePredict(_input, 13, _ctx)) {
-                    case 1: {
-                        setState(234);
-                        ((EffectBlockContext) _localctx).time = time();
-
-                        ((EffectBlockContext) _localctx).timeDiceString = ((EffectBlockContext) _localctx).time.timeStr;
-
-                    }
-                    break;
-                }
-                setState(242);
-                _errHandler.sync(this);
                 _la = _input.LA(1);
                 if (_la == EFFECT_MESSAGE) {
                     {
-                        setState(239);
+                        setState(234);
                         ((EffectBlockContext) _localctx).effectMsg = effectMsg();
                         ((EffectBlockContext) _localctx).effectMessage = ((EffectBlockContext) _localctx).effectMsg.message;
                     }

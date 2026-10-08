@@ -17,6 +17,14 @@
 // Generated from PlayerTimedGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.playertimed;
 
+import uk.co.jackoftradesltd.backend.parser.playertimed.PlayerTimedParseRecord;
+import uk.co.jackoftradesltd.backend.parser.playertimed.PlayerTimedParseRecord.PlayerTimedGradeParseRecord;
+import uk.co.jackoftradesltd.backend.parser.playertimed.PlayerTimedParseRecord.FailureParseRecord;
+import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
+
+import java.util.List;
+import java.util.ArrayList;
+
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
 /**

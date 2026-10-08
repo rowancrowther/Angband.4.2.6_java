@@ -17,6 +17,14 @@
 // Generated from ShapeGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.shape;
 
+import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
+import uk.co.jackoftradesltd.backend.parser.shape.ShapeParseRecord;
+
+import java.util.List;
+import java.util.Map;
+import java.util.ArrayList;
+import java.util.HashMap;
+
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
 /**
@@ -172,14 +180,6 @@ public interface ShapeGrammarVisitor<T> extends ParseTreeVisitor<T> {
     T visitEffect(ShapeGrammar.EffectContext ctx);
 
     /**
-     * Visit a parse tree produced by {@link ShapeGrammar#time}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitTime(ShapeGrammar.TimeContext ctx);
-
-    /**
      * Visit a parse tree produced by {@link ShapeGrammar#effectYX}.
      *
      * @param ctx the parse tree
@@ -210,6 +210,14 @@ public interface ShapeGrammarVisitor<T> extends ParseTreeVisitor<T> {
      * @return the visitor result
      */
     T visitEffectMsg(ShapeGrammar.EffectMsgContext ctx);
+
+    /**
+     * Visit a parse tree produced by {@link ShapeGrammar#time}.
+     *
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    T visitTime(ShapeGrammar.TimeContext ctx);
 
     /**
      * Visit a parse tree produced by {@link ShapeGrammar#effectBlock}.

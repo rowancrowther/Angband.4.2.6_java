@@ -17,6 +17,14 @@
 // Generated from ShapeGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.shape;
 
+import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
+import uk.co.jackoftradesltd.backend.parser.shape.ShapeParseRecord;
+
+import java.util.List;
+import java.util.Map;
+import java.util.ArrayList;
+import java.util.HashMap;
+
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
 /**
@@ -277,20 +285,6 @@ public interface ShapeGrammarListener extends ParseTreeListener {
     void exitEffect(ShapeGrammar.EffectContext ctx);
 
     /**
-     * Enter a parse tree produced by {@link ShapeGrammar#time}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterTime(ShapeGrammar.TimeContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link ShapeGrammar#time}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitTime(ShapeGrammar.TimeContext ctx);
-
-    /**
      * Enter a parse tree produced by {@link ShapeGrammar#effectYX}.
      *
      * @param ctx the parse tree
@@ -345,6 +339,20 @@ public interface ShapeGrammarListener extends ParseTreeListener {
      * @param ctx the parse tree
      */
     void exitEffectMsg(ShapeGrammar.EffectMsgContext ctx);
+
+    /**
+     * Enter a parse tree produced by {@link ShapeGrammar#time}.
+     *
+     * @param ctx the parse tree
+     */
+    void enterTime(ShapeGrammar.TimeContext ctx);
+
+    /**
+     * Exit a parse tree produced by {@link ShapeGrammar#time}.
+     *
+     * @param ctx the parse tree
+     */
+    void exitTime(ShapeGrammar.TimeContext ctx);
 
     /**
      * Enter a parse tree produced by {@link ShapeGrammar#effectBlock}.

@@ -77,22 +77,6 @@ effect
 /*
  * @author Rowan Crowther
  *
- * "time:<dice string>" - the storage of the random string of the
- * time part of the effect. This is a straight dice string with
- * no '$' variable names present.
- */
-/*
-time
-        returns[String timeStr]
-        : TIME DICE_SIMPLE_VALUE {
-                $timeStr = $DICE_SIMPLE_VALUE.getText();
-            }
-        ;
- */
- 
-/*
- * @author Rowan Crowther
- *
  * "effect-yx:<y>:<x>" - the range of the effect in the
  * vertical (y) and horizontal (x) directions about the effects
  * centre.
@@ -192,6 +176,11 @@ effectMsg
         :   EFFECT_MESSAGE FREE_TEXT { $message = $FREE_TEXT.getText(); }
         ;
 
+time
+        returns[String timeStr]
+        :   TIME SIMPLE_DICE_STRING { $timeStr = $SIMPLE_DICE_STRING.getText(); }
+        ;
+
 /*
  * @author Rowan Crowther
  *
@@ -214,13 +203,12 @@ effectMsg
 effectBlock
         returns[String typeInit, String subtypeWrapperInit, String radius, String other,
                 String diceString, String yVal, String xVal, String expressionChars, String expressionBase,
-                String expressionOperation, String timeDiceString, String effectMessage, int lineNo]
+                String expressionOperation, String effectMessage, int lineNo]
         @init {
             String expressionString = "";
             String baseString = "";
             String opString = "";
             $diceString = "";
-            $timeDiceString = "";
             $yVal = "";
             $xVal = "";
             $effectMessage = "";
@@ -246,8 +234,5 @@ effectBlock
                 baseString = $dice.baseName;
                 opString = $dice.operation;
             })?))
-            (time {
-                $timeDiceString = $time.timeStr;
-            })?
             (effectMsg { $effectMessage = $effectMsg.message; })?
         ;

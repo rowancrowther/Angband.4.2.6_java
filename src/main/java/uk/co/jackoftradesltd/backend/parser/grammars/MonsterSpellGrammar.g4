@@ -123,7 +123,7 @@ monsterSpell
                     $effectBlock.subtypeWrapperInit, $effectBlock.radius, $effectBlock.other,
                     $effectBlock.diceString, $effectBlock.yVal, $effectBlock.xVal,
                     $effectBlock.expressionChars, $effectBlock.expressionBase,
-                    $effectBlock.expressionOperation, $effectBlock.timeDiceString,
+                    $effectBlock.expressionOperation,
                     $effectBlock.effectMessage, $effectBlock.start.getLine())); }
         |   powerCutoffBlock { levels.add(new MonsterSpellParseRecord.MonsterSpellLevelParseRecord(
                     $powerCutoffBlock.powerCutOffVal, $powerCutoffBlock.loreStr,

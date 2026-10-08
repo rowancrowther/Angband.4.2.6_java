@@ -17,6 +17,12 @@
 // Generated from TrapGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.trap;
 
+import uk.co.jackoftradesltd.backend.parser.trap.TrapParseRecord;
+import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
+
+import java.util.List;
+import java.util.ArrayList;
+
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
 /**
@@ -291,20 +297,6 @@ public interface TrapGrammarListener extends ParseTreeListener {
     void exitEffect(TrapGrammar.EffectContext ctx);
 
     /**
-     * Enter a parse tree produced by {@link TrapGrammar#time}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterTime(TrapGrammar.TimeContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link TrapGrammar#time}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitTime(TrapGrammar.TimeContext ctx);
-
-    /**
      * Enter a parse tree produced by {@link TrapGrammar#effectYX}.
      *
      * @param ctx the parse tree
@@ -359,6 +351,20 @@ public interface TrapGrammarListener extends ParseTreeListener {
      * @param ctx the parse tree
      */
     void exitEffectMsg(TrapGrammar.EffectMsgContext ctx);
+
+    /**
+     * Enter a parse tree produced by {@link TrapGrammar#time}.
+     *
+     * @param ctx the parse tree
+     */
+    void enterTime(TrapGrammar.TimeContext ctx);
+
+    /**
+     * Exit a parse tree produced by {@link TrapGrammar#time}.
+     *
+     * @param ctx the parse tree
+     */
+    void exitTime(TrapGrammar.TimeContext ctx);
 
     /**
      * Enter a parse tree produced by {@link TrapGrammar#effectBlock}.

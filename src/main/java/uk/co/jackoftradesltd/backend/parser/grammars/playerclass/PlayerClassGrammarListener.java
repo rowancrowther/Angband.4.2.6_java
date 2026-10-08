@@ -14,9 +14,16 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
 // Generated from PlayerClassGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.playerclass;
+
+import uk.co.jackoftradesltd.backend.parser.playerclass.*;
+import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
+
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
 
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
@@ -502,20 +509,6 @@ public interface PlayerClassGrammarListener extends ParseTreeListener {
     void exitEffect(PlayerClassGrammar.EffectContext ctx);
 
     /**
-     * Enter a parse tree produced by {@link PlayerClassGrammar#time}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterTime(PlayerClassGrammar.TimeContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link PlayerClassGrammar#time}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitTime(PlayerClassGrammar.TimeContext ctx);
-
-    /**
      * Enter a parse tree produced by {@link PlayerClassGrammar#effectYX}.
      *
      * @param ctx the parse tree
@@ -570,6 +563,20 @@ public interface PlayerClassGrammarListener extends ParseTreeListener {
      * @param ctx the parse tree
      */
     void exitEffectMsg(PlayerClassGrammar.EffectMsgContext ctx);
+
+    /**
+     * Enter a parse tree produced by {@link PlayerClassGrammar#time}.
+     *
+     * @param ctx the parse tree
+     */
+    void enterTime(PlayerClassGrammar.TimeContext ctx);
+
+    /**
+     * Exit a parse tree produced by {@link PlayerClassGrammar#time}.
+     *
+     * @param ctx the parse tree
+     */
+    void exitTime(PlayerClassGrammar.TimeContext ctx);
 
     /**
      * Enter a parse tree produced by {@link PlayerClassGrammar#effectBlock}.

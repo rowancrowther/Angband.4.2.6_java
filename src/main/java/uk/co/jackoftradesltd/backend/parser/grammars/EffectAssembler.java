@@ -93,7 +93,7 @@ public class EffectAssembler {
      * Resolves one {@link EffectParseRecord} into an {@link Effect}: the type name to an
      * {@link EffectEnum}, the sub-type token to a payload-specific {@link EffectSubTypeWrapper}
      * via {@link #getWrapperSubType}, the numeric fields from text, and the dice expression's
-     * bound variables to {@link Expression}s — while deliberately leaving {@link #diceString} and
+     * bound variables to {@link Expression}s — while deliberately leaving 
      * the effect's duration unrolled (see the note above {@link #assemble}). The
      * {@code EST_TELEPORT}/{@code EST_TELEPORT_TO} carve-out mirrors C's {@code effect_subtype}
      * treating an absent line as the flag's off state rather than an error.
@@ -187,7 +187,6 @@ public class EffectAssembler {
                 expressionBases, expressionOperations, line, errors);
         if (expressions == null) return null;
         String msg = record.effectMessage();
-        Random time = Random.parseStr(record.timeDiceString());
 
         // The evaluated dice value (the Random field) is intentionally left null here.
         // Dice are not rolled at parse time: an expression such as "$B+1d8" bound to
@@ -198,7 +197,7 @@ public class EffectAssembler {
         // We therefore retain only the lossless raw diceString plus the parsed expressions,
         // to be parsed and evaluated together by the future runtime roll engine.
         return new Effect(effectEnum, null, diceString, yVal, xVal, effectEnum.getSubType(),
-                wrapper, radius, otherParameter, time, expressions, msg);
+                wrapper, radius, otherParameter, expressions, msg);
     }
 
     /**

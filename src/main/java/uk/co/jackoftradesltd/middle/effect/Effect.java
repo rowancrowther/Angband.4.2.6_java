@@ -130,13 +130,6 @@ public class Effect {
      * <p>Field msg coded before 261001, commented in full on 261001.
      */
     private String msg;
-    /**
-     * The effect's timing/duration, as a Random expression. A port addition; C's
-     * {@code struct effect} has no such field. Read through {@link #getTime()}.
-     *
-     * <p>Field time coded before 261001, commented in full on 261001.
-     */
-    private Random time;
 
     /**
      * Build a fully-specified effect from its parsed fields. Every argument is stored as given, with
@@ -153,12 +146,11 @@ public class Effect {
      * @param value          typed subtype payload
      * @param radius         radius int
      * @param otherParameter integer extra parameter
-     * @param time           timing dice
      * @param expression     value-scaling expressions
      * @param msg            String message on effect triggering
      */
     public Effect(EffectEnum index, Random dice, String diceString, int y, int x, EffectSubTypeEnum subType,
-                  EffectSubTypeWrapper value, int radius, int otherParameter, Random time,
+                  EffectSubTypeWrapper value, int radius, int otherParameter,
                   List<Expression> expression, String msg) {
         this.index = index;
         this.dice = dice;
@@ -169,7 +161,6 @@ public class Effect {
         this.value = value;
         this.radius = radius;
         this.otherParameter = otherParameter;
-        this.time = time;
         this.expression = expression;
         this.msg = msg;
     }
@@ -251,19 +242,6 @@ public class Effect {
     }
 
     /**
-     * Returns the recharge or duration dice attached to this effect. The returned object is the
-     * field itself, not a copy, so changes to it are changes to this effect.
-     *
-     * <p>Function getTime coded before 261001, commented in full on 261001.
-     *
-     * @return the recharge or duration dice attached to this effect, shared with this instance -
-     * C's {@code effect->time}
-     */
-    public Random getTime() {
-        return time;
-    }
-
-    /**
      * Returns an independent copy of this effect.
      *
      * <p>Deep-copied because their contents are mutable: the expression list (each
@@ -292,9 +270,8 @@ public class Effect {
 
         EffectSubTypeWrapper newWrapper = this.value.copy();
 
-        Random newTime = this.time.copy();
         Effect copy = new Effect(this.index, newDice, this.diceString, this.y, this.x,
-                this.subType, newWrapper, this.radius, this.otherParameter, newTime,
+                this.subType, newWrapper, this.radius, this.otherParameter,
                 expression, this.msg);
 
         return copy;

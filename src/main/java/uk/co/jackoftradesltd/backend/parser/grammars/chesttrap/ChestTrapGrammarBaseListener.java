@@ -17,6 +17,12 @@
 // Generated from ChestTrapGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.chesttrap;
 
+import uk.co.jackoftradesltd.backend.parser.chesttrap.ChestTrapParseRecord;
+import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
+
+import java.util.ArrayList;
+import java.util.List;
+
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
@@ -233,24 +239,6 @@ public class ChestTrapGrammarBaseListener implements ChestTrapGrammarListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterTime(ChestTrapGrammar.TimeContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void exitTime(ChestTrapGrammar.TimeContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
     public void enterEffectYX(ChestTrapGrammar.EffectYXContext ctx) {
     }
 
@@ -323,6 +311,24 @@ public class ChestTrapGrammarBaseListener implements ChestTrapGrammarListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
+    public void enterTime(ChestTrapGrammar.TimeContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitTime(ChestTrapGrammar.TimeContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
     public void enterEffectBlock(ChestTrapGrammar.EffectBlockContext ctx) {
     }
 
@@ -347,27 +353,19 @@ public class ChestTrapGrammarBaseListener implements ChestTrapGrammarListener {
     /**
      * {@inheritDoc}
      *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void exitEveryRule(ParserRuleContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void visitTerminal(TerminalNode node) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void visitErrorNode(ErrorNode node) {
-    }
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitEveryRule(ParserRuleContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void visitTerminal(TerminalNode node) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void visitErrorNode(ErrorNode node) { }
 }

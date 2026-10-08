@@ -17,6 +17,12 @@
 // Generated from ChestTrapGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.chesttrap;
 
+import uk.co.jackoftradesltd.backend.parser.chesttrap.ChestTrapParseRecord;
+import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
 /**
@@ -24,7 +30,7 @@ import org.antlr.v4.runtime.tree.ParseTreeVisitor;
  * by {@link ChestTrapGrammar}.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
- *            operations with no return type.
+ * operations with no return type.
  */
 public interface ChestTrapGrammarVisitor<T> extends ParseTreeVisitor<T> {
     /**
@@ -116,14 +122,6 @@ public interface ChestTrapGrammarVisitor<T> extends ParseTreeVisitor<T> {
     T visitEffect(ChestTrapGrammar.EffectContext ctx);
 
     /**
-     * Visit a parse tree produced by {@link ChestTrapGrammar#time}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitTime(ChestTrapGrammar.TimeContext ctx);
-
-    /**
      * Visit a parse tree produced by {@link ChestTrapGrammar#effectYX}.
      *
      * @param ctx the parse tree
@@ -154,6 +152,14 @@ public interface ChestTrapGrammarVisitor<T> extends ParseTreeVisitor<T> {
      * @return the visitor result
      */
     T visitEffectMsg(ChestTrapGrammar.EffectMsgContext ctx);
+
+    /**
+     * Visit a parse tree produced by {@link ChestTrapGrammar#time}.
+     *
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    T visitTime(ChestTrapGrammar.TimeContext ctx);
 
     /**
      * Visit a parse tree produced by {@link ChestTrapGrammar#effectBlock}.

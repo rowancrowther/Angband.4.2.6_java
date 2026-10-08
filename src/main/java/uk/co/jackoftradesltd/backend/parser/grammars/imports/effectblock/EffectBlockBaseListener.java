@@ -14,7 +14,6 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
 // Generated from EffectBlock.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.imports.effectblock;
 
@@ -45,24 +44,6 @@ public class EffectBlockBaseListener implements EffectBlockListener {
      */
     @Override
     public void exitEffect(EffectBlock.EffectContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void enterTime(EffectBlock.TimeContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void exitTime(EffectBlock.TimeContext ctx) {
     }
 
     /**
@@ -143,6 +124,24 @@ public class EffectBlockBaseListener implements EffectBlockListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
+    public void enterTime(EffectBlock.TimeContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitTime(EffectBlock.TimeContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
     public void enterEffectBlock(EffectBlock.EffectBlockContext ctx) {
     }
 
@@ -179,15 +178,11 @@ public class EffectBlockBaseListener implements EffectBlockListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void visitTerminal(TerminalNode node) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void visitErrorNode(ErrorNode node) {
-    }
+    public void visitTerminal(TerminalNode node) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void visitErrorNode(ErrorNode node) { }
 }

@@ -17,6 +17,12 @@
 // Generated from ChestTrapGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.chesttrap;
 
+import uk.co.jackoftradesltd.backend.parser.chesttrap.ChestTrapParseRecord;
+import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
 /**
@@ -179,20 +185,6 @@ public interface ChestTrapGrammarListener extends ParseTreeListener {
     void exitEffect(ChestTrapGrammar.EffectContext ctx);
 
     /**
-     * Enter a parse tree produced by {@link ChestTrapGrammar#time}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterTime(ChestTrapGrammar.TimeContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link ChestTrapGrammar#time}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitTime(ChestTrapGrammar.TimeContext ctx);
-
-    /**
      * Enter a parse tree produced by {@link ChestTrapGrammar#effectYX}.
      *
      * @param ctx the parse tree
@@ -247,6 +239,20 @@ public interface ChestTrapGrammarListener extends ParseTreeListener {
      * @param ctx the parse tree
      */
     void exitEffectMsg(ChestTrapGrammar.EffectMsgContext ctx);
+
+    /**
+     * Enter a parse tree produced by {@link ChestTrapGrammar#time}.
+     *
+     * @param ctx the parse tree
+     */
+    void enterTime(ChestTrapGrammar.TimeContext ctx);
+
+    /**
+     * Exit a parse tree produced by {@link ChestTrapGrammar#time}.
+     *
+     * @param ctx the parse tree
+     */
+    void exitTime(ChestTrapGrammar.TimeContext ctx);
 
     /**
      * Enter a parse tree produced by {@link ChestTrapGrammar#effectBlock}.

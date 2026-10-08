@@ -17,22 +17,22 @@
 // Generated from PlayerTimedGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.playertimed;
 
-import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.atn.ATN;
-import org.antlr.v4.runtime.atn.ATNDeserializer;
-import org.antlr.v4.runtime.atn.ParserATNSimulator;
-import org.antlr.v4.runtime.atn.PredictionContextCache;
-import org.antlr.v4.runtime.dfa.DFA;
-import org.antlr.v4.runtime.tree.ParseTreeListener;
-import org.antlr.v4.runtime.tree.ParseTreeVisitor;
-import org.antlr.v4.runtime.tree.TerminalNode;
-import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
 import uk.co.jackoftradesltd.backend.parser.playertimed.PlayerTimedParseRecord;
-import uk.co.jackoftradesltd.backend.parser.playertimed.PlayerTimedParseRecord.FailureParseRecord;
 import uk.co.jackoftradesltd.backend.parser.playertimed.PlayerTimedParseRecord.PlayerTimedGradeParseRecord;
+import uk.co.jackoftradesltd.backend.parser.playertimed.PlayerTimedParseRecord.FailureParseRecord;
+import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.ArrayList;
+
+import org.antlr.v4.runtime.atn.*;
+import org.antlr.v4.runtime.dfa.DFA;
+import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.misc.*;
+import org.antlr.v4.runtime.tree.*;
+import java.util.List;
+import java.util.Iterator;
+import java.util.ArrayList;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue", "this-escape"})
 public class PlayerTimedGrammar extends Parser {
@@ -1610,178 +1610,12 @@ public class PlayerTimedGrammar extends Parser {
         }
     }
 
-    public final PlayerTimedContext playerTimed() throws RecognitionException {
-        PlayerTimedContext _localctx = new PlayerTimedContext(_ctx, getState());
-        enterRule(_localctx, 34, RULE_playerTimed);
-
-        String nameInit = "";
-        String descInit = "";
-        List<PlayerTimedGradeParseRecord> grades = new ArrayList<>();
-        String onEndInit = "";
-        String onIncreaseInit = "";
-        String onDecreaseInit = "";
-        String msgtInit = "";
-        List<FailureParseRecord> fails = new ArrayList<>();
-        EffectParseRecord onBeginEffectInit = null;
-        EffectParseRecord onEndEffectInit = null;
-        String resistInit = "";
-        String brandInit = "";
-        String slayInit = "";
-        String flagSynonymFlagInit = "";
-        String flagSynonymValueInit = "";
-        String lowerBoundInit = "";
-        List<String> flags = new ArrayList<>();
-        int line = 0;
-
-        int _la;
-        try {
-            enterOuterAlt(_localctx, 1);
-            {
-                setState(142);
-                ((PlayerTimedContext) _localctx).name = name();
-                nameInit = ((PlayerTimedContext) _localctx).name.nameStr;
-                line = ((PlayerTimedContext) _localctx).name.lineNo;
-                setState(189);
-                _errHandler.sync(this);
-                _la = _input.LA(1);
-                do {
-                    {
-                        setState(189);
-                        _errHandler.sync(this);
-                        switch (_input.LA(1)) {
-                            case DESC: {
-                                setState(144);
-                                ((PlayerTimedContext) _localctx).desc = desc();
-                                descInit = ((PlayerTimedContext) _localctx).desc.descStr;
-                            }
-                            break;
-                            case GRADE: {
-                                setState(147);
-                                ((PlayerTimedContext) _localctx).grade = grade();
-                                String colour = ((PlayerTimedContext) _localctx).grade.colour;
-                                String max = ((PlayerTimedContext) _localctx).grade.max;
-                                String status = ((PlayerTimedContext) _localctx).grade.status;
-                                String messageUp = ((PlayerTimedContext) _localctx).grade.messageUp;
-                                String messageDown = ((PlayerTimedContext) _localctx).grade.messageDown;
-                                PlayerTimedGradeParseRecord gradeRecord =
-                                        new PlayerTimedGradeParseRecord(colour, max, status, messageDown, messageUp);
-                                grades.add(gradeRecord);
-
-                            }
-                            break;
-                            case ON_END: {
-                                setState(150);
-                                ((PlayerTimedContext) _localctx).onEnd = onEnd();
-                                onEndInit = ((PlayerTimedContext) _localctx).onEnd.message;
-                            }
-                            break;
-                            case ON_INCREASE: {
-                                setState(153);
-                                ((PlayerTimedContext) _localctx).onIncrease = onIncrease();
-                                onIncreaseInit = ((PlayerTimedContext) _localctx).onIncrease.message;
-                            }
-                            break;
-                            case ON_DECREASE: {
-                                setState(156);
-                                ((PlayerTimedContext) _localctx).onDecrease = onDecrease();
-                                onDecreaseInit = ((PlayerTimedContext) _localctx).onDecrease.message;
-                            }
-                            break;
-                            case MSGT: {
-                                setState(159);
-                                ((PlayerTimedContext) _localctx).msgt = msgt();
-                                msgtInit = ((PlayerTimedContext) _localctx).msgt.msgType;
-                            }
-                            break;
-                            case FAIL: {
-                                setState(162);
-                                ((PlayerTimedContext) _localctx).fail = fail();
-                                String failTypeInit = ((PlayerTimedContext) _localctx).fail.type;
-                                String failValueInit = ((PlayerTimedContext) _localctx).fail.value;
-                                fails.add(new FailureParseRecord(failTypeInit, failValueInit));
-                            }
-                            break;
-                            case ON_BEGIN_EFFECT: {
-                                setState(165);
-                                ((PlayerTimedContext) _localctx).onBeginEffect = onBeginEffect();
-                                onBeginEffectInit = new EffectParseRecord(((PlayerTimedContext) _localctx).onBeginEffect.type,
-                                        ((PlayerTimedContext) _localctx).onBeginEffect.subType, "", "", "",
-                                        "", "", "", "", "",
-                                        "", "", line);
-                            }
-                            break;
-                            case ON_END_EFFECT: {
-                                setState(168);
-                                ((PlayerTimedContext) _localctx).onEndEffectBlock = onEndEffectBlock();
-                                onEndEffectInit = new EffectParseRecord(((PlayerTimedContext) _localctx).onEndEffectBlock.type,
-                                        ((PlayerTimedContext) _localctx).onEndEffectBlock.subType, "", "", ((PlayerTimedContext) _localctx).onEndEffectBlock.dice,
-                                        "", "", "", "", "",
-                                        "", "", line);
-                            }
-                            break;
-                            case RESIST: {
-                                setState(171);
-                                ((PlayerTimedContext) _localctx).resist = resist();
-                                resistInit = ((PlayerTimedContext) _localctx).resist.res;
-                            }
-                            break;
-                            case BRAND: {
-                                setState(174);
-                                ((PlayerTimedContext) _localctx).brand = brand();
-                                brandInit = ((PlayerTimedContext) _localctx).brand.b;
-                            }
-                            break;
-                            case SLAY: {
-                                setState(177);
-                                ((PlayerTimedContext) _localctx).slay = slay();
-                                slayInit = ((PlayerTimedContext) _localctx).slay.s;
-                            }
-                            break;
-                            case FLAG_SYNONYM: {
-                                setState(180);
-                                ((PlayerTimedContext) _localctx).flagSynonym = flagSynonym();
-                                flagSynonymFlagInit = ((PlayerTimedContext) _localctx).flagSynonym.objProp;
-                                flagSynonymValueInit = ((PlayerTimedContext) _localctx).flagSynonym.val;
-                            }
-                            break;
-                            case LOWER_BOUND: {
-                                setState(183);
-                                ((PlayerTimedContext) _localctx).lowerBound = lowerBound();
-                                lowerBoundInit = ((PlayerTimedContext) _localctx).lowerBound.bound;
-                            }
-                            break;
-                            case FLAGS: {
-                                setState(186);
-                                ((PlayerTimedContext) _localctx).flags = flags();
-                                flags.addAll(((PlayerTimedContext) _localctx).flags.flagList);
-                            }
-                            break;
-                            default:
-                                throw new NoViableAltException(this);
-                        }
-                    }
-                    setState(191);
-                    _errHandler.sync(this);
-                    _la = _input.LA(1);
-                } while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 520184L) != 0));
-            }
-            _ctx.stop = _input.LT(-1);
-
-            ((PlayerTimedContext) _localctx).timed = new PlayerTimedParseRecord(nameInit, descInit, grades,
-                    onEndInit, onIncreaseInit, onDecreaseInit, msgtInit,
-                    fails, onBeginEffectInit, onEndEffectInit,
-                    resistInit, brandInit, slayInit, flagSynonymFlagInit,
-                    flagSynonymValueInit, lowerBoundInit, flags, line);
-
-        } catch (RecognitionException re) {
-            _localctx.exception = re;
-            _errHandler.reportError(this, re);
-            _errHandler.recover(this, re);
-        } finally {
-            exitRule();
+    static {
+        _decisionToDFA = new DFA[_ATN.getNumberOfDecisions()];
+        for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
+            _decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
         }
-        return _localctx;
-    }
+	}
 
     @SuppressWarnings("CheckReturnValue")
     public static class FileContext extends ParserRuleContext {
@@ -2005,10 +1839,176 @@ public class PlayerTimedGrammar extends Parser {
     public static final ATN _ATN =
             new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 
-    static {
-        _decisionToDFA = new DFA[_ATN.getNumberOfDecisions()];
-        for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
-            _decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
+    public final PlayerTimedContext playerTimed() throws RecognitionException {
+        PlayerTimedContext _localctx = new PlayerTimedContext(_ctx, getState());
+        enterRule(_localctx, 34, RULE_playerTimed);
+
+        String nameInit = "";
+        String descInit = "";
+        List<PlayerTimedGradeParseRecord> grades = new ArrayList<>();
+        String onEndInit = "";
+        String onIncreaseInit = "";
+        String onDecreaseInit = "";
+        String msgtInit = "";
+        List<FailureParseRecord> fails = new ArrayList<>();
+        EffectParseRecord onBeginEffectInit = null;
+        EffectParseRecord onEndEffectInit = null;
+        String resistInit = "";
+        String brandInit = "";
+        String slayInit = "";
+        String flagSynonymFlagInit = "";
+        String flagSynonymValueInit = "";
+        String lowerBoundInit = "";
+        List<String> flags = new ArrayList<>();
+        int line = 0;
+
+        int _la;
+        try {
+            enterOuterAlt(_localctx, 1);
+            {
+                setState(142);
+                ((PlayerTimedContext) _localctx).name = name();
+                nameInit = ((PlayerTimedContext) _localctx).name.nameStr;
+                line = ((PlayerTimedContext) _localctx).name.lineNo;
+                setState(189);
+                _errHandler.sync(this);
+                _la = _input.LA(1);
+                do {
+                    {
+                        setState(189);
+                        _errHandler.sync(this);
+                        switch (_input.LA(1)) {
+                            case DESC: {
+                                setState(144);
+                                ((PlayerTimedContext) _localctx).desc = desc();
+                                descInit = ((PlayerTimedContext) _localctx).desc.descStr;
+                            }
+                            break;
+                            case GRADE: {
+                                setState(147);
+                                ((PlayerTimedContext) _localctx).grade = grade();
+                                String colour = ((PlayerTimedContext) _localctx).grade.colour;
+                                String max = ((PlayerTimedContext) _localctx).grade.max;
+                                String status = ((PlayerTimedContext) _localctx).grade.status;
+                                String messageUp = ((PlayerTimedContext) _localctx).grade.messageUp;
+                                String messageDown = ((PlayerTimedContext) _localctx).grade.messageDown;
+                                PlayerTimedGradeParseRecord gradeRecord =
+                                        new PlayerTimedGradeParseRecord(colour, max, status, messageDown, messageUp);
+                                grades.add(gradeRecord);
+
+                            }
+                            break;
+                            case ON_END: {
+                                setState(150);
+                                ((PlayerTimedContext) _localctx).onEnd = onEnd();
+                                onEndInit = ((PlayerTimedContext) _localctx).onEnd.message;
+                            }
+                            break;
+                            case ON_INCREASE: {
+                                setState(153);
+                                ((PlayerTimedContext) _localctx).onIncrease = onIncrease();
+                                onIncreaseInit = ((PlayerTimedContext) _localctx).onIncrease.message;
+                            }
+                            break;
+                            case ON_DECREASE: {
+                                setState(156);
+                                ((PlayerTimedContext) _localctx).onDecrease = onDecrease();
+                                onDecreaseInit = ((PlayerTimedContext) _localctx).onDecrease.message;
+                            }
+                            break;
+                            case MSGT: {
+                                setState(159);
+                                ((PlayerTimedContext) _localctx).msgt = msgt();
+                                msgtInit = ((PlayerTimedContext) _localctx).msgt.msgType;
+                            }
+                            break;
+                            case FAIL: {
+                                setState(162);
+                                ((PlayerTimedContext) _localctx).fail = fail();
+                                String failTypeInit = ((PlayerTimedContext) _localctx).fail.type;
+                                String failValueInit = ((PlayerTimedContext) _localctx).fail.value;
+                                fails.add(new FailureParseRecord(failTypeInit, failValueInit));
+                            }
+                            break;
+                            case ON_BEGIN_EFFECT: {
+                                setState(165);
+                                ((PlayerTimedContext) _localctx).onBeginEffect = onBeginEffect();
+                                onBeginEffectInit = new EffectParseRecord(((PlayerTimedContext) _localctx).onBeginEffect.type,
+                                        ((PlayerTimedContext) _localctx).onBeginEffect.subType, "", "", "",
+                                        "", "", "", "",
+                                        "", "", line);
+                            }
+                            break;
+                            case ON_END_EFFECT: {
+                                setState(168);
+                                ((PlayerTimedContext) _localctx).onEndEffectBlock = onEndEffectBlock();
+                                onEndEffectInit = new EffectParseRecord(((PlayerTimedContext) _localctx).onEndEffectBlock.type,
+                                        ((PlayerTimedContext) _localctx).onEndEffectBlock.subType, "", "", ((PlayerTimedContext) _localctx).onEndEffectBlock.dice,
+                                        "", "", "", "",
+                                        "", "", line);
+                            }
+                            break;
+                            case RESIST: {
+                                setState(171);
+                                ((PlayerTimedContext) _localctx).resist = resist();
+                                resistInit = ((PlayerTimedContext) _localctx).resist.res;
+                            }
+                            break;
+                            case BRAND: {
+                                setState(174);
+                                ((PlayerTimedContext) _localctx).brand = brand();
+                                brandInit = ((PlayerTimedContext) _localctx).brand.b;
+                            }
+                            break;
+                            case SLAY: {
+                                setState(177);
+                                ((PlayerTimedContext) _localctx).slay = slay();
+                                slayInit = ((PlayerTimedContext) _localctx).slay.s;
+                            }
+                            break;
+                            case FLAG_SYNONYM: {
+                                setState(180);
+                                ((PlayerTimedContext) _localctx).flagSynonym = flagSynonym();
+                                flagSynonymFlagInit = ((PlayerTimedContext) _localctx).flagSynonym.objProp;
+                                flagSynonymValueInit = ((PlayerTimedContext) _localctx).flagSynonym.val;
+                            }
+                            break;
+                            case LOWER_BOUND: {
+                                setState(183);
+                                ((PlayerTimedContext) _localctx).lowerBound = lowerBound();
+                                lowerBoundInit = ((PlayerTimedContext) _localctx).lowerBound.bound;
+                            }
+                            break;
+                            case FLAGS: {
+                                setState(186);
+                                ((PlayerTimedContext) _localctx).flags = flags();
+                                flags.addAll(((PlayerTimedContext) _localctx).flags.flagList);
+                            }
+                            break;
+                            default:
+                                throw new NoViableAltException(this);
+                        }
+                    }
+                    setState(191);
+                    _errHandler.sync(this);
+                    _la = _input.LA(1);
+                } while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 520184L) != 0));
+            }
+            _ctx.stop = _input.LT(-1);
+
+            ((PlayerTimedContext) _localctx).timed = new PlayerTimedParseRecord(nameInit, descInit, grades,
+                    onEndInit, onIncreaseInit, onDecreaseInit, msgtInit,
+                    fails, onBeginEffectInit, onEndEffectInit,
+                    resistInit, brandInit, slayInit, flagSynonymFlagInit,
+                    flagSynonymValueInit, lowerBoundInit, flags, line);
+
+        } catch (RecognitionException re) {
+            _localctx.exception = re;
+            _errHandler.reportError(this, re);
+            _errHandler.recover(this, re);
+        } finally {
+            exitRule();
         }
+        return _localctx;
     }
 }

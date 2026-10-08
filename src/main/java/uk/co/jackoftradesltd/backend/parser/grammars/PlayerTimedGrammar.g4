@@ -187,11 +187,11 @@ playerTimed
                    fails.add(new FailureParseRecord(failTypeInit, failValueInit)); }
         |   onBeginEffect { onBeginEffectInit = new EffectParseRecord($onBeginEffect.type,
                             $onBeginEffect.subType, "", "", "",
-                            "", "", "", "", "",
+                            "", "", "", "",
                             "", "", line); }
         |   onEndEffectBlock { onEndEffectInit = new EffectParseRecord($onEndEffectBlock.type,
                             $onEndEffectBlock.subType, "", "", $onEndEffectBlock.dice,
-                            "", "", "", "", "",
+                            "", "", "", "",
                             "", "", line); }
         |   resist { resistInit = $resist.res; }
         |   brand { brandInit = $brand.b; }

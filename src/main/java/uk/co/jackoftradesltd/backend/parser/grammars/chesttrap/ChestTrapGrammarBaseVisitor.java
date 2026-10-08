@@ -17,6 +17,12 @@
 // Generated from ChestTrapGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.chesttrap;
 
+import uk.co.jackoftradesltd.backend.parser.chesttrap.ChestTrapParseRecord;
+import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
@@ -25,7 +31,7 @@ import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
  * of the available methods.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
- *            operations with no return type.
+ * operations with no return type.
  */
 @SuppressWarnings("CheckReturnValue")
 public class ChestTrapGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements ChestTrapGrammarVisitor<T> {
@@ -157,17 +163,6 @@ public class ChestTrapGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T> 
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitTime(ChestTrapGrammar.TimeContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
     public T visitEffectYX(ChestTrapGrammar.EffectYXContext ctx) {
         return visitChildren(ctx);
     }
@@ -202,6 +197,17 @@ public class ChestTrapGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T> 
      */
     @Override
     public T visitEffectMsg(ChestTrapGrammar.EffectMsgContext ctx) {
+        return visitChildren(ctx);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public T visitTime(ChestTrapGrammar.TimeContext ctx) {
         return visitChildren(ctx);
     }
 

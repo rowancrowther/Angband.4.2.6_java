@@ -17,6 +17,12 @@
 // Generated from TrapGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.trap;
 
+import uk.co.jackoftradesltd.backend.parser.trap.TrapParseRecord;
+import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
+
+import java.util.List;
+import java.util.ArrayList;
+
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
@@ -25,7 +31,7 @@ import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
  * of the available methods.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
- *            operations with no return type.
+ * operations with no return type.
  */
 @SuppressWarnings("CheckReturnValue")
 public class TrapGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements TrapGrammarVisitor<T> {
@@ -245,17 +251,6 @@ public class TrapGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitTime(TrapGrammar.TimeContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
     public T visitEffectYX(TrapGrammar.EffectYXContext ctx) {
         return visitChildren(ctx);
     }
@@ -290,6 +285,17 @@ public class TrapGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
      */
     @Override
     public T visitEffectMsg(TrapGrammar.EffectMsgContext ctx) {
+        return visitChildren(ctx);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public T visitTime(TrapGrammar.TimeContext ctx) {
         return visitChildren(ctx);
     }
 

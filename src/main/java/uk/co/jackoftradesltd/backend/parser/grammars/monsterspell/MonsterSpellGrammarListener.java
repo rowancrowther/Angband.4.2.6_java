@@ -14,9 +14,15 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
 // Generated from MonsterSpellGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.monsterspell;
+
+import uk.co.jackoftradesltd.backend.parser.monsterspell.MonsterSpellParseRecord;
+import uk.co.jackoftradesltd.backend.parser.monsterspell.MonsterSpellParseRecord.MonsterSpellLevelParseRecord;
+import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
@@ -264,20 +270,6 @@ public interface MonsterSpellGrammarListener extends ParseTreeListener {
     void exitEffect(MonsterSpellGrammar.EffectContext ctx);
 
     /**
-     * Enter a parse tree produced by {@link MonsterSpellGrammar#time}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterTime(MonsterSpellGrammar.TimeContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link MonsterSpellGrammar#time}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitTime(MonsterSpellGrammar.TimeContext ctx);
-
-    /**
      * Enter a parse tree produced by {@link MonsterSpellGrammar#effectYX}.
      *
      * @param ctx the parse tree
@@ -332,6 +324,20 @@ public interface MonsterSpellGrammarListener extends ParseTreeListener {
      * @param ctx the parse tree
      */
     void exitEffectMsg(MonsterSpellGrammar.EffectMsgContext ctx);
+
+    /**
+     * Enter a parse tree produced by {@link MonsterSpellGrammar#time}.
+     *
+     * @param ctx the parse tree
+     */
+    void enterTime(MonsterSpellGrammar.TimeContext ctx);
+
+    /**
+     * Exit a parse tree produced by {@link MonsterSpellGrammar#time}.
+     *
+     * @param ctx the parse tree
+     */
+    void exitTime(MonsterSpellGrammar.TimeContext ctx);
 
     /**
      * Enter a parse tree produced by {@link MonsterSpellGrammar#effectBlock}.

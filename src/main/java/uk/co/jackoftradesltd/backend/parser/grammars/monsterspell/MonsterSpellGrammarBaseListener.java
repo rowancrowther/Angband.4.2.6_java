@@ -14,9 +14,16 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
 // Generated from MonsterSpellGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.monsterspell;
+
+import uk.co.jackoftradesltd.backend.parser.monsterspell.MonsterSpellParseRecord;
+import uk.co.jackoftradesltd.backend.parser.monsterspell.MonsterSpellParseRecord.MonsterSpellLevelParseRecord;
+import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
+
+import java.util.ArrayList;
+import java.util.List;
+
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
@@ -276,20 +283,6 @@ public class MonsterSpellGrammarBaseListener implements MonsterSpellGrammarListe
 	 * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterTime(MonsterSpellGrammar.TimeContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void exitTime(MonsterSpellGrammar.TimeContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-     */
-    @Override
     public void enterEffectYX(MonsterSpellGrammar.EffectYXContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -339,7 +332,21 @@ public class MonsterSpellGrammarBaseListener implements MonsterSpellGrammarListe
 	 * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitEffectMsg(MonsterSpellGrammar.EffectMsgContext ctx) {
+    public void exitEffectMsg(MonsterSpellGrammar.EffectMsgContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterTime(MonsterSpellGrammar.TimeContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitTime(MonsterSpellGrammar.TimeContext ctx) {
     }
 
     /**

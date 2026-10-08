@@ -17,6 +17,12 @@
 // Generated from TrapGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.trap;
 
+import uk.co.jackoftradesltd.backend.parser.trap.TrapParseRecord;
+import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
+
+import java.util.List;
+import java.util.ArrayList;
+
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
 /**
@@ -24,7 +30,7 @@ import org.antlr.v4.runtime.tree.ParseTreeVisitor;
  * by {@link TrapGrammar}.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
- *            operations with no return type.
+ * operations with no return type.
  */
 public interface TrapGrammarVisitor<T> extends ParseTreeVisitor<T> {
     /**
@@ -180,14 +186,6 @@ public interface TrapGrammarVisitor<T> extends ParseTreeVisitor<T> {
     T visitEffect(TrapGrammar.EffectContext ctx);
 
     /**
-     * Visit a parse tree produced by {@link TrapGrammar#time}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitTime(TrapGrammar.TimeContext ctx);
-
-    /**
      * Visit a parse tree produced by {@link TrapGrammar#effectYX}.
      *
      * @param ctx the parse tree
@@ -218,6 +216,14 @@ public interface TrapGrammarVisitor<T> extends ParseTreeVisitor<T> {
      * @return the visitor result
      */
     T visitEffectMsg(TrapGrammar.EffectMsgContext ctx);
+
+    /**
+     * Visit a parse tree produced by {@link TrapGrammar#time}.
+     *
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    T visitTime(TrapGrammar.TimeContext ctx);
 
     /**
      * Visit a parse tree produced by {@link TrapGrammar#effectBlock}.

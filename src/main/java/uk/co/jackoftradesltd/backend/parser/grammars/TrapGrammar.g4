@@ -175,14 +175,14 @@ trapRecord
                                         $effectBlock.subtypeWrapperInit, $effectBlock.radius, $effectBlock.other,
                                         $effectBlock.diceString, $effectBlock.yVal, $effectBlock.xVal,
                                         $effectBlock.expressionChars, $effectBlock.expressionBase,
-                                        $effectBlock.expressionOperation, $effectBlock.timeDiceString,
+                                        $effectBlock.expressionOperation, 
                                         $effectBlock.effectMessage, $effectBlock.start.getLine())); }
         |   effectXtraBlock { xtraEffectInit.add(new EffectParseRecord(
                                         $effectXtraBlock.effectType, $effectXtraBlock.effectSubtype,
                                         $effectXtraBlock.radius, $effectXtraBlock.parameter,
                                         $effectXtraBlock.complexDiceValue, "", "",
                                         $effectXtraBlock.exprChar, $effectXtraBlock.baseName,
-                                        $effectXtraBlock.op, "", "", $effectXtraBlock.start.getLine())); } )+
+                                        $effectXtraBlock.op, "", $effectXtraBlock.start.getLine())); } )+
         ;
 
 file

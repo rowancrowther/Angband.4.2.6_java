@@ -14,10 +14,8 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
 // Generated from EffectBlock.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.imports.effectblock;
-
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
 /**
@@ -38,20 +36,6 @@ public interface EffectBlockListener extends ParseTreeListener {
      * @param ctx the parse tree
      */
     void exitEffect(EffectBlock.EffectContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link EffectBlock#time}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterTime(EffectBlock.TimeContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link EffectBlock#time}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitTime(EffectBlock.TimeContext ctx);
 
     /**
      * Enter a parse tree produced by {@link EffectBlock#effectYX}.
@@ -108,6 +92,20 @@ public interface EffectBlockListener extends ParseTreeListener {
      * @param ctx the parse tree
      */
     void exitEffectMsg(EffectBlock.EffectMsgContext ctx);
+
+    /**
+     * Enter a parse tree produced by {@link EffectBlock#time}.
+     *
+     * @param ctx the parse tree
+     */
+    void enterTime(EffectBlock.TimeContext ctx);
+
+    /**
+     * Exit a parse tree produced by {@link EffectBlock#time}.
+     *
+     * @param ctx the parse tree
+     */
+    void exitTime(EffectBlock.TimeContext ctx);
 
     /**
      * Enter a parse tree produced by {@link EffectBlock#effectBlock}.

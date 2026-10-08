@@ -246,7 +246,7 @@
           <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ShapeGrammar.g4" />
           <option name="autoGen" value="true" />
           <option name="outputDir" value="" />
-          <option name="libDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports/" />
           <option name="encoding" value="" />
           <option name="pkg" value="" />
           <option name="language" value="" />
@@ -903,7 +903,7 @@
     <option name="OUTPUT_DIRECTORY" value="$PROJECT_DIR$/.." />
     <option name="OPTION_INCLUDE_LIBS" value="true" />
   </component>
-  <component name="KubernetesApiProvider"><![CDATA[{}]]></component>
+  <component name="KubernetesApiProvider">{}</component>
   <component name="ProjectRootManager" version="2" languageLevel="JDK_26" default="true" project-jdk-name="openjdk-26" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/out" />
   </component>

@@ -47,8 +47,6 @@ package uk.co.jackoftradesltd.backend.parser.grammars;
  *                              with an {@code EFB_} prefix
  * @param expressionOperations  the {@code ^}-delimited raw operation strings paired positionally
  *                              with {@link #expressionChars}
- * @param timeDiceString        the raw dice expression for the effect's duration, parsed (not
- *                              rolled) via {@code Random.parseStr}
  * @param effectMessage         the message text shown when the effect fires, or {@code null}/empty
  *                              if the line gave none
  * @param line                  the source line the {@code effect:} block starts on, for error
@@ -65,7 +63,6 @@ public record EffectParseRecord(String typeInit,
                                 String expressionChars,
                                 String expressionBases,
                                 String expressionOperations,
-                                String timeDiceString,
                                 String effectMessage,
                                 int line) {
 }

@@ -48,16 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/objects/Brand.java`
-
-0 missing, 5 low
-
-- L94: method `getName` - LOW
-- L101: method `getCode` - LOW
-- L108: method `toString` - LOW
-- L146: method `hashCode` - LOW
-- L162: method `getMultiplier` - LOW
-
 ### `middle/player/StartItem.java`
 
 0 missing, 5 low

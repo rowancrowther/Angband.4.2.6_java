@@ -27,7 +27,10 @@ import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftradesltd.middle.magic.ClassMagic;
 import uk.co.jackoftradesltd.middle.magic.MagicBook;
+import uk.co.jackoftradesltd.middle.objects.ObjectKind;
+import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 import uk.co.jackoftradesltd.middle.player.PlayerClass;
+import uk.co.jackoftradesltd.middle.player.StartItem;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerSkill;
 
@@ -35,8 +38,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -88,7 +90,7 @@ class PlayerClassReaderTest {
     private static final String OBJECT_BASE_FILE = "lib/gamedata/object_base.txt";
     private static final String SHAPE_FILE = "lib/gamedata/shape.txt";
 
-    private static Object savedRealms, savedObjectBases, savedShapes;
+    private static Object savedRealms, savedObjectBases, savedShapes, savedObjectKinds;
 
     /**
      * The one shared load of the real file; the happy-path tests assert against this.
@@ -99,14 +101,21 @@ class PlayerClassReaderTest {
     Path tempDir;
 
     /**
-     * Seeds the three registries the class assembler resolves against — realms, object bases and
-     * player shapes — then loads the real {@code class.txt} once for the happy-path tests.
+     * Seeds the registries the class assembler resolves against — realms, object bases, player
+     * shapes and object kinds — then loads the real {@code class.txt} once for the happy-path tests.
+     *
+     * <p>The object kinds are minimal stand-ins, one per distinct tval and subtype named by an
+     * {@code equip:} line of {@code class.txt}, because {@code ClassEquipAssembler} resolves every
+     * subtype as C's {@code parse_class_equip()} does and loading the real {@code object.txt}
+     * would drag in the slay, brand and curse loaders. Reading the pairs from the file keeps the
+     * seed from drifting from the data.
      */
     @BeforeAll
     static void seed() throws Exception {
         savedRealms = setStatic("realms", new RealmReader().parse(REALM_FILE));
         savedObjectBases = setStatic("objectBases", new ObjectBaseReader().parse(OBJECT_BASE_FILE));
         savedShapes = setStatic("playerShapes", new ShapeReader().parse(SHAPE_FILE));
+        savedObjectKinds = setStatic("objectKinds", equipKinds());
 
         result = new PlayerClassReader().parseWithResults(CLASS_FILE);
     }
@@ -120,6 +129,31 @@ class PlayerClassReaderTest {
         setStatic("realms", savedRealms);
         setStatic("objectBases", savedObjectBases);
         setStatic("playerShapes", savedShapes);
+        setStatic("objectKinds", savedObjectKinds);
+    }
+
+    /**
+     * Builds one bare {@link ObjectKind} for each distinct tval and subtype named by an
+     * {@code equip:} line of {@code class.txt}. Only the tval and the subtype name are set, which
+     * is all {@code ObjectRegistry.lookupObjectKind(TValue, String)} compares.
+     */
+    private static List<ObjectKind> equipKinds() throws Exception {
+        Set<String> pairs = new LinkedHashSet<>();
+        for (String line : Files.readAllLines(Path.of(CLASS_FILE))) {
+            if (!line.startsWith("equip:")) continue;
+            String[] parts = line.split(":");
+            pairs.add(parts[1] + ":" + parts[2]);
+        }
+
+        List<ObjectKind> kinds = new ArrayList<>();
+        for (String pair : pairs) {
+            String[] parts = pair.split(":", 2);
+            ObjectKind kind = new ObjectKind();
+            field(kind, ObjectKind.class, "tValue", TValue.fromName(parts[0]));
+            field(kind, ObjectKind.class, "sValueName", parts[1]);
+            kinds.add(kind);
+        }
+        return kinds;
     }
 
     // ---- fixture + reflection helpers ------------------------------------
@@ -150,6 +184,12 @@ class PlayerClassReaderTest {
         Object old = f.get(null);
         f.set(null, value);
         return old;
+    }
+
+    private static void field(Object target, Class<?> owner, String name, Object value) throws Exception {
+        Field f = owner.getDeclaredField(name);
+        f.setAccessible(true);
+        f.set(target, value);
     }
 
     @SuppressWarnings("unchecked")
@@ -346,6 +386,40 @@ class PlayerClassReaderTest {
                 withHeader(1, "name:Adventurer\nequip:food:Ration of Food:1:1:notanoption\n"));
 
         assertTrue(hasError(r, "Invalid birth option found: notanoption"), r.errors()::toString);
+    }
+
+    @Test
+    void badEquipOptionDropsTheWholeEntryAsCDoes() throws IOException {
+        // parse_class_equip() returns PARSE_ERROR_INVALID_OPTION and frees the entry, so a line with
+        // one bad option contributes nothing, even when its other option is valid.
+        ParseResult<PlayerClass> r = load("bad-opt-drops.txt", withHeader(1,
+                "name:Adventurer\n"
+                        + "equip:food:Ration of Food:1:3:none\n"
+                        + "equip:scroll:Word of Recall:1:1:birth_no_recall | notanoption\n"
+                        + "title:X\n"));
+
+        assertEquals(1, r.items().size());
+        assertTrue(hasError(r, "Invalid birth option found: notanoption"), r.errors()::toString);
+        assertTrue(hasError(r, "bad eopts line"), r.errors()::toString);
+
+        List<StartItem> items = r.items().get(0).getStartItems();
+        assertEquals(1, items.size());
+        assertEquals(TValue.TV_FOOD, items.get(0).gettValue());
+    }
+
+    @Test
+    void startItemsAreHeldInReverseFileOrder() throws IOException {
+        // C pushes each equip: line on the head of the chain, so the last line is walked first.
+        ParseResult<PlayerClass> r = load("equip-order.txt", withHeader(1,
+                "name:Adventurer\n"
+                        + "equip:food:Ration of Food:1:3:none\n"
+                        + "equip:light:Wooden Torch:1:3:none\n"
+                        + "title:X\n"));
+
+        List<StartItem> items = r.items().get(0).getStartItems();
+        assertEquals(2, items.size());
+        assertEquals(TValue.TV_LIGHT, items.get(0).gettValue());
+        assertEquals(TValue.TV_FOOD, items.get(1).gettValue());
     }
 
     // ---- ClassSpellBookAssembler: base + realm resolution ----------------

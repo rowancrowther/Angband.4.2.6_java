@@ -1063,7 +1063,7 @@ public class PlayerCalcs {
                     boolean slept;
                     boolean held;
                     if (monsterExists) {
-                        monsterVisible = player.getPlayerUpkeep().getHealthWho().isVisible();
+                        monsterVisible = player.getPlayerUpkeep().getHealthWho().monsterIsVisible();
                         monsterHp = player.getPlayerUpkeep().getHealthWho().getHp();
                         tmdImage = player.getTimedEffect(TimedEffect.TMD_IMAGE) != 0;
                         monMaxHP = player.getPlayerUpkeep().getHealthWho().getMaxHp();

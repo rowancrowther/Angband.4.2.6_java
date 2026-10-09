@@ -47,11 +47,24 @@ import java.util.Map;
  * Java port of the C original's {@code struct monster} ({@code src/monster.h});
  * contrast with {@link MonsterRace}, which is the shared template.
  *
+ * <p>The class also carries the C predicates and flag macros that take a {@code struct monster}
+ * ({@code mon-predicate.c}, {@code mflag_on} and {@code mflag_off} in {@code monster.h}), the
+ * timed-effect entry points of {@code mon-timed.c}, and {@code update_smart_learn} from
+ * {@code mon-util.c}. Several fields are mutable, and a few can be {@code null} on a shell
+ * monster built for a test; each accessor below says which link it dereferences.
+ *
+ * <p>Class Monster coded before 261009, commented in full on 261009.
+ *
  * @author Rowan Crowther
  */
 public class Monster {
+    /**
+     * This monster's slot in the level's monster array (C: {@code mon->midx}). Set by
+     * {@link #setMonIndex(int)} when the chunk places or moves the monster; {@code 0} until then,
+     * which is also the value C reserves for "no monster".
+     */
     private int monIndex;
-    
+
     /**
      * The race this monster currently is.
      */
@@ -141,7 +154,16 @@ public class Monster {
     private int bestRange;
 
     /**
-     * Build a live monster from its full set of state fields.
+     * Build a live monster from its full set of state fields. Has no C counterpart: C fills a
+     * {@code struct monster} field by field in {@code place_new_monster_one} and friends.
+     *
+     * <p>The constructor is not side-effect free. {@link #setHp(int)} and {@link #setMaxHp(int)}
+     * write the legacy {@code PlayerEventStatusUpdate} cache, and if {@code monsterFlag} is
+     * non-null with {@code MFLAG_VISIBLE} set, {@link #updateCached(Boolean)} refreshes the rest of
+     * it. Nothing else is validated: every argument may be {@code null}, and the accessors that
+     * dereference a field do not guard it.
+     *
+     * <p>Constructor Monster coded before 261009, commented in full on 261009.
      *
      * @param monsterRace    current race
      * @param originalRace   original race (pre-shapechange)
@@ -192,6 +214,11 @@ public class Monster {
     }
 
     /**
+     * Read the race this monster currently is (C: {@code mon->race}). After a shapechange this is
+     * the shape being worn; the form it started as is held in {@link #originalRace}.
+     *
+     * <p>Method getMonsterRace coded before 261009, commented in full on 261009.
+     *
      * @return this monster's current race
      */
     public MonsterRace getMonsterRace() {
@@ -199,7 +226,12 @@ public class Monster {
     }
 
     /**
-     * Test whether one of this monster's transient status flags is set.
+     * Test whether one of this monster's transient status flags is set - the port of C's
+     * {@code mflag_has} macro in {@code monster.h}. Dereferences {@link #monsterFlag}, which is
+     * never null in C (the flags are an inline array) but can be here if the constructor was given
+     * {@code null}.
+     *
+     * <p>Method hasMonsterFlag coded before 261009, commented in full on 261009.
      *
      * @param flag the flag to test
      * @return true if the flag is set
@@ -209,8 +241,12 @@ public class Monster {
     }
 
     /**
-     * Clear one of this monster's transient status flags — the port of C's {@code mflag_off}. Leaves
-     * the flag clear whether or not it was previously set.
+     * Clear one of this monster's transient status flags — the port of C's {@code mflag_off} macro
+     * in {@code monster.h}. Leaves the flag clear whether or not it was previously set. Clearing
+     * {@code MFLAG_VISIBLE} also refreshes the legacy cache through {@link #updateCached(Boolean)},
+     * which C has no equivalent of; see {@link #monsterFlagOn} for the mirror.
+     *
+     * <p>Method monsterFlagOff coded before 261009, commented in full on 261009.
      *
      * @param flag the flag to clear
      */
@@ -222,6 +258,11 @@ public class Monster {
     }
 
     /**
+     * Read the monster's current grid (C: {@code mon->grid}). The {@link Loc} itself is returned,
+     * not a copy.
+     *
+     * <p>Method getGrid coded before 261009, commented in full on 261009.
+     *
      * @return this monster's current grid location
      */
     public Loc getGrid() {
@@ -229,13 +270,31 @@ public class Monster {
     }
 
     /**
-     * @return this monster's distance from the player, in grids (C: {@code cdis})
+     * Read the monster's cached distance from the player (C: {@code mon->cdis}, a {@code uint8_t}).
+     * It is a stored value refreshed by the monster-update code, so it is only as current as the
+     * last update.
+     *
+     * <p>Method getcDistance coded before 261009, commented in full on 261009.
+     *
+     * @return this monster's distance from the player, in grids
      */
     public int getcDistance() {
         return cDistance;
     }
 
     /**
+     * Test whether this monster is a unique - the port of C's {@code monster_is_unique} in
+     * {@code mon-predicate.c}, whose comment reads "unshifted form is unique".
+     *
+     * <p>The test reads {@code RF_UNIQUE} off the original race when there is one and off the
+     * current race otherwise; it never combines the two. A unique that has shapechanged into a
+     * common race is therefore still unique, and a common monster that takes a unique's shape is
+     * not. C keeps the other reading separately as {@code monster_is_shape_unique}, which looks at
+     * {@code mon->race} alone and is not ported. Contrast {@link #monsterIsSmart()}, which takes
+     * either race, and {@link #monsterIsStupid()}, which takes the current race only.
+     *
+     * <p>Method isUnique coded before 261009, commented in full on 261009.
+     *
      * @return {@code true} if this monster is a unique — tested against its original race if it has
      * shapechanged, otherwise its current race
      */
@@ -245,6 +304,13 @@ public class Monster {
     }
 
     /**
+     * Read the turns remaining on a monster timed effect (C: {@code mon->m_timed[effect_type]}).
+     * The map is sparse, so an effect that was never set reads as {@code 0}, as C's zeroed array
+     * does. Dereferences {@link #mTimed}, the container, which is {@code null} only if the
+     * constructor was given none; a missing key is not an error.
+     *
+     * <p>Method getMonTimed coded before 261009, commented in full on 261009.
+     *
      * @param timed the monster timed effect to query
      * @return the turns remaining on that effect, or {@code 0} if the monster is not under it
      */
@@ -255,7 +321,11 @@ public class Monster {
     /**
      * Clear a monster timed effect outright by setting its duration to zero,
      * delegating to {@link #setTimed}. The port of C's {@code mon_clear_timed}.
-     * A no-op (returns {@code false}) if the effect is not currently active.
+     * A no-op (returns {@code false}) if the effect is not currently active, which is C's early
+     * return on {@code mon->m_timed[effect_type] == 0}. C's {@code assert}s on the effect index
+     * have no Java counterpart, since an enum cannot be out of range.
+     *
+     * <p>Method clearTimed coded on 260830, commented in full on 261009.
      *
      * @param timed the monster timed effect to clear
      * @param flag  behavioural flags controlling messaging/notification
@@ -273,8 +343,14 @@ public class Monster {
      * dictated by {@code flag}. The port of C's {@code mon_set_timed}; the common
      * sink that {@link #clearTimed} and {@link #decrementTimed} both funnel through.
      *
-     * <p><b>Stub:</b> not yet implemented, awaiting the monster timed-effect runtime;
-     * reports {@code false} (no change).</p>
+     * <p><b>Stub:</b> not yet implemented, awaiting the monster timed-effect runtime. It does not
+     * store {@code timer} in {@link #mTimed}, so a later {@link #getMonTimed} still reads the old
+     * value, and it always reports {@code false} (no change). Its only effect is to push
+     * {@code timer != 0} into the legacy {@code PlayerEventStatusUpdate} cache for the seven
+     * health-bar effects (fear, disenchant, command, confusion, stun, sleep, hold). C's resist
+     * check, shapechange handling, message and redraw requests are all still to come.
+     *
+     * <p>Method setTimed stub coded before 261009, commented in full on 261009.
      *
      * @param timed the monster timed effect to set
      * @param timer the new duration in turns
@@ -307,6 +383,13 @@ public class Monster {
      * Reduce a monster timed effect's duration by a given amount, flooring at zero,
      * and delegate to {@link #setTimed}. The port of C's {@code mon_dec_timed}. Used
      * to keep a commanded monster's timer aligned with the player's fading command.
+     *
+     * <p>C asserts {@code timer > 0} ("for negative amounts, we use mon_inc_timed instead"). Java
+     * has no such check, so a negative {@code timer} would raise the level rather than fail. Both
+     * versions floor the result at zero, and C's comment that decreasing "should never fail"
+     * holds because decreases skip the resist check in {@code mon_set_timed}.
+     *
+     * <p>Method decrementTimed coded on 260830, commented in full on 261009.
      *
      * @param timed the monster timed effect to shorten
      * @param timer the number of turns to remove
@@ -342,7 +425,7 @@ public class Monster {
     /**
      * Let this monster learn one "observed" property of the player — a resistance, an object flag,
      * or a player flag — or learn that the player lacks it. The port of C's
-     * {@code update_smart_learn} ({@code mon-util.c:790}).
+     * {@code update_smart_learn} in {@code mon-util.c}.
      *
      * <p>The method has two halves that serve different parties. The first half is unconditional
      * and works on the player: whatever a monster might learn from an event, the player is given
@@ -365,7 +448,8 @@ public class Monster {
      * here: {@link ObjectFlag#OF_NONE}, {@link PlayerFlag#PF_NONE} and {@link ElementEnum#ELEM_NONE}.
      * Testing against those constants rather than against null is the point — the sentinels are
      * ordinary enum constants and a null test would let them through, which is what the live
-     * caller in {@code Player.playerSetTimed} would hit, passing {@code PF_NONE} on every call.
+     * caller in {@code PlayerTimed} (the object-flag failure check) would hit, passing
+     * {@code PF_NONE} and {@code ELEM_NONE} on every call.
      *
      * <p>{@code elementOK} is C's {@code (element >= 0) && (element < ELEM_MAX)}, and C's comment
      * records why the bounds are there: the element argument is routinely an arbitrary
@@ -382,9 +466,15 @@ public class Monster {
      * <p><b>Outstanding:</b> the {@link ObjectFlag#OF_MAX} end-marker is treated inconsistently —
      * the sanity check at the top counts it as "no flag", while the learning branch counts it as a
      * flag and would write it into {@link #knownPState}. C never passes an end-marker, and no
-     * caller in the port does either, so nothing reaches it today.
+     * caller in the port does either, so nothing reaches it today. The learning condition itself,
+     * {@code objFlag != OF_NONE || objFlag == OF_MAX}, reduces to {@code objFlag != OF_NONE}.
      *
-     * <p>Function updateSmartLearn coded on 260831, commented in full on 260831.
+     * <p>The only caller in the port is {@code PlayerTimed}, which passes a real object flag with
+     * {@code PF_NONE} and {@code ELEM_NONE}. So the pflag and element halves are exercised only
+     * by tests until another caller arrives. {@link #knownPState} is dereferenced after the gates
+     * pass and is {@code null} on a shell monster built without one.
+     *
+     * <p>Function updateSmartLearn coded on 260831, commented in full on 261009.
      *
      * @param player  the player whose properties are being observed, and who learns alongside the
      *                monster
@@ -597,13 +687,14 @@ public class Monster {
      * reads the live monster - and, like the cache writes in {@link #setHp(int)}, exists only until
      * the cache-to-messages migration removes the cache.
      *
-     * <p>Each part is skipped when its source is {@code null}, because the constructor can call
-     * this before the flag set and timed-effect map are assigned: the visibility write needs
-     * {@link #monsterFlag}, and the seven timed-effect writes need {@link #mTimed}. The tracked
+     * <p>Each part is skipped when its source is {@code null}: the visibility write needs
+     * {@link #monsterFlag}, and the seven timed-effect writes need {@link #mTimed}. The constructor
+     * assigns both fields before it calls this method, so the guards only matter when a caller
+     * passed {@code null} for one of them, as shell monsters in tests do. The tracked
      * write is skipped when {@code monTracked} is {@code null}, which is how the flag setters ask
      * for "leave tracking alone".
      *
-     * <p>Method updateCached coded before 260929, commented in full on 260929.
+     * <p>Method updateCached coded before 260929, commented in full on 261009.
      *
      * @param monTracked whether this monster is the tracked one, or {@code null} to leave that
      *                   part of the cache untouched
@@ -625,39 +716,85 @@ public class Monster {
     }
 
     /**
-     * Test whether the player can currently see this monster - the port of C's
-     * {@code monster_is_visible}, a read of the transient {@code MFLAG_VISIBLE} flag.
-     * {@code PlayerCalcs.redrawStuff}'s {@code PR_HEALTH} arm uses it to fill the health bar's
-     * visibility component.
+     * Read the objects this monster is carrying (C: {@code mon->held_obj}, a linked list headed by
+     * that pointer). The list itself is returned, not a copy, and is {@code null} if the
+     * constructor was given none - C's empty list is a {@code NULL} head, so a Java caller that
+     * iterates must guard the list itself.
      *
-     * <p>Method isVisible coded before 260929, commented in full on 260929.
+     * <p>Method getHeldObjects coded before 261009, commented in full on 261009.
      *
-     * @return {@code true} if {@code MFLAG_VISIBLE} is set
+     * @return the carried objects, dropped when the monster dies
      */
-    public boolean isVisible() {
-        return monsterFlag.has(MonsterFlag.MFLAG_VISIBLE);
-    }
-
     public List<ItemObject> getHeldObjects() {
         return heldObject;
     }
 
+    /**
+     * Read the object this monster is currently mimicking (C: {@code mon->mimicked_obj}). A
+     * {@code null} answer means none, as a {@code NULL} pointer does in C; a mimicking monster is
+     * one with this non-null <em>and</em> {@code MFLAG_CAMOUFLAGE} set, per C's
+     * {@code monster_is_mimicking}, which is not ported.
+     *
+     * <p>Method getMimickedObject coded before 261009, commented in full on 261009.
+     *
+     * @return the mimicked object, or {@code null} if the monster is not mimicking one
+     */
     public ItemObject getMimickedObject() {
         return mimickedObject;
     }
 
+    /**
+     * Test whether the player recognizes this monster as a monster - the port of C's
+     * {@code monster_is_obvious} in {@code mon-predicate.c}, which is
+     * {@code monster_is_visible(mon) && !monster_is_camouflaged(mon)}. A visible mimic is
+     * therefore not obvious, and an unseen monster never is, camouflaged or not. Both halves read
+     * {@link #monsterFlag}.
+     *
+     * <p>Method isObvious coded before 261009, commented in full on 261009.
+     *
+     * @return {@code true} if {@code MFLAG_VISIBLE} is set and {@code MFLAG_CAMOUFLAGE} is not
+     */
     public boolean isObvious() {
         return monsterIsVisible() && !monsterIsCamouflaged();
     }
 
+    /**
+     * Test whether the player can currently see this monster - the port of C's
+     * {@code monster_is_visible} in {@code mon-predicate.c}, a read of the transient
+     * {@code MFLAG_VISIBLE} flag. {@link #isObvious()} calls this method, and
+     * {@code PlayerCalcs.redrawStuff}'s {@code PR_HEALTH} arm uses it to fill the health bar's
+     * visibility component.
+     *
+     * <p>Method monsterIsVisible coded before 261009, commented in full on 261009.
+     *
+     * @return {@code true} if {@code MFLAG_VISIBLE} is set
+     */
     public boolean monsterIsVisible() {
         return monsterFlag.has(MonsterFlag.MFLAG_VISIBLE);
     }
 
+    /**
+     * Read this monster's slot in the level's monster array (C: {@code mon->midx}). {@code 0}
+     * until {@link #setMonIndex(int)} has been called.
+     *
+     * <p>Method getMonIndex coded before 261009, commented in full on 261009.
+     *
+     * @return the monster's index
+     */
     public int getMonIndex() {
         return monIndex;
     }
 
+    /**
+     * Record this monster's slot in the level's monster array. {@code Chunk} calls it when the
+     * monster is moved to a new index. C assigns {@code mon->midx} directly in
+     * {@code monster_index_move()} and {@code place_monster()} in {@code mon-make.c}, so there is
+     * no C setter.
+     *
+     * <p>Method setMonIndex coded before 261009, commented in full on 261009.
+     *
+     * @param monIndex the new index
+     */
     public void setMonIndex(int monIndex) {
         this.monIndex = monIndex;
     }

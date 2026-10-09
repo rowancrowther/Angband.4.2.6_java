@@ -48,22 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/objects/enums/ObjPropertyType.java`
-
-10 missing, 1 low
-
-- L44: method `OBJ_PROPERTY_MAX` - MISSING
-- L44: enum-const `OBJ_PROPERTY_NONE` - MISSING
-- L45: enum-const `OBJ_PROPERTY_STAT` - MISSING
-- L46: enum-const `OBJ_PROPERTY_MOD` - MISSING
-- L47: enum-const `OBJ_PROPERTY_FLAG` - MISSING
-- L48: enum-const `OBJ_PROPERTY_IGNORE` - MISSING
-- L49: enum-const `OBJ_PROPERTY_RESIST` - MISSING
-- L50: enum-const `OBJ_PROPERTY_VULN` - MISSING
-- L51: enum-const `OBJ_PROPERTY_IMM` - MISSING
-- L52: enum-const `OBJ_PROPERTY_MAX` - MISSING
-- L71: method `getValue` - LOW
-
 ### `middle/monsters/Monster.java`
 
 7 missing, 4 low

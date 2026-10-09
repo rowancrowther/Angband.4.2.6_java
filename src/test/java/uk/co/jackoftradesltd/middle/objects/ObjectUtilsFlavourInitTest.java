@@ -17,13 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
@@ -43,17 +37,9 @@ import uk.co.jackoftradesltd.middle.player.enums.RandnameType;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link ObjectUtils#flavourInit()}, the port of C's {@code flavor_init} ({@code obj-util.c}).
@@ -236,8 +222,9 @@ class ObjectUtilsFlavourInitTest {
 
             ObjectUtils.flavourInit();
 
-            Flavour expectedForA = firstDraw == 0 ? ruby : jade;
-            Flavour expectedForB = firstDraw == 0 ? jade : ruby;
+            // C's list is newest-first: draw 0 is the last flavour in the file
+            Flavour expectedForA = firstDraw == 0 ? jade : ruby;
+            Flavour expectedForB = firstDraw == 0 ? ruby : jade;
 
             assertSame(expectedForA, ringA.getFlavour());
             assertSame(expectedForB, ringB.getFlavour());

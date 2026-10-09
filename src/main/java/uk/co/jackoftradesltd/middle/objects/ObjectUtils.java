@@ -1575,7 +1575,7 @@ public class ObjectUtils {
      * choice.
      *
      * <p>Each unflavoured kind of the given type draws a random index into that remaining pool,
-     * walks the pool in file order to find it, binds the two together, resolves the flavour's
+     * walks the pool to find it, last file entry first as C's newest-first list does, binds the two together, resolves the flavour's
      * sval to the kind's, and shrinks the pool by one — the same shrinking-without-removing trick
      * C's loop performs by decrementing {@code flavor_count} as each candidate is claimed. Running
      * out of flavours partway through is a data-file error, not a recoverable one: C exits via
@@ -1595,7 +1595,7 @@ public class ObjectUtils {
      * while {@code flavor.txt} keeps one {@code kind:} block per tval, which it does.
      *
      * <p>Function flavourAssignRandom coded before 260908, commented in full on 261007, one-block-per-type
-     * condition recorded on 261007, quit behaviour corrected on 261007.
+     * condition recorded on 261007, quit behaviour corrected on 261007, pool order corrected on 261009.
      *
      * @param tValue the object type to assign random flavours to
      */

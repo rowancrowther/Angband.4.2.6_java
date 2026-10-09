@@ -17,11 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.middle.game.globals.registry.MiscRegistry;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
@@ -34,11 +30,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Random;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link ObjectUtils#flavourAssignRandom}, the port of C's {@code flavor_assign_random}
@@ -46,7 +38,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p>C counts the flavours of a tval whose {@code sval} is still {@code SV_UNKNOWN}, then for
  * every {@code k_info} entry of that tval with no flavour yet, draws a random index into that
- * count and walks the flavour list in file order to claim the matching one, shrinking the count
+ * count and walks the flavour list to claim the matching one (the list is built newest-first, so
+ * draw 0 is the last flavour in the file), shrinking the count
  * as each is claimed. Unlike {@code flavor_assign_fixed}, the outer loop's guard is
  * {@code if (k_info[i].tval != tval || k_info[i].flavor) continue;} — a kind of the wrong tval, or
  * one already flavoured, is left untouched. Private, so reached by reflection rather than through
@@ -56,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * {@link Random} constructed from the same seed via {@link RandomValueUtils#stateInit(long)} —
  * the port's generator does not reproduce C's stream (see {@link RandomValueUtils#randDiv}), so
  * the only thing worth pinning down here is that the method claims whichever candidate its own
- * draw names, in file order, and shrinks the pool as it goes. The fatal, out-of-flavours branch
+ * draw names, counting from the last flavour in the file as C's list does, and shrinks the pool as it goes. The fatal, out-of-flavours branch
  * calls {@link System#exit}, so it is not exercised here.
  *
  * @author Rowan Crowther
@@ -253,8 +246,9 @@ class ObjectUtilsFlavourAssignRandomTest {
 
             flavourAssignRandom(TValue.TV_RING);
 
-            Flavour expectedForA = firstDraw == 0 ? first : second;
-            Flavour expectedForB = firstDraw == 0 ? second : first;
+            // C's list is newest-first: draw 0 is the last flavour in the file
+            Flavour expectedForA = firstDraw == 0 ? second : first;
+            Flavour expectedForB = firstDraw == 0 ? first : second;
 
             assertSame(expectedForA, ringA.getFlavour());
             assertSame(expectedForB, ringB.getFlavour());

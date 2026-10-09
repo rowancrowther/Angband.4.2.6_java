@@ -19,17 +19,17 @@ package uk.co.jackoftradesltd.middle.objects;
 
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
-import uk.co.jackoftradesltd.channel.utils.FlagView;
-import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
-import uk.co.jackoftradesltd.middle.magic.ClassMagic;
-import uk.co.jackoftradesltd.middle.magic.MagicBook;
-import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.channel.utils.Flag;
+import uk.co.jackoftradesltd.channel.utils.FlagView;
 import uk.co.jackoftradesltd.middle.Activation;
 import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
+import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
+import uk.co.jackoftradesltd.middle.magic.ClassMagic;
+import uk.co.jackoftradesltd.middle.magic.MagicBook;
+import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.enums.*;
 import uk.co.jackoftradesltd.middle.player.Player;
 
@@ -1278,17 +1278,17 @@ public class ObjectKind {
      * <p>Deep-copied because their contents are mutable: every {@link uk.co.jackoftradesltd.middle.numerics.Random}
      * term, the two flag sets and the ignore flags, the modifier map (each value copied in turn),
      * the element info (each entry copied), the curse map (each {@code CurseData} rebuilt), the
-     * display character, the activation and effect lists, the flavour, and the stack-size and charge
-     * dice.
+     * display character, the activation and effect lists, and the stack-size and charge dice.
      *
      * <p>Shared deliberately: {@link #base}, because one base serves every kind of its tval and holds
      * the running count of svals, so a copy that owned its own would drift from the registry's; and
      * the members of the brand and slay sets, which are registry entries with no setters that every
      * carrier points at. C shares the same pointers.
      *
-     * <p>The flavour is the exception to that logic: it is copied, so the copy's flavour is a
-     * separate object from the one the flavour table holds, and marking either aware or tried does
-     * not reach the other.
+     * <p>The flavour is shared too, not copied: the copy points at the same {@link Flavour} the
+     * flavour table holds, as C's struct assignment copies the {@code flavor} pointer. A flavour is
+     * one disguise worn by its kind, so it should not be duplicated, and a change to its sval or
+     * text is seen through every kind that carries it.
      *
      * <p>Built member by member on a fresh instance through the no-argument constructor, which has
      * already given the copy empty collections; that is why the collections are cleared or added
@@ -1298,11 +1298,12 @@ public class ObjectKind {
      * were never assigned, such as one from the ten-argument constructor given a {@code null}
      * display character, or the no-argument shell itself.
      *
-     * <p>Function copy commented in full on 261008 (the claims that bases are immutable and that
-     * the kind has more fields than any constructor takes removed).
+     * <p>Function copy commented in full on 261009 (the claims that bases are immutable and that
+     * the kind has more fields than any constructor takes removed on 261008; the claim that the
+     * flavour is copied removed on 261009).
      *
-     * @return a new object kind that shares no mutable state with this one, bar the base and the
-     *         brand and slay members
+     * @return a new object kind that shares no mutable state with this one, bar the base, the
+     *         flavour and the brand and slay members
      */
     public ObjectKind copy() {
         ObjectKind copy = new ObjectKind();
@@ -1366,9 +1367,7 @@ public class ObjectKind {
         copy.charge = this.charge.copy();
         copy.genMultProb = this.genMultProb;
         copy.stackSize = this.stackSize.copy();
-        copy.flavour = null;
-        if (this.flavour != null)
-            copy.flavour = this.flavour.copy();
+        copy.flavour = this.flavour;
         copy.noteAware = this.noteAware;
         copy.noteUnaware = this.noteUnaware;
         copy.aware = this.aware;

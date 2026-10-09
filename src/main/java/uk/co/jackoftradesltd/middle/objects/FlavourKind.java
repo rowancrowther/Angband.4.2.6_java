@@ -19,6 +19,7 @@ package uk.co.jackoftradesltd.middle.objects;
 
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -45,7 +46,13 @@ public class FlavourKind {
     private char glyph;
 
     /**
-     * The flavours available to this type, in file order.
+     * The flavours available to this type, stored last file entry first. C threads every
+     * {@code struct flavor} onto the head of its global list as it is parsed, so the list runs
+     * newest-first, and the random-assignment pass counts down it; the constructor reverses the
+     * list it is given so that the same draw names the same flavour. It is a copy, so changing the
+     * list passed to the constructor afterwards does not reach this field.
+     *
+     * <p>Field flavours commented in full on 261009.
      */
     private List<Flavour> flavours;
 
@@ -60,7 +67,7 @@ public class FlavourKind {
         for (Flavour flavour : flavours) {
             flavour.setFlavourKind(this);
         }
-        this.flavours = flavours;
+        this.flavours = new ArrayList<Flavour>(flavours.reversed());
     }
 
     /**

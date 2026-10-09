@@ -48,17 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/objects/FlagSet.java`
-
-0 missing, 6 low
-
-- L98: method `getType` - LOW
-- L105: method `getFactor` - LOW
-- L112: method `getBonus` - LOW
-- L119: method `getSize` - LOW
-- L126: method `getCount` - LOW
-- L143: method `getDescription` - LOW
-
 ### `middle/objects/Flavour.java`
 
 0 missing, 6 low

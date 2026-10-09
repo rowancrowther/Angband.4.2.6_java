@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Tests {@link Flavour#setText}, the Java equivalent of the direct C struct-field write
- * {@code f->text = ...} in {@code flavor_assign_random} ({@code obj-util.c:106}), where a random
+ * {@code f->text = ...} in {@code flavor_assign_random} ({@code obj-util.c}), where a random
  * scroll flavour is retitled from the {@code scroll_adj} table after its sval is chosen.
  *
  * @author Rowan Crowther

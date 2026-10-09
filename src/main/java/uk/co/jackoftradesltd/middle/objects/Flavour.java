@@ -20,50 +20,103 @@ package uk.co.jackoftradesltd.middle.objects;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 
 /**
- * A randomized "flavour" for an unidentified object kind — the disguising name
- * (e.g. a potion's colour) and the glyph/colour it is shown with until
- * identified. This is the Java port of the C original's {@code struct flavor}
- * ({@code src/object.h}).
+ * One flavour: the disguise (a potion's colour word, a ring's gem) an object kind is shown under
+ * while the player is unaware of it. This is the Java port of the C original's
+ * {@code struct flavor} ({@code object.h}), read from {@code flavor.txt} by the
+ * {@code flavor} parser in {@code init.c}.
+ *
+ * <p>The port changes the shape of the record in three ways, none of which change what a flavour
+ * means:
+ * <ul>
+ *   <li>C's {@code tval} and {@code d_char} are copied onto every {@code struct flavor} from its
+ *       {@code kind:} line; here they live once on the owning {@link FlavourKind}, reached through
+ *       {@link #getFlavourKind()}.</li>
+ *   <li>C's {@code next} pointer chains every flavour into the single global list {@code flavors}
+ *       (built newest-first); here a flavour has no link, and {@link FlavourKind#getFlavours()}
+ *       holds the block's flavours reversed, last file entry first, as C's list does.</li>
+ *   <li>C's {@code d_attr} is a colour index; here {@link #colour} is a {@link ColourEnum}.</li>
+ * </ul>
+ *
+ * <p>A flavour is mutable in exactly two fields once loaded, both written by
+ * {@code ObjectUtils.flavourInit}: {@link #sVal}, which {@code flavor_assign_random} sets to the
+ * sval of the kind it binds and {@code flavor_reset_fixed} puts back to 0, and {@link #text},
+ * which {@code flavor_assign_random} replaces with a generated title for scrolls. Everything else
+ * is fixed at construction.
+ *
+ * <p>Class Flavour commented in full on 261009.
  *
  * @author Rowan Crowther
  */
 public class Flavour {
     /**
-     * The flavour text shown for the unidentified object (e.g. "Azure").
+     * The flavour text shown for the unidentified object (e.g. "Azure"), C's {@code text}.
+     * {@code null} when the data file gives no description, which is the case for every scroll
+     * flavour: C leaves {@code text} unset there too, and {@code flavor_assign_random} fills it in
+     * from {@code scroll_adj} (see {@link #setText}).
+     *
+     * <p>Field text commented in full on 261009.
      */
     private String text;
 
     /**
      * The sub-type <em>symbol</em> a fixed flavour binds to (e.g. "Ring of
      * Power"), exactly as written in the data file. Only fixed flavours carry
-     * one; it is {@code null} for a randomly-assigned flavour. Resolved to the
-     * numeric {@link #sVal} against the object-kind table, the way C's
-     * {@code lookup_sval} does.
+     * one; it is {@code null} for a randomly-assigned flavour. It has no field in C, which resolves
+     * the symbol the moment it is parsed; the port keeps it because the tval needed to resolve it
+     * is on the enclosing {@code FlavourKindParseRecord}, so {@code FlavourKindAssembler} does the
+     * lookup one level up (C's {@code lookup_sval}) and stores the answer in {@link #sVal}.
+     *
+     * <p>Field sValStr commented in full on 261009.
      */
     private String sValStr;
 
     /**
-     * The resolved numeric sub-type value. For a fixed flavour this is the sval
-     * of the kind {@link #sValStr} names; for a random flavour it stays 0, which
-     * is C's {@code SV_UNKNOWN} ({@code obj-tval.h}).
+     * The numeric sub-type value this flavour is bound to, C's {@code sval}, where 0 is
+     * {@code SV_UNKNOWN} ({@code obj-tval.h}) and means "not bound to any kind". It changes over
+     * the life of a flavour:
+     * <ul>
+     *   <li>a fixed flavour starts as the sval of the kind {@link #sValStr} names;</li>
+     *   <li>a random flavour starts at 0, and {@code flavor_assign_random} sets it to the sval of
+     *       the kind it is dealt to, so after {@code flavourInit} every random flavour in use
+     *       holds a non-zero value;</li>
+     *   <li>{@code flavor_reset_fixed} puts every flavour back to 0 for a randarts birth, except
+     *       the One Ring's "Plain Gold".</li>
+     * </ul>
+     * That is why the random-assignment passes in {@code ObjectUtils} test {@code getsVal() == 0}
+     * to mean "still on offer" rather than {@link #isFixed()}. C holds this as a {@code uint8_t};
+     * the port holds an {@code int}, which cannot differ for any sval {@code object.txt} produces.
+     *
+     * <p>Field sVal commented in full on 261009.
      */
     private int sVal;
 
     /**
-     * The colour the flavoured object is drawn in until identified. The glyph is
-     * shared across the whole block and lives on the owning {@link FlavourKind}.
+     * The colour the flavoured object is drawn in until identified, C's {@code d_attr}. The glyph
+     * is shared across the whole block and lives on the owning {@link FlavourKind}.
+     *
+     * <p>Field colour commented in full on 261009.
      */
     private ColourEnum colour;
 
     /**
-     * The flavour's index within the file ({@code fidx} in C) — the stable
-     * identity used to pair a flavour with the objects it disguises.
+     * The flavour's index within the file ({@code fidx} in C), the number on its {@code flavor:}
+     * or {@code fixed:} line. C records it and never reads it back, and so far nothing in the port
+     * outside tests does either; list position, not this number, is what orders the flavours.
+     *
+     * <p>Field index commented in full on 261009.
      */
     private int index;
 
     /**
-     * Whether this is a {@code fixed:} flavour (pinned to a named sub-type) as
-     * opposed to a randomly-assigned {@code flavor:} one.
+     * Whether this was read from a {@code fixed:} line (pinned to a named sub-type) as opposed to
+     * a {@code flavor:} one. C has no such field: it parses both line types with the same function
+     * and tells them apart by whether {@code sval} came out as {@code SV_UNKNOWN}. The port needs
+     * the fact on its own because {@link #sVal} moves (see there), so the sval alone can no longer
+     * say which kind of line a flavour came from. It is set by the constructor and never changes,
+     * and so does not follow {@code flavor_reset_fixed}: a fixed flavour whose sval has been reset
+     * to 0 still answers {@code true}. {@code FlavourKindAssembler} is its only reader, at load.
+     *
+     * <p>Field isFixed commented in full on 261009.
      */
     private boolean isFixed;
 
@@ -77,12 +130,20 @@ public class Flavour {
      * reassigned afterwards except by {@link #copy()}, which carries the same owner across onto
      * the copy.
      *
-     * <p>Field flavourKind coded on 260827, commented in full on 260928.
+     * <p>Field flavourKind coded on 260827, commented in full on 261009.
      */
     private FlavourKind flavourKind;
 
     /**
-     * Constructs a fixed flavour — one bound to a specific object sub-type.
+     * Constructs a fixed flavour — one read from a {@code fixed:} line, pinned to a named object
+     * sub-type. The port of the {@code fixed} branch of {@code parse_flavor_flavor}
+     * ({@code init.c}), minus the work that needs the enclosing block: the tval and glyph come from
+     * the {@link FlavourKind} that is later handed this flavour, and the sval symbol is only stored
+     * here, unresolved. {@link #sVal} starts at 0 until {@code FlavourKindAssembler} resolves
+     * {@code sVal} against the object kinds and calls {@link #setsVal}. {@link #flavourKind} is
+     * null until {@link FlavourKind}'s constructor adopts the flavour.
+     *
+     * <p>Constructor Flavour (fixed) commented in full on 261009.
      *
      * @param text   the displayed flavour text
      * @param sVal   the sub-type symbol this flavour is pinned to (unresolved)
@@ -98,9 +159,14 @@ public class Flavour {
     }
 
     /**
-     * Constructs a random flavour — one assigned to an unidentified sub-type at
-     * random. It carries no sval symbol ({@link #sValStr} stays null) and its
-     * numeric sval stays unknown (0).
+     * Constructs a random flavour — one read from a {@code flavor:} line, to be dealt to an
+     * unidentified sub-type at random. The port of the {@code flavor} branch of
+     * {@code parse_flavor_flavor} ({@code init.c}), where {@code sval} is set to
+     * {@code SV_UNKNOWN}: it carries no sval symbol ({@link #sValStr} stays null) and its numeric
+     * sval starts unknown (0), until {@code flavor_assign_random} binds it. As for the fixed
+     * constructor, the tval and glyph arrive with the owning {@link FlavourKind}.
+     *
+     * <p>Constructor Flavour (random) commented in full on 261009.
      *
      * @param text   the displayed flavour text ({@code null} when the file omits
      *               it, as scrolls do)
@@ -115,10 +181,16 @@ public class Flavour {
     }
 
     /**
-     * Sets the resolved numeric sub-type value, once {@link #sValStr} has been
-     * looked up against the object-kind table.
+     * Sets the numeric sub-type value, C's direct write to {@code f->sval}. Three callers write
+     * it, and each has a C counterpart: {@code FlavourKindAssembler} resolves a fixed flavour's
+     * symbol (the {@code lookup_sval} call in {@code parse_flavor_flavor}), {@code flavourAssignRandom}
+     * binds a random flavour to the kind it was dealt ({@code flavor_assign_random}), and
+     * {@code flavourResetFixed} passes 0 ({@code flavor_reset_fixed}). Nothing is validated: 0 is
+     * {@code SV_UNKNOWN}, and any other value is taken as a real sval.
      *
-     * @param sVal the resolved sval
+     * <p>Function setsVal commented in full on 261009.
+     *
+     * @param sVal the new sval, 0 for "not bound to any kind"
      */
     public void setsVal(int sVal) {
         this.sVal = sVal;
@@ -126,10 +198,11 @@ public class Flavour {
 
     /**
      * Returns the {@link FlavourKind} block this flavour belongs to - see {@link #flavourKind}.
-     * {@link ItemObject#getItemObjectADC()} is the one caller today, reaching through this to
-     * read the block's shared glyph.
+     * {@link ItemObject#objectKindChar()} is the one caller in the main code, reaching through
+     * this to read the block's shared glyph, where C reads {@code d_char} off the flavour itself.
+     * The value is null only for a flavour that has not yet been handed to a {@link FlavourKind}.
      *
-     * <p>Function getFlavourKind coded on 260827, commented in full on 260928.
+     * <p>Function getFlavourKind coded on 260827, commented in full on 261009.
      *
      * @return the owning {@link FlavourKind}
      */
@@ -142,7 +215,7 @@ public class Flavour {
      * {@link FlavourKind}'s constructor and {@link #copy()} call it, so a flavour cannot be
      * handed a different owner from outside this package.
      *
-     * <p>Function setFlavourKind coded on 260827, commented in full on 260928.
+     * <p>Function setFlavourKind coded on 260827, commented in full on 261009.
      *
      * @param flavourKind the owning {@link FlavourKind}
      */
@@ -151,6 +224,11 @@ public class Flavour {
     }
 
     /**
+     * Returns the flavour text, C's {@code text}. Reflects any {@link #setText} call, so a scroll
+     * flavour reads {@code null} until {@code flavourAssignRandom} has dealt it a title.
+     *
+     * <p>Function getText commented in full on 261009.
+     *
      * @return the displayed flavour text, or {@code null} if the file omitted it
      */
     public String getText() {
@@ -158,6 +236,11 @@ public class Flavour {
     }
 
     /**
+     * Returns the unresolved sub-type symbol, which C has no field for (see {@link #sValStr}).
+     * Unlike {@link #getsVal()} it never changes after construction.
+     *
+     * <p>Function getsValStr commented in full on 261009.
+     *
      * @return the unresolved sub-type symbol for a fixed flavour, or {@code null}
      * for a random one
      */
@@ -166,14 +249,25 @@ public class Flavour {
     }
 
     /**
-     * @return the resolved numeric sub-type value (0 = {@code SV_UNKNOWN} for a
-     * random flavour)
+     * Returns the sub-type value the flavour is currently bound to, C's {@code sval}. Read it as
+     * "which kind has this flavour been tied to right now", not "what kind of line was this": see
+     * {@link #sVal} for how it moves, and {@link #isFixed()} for the fact that does not.
+     *
+     * <p>Function getsVal commented in full on 261009.
+     *
+     * @return the sub-type value, 0 ({@code SV_UNKNOWN}) while the flavour is bound to no kind
      */
     public int getsVal() {
         return sVal;
     }
 
     /**
+     * Returns the colour the flavoured object is drawn in, C's {@code d_attr}. Read by
+     * {@code ItemObject}'s colour lookup for any flavoured kind except an aware scroll, so it
+     * still applies to an identified potion or ring, not only to an unidentified one.
+     *
+     * <p>Function getColour commented in full on 261009.
+     *
      * @return the colour the flavoured object is drawn in
      */
     public ColourEnum getColour() {
@@ -181,6 +275,11 @@ public class Flavour {
     }
 
     /**
+     * Returns the file index, C's {@code fidx}. See {@link #index}: C never reads the field back,
+     * and the port's only readers are tests.
+     *
+     * <p>Function getIndex commented in full on 261009.
+     *
      * @return the flavour's file index ({@code fidx})
      */
     public int getIndex() {
@@ -188,6 +287,11 @@ public class Flavour {
     }
 
     /**
+     * Reports whether the flavour came from a {@code fixed:} line. C has no equivalent; see
+     * {@link #isFixed} for why the port needs one and why it does not follow {@link #sVal}.
+     *
+     * <p>Function isFixed commented in full on 261009.
+     *
      * @return {@code true} for a fixed flavour, {@code false} for a random one
      */
     public boolean isFixed() {
@@ -195,19 +299,25 @@ public class Flavour {
     }
 
     /**
-     * Returns an independent copy of this flavour.
+     * Returns an independent copy of this flavour, carrying the same owning {@link FlavourKind}.
+     * No C original: C never duplicates a {@code struct flavor}. Nothing in the main code or the
+     * tests calls this method; in particular {@code ObjectKind.copy} shares its flavour reference
+     * rather than calling it.
      *
-     * <p>A shallow copy is enough: every field is a primitive or an immutable {@link String}. The
-     * fixed flag is assigned after construction because the constructor does not take it - a fixed
-     * flavour is one the data file pinned to a particular item rather than one shuffled at birth,
-     * and that fact is set separately.
+     * <p>A shallow copy is enough: every field is a primitive, an enum or an immutable
+     * {@link String}. The copy is built through the fixed constructor, which sets the fixed flag
+     * true, so the flag is then overwritten with this flavour's own value; that route is also why
+     * a random flavour's copy gets a null {@link #sValStr}, which is what it already has. The copy
+     * is <em>not</em> added to the owner's {@link FlavourKind#getFlavours()} list, so it is
+     * invisible to the assignment passes in {@code ObjectUtils}.
      *
-     * <p>Function copy commented in full on 260827.
+     * <p>Function copy commented in full on 261009.
      *
      * @return a new flavour equal to this one
      */
     public Flavour copy() {
         Flavour copy = new Flavour(this.text, this.sValStr, this.colour, this.index);
+        copy.setsVal(this.sVal);
         copy.setFlavourKind(this.getFlavourKind());
         copy.isFixed = this.isFixed;
         return copy;
@@ -215,11 +325,14 @@ public class Flavour {
 
     /**
      * Sets the flavour text. This is the Java equivalent of the direct C struct-field
-     * write {@code f->text = ...} in {@code flavor_assign_random} ({@code obj-util.c}),
+     * write {@code f->text = scroll_adj[...]} in {@code flavor_assign_random} ({@code obj-util.c}),
      * used when a random scroll flavour is assigned its title from the {@code scroll_adj}
-     * table.
+     * table. C stores a pointer into that table, so scroll text is the one {@code text} that is
+     * not heap-allocated (hence the scroll exception in {@code cleanup_flavor}); the port stores
+     * an ordinary {@link String}, and that distinction does not exist here. Nothing is validated,
+     * and {@code null} is accepted.
      *
-     * <p>coded on 260907 / commented in full on 260908.
+     * <p>Function setText coded on 260907, commented in full on 261009.
      *
      * @param text the new flavour text
      */

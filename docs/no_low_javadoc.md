@@ -48,17 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/objects/Flavour.java`
-
-0 missing, 6 low
-
-- L116: method `getText` - LOW
-- L124: method `getsValStr` - LOW - "for a random one"
-- L132: method `getsVal` - LOW - "random flavour)"
-- L139: method `getColour` - LOW
-- L146: method `getIndex` - LOW
-- L153: method `isFixed` - LOW
-
 ### `middle/player/Quest.java`
 
 0 missing, 6 low

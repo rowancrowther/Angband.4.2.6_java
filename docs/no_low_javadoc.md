@@ -48,16 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/player/enums/PlayerOptionEnum.java`
-
-5 missing, 0 low
-
-- L38: method `OP_birth_percent_damage` - MISSING
-- L153: method `getDescription` - MISSING
-- L157: method `getPlayerOptionType` - MISSING
-- L161: method `isNormal` - MISSING
-- L165: method `isCheat` - MISSING
-
 ### `middle/game/globals/registry/MiscRegistry.java`
 
 2 missing, 3 low

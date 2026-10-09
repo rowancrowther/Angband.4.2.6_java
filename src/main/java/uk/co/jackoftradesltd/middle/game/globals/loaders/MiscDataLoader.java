@@ -22,11 +22,11 @@ import org.apache.logging.log4j.Logger;
 import uk.co.jackoftradesltd.backend.parser.FlavourReader;
 import uk.co.jackoftradesltd.backend.parser.HintReader;
 import uk.co.jackoftradesltd.backend.parser.NamesReader;
+import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
 import uk.co.jackoftradesltd.channel.parser.ErrorParsing;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.game.Hint;
 import uk.co.jackoftradesltd.middle.game.Name;
-import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
 import uk.co.jackoftradesltd.middle.game.globals.registry.MiscRegistry;
 import uk.co.jackoftradesltd.middle.objects.FlavourKind;
 
@@ -40,10 +40,11 @@ import java.io.IOException;
  * <p>This is the write side of the misc slice, paired with {@code MiscRegistry} (the read side). Of
  * the three, only {@code loadFlavours} has a cross-slice dependency: the flavour assembler resolves
  * each flavour to an object kind, so {@code GameConstants.init()} runs it after the object kinds are
- * loaded; hints and names are self-contained. Every loader here soft-fails — a file with parse
- * errors is logged and skipped, leaving that registry list unpopulated rather than partially
- * filled. It was split out of {@code GameConstants} as one domain slice of the loader/registry
- * refactor.
+ * loaded; hints and names are self-contained. The loaders soft-fail on the file itself — an
+ * unreadable file is logged and skipped, leaving that registry list unpopulated, and soft parse
+ * errors are reported while the records that did assemble are still registered. The one exception
+ * is {@code loadNames}, which lets a bad name section stop start-up, as C does. It was split out of
+ * {@code GameConstants} as one domain slice of the loader/registry refactor.
  *
  * @author Rowan Crowther
  */
@@ -103,6 +104,18 @@ public class MiscDataLoader {
      * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the name lists that
      * did assemble are registered regardless, per the partial-results contract. An IO failure is
      * logged and <em>swallowed</em>; character generation is the first thing to notice.
+     *
+     * <p>The one hard failure is a record whose {@code section:} is outside the usable range —
+     * C's {@code PARSE_ERROR_OUT_OF_BOUNDS} from {@code parse_names_section} ({@code init.c}), which
+     * stops C from starting. {@link MiscRegistry#setNames} throws an
+     * {@link IllegalArgumentException} for it and this method deliberately does not catch it, so it
+     * reaches {@code GameConstants.init}, which stops start-up with an error naming
+     * {@code names.txt}. The port is stricter than C only for section zero, which C accepts.
+     *
+     * <p>Method loadNames coded before 261009, commented in full on 261009.
+     *
+     * @throws IllegalArgumentException if a name record's section names no usable
+     *         {@link uk.co.jackoftradesltd.middle.player.enums.RandnameType}
      */
     public static void loadNames() {
         NamesReader parser = new NamesReader();

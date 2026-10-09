@@ -48,20 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/player/PlayerShape.java`
-
-0 missing, 9 low
-
-- L172: method `getName` - LOW
-- L179: method `getToAc` - LOW
-- L186: method `getToHit` - LOW
-- L193: method `getToDam` - LOW
-- L200: method `getSkills` - LOW
-- L207: method `getFlags` - LOW
-- L214: method `getPflags` - LOW
-- L237: method `getEffect` - LOW
-- L252: method `getPlayerBlow` - LOW
-
 ### `middle/monsters/Summon.java`
 
 0 missing, 8 low

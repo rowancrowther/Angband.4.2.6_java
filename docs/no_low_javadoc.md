@@ -48,22 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/monsters/Monster.java`
-
-7 missing, 4 low
-
-- L195: method `getMonsterRace` - LOW
-- L225: method `getGrid` - LOW
-- L232: method `getcDistance` - LOW
-- L249: method `getMonTimed` - LOW
-- L502: method `getHp` - MISSING
-- L506: method `setHp` - MISSING
-- L513: method `getMaxHp` - MISSING
-- L517: method `setMaxHp` - MISSING
-- L524: method `monsterFlagOn` - MISSING
-- L531: method `setMonsterTracked` - MISSING
-- L535: method `updateCached` - MISSING
-
 ### `middle/objects/ObjectBase.java`
 
 2 missing, 9 low

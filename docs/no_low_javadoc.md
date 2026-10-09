@@ -48,17 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/objects/enums/QualityValueEnum.java`
-
-6 missing, 0 low
-
-- L20: enum `QualityValueEnum` - MISSING
-- L21: enum-const `IGNORE_NONE` - MISSING
-- L22: enum-const `IGNORE_BAD` - MISSING
-- L23: enum-const `IGNORE_AVERAGE` - MISSING
-- L24: enum-const `IGNORE_GOOD` - MISSING
-- L25: enum-const `IGNORE_ALL` - MISSING
-
 ### `middle/objects/enums/CombatRunes.java`
 
 5 missing, 1 low

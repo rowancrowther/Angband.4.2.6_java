@@ -48,18 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/monsters/BlowEffect.java`
-
-0 missing, 7 low
-
-- L126: method `getName` - LOW
-- L133: method `getPower` - LOW
-- L140: method `getEval` - LOW
-- L147: method `getDesc` - LOW
-- L154: method `getLoreAttr` - LOW
-- L161: method `getLoreAttrResist` - LOW
-- L168: method `getLoreAttrImmune` - LOW
-
 ### `middle/objects/ElementPowers.java`
 
 0 missing, 7 low

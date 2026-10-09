@@ -17,13 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.game.gameengine;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.*;
 import uk.co.jackoftradesltd.channel.Channels;
 import uk.co.jackoftradesltd.channel.StartupOptions;
 import uk.co.jackoftradesltd.channel.messages.UIMessage;
@@ -41,12 +35,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Runs the game's start-up once, against the real data files, and checks what it leaves behind —
@@ -346,6 +335,52 @@ class GameEngineBootstrapTest {
         for (uk.co.jackoftradesltd.middle.objects.ObjectKind kind : ObjectRegistry.getObjectKinds()) {
             assertNull(kind.getFlavour(),
                     "no kind is given a flavour yet, including " + kind.getName());
+        }
+    }
+
+    /**
+     * C's {@code el_powers[]} table ({@code obj-power.c}), typed from the source rather than read
+     * from the port: each row is {name, type, ignore_power, vuln_power, res_power, im_power}, with
+     * the {@code ELEM_*} index C reaches the row by.
+     *
+     * <p>The port's list is built by hand in {@code GameConstants.init}, so a transposed figure or a
+     * row filed under the wrong element loads and runs and quietly misprices every object. Order
+     * matters too: C's loop index doubles as the {@code el_info} index, and the port keys by element
+     * instead, so each row's key is checked rather than its position alone.
+     */
+    @Test
+    @Order(11)
+    @DisplayName("the element power table holds C's thirteen rows")
+    void elementPowerTableMatchesC() {
+        Object[][] c = {
+                {uk.co.jackoftradesltd.channel.enums.ElementEnum.ELEM_ACID, "acid", "T_LRES", 3, -6, 5, 38},
+                {uk.co.jackoftradesltd.channel.enums.ElementEnum.ELEM_ELEC, "electricity", "T_LRES", 1, -6, 6, 35},
+                {uk.co.jackoftradesltd.channel.enums.ElementEnum.ELEM_FIRE, "fire", "T_LRES", 3, -6, 6, 40},
+                {uk.co.jackoftradesltd.channel.enums.ElementEnum.ELEM_COLD, "cold", "T_LRES", 1, -6, 6, 37},
+                {uk.co.jackoftradesltd.channel.enums.ElementEnum.ELEM_POIS, "poison", "T_HRES", 0, 0, 28, 0},
+                {uk.co.jackoftradesltd.channel.enums.ElementEnum.ELEM_LIGHT, "light", "T_HRES", 0, 0, 6, 0},
+                {uk.co.jackoftradesltd.channel.enums.ElementEnum.ELEM_DARK, "dark", "T_HRES", 0, 0, 16, 0},
+                {uk.co.jackoftradesltd.channel.enums.ElementEnum.ELEM_SOUND, "sound", "T_HRES", 0, 0, 14, 0},
+                {uk.co.jackoftradesltd.channel.enums.ElementEnum.ELEM_SHARD, "shards", "T_HRES", 0, 0, 8, 0},
+                {uk.co.jackoftradesltd.channel.enums.ElementEnum.ELEM_NEXUS, "nexus", "T_HRES", 0, 0, 15, 0},
+                {uk.co.jackoftradesltd.channel.enums.ElementEnum.ELEM_NETHER, "nether", "T_HRES", 0, 0, 20, 0},
+                {uk.co.jackoftradesltd.channel.enums.ElementEnum.ELEM_CHAOS, "chaos", "T_HRES", 0, 0, 20, 0},
+                {uk.co.jackoftradesltd.channel.enums.ElementEnum.ELEM_DISEN, "disenchantment", "T_HRES", 0, 0, 20, 0},
+        };
+
+        List<uk.co.jackoftradesltd.middle.objects.ElementPowers> rows = ObjectRegistry.elementPowers;
+        assertEquals(c.length, rows.size(), "one row per real element, no blank slot");
+
+        for (int i = 0; i < c.length; i++) {
+            uk.co.jackoftradesltd.middle.objects.ElementPowers row = rows.get(i);
+            String where = "row " + i + " (" + c[i][1] + ")";
+            assertSame(c[i][0], row.getElement(), where + " element");
+            assertEquals(c[i][1], row.getName(), where + " name");
+            assertEquals(c[i][2], row.getType().name(), where + " type");
+            assertEquals(c[i][3], row.getIgnorePower(), where + " ignore_power");
+            assertEquals(c[i][4], row.getVulnPower(), where + " vuln_power");
+            assertEquals(c[i][5], row.getResPower(), where + " res_power");
+            assertEquals(c[i][6], row.getImPower(), where + " im_power");
         }
     }
 }

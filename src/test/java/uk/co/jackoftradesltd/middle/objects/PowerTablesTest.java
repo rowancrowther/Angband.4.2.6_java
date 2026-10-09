@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 class PowerTablesTest {
 
     /**
-     * The launcher-and-ammo assumptions, C's {@code archery[]} ({@code obj-power.c:52}).
+     * The launcher-and-ammo assumptions, C's {@code archery[]} ({@code obj-power.c}).
      */
     @Nested
     @DisplayName("Archery")
@@ -93,7 +93,7 @@ class PowerTablesTest {
 
     /**
      * What one element is worth at each level of protection, C's {@code el_powers[]}
-     * ({@code obj-power.c:112}).
+     * ({@code obj-power.c}).
      */
     @Nested
     @DisplayName("ElementPowers")
@@ -150,7 +150,7 @@ class PowerTablesTest {
 
     /**
      * The elemental combinations worth more together than apart, C's {@code element_sets[]}
-     * ({@code obj-power.c:93}).
+     * ({@code obj-power.c}).
      */
     @Nested
     @DisplayName("ElementSet")
@@ -210,7 +210,7 @@ class PowerTablesTest {
 
     /**
      * The flag families worth more together than apart, C's {@code flag_sets[]}
-     * ({@code obj-power.c:71}).
+     * ({@code obj-power.c}).
      */
     @Nested
     @DisplayName("FlagSet")

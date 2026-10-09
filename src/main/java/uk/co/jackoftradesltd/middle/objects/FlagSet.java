@@ -38,43 +38,65 @@ import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlagType;
  * rows are therefore shared mutable state and two power calculations must not interleave; they
  * cannot, because the curse recursion happens strictly after the counting is done.
  *
- * <p>Class FlagSet commented in full on 260827.
+ * <p>The three rows are built by {@code GameConstants} and held in {@code ObjectRegistry.flagSets},
+ * keyed by {@link #getType()}. C walks its array in row order; the Java map has no guaranteed
+ * order, which can reorder the power log's lines but not the total, because the increments are
+ * simply summed.
+ *
+ * <p>Class FlagSet coded on 260827 / commented in full on 261009.
  *
  * @author Rowan Crowther
  */
 public class FlagSet {
     /**
      * Which family of flags this row counts, matched against an
-     * {@code ObjectProperty}'s subtype - sustains, protections or miscellaneous abilities.
+     * {@code ObjectProperty}'s subtype - sustains, protections or miscellaneous abilities. C's
+     * {@code flag_sets[].type}, an {@code OFT_*} value in {@code obj-power.c}.
+     *
+     * <p>Field type coded on 260827 / commented in full on 261009.
      */
     private ObjectFlagType type;
     /**
      * Multiplier for the quadratic increment awarded for holding more than one of these -
-     * {@code factor * count * count}. C's {@code flag_sets[].factor}.
+     * {@code factor * count * count}. C's {@code flag_sets[].factor}: 1 for sustains, 3 for
+     * protections, 1 for miscellaneous abilities.
+     *
+     * <p>Field factor coded on 260827 / commented in full on 261009.
      */
     private int factor;
     /**
-     * Flat bonus for holding every flag in the family.
+     * Flat bonus for holding every flag in the family. C's {@code flag_sets[].bonus}: 10 for
+     * sustains, 15 for protections, 25 for miscellaneous abilities.
+     *
+     * <p>Field bonus coded on 260827 / commented in full on 261009.
      */
     private int bonus;
     /**
-     * How many flags make a full set - 5 sustains, 4 protections, 8 miscellaneous.
+     * How many flags make a full set - 5 sustains, 4 protections, 8 miscellaneous. C's
+     * {@code flag_sets[].size}. The bonus is awarded when {@link #count} equals this exactly.
+     *
+     * <p>Field size coded on 260827 / commented in full on 261009.
      */
     private int size;
     /**
      * How many matching flags the object being priced carries. Working state, zeroed by the caller
-     * before each pass rather than data loaded once.
+     * before each pass rather than data loaded once. C's {@code flag_sets[].count}.
+     *
+     * <p>Field count coded on 260827 / commented in full on 261009.
      */
     private int count;
     /**
-     * The row's name as the power log spells it, e.g. {@code "sustains"}.
+     * The row's name as the power log spells it, e.g. {@code "sustains"}. C's
+     * {@code flag_sets[].desc}; the miscellaneous row is {@code "misc abilities"}.
+     *
+     * <p>Field description coded on 260827 / commented in full on 261009.
      */
     private String description;
 
     /**
      * Build one row of the flag set table.
      *
-     * <p>Constructor FlagSet commented in full on 260827.
+     * <p>Constructor FlagSet coded on 260827 / commented in full on 261009.
      *
      * @param type        the family of flags this row counts
      * @param factor      multiplier for the quadratic multiple-holding increment
@@ -93,13 +115,22 @@ public class FlagSet {
     }
 
     /**
-     * @return the family of flags this row counts, matched against an object property's subtype
+     * Gets the family of flags this row counts, matched against an object property's subtype.
+     *
+     * <p>Method getType coded on 260827 / commented in full on 261009.
+     *
+     * @return the family of flags this row counts
      */
     public ObjectFlagType getType() {
         return type;
     }
 
     /**
+     * Gets the multiplier applied to the square of the count once an object holds more than one
+     * flag of this family.
+     *
+     * <p>Method getFactor coded on 260827 / commented in full on 261009.
+     *
      * @return the multiplier for the quadratic increment awarded for holding several of these
      */
     public int getFactor() {
@@ -107,6 +138,10 @@ public class FlagSet {
     }
 
     /**
+     * Gets the flat bonus added when the count reaches {@link #getSize()}.
+     *
+     * <p>Method getBonus coded on 260827 / commented in full on 261009.
+     *
      * @return the flat bonus for carrying every flag in the family
      */
     public int getBonus() {
@@ -114,6 +149,11 @@ public class FlagSet {
     }
 
     /**
+     * Gets how many flags make a full set of this row. The test is equality, so a count above the
+     * size earns no bonus - not reachable with C's table, where the size is the whole family.
+     *
+     * <p>Method getSize coded on 260827 / commented in full on 261009.
+     *
      * @return how many flags make a full set of this row
      */
     public int getSize() {
@@ -121,7 +161,12 @@ public class FlagSet {
     }
 
     /**
-     * @return how many matching flags the object being priced carries - working state, valid only between the caller's zeroing pass and its read-back
+     * Gets how many matching flags the object being priced carries. Working state, valid only
+     * between the caller's zeroing pass and its read-back.
+     *
+     * <p>Method getCount coded on 260827 / commented in full on 261009.
+     *
+     * @return the running count of matching flags
      */
     public int getCount() {
         return count;
@@ -131,6 +176,8 @@ public class FlagSet {
      * Sets the running count of matching flags. Callers zero every row before a power pass and
      * increment as they walk the object's flags; nothing else should write it.
      *
+     * <p>Method setCount coded on 260827 / commented in full on 261009.
+     *
      * @param count the new count
      */
     public void setCount(int count) {
@@ -138,7 +185,11 @@ public class FlagSet {
     }
 
     /**
-     * @return the row's name as the power log spells it
+     * Gets the row's name as the power log spells it.
+     *
+     * <p>Method getDescription coded on 260827 / commented in full on 261009.
+     *
+     * @return the row's name for the power log
      */
     public String getDescription() {
         return description;

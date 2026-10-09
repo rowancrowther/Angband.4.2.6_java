@@ -26,24 +26,24 @@ import org.jetbrains.annotations.Nullable;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
-import uk.co.jackoftradesltd.middle.Message;
-import uk.co.jackoftradesltd.middle.cave.Chunk;
-import uk.co.jackoftradesltd.middle.enums.DamageAspect;
-import uk.co.jackoftradesltd.middle.enums.MessageType;
-import uk.co.jackoftradesltd.middle.enums.Stats;
-import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
-import uk.co.jackoftradesltd.middle.gameinput.GameInputHolder;
-import uk.co.jackoftradesltd.middle.numerics.Guards;
-import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.Activation;
+import uk.co.jackoftradesltd.middle.Message;
+import uk.co.jackoftradesltd.middle.cave.Chunk;
 import uk.co.jackoftradesltd.middle.cave.Loc;
 import uk.co.jackoftradesltd.middle.effect.Effect;
+import uk.co.jackoftradesltd.middle.enums.DamageAspect;
 import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
+import uk.co.jackoftradesltd.middle.enums.MessageType;
+import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
+import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
+import uk.co.jackoftradesltd.middle.gameinput.GameInputHolder;
 import uk.co.jackoftradesltd.middle.monsters.MonsterRace;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
+import uk.co.jackoftradesltd.middle.numerics.Guards;
+import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.enums.*;
 import uk.co.jackoftradesltd.middle.player.Player;
 import uk.co.jackoftradesltd.middle.player.PlayerKnowledge;
@@ -5327,7 +5327,7 @@ public class ItemObject {
             if (flagSet.getCount() > 1) {
                 q = flagSet.getFactor() * flagSet.getCount() * flagSet.getCount();
                 power += q;
-                logger.info("Add {} power for multiple {}, total {}", q, flagSet.getDescription(), power);
+                logger.info("Add {} power for multiple {}, total is {}", q, flagSet.getDescription(), power);
             }
 
             // Add bonus if item has a full set of these flags

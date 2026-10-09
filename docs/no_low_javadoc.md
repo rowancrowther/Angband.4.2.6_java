@@ -48,17 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/objects/ArtifactUpkeep.java`
-
-0 missing, 6 low
-
-- L53: method `isCreated` - LOW
-- L60: method `setCreated` - LOW
-- L67: method `isSeen` - LOW
-- L74: method `setSeen` - LOW
-- L81: method `isEverseen` - LOW
-- L88: method `setEverseen` - LOW
-
 ### `middle/objects/FlagSet.java`
 
 0 missing, 6 low

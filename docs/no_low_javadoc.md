@@ -48,19 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/monsters/Summon.java`
-
-0 missing, 8 low
-
-- L123: method `getName` - LOW
-- L130: method `getMessageType` - LOW
-- L137: method `isUniquesAllowed` - LOW
-- L144: method `getBases` - LOW
-- L151: method `getRaceFlag` - LOW
-- L158: method `getFallback` - LOW
-- L173: method `getDescription` - LOW
-- L180: method `toString` - LOW
-
 ### `middle/objects/ChestTrap.java`
 
 0 missing, 8 low

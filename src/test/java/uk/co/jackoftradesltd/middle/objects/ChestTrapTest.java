@@ -23,21 +23,17 @@ import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.objects.enums.ChestTrapCode;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests for {@link ChestTrap}, {@link ChestTrapCode} and the chest trap corner of
  * {@link ObjectRegistry} - the three pieces that between them replace C's {@code struct chest_trap}
- * and its global {@code chest_traps} list ({@code object.h:67-78}, {@code obj-chest.c:53}).
+ * and its global {@code chest_traps} list ({@code object.h}, {@code obj-chest.c}).
  *
  * <p>The pval arithmetic is what these mostly pin. C derives a trap's bit from its position in the
- * file while parsing ({@code t->pval = h->pval * 2}, {@code obj-chest.c:64-72}); this port derives
+ * file while parsing ({@code t->pval = h->pval * 2} in {@code parse_chest_trap_name}); this port derives
  * it from the enum's declaration order instead, so the enum and the data file have to agree - a
  * duty {@code ChestTrapAssembler} discharges and {@code ChestTrapReaderTest} covers. What is left to
  * check here is that the bits themselves are what C would have produced, and that they still fit the
@@ -163,5 +159,170 @@ class ChestTrapTest {
         } finally {
             ObjectRegistry.setChestTraps(saved);
         }
+    }
+
+    // ---- Behaviour C reads off the fields ---------------------------------
+
+    /**
+     * The seven records of {@code chest_trap.txt} as C reads them. Built by hand from the file so
+     * the expected values come from C's data, not from the Java loader.
+     */
+    private static List<ChestTrap> shippedTraps() {
+        return List.of(
+                new ChestTrap("locked", ChestTrapCode.NO_TRAP, 1, new ArrayList<>(), false, false, "", ""),
+                new ChestTrap("gas trap", ChestTrapCode.POISON, 1, new ArrayList<>(), false, false,
+                        "A puff of green gas surrounds you!", ""),
+                new ChestTrap("poison needle", ChestTrapCode.LOSE_STR, 2, new ArrayList<>(), false, false,
+                        "A small needle has pricked you!", "a poison needle"),
+                new ChestTrap("poison needle", ChestTrapCode.LOSE_CON, 3, new ArrayList<>(), false, false,
+                        "A small needle has pricked you!", "a poison needle"),
+                new ChestTrap("summoning runes", ChestTrapCode.SUMMON, 15, new ArrayList<>(), false, true,
+                        "You are enveloped in a cloud of smoke!", ""),
+                new ChestTrap("gas trap", ChestTrapCode.PARALYZE, 19, new ArrayList<>(), false, false,
+                        "A puff of yellow gas surrounds you!", ""),
+                new ChestTrap("explosion device", ChestTrapCode.EXPLODE, 25, new ArrayList<>(), true, false,
+                        "There is a sudden explosion! Everything inside the chest is destroyed!",
+                        "an exploding chest"));
+    }
+
+    /** C's {@code chest_trap_name}, written against the Java accessors. */
+    private static String trapName(List<ChestTrap> traps, int pval) {
+        if (pval < 0) {
+            return pval == -1 ? "unlocked" : "disarmed";
+        } else if (pval > 0) {
+            ChestTrap found = null;
+            for (ChestTrap trap : traps) {
+                if ((pval & trap.getPVal()) != 0) {
+                    if (found != null) {
+                        return "multiple traps";
+                    }
+                    found = trap;
+                }
+            }
+            if (found != null) {
+                return found.getName();
+            }
+        }
+        return "empty";
+    }
+
+    /** C's {@code pick_one_chest_trap} candidate count: traps after the "locked" entry that fit. */
+    private static int candidates(List<ChestTrap> traps, int chestLevel) {
+        int count = 0;
+        for (ChestTrap trap : traps.subList(1, traps.size())) {
+            if (trap.getLevel() <= chestLevel) count++;
+        }
+        return count;
+    }
+
+    private static String disarmKind(List<ChestTrap> traps, int pval) {
+        boolean magic = false;
+        boolean physical = false;
+        for (ChestTrap trap : traps) {
+            if ((trap.getPVal() & pval) == 0) continue;
+            if (trap.isMagic()) {
+                magic = true;
+            } else {
+                physical = true;
+            }
+        }
+        return magic ? (physical ? "both" : "magic") : "physical";
+    }
+
+    @Test
+    void chestTrapNameFollowsCsBranches() {
+        List<ChestTrap> traps = shippedTraps();
+
+        assertEquals("unlocked", trapName(traps, -1));
+        assertEquals("disarmed", trapName(traps, -2));
+        assertEquals("disarmed", trapName(traps, -66));
+        assertEquals("empty", trapName(traps, 0));
+        // pval 1 is the "locked" record's own bit, so a locked untrapped chest is named "locked".
+        assertEquals("locked", trapName(traps, 1));
+        assertEquals("gas trap", trapName(traps, 2));
+        assertEquals("poison needle", trapName(traps, 4));
+        assertEquals("poison needle", trapName(traps, 8));
+        assertEquals("summoning runes", trapName(traps, 16));
+        assertEquals("explosion device", trapName(traps, 64));
+        // Two or more bits is "multiple traps", whichever they are - even with "locked" among them.
+        assertEquals("multiple traps", trapName(traps, 4 | 8));
+        assertEquals("multiple traps", trapName(traps, 1 | 2));
+        assertEquals("multiple traps", trapName(traps, 127));
+        // A bit no record owns names nothing.
+        assertEquals("empty", trapName(traps, 128));
+    }
+
+    @Test
+    void theLevelGateCountsTrapsAfterLockedWhoseLevelIsAtMostTheChests() {
+        List<ChestTrap> traps = shippedTraps();
+
+        // Levels in the file after "locked": 1, 2, 3, 15, 19, 25. Inclusive at each boundary.
+        assertEquals(0, candidates(traps, 0));
+        assertEquals(1, candidates(traps, 1));
+        assertEquals(2, candidates(traps, 2));
+        assertEquals(3, candidates(traps, 3));
+        assertEquals(3, candidates(traps, 14));
+        assertEquals(4, candidates(traps, 15));
+        assertEquals(4, candidates(traps, 18));
+        assertEquals(5, candidates(traps, 19));
+        assertEquals(5, candidates(traps, 24));
+        assertEquals(6, candidates(traps, 25));
+        assertEquals(6, candidates(traps, 55));
+    }
+
+    @Test
+    void springingTheTrapsWalksTheFileInOrderAndStopsAtADestroyer() {
+        // chest_trap: every trap whose bit is set fires in file order; a destroy trap ends the walk.
+        List<ChestTrap> traps = shippedTraps();
+        List<String> fired = new ArrayList<>();
+        int pval = ChestTrapCode.POISON.getPval() | ChestTrapCode.SUMMON.getPval()
+                | ChestTrapCode.EXPLODE.getPval();
+        for (ChestTrap trap : traps) {
+            if ((trap.getPVal() & pval) != 0) {
+                fired.add(trap.getCode().name());
+                if (trap.isDestroy()) break;
+            }
+        }
+        assertEquals(List.of("POISON", "SUMMON", "EXPLODE"), fired);
+
+        // Put the destroyer first and nothing after it fires.
+        List<ChestTrap> reordered = List.of(
+                new ChestTrap("a", ChestTrapCode.POISON, 1, new ArrayList<>(), true, false, "", ""),
+                new ChestTrap("b", ChestTrapCode.LOSE_STR, 1, new ArrayList<>(), false, false, "", ""));
+        fired.clear();
+        for (ChestTrap trap : reordered) {
+            if ((trap.getPVal() & 6) != 0) {
+                fired.add(trap.getName());
+                if (trap.isDestroy()) break;
+            }
+        }
+        assertEquals(List.of("a"), fired);
+    }
+
+    @Test
+    void theDisarmSkillIsChosenFromTheMagicFlagsOfTheCarriedTraps() {
+        // do_cmd_disarm_chest: magic skill if all carried traps are magic, the average if mixed,
+        // physical otherwise. "locked" is physical, so a chest with it and the runes is mixed.
+        List<ChestTrap> traps = shippedTraps();
+
+        assertEquals("physical", disarmKind(traps, ChestTrapCode.POISON.getPval()));
+        assertEquals("magic", disarmKind(traps, ChestTrapCode.SUMMON.getPval()));
+        assertEquals("both", disarmKind(traps,
+                ChestTrapCode.POISON.getPval() | ChestTrapCode.SUMMON.getPval()));
+        assertEquals("both", disarmKind(traps,
+                ChestTrapCode.NO_TRAP.getPval() | ChestTrapCode.SUMMON.getPval()));
+        // Only the summoning runes are magic in the shipped file.
+        assertEquals(1, traps.stream().filter(ChestTrap::isMagic).count());
+    }
+
+    @Test
+    void onlyThePoisonNeedlesAndTheExplosionCarryADeathMessage() {
+        // msg-death: appears three times in chest_trap.txt; every other record gets "" for C's NULL.
+        List<ChestTrapCode> withDeath = new ArrayList<>();
+        for (ChestTrap trap : shippedTraps()) {
+            if (!trap.getMessageDeath().isEmpty()) withDeath.add(trap.getCode());
+        }
+        assertEquals(List.of(ChestTrapCode.LOSE_STR, ChestTrapCode.LOSE_CON, ChestTrapCode.EXPLODE),
+                withDeath);
     }
 }

@@ -48,28 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/objects/Pile.java`
-
-6 missing, 0 low
-
-- L239: method `insertEnd` - MISSING
-- L316: method `size` - MISSING
-- L320: method `get` - MISSING
-- L324: method `reversed` - MISSING
-- L328: method `removeIf` - MISSING
-- L332: method `remove` - MISSING
-
-### `middle/objects/enums/IgnoreTypeEnum.java`
-
-6 missing, 0 low
-
-- L20: enum `IgnoreTypeEnum` - MISSING
-- L21: enum-const `IGNORE_NONE` - MISSING
-- L22: enum-const `IGNORE_BAD` - MISSING
-- L23: enum-const `IGNORE_AVERAGE` - MISSING
-- L24: enum-const `IGNORE_GOOD` - MISSING
-- L25: enum-const `IGNORE_ALL` - MISSING
-
 ### `middle/objects/enums/QualityValueEnum.java`
 
 6 missing, 0 low

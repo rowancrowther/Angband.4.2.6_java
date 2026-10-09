@@ -66,7 +66,7 @@ public class ObjectIgnore {
 
     /**
      * Reports whether a known item may be ignored under the player's ignore settings - the port of
-     * C's {@code ignore_known_item_ok} ({@code obj-ignore.c:645}). <b>Stub:</b> always answers
+     * C's {@code ignore_known_item_ok} ({@code obj-ignore.c}). <b>Stub:</b> always answers
      * {@code false}, so nothing on the floor is hidden by this route yet.
      *
      * <p>The distinction from {@link #ignoreItemOK} is which object is judged. This one is handed
@@ -95,7 +95,7 @@ public class ObjectIgnore {
 
     /**
      * Drops everything in the gear that the player's ignore settings now cover - the port of C's
-     * {@code ignore_drop} ({@code obj-ignore.c:651}).
+     * {@code ignore_drop} ({@code obj-ignore.c}).
      *
      * <p>Walks the gear in reverse and, for each item {@link #ignoreItemOK} accepts, pushes a
      * {@code CMD_DROP}. An item inscribed {@code !d} or {@code !*} is left alone. An equipped item
@@ -184,7 +184,7 @@ public class ObjectIgnore {
 
     /**
      * Tests whether an object may be ignored right now - the port of C's {@code ignore_item_ok}
-     * ({@code obj-ignore.c:622}).
+     * ({@code obj-ignore.c}).
      *
      * <p>Nothing is ignorable while the player is unignoring, which is the state the "show ignored
      * items" toggle puts them in; otherwise the question is passed to {@link #isIgnored}.
@@ -208,7 +208,7 @@ public class ObjectIgnore {
 
     /**
      * Tests whether an object falls under the player's ignore settings - the port of C's
-     * {@code object_is_ignored} ({@code obj-ignore.c:576}).
+     * {@code object_is_ignored} ({@code obj-ignore.c}).
      *
      * <p>An object with no known half cannot be ignored at all: the player has nothing to judge it
      * by. Beyond that the tests run in C's order - the per-object ignore mark, then the escapes
@@ -264,7 +264,7 @@ public class ObjectIgnore {
 
     /**
      * Puts the appropriate autoinscription on an object, if any is due - the port of C's
-     * {@code apply_autoinscription} ({@code obj-ignore.c:242-288}).
+     * {@code apply_autoinscription} ({@code obj-ignore.c}).
      *
      * <p>The note fetched at the top is whichever of {@link ObjectKind#getNoteAware()} or
      * {@link ObjectKind#getNoteUnaware()} matches the object's current aware state
@@ -283,7 +283,7 @@ public class ObjectIgnore {
      * autoinscription with a message, returning {@code 1}, exactly as C does with its {@code msg}
      * call and its own {@code return 1}.
      *
-     * <p>The {@code obj != null} check at line 268 mirrors a check C itself never needs: C
+     * <p>The {@code obj != null} check on the {@code note} line mirrors a check C itself never needs: C
      * dereferences {@code obj->kind->aware} to compute {@code aware} one line above its own
      * {@code obj ? ... : NULL} ternary, so the null branch there is as unreachable in the
      * original as it is here.
@@ -337,7 +337,7 @@ public class ObjectIgnore {
 
     /**
      * Applies every rune autoinscription the player is entitled to see onto a single object -
-     * the port of C's {@code runes_autoinscribe} ({@code obj-ignore.c:217-224}).
+     * the port of C's {@code runes_autoinscribe} ({@code obj-ignore.c}).
      *
      * <p>C walks the full rune index range {@code 0..max_runes()} and inscribes only where
      * {@code object_has_rune(obj, i) && player_knows_rune(p, i)} both hold; this walks
@@ -362,7 +362,7 @@ public class ObjectIgnore {
 
     /**
      * Makes or extends a single rune's autoinscription on an object - the port of C's
-     * {@code rune_add_autoinscription} ({@code obj-ignore.c:172-188}).
+     * {@code rune_add_autoinscription} ({@code obj-ignore.c}).
      *
      * <p>Three clauses mirror the C in order: a rune with no configured note
      * ({@link Rune#getNote()} {@code == null}) is skipped outright, matching {@code !rune_note(i)};
@@ -399,7 +399,7 @@ public class ObjectIgnore {
 
     /**
      * Looks up an object kind's autoinscription for the given aware state - the port of C's
-     * {@code get_autoinscription} ({@code obj-ignore.c:229}).
+     * {@code get_autoinscription} ({@code obj-ignore.c}).
      *
      * <p>A missing kind answers {@code null} before either branch is tried, matching C's
      * {@code !kind} guard; otherwise the aware flag alone picks {@link ObjectKind#getNoteAware()}
@@ -427,7 +427,7 @@ public class ObjectIgnore {
 
     /**
      * Reports whether the player has chosen to ignore unidentified items of this kind - the port of
-     * C's {@code kind_is_ignored_unaware} ({@code obj-ignore.c:561-564}), which tests the
+     * C's {@code kind_is_ignored_unaware} ({@code obj-ignore.c}), which tests the
      * {@code IGNORE_IF_UNAWARE} bit of {@code kind->ignore} directly. Here that same bit test goes
      * through {@link ObjectKind#hasIgnoreFlag}, so this wrapper does nothing C's version doesn't - it
      * just names the one flag being asked about.
@@ -443,7 +443,7 @@ public class ObjectIgnore {
 
     /**
      * Marks an object kind to be ignored once it is identified - the port of C's
-     * {@code kind_ignore_when_aware} ({@code obj-ignore.c:567-571}).
+     * {@code kind_ignore_when_aware} ({@code obj-ignore.c}).
      *
      * <p>Two statements, in C's order: set the {@code IGNORE_IF_AWARE} bit on the kind through
      * {@link ObjectKind#setIgnoreFlag}, then raise {@code PN_IGNORE} on the player's upkeep, matching
@@ -468,7 +468,7 @@ public class ObjectIgnore {
 
     /**
      * Applies whatever autoinscription is due to every object the player carries - the port of C's
-     * {@code autoinscribe_pack} ({@code obj-ignore.c:352-359}).
+     * {@code autoinscribe_pack} ({@code obj-ignore.c}).
      *
      * <p>Walks the gear forward, in C's order - {@code p->gear} down its {@code obj->next} chain -
      * and calls {@link #applyAutoinscription} on each item in turn. Forward is the right direction
@@ -494,7 +494,7 @@ public class ObjectIgnore {
 
     /**
      * Applies whatever autoinscription is due to every object on the floor beneath the player - the
-     * port of C's {@code autoinscribe_ground} ({@code obj-ignore.c:340-347}).
+     * port of C's {@code autoinscribe_ground} ({@code obj-ignore.c}).
      *
      * <p>C's loop starts from {@code square_object(cave, p->grid)}, which answers {@code NULL} -
      * and so never runs the loop body at all - when the player's grid fails
@@ -524,7 +524,7 @@ public class ObjectIgnore {
 
     /**
      * Resets every ignore setting to its birth-time default - the port of C's
-     * {@code ignore_birth_init} ({@code obj-ignore.c:143-159}).
+     * {@code ignore_birth_init} ({@code obj-ignore.c}).
      *
      * <p>Three sweeps, in C's order: {@link ObjectKind#wipeIgnoreFlags} clears both ignore bits on
      * every kind in {@link ObjectRegistry#getObjectKinds}, matching C's {@code k_info[i].ignore =

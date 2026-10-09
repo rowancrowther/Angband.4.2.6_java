@@ -33,7 +33,7 @@ package uk.co.jackoftradesltd.middle.objects.enums;
  * {@code ego_ignore_types} arrays by {@code ITYPE_MAX}, so the declaration order must
  * stay exactly as {@code list-ignore-types.h} has it.
  *
- * <p>This is not the same thing as {@link IgnoreTypeEnum}, which ports C's quality
+ * <p>This is not the same thing as {@link QualityValueEnum}, which ports C's quality
  * levels ({@code IGNORE_BAD}, {@code IGNORE_GOOD} and so on). An ignore setting pairs one
  * of each: a kind of item from here, and a quality level from there.
  *

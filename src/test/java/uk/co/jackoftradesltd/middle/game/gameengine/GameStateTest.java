@@ -17,20 +17,15 @@
 
 package uk.co.jackoftradesltd.middle.game.gameengine;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.middle.cave.Chunk;
+import uk.co.jackoftradesltd.middle.combat.Target;
 import uk.co.jackoftradesltd.middle.game.GameWorld;
 import uk.co.jackoftradesltd.middle.player.Player;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests the members of {@link GameState} that the single-method test classes beside it do not
@@ -46,11 +41,11 @@ import static org.junit.jupiter.api.Assertions.assertSame;
  * store, an add of one, and two's-complement wrap at the 32-bit boundary, with nothing clamped and
  * nothing coupled to a neighbouring global.
  *
- * <p>{@link GameState#targetOkay()} is deliberately not tested: it is a stub answering
- * {@code true}, and C's {@code target_okay()} answers {@code false} when no target is set, so a
- * test pinning the stub would fail the moment targeting is ported. {@code CommandTest} exercises it
- * through {@code getTarget}. The {@code seedFlavour} and {@code characterGenerated} pairs have
- * their own test classes, and {@code seedRandart} has no accessor to test.
+ * <p>{@link Target#targetOkay()} is not a {@link GameState} member any more: C's
+ * {@code target_okay()} lives in {@code target.c}, so it moved to {@link Target} and its tests
+ * belong with that class's port. {@code CommandTest} exercises it through {@code getTarget}. The
+ * {@code seedFlavour} and {@code characterGenerated} pairs have their own test classes, and
+ * {@code seedRandart} has no accessor to test.
  *
  * <p>Every member is static, so each test saves the five fields it can touch beforehand and puts
  * them back afterwards to avoid leaking state into whichever test runs next.

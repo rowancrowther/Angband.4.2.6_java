@@ -48,16 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/game/globals/registry/MiscRegistry.java`
-
-2 missing, 3 low
-
-- L52: field `logger` - MISSING
-- L54: field `nameSections` - MISSING
-- L72: method `getHints` - LOW
-- L82: method `getNames` - LOW
-- L92: method `getFlavours` - LOW
-
 ### `middle/game/gameengine/GameState.java`
 
 0 missing, 5 low

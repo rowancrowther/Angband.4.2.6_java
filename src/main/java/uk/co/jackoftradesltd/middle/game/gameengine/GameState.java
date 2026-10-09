@@ -29,9 +29,11 @@ import uk.co.jackoftradesltd.middle.player.Player;
  * {@code turn}, {@code daycount}, {@code seed_randart}, {@code seed_flavor} and
  * {@code character_generated}, {@code player.c} defines {@code player}, {@code cave.c} defines
  * {@code cave}, and {@code cmd-core.c} keeps its command ring as file-scope statics. They are bound
- * together only by all being globals, and C reads and writes them directly, so apart from
- * {@code target_okay()} none of the members below has a C function to be checked against. Each
- * accessor here is the boundary's stand-in for the bare reads and writes C makes at its call sites.
+ * together only by all being globals, and C reads and writes them directly, so none of the members
+ * below has a C function to be checked against. Each accessor here is the boundary's stand-in for
+ * the bare reads and writes C makes at its call sites. The state of {@code target.c}, and its
+ * function {@code target_okay()}, belong to {@link uk.co.jackoftradesltd.middle.combat.Target}
+ * rather than to this class.
  *
  * <p>The port gathers the data half here, next to the {@link Player}, {@link Chunk} and
  * {@link CommandQueue} it tracks, and leaves the turn-loop <em>behaviour</em> to
@@ -43,7 +45,7 @@ import uk.co.jackoftradesltd.middle.player.Player;
  * <p>Everything is static, so the state is shared across the JVM; tests that write it must put it
  * back afterwards.
  *
- * <p>Class GameState coded before 260903, commented in full on 261006.
+ * <p>Class GameState coded before 260903, commented in full on 261009.
  *
  * @author Rowan Crowther
  */
@@ -282,28 +284,6 @@ public class GameState {
      * <p>Method initGameState coded before 260903, commented in full on 261006.
      */
     public static void initGameState() {
-    }
-
-    /**
-     * Reports whether the current health-bar target is still valid to fire at - the port of C's
-     * {@code target_okay()} ({@code target.c}). {@link Command#getTarget} calls this before
-     * honouring a queued {@code DIR_TARGET} argument, so a target that has since died or moved out
-     * of sight forces a fresh aim rather than being reused.
-     *
-     * <p>In C the answer is {@code false} when no target is set. For a monster target it is
-     * {@code true} only while {@code target_able()} still holds, and it also refreshes the stored
-     * target grid from the monster's current position. For a grid target with no monster it is
-     * {@code true} whenever both coordinates are non-zero, and otherwise {@code false}.
-     *
-     * <p>Stub for now: always reports the target as usable until real targeting exists.
-     *
-     * <p>Function targetOkay coded before 260903, commented in full on 261006.
-     *
-     * @return {@code true} while the current target may be used
-     */
-    public static boolean targetOkay() {
-        // TODO: Stub function
-        return true;
     }
 
     /**

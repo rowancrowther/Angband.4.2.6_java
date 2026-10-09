@@ -45,27 +45,26 @@ import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Tests {@link Target#setTargetMonster}, {@link Target#getTargetMonster} and the private
- * {@code targetable} they depend on, ports of {@code target_set_monster}, {@code target_get_monster}
- * and {@code target_able} in C's {@code target.c}.
+ * Tests {@link Target#setTargetMonster}, {@link Target#getTargetMonster}, {@link Target#targetOkay}
+ * and the {@code targetable} they depend on, ports of {@code target_set_monster},
+ * {@code target_get_monster}, {@code target_okay} and {@code target_able} in C's {@code target.c}.
  *
  * <p>Expected values come from reading the C. {@code target_able} is a short-circuit chain: the
  * monster exists, has a race, is obvious (visible and not camouflaged), is reachable by a
  * {@code PROJECT_NONE} projection, and the player is not under {@code TMD_IMAGE}. In
  * {@code target_set_monster} a targetable monster sets the target, and anything else either keeps
  * the target (index zeroed, grid kept) when it is fixed, or resets index and grid to zero.
+ * {@code target_okay} is false when nothing is set; for {@code midx > 0} it is true only while
+ * {@code target_able} holds for the monster in that slot (refreshing the grid), and never falls
+ * through to the grid test; for {@code midx == 0} it is true when both grid coordinates are non-zero.
  *
  * <p>The target is static state with no reset method, so the fixture clears it through the public
  * method with the fixed flag off, and reads and sets the private fields by reflection.
  *
- * <p>Test class TargetTest coded on 261001, commented in full on 261001.
+ * <p>Test class TargetTest coded on 261001, commented in full on 261009.
  *
  * @author Rowan Crowther
  */
@@ -364,5 +363,132 @@ class TargetTest {
         assertNull(Target.getTargetMonster(level));
         setField("targetMonsterIndex", 9);
         assertNull(Target.getTargetMonster(level));
+    }
+
+    /**
+     * Stores a raw target state, bypassing the setters, so each {@code target_okay} branch can be
+     * reached with exactly the (set, midx, grid) triple the C reads.
+     */
+    private void rawTarget(boolean set, int index, Loc grid) throws ReflectiveOperationException {
+        setField("targetSet", set);
+        setField("targetMonsterIndex", index);
+        setField("grid", grid);
+    }
+
+    @Test
+    @DisplayName("targetOkay: no target set is false, whatever grid is stored")
+    void okayUnset() throws ReflectiveOperationException {
+        rawTarget(false, 0, at(3, 4));
+        assertFalse(Target.targetOkay());
+    }
+
+    @Test
+    @DisplayName("targetOkay: a live targetable monster is okay, and the stored grid is refreshed to where it now stands")
+    void okayMonsterRefreshesGrid() throws ReflectiveOperationException {
+        Monster mon = good(3, at(5, 0));
+        level.getMonsters()[3] = mon;
+        rawTarget(true, 3, at(1, 1));
+
+        assertTrue(Target.targetOkay());
+
+        assertEquals(at(5, 0), Target.getGrid());
+    }
+
+    @Test
+    @DisplayName("targetOkay: midx above zero but the slot is empty is false, not a fall back to the stored grid")
+    void okayEmptySlotDoesNotFallBackToGrid() throws ReflectiveOperationException {
+        rawTarget(true, 5, at(3, 4));
+
+        assertFalse(Target.targetOkay());
+    }
+
+    @Test
+    @DisplayName("targetOkay: a monster that is no longer visible is false, the grid is left alone, and it does not fall back to the grid")
+    void okayMonsterNotVisible() throws ReflectiveOperationException {
+        level.getMonsters()[3] = monster(3, at(5, 0), false, false, new MonsterRace());
+        rawTarget(true, 3, at(3, 4));
+
+        assertFalse(Target.targetOkay());
+
+        assertEquals(at(3, 4), Target.getGrid());
+    }
+
+    @Test
+    @DisplayName("targetOkay: a monster behind a wall, or out of range, is false")
+    void okayMonsterNotProjectable() throws ReflectiveOperationException {
+        setFeature(at(3, 0), feature());
+        level.getMonsters()[3] = good(3, at(6, 0));
+        rawTarget(true, 3, at(6, 0));
+        assertFalse(Target.targetOkay());
+
+        level.getMonsters()[4] = good(4, at(MAX_RANGE + 1, 0));
+        rawTarget(true, 4, at(MAX_RANGE + 1, 0));
+        assertFalse(Target.targetOkay());
+    }
+
+    @Test
+    @DisplayName("targetOkay: hallucination makes a monster target false")
+    void okayHallucinating() throws ReflectiveOperationException {
+        level.getMonsters()[3] = good(3, at(5, 0));
+        rawTarget(true, 3, at(5, 0));
+        player.putTimed(TimedEffect.TMD_IMAGE, 10);
+
+        assertFalse(Target.targetOkay());
+    }
+
+    @Test
+    @DisplayName("targetOkay: a grid-only target is okay when both x and y are non-zero")
+    void okayGridBothNonZero() throws ReflectiveOperationException {
+        rawTarget(true, 0, at(3, 4));
+        assertTrue(Target.targetOkay());
+
+        rawTarget(true, 0, at(1, 1));
+        assertTrue(Target.targetOkay());
+    }
+
+    @Test
+    @DisplayName("targetOkay: a grid-only target on row 0 or column 0 is false, as C tests x && y")
+    void okayGridOnAnAxis() throws ReflectiveOperationException {
+        rawTarget(true, 0, at(0, 5));
+        assertFalse(Target.targetOkay());
+
+        rawTarget(true, 0, at(7, 0));
+        assertFalse(Target.targetOkay());
+    }
+
+    @Test
+    @DisplayName("targetOkay: the origin is false whether it is the shared Loc.zero or a fresh equal Loc")
+    void okayGridOrigin() throws ReflectiveOperationException {
+        rawTarget(true, 0, Loc.zero);
+        assertFalse(Target.targetOkay());
+
+        rawTarget(true, 0, at(0, 0));
+        assertFalse(Target.targetOkay());
+    }
+
+    @Test
+    @DisplayName("targetOkay: a set target whose grid was never stored (null here, zeroed in C) is false")
+    void okayGridNull() throws ReflectiveOperationException {
+        rawTarget(true, 0, null);
+        assertFalse(Target.targetOkay());
+    }
+
+    @Test
+    @DisplayName("targetOkay: a negative index is not a monster target, so the grid decides, as C's midx > 0 test")
+    void okayNegativeIndexUsesGrid() throws ReflectiveOperationException {
+        rawTarget(true, -1, at(3, 4));
+        assertTrue(Target.targetOkay());
+    }
+
+    @Test
+    @DisplayName("targetOkay: after setTargetMonster targets a monster it is okay, and after a reset it is not")
+    void okayThroughTheSetter() throws ReflectiveOperationException {
+        Monster mon = good(3, at(5, 0));
+        level.getMonsters()[3] = mon;
+        Target.setTargetMonster(mon);
+        assertTrue(Target.targetOkay());
+
+        Target.setTargetMonster(null);
+        assertFalse(Target.targetOkay());
     }
 }

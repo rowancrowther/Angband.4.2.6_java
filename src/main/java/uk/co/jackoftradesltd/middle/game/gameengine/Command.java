@@ -18,15 +18,16 @@
 package uk.co.jackoftradesltd.middle.game.gameengine;
 
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.Message;
 import uk.co.jackoftradesltd.middle.cave.Loc;
 import uk.co.jackoftradesltd.middle.cave.enums.DirectionEnum;
+import uk.co.jackoftradesltd.middle.combat.Target;
 import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.middle.game.enums.CommandArgumentType;
 import uk.co.jackoftradesltd.middle.game.enums.CommandCode;
 import uk.co.jackoftradesltd.middle.game.enums.CommandContext;
-import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.middle.game.gameengine.argumentdata.*;
 import uk.co.jackoftradesltd.middle.gameinput.EffectChoice;
 import uk.co.jackoftradesltd.middle.gameinput.GameInput;
@@ -676,7 +677,7 @@ public class Command {
      * <p>A stored target is trusted only when it is still usable: it must not be {@link
      * DirectionEnum#DIR_UNKNOWN}, and a {@link DirectionEnum#DIR_TARGET} (meaning "the current
      * health-bar target") is only honoured while that target is still valid ({@link
-     * GameState#targetOkay}). Anything else - no arg, an unknown target, or a stale health-bar
+     * Target#targetOkay}). Anything else - no arg, an unknown target, or a stale health-bar
      * target - falls through to the aim prompt, matching C's re-check before it calls
      * {@code get_aim_dir}. The aimed direction returns as the {@link Optional} value (C's out-param
      * {@code *target}); empty is C's {@code CMD_ARG_ABORTED}. Unlike {@link #getDirection}, an
@@ -692,7 +693,7 @@ public class Command {
 
         if (result.isPresent()) {
             DirectionEnum target = result.get();
-            if (target != DirectionEnum.DIR_UNKNOWN && (target != DirectionEnum.DIR_TARGET || GameState.targetOkay()))
+            if (target != DirectionEnum.DIR_UNKNOWN && (target != DirectionEnum.DIR_TARGET || Target.targetOkay()))
                 return result;
         }
 

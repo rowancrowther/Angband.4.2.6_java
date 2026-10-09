@@ -22,8 +22,8 @@ import uk.co.jackoftradesltd.middle.cave.Chunk;
 import uk.co.jackoftradesltd.middle.cave.ChunkUtils;
 import uk.co.jackoftradesltd.middle.cave.Loc;
 import uk.co.jackoftradesltd.middle.combat.enums.ProjectEnum;
+import uk.co.jackoftradesltd.middle.game.gameengine.Command;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
-import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.monsters.Monster;
 import uk.co.jackoftradesltd.middle.player.Player;
 import uk.co.jackoftradesltd.middle.player.enums.TimedEffect;
@@ -140,11 +140,95 @@ public class Target {
      * @param monster the candidate monster, may be {@code null}
      * @return {@code true} if the monster can be targeted
      */
-    private static boolean targetable(Monster monster) {
+    public static boolean targetable(Monster monster) {
         Player player = GameState.getPlayer();
         Flag<ProjectEnum> flag = new Flag<>(ProjectEnum.class, ProjectEnum.PROJECT_NONE);
         return monster != null && monster.getMonsterRace() != null && monster.isObvious()
                 && ChunkUtils.isProjectable(GameState.getCave(), player.getGrid(), monster.getGrid(), flag)
                 && player.getTimedEffect(TimedEffect.TMD_IMAGE) == 0;
+    }
+
+    /**
+     * Tells the UI whether a target is currently set, the port of C's {@code target_is_set}
+     * ({@code target.c}). Reads {@link #targetSet} and nothing else, so it says nothing about
+     * whether the target is still usable; {@link #targetOkay()} answers that.
+     *
+     * <p>Method isTargetSet coded before 261009, commented in full on 261009.
+     *
+     * @return {@code true} if a monster or grid target has been set
+     */
+    public static boolean isTargetSet() {
+        return targetSet;
+    }
+
+    /**
+     * Overwrites the stored target grid, {@code target.grid} in C, leaving the set flag and the
+     * monster index alone. C has no function for this; {@code target_okay} assigns the field
+     * directly, and {@link #targetOkay()} calls this method to do the same.
+     *
+     * <p>Method setGrid coded before 261009, commented in full on 261009.
+     *
+     * @param grid the grid to store
+     */
+    public static void setGrid(Loc grid) {
+        Target.grid = grid;
+    }
+
+    /**
+     * Returns the stored target grid, the port of C's {@code target_get} ({@code target.c}), which
+     * copies {@code target.grid} out through a pointer. Java returns the immutable {@link Loc}
+     * itself. The result is {@link Loc#zero} after the target has been reset, but {@code null}
+     * before the first target is ever set or reset, because the static {@link #grid} starts
+     * uninitialised where C's file-scope {@code target} starts zeroed.
+     *
+     * <p>Method getGrid coded before 261009, commented in full on 261009.
+     *
+     * @return the stored grid, which may be {@code null} before any target has been set
+     */
+    public static Loc getGrid() {
+        return grid;
+    }
+
+    /**
+     * Updates and verifies the target - the port of C's {@code target_okay} ({@code target.c}).
+     * {@link Command#getTarget} calls this before honouring a queued {@code DIR_TARGET} argument,
+     * so a target that has since died or moved out of sight forces a fresh aim rather than being
+     * reused.
+     *
+     * <p>The answer is {@code false} when no target is set. When {@link #targetMonsterIndex} is
+     * above {@code 0} the target is a monster: it is looked up in the current cave, and the answer
+     * is {@code true} only if the slot holds a monster for which {@link #targetable(Monster)}
+     * still holds, in which case the stored grid is refreshed from the monster's current position.
+     * A monster target that fails, including one whose slot is now empty, answers {@code false}
+     * and does not fall back to the grid, as in C. Only with an index of {@code 0} is the stored
+     * grid considered, and then the answer is {@code true} when both its x and y are non-zero, so
+     * a grid on row 0 or column 0 is not a usable target.
+     *
+     * <p>Java adds a {@code null} guard on the stored grid, which is {@code null} until a target
+     * is first set or reset (see {@link #getGrid()}); C's zeroed grid fails the non-zero test in
+     * the same way, so the answer is {@code false} in both.
+     *
+     * <p>Function targetOkay coded before 260903, commented in full on 261009.
+     *
+     * @return {@code true} while the current target may be used
+     */
+    public static boolean targetOkay() {
+        if (!isTargetSet()) return false;
+        
+        if (targetMonsterIndex > 0) {
+            Monster monster = getTargetMonster(GameState.getCave());
+            if (monster != null && targetable(monster)) {
+                setGrid(monster.getGrid());
+                
+                // Good target
+                return true;
+            }
+        } else if (getGrid() != null && getGrid().getY() != 0 && getGrid().getX() != 0) {
+            // Allow a direction without a monster
+            return true;
+        }
+        
+        // Assume no target
+        return false;
     }
 }

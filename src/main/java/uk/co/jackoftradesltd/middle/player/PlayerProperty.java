@@ -22,7 +22,6 @@ import org.apache.logging.log4j.Logger;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjPropertyType;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
@@ -30,7 +29,6 @@ import uk.co.jackoftradesltd.middle.player.enums.PlayerFlagType;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * The definition of one player property — a named characteristic (a player flag, an object flag,
@@ -69,11 +67,17 @@ import java.util.Objects;
 public class PlayerProperty {
     /**
      * Logger for this type.
+     *
+     * <p>Field logger coded before 261009, commented in full on 261009.
      */
     private static final Logger logger = LogManager.getLogger();
 
     /**
-     * One binding of a player property to a UI display slot (a {@code bindui:} line).
+     * One binding of a player property to a UI display slot (a {@code bindui:} line). Ports C's
+     * {@code struct player_bound_ui} ({@code init.c}), the per-line record the parser keeps until
+     * {@code finish_parse_player_prop} binds it to the UI entry; here it is kept on the property.
+     *
+     * <p>Record BindUI coded before 261009, commented in full on 261009.
      *
      * @param uiEntry the UI entry this property is displayed in
      * @param value   the value threshold associated with the binding
@@ -85,7 +89,11 @@ public class PlayerProperty {
     }
 
     /**
-     * Discriminator selecting which flavour of property (and which code carrier) is live.
+     * Discriminator selecting which flavour of property (and which code carrier) is live. Replaces
+     * the {@code type} string of C's {@code player_ability}, which every C test compares with
+     * {@code streq}.
+     *
+     * <p>Field playerPropertyType coded before 261009, commented in full on 261009.
      */
     private PlayerPropertyType playerPropertyType;
     /**
@@ -103,23 +111,54 @@ public class PlayerProperty {
      * <p>Field group coded before 261009, commented in full on 261009.
      */
     private PlayerFlagType group;
-    /** Payload when {@link #playerPropertyType} is {@code PROP_TYPE_PLAYER}: the player flag. */
+    /**
+     * Payload when {@link #playerPropertyType} is {@code PROP_TYPE_PLAYER}: the player flag (C's
+     * {@code player_ability.index} read as a {@code PF_*}).
+     *
+     * <p>Field pCode coded before 261009, commented in full on 261009.
+     */
     private PlayerFlag pCode;
-    /** Payload when {@link #playerPropertyType} is {@code PROP_TYPE_OBJECT}: the object flag. */
+    /**
+     * Payload when {@link #playerPropertyType} is {@code PROP_TYPE_OBJECT}: the object flag (C's
+     * {@code player_ability.index} read as an {@code OF_*}).
+     *
+     * <p>Field oCode coded before 261009, commented in full on 261009.
+     */
     private ObjectFlag oCode;
     /**
-     * Payload when {@link #playerPropertyType} is {@code PROP_TYPE_ELEMENT}: the element code.
+     * Payload when {@link #playerPropertyType} is {@code PROP_TYPE_ELEMENT}: the element code (C's
+     * {@code player_ability.index} read as an element index).
+     *
+     * <p>Field eCode coded before 261009, commented in full on 261009.
      */
     private ElementEnum eCode;
     /**
-     * Payload when {@link #playerPropertyType} is {@code PROP_TYPE_OBJECT_MODIFIER}: the object modifier.
+     * Payload when {@link #playerPropertyType} is {@code PROP_TYPE_OBJECT_MODIFIER}: the object
+     * modifier. The port's own addition; C has no such type.
+     *
+     * <p>Field omFlag coded before 261009, commented in full on 261009.
      */
     private ObjectModifier omFlag;
-    /** Resolved bindings from this property to the UI slots that display it (the {@code bindui:} lines). */
+    /**
+     * Resolved bindings from this property to the UI slots that display it (the {@code bindui:}
+     * lines). Not a field of C's {@code player_ability}: C hands each binding to
+     * {@code bind_player_ability_to_ui_entry_by_name} ({@code ui-entry.c}) as the property is
+     * built and keeps it on the UI entry.
+     *
+     * <p>Field entries coded before 261009, commented in full on 261009.
+     */
     private List<BindUI> entries;
-    /** Display name of the property (C: {@code player_ability.name}). */
+    /**
+     * Display name of the property (C: {@code player_ability.name}).
+     *
+     * <p>Field name coded before 261009, commented in full on 261009.
+     */
     private String name;
-    /** Human-readable description of the property (C: {@code player_ability.desc}). */
+    /**
+     * Human-readable description of the property (C: {@code player_ability.desc}).
+     *
+     * <p>Field description coded before 261009, commented in full on 261009.
+     */
     private String description;
     /**
      * For an element property, the resistance level a race must have to the element for the
@@ -171,6 +210,10 @@ public class PlayerProperty {
     }
 
     /**
+     * Reads the discriminator that says which code carrier is live.
+     *
+     * <p>Function getPlayerPropertyType coded before 261009, commented in full on 261009.
+     *
      * @return the property flavour / code discriminator
      */
     public PlayerPropertyType getPlayerPropertyType() {
@@ -178,6 +221,10 @@ public class PlayerProperty {
     }
 
     /**
+     * Reads the player flag carrier; {@code null} unless the type is {@code PROP_TYPE_PLAYER}.
+     *
+     * <p>Function getpCode coded before 261009, commented in full on 261009.
+     *
      * @return the player flag this property carries (meaningful for {@code PROP_TYPE_PLAYER})
      */
     public PlayerFlag getpCode() {
@@ -185,6 +232,10 @@ public class PlayerProperty {
     }
 
     /**
+     * Reads the object flag carrier; {@code null} unless the type is {@code PROP_TYPE_OBJECT}.
+     *
+     * <p>Function getoCode coded before 261009, commented in full on 261009.
+     *
      * @return the object flag this property carries (meaningful for {@code PROP_TYPE_OBJECT})
      */
     public ObjectFlag getoCode() {
@@ -192,6 +243,10 @@ public class PlayerProperty {
     }
 
     /**
+     * Reads the element carrier; {@code null} unless the type is {@code PROP_TYPE_ELEMENT}.
+     *
+     * <p>Function geteCode coded before 261009, commented in full on 261009.
+     *
      * @return the element code this property carries (meaningful for {@code PROP_TYPE_ELEMENT})
      */
     public ElementEnum geteCode() {
@@ -199,6 +254,11 @@ public class PlayerProperty {
     }
 
     /**
+     * Reads the object-modifier carrier; {@code null} unless the type is
+     * {@code PROP_TYPE_OBJECT_MODIFIER}. Named {@code getomCode} though the field is {@code omFlag}.
+     *
+     * <p>Function getomCode coded before 261009, commented in full on 261009.
+     *
      * @return the object modifier this property carries (meaningful for
      * {@code PROP_TYPE_OBJECT_MODIFIER})
      */
@@ -207,6 +267,10 @@ public class PlayerProperty {
     }
     
     /**
+     * Reads the resolved UI bindings; the list is the property's own, not a copy.
+     *
+     * <p>Function getEntries coded before 261009, commented in full on 261009.
+     *
      * @return the resolved UI bindings that display this property
      */
     public List<BindUI> getEntries() {
@@ -214,6 +278,10 @@ public class PlayerProperty {
     }
 
     /**
+     * Reads the display name.
+     *
+     * <p>Function getName coded before 261009, commented in full on 261009.
+     *
      * @return the property's display name
      */
     public String getName() {
@@ -221,6 +289,10 @@ public class PlayerProperty {
     }
 
     /**
+     * Reads the human-readable description.
+     *
+     * <p>Function getDescription coded before 261009, commented in full on 261009.
+     *
      * @return the property's human-readable description
      */
     public String getDescription() {
@@ -278,6 +350,10 @@ public class PlayerProperty {
     }
 
     /**
+     * Reads the resistance level; {@link #raceHasAbility} compares it with the race's level.
+     *
+     * <p>Function getValue coded before 261009, commented in full on 261009.
+     *
      * @return the resistance level this property confers (meaningful for element properties)
      */
     public int getValue() {
@@ -360,14 +436,38 @@ public class PlayerProperty {
                 && playerClass.getoFlags().has(property.getoCode());
     }
 
+    /**
+     * Replaces the object flag carrier. Nothing in {@code src/main} or {@code src/test} calls it:
+     * the constructor sets the carrier, and the registry entries are not changed after loading.
+     *
+     * <p>Function setoCode coded before 261009, commented in full on 261009.
+     *
+     * @param oCode the object flag
+     */
     public void setoCode(ObjectFlag oCode) {
         this.oCode = oCode;
     }
 
+    /**
+     * Replaces the player flag carrier. Nothing in {@code src/main} or {@code src/test} calls it;
+     * see {@link #setoCode}.
+     *
+     * <p>Function setpCode coded before 261009, commented in full on 261009.
+     *
+     * @param pCode the player flag
+     */
     public void setpCode(PlayerFlag pCode) {
         this.pCode = pCode;
     }
 
+    /**
+     * Replaces the element carrier. Nothing in {@code src/main} or {@code src/test} calls it; see
+     * {@link #setoCode}.
+     *
+     * <p>Function seteCode coded before 261009, commented in full on 261009.
+     *
+     * @param eCode the element
+     */
     public void seteCode(ElementEnum eCode) {
         this.eCode = eCode;
     }
@@ -375,6 +475,8 @@ public class PlayerProperty {
     /**
      * The flavour of a player property, discriminating which code carrier is live and how the
      * property is interpreted (C: the {@code type} string of {@code player_ability}).
+     *
+     * <p>Enum PlayerPropertyType coded before 261009, commented in full on 261009.
      *
      * @author Rowan Crowther
      */
@@ -408,6 +510,10 @@ public class PlayerProperty {
 
     /**
      * The resistance level an element property confers, from vulnerability through to immunity.
+     * Superseded: {@link #value} is now a plain {@code int} (-1, 1 or 3, as C stores it), and
+     * nothing in {@code src/main} or {@code src/test} refers to this enum.
+     *
+     * <p>Enum PlayerPropertyValue coded before 261009, commented in full on 261009.
      *
      * @author Rowan Crowther
      */

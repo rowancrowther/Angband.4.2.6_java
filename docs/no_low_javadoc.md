@@ -48,19 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/objects/ChestTrap.java`
-
-0 missing, 8 low
-
-- L110: method `getName` - LOW
-- L128: method `getCode` - LOW
-- L135: method `getLevel` - LOW
-- L142: method `getEffect` - LOW
-- L149: method `isDestroy` - LOW
-- L156: method `isMagic` - LOW
-- L163: method `getMessage` - LOW
-- L170: method `getMessageDeath` - LOW
-
 ### `middle/monsters/BlowEffect.java`
 
 0 missing, 7 low

@@ -48,20 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/player/PlayerAbility.java`
-
-9 missing, 0 low
-
-- L24: class `PlayerAbility` - MISSING
-- L25: field `indexPlayerFlag` - MISSING
-- L26: field `indexObjectFlag` - MISSING
-- L27: field `indexElementEnum` - MISSING
-- L29: field `type` - MISSING
-- L30: field `name` - MISSING
-- L31: field `desc` - MISSING
-- L32: field `group` - MISSING
-- L33: field `value` - MISSING
-
 ### `middle/player/enums/PlayerOverExertion.java`
 
 9 missing, 0 low

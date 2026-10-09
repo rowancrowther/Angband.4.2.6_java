@@ -1502,6 +1502,116 @@ public class TrapGrammar extends Parser {
 	}
 
 	@SuppressWarnings("CheckReturnValue")
+	public static class TrapRecordContext extends ParserRuleContext {
+		public TrapParseRecord trap;
+		public NameContext name;
+		public GraphicsContext graphics;
+		public AppearContext appear;
+		public VisibilityContext visibility;
+		public FlagsContext flags;
+		public SaveContext save;
+		public DescContext desc;
+		public MsgContext msg;
+		public MsgGoodContext msgGood;
+		public MsgBadContext msgBad;
+		public MsgXtraContext msgXtra;
+		public EffectBlockContext effectBlock;
+		public EffectXtraBlockContext effectXtraBlock;
+		public NameContext name() {
+			return getRuleContext(NameContext.class,0);
+		}
+		public List<GraphicsContext> graphics() {
+			return getRuleContexts(GraphicsContext.class);
+		}
+		public GraphicsContext graphics(int i) {
+			return getRuleContext(GraphicsContext.class,i);
+		}
+		public List<AppearContext> appear() {
+			return getRuleContexts(AppearContext.class);
+		}
+		public AppearContext appear(int i) {
+			return getRuleContext(AppearContext.class,i);
+		}
+		public List<VisibilityContext> visibility() {
+			return getRuleContexts(VisibilityContext.class);
+		}
+		public VisibilityContext visibility(int i) {
+			return getRuleContext(VisibilityContext.class,i);
+		}
+		public List<FlagsContext> flags() {
+			return getRuleContexts(FlagsContext.class);
+		}
+		public FlagsContext flags(int i) {
+			return getRuleContext(FlagsContext.class,i);
+		}
+		public List<SaveContext> save() {
+			return getRuleContexts(SaveContext.class);
+		}
+		public SaveContext save(int i) {
+			return getRuleContext(SaveContext.class,i);
+		}
+		public List<DescContext> desc() {
+			return getRuleContexts(DescContext.class);
+		}
+		public DescContext desc(int i) {
+			return getRuleContext(DescContext.class,i);
+		}
+		public List<MsgContext> msg() {
+			return getRuleContexts(MsgContext.class);
+		}
+		public MsgContext msg(int i) {
+			return getRuleContext(MsgContext.class,i);
+		}
+		public List<MsgGoodContext> msgGood() {
+			return getRuleContexts(MsgGoodContext.class);
+		}
+		public MsgGoodContext msgGood(int i) {
+			return getRuleContext(MsgGoodContext.class,i);
+		}
+		public List<MsgBadContext> msgBad() {
+			return getRuleContexts(MsgBadContext.class);
+		}
+		public MsgBadContext msgBad(int i) {
+			return getRuleContext(MsgBadContext.class,i);
+		}
+		public List<MsgXtraContext> msgXtra() {
+			return getRuleContexts(MsgXtraContext.class);
+		}
+		public MsgXtraContext msgXtra(int i) {
+			return getRuleContext(MsgXtraContext.class,i);
+		}
+		public List<EffectBlockContext> effectBlock() {
+			return getRuleContexts(EffectBlockContext.class);
+		}
+		public EffectBlockContext effectBlock(int i) {
+			return getRuleContext(EffectBlockContext.class,i);
+		}
+		public List<EffectXtraBlockContext> effectXtraBlock() {
+			return getRuleContexts(EffectXtraBlockContext.class);
+		}
+		public EffectXtraBlockContext effectXtraBlock(int i) {
+			return getRuleContext(EffectXtraBlockContext.class,i);
+		}
+		public TrapRecordContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+		@Override public int getRuleIndex() { return RULE_trapRecord; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).enterTrapRecord(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).exitTrapRecord(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof TrapGrammarVisitor ) return ((TrapGrammarVisitor<? extends T>)visitor).visitTrapRecord(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
+	@SuppressWarnings("CheckReturnValue")
 	public static class MsgGoodContext extends ParserRuleContext {
 		public String goodMsg;
 		public Token STRING;
@@ -1525,6 +1635,41 @@ public class TrapGrammar extends Parser {
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if ( visitor instanceof TrapGrammarVisitor ) return ((TrapGrammarVisitor<? extends T>)visitor).visitMsgGood(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class FileContext extends ParserRuleContext {
+		public String declaredRecordCount;
+		public List<TrapParseRecord> traps;
+		public RecordCountContext recordCount;
+		public TrapRecordContext trapRecord;
+		public RecordCountContext recordCount() {
+			return getRuleContext(RecordCountContext.class,0);
+		}
+		public TerminalNode EOF() { return getToken(TrapGrammar.EOF, 0); }
+		public List<TrapRecordContext> trapRecord() {
+			return getRuleContexts(TrapRecordContext.class);
+		}
+		public TrapRecordContext trapRecord(int i) {
+			return getRuleContext(TrapRecordContext.class,i);
+		}
+		public FileContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+		@Override public int getRuleIndex() { return RULE_file; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).enterFile(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).exitFile(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof TrapGrammarVisitor ) return ((TrapGrammarVisitor<? extends T>)visitor).visitFile(this);
 			else return visitor.visitChildren(this);
 		}
 	}
@@ -1749,151 +1894,6 @@ public class TrapGrammar extends Parser {
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if ( visitor instanceof TrapGrammarVisitor ) return ((TrapGrammarVisitor<? extends T>)visitor).visitEffectXtraBlock(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class TrapRecordContext extends ParserRuleContext {
-		public TrapParseRecord trap;
-		public NameContext name;
-		public GraphicsContext graphics;
-		public AppearContext appear;
-		public VisibilityContext visibility;
-		public FlagsContext flags;
-		public SaveContext save;
-		public DescContext desc;
-		public MsgContext msg;
-		public MsgGoodContext msgGood;
-		public MsgBadContext msgBad;
-		public MsgXtraContext msgXtra;
-		public EffectBlockContext effectBlock;
-		public EffectXtraBlockContext effectXtraBlock;
-		public NameContext name() {
-			return getRuleContext(NameContext.class,0);
-		}
-		public List<GraphicsContext> graphics() {
-			return getRuleContexts(GraphicsContext.class);
-		}
-		public GraphicsContext graphics(int i) {
-			return getRuleContext(GraphicsContext.class,i);
-		}
-		public List<AppearContext> appear() {
-			return getRuleContexts(AppearContext.class);
-		}
-		public AppearContext appear(int i) {
-			return getRuleContext(AppearContext.class,i);
-		}
-		public List<VisibilityContext> visibility() {
-			return getRuleContexts(VisibilityContext.class);
-		}
-		public VisibilityContext visibility(int i) {
-			return getRuleContext(VisibilityContext.class,i);
-		}
-		public List<FlagsContext> flags() {
-			return getRuleContexts(FlagsContext.class);
-		}
-		public FlagsContext flags(int i) {
-			return getRuleContext(FlagsContext.class,i);
-		}
-		public List<SaveContext> save() {
-			return getRuleContexts(SaveContext.class);
-		}
-		public SaveContext save(int i) {
-			return getRuleContext(SaveContext.class,i);
-		}
-		public List<DescContext> desc() {
-			return getRuleContexts(DescContext.class);
-		}
-		public DescContext desc(int i) {
-			return getRuleContext(DescContext.class,i);
-		}
-		public List<MsgContext> msg() {
-			return getRuleContexts(MsgContext.class);
-		}
-		public MsgContext msg(int i) {
-			return getRuleContext(MsgContext.class,i);
-		}
-		public List<MsgGoodContext> msgGood() {
-			return getRuleContexts(MsgGoodContext.class);
-		}
-		public MsgGoodContext msgGood(int i) {
-			return getRuleContext(MsgGoodContext.class,i);
-		}
-		public List<MsgBadContext> msgBad() {
-			return getRuleContexts(MsgBadContext.class);
-		}
-		public MsgBadContext msgBad(int i) {
-			return getRuleContext(MsgBadContext.class,i);
-		}
-		public List<MsgXtraContext> msgXtra() {
-			return getRuleContexts(MsgXtraContext.class);
-		}
-		public MsgXtraContext msgXtra(int i) {
-			return getRuleContext(MsgXtraContext.class,i);
-		}
-		public List<EffectBlockContext> effectBlock() {
-			return getRuleContexts(EffectBlockContext.class);
-		}
-		public EffectBlockContext effectBlock(int i) {
-			return getRuleContext(EffectBlockContext.class,i);
-		}
-		public List<EffectXtraBlockContext> effectXtraBlock() {
-			return getRuleContexts(EffectXtraBlockContext.class);
-		}
-		public EffectXtraBlockContext effectXtraBlock(int i) {
-			return getRuleContext(EffectXtraBlockContext.class,i);
-		}
-		public TrapRecordContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-		@Override public int getRuleIndex() { return RULE_trapRecord; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).enterTrapRecord(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).exitTrapRecord(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof TrapGrammarVisitor ) return ((TrapGrammarVisitor<? extends T>)visitor).visitTrapRecord(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class FileContext extends ParserRuleContext {
-		public String declaredRecordCount;
-		public List<TrapParseRecord> traps;
-		public RecordCountContext recordCount;
-		public TrapRecordContext trapRecord;
-		public RecordCountContext recordCount() {
-			return getRuleContext(RecordCountContext.class,0);
-		}
-		public TerminalNode EOF() { return getToken(TrapGrammar.EOF, 0); }
-		public List<TrapRecordContext> trapRecord() {
-			return getRuleContexts(TrapRecordContext.class);
-		}
-		public TrapRecordContext trapRecord(int i) {
-			return getRuleContext(TrapRecordContext.class,i);
-		}
-		public FileContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-		@Override public int getRuleIndex() { return RULE_file; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).enterFile(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).exitFile(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof TrapGrammarVisitor ) return ((TrapGrammarVisitor<? extends T>)visitor).visitFile(this);
 			else return visitor.visitChildren(this);
 		}
 	}

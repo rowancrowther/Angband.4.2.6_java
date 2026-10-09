@@ -48,16 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/player/StartItem.java`
-
-0 missing, 5 low
-
-- L74: method `gettValue` - LOW
-- L81: method `getsValue` - LOW
-- L88: method `getMin` - LOW
-- L95: method `getMax` - LOW
-- L102: method `geteOpts` - LOW
-
 ### `middle/gameinput/EffectChoice.java`
 
 4 missing, 0 low

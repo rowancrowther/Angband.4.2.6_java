@@ -48,16 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/game/gameengine/GameState.java`
-
-0 missing, 5 low
-
-- L70: method `getTurn` - LOW
-- L92: method `getDaycount` - LOW
-- L122: method `getPlayer` - LOW
-- L138: method `getCave` - LOW
-- L163: method `getCommandQueue` - LOW
-
 ### `middle/objects/Brand.java`
 
 0 missing, 5 low

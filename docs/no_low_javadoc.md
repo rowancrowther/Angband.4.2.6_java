@@ -48,20 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/player/enums/PlayerOverExertion.java`
-
-9 missing, 0 low
-
-- L20: enum `PlayerOverExertion` - MISSING
-- L21: enum-const `PY_EXERT_NONE` - MISSING
-- L22: enum-const `PY_EXERT_CON` - MISSING
-- L23: enum-const `PY_EXERT_FAINT` - MISSING
-- L24: enum-const `PY_EXERT_SCRAMBLE` - MISSING
-- L25: enum-const `PY_EXERT_CUT` - MISSING
-- L26: enum-const `PY_EXERT_CONF` - MISSING
-- L27: enum-const `PY_EXERT_HALLU` - MISSING
-- L28: enum-const `PY_EXERT_SLOW` - MISSING
-
 ### `middle/monsters/enums/BlowEffectType.java`
 
 8 missing, 1 low

@@ -14,7 +14,6 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
 // Generated from TrapGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.trap;
 
@@ -1999,26 +1998,20 @@ public class TrapGrammar extends Parser {
 		public EffectContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
-
-		public TerminalNode EFFECT() { return getToken(TrapGrammar.EFFECT, 0); }
-
 		public List<TerminalNode> UCASE() { return getTokens(TrapGrammar.UCASE); }
-
 		public TerminalNode UCASE(int i) {
 			return getToken(TrapGrammar.UCASE, i);
 		}
-
 		public List<TerminalNode> COLON() { return getTokens(TrapGrammar.COLON); }
-
 		public TerminalNode COLON(int i) {
 			return getToken(TrapGrammar.COLON, i);
 		}
-
 		public List<TerminalNode> INTEGER() { return getTokens(TrapGrammar.INTEGER); }
-
 		public TerminalNode INTEGER(int i) {
 			return getToken(TrapGrammar.INTEGER, i);
 		}
+
+		public TerminalNode EFFECT() { return getToken(TrapGrammar.EFFECT, 0); }
 
 		@Override public int getRuleIndex() { return RULE_effect; }
 		@Override

@@ -19,10 +19,10 @@ package uk.co.jackoftradesltd.middle.player;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.objects.ElementInfo;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
@@ -31,13 +31,12 @@ import uk.co.jackoftradesltd.middle.player.enums.PlayerSkill;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerShape#getModifier(Stats)}, the port of reading C's
- * {@code shape->modifiers[i]} for a stat index ({@code player-calcs.c:1821-1823}).
+ * {@code shape->modifiers[i]} for a stat index (the stats loop in {@code calc_shapechange},
+ * {@code player-calcs.c}).
  *
  * <p><b>C is subscripting one array with two different kinds of index.</b> A shape's modifiers are
  * an {@code OBJ_MOD_*} array, and {@code calc_shapechange} reads the first five entries as though

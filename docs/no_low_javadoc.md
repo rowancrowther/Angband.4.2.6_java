@@ -48,20 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/objects/KnownObject.java`
-
-1 missing, 8 low
-
-- L88: field `noticeFlags` - MISSING
-- L228: method `toHIsKnown` - LOW
-- L247: method `toDIsKnown` - LOW
-- L265: method `toAIsKnown` - LOW
-- L524: method `getDd` - LOW
-- L532: method `getDs` - LOW
-- L540: method `getToH` - LOW
-- L548: method `getToD` - LOW
-- L575: method `getToA` - LOW
-
 ### `middle/player/PlayerShape.java`
 
 0 missing, 9 low

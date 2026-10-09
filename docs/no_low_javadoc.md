@@ -48,23 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/objects/enums/ObjectDescription.java`
-
-12 missing, 0 low
-
-- L20: enum `ObjectDescription` - MISSING
-- L21: enum-const `ODESC_BASE` - MISSING
-- L22: enum-const `ODESC_COMBAT` - MISSING
-- L23: enum-const `ODESC_EXTRA` - MISSING
-- L24: enum-const `ODESC_STORE` - MISSING
-- L25: enum-const `ODESC_PLURAL` - MISSING
-- L26: enum-const `ODESC_SINGULAR` - MISSING
-- L27: enum-const `ODESC_SPOIL` - MISSING
-- L28: enum-const `ODESC_PREFIX` - MISSING
-- L29: enum-const `ODESC_CAPITAL` - MISSING
-- L30: enum-const `ODESC_TERSE` - MISSING
-- L31: enum-const `ODESC_NOEGO` - MISSING
-
 ### `middle/objects/enums/ObjPropertyType.java`
 
 10 missing, 1 low

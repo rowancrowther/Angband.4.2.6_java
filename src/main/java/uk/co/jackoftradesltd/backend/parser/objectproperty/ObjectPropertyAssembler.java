@@ -72,10 +72,16 @@ public class ObjectPropertyAssembler implements Assembler<ObjectPropertyParseRec
             // against, so it must resolve first (C errors PARSE_ERROR_MISSING_OBJ_PROP_TYPE
             // if code precedes type). An unrecognized type makes the record meaningless.
             String type = record.type();
-            ObjPropertyType objPropertyType = ObjPropertyType.fromValue(type);
-            if (objPropertyType == null) {
-                errors.add("Object Property at line: " + line + " has " +
-                        "an illegal type: " + type);
+            ObjPropertyType objPropertyType;
+            if (!type.isEmpty()) {
+                objPropertyType = ObjPropertyType.fromValue(type);
+                if (objPropertyType == null) {
+                    errors.add("Object Property at line: " + line + " has " +
+                            "an illegal type: " + type);
+                    continue;
+                }
+            } else {
+                errors.add("Object Property at line: " + line + " has no type");
                 continue;
             }
 

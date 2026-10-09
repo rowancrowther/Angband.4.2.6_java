@@ -48,22 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/objects/ObjectBase.java`
-
-2 missing, 9 low
-
-- L66: field `flags` - MISSING
-- L127: method `getNumSvals` - LOW
-- L144: method `getName` - LOW
-- L151: method `getElementMap` - LOW
-- L158: method `gettVal` - LOW
-- L165: method `getAttr` - LOW
-- L172: method `getBreakPerc` - LOW
-- L179: method `getMaxStack` - LOW
-- L186: method `getKindFlags` - LOW
-- L190: method `getFlags` - MISSING
-- L197: method `toString` - LOW
-
 ### `middle/strings/MessageTag.java`
 
 10 missing, 0 low

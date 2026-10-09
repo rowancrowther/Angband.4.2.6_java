@@ -25,20 +25,44 @@ package uk.co.jackoftradesltd.middle.strings;
  * A tag is recognized by its opening letters, not the whole word, which {@link #getTag} implements.
  * The constants are in C's order, with {@code MSG_TAG_NONE} first as it is there.
  *
- * <p>Enum MessageTag coded on 261003 / commented in full on 261005.
+ * <p>Enum MessageTag coded on 261003 / commented in full on 261009.
  */
 public enum MessageTag {
     /**
-     * Any tag that is not recognized.
+     * Any tag that is not recognized. C's {@code switch} has no arm for it, so the message printer
+     * writes nothing for it and resumes after the closing brace. Its size of 1 is a placeholder, as
+     * it has no name to measure.
+     *
+     * <p>Constant MSG_TAG_NONE coded on 261003 / commented in full on 261009.
      */
     MSG_TAG_NONE(1),
-    /** {@code {name}}: the object's full description, or {@code hands} with no object. */
+    /**
+     * {@code {name}}: the object's name with its quantity prefix, described under
+     * {@code ODESC_PREFIX | ODESC_BASE} so with none of the extras that {@code ODESC_FULL} adds, or
+     * {@code hands} with no object.
+     *
+     * <p>Constant MSG_TAG_NAME coded on 261003 / commented in full on 261009.
+     */
     MSG_TAG_NAME(5),
-    /** {@code {kind}}: the kind's name alone, or {@code hands} with no object. */
+    /**
+     * {@code {kind}}: the kind's name alone, as {@code object_kind_name} gives it with
+     * {@code easy_know} set, or {@code hands} with no object.
+     *
+     * <p>Constant MSG_TAG_KIND coded on 261003 / commented in full on 261009.
+     */
     MSG_TAG_KIND(5),
-    /** {@code {s}}: the verb ending, {@code s} for a single object and nothing for a pile. */
+    /**
+     * {@code {s}}: the verb ending, {@code s} for a single object and nothing for a pile or with no
+     * object.
+     *
+     * <p>Constant MSG_TAG_VERB coded on 261003 / commented in full on 261009.
+     */
     MSG_TAG_VERB(2),
-    /** {@code {is}}: {@code is} for a single object, {@code are} for a pile or no object. */
+    /**
+     * {@code {is}}: {@code is} for a single object, {@code are} for a pile or no object.
+     *
+     * <p>Constant MSG_TAG_VERB_IS coded on 261003 / commented in full on 261009.
+     */
     MSG_TAG_VERB_IS(3);
 
     /**
@@ -46,6 +70,8 @@ public enum MessageTag {
      * whole-tag matching that used to skip by it. Nothing reads it now: the message printer skips
      * past the closing brace it found, as C does, because a tag matched by its prefix can be longer
      * than its name.
+     *
+     * <p>Field size coded on 261003 / commented in full on 261009.
      */
     private final int size;
 
@@ -53,7 +79,7 @@ public enum MessageTag {
      * Builds one constant with the length of its whole braced tag. C's {@code msg_tag_t} has no
      * such number; it is the Java port's own, kept for {@link #getSize}.
      *
-     * <p>Constructor MessageTag coded on 261003 / commented in full on 261005.
+     * <p>Constructor MessageTag coded on 261003 / commented in full on 261009.
      *
      * @param size the tag's length from its first letter to its closing brace
      */
@@ -76,7 +102,7 @@ public enum MessageTag {
      * letters run unbroken to a closing brace, so the brace that ends C's argument can never be
      * mistaken for a letter of a name, and a tag cut short by it fails in both versions.
      *
-     * <p>Function getTag coded on 261003 / commented in full on 261005.
+     * <p>Function getTag coded on 261003 / commented in full on 261009.
      *
      * @param tag the letters between the braces
      * @return the matching tag, or {@link #MSG_TAG_NONE}
@@ -97,7 +123,7 @@ public enum MessageTag {
     /**
      * Returns the length of the whole braced tag. Not called anywhere now; see {@link #size}.
      *
-     * <p>Method getSize coded on 261003 / commented in full on 261005.
+     * <p>Method getSize coded on 261003 / commented in full on 261009.
      *
      * @return the tag's length from its first letter to its closing brace
      */

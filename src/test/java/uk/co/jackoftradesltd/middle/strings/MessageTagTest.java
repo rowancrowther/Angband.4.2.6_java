@@ -113,6 +113,19 @@ class MessageTagTest {
     }
 
     /**
+     * C's {@code msg_tag_t} lists {@code MSG_TAG_NONE}, {@code MSG_TAG_NAME}, {@code MSG_TAG_KIND},
+     * {@code MSG_TAG_VERB}, {@code MSG_TAG_VERB_IS} in that order, so the constants keep it.
+     */
+    @Test
+    @DisplayName("the constants are in the order of C's msg_tag_t")
+    void constantOrder() {
+        assertEquals(java.util.List.of(
+                        MessageTag.MSG_TAG_NONE, MessageTag.MSG_TAG_NAME, MessageTag.MSG_TAG_KIND,
+                        MessageTag.MSG_TAG_VERB, MessageTag.MSG_TAG_VERB_IS),
+                java.util.List.of(MessageTag.values()));
+    }
+
+    /**
      * {@code s} is tested before {@code is}, but {@code is...} does not begin with {@code s}, so the
      * order only matters for tags beginning with {@code s}.
      */

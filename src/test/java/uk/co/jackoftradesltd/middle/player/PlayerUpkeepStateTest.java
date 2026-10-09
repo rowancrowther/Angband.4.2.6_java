@@ -17,12 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.player;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.data.CarryCapData;
@@ -34,11 +29,7 @@ import uk.co.jackoftradesltd.middle.player.enums.PlayerUpdateEnum;
 
 import java.lang.reflect.Field;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerUpkeep}'s per-turn bookkeeping — the port of C's {@code player_upkeep}
@@ -156,10 +147,11 @@ class PlayerUpkeepStateTest {
         }
 
         /**
-         * The floor pile starts as nothing, not as an empty pile. C's {@code upkeep->object_pile}
-         * is a pointer left {@code NULL} by {@code mem_zalloc}, and the constructor here says so
-         * explicitly rather than allocating — the pile is set when the player steps onto a square
-         * that has one, and a caller reading it has to cope with there being none.
+         * The floor pile starts as nothing, not as an empty pile. <b>This field is Java-only:</b>
+         * {@code struct player_upkeep} has no pile - C finds floor objects through the cave
+         * ({@code square_object}) - so there is no C value to derive this from. The test pins only
+         * the current behaviour, that the constructor leaves it null, and the field is never
+         * assigned anywhere else.
          *
          * <p>That makes it unlike the pack and quiver two fields away, which the same constructor
          * <em>does</em> allocate because C allocates them too.

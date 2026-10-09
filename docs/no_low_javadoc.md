@@ -48,17 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/objects/enums/CombatRunes.java`
-
-5 missing, 1 low
-
-- L43: method `COMBAT_RUNE_MAX` - MISSING
-- L43: enum-const `COMBAT_RUNE_TO_A` - MISSING
-- L44: enum-const `COMBAT_RUNE_TO_H` - MISSING
-- L45: enum-const `COMBAT_RUNE_TO_D` - MISSING
-- L46: enum-const `COMBAT_RUNE_MAX` - MISSING
-- L66: method `getDescription` - LOW
-
 ### `middle/player/PlayerUpkeep.java`
 
 2 missing, 4 low

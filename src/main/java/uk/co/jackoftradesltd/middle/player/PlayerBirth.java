@@ -968,10 +968,8 @@ public class PlayerBirth {
         }
 
         // Add the unwielded split items to the gear
-        if (newPile != null) {
-            player.getGear().insertEnd(newPile);
-            player.getGearKnown().insertEnd(newKnownPile);
-        }
+        player.getGear().insertEnd(newPile);
+        player.getGearKnown().insertEnd(newKnownPile);
     }
 
     /**

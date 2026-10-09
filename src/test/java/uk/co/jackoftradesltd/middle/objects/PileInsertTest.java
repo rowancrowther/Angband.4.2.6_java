@@ -19,18 +19,17 @@ package uk.co.jackoftradesltd.middle.objects;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link Pile#insert(ItemObject)}.
  *
  * <p>Ports C's {@code pile_insert} ({@code obj-pile.c}). C makes the newest object the pile's
- * head; this pile represents "newest" as the last (top) index instead, so {@code lastItem()} pops
- * are used below to read insertion order back out. C guards the precondition with
+ * head; this pile represents "newest" as the last (top) index instead, so {@code reversed()}
+ * (head first, as C walks {@code obj->next}) and {@code peekLastItem()} (the head) are used below
+ * to read insertion order back out. C guards the precondition with
  * {@code obj->prev || obj->next}, which cannot detect an object that is the sole member of some
  * other list — a singleton has null prev and next either way, same as a fresh object. This port
  * tracks ownership directly via {@link ItemObject#getOwningPile()}, so
@@ -50,9 +49,8 @@ class PileInsertTest {
         assertSame(pile, item.getOwningPile());
         assertFalse(pile.isEmpty());
         assertTrue(pile.contains(item));
-        assertSame(item, pile.lastItem());
-        assertNull(item.getOwningPile());
-        assertTrue(pile.isEmpty());
+        assertEquals(1, pile.size());
+        assertSame(item, pile.peekLastItem());
     }
 
     @Test
@@ -66,10 +64,10 @@ class PileInsertTest {
         pile.insert(second);
         pile.insert(third);
 
-        assertSame(third, pile.lastItem());
-        assertSame(second, pile.lastItem());
+        // C: each pile_insert links the new object in at the head, so head to tail is third, second, first.
+        assertEquals(List.of(third, second, first), pile.reversed());
+        assertSame(third, pile.peekLastItem());
         assertSame(first, pile.lastItem());
-        assertTrue(pile.isEmpty());
     }
 
     @Test

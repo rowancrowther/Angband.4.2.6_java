@@ -48,30 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/player/PlayerProperty.java`
-
-0 missing, 7 low
-
-- L111: method `getPlayerPropertyType` - LOW
-- L118: method `getpCode` - LOW
-- L125: method `getoCode` - LOW
-- L132: method `getEntries` - LOW
-- L139: method `getName` - LOW
-- L146: method `getDescription` - LOW
-- L153: method `getValue` - LOW
-
-### `unused/EventDataBirthStage.java`
-
-0 missing, 7 low
-
-- L92: method `isReset` - LOW
-- L99: method `getHint` - LOW
-- L106: method `getnChoices` - LOW
-- L113: method `getInitialChoice` - LOW
-- L120: method `getChoices` - LOW
-- L127: method `getHelpTexts` - LOW
-- L134: method `getXtra` - LOW
-
 ### `middle/objects/Pile.java`
 
 6 missing, 0 low

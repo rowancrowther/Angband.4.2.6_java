@@ -17,12 +17,9 @@
 
 package uk.co.jackoftradesltd.middle.player;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
 import uk.co.jackoftradesltd.channel.utils.Flag;
@@ -32,15 +29,11 @@ import uk.co.jackoftradesltd.middle.game.event.EventsHandler;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
-import uk.co.jackoftradesltd.middle.objects.Curse;
-import uk.co.jackoftradesltd.middle.objects.ElementInfo;
-import uk.co.jackoftradesltd.middle.objects.ItemObject;
-import uk.co.jackoftradesltd.middle.objects.KnownObject;
-import uk.co.jackoftradesltd.middle.objects.ObjectKind;
-import uk.co.jackoftradesltd.middle.objects.Pile;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
+import uk.co.jackoftradesltd.middle.objects.*;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
+import uk.co.jackoftradesltd.testsupport.CurseFixture;
+import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -48,14 +41,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
-import uk.co.jackoftradesltd.testsupport.CurseFixture;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests the three populations {@link PlayerKnowledge#updateObjectKnowledge} can currently reach —
@@ -471,6 +457,10 @@ class PlayerUpdateObjectKnowledgeTest {
          * pass is real, not a fixture artefact: C's {@code update_player_object_knowledge} walks
          * {@code p->gear} twice in exactly the same way, once in its own loop and again inside
          * {@code autoinscribe_pack}.
+         *
+         * <p>Each pass runs head first, as C's {@code obj->next} walk does. {@link RecordingPile}
+         * {@code insert}s the items in the order given, so the last one given, {@code second}, is
+         * the pack's head and is visited first.
          */
         @Test
         @DisplayName("every object in the pack is visited")
@@ -481,7 +471,7 @@ class PlayerUpdateObjectKnowledgeTest {
 
             PlayerKnowledge.updateObjectKnowledge(player);
 
-            assertEquals(List.of(first, second, first, second), visited);
+            assertEquals(List.of(second, first, second, first), visited);
         }
 
         /**

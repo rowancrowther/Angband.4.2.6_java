@@ -100,6 +100,10 @@ public class MonsterRace {
         this.maxNum = num;
     }
 
+    public List<MonsterBlow> getBlows() {
+        return blow;
+    }
+
     /**
      * The three message variants shown when a monster casts a spell, chosen by what the player can
      * perceive: {@code visible} when the caster is seen, {@code invisible} when only the effect is

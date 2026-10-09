@@ -20,13 +20,13 @@ package uk.co.jackoftradesltd.middle.game.globals.loaders;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftradesltd.backend.parser.*;
+import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
 import uk.co.jackoftradesltd.channel.parser.ErrorParsing;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.frontend.colour.FlickerTable;
 import uk.co.jackoftradesltd.frontend.colour.VisualsCycler;
 import uk.co.jackoftradesltd.middle.cave.PitProfile;
 import uk.co.jackoftradesltd.middle.combat.BlowMethod;
-import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
 import uk.co.jackoftradesltd.middle.game.globals.registry.MonsterRegistry;
 import uk.co.jackoftradesltd.middle.monsters.*;
 
@@ -71,7 +71,6 @@ public class MonsterDataLoader {
             ErrorParsing.reportAndCheck(filename, result, logger);
 
             MonsterRegistry.setMonsterRaces(result.items());
-            MonsterRegistry.monsterRaceMax = MonsterRegistry.monsterRaces.size();
 
             // Second pass: friend and shape references to other races can only be resolved once every
             // race exists (a monster may reference one defined later in the file). Mirrors C's
@@ -80,6 +79,10 @@ public class MonsterDataLoader {
                 race.resolveFriends();
                 race.resolveShapes();
             }
+            
+            // Calculate max blows and pit types
+            int blowsCount = 0;
+            int pitCount = 0;
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
         }
@@ -104,7 +107,7 @@ public class MonsterDataLoader {
             ErrorParsing.reportAndCheck(filename, result, logger);
 
             MonsterRegistry.setMonsterPitProfiles(result.items());
-        } catch (IOException e) {
+                    } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
         }
     }

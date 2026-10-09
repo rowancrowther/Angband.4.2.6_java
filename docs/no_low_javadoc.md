@@ -48,20 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/objects/enums/RuneGroup.java`
-
-8 missing, 1 low
-
-- L40: method `OTHER` - MISSING
-- L40: enum-const `COMBAT` - MISSING
-- L41: enum-const `MODIFIERS` - MISSING
-- L42: enum-const `RESIST` - MISSING
-- L43: enum-const `BRAND` - MISSING
-- L44: enum-const `SLAY` - MISSING
-- L45: enum-const `CURSE` - MISSING
-- L46: enum-const `OTHER` - MISSING
-- L65: method `getName` - LOW
-
 ### `middle/game/globals/registry/MonsterRegistry.java`
 
 1 missing, 8 low

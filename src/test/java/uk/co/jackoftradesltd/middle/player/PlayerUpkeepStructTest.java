@@ -141,12 +141,14 @@ class PlayerUpkeepStructTest {
     class Struct {
 
         /**
-         * The Java class carries exactly the 32 fields of {@code struct player_upkeep} plus the one
-         * Java-only {@code objectPile}. The names on the left are C's, in C's order, mapped to the
-         * port's spelling; a field C has and Java lacks, or the reverse, shows up as a difference.
+         * The Java class carries exactly the 32 fields of {@code struct player_upkeep} and nothing
+         * else. The names are C's, in C's order, mapped to the port's spelling; a field C has and
+         * Java lacks, or the reverse, shows up as a difference. There is no Java-only field: the
+         * floor pile that once sat here as {@code objectPile} has gone, C finding floor objects
+         * through the cave ({@code square_object}) instead.
          */
         @Test
-        @DisplayName("has every C field, plus only objectPile")
+        @DisplayName("has exactly the 32 C fields")
         void fieldSetMatchesC() {
             Set<String> expected = new TreeSet<>(Set.of(
                     "playing", "autosave", "generateLevel", "onlyPartial", "dropping",
@@ -160,7 +162,6 @@ class PlayerUpkeepStructTest {
                     "inventoryCount", "equipmentCount", "quiverCount",
                     "rechargePower", "stepCount", "steps", "pathDestination"));
             assertEquals(32, expected.size(), "the C struct has 32 fields");
-            expected.add("objectPile");
 
             Set<String> actual = new TreeSet<>();
             for (Field field : PlayerUpkeep.class.getDeclaredFields()) {

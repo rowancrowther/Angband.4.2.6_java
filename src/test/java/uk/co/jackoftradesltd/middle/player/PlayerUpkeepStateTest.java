@@ -145,22 +145,6 @@ class PlayerUpkeepStateTest {
             assertFalse(upkeep.isNotice());
             assertTrue(upkeep.getNoticeFlags().isEmpty());
         }
-
-        /**
-         * The floor pile starts as nothing, not as an empty pile. <b>This field is Java-only:</b>
-         * {@code struct player_upkeep} has no pile - C finds floor objects through the cave
-         * ({@code square_object}) - so there is no C value to derive this from. The test pins only
-         * the current behaviour, that the constructor leaves it null, and the field is never
-         * assigned anywhere else.
-         *
-         * <p>That makes it unlike the pack and quiver two fields away, which the same constructor
-         * <em>does</em> allocate because C allocates them too.
-         */
-        @Test
-        @DisplayName("the floor pile starts as nothing")
-        void floorPileStartsNull() {
-            assertNull(upkeep.getPile());
-        }
     }
 
     /**

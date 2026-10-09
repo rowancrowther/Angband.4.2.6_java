@@ -48,17 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/player/PlayerUpkeep.java`
-
-2 missing, 4 low
-
-- L270: method `getPile` - LOW
-- L286: method `getCommand_wrk` - LOW
-- L372: method `isPlaying` - LOW
-- L531: method `getRestingCounter` - LOW
-- L965: method `setHealthWho` - MISSING
-- L972: method `setRestingCounter` - MISSING
-
 ### `middle/game/globals/registry/WorldRegistry.java`
 
 0 missing, 6 low

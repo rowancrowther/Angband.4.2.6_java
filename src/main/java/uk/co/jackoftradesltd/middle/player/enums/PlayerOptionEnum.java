@@ -21,16 +21,40 @@ package uk.co.jackoftradesltd.middle.player.enums;
  * The set of user-configurable game options, each pairing a human-readable description
  * with the option category it belongs to and its default ("normal") value.
  *
- * <p>Ports the C option table (driven by {@code list-options.h} / {@code option.c}). In the
- * original an option is an index into parallel arrays of name, description, type and
- * default; here each option is a single enum constant carrying those attributes inline, so
- * the data and its metadata cannot drift out of step.
+ * <p>Ports the C option table, which {@code list-options.h} expands through the {@code OP()}
+ * macro in two places: {@code option.h} turns each row into an {@code OPT_xxx} index, and
+ * {@code option.c} turns each row into an entry of the {@code options[]} array holding the
+ * name, description, type and default. Here each option is a single enum constant carrying
+ * the description, type and default inline, so the data and its metadata cannot drift out of
+ * step. All 46 rows of {@code list-options.h} are present, in the same order, with the same
+ * type and default; {@link #ordinal()} therefore equals the C {@code OPT_xxx} index.
  *
  * <p><b>Why the description and default live on the constant:</b> options are surfaced in
  * menus and persisted in preferences, so every option needs its label, its grouping
  * ({@link PlayerOptionTypes} — interface / birth / cheat / score / special) and the value a
  * fresh game starts with. Bundling that triple onto the constant keeps it authoritative in
- * one place. {@code OP_none} is the index-0 placeholder mirroring the C sentinel.
+ * one place. {@code OP_none} is the index-0 placeholder mirroring the C {@code OPT_none}
+ * sentinel; the C {@code OPT_MAX} terminator is not needed because {@code values().length}
+ * supplies it.
+ *
+ * <p><b>Known differences from C:</b>
+ * <ul>
+ *   <li>The constants are prefixed {@code OP_} where C uses {@code OPT_}, and C's separate
+ *       name string ({@code #a} in the macro, the text written to the savefile and to
+ *       preference files) is not stored: it is the constant's {@link #name()} without the
+ *       {@code OP_} prefix.</li>
+ *   <li>Descriptions use Oxford spelling ("flavours", "Colour:", "multi-coloured") where C
+ *       uses US ("flavors", "Color:", "multi-colored"). "Center map continuously" is
+ *       unchanged from C.</li>
+ *   <li>{@link PlayerOptionTypes} declares its constants in a different order from the C
+ *       {@code OP_INTERFACE .. OP_SPECIAL} enum, so its ordinals do not match the C values.
+ *       Nothing in this enum depends on them.</li>
+ * </ul>
+ *
+ * <p>The 46 constants are not documented individually: each is a verbatim row of
+ * {@code list-options.h}, and the row is its documentation.
+ *
+ * <p>Class coded before 261009, commented in full on 261009.
  *
  * @author Rowan Crowther
  */
@@ -101,7 +125,7 @@ public enum PlayerOptionEnum {
             PlayerOptionTypes.BIRTH, false),
     OP_birth_connect_stairs("Generate connected stairs",
             PlayerOptionTypes.BIRTH, true),
-    OP_birth_force_descend("Force player descent (never make up stairs),",
+    OP_birth_force_descend("Force player descent (never make up stairs)",
             PlayerOptionTypes.BIRTH, false),
     OP_birth_no_recall("Word of Recall has no effect",
             PlayerOptionTypes.BIRTH, false),
@@ -123,22 +147,40 @@ public enum PlayerOptionEnum {
             PlayerOptionTypes.BIRTH, false),
     OP_birth_know_flavors("Know all flavours on birth",
             PlayerOptionTypes.BIRTH, false),
-    OP_birth_levels_persist("Persistent levels (experimental),",
+    OP_birth_levels_persist("Persistent levels (experimental)",
             PlayerOptionTypes.BIRTH, false),
-    OP_birth_percent_damage("To-damage is a percentage of dice (experimental),",
+    OP_birth_percent_damage("To-damage is a percentage of dice (experimental)",
             PlayerOptionTypes.BIRTH, false);
 
     /**
-     * Menu label shown to the player (C: option description string).
+     * Menu label shown to the player (C: the {@code description} member of {@code struct
+     * option_entry} in {@code option.c}, the second macro argument in {@code list-options.h}). Oxford spelling,
+     * so it can differ from the C text in "flavours" and "colour".
+     *
+     * <p>Field coded before 261009, commented in full on 261009.
      */
     private final String description;
-    /** Which option group this belongs to, controlling where and whether it is shown. */
+    /**
+     * Which option group this belongs to, controlling where and whether it is shown (C: the
+     * {@code type} member, the {@code OP_INTERFACE} .. {@code OP_SPECIAL} value in the third
+     * macro argument).
+     *
+     * <p>Field coded before 261009, commented in full on 261009.
+     */
     private final PlayerOptionTypes playerOptionType;
-    /** The default value applied at birth and on a reset-to-defaults. */
+    /**
+     * The default value applied at birth and on a reset-to-defaults (C: the {@code normal}
+     * member, the fourth macro argument). Not the current value: that lives per player, in
+     * {@link uk.co.jackoftradesltd.middle.player.PlayerOptions}.
+     *
+     * <p>Field coded before 261009, commented in full on 261009.
+     */
     private final boolean normal;
 
     /**
      * Binds an option to its display text, category and default state.
+     *
+     * <p>Constructor coded before 261009, commented in full on 261009.
      *
      * @param description      the menu label
      * @param playerOptionType the option's category
@@ -150,18 +192,49 @@ public enum PlayerOptionEnum {
         this.normal = normal;
     }
 
+    /**
+     * Returns the menu label for this option (C: {@code option_desc()}).
+     *
+     * <p>Method getDescription coded before 261009, commented in full on 261009.
+     *
+     * @return the label, empty for {@link #OP_none}
+     */
     public String getDescription() {
         return description;
     }
 
+    /**
+     * Returns the group this option belongs to (C: {@code option_type()}).
+     *
+     * <p>Method getPlayerOptionType coded before 261009, commented in full on 261009.
+     *
+     * @return the option's category
+     */
     public PlayerOptionTypes getPlayerOptionType() {
         return playerOptionType;
     }
 
+    /**
+     * Returns the default value for this option (the {@code normal} member in C's
+     * {@code options[]} table, copied into the player's options by {@code options_init_defaults()}
+     * in {@code option.c}).
+     *
+     * <p>Method isNormal coded before 261009, commented in full on 261009.
+     *
+     * @return {@code true} if the option starts switched on
+     */
     public boolean isNormal() {
         return normal;
     }
 
+    /**
+     * Tests whether this is one of the {@code cheat_} options. Equivalent to C's static
+     * {@code option_is_cheat()} in {@code option.c}, which is {@code option_type(opt) == OP_CHEAT}.
+     *
+     * <p>Method isCheat coded before 261009, commented in full on 261009.
+     *
+     * @return {@code true} if the category is {@link PlayerOptionTypes#CHEAT}
+     */
     public boolean isCheat() {
         return playerOptionType == PlayerOptionTypes.CHEAT;
     }

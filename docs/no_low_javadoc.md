@@ -48,17 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/player/Quest.java`
-
-0 missing, 6 low
-
-- L79: method `getIndex` - LOW
-- L86: method `getName` - LOW
-- L93: method `getLevel` - LOW
-- L100: method `getRace` - LOW
-- L107: method `getCurrentNumber` - LOW
-- L114: method `getMaxNumber` - LOW
-
 ### `middle/player/enums/PlayerOptionEnum.java`
 
 5 missing, 0 low

@@ -48,20 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/monsters/enums/BlowEffectType.java`
-
-8 missing, 1 low
-
-- L40: method `BET_ALL_SUSTAINS` - MISSING
-- L40: enum-const `BET_ELEMENT` - MISSING
-- L41: enum-const `BET_FLAG` - MISSING
-- L42: enum-const `BET_DRAIN` - MISSING
-- L43: enum-const `BET_THEFT` - MISSING
-- L44: enum-const `BET_EAT_FOOD` - MISSING
-- L45: enum-const `BET_EAT_LIGHT` - MISSING
-- L46: enum-const `BET_ALL_SUSTAINS` - MISSING
-- L63: method `getType` - LOW
-
 ### `middle/objects/enums/RuneGroup.java`
 
 8 missing, 1 low

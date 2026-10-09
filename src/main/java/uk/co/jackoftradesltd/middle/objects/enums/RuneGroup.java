@@ -28,30 +28,75 @@ package uk.co.jackoftradesltd.middle.objects.enums;
  * Note that flag runes display as {@code "Other"} rather than "Flags" — that mismatch is the one
  * place the label diverges from the variety it names, and it is deliberate in the original.
  *
- * <p>Declaration order matters. C's browser buckets the rune list with a single run-length pass,
- * starting a new group each time the group id changes and never sorting, so the rune list must
- * already be in group order. A rune appearing out of order would not merely sort oddly — it would
- * produce a second panel entry with the same label. Keeping this enum in the order the rune list is
- * built preserves that invariant.
+ * <p>C's array ends in a {@code NULL} entry that {@code N_ELEMENTS} counts, so the group count it
+ * hands the browser is eight where there are seven headings. The terminator is not ported: the
+ * count only caps how many groups {@code display_knowledge} sizes its tables for, and the browser
+ * never reads past the groups that actually occur.
+ *
+ * <p>Declaration order documents C's rather than driving it. C's browser
+ * ({@code display_knowledge}, {@code ui-knowledge.c}) buckets the rune list with a single
+ * run-length pass, starting a new group each time the group id changes and never sorting (the rune
+ * browser passes no comparison function), so the rune list must already be in group order. A rune
+ * appearing out of order would not merely sort oddly — it would produce a second panel entry with
+ * the same label. That order comes from the sequence {@code init_rune} ({@code obj-knowledge.c})
+ * builds the list in, which is the order of the constants below. Nothing in the port reads an
+ * ordinal — each {@link RuneVariety} record names its group directly — so reordering the constants
+ * cannot move a rune under the wrong heading, but it would stop agreeing with the order C lists
+ * them in.
+ *
+ * <p>Type RuneGroup coded before 260814, commented in full on 261009.
  *
  * @author Rowan Crowther
  */
 public enum RuneGroup {
+    /**
+     * Enchantments to armour class, to-hit and to-damage; C's {@code RUNE_VAR_COMBAT}, the first
+     * heading in {@code rune_group_text[]}. Held by {@link RuneVariety.CombatKey}.
+     */
     COMBAT("Combat"),
+    /**
+     * Numeric object modifiers such as stats, speed and stealth; C's {@code RUNE_VAR_MOD}. Held by
+     * {@link RuneVariety.ModKey}.
+     */
     MODIFIERS("Modifiers"),
+    /**
+     * Elemental resistances; C's {@code RUNE_VAR_RESIST}. Held by {@link RuneVariety.ResistKey}.
+     */
     RESIST("Resists"),
+    /**
+     * Weapon brands, one rune per brand name; C's {@code RUNE_VAR_BRAND}. Held by
+     * {@link RuneVariety.BrandKey}.
+     */
     BRAND("Brands"),
+    /**
+     * Weapon slays, one rune per set of monsters slain; C's {@code RUNE_VAR_SLAY}. Held by
+     * {@link RuneVariety.SlayKey}.
+     */
     SLAY("Slays"),
+    /**
+     * Curses, one rune each; C's {@code RUNE_VAR_CURSE}. Held by {@link RuneVariety.CurseKey}.
+     */
     CURSE("Curses"),
+    /**
+     * Boolean object flags such as sustains and protections; C's {@code RUNE_VAR_FLAG}. The heading
+     * reads "Other", not "Flags" — the one label in {@code rune_group_text[]} that does not echo its
+     * variety. Held by {@link RuneVariety.FlagKey}.
+     */
     OTHER("Other");
 
     /**
-     * The heading shown to the player for this group.
+     * The heading shown to the player for this group — the string at this group's position in C's
+     * {@code rune_group_text[]}, which {@code rune_var_name} ({@code ui-knowledge.c}) returns for
+     * the browser's left-hand panel.
+     *
+     * <p>Field name coded before 260814, commented in full on 261009.
      */
     private final String name;
 
     /**
      * Bind a group to its player-visible heading.
+     *
+     * <p>Constructor RuneGroup coded before 260814, commented in full on 261009.
      *
      * @param name the heading shown in the knowledge menu
      */
@@ -60,6 +105,12 @@ public enum RuneGroup {
     }
 
     /**
+     * The player-visible heading for this group, as C's {@code rune_var_name} returns it for the
+     * knowledge browser's group panel. This is the display text — "Resists" for {@link #RESIST} —
+     * not the constant's identifier, which {@link #name()} gives.
+     *
+     * <p>Method getName coded before 260814, commented in full on 261009.
+     *
      * @return the player-visible heading for this group
      */
     public String getName() {

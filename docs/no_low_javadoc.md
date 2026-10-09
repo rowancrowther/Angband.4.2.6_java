@@ -48,21 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-###  `middle/game/globals/registry/TerrainRegistry.java`
-
-9 missing, 1 low
-
-- L33: class `TerrainRegistry` - MISSING
-- L34: field `logger` - MISSING
-- L36: field `trapMax` - MISSING
-- L37: field `features` - MISSING
-- L38: field `trapInfo` - MISSING
-- L40: method `getFeatures` - MISSING
-- L44: method `setFeatures` - MISSING
-- L48: method `getTrapInfo` - MISSING
-- L52: method `setTrapInfo` - MISSING
-- L114: method `getTrapMax` - LOW
-
 ### `middle/player/PlayerAbility.java`
 
 9 missing, 0 low

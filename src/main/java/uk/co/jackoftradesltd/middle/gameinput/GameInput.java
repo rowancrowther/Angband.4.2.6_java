@@ -29,7 +29,7 @@ import uk.co.jackoftradesltd.middle.magic.MagicSpell;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
 import uk.co.jackoftradesltd.middle.objects.enums.GetItemFlags;
 import uk.co.jackoftradesltd.middle.player.Player;
-import uk.co.jackoftradesltd.middle.player.PlayerAbility;
+import uk.co.jackoftradesltd.middle.player.PlayerProperty;
 
 import java.util.List;
 import java.util.Optional;
@@ -52,6 +52,8 @@ import java.util.function.Predicate;
  * @author Rowan Crowther
  */
 public interface GameInput {
+
+    void viewAbilityMenu(List<PlayerProperty> propertyList);
 
     /**
      * The book-and-spell pair returned by {@link #getSpell}. C reported the spell through an
@@ -131,14 +133,6 @@ public interface GameInput {
      * @return {@code true} if the map is currently visible
      */
     boolean mapIsVisible();
-
-    /**
-     * Displays the player's abilities - the port of C's {@code view_ability_menu}. This is a
-     * display-only action with no result; when no UI is installed it does nothing.
-     *
-     * @param abilityList the abilities to show
-     */
-    void viewAbilityMenu(List<PlayerAbility> abilityList);
 
     /**
      * Asks the player to confirm enabling the dangerous debug commands - the port of C's

@@ -49,9 +49,10 @@ import java.util.List;
  *       entry against the {@link GameConstants} registry by the combined
  *       {@code name + tag} string (e.g. {@code stat_mod_ui_compact_0<STR>}) and
  *       carrying the binding's value, {@code special} and {@code aux} flags;</li>
- *   <li>{@code value} - {@code 1}/{@code 3}/{@code -1} - into a
- *       {@link PlayerProperty.PlayerPropertyValue} (resistance/immunity/
- *       vulnerability), defaulting to {@link PlayerProperty.PlayerPropertyValue#NONE}.</li>
+ *   <li>{@code value} - {@code 1} (resistance), {@code 3} (immunity) or {@code -1}
+ *       (vulnerability) - into the {@code int} that {@link PlayerProperty#getValue()} returns,
+ *       as {@code parse_player_prop_value} stores it with {@code parser_getint}. A record with no
+ *       {@code value:} line keeps {@code 0}; a non-integer one is a soft error.</li>
  * </ul>
  * <p>
  * An {@code element}-typed record is a template, not a finished property: C's
@@ -182,19 +183,23 @@ public class PlayerPropertyAssembler implements Assembler<PlayerPropertyParseRec
             }
             String name = record.name();
             String desc = record.desc();
-            PlayerProperty.PlayerPropertyValue ppv = switch (record.value()) {
-                case "1" -> PlayerProperty.PlayerPropertyValue.RESISTANCE;
-                case "3" -> PlayerProperty.PlayerPropertyValue.IMMUNITY;
-                case "-1" -> PlayerProperty.PlayerPropertyValue.VULNERABILITY;
-                default -> PlayerProperty.PlayerPropertyValue.NONE;
-            };
+            int value = 0;
+            if (!record.value().isEmpty()) {
+                try {
+                    value = Integer.parseInt(record.value());
+                } catch (NumberFormatException e) {
+                    errors.add("Record starting at line: " + line + " has " +
+                            "an invalid value: " + record.value());
+                    continue;
+                }
+            }
 
             if (extendToAllElements) {
                 for (ElementEnum e : ElementEnum.values()) {
                     if (e == ElementEnum.ELEM_MAX || e == ElementEnum.ELEM_NONE)
                         continue;
 
-                    PlayerProperty pp = new PlayerProperty(ppt, pFlag, oFlag, e, omCode, bindings, name, desc, ppv);
+                    PlayerProperty pp = new PlayerProperty(ppt, pFlag, oFlag, e, omCode, bindings, name, desc, value);
 
                     pp = spreadPlayerPropertyOut(pp, e);
 
@@ -203,7 +208,7 @@ public class PlayerPropertyAssembler implements Assembler<PlayerPropertyParseRec
                 }
             } else {
                 results.add(new PlayerProperty(
-                        ppt, pFlag, oFlag, eCode, omCode, bindings, name, desc, ppv)
+                        ppt, pFlag, oFlag, eCode, omCode, bindings, name, desc, value)
                 );
             }
         }

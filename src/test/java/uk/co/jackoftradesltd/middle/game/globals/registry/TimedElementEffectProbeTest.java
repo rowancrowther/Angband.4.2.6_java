@@ -111,7 +111,7 @@ class TimedElementEffectProbeTest {
         flags.on(ChannelEntryFlag.ENTRY_FLAG_TIMED_AS_AUX);
         PlayerProperty prop = new PlayerProperty(PlayerProperty.PlayerPropertyType.PROP_TYPE_ELEMENT, null, null,
                 asked, null, List.of(new PlayerProperty.BindUI(ENTRY, 0, true, false)),
-                "test", "", PlayerProperty.PlayerPropertyValue.NONE);
+                "test", "", 0);
         UIEntryValueRegistry.addEntryBinding(ENTRY, List.of(), List.of(prop), CombinerName.ADD, flags);
 
         Player player = new Player();

@@ -95,7 +95,7 @@ class CachedPlayerDataProbeTest {
     private static PlayerProperty objectFlagPlayerProperty(ObjectFlag oFlag) {
         return new PlayerProperty(PlayerProperty.PlayerPropertyType.PROP_TYPE_OBJECT, null, oFlag, null, null,
                 List.of(new PlayerProperty.BindUI(ENTRY, 0, true, false)),
-                "test", "", PlayerProperty.PlayerPropertyValue.NONE);
+                "test", "", 0);
     }
 
     @BeforeEach

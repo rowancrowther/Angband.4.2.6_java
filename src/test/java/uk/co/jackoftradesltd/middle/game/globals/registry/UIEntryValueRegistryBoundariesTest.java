@@ -122,19 +122,19 @@ class UIEntryValueRegistryBoundariesTest {
     private static PlayerProperty playerFlagProperty(PlayerFlag pFlag, int value, boolean special, boolean aux) {
         return new PlayerProperty(PlayerProperty.PlayerPropertyType.PROP_TYPE_PLAYER, pFlag, null, null, null,
                 List.of(new PlayerProperty.BindUI(ENTRY, value, special, aux)),
-                "test", "", PlayerProperty.PlayerPropertyValue.NONE);
+                "test", "", 0);
     }
 
     private static PlayerProperty objectFlagPlayerProperty(ObjectFlag oFlag, boolean aux) {
         return new PlayerProperty(PlayerProperty.PlayerPropertyType.PROP_TYPE_OBJECT, null, oFlag, null, null,
                 List.of(new PlayerProperty.BindUI(ENTRY, 0, true, aux)),
-                "test", "", PlayerProperty.PlayerPropertyValue.NONE);
+                "test", "", 0);
     }
 
     private static PlayerProperty elementPlayerProperty(ElementEnum eCode, boolean aux) {
         return new PlayerProperty(PlayerProperty.PlayerPropertyType.PROP_TYPE_ELEMENT, null, null, eCode, null,
                 List.of(new PlayerProperty.BindUI(ENTRY, 0, true, aux)),
-                "test", "", PlayerProperty.PlayerPropertyValue.NONE);
+                "test", "", 0);
     }
 
     private static ItemObject rawItem(Flag<ObjectFlag> flags, Map<ObjectModifier, Integer> modifiers,

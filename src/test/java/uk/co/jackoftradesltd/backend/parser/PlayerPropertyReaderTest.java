@@ -200,7 +200,7 @@ class PlayerPropertyReaderTest {
         PlayerProperty coldResistance = byName(result.items(), "Cold Resistance");
         assertEquals(PlayerProperty.PlayerPropertyType.PROP_TYPE_ELEMENT, coldResistance.getPlayerPropertyType());
         assertEquals(ElementEnum.ELEM_COLD, coldResistance.geteCode());
-        assertEquals(PlayerProperty.PlayerPropertyValue.RESISTANCE, coldResistance.getValue());
+        assertEquals(1, coldResistance.getValue());
         assertEquals("You resist cold.", coldResistance.getDescription());
         assertEquals(1, coldResistance.getEntries().size());
         assertEquals("resist_ui_compact_0<COLD>", coldResistance.getEntries().get(0).uiEntry());
@@ -230,15 +230,15 @@ class PlayerPropertyReaderTest {
         // spot-checked against values derived from C's finish_parse_player_prop and
         // player_property.txt's own name:/desc: text, not from the Java implementation.
         PlayerProperty coldResistance = byName(result.items(), "Cold Resistance");
-        assertEquals(PlayerProperty.PlayerPropertyValue.RESISTANCE, coldResistance.getValue());
+        assertEquals(1, coldResistance.getValue());
         assertEquals("You resist cold.", coldResistance.getDescription());
 
         PlayerProperty fireImmunity = byName(result.items(), "Fire Immunity");
-        assertEquals(PlayerProperty.PlayerPropertyValue.IMMUNITY, fireImmunity.getValue());
+        assertEquals(3, fireImmunity.getValue());
         assertEquals("You are immune to fire.", fireImmunity.getDescription());
 
         PlayerProperty poisonVulnerability = byName(result.items(), "Poison Vulnerability");
-        assertEquals(PlayerProperty.PlayerPropertyValue.VULNERABILITY, poisonVulnerability.getValue());
+        assertEquals(-1, poisonVulnerability.getValue());
         assertEquals("You are vulnerable to poison.", poisonVulnerability.getDescription());
     }
 

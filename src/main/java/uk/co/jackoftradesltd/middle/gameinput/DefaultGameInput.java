@@ -28,7 +28,7 @@ import uk.co.jackoftradesltd.middle.magic.MagicSpell;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
 import uk.co.jackoftradesltd.middle.objects.enums.GetItemFlags;
 import uk.co.jackoftradesltd.middle.player.Player;
-import uk.co.jackoftradesltd.middle.player.PlayerAbility;
+import uk.co.jackoftradesltd.middle.player.PlayerProperty;
 
 import java.util.List;
 import java.util.Optional;
@@ -171,10 +171,8 @@ public class DefaultGameInput implements GameInput {
         return true;
     }
 
-    /**
-     * {@inheritDoc} This default shows nothing - the menu is a no-op, as in C when no UI is installed.
-     */
     @Override
-    public void viewAbilityMenu(List<PlayerAbility> abilityList) {
+    public void viewAbilityMenu(List<PlayerProperty> propertyList) {
+        
     }
 }

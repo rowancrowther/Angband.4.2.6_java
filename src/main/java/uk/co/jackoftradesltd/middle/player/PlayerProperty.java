@@ -20,12 +20,17 @@ package uk.co.jackoftradesltd.middle.player;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
+import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
+import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjPropertyType;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
+import uk.co.jackoftradesltd.middle.player.enums.PlayerFlagType;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * The definition of one player property — a named characteristic (a player flag, an object flag,
@@ -46,6 +51,18 @@ import java.util.List;
  * <p>Beyond the C struct the port also holds {@link #entries}: the resolved bindings from this
  * property to the {@code UIEntry} slots that display it (the {@code bindui:} lines), which is how a
  * property surfaces on the character screen.
+ *
+ * <p>Two things here are not part of what {@code player_property.txt} defines. {@link #group} is
+ * C's {@code player_ability.group}, which the data file never sets: it stays
+ * {@link PlayerFlagType#PLAYER_FLAG_NONE} on every entry of {@code PlayerRegistry}, and only the
+ * copies that {@link #viewAbilities} builds for the "Race and class abilities" menu carry
+ * {@code PLAYER_FLAG_CLASS} or {@code PLAYER_FLAG_RACE}. A registry entry is therefore always an
+ * ability whatever its group, and a group of {@code NONE} means "no view has assigned one", not
+ * "not an ability". {@link #viewAbilities}, {@link #classHasAbility} and {@link #raceHasAbility}
+ * are the ports of C's {@code view_abilities}, {@code class_has_ability} and
+ * {@code race_has_ability} ({@code player-properties.c}).
+ *
+ * <p>Class PlayerProperty coded before 261009, commented in full on 261009.
  *
  * @author Rowan Crowther
  */
@@ -71,6 +88,21 @@ public class PlayerProperty {
      * Discriminator selecting which flavour of property (and which code carrier) is live.
      */
     private PlayerPropertyType playerPropertyType;
+    /**
+     * Where this ability came from, which the ability menu's display switches on to choose the
+     * prefix and colour ("Class:" in umber for {@link PlayerFlagType#PLAYER_FLAG_CLASS}, "Racial:"
+     * in orange for {@link PlayerFlagType#PLAYER_FLAG_RACE}, "Specialty Ability:" in green for
+     * {@link PlayerFlagType#PLAYER_FLAG_SPECIAL}, "Mysterious" in purple for anything else). C's
+     * {@code player_ability.group}, commented there as "set locally when viewing".
+     *
+     * <p>Holds exactly one value and starts at {@link PlayerFlagType#PLAYER_FLAG_NONE}, as C's
+     * zeroed struct does. Set only on the copies {@link #viewAbilities} builds, never on an entry of
+     * the registry: an ability that both the class and the race have is listed twice, once per
+     * group, so a single shared object could not hold both.
+     *
+     * <p>Field group coded before 261009, commented in full on 261009.
+     */
+    private PlayerFlagType group;
     /** Payload when {@link #playerPropertyType} is {@code PROP_TYPE_PLAYER}: the player flag. */
     private PlayerFlag pCode;
     /** Payload when {@link #playerPropertyType} is {@code PROP_TYPE_OBJECT}: the object flag. */
@@ -89,12 +121,22 @@ public class PlayerProperty {
     private String name;
     /** Human-readable description of the property (C: {@code player_ability.desc}). */
     private String description;
-    /** For an element property, the resistance level it confers (C: {@code player_ability.value}). */
-    private PlayerPropertyValue value;
+    /**
+     * For an element property, the resistance level a race must have to the element for the
+     * property to apply: -1 (vulnerability), 1 (resistance) or 3 (immunity), as
+     * {@code player_property.txt} documents. {@link #raceHasAbility} compares it for equality with
+     * the race's level (C: {@code player_ability.value}). Unused for the other types.
+     *
+     * <p>Field value retyped from PlayerPropertyValue to int on 261009, commented in full on 261009.
+     */
+    private int value;
 
     /**
      * Builds a fully-resolved player property, as produced by the property reader/assembler from one
-     * {@code player_property.txt} record.
+     * {@code player_property.txt} record. The new property's {@link #group} starts at
+     * {@link PlayerFlagType#PLAYER_FLAG_NONE}.
+     *
+     * <p>Function PlayerProperty coded before 261009, commented in full on 261009.
      *
      * @param playerPropertyType the property flavour / code discriminator
      * @param pCode              the player flag (for {@code PROP_TYPE_PLAYER}; otherwise {@code null})
@@ -105,7 +147,7 @@ public class PlayerProperty {
      * @param entries            the resolved UI bindings
      * @param name               display name
      * @param description        human-readable description
-     * @param value              the resistance level (for element properties)
+     * @param value              the resistance level -1, 1 or 3 (for element properties; otherwise 0)
      */
     public PlayerProperty(PlayerPropertyType playerPropertyType,
                           PlayerFlag pCode,
@@ -115,7 +157,7 @@ public class PlayerProperty {
                           List<BindUI> entries,
                           String name,
                           String description,
-                          PlayerPropertyValue value) {
+                          int value) {
         this.playerPropertyType = playerPropertyType;
         this.oCode = oCode;
         this.pCode = pCode;
@@ -125,6 +167,7 @@ public class PlayerProperty {
         this.name = name;
         this.description = description;
         this.value = value;
+        this.group = PlayerFlagType.PLAYER_FLAG_NONE;
     }
 
     /**
@@ -185,10 +228,148 @@ public class PlayerProperty {
     }
 
     /**
+     * Gathers the abilities the character's class and race confer, as the list the "Race and class
+     * abilities" menu shows - the port of C's {@code view_abilities} ({@code player-properties.c}).
+     *
+     * <p>The registry is walked twice, class first, then race, each time testing every property with
+     * {@link #classHasAbility} or {@link #raceHasAbility}. Each match is copied into a new
+     * {@code PlayerProperty} - C's {@code memcpy} into the local {@code ability_list} - and only the
+     * copy's group is set, {@code PLAYER_FLAG_CLASS} in the first walk and {@code PLAYER_FLAG_RACE}
+     * in the second. The registry entries are never written. An ability the class and the race both
+     * have therefore appears twice, once per group, as in C.
+     *
+     * <p>C's {@code ability_list} is a fixed array of 32; the Java list is unbounded.
+     *
+     * <p><b>Outstanding:</b> the final call to {@code view_ability_menu} is commented out until the
+     * menu is ported, so for now the list is built and discarded. Nothing observable results from
+     * calling this method.
+     *
+     * <p>Function viewAbilities coded on 261009, commented in full on 261009.
+     */
+    public static void viewAbilities() {
+        List<PlayerProperty> properties = PlayerRegistry.getPlayerProperties();
+        int numAbilities = 0;
+        List<PlayerProperty> abilityList = new ArrayList<>();
+        Player player = GameState.getPlayer();
+        
+        for (PlayerProperty property : properties) {
+            if (property.classHasAbility(player.getPlayerClass(), property)) {
+                PlayerProperty prop = new PlayerProperty(property.getPlayerPropertyType(), property.getpCode(), property.getoCode(), property.geteCode(),
+                        property.getomCode(), property.getEntries(), property.getName(), property.getDescription(), property.getValue());
+                prop.setGroup(PlayerFlagType.PLAYER_FLAG_CLASS);      
+                numAbilities++;
+                abilityList.add(prop);
+            }
+        }
+        
+        for (PlayerProperty property : properties) {
+            if (property.raceHasAbility(player.getRace(), property)) {
+                PlayerProperty prop = new PlayerProperty(property.getPlayerPropertyType(), property.getpCode(), property.getoCode(), property.geteCode(),
+                        property.getomCode(), property.getEntries(), property.getName(), property.getDescription(), property.getValue());
+                prop.setGroup(PlayerFlagType.PLAYER_FLAG_RACE);
+                numAbilities++;
+                abilityList.add(prop);
+            }
+        }
+        
+        // TODO - uncomment out below line once it is ported
+        //
+        // viewAbilityMenu(abilityList, numAbilities);
+    }
+
+    /**
      * @return the resistance level this property confers (meaningful for element properties)
      */
-    public PlayerPropertyValue getValue() {
+    public int getValue() {
         return value;
+    }
+
+    /**
+     * Reads which group this property was listed under; see {@link #group}.
+     *
+     * <p>Function getGroup coded before 261009, commented in full on 261009.
+     *
+     * @return the group - {@code PLAYER_FLAG_NONE} for a registry entry, {@code PLAYER_FLAG_CLASS}
+     * or {@code PLAYER_FLAG_RACE} for a copy built by {@link #viewAbilities}
+     */
+    public PlayerFlagType getGroup() {
+        return group;
+    }
+
+    /**
+     * Assigns the group. Call it on a copy only, never on an entry of {@code PlayerRegistry}; see
+     * {@link #group} for why.
+     *
+     * <p>Function setGroup coded before 261009, commented in full on 261009.
+     *
+     * @param group the group to assign
+     */
+    public void setGroup(PlayerFlagType group) {
+        this.group = group;
+    }
+    
+    /**
+     * Tests whether a race confers an ability - the port of C's {@code race_has_ability}
+     * ({@code player-properties.c}).
+     *
+     * <p>A player-flag property applies if the race has that player flag, an object-flag property if
+     * the race has that object flag, and an element property if the race's resistance level to the
+     * element equals the property's {@link #value} exactly. The levels are compared for equality, not
+     * "at least": a race with immunity (3) does not satisfy the resistance property (1). Any other
+     * type, including {@code PROP_TYPE_OBJECT_MODIFIER}, applies to nothing, as C's {@code streq}
+     * chain falls through to {@code false}.
+     *
+     * <p>Function raceHasAbility coded on 261009, commented in full on 261009.
+     *
+     * @param race     the race to test
+     * @param property the property to look for
+     * @return {@code true} if the race confers the property
+     */
+    private boolean raceHasAbility(PlayerRace race, PlayerProperty property) {
+        if (property.getPlayerPropertyType() == PlayerPropertyType.PROP_TYPE_PLAYER
+                && race.getpFlags().has(property.getpCode())) {
+            return true;
+        } else if (property.getPlayerPropertyType() == PlayerPropertyType.PROP_TYPE_OBJECT 
+                && race.getoFlags().has(property.getoCode())) {
+            return true;
+        } else return property.getPlayerPropertyType() == PlayerPropertyType.PROP_TYPE_ELEMENT
+                && race.getResistanceLevel(property.geteCode()) == property.getValue();
+    }
+    
+    /**
+     * Tests whether a class confers an ability - the port of C's {@code class_has_ability}
+     * ({@code player-properties.c}).
+     *
+     * <p>A player-flag property applies if the class has that player flag and an object-flag property
+     * if the class has that object flag. Unlike {@link #raceHasAbility} there is no element branch:
+     * a class has no resistance table, so an element property never applies to a class.
+     *
+     * <p>Function classHasAbility coded on 261009, commented in full on 261009.
+     *
+     * @param playerClass the class to test
+     * @param property    the property to look for
+     * @return {@code true} if the class confers the property
+     */
+    private boolean classHasAbility(PlayerClass playerClass, PlayerProperty property) {
+        if (property.getPlayerPropertyType() == PlayerPropertyType.PROP_TYPE_PLAYER 
+            && playerClass.getpFlags().has(property.getpCode())) {
+            return true;
+        } 
+        
+        return property.getPlayerPropertyType() == PlayerPropertyType.PROP_TYPE_OBJECT
+                && playerClass.getoFlags().has(property.getoCode());
+    }
+
+    public void setoCode(ObjectFlag oCode) {
+        this.oCode = oCode;
+    }
+
+    public void setpCode(PlayerFlag pCode) {
+        this.pCode = pCode;
+    }
+
+    public void seteCode(ElementEnum eCode) {
+        this.eCode = eCode;
     }
 
     /**

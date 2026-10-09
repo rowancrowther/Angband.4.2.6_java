@@ -15,20 +15,11 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftradesltd.middle.player;
+package uk.co.jackoftradesltd.middle.player.enums;
 
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
-
-public class PlayerAbility {
-    PlayerFlag indexPlayerFlag;
-    ObjectFlag indexObjectFlag;
-    ElementEnum indexElementEnum;
-
-    String type;
-    String name;
-    String desc;
-    PlayerFlag group;
-    int value;
+public enum PlayerFlagType {
+    PLAYER_FLAG_NONE,
+    PLAYER_FLAG_SPECIAL,
+    PLAYER_FLAG_RACE,
+    PLAYER_FLAG_CLASS
 }

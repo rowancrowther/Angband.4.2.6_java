@@ -17,12 +17,11 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectNotice;
 import uk.co.jackoftradesltd.middle.player.Player;
 
 import java.util.HashMap;
@@ -63,9 +62,13 @@ import java.util.Set;
  * on every subsequent hit.
  *
  * <p>An instance starts empty, matching C's zeroing allocation. The knowledge a character begins
- * play with — {@link #getDd()}, {@link #getDs()} and {@link #getAc()} set to 1, and the light and
- * digging flags switched on — is applied by the birth code ({@code player_outfit},
- * {@code src/player-birth.c}), not by the constructor.
+ * play with is applied by the birth code, not by the constructor. {@code player_outfit}
+ * ({@code src/player-birth.c}) sets {@link #getDd()}, {@link #getDs()} and {@link #getAc()} to 1
+ * and switches on every object flag whose property subtype is light, digging, throwing or
+ * curse-only; {@code do_cmd_accept_character} (same file) then sets the three combat bonuses to 1
+ * under a comment calling it a hack.
+ *
+ * <p>Class KnownObject coded before 261009, commented in full on 261009.
  *
  * @author Rowan Crowther
  * @see ItemObject
@@ -78,35 +81,47 @@ public class KnownObject {
      * truth, so a {@link Flag} loses nothing. It does change the call sites that multiply by it —
      * {@code player-calcs.c} computes {@code stat_add[STAT_STR] * obj_k->modifiers[OBJ_MOD_STR]}
      * to zero out an unknown bonus, which becomes a conditional here.
+     *
+     * <p>Field modifierFlag coded before 261009, commented in full on 261009.
      */
     private Flag<ObjectModifier> modifierFlag;
     /**
      * Which object flags the player can read, C's {@code obj_k->flags}. The one field where C's
      * representation and this one already agree, both being a set of flags.
+     *
+     * <p>Field objectFlags coded before 261009, commented in full on 261009.
      */
     private Flag<ObjectFlag> objectFlags;
 
-    private Flag<ObjectNotice> noticeFlags;
     /**
      * Which elemental resistances the player can read, C's {@code obj_k->el_info[].res_level}.
      *
      * <p>A boolean rather than an {@link ElementInfo}, because on the knowledge side the level is
      * not a level: C writes 1 to mean "known" and tests it for truth. The {@code flags} half of
-     * C's {@code element_info} is dropped, being savefile-only.
+     * C's {@code element_info} is dropped, being savefile-only. The map holds an entry for every
+     * real element and none for {@code ELEM_NONE} or {@code ELEM_MAX}.
+     *
+     * <p>Field elementResistInfo coded before 261009, commented in full on 261009.
      */
     private Map<ElementEnum, Boolean> elementResistInfo;
     /**
      * Whether the player can read to-hit bonuses, C's {@code obj_k->to_h}. Kept as an int rather
      * than a boolean because C multiplies by it — {@code obj->known->to_h = p->obj_k->to_h *
      * obj->to_h} — so the 0/1 value does the masking directly.
+     *
+     * <p>Field toH coded before 261009, commented in full on 261009.
      */
     private int toH;
     /**
      * Whether the player can read to-damage bonuses, C's {@code obj_k->to_d}. See {@link #toH}.
+     *
+     * <p>Field toD coded before 261009, commented in full on 261009.
      */
     private int toD;
     /**
      * Whether the player can read to-armour bonuses, C's {@code obj_k->to_a}. See {@link #toH}.
+     *
+     * <p>Field toA coded before 261009, commented in full on 261009.
      */
     private int toA;
     /**
@@ -116,6 +131,8 @@ public class KnownObject {
      * power, and only as 0/1 — {@code player_knows_curse} is {@code curses[index].power == 1}.
      * Held as a map rather than a set because, unlike brands and slays, it is populated up front
      * from the registry so that an unrecognized curse is distinguishable from a known-false one.
+     *
+     * <p>Field curses coded before 261009, commented in full on 261009.
      */
     private Map<Curse, Boolean> curses;
     /**
@@ -124,11 +141,15 @@ public class KnownObject {
      * <p>A set rather than a map, because membership is the whole of the state: C's array is
      * indexed by registry position and holds nothing but a bool. Membership stands for the brand's
      * whole equivalence class — see {@link #learnBrand(Brand)}.
+     *
+     * <p>Field brands coded before 261009, commented in full on 261009.
      */
     private Set<Brand> brands;
     /**
      * Which slays the player recognizes, C's {@code obj_k->slays[]}. As {@link #brands}, with the
      * class defined by monsters slain rather than by name — see {@link #learnSlay(Slay)}.
+     *
+     * <p>Field slays coded before 261009, commented in full on 261009.
      */
     private Set<Slay> slays;
     /**
@@ -138,16 +159,22 @@ public class KnownObject {
      *
      * <p>Zero here is the pre-birth state. {@code player_outfit} raises it to 1 as part of the
      * "obvious object knowledge" every character starts with, so it is 1 for the whole of play.
+     *
+     * <p>Field ac coded before 261009, commented in full on 261009.
      */
     private int ac = 0;
     /**
      * Whether the player can read damage dice, C's {@code obj_k->dd}. See {@link #ac} for the
      * multiplier convention and the birth-time initialization; {@code obj-desc.c} prints the dice
      * only when this and {@link #ds} are both set.
+     *
+     * <p>Field dd coded before 261009, commented in full on 261009.
      */
     private int dd = 0;
     /**
      * Whether the player can read damage sides, C's {@code obj_k->ds}. See {@link #dd}.
+     *
+     * <p>Field ds coded before 261009, commented in full on 261009.
      */
     private int ds = 0;
 
@@ -161,6 +188,8 @@ public class KnownObject {
      * {@code obj_k}'s arrays from {@code z_info->curse_max} and friends — which is why
      * {@code p->obj_k} is allocated in {@code init_player} rather than when the player struct
      * itself is created.
+     *
+     * <p>Function KnownObject coded before 261009, commented in full on 261009.
      */
     public KnownObject() {
         initSlays();
@@ -170,12 +199,15 @@ public class KnownObject {
         initResistances();
         initToValues();
         initCurses();
-        noticeFlags = new Flag<>(ObjectNotice.class);
     }
 
     /**
      * Populates the curse map with every registered curse, all unrecognized. C reaches the same
      * state with {@code mem_zalloc(z_info->curse_max * sizeof(struct curse_data))}.
+     *
+     * <p>Replaces any previous map, so calling it again forgets every recognized curse.
+     *
+     * <p>Function initCurses coded before 261009, commented in full on 261009.
      */
     public void initCurses() {
         curses = new HashMap<>();
@@ -190,6 +222,8 @@ public class KnownObject {
      * map at all — one built outside the registry — and answers false for it, on the grounds that
      * a curse the player's knowledge has never heard of cannot be one they recognize.
      *
+     * <p>Function curseIsKnown coded before 261009, commented in full on 261009.
+     *
      * @param curse the curse to ask about
      * @return true if the player recognizes this curse
      */
@@ -201,7 +235,14 @@ public class KnownObject {
 
     /**
      * Records that the player now recognizes a curse. Curses are the one property with no
-     * equivalence class — each has its own rune — so this marks exactly the curse it is given.
+     * equivalence class — each has its own rune — so this marks exactly the curse it is given. The
+     * port of the curse arm of {@code player_learn_rune} ({@code obj-knowledge.c}), which sets
+     * {@code curses[j].power = 1} only when {@code player_knows_curse} is false.
+     *
+     * <p>A curse outside the registry is added to the map rather than rejected; C would trip an
+     * assert, and the registry is the only legitimate source of curses.
+     *
+     * <p>Function learnCurse coded before 261009, commented in full on 261009.
      *
      * @param curse the curse now recognized
      * @return true if this was new knowledge, false if the curse was already recognized
@@ -216,6 +257,8 @@ public class KnownObject {
      * Clears the three combat bonuses to unknown. Written out rather than left to Java's default
      * field initialization so that the constructor's list of {@code init} calls reads as the
      * complete account of the starting state.
+     *
+     * <p>Function initToValues coded before 261009, commented in full on 261009.
      */
     private void initToValues() {
         toH = 0;
@@ -224,6 +267,11 @@ public class KnownObject {
     }
 
     /**
+     * Asks whether the player can read to-hit bonuses on items, the port of the truth test on C's
+     * {@code p->obj_k->to_h} (for example in {@code obj-desc.c}).
+     *
+     * <p>Function toHIsKnown coded before 261009, commented in full on 261009.
+     *
      * @return true if the player can read an item's to-hit bonus
      */
     public boolean toHIsKnown() {
@@ -232,7 +280,10 @@ public class KnownObject {
 
     /**
      * Records that the player can now read to-hit bonuses. The port of the {@code COMBAT_RUNE_TO_H}
-     * arm of {@code player_learn_rune}.
+     * arm of {@code player_learn_rune} ({@code obj-knowledge.c}), which sets {@code to_h} to 1 only
+     * if it was 0 and counts the rune as learned only in that case.
+     *
+     * <p>Function learnToH coded before 261009, commented in full on 261009.
      *
      * @return true if this was new knowledge
      */
@@ -243,6 +294,10 @@ public class KnownObject {
     }
 
     /**
+     * Asks whether the player can read to-damage bonuses on items. See {@link #toHIsKnown()}.
+     *
+     * <p>Function toDIsKnown coded before 261009, commented in full on 261009.
+     *
      * @return true if the player can read an item's to-damage bonus
      */
     public boolean toDIsKnown() {
@@ -250,7 +305,10 @@ public class KnownObject {
     }
 
     /**
-     * Records that the player can now read to-damage bonuses. See {@link #learnToH()}.
+     * Records that the player can now read to-damage bonuses. The {@code COMBAT_RUNE_TO_D} arm of
+     * {@code player_learn_rune}; see {@link #learnToH()}.
+     *
+     * <p>Function learnToD coded before 261009, commented in full on 261009.
      *
      * @return true if this was new knowledge
      */
@@ -261,6 +319,10 @@ public class KnownObject {
     }
 
     /**
+     * Asks whether the player can read to-armour bonuses on items. See {@link #toHIsKnown()}.
+     *
+     * <p>Function toAIsKnown coded before 261009, commented in full on 261009.
+     *
      * @return true if the player can read an item's to-armour bonus
      */
     public boolean toAIsKnown() {
@@ -268,7 +330,10 @@ public class KnownObject {
     }
 
     /**
-     * Records that the player can now read to-armour bonuses. See {@link #learnToH()}.
+     * Records that the player can now read to-armour bonuses. The {@code COMBAT_RUNE_TO_A} arm of
+     * {@code player_learn_rune}; see {@link #learnToH()}.
+     *
+     * <p>Function learnToA coded before 261009, commented in full on 261009.
      *
      * @return true if this was new knowledge
      */
@@ -282,6 +347,8 @@ public class KnownObject {
      * Populates the resistance map with every real element, all unknown. C indexes an array by
      * element, so its bounds are the elements; here the two sentinels have to be skipped by hand,
      * and are skipped again on the way in and out so that neither can be marked or reported known.
+     *
+     * <p>Function initResistances coded before 261009, commented in full on 261009.
      */
     private void initResistances() {
         elementResistInfo = new HashMap<>();
@@ -295,7 +362,10 @@ public class KnownObject {
     }
 
     /**
-     * The port of C's {@code obj_k->el_info[element].res_level} test.
+     * The port of C's {@code obj_k->el_info[element].res_level} test. C indexes by element number
+     * and so never sees a sentinel; here the two sentinels answer false rather than being looked up.
+     *
+     * <p>Function resistanceIsKnown coded before 261009, commented in full on 261009.
      *
      * @param element the element to ask about
      * @return true if the player can read resistance to this element; false for the sentinels
@@ -309,7 +379,11 @@ public class KnownObject {
     /**
      * Records that the player can now read resistance to an element. Answers false for a sentinel
      * without recording anything, which is also the right answer to "was that new knowledge" —
-     * there is no rune for {@code ELEM_NONE} to learn.
+     * there is no rune for {@code ELEM_NONE} to learn. The port of the resist arm of
+     * {@code player_learn_rune} ({@code obj-knowledge.c}), which sets {@code res_level} to 1 only
+     * if it was 0.
+     *
+     * <p>Function learnResistance coded before 261009, commented in full on 261009.
      *
      * @param element the element whose resistance is now readable
      * @return true if this was new knowledge
@@ -325,6 +399,8 @@ public class KnownObject {
 
     /**
      * Creates the empty object-flag set, the port of the zeroed {@code obj_k->flags}.
+     *
+     * <p>Function initObjectFlags coded before 261009, commented in full on 261009.
      */
     private void initObjectFlags() {
         objectFlags = new Flag<>(ObjectFlag.class);
@@ -332,6 +408,8 @@ public class KnownObject {
 
     /**
      * The port of C's {@code of_has(p->obj_k->flags, flag)}.
+     *
+     * <p>Function flagIsKnown coded before 261009, commented in full on 261009.
      *
      * @param flag the object flag to ask about
      * @return true if the player can read this flag on an item
@@ -345,6 +423,8 @@ public class KnownObject {
      * {@code player_learn_rune} is a bare {@code if (of_on(p->obj_k->flags, r->index)) learned =
      * true;} — {@link Flag#on} already answers the "was it new" question the same way, so this
      * needs no test of its own.
+     *
+     * <p>Function learnFlag coded before 261009, commented in full on 261009.
      *
      * @param flag the object flag now readable
      * @return true if this was new knowledge
@@ -363,6 +443,8 @@ public class KnownObject {
      * it by copying first: {@code object_flags(p->obj_k, f); of_negate(f);} negates {@code f},
      * never the player's own flags.
      *
+     * <p>Function getFlags coded before 261009, commented in full on 261009.
+     *
      * @return an independent copy of the known object flags
      */
     public Flag<ObjectFlag> getFlags() {
@@ -373,6 +455,8 @@ public class KnownObject {
 
     /**
      * Creates the empty modifier set, the port of the zeroed {@code obj_k->modifiers[]}.
+     *
+     * <p>Function initModifiers coded before 261009, commented in full on 261009.
      */
     private void initModifiers() {
         modifierFlag = new Flag<>(ObjectModifier.class);
@@ -380,6 +464,8 @@ public class KnownObject {
 
     /**
      * The port of C's {@code p->obj_k->modifiers[index]} test.
+     *
+     * <p>Function modifierIsKnown coded before 261009, commented in full on 261009.
      *
      * @param modifier the modifier to ask about
      * @return true if the player can read this modifier on an item
@@ -389,7 +475,11 @@ public class KnownObject {
     }
 
     /**
-     * Records that the player can now read a modifier.
+     * Records that the player can now read a modifier. The port of the mod arm of
+     * {@code player_learn_rune} ({@code obj-knowledge.c}), which sets
+     * {@code modifiers[r->index] = 1} only if it was 0 and counts the rune as learned only then.
+     *
+     * <p>Function learnModifier coded before 261009, commented in full on 261009.
      *
      * @param modifier the modifier now readable
      * @return true if this was new knowledge
@@ -402,6 +492,8 @@ public class KnownObject {
      * The port of C's {@code player_knows_brand}, which is a bare array lookup. It can afford to
      * be that cheap because the cost of grouping is paid on the learning side — see
      * {@link #learnBrand(Brand)} — and this port keeps the same division of labour.
+     *
+     * <p>Function brandIsKnown coded before 261009, commented in full on 261009.
      *
      * @param brand the brand to ask about
      * @return true if the player recognizes this brand
@@ -435,6 +527,11 @@ public class KnownObject {
      * already known every {@code add} returns false and the result is false anyway — but it saves
      * walking the registry on the repeat calls, which are the common case.
      *
+     * <p>C walks {@code j = 1 .. brand_max - 1}, skipping the blank slot 0; the Java registry is
+     * base 0 and holds only real brands, so the walk covers all of it (accepted deviation).
+     *
+     * <p>Function learnBrand coded before 261009, commented in full on 261009.
+     *
      * @param brand any brand of the wanted kind, at any strength
      * @return true if this was new knowledge for any member of the group
      */
@@ -454,7 +551,10 @@ public class KnownObject {
 
     /**
      * Creates the empty brand set. Nothing is pre-populated from the registry, because membership
-     * is the state: an absent brand is an unrecognized one.
+     * is the state: an absent brand is an unrecognized one. C's equivalent is the
+     * {@code mem_zalloc(z_info->brand_max * sizeof(bool))} in {@code init_player}.
+     *
+     * <p>Function initBrands coded before 261009, commented in full on 261009.
      */
     public void initBrands() {
         brands = new HashSet<>();
@@ -463,6 +563,8 @@ public class KnownObject {
     /**
      * The port of C's {@code player_knows_slay}. As {@link #brandIsKnown(Brand)}, a plain
      * membership test made cheap by the grouping happening on the learning side.
+     *
+     * <p>Function slayIsKnown coded before 261009, commented in full on 261009.
      *
      * @param slay the slay to ask about
      * @return true if the player recognizes this slay
@@ -482,6 +584,11 @@ public class KnownObject {
      *
      * <p>It is the same test {@code Rune.initRunes} de-duplicates the rune list with, so the two
      * cannot disagree about where the group boundaries fall.
+     *
+     * <p>As with brands, C's walk starts at slot 1 and this one covers the whole base-0 registry
+     * (accepted deviation).
+     *
+     * <p>Function learnSlay coded before 261009, commented in full on 261009.
      *
      * @param slay any slay of the wanted kind, at any strength
      * @return true if this was new knowledge for any member of the group
@@ -503,6 +610,8 @@ public class KnownObject {
 
     /**
      * Creates the empty slay set. See {@link #initBrands()}.
+     *
+     * <p>Function initSlays coded before 261009, commented in full on 261009.
      */
     public void initSlays() {
         slays = new HashSet<>();
@@ -512,6 +621,8 @@ public class KnownObject {
      * Returns the armour-class knowledge as the 0/1 multiplier C uses it as, so that a caller can
      * write {@code item.getAc() * knowledge.getAc()} and get either the real value or nothing.
      *
+     * <p>Function getAc coded before 261009, commented in full on 261009.
+     *
      * @return 1 if the player can read armour class, 0 if not
      */
     public int getAc() {
@@ -519,32 +630,48 @@ public class KnownObject {
     }
 
     /**
+     * Returns the damage-dice knowledge as the 0/1 multiplier C uses it as
+     * ({@code obj->known->dd = obj->dd * p->obj_k->dd}). See {@link #getAc()}.
+     *
+     * <p>Function getDd coded before 261009, commented in full on 261009.
+     *
      * @return 1 if the player can read damage dice, 0 if not
-     * @see #getAc()
      */
     public int getDd() {
         return dd;
     }
 
     /**
+     * Returns the damage-sides knowledge as the 0/1 multiplier C uses it as
+     * ({@code obj->known->ds = obj->ds * p->obj_k->ds}). See {@link #getAc()}.
+     *
+     * <p>Function getDs coded before 261009, commented in full on 261009.
+     *
      * @return 1 if the player can read damage sides, 0 if not
-     * @see #getAc()
      */
     public int getDs() {
         return ds;
     }
 
     /**
+     * Returns the to-hit knowledge as the 0/1 multiplier C uses it as
+     * ({@code obj->known->to_h = p->obj_k->to_h * obj->to_h}). See {@link #getAc()}.
+     *
+     * <p>Function getToH coded before 261009, commented in full on 261009.
+     *
      * @return 1 if the player can read to-hit bonuses, 0 if not
-     * @see #getAc()
      */
     public int getToH() {
         return toH;
     }
 
     /**
+     * Returns the to-damage knowledge as the 0/1 multiplier C uses it as
+     * ({@code obj->known->to_d = p->obj_k->to_d * obj->to_d}). See {@link #getAc()}.
+     *
+     * <p>Function getToD coded before 261009, commented in full on 261009.
+     *
      * @return 1 if the player can read to-damage bonuses, 0 if not
-     * @see #getAc()
      */
     public int getToD() {
         return toD;
@@ -561,7 +688,7 @@ public class KnownObject {
      *
      * <p>Live, not a copy. Callers read it; the write path is {@link #learnResistance}.
      *
-     * <p>Function getElementResistInfo commented in full on 260816.
+     * <p>Function getElementResistInfo coded before 260816, commented in full on 261009.
      *
      * @return the per-element knowledge bits, shared with this instance
      */
@@ -570,39 +697,25 @@ public class KnownObject {
     }
 
     /**
+     * Returns the to-armour knowledge as the 0/1 multiplier C uses it as
+     * ({@code obj->known->to_a = p->obj_k->to_a * obj->to_a}). See {@link #getAc()}.
+     *
+     * <p>Function getToA coded before 261009, commented in full on 261009.
+     *
      * @return 1 if the player can read to-armour bonuses, 0 if not
-     * @see #getAc()
      */
     public int getToA() {
         return toA;
     }
 
     /**
-     * Switches a notice flag on, the port of C's {@code obj->known->notice |= <flag>}
-     * ({@code obj-knowledge.c}, {@code player-birth.c}). C's {@code notice} is a plain
-     * {@code uint32_t} bitmask over the {@code OBJ_NOTICE_*} constants ({@code object.h}); this
-     * class keeps the same four flags as {@link ObjectNotice} and stores them in a {@link Flag}
-     * rather than raw bits, so the bitwise-or becomes {@link Flag#on}.
+     * Sets the damage-dice knowledge bit - the port of writing C's {@code p->obj_k->dd}. Birth sets
+     * it to 1 outright in {@code player_outfit} ({@code player-birth.c}), giving the player damage
+     * dice on every item from the start; the savefile loader ({@code load.c}) is the only other
+     * writer, and nothing in the 4.2.6 tree ever writes it back to 0. Assignment itself does no
+     * validation in either language.
      *
-     * <p>Returns whether the flag was newly set, which C's {@code |=} has no equivalent for — the
-     * value is this port's own, not a translation of anything the original returns.
-     *
-     * <p>Function noticeFlagOn commented in full on 260904.
-     *
-     * @param notice the flag to switch on
-     * @return true if the flag was off and is now on, false if it was already on
-     */
-    public boolean noticeFlagOn(ObjectNotice notice) {
-        return noticeFlags.on(notice);
-    }
-
-    /**
-     * Sets the damage-dice knowledge bit - the port of writing C's {@code p->obj_k->dd}
-     * ({@code obj-knowledge.c}). Birth sets it to 1 outright ({@code player-birth.c:595}), giving
-     * the player damage dice on every item from the start; nothing in the 4.2.6 tree ever writes it
-     * back to 0. Assignment itself does no validation in either language.
-     *
-     * <p>Function setDD commented in full on 260904.
+     * <p>Function setDD coded before 260904, commented in full on 261009.
      *
      * @param dd 1 if the player can read damage dice, 0 if not
      * @see #getDd()
@@ -612,11 +725,11 @@ public class KnownObject {
     }
 
     /**
-     * Sets the damage-sides knowledge bit - the port of writing C's {@code p->obj_k->ds}
-     * ({@code obj-knowledge.c}). Birth sets it to 1 outright ({@code player-birth.c:596}); see
-     * {@link #setDD} for the rest of that boundary, which the same statement group shares.
+     * Sets the damage-sides knowledge bit - the port of writing C's {@code p->obj_k->ds}. Birth sets
+     * it to 1 outright in {@code player_outfit} ({@code player-birth.c}); see {@link #setDD} for
+     * the rest of that boundary, which the same statement group shares.
      *
-     * <p>Function setDS commented in full on 260904.
+     * <p>Function setDS coded before 260904, commented in full on 261009.
      *
      * @param ds 1 if the player can read damage sides, 0 if not
      * @see #getDs()
@@ -626,11 +739,11 @@ public class KnownObject {
     }
 
     /**
-     * Sets the armour-class knowledge bit - the port of writing C's {@code p->obj_k->ac}
-     * ({@code obj-knowledge.c}). Birth sets it to 1 outright ({@code player-birth.c:597}); see
-     * {@link #setDD} for the rest of that boundary, which the same statement group shares.
+     * Sets the armour-class knowledge bit - the port of writing C's {@code p->obj_k->ac}. Birth
+     * sets it to 1 outright in {@code player_outfit} ({@code player-birth.c}); see {@link #setDD}
+     * for the rest of that boundary, which the same statement group shares.
      *
-     * <p>Function setAC commented in full on 260904.
+     * <p>Function setAC coded before 260904, commented in full on 261009.
      *
      * @param ac 1 if the player can read armour class, 0 if not
      * @see #getAc()
@@ -640,14 +753,13 @@ public class KnownObject {
     }
 
     /**
-     * Sets the to-hit knowledge bit - the port of writing C's {@code p->obj_k->to_h}
-     * ({@code obj-knowledge.c}, {@code player-birth.c}). Birth sets it to 1 outright
-     * ({@code player-birth.c:1292}) under a comment calling it a hack, on the grounds that it
-     * shouldn't really be a rune at all; {@code player_learn_rune}'s {@code COMBAT_RUNE_TO_H} arm
-     * ({@link #learnToH()}) is the other writer. Assignment itself does no validation in either
-     * language.
+     * Sets the to-hit knowledge bit - the port of writing C's {@code p->obj_k->to_h}. Birth sets it
+     * to 1 outright in {@code do_cmd_accept_character} ({@code player-birth.c}) under a comment
+     * calling it a hack, on the grounds that it shouldn't really be a rune at all;
+     * {@code player_learn_rune}'s {@code COMBAT_RUNE_TO_H} arm ({@link #learnToH()}) is the other
+     * writer. Assignment itself does no validation in either language.
      *
-     * <p>Function setToH commented in full on 260908.
+     * <p>Function setToH coded before 260908, commented in full on 261009.
      *
      * @param toH 1 if the player can read to-hit bonuses, 0 if not
      * @see #getToH()
@@ -657,12 +769,12 @@ public class KnownObject {
     }
 
     /**
-     * Sets the to-damage knowledge bit - the port of writing C's {@code p->obj_k->to_d}
-     * ({@code obj-knowledge.c}, {@code player-birth.c}). Birth sets it to 1 outright
-     * ({@code player-birth.c:1293}); see {@link #setToH} for the rest of that boundary, which the
-     * same statement group shares.
+     * Sets the to-damage knowledge bit - the port of writing C's {@code p->obj_k->to_d}. Birth sets
+     * it to 1 outright in {@code do_cmd_accept_character} ({@code player-birth.c}); see
+     * {@link #setToH} for the rest of that boundary, which the same statement group shares.
+     * {@link #learnToD()} is the other writer.
      *
-     * <p>Function setToD commented in full on 260908.
+     * <p>Function setToD coded before 260908, commented in full on 261009.
      *
      * @param toD 1 if the player can read to-damage bonuses, 0 if not
      * @see #getToD()
@@ -672,12 +784,12 @@ public class KnownObject {
     }
 
     /**
-     * Sets the to-armour knowledge bit - the port of writing C's {@code p->obj_k->to_a}
-     * ({@code obj-knowledge.c}, {@code player-birth.c}). Birth sets it to 1 outright
-     * ({@code player-birth.c:1291}); see {@link #setToH} for the rest of that boundary, which the
-     * same statement group shares.
+     * Sets the to-armour knowledge bit - the port of writing C's {@code p->obj_k->to_a}. Birth sets
+     * it to 1 outright in {@code do_cmd_accept_character} ({@code player-birth.c}); see
+     * {@link #setToH} for the rest of that boundary, which the same statement group shares.
+     * {@link #learnToA()} is the other writer.
      *
-     * <p>Function setToA commented in full on 260908.
+     * <p>Function setToA coded before 260908, commented in full on 261009.
      *
      * @param toA 1 if the player can read to-armour bonuses, 0 if not
      * @see #getToA()
@@ -713,13 +825,13 @@ public class KnownObject {
      * </ol>
      * Failing all three, the element is not known and the method answers false.
      *
+     * <p>Function objectElementIsKnown coded before 260924, commented in full on 261009.
+     *
      * @param player  the player asking (unused; see the second route above)
      * @param item    the object being asked about
      * @param element the element whose knowledge is in question
      * @return true if the player is currently entitled to see resistance to {@code element} on
      * {@code item}
-     *
-     * <p>Function objectElementIsKnown coded before 260924, commented in full on 260924.
      */
     public boolean objectElementIsKnown(Player player, ItemObject item, ElementEnum element) {
         if (element == ElementEnum.ELEM_NONE || element == ElementEnum.ELEM_MAX)

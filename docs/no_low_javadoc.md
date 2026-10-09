@@ -48,20 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/game/globals/registry/MonsterRegistry.java`
-
-1 missing, 8 low
-
-- L50: field `logger` - MISSING
-- L175: method `getMonsterRaces` - LOW
-- L367: method `getMonsterRaceMax` - LOW
-- L374: method `getMonsterPainMsgMax` - LOW
-- L381: method `getMonsterPitTypeMax` - LOW
-- L388: method `getMonsterBlowsMax` - LOW
-- L395: method `getMonsterBlowsMethodsMax` - LOW
-- L402: method `getMonsterBlowsEffectsMax` - LOW
-- L425: method `getVisualsCyclerTable` - LOW
-
 ### `middle/objects/KnownObject.java`
 
 1 missing, 8 low

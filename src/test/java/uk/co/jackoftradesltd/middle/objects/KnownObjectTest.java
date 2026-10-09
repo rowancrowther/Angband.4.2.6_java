@@ -17,20 +17,14 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.monsters.MonsterBase;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectNotice;
 import uk.co.jackoftradesltd.testsupport.CurseFixture;
 
 import java.lang.reflect.Field;
@@ -38,11 +32,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link KnownObject}, the port of C's {@code p->obj_k} ({@code src/player.h}) and the store
@@ -714,55 +704,20 @@ class KnownObjectTest {
         void unregisteredCurseIsNotKnown() {
             assertFalse(knowledge.curseIsKnown(curse("nowhere")));
         }
-    }
-
-    /**
-     * Notice flags, C's {@code obj->known->notice |= <flag>} bitmask ({@code object.h}'s
-     * {@code OBJ_NOTICE_*} constants). {@code noticeFlags} was for a time left uninitialised by the
-     * constructor, so every one of these would have thrown a {@link NullPointerException} rather
-     * than reporting anything about the flag — {@link #switchingOnFreshInstanceDoesNotThrow} pins
-     * that regression directly.
-     *
-     * @author Rowan Crowther
-     */
-    @Nested
-    @DisplayName("notice flags")
-    class NoticeFlags {
-
-        @Test
-        @DisplayName("switching one on a fresh instance does not throw")
-        void switchingOnFreshInstanceDoesNotThrow() {
-            assertDoesNotThrow(() -> knowledge.noticeFlagOn(ObjectNotice.OBJ_NOTICE_WORN));
-        }
-
-        @Test
-        @DisplayName("switching a flag on reports novelty once and then sticks")
-        void switchingOnReportsNoveltyOnce() {
-            assertTrue(knowledge.noticeFlagOn(ObjectNotice.OBJ_NOTICE_WORN));
-            assertFalse(knowledge.noticeFlagOn(ObjectNotice.OBJ_NOTICE_WORN));
-        }
 
         /**
-         * Each flag is its own bit in C's mask, so switching one on must leave the others reading as
-         * still off — provable here only by the fact that switching them on afterwards still reports
-         * novelty.
+         * C asserts {@code j < z_info->curse_max} before setting {@code curses[j].power = 1}, so an
+         * unregistered curse cannot reach that arm. The port instead adds it to the map; the
+         * "was that new" answer must still be true once and then false.
          */
         @Test
-        @DisplayName("flags are independent of each other")
-        void flagsAreIndependent() {
-            knowledge.noticeFlagOn(ObjectNotice.OBJ_NOTICE_WORN);
+        @DisplayName("learning an unregistered curse is new once and then sticks")
+        void unregisteredCurseCanBeLearned() {
+            Curse nowhere = curse("nowhere");
 
-            assertTrue(knowledge.noticeFlagOn(ObjectNotice.OBJ_NOTICE_ASSESSED));
-            assertTrue(knowledge.noticeFlagOn(ObjectNotice.OBJ_NOTICE_IGNORE));
-            assertTrue(knowledge.noticeFlagOn(ObjectNotice.OBJ_NOTICE_IMAGINED));
-        }
-
-        @Test
-        @DisplayName("every flag can be switched on from a fresh instance")
-        void everyFlagIsReachable() {
-            for (ObjectNotice notice : ObjectNotice.values()) {
-                assertTrue(knowledge.noticeFlagOn(notice), notice + " should report novelty on a fresh instance");
-            }
+            assertTrue(knowledge.learnCurse(nowhere));
+            assertTrue(knowledge.curseIsKnown(nowhere));
+            assertFalse(knowledge.learnCurse(nowhere));
         }
     }
 }

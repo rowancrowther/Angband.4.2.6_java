@@ -39,10 +39,11 @@ import java.util.Objects;
  * port of the C original's {@code struct trap_kind} ({@code trap.h}).
  *
  * <p>The C {@code next} link is dropped (kinds live in a {@code List}), and {@code d_attr}/{@code d_char} are
- * folded into one {@link AngbandDisplayCharacter}. C also keeps a blank kind at index 0 of {@code trap_info};
- * the Java list has no such padding, which is harmless because {@code lookup_trap()} skips unnamed kinds anyway.
+ * folded into one {@link AngbandDisplayCharacter}. As in C, index 0 of the trap-kind table is the real
+ * {@code no trap} kind from the first record of {@code trap.txt}, not padding, and {@code lookup_trap()} skips it by
+ * position.
  *
- * <p>Class coded before 260930, commented in full on 260930.
+ * <p>Class coded before 260930, commented in full on 260930, index-0 note corrected on 261009.
  *
  * @author Rowan Crowther
  */
@@ -138,7 +139,7 @@ public class TrapKind {
      * @param messageOnSave           message on a successful save
      * @param messageOnFailure        message on a failed save
      * @param messageOnExtraEffect    message when the extra effect fires
-     * @param trapKindIndex           this trap's index in the trap-kind table (its file position)
+     * @param trapKindIndex           this trap's index in the trap-kind table (its position among the records that assemble)
      * @param angbandDisplayCharacter display glyph and colour
      * @param rarity                  rarity weighting
      * @param minDepth                shallowest level it appears on
@@ -175,38 +176,21 @@ public class TrapKind {
     }
 
     /**
-     * Finds a trap kind from its short description, the Java form of {@code lookup_trap()} in {@code trap.c}.
-     * Walks {@link TerrainRegistry#getTrapKinds()} in table order, skipping kinds with a {@code null} name. The
-     * first kind whose description equals the argument exactly (case-sensitive) wins immediately; failing that,
-     * the first kind whose description contains the argument case-insensitively (C {@code my_stristr}) is
-     * returned. Consequently an empty string matches every description and returns the first named kind, as in C,
-     * and an argument with no match returns {@code null}.
+     * Finds a trap kind from its short description, the Java form of {@code lookup_trap()} in {@code trap.c}. It
+     * delegates to {@link TerrainRegistry#lookupTrap}, which walks the kinds in table order, skipping the kind at
+     * index 0 (the {@code no trap} kind) and any kind with a {@code null} name. The first kind whose description
+     * equals the argument exactly (case-sensitive) wins immediately; failing that, the first kind whose description
+     * contains the argument case-insensitively (C {@code my_stristr}) is returned. An empty string therefore returns
+     * the kind at index 1, and an argument with no match, or {@code "no trap"}, returns {@code null}.
      *
-     * <p>Function lookupTrap coded before 260930, commented in full on 260930.
+     * <p>Function lookupTrap coded before 260930, commented in full on 260930, delegation to the registry and
+     * index-0 note updated on 261009.
      *
      * @param description the trap description to match, exactly or as a substring
      * @return the matching trap kind, or {@code null} if nothing matches
      */
     public static TrapKind lookupTrap(String description) {
-        TrapKind closest = null;
-
-        for (TrapKind tk : TerrainRegistry.getTrapKinds()) {
-            if (tk.getTrapKindName() == null) continue;
-
-            // Test for equality
-            if (tk.getDescription().equals(description)) {
-                return tk;
-            }
-
-            // Test for close matches
-            if (closest == null && tk.getDescription().toLowerCase(Locale.ROOT)
-                    .contains(description.toLowerCase(Locale.ROOT))) {
-                closest = tk;
-            }
-        }
-
-        // Return 1st close match
-        return closest;
+        return TerrainRegistry.lookupTrap(description);
     }
 
     /**
@@ -232,8 +216,13 @@ public class TrapKind {
     }
 
     /**
-     * @return this trap type's index in the trap-kind table (its 0-based file position, C
-     * {@code tidx})
+     * Returns this kind's index in the trap-kind table (C {@code tidx}). It is the 0-based position among the
+     * records that assemble, so it matches the kind's place in {@link TerrainRegistry#getTrapKinds()}. Index 0 is
+     * normally the {@code no trap} kind, which {@link #lookupTrap} never returns.
+     *
+     * <p>Function getTrapKindIndex coded before 261009, commented in full on 261009.
+     *
+     * @return this trap type's index in the trap-kind table
      */
     public int getTrapKindIndex() {
         return trapKindIndex;

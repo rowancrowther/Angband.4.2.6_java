@@ -50,7 +50,10 @@ import java.util.List;
  *   <li>{@code flags:} resolve to {@link TrapEnum} ({@code TRF_}) and {@code save:} to
  *       {@link ObjectFlag} ({@code OF_}) — two distinct flag vocabularies;</li>
  *   <li>primary and extra effects are delegated to {@link EffectAssembler}; and
- *       {@code trapKindIndex} is assigned by source position, mirroring C's {@code tidx}.</li>
+ *       {@code trapKindIndex} is assigned by position among the records that assemble, mirroring C's
+ *       {@code tidx}. Because a dropped record takes no index, every later kind moves down one, so
+ *       index 0 stays the first kept record (normally {@code no trap}, which {@code lookup_trap()}
+ *       skips).</li>
  * </ul>
  *
  * <p><b>Error policy:</b> soft errors follow the suite's skip-and-continue contract — an
@@ -87,8 +90,6 @@ public class TrapAssembler implements Assembler<TrapParseRecord, List<TrapKind>>
             String saveMessage = record.saveMessage();
             String failMessage = record.failMessage();
             String extraMessage = record.xtraMessage();
-            String trapIndexStr = record.index();
-            index++;
             char glyphChar;
             AngbandDisplayCharacter adc = null;
             String glyph = record.glyph();
@@ -173,13 +174,14 @@ public class TrapAssembler implements Assembler<TrapParseRecord, List<TrapKind>>
             if (badSaveFlag) continue;
             List<Effect> effects = EffectAssembler.assemble(record.effects(), errors);
             List<Effect> xtraEffects = EffectAssembler.assemble(record.xtraEffects(), errors);
+            index++;
 
             traps.add(new TrapKind(trapKindName, trapText, trapDescription,
                     trapMessage, saveMessage, failMessage, extraMessage,
                     index, adc, rarity, minDepth, maxNum, power, flags,
                     saveFlags, effects, xtraEffects));
         }
-
+        
         return traps;
     }
 }

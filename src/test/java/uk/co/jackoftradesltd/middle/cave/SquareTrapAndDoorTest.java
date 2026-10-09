@@ -71,9 +71,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class SquareTrapAndDoorTest {
 
     /**
-     * Fixture kinds, indexed as their position in the seeded registry. The two dart kinds share a
-     * description and differ only in index.
+     * Fixture kinds, indexed as their position in the seeded registry. Index 0 is the {@code no trap}
+     * kind that opens {@code trap.txt}, which {@code lookup_trap()} never returns, so the named kinds
+     * start at 1. The two dart kinds share a description and differ only in index.
      */
+    private TrapKind noTrap;
     private TrapKind web;
     private TrapKind decoy;
     private TrapKind lock;
@@ -148,13 +150,14 @@ class SquareTrapAndDoorTest {
     @BeforeEach
     void seedRegistry() {
         savedRegistry = new ArrayList<>(TerrainRegistry.getTrapInfo());
-        web = kind("web", "web", 0);
-        decoy = kind("decoy", "decoy", 1);
-        lock = kind("door lock", "door lock", 2);
-        glyph = kind("glyph of warding", "glyph of warding", 3);
-        dartA = kind("dart trap", "damaging darts", 4);
-        dartB = kind("dart trap", "damaging darts", 5);
-        TerrainRegistry.setTrapInfo(new ArrayList<>(List.of(web, decoy, lock, glyph, dartA, dartB)));
+        noTrap = kind("no trap", "no trap", 0);
+        web = kind("web", "web", 1);
+        decoy = kind("decoy", "decoy", 2);
+        lock = kind("door lock", "door lock", 3);
+        glyph = kind("glyph of warding", "glyph of warding", 4);
+        dartA = kind("dart trap", "damaging darts", 5);
+        dartB = kind("dart trap", "damaging darts", 6);
+        TerrainRegistry.setTrapInfo(new ArrayList<>(List.of(noTrap, web, decoy, lock, glyph, dartA, dartB)));
     }
 
     /**
@@ -263,18 +266,19 @@ class SquareTrapAndDoorTest {
         }
 
         /**
-         * The index is the kind's, not the trap's place in the list. With the decoy (kind 1) first
-         * and the glyph (kind 3) second, asking for 1 must not be answered by the trap at list
-         * position 1.
+         * The index is the kind's, not the trap's place in the list. With the decoy (kind 2) first
+         * and the glyph (kind 4) second, asking for 0 or 1, the trap list's own positions, must not be
+         * answered by either of them.
          */
         @Test
         @DisplayName("trapTimeout's index is the kind index, not the list position")
         void timeoutIsNotListPosition() {
             Square s = floorWith(true, trap(decoy, 0, 5), trap(glyph, 0, 9));
             assertAll(
-                    () -> assertEquals(5, s.trapTimeout(1)),
-                    () -> assertEquals(9, s.trapTimeout(3)),
-                    () -> assertEquals(0, s.trapTimeout(0)));
+                    () -> assertEquals(5, s.trapTimeout(decoy.getTrapKindIndex())),
+                    () -> assertEquals(9, s.trapTimeout(glyph.getTrapKindIndex())),
+                    () -> assertEquals(0, s.trapTimeout(0)),
+                    () -> assertEquals(0, s.trapTimeout(1)));
         }
 
         /**

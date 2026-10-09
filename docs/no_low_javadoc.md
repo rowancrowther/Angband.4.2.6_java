@@ -48,22 +48,7 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/strings/MessageTag.java`
-
-10 missing, 0 low
-
-- L20: enum `MessageTag` - MISSING
-- L21: method `MSG_TAG_VERB_IS` - MISSING
-- L21: enum-const `MSG_TAG_NONE` - MISSING
-- L22: enum-const `MSG_TAG_NAME` - MISSING
-- L23: enum-const `MSG_TAG_KIND` - MISSING
-- L24: enum-const `MSG_TAG_VERB` - MISSING
-- L25: enum-const `MSG_TAG_VERB_IS` - MISSING
-- L27: field `size` - MISSING
-- L33: method `getTag` - MISSING
-- L46: method `getSize` - MISSING
-
-### `middle/game/globals/registry/TerrainRegistry.java`
+###  `middle/game/globals/registry/TerrainRegistry.java`
 
 9 missing, 1 low
 

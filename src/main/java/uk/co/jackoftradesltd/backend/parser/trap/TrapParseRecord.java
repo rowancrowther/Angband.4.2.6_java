@@ -30,9 +30,9 @@ import java.util.List;
  * <p>Two subtleties are baked into the field wiring (matching C's {@code parse_trap_name}/
  * {@code parse_trap_desc}): the {@code name:} line's second field is captured as {@link #description}
  * (C {@code desc}, the {@code lookupTrap} key) while the {@code desc:} directive is captured as
- * {@link #text} (C {@code text}); and {@link #index} is vestigial — there is no {@code index:}
- * directive, so it is always {@code "0"} and the assembler assigns the real {@code trapKindIndex}
- * by file position instead.
+ * {@link #text} (C {@code text}); and the assembler assigns the real {@code trapKindIndex}
+ * instead, by position among the records that assemble, so a record dropped on a soft error
+ * shifts the indices of the ones after it.
  *
  * @param name        the {@code name:} line's first field — the (non-unique) grouping name
  * @param text        the {@code desc:} directive's flavour text (C {@code text})
@@ -41,7 +41,6 @@ import java.util.List;
  * @param saveMessage the {@code msg-good:} message (shown on a successful save)
  * @param failMessage the {@code msg-bad:} message (shown on a failed save)
  * @param xtraMessage the {@code msg-xtra:} message (shown when the extra effect fires)
- * @param index       vestigial — always {@code "0"} (see above)
  * @param glyph       the display glyph from {@code graphics:}
  * @param colour      the raw colour code or name from {@code graphics:}
  * @param rarity      the {@code appear:} line's first field
@@ -62,7 +61,6 @@ public record TrapParseRecord(String name,
                               String saveMessage,
                               String failMessage,
                               String xtraMessage,
-                              String index,
                               String glyph,
                               String colour,
                               String rarity,

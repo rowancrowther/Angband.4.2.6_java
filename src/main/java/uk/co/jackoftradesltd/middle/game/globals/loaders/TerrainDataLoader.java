@@ -49,9 +49,18 @@ public class TerrainDataLoader {
      * Load the trap kinds from {@code trap.txt} into {@link TerrainRegistry}.
      * <p>
      * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the records that did
-     * assemble are registered regardless, per the partial-results contract: a single unusable record
-     * costs that record, not the whole file. Nothing else loads from the trap registry, so a wholly
-     * empty parse is left to surface at the point of use rather than stopping the load here.
+     * assemble are registered, per the partial-results contract: a single unusable record costs that
+     * record, not the whole file. The one exception is the kind at index 0. {@code lookup_trap()} in
+     * {@code trap.c} never returns the first kind, which in {@code trap.txt} is {@code no trap}, and a
+     * dropped record takes no index, so a dropped {@code no trap} would hand index 0 to the next kind
+     * and {@code lookupTrap} would skip it. The load therefore stops, with a fatal log and a
+     * {@link RuntimeException}, if the assembled list is empty or its first kind is not named
+     * {@code no trap}. The registry is left as it was. C has no such check: it quits on any bad record.
+     *
+     * <p>Function loadTraps coded before 261009, index-0 guard added on 261009, commented in full on 261009.
+     *
+     * @throws IOException      if {@code trap.txt} cannot be read
+     * @throws RuntimeException if no kinds assembled or the first one is not {@code no trap}
      */
     public static void loadTraps() throws IOException {
         TrapReader parser = new TrapReader();
@@ -61,6 +70,13 @@ public class TerrainDataLoader {
             ParseResult<TrapKind> result = parser.parseWithResults(filename);
 
             ErrorParsing.reportAndCheck(filename, result, logger);
+            
+            if (result.items().isEmpty() 
+                    || !"no trap".equals(result.items().getFirst().getTrapKindName())) {
+                // Trap "no trap" not found at index 0, crash out of the game
+                logger.fatal("Trap 'no trap' not found at traps index 0. Unable to continue");
+                throw new RuntimeException("Trap 'no trap' not found at traps index 0.");
+            }
 
             TerrainRegistry.setTrapInfo(result.items());
         } catch (IOException e) {

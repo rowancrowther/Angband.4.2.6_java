@@ -136,7 +136,6 @@ trapRecord
             StringBuilder saveMessageSB = new StringBuilder();
             StringBuilder failMessageSB = new StringBuilder();
             StringBuilder xtraMessageSB = new StringBuilder();
-            String indexInit = "0";
             String glyphInit = "";
             String colourInit = "";
             String rarityInit = "";
@@ -154,7 +153,7 @@ trapRecord
             $trap = new TrapParseRecord(nameInit, descSB.toString(),
                 descInit, messageSB.toString(), saveMessageSB.toString(),
                 failMessageSB.toString(), xtraMessageSB.toString(),
-                indexInit, glyphInit, colourInit, rarityInit,
+                glyphInit, colourInit, rarityInit,
                 minDepthInit, maxNumInit, powerInit, flagsInit,
                 saveFlagsInit, effectInit, xtraEffectInit, line);
         }

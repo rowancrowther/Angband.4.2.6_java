@@ -282,11 +282,11 @@ public class TrapGrammar extends Parser {
 			"GLYPH_COLON_SWITCH", "GLYPH_EOL"
 		};
 	}
+	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
+	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
-	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
-	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
 
 	@Override
 	@Deprecated
@@ -421,984 +421,6 @@ public class TrapGrammar extends Parser {
 		return _localctx;
 	}
 
-	public final EffectContext effect() throws RecognitionException {
-		EffectContext _localctx = new EffectContext(_ctx, getState());
-		enterRule(_localctx, 36, RULE_effect);
-
-		            ((EffectContext)_localctx).wrapper =  "";
-		            ((EffectContext)_localctx).radius =  "";
-		            ((EffectContext)_localctx).other =  "";
-		        
-		int _la;
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(220);
-			match(EFFECT);
-			setState(221);
-			((EffectContext)_localctx).t = match(UCASE);
-
-			                ((EffectContext)_localctx).type =  ((EffectContext)_localctx).t.getText();
-			            
-			setState(236);
-			_errHandler.sync(this);
-			_la = _input.LA(1);
-			if (_la==COLON) {
-				{
-				setState(223);
-				match(COLON);
-				setState(224);
-				((EffectContext)_localctx).st = match(UCASE);
-
-				                ((EffectContext)_localctx).wrapper =  ((EffectContext)_localctx).st.getText();
-				            
-				setState(234);
-				_errHandler.sync(this);
-				_la = _input.LA(1);
-				if (_la==COLON) {
-					{
-					setState(226);
-					match(COLON);
-					setState(227);
-					((EffectContext)_localctx).rad = match(INTEGER);
-
-					                ((EffectContext)_localctx).radius =  ((EffectContext)_localctx).rad.getText();
-					            
-					setState(232);
-					_errHandler.sync(this);
-					_la = _input.LA(1);
-					if (_la==COLON) {
-						{
-						setState(229);
-						match(COLON);
-						setState(230);
-						((EffectContext)_localctx).oth = match(INTEGER);
-
-						                ((EffectContext)_localctx).other =  ((EffectContext)_localctx).oth.getText();
-						            
-						}
-					}
-
-					}
-				}
-
-				}
-			}
-
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	public final AppearContext appear() throws RecognitionException {
-		AppearContext _localctx = new AppearContext(_ctx, getState());
-		enterRule(_localctx, 6, RULE_appear);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(66);
-			match(APPEAR);
-			setState(67);
-			((AppearContext)_localctx).r = match(DELIMITED_INTEGER);
-			setState(68);
-			match(DELIMITER_COLON);
-			setState(69);
-			((AppearContext)_localctx).n = match(DELIMITED_INTEGER);
-			setState(70);
-			match(DELIMITER_COLON);
-			setState(71);
-			((AppearContext)_localctx).x = match(DELIMITED_INTEGER);
-
-			                ((AppearContext)_localctx).rarity =  ((AppearContext)_localctx).r.getText();
-			                ((AppearContext)_localctx).minDepth =  ((AppearContext)_localctx).n.getText();
-			                ((AppearContext)_localctx).maxNum =  ((AppearContext)_localctx).x.getText();
-			            
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class RecordCountContext extends ParserRuleContext {
-		public String declaredRecordCount;
-		public Token INTEGER;
-		public RecordCountContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode RECORD_COUNT() { return getToken(TrapGrammar.RECORD_COUNT, 0); }
-
-		public TerminalNode INTEGER() { return getToken(TrapGrammar.INTEGER, 0); }
-
-		@Override public int getRuleIndex() { return RULE_recordCount; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).enterRecordCount(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).exitRecordCount(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof TrapGrammarVisitor ) return ((TrapGrammarVisitor<? extends T>)visitor).visitRecordCount(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	public final VisibilityContext visibility() throws RecognitionException {
-		VisibilityContext _localctx = new VisibilityContext(_ctx, getState());
-		enterRule(_localctx, 8, RULE_visibility);
-		int _la;
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(74);
-			match(VISIBILITY);
-			setState(75);
-			((VisibilityContext)_localctx).d = _input.LT(1);
-			_la = _input.LA(1);
-			if ( !(_la==DICE_SIMPLE_VALUE || _la==DICE_COMPLEX_VALUE) ) {
-				((VisibilityContext)_localctx).d = (Token)_errHandler.recoverInline(this);
-			}
-			else {
-				if ( _input.LA(1)==Token.EOF ) matchedEOF = true;
-				_errHandler.reportMatch(this);
-				consume();
-			}
-			 ((VisibilityContext)_localctx).vis =  ((VisibilityContext)_localctx).d.getText(); 
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class NameContext extends ParserRuleContext {
-		public String nameStr;
-		public String textStr;
-		public int line;
-		public Token n;
-		public Token t;
-		public NameContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode NAME() { return getToken(TrapGrammar.NAME, 0); }
-
-		public TerminalNode DELIMITER_COLON() { return getToken(TrapGrammar.DELIMITER_COLON, 0); }
-
-		public List<TerminalNode> DELIMITED_STRING() { return getTokens(TrapGrammar.DELIMITED_STRING); }
-
-		public TerminalNode DELIMITED_STRING(int i) {
-			return getToken(TrapGrammar.DELIMITED_STRING, i);
-		}
-
-		@Override public int getRuleIndex() { return RULE_name; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).enterName(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).exitName(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof TrapGrammarVisitor ) return ((TrapGrammarVisitor<? extends T>)visitor).visitName(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	public final DescContext desc() throws RecognitionException {
-		DescContext _localctx = new DescContext(_ctx, getState());
-		enterRule(_localctx, 10, RULE_desc);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(78);
-			match(DESC);
-			setState(79);
-			((DescContext)_localctx).STRING = match(STRING);
-			 ((DescContext)_localctx).line =  ((DescContext)_localctx).STRING.getText(); 
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class GraphicsContext extends ParserRuleContext {
-		public String glyph;
-		public String colour;
-		public Token g;
-		public Token c;
-		public GraphicsContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode GRAPHICS() { return getToken(TrapGrammar.GRAPHICS, 0); }
-
-		public TerminalNode GLYPH_COLON_SWITCH() { return getToken(TrapGrammar.GLYPH_COLON_SWITCH, 0); }
-
-		public TerminalNode GLYPH_VALUES() { return getToken(TrapGrammar.GLYPH_VALUES, 0); }
-
-		public TerminalNode COLOUR_VALUES() { return getToken(TrapGrammar.COLOUR_VALUES, 0); }
-
-		@Override public int getRuleIndex() { return RULE_graphics; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).enterGraphics(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).exitGraphics(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof TrapGrammarVisitor ) return ((TrapGrammarVisitor<? extends T>)visitor).visitGraphics(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	public final FlagsContext flags() throws RecognitionException {
-		FlagsContext _localctx = new FlagsContext(_ctx, getState());
-		enterRule(_localctx, 12, RULE_flags);
-		int _la;
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			 ((FlagsContext)_localctx).flagList =  new ArrayList<>(); 
-			setState(83);
-			match(FLAGS);
-			setState(84);
-			((FlagsContext)_localctx).f1 = match(FLAG);
-			 _localctx.flagList.add(((FlagsContext)_localctx).f1.getText()); 
-			setState(91);
-			_errHandler.sync(this);
-			_la = _input.LA(1);
-			while (_la==FLAG_OR) {
-				{
-				{
-				setState(86);
-				match(FLAG_OR);
-				setState(87);
-				((FlagsContext)_localctx).f2 = match(FLAG);
-				 _localctx.flagList.add(((FlagsContext)_localctx).f2.getText()); 
-				}
-				}
-				setState(93);
-				_errHandler.sync(this);
-				_la = _input.LA(1);
-			}
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class AppearContext extends ParserRuleContext {
-		public String rarity;
-		public String minDepth;
-		public String maxNum;
-		public Token r;
-		public Token n;
-		public Token x;
-		public AppearContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode APPEAR() { return getToken(TrapGrammar.APPEAR, 0); }
-
-		public List<TerminalNode> DELIMITER_COLON() { return getTokens(TrapGrammar.DELIMITER_COLON); }
-
-		public TerminalNode DELIMITER_COLON(int i) {
-			return getToken(TrapGrammar.DELIMITER_COLON, i);
-		}
-
-		public List<TerminalNode> DELIMITED_INTEGER() { return getTokens(TrapGrammar.DELIMITED_INTEGER); }
-
-		public TerminalNode DELIMITED_INTEGER(int i) {
-			return getToken(TrapGrammar.DELIMITED_INTEGER, i);
-		}
-
-		@Override public int getRuleIndex() { return RULE_appear; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).enterAppear(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).exitAppear(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof TrapGrammarVisitor ) return ((TrapGrammarVisitor<? extends T>)visitor).visitAppear(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	public final MsgContext msg() throws RecognitionException {
-		MsgContext _localctx = new MsgContext(_ctx, getState());
-		enterRule(_localctx, 14, RULE_msg);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(94);
-			match(MSG);
-			setState(95);
-			((MsgContext)_localctx).STRING = match(STRING);
-			 ((MsgContext)_localctx).msgStr =  ((MsgContext)_localctx).STRING.getText(); 
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class VisibilityContext extends ParserRuleContext {
-		public String vis;
-		public Token d;
-		public VisibilityContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode VISIBILITY() { return getToken(TrapGrammar.VISIBILITY, 0); }
-
-		public TerminalNode DICE_SIMPLE_VALUE() { return getToken(TrapGrammar.DICE_SIMPLE_VALUE, 0); }
-
-		public TerminalNode DICE_COMPLEX_VALUE() { return getToken(TrapGrammar.DICE_COMPLEX_VALUE, 0); }
-
-		@Override public int getRuleIndex() { return RULE_visibility; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).enterVisibility(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).exitVisibility(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof TrapGrammarVisitor ) return ((TrapGrammarVisitor<? extends T>)visitor).visitVisibility(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	public final SaveContext save() throws RecognitionException {
-		SaveContext _localctx = new SaveContext(_ctx, getState());
-		enterRule(_localctx, 16, RULE_save);
-		int _la;
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			 ((SaveContext)_localctx).saveFlags =  new ArrayList<>(); 
-			setState(99);
-			match(SAVE);
-			setState(100);
-			((SaveContext)_localctx).f1 = match(FLAG);
-			 _localctx.saveFlags.add(((SaveContext)_localctx).f1.getText()); 
-			setState(107);
-			_errHandler.sync(this);
-			_la = _input.LA(1);
-			while (_la==FLAG_OR) {
-				{
-				{
-				setState(102);
-				match(FLAG_OR);
-				setState(103);
-				((SaveContext)_localctx).f2 = match(FLAG);
-				 _localctx.saveFlags.add(((SaveContext)_localctx).f2.getText()); 
-				}
-				}
-				setState(109);
-				_errHandler.sync(this);
-				_la = _input.LA(1);
-			}
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class DescContext extends ParserRuleContext {
-		public String line;
-		public Token STRING;
-		public DescContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode DESC() { return getToken(TrapGrammar.DESC, 0); }
-
-		public TerminalNode STRING() { return getToken(TrapGrammar.STRING, 0); }
-
-		@Override public int getRuleIndex() { return RULE_desc; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).enterDesc(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).exitDesc(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof TrapGrammarVisitor ) return ((TrapGrammarVisitor<? extends T>)visitor).visitDesc(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	public final MsgGoodContext msgGood() throws RecognitionException {
-		MsgGoodContext _localctx = new MsgGoodContext(_ctx, getState());
-		enterRule(_localctx, 18, RULE_msgGood);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(110);
-			match(MSG_GOOD);
-			setState(111);
-			((MsgGoodContext)_localctx).STRING = match(STRING);
-			 ((MsgGoodContext)_localctx).goodMsg =  ((MsgGoodContext)_localctx).STRING.getText(); 
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class FlagsContext extends ParserRuleContext {
-		public List<String> flagList;
-		public Token f1;
-		public Token f2;
-		public FlagsContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode FLAGS() { return getToken(TrapGrammar.FLAGS, 0); }
-
-		public List<TerminalNode> FLAG() { return getTokens(TrapGrammar.FLAG); }
-
-		public TerminalNode FLAG(int i) {
-			return getToken(TrapGrammar.FLAG, i);
-		}
-
-		public List<TerminalNode> FLAG_OR() { return getTokens(TrapGrammar.FLAG_OR); }
-
-		public TerminalNode FLAG_OR(int i) {
-			return getToken(TrapGrammar.FLAG_OR, i);
-		}
-
-		@Override public int getRuleIndex() { return RULE_flags; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).enterFlags(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).exitFlags(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof TrapGrammarVisitor ) return ((TrapGrammarVisitor<? extends T>)visitor).visitFlags(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	public final MsgBadContext msgBad() throws RecognitionException {
-		MsgBadContext _localctx = new MsgBadContext(_ctx, getState());
-		enterRule(_localctx, 20, RULE_msgBad);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(114);
-			match(MSG_BAD);
-			setState(115);
-			((MsgBadContext)_localctx).STRING = match(STRING);
-			 ((MsgBadContext)_localctx).badMsg =  ((MsgBadContext)_localctx).STRING.getText(); 
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class MsgContext extends ParserRuleContext {
-		public String msgStr;
-		public Token STRING;
-		public MsgContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode MSG() { return getToken(TrapGrammar.MSG, 0); }
-
-		public TerminalNode STRING() { return getToken(TrapGrammar.STRING, 0); }
-
-		@Override public int getRuleIndex() { return RULE_msg; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).enterMsg(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).exitMsg(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof TrapGrammarVisitor ) return ((TrapGrammarVisitor<? extends T>)visitor).visitMsg(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	public final MsgXtraContext msgXtra() throws RecognitionException {
-		MsgXtraContext _localctx = new MsgXtraContext(_ctx, getState());
-		enterRule(_localctx, 22, RULE_msgXtra);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(118);
-			match(MSG_XTRA);
-			setState(119);
-			((MsgXtraContext)_localctx).STRING = match(STRING);
-			 ((MsgXtraContext)_localctx).msgExtra =  ((MsgXtraContext)_localctx).STRING.getText(); 
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class SaveContext extends ParserRuleContext {
-		public List<String> saveFlags;
-		public Token f1;
-		public Token f2;
-		public SaveContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode SAVE() { return getToken(TrapGrammar.SAVE, 0); }
-
-		public List<TerminalNode> FLAG() { return getTokens(TrapGrammar.FLAG); }
-
-		public TerminalNode FLAG(int i) {
-			return getToken(TrapGrammar.FLAG, i);
-		}
-
-		public List<TerminalNode> FLAG_OR() { return getTokens(TrapGrammar.FLAG_OR); }
-
-		public TerminalNode FLAG_OR(int i) {
-			return getToken(TrapGrammar.FLAG_OR, i);
-		}
-
-		@Override public int getRuleIndex() { return RULE_save; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).enterSave(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).exitSave(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof TrapGrammarVisitor ) return ((TrapGrammarVisitor<? extends T>)visitor).visitSave(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	public final EffectXtraContext effectXtra() throws RecognitionException {
-		EffectXtraContext _localctx = new EffectXtraContext(_ctx, getState());
-		enterRule(_localctx, 24, RULE_effectXtra);
-		int _la;
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			 ((EffectXtraContext)_localctx).effectSubtype =  ""; ((EffectXtraContext)_localctx).radius =  ""; ((EffectXtraContext)_localctx).parameter =  ""; 
-			setState(123);
-			match(EFFECT_XTRA);
-			setState(124);
-			((EffectXtraContext)_localctx).t = match(UCASE);
-			 ((EffectXtraContext)_localctx).effectType =  ((EffectXtraContext)_localctx).t.getText(); 
-			setState(139);
-			_errHandler.sync(this);
-			_la = _input.LA(1);
-			if (_la==COLON) {
-				{
-				setState(126);
-				match(COLON);
-				setState(127);
-				((EffectXtraContext)_localctx).s = match(UCASE);
-				 ((EffectXtraContext)_localctx).effectSubtype =  ((EffectXtraContext)_localctx).s.getText(); 
-				setState(137);
-				_errHandler.sync(this);
-				_la = _input.LA(1);
-				if (_la==COLON) {
-					{
-					setState(129);
-					match(COLON);
-					setState(130);
-					((EffectXtraContext)_localctx).r = match(INTEGER);
-					 ((EffectXtraContext)_localctx).radius =  ((EffectXtraContext)_localctx).r.getText(); 
-					setState(135);
-					_errHandler.sync(this);
-					_la = _input.LA(1);
-					if (_la==COLON) {
-						{
-						setState(132);
-						match(COLON);
-						setState(133);
-						((EffectXtraContext)_localctx).p = match(INTEGER);
-						 ((EffectXtraContext)_localctx).parameter =  ((EffectXtraContext)_localctx).p.getText(); 
-						}
-					}
-
-					}
-				}
-
-				}
-			}
-
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class MsgGoodContext extends ParserRuleContext {
-		public String goodMsg;
-		public Token STRING;
-		public MsgGoodContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode MSG_GOOD() { return getToken(TrapGrammar.MSG_GOOD, 0); }
-
-		public TerminalNode STRING() { return getToken(TrapGrammar.STRING, 0); }
-
-		@Override public int getRuleIndex() { return RULE_msgGood; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).enterMsgGood(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).exitMsgGood(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof TrapGrammarVisitor ) return ((TrapGrammarVisitor<? extends T>)visitor).visitMsgGood(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	public final DiceXtraContext diceXtra() throws RecognitionException {
-		DiceXtraContext _localctx = new DiceXtraContext(_ctx, getState());
-		enterRule(_localctx, 26, RULE_diceXtra);
-		int _la;
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(141);
-			match(DICE_XTRA);
-			setState(142);
-			((DiceXtraContext)_localctx).d = _input.LT(1);
-			_la = _input.LA(1);
-			if ( !(_la==DICE_SIMPLE_VALUE || _la==DICE_COMPLEX_VALUE) ) {
-				((DiceXtraContext)_localctx).d = (Token)_errHandler.recoverInline(this);
-			}
-			else {
-				if ( _input.LA(1)==Token.EOF ) matchedEOF = true;
-				_errHandler.reportMatch(this);
-				consume();
-			}
-			 ((DiceXtraContext)_localctx).complexDiceValue =  ((DiceXtraContext)_localctx).d.getText(); 
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class MsgBadContext extends ParserRuleContext {
-		public String badMsg;
-		public Token STRING;
-		public MsgBadContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode MSG_BAD() { return getToken(TrapGrammar.MSG_BAD, 0); }
-
-		public TerminalNode STRING() { return getToken(TrapGrammar.STRING, 0); }
-
-		@Override public int getRuleIndex() { return RULE_msgBad; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).enterMsgBad(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).exitMsgBad(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof TrapGrammarVisitor ) return ((TrapGrammarVisitor<? extends T>)visitor).visitMsgBad(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	public final ExprXtraContext exprXtra() throws RecognitionException {
-		ExprXtraContext _localctx = new ExprXtraContext(_ctx, getState());
-		enterRule(_localctx, 28, RULE_exprXtra);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(145);
-			match(EXPR_XTRA);
-			setState(146);
-			((ExprXtraContext)_localctx).EXPR_XTRA_CHAR = match(EXPR_XTRA_CHAR);
-			setState(147);
-			match(EXPR_XTRA_COLON);
-			setState(148);
-			((ExprXtraContext)_localctx).EXPR_XTRA_UCASE = match(EXPR_XTRA_UCASE);
-			setState(149);
-			match(EXPR_XTRA_COLON);
-			setState(150);
-			((ExprXtraContext)_localctx).EXPR_XTRA_OP = match(EXPR_XTRA_OP);
-
-			                ((ExprXtraContext)_localctx).exprChar =  ((ExprXtraContext)_localctx).EXPR_XTRA_CHAR.getText();
-			                ((ExprXtraContext)_localctx).baseName =  ((ExprXtraContext)_localctx).EXPR_XTRA_UCASE.getText();
-			                ((ExprXtraContext)_localctx).op =  ((ExprXtraContext)_localctx).EXPR_XTRA_OP.getText();
-			            
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class MsgXtraContext extends ParserRuleContext {
-		public String msgExtra;
-		public Token STRING;
-		public MsgXtraContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode MSG_XTRA() { return getToken(TrapGrammar.MSG_XTRA, 0); }
-
-		public TerminalNode STRING() { return getToken(TrapGrammar.STRING, 0); }
-
-		@Override public int getRuleIndex() { return RULE_msgXtra; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).enterMsgXtra(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).exitMsgXtra(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof TrapGrammarVisitor ) return ((TrapGrammarVisitor<? extends T>)visitor).visitMsgXtra(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	public final EffectXtraBlockContext effectXtraBlock() throws RecognitionException {
-		EffectXtraBlockContext _localctx = new EffectXtraBlockContext(_ctx, getState());
-		enterRule(_localctx, 30, RULE_effectXtraBlock);
-		int _la;
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			 ((EffectXtraBlockContext)_localctx).complexDiceValue =  ""; ((EffectXtraBlockContext)_localctx).exprChar =  ""; ((EffectXtraBlockContext)_localctx).baseName =  ""; ((EffectXtraBlockContext)_localctx).op =  ""; ((EffectXtraBlockContext)_localctx).msgExtra =  ""; 
-			setState(154);
-			((EffectXtraBlockContext)_localctx).effectXtra = effectXtra();
-			 ((EffectXtraBlockContext)_localctx).effectType =  ((EffectXtraBlockContext)_localctx).effectXtra.effectType;
-			                          ((EffectXtraBlockContext)_localctx).effectSubtype =  ((EffectXtraBlockContext)_localctx).effectXtra.effectSubtype;
-			                          ((EffectXtraBlockContext)_localctx).radius =  ((EffectXtraBlockContext)_localctx).effectXtra.radius;
-			                          ((EffectXtraBlockContext)_localctx).parameter =  ((EffectXtraBlockContext)_localctx).effectXtra.parameter; 
-			setState(159);
-			_errHandler.sync(this);
-			_la = _input.LA(1);
-			if (_la==DICE_XTRA) {
-				{
-				setState(156);
-				((EffectXtraBlockContext)_localctx).diceXtra = diceXtra();
-				 ((EffectXtraBlockContext)_localctx).complexDiceValue =  ((EffectXtraBlockContext)_localctx).diceXtra.complexDiceValue; 
-				}
-			}
-
-			setState(164);
-			_errHandler.sync(this);
-			_la = _input.LA(1);
-			if (_la==EXPR_XTRA) {
-				{
-				setState(161);
-				((EffectXtraBlockContext)_localctx).exprXtra = exprXtra();
-				 ((EffectXtraBlockContext)_localctx).exprChar =  ((EffectXtraBlockContext)_localctx).exprXtra.exprChar;
-				                       ((EffectXtraBlockContext)_localctx).baseName =  ((EffectXtraBlockContext)_localctx).exprXtra.baseName;
-				                       ((EffectXtraBlockContext)_localctx).op =  ((EffectXtraBlockContext)_localctx).exprXtra.op; 
-				}
-			}
-
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	@SuppressWarnings("CheckReturnValue")
-	public static class EffectXtraContext extends ParserRuleContext {
-		public String effectType;
-		public String effectSubtype;
-		public String radius;
-		public String parameter;
-		public Token t;
-		public Token s;
-		public Token r;
-		public Token p;
-		public EffectXtraContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		public TerminalNode EFFECT_XTRA() { return getToken(TrapGrammar.EFFECT_XTRA, 0); }
-
-		public List<TerminalNode> UCASE() { return getTokens(TrapGrammar.UCASE); }
-
-		public TerminalNode UCASE(int i) {
-			return getToken(TrapGrammar.UCASE, i);
-		}
-
-		public List<TerminalNode> COLON() { return getTokens(TrapGrammar.COLON); }
-
-		public TerminalNode COLON(int i) {
-			return getToken(TrapGrammar.COLON, i);
-		}
-
-		public List<TerminalNode> INTEGER() { return getTokens(TrapGrammar.INTEGER); }
-
-		public TerminalNode INTEGER(int i) {
-			return getToken(TrapGrammar.INTEGER, i);
-		}
-
-		@Override public int getRuleIndex() { return RULE_effectXtra; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).enterEffectXtra(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).exitEffectXtra(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof TrapGrammarVisitor ) return ((TrapGrammarVisitor<? extends T>)visitor).visitEffectXtra(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
 	public final TrapRecordContext trapRecord() throws RecognitionException {
 		TrapRecordContext _localctx = new TrapRecordContext(_ctx, getState());
 		enterRule(_localctx, 32, RULE_trapRecord);
@@ -1409,7 +431,6 @@ public class TrapGrammar extends Parser {
 		            StringBuilder saveMessageSB = new StringBuilder();
 		            StringBuilder failMessageSB = new StringBuilder();
 		            StringBuilder xtraMessageSB = new StringBuilder();
-		            String indexInit = "0";
 		            String glyphInit = "";
 		            String colourInit = "";
 		            String rarityInit = "";
@@ -1548,7 +569,7 @@ public class TrapGrammar extends Parser {
 			            ((TrapRecordContext)_localctx).trap =  new TrapParseRecord(nameInit, descSB.toString(),
 			                descInit, messageSB.toString(), saveMessageSB.toString(),
 			                failMessageSB.toString(), xtraMessageSB.toString(),
-			                indexInit, glyphInit, colourInit, rarityInit,
+			                glyphInit, colourInit, rarityInit,
 			                minDepthInit, maxNumInit, powerInit, flagsInit,
 			                saveFlagsInit, effectInit, xtraEffectInit, line);
 			        
@@ -1562,6 +583,983 @@ public class TrapGrammar extends Parser {
 			exitRule();
 		}
 		return _localctx;
+	}
+
+	public final AppearContext appear() throws RecognitionException {
+		AppearContext _localctx = new AppearContext(_ctx, getState());
+		enterRule(_localctx, 6, RULE_appear);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(66);
+			match(APPEAR);
+			setState(67);
+			((AppearContext)_localctx).r = match(DELIMITED_INTEGER);
+			setState(68);
+			match(DELIMITER_COLON);
+			setState(69);
+			((AppearContext)_localctx).n = match(DELIMITED_INTEGER);
+			setState(70);
+			match(DELIMITER_COLON);
+			setState(71);
+			((AppearContext)_localctx).x = match(DELIMITED_INTEGER);
+
+			                ((AppearContext)_localctx).rarity =  ((AppearContext)_localctx).r.getText();
+			                ((AppearContext)_localctx).minDepth =  ((AppearContext)_localctx).n.getText();
+			                ((AppearContext)_localctx).maxNum =  ((AppearContext)_localctx).x.getText();
+			            
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	public final EffectContext effect() throws RecognitionException {
+		EffectContext _localctx = new EffectContext(_ctx, getState());
+		enterRule(_localctx, 36, RULE_effect);
+
+		            ((EffectContext)_localctx).wrapper =  "";
+		            ((EffectContext)_localctx).radius =  "";
+		            ((EffectContext)_localctx).other =  "";
+		        
+		int _la;
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(220);
+			match(EFFECT);
+			setState(221);
+			((EffectContext)_localctx).t = match(UCASE);
+
+			                ((EffectContext)_localctx).type =  ((EffectContext)_localctx).t.getText();
+			            
+			setState(236);
+			_errHandler.sync(this);
+			_la = _input.LA(1);
+			if (_la==COLON) {
+				{
+				setState(223);
+				match(COLON);
+				setState(224);
+				((EffectContext)_localctx).st = match(UCASE);
+
+				                ((EffectContext)_localctx).wrapper =  ((EffectContext)_localctx).st.getText();
+				            
+				setState(234);
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+				if (_la==COLON) {
+					{
+					setState(226);
+					match(COLON);
+					setState(227);
+					((EffectContext)_localctx).rad = match(INTEGER);
+
+					                ((EffectContext)_localctx).radius =  ((EffectContext)_localctx).rad.getText();
+					            
+					setState(232);
+					_errHandler.sync(this);
+					_la = _input.LA(1);
+					if (_la==COLON) {
+						{
+						setState(229);
+						match(COLON);
+						setState(230);
+						((EffectContext)_localctx).oth = match(INTEGER);
+
+						                ((EffectContext)_localctx).other =  ((EffectContext)_localctx).oth.getText();
+						            
+						}
+					}
+
+					}
+				}
+
+				}
+			}
+
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	public final VisibilityContext visibility() throws RecognitionException {
+		VisibilityContext _localctx = new VisibilityContext(_ctx, getState());
+		enterRule(_localctx, 8, RULE_visibility);
+		int _la;
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(74);
+			match(VISIBILITY);
+			setState(75);
+			((VisibilityContext)_localctx).d = _input.LT(1);
+			_la = _input.LA(1);
+			if ( !(_la==DICE_SIMPLE_VALUE || _la==DICE_COMPLEX_VALUE) ) {
+				((VisibilityContext)_localctx).d = (Token)_errHandler.recoverInline(this);
+			}
+			else {
+				if ( _input.LA(1)==Token.EOF ) matchedEOF = true;
+				_errHandler.reportMatch(this);
+				consume();
+			}
+			 ((VisibilityContext)_localctx).vis =  ((VisibilityContext)_localctx).d.getText(); 
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class RecordCountContext extends ParserRuleContext {
+		public String declaredRecordCount;
+		public Token INTEGER;
+		public RecordCountContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode RECORD_COUNT() { return getToken(TrapGrammar.RECORD_COUNT, 0); }
+
+		public TerminalNode INTEGER() { return getToken(TrapGrammar.INTEGER, 0); }
+
+		@Override public int getRuleIndex() { return RULE_recordCount; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).enterRecordCount(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).exitRecordCount(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof TrapGrammarVisitor ) return ((TrapGrammarVisitor<? extends T>)visitor).visitRecordCount(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
+	public final DescContext desc() throws RecognitionException {
+		DescContext _localctx = new DescContext(_ctx, getState());
+		enterRule(_localctx, 10, RULE_desc);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(78);
+			match(DESC);
+			setState(79);
+			((DescContext)_localctx).STRING = match(STRING);
+			 ((DescContext)_localctx).line =  ((DescContext)_localctx).STRING.getText(); 
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class NameContext extends ParserRuleContext {
+		public String nameStr;
+		public String textStr;
+		public int line;
+		public Token n;
+		public Token t;
+		public NameContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode NAME() { return getToken(TrapGrammar.NAME, 0); }
+
+		public TerminalNode DELIMITER_COLON() { return getToken(TrapGrammar.DELIMITER_COLON, 0); }
+
+		public List<TerminalNode> DELIMITED_STRING() { return getTokens(TrapGrammar.DELIMITED_STRING); }
+
+		public TerminalNode DELIMITED_STRING(int i) {
+			return getToken(TrapGrammar.DELIMITED_STRING, i);
+		}
+
+		@Override public int getRuleIndex() { return RULE_name; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).enterName(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).exitName(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof TrapGrammarVisitor ) return ((TrapGrammarVisitor<? extends T>)visitor).visitName(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
+	public final FlagsContext flags() throws RecognitionException {
+		FlagsContext _localctx = new FlagsContext(_ctx, getState());
+		enterRule(_localctx, 12, RULE_flags);
+		int _la;
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			 ((FlagsContext)_localctx).flagList =  new ArrayList<>(); 
+			setState(83);
+			match(FLAGS);
+			setState(84);
+			((FlagsContext)_localctx).f1 = match(FLAG);
+			 _localctx.flagList.add(((FlagsContext)_localctx).f1.getText()); 
+			setState(91);
+			_errHandler.sync(this);
+			_la = _input.LA(1);
+			while (_la==FLAG_OR) {
+				{
+				{
+				setState(86);
+				match(FLAG_OR);
+				setState(87);
+				((FlagsContext)_localctx).f2 = match(FLAG);
+				 _localctx.flagList.add(((FlagsContext)_localctx).f2.getText()); 
+				}
+				}
+				setState(93);
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+			}
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class GraphicsContext extends ParserRuleContext {
+		public String glyph;
+		public String colour;
+		public Token g;
+		public Token c;
+		public GraphicsContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode GRAPHICS() { return getToken(TrapGrammar.GRAPHICS, 0); }
+
+		public TerminalNode GLYPH_COLON_SWITCH() { return getToken(TrapGrammar.GLYPH_COLON_SWITCH, 0); }
+
+		public TerminalNode GLYPH_VALUES() { return getToken(TrapGrammar.GLYPH_VALUES, 0); }
+
+		public TerminalNode COLOUR_VALUES() { return getToken(TrapGrammar.COLOUR_VALUES, 0); }
+
+		@Override public int getRuleIndex() { return RULE_graphics; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).enterGraphics(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).exitGraphics(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof TrapGrammarVisitor ) return ((TrapGrammarVisitor<? extends T>)visitor).visitGraphics(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
+	public final MsgContext msg() throws RecognitionException {
+		MsgContext _localctx = new MsgContext(_ctx, getState());
+		enterRule(_localctx, 14, RULE_msg);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(94);
+			match(MSG);
+			setState(95);
+			((MsgContext)_localctx).STRING = match(STRING);
+			 ((MsgContext)_localctx).msgStr =  ((MsgContext)_localctx).STRING.getText(); 
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class AppearContext extends ParserRuleContext {
+		public String rarity;
+		public String minDepth;
+		public String maxNum;
+		public Token r;
+		public Token n;
+		public Token x;
+		public AppearContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode APPEAR() { return getToken(TrapGrammar.APPEAR, 0); }
+
+		public List<TerminalNode> DELIMITER_COLON() { return getTokens(TrapGrammar.DELIMITER_COLON); }
+
+		public TerminalNode DELIMITER_COLON(int i) {
+			return getToken(TrapGrammar.DELIMITER_COLON, i);
+		}
+
+		public List<TerminalNode> DELIMITED_INTEGER() { return getTokens(TrapGrammar.DELIMITED_INTEGER); }
+
+		public TerminalNode DELIMITED_INTEGER(int i) {
+			return getToken(TrapGrammar.DELIMITED_INTEGER, i);
+		}
+
+		@Override public int getRuleIndex() { return RULE_appear; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).enterAppear(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).exitAppear(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof TrapGrammarVisitor ) return ((TrapGrammarVisitor<? extends T>)visitor).visitAppear(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
+	public final SaveContext save() throws RecognitionException {
+		SaveContext _localctx = new SaveContext(_ctx, getState());
+		enterRule(_localctx, 16, RULE_save);
+		int _la;
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			 ((SaveContext)_localctx).saveFlags =  new ArrayList<>(); 
+			setState(99);
+			match(SAVE);
+			setState(100);
+			((SaveContext)_localctx).f1 = match(FLAG);
+			 _localctx.saveFlags.add(((SaveContext)_localctx).f1.getText()); 
+			setState(107);
+			_errHandler.sync(this);
+			_la = _input.LA(1);
+			while (_la==FLAG_OR) {
+				{
+				{
+				setState(102);
+				match(FLAG_OR);
+				setState(103);
+				((SaveContext)_localctx).f2 = match(FLAG);
+				 _localctx.saveFlags.add(((SaveContext)_localctx).f2.getText()); 
+				}
+				}
+				setState(109);
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+			}
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class VisibilityContext extends ParserRuleContext {
+		public String vis;
+		public Token d;
+		public VisibilityContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode VISIBILITY() { return getToken(TrapGrammar.VISIBILITY, 0); }
+
+		public TerminalNode DICE_SIMPLE_VALUE() { return getToken(TrapGrammar.DICE_SIMPLE_VALUE, 0); }
+
+		public TerminalNode DICE_COMPLEX_VALUE() { return getToken(TrapGrammar.DICE_COMPLEX_VALUE, 0); }
+
+		@Override public int getRuleIndex() { return RULE_visibility; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).enterVisibility(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).exitVisibility(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof TrapGrammarVisitor ) return ((TrapGrammarVisitor<? extends T>)visitor).visitVisibility(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
+	public final MsgGoodContext msgGood() throws RecognitionException {
+		MsgGoodContext _localctx = new MsgGoodContext(_ctx, getState());
+		enterRule(_localctx, 18, RULE_msgGood);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(110);
+			match(MSG_GOOD);
+			setState(111);
+			((MsgGoodContext)_localctx).STRING = match(STRING);
+			 ((MsgGoodContext)_localctx).goodMsg =  ((MsgGoodContext)_localctx).STRING.getText(); 
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class DescContext extends ParserRuleContext {
+		public String line;
+		public Token STRING;
+		public DescContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode DESC() { return getToken(TrapGrammar.DESC, 0); }
+
+		public TerminalNode STRING() { return getToken(TrapGrammar.STRING, 0); }
+
+		@Override public int getRuleIndex() { return RULE_desc; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).enterDesc(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).exitDesc(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof TrapGrammarVisitor ) return ((TrapGrammarVisitor<? extends T>)visitor).visitDesc(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
+	public final MsgBadContext msgBad() throws RecognitionException {
+		MsgBadContext _localctx = new MsgBadContext(_ctx, getState());
+		enterRule(_localctx, 20, RULE_msgBad);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(114);
+			match(MSG_BAD);
+			setState(115);
+			((MsgBadContext)_localctx).STRING = match(STRING);
+			 ((MsgBadContext)_localctx).badMsg =  ((MsgBadContext)_localctx).STRING.getText(); 
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class FlagsContext extends ParserRuleContext {
+		public List<String> flagList;
+		public Token f1;
+		public Token f2;
+		public FlagsContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode FLAGS() { return getToken(TrapGrammar.FLAGS, 0); }
+
+		public List<TerminalNode> FLAG() { return getTokens(TrapGrammar.FLAG); }
+
+		public TerminalNode FLAG(int i) {
+			return getToken(TrapGrammar.FLAG, i);
+		}
+
+		public List<TerminalNode> FLAG_OR() { return getTokens(TrapGrammar.FLAG_OR); }
+
+		public TerminalNode FLAG_OR(int i) {
+			return getToken(TrapGrammar.FLAG_OR, i);
+		}
+
+		@Override public int getRuleIndex() { return RULE_flags; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).enterFlags(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).exitFlags(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof TrapGrammarVisitor ) return ((TrapGrammarVisitor<? extends T>)visitor).visitFlags(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
+	public final MsgXtraContext msgXtra() throws RecognitionException {
+		MsgXtraContext _localctx = new MsgXtraContext(_ctx, getState());
+		enterRule(_localctx, 22, RULE_msgXtra);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(118);
+			match(MSG_XTRA);
+			setState(119);
+			((MsgXtraContext)_localctx).STRING = match(STRING);
+			 ((MsgXtraContext)_localctx).msgExtra =  ((MsgXtraContext)_localctx).STRING.getText(); 
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class MsgContext extends ParserRuleContext {
+		public String msgStr;
+		public Token STRING;
+		public MsgContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode MSG() { return getToken(TrapGrammar.MSG, 0); }
+
+		public TerminalNode STRING() { return getToken(TrapGrammar.STRING, 0); }
+
+		@Override public int getRuleIndex() { return RULE_msg; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).enterMsg(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).exitMsg(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof TrapGrammarVisitor ) return ((TrapGrammarVisitor<? extends T>)visitor).visitMsg(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
+	public final EffectXtraContext effectXtra() throws RecognitionException {
+		EffectXtraContext _localctx = new EffectXtraContext(_ctx, getState());
+		enterRule(_localctx, 24, RULE_effectXtra);
+		int _la;
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			 ((EffectXtraContext)_localctx).effectSubtype =  ""; ((EffectXtraContext)_localctx).radius =  ""; ((EffectXtraContext)_localctx).parameter =  ""; 
+			setState(123);
+			match(EFFECT_XTRA);
+			setState(124);
+			((EffectXtraContext)_localctx).t = match(UCASE);
+			 ((EffectXtraContext)_localctx).effectType =  ((EffectXtraContext)_localctx).t.getText(); 
+			setState(139);
+			_errHandler.sync(this);
+			_la = _input.LA(1);
+			if (_la==COLON) {
+				{
+				setState(126);
+				match(COLON);
+				setState(127);
+				((EffectXtraContext)_localctx).s = match(UCASE);
+				 ((EffectXtraContext)_localctx).effectSubtype =  ((EffectXtraContext)_localctx).s.getText(); 
+				setState(137);
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+				if (_la==COLON) {
+					{
+					setState(129);
+					match(COLON);
+					setState(130);
+					((EffectXtraContext)_localctx).r = match(INTEGER);
+					 ((EffectXtraContext)_localctx).radius =  ((EffectXtraContext)_localctx).r.getText(); 
+					setState(135);
+					_errHandler.sync(this);
+					_la = _input.LA(1);
+					if (_la==COLON) {
+						{
+						setState(132);
+						match(COLON);
+						setState(133);
+						((EffectXtraContext)_localctx).p = match(INTEGER);
+						 ((EffectXtraContext)_localctx).parameter =  ((EffectXtraContext)_localctx).p.getText(); 
+						}
+					}
+
+					}
+				}
+
+				}
+			}
+
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class SaveContext extends ParserRuleContext {
+		public List<String> saveFlags;
+		public Token f1;
+		public Token f2;
+		public SaveContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode SAVE() { return getToken(TrapGrammar.SAVE, 0); }
+
+		public List<TerminalNode> FLAG() { return getTokens(TrapGrammar.FLAG); }
+
+		public TerminalNode FLAG(int i) {
+			return getToken(TrapGrammar.FLAG, i);
+		}
+
+		public List<TerminalNode> FLAG_OR() { return getTokens(TrapGrammar.FLAG_OR); }
+
+		public TerminalNode FLAG_OR(int i) {
+			return getToken(TrapGrammar.FLAG_OR, i);
+		}
+
+		@Override public int getRuleIndex() { return RULE_save; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).enterSave(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).exitSave(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof TrapGrammarVisitor ) return ((TrapGrammarVisitor<? extends T>)visitor).visitSave(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
+	public final DiceXtraContext diceXtra() throws RecognitionException {
+		DiceXtraContext _localctx = new DiceXtraContext(_ctx, getState());
+		enterRule(_localctx, 26, RULE_diceXtra);
+		int _la;
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(141);
+			match(DICE_XTRA);
+			setState(142);
+			((DiceXtraContext)_localctx).d = _input.LT(1);
+			_la = _input.LA(1);
+			if ( !(_la==DICE_SIMPLE_VALUE || _la==DICE_COMPLEX_VALUE) ) {
+				((DiceXtraContext)_localctx).d = (Token)_errHandler.recoverInline(this);
+			}
+			else {
+				if ( _input.LA(1)==Token.EOF ) matchedEOF = true;
+				_errHandler.reportMatch(this);
+				consume();
+			}
+			 ((DiceXtraContext)_localctx).complexDiceValue =  ((DiceXtraContext)_localctx).d.getText(); 
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class MsgGoodContext extends ParserRuleContext {
+		public String goodMsg;
+		public Token STRING;
+		public MsgGoodContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode MSG_GOOD() { return getToken(TrapGrammar.MSG_GOOD, 0); }
+
+		public TerminalNode STRING() { return getToken(TrapGrammar.STRING, 0); }
+
+		@Override public int getRuleIndex() { return RULE_msgGood; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).enterMsgGood(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).exitMsgGood(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof TrapGrammarVisitor ) return ((TrapGrammarVisitor<? extends T>)visitor).visitMsgGood(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
+	public final ExprXtraContext exprXtra() throws RecognitionException {
+		ExprXtraContext _localctx = new ExprXtraContext(_ctx, getState());
+		enterRule(_localctx, 28, RULE_exprXtra);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(145);
+			match(EXPR_XTRA);
+			setState(146);
+			((ExprXtraContext)_localctx).EXPR_XTRA_CHAR = match(EXPR_XTRA_CHAR);
+			setState(147);
+			match(EXPR_XTRA_COLON);
+			setState(148);
+			((ExprXtraContext)_localctx).EXPR_XTRA_UCASE = match(EXPR_XTRA_UCASE);
+			setState(149);
+			match(EXPR_XTRA_COLON);
+			setState(150);
+			((ExprXtraContext)_localctx).EXPR_XTRA_OP = match(EXPR_XTRA_OP);
+
+			                ((ExprXtraContext)_localctx).exprChar =  ((ExprXtraContext)_localctx).EXPR_XTRA_CHAR.getText();
+			                ((ExprXtraContext)_localctx).baseName =  ((ExprXtraContext)_localctx).EXPR_XTRA_UCASE.getText();
+			                ((ExprXtraContext)_localctx).op =  ((ExprXtraContext)_localctx).EXPR_XTRA_OP.getText();
+			            
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class MsgBadContext extends ParserRuleContext {
+		public String badMsg;
+		public Token STRING;
+		public MsgBadContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode MSG_BAD() { return getToken(TrapGrammar.MSG_BAD, 0); }
+
+		public TerminalNode STRING() { return getToken(TrapGrammar.STRING, 0); }
+
+		@Override public int getRuleIndex() { return RULE_msgBad; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).enterMsgBad(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).exitMsgBad(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof TrapGrammarVisitor ) return ((TrapGrammarVisitor<? extends T>)visitor).visitMsgBad(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
+	public final EffectXtraBlockContext effectXtraBlock() throws RecognitionException {
+		EffectXtraBlockContext _localctx = new EffectXtraBlockContext(_ctx, getState());
+		enterRule(_localctx, 30, RULE_effectXtraBlock);
+		int _la;
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			 ((EffectXtraBlockContext)_localctx).complexDiceValue =  ""; ((EffectXtraBlockContext)_localctx).exprChar =  ""; ((EffectXtraBlockContext)_localctx).baseName =  ""; ((EffectXtraBlockContext)_localctx).op =  ""; ((EffectXtraBlockContext)_localctx).msgExtra =  ""; 
+			setState(154);
+			((EffectXtraBlockContext)_localctx).effectXtra = effectXtra();
+			 ((EffectXtraBlockContext)_localctx).effectType =  ((EffectXtraBlockContext)_localctx).effectXtra.effectType;
+			                          ((EffectXtraBlockContext)_localctx).effectSubtype =  ((EffectXtraBlockContext)_localctx).effectXtra.effectSubtype;
+			                          ((EffectXtraBlockContext)_localctx).radius =  ((EffectXtraBlockContext)_localctx).effectXtra.radius;
+			                          ((EffectXtraBlockContext)_localctx).parameter =  ((EffectXtraBlockContext)_localctx).effectXtra.parameter; 
+			setState(159);
+			_errHandler.sync(this);
+			_la = _input.LA(1);
+			if (_la==DICE_XTRA) {
+				{
+				setState(156);
+				((EffectXtraBlockContext)_localctx).diceXtra = diceXtra();
+				 ((EffectXtraBlockContext)_localctx).complexDiceValue =  ((EffectXtraBlockContext)_localctx).diceXtra.complexDiceValue; 
+				}
+			}
+
+			setState(164);
+			_errHandler.sync(this);
+			_la = _input.LA(1);
+			if (_la==EXPR_XTRA) {
+				{
+				setState(161);
+				((EffectXtraBlockContext)_localctx).exprXtra = exprXtra();
+				 ((EffectXtraBlockContext)_localctx).exprChar =  ((EffectXtraBlockContext)_localctx).exprXtra.exprChar;
+				                       ((EffectXtraBlockContext)_localctx).baseName =  ((EffectXtraBlockContext)_localctx).exprXtra.baseName;
+				                       ((EffectXtraBlockContext)_localctx).op =  ((EffectXtraBlockContext)_localctx).exprXtra.op; 
+				}
+			}
+
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class MsgXtraContext extends ParserRuleContext {
+		public String msgExtra;
+		public Token STRING;
+		public MsgXtraContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+		public TerminalNode STRING() { return getToken(TrapGrammar.STRING, 0); }
+
+		public TerminalNode MSG_XTRA() { return getToken(TrapGrammar.MSG_XTRA, 0); }
+
+		@Override public int getRuleIndex() { return RULE_msgXtra; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).enterMsgXtra(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).exitMsgXtra(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof TrapGrammarVisitor ) return ((TrapGrammarVisitor<? extends T>)visitor).visitMsgXtra(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class EffectXtraContext extends ParserRuleContext {
+		public String effectType;
+		public String effectSubtype;
+		public String radius;
+		public String parameter;
+		public Token t;
+		public Token s;
+		public Token r;
+		public Token p;
+		public EffectXtraContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		public TerminalNode EFFECT_XTRA() { return getToken(TrapGrammar.EFFECT_XTRA, 0); }
+
+		public List<TerminalNode> UCASE() { return getTokens(TrapGrammar.UCASE); }
+
+		public TerminalNode UCASE(int i) {
+			return getToken(TrapGrammar.UCASE, i);
+		}
+
+		public List<TerminalNode> COLON() { return getTokens(TrapGrammar.COLON); }
+
+		public TerminalNode COLON(int i) {
+			return getToken(TrapGrammar.COLON, i);
+		}
+
+		public List<TerminalNode> INTEGER() { return getTokens(TrapGrammar.INTEGER); }
+
+		public TerminalNode INTEGER(int i) {
+			return getToken(TrapGrammar.INTEGER, i);
+		}
+
+		@Override public int getRuleIndex() { return RULE_effectXtra; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).enterEffectXtra(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof TrapGrammarListener ) ((TrapGrammarListener)listener).exitEffectXtra(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof TrapGrammarVisitor ) return ((TrapGrammarVisitor<? extends T>)visitor).visitEffectXtra(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	@SuppressWarnings("CheckReturnValue")

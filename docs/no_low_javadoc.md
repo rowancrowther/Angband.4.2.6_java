@@ -48,17 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/game/globals/registry/WorldRegistry.java`
-
-0 missing, 6 low
-
-- L76: method `getWorlds` - LOW
-- L90: method `getProjections` - LOW
-- L104: method `getQuests` - LOW
-- L195: method `getQuestMax` - LOW
-- L202: method `getProjMax` - LOW
-- L209: method `getMaxRandDepth` - LOW
-
 ### `middle/objects/ArtifactUpkeep.java`
 
 0 missing, 6 low

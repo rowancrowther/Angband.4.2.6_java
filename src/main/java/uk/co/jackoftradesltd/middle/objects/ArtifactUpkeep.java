@@ -29,25 +29,49 @@ package uk.co.jackoftradesltd.middle.objects;
  * ({@code aup_info[i].aidx == i}). The Java port has no parallel array to cross-check against, so
  * there is nothing for that field to guard.
  *
- * <p>Class ArtifactUpkeep coded on 260902, commented in full on 260903.
+ * <p>C zeroes the whole {@code aup_info} array when it is allocated ({@code obj-init.c}), so every
+ * flag starts clear. A new {@code ArtifactUpkeep} gets the same starting state from Java's
+ * default of {@code false} for a {@code boolean} field, with no constructor needed. The flags are
+ * independent: nothing in {@code obj-util.c} ties one to another.
+ *
+ * <p>Class ArtifactUpkeep coded on 260902, commented in full on 261009.
  *
  * @author Rowan Crowther
  */
 public class ArtifactUpkeep {
     /**
-     * Whether this artifact has been created — C's {@code aup_info[i].created}.
+     * Whether this artifact has been created — C's {@code aup_info[i].created}. Written by C's
+     * {@code mark_artifact_created()} and read by {@code is_artifact_created()}, both in
+     * {@code obj-util.c}; the save file stores it as one byte (0 or 1).
+     *
+     * <p>Field created coded on 260902, commented in full on 261009.
      */
     private boolean created;
     /**
-     * Whether this artifact has been seen this game — C's {@code aup_info[i].seen}.
+     * Whether this artifact has been seen this game — C's {@code aup_info[i].seen}. Written by C's
+     * {@code mark_artifact_seen()} and read by {@code is_artifact_seen()}, both in
+     * {@code obj-util.c}; the save file stores it as one byte (0 or 1).
+     *
+     * <p>Field seen coded on 260902, commented in full on 261009.
      */
     private boolean seen;
     /**
-     * Whether this artifact has ever been seen — C's {@code aup_info[i].everseen}.
+     * Whether this artifact has ever been seen — C's {@code aup_info[i].everseen}. Written by C's
+     * {@code mark_artifact_everseen()} and read by {@code is_artifact_everseen()}, both in
+     * {@code obj-util.c}; the save file stores it as one byte (0 or 1).
+     *
+     * <p>Field everseen coded on 260902, commented in full on 261009.
      */
     private boolean everseen;
 
     /**
+     * Reports whether this artifact has been created — the read of C's
+     * {@code aup_info[art->aidx].created}, as done by {@code is_artifact_created()} in
+     * {@code obj-util.c}. C's {@code assert(art->aidx == aup_info[art->aidx].aidx)} has no
+     * counterpart; see the class Javadoc.
+     *
+     * <p>Function isCreated coded on 260902, commented in full on 261009.
+     *
      * @return whether this artifact has been created
      */
     public boolean isCreated() {
@@ -55,6 +79,12 @@ public class ArtifactUpkeep {
     }
 
     /**
+     * Records whether this artifact has been created — the write of C's
+     * {@code aup_info[art->aidx].created}, as done by {@code mark_artifact_created()} in
+     * {@code obj-util.c}. The flag can be cleared as well as set.
+     *
+     * <p>Function setCreated coded on 260902, commented in full on 261009.
+     *
      * @param created whether this artifact has been created
      */
     public void setCreated(boolean created) {
@@ -62,6 +92,12 @@ public class ArtifactUpkeep {
     }
 
     /**
+     * Reports whether this artifact has been seen this game — the read of C's
+     * {@code aup_info[art->aidx].seen}, as done by {@code is_artifact_seen()} in
+     * {@code obj-util.c}.
+     *
+     * <p>Function isSeen coded on 260902, commented in full on 261009.
+     *
      * @return whether this artifact has been seen this game
      */
     public boolean isSeen() {
@@ -69,6 +105,12 @@ public class ArtifactUpkeep {
     }
 
     /**
+     * Records whether this artifact has been seen this game — the write of C's
+     * {@code aup_info[art->aidx].seen}, as done by {@code mark_artifact_seen()} in
+     * {@code obj-util.c}. The flag can be cleared as well as set.
+     *
+     * <p>Function setSeen coded on 260902, commented in full on 261009.
+     *
      * @param seen whether this artifact has been seen this game
      */
     public void setSeen(boolean seen) {
@@ -76,6 +118,12 @@ public class ArtifactUpkeep {
     }
 
     /**
+     * Reports whether this artifact has ever been seen — the read of C's
+     * {@code aup_info[art->aidx].everseen}, as done by {@code is_artifact_everseen()} in
+     * {@code obj-util.c}.
+     *
+     * <p>Function isEverseen coded on 260902, commented in full on 261009.
+     *
      * @return whether this artifact has ever been seen
      */
     public boolean isEverseen() {
@@ -83,6 +131,12 @@ public class ArtifactUpkeep {
     }
 
     /**
+     * Records whether this artifact has ever been seen — the write of C's
+     * {@code aup_info[art->aidx].everseen}, as done by {@code mark_artifact_everseen()} in
+     * {@code obj-util.c}. The flag can be cleared as well as set.
+     *
+     * <p>Function setEverseen coded on 260902, commented in full on 261009.
+     *
      * @param everseen whether this artifact has ever been seen
      */
     public void setEverseen(boolean everseen) {

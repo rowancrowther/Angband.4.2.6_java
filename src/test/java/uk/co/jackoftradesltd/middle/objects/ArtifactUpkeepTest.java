@@ -76,4 +76,49 @@ class ArtifactUpkeepTest {
         assertEquals(true, upkeep.isSeen(), "clearing created must not clear seen");
         assertEquals(true, upkeep.isEverseen(), "clearing created must not clear everseen");
     }
+
+    /**
+     * With all three flags set, clearing each one in turn clears only that flag. C's
+     * {@code mark_artifact_seen()} and {@code mark_artifact_everseen()} take a bool and write it
+     * straight through, so {@code false} is as valid an argument as {@code true}; this covers the
+     * {@code seen} and {@code everseen} clears that the previous test does not reach.
+     */
+    @Test
+    @DisplayName("each flag can be cleared without disturbing the others")
+    void eachFlagClearsIndependently() {
+        ArtifactUpkeep upkeep = new ArtifactUpkeep();
+        upkeep.setCreated(true);
+        upkeep.setSeen(true);
+        upkeep.setEverseen(true);
+
+        upkeep.setSeen(false);
+        assertEquals(true, upkeep.isCreated(), "clearing seen must not clear created");
+        assertFalse(upkeep.isSeen());
+        assertEquals(true, upkeep.isEverseen(), "clearing seen must not clear everseen");
+
+        upkeep.setSeen(true);
+        upkeep.setEverseen(false);
+        assertEquals(true, upkeep.isCreated(), "clearing everseen must not clear created");
+        assertEquals(true, upkeep.isSeen(), "clearing everseen must not clear seen");
+        assertFalse(upkeep.isEverseen());
+    }
+
+    /**
+     * Two instances share no state — C gives each artifact its own {@code aup_info} slot, so
+     * marking one artifact created must not mark another.
+     */
+    @Test
+    @DisplayName("instances do not share flag state")
+    void instancesAreIndependent() {
+        ArtifactUpkeep first = new ArtifactUpkeep();
+        ArtifactUpkeep second = new ArtifactUpkeep();
+
+        first.setCreated(true);
+        first.setSeen(true);
+        first.setEverseen(true);
+
+        assertFalse(second.isCreated());
+        assertFalse(second.isSeen());
+        assertFalse(second.isEverseen());
+    }
 }

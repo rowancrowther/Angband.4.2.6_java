@@ -48,14 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/objects/Rune.java`
-
-1 missing, 2 low
-
-- L49: field `logger` - MISSING
-- L219: method `getNote` - LOW
-- L236: method `getVariety` - LOW
-
 ### `middle/monsters/MonsterPain.java`
 
 0 missing, 3 low

@@ -48,14 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/objects/ObjectName.java`
-
-3 missing, 0 low
-
-- L26: class `ObjectName` - MISSING
-- L28: field `nameSections` - MISSING
-- L30: method `randnameMake` - MISSING
-
 ### `middle/player/PlayerOptions.java`
 
 3 missing, 0 low

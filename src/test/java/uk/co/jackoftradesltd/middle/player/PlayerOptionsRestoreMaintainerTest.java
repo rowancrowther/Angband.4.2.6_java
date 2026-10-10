@@ -30,8 +30,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@code PlayerOptions.restoreMaintainer(PlayerOptionTypes)}, the port of C's
- * {@code options_restore_maintainer} ({@code option.c:338-345}).
+ * Tests {@code PlayerOptions.restoreMaintainer(Flag, PlayerOptionTypes)}, the port of C's
+ * {@code options_restore_maintainer} ({@code option.c}).
  *
  * <p>The method is private, so every test reaches it through reflection, following the pattern in
  * {@code PlayerBirthIntToRomanTest}. Since {@code PlayerOptions} exposes no setter for an
@@ -45,9 +45,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class PlayerOptionsRestoreMaintainerTest {
 
     private static void restoreMaintainer(PlayerOptions options, PlayerOptionTypes type) throws Exception {
-        Method method = PlayerOptions.class.getDeclaredMethod("restoreMaintainer", PlayerOptionTypes.class);
+        Method method = PlayerOptions.class.getDeclaredMethod("restoreMaintainer", Flag.class, PlayerOptionTypes.class);
         method.setAccessible(true);
-        method.invoke(options, type);
+        method.invoke(options, flagOf(options), type);
     }
 
     @SuppressWarnings("unchecked")

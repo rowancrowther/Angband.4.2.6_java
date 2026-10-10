@@ -26,12 +26,7 @@ import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link ClassMagic}, the port of C's {@code struct class_magic} — when a class can cast, how
@@ -75,7 +70,7 @@ class ClassMagicTest {
      */
     private static MagicBook book(String name, MagicSpell... spells) {
         List<MagicSpell> list = new ArrayList<>(List.of(spells));
-        return new MagicBook(TValue.TV_MAGIC_BOOK, name, false, list.size(),
+        return new MagicBook(TValue.TV_MAGIC_BOOK, name, false,
                 new MagicRealm("arcane", Stats.STAT_INT, "cast", "spell", TValue.TV_MAGIC_BOOK),
                 null, 0, 0, 0, 0, list);
     }

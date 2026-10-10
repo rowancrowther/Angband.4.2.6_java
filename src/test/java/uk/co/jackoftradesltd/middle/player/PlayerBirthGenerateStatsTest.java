@@ -17,11 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.player;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
@@ -195,7 +191,8 @@ class PlayerBirthGenerateStatsTest {
      */
     private static ClassMagic magicWithStat(Stats stat) {
         MagicRealm realm = new MagicRealm("Test Realm", stat, "casts", "spell", TValue.TV_MAGIC_BOOK);
-        MagicBook book = new MagicBook(TValue.TV_MAGIC_BOOK, false, "Test Book", 1, realm);
+        MagicBook book = new MagicBook(TValue.TV_MAGIC_BOOK, "Test Book", false, realm, null,
+                0, 0, 0, 0, new java.util.ArrayList<>(java.util.Collections.nCopies(1, new uk.co.jackoftradesltd.middle.magic.MagicSpell("spell", 1, 1, 1, 0, List.of(), ""))));
         return new ClassMagic(1, 0, 1, List.of(book));
     }
 

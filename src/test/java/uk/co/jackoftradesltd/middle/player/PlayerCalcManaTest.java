@@ -41,9 +41,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerCalcs#calcMana}, the port of C's {@code calc_mana} ({@code player-calcs.c}).
@@ -93,7 +91,7 @@ class PlayerCalcManaTest {
         MagicRealm arcane = new MagicRealm("arcane", Stats.STAT_INT, "cast", "spell",
                 TValue.TV_MAGIC_BOOK);
         MagicBook book = new MagicBook(TValue.TV_MAGIC_BOOK, "Magic for Beginners", false,
-                spells, arcane, null, 0, 0, 0, 0, List.of());
+                arcane, null, 0, 0, 0, 0, new java.util.ArrayList<>(java.util.Collections.nCopies(spells, new uk.co.jackoftradesltd.middle.magic.MagicSpell("spell", 1, 1, 1, 0, List.of(), ""))));
 
         Map<Stats, Integer> stats = new HashMap<>();
         for (Stats stat : Stats.values()) {

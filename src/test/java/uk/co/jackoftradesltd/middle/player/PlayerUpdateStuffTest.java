@@ -17,11 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.player;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
@@ -54,10 +50,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerCalcs#updateStuff(Player)}, the port of C's {@code update_stuff}
@@ -253,7 +246,7 @@ class PlayerUpdateStuffTest {
                 TValue.TV_MAGIC_BOOK);
         List<MagicBook> books = spells > 0
                 ? List.of(new MagicBook(TValue.TV_MAGIC_BOOK, "Magic for Beginners", false,
-                spells, arcane, null, 0, 0, 0, 0, List.of()))
+                arcane, null, 0, 0, 0, 0, new java.util.ArrayList<>(java.util.Collections.nCopies(spells, new uk.co.jackoftradesltd.middle.magic.MagicSpell("spell", 1, 1, 1, 0, List.of(), "")))))
                 : List.of();
 
         Map<Stats, Integer> stats = new HashMap<>();

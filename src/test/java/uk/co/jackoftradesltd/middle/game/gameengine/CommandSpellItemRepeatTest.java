@@ -17,11 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.game.gameengine;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
@@ -51,11 +47,7 @@ import uk.co.jackoftradesltd.middle.player.enums.PlayerSkill;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
@@ -111,9 +103,9 @@ class CommandSpellItemRepeatTest {
      */
     private static PlayerClass casterClass(MagicSpell a, MagicSpell b, MagicSpell c, MagicSpell d) {
         MagicRealm arcane = new MagicRealm("arcane", Stats.STAT_INT, "cast", "spell", TValue.TV_MAGIC_BOOK);
-        MagicBook first = new MagicBook(TValue.TV_MAGIC_BOOK, "First", false, 2, arcane,
+        MagicBook first = new MagicBook(TValue.TV_MAGIC_BOOK, "First", false, arcane,
                 null, 0, 0, 0, 0, new ArrayList<>(List.of(a, b)));
-        MagicBook second = new MagicBook(TValue.TV_MAGIC_BOOK, "Second", false, 2, arcane,
+        MagicBook second = new MagicBook(TValue.TV_MAGIC_BOOK, "Second", false, arcane,
                 null, 0, 0, 0, 0, new ArrayList<>(List.of(c, d)));
         return classWith(new ClassMagic(1, 300, 2, List.of(first, second)));
     }

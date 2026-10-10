@@ -48,15 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/objects/Slay.java`
-
-1 missing, 3 low
-
-- L112: method `getCode` - LOW
-- L119: method `getName` - LOW
-- L126: method `toString` - LOW
-- L180: method `copy` - MISSING
-
 ### `middle/magic/MagicBook.java`
 
 0 missing, 4 low

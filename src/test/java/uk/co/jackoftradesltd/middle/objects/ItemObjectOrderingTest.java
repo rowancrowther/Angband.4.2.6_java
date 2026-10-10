@@ -17,11 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.enums.Stats;
@@ -42,9 +38,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link ItemObject#earlierObject}, the port of C's {@code earlier_object}
@@ -98,7 +92,7 @@ class ItemObjectOrderingTest {
         MagicRealm arcane = new MagicRealm("arcane", Stats.STAT_INT, "cast", "spell",
                 TValue.TV_MAGIC_BOOK);
         MagicBook book = new MagicBook(TValue.TV_MAGIC_BOOK, "Magic for Beginners", false,
-                1, arcane, null, 0, 0, 0, 0, List.of());
+                arcane, null, 0, 0, 0, 0, new java.util.ArrayList<>(java.util.Collections.nCopies(1, new uk.co.jackoftradesltd.middle.magic.MagicSpell("spell", 1, 1, 1, 0, List.of(), ""))));
 
         // The book resolves its own sub-type from the object registry, which a unit test has not
         // loaded, so it is set directly here.

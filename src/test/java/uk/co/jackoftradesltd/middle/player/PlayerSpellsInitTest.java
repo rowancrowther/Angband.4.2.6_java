@@ -82,7 +82,7 @@ class PlayerSpellsInitTest {
     private static MagicBook book(int count) {
         List<MagicSpell> spells = new ArrayList<>();
         for (int i = 0; i < count; i++) spells.add(spell("spell" + i));
-        return new MagicBook(TValue.TV_MAGIC_BOOK, "Test Book", false, spells.size(),
+        return new MagicBook(TValue.TV_MAGIC_BOOK, "Test Book", false,
                 new MagicRealm("arcane", Stats.STAT_INT, "cast", "spell", TValue.TV_MAGIC_BOOK),
                 null, 0, 0, 0, 0, spells);
     }

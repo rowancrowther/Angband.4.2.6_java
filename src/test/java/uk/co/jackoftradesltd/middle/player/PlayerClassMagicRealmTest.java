@@ -34,9 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerClass#magicRealm()}, the port of C's {@code class_magic_realms}, and the
@@ -77,7 +75,7 @@ class PlayerClassMagicRealmTest {
      * @return the book
      */
     private static MagicBook book(String name, MagicRealm realm) {
-        return new MagicBook(TValue.TV_MAGIC_BOOK, name, false, 1, realm, null, 0, 0, 0, 0,
+        return new MagicBook(TValue.TV_MAGIC_BOOK, name, false, realm, null, 0, 0, 0, 0,
                 List.of(new MagicSpell("a spell", 1, 25, 1, 0, List.of(), "")));
     }
 

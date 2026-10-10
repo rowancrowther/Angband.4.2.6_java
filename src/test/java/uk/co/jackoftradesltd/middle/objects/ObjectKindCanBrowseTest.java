@@ -39,7 +39,6 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -66,7 +65,8 @@ class ObjectKindCanBrowseTest {
      * normally fills it.
      */
     private static MagicBook book(TValue tval, int sval) throws ReflectiveOperationException {
-        MagicBook book = new MagicBook(tval, false, "test book", 0, null);
+        MagicBook book = new MagicBook(tval, "test book", false, null, null,
+                0, 0, 0, 0, new java.util.ArrayList<>());
         Field field = MagicBook.class.getDeclaredField("sVal");
         field.setAccessible(true);
         field.setInt(book, sval);

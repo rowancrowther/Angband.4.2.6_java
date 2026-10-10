@@ -37,12 +37,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerClass#copy()}, the method {@code PlayerBirth.playerGenerate} hands a player its
@@ -149,7 +144,7 @@ class PlayerClassCopyTest {
         MagicRealm arcane = new MagicRealm("arcane", Stats.STAT_INT, "cast", "spell",
                 TValue.TV_MAGIC_BOOK);
         magic = new ClassMagic(1, 300, 1, List.of(
-                new MagicBook(TValue.TV_MAGIC_BOOK, "Magic for Beginners", false, 1, arcane, null,
+                new MagicBook(TValue.TV_MAGIC_BOOK, "Magic for Beginners", false, arcane, null,
                         0, 0, 0, 0,
                         List.of(new MagicSpell("Magic Missile", 1, 1, 25, 0, List.of(), "")))));
 

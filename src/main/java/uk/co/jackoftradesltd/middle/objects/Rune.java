@@ -26,7 +26,10 @@ import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.game.globals.registry.WorldRegistry;
 import uk.co.jackoftradesltd.middle.objects.enums.*;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * One rune in the rune-based identification system — a single object property the player can learn,
@@ -43,13 +46,29 @@ import java.util.*;
  * stores auto-inscriptions against a rune's <em>position</em> in that list rather than against
  * anything intrinsic to the rune.
  *
+ * <p>Besides the constructor and the two accessors for the auto-inscription, the class holds the
+ * list builder {@link #initRunes()} (C's {@code init_rune}) and the seven {@code runeIndex}
+ * lookups (C's {@code rune_index}). C's {@code rune_list} and {@code rune_max} live in
+ * {@link ObjectRegistry} rather than here.
+ *
+ * <p>Class Rune coded before 261010, commented in full on 261010.
+ *
  * @author Rowan Crowther
  */
 public class Rune {
+    /**
+     * Logger for the failures {@link #initRunes()} reports before it throws.
+     *
+     * <p>Field logger coded before 261010, commented in full on 261010.
+     */
     private static final Logger logger = LogManager.getLogger(Rune.class);
 
     /**
-     * What this is a rune of — the property the player learns, and the object it applies to.
+     * What this is a rune of — the property the player learns, and the object it applies to. Ports
+     * the {@code variety} and {@code index} members of C's {@code struct rune}, and its {@code name}
+     * where the variety can supply one; fixed for the life of the rune.
+     *
+     * <p>Field variety coded before 261010, commented in full on 261010.
      */
     private final RuneVariety variety;
 
@@ -60,11 +79,16 @@ public class Rune {
      * an empty string, which would read as an inscription of nothing.
      *
      * <p>This is the only mutable state on a rune, and the only part of one that C persists.
+     *
+     * <p>Field note coded before 261010, commented in full on 261010.
      */
     private String note;
 
     /**
-     * Build a rune for the given property. The auto-inscription starts unset.
+     * Build a rune for the given property. The auto-inscription starts unset, as the zero C's
+     * {@code mem_zalloc} gives the {@code note} of every rune in {@code init_rune}.
+     *
+     * <p>Constructor Rune coded before 261010, commented in full on 261010.
      *
      * @param variety what this is a rune of
      */
@@ -87,10 +111,18 @@ public class Rune {
      * property at different strengths, and the player learns the property, not the strength. Brands
      * group by name, slays by {@link Slay#sameMonsterSlain}. In each case the first entry of a
      * group becomes the rune's subject and the rest are skipped, so the surviving entry is a
-     * representative — see {@link RuneVariety.BrandKey}. This walks the lists in load order, where
-     * C walks its arrays in reverse data-file order; since the grouping key is shared by every
-     * member of a group, the choice affects only which member is retained and the order the groups
-     * appear in, never which objects match.
+     * representative — see {@link RuneVariety.BrandKey}.
+     *
+     * <p>Both the order of the runes and the entry that represents a group follow C's arrays, and
+     * C's brand, slay and curse arrays run in reverse data-file order, because their loaders build
+     * a list newest-first and copy it into the array from the head. {@link ObjectRegistry} holds
+     * brands and slays in data-file order, so this method walks those two lists backwards: the
+     * rune order is then C's (poison before acid, undead before evil creatures) and the
+     * representative is the last member in the file, as in C ({@code POIS_2}, not {@code POIS_3}).
+     * Curses need no such step, because {@code CurseAssembler} already reverses them to match C.
+     * The order matters, since it is the knowledge-menu order and C's savefile records
+     * auto-inscriptions by position. Which member represents a group never changes which objects
+     * match it.
      *
      * <p>Sentinel enum constants are skipped throughout, and a subject that fails to resolve throws
      * rather than being quietly omitted: in the original these cases are impossible by construction
@@ -98,11 +130,19 @@ public class Rune {
      * property lookup is dereferenced unguarded — so a failure here means the data files and the
      * enums have drifted apart, which is worth failing loudly for.
      *
+     * <p>Accepted deviation from C: {@code brands[]}, {@code slays[]} and {@code curses[]} carry a
+     * blank record at slot 0 that the Java lists do not, so C's loops start at 1 and these start
+     * at 0. The blank record is never a rune, so the rune list is unaffected, and
+     * {@link ObjectRegistry#getMaxRunes()} is the plain size of the list.
+     *
+     * <p>Function initRunes coded before 261010, commented in full on 261010 after brands and slays
+     * were walked in C's array order.
+     *
      * @throws RuntimeException if a modifier, flag or element cannot be resolved to its definition
      */
 
     public static void initRunes() {
-        List<Rune> runes = new ArrayList<Rune>();
+        List<Rune> runes = new ArrayList<>();
 
         // Combat runes are a fixed set, so they need no lookup - just the three constants
         for (CombatRunes r : CombatRunes.values()) {
@@ -153,7 +193,7 @@ public class Rune {
         }
 
         // Brands sharing a name are the same property at different strengths, so they share a rune
-        List<Brand> brands = ObjectRegistry.getBrands();
+        List<Brand> brands = ObjectRegistry.getBrands().reversed();
         Set<String> brandNames = new HashSet<>();
         for (Brand brand : brands) {
             if (brand.getName() == null) continue;
@@ -164,7 +204,7 @@ public class Rune {
             }
         }
 
-        List<Slay> slays = ObjectRegistry.getSlays();
+        List<Slay> slays = ObjectRegistry.getSlays().reversed();
         // Slays group by the monsters they kill rather than by name, so there is no key to hash on;
         // needs to stay a nested for loop as we need the sameMonsterSlain test
         for (int i = 0; i < slays.size(); i++) {
@@ -209,11 +249,17 @@ public class Rune {
 
             runes.add(new Rune(new RuneVariety.FlagKey(flag, property)));
         }
-
+        
         ObjectRegistry.setRunes(runes);
     }
 
     /**
+     * Reports the player's auto-inscription for this rune. Ports C's {@code rune_note}, which
+     * returns the {@code quark_t} index of the inscription, or zero for none; the string itself
+     * stands in for the quark here, so there is no table to look it up in.
+     *
+     * <p>Method getNote coded before 261010, commented in full on 261010.
+     *
      * @return the player's auto-inscription for this rune, or {@code null} if none is set
      */
     public String getNote() {
@@ -222,7 +268,11 @@ public class Rune {
 
     /**
      * Sets or clears the player's auto-inscription for this rune. Ports C's {@code rune_set_note},
-     * which likewise treats a null argument as "uninscribe".
+     * which likewise treats a null argument as "uninscribe": it stores zero, where a non-null
+     * argument is added to the quark table with {@code quark_add}. Nothing is trimmed or checked
+     * here, as nothing is in C.
+     *
+     * <p>Method setNote coded before 261010, commented in full on 261010.
      *
      * @param note the inscription to apply, or {@code null} to clear it
      */
@@ -231,6 +281,12 @@ public class Rune {
     }
 
     /**
+     * Reports what this rune is a rune of. Stands in for C's {@code rune_variety}, which returns the
+     * {@code enum rune_variety} of the rune at a list position; here the variety also carries the
+     * rune's subject, so the caller can read the name, group and key off it directly.
+     *
+     * <p>Method getVariety coded before 261010, commented in full on 261010.
+     *
      * @return what this is a rune of
      */
     public RuneVariety getVariety() {
@@ -239,7 +295,7 @@ public class Rune {
 
     /**
      * Finds the rune for one of the three fixed combat enchantments — the first of the seven
-     * lookups that together port C's {@code rune_index} ({@code src/obj-knowledge.c:194}).
+     * lookups that together port C's {@code rune_index} ({@code obj-knowledge.c}).
      *
      * <p>C identifies a rune by a {@code (variety, index)} pair and returns its <em>position</em> in
      * {@code rune_list}. Every caller hands that position straight back to
@@ -263,6 +319,8 @@ public class Rune {
      * reference that a later re-init would strand. If these ever become hot enough to matter, the
      * scans are what an index would replace, and none of the signatures here would change.
      *
+     * <p>Method runeIndex coded before 261010, commented in full on 261010.
+     *
      * @param key which combat enchantment
      * @return the rune for that enchantment, or {@code null} if there is none
      */
@@ -283,7 +341,10 @@ public class Rune {
      *
      * <p>Every modifier {@link #initRunes()} could resolve a property for has a rune, so a
      * {@code null} here means the sentinels, or a modifier added to the enum without a matching
-     * entry in {@code object_property.txt}.
+     * entry in {@code object_property.txt}. The five stats count as modifiers here, as they do in
+     * C's {@code OBJ_MOD_MAX}.
+     *
+     * <p>Method runeIndex coded before 261010, commented in full on 261010.
      *
      * @param key which modifier
      * @return the rune for that modifier, or {@code null} if there is none
@@ -308,6 +369,8 @@ public class Rune {
      * {@link ElementEnum#isHasResistRune()} ports — so asking about anything above it is a
      * legitimate question with the answer {@code null}, not a lookup failure.
      *
+     * <p>Method runeIndex coded before 261010, commented in full on 261010.
+     *
      * @param key which element
      * @return the rune for that element's resistance, or {@code null} if it has none
      */
@@ -330,7 +393,11 @@ public class Rune {
      * rune and the one the rune holds is only a representative of that group — see
      * {@link RuneVariety.BrandKey}. Any acid brand must therefore find the acid rune, not just the
      * particular one {@link #initRunes()} happened to keep. C reaches the same result from the other
-     * direction: it stores nothing but the name and compares with {@code streq}.
+     * direction: its rune holds the array index of one brand, so {@code player_learn_brand} first
+     * finds the lowest-numbered brand with the same name ({@code streq}) and only then calls
+     * {@code rune_index}.
+     *
+     * <p>Method runeIndex coded before 261010, commented in full on 261010.
      *
      * @param key any brand of the wanted kind, at any strength
      * @return the rune covering brands of that name, or {@code null} if there is none
@@ -355,7 +422,11 @@ public class Rune {
      * grouping is by {@link Slay#sameMonsterSlain} rather than by name — so this cannot match on a
      * name, and slays that kill the same monsters under different names still find the same rune.
      * The test used here is the same one {@link #initRunes()} de-duplicates with, so the two cannot
-     * disagree about which slays share a rune.
+     * disagree about which slays share a rune. C does the same grouping in the caller:
+     * {@code player_learn_slay} finds the first slay for which {@code same_monsters_slain} holds
+     * and hands that index to {@code rune_index}.
+     *
+     * <p>Method runeIndex coded before 261010, commented in full on 261010.
      *
      * @param slay any slay of the wanted kind, at any strength
      * @return the rune covering slays that kill the same monsters, or {@code null} if there is none
@@ -380,6 +451,8 @@ public class Rune {
      * {@code rune_index(RUNE_VAR_CURSE, lookup_curse(curse->name))}. That also makes the lookup
      * indifferent to where the curse came from, where identity would quietly fail for one that did
      * not come from the registry.
+     *
+     * <p>Method runeIndex coded before 261010, commented in full on 261010.
      *
      * @param curse the curse to look up
      * @return the rune for that curse, or {@code null} if there is none — C's {@code lookup_curse}
@@ -406,6 +479,8 @@ public class Rune {
      * subtypes, the ones describing the object rather than the player (light, digging, throwing),
      * and those that only ever appear on curses. Asking about one of those is expected — the
      * learning code walks whole flag sets — and answers {@code null}, C's {@code -1}.
+     *
+     * <p>Method runeIndex coded before 261010, commented in full on 261010.
      *
      * @param flag which flag
      * @return the rune for that flag, or {@code null} if it is not a learnable property

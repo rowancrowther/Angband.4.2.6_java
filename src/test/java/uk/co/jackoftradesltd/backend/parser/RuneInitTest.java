@@ -20,32 +20,17 @@ package uk.co.jackoftradesltd.backend.parser;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import uk.co.jackoftradesltd.frontend.ui.entrybase.reader.UIEntryBaseReader;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.frontend.ui.entry.reader.UIEntryReader;
+import uk.co.jackoftradesltd.frontend.ui.entrybase.reader.UIEntryBaseReader;
 import uk.co.jackoftradesltd.frontend.ui.entryrenderer.reader.UIEntryRendererReader;
 import uk.co.jackoftradesltd.middle.game.event.projection.Projection;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
-import uk.co.jackoftradesltd.middle.objects.Brand;
-import uk.co.jackoftradesltd.middle.objects.Curse;
-import uk.co.jackoftradesltd.middle.objects.ObjectProperty;
-import uk.co.jackoftradesltd.middle.objects.ObjectPropertyTypeWrapper;
-import uk.co.jackoftradesltd.middle.objects.Rune;
-import uk.co.jackoftradesltd.middle.objects.Slay;
-import uk.co.jackoftradesltd.middle.objects.enums.CombatRunes;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjPropertyType;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlagType;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
-import uk.co.jackoftradesltd.middle.objects.enums.RuneGroup;
-import uk.co.jackoftradesltd.middle.objects.enums.RuneVariety;
+import uk.co.jackoftradesltd.middle.objects.*;
+import uk.co.jackoftradesltd.middle.objects.enums.*;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -96,6 +81,17 @@ class RuneInitTest {
     private static final Set<ObjectFlagType> EXCLUDED_SUBTYPES = EnumSet.of(
             ObjectFlagType.OFT_NONE, ObjectFlagType.OFT_MAX, ObjectFlagType.OFT_LIGHT,
             ObjectFlagType.OFT_DIG, ObjectFlagType.OFT_THROW, ObjectFlagType.OFT_CURSE_ONLY);
+
+    /**
+     * The 27 curse names of {@code curse.txt} in the order C's {@code curses[]} holds them - the
+     * file's last entry at index 1 - which is the order {@code init_rune} walks.
+     */
+    private static final List<String> CURSE_NAMES_IN_C_ORDER = List.of("air swing", "steelskin", "chilled to the bone", "burning up",
+                "treacherous weapon", "anti-teleportation", "stone", "cowardice",
+                "impair hitpoint recovery", "impair mana recovery", "undead summon",
+                "demon summon", "dragon summon", "paralysis", "hallucination", "siren", "poison",
+                "annoyance", "slowness", "clumsiness", "weakness", "irritation", "enveloping",
+                "sickliness", "dullness", "teleportation", "vulnerability");
 
     private static Object savedRenderers;
     private static Object savedUiBases;
@@ -359,7 +355,8 @@ class RuneInitTest {
 
     /**
      * {@code brand.txt} ships ten brands - a x3 and a x2 of each of acid, lightning, fire, cold and
-     * poison - and C gives one rune per distinct name, so five.
+     * poison - and C gives one rune per distinct name, so five. C's {@code brands[]} runs in reverse
+     * data-file order, so the runes come out poison first and acid last.
      */
     @Test
     void brandsWithTheSameNameShareOneRune() throws Exception {
@@ -367,8 +364,19 @@ class RuneInitTest {
 
         assertEquals(10, ObjectRegistry.getBrands().size(), "guard: brand.txt as shipped");
         assertEquals(5, brands.size());
-        assertEquals(List.of("acid", "lightning", "fire", "cold", "poison"),
+        assertEquals(List.of("poison", "cold", "fire", "lightning", "acid"),
                 brands.stream().map(v -> ((RuneVariety.BrandKey) v).key().getName()).toList());
+    }
+
+    /**
+     * C keeps the lowest index of each name, and because {@code brands[]} is reversed that is the
+     * last entry in {@code brand.txt} - the x2 brand, not the x3.
+     */
+    @Test
+    void eachBrandRuneHoldsTheLastEntryInTheFileForItsName() throws Exception {
+        assertEquals(List.of("POIS_2", "COLD_2", "FIRE_2", "ELEC_2", "ACID_2"),
+                varietiesOf(RuneGroup.BRAND).stream()
+                        .map(v -> ((RuneVariety.BrandKey) v).key().getCode()).toList());
     }
 
     @Test
@@ -392,7 +400,7 @@ class RuneInitTest {
     /**
      * {@code slay.txt} ships eleven slays across eight race flags - demons, dragons and undead each
      * appear at two strengths - and C groups by {@code same_monsters_slain} rather than by name, so
-     * eight.
+     * eight. {@code slays[]} runs in reverse data-file order, so undead come first and evil last.
      */
     @Test
     void slaysKillingTheSameMonstersShareOneRune() throws Exception {
@@ -400,9 +408,21 @@ class RuneInitTest {
 
         assertEquals(11, ObjectRegistry.getSlays().size(), "guard: slay.txt as shipped");
         assertEquals(8, slays.size());
-        assertEquals(List.of("evil creatures", "animals", "orcs", "trolls", "giants", "demons",
-                        "dragons", "undead"),
+        assertEquals(List.of("undead", "dragons", "demons", "giants", "trolls", "orcs", "animals",
+                        "evil creatures"),
                 slays.stream().map(v -> ((RuneVariety.SlayKey) v).key().getName()).toList());
+    }
+
+    /**
+     * As for brands, the slay kept is the lowest index in C's reversed array: the last entry in
+     * {@code slay.txt}, which for demons, dragons and undead is the x5 slay, not the x3.
+     */
+    @Test
+    void eachSlayRuneHoldsTheLastEntryInTheFileForItsMonsters() throws Exception {
+        assertEquals(List.of("UNDEAD_5", "DRAGON_5", "DEMON_5", "GIANT_3", "TROLL_3", "ORC_3",
+                        "ANIMAL_2", "EVIL_2"),
+                varietiesOf(RuneGroup.SLAY).stream()
+                        .map(v -> ((RuneVariety.SlayKey) v).key().getCode()).toList());
     }
 
     /**
@@ -440,9 +460,9 @@ class RuneInitTest {
         assertEquals(27, ObjectRegistry.getCurses().size(), "guard: curse.txt as shipped");
         assertEquals(ObjectRegistry.getCurses().size(), curses.size(),
                 "curses are never grouped");
-        assertEquals(ObjectRegistry.getCurses().stream().map(Curse::getName).toList(),
+        assertEquals(CURSE_NAMES_IN_C_ORDER,
                 curses.stream().map(v -> ((RuneVariety.CurseKey) v).key().getName()).toList(),
-                "and they keep data-file order");
+                "and they come in C's order, which is reverse data-file order");
     }
 
     // ---- Flags -----------------------------------------------------------
@@ -518,22 +538,22 @@ class RuneInitTest {
      */
     @Test
     void brandAndSlayRuneNamesMatchCsFormats() throws Exception {
-        assertEquals(List.of("acid brand", "lightning brand", "fire brand", "cold brand",
-                        "poison brand"),
+        assertEquals(List.of("poison brand", "cold brand", "fire brand", "lightning brand",
+                        "acid brand"),
                 varietiesOf(RuneGroup.BRAND).stream().map(RuneVariety::runeName).toList());
-        assertEquals(List.of("slay evil creatures", "slay animals", "slay orcs", "slay trolls",
-                        "slay giants", "slay demons", "slay dragons", "slay undead"),
+        assertEquals(List.of("slay undead", "slay dragons", "slay demons", "slay giants",
+                        "slay trolls", "slay orcs", "slay animals", "slay evil creatures"),
                 varietiesOf(RuneGroup.SLAY).stream().map(RuneVariety::runeName).toList());
     }
 
     /**
-     * Every curse gets its own rune, so the names are {@code curse.txt}'s in file order with
-     * {@code " curse"} appended.
+     * Every curse gets its own rune, so the names are {@code curse.txt}'s in C's order - reverse
+     * file order - with {@code " curse"} appended.
      */
     @Test
     void curseRuneNamesAreTheDataNamesWithCurseAppended() throws Exception {
         assertEquals(
-                ObjectRegistry.getCurses().stream().map(c -> c.getName() + " curse").toList(),
+                CURSE_NAMES_IN_C_ORDER.stream().map(n -> n + " curse").toList(),
                 varietiesOf(RuneGroup.CURSE).stream().map(RuneVariety::runeName).toList());
     }
 

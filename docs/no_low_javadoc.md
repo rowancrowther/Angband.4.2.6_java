@@ -48,14 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/player/PlayerClass.java`
-
-2 missing, 1 low
-
-- L158: method `getMagic` - LOW
-- L453: method `getTitle` - MISSING
-- L468: method `getNoTitles` - MISSING
-
 ### `middle/objects/Rune.java`
 
 1 missing, 2 low

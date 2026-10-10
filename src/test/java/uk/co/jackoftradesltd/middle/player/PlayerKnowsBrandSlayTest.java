@@ -17,12 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.player;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
@@ -36,9 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link Player#playerKnowsBrand} and {@link Player#playerKnowsSlay}, the ports of C's
@@ -251,18 +244,54 @@ class PlayerKnowsBrandSlayTest {
     }
 
     /**
-     * The edge C does not have: the knowledge object is allocated by {@code init_player} before
-     * anything can ask, but the port leaves it null until the registries are loaded, and the
-     * methods document that they throw rather than answer {@code false}.
+     * A freshly built player already owns an empty knowledge object. C allocates {@code p->obj_k}
+     * in {@code init_player} with {@code object_new()} and zero-allocated {@code brands} and
+     * {@code slays} arrays, so before anything is learned every lookup is {@code false}; the
+     * constructor now does the same through {@code new KnownObject()}.
      */
     @Nested
-    @DisplayName("a player whose knowledge object has not been built")
+    @DisplayName("a freshly built player")
+    class FreshPlayer {
+
+        @Test
+        @DisplayName("owns a knowledge object that knows nothing")
+        void ownsEmptyKnowledge() {
+            Player fresh = new Player();
+
+            assertNotNull(fresh.getItemKnowledge());
+        }
+
+        @Test
+        @DisplayName("playerKnowsBrand is false")
+        void brandIsFalse() {
+            Player fresh = new Player();
+
+            assertFalse(fresh.playerKnowsBrand(weakAcid));
+        }
+
+        @Test
+        @DisplayName("playerKnowsSlay is false")
+        void slayIsFalse() {
+            Player fresh = new Player();
+
+            assertFalse(fresh.playerKnowsSlay(evil3));
+        }
+    }
+
+    /**
+     * The edge C does not have: a caller can still take the knowledge object away with
+     * {@code setItemKnowledge(null)}, and the methods document that they throw rather than answer
+     * {@code false}.
+     */
+    @Nested
+    @DisplayName("a player whose knowledge object has been removed")
     class NoKnowledgeObject {
 
         @Test
         @DisplayName("playerKnowsBrand throws NullPointerException")
         void brandThrows() {
             Player fresh = new Player();
+            fresh.setItemKnowledge(null);
 
             assertThrows(NullPointerException.class, () -> fresh.playerKnowsBrand(weakAcid));
         }
@@ -271,6 +300,7 @@ class PlayerKnowsBrandSlayTest {
         @DisplayName("playerKnowsSlay throws NullPointerException")
         void slayThrows() {
             Player fresh = new Player();
+            fresh.setItemKnowledge(null);
 
             assertThrows(NullPointerException.class, () -> fresh.playerKnowsSlay(evil3));
         }

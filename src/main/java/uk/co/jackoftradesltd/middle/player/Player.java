@@ -25,23 +25,26 @@ import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftradesltd.channel.messages.data.PlayerEventStatusUpdate;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.Message;
+import uk.co.jackoftradesltd.middle.cave.Chunk;
+import uk.co.jackoftradesltd.middle.cave.Loc;
 import uk.co.jackoftradesltd.middle.effect.EffectSubTypeWrapper;
 import uk.co.jackoftradesltd.middle.effect.EffectUtil;
 import uk.co.jackoftradesltd.middle.enums.EffectEnum;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
+import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.game.event.projection.Source;
 import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftradesltd.middle.numerics.RandomValueUtils;
-import uk.co.jackoftradesltd.middle.cave.Chunk;
-import uk.co.jackoftradesltd.middle.cave.Loc;
-import uk.co.jackoftradesltd.middle.enums.Stats;
-import uk.co.jackoftradesltd.middle.objects.*;
-import uk.co.jackoftradesltd.middle.objects.enums.*;
+import uk.co.jackoftradesltd.middle.objects.Brand;
+import uk.co.jackoftradesltd.middle.objects.KnownObject;
+import uk.co.jackoftradesltd.middle.objects.Pile;
+import uk.co.jackoftradesltd.middle.objects.Slay;
+import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.player.enums.*;
 
 import java.util.*;
 
-    /**
+/**
      * The player - the port of C's {@code struct player} (player.h), and the central mutable object of a
      * game in progress. It gathers everything about the current character: identity (race, class, name,
      * history), the birth and derived statistics, position and depth, resources (HP, SP, gold, food,
@@ -86,11 +89,15 @@ public class Player {
      * {@code obj_k} actually uses and none of the several dozen it does not. See that class for
      * why the split is safe.
      *
-     * <p>Null until the data files are parsed, matching C, which allocates {@code p->obj_k} in
-     * {@code init_player} rather than with the player struct because the knowledge is sized from
-     * the registries.
+     * <p>Never null on a player that has just been built or wiped: the constructor and
+     * {@link #wipe()} each allocate an empty {@code new KnownObject()}, which knows nothing, as C's
+     * {@code init_player} ({@code player.c}) allocates {@code p->obj_k} with {@code object_new()}
+     * and zero-filled {@code brands}, {@code slays} and {@code curses} arrays. Birth then replaces
+     * it with a freshly initialized one, and {@link #setItemKnowledge} can replace or null it at any
+     * time, so code that reaches through {@link #getItemKnowledge()} after such a call must not
+     * assume it is present.
      *
-     * <p>Field itemKnowledge coded before 260815, commented in full on 261008.
+     * <p>Field itemKnowledge coded before 260815, commented in full on 261010.
      */
     KnownObject itemKnowledge;
     /**
@@ -471,8 +478,8 @@ public class Player {
      * than implied.
      *
      * <p>A player built here is not yet playable: the race, class, state, known state and shape
-     * are null, the level is zero, and {@link #itemKnowledge} is null until the registries exist to
-     * size it against. Birth fills them in.
+     * are null and the level is zero. Birth fills those in. {@link #itemKnowledge} is not among the
+     * nulls: it is an empty {@code KnownObject}, the port of the allocation in {@code init_player}.
      *
      * <p>The race is null because C's is: {@code mem_zalloc} leaves {@code player->race} as
      * {@code NULL}, and C first sets it in {@code player_init} ({@code player-birth.c}), which
@@ -483,7 +490,7 @@ public class Player {
      * <p>The body is the one exception to that independence: it is looked up in the registry, so a
      * player cannot be built before the bodies have been loaded.
      *
-     * <p>Constructor Player coded before 260815, commented in full on 261008.
+     * <p>Constructor Player coded before 260815, commented in full on 261010.
      *
      * @throws IllegalStateException if the player bodies have not been loaded
      */
@@ -494,7 +501,7 @@ public class Player {
         for (TimedEffect effect : TimedEffect.values()) {
             putTimed(effect, 0);
         }
-        itemKnowledge = null;
+        itemKnowledge = new KnownObject();
         options = new PlayerOptions();
         options.initDefaults();
 
@@ -545,16 +552,20 @@ public class Player {
      * with them.
      *
      * <p>The result is blank rather than ready. {@code playerInit} goes on to put the saved options
-     * back, size the upkeep, the timed-effect table and the object knowledge, reset the quests, and
-     * point the player at copies of C's default race and class and at the "normal" shape. Until then
-     * the race, the class and the shape are {@code null} and the options are the defaults rather
+     * back, size the upkeep and the timed-effect table, replace the object knowledge, reset the
+     * quests, and point the player at copies of C's default race and class and at the "normal"
+     * shape. Until then the race, the class and the shape are {@code null} and the options are the defaults rather
      * than the player's own.
      *
      * <p>Clearing the race matches C, whose {@code memset} leaves {@code p->race} as {@code NULL}
      * for {@code player_init} to fill a few lines later. As with the constructor, the wipe does not
      * read the race list, but it does look up the body.
      *
-     * <p>Function wipe coded before 260815, commented in full on 261008.
+     * <p>The object knowledge is replaced by a new, empty {@code KnownObject} rather than cleared in
+     * place, so a reference taken from {@link #getItemKnowledge()} before the wipe no longer
+     * belongs to the player afterwards.
+     *
+     * <p>Function wipe coded before 260815, commented in full on 261010.
      *
      * @throws IllegalStateException if the player bodies have not been loaded
      */
@@ -565,7 +576,7 @@ public class Player {
         for (TimedEffect effect : TimedEffect.values()) {
             putTimed(effect, 0);
         }
-        itemKnowledge = null;
+        itemKnowledge = new KnownObject();
         options = new PlayerOptions();
         options.initDefaults();
 
@@ -2851,12 +2862,15 @@ public class Player {
      * ({@code player.h}).
      *
      * <p>C assigns the field directly wherever a fresh struct is allocated - {@code init_player}
-     * ({@code player.c:498}) allocates it via {@code object_new} and {@code player_birth}
-     * ({@code player-birth.c:438}) via a bare {@code mem_zalloc}, and both assign it before its
+     * ({@code player.c}) allocates it via {@code object_new} and {@code player_birth}
+     * ({@code player-birth.c}) via a bare {@code mem_zalloc}, and both assign it before its
      * {@code brands}/{@code slays}/{@code curses} arrays are populated. Assignment itself does no
-     * validation or cleanup of a previous value in either language.
+     * validation or cleanup of a previous value in either language. Passing {@code null} is
+     * accepted here and leaves the player without knowledge, after which {@link #playerKnowsBrand}
+     * and {@link #playerKnowsSlay} throw; C has no equivalent state, its pointer being allocated
+     * before anything can ask.
      *
-     * <p>Function setItemKnowledge commented in full on 260903.
+     * <p>Function setItemKnowledge commented in full on 261010.
      *
      * @param itemKnowledge the character's new object/rune knowledge
      */
@@ -2915,9 +2929,11 @@ public class Player {
 
     /**
      * Returns this character's object/rune knowledge - the port of reading C's {@code p->obj_k}
-     * ({@code player.h}). Live, not a copy; the write path is {@link #setItemKnowledge}.
+     * ({@code player.h}). Live, not a copy; the write path is {@link #setItemKnowledge}. Non-null
+     * for a player built by the constructor or {@link #wipe()}, but null if
+     * {@link #setItemKnowledge} has been given null.
      *
-     * <p>Function getItemKnowledge commented in full on 260904.
+     * <p>Function getItemKnowledge commented in full on 261010.
      *
      * @return the character's object/rune knowledge, shared with this instance
      */
@@ -3289,10 +3305,13 @@ public class Player {
      * about its group because learning any member of a group marks every same-named brand. The static
      * {@link PlayerKnowledge#knowsBrand} answers the same question from the other side.
      *
-     * <p>Throws a NullPointerException if the knowledge object has not been built yet, as
-     * {@link #getItemKnowledge()} then answers null.
+     * <p>A player straight from the constructor or {@link #wipe()} owns an empty knowledge object,
+     * so this answers {@code false} for every brand until something is learned. It throws a
+     * {@code NullPointerException} only if the knowledge object has been removed with
+     * {@link #setItemKnowledge(KnownObject) setItemKnowledge(null)}, as {@link #getItemKnowledge()}
+     * then answers null.
      *
-     * <p>Function playerKnowsBrand coded before 261003, commented in full on 261003.
+     * <p>Function playerKnowsBrand coded before 261003, commented in full on 261010.
      *
      * @param brand the brand to ask about
      * @return true if the character recognizes this brand
@@ -3307,10 +3326,11 @@ public class Player {
      *
      * <p>The sibling of {@link #playerKnowsBrand}, and the same in every respect that matters:
      * learning any slay that kills the same monsters marks them all, so asking about the exact slay
-     * given gives the same answer as asking about its group, and the knowledge object must exist.
+     * given gives the same answer as asking about its group. A fresh player answers {@code false};
+     * the call throws a {@code NullPointerException} only if the knowledge object was removed.
      * {@link PlayerKnowledge#knowsSlay} is the static counterpart.
      *
-     * <p>Function playerKnowsSlay coded before 261003, commented in full on 261003.
+     * <p>Function playerKnowsSlay coded before 261003, commented in full on 261010.
      *
      * @param slay the slay to ask about
      * @return true if the character recognizes this slay

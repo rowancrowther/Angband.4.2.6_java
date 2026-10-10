@@ -17,65 +17,32 @@
 
 package uk.co.jackoftradesltd.middle.player;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataMessage;
 import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
 import uk.co.jackoftradesltd.channel.utils.Flag;
+import uk.co.jackoftradesltd.middle.Message;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
 import uk.co.jackoftradesltd.middle.enums.Stats;
-import uk.co.jackoftradesltd.middle.objects.ElementInfo;
-import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
-import uk.co.jackoftradesltd.middle.player.enums.PlayerSkill;
 import uk.co.jackoftradesltd.middle.game.event.EventHandlerInterface;
 import uk.co.jackoftradesltd.middle.game.event.EventsHandler;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
-import uk.co.jackoftradesltd.middle.objects.Brand;
-import uk.co.jackoftradesltd.middle.objects.Curse;
-import uk.co.jackoftradesltd.middle.objects.KnownObject;
-import uk.co.jackoftradesltd.middle.objects.ObjectProperty;
-import uk.co.jackoftradesltd.middle.objects.ObjectPropertyTypeWrapper;
-import uk.co.jackoftradesltd.middle.objects.Rune;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjPropertyType;
-import uk.co.jackoftradesltd.middle.objects.Slay;
-import uk.co.jackoftradesltd.middle.objects.enums.CombatRunes;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
-import uk.co.jackoftradesltd.middle.objects.enums.RuneVariety;
-
-import uk.co.jackoftradesltd.middle.objects.CurseData;
-import uk.co.jackoftradesltd.middle.Message;
-import uk.co.jackoftradesltd.middle.objects.ItemObject;
-import uk.co.jackoftradesltd.middle.objects.ObjectKind;
-import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
-import uk.co.jackoftradesltd.middle.objects.enums.TValue;
+import uk.co.jackoftradesltd.middle.objects.*;
+import uk.co.jackoftradesltd.middle.objects.enums.*;
+import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
+import uk.co.jackoftradesltd.middle.player.enums.PlayerSkill;
+import uk.co.jackoftradesltd.testsupport.CurseFixture;
+import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
-import uk.co.jackoftradesltd.testsupport.CurseFixture;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link Player}'s object-knowledge path — {@link PlayerKnowledge#learnRune}, the wrappers over it,
@@ -494,9 +461,9 @@ class PlayerRuneLearningTest {
     /**
      * A player with a fresh knowledge set, and a bus to catch what the learning announces.
      *
-     * <p>{@link Player}'s constructor leaves {@code itemKnowledge} null, matching C, where
-     * {@code p->obj_k} is allocated later in {@code init_player} once the registries can size it.
-     * Birth would fill it in; this stands in for birth with the one field under test.
+     * <p>{@link Player}'s constructor already allocates an empty {@code itemKnowledge}, as C's
+     * {@code init_player} allocates {@code p->obj_k}. This replaces it with a known instance the
+     * tests can read back, standing in for birth with the one field under test.
      *
      * <p>No player is installed in {@code GameState}. Between 260817 and the same day one was, because
      * {@code ItemObject.runesKnown} reached {@code nonCurseRunesKnown} through

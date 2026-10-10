@@ -36,14 +36,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link Player#wipe()} and the constructor it repeats, against the C they stand in for:
@@ -455,8 +448,10 @@ class PlayerWipeTest {
     class LeftForPlayerInit {
 
         /**
-         * Class, shape, calculated state, known state, object knowledge and the remembered level are
-         * all null after a wipe. The object knowledge is the only one the fixture can dirty first,
+         * Class, shape, calculated state, known state and the remembered level are all null after a
+         * wipe. The object knowledge is not: C's {@code memset} is followed by {@code init_player}'s
+         * allocation, which the wipe repeats with {@code new KnownObject()}, so the player ends with
+         * a new, empty object rather than the dirtied one. The fixture can dirty only that member,
          * since the others need registry data the test does not load; the rest are null from
          * construction and the wipe must leave them so. The race is the exception: it is the first
          * one loaded, so a wiped player always has one.
@@ -464,10 +459,11 @@ class PlayerWipeTest {
          * @throws Exception if a field cannot be reached
          */
         @Test
-        @DisplayName("class, shape, state, known state and object knowledge are null")
+        @DisplayName("class, shape, state and known state are null; object knowledge is a new empty object")
         void unassignedMembersAreNull() throws Exception {
             dirty();
-            assertNotNull(player.getItemKnowledge(), "the fixture did not dirty it");
+            KnownObject dirtied = player.getItemKnowledge();
+            assertNotNull(dirtied, "the fixture did not dirty it");
 
             player.wipe();
 
@@ -475,7 +471,8 @@ class PlayerWipeTest {
             assertNull(player.getShape());
             assertNull(player.getPlayerState());
             assertNull(player.getKnownState());
-            assertNull(player.getItemKnowledge());
+            assertNotNull(player.getItemKnowledge(), "the wipe allocates a fresh knowledge object");
+            assertNotSame(dirtied, player.getItemKnowledge(), "and it is not the dirtied one");
             assertNull(player.getCave());
         }
 

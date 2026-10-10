@@ -270,23 +270,6 @@ public class GameState {
     }
 
     /**
-     * Once stood up a fresh game state: a new player, a placeholder current level around them, and
-     * the {@link CommandQueue} that feeds the engine. Its body is now empty and nothing calls it.
-     *
-     * <p><b>Superseded, and safe to delete.</b> {@link GameEngine#loadGameConstants(Core)} builds
-     * all three itself as the port of {@code player_module.init} ({@code init_player()} in
-     * {@code player.c}), and it does so <em>after</em> the game data is read - which is where C
-     * puts it, {@code player_module} following {@code arrays_module} in the module table in
-     * {@code init.c}, because {@code init_player()} sizes the pack, quiver and rune arrays from
-     * values that only exist once {@code constants.txt} has been read. There is no C function of
-     * this name to compare it with.
-     *
-     * <p>Method initGameState coded before 260903, commented in full on 261006.
-     */
-    public static void initGameState() {
-    }
-
-    /**
      * Reports whether a character currently exists — the port of reading C's
      * {@code character_generated} global ({@code game-world.c}). C has no accessor function for
      * it; every call site reads the global directly (e.g. {@code update_stuff()} in

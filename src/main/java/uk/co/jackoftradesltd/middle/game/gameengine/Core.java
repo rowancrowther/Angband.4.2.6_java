@@ -19,8 +19,8 @@ package uk.co.jackoftradesltd.middle.game.gameengine;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import uk.co.jackoftradesltd.channel.StartupOptions;
 import uk.co.jackoftradesltd.channel.CoreChannel;
+import uk.co.jackoftradesltd.channel.StartupOptions;
 import uk.co.jackoftradesltd.channel.corechannel.CoreSender;
 import uk.co.jackoftradesltd.channel.enums.CoreLifecycleEvent;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
@@ -55,18 +55,54 @@ import uk.co.jackoftradesltd.middle.game.event.eventhandlers.RedrawHandlers;
  * port-only decision forced by Swing, which reserves the EDT for the UI.
  *
  * <p><b>Wired at both ends, with nothing in the middle yet.</b> {@link #gameLoop()}
- * builds the engine, installs the boundary the start-up events leave through,
- * registers the handlers and runs the data load - all on this thread, so the
- * engine's mutable state is confined to it by construction; it then blocks on the
- * core's inbox and answers the shutdown handshake. What is still missing is the
- * game: the loop understands the two lifecycle messages and nothing else, because
- * nothing else is sent yet. Commands arrive with Chapter 5 and the save with
- * Chapter 8, and both land as further arms of the same switch.
+ * builds the engine, registers the handlers the start-up events leave through and runs the
+ * data load - all on this thread, so the engine's mutable state is confined to it by
+ * construction; it then blocks on the core's inbox and answers the shutdown handshake.
+ * What is still missing is the game: {@link #handleChannelOutput(UIMessage)} acts on one
+ * message, {@code SAVE_AND_STOP}, and merely logs or ignores every other {@code UIMessage},
+ * because nothing else is sent yet. Commands arrive with Chapter 5 and the
+ * save with Chapter 8, and both land as further arms of the same switch.
+ *
+ * <p><b>Two callers reach that switch.</b> {@link #gameLoop()} calls it once the load is
+ * done, but the load itself also calls it: {@code GameConstants.init(Core)} stops part-way
+ * to wait for the front end's {@code UIEntriesLoaded} message, and hands every other message
+ * it reads while waiting to {@link #handleChannelOutput(UIMessage)}. So a shutdown request
+ * that arrives mid-load is answered by the same code as one that arrives mid-game.
+ *
+ * <p>Class Core coded before 260813, commented in full on 261010.
  *
  * @author Rowan Crowther
  */
 public class Core {
+    /**
+     * The class's log4j logger, used by {@link #gameLoop()} for the interrupt that ends it and by
+     * {@link #handleChannelOutput(UIMessage)} for each lifecycle message it is given.
+     *
+     * <p>Static and final, so shared by every {@code Core} and safe to use from the game thread
+     * without further thought. There is no C counterpart: C reports through {@code msg()} and
+     * {@code quit()}, neither of which is a log.
+     *
+     * <p>Field logger coded before 260813, commented in full on 261010.
+     */
     private static final Logger logger = LogManager.getLogger(Core.class);
+
+    /**
+     * Whether the data load has run to completion, so the front end's {@code START} message is
+     * arriving at a core that can act on it.
+     *
+     * <p>{@code false} from construction until {@link #gameLoop()} sees
+     * {@code loadGameConstants()} return normally, then {@code true} for the rest of the run; it
+     * never goes back. The only reader is the {@code START} arm of
+     * {@link #handleChannelOutput(UIMessage)}, and that arm sees {@code false} only when the load
+     * itself passed the message across, because the loop in {@code gameLoop()} is not entered
+     * before the flag is set. Today the arm does nothing with either value; a {@code START} that
+     * arrives early is logged and dropped, not held over.
+     *
+     * <p>Not {@code volatile}: both the write and the reads happen on the game thread.
+     *
+     * <p>Field gameConstantsFinishedLoading coded before 261010, commented in full on 261010.
+     */
+    private boolean gameConstantsFinishedLoading = false;
 
     /**
      * The middle end this class drives, built by {@link #getGameEngine()} and used only on the
@@ -81,6 +117,8 @@ public class Core {
      * object is constructed on {@code main}'s thread but every field it touches after that belongs
      * to the game thread, and starting a thread publishes everything written before the start to
      * it.
+     *
+     * <p>Field gameEngine coded before 260813, commented in full on 261010.
      */
     private GameEngine gameEngine;
 
@@ -101,6 +139,11 @@ public class Core {
      * <p>Handed in at construction, on {@code main}'s thread, and read on the game
      * thread; safe without {@code volatile} because starting a thread publishes
      * everything written before it.
+     *
+     * <p>Reached from outside through {@link #getCoreChannel()}, which is how the data load finds
+     * the inbox it waits on.
+     *
+     * <p>Field coreChannel coded before 260813, commented in full on 261010.
      */
     private CoreChannel coreChannel;
 
@@ -112,6 +155,13 @@ public class Core {
      * {@code selectSavefile}, {@code startNewCharacter} and {@code useSpecificCharacter} all decide
      * what happens before the first turn, which is Chapter 3's work. {@code requestGraphicsMode}
      * belongs to the other half and is carried here only because both halves get the whole record.
+     *
+     * <p>The C counterpart is what {@code main()} ({@code src/main.c}) works out from {@code argv}
+     * before it calls {@code play_game()}: the {@code new_game} and {@code select_game} locals,
+     * which choose the {@code game_mode_type} passed in, and the savefile name set through
+     * {@code savefile_set_name()}.
+     *
+     * <p>Field startupOptions coded before 260813, commented in full on 261010.
      */
     private StartupOptions startupOptions;
 
@@ -127,6 +177,8 @@ public class Core {
      * is private, so the override has nothing it can write to, and {@link #gameLoop()} would find
      * the field still null. The boundary is nominal until either the field is made visible to
      * subclasses or this hands the engine back instead of storing it.
+     *
+     * <p>Method getGameEngine coded before 260813, commented in full on 261010.
      */
     public void getGameEngine() {
         gameEngine = GameEngine.getGame();
@@ -138,6 +190,8 @@ public class Core {
      * <p>Only assembles state: no thread is started, no engine is built and no message is sent
      * until {@link #gameLoop()} runs on the thread {@code main()} wraps this in. That split is what
      * lets construction happen on one thread and everything else on another.
+     *
+     * <p>Constructor Core coded before 260813, commented in full on 261010.
      *
      * @param coreChannel    the core's pair of channel ends - its inbox and its way of replying
      * @param startupOptions the parsed command line
@@ -157,6 +211,18 @@ public class Core {
      * for messages, which is the same shape with a queue where C has a blocking call
      * into the display module. The alternation itself is Chapter 5's.
      *
+     * <p><b>What of {@code play_game()} is not here yet.</b> C opens with a switch on the
+     * {@code game_mode_type} - {@code GAME_LOAD}, {@code GAME_NEW} or {@code GAME_SELECT} - and
+     * calls {@code start_game()} to load a savefile or birth a character, which is Chapter 3. Its
+     * inner loop runs while the player is neither dead nor finished playing, calling
+     * {@code pre_turn_refresh()}, the command hook and {@code run_game_loop()} each time round
+     * (Chapter 5). It ends with {@code close_game()}, which is the save of Chapter 8, and with the
+     * {@code play_again} branch that tears the game down and starts over, which has no equivalent
+     * because the thread simply returns. In C the data load belongs to {@code main()}, which calls
+     * {@code init_display()}, {@code init_angband()} and {@code textui_init()} before
+     * {@code play_game()}; here it is the first thing the method does, in the same order relative
+     * to the handlers.
+     *
      * <p><b>The statements before the loop are the core's whole set-up, in the only order that
      * works.</b> The engine is built first, because building it replaces the event bus. Both
      * {@code InitHandlers} and {@code RedrawHandlers} are then constructed around the core's
@@ -166,6 +232,14 @@ public class Core {
      * RedrawHandlers} has no such deadline of its own - {@code EVENT_HP} is not signalled until
      * play begins - but is wired alongside it for the same reason and at no cost. Only then does
      * {@code loadGameConstants()} produce the events {@code InitHandlers} carries across.
+     *
+     * <p><b>The load is not a straight run.</b> Part-way through, {@code GameConstants.init(Core)}
+     * waits on this core's inbox for the front end's {@code UIEntriesLoaded} message and passes
+     * anything else it reads to {@link #handleChannelOutput(UIMessage)}. If that call says to
+     * stop, the load is abandoned and {@code loadGameConstants()} returns {@code true}; the
+     * {@code STOPPED} reply has already been sent by then, so returning without sending anything
+     * further is the clean exit. {@link #gameConstantsFinishedLoading} is set only on the
+     * {@code false} return, so a {@code START} that is handled inside the load sees it unset.
      *
      * <p>Nothing keeps either the {@code InitHandlers} or the {@code RedrawHandlers} instance
      * after this method drops its local, and nothing needs to: subscribing hands the bus a bound
@@ -183,15 +257,14 @@ public class Core {
      * is that the thread is unresponsive to anything that is not a message, which is
      * the point: there is no longer any other way to reach it.
      *
-     * <p><b>The shutdown handshake, core half.</b> {@code SAVE_AND_STOP} is answered
-     * with {@code STOPPED} and then the loop ends, in that order, so the reply is on
-     * the queue before this thread stops existing. The front end is waiting for that
-     * reply before it disposes anything, which is what makes "the save finished
-     * before the window went" a guarantee rather than a race - and why nothing here
-     * calls {@code System.exit}. The thread simply returns; the JVM exits when the
-     * last non-daemon thread does. (There is nothing to save yet. When there is, it
-     * goes between the two lines below, and the guarantee is already in place for
-     * it.)
+     * <p><b>The shutdown handshake, core half.</b> {@link #handleChannelOutput(UIMessage)}
+     * answers {@code SAVE_AND_STOP} with {@code STOPPED} and reports that the loop should
+     * end, in that order, so the reply is on the queue before this thread stops existing. The
+     * front end is waiting for that reply before it disposes anything, which is what makes "the
+     * save finished before the window went" a guarantee rather than a race - and why nothing here
+     * calls {@code System.exit}. The thread simply returns; the JVM exits when the last non-daemon
+     * thread does. (There is nothing to save yet. When there is, it goes between the send and the
+     * return in {@code handleChannelOutput}, and the guarantee is already in place for it.)
      *
      * <p>An interrupt is treated as a hard stop rather than as a request: nothing
      * interrupts this thread today, so an interrupt means something unexpected has
@@ -200,7 +273,7 @@ public class Core {
      * would then wait forever, which is a real gap and the reason interrupting this
      * thread is not part of any shutdown path.
      *
-     * <p>Method gameLoop coded before 260813, commented in full on 260926.
+     * <p>Method gameLoop coded before 260813, commented in full on 261010.
      */
     public void gameLoop() {
         if (gameEngine == null)
@@ -214,7 +287,11 @@ public class Core {
         RedrawHandlers redrawHandlers = new RedrawHandlers(coreSender);
         redrawHandlers.initHandlers();
 
-        if (gameEngine.loadGameConstants(this)) return;
+        if (gameEngine.loadGameConstants(this)) {
+            return;
+        } else {
+            gameConstantsFinishedLoading = true;
+        }
 
         while (true) {
             try {
@@ -231,10 +308,51 @@ public class Core {
         }
     }
 
+    /**
+     * Act on one message from the front end, and say whether the game thread should now end.
+     *
+     * <p>The one place the core's inbox is interpreted. It is public because two callers need it:
+     * the loop in {@link #gameLoop()} and the data load, which reads the same inbox while it waits
+     * for {@code UIEntriesLoaded} and passes every other message here. Both treat {@code true} as
+     * "stop at once" - the loop returns, the load abandons its work and reports the same to
+     * {@code gameLoop()}.
+     *
+     * <p>What each message does today:
+     * <ul>
+     *   <li>{@code LifecycleUIMessage(SAVE_AND_STOP)} sends {@code STOPPED} on the core's sender
+     *       and returns {@code true}. The send completes before the return, so the reply is on the
+     *       queue before the caller ends the thread.</li>
+     *   <li>{@code LifecycleUIMessage(START)} is logged and does nothing else; birth lands here in
+     *       Chapter 3. The branch for a {@code START} that arrives before the load has finished is
+     *       an empty placeholder, so such a message is lost rather than held over.</li>
+     *   <li>{@code WindowCloseRequested}, {@code SimpleUIMessage} and {@code UIEntriesLoaded} are
+     *       ignored. The first is the EDT's, posted to the UI thread's inbox and never expected
+     *       here; the second is a bus event the loaders use, and means nothing to the core; the
+     *       third is consumed by the load before it could reach this method, and is ignored if it
+     *       arrives later.</li>
+     * </ul>
+     *
+     * <p>The outer switch is over the sealed {@code UIMessage} with type patterns, so a new record
+     * added to the protocol stops this method compiling. The inner switch over
+     * {@code UILifecycleEvent} has no such protection - an arrow-form switch statement over an enum
+     * is not checked for exhaustiveness - so a new lifecycle constant would be ignored without a
+     * warning.
+     *
+     * <p>There is no C counterpart. C is single-threaded and reads its input by calling the
+     * command hook from inside {@code play_game()}; a message handed across a queue is the port's
+     * own mechanism.
+     *
+     * <p>Method handleChannelOutput coded before 261010, commented in full on 261010.
+     *
+     * @param uiMessage the message just read from the core's inbox
+     * @return {@code true} if the caller should end the game thread, {@code false} to carry on
+     */
     public boolean handleChannelOutput(UIMessage uiMessage) {
         // Exhaustive over the sealed UIMessage, so a new record added to the protocol
         // breaks this switch at compile time rather than being silently ignored at run
-        // time. The inner switch over UILifecycleEvent is exhaustive for the same reason.
+        // time. The inner switch over UILifecycleEvent is NOT checked: an arrow-form
+        // statement switch over an enum need not be exhaustive, so a new constant there
+        // would fall through unnoticed.
         switch (uiMessage) {
             case UIMessage.LifecycleUIMessage lifecycleUIMessage -> {
                 logger.info("Received {}", lifecycleUIMessage.event());
@@ -251,7 +369,12 @@ public class Core {
                     // Nothing to do with it yet - the window is up and the data is
                     // already loaded by the time it arrives. This is where character
                     // birth goes in Chapter 3.
-                    case START -> logger.debug("Start message received");
+                    case START -> {
+                        if (!gameConstantsFinishedLoading) {
+                            // Send a new message to tell the UI to wait and resend the START command?
+                        }
+                        logger.debug("Start message received");
+                    }
                 }
             }
             // Not ours: the EDT posts these to the UI thread's inbox, not to this one.
@@ -275,6 +398,17 @@ public class Core {
         return false;
     }
 
+    /**
+     * The core's pair of channel ends, as handed to the constructor.
+     *
+     * <p>Exists for {@code GameConstants.init(Core)}, which reads the inbox through it while the
+     * data load waits for the front end's {@code UIEntriesLoaded} message. The same instance every
+     * call; nothing here copies it.
+     *
+     * <p>Method getCoreChannel coded before 261010, commented in full on 261010.
+     *
+     * @return the channel ends this core was built with
+     */
     public CoreChannel getCoreChannel() {
         return coreChannel;
     }

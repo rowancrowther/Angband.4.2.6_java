@@ -48,24 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/player/PlayerBody.java`
-
-0 missing, 4 low
-
-- L158: method `getName` - LOW
-- L165: method `getCount` - LOW
-- L172: method `getSlots` - LOW
-- L180: method `getSlot` - LOW
-
-### `unused/Rect.java`
-
-0 missing, 4 low
-
-- L64: method `getLeft` - LOW
-- L71: method `getTop` - LOW
-- L78: method `getRight` - LOW
-- L85: method `getBottom` - LOW
-
 ### `middle/game/gameengine/Core.java`
 
 3 missing, 0 low

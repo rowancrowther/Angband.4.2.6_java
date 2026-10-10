@@ -48,14 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/game/gameengine/Core.java`
-
-3 missing, 0 low
-
-- L68: field `logger` - MISSING
-- L224: method `handleChannelOutput` - MISSING
-- L264: method `getCoreChannel` - MISSING
-
 ### `middle/monsters/enums/MonTimedFlags.java`
 
 3 missing, 0 low

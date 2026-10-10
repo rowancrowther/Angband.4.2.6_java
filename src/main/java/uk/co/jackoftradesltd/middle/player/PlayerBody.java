@@ -30,16 +30,26 @@ import java.util.List;
  * A body layout — a named, ordered set of equipment slots a creature presents.
  *
  * <p>Ports the C {@code struct player_body} ({@code player.h}), defined by {@code body.txt}: a body
- * name followed by its slots in declared order. This is the immutable <em>template</em>; the runtime
- * occupant of each slot (C's {@code equip_slot.obj}) is per-player state and lives elsewhere, so it
- * is deliberately absent here — at character birth C copies the template and allocates a fresh slot
- * array to hold the worn items.
+ * name followed by its slots in declared order. C's {@code count} member is not stored; it is the
+ * size of the slot list ({@link #getCount()}).
+ *
+ * <p><b>One class, two roles.</b> C uses the same struct for the template and for the player's own
+ * body, and so does this class. The templates are built once by {@code BodyAssembler} and held in
+ * the registry, with every slot empty. At character birth {@link #copy()} makes the player's body
+ * from the race's template, and from then on the {@link EquipSlot}s of that copy are filled and
+ * emptied by the wield code (C's {@code equip_slot.obj}). The list itself never changes after
+ * construction, the slots in it do; so the class is only "immutable" in the sense that no slot is
+ * added, removed or reordered. The three gear queries here ({@link #itemIsEquipped},
+ * {@link #equippedItemSlot}, {@link #equippedItemBySlotName}) are meaningful on the player's copy
+ * only, a template having nothing worn.
  *
  * <p><b>Slots are index-addressed.</b> The whole gear system reaches equipment by slot number
  * ({@code slots[i]}); name and type are only lookup keys that resolve to an index (C's
  * {@code slot_by_name} / {@code slot_by_type}). So the slots are held as an ordered {@link List} and
  * position is significant — e.g. the two {@code RING} slots ("right hand", "left hand") are distinct
  * only by their index and name.
+ *
+ * <p>Class PlayerBody coded before 260815, commented in full on 261010.
  *
  * @author Rowan Crowther
  */
@@ -48,24 +58,50 @@ public class PlayerBody {
      * Logger for this class, used to report a body built without slots before the constructor
      * throws. C has no equivalent: its bodies come from a parser that has already rejected a
      * malformed {@code body.txt}, and a body with no slots is simply an array of length zero.
+     *
+     * <p>Field logger coded before 260815, commented in full on 261010.
      */
     private final static Logger logger = LogManager.getLogger(PlayerBody.class);
     
     /**
      * Display name of this body layout, e.g. {@code "Humanoid"} (C: {@code player_body.name}).
+     * Set once by the constructor and never reassigned, though not declared {@code final}.
+     *
+     * <p>Field name coded before 260815, commented in full on 261010.
      */
     private String name;
 
     /**
-     * The equipment slots in declared (body) order; a slot's index is its identity.
+     * The equipment slots in declared (body) order; a slot's index is its identity (C:
+     * {@code player_body.slots}, with {@code count} being this list's size). The list is fixed at
+     * construction; the {@link EquipSlot}s in it are not, as each one's worn item changes.
+     *
+     * <p>Field slots coded before 260815, commented in full on 261010.
      */
     private final List<EquipSlot> slots;
 
     /**
-     * Creates an immutable body template.
+     * Creates a body from a name and an ordered slot list.
+     *
+     * <p>The slot list is copied into a list of the body's own, so the caller adding to or clearing
+     * its list afterwards changes nothing here; the {@link EquipSlot}s themselves are not copied,
+     * and are shared with the caller's list. A null or empty list is refused with an
+     * {@link IllegalArgumentException}, after a fatal log entry, because C can never produce one:
+     * its bodies come from a parser that has already rejected the file.
+     *
+     * <p><b>Side effect with no C counterpart.</b> A successful construction also pushes the slot
+     * count to the character sheet through
+     * {@link PlayerEventStatusUpdate#updatePlayerCharSheetBodyCount}. In C the sheet reads
+     * {@code player->body.count} on demand; the cache-to-messages migration replaces that read with
+     * this push. The push happens for every body built, so it fires once per template when
+     * {@code body.txt} is loaded and again for each {@link #copy()}, and what the sheet holds is
+     * whichever body was constructed last.
+     *
+     * <p>Constructor PlayerBody coded before 260815, commented in full on 261010.
      *
      * @param name  the body's display name
-     * @param slots the equipment slots in declared order (defensively copied and kept immutable)
+     * @param slots the equipment slots in declared order (copied into a list of this body's own)
+     * @throws IllegalArgumentException if {@code slots} is {@code null} or empty
      */
     public PlayerBody(String name, List<EquipSlot> slots) {
         this.name = name;
@@ -81,7 +117,7 @@ public class PlayerBody {
 
     /**
      * Copies this body plan into a new, unworn one — the port of the copying half of C's
-     * {@code player_embody} ({@code player-birth.c:369}).
+     * {@code player_embody} ({@code player-birth.c}).
      *
      * <p>C builds the player's body from the race's template in two steps: a {@code memcpy} of the
      * whole {@code player_body} struct to carry the name and the slot count across, then a freshly
@@ -112,7 +148,11 @@ public class PlayerBody {
      * of its own. It also matches {@code ElementInfo.copy}, the same decision taken elsewhere in
      * the port.
      *
-     * <p>Function copy coded on 260818, commented in full on 260818.
+     * <p>The copy goes through the public constructor, so it also pushes the new body's slot count to
+     * the character sheet, which {@code player_embody} does not do; see
+     * {@link #PlayerBody(String, List)}.
+     *
+     * <p>Function copy coded on 260818, commented in full on 261010.
      *
      * @return a new body with this one's name and slot layout, and every slot empty
      */
@@ -127,32 +167,54 @@ public class PlayerBody {
 
     /**
      * Tests whether a given item is currently worn in one of this body's equipment slots — the port
-     * of C's {@code object_is_equipped} ({@code obj-gear.c}). Empty slots are skipped; the match is
-     * by object identity.
+     * of C's {@code object_is_equipped} ({@code obj-gear.c}). Empty slots never match a real item;
+     * the match is by object identity.
+     *
+     * <p>C writes this as {@code object_slot(body, obj) < body.count}, where {@code object_slot}
+     * walks the slots comparing {@code obj == body.slots[i].obj} and returns the index it stopped at.
+     * The port answers the yes/no question directly and has no separate {@code object_slot}.
      *
      * <p>Worn is a different question from carried. An object in an equipment slot is still on the
-     * gear list, so {@code Player.isCarried} answers {@code true}
-     * for it too; this narrows that to the objects actually in use, which is what decides whether an
-     * object is labelled by its slot or by its position in the pack.
+     * gear list, so {@link uk.co.jackoftradesltd.middle.objects.ObjectUtils#isCarried} answers
+     * {@code true} for it too; this narrows that to the objects actually in use, which is what
+     * decides whether an object is labelled by its slot or by its position in the pack.
      *
-     * <p>Function itemIsEquipped commented in full on 260816.
+     * <p><b>A null item is "equipped" when any slot is empty.</b> C compares pointers, so a NULL
+     * argument equals the NULL held by every empty slot and the answer is true as soon as the body
+     * has a gap. The port reproduces that with the {@code emptySlot} flag rather than refusing the
+     * null. No caller relies on it: {@code ObjectUtils.gearToLabel} returns before asking when the
+     * item is null.
      *
-     * @param item the item to look for
-     * @return {@code true} if the item occupies one of this body's slots
+     * <p>Matching is by identity, {@link ItemObject} declaring no {@code equals} of its own, which
+     * is what C's pointer comparison means.
+     *
+     * <p>Function itemIsEquipped coded before 260816, commented in full on 261010.
+     *
+     * @param item the item to look for, or {@code null}
+     * @return {@code true} if the item occupies one of this body's slots, or if {@code item} is
+     * {@code null} and at least one slot is empty
      */
     public boolean itemIsEquipped(ItemObject item) {
+        boolean emptySlot = false;
         for (EquipSlot slot : slots) {
-            if (slot.getItem() == null) continue;
+            if (slot.getItem() == null) {
+                emptySlot = true;
+                continue;
+            }
 
             if (slot.getItem().equals(item)) {
                 return true;
             }
         }
 
-        return false;
+        return item == null && emptySlot;
     }
 
     /**
+     * Returns this body's display name, e.g. {@code "Humanoid"} (C: {@code player_body.name}).
+     *
+     * <p>Method getName coded before 260815, commented in full on 261010.
+     *
      * @return this body's display name
      */
     public String getName() {
@@ -160,13 +222,24 @@ public class PlayerBody {
     }
 
     /**
-     * @return the number of equipment slots this body provides (C: {@code player_body.count})
+     * Returns the number of equipment slots this body provides. C stores this as
+     * {@code player_body.count}; here it is the size of the slot list, so it cannot disagree with
+     * it. It is also the value {@link #equippedItemSlot} returns for an item that is not worn.
+     *
+     * <p>Method getCount coded before 260815, commented in full on 261010.
+     *
+     * @return the number of equipment slots this body provides
      */
     public int getCount() {
         return slots.size();
     }
 
     /**
+     * Returns the slots in body order, as a read-only view. The list cannot be changed through it,
+     * but the {@link EquipSlot}s in it can, so a caller can still wear or remove items.
+     *
+     * <p>Method getSlots coded before 260815, commented in full on 261010.
+     *
      * @return the slots in body order (unmodifiable)
      */
     public List<EquipSlot> getSlots() {
@@ -174,8 +247,17 @@ public class PlayerBody {
     }
 
     /**
+     * Returns the slot at a given position, C's {@code body.slots[index]}. No bounds check is made
+     * beyond the list's own: an index outside {@code 0..getCount()-1} throws
+     * {@link IndexOutOfBoundsException}, where C reads past the array (or trips the assert in
+     * {@code slot_object}). In particular the "not worn" result of {@link #equippedItemSlot} is
+     * not a valid index here.
+     *
+     * <p>Method getSlot coded before 260815, commented in full on 261010.
+     *
      * @param index the slot's position, its C {@code slots[i]} address
      * @return the slot at the given index
+     * @throws IndexOutOfBoundsException if the index is out of range
      */
     public EquipSlot getSlot(int index) {
         return slots.get(index);
@@ -183,7 +265,7 @@ public class PlayerBody {
 
     /**
      * Finds which equipment slot an item is worn in, the port of C's {@code equipped_item_slot}
-     * ({@code obj-gear.c}).
+     * ({@code player-calcs.c}).
      *
      * <p>The return for "not worn" is {@link #getCount()} — one past the last slot — rather than
      * {@code -1}. That follows C, whose loop simply runs off the end and hands back the index it
@@ -191,8 +273,13 @@ public class PlayerBody {
      * {@code if (slot == player->body.count) return;}. A null item takes the same exit, which is
      * why the size is returned up front rather than falling through the loop.
      *
+     * <p>This is the one place C and {@link #itemIsEquipped} part company over a null item. C's
+     * {@code object_is_equipped} lets NULL match an empty slot, whereas {@code equipped_item_slot}
+     * returns early and never does, so {@code equippedItemSlot(null)} is {@code getCount()} even on
+     * a body with a gap.
+     *
      * <p>The reason it is an index and not a slot is that the index <em>is</em> the answer the
-     * callers want: {@code Player.gearToLabel} uses it to
+     * callers want: {@link uk.co.jackoftradesltd.middle.objects.ObjectUtils#gearToLabel} uses it to
      * subscript the equipment label string, so an item's slot position becomes the letter the
      * player selects it by.
      *
@@ -200,7 +287,7 @@ public class PlayerBody {
      * is what C's pointer comparison means. Two identical swords are two different objects and only
      * the one actually worn is found.
      *
-     * <p>Function equippedItemSlot coded before 260817, commented in full on 260817.
+     * <p>Function equippedItemSlot coded before 260817, commented in full on 261010.
      *
      * @param item the item to locate, or {@code null}
      * @return the slot's index, or {@link #getCount()} if the item is not worn
@@ -220,11 +307,11 @@ public class PlayerBody {
 
     /**
      * Finds the item worn in the slot with the given name — the port of C's
-     * {@code equipped_item_by_slot_name} ({@code obj-gear.c:127}).
+     * {@code equipped_item_by_slot_name} ({@code obj-gear.c}).
      *
      * <p>Slot names are the second field of each {@code slot:} line in {@code body.txt}: "weapon",
      * "shooting", "light", "body", "head" and so on. They are how the rest of the game asks for a
-     * particular piece of equipment without knowing the body's layout — twenty-nine call sites in C
+     * particular piece of equipment without knowing the body's layout — some thirty call sites in C
      * do exactly this, from the light source the fuel code burns down to the weapon a brand is
      * applied to. This is the reason the name exists at all; the gear system otherwise addresses
      * slots by index.
@@ -241,7 +328,7 @@ public class PlayerBody {
      * {@code streq}.
      *
      * <p><b>Deliberate divergence from the C original.</b> C asserts that the name was found —
-     * {@code assert(i < p->body.count)} at {@code obj-gear.c:62} — so asking for a slot this body
+     * {@code assert(i < p->body.count)} in {@code slot_by_name} — so asking for a slot this body
      * does not have aborts the game in a debug build and silently reads past the end of the array
      * in a release one. This returns null instead, on the grounds that a Java null is both safer
      * than the read and easier to trace than an abort. The cost is that "no such slot" and "that
@@ -256,7 +343,7 @@ public class PlayerBody {
      * player whose body has not been built yet, where the slot array is still NULL. The constructor
      * here refuses to build a body without slots, so the list always exists.
      *
-     * <p>Function equippedItemBySlotName coded on 260818, commented in full on 260818.
+     * <p>Function equippedItemBySlotName coded on 260818, commented in full on 261010.
      *
      * @param name the slot's name from {@code body.txt}, or {@code null}
      * @return the item worn in that slot, or {@code null} if the slot is empty, the name is unknown,

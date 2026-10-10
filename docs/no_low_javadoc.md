@@ -48,15 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/objects/FlavourKind.java`
-
-0 missing, 4 low
-
-- L57: constructor `FlavourKind` - LOW
-- L66: method `getValue` - LOW
-- L73: method `getGlyph` - LOW
-- L80: method `getFlavours` - LOW
-
 ### `middle/player/PlayerBody.java`
 
 0 missing, 4 low

@@ -48,14 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/objects/ObjectInfo.java`
-
-3 missing, 0 low
-
-- L27: class `ObjectIgnoreTables` - MISSING
-- L69: field `ignoreLevel` - MISSING
-- L78: record `QualityMapping` - MISSING
-
 ### `middle/objects/ObjectName.java`
 
 3 missing, 0 low

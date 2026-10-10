@@ -17,11 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.cave.Chunk;
@@ -34,11 +30,7 @@ import uk.co.jackoftradesltd.middle.game.gameengine.CommandQueue;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.gameinput.GameInput;
 import uk.co.jackoftradesltd.middle.gameinput.GameInputHolder;
-import uk.co.jackoftradesltd.middle.objects.enums.IgnoreType;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectNotice;
-import uk.co.jackoftradesltd.middle.objects.enums.QualityValueEnum;
-import uk.co.jackoftradesltd.middle.objects.enums.TValue;
+import uk.co.jackoftradesltd.middle.objects.enums.*;
 import uk.co.jackoftradesltd.middle.player.Player;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerNotice;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerUpdateEnum;
@@ -51,12 +43,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static uk.co.jackoftradesltd.testsupport.ItemFixture.set;
 
 /**
@@ -191,8 +178,8 @@ class ObjectIgnoreTest {
         savedPlayer = GameState.getPlayer();
         savedCave = GameState.getCave();
         savedQueue = GameState.getCommandQueue();
-        savedIgnoreLevels = ObjectInfo.ignoreLevel;
-        ObjectInfo.ignoreLevel = new HashMap<>(savedIgnoreLevels);
+        savedIgnoreLevels = ObjectIgnoreTables.ignoreLevel;
+        ObjectIgnoreTables.ignoreLevel = new HashMap<>(savedIgnoreLevels);
 
         player = new Player();
         level = new Chunk("level", 0, 0, 0, 0, 0, false, 6, 6, 0, 4, 2, 0, 0, 0, player);
@@ -212,7 +199,7 @@ class ObjectIgnoreTest {
         GameState.setPlayer(savedPlayer);
         GameState.setCave(savedCave);
         GameState.setCommandQueue(savedQueue);
-        ObjectInfo.ignoreLevel = savedIgnoreLevels;
+        ObjectIgnoreTables.ignoreLevel = savedIgnoreLevels;
         GameInputHolder.resetInstance();
     }
 
@@ -443,7 +430,7 @@ class ObjectIgnoreTest {
         @DisplayName("an item outside the quality categories is never ignored on quality")
         void itemWithNoQualityCategoryIsSafe() {
             for (IgnoreType type : IgnoreType.values()) {
-                ObjectInfo.ignoreLevel.put(type, QualityValueEnum.IGNORE_ALL);
+                ObjectIgnoreTables.ignoreLevel.put(type, QualityValueEnum.IGNORE_ALL);
             }
             ItemObject item = potion();
             player.getGear().insertEnd(item);
@@ -462,7 +449,7 @@ class ObjectIgnoreTest {
         @Test
         @DisplayName("an assessed item in a category set to ignore-all is dropped")
         void assessedItemInAnIgnoreAllCategoryIsDropped() {
-            ObjectInfo.ignoreLevel.put(IgnoreType.ITYPE_BODY_ARMOR, QualityValueEnum.IGNORE_ALL);
+            ObjectIgnoreTables.ignoreLevel.put(IgnoreType.ITYPE_BODY_ARMOR, QualityValueEnum.IGNORE_ALL);
             ItemObject item = ItemFixture.item(TValue.TV_SOFT_ARMOR)
                     .kind(ItemFixture.loadedKind(TValue.TV_SOFT_ARMOR, "armour", 40)).fullyKnown().build();
             item.getKnown().orNotice(ObjectNotice.OBJ_NOTICE_ASSESSED);

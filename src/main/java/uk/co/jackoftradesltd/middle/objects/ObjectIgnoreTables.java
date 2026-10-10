@@ -38,9 +38,9 @@ import java.util.Map;
  * <p>Both tables are read by {@code ObjectIgnore}, {@code ItemObject} and {@code EgoItem}, and the
  * class has no behaviour of its own.
  *
- * <p>Class ObjectInfo coded before 261008, commented in full on 261010.
+ * <p>Class ObjectIgnoreTables coded before 261008, commented in full on 261010.
  */
-public class ObjectInfo {
+public class ObjectIgnoreTables {
     /**
      * Which ignore category each kind of item falls under - the port of C's {@code quality_mapping[]}
      * in {@code obj-ignore.c}.

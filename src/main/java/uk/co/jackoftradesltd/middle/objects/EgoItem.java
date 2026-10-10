@@ -18,12 +18,14 @@
 package uk.co.jackoftradesltd.middle.objects;
 
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
-import uk.co.jackoftradesltd.channel.utils.FlagView;
-import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
-import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.channel.utils.Flag;
+import uk.co.jackoftradesltd.channel.utils.FlagView;
 import uk.co.jackoftradesltd.middle.Activation;
-import uk.co.jackoftradesltd.middle.objects.enums.*;
+import uk.co.jackoftradesltd.middle.numerics.Random;
+import uk.co.jackoftradesltd.middle.objects.enums.IgnoreType;
+import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
+import uk.co.jackoftradesltd.middle.objects.enums.ObjectKindFlag;
+import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftradesltd.middle.player.PlayerKnowledge;
 
 import java.util.*;
@@ -492,7 +494,7 @@ public class EgoItem {
      * {@code ego_has_ignore_type} in {@code obj-ignore.c}.
      *
      * <p>Walks every kind this ego may be applied to ({@link #possItems}) and, for each, every row of
-     * {@link ObjectInfo#qualityMapping}. It answers {@code true} on the first row where all three hold:
+     * {@link ObjectIgnoreTables#qualityMapping}. It answers {@code true} on the first row where all three hold:
      * the row's tval is the kind's tval, the row's ignore type is the one asked for, and the row's
      * identifier occurs somewhere inside the <em>kind's</em> name (C's {@code strstr}, here
      * {@link String#contains}). The identifier is matched against the kind, not the ego: "Chaos" is
@@ -514,7 +516,7 @@ public class EgoItem {
     public boolean egoHasIgnoreType(IgnoreType ignoreType) {
         // Go through all possible item kinds
         for (ObjectKind egoKind : possItems) {
-            for (ObjectInfo.QualityMapping mapping : ObjectInfo.qualityMapping) {
+            for (ObjectIgnoreTables.QualityMapping mapping : ObjectIgnoreTables.qualityMapping) {
                 if (mapping.tval() == egoKind.gettValue()
                         && mapping.ignoreType() == ignoreType
                         && egoKind.getName().contains(mapping.identifier()))

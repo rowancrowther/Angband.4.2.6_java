@@ -27,7 +27,7 @@ import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Tests {@link ObjectInfo} - the Java home of {@code quality_mapping[]} and {@code ignore_level[]}
+ * Tests {@link ObjectIgnoreTables} - the Java home of {@code quality_mapping[]} and {@code ignore_level[]}
  * from {@code obj-ignore.c}.
  *
  * <p>The expected rows below are typed out from the C table, not read back from the Java one, so a
@@ -82,9 +82,9 @@ class ObjectInfoTest {
             {IgnoreType.ITYPE_LIGHT, TValue.TV_LIGHT, ""},
     };
 
-    /** Runs C's {@code ignore_type_of} loop over {@link ObjectInfo#qualityMapping}. */
+    /** Runs C's {@code ignore_type_of} loop over {@link ObjectIgnoreTables#qualityMapping}. */
     private static IgnoreType ignoreTypeOf(TValue tval, String kindName) {
-        for (ObjectInfo.QualityMapping row : ObjectInfo.qualityMapping) {
+        for (ObjectIgnoreTables.QualityMapping row : ObjectIgnoreTables.qualityMapping) {
             if (row.tval() == tval) {
                 if (!row.identifier().isEmpty() && !kindName.contains(row.identifier())) continue;
                 return row.ignoreType();
@@ -101,14 +101,14 @@ class ObjectInfoTest {
         @DisplayName("has the 38 rows of C's table")
         void rowCount() {
             assertEquals(38, C_ROWS.length, "the expectation itself must have C's row count");
-            assertEquals(38, ObjectInfo.qualityMapping.length);
+            assertEquals(38, ObjectIgnoreTables.qualityMapping.length);
         }
 
         @Test
         @DisplayName("every row matches C by position: ignore type, tval and identifier")
         void rowsMatchC() {
             for (int i = 0; i < C_ROWS.length; i++) {
-                ObjectInfo.QualityMapping row = ObjectInfo.qualityMapping[i];
+                ObjectIgnoreTables.QualityMapping row = ObjectIgnoreTables.qualityMapping[i];
                 assertEquals(C_ROWS[i][0], row.ignoreType(), "row " + i + " ignore type");
                 assertEquals(C_ROWS[i][1], row.tval(), "row " + i + " tval");
                 assertEquals(C_ROWS[i][2], row.identifier(), "row " + i + " identifier");
@@ -118,11 +118,11 @@ class ObjectInfoTest {
         @Test
         @DisplayName("a row with an identifier always sits above a row of the same tval with none")
         void identifierRowsComeFirst() {
-            for (int i = 0; i < ObjectInfo.qualityMapping.length; i++) {
-                ObjectInfo.QualityMapping blanket = ObjectInfo.qualityMapping[i];
+            for (int i = 0; i < ObjectIgnoreTables.qualityMapping.length; i++) {
+                ObjectIgnoreTables.QualityMapping blanket = ObjectIgnoreTables.qualityMapping[i];
                 if (!blanket.identifier().isEmpty()) continue;
-                for (int j = i + 1; j < ObjectInfo.qualityMapping.length; j++) {
-                    ObjectInfo.QualityMapping later = ObjectInfo.qualityMapping[j];
+                for (int j = i + 1; j < ObjectIgnoreTables.qualityMapping.length; j++) {
+                    ObjectIgnoreTables.QualityMapping later = ObjectIgnoreTables.qualityMapping[j];
                     assertFalse(later.tval() == blanket.tval() && !later.identifier().isEmpty(),
                             "row " + j + " hides behind the catch-all row " + i);
                 }
@@ -132,11 +132,11 @@ class ObjectInfoTest {
         @Test
         @DisplayName("no tval carries two catch-all rows, so the second could never be reached")
         void oneCatchAllPerTval() {
-            for (int i = 0; i < ObjectInfo.qualityMapping.length; i++) {
-                if (!ObjectInfo.qualityMapping[i].identifier().isEmpty()) continue;
-                for (int j = i + 1; j < ObjectInfo.qualityMapping.length; j++) {
-                    assertFalse(ObjectInfo.qualityMapping[j].tval() == ObjectInfo.qualityMapping[i].tval()
-                                    && ObjectInfo.qualityMapping[j].identifier().isEmpty(),
+            for (int i = 0; i < ObjectIgnoreTables.qualityMapping.length; i++) {
+                if (!ObjectIgnoreTables.qualityMapping[i].identifier().isEmpty()) continue;
+                for (int j = i + 1; j < ObjectIgnoreTables.qualityMapping.length; j++) {
+                    assertFalse(ObjectIgnoreTables.qualityMapping[j].tval() == ObjectIgnoreTables.qualityMapping[i].tval()
+                                    && ObjectIgnoreTables.qualityMapping[j].identifier().isEmpty(),
                             "rows " + i + " and " + j + " are both catch-alls for one tval");
                 }
             }
@@ -145,8 +145,8 @@ class ObjectInfoTest {
         @Test
         @DisplayName("the record is a value: equal rows are equal and the accessors read its fields back")
         void recordIsAValue() {
-            ObjectInfo.QualityMapping a = new ObjectInfo.QualityMapping(IgnoreType.ITYPE_RING, TValue.TV_RING, "");
-            ObjectInfo.QualityMapping b = new ObjectInfo.QualityMapping(IgnoreType.ITYPE_RING, TValue.TV_RING, "");
+            ObjectIgnoreTables.QualityMapping a = new ObjectIgnoreTables.QualityMapping(IgnoreType.ITYPE_RING, TValue.TV_RING, "");
+            ObjectIgnoreTables.QualityMapping b = new ObjectIgnoreTables.QualityMapping(IgnoreType.ITYPE_RING, TValue.TV_RING, "");
             assertEquals(a, b);
             assertEquals(IgnoreType.ITYPE_RING, a.ignoreType());
             assertEquals(TValue.TV_RING, a.tval());
@@ -234,16 +234,16 @@ class ObjectInfoTest {
         @DisplayName("starts every ignore type at IGNORE_NONE, as C's zero-filled array does")
         void startsAtNone() {
             for (IgnoreType type : IgnoreType.values()) {
-                assertEquals(QualityValueEnum.IGNORE_NONE, ObjectInfo.ignoreLevel.get(type), type.name());
+                assertEquals(QualityValueEnum.IGNORE_NONE, ObjectIgnoreTables.ignoreLevel.get(type), type.name());
             }
         }
 
         @Test
         @DisplayName("holds a slot for every ignore type, the ITYPE_NONE and ITYPE_MAX sentinels included")
         void oneSlotPerType() {
-            assertEquals(IgnoreType.values().length, ObjectInfo.ignoreLevel.size());
-            assertTrue(ObjectInfo.ignoreLevel.containsKey(IgnoreType.ITYPE_NONE));
-            assertTrue(ObjectInfo.ignoreLevel.containsKey(IgnoreType.ITYPE_MAX));
+            assertEquals(IgnoreType.values().length, ObjectIgnoreTables.ignoreLevel.size());
+            assertTrue(ObjectIgnoreTables.ignoreLevel.containsKey(IgnoreType.ITYPE_NONE));
+            assertTrue(ObjectIgnoreTables.ignoreLevel.containsKey(IgnoreType.ITYPE_MAX));
         }
 
         @Test

@@ -81,7 +81,7 @@ import static uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum.ORIGIN
  * <p>The knowledge, ignoring and recharge queries ({@link #isKnown}, {@link #flagsKnown},
  * {@link #ignoreLevelOf}, {@link #numberCharging} and their neighbours) report on an item and
  * change nothing, with one exception: {@link #rechargeTimeout} spends a turn of the item's
- * timeout. The quality table they read for ignoring lives in {@code ObjectInfo}, and the marks
+ * timeout. The quality table they read for ignoring lives in {@code ObjectIgnoreTables}, and the marks
  * a player has put on an ego live on the {@link EgoItem}, not here.
  *
  * <p>{@link #modMessage} is the message half of learning a modifier by use: it prints the line
@@ -3720,7 +3720,7 @@ public class ItemObject {
      * <p>The first match wins, so the order of the table matters: a Sword named for Chaos is a
      * {@code ITYPE_GREAT} because that row comes before the plain sword row, while any other sword
      * is {@code ITYPE_SHARP}. The identifier is a substring test on the kind's name, not an
-     * equality, as C's {@code strstr}. The table is in {@code ObjectInfo} and keeps C's order.
+     * equality, as C's {@code strstr}. The table is in {@code ObjectIgnoreTables} and keeps C's order.
      *
      * <p>Reads the kind's name only for a row that has an identifier, so an object with no kind
      * throws there, where C would dereference null.
@@ -3731,7 +3731,7 @@ public class ItemObject {
      * subject to quality ignoring at all
      */
     public IgnoreType getIgnoreTypeOf() {
-        for (ObjectInfo.QualityMapping mapping : ObjectInfo.qualityMapping) {
+        for (ObjectIgnoreTables.QualityMapping mapping : ObjectIgnoreTables.qualityMapping) {
             if (mapping.tval() == gettValue()) {
                 // Is there a matching identifier
                 if (!mapping.identifier().isEmpty()) {

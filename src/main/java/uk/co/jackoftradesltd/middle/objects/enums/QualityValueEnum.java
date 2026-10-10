@@ -24,7 +24,7 @@ package uk.co.jackoftradesltd.middle.objects.enums;
  *
  * <p>This is the Java port of the anonymous {@code enum} of {@code IGNORE_*} values in
  * {@code obj-ignore.h}. C keeps each player's setting as a {@code uint8_t} in
- * {@code ignore_level[ITYPE_MAX]}; here {@code ObjectInfo.ignoreLevel} holds these constants
+ * {@code ignore_level[ITYPE_MAX]}; here {@code ObjectIgnoreTables.ignoreLevel} holds these constants
  * instead, keyed by {@link IgnoreType}.
  *
  * <p>Each constant's {@link #ordinal()} is its C value, and the order matters. C's
@@ -52,7 +52,7 @@ public enum QualityValueEnum {
     /**
      * No quality ignoring at all, the setting every kind of item starts with. Being the lowest
      * band, it is below every band {@code ignoreLevelOf} can report, so the ordinal test never
-     * ignores anything on quality. {@code ObjectInfo.ignoreLevel} is filled with it at start-up and
+     * ignores anything on quality. {@code ObjectIgnoreTables.ignoreLevel} is filled with it at start-up and
      * {@code ObjectIgnore.ignoreBirthInit} puts it back, as C's {@code ignore_birth_init} does with
      * {@code ignore_level[i] = IGNORE_NONE}. C's menu names it {@code "no ignore"}. Nothing returns
      * it from {@code ignore_level_of}: it is a setting, not an item's quality.

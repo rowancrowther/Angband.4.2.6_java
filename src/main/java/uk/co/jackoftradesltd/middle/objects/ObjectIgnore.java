@@ -50,7 +50,7 @@ import java.util.Iterator;
  * {@link #ignoreKnownItemOk}).
  *
  * <p><b>What is elsewhere.</b> Only the decision is here. The settings it reads sit with the things
- * they describe - the per-quality bands in {@code ObjectInfo.ignoreLevel}, the aware/unaware kind
+ * they describe - the per-quality bands in {@code ObjectIgnoreTables.ignoreLevel}, the aware/unaware kind
  * flags on {@link ObjectKind}, the per-category ego marks on {@code EgoItem} - and the per-object
  * judgements it calls are methods on {@link ItemObject}: {@code getIgnoreTypeOf},
  * {@code ignoreLevelOf}, {@code egoIsIgnored}, {@code checkForInscription}. So this class is three
@@ -257,9 +257,9 @@ public class ObjectIgnore {
 
         // Ignore non-artefact objects
         if (item.getKnown().getNotice().has(ObjectNotice.OBJ_NOTICE_ASSESSED) && !item.isArtifact()
-                && ObjectInfo.ignoreLevel.get(type) == QualityValueEnum.IGNORE_ALL) return true;
+                && ObjectIgnoreTables.ignoreLevel.get(type) == QualityValueEnum.IGNORE_ALL) return true;
 
-        return item.ignoreLevelOf().ordinal() <= ObjectInfo.ignoreLevel.get(type).ordinal();
+        return item.ignoreLevelOf().ordinal() <= ObjectIgnoreTables.ignoreLevel.get(type).ordinal();
     }
 
     /**
@@ -529,7 +529,7 @@ public class ObjectIgnore {
      * <p>Three sweeps, in C's order: {@link ObjectKind#wipeIgnoreFlags} clears both ignore bits on
      * every kind in {@link ObjectRegistry#getObjectKinds}, matching C's {@code k_info[i].ignore =
      * false} over {@code z_info->k_max}; every non-sentinel {@link IgnoreType} in
-     * {@link ObjectInfo#ignoreLevel} is put back to {@link QualityValueEnum#IGNORE_NONE}, matching
+     * {@link ObjectIgnoreTables#ignoreLevel} is put back to {@link QualityValueEnum#IGNORE_NONE}, matching
      * C's loop from {@code ITYPE_NONE} to (but not including) {@code ITYPE_MAX}; and
      * {@link EgoItem#clearIgnoreType} does the same for every ego in
      * {@link ObjectRegistry#getEgoItems}, matching C's nested loop over {@code ego_ignore_types}.
@@ -552,7 +552,7 @@ public class ObjectIgnore {
         // clear the ignore bytes
         for (IgnoreType type : IgnoreType.values()) {
             if (type == IgnoreType.ITYPE_MAX) continue;
-            ObjectInfo.ignoreLevel.put(type, QualityValueEnum.IGNORE_NONE);
+            ObjectIgnoreTables.ignoreLevel.put(type, QualityValueEnum.IGNORE_NONE);
         }
 
         // clear ego ignore

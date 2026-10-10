@@ -29,15 +29,9 @@ import uk.co.jackoftradesltd.middle.objects.enums.ObjectKindFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.QualityValueEnum;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link ObjectIgnore#ignoreBirthInit} — the port of C's {@code ignore_birth_init}
@@ -120,8 +114,8 @@ class ObjectIgnoreBirthInitTest {
     void saveState() throws Exception {
         savedKinds = rawObjectKinds();
         savedEgos = rawEgoItems();
-        savedIgnoreLevels = ObjectInfo.ignoreLevel;
-        ObjectInfo.ignoreLevel = new HashMap<>(savedIgnoreLevels);
+        savedIgnoreLevels = ObjectIgnoreTables.ignoreLevel;
+        ObjectIgnoreTables.ignoreLevel = new HashMap<>(savedIgnoreLevels);
 
         // ObjectRegistry.getEgoItems can't wrap a null list; real play always loads the ego table
         // before birth runs, so every test starts from that same non-null baseline.
@@ -132,7 +126,7 @@ class ObjectIgnoreBirthInitTest {
     void restoreState() throws Exception {
         restoreRawObjectKinds(savedKinds);
         restoreRawEgoItems(savedEgos);
-        ObjectInfo.ignoreLevel = savedIgnoreLevels;
+        ObjectIgnoreTables.ignoreLevel = savedIgnoreLevels;
     }
 
     /**
@@ -170,17 +164,17 @@ class ObjectIgnoreBirthInitTest {
     @DisplayName("resets every quality band except the ITYPE_MAX sentinel")
     void resetsIgnoreLevelExceptSentinel() {
         for (IgnoreType type : IgnoreType.values()) {
-            ObjectInfo.ignoreLevel.put(type, QualityValueEnum.IGNORE_ALL);
+            ObjectIgnoreTables.ignoreLevel.put(type, QualityValueEnum.IGNORE_ALL);
         }
 
         ObjectIgnore.ignoreBirthInit();
 
         for (IgnoreType type : IgnoreType.values()) {
             if (type == IgnoreType.ITYPE_MAX) continue;
-            assertEquals(QualityValueEnum.IGNORE_NONE, ObjectInfo.ignoreLevel.get(type),
+            assertEquals(QualityValueEnum.IGNORE_NONE, ObjectIgnoreTables.ignoreLevel.get(type),
                     type + " is reset");
         }
-        assertEquals(QualityValueEnum.IGNORE_ALL, ObjectInfo.ignoreLevel.get(IgnoreType.ITYPE_MAX),
+        assertEquals(QualityValueEnum.IGNORE_ALL, ObjectIgnoreTables.ignoreLevel.get(IgnoreType.ITYPE_MAX),
                 "the sentinel is never indexed by C's loop, so it is left as it was");
     }
 
@@ -236,10 +230,10 @@ class ObjectIgnoreBirthInitTest {
     void resetsIgnoreLevelWithEmptyTables() {
         ObjectRegistry.setObjectKinds(List.of());
         ObjectRegistry.setEgoItems(List.of());
-        ObjectInfo.ignoreLevel.put(IgnoreType.ITYPE_LIGHT, QualityValueEnum.IGNORE_ALL);
+        ObjectIgnoreTables.ignoreLevel.put(IgnoreType.ITYPE_LIGHT, QualityValueEnum.IGNORE_ALL);
 
         ObjectIgnore.ignoreBirthInit();
 
-        assertEquals(QualityValueEnum.IGNORE_NONE, ObjectInfo.ignoreLevel.get(IgnoreType.ITYPE_LIGHT));
+        assertEquals(QualityValueEnum.IGNORE_NONE, ObjectIgnoreTables.ignoreLevel.get(IgnoreType.ITYPE_LIGHT));
     }
 }

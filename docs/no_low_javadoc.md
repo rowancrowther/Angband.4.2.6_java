@@ -52,7 +52,7 @@ the existing doc comment for context.
 
 3 missing, 0 low
 
-- L27: class `ObjectInfo` - MISSING
+- L27: class `ObjectIgnoreTables` - MISSING
 - L69: field `ignoreLevel` - MISSING
 - L78: record `QualityMapping` - MISSING
 

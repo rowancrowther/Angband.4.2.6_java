@@ -28,16 +28,14 @@ import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerClass#getStartItems()}, the read of C's {@code class->start_items} chain
  * ({@code player.h}).
  *
  * <p>C walks the list head-to-tail with a {@code for (si = c->start_items; si; si = si->next)}
- * loop ({@code player-birth.c:607}); the port holds the same sequence as a {@link List}, so what
+ * loop in {@code player_outfit} ({@code player-birth.c}); the port holds the same sequence as a {@link List}, so what
  * matters here is that the accessor preserves the order the class was built with and hands back
  * the live list C's shared pointer would equally expose, not a defensive copy.
  *

@@ -48,11 +48,18 @@ public class RealmAssembler implements Assembler<RealmParseRecord, List<MagicRea
      * Assembles every parsed realm record into a {@link MagicRealm}, dropping (with an error appended
      * to {@code errors}) any record whose stat or book-noun fails to resolve.
      *
-     * <p>Function assemble coded before 260915, commented in full on 260915.
+     * <p><b>Order.</b> The result is in <em>reverse</em> file order. C's {@code parse_realm_name}
+     * pushes each realm onto the head of the {@code realms} list and {@code finish_parse_realm}
+     * keeps the list as built, so the last realm in {@code realm.txt} is first. The loop does the
+     * same with {@code addFirst}, so the shipped file gives shadow, nature, divine, arcane. Realms
+     * are looked up by name, so the order changes nothing there; it is kept so that anything which
+     * walks the whole list meets the realms in C's order.
+     *
+     * <p>Function assemble coded before 260915, commented in full on 261010.
      *
      * @param records the raw per-realm parse records, in file order
      * @param errors  sink for human-readable messages describing each dropped record
-     * @return the successfully assembled realms, in file order (dropped records omitted)
+     * @return the successfully assembled realms in reverse file order (dropped records omitted)
      */
     @Override
     public List<MagicRealm> assemble(@NotNull List<RealmParseRecord> records, @NotNull List<String> errors) {
@@ -80,7 +87,7 @@ public class RealmAssembler implements Assembler<RealmParseRecord, List<MagicRea
                 continue;
             }
 
-            realms.add(new MagicRealm(name, stat, verb, spellNoun, tValue));
+            realms.addFirst(new MagicRealm(name, stat, verb, spellNoun, tValue));
         }
 
         return realms;

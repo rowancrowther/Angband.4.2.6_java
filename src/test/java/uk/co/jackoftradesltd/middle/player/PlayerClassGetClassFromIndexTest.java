@@ -17,11 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.player;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftradesltd.middle.magic.ClassMagic;
@@ -37,12 +33,12 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * Tests {@link PlayerClass#getClassFromIndex(int)}, the port of C's {@code player_id2class}
- * ({@code player-class.c:22-29}).
+ * ({@code player-class.c}).
  *
  * <p>C searches a linked list for the node whose {@code cidx} equals the requested id and falls
  * back to {@code NULL} when the search runs out. The expected values here come from tracing that
  * search directly, not from the port: {@code cidx} is assigned by counting down from the list head
- * once parsing finishes ({@code init.c:4128-4139}), and because the list is built by prepending
+ * once parsing finishes ({@code finish_parse_class} in {@code init.c}), and because the list is built by prepending
  * during parsing, the count-down puts the data file's first class at {@code cidx} 0 and its last at
  * {@code cidx count - 1}. {@link PlayerRegistry#getPlayerClasses()} keeps its list in that same file
  * order, so a fixture list's position doubles as the {@code cidx} it is standing in for.

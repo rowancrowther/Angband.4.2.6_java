@@ -32,7 +32,6 @@ import uk.co.jackoftradesltd.middle.player.enums.PlayerSkill;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -42,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p><b>The realms decide a caster's mana</b>, so how many there are matters more than which they
  * are: {@code averageSpellStat} averages the governing stat's index across the set, and then divides
- * by its size ({@code player-calcs.c:1247-1259}). A duplicate that survived would drag the average
+ * by its size ({@code average_spell_stat} in {@code player-calcs.c}). A duplicate that survived would drag the average
  * toward one realm's stat and make a class's mana depend on how many books happened to name the same
  * school. An empty set would divide by zero.
  *
@@ -102,7 +101,7 @@ class PlayerClassMagicRealmTest {
         PlayerClass c = playerClass(new ClassMagic(1, 300, 2,
                 List.of(book("first", arcane), book("second", arcane))));
 
-        Set<MagicRealm> realms = c.magicRealm();
+        List<MagicRealm> realms = c.magicRealm();
 
         assertAll(
                 () -> assertEquals(1, realms.size()),
@@ -146,6 +145,53 @@ class PlayerClassMagicRealmTest {
     @DisplayName("a class with no spells has no realms")
     void nonCasterHasNoRealms() {
         assertTrue(playerClass(ClassMagic.NONE).magicRealm().isEmpty());
+    }
+
+    /**
+     * C builds the list by prepending, so the realms come out in the reverse of the order the books
+     * first name them — the first realm last. Expected from tracing {@code class_magic_realms}:
+     * after the books A, B, C the list reads C, B, A.
+     */
+    @Test
+    @DisplayName("realms come out in C's order, the reverse of first appearance")
+    void realmsAreReversed() {
+        MagicRealm arcane = realm("arcane", Stats.STAT_INT);
+        MagicRealm divine = realm("divine", Stats.STAT_WIS);
+        MagicRealm nature = realm("nature", Stats.STAT_WIS);
+        PlayerClass c = playerClass(new ClassMagic(1, 300, 3,
+                List.of(book("a", arcane), book("b", divine), book("c", nature))));
+
+        assertEquals(List.of(nature, divine, arcane), c.magicRealm());
+    }
+
+    /**
+     * A repeat of a realm already recorded changes nothing, wherever it falls. Books A, B, A leave
+     * B, A: the second A is found in the list and skipped, so A stays at the tail.
+     */
+    @Test
+    @DisplayName("a repeated realm keeps its first position")
+    void repeatedRealmKeepsFirstPosition() {
+        MagicRealm arcane = realm("arcane", Stats.STAT_INT);
+        MagicRealm divine = realm("divine", Stats.STAT_WIS);
+        PlayerClass c = playerClass(new ClassMagic(1, 300, 3,
+                List.of(book("a", arcane), book("b", divine), book("c", arcane))));
+
+        assertEquals(List.of(divine, arcane), c.magicRealm());
+    }
+
+    /**
+     * When two objects share a name, the one from the first book that names the realm is the one
+     * returned, as C copies the realm of the first book and skips the later one.
+     */
+    @Test
+    @DisplayName("the first book's realm object is the one returned for a name")
+    void firstObjectWins() {
+        MagicRealm first = realm("arcane", Stats.STAT_INT);
+        MagicRealm second = realm("arcane", Stats.STAT_INT);
+        PlayerClass c = playerClass(new ClassMagic(1, 300, 2,
+                List.of(book("a", first), book("b", second))));
+
+        assertSame(first, c.magicRealm().getFirst());
     }
 
     /**

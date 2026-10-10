@@ -186,6 +186,7 @@ public class PlayerClassAssembler implements Assembler<PlayerClassParseRecord, L
                     illegalOFlag = true;
                     errors.add("Class beginning at line: " + line + " has " +
                             "an unknown obj-flag: " + oFlag);
+                    continue;
                 }
             }
             if (illegalOFlag) continue;
@@ -199,10 +200,16 @@ public class PlayerClassAssembler implements Assembler<PlayerClassParseRecord, L
                     illegalPFlag = true;
                     errors.add("Class beginning at line: " + line + " has " +
                             "an unknown player-flag: " + pFlag);
+                    continue;
                 }
             }
             if (illegalPFlag) continue;
             List<String> titles = record.titles();
+            if (titles.size() > 10) {
+                errors.add("Class beginning at line: " + line + " has " +
+                        "too many titles: " + titles.size());
+                continue;
+            }
             List<ClassMagic> magic = new ArrayList<>();
             if (record.magic() != null) {
                 List<ClassMagicParseRecord> cmpr = new ArrayList<>();

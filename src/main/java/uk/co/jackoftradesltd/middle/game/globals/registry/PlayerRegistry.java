@@ -22,13 +22,15 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import uk.co.jackoftradesltd.channel.globals.ChannelRegistry;
 import uk.co.jackoftradesltd.middle.Message;
 import uk.co.jackoftradesltd.middle.magic.MagicRealm;
 import uk.co.jackoftradesltd.middle.player.*;
 import uk.co.jackoftradesltd.middle.player.enums.TimedEffect;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Runtime holder for all player-domain game data — properties, shapes, history charts, bodies,
@@ -45,7 +47,8 @@ import java.util.*;
  * instance.
  *
  * <p>Two differences of shape run through the whole class. First, C builds every parsed list by
- * prepending, so its lists run in reverse file order; the port keeps file order. Every lookup here
+ * prepending, so its lists run in reverse file order; the port keeps file order, except for the
+ * magic realms, which are kept in C's reverse order. Every lookup here
  * is a first-match search over names or numbers that are unique in the shipped data, so the order
  * does not change which record is found. Second, each lookup first checks that its list has been
  * loaded and throws {@link IllegalStateException} if not. C has no equivalent: an unloaded C list
@@ -290,10 +293,12 @@ public class PlayerRegistry {
      */
     private static List<PlayerRace> playerRaces;
     /**
-     * The loaded magic realms in file order - the port of C's {@code realms} list. Resolved by
-     * name, ignoring case, via {@link #lookupRealm}; {@code null} until loaded.
+     * The loaded magic realms in reverse file order - the port of C's {@code realms} list (which C
+     * holds in reverse file order). Unlike most lists in this class, the port keeps C's order
+     * here, because {@code RealmAssembler} builds it that way. Resolved by name, ignoring case,
+     * via {@link #lookupRealm}; {@code null} until loaded.
      *
-     * <p>Field realms commented in full on 261008.
+     * <p>Field realms commented in full on 261010.
      */
     private static List<MagicRealm> realms;
     /**
@@ -484,18 +489,18 @@ public class PlayerRegistry {
      * Stores the loaded magic realms. Called once by {@code PlayerDataLoader}, before the classes,
      * whose spell books name a realm; the list is kept by reference, not copied.
      *
-     * <p>Function setMagicRealm commented in full on 261008.
+     * <p>Function setMagicRealm commented in full on 261010.
      *
-     * @param realms the assembled magic realms, in file order
+     * @param realms the assembled magic realms, in reverse file order as C holds them
      */
     public static void setMagicRealm(List<MagicRealm> realms) {
         PlayerRegistry.realms = realms;
     }
 
     /**
-     * Returns the loaded magic realms.
+     * Returns the loaded magic realms, in reverse file order as C's {@code realms} list holds them.
      *
-     * <p>Function getMagicRealms commented in full on 261008.
+     * <p>Function getMagicRealms commented in full on 261010.
      *
      * @return an unmodifiable view of the loaded magic realms
      * @throws NullPointerException if the realms have not been loaded

@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p><b>There is no C function to compare against, and that is the point.</b> C's
  * {@code player_generate} writes the shared pointer — {@code p->class = c}
- * ({@code player-birth.c:989}) — because a class record is read-only data held once by the registry.
+ * (in {@code player-birth.c}) — because a class record is read-only data held once by the registry.
  * The port copies instead, so the expected behaviour is not a number taken from C but the property
  * that makes the copy worth having: the two objects must agree on every field, and the copy must
  * share no structure through which a player could write back into the registry's template.

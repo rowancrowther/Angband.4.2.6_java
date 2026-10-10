@@ -1234,7 +1234,7 @@ public class PlayerCalcs {
      *                             casts before asking, as {@code calcMana}'s literacy test does
      */
     private static int averageSpellStat(Player player, PlayerState state) {
-        Set<MagicRealm> realms = player.getPlayerClass().magicRealm();
+        List<MagicRealm> realms = player.getPlayerClass().magicRealm();
         int numRealms = realms.size();
         int total = 0;
         for (MagicRealm realm : realms) {

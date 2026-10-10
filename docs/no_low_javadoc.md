@@ -48,15 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/magic/MagicBook.java`
-
-0 missing, 4 low
-
-- L182: method `getNumOfSpells` - LOW
-- L191: method `getBookName` - LOW
-- L198: method `getBookTValue` - LOW
-- L214: method `isDungeon` - LOW
-
 ### `middle/monsters/MonsterBase.java`
 
 0 missing, 4 low

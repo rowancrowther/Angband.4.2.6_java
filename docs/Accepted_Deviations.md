@@ -60,6 +60,20 @@ recorded here as the summary states them; fill in the detail when you next touch
 - **Accepted:** 2026-10-08. From `docs/ItemObject_round2/summary.md` item 12 (Part G). Marked in the `message` and
   `messageType` Javadoc.
 
+## Monster base
+
+### `MonsterBase` holds C's one `text` member twice
+
+- **Java:** `MonsterBase.inGameName` and `MonsterBase.description`; `MonsterBaseParseRecord.inGameName` and
+  `description`; the `monsterBase` rule in `MonsterBaseGrammar.g4`. **C:** `monster_base->text` (`monster.h`), filled
+  by `parse_mon_base_desc` (`mon-init.c`).
+- **Differs:** C has one `text` member, which the C comment calls the in-game name and the data file calls the
+  description. Java stores the same `desc:` text in two fields, and the grammar passes it for both.
+- **Reach:** none. Both fields are always equal for a base read from `monster_base.txt`. Neither has an accessor yet.
+- **Revisit:** when the first accessor is added, or when the record is next reworked. Then drop one component from the
+  record, the grammar, the assembler and the `MonsterBase` constructor.
+- **Accepted:** 2026-10-10. Marked in the `MonsterBase` and `MonsterBaseParseRecord` Javadoc.
+
 ## Pending your decision
 
 - The five `objDescNameFormat` divergences (Part G; `docs/ItemObject_round2/part_G.md`). All unreachable from shipped

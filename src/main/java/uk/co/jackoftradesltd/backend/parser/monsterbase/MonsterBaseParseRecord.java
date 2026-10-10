@@ -24,13 +24,22 @@ import java.util.List;
  * fields parsed by the grammar, later turned into the {@code MonsterBase} domain type by
  * {@link MonsterBaseAssembler}.
  *
+ * <p>{@code monster_base.txt} has no line for a displayed name separate from the description, and
+ * C's {@code struct monster_base} has a single {@code text} member that {@code desc:} fills. The
+ * grammar's {@code monsterBase} rule therefore passes the same {@code desc:} text as both
+ * {@code inGameName} and {@code description}, so the two components are always equal.
+ *
+ * <p>Record MonsterBaseParseRecord coded before 261010, commented in full on 261010.
+ *
  * @param codeName    the base's internal name ({@code name:}), used as its registry key
- * @param inGameName  the base's displayed name ({@code plural:} in the data file)
+ * @param inGameName  the base's displayed name: the {@code desc:} text, identical to
+ *                    {@code description} (the data file has no {@code plural:} line)
  * @param flags       the monster race flag codes ({@code flags:}), each without its {@code RF_}
  *                    prefix, unresolved
  * @param glyph       the display glyph as written, expected to be a single character
  * @param pain        the pain-message serial number ({@code pain:}), as text
- * @param description the base's descriptive text ({@code desc:})
+ * @param description the base's descriptive text ({@code desc:}); where a base has several
+ *                    {@code desc:} lines they are joined end to end with no separator, as C does
  * @param line        the source line the block started on, for error messages
  * @author Rowan Crowther
  */

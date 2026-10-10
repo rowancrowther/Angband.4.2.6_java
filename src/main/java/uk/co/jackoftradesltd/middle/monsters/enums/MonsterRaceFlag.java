@@ -25,6 +25,17 @@ package uk.co.jackoftradesltd.middle.monsters.enums;
  * race flags ({@code src/list-mon-race-flags.h}); the constants are
  * self-describing and documented collectively here.
  *
+ * <p>This enum also stands in for C's {@code struct monster_flag} ({@code monster.h}) and the
+ * {@code monster_flag_table[]} built from it in {@code mon-util.c}. Each row of that table is an
+ * {@code (index, type, desc)} triple: here the constant itself is the {@code index}, {@link #getCategory()}
+ * is the {@code type} (an {@code RFT_} category) and {@link #getDescription()} is the {@code desc}
+ * lore text. There is therefore no separate record class; the constants are declared in the same order
+ * as the {@code RF()} rows of {@code list-mon-race-flags.h}, one for one, including {@link #RF_NONE}.
+ * The table's {@code RF_MAX} terminator row has no counterpart, as {@code values()} replaces the
+ * sentinel-terminated loops in {@code create_mon_flag_mask()}.
+ *
+ * <p>Class MonsterRaceFlag coded before 261010, commented in full on 261010.
+ *
  * @author Rowan Crowther
  */
 public enum MonsterRaceFlag {
@@ -115,19 +126,33 @@ public enum MonsterRaceFlag {
     RF_NO_SLOW(MonsterRaceCategory.RFT_PROT, "slowed");
 
     /**
-     * The category this flag belongs to (for grouping in lore/display).
+     * The {@code RFT_} category this flag belongs to: the {@code type} member of C's
+     * {@code struct monster_flag}. The lore code selects flags by category when it builds masks
+     * (C's {@code create_mon_flag_mask()} in {@code mon-util.c}).
+     *
+     * <p>Field category coded before 261010, commented in full on 261010.
      */
     private MonsterRaceCategory category;
     /**
-     * Human-readable description of the property (e.g. the resisted element).
+     * The lore text for this flag: the {@code desc} member of C's {@code struct monster_flag}.
+     * It is the empty string for flags that have no lore wording (all of the {@code RFT_OBV},
+     * {@code RFT_DISP}, {@code RFT_GEN}, {@code RFT_NOTE}, {@code RFT_BEHAV} and {@code RFT_DROP}
+     * flags and {@link #RF_NONE}). For the detection, alteration, race, vulnerability, resistance
+     * and protection categories it is the phrase the lore display splices into a sentence, e.g.
+     * {@code "fire"} for {@link #RF_IM_FIRE} or {@code "slowed"} for {@link #RF_NO_SLOW}.
+     *
+     * <p>Field description coded before 261010, commented in full on 261010.
      */
     private String description;
 
     /**
-     * Bind a race flag to its category and description.
+     * Bind a race flag to its category and description; each constant above is one row of
+     * {@code list-mon-race-flags.h}, with the {@code RF_} index supplied by the constant itself.
+     *
+     * <p>Constructor MonsterRaceFlag coded before 261010, commented in full on 261010.
      *
      * @param category    the flag category
-     * @param description the description
+     * @param description the lore description, or {@code ""} where C has none
      */
     MonsterRaceFlag(MonsterRaceCategory category, String description) {
         this.category = category;
@@ -135,6 +160,11 @@ public enum MonsterRaceFlag {
     }
 
     /**
+     * Return the {@code RFT_} category of this flag, i.e. the {@code type} member of the matching
+     * row of C's {@code monster_flag_table[]}.
+     *
+     * <p>Method getCategory coded before 261010, commented in full on 261010.
+     *
      * @return the category this flag belongs to
      */
     public MonsterRaceCategory getCategory() {
@@ -142,7 +172,14 @@ public enum MonsterRaceFlag {
     }
 
     /**
-     * @return the human-readable description of this flag
+     * Return the lore description of this flag, i.e. the {@code desc} member of the matching row of
+     * C's {@code monster_flag_table[]}. Unlike C's {@code describe_race_flag()}, which is not
+     * ported here, this does no range check and returns {@code ""} only for flags whose row has
+     * an empty description.
+     *
+     * <p>Method getDescription coded before 261010, commented in full on 261010.
+     *
+     * @return the lore description of this flag, or {@code ""} where C has none
      */
     public String getDescription() {
         return description;

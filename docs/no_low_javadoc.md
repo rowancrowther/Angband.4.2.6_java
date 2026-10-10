@@ -48,24 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/gameinput/EffectChoice.java`
-
-4 missing, 0 low
-
-- L20: interface `EffectChoice` - MISSING
-- L22: record `Index` - MISSING
-- L25: record `Random` - MISSING
-- L28: record `Aborted` - MISSING
-
-### `middle/monsters/MonsterFlag.java`
-
-4 missing, 0 low
-
-- L23: class `MonsterFlag` - MISSING
-- L24: field `index` - MISSING
-- L25: field `type` - MISSING
-- L26: field `desc` - MISSING
-
 ### `middle/objects/ObjectRandart.java`
 
 4 missing, 0 low
@@ -203,14 +185,6 @@ the existing doc comment for context.
 - L158: method `getMagic` - LOW
 - L453: method `getTitle` - MISSING
 - L468: method `getNoTitles` - MISSING
-
-### `middle/monsters/enums/MonsterRaceFlag.java`
-
-1 missing, 2 low
-
-- L31: method `RF_NO_SLOW` - MISSING
-- L140: method `getCategory` - LOW
-- L147: method `getDescription` - LOW
 
 ### `middle/objects/Rune.java`
 

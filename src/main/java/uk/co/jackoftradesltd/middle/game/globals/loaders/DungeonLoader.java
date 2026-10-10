@@ -20,14 +20,15 @@ package uk.co.jackoftradesltd.middle.game.globals.loaders;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftradesltd.backend.parser.DungeonProfileReader;
-import uk.co.jackoftradesltd.channel.parser.ErrorParsing;
-import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.backend.parser.RoomProfileReader;
 import uk.co.jackoftradesltd.backend.parser.VaultReader;
+import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
+import uk.co.jackoftradesltd.channel.parser.ErrorParsing;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.cave.profiles.dungeon.CaveProfile;
 import uk.co.jackoftradesltd.middle.cave.profiles.room.RoomTemplate;
 import uk.co.jackoftradesltd.middle.cave.profiles.vault.Vault;
-import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
+import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.registry.DungeonRegistry;
 
 import java.io.IOException;
@@ -62,6 +63,7 @@ public class DungeonLoader {
             ErrorParsing.reportAndCheck(filename, result, logger);
 
             DungeonRegistry.setCaveProfiles(result.items());
+            GameConstants.setCaveProfileMax(result.items().size());
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
         }

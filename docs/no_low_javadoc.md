@@ -48,15 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/objects/ObjectUtils.java`
-
-4 missing, 0 low
-
-- L75: field `logger` - MISSING
-- L77: field `MAX_TITLES` - MISSING
-- L78: field `maxTitleLength` - MISSING
-- L80: field `scrollAdj` - MISSING
-
 ### `middle/game/globals/GameConstants.java`
 
 1 missing, 3 low

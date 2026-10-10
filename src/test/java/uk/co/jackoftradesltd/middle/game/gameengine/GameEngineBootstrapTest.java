@@ -26,6 +26,7 @@ import uk.co.jackoftradesltd.frontend.entries.UIEntry;
 import uk.co.jackoftradesltd.frontend.ui.globals.UIDataLoader;
 import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
+import uk.co.jackoftradesltd.middle.game.globals.loaders.DungeonLoader;
 import uk.co.jackoftradesltd.middle.game.globals.registry.MonsterRegistry;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
@@ -290,26 +291,30 @@ class GameEngineBootstrapTest {
     }
 
     /**
-     * The template loader is a second entry point into the dungeon-profile load, and is callable on
-     * its own once the engine is up.
+     * The dungeon-profile loader can be run again once the engine is up, and the count it records
+     * tracks the registry.
      *
      * <p>It reloads the profiles rather than adding to them, so calling it after the full load
-     * leaves the registry holding the same number of rows it already had — which is the property
-     * that makes it safe to call twice, and the only thing worth asserting about a method that
-     * announces progress and delegates. The table has no accessor, so it is read through the field.
+     * leaves the registry holding the same number of rows it already had - the property that makes
+     * it safe to call twice. It also writes {@code GameConstants.getCaveProfileMax()}, the port of
+     * C's {@code z_info->profile_max} set in {@code finish_parse_profile} ({@code generate.c}), so
+     * that figure must equal the number of profiles in the table. The table has no accessor, so it
+     * is read through the field.
      *
      * @throws Exception if the profile table cannot be reached
      */
     @Test
     @Order(9)
-    @DisplayName("the template parser reloads the dungeon profiles")
-    void templateParserReloadsProfiles() throws Exception {
+    @DisplayName("reloading the dungeon profiles replaces them and records their count")
+    void profileLoaderReloadsProfiles() throws Exception {
         int before = caveProfileCount();
 
-        GameConstants.runTemplateParser();
+        DungeonLoader.loadDungeonProfiles();
 
         assertEquals(before, caveProfileCount(), "the profiles were reloaded, not appended to");
         assertTrue(before > 0, "and there were profiles to reload");
+        assertEquals(before, GameConstants.getCaveProfileMax(),
+                "the recorded profile count is the number of profiles loaded");
     }
 
     /**

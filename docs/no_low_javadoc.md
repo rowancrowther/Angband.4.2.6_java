@@ -48,14 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/monsters/enums/MonTimedFlags.java`
-
-3 missing, 0 low
-
-- L20: enum `MonTimedFlags` - MISSING
-- L21: enum-const `MON_TMD_FLG_NOTIFY` - MISSING
-- L22: enum-const `MON_TMD_FLG_NOMESSAGE` - MISSING
-
 ### `middle/objects/ObjectInfo.java`
 
 3 missing, 0 low

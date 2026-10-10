@@ -1194,9 +1194,9 @@ public class ObjectUtils {
      * <p>Unlike {@link #copySlays} and {@link #copyBrands} there is no "keep the stronger one"
      * comparison: a curse present in {@code source} always wins, its power taken as-is and its
      * timeout re-rolled from the dice on the curse's own object ({@code curse.getItemObject().getTime()},
-     * C's {@code curse->obj->time}) rather than carried over from any prior value - C's comment on the equivalent line reads "Timeouts need to be set for
-     * new objects". A curse on {@code dest} that {@code source} does not name is left exactly as it
-     * was.
+     * C's {@code curse->obj->time}) rather than carried over from any prior value. C's comment on
+     * the equivalent line reads "Timeouts need to be set for new objects". A curse on {@code dest}
+     * that {@code source} does not name is left exactly as it was.
      *
      * <p>{@code null} as source is C's {@code !source}, and returns immediately without touching
      * {@code dest} at all - not even to reallocate an unset curse map, matching C's own early
@@ -1237,7 +1237,7 @@ public class ObjectUtils {
      * {@code TreeMap} on 261005, walk order recorded on 261007, all-zero source divergence marked
      * accepted on 261007, timeout link repointed at the curse object's {@code getTime()} on 261008
      * once {@code Curse#getTime()} was gone and {@code CurseAssembler} began filling that object's
-     * time.
+     * time, timeout sentence reflowed on 261010.
      *
      * @param dest   the item the curses are being attached to
      * @param source the curses to copy on, keyed by curse and each mapped to its power; {@code null}
@@ -1574,9 +1574,10 @@ public class ObjectUtils {
      * {@link #flavourAssignFixed()} before this runs, so it must not be offered as a random
      * choice.
      *
-     * <p>Each unflavoured kind of the given type draws a random index into that remaining pool,
-     * walks the pool to find it, last file entry first as C's newest-first list does, binds the two together, resolves the flavour's
-     * sval to the kind's, and shrinks the pool by one — the same shrinking-without-removing trick
+     * <p>Each unflavoured kind of the given type draws a random index into that remaining pool and
+     * walks the pool to find it. The walk starts from the last entry in the file, because C's list
+     * is built newest-first. The kind and the flavour are then bound together, the flavour's sval is
+     * resolved to the kind's, and the pool shrinks by one — the same shrinking-without-removing trick
      * C's loop performs by decrementing {@code flavor_count} as each candidate is claimed. Running
      * out of flavours partway through is a data-file error, not a recoverable one: C exits via
      * {@code quit_fmt}, the port logs and calls {@link ControlUtils#quitFmt}, which does not end the
@@ -1595,7 +1596,8 @@ public class ObjectUtils {
      * while {@code flavor.txt} keeps one {@code kind:} block per tval, which it does.
      *
      * <p>Function flavourAssignRandom coded before 260908, commented in full on 261007, one-block-per-type
-     * condition recorded on 261007, quit behaviour corrected on 261007, pool order corrected on 261009.
+     * condition recorded on 261007, quit behaviour corrected on 261007, pool order corrected on 261009,
+     * pool-walk sentence reworded on 261010.
      *
      * @param tValue the object type to assign random flavours to
      */

@@ -48,15 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/game/globals/GameConstants.java`
-
-1 missing, 3 low
-
-- L156: field `storeMax` - MISSING
-- L478: method `getStoreMax` - LOW
-- L485: method `getRandartActivationsMax` - LOW
-- L492: method `getCaveProfileMax` - LOW
-
 ### `middle/objects/Slay.java`
 
 1 missing, 3 low

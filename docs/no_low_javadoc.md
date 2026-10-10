@@ -48,24 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/monsters/MonsterBase.java`
-
-0 missing, 4 low
-
-- L99: method `toString` - LOW
-- L113: method `getCodeName` - LOW
-- L120: method `getFlags` - LOW
-- L127: method `getDefaultMonsterChar` - LOW
-
-### `middle/objects/Archery.java`
-
-0 missing, 4 low
-
-- L91: method `getAmmoType` - LOW
-- L98: method `getAmmoDamage` - LOW
-- L105: method `getLaunchDamage` - LOW
-- L113: method `getLaunchMult` - LOW - "it back out"
-
 ### `middle/objects/FlavourKind.java`
 
 0 missing, 4 low

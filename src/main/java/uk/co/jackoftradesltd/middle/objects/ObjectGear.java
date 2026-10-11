@@ -24,10 +24,8 @@ import uk.co.jackoftradesltd.middle.Message;
 import uk.co.jackoftradesltd.middle.cave.Loc;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
-import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectDescription;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectStackEnum;
-import uk.co.jackoftradesltd.middle.player.EquipSlot;
 import uk.co.jackoftradesltd.middle.player.Player;
 import uk.co.jackoftradesltd.middle.player.PlayerCalcs;
 import uk.co.jackoftradesltd.middle.player.PlayerKnowledge;
@@ -38,18 +36,40 @@ import uk.co.jackoftradesltd.middle.player.enums.PlayerUpdateEnum;
 
 import java.util.Iterator;
 
+/**
+ * Static helpers for the player's gear list - the pack, quiver and equipment held in
+ * {@link Player#getGear()} - ported from {@code obj-gear.c}.
+ *
+ * <p>This class holds the pieces of that file that put an item into the gear and count what is
+ * already there: {@link #invenCarry} (C's {@code inven_carry}) and the private
+ * {@link #objectPackTotal} (C's {@code object_pack_total}) with its result pair
+ * {@link ItemObjectAndInt}.
+ *
+ * <p>Class ObjectGear coded before 260905, commented in full on 261011.
+ *
+ * @author Rowan Crowther
+ */
 public class ObjectGear {
+    /**
+     * Log sink for the invariant failures that C reports with {@code assert}. Each failure is logged
+     * here and then thrown as a {@link RuntimeException}, since a Java {@code assert} is disabled
+     * unless the JVM is started with {@code -ea}.
+     *
+     * <p>Field logger coded before 260905, commented in full on 261011.
+     */
     private static final Logger logger = LogManager.getLogger(ObjectGear.class);
 
     /**
      * Adds {@code obj} to {@code player}'s gear, merging it into an existing mergeable pack/quiver
      * stack when {@code absorb} allows it, or inserting it as a new gear entry otherwise - the port
-     * of C's {@code inven_carry} ({@code obj-gear.c:832}).
+     * of C's {@code inven_carry} ({@code obj-gear.c}).
      *
      * <p>When {@code absorb} is set, the gear list is searched for the first non-equipped stack that
-     * {@link ItemObject#mergeable} accepts. A match absorbs {@code obj}'s known half (via a copy,
-     * since {@code obj}'s own known object is discarded immediately after) and then {@code obj}
-     * itself, keeps the two known counts aligned, and reassigns the local {@code obj} to alias the
+     * {@link ItemObject#mergeable} accepts, using quiver stacking rules for a quiver stack and pack
+     * rules for anything else. A match absorbs {@code obj}'s known half (via a copy: C's inner
+     * {@code object_absorb} deletes the object it absorbs, and {@code obj}'s own known object is
+     * dropped straight afterwards, so the copy leaves the same result) and then {@code obj} itself,
+     * keeps the two known counts aligned, and reassigns the local {@code obj} to alias the
      * combined gear entry - not a copy - so every read further down the method (the pack-total
      * search's identity check, and the closing quiver-sound check) sees the same object C's pointer
      * reassignment would have exposed.
@@ -73,7 +93,12 @@ public class ObjectGear {
      * stack whose reported total covers at least its own count, and that a total matching the
      * stack's own count really is {@code obj} and not some other stack.
      *
-     * <p>Function invenCarry coded before 260905, commented in full on 260905, fixed on 260905 so
+     * <p><b>Outstanding:</b> C builds the message description with the aggregate {@code total}
+     * packed into the high 16 bits of the mode word ({@code ODESC_ALTNUM}). The port sets the flag
+     * but cannot pass the count, because {@link ObjectUtils#objectDesc} is a stub with no count
+     * parameter, so the "You have ..." text will show the stack's own count until that is ported.
+     *
+     * <p>Function invenCarry coded before 260905, commented in full on 261011, fixed on 260905 so
      * the paranoia guard checks for exceeding pack capacity rather than firing on the ordinary case.
      *
      * @param player  the player receiving the item
@@ -150,7 +175,6 @@ public class ObjectGear {
             if (!obj.objectFlavourIsAware()) {
                 if (player.hasPlayerFlag(PlayerFlag.PF_KNOW_MUSHROOM) && obj.gettValue().isMushroom()) {
                     PlayerKnowledge.flavourAware(player, obj);
-                    PlayerKnowledge.flavourAware(player, obj);
                     Message.message("Mushrooms for breakfast!");
                 } else if (player.hasPlayerFlag(PlayerFlag.PF_KNOW_ZAPPER) && obj.gettValue().isZapper()) {
                     PlayerKnowledge.flavourAware(player, obj);
@@ -166,7 +190,7 @@ public class ObjectGear {
         if (message) {
             String oName;
             int total;
-            ItemObject first = new ItemObject();
+            ItemObject first;
 
             // Show an aggregate total if the description doesn't have
             // a charge/rechargin notice that's specific to the stack
@@ -175,7 +199,7 @@ public class ObjectGear {
                 total = obj.getNumber();
                 first = obj;
             } else {
-                ItemObjectAndInt result = ObjectGear.objectPackTotal(player, obj, false, first);
+                ItemObjectAndInt result = ObjectGear.objectPackTotal(player, obj, false);
                 first = result.obj;
                 total = result.number();
             }
@@ -208,7 +232,7 @@ public class ObjectGear {
 
     /**
      * Counts every gear stack like {@code obj} and identifies the one that would be shown first in
-     * the inventory/quiver listing - the port of C's {@code object_pack_total} ({@code obj-gear.c:195}).
+     * the inventory/quiver listing - the port of C's {@code object_pack_total} ({@code obj-gear.c}).
      *
      * <p>"Like" is judged three ways: a cursor that <em>is</em> {@code obj} itself only counts if
      * {@code obj} is not equipped ({@link ItemObject#similar} and {@link ItemObject#objectStackable}
@@ -226,27 +250,29 @@ public class ObjectGear {
      * <p>C returns the total and writes the winning stack through {@code struct object **first},
      * resetting {@code *first} to {@code NULL} before the search starts regardless of what the
      * caller passed in. The port cannot take an address, so both values travel out together in an
-     * {@link ItemObjectAndInt}; {@code first} is nulled out the same way at entry so the caller's
-     * placeholder argument can never leak through unset.
+     * {@link ItemObjectAndInt}; the port has no {@code first} parameter, so the search starts from a
+     * local {@code null} and nothing the caller holds can leak in. C only tracks the first stack when
+     * the caller passes a non-{@code NULL} {@code first}; the port always tracks it, which cannot
+     * change the total. C's {@code uint16_t} return would wrap past 65535; the port's {@code int}
+     * does not.
      *
-     * <p>Function objectPackTotal coded before 260905, commented in full on 260905, fixed on 260905
-     * so {@code first} is reset at entry instead of trusting the caller's placeholder and the label
-     * tie-break re-runs for every match instead of stopping after the first.
+     * <p>Function objectPackTotal coded before 260905, commented in full on 261011, fixed on 260905
+     * so the first match starts from {@code null} instead of trusting a caller's placeholder and the
+     * label tie-break re-runs for every match instead of stopping after the first; the placeholder
+     * parameter was removed on 261011.
      *
      * @param player        the player whose gear is searched
      * @param obj           the template object other gear stacks are compared against
      * @param ignoreInscrip if {@code true}, stacks are compared ignoring inscriptions; if
      *                      {@code false}, inscriptions are considered too
-     * @param first         ignored on entry - the search always starts from {@code null}, kept only to
-     *                      mirror C's parameter list
      * @return the matching stack count and the earliest-labelled matching stack, as an
      * {@link ItemObjectAndInt}
      */
-    private static ItemObjectAndInt objectPackTotal(Player player, ItemObject obj, boolean ignoreInscrip, ItemObject first) {
+    private static ItemObjectAndInt objectPackTotal(Player player, ItemObject obj, boolean ignoreInscrip) {
         int total = 0;
         char firstLabel = '\0';
 
-        first = null;
+        ItemObject first = null;
 
         Iterator<ItemObject> it = player.getGear().getIterator();
         while (it.hasNext()) {
@@ -296,12 +322,15 @@ public class ObjectGear {
 
     /**
      * The pair {@link #objectPackTotal} hands back in place of C's return value plus its
-     * {@code struct object **first} out-parameter ({@code obj-gear.c:195}).
+     * {@code struct object **first} out-parameter ({@code obj-gear.c}, function
+     * {@code object_pack_total}).
      *
      * <p>C returns the running total directly and writes the winning stack through {@code first};
      * the port cannot take an address, so both values travel out together here instead -
      * {@link #obj} is what C would have left in {@code *first} and {@link #number} is what C
      * returns.
+     *
+     * <p>Record ItemObjectAndInt coded before 260905, commented in full on 261011.
      *
      * @param obj    the earliest-labelled matching stack, or {@code null} if none matched
      * @param number the total item count across every matching stack

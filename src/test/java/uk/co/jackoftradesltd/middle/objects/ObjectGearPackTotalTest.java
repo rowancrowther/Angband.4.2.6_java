@@ -17,17 +17,13 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.data.CarryCapData;
 import uk.co.jackoftradesltd.middle.game.globals.data.GameConstantsData;
+import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
@@ -46,27 +42,23 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static uk.co.jackoftradesltd.testsupport.ItemFixture.set;
 import static uk.co.jackoftradesltd.testsupport.ItemFixture.setStatic;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-
 /**
  * Tests the private {@code ObjectGear.objectPackTotal} - the port of C's {@code object_pack_total}
- * ({@code obj-gear.c:195}).
+ * ({@code obj-gear.c}).
  *
  * <p>The method has two jobs at once: sum every gear stack like a template object, and identify
  * which of those stacks would be shown first in the inventory/quiver listing. The sum is the easy
  * half; the "first" half is where the port drifted from C twice while this suite was being written,
  * both times invisibly - a wrong "first" never throws, it just names the wrong stack in a message.
  *
- * <p><b>Why {@code first} is reset at entry is asserted directly.</b> C resets {@code *first} to
- * {@code NULL} unconditionally before searching, regardless of what the caller's pointer held. The
- * port cannot take an address, so it takes an {@link ItemObject} value instead and has to discard it
- * itself; the real caller, {@code invenCarry}, passes a non-null placeholder rather than {@code null},
- * which is exactly the shape that let the old bug hide. {@link FirstReset} rebuilds that call shape.
+ * <p><b>Why an unlabelled first match is asserted directly.</b> C resets {@code *first} to
+ * {@code NULL} unconditionally before searching. The port has no {@code first} parameter and starts
+ * from a local {@code null}, so nothing a caller holds can leak in; {@link FirstReset} checks that a
+ * stack carrying no label at all is still found, which is the case the old placeholder code got wrong.
  *
  * <p><b>Why the label tie-break is re-run on every match, not just the first, is asserted directly.</b>
  * The gear list's iteration order need not match the letter/digit order the game assigns, so the
@@ -110,6 +102,13 @@ class ObjectGearPackTotalTest {
     private static Object savedRaces;
 
     /**
+     * The registry's curse list before this class replaced it. {@code new Player()} builds a
+     * {@code KnownObject}, whose constructor reads the curse list, so it cannot be left unset when
+     * this class runs on its own.
+     */
+    private static Object savedCurses;
+
+    /**
      * The kind every fixture item shares. {@code similar} compares kinds by identity, so sharing
      * one instance is what makes separately-built stacks mutually stackable.
      */
@@ -131,9 +130,14 @@ class ObjectGearPackTotalTest {
         registryField("playerBodies").set(null, new ArrayList<>(List.of(humanoid)));
         registryField("playerRaces").set(null, new ArrayList<>(List.of(testRace(humanoid))));
 
+        Field cursesField = ObjectRegistry.class.getDeclaredField("curses");
+        cursesField.setAccessible(true);
+        savedCurses = cursesField.get(null);
+        ObjectRegistry.setCurses(new ArrayList<>());
+
         savedPlayer = GameState.getPlayer();
 
-        kind = ItemFixture.kindWithBase(TValue.TV_POTION, "potion", MAX_STACK);
+        kind =ItemFixture.kindWithBase(TValue.TV_POTION, "potion", MAX_STACK);
     }
 
     @AfterAll
@@ -142,6 +146,9 @@ class ObjectGearPackTotalTest {
         setStatic(GameConstants.class, "data", savedConstants);
         registryField("playerBodies").set(null, savedBodies);
         registryField("playerRaces").set(null, savedRaces);
+        Field cursesField = ObjectRegistry.class.getDeclaredField("curses");
+        cursesField.setAccessible(true);
+        cursesField.set(null, savedCurses);
     }
 
     /**
@@ -226,16 +233,14 @@ class ObjectGearPackTotalTest {
      *
      * @param obj           the template object other gear stacks are compared against
      * @param ignoreInscrip whether inscriptions are ignored when testing for a match
-     * @param first         the placeholder passed in the {@code first} slot - discarded by the
-     *                      method itself, so its value should never affect the result
      * @return the method's result
      */
-    private ObjectGear.ItemObjectAndInt packTotal(ItemObject obj, boolean ignoreInscrip, ItemObject first) {
+    private ObjectGear.ItemObjectAndInt packTotal(ItemObject obj, boolean ignoreInscrip) {
         try {
             Method method = ObjectGear.class.getDeclaredMethod("objectPackTotal", Player.class,
-                    ItemObject.class, boolean.class, ItemObject.class);
+                    ItemObject.class, boolean.class);
             method.setAccessible(true);
-            return (ObjectGear.ItemObjectAndInt) method.invoke(null, player, obj, ignoreInscrip, first);
+            return (ObjectGear.ItemObjectAndInt) method.invoke(null, player, obj, ignoreInscrip);
         } catch (InvocationTargetException e) {
             if (e.getCause() instanceof RuntimeException cause) {
                 throw cause;
@@ -259,7 +264,7 @@ class ObjectGearPackTotalTest {
         @Test
         @DisplayName("empty gear totals nothing and finds nothing")
         void emptyGearFindsNothing() {
-            ObjectGear.ItemObjectAndInt result = packTotal(potion(1), false, null);
+            ObjectGear.ItemObjectAndInt result = packTotal(potion(1), false);
 
             assertEquals(0, result.number());
             assertNull(result.obj());
@@ -272,7 +277,7 @@ class ObjectGearPackTotalTest {
             inventory()[0] = stack;
             gear().insertEnd(stack);
 
-            ObjectGear.ItemObjectAndInt result = packTotal(potion(1), false, null);
+            ObjectGear.ItemObjectAndInt result = packTotal(potion(1), false);
 
             assertEquals(3, result.number());
             assertSame(stack, result.obj());
@@ -289,7 +294,7 @@ class ObjectGearPackTotalTest {
             inventory()[1] = stackB;
             gear().insertEnd(stackB);
 
-            ObjectGear.ItemObjectAndInt result = packTotal(potion(1), false, null);
+            ObjectGear.ItemObjectAndInt result = packTotal(potion(1), false);
 
             assertEquals(5, result.number());
         }
@@ -314,7 +319,7 @@ class ObjectGearPackTotalTest {
             inventory()[0] = obj;
             gear().insertEnd(obj);
 
-            ObjectGear.ItemObjectAndInt result = packTotal(obj, false, null);
+            ObjectGear.ItemObjectAndInt result = packTotal(obj, false);
 
             assertEquals(2, result.number());
             assertSame(obj, result.obj());
@@ -327,7 +332,7 @@ class ObjectGearPackTotalTest {
             gear().insertEnd(obj);
             equip(obj);
 
-            ObjectGear.ItemObjectAndInt result = packTotal(obj, false, null);
+            ObjectGear.ItemObjectAndInt result = packTotal(obj, false);
 
             assertEquals(0, result.number());
             assertNull(result.obj());
@@ -357,7 +362,7 @@ class ObjectGearPackTotalTest {
             inventory()[0] = cursor;
             gear().insertEnd(cursor);
 
-            ObjectGear.ItemObjectAndInt result = packTotal(obj, true, null);
+            ObjectGear.ItemObjectAndInt result = packTotal(obj, true);
 
             assertEquals(2, result.number());
             assertSame(cursor, result.obj());
@@ -374,7 +379,7 @@ class ObjectGearPackTotalTest {
             inventory()[0] = cursor;
             gear().insertEnd(cursor);
 
-            ObjectGear.ItemObjectAndInt result = packTotal(obj, false, null);
+            ObjectGear.ItemObjectAndInt result = packTotal(obj, false);
 
             assertEquals(0, result.number());
             assertNull(result.obj());
@@ -407,7 +412,7 @@ class ObjectGearPackTotalTest {
             inventory()[0] = stackA;
             gear().insertEnd(stackA);
 
-            ObjectGear.ItemObjectAndInt result = packTotal(potion(1), false, null);
+            ObjectGear.ItemObjectAndInt result = packTotal(potion(1), false);
 
             assertEquals(5, result.number());
             assertSame(stackA, result.obj());
@@ -424,7 +429,7 @@ class ObjectGearPackTotalTest {
             quiver()[0] = quiverStack;
             gear().insertEnd(quiverStack);
 
-            ObjectGear.ItemObjectAndInt result = packTotal(potion(1), false, null);
+            ObjectGear.ItemObjectAndInt result = packTotal(potion(1), false);
 
             assertSame(quiverStack, result.obj());
         }
@@ -440,21 +445,17 @@ class ObjectGearPackTotalTest {
             inventory()[0] = packStack;
             gear().insertEnd(packStack);
 
-            ObjectGear.ItemObjectAndInt result = packTotal(potion(1), false, null);
+            ObjectGear.ItemObjectAndInt result = packTotal(potion(1), false);
 
             assertSame(quiverStack, result.obj());
         }
     }
 
     /**
-     * Confirms that {@code first} is reset at the method's own entry rather than trusting whatever
-     * the caller passed - the fix for the bug that let an uppercase-labelled, or otherwise
-     * unlabelled, first match be silently dropped in favour of the caller's placeholder.
-     *
-     * <p>{@code invenCarry} always calls with a non-null placeholder ({@code new ItemObject()}),
-     * never {@code null}; {@link #firstIsSetRegardlessOfCallersPlaceholder} rebuilds exactly that
-     * call shape against a stack that carries no label at all, which is the case the old code got
-     * wrong.
+     * Confirms that {@code first} starts from {@code null} inside the method - the fix for the bug
+     * that let an uppercase-labelled, or otherwise unlabelled, first match be silently dropped in
+     * favour of a placeholder the caller passed in. The placeholder parameter has since been removed,
+     * so this pins the remaining half: a stack carrying no label at all is still reported as first.
      *
      * @author Rowan Crowther
      */
@@ -464,20 +465,17 @@ class ObjectGearPackTotalTest {
 
         @Test
         @DisplayName("first is found even when it carries no inventory/quiver label")
-        void firstIsSetRegardlessOfCallersPlaceholder() {
+        void firstIsFoundWhenUnlabelled() {
             ItemObject stack = potion(4);
             // Deliberately left out of both the inventory and quiver arrays, and not equipped, so
             // gearToLabel falls through to '\0' - the label neither the letter nor digit tie-break
             // branch recognises.
             gear().insertEnd(stack);
 
-            ObjectGear.ItemObjectAndInt withPlaceholder = packTotal(potion(1), false, new ItemObject());
-            ObjectGear.ItemObjectAndInt withNull = packTotal(potion(1), false, null);
+            ObjectGear.ItemObjectAndInt result = packTotal(potion(1), false);
 
-            assertSame(stack, withPlaceholder.obj());
-            assertEquals(4, withPlaceholder.number());
-            assertSame(stack, withNull.obj());
-            assertEquals(4, withNull.number());
+            assertSame(stack, result.obj());
+            assertEquals(4, result.number());
         }
     }
 }

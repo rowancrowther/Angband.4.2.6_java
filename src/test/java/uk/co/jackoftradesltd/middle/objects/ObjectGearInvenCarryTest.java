@@ -17,13 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataMessage;
 import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
@@ -44,11 +38,7 @@ import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
-import uk.co.jackoftradesltd.middle.player.EquipSlot;
-import uk.co.jackoftradesltd.middle.player.Player;
-import uk.co.jackoftradesltd.middle.player.PlayerBody;
-import uk.co.jackoftradesltd.middle.player.PlayerCalcs;
-import uk.co.jackoftradesltd.middle.player.PlayerRace;
+import uk.co.jackoftradesltd.middle.player.*;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerNotice;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerRedraw;
@@ -61,18 +51,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static uk.co.jackoftradesltd.testsupport.ItemFixture.set;
 import static uk.co.jackoftradesltd.testsupport.ItemFixture.setStatic;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * Tests {@code ObjectGear.invenCarry} - the port of C's {@code inven_carry}
- * ({@code obj-gear.c:832}).
+ * ({@code obj-gear.c}).
  *
  * <p>Four clauses drifted from C while this port was being written, all invisibly - none of them
  * throws on its own, they each either throw on the ordinary case instead of the exceptional one, or
@@ -573,6 +558,117 @@ class ObjectGearInvenCarryTest {
             assertTrue(bus.lastMessage().message().startsWith("You have "));
             assertFalse(bus.lastMessage().message().contains("1st"),
                     "one stack reporting itself does not get the \"1st\" prefix");
+        }
+
+        @Test
+        @DisplayName("two like pack stacks report the aggregate with the \"1st\" marker")
+        void likeStacksReportFirstMarker() {
+            gear().insertEnd(potion(10));
+            ItemObject incoming = potion(10);
+
+            ObjectGear.invenCarry(player, incoming, false, true);
+
+            assertEquals(2, gear().size(), "absorb is off, so the incoming stack stays separate");
+            assertTrue(bus.lastMessage().message().matches("^You have .*\\(1st [a-z0-9]\\)\\.$"),
+                    "20 potions across two stacks exceed the incoming stack's 10: " + bus.lastMessage().message());
+        }
+
+        @Test
+        @DisplayName("a wand reports its own stack only, never the aggregate")
+        void wandReportsOwnCountOnly() {
+            ObjectKind wandKind = ItemFixture.kindWithBase(TValue.TV_WAND, "wand", MAX_STACK);
+            gear().insertEnd(ItemFixture.item(TValue.TV_WAND).kind(wandKind).number(1).fullyKnown().build());
+            ItemObject incoming = ItemFixture.item(TValue.TV_WAND).kind(wandKind).number(1).fullyKnown().build();
+
+            ObjectGear.invenCarry(player, incoming, false, true);
+
+            assertTrue(bus.lastMessage().message().matches("^You have .*\\([a-z0-9]\\)\\.$"),
+                    "tval_can_have_charges short-circuits the pack total: " + bus.lastMessage().message());
+        }
+
+        @Test
+        @DisplayName("a rod reports its own stack only, never the aggregate")
+        void rodReportsOwnCountOnly() {
+            ObjectKind rodKind = ItemFixture.kindWithBase(TValue.TV_ROD, "rod", MAX_STACK);
+            gear().insertEnd(ItemFixture.item(TValue.TV_ROD).kind(rodKind).number(1).fullyKnown().build());
+            ItemObject incoming = ItemFixture.item(TValue.TV_ROD).kind(rodKind).number(1).fullyKnown().build();
+
+            ObjectGear.invenCarry(player, incoming, false, true);
+
+            assertTrue(bus.lastMessage().message().matches("^You have .*\\([a-z0-9]\\)\\.$"),
+                    "tval_is_rod short-circuits the pack total: " + bus.lastMessage().message());
+        }
+
+        @Test
+        @DisplayName("a live timeout reports the stack's own count only")
+        void timeoutReportsOwnCountOnly() {
+            gear().insertEnd(potion(10));
+            ItemObject incoming = ItemFixture.item(TValue.TV_POTION).kind(potionKind).number(10)
+                    .timeout(5).fullyKnown().build();
+
+            ObjectGear.invenCarry(player, incoming, false, true);
+
+            assertTrue(bus.lastMessage().message().matches("^You have .*\\([a-z0-9]\\)\\.$"),
+                    "obj->timeout > 0 short-circuits the pack total: " + bus.lastMessage().message());
+        }
+
+        @Test
+        @DisplayName("no message is raised when the message flag is off")
+        void silentWhenMessageOff() {
+            ObjectGear.invenCarry(player, potion(1), false, false);
+
+            assertTrue(bus.payloads.isEmpty());
+        }
+    }
+
+    /**
+     * The known half's bookkeeping on the combining path: C absorbs {@code obj->known} into the
+     * stack's known object, then forces {@code known->number} to agree with the real count.
+     *
+     * @author Rowan Crowther
+     */
+    @Nested
+    @DisplayName("known half")
+    class KnownHalf {
+
+        @Test
+        @DisplayName("the surviving stack's known count follows the merged count")
+        void knownCountFollowsMergedCount() throws Exception {
+            ItemObject existing = mergeableStack(3);
+            gear().insertEnd(existing);
+
+            ObjectGear.invenCarry(player, mergeableStack(2), true, false);
+
+            assertEquals(5, existing.getNumber());
+            assertEquals(5, existing.getKnown().getNumber());
+        }
+
+        @Test
+        @DisplayName("a merge past the kind's maximum stack is clamped on both halves")
+        void mergePastMaxStackIsClamped() throws Exception {
+            // objectStackable refuses a total above MAX_STACK, so the clamp is reached only through
+            // object_absorb itself; 20 + 20 is the largest merge the stack check still allows.
+            ItemObject existing = mergeableStack(20);
+            gear().insertEnd(existing);
+
+            ObjectGear.invenCarry(player, mergeableStack(20), true, false);
+
+            assertEquals(MAX_STACK, existing.getNumber());
+            assertEquals(MAX_STACK, existing.getKnown().getNumber());
+        }
+
+        @Test
+        @DisplayName("a stack that would overflow the maximum is not merged")
+        void overflowingStackIsNotMerged() throws Exception {
+            ItemObject existing = mergeableStack(30);
+            gear().insertEnd(existing);
+            ItemObject incoming = mergeableStack(20);
+
+            ObjectGear.invenCarry(player, incoming, true, false);
+
+            assertEquals(2, gear().size(), "50 exceeds the 40 maximum, so the item is inserted instead");
+            assertEquals(30, existing.getNumber());
+            assertTrue(gear().contains(incoming));
         }
     }
 }

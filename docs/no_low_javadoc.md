@@ -48,13 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/game/globals/loaders/PlayerDataLoader.java`
-
-2 missing, 0 low
-
-- L47: field `logger` - MISSING
-- L49: method `initialiseExpLevel` - MISSING
-
 ### `middle/objects/ObjectGear.java`
 
 2 missing, 0 low

@@ -42,9 +42,32 @@ import java.io.IOException;
  * UI entries before properties. It was split out of {@code GameConstants} as one domain slice of the
  * loader/registry refactor.
  *
+ * <p>In C each of these files has a parser in {@code init.c} ({@code player_property_parser},
+ * {@code shape_parser}, {@code history_parser}, {@code body_parser}, {@code p_race_parser},
+ * {@code realm_parser}, {@code class_parser}, and {@code player_timed_parser} in
+ * {@code player-timed.c}), all run in turn by {@code init_arrays()} and all fatal on failure: a file
+ * that cannot be opened ends the program through {@code parse_file_quit_not_found} in
+ * {@code datafile.c}, and any parser error ends it through {@code init_arrays()}. The eight loaders
+ * here keep that stop-the-load behaviour for an unreadable file and for a file that yields no records
+ * at all, by throwing a {@code RuntimeException} that {@code GameConstants.init()} turns into its
+ * own. They deliberately soften one case: a file with soft errors that still assembled some records
+ * is logged and those records are registered (the partial-results contract described on
+ * {@link ErrorParsing}), where C would have quit.
+ *
+ * <p>The class also holds {@link #initializeExpLevel()}, which is not a parser but the port of C's
+ * compile-time {@code player_exp[]} table.
+ *
+ * <p>Class PlayerDataLoader coded before 261011, commented in full on 261011.
+ *
  * @author Rowan Crowther
  */
 public class PlayerDataLoader {
+    /**
+     * Logger for this class - receives the per-record soft errors that {@link ErrorParsing} reports
+     * for each file, and the name of the file when a load stops.
+     *
+     * <p>Field logger coded before 261011, commented in full on 261011.
+     */
     private static final Logger logger = LogManager.getLogger(PlayerDataLoader.class);
 
     /**
@@ -58,7 +81,12 @@ public class PlayerDataLoader {
      * {@link PlayerEventStatusUpdate#updatePlayerCharSheetExpToLevel} to keep the cached
      * character-sheet view in step.
      *
-     * <p>Method initializeExpLevel coded on 260925, commented in full on 260925.
+     * <p>Keys run 0 to 49 with level 1 at key 0, so C's {@code player_exp[lev - 1]} is
+     * {@code playerExperience.get(lev - 1)}; the first value is 10 and the last 5,000,000. Unlike C
+     * the table does not exist until this runs, which {@code GameConstants.init()} does after every
+     * data file has loaded, so nothing read during loading can see it.
+     *
+     * <p>Method initializeExpLevel coded on 260925, commented in full on 261011.
      */
     public static void initializeExpLevel() {
         long[] playerExp = new long[50];
@@ -122,10 +150,18 @@ public class PlayerDataLoader {
     
     /**
      * Load the timed-effect definitions from {@code player_timed.txt} into {@link PlayerRegistry}.
-     * <p>
-     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the effects that did
-     * assemble are registered regardless, per the partial-results contract. An IO failure is logged
-     * and <em>swallowed</em>, leaving the registry unset for the first effect that fires.
+     * The port of C's {@code player_timed_parser} ({@code player-timed.c}), run by {@code init_arrays()}
+     * after the classes.
+     *
+     * <p>Soft errors are reported through {@link ErrorParsing#reportAndCheck}, and if any effects
+     * assembled they are registered despite the errors (the partial-results contract; C would have
+     * quit). If the file yields no records, or cannot be read, the failure is logged and a
+     * {@code RuntimeException} stops the load, as C's {@code parse_file_quit_not_found} and
+     * {@code init_arrays()} do. A hard syntax error counts as an empty file: the reader catches it
+     * and returns an empty result carrying its messages.
+     *
+     * <p>Method loadPlayerTimedProperties coded before 261011, commented in full on 261011, updated
+     * on 261011 to stop the load on an unreadable or empty file.
      */
     public static void loadPlayerTimedProperties() {
         PlayerTimedReader parser = new PlayerTimedReader();
@@ -134,23 +170,35 @@ public class PlayerDataLoader {
         try {
             ParseResult<PlayerTimedEffect> result = parser.parseWithResults(filename);
 
-            ErrorParsing.reportAndCheck(filename, result, logger);
+            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
+                throw new RuntimeException("Error parsing " + filename);
+            }
 
             PlayerRegistry.setPlayerTimedEffects(result.items());
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
+            throw new RuntimeException("Error while loading file " + filename, e);
         }
     }
 
     /**
      * Load the player classes from {@code class.txt} into {@link PlayerRegistry}. Must run after
-     * magic realms, item objects and summons, which the class assembler resolves against.
-     * <p>
-     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the classes that did
-     * assemble are registered regardless, per the partial-results contract. An IO failure is logged
-     * and <em>swallowed</em>. Note this loader's dependencies are the deepest in the suite - a class
-     * resolves spellbooks through the object kinds - so a failure upstream tends to arrive here as a
-     * wall of unresolved references rather than as an IO error.
+     * magic realms, item objects and summons, which the class assembler resolves against. The port of
+     * C's {@code class_parser} ({@code init.c}), whose {@code run_parse_class} reads {@code class.txt}.
+     *
+     * <p>Soft errors are reported through {@link ErrorParsing#reportAndCheck}, and if any classes
+     * assembled they are registered despite the errors (the partial-results contract; C would have
+     * quit). If the file yields no records, or cannot be read, the failure is logged and a
+     * {@code RuntimeException} stops the load, as C's {@code parse_file_quit_not_found} and
+     * {@code init_arrays()} do. A hard syntax error counts as an empty file: the reader catches it
+     * and returns an empty result carrying its messages.
+     *
+     * <p>This loader's dependencies are the deepest in the suite - a class resolves spellbooks
+     * through the object kinds - so a failure upstream tends to arrive here as a wall of unresolved
+     * references rather than as an IO error.
+     *
+     * <p>Method loadPlayerClasses coded before 261011, commented in full on 261011, updated on
+     * 261011 to stop the load on an unreadable or empty file.
      */
     public static void loadPlayerClasses() {
         PlayerClassReader parser = new PlayerClassReader();
@@ -159,22 +207,31 @@ public class PlayerDataLoader {
         try {
             ParseResult<PlayerClass> result = parser.parseWithResults(filename);
 
-            ErrorParsing.reportAndCheck(filename, result, logger);
-
+            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
+                throw new RuntimeException("Error parsing " + filename);
+            }
+            
             PlayerRegistry.setPlayerClasses(result.items());
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
+            throw new RuntimeException("Error while loading file " + filename, e);
         }
     }
 
     /**
      * Load the magic realms from {@code realm.txt} into {@link PlayerRegistry}. Must run before
-     * classes, whose spellbooks reference a realm by name.
-     * <p>
-     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the realms that did
-     * assemble are registered regardless, per the partial-results contract. An IO failure is logged
-     * and <em>swallowed</em>; the classes that depend on a realm will report it as an unresolved
-     * name shortly afterwards.
+     * classes, whose spellbooks reference a realm by name. The port of C's {@code realm_parser}
+     * ({@code init.c}), whose {@code run_parse_realm} reads {@code realm.txt}.
+     *
+     * <p>Soft errors are reported through {@link ErrorParsing#reportAndCheck}, and if any realms
+     * assembled they are registered despite the errors (the partial-results contract; C would have
+     * quit). If the file yields no records, or cannot be read, the failure is logged and a
+     * {@code RuntimeException} stops the load, as C's {@code parse_file_quit_not_found} and
+     * {@code init_arrays()} do. A hard syntax error counts as an empty file: the reader catches it
+     * and returns an empty result carrying its messages.
+     *
+     * <p>Method loadMagicRealms coded before 261011, commented in full on 261011, updated on 261011
+     * to stop the load on an unreadable or empty file.
      */
     public static void loadMagicRealms() {
         RealmReader parser = new RealmReader();
@@ -183,21 +240,32 @@ public class PlayerDataLoader {
         try {
             ParseResult<MagicRealm> result = parser.parseWithResults(filename);
 
-            ErrorParsing.reportAndCheck(filename, result, logger);
+            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
+                throw new RuntimeException("Error parsing " + filename);
+            }
 
             PlayerRegistry.setMagicRealm(result.items());
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
+            throw new RuntimeException("Error while loading file " + filename, e);
         }
     }
 
     /**
      * Load the player races from {@code p_race.txt} into {@link PlayerRegistry}. Must run after
-     * bodies and history, which each race references.
-     * <p>
-     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the races that did
-     * assemble are registered regardless, per the partial-results contract. An IO failure is logged
-     * and <em>swallowed</em>, leaving character creation with nothing to offer.
+     * bodies and history, which each race references. The port of C's {@code p_race_parser}
+     * ({@code init.c}), whose {@code run_parse_p_race} reads {@code p_race.txt}.
+     *
+     * <p>Soft errors are reported through {@link ErrorParsing#reportAndCheck}, and if any races
+     * assembled they are registered despite the errors (the partial-results contract; C would have
+     * quit). If the file yields no records, or cannot be read, the failure is logged and a
+     * {@code RuntimeException} stops the load, as C's {@code parse_file_quit_not_found} and
+     * {@code init_arrays()} do - so character creation is never left with nothing to offer. A hard
+     * syntax error counts as an empty file: the reader catches it and returns an empty result
+     * carrying its messages.
+     *
+     * <p>Method loadPlayerRaces coded before 261011, commented in full on 261011, updated on 261011
+     * to stop the load on an unreadable or empty file.
      */
     public static void loadPlayerRaces() {
         PlayerRaceReader parser = new PlayerRaceReader();
@@ -206,23 +274,34 @@ public class PlayerDataLoader {
         try {
             ParseResult<PlayerRace> result = parser.parseWithResults(filename);
 
-            ErrorParsing.reportAndCheck(filename, result, logger);
+            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
+                throw new RuntimeException("Error parsing " + filename);
+            }
 
             PlayerRegistry.setPlayerRaces(result.items());
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
+            throw new RuntimeException("Error while loading file " + filename, e);
         }
     }
 
     /**
      * Load the body layouts from {@code body.txt} into {@link PlayerRegistry}. Must run before
-     * races, which reference a body by index.
-     * <p>
-     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the bodies that did
-     * assemble are registered regardless, per the partial-results contract. An IO failure is logged
-     * and <em>swallowed</em>. Because races resolve a body by <em>index</em> rather than by name, a
-     * partial load here shifts every later index - a case worth treating as structural if it ever
-     * bites.
+     * races, which reference a body by index. The port of C's {@code body_parser} ({@code init.c}),
+     * whose {@code run_parse_body} reads {@code body.txt}.
+     *
+     * <p>Soft errors are reported through {@link ErrorParsing#reportAndCheck}, and if any bodies
+     * assembled they are registered despite the errors (the partial-results contract; C would have
+     * quit). If the file yields no records, or cannot be read, the failure is logged and a
+     * {@code RuntimeException} stops the load, as C's {@code parse_file_quit_not_found} and
+     * {@code init_arrays()} do. A hard syntax error counts as an empty file: the reader catches it
+     * and returns an empty result carrying its messages.
+     *
+     * <p>Because races resolve a body by <em>index</em> rather than by name, a partial load here
+     * shifts every later index - the soft-error case is the one this loader still lets through.
+     *
+     * <p>Method loadBodies coded before 261011, commented in full on 261011, updated on 261011 to
+     * stop the load on an unreadable or empty file.
      */
     public static void loadBodies() {
         BodyReader reader = new BodyReader();
@@ -231,22 +310,34 @@ public class PlayerDataLoader {
         try {
             ParseResult<PlayerBody> results = reader.parseWithResults(filename);
 
-            ErrorParsing.reportAndCheck(filename, results, logger);
+            if (!ErrorParsing.reportAndCheck(filename, results, logger)) {
+                throw new RuntimeException("Error parsing " + filename);
+            }
 
             PlayerRegistry.setPlayerBodies(results.items());
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
+            throw new RuntimeException("Error while loading file " + filename, e);
         }
     }
 
     /**
      * Load the background-history charts from {@code history.txt} into {@link PlayerRegistry}. Must
-     * run before races, each of which starts at a named chart.
-     * <p>
-     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the charts that did
-     * assemble are registered regardless, per the partial-results contract. An IO failure is logged
-     * and <em>swallowed</em>; the charts are a linked structure, so a partial load can leave an
-     * entry pointing at a successor that never loaded.
+     * run before races, each of which starts at a named chart. The port of C's {@code history_parser}
+     * ({@code init.c}), whose {@code run_parse_history} reads {@code history.txt}.
+     *
+     * <p>Soft errors are reported through {@link ErrorParsing#reportAndCheck}, and if any charts
+     * assembled they are registered despite the errors (the partial-results contract; C would have
+     * quit). If the file yields no records, or cannot be read, the failure is logged and a
+     * {@code RuntimeException} stops the load, as C's {@code parse_file_quit_not_found} and
+     * {@code init_arrays()} do. A hard syntax error counts as an empty file: the reader catches it
+     * and returns an empty result carrying its messages.
+     *
+     * <p>The charts are a linked structure, so a soft-error partial load can leave an entry pointing
+     * at a successor that never loaded.
+     *
+     * <p>Method loadPlayerHistories coded before 261011, commented in full on 261011, updated on
+     * 261011 to stop the load on an unreadable or empty file.
      */
     public static void loadPlayerHistories() {
         HistoryReader reader = new HistoryReader();
@@ -255,66 +346,84 @@ public class PlayerDataLoader {
         try {
             ParseResult<PlayerHistoryChart> results = reader.parseWithResults(filename);
 
-            ErrorParsing.reportAndCheck(filename, results, logger);
+            if (!ErrorParsing.reportAndCheck(filename, results, logger)) {
+                throw new RuntimeException("Error parsing " + filename);
+            }
 
             PlayerRegistry.setPlayerHistoryCharts(results.items());
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
+            throw new RuntimeException("Error while loading file " + filename, e);
         }
     }
 
     /**
      * Load the player shapes from {@code shape.txt} into {@link PlayerRegistry}. Must run before the
-     * effects that reference a shape by name (C's {@code EST_SHAPECHANGE}).
-     * <p>
-     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the shapes that did
-     * assemble are registered regardless, per the partial-results contract. The catch is on
-     * {@code Exception} rather than {@code IOException} and <em>rethrows</em>, so any failure here
-     * stops the load.
+     * effects that reference a shape by name (C's {@code EST_SHAPECHANGE}). The port of C's
+     * {@code shape_parser} ({@code init.c}), whose {@code run_parse_shape} reads {@code shape.txt};
+     * C runs it before the objects, as the Java load order does.
      *
-     * @throws IOException an IO error occurred during parsing
+     * <p>Soft errors are reported through {@link ErrorParsing#reportAndCheck}, and if any shapes
+     * assembled they are registered despite the errors (the partial-results contract; C would have
+     * quit). If the file yields no records, or cannot be read, the failure is logged and a
+     * {@code RuntimeException} stops the load, as C's {@code parse_file_quit_not_found} and
+     * {@code init_arrays()} do. A hard syntax error counts as an empty file: the reader catches it
+     * and returns an empty result carrying its messages.
+     *
+     * <p>Method loadPlayerShapes coded before 261011, commented in full on 261011, updated on
+     * 261011 to stop the load on an unreadable or empty file and to drop the checked
+     * {@code IOException} from its signature.
      */
-    public static void loadPlayerShapes() throws IOException {
+    public static void loadPlayerShapes() {
         ShapeReader parser = new ShapeReader();
         String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "shape.txt";
 
         try {
             ParseResult<PlayerShape> result = parser.parseWithResults(filename);
 
-            ErrorParsing.reportAndCheck(filename, result, logger);
+            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
+                throw new RuntimeException("Error parsing " + filename);
+            }
 
             PlayerRegistry.setPlayerShape(result.items());
-        } catch (Exception e) {
+        } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
-            throw e;
+            throw new RuntimeException("Error while loading file " + filename, e);
         }
     }
 
     /**
      * Load the player properties (stats, flags and their UI bindings) from
      * {@code player_property.txt} into {@link PlayerRegistry}. Must run after the UI entries its
-     * {@code bindui:} lines resolve against.
-     * <p>
-     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the properties that
-     * did assemble are registered regardless, per the partial-results contract. The catch is on
-     * {@code Exception} and <em>rethrows</em>: an unresolvable {@code bindui:} target is a data bug
-     * worth stopping for rather than a property silently missing from the character sheet.
+     * {@code bindui:} lines resolve against. The port of C's {@code player_property_parser}
+     * ({@code init.c}), whose {@code run_parse_player_prop} reads {@code player_property.txt}.
      *
-     * @throws IOException an IO error occurred during parsing
+     * <p>Soft errors are reported through {@link ErrorParsing#reportAndCheck}, and if any properties
+     * assembled they are registered despite the errors (the partial-results contract; C would have
+     * quit). If the file yields no records, or cannot be read, the failure is logged and a
+     * {@code RuntimeException} stops the load, as C's {@code parse_file_quit_not_found} and
+     * {@code init_arrays()} do. A hard syntax error counts as an empty file: the reader catches it
+     * and returns an empty result carrying its messages.
+     *
+     * <p>Method loadPlayerProperties coded before 261011, commented in full on 261011, updated on
+     * 261011 to stop the load on an unreadable or empty file and to drop the checked
+     * {@code IOException} from its signature.
      */
-    public static void loadPlayerProperties() throws IOException {
+    public static void loadPlayerProperties() {
         PlayerPropertyReader parser = new PlayerPropertyReader();
         String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "player_property.txt";
 
         try {
             ParseResult<PlayerProperty> result = parser.parseWithResults(filename);
 
-            ErrorParsing.reportAndCheck(filename, result, logger);
+            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
+                throw new RuntimeException("Error parsing " + filename);
+            }
 
             PlayerRegistry.setPlayerProperties(result.items());
-        } catch (Exception e) {
+        } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
-            throw e;
+            throw new RuntimeException("Error while loading file " + filename, e);
         }
     }
 }

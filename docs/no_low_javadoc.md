@@ -48,20 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/objects/ObjectKnowledge.java`
-
-2 missing, 0 low
-
-- L26: class `ObjectKnowledge` - MISSING
-- L27: field `logger` - MISSING
-
-### `middle/objects/ObjectMake.java`
-
-2 missing, 0 low
-
-- L23: class `ObjectMake` - MISSING
-- L24: method `makeFakeArtifact` - MISSING
-
 ### `middle/objects/enums/ResType.java`
 
 2 missing, 0 low

@@ -2,21 +2,6 @@
 
 ## To deal with ##
 
-[ ] 26-10-11 `MonsterSpell.java` has 19 breath constants that C does not. `RSF_ACID` to `RSF_MANA` repeat the breaths
-that `RSF_BR_ACID` to `RSF_BR_MANA` already hold, with identical types (`RST_BREATH`, `RST_INNATE`), and nothing in
-the main code reads the short names: the monster and pit assemblers build the constant as `"RSF_" + code`, so
-`BR_ACID` in a data file always reaches the `RSF_BR_` one. The enum has 112 constants where `list-mon-spells.h` has 93
-plus `NONE` and `MAX`, so every ordinal after the block is 19 too high.
-
-- Ordinals matter wherever a `Flag<MonsterSpell>` is written or compared by position, and for anything that walks the
-  enum in C's order.
-- Delete the 19 short-name constants. A whole-word grep of `src` (main and test) outside the enum on 26-10-11 found no
-  use of them; repeat it just before deleting.
-- After the deletion, add a table test that pins every constant's ordinal and types against `list-mon-spells.h`, as
-  `MonsterRaceFlagTableTest` does for the race flags.
-- Related and already fixed: `MonsterAssembler.java` classifies spells with `getTypes()`, which is correct for the
-  breath types either way, so the frequency defaults are not affected by the duplicates.
-
 [ ] 26-10-10 Implement the lore structure that sits behind the lore file. C's `finish_parse_monster` (`mon-init.c`)
 allocates `l_list`, one zeroed `monster_lore` per race with its `blows` and `blow_known` arrays, and `get_lore`
 (`mon-lore.c`) returns a record from it for every race. The Java has no such allocation: nothing in main code calls
@@ -87,3 +72,9 @@ no division. Found while fixing the race side of the same rule in `MonsterAssemb
 `parser_getint(p, "hearing") * z_info->max_sight / 20`, with a comment that it assumes `max_sight` is 20. The Java
 `MonsterAssembler.java` parses the value and passes it to `MonsterRace` unscaled. The two agree only while
 `player:max-sight` in `constants.txt` is 20, which it is in the shipped file.
+
+[X] 26-10-11 `MonsterSpell.java` has 19 breath constants that C does not. `RSF_ACID` to `RSF_MANA` repeat the breaths
+that `RSF_BR_ACID` to `RSF_BR_MANA` already hold, with identical types (`RST_BREATH`, `RST_INNATE`), and nothing in
+the main code reads the short names: the monster and pit assemblers build the constant as `"RSF_" + code`, so
+`BR_ACID` in a data file always reaches the `RSF_BR_` one. The enum has 112 constants where `list-mon-spells.h` has 93
+plus `NONE` and `MAX`, so every ordinal after the block is 19 too high.

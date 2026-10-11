@@ -48,14 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/objects/ObjectProperty.java`
-
-0 missing, 3 low
-
-- L152: method `getType` - LOW
-- L167: method `getPayload` - LOW
-- L174: method `getName` - LOW
-
 ### `middle/player/EquipSlot.java`
 
 0 missing, 3 low

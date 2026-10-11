@@ -2,19 +2,6 @@
 
 ## To deal with ##
 
-[ ] 26-10-11 Store a pit's `innate-freq:` as `100 / pct`, as C does. `parse_pit_innate_freq` (`mon-init.c`) rejects a
-percentage outside 1 to 100 and stores `100 / pct` in `pit_profile.freq_innate`, the same convention as a race's
-`freq_innate`. `PitAssembler.java` parses the integer and passes it to `PitProfile` as written, with no range check and
-no division. Found while fixing the race side of the same rule in `MonsterAssembler.java`.
-
-- Divide into 100 and reject 0 and anything over 100 as a soft error, as `MonsterAssembler.java` now does for races.
-- It matters because `gen-room.c` rejects a race for a pit when `race->freq_innate < pit->freq_innate`. Both sides must
-  hold `100 / pct`, so while the race side is C's and the pit side is raw the comparison is between different units.
-- `pit.txt` has one such line, `innate-freq:4` on the Archers pit, so C stores 25 there. `PitReaderTest.java` reads the
-  `freqInnate` field in two tests (checked only by grep), so check their expected values when this changes.
-- `PitProfile.java` is the store and needs no change beyond the Javadoc on `freqInnate`, which should say it holds
-  `100 / pct`.
-
 [ ] 26-10-11 Scale a race's `hearing:` by `max_sight / 20`. `parse_monster_hearing` (`mon-init.c`) stores
 `parser_getint(p, "hearing") * z_info->max_sight / 20`, with a comment that it assumes `max_sight` is 20. The Java
 `MonsterAssembler.java` parses the value and passes it to `MonsterRace` unscaled. The two agree only while
@@ -104,3 +91,8 @@ shared across both files"). C keeps one `entries[]` array, so `name:` and `templ
 [X] 26-08-10-12-16 Moving `GameEventType` into channel is a bigger move than it looks. It's referenced across middle, so
 it's a stage-0-style import churn on top of stage 1's new code. Worth doing as its own commit before the records, so a
 compile failure tells you which of the two broke.
+
+[X] 26-10-11 Store a pit's `innate-freq:` as `100 / pct`, as C does. `parse_pit_innate_freq` (`mon-init.c`) rejects a
+percentage outside 1 to 100 and stores `100 / pct` in `pit_profile.freq_innate`, the same convention as a race's
+`freq_innate`. `PitAssembler.java` parses the integer and passes it to `PitProfile` as written, with no range check and
+no division. Found while fixing the race side of the same rule in `MonsterAssembler.java`.

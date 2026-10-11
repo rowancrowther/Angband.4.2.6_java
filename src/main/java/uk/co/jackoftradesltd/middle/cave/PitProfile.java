@@ -66,7 +66,14 @@ public class PitProfile {
      */
     private Flag<MonsterRaceFlag> forbiddenFlags;
     /**
-     * Required innate-attack frequency for eligible monsters.
+     * Required innate-attack frequency for eligible monsters, held as {@code 100 / pct} where
+     * {@code pct} is the percentage on the {@code innate-freq:} line of {@code pit.txt}. This is the
+     * same convention as a race's {@code freqInnate}, so the two compare directly: a race is
+     * rejected for the pit when its {@code freqInnate} is lower than this value. A pit with no
+     * {@code innate-freq:} line holds 0, which no race falls below.
+     *
+     * <p>Field freqInnate coded before 261011, commented in full on 261011, updated on 261011 to say
+     * it holds {@code 100 / pct}.
      */
     private int freqInnate;
     /**
@@ -91,16 +98,21 @@ public class PitProfile {
     private List<MonsterRace> forbiddenMonsters;
 
     /**
-     * Build a pit profile from its parsed data-file fields.
+     * Build a pit profile from its parsed data-file fields. The values are stored as given, so the
+     * caller does the conversions C's pit parser does: {@code freqInnate} must already be
+     * {@code 100 / pct}, not the percentage as written in the data file.
      *
-     * @param name                the profile name
+     * <p>Function PitProfile coded before 261011, commented in full on 261011, updated on 261011 to
+     * document the {@code freqInnate} convention.
+     *
+     * @param name               the profile name
      * @param roomType            pit/nest/other room type
      * @param ave                 average native depth
      * @param rarity              rarity weighting
      * @param objectRarity        rarity of objects within
      * @param flags               required race flags
      * @param forbiddenFlags      excluding race flags
-     * @param freqInnate          required innate-attack frequency
+     * @param freqInnate          required innate-attack frequency, as {@code 100 / pct} (0 if the pit has none)
      * @param spellsFlags         required spell flags
      * @param forbiddenSpellFlags excluding spell flags
      * @param bases               allowed monster base types

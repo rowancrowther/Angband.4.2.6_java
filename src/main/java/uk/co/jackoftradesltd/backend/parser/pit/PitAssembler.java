@@ -143,10 +143,18 @@ public class PitAssembler implements Assembler<PitParseRecord, List<PitProfile>>
                 }
             }
             if (badBannedFlag) continue;
+            int percent = 0;
             int innateFreq = 0;
             if (!record.innateFreq().isEmpty()) {
                 try {
-                    innateFreq = Integer.parseInt(record.innateFreq());
+                    percent = Integer.parseInt(record.innateFreq());
+                    if (percent < 1 || percent > 100) {
+                        errors.add("Pit at line: " + line + " has " +
+                                "an invalid innate frequency: " + record.innateFreq());
+                        continue;
+                    }
+                    innateFreq = 100 / percent;
+                    
                 } catch (NumberFormatException e) {
                     errors.add("Pit at line: " + line + " has " +
                             "a malformed innate frequency integer: " + record.innateFreq());

@@ -257,7 +257,8 @@ class PitReaderTest {
         int innateFreq = field(good, "freqInnate");
         assertEquals(1, rarity);
         assertEquals(25, ave);
-        assertEquals(5, innateFreq);
+        // innate-freq:5 is stored as 100 / 5, as parse_pit_innate_freq does, not as written.
+        assertEquals(20, innateFreq);
         List<ColourEnum> colours = field(good, "colours");
         assertEquals(List.of(ColourEnum.COLOUR_RED), colours);
         List<MonsterBase> bases = field(good, "bases");
@@ -352,6 +353,32 @@ class PitReaderTest {
         assertTrue(result.errors().stream()
                         .anyMatch(e -> e.contains("an unknown banned monster base: Norman the Unlikely")),
                 result.errors()::toString);
+    }
+
+    /**
+     * parse_pit_innate_freq rejects a percentage outside 1 to 100 and stores {@code 100 / pct}.
+     * 0 and 101 drop the record; 1, 4 and 100 are accepted and stored as 100, 25 and 1.
+     */
+    @Test
+    void innateFreqIsRangeCheckedAndStoredAsHundredOverPercent() throws Exception {
+        String zero = GOOD_RECORD.replace("name:Good pit", "name:Zero").replace("innate-freq:5", "innate-freq:0");
+        String over = GOOD_RECORD.replace("name:Good pit", "name:Over").replace("innate-freq:5", "innate-freq:101");
+        String one = GOOD_RECORD.replace("name:Good pit", "name:One").replace("innate-freq:5", "innate-freq:1");
+        String four = GOOD_RECORD.replace("name:Good pit", "name:Four").replace("innate-freq:5", "innate-freq:4");
+        String hundred = GOOD_RECORD.replace("name:Good pit", "name:Hundred").replace("innate-freq:5", "innate-freq:100");
+        String path = tempFile("freq-range.txt", "record-count:5\n" + zero + "\n" + over + "\n" + one + "\n"
+                + four + "\n" + hundred + "\n");
+
+        ParseResult<PitProfile> result = new PitReader().parseWithResults(path);
+
+        assertEquals(List.of("One", "Four", "Hundred"), names(result));
+        assertEquals(2, result.errors().size(), result.errors()::toString);
+        int storedOne = field(result.items().get(0), "freqInnate");
+        int storedFour = field(result.items().get(1), "freqInnate");
+        int storedHundred = field(result.items().get(2), "freqInnate");
+        assertEquals(100, storedOne);
+        assertEquals(25, storedFour);
+        assertEquals(1, storedHundred);
     }
 
     /**

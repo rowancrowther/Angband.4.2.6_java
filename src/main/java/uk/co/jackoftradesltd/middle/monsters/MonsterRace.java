@@ -219,8 +219,9 @@ public class MonsterRace {
     /**
      * Hearing, C's {@code race->hearing}: how far away the monster notices noise. C's comment gives
      * the range as 1 to 100 with 20 standard, and its parser scales the data-file value by
-     * {@code z_info->max_sight / 20}. The assembler passes the {@code hearing:} value through
-     * unscaled, which makes no difference while {@code max_sight} is its default of 20.
+     * {@code z_info->max_sight / 20}. The assembler does the same, multiplying by
+     * {@code GameConstants.getPlayerMaxSight()} before dividing by 20 in integer arithmetic, so a
+     * {@code max_sight} other than its default of 20 changes the stored value exactly as in C.
      *
      * <p>Field hearing coded before 261010, commented in full on 261010.
      */

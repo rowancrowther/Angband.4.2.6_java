@@ -130,6 +130,7 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
             if (!record.hearing().isEmpty()) {
                 try {
                     hearing = Integer.parseInt(record.hearing());
+                    hearing = hearing * GameConstants.getPlayerMaxSight() / 20;
                 } catch (NumberFormatException e) {
                     errors.add("Monster at line: " + line + " has " +
                             "a malformed integer for hearing: " + record.hearing());

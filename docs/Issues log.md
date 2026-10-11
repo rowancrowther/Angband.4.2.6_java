@@ -2,20 +2,6 @@
 
 ## To deal with ##
 
-[ ] 26-10-11 Scale a race's `hearing:` by `max_sight / 20`. `parse_monster_hearing` (`mon-init.c`) stores
-`parser_getint(p, "hearing") * z_info->max_sight / 20`, with a comment that it assumes `max_sight` is 20. The Java
-`MonsterAssembler.java` parses the value and passes it to `MonsterRace` unscaled. The two agree only while
-`player:max-sight` in `constants.txt` is 20, which it is in the shipped file.
-
-- The multiplier is `GameConstants.getPlayerMaxSight()`, so the assembler can read it, provided the constants have been
-  loaded by the time `monster.txt` is parsed (the order in `GameConstants.init` decides this; check it first).
-- C multiplies before it divides, in integer arithmetic, so `hearing:30` with `max_sight` 25 gives 37, not 37.5 or 36.
-  Keep the order.
-- `MonsterRace.java` already says in its `hearing` field block that the assembler passes the value through unscaled;
-  update that block when this is fixed.
-- Low priority while the constant stays at 20, but a modded `constants.txt` would silently change every monster's range
-  of hearing relative to C.
-
 [ ] 26-10-11 `MonsterSpell.java` has 19 breath constants that C does not. `RSF_ACID` to `RSF_MANA` repeat the breaths
 that `RSF_BR_ACID` to `RSF_BR_MANA` already hold, with identical types (`RST_BREATH`, `RST_INNATE`), and nothing in
 the main code reads the short names: the monster and pit assemblers build the constant as `"RSF_" + code`, so
@@ -96,3 +82,8 @@ compile failure tells you which of the two broke.
 percentage outside 1 to 100 and stores `100 / pct` in `pit_profile.freq_innate`, the same convention as a race's
 `freq_innate`. `PitAssembler.java` parses the integer and passes it to `PitProfile` as written, with no range check and
 no division. Found while fixing the race side of the same rule in `MonsterAssembler.java`.
+
+[X] 26-10-11 Scale a race's `hearing:` by `max_sight / 20`. `parse_monster_hearing` (`mon-init.c`) stores
+`parser_getint(p, "hearing") * z_info->max_sight / 20`, with a comment that it assumes `max_sight` is 20. The Java
+`MonsterAssembler.java` parses the value and passes it to `MonsterRace` unscaled. The two agree only while
+`player:max-sight` in `constants.txt` is 20, which it is in the shipped file.

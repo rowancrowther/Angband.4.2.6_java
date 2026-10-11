@@ -2,6 +2,65 @@
 
 ## To deal with ##
 
+[ ] 26-10-11 Store a pit's `innate-freq:` as `100 / pct`, as C does. `parse_pit_innate_freq` (`mon-init.c`) rejects a
+percentage outside 1 to 100 and stores `100 / pct` in `pit_profile.freq_innate`, the same convention as a race's
+`freq_innate`. `PitAssembler.java` parses the integer and passes it to `PitProfile` as written, with no range check and
+no division. Found while fixing the race side of the same rule in `MonsterAssembler.java`.
+
+- Divide into 100 and reject 0 and anything over 100 as a soft error, as `MonsterAssembler.java` now does for races.
+- It matters because `gen-room.c` rejects a race for a pit when `race->freq_innate < pit->freq_innate`. Both sides must
+  hold `100 / pct`, so while the race side is C's and the pit side is raw the comparison is between different units.
+- `pit.txt` has one such line, `innate-freq:4` on the Archers pit, so C stores 25 there. `PitReaderTest.java` reads the
+  `freqInnate` field in two tests (checked only by grep), so check their expected values when this changes.
+- `PitProfile.java` is the store and needs no change beyond the Javadoc on `freqInnate`, which should say it holds
+  `100 / pct`.
+
+[ ] 26-10-11 Scale a race's `hearing:` by `max_sight / 20`. `parse_monster_hearing` (`mon-init.c`) stores
+`parser_getint(p, "hearing") * z_info->max_sight / 20`, with a comment that it assumes `max_sight` is 20. The Java
+`MonsterAssembler.java` parses the value and passes it to `MonsterRace` unscaled. The two agree only while
+`player:max-sight` in `constants.txt` is 20, which it is in the shipped file.
+
+- The multiplier is `GameConstants.getPlayerMaxSight()`, so the assembler can read it, provided the constants have been
+  loaded by the time `monster.txt` is parsed (the order in `GameConstants.init` decides this; check it first).
+- C multiplies before it divides, in integer arithmetic, so `hearing:30` with `max_sight` 25 gives 37, not 37.5 or 36.
+  Keep the order.
+- `MonsterRace.java` already says in its `hearing` field block that the assembler passes the value through unscaled;
+  update that block when this is fixed.
+- Low priority while the constant stays at 20, but a modded `constants.txt` would silently change every monster's range
+  of hearing relative to C.
+
+[ ] 26-10-11 `MonsterSpell.java` has 19 breath constants that C does not. `RSF_ACID` to `RSF_MANA` repeat the breaths
+that `RSF_BR_ACID` to `RSF_BR_MANA` already hold, with identical types (`RST_BREATH`, `RST_INNATE`), and nothing in
+the main code reads the short names: the monster and pit assemblers build the constant as `"RSF_" + code`, so
+`BR_ACID` in a data file always reaches the `RSF_BR_` one. The enum has 112 constants where `list-mon-spells.h` has 93
+plus `NONE` and `MAX`, so every ordinal after the block is 19 too high.
+
+- Ordinals matter wherever a `Flag<MonsterSpell>` is written or compared by position, and for anything that walks the
+  enum in C's order.
+- Delete the 19 short-name constants. A whole-word grep of `src` (main and test) outside the enum on 26-10-11 found no
+  use of them; repeat it just before deleting.
+- After the deletion, add a table test that pins every constant's ordinal and types against `list-mon-spells.h`, as
+  `MonsterRaceFlagTableTest` does for the race flags.
+- Related and already fixed: `MonsterAssembler.java` classifies spells with `getTypes()`, which is correct for the
+  breath types either way, so the frequency defaults are not affected by the duplicates.
+
+[ ] 26-10-10 Implement the lore structure that sits behind the lore file. C's `finish_parse_monster` (`mon-init.c`)
+allocates `l_list`, one zeroed `monster_lore` per race with its `blows` and `blow_known` arrays, and `get_lore`
+(`mon-lore.c`) returns a record from it for every race. The Java has no such allocation: nothing in main code calls
+`MonsterRace.setLore`, so `getLore()` returns null for every race loaded from `monster.txt`. Found by `/port` of
+`MonsterRace.java` on 26-10-10.
+
+- Give each race a blank `MonsterLore` when the races are registered (`MonsterDataLoader.loadMonsters`), sized to the
+  longest blow list as C's `mon_blows_max` does. This does not need the lore file, and it comes first.
+- `PlayerBirth.java` calls `getLore()` and then `setPSkills(0)` and `setThefts(0)` on the result for every race after
+  the first, so it throws until the records exist.
+- The lore file itself (`lore.txt`, `lore_parser` in `mon-init.c`, writer `lore_save` in `mon-lore.c`) stays parked
+  behind `LoreReader`, as already decided; it fills the records this issue creates and is not part of it.
+- The savefile side (`rd_monster_memory` in `load.c`, `wr_monster_memory` in `save.c`) restores only `pkills` and
+  `thefts`, and also resets `max_num` and keeps dead uniques at zero. It needs the records too.
+- Decide whether `getLore` should keep returning null for a bare race, since C's `get_lore` asserts the race is not
+  null and never returns null itself.
+
 [ ] 26-09-29 Fold `UIEntryBase` into `UIEntry`, as decided 26-09-19 (`docs/precis/260918.md`, section "The registry is
 shared across both files"). C keeps one `entries[]` array, so `name:` and `template:` both search the same list.
 `/port` of `UIRegistry.java` failed stage 1 on 26-09-29 because `UIRegistry.java` still holds the split.

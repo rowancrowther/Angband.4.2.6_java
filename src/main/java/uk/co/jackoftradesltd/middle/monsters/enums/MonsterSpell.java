@@ -168,7 +168,7 @@ public enum MonsterSpell {
     /**
      * @return the set of spell-type categories this spell belongs to
      */
-    private Flag<MonsterSpellTypeEnum> getTypes() {
+    public Flag<MonsterSpellTypeEnum> getTypes() {
         return spellTypes;
     }
 }

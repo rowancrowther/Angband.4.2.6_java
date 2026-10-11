@@ -48,14 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/monsters/MonsterPain.java`
-
-0 missing, 3 low
-
-- L76: method `getMessage` - LOW - "Getter for message"
-- L86: method `toString` - LOW
-- L105: method `getPainIndex` - LOW
-
 ### `middle/monsters/MonsterRace.java`
 
 0 missing, 3 low

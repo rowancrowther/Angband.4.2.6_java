@@ -17,11 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.monsters;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import uk.co.jackoftradesltd.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 import uk.co.jackoftradesltd.middle.game.globals.registry.MonsterRegistry;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterGroupRole;
@@ -30,11 +26,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link MonsterRace}'s second-pass resolution — the two methods that turn the names in
@@ -263,7 +255,9 @@ class MonsterRaceResolutionTest {
     }
 
     /**
-     * The spell-message record, which groups the three variants C keeps as parallel strings.
+     * The nested spell-message record, a visible / invisible / miss triple. Nothing in the main code
+     * uses it (the assembler builds {@code MonsterSpellMessage}), and it is not a port of C's
+     * {@code monster_altmsg}, which holds one message per record.
      */
     @Nested
     @DisplayName("MonsterSpellMessages")

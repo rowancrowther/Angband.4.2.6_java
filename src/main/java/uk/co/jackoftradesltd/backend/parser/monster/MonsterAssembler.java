@@ -19,7 +19,6 @@ package uk.co.jackoftradesltd.backend.parser.monster;
 
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
-import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.channel.utils.Flag;
@@ -32,6 +31,8 @@ import uk.co.jackoftradesltd.middle.monsters.*;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterGroupRole;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterSpell;
+import uk.co.jackoftradesltd.middle.monsters.enums.MonsterSpellTypeEnum;
+import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.ObjectKind;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 
@@ -175,20 +176,39 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
                     continue;
                 }
             }
-            int freqInnate = 0;
+            int freqInnate;
+            int innatePct = 0;
             if (!record.innateFreq().isEmpty()) {
                 try {
                     freqInnate = Integer.parseInt(record.innateFreq());
+                    if (freqInnate < 1 || freqInnate > 100) {
+                        errors.add("Monster at line: " + line + " has " +
+                                "a frequency number that is out of range. " +
+                                "Should be between 1 and 100 inclusive. was: " +
+                                record.innateFreq());
+                        continue;
+                    }
+                    
+                    innatePct = 100 / freqInnate;
                 } catch (NumberFormatException e) {
                     errors.add("Monster at line: " + line + " has " +
                             "a malformed integer for innate-freq: " + record.innateFreq());
                     continue;
                 }
             }
-            int freqSpell = 0;
+            int freqSpell;
+            int spellPct = 0;
             if (!record.spellFreq().isEmpty()) {
                 try {
                     freqSpell = Integer.parseInt(record.spellFreq());
+                    if (freqSpell < 1 || freqSpell > 100) {
+                        errors.add("Monster at line: " + line + " has " +
+                                "a frequency number that is out of range. " +
+                                "Should be between 1 and 100 inclusive. was: " +
+                                record.spellFreq());
+                        continue;
+                    }
+                    spellPct = 100 / freqSpell;
                 } catch (NumberFormatException e) {
                     errors.add("Monster at line: " + line + " has " +
                             "a malformed integer for spell-freq: " + record.spellFreq());
@@ -556,12 +576,23 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
                     visualsCycler = null;
                 }
             }
-            // An unset (0) innate or spell-cast frequency defaults to 4.
-            if (freqInnate == 0) freqInnate = 4;
-            if (freqSpell == 0) freqSpell = 4;
+            
+            boolean hasSpell = false;
+            boolean hasInnate = false;
+            
+            for (MonsterSpell monsterSpell : spells) {
+                if (monsterSpell.getTypes().has(MonsterSpellTypeEnum.RST_INNATE))
+                    hasInnate = true;
+                if (!monsterSpell.getTypes().has(MonsterSpellTypeEnum.RST_INNATE) 
+                        && !monsterSpell.getTypes().has(MonsterSpellTypeEnum.RST_BREATH))
+                    hasSpell = true;
+            }
+            
+            if (innatePct == 0 && hasInnate) innatePct = 4;
+            if (spellPct == 0 && hasSpell) spellPct = 4;
 
             monsters.add(new MonsterRace(name, text, plural, base, hitPoints, ac, sleep,
-                    hearing, smell, speed, light, mexp, freqInnate, freqSpell,
+                    hearing, smell, speed, light, mexp, innatePct, spellPct,
                     spellPower, flags, spells, blows, level, rarity, adc, spellMessages,
                     drops, friends, friendsBase, mimics, shapes, shapes.size(), visualsCycler));
         }

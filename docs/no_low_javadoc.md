@@ -48,13 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/player/PlayerBirth.java`
-
-2 missing, 0 low
-
-- L76: field `logger` - MISSING
-- L78: field `MAX_BIRTH_POINTS` - MISSING
-
 ### `middle/player/PlayerKnowledge.java`
 
 2 missing, 0 low

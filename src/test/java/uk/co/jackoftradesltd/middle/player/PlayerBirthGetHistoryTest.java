@@ -25,14 +25,11 @@ import uk.co.jackoftradesltd.middle.numerics.RandomValueUtils;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerBirth#getHistory(PlayerHistoryChart)}, the port of C's {@code get_history}
- * ({@code player-birth.c:330-345}):
+ * ({@code player-birth.c}):
  *
  * <pre>{@code
  * while (chart) {

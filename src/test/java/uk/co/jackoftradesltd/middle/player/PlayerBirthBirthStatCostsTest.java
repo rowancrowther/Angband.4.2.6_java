@@ -26,10 +26,10 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 /**
  * Tests {@link PlayerBirth}'s {@code birthStatCosts} field, the port of C's
- * {@code birth_stat_costs} ({@code player-birth.c:679}).
+ * {@code birth_stat_costs} ({@code player-birth.c}).
  *
  * <p>The field is a bare data array with no accessor, so the only thing to check is that the
- * nineteen entries match C's exactly — the values are hand-derived from {@code player-birth.c:679}
+ * nineteen entries match C's exactly — the values are hand-derived from {@code player-birth.c}
  * rather than copied out of the port, so a transcription slip in either place would show up as a
  * mismatch.
  *
@@ -41,7 +41,7 @@ class PlayerBirthBirthStatCostsTest {
 
     /**
      * Costs 0-19, index {@code i} pricing the point that raises a stat from {@code i - 1} to
-     * {@code i} — {@code player-birth.c:679}.
+     * {@code i} — {@code player-birth.c}.
      */
     private static final int[] EXPECTED =
             {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 4};

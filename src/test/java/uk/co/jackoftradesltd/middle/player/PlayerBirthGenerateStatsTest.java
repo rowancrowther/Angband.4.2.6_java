@@ -51,7 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests the private {@link PlayerBirth#generateStats}, the port of C's {@code generate_stats}
- * ({@code player-birth.c:824-981}), the point-buy birth screen's auto-generate heuristic.
+ * ({@code player-birth.c}), the point-buy birth screen's auto-generate heuristic.
  *
  * <p>{@code generateStats} is private and instance-scoped, and nothing in the port calls it yet -
  * the same gap noted on the method's own Javadoc. Every test here reaches it through reflection on

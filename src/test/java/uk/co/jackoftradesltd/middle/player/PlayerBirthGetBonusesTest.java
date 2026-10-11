@@ -43,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerBirth#getBonuses(Player)}, the port of C's {@code get_bonuses}
- * ({@code player-birth.c:311-324}).
+ * ({@code player-birth.c}).
  *
  * <p>The C is four lines:
  *
@@ -70,7 +70,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * skipped the fill entirely would leave it where it started. All three are distinguishable.
  *
  * <p><b>Unconditional, not a clamp.</b> {@code calc_hitpoints} already pulls a current total down
- * to a falling maximum, but only when it is at or above it ({@code player-calcs.c:1588}); these two
+ * to a falling maximum, but only when it is at or above it ({@code player-calcs.c}); these two
  * lines have no such guard, so a character coming in <em>below</em> the maximum is raised to it.
  * That is the difference between healing and clamping, and the fixture's low starting current total
  * is what makes it visible. The mana side is checked in both directions: a caster is filled upwards

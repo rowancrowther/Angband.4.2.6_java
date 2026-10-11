@@ -36,15 +36,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.*;
 import static uk.co.jackoftradesltd.testsupport.ItemFixture.set;
 
 /**
  * Tests {@link PlayerBirth#embody}, the port of C's {@code player_embody}
- * ({@code player-birth.c:369}), which gives a player the body their race is built with.
+ * ({@code player-birth.c}), which gives a player the body their race is built with.
  *
  * <p>The method is one assignment because {@link PlayerBody#copy} is both halves of what C does —
  * the struct copy and the fresh, unworn slot array. What is left to test here is the pair of

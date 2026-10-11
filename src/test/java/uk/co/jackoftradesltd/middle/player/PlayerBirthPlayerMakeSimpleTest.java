@@ -17,11 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.player;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.game.enums.CommandCode;
@@ -40,17 +36,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerBirth#playerMakeSimple(Player, String, String, String)}, the port of C's
- * {@code player_make_simple} ({@code player-birth.c:523-577}).
+ * {@code player_make_simple} ({@code player-birth.c}).
  *
  * <p>The C function resolves each name to a menu-choice index by walking its {@code races}/
  * {@code classes} linked lists and then rewriting the found position with
- * {@code ir = nr - ir - 1} ({@code player-birth.c:543}), because those lists are built by
+ * {@code ir = nr - ir - 1} ({@code player-birth.c}), because those lists are built by
  * <em>prepending</em> each parsed entry — a forward walk from the head finds entries in the
  * reverse of the edit file's order. The port's lists are built by <em>appending</em>
  * ({@code PlayerRaceAssembler}, {@code PlayerClassAssembler}), so a forward scan already lands on
@@ -179,7 +173,7 @@ class PlayerBirthPlayerMakeSimpleTest {
 
     /**
      * The command-queue sequence, defaulting and context - C's {@code cmdq_push} calls and their
-     * order ({@code player-birth.c:564-574}), independent of which race/class/name is chosen.
+     * order ({@code player-birth.c}), independent of which race/class/name is chosen.
      */
     @Nested
     @DisplayName("the command sequence")

@@ -45,13 +45,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerBirth#doCmdSellStat}, the port of C's {@code do_cmd_sell_stat} ({@code
- * player-birth.c:1146-1155}).
+ * player-birth.c}).
  *
  * <p>The C:
  *
@@ -90,7 +88,7 @@ class PlayerBirthDoCmdSellStatTest {
     private static final int START_GOLD = 600;
 
     /**
-     * C's {@code MAX_BIRTH_POINTS} ({@code player-birth.c:683}).
+     * C's {@code MAX_BIRTH_POINTS} ({@code player-birth.c}).
      */
     private static final int MAX_BIRTH_POINTS = 20;
 
@@ -179,7 +177,7 @@ class PlayerBirthDoCmdSellStatTest {
     /**
      * Builds the {@code CMD_SELL_STAT} command C's {@code cmd_get_arg_choice} would read from - the
      * port of {@code cmd_set_arg_choice(cmdq_peek(), "choice", stat)}, which the birth-screen points
-     * menu calls before the command ever runs ({@code ui-birth.c:1255-1257}).
+     * menu calls before the command ever runs ({@code ui-birth.c}).
      *
      * @param choice the raw choice index to store, or {@code null} to leave the arg unset
      * @return the command

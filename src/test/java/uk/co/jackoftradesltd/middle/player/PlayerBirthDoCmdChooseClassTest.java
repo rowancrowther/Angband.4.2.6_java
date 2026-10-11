@@ -51,13 +51,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerBirth#doCmdChooseClass}, the port of C's {@code do_cmd_choose_class}
- * ({@code player-birth.c:1122-1131}).
+ * ({@code player-birth.c}).
  *
  * <p>The C is short:
  *
@@ -121,7 +119,7 @@ class PlayerBirthDoCmdChooseClassTest {
     private static final int COST_FLAT = 1;
 
     /**
-     * C's {@code MAX_BIRTH_POINTS} ({@code player-birth.c:683}), what {@code resetStats} always
+     * C's {@code MAX_BIRTH_POINTS} ({@code player-birth.c}), what {@code resetStats} always
      * resets the running total to before {@code generateStats} spends any of it.
      */
     private static final int MAX_BIRTH_POINTS = 20;

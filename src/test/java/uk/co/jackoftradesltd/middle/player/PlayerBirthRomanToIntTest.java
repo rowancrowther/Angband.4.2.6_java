@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  * Tests {@code PlayerBirth.value(char)} and {@code PlayerBirth.romanToInt(String)}, the port of
  * C's single-letter lookup embedded in {@code roman_token_vals[*][0]} and of
- * {@code roman_to_int} itself ({@code player-birth.c:1439-1492}). Both methods are private and
+ * {@code roman_to_int} itself ({@code player-birth.c}). Both methods are private and
  * static, so every test reaches them through reflection.
  *
  * <p>The expected values throughout come from hand-tracing C's {@code roman_to_int}, not from the

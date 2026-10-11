@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 /**
  * Tests {@link PlayerBirth#doCmdPrevStats}, the port of C's {@code do_cmd_prev_stats}
- * ({@code player-birth.c:1218-1231}).
+ * ({@code player-birth.c}).
  *
  * <p>The C:
  *

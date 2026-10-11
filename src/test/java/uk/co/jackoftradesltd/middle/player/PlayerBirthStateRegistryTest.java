@@ -27,16 +27,11 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerBirthStateRegistry}, the port of the block of C statics at
- * {@code player-birth.c:118-138} - {@code stats}, {@code points_spent}, {@code points_inc},
+ * {@code player-birth.c} - {@code stats}, {@code points_spent}, {@code points_inc},
  * {@code points_left}, {@code quickstart_allowed}, {@code rolled_stats}, {@code prev} and
  * {@code quickstart_prev}.
  *
@@ -149,7 +144,7 @@ class PlayerBirthStateRegistryTest {
      * {@link PlayerBirthStateRegistry#getStats()} / {@link PlayerBirthStateRegistry#setStats(Map)}
      * - the whole-array form of C's {@code stats}, the shape {@code reset_stats}, {@code
      * generate_stats} and {@code get_stats} use when they take the array by reference rather than
-     * one stat at a time ({@code player-birth.c:715, 829, 1181}).
+     * one stat at a time ({@code player-birth.c}).
      */
     @Nested
     @DisplayName("the stats whole map")
@@ -269,7 +264,7 @@ class PlayerBirthStateRegistryTest {
      * {@link PlayerBirthStateRegistry#getPointsSpent()} / {@link
      * PlayerBirthStateRegistry#setPointsSpent(Map)} - the whole-array form of C's {@code
      * points_spent}, the shape {@code reset_stats}, {@code generate_stats}, {@code buy_stat} and
-     * {@code sell_stat} use when they take the array by reference ({@code player-birth.c:715,
+     * {@code sell_stat} use when they take the array by reference ({@code player-birth.c,
      * 829, 1137, 1148}).
      */
     @Nested
@@ -363,7 +358,7 @@ class PlayerBirthStateRegistryTest {
      * {@link PlayerBirthStateRegistry#getPointsInc()} / {@link
      * PlayerBirthStateRegistry#setPointsInc(Map)} - the whole-array form of C's {@code
      * points_inc}, the shape {@code reset_stats}, {@code generate_stats}, {@code buy_stat} and
-     * {@code sell_stat} use when they take the array by reference ({@code player-birth.c:715,
+     * {@code sell_stat} use when they take the array by reference ({@code player-birth.c,
      * 829, 1137, 1148}).
      */
     @Nested
@@ -620,7 +615,7 @@ class PlayerBirthStateRegistryTest {
         /**
          * {@code pointsLeft}, {@code quickstartAllowed}, {@code rolledStats}, {@code prev} and
          * {@code quickstartPrev} are not among the fields it (re)creates - only the three maps at
-         * {@code player-birth.c:118-120} are - so calling it leaves all five exactly as they were.
+         * {@code player-birth.c} are - so calling it leaves all five exactly as they were.
          */
         @Test
         @DisplayName("leaves pointsLeft, quickstartAllowed, rolledStats, prev and quickstartPrev untouched")
@@ -655,7 +650,7 @@ class PlayerBirthStateRegistryTest {
 
     /**
      * {@link PlayerBirthStateRegistry#getPrev()} / {@link PlayerBirthStateRegistry#setPrev(Birther)}
-     * - the port of C's {@code prev} ({@code player-birth.c:131}), the birth screen's "flick between
+     * - the port of C's {@code prev} ({@code player-birth.c}), the birth screen's "flick between
      * two rolls" undo snapshot.
      */
     @Nested
@@ -696,7 +691,7 @@ class PlayerBirthStateRegistryTest {
     /**
      * {@link PlayerBirthStateRegistry#getQuickstartPrev()} / {@link
      * PlayerBirthStateRegistry#setQuickstartPrev(Birther)} - the port of C's {@code quickstart_prev}
-     * ({@code player-birth.c:138}), the quickstart restore snapshot.
+     * ({@code player-birth.c}), the quickstart restore snapshot.
      */
     @Nested
     @DisplayName("quickstartPrev")

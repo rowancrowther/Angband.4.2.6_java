@@ -17,11 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.player;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.enums.Stats;
@@ -34,16 +30,12 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests the private {@link PlayerBirth#saveRollerData}, the port of C's {@code save_roller_data}
- * ({@code player-birth.c:146}) — the snapshot the birth process keeps for undo and quickstart.
+ * ({@code player-birth.c}) — the snapshot the birth process keeps for undo and quickstart.
  *
  * <p>{@code saveRollerData} is private and instance-scoped, and reads its subject through
  * {@link GameState#getPlayer()} rather than taking one as a parameter, so every test here installs a
@@ -61,7 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
  * and {@link HistoryHandoff} pins down that the background-text read and the null-out that follows it
  * hit the <em>same</em> field — {@code toSave.setHistoryBirth(player.getHistoryBirth())} then
  * {@code player.setHistoryBirth(null)} — matching C's {@code tosave->history = player->history;
- * player->history = NULL;} ({@code player-birth.c:165-166}). A field-name collision earlier in the
+ * player->history = NULL;} ({@code player-birth.c}). A field-name collision earlier in the
  * port had the read and the null-out landing on two unrelated fields.
  *
  * <p>Class PlayerBirthSaveRollerDataTest coded on 260906, commented in full on 260906.
@@ -154,7 +146,7 @@ class PlayerBirthSaveRollerDataTest {
 
     /**
      * The ordinary path: every field {@code save_roller_data} copies ends up in {@code toSave},
-     * matching C clause by clause ({@code player-birth.c:151-167}).
+     * matching C clause by clause ({@code player-birth.c}).
      */
     @Nested
     @DisplayName("the ordinary path copies every field save_roller_data does")
@@ -208,7 +200,7 @@ class PlayerBirthSaveRollerDataTest {
 
     /**
      * C reads {@code wt_birth}/{@code ht_birth}/{@code au_birth}, never the live {@code wt}/
-     * {@code ht}/{@code au} ({@code player-birth.c:154-156}) — an easy field to reach for by name
+     * {@code ht}/{@code au} ({@code player-birth.c}) — an easy field to reach for by name
      * alone, since the port keeps both pairs on {@link Player}.
      */
     @Nested
@@ -273,7 +265,7 @@ class PlayerBirthSaveRollerDataTest {
 
     /**
      * C's loop is {@code for (i = 0; i < STAT_MAX; i++)} over a bare {@code int} array
-     * ({@code player-birth.c:159-160}) — five slots, no sentinel among them. The port's
+     * ({@code player-birth.c}) — five slots, no sentinel among them. The port's
      * {@link Stats} enum carries two sentinels of its own, {@code STAT_NONE} and {@code STAT_MAX},
      * which the loop in {@code saveRollerData} must skip.
      */
@@ -299,7 +291,7 @@ class PlayerBirthSaveRollerDataTest {
 
     /**
      * C's {@code tosave->history = player->history; player->history = NULL;}
-     * ({@code player-birth.c:165-166}) reads and nulls the same field, handing the rolled
+     * ({@code player-birth.c}) reads and nulls the same field, handing the rolled
      * background-text pointer to {@code toSave} and leaving the player without one. An earlier field-
      * name collision in the port had the read and the null-out landing on two different fields.
      */

@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Tests {@link PlayerBirth#doCmdChooseHistory}, the port of C's {@code do_cmd_choose_history}
- * ({@code player-birth.c:1244-1255}).
+ * ({@code player-birth.c}).
  *
  * <p>The C is short:
  *

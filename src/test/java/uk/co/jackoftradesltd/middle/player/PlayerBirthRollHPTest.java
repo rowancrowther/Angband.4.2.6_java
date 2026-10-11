@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests {@link PlayerBirth#rollHP(Player)}, the port of C's {@code roll_hp}
- * ({@code player-birth.c:279-308}), together with the two accessors it drives —
+ * ({@code player-birth.c}), together with the two accessors it drives —
  * {@link Player#getHitDie()} and {@link Player#setPlayerHitpoint(int, int)}.
  *
  * <p>The C is a rejection sampler:
@@ -64,7 +64,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * {@code player_hp[i] = player_hp[0] + i}. The window collapses with it: {@code (50 * 0 * 3) / 8 + 50}
  * and {@code (50 * 0 * 5) / 8 + 50} are both 50, so the one table the loop can produce is the one
  * table it will accept — provided index zero holds the seed {@code player_generate} gives it
- * ({@code player-birth.c:1003}), which for a one-sided die is 1. That case pins the whole table
+ * ({@code player-birth.c}), which for a one-sided die is 1. That case pins the whole table
  * against arithmetic, with no sampling involved.
  *
  * <p><b>The window.</b> Its two bounds are integer divisions that truncate, and the shipped hit dice
@@ -95,7 +95,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class PlayerBirthRollHPTest {
 
     /**
-     * C's {@code PY_MAX_LEVEL} ({@code player.h:81}), repeated here rather than read from the port
+     * C's {@code PY_MAX_LEVEL} ({@code player.h}), repeated here rather than read from the port
      * so that a test does not agree with a constant it is meant to be checking.
      */
     private static final int PY_MAX_LEVEL = 50;
@@ -116,7 +116,7 @@ class PlayerBirthRollHPTest {
     /**
      * Writes the player's private {@code hitDie} field, which has no setter — in C it is filled by
      * {@code player_generate} from the race's and the class's contributions
-     * ({@code player-birth.c:998}), and the port has not reached that function yet.
+     * ({@code player-birth.c}), and the port has not reached that function yet.
      *
      * @param sides the number of sides on the hit die
      * @throws Exception if the field cannot be reached
@@ -130,7 +130,7 @@ class PlayerBirthRollHPTest {
     /**
      * Puts a character in the state {@code roll_hp} expects to be called in: a hit die of the given
      * size, with index zero of the table already seeded with it, exactly as
-     * {@code player_generate} leaves things ({@code player-birth.c:1003}).
+     * {@code player_generate} leaves things ({@code player-birth.c}).
      *
      * @param sides the number of sides on the hit die
      * @throws Exception if the hit die field cannot be reached
@@ -187,7 +187,7 @@ class PlayerBirthRollHPTest {
 
         /**
          * The setter stores what it is handed, without deriving it. C's caller does the cumulative
-         * addition ({@code player-birth.c:296}); a port that added inside the accessor would double
+         * addition ({@code player-birth.c}); a port that added inside the accessor would double
          * it.
          */
         @Test
@@ -240,7 +240,7 @@ class PlayerBirthRollHPTest {
         }
 
         /**
-         * C's array runs to {@code PY_MAX_LEVEL} entries ({@code player.h:583}) and its loop stops
+         * C's array runs to {@code PY_MAX_LEVEL} entries ({@code player.h}) and its loop stops
          * at {@code PY_MAX_LEVEL - 1}. The port's array carries one slot more, and nothing should
          * reach it — an off-by-one in the loop bound would show up here and nowhere else.
          *
@@ -357,7 +357,7 @@ class PlayerBirthRollHPTest {
         }
 
         /**
-         * The port's {@code PY_MAX_LEVEL} is C's ({@code player.h:81}). Every bound above is derived
+         * The port's {@code PY_MAX_LEVEL} is C's ({@code player.h}). Every bound above is derived
          * from 50, so a port that had changed it would make the rest of this class meaningless
          * rather than fail.
          */

@@ -17,11 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.player;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.enums.Stats;
@@ -40,19 +36,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests the private {@link PlayerBirth#LoadRollerData}, the port of C's {@code load_roller_data}
- * ({@code player-birth.c:181-225}) — the other half of the roller's undo, restoring a
+ * ({@code player-birth.c}) — the other half of the roller's undo, restoring a
  * {@link Birther} snapshot onto the live player and, if the caller wants it, handing back what the
  * player held before.
  *
  * <p>C documents that {@code saved} and {@code prev_player} may be the very same struct
- * ({@code player-birth.c:177-178}), and its one real caller does exactly that -
- * {@code load_roller_data(&prev, &prev)} ({@code player-birth.c:1211}) - so the "flick between two
+ * ({@code player-birth.c}), and its one real caller does exactly that -
+ * {@code load_roller_data(&prev, &prev)} ({@code player-birth.c}) - so the "flick between two
  * rolls" is a swap of one struct's contents with the live player's. {@link SavedAndPrevPlayerAreTheSameObject}
  * pins that case down; {@link PrevPlayerCapturesPriorState} pins down the simpler two-object case the
  * same code path also has to get right.
@@ -64,7 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
  * {@code player->au = z_info->start_gold} rather than {@code player->au = saved->au}; and
  * {@link ReturnsTheSameReference} pins down that the caller's own {@code prevPlayer} object is
  * mutated and handed back, not replaced with an unrelated copy - C's raw
- * {@code *prev_player = temp;} ({@code player-birth.c:223}) writes through the caller's own pointer,
+ * {@code *prev_player = temp;} ({@code player-birth.c}) writes through the caller's own pointer,
  * and a port that instead reassigned a local variable to a fresh object would silently break the one
  * real C caller's swap.
  *
@@ -227,7 +221,7 @@ class PlayerBirthLoadRollerDataTest {
 
     /**
      * The ordinary path: every field {@code load_roller_data} writes onto the live player from
-     * {@code saved}, matching C clause by clause ({@code player-birth.c:196-216}).
+     * {@code saved}, matching C clause by clause ({@code player-birth.c}).
      */
     @Nested
     @DisplayName("loads every field save_roller_data would have saved")
@@ -261,7 +255,7 @@ class PlayerBirthLoadRollerDataTest {
 
     /**
      * {@code player->wt = player->wt_birth = saved->wt} and
-     * {@code player->ht = player->ht_birth = saved->ht} ({@code player-birth.c:199-200}) - one figure
+     * {@code player->ht = player->ht_birth = saved->ht} ({@code player-birth.c}) - one figure
      * from {@code saved} lands in both the live and the birth field, unlike the gold, which splits
      * (see {@link GoldIsReset}).
      */
@@ -285,7 +279,7 @@ class PlayerBirthLoadRollerDataTest {
 
     /**
      * {@code player->au_birth = saved->au; player->au = z_info->start_gold;}
-     * ({@code player-birth.c:201-202}) - unlike weight and height, gold does not carry {@code saved}'s
+     * ({@code player-birth.c}) - unlike weight and height, gold does not carry {@code saved}'s
      * figure into both fields. The birth copy takes {@code saved}'s gold; the live purse is reset to
      * the data file's starting figure regardless of what {@code saved} held.
      */
@@ -308,7 +302,7 @@ class PlayerBirthLoadRollerDataTest {
 
     /**
      * {@code player->stat_max[i] = player->stat_cur[i] = player->stat_birth[i] = saved->stat[i];
-     * player->stat_map[i] = i;} ({@code player-birth.c:206-208}) - all four targets take
+     * player->stat_map[i] = i;} ({@code player-birth.c}) - all four targets take
      * {@code saved}'s figure, and the scramble map resets to the identity permutation.
      */
     @Nested
@@ -335,9 +329,9 @@ class PlayerBirthLoadRollerDataTest {
 
     /**
      * The one subtlety in reusing {@link PlayerBirth#saveRollerData} to capture the outgoing state:
-     * it nulls the player's {@code historyBirth} as a side effect ({@code player-birth.c:167}), and
+     * it nulls the player's {@code historyBirth} as a side effect ({@code player-birth.c}), and
      * that happens <em>before</em> this method's own history write further down
-     * ({@code player-birth.c:212-215}). The player must not be left with a null history at the end of
+     * ({@code player-birth.c}). The player must not be left with a null history at the end of
      * the call just because the capture step passed through it on the way.
      */
     @Nested
@@ -357,7 +351,7 @@ class PlayerBirthLoadRollerDataTest {
     }
 
     /**
-     * {@code prev_player == NULL} skips the capture entirely ({@code player-birth.c:192, 219}); the
+     * {@code prev_player == NULL} skips the capture entirely ({@code player-birth.c}); the
      * port's {@code prevPlayer == null} guard does the same, and the load onto the player still runs.
      */
     @Nested
@@ -379,8 +373,8 @@ class PlayerBirthLoadRollerDataTest {
 
     /**
      * The two-object case: {@code saved} and {@code prevPlayer} are different snapshots, so the
-     * capture ({@code save_roller_data(&temp)}, {@code player-birth.c:193}) and the final
-     * {@code *prev_player = temp;} ({@code player-birth.c:223}) write onto an object the load never
+     * capture ({@code save_roller_data(&temp)}, {@code player-birth.c}) and the final
+     * {@code *prev_player = temp;} ({@code player-birth.c}) write onto an object the load never
      * reads from.
      */
     @Nested
@@ -414,7 +408,7 @@ class PlayerBirthLoadRollerDataTest {
 
     /**
      * C's documented, and only real, caller shape: the same struct for both parameters
-     * ({@code player-birth.c:177-178, 1211}) - a swap of {@code saved}'s contents onto the player and
+     * ({@code player-birth.c}) - a swap of {@code saved}'s contents onto the player and
      * the player's own outgoing state back onto the very same object.
      */
     @Nested

@@ -17,11 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.player;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataBirthPoints;
@@ -44,13 +40,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerBirth#resetStats(Map, Map, Map, int, boolean)}, the port of C's
- * {@code reset_stats} ({@code player-birth.c:710-735}).
+ * {@code reset_stats} ({@code player-birth.c}).
  *
  * <p>The C is short:
  *
@@ -100,13 +94,13 @@ class PlayerBirthResetStatsTest {
     private static final int START_GOLD = 600;
 
     /**
-     * C's {@code MAX_BIRTH_POINTS} ({@code player-birth.c:683}), {@code 3 * (1+1+1+1+1+1+2)}.
+     * C's {@code MAX_BIRTH_POINTS} ({@code player-birth.c}), {@code 3 * (1+1+1+1+1+1+2)}.
      */
     private static final int MAX_BIRTH_POINTS = 20;
 
     /**
      * The cost {@code birth_stat_costs} charges to raise a stat from 10 - {@code birth_stat_costs[11]}
-     * ({@code player-birth.c:679}) - which every real stat's increment cost must equal once reset.
+     * ({@code player-birth.c}) - which every real stat's increment cost must equal once reset.
      */
     private static final int COST_AT_TEN = 1;
 

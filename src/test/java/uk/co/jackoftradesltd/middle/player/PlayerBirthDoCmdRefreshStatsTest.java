@@ -37,13 +37,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerBirth#doCmdRefreshStats}, the port of C's {@code do_cmd_refresh_stats}
- * ({@code player-birth.c:1173-1178}).
+ * ({@code player-birth.c}).
  *
  * <p>The C:
  *

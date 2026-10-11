@@ -50,13 +50,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerBirth#doCmdResetStats}, the port of C's {@code do_cmd_reset_stats}
- * ({@code player-birth.c:1157-1169}).
+ * ({@code player-birth.c}).
  *
  * <p>The C:
  *
@@ -118,7 +116,7 @@ class PlayerBirthDoCmdResetStatsTest {
     private static final int COST_FLAT = 1;
 
     /**
-     * C's {@code MAX_BIRTH_POINTS} ({@code player-birth.c:683}), what {@code resetStats} always
+     * C's {@code MAX_BIRTH_POINTS} ({@code player-birth.c}), what {@code resetStats} always
      * resets the running total to before {@code generateStats} (if it runs at all) spends any of it.
      */
     private static final int MAX_BIRTH_POINTS = 20;
@@ -194,8 +192,8 @@ class PlayerBirthDoCmdResetStatsTest {
     /**
      * Builds the {@code CMD_RESET_STATS} command C's {@code cmd_get_arg_choice} would read from -
      * the port of {@code cmd_set_arg_choice(cmdq_peek(), "choice", ...)}, which both real producers
-     * of this command call before it is ever executed ({@code ui-birth.c:824},
-     * {@code ui-birth.c:1270}).
+     * of this command call before it is ever executed ({@code ui-birth.c},
+     * {@code ui-birth.c}).
      *
      * @param choice whether to auto-generate stats, or {@code null} to leave the arg unset
      * @return the command

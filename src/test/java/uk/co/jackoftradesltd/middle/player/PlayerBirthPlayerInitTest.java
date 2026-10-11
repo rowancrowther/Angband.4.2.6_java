@@ -56,7 +56,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@code PlayerBirth.playerInit}, the port of C's {@code player_init}
- * ({@code player-birth.c:396-458}).
+ * ({@code player-birth.c}).
  *
  * <p>{@code playerInit} is private and instance-scoped, and nothing in the port calls it — the
  * same gap noted on the method's own Javadoc. Every test here reaches it through reflection on a
@@ -69,9 +69,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * so this suite runs the same whether it is the only class executed or one of hundreds.
  *
  * <p>The two findings from the target's stage-1 review are the centre of this suite: C's kind and
- * race loops both start at index 1 ({@code player-birth.c:415,421}), skipping a synthetic zeroth
+ * race loops both start at index 1 ({@code player-birth.c}), skipping a synthetic zeroth
  * entry — the {@code <pile>} kind and the {@code <player>} race — while the artifact loop
- * ({@code player-birth.c:407}) starts at index 0 and skips nothing. Each fixture list here puts a
+ * ({@code player-birth.c}) starts at index 0 and skips nothing. Each fixture list here puts a
  * "sentinel" first and a "real" second, so a loop that touched the wrong end would be caught.
  *
  * @author Rowan Crowther
@@ -324,7 +324,7 @@ class PlayerBirthPlayerInitTest {
     }
 
     // ------------------------------------------------------------------
-    // Object-kind loop - C's for (i = 1; ... i < z_info->k_max; i++), player-birth.c:415
+    // Object-kind loop - C's for (i = 1; ... i < z_info->k_max; i++), player-birth.c
     // ------------------------------------------------------------------
 
     @Test
@@ -342,7 +342,7 @@ class PlayerBirthPlayerInitTest {
     }
 
     // ------------------------------------------------------------------
-    // Monster-race loop - C's for (i = 1; ... i < z_info->r_max; i++), player-birth.c:421
+    // Monster-race loop - C's for (i = 1; ... i < z_info->r_max; i++), player-birth.c
     // ------------------------------------------------------------------
 
     @Test
@@ -367,11 +367,11 @@ class PlayerBirthPlayerInitTest {
     @DisplayName("race loop caps an RF_UNIQUE race's max_num at 1, not 100")
     void raceLoopCapsUniqueAtOne() throws Exception {
         assertEquals(0, readInstance(uniqueRace, "curNum"));
-        assertEquals(1, readInstance(uniqueRace, "maxNum"), "RF_UNIQUE branch (player-birth.c:426-427) not applied");
+        assertEquals(1, readInstance(uniqueRace, "maxNum"), "RF_UNIQUE branch (player-birth.c) not applied");
     }
 
     // ------------------------------------------------------------------
-    // Artifact loop - C's for (i = 0; ... i < z_info->a_max; i++), player-birth.c:407, no skip
+    // Artifact loop - C's for (i = 0; ... i < z_info->a_max; i++), player-birth.c, no skip
     // ------------------------------------------------------------------
 
     @Test
@@ -382,7 +382,7 @@ class PlayerBirthPlayerInitTest {
     }
 
     // ------------------------------------------------------------------
-    // Upkeep, timed table, item knowledge - player-birth.c:432-442
+    // Upkeep, timed table, item knowledge - player-birth.c
     // ------------------------------------------------------------------
 
     @Test
@@ -408,7 +408,7 @@ class PlayerBirthPlayerInitTest {
     }
 
     // ------------------------------------------------------------------
-    // Turn, energy and defaults - player-birth.c:447-457
+    // Turn, energy and defaults - player-birth.c
     // ------------------------------------------------------------------
 
     @Test

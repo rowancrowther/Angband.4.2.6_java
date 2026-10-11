@@ -56,37 +56,71 @@ import java.util.*;
 import static uk.co.jackoftradesltd.middle.player.PlayerUtils.modifyStatValue;
 
 /**
- * The character-creation machinery - the port of C's {@code player-birth.c}, minus its parsing, its
- * command handlers and the point-buy interface.
+ * The character-creation machinery - the port of C's {@code player-birth.c}, the game-mechanical
+ * half of the birth process.
  *
- * <p>C's file is mostly the birth screen: the stat roller, the point costs, the {@code do_cmd_*}
- * handlers behind each key the player presses, and the roman-numeral suffixes on a reused character
- * name. None of that belongs to the model, and none of it is here. What is left is the part that
- * builds a character out of a race and a class, and so far that is one method,
- * {@link #embody}.
+ * <p>Three groups of methods live here. The builders make a character out of a race and a class:
+ * {@link #embody}, {@link #playerGenerate}, {@link #playerInit}, {@link #getAHW},
+ * {@link #getHistory}, {@link #getMoney}, {@link #rollHP}, {@link #getBonuses},
+ * {@link #getStats}, {@link #playerOutfit} and {@link #playerMakeSimple}. The point-buy helpers
+ * price and apply stats: {@link #recalculateStats}, {@link #resetStats}, {@link #buyStat},
+ * {@link #sellStat} and {@link #generateStats}, with {@link #saveRollerData} and
+ * {@link #LoadRollerData} holding the undo snapshots. The {@code doCmd*} handlers are what each
+ * {@code CMD_*} birth command runs, in the order the birth screen sends them, ending in
+ * {@link #doCmdAcceptCharacter}.
+ *
+ * <p>Left out are the birth screen itself ({@code ui-birth.c}) and the savefile code. The
+ * statics C keeps beside the functions ({@code stats}, {@code points_left}, {@code prev} and the
+ * rest) live in {@link PlayerBirthStateRegistry}.
  *
  * <p>The methods are static and take the player, as C's take {@code struct player *p}: a character
- * is being built, so there is nothing yet to be a method on. The class is a namespace.
+ * is being built, so there is nothing yet to be a method on. The class is a namespace. The
+ * handlers that C writes against the global {@code player} fetch it with
+ * {@link GameState#getPlayer()}.
  *
- * <p>Class PlayerBirth commented in full on 260901.
+ * <p>Class PlayerBirth coded on 260901, commented in full on 261011.
  *
  * @author Rowan Crowther
  */
 public class PlayerBirth {
+    /**
+     * Logger for the faults this class throws over: a null player, a chart that cannot answer a
+     * legal roll, a point-buy cost that disagrees with the table, a start item with no kind.
+     *
+     * <p>Field logger coded on 260902, commented in full on 261011.
+     */
     private static final Logger logger = LogManager.getLogger(PlayerBirth.class);
 
+    /**
+     * The point-buy budget, 20 points - C's {@code MAX_BIRTH_POINTS}. C's comment on the macro reads
+     * {@code 3 * (1+1+1+1+1+1+2)} and sits under a note that it was feasible to get a base 17 in
+     * three stats with the autoroller; the sum it quotes is 24, not the 20 the macro holds, and the
+     * port keeps the macro's 20. {@link #resetStats} hands the whole budget back to the caller.
+     *
+     * <p>Field MAX_BIRTH_POINTS coded on 260906, commented in full on 261011.
+     */
     private static final int MAX_BIRTH_POINTS = 20;
 
     /**
+     * The longest character name that fits {@code full_name}, 31 characters. C's buffer is
+     * {@code PLAYER_NAME_LEN} (32) bytes and the last is the terminator, so {@link #doCmdBirthInit}
+     * refuses a successor name once the text before the old suffix plus the new numeral would
+     * exceed this.
+     *
+     * <p>Field MAX_PLAYER_NAME_LENGTH coded on 261011, commented in full on 261011.
+     */
+    private static final int MAX_PLAYER_NAME_LENGTH = 31;
+
+    /**
      * The point-buy price of a stat, indexed by <em>stat value + 1</em> - the port of C's
-     * {@code birth_stat_costs} ({@code player-birth.c:679}).
+     * {@code birth_stat_costs} ({@code player-birth.c}).
      *
      * <p>A stat's own value is the index minus one, so entry 0 answers "what does base 9 cost"
      * and is never read: the point-buy screen starts every stat at 10 and can only sell down to
      * 10, never below. Reading at {@code stat + 1} rather than {@code stat} is what buys the next
      * point rather than pricing the one already held - {@code buy_stat} charges
      * {@code birth_stat_costs[stats_local[choice] + 1]} for raising a stat that currently sits at
-     * {@code stats_local[choice]} ({@code player-birth.c:744}).
+     * {@code stats_local[choice]}.
      *
      * <p>Costs are flat at one point per point through the climb from 10 to 16, then jump to 2 for
      * the point that reaches 17 and to 4 for the point that reaches 18 - the highest a stat can
@@ -95,12 +129,12 @@ public class PlayerBirth {
      * array is shaped around what the roller could already produce, not an arbitrary curve, and it
      * is the last two points that are made deliberately expensive rather than the whole climb.
      *
-     * <p>Ported here as a bare field because the point-buy screen itself is UI, not model, and is
-     * out of scope for this class (see the class Javadoc) - {@code sell_stat} is still nothing more
-     * than that C name here. {@link #resetStats} and {@link #buyStat} both read the field directly,
-     * since pricing a point is a one-line array lookup rather than something worth wrapping.
+     * <p>Ported as a bare field. {@link #resetStats}, {@link #buyStat} and {@link #sellStat} all
+     * read it directly, since pricing a point is a one-line array lookup rather than something
+     * worth wrapping. {@code sellStat} reads it at the stat's own value, not at value + 1, because
+     * it refunds the point already bought.
      *
-     * <p>Field birthStatCosts coded on 260901 / commented in full on 260906.
+     * <p>Field birthStatCosts coded on 260901 / commented in full on 261011.
      */
     private static final int[] birthStatCosts = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 4};
 
@@ -127,7 +161,7 @@ public class PlayerBirth {
     
     /**
      * Rolls the character's age, height and weight - the port of C's {@code get_ahw}
-     * ({@code player-birth.c:353}).
+     * ({@code player-birth.c}).
      *
      * <p>Three rolls from the race's own numbers, in that order. The age is
      * {@code b_age + randint1(m_age)}, so it is strictly above the base - a race's base age is a
@@ -138,16 +172,15 @@ public class PlayerBirth {
      * <p>C writes each of the last two with one chained assignment putting a single roll into both
      * the working field and the birth copy -
      * {@code p->ht = p->ht_birth = Rand_normal(p->race->base_hgt, p->race->mod_hgt)}
-     * ({@code player-birth.c:359-360}). The port spells that as two calls, the second reading the
+     * ({@code player-birth.c}). The port spells that as two calls, the second reading the
      * value back off the player, which keeps the one-roll-two-fields property that matters:
      * rolling a second time for the birth copy would leave a character whose recorded birth height
      * was not the height they were born at. The age has no birth copy - quickstart saves
-     * {@code p->age} itself ({@code player-birth.c:153}).
+     * {@code p->age} itself.
      *
      * <p>C calls this from two places, and both take fresh values rather than reusing any:
-     * {@code player_generate} when a character is built ({@code player-birth.c:1018}) and the
-     * roller each time it produces a new candidate ({@code player-birth.c:1173}, whose comment
-     * concedes it is only there by tradition). Calling it again on a live player therefore rerolls
+     * {@code player_generate} when a character is built and {@code do_cmd_roll_stats} each time the
+     * roller produces a new candidate (whose comment concedes it is only there by tradition). Calling it again on a live player therefore rerolls
      * all three, birth copies included.
      *
      * <p>The player's race must already be set; C asserts as much upstream, and the port would
@@ -172,7 +205,7 @@ public class PlayerBirth {
 
     /**
      * Walks the history-chart graph and assembles the character's background - the port of C's
-     * {@code get_history} ({@code player-birth.c:330}).
+     * {@code get_history} ({@code player-birth.c}).
      *
      * <p>One chart is one sentence fragment. Starting at the race's chart, a d100 picks one of the
      * chart's entries, its phrase is appended, and generation moves to the successor chart; the
@@ -233,7 +266,7 @@ public class PlayerBirth {
 
     /**
      * Gives the character their starting money - the port of C's {@code get_money}
-     * ({@code player-birth.c:391}).
+     * ({@code player-birth.c}).
      *
      * <p>Both purses open at the same figure, {@code player:start-gold} from
      * {@code constants.txt}, which the shipped data sets to 600. C says it in one chained
@@ -243,8 +276,8 @@ public class PlayerBirth {
      * is read while the other is being written and the outcome is the same.
      *
      * <p>The order in birth matters more than the assignment order does. {@code get_money} runs
-     * from {@code do_cmd_accept_character} ({@code player-birth.c:1256}), before
-     * {@code player_outfit} ({@code player-birth.c:1298}) buys the starting kit and spends the
+     * from {@code do_cmd_accept_character}, before
+     * {@code player_outfit} buys the starting kit and spends the
      * working total back down - so this is the gross sum, not what the character reaches the
      * dungeon with. It also overwrites whatever the point-based roller had put in the birth copy
      * (see {@link Player#setAUBirth(long)}).
@@ -263,7 +296,7 @@ public class PlayerBirth {
 
     /**
      * Rolls the character's hit points for every level they will ever reach - the port of C's
-     * {@code roll_hp} ({@code player-birth.c:279-308}).
+     * {@code roll_hp} ({@code player-birth.c}).
      *
      * <p>A character's hit points are settled once, at birth, for all fifty levels. Gaining a level
      * later reads this table rather than rolling against it, so a run of bad luck at level thirty is
@@ -282,7 +315,7 @@ public class PlayerBirth {
      * again; there is no cap on attempts and no adjustment of a table that came close. The bounds
      * are wide enough that this is not a practical concern. Note that the loop rolls indices one
      * upwards and never touches index zero: {@code player_generate} has already seeded that with the
-     * full hit die ({@code player-birth.c:1003}), and leaving it alone is what keeps the level-one
+     * full hit die, and leaving it alone is what keeps the level-one
      * total the same across every attempt. That makes the seeding a precondition of this method
      * rather than an incidental ordering - see {@link Player#setPlayerHitpoint(int, int)}.
      *
@@ -293,7 +326,7 @@ public class PlayerBirth {
      * <p>Rolling at birth rather than on level-up is also what stops a player from resetting the
      * birth screen until the rolls suit them: {@code player_generate} fills the levels it can see
      * with deliberate overestimates and leaves the real rolls to this method, which runs only when
-     * the character is accepted ({@code player-birth.c:1237}).
+     * the character is accepted ({@code do_cmd_accept_character}).
      *
      * <p>Function rollHP coded on 260902, commented in full on 260902.
      *
@@ -327,13 +360,13 @@ public class PlayerBirth {
 
     /**
      * Recalculates the character's derived totals and then fills them - the port of C's
-     * {@code get_bonuses} ({@code player-birth.c:311-324}).
+     * {@code get_bonuses} ({@code player-birth.c}).
      *
      * <p>Called at each point in birth where a choice has changed what the character is made of -
-     * after the race and class are picked ({@code player-birth.c:697}), after the stats are rolled
-     * ({@code player-birth.c:1047}), and at the end of the whole process
-     * ({@code player-birth.c:1170, 1202}) - so that the birth screen always shows totals that match
-     * the current choices rather than the previous ones.
+     * from {@link #recalculateStats} after a point-buy change, from {@link #doBirthReset} after a
+     * reset, from {@link #doCmdRollStats} after the stats are rolled and from
+     * {@link #doCmdPrevStats} after a swap back - so that the birth screen always shows totals that
+     * match the current choices rather than the previous ones.
      *
      * <p><b>Two flags, then one update pass.</b> {@code PU_BONUS} rebuilds the whole player state
      * (the stat totals, the skills, the speed) and {@code PU_MANA} is raised as a consequence of it,
@@ -341,7 +374,8 @@ public class PlayerBirth {
      * constitution bonus. Raising both before a single {@link PlayerCalcs#updateStuff} call rather
      * than calling twice matters, because the hit point calculation reads the constitution the bonus
      * pass has just settled: {@code updateStuff} handles {@code PU_BONUS} before {@code PU_HP}
-     * ({@code PlayerCalcs.java:769, 779}), which is the order C's chain of {@code if} blocks gives.
+     * (see {@link PlayerCalcs#updateStuff}), which is the order C's chain of {@code if} blocks
+     * gives.
      *
      * <p>The flags are raised, never replaced - {@link PlayerUpkeep#setUpdateFlagOn} is the port of
      * C's {@code |=} - so anything else already pending is serviced by the same pass.
@@ -378,9 +412,8 @@ public class PlayerBirth {
 
     /**
      * Rolls a fresh set of stats for a character being born - the port of C's {@code get_stats}
-     * ({@code player-birth.c:231}). This is the standard roller: {@code do_cmd_roll_stats} calls it
-     * for each re-roll ({@code player-birth.c:1167}), and the point-based birth path does not use it
-     * at all.
+     * ({@code player-birth.c}). This is the standard roller: {@link #doCmdRollStats} calls it
+     * for each re-roll, and the point-based birth path does not use it at all.
      *
      * <p>Fifteen dice are rolled at once, three per stat, and the sizes cycle with the index:
      * {@code randint1(3 + index % 3)} gives a d3, a d4 and a d5 to each stat in turn. The three
@@ -393,7 +426,7 @@ public class PlayerBirth {
      * {@code 7 * STAT_MAX} and {@code 9 * STAT_MAX} - 36 to 44 inclusive, against a possible range
      * of 15 to 60. Both comparisons are strict, so 35 and 45 are both rejected. The accumulator is
      * declared inside the loop precisely so that it starts at zero on every attempt; C resets it in
-     * the {@code for} initializer, {@code for (j = i = 0; ...)} ({@code player-birth.c:239}). A
+     * the {@code for} initializer, {@code for (j = i = 0; ...)}. A
      * total carried between attempts could never fall back inside the window, and the loop would
      * never terminate.
      *
@@ -470,11 +503,12 @@ public class PlayerBirth {
 
     /**
      * Fleshes out a character from the race and class chosen so far - the port of C's
-     * {@code player_generate} ({@code player-birth.c:980-1028}).
+     * {@code player_generate} ({@code player-birth.c}).
      *
      * <p>This runs every time a choice is made on the birth screen, not once at the end of it. C
-     * calls it when the screen is reset, when a race is picked and when a class is picked
-     * ({@code player-birth.c:1042, 1079, 1099, 1110}), so it has to be able to overwrite the
+     * calls it when birth starts, when the screen is reset, when a race is picked and when a class
+     * is picked ({@link #doCmdBirthInit}, {@link #doBirthReset}, {@link #doCmdChooseRace} and
+     * {@link #doCmdChooseClass} here), so it has to be able to overwrite the
      * results of its own previous run rather than assuming a blank character. That is why each
      * step assigns outright instead of accumulating, and why the level-1 hit point entry is
      * rewritten below even though a hit point table may already exist from an earlier choice.
@@ -496,9 +530,8 @@ public class PlayerBirth {
      *
      * <p>Age, height and weight are then rolled, and the character starts one point below a full
      * stomach. That last write goes straight into the timed-effect map rather than through
-     * {@link PlayerTimed#setTimed}, matching C's raw {@code p->timed[TMD_FOOD] =}
-     * ({@code player-birth.c:1021}): there is no character yet for the grade-change messages and
-     * recalculations to be about.
+     * {@link PlayerTimed#setTimed}, matching C's raw {@code p->timed[TMD_FOOD] =}: there is no
+     * character yet for the grade-change messages and recalculations to be about.
      *
      * <p>The history is regenerated last, unless {@code oldHistory} says to keep the one already
      * there - the flag quickstart sets when it restores a previous character, so that a replayed
@@ -681,15 +714,15 @@ public class PlayerBirth {
     /**
      * Drives a whole birth through the command queue in one call, as if a player had picked a
      * race, a class and a name at the birth screen and accepted the result - the port of C's
-     * {@code player_make_simple} ({@code player-birth.c:523}). Angband's test suite and its
+     * {@code player_make_simple} ({@code player-birth.c}). Angband's test suite and its
      * spoiler-file generator both use this to get a fully-initialized player without a UI.
      *
      * <p>{@code raceName} and {@code className} are resolved to the index of the matching entry
      * in {@link PlayerRegistry#getPlayerRaces()} / {@link PlayerRegistry#getPlayerClasses()},
      * found by a forward scan for a name match, returning {@code false} if the list runs out
      * first. C does the equivalent lookup against its {@code races}/{@code classes} linked lists,
-     * but then rewrites the found position with {@code ir = nr - ir - 1} ({@code
-     * player-birth.c:543}) before using it as a choice index. That rewrite exists only because
+     * but then rewrites the found position with {@code ir = nr - ir - 1} before using it as a
+     * choice index. That rewrite exists only because
      * C's lists are built by prepending each parsed entry, so a forward walk from the list head
      * finds entries in the reverse of the file's order and needs converting back. The port's race
      * and class lists are built by appending in file order (see {@code PlayerRaceAssembler},
@@ -704,7 +737,7 @@ public class PlayerBirth {
      * CMD_BIRTH_INIT}, {@code CMD_BIRTH_RESET}, {@code CMD_CHOOSE_RACE}, {@code CMD_CHOOSE_CLASS},
      * {@code CMD_NAME_CHOICE} and {@code CMD_ACCEPT_CHARACTER} in that order, then executed under
      * {@link CommandContext#CTX_BIRTH} - the same sequence and order as C's {@code cmdq_push}
-     * calls at {@code player-birth.c:564-574}.
+     * calls in {@code player_make_simple}.
      *
      * <p>Outstanding: nothing calls this yet; it exists for the same test/spoiler-harness use C
      * puts it to, and the port has neither yet.
@@ -726,8 +759,7 @@ public class PlayerBirth {
     public static boolean playerMakeSimple(Player player, String raceName, String className, String playerName) {
         int raceIndex = 0;
         List<PlayerRace> races = PlayerRegistry.getPlayerRaces();
-        int raceNum = races.size();
-
+        
         if (raceName != null) {
             while (true) {
                 if (raceIndex >= races.size()) return false;
@@ -738,8 +770,7 @@ public class PlayerBirth {
 
         int classIndex = 0;
         List<PlayerClass> classes = PlayerRegistry.getPlayerClasses();
-        int classNum = classes.size();
-
+        
         if (className != null) {
             while (true) {
                 if (classIndex >= classes.size()) return false;
@@ -768,7 +799,7 @@ public class PlayerBirth {
 
     /**
      * Gives a freshly-born character their starting kit - the port of C's {@code player_outfit}
-     * ({@code player-birth.c:586-672}). Having an item identifies it and makes the player aware of
+     * ({@code player-birth.c}). Having an item identifies it and makes the player aware of
      * its purpose, so this is also where a character's earliest object knowledge comes from.
      *
      * <p><b>Obvious knowledge first.</b> Before any item exists, the player's {@link KnownObject} is
@@ -802,13 +833,17 @@ public class PlayerBirth {
      * gold {@link #getMoney} set earlier, and carried into the gear. The kind itself is marked
      * {@code everSeen} regardless of how many of it were granted.
      *
+     * <p>The known shadow copies the real object's {@code pval} and effect, so the player knows
+     * both from the start. It is the object's {@code pval}, C's {@code obj->known->pval =
+     * obj->pval}, that is copied - not the stack size.
+     *
      * <p>Spending can drive gold negative if the starting kit is expensive enough, so the total is
      * clamped to zero afterwards rather than checked before each purchase - C does the same, one
      * clamp at the end rather than a guard per item. Finally {@link #wieldAll} tries to equip
      * whatever was carried, and {@link PlayerKnowledge#updateObjectKnowledge} brings the player's
      * overall knowledge state in line with everything just granted.
      *
-     * <p>Function playerOutfit coded on 260905, commented in full on 260905.
+     * <p>Function playerOutfit coded on 260905, commented in full on 261011.
      *
      * @param player the character being born, whose knowledge, gear and gold are all set from
      *               scratch
@@ -882,7 +917,7 @@ public class PlayerBirth {
             obj.setKnown(known);
             PlayerKnowledge.objectSetBaseKnown(player, obj);
             PlayerKnowledge.flavourAware(player, obj);
-            known.setpValue(obj.getNumber());
+            known.setpValue(obj.getpValue());
             known.setEffect(obj.getEffect());
             known.orNotice(ObjectNotice.OBJ_NOTICE_ASSESSED);
 
@@ -907,7 +942,7 @@ public class PlayerBirth {
 
     /**
      * Tries to wield everything wieldable in the gear pile — the port of C's {@code wield_all}
-     * ({@code player-birth.c:463}). Called once at the end of birth, after the starting kit has
+     * ({@code player-birth.c}). Called once at the end of birth, after the starting kit has
      * been bought and carried, so every newly-acquired item gets a pass at going into an equipment
      * slot before play begins.
      *
@@ -974,7 +1009,7 @@ public class PlayerBirth {
 
     /**
      * Recalculates the derived character state from a set of point-buy stat values - the port of
-     * C's {@code recalculate_stats} ({@code player-birth.c:685-707}).
+     * C's {@code recalculate_stats} ({@code player-birth.c}).
      *
      * <p>Writes each of the five real stats' current, maximum and birth values from the supplied
      * map, resets the scramble map to the identity permutation, derives the birth gold from the
@@ -996,10 +1031,11 @@ public class PlayerBirth {
      * the point-buy birth commands, and accepting the character re-derives the plain starting gold
      * afterwards.
      *
-     * <p>Those callers - {@code buy_stat}, {@code sell_stat} and {@code reset_stats} - are the
-     * point-buy birth screen and stay out of the model's scope, so this method has no caller yet.
+     * <p>Its callers are {@link #buyStat}, {@link #sellStat}, {@link #resetStats} and
+     * {@link #generateStats}, each only when its {@code updateDisplay} is set (or, for
+     * {@code generateStats}, at the end of its run).
      *
-     * <p>Function recalculateStats commented in full on 260905.
+     * <p>Function recalculateStats commented in full on 261011.
      *
      * @param statsLocalLocal the point-buy stat values, one entry per real stat
      * @param pointsLeftLocal the unspent point-buy points, used to derive the starting gold
@@ -1033,12 +1069,11 @@ public class PlayerBirth {
 
     /**
      * Resets the point-buy stats to their starting values - the port of C's
-     * {@code reset_stats} ({@code player-birth.c:710-735}).
+     * {@code reset_stats} ({@code player-birth.c}).
      *
      * <p>Every real stat goes back to base 10 with nothing spent on it yet, and its increment
      * cost is reseeded from {@link #birthStatCosts} at <em>value + 1</em> - the same offset
-     * {@code buy_stat} uses when pricing the point it is about to buy
-     * ({@code player-birth.c:746}). Reading each stat's own freshly-set value, rather than some
+     * {@code buy_stat} uses when pricing the point it is about to buy. Reading each stat's own freshly-set value, rather than some
      * other stat's, is what keeps this in step with C, where {@code stats_local[i]} and
      * {@code points_inc_local[i]} share the one index throughout the loop. The stat loop skips
      * {@code STAT_NONE} and {@code STAT_MAX}, the same guard {@link #recalculateStats} and
@@ -1049,16 +1084,15 @@ public class PlayerBirth {
      * by the call regardless of what it held going in. The port has no by-reference {@code int},
      * so it returns the new total instead and ignores whatever {@code pointsLeftLocal} arrived
      * with - a caller has to assign the result rather than read a mutated parameter, unlike
-     * every C caller of {@code reset_stats} ({@code player-birth.c:1094,1105,1116,1148}).
+     * every C caller of {@code reset_stats}. The port's callers - {@link #doCmdBirthReset},
+     * {@link #doCmdChooseRace}, {@link #doCmdChooseClass} and {@link #doCmdResetStats} - each
+     * assign the result back through {@link PlayerBirthStateRegistry#setPointsLeft}.
      *
      * <p>{@code updateDisplay} is the same UI guard {@code buy_stat} and {@code sell_stat} take -
      * when set, this also calls {@link #recalculateStats} and signals the birthpoints event, so
      * the point-buy screen catches up with the reset.
      *
-     * <p>This is the point-buy birth screen and stays out of the model's scope, so this method
-     * has no caller yet.
-     *
-     * <p>Function resetStats coded on 260906, commented in full on 260906.
+     * <p>Function resetStats coded on 260906, commented in full on 261011.
      *
      * @param statsLocal       the point-buy stat values, one entry per real stat, overwritten in place
      * @param pointsSpentLocal the points spent per stat, overwritten in place
@@ -1095,24 +1129,21 @@ public class PlayerBirth {
 
     /**
      * Spends one point-buy point raising a single stat by one - the port of C's {@code buy_stat}
-     * ({@code player-birth.c:738-773}).
+     * ({@code player-birth.c}).
      *
-     * <p>{@code choice} arrives as C's own raw stat index - {@code STAT_STR} is 0, {@code STAT_CON}
-     * is 4 - and is incremented once before use so it can index straight into
-     * {@link Stats#values()}, whose ordinal 0 is the {@code STAT_NONE} sentinel. That shift is why
-     * the validity test below reads {@code choice <= 0} and {@code choice >= STAT_MAX.getValue() + 1}
-     * rather than C's unshifted {@code choice < 0} / {@code choice >= STAT_MAX}: both exclude the
-     * same five stats, just at indices one higher.
+     * <p>{@code choice} arrives as a {@link Stats} constant, where C passes the raw stat index as
+     * an {@code int}. The two sentinels, {@link Stats#STAT_NONE} and {@link Stats#STAT_MAX}, are
+     * the port's version of C's {@code choice >= STAT_MAX || choice < 0} test: both answer
+     * {@code new IntAndBoolean(pointsLeftLocal, false)} immediately, the same "no-op, nothing
+     * spent" result C gives for an out-of-range index. {@link #doCmdBuyStat} converts the command's
+     * integer with {@link Stats#getStats} and drops anything that comes back {@code null}, so the
+     * enum never reaches this method out of range.
      *
      * <p><b>Out-of-range {@code choice} returns, it does not throw.</b> C's {@code do_cmd_buy_stat}
-     * passes {@code choice} straight from a command argument with no validation of its own
-     * ({@code player-birth.c:1122-1130}), so {@code buy_stat} itself is the only thing standing
-     * between a malformed argument and an out-of-bounds array read - which is exactly why its
-     * guard is a plain {@code if}, not an {@code assert}, and answers {@code false} rather than
-     * crashing. The port's first check, before {@code choice} ever indexes {@link Stats#values()},
-     * reproduces that: any {@code choice} landing outside the enum's own bounds answers
-     * {@code new IntAndBoolean(pointsLeftLocal, false)} immediately, the same "no-op, nothing
-     * spent" result C gives for the identical input.
+     * passes {@code choice} straight from a command argument with no validation of its own, so
+     * {@code buy_stat} itself is the only thing standing between a malformed argument and an
+     * out-of-bounds array read - which is exactly why its guard is a plain {@code if}, not an
+     * {@code assert}, and answers {@code false} rather than crashing.
      *
      * <p>The point-cost lookup, the cost-mismatch guard and the spend are otherwise C's clauses in
      * C's order: {@code birthStatCosts[stat + 1]} prices the point being bought, a mismatch against
@@ -1121,7 +1152,7 @@ public class PlayerBirth {
      *
      * <p><b>One deliberate divergence.</b> Buying a stat from 17 to 18 is reachable within
      * {@link #MAX_BIRTH_POINTS} - the full climb from base 10 costs 12 of the 20 available points,
-     * eight of them on the last two steps alone ({@link #birthStatCosts}'s own entries 17 and 18
+     * six of them on the last two steps alone ({@link #birthStatCosts}'s own entries 17 and 18
      * are 2 and 4, not 1) - and C's next line then reads {@code birth_stat_costs[stat + 1]} with
      * the freshly-incremented value 18, i.e.
      * {@code birth_stat_costs[19]}: one past both that array's and {@link #birthStatCosts}'s
@@ -1135,11 +1166,10 @@ public class PlayerBirth {
      * points-left figure and the success flag back to the caller, the same pairing
      * {@link #resetStats} uses its own return value for.
      *
-     * <p>Function buyStat coded on 260906, commented in full on 260906.
+     * <p>Function buyStat coded on 260906, commented in full on 261011.
      *
-     * @param choice           the stat to raise, as C's raw {@code STAT_*} index (0 for
-     *                         {@code STAT_STR} through 4 for {@code STAT_CON}); any other value
-     *                         leaves the stats untouched
+     * @param choice           the stat to raise; {@code STAT_NONE} or {@code STAT_MAX} leaves the
+     *                         stats untouched
      * @param statsLocal       the point-buy stat values, one entry per real stat; the chosen stat's
      *                         entry is incremented on success
      * @param pointsSpentLocal the points spent per stat so far; the chosen stat's entry grows by
@@ -1201,13 +1231,11 @@ public class PlayerBirth {
 
     /**
      * Spends one point-buy point lowering a single stat by one, refunding the point it cost to
-     * raise it - the port of C's {@code sell_stat} ({@code player-birth.c:777-807}).
+     * raise it - the port of C's {@code sell_stat} ({@code player-birth.c}).
      *
-     * <p>Unlike {@link #buyStat}, {@code choice} arrives as the enum constant directly rather than
-     * C's raw {@code STAT_*} index, so there is no shift to apply before the validity check:
-     * {@code choice == STAT_MAX || choice == STAT_NONE} excludes the same two sentinels C's
-     * {@code choice >= STAT_MAX || choice < 0} does, at the enum's own bounds rather than an
-     * incremented one.
+     * <p>As in {@link #buyStat}, {@code choice} arrives as the enum constant rather than C's raw
+     * {@code STAT_*} index: {@code choice == STAT_MAX || choice == STAT_NONE} excludes the same
+     * two sentinels C's {@code choice >= STAT_MAX || choice < 0} does.
      *
      * <p><b>The floor guard is strict.</b> {@code statsLocal.get(choice) <= 10} refuses the sale,
      * matching C's {@code stats_local[choice] > 10} test for proceeding: the point-buy screen
@@ -1223,10 +1251,7 @@ public class PlayerBirth {
      * own cost, would land one index higher and - at the top of the range - one past
      * {@link #birthStatCosts}'s last entry.
      *
-     * <p>This is the point-buy birth screen and stays out of the model's scope (see the class
-     * Javadoc), so this method has no caller yet.
-     *
-     * <p>Function sellStat coded on 260906, commented in full on 260906.
+     * <p>Function sellStat coded on 260906, commented in full on 261011.
      *
      * @param choice           the stat to lower; {@code STAT_NONE} or {@code STAT_MAX} leaves the
      *                         stats untouched
@@ -1278,7 +1303,7 @@ public class PlayerBirth {
     /**
      * Picks reasonable starting stats for the current race/class combination by driving
      * {@link #buyStat} and {@link #sellStat} through a five-step heuristic - the port of C's
-     * {@code generate_stats} ({@code player-birth.c:824-981}). {@code st}, {@code spent} and
+     * {@code generate_stats} ({@code player-birth.c}). {@code st}, {@code spent} and
      * {@code inc} are mutated in place across the run, the same as C's arrays passed by pointer;
      * there is no by-reference {@code left}, so the running total is threaded back out through
      * the return value the way {@link #buyStat} and {@link #sellStat} thread theirs through
@@ -1309,10 +1334,11 @@ public class PlayerBirth {
      * every such class shipped with the game (Paladin, Rogue, Ranger, Blackguard) carries one, so
      * the fallback is currently unexercised.
      *
-     * <p>Outstanding: this is the point-buy birth screen's auto-generate step and stays out of the
-     * model's scope (see the class Javadoc), so this method has no caller yet.
+     * <p>Called by {@link #doCmdChooseRace} and {@link #doCmdChooseClass} after a reset, and by
+     * {@link #doCmdResetStats} when the command asks for the stats to be regenerated. Whatever it
+     * leaves is pushed to the UI by its own closing {@link #recalculateStats} call.
      *
-     * <p>Function generateStats coded on 260906, commented in full on 260906.
+     * <p>Function generateStats coded on 260906, commented in full on 261011.
      *
      * @param st    the point-buy stat values, one entry per real stat; mutated in place by the
      *              {@link #buyStat}/{@link #sellStat} calls made along the way
@@ -1473,7 +1499,7 @@ public class PlayerBirth {
 
     /**
      * Copies the currently-rolled character into {@code toSave}, the port of C's
-     * {@code save_roller_data} ({@code player-birth.c:146}). This is the snapshot the birth process
+     * {@code save_roller_data} ({@code player-birth.c}). This is the snapshot the birth process
      * keeps for undo and quickstart - {@code prev} and {@code quickstart_prev} in C - so a step back
      * through the birth screens, or a quickstart restart, has something to restore from.
      *
@@ -1482,15 +1508,14 @@ public class PlayerBirth {
      * {@code getAu} - matching C's {@code wt_birth}/{@code ht_birth}/{@code au_birth} over {@code wt}/
      * {@code ht}/{@code au}. The stat loop walks {@link Stats#values()} and skips the two sentinels,
      * {@code STAT_NONE} and {@code STAT_MAX}, leaving the five real stats C's {@code for (i = 0; i <
-     * STAT_MAX; i++)} covers ({@code player-birth.c:159-160}).
+     * STAT_MAX; i++)} covers.
      *
      * <p>The background-text handoff - {@code toSave.setHistoryBirth(player.getHistoryBirth())} then
      * {@code player.setHistoryBirth(null)} - reads and nulls the same field, matching C's
-     * {@code tosave->history = player->history; player->history = NULL;} ({@code player-birth.c:165-166}),
-     * which hands the rolled background-text pointer to {@code toSave} and leaves the player without
-     * one. C also frees {@code tosave->history} first if it already held a string
-     * ({@code player-birth.c:162-164}); the port has nothing to do there, since the old value is simply
-     * unreferenced rather than leaked.
+     * {@code tosave->history = player->history; player->history = NULL;}, which hands the rolled
+     * background-text pointer to {@code toSave} and leaves the player without one. C also frees
+     * {@code tosave->history} first if it already held a string; the port has nothing to do there,
+     * since the old value is simply unreferenced rather than leaked.
      *
      * <p>Function saveRollerData coded on 260906, commented in full on 260906.
      *
@@ -1525,7 +1550,7 @@ public class PlayerBirth {
     /**
      * Restores a previously-saved snapshot as the currently-rolled character, optionally handing
      * the caller back what was displaced - the port of C's {@code load_roller_data}
-     * ({@code player-birth.c:181-225}). Paired with {@link #saveRollerData}, this is the "flick
+     * ({@code player-birth.c}). Paired with {@link #saveRollerData}, this is the "flick
      * between two rolls" undo and the quickstart restore reading from the other direction: where
      * {@code saveRollerData} pulls the live player into a {@link Birther}, this pushes a
      * {@link Birther} back onto the live player.
@@ -1535,8 +1560,8 @@ public class PlayerBirth {
      * {@code p->wt = p->wt_birth = saved->wt}), the birth gold, all five real stats (written to the
      * max/current/birth trio and the identity scramble map, matching C's own triple chain), the
      * history and the name - so a caller passing the same {@link Birther} for both {@code saved}
-     * and {@code prevPlayer} (C's own documented case, {@code player-birth.c:177-178}, and its one
-     * real caller at {@code player-birth.c:1211}) sees the read finish before the write below
+     * and {@code prevPlayer} (C's own documented case, and its one real caller,
+     * {@code do_cmd_prev_stats}) sees the read finish before the write below
      * touches that same object. The live gold itself, rather than the birth copy, is reset to
      * {@link GameConstants#getPlayerStartGold()} - matching C's
      * {@code player->au = z_info->start_gold} - not carried over from {@code saved} at all.
@@ -1544,7 +1569,7 @@ public class PlayerBirth {
      * <p>When {@code prevPlayer} is non-{@code null}, the live player's <em>previous</em> state is
      * captured into a local {@code temp} via {@link #saveRollerData} before the load above
      * overwrites it, then written field-by-field onto {@code prevPlayer} afterwards - matching C's
-     * {@code *prev_player = temp;} ({@code player-birth.c:223}), a raw struct assignment that
+     * {@code *prev_player = temp;}, a raw struct assignment that
      * overwrites every field of the caller's own struct in place. The port reproduces that in-place
      * effect with individual setters rather than {@link Birther#copy()}, so the object the caller
      * passed in is the very one left holding {@code temp}'s values, with no need for the caller to
@@ -1625,7 +1650,7 @@ public class PlayerBirth {
 
     /**
      * Puts the character back to the state it would be in on entering the birth screen fresh - the
-     * port of C's {@code do_birth_reset} ({@code player-birth.c:1045-1058}).
+     * port of C's {@code do_birth_reset} ({@code player-birth.c}).
      *
      * <p>Quickstart data is restored first, but only when both {@code useQuickstart} is set
      * <em>and</em> {@code quickstartPrevLevel} is non-{@code null} - mirroring C's
@@ -1665,7 +1690,7 @@ public class PlayerBirth {
 
     /**
      * Handler for {@code CMD_BIRTH_INIT}, starting the birth process - the port of C's
-     * {@code do_cmd_birth_init} ({@code player-birth.c:1061-1096}).
+     * {@code do_cmd_birth_init} ({@code player-birth.c}).
      *
      * <p>The dungeon is marked not ready first, matching C's own leading
      * {@code character_dungeon = false}. What happens next hinges on whether the player already
@@ -1680,12 +1705,20 @@ public class PlayerBirth {
      * #intToRoman} builds the incremented numeral back into text. C writes that text straight
      * into the {@code full_name} buffer through the same pointer {@code roman_to_int} read from;
      * the port reproduces that in-place rename with {@link Player#setFullName}, splicing
-     * {@code result} onto whatever preceded the old suffix. Only a genuine build failure - an
-     * empty {@code result}, the same signal C's {@code int_to_roman} gives by returning 0 and
-     * clearing its buffer - reaches the user, via the message C itself shows on that path. {@link
-     * #saveRollerData} is then called and {@link PlayerBirthStateRegistry#isQuickstartAllowed()}
-     * set, both unconditionally on
-     * this branch, matching C's own {@code save_roller_data(&quickstart_prev)} and
+     * {@code result} onto whatever preceded the old suffix.
+     *
+     * <p><b>Failure drops the suffix.</b> C hands {@code int_to_roman} only the room left in the
+     * 32-byte {@code full_name} from the suffix onward, and on any failure - an empty numeral, or
+     * one that does not fit - the function clears that buffer, so the name loses its suffix and is
+     * left ending at the space before it. The port reproduces both halves: the numeral fits only if
+     * the name without its old suffix plus the new numeral is at most
+     * {@link #MAX_PLAYER_NAME_LENGTH} (31) characters, and on failure {@code result} is blanked so
+     * the same splice leaves the bare prefix. The message shown is C's, word for word:
+     * {@code "Sorry, could not deal with suffix"}. A name that ends in a space has an empty suffix,
+     * which {@code roman_to_int} reports as -1; adding one gives 0, which has no numeral, so it
+     * takes the failure path with nothing to drop. {@link #saveRollerData} is then called and
+     * {@link PlayerBirthStateRegistry#isQuickstartAllowed()} set, both unconditionally on this
+     * branch, matching C's own {@code save_roller_data(&quickstart_prev)} and
      * {@code quickstart_allowed = true}.
      *
      * <p>Without quickstart data, {@link #playerGenerate} builds a fresh character from the
@@ -1698,7 +1731,7 @@ public class PlayerBirth {
      * {@link PlayerBirthStateRegistry#isQuickstartAllowed()}, matching C's trailing 
      * {@code event_signal_flag} call.
      *
-     * <p>Function doCmdBirthInit coded on 260907, commented in full on 260907.
+     * <p>Function doCmdBirthInit coded on 260907, commented in full on 261011.
      *
      * @param cmd the birth-init command; unused, matching C's own unused {@code cmd} parameter
      */
@@ -1717,13 +1750,15 @@ public class PlayerBirth {
                 int newSuffix = romanToInt(suffix);
                 newSuffix++;
                 String result = intToRoman(newSuffix);
-                if (result.isEmpty())
-                    Message.message("Sorry, couldn't deal with suffix.");
-                else {
-                    String newName = player.getFullName();
-                    newName = newName.substring(0, newName.length() - suffix.length()) + result;
-                    player.setFullName(newName);
+                int newNameLength = player.getFullName().length() - suffix.length() + result.length();
+                if (result.isEmpty() || newNameLength > MAX_PLAYER_NAME_LENGTH) {
+                    Message.message("Sorry, could not deal with suffix");
+                    result = "";
                 }
+                String newName = player.getFullName();
+                newName = newName.substring(0, player.getFullName().length() - suffix.length()) + result;
+                player.setFullName(newName);
+
             }
             PlayerBirthStateRegistry.setQuickstartPrev(saveRollerData(PlayerBirthStateRegistry.getQuickstartPrev()));
             PlayerBirthStateRegistry.setQuickstartAllowed(true);
@@ -1740,7 +1775,7 @@ public class PlayerBirth {
 
     /**
      * Converts an arabic integer to its upper-case Roman numeral - the port of C's
-     * {@code int_to_roman} ({@code player-birth.c:1379-1424}). The only caller is
+     * {@code int_to_roman} ({@code player-birth.c}). The only caller is
      * {@link #doCmdBirthInit}, building the incremented numeral suffix for a reused
      * character name.
      *
@@ -1757,12 +1792,13 @@ public class PlayerBirth {
      * smallest symbol is {@code I} = 1, the remainder could never reach zero.
      *
      * <p>C bounds the write against a caller-supplied {@code bufsize} and signals failure
-     * by returning 0 with an empty buffer; the port has no fixed buffer to overflow, so the
-     * only failure path left is the one C also falls back to when its own table runs out -
-     * answered here with an empty string, matching the empty-string failure convention
-     * {@link #romanToInt} already uses.
+     * by returning 0 with an empty buffer. The port has no fixed buffer to overflow inside this
+     * method, so the room check lives in the caller instead: {@link #doCmdBirthInit} compares the
+     * new name's length with {@link #MAX_PLAYER_NAME_LENGTH} and treats an over-long numeral as the
+     * same failure as an empty one. The method's own empty-string answer covers the one remaining
+     * failure, a {@code value} below 1.
      *
-     * <p>Function intToRoman coded on 260907, commented in full on 260907.
+     * <p>Function intToRoman coded on 260907, commented in full on 261011.
      *
      * @param value the arabic value to convert; values below 1 have no Roman representation
      * @return the upper-case Roman numeral for {@code value}, or the empty string if
@@ -1801,7 +1837,7 @@ public class PlayerBirth {
     /**
      * Looks up the value of a single Roman-numeral letter - the port of the single-letter
      * entries C keeps in {@code roman_token_vals[*][0]}, read via
-     * {@code roman_token_chr1 = "MDCLXVI"} ({@code player-birth.c:1445-1454}). C never factors
+     * {@code roman_token_chr1 = "MDCLXVI"} ({@code player-birth.c}). C never factors
      * this lookup out into a function of its own; the port does, since {@link #romanToInt}
      * needs the same lookup at both the leading and the lookahead character of every position
      * it examines.
@@ -1831,7 +1867,7 @@ public class PlayerBirth {
 
     /**
      * Converts a Roman numeral to its arabic value - the port of C's {@code roman_to_int}
-     * ({@code player-birth.c:1439-1492}). The only caller is {@link #doCmdBirthInit}, incrementing
+     * ({@code player-birth.c}). The only caller is {@link #doCmdBirthInit}, incrementing
      * the numeral suffix on a reused character name.
      *
      * <p>Walks the string left to right. Each position's letter is looked up with {@link #value};
@@ -1927,7 +1963,7 @@ public class PlayerBirth {
     /**
      * Handler for {@code CMD_BIRTH_RESET}, putting the character and its point-buy state back to
      * how they'd be on entering the birth screen fresh - the port of C's {@code do_cmd_birth_reset}
-     * ({@code player-birth.c:1101-1106}).
+     * ({@code player-birth.c}).
      *
      * <p>C's four statements run in the same order here: {@link #playerInit} rebuilds the player
      * from scratch, {@link #resetStats} puts every stat back to 10 with zero spent and the base
@@ -1963,7 +1999,7 @@ public class PlayerBirth {
     /**
      * Handler for {@code CMD_CHOOSE_RACE}, applying the player's race choice from the birth
      * screen and re-running the point-buy pipeline against it - the port of C's {@code
-     * do_cmd_choose_race} ({@code player-birth.c:1110-1119}).
+     * do_cmd_choose_race} ({@code player-birth.c}).
      *
      * <p>C reads the {@code choice} arg into a stack {@code int} with {@code
      * cmd_get_arg_choice(cmd, "choice", &choice)} and never checks the return value, so on the
@@ -2012,7 +2048,7 @@ public class PlayerBirth {
     /**
      * Handler for {@code CMD_CHOOSE_CLASS}, applying the player's class choice from the birth
      * screen and re-running the point-buy pipeline against it - the port of C's {@code
-     * do_cmd_choose_class} ({@code player-birth.c:1122-1131}).
+     * do_cmd_choose_class} ({@code player-birth.c}).
      *
      * <p>Like {@link #doCmdChooseRace}, C reads the {@code choice} arg into a stack {@code int}
      * with {@code cmd_get_arg_choice(cmd, "choice", &choice)} and never checks the return value,
@@ -2061,7 +2097,7 @@ public class PlayerBirth {
     /**
      * Handler for {@code CMD_BUY_STAT}, spending one point-buy point to raise a single birth stat
      * from the stat-purchase screen - the port of C's {@code do_cmd_buy_stat} ({@code
-     * player-birth.c:1134-1143}).
+     * player-birth.c}).
      *
      * <p>Skipped entirely once {@link PlayerBirthStateRegistry#isRolledStats()}, matching C's own
      * {@code if (!rolled_stats)} boundary: a rolled character has no point-buy total left to spend
@@ -2071,7 +2107,7 @@ public class PlayerBirth {
      * arg into a stack {@code int} with {@code cmd_get_arg_choice(cmd, "choice", &choice)} and
      * never checks the return value; every producer of {@code CMD_BUY_STAT} in the C tree - the
      * birth-screen points menu - asserts the stat index in range before pushing the command
-     * ({@code ui-birth.c:1258-1261}), so the missing-arg path is dead-but-present in C, not a real
+     * ({@code ui-birth.c}), so the missing-arg path is dead-but-present in C, not a real
      * caller this port needs to reproduce. This method chooses safety over exact replication and
      * returns early via {@code chosen.isPresent()} when the arg is absent, deliberately diverging
      * from C here.
@@ -2111,7 +2147,7 @@ public class PlayerBirth {
     /**
      * Handler for {@code CMD_SELL_STAT}, refunding one point-buy point by lowering a single birth
      * stat from the stat-purchase screen - the port of C's {@code do_cmd_sell_stat} ({@code
-     * player-birth.c:1146-1155}).
+     * player-birth.c}).
      *
      * <p>Skipped entirely once {@link PlayerBirthStateRegistry#isRolledStats()}, matching C's own
      * {@code if (!rolled_stats)} boundary: a rolled character has no point-buy total left to sell
@@ -2120,7 +2156,7 @@ public class PlayerBirth {
      * <p>Like {@link #doCmdBuyStat}, C reads the {@code choice} arg into a stack {@code int} with
      * {@code cmd_get_arg_choice(cmd, "choice", &choice)} and never checks the return value; the one
      * producer of {@code CMD_SELL_STAT} in the C tree - the birth-screen points menu - asserts the
-     * stat index in range before pushing the command ({@code ui-birth.c:1255-1257}), so the
+     * stat index in range before pushing the command ({@code ui-birth.c}), so the
      * missing-arg path is dead-but-present in C, not a real caller this port needs to reproduce.
      * This method chooses safety over exact replication and returns early via {@code
      * chosen.isPresent()} when the arg is absent, deliberately diverging from C here.
@@ -2160,7 +2196,7 @@ public class PlayerBirth {
     /**
      * Handler for {@code CMD_RESET_STATS}, putting the point-buy stats back to their starting
      * values and, if asked, immediately running the auto-buy pass on top of that reset - the port
-     * of C's {@code do_cmd_reset_stats} ({@code player-birth.c:1157-1169}).
+     * of C's {@code do_cmd_reset_stats} ({@code player-birth.c}).
      *
      * <p>{@link #resetStats} always runs first, with {@code updateDisplay} {@code true}, matching
      * C's unconditional {@code reset_stats(stats, points_spent, points_inc, &points_left, true);} -
@@ -2168,8 +2204,8 @@ public class PlayerBirth {
      *
      * <p>Like {@link #doCmdBuyStat} and {@link #doCmdSellStat}, C reads the {@code choice} arg into
      * a stack {@code int} with {@code cmd_get_arg_choice(cmd, "choice", &choice)} and never checks
-     * the return value; both producers of {@code CMD_RESET_STATS} in the C tree ({@code
-     * ui-birth.c:824} and {@code ui-birth.c:1270}) always set the arg before pushing the command,
+     * the return value; both producers of {@code CMD_RESET_STATS} in the C tree (both in {@code
+     * ui-birth.c}) always set the arg before pushing the command,
      * so the missing-arg path is dead-but-present in C here too.
      *
      * <p>Unlike those two siblings, though, an absent {@code chosen} does not return early here -
@@ -2208,7 +2244,7 @@ public class PlayerBirth {
 
     /**
      * Re-fires the birth-points UI event without changing any state - the port of C's {@code
-     * do_cmd_refresh_stats} ({@code player-birth.c:1173-1178}).
+     * do_cmd_refresh_stats} ({@code player-birth.c}).
      *
      * <p>When {@link PlayerBirthStateRegistry#isRolledStats()} is {@code true} the method returns
      * immediately, matching C's {@code if (rolled_stats) return;} - refreshing is a no-op once the
@@ -2235,7 +2271,7 @@ public class PlayerBirth {
     /**
      * Handler for {@code CMD_ROLL_STATS}, throwing away the point-buy total in favour of a freshly
      * rolled character - the port of C's {@code do_cmd_roll_stats} ({@code
-     * player-birth.c:1181-1215}).
+     * player-birth.c}).
      *
      * <p>Unconditional and linear in both languages: no branch, no early return, and {@code cmd} is
      * never read, the same unused-parameter pattern as {@link #doCmdRefreshStats}. The snapshot,
@@ -2307,7 +2343,7 @@ public class PlayerBirth {
     /**
      * Handler for {@code CMD_PREV_STATS}, flicking the character back to whatever was rolled
      * before the current one - the port of C's {@code do_cmd_prev_stats}
-     * ({@code player-birth.c:1218-1231}).
+     * ({@code player-birth.c}).
      *
      * <p>The guard mirrors C's {@code if (prev.age)} exactly: {@link Birther#getAge()} returns
      * {@code int}, so {@code != 0} is the same truthy check C gets for free on a raw {@code int}
@@ -2361,27 +2397,26 @@ public class PlayerBirth {
     }
 
     /**
-     * The port of C's {@code do_cmd_choose_name} ({@code player-birth.c:1234}) - reads the
+     * The port of C's {@code do_cmd_choose_name} ({@code player-birth.c}) - reads the
      * {@code "name"} command argument and sets it as the current player's full name.
      *
      * <p>C fetches the argument with {@code cmd_get_arg_string(cmd, "name", &str)} but never checks
-     * its return value ({@code player-birth.c:1237}): if the argument were absent, {@code str} would
+     * its return value: if the argument were absent, {@code str} would
      * be left uninitialized and the following {@code my_strcpy(player->full_name, str, ...)}
-     * ({@code player-birth.c:1240}) would read through a garbage pointer - undefined behaviour, not a
+     * would read through a garbage pointer - undefined behaviour, not a
      * designed fallback. The port's {@link Command#getArgString} returns an {@link Optional} instead,
      * and this method guards on {@link Optional#isEmpty()} to return without touching the player's
      * name - a deliberate divergence from C's unchecked read, not an oversight. On the one known
-     * caller, {@link #playerMakeSimple}, the argument is always set before the command runs
-     * ({@code PlayerBirth.java:748}), matching C's own only caller ({@code ui-birth.c:1321}), so the
+     * caller, {@link #playerMakeSimple}, the argument is always set before the command runs,
+     * matching C's own only caller (in {@code ui-birth.c}), so the
      * guard never fires in current use; it exists for the day some other caller dispatches
      * {@code CMD_NAME_CHOICE} without pre-setting {@code "name"}.
      *
      * <p>When the argument is present, the name is handed straight to {@link Player#setFullName},
      * which already reproduces {@code my_strcpy}'s 31-character truncation
-     * ({@code player-birth.c:1240}, {@code PLAYER_NAME_LEN} = 32) - this method does no truncation
-     * of its own.
+     * ({@code PLAYER_NAME_LEN} = 32) - this method does no truncation of its own.
      *
-     * <p>Function doCmdChooseName coded on 260907, commented in full on 260907.
+     * <p>Function doCmdChooseName coded on 260907, commented in full on 261011.
      *
      * @param cmd the name-choice command, expected to carry a {@code "name"} string argument
      */
@@ -2393,30 +2428,28 @@ public class PlayerBirth {
     }
 
     /**
-     * The port of C's {@code do_cmd_choose_history} ({@code player-birth.c:1244}) - reads the
+     * The port of C's {@code do_cmd_choose_history} ({@code player-birth.c}) - reads the
      * {@code "history"} command argument and sets it as the current player's background text.
      *
      * <p>C fetches the argument with {@code cmd_get_arg_string(cmd, "history", &str)} but never
-     * checks its return value ({@code player-birth.c:1253}): if the argument were absent, {@code str}
-     * would be left uninitialized and the following {@code string_make(str)} ({@code
-     * player-birth.c:1254}) would read through a garbage pointer - undefined behaviour, not a
+     * checks its return value: if the argument were absent, {@code str}
+     * would be left uninitialized and the following {@code string_make(str)}
+     * would read through a garbage pointer - undefined behaviour, not a
      * designed fallback. The port's {@link Command#getArgString} returns an {@link Optional} instead,
      * and this method guards on {@link Optional#isEmpty()} to return without touching the player's
      * history - a deliberate divergence from C's unchecked read, not an oversight, and the same shape
      * used by the sibling command {@link #doCmdChooseName}. There is no known Java caller yet: C's own
-     * dispatch runs through the {@code CMD_HISTORY_CHOICE} table entry ({@code cmd-core.c:71}), pushed
-     * from the UI layer ({@code ui-birth.c:753}, {@code ui-birth.c:1552}), which this port has not
-     * reached.
+     * dispatch runs through the {@code CMD_HISTORY_CHOICE} table entry in {@code cmd-core.c}, pushed
+     * from the UI layer ({@code ui-birth.c}), which this port has not reached.
      *
      * <p>C also guards the write itself, freeing the old string first with
-     * {@code if (player->history) string_free(player->history)} ({@code player-birth.c:1249-1250})
-     * before {@code string_make(str)} allocates the replacement. {@link Player#setHistoryBirth} already
+     * {@code if (player->history) string_free(player->history)} before {@code string_make(str)} allocates the replacement. {@link Player#setHistoryBirth} already
      * documents absorbing that guard - the port just replaces the field and leaves the old reference
      * for the garbage collector - so this method does no freeing of its own. Unlike
      * {@link #doCmdChooseName}'s target field, {@code player->history} is a heap pointer rather than a
      * fixed-size buffer, so neither C's {@code string_make} nor the port truncates the text.
      *
-     * <p>Function doCmdChooseHistory coded on 260907, commented in full on 260907.
+     * <p>Function doCmdChooseHistory coded on 260907, commented in full on 261011.
      *
      * @param cmd the history-choice command, expected to carry a {@code "history"} string argument
      */
@@ -2428,7 +2461,7 @@ public class PlayerBirth {
     }
 
     /**
-     * The port of C's {@code do_cmd_accept_character} ({@code player-birth.c:1258}) - the final step
+     * The port of C's {@code do_cmd_accept_character} ({@code player-birth.c}) - the final step
      * of character creation, run once the player has finished rolling or buying stats and choosing a
      * name and history. It rolls hit points, opens the message log with the "began the quest" line,
      * embodies and outfits the player, initializes spells and known runes, restores the standard
@@ -2447,17 +2480,18 @@ public class PlayerBirth {
      *
      * <p>The artifact restore keeps C's call order: {@link Datafile#deactivateRandartFile()} runs
      * before {@link ObjectDataLoader#loadArtifacts()}, matching {@code deactivate_randart_file()}
-     * ahead of {@code run_parser(&artifact_parser)} ({@code player-birth.c:1304-1305}) - archiving any
+     * ahead of {@code run_parser(&artifact_parser)} - archiving any
      * randart export left over from a previous birth before the standard artifact table reloads over
      * it. The same {@link Datafile#deactivateRandartFile()} call recurs inside the
-     * {@code birth_randarts} branch, matching C's second call after {@code do_randart}
-     * ({@code player-birth.c:1311}). {@link Datafile#deactivateRandartFile()} is currently an empty
+     * {@code birth_randarts} branch, matching C's second call after {@code do_randart}.
+     * C also calls {@code cleanup_parser(&randart_parser)} first; the port has no parser object to
+     * clean up. {@link Datafile#deactivateRandartFile()} is currently an empty
      * stub, so neither call has an observable effect yet - a gap in {@link Datafile}, not in this
      * method, whose own call order already matches C's.
      *
      * <p>The closing history clear - {@code prev.setHistoryBirth("")} and
      * {@code quickstartPrev.setHistoryBirth("")} - is the port of C's {@code prev.history = NULL;}
-     * and {@code quickstart_prev.history = NULL;} ({@code player-birth.c:1336-1339}), releasing the
+     * and {@code quickstart_prev.history = NULL;}, releasing the
      * two cached roller snapshots' background text now that birth is done. The port answers with
      * {@code ""} rather than {@code null}, unlike the {@code null} this same field is cleared to
      * elsewhere in this class ({@link #saveRollerData}, {@link #LoadRollerData}); the difference has
@@ -2468,10 +2502,18 @@ public class PlayerBirth {
      *
      * <p>The "know all combat runes" hack sets {@link KnownObject#setToA}, {@link
      * KnownObject#setToD} and {@link KnownObject#setToH} in a different order to C's own
-     * {@code to_a}/{@code to_h}/{@code to_d} ({@code player-birth.c:1291-1293}); the three
+     * {@code to_a}/{@code to_h}/{@code to_d}; the three
      * assignments have no side effects on one another, so the reorder changes nothing observable.
      *
-     * <p>Function doCmdAcceptCharacter coded on 260908, commented in full on 260908.
+     * <p><b>The randart seed is rolled and kept.</b> Inside the {@code birth_randarts} branch the
+     * seed is drawn with {@code randInt0(0x10000000)} and stored through
+     * {@link GameState#setSeedRandart} before the same value is handed to
+     * {@link ObjectRandart#doRandart}, as C writes the {@code seed_randart} global and then reads
+     * it back. The savefile, character dump and spoiler code read that global, so the stored value,
+     * not a local, is what a later reader must see. Without the option on, no seed is drawn and
+     * the RNG is not advanced.
+     *
+     * <p>Function doCmdAcceptCharacter coded on 260908, commented in full on 261011.
      *
      * @param cmd the accept-character command; unused, kept only to match the {@code cmd_fn} signature
      */
@@ -2525,8 +2567,9 @@ public class PlayerBirth {
         ObjectDataLoader.loadArtifacts();
         
         if (player.opt(PlayerOptionEnum.OP_birth_randarts)) {
-            long seedRandart = (long) RandomValueUtils.randInt0(0x10000000);
-            ObjectRandart.doRandart(seedRandart, true);
+            long seed = RandomValueUtils.randInt0(0x10000000);
+            GameState.setSeedRandart(seed);
+            ObjectRandart.doRandart(seed, true);
             Datafile.deactivateRandartFile();
         }
 
@@ -2563,15 +2606,17 @@ public class PlayerBirth {
     }
 
     /**
-     * The pair {@link #buyStat} hands back in place of C's by-reference {@code int} and {@code bool}
-     * return - {@code value} stands in for what C writes through {@code points_left_local} and
-     * {@code bool} for C's own return value. Private, and scoped to {@link #buyStat}: nothing else
-     * in the class needs the pairing.
+     * The pair {@link #buyStat} and {@link #sellStat} hand back in place of C's by-reference
+     * {@code int} and {@code bool} return - {@code value} stands in for what C writes through
+     * {@code points_left_local} and {@code bool} for C's own return value. The record is public
+     * because the handlers {@link #doCmdBuyStat} and {@link #doCmdSellStat} and the heuristic
+     * {@link #generateStats} all read the pair back, each threading {@code value} on as the running
+     * points-left total.
      *
-     * <p>Record IntAndBoolean coded on 260906, commented in full on 260906.
+     * <p>Record IntAndBoolean coded on 260906, commented in full on 261011.
      *
      * @param value the points-left total after the call
-     * @param bool  whether the purchase succeeded
+     * @param bool  whether the purchase or sale succeeded
      */
     public record IntAndBoolean(int value, boolean bool) {
     }

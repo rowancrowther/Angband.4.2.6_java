@@ -26,19 +26,16 @@ import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.numerics.RandomValueUtils;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
-
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
 import java.lang.reflect.Field;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerBirth#getAHW}, the port of C's {@code get_ahw}
- * ({@code player-birth.c:353-361}):
+ * ({@code player-birth.c}):
  *
  * <pre>{@code
  * p->age = p->race->b_age + randint1(p->race->m_age);
@@ -53,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * therefore asserted equal, over many seeds, rather than asserted to be any particular number.
  *
  * <p>The age is different in kind and is checked against C's arithmetic directly.
- * {@code randint1(m_age)} returns {@code 1 .. m_age} ({@code z-rand.h:85}), so the age lands in
+ * {@code randint1(m_age)} returns {@code 1 .. m_age} ({@code z-rand.h}), so the age lands in
  * {@code b_age + 1 .. b_age + m_age} — the base is a floor the character is always at least a year
  * past, unlike the height and weight bases, which are means. The Human's {@code 14:6}
  * ({@code p_race.txt}) therefore gives ages of 15 to 20 and never 14, and a race with a spread of
@@ -221,7 +218,7 @@ class PlayerBirthGetAHWTest {
 
         /**
          * A spread of zero still ages the character a year: {@code randint1(0)} is one, not zero
-         * ({@code z-rand.h:85} over {@code Rand_div}'s degenerate case). No shipped race does this,
+         * ({@code z-rand.h} over {@code Rand_div}'s degenerate case). No shipped race does this,
          * but it is the boundary the port's {@code randInt1} has to agree with C on.
          *
          * @throws Exception if a field cannot be reached
@@ -300,8 +297,8 @@ class PlayerBirthGetAHWTest {
 
         /**
          * Nothing is preserved across calls. C calls {@code get_ahw} once per generated character
-         * ({@code player-birth.c:1018}) and again for every candidate the roller produces
-         * ({@code player-birth.c:1173}), so a second call must reroll all three — birth copies
+         * ({@code player-birth.c}) and again for every candidate the roller produces
+         * ({@code player-birth.c}), so a second call must reroll all three — birth copies
          * included, since they are written by the same statements.
          *
          * @throws Exception if a field cannot be reached

@@ -335,4 +335,12 @@ public class GameState {
     public static void setSeedFlavour(long seedFlavour) {
         GameState.seedFlavour = seedFlavour;
     }
+
+    public static long getSeedRandart() {
+        return seedRandart;
+    }
+
+    public static void setSeedRandart(long seedRandart) {
+        GameState.seedRandart = seedRandart;
+    }
 }

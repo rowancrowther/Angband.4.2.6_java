@@ -25,12 +25,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
+import uk.co.jackoftradesltd.middle.objects.KnownObject;
 import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 import uk.co.jackoftradesltd.testsupport.ItemFixture;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
-
-import uk.co.jackoftradesltd.middle.objects.KnownObject;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -38,17 +37,11 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerBirth}'s {@code wieldAll}, the port of C's {@code wield_all}
- * ({@code player-birth.c:463}).
+ * ({@code player-birth.c}).
  *
  * <p>{@code wieldAll} is private, as C's is {@code static}, so it is reached by reflection. Every
  * item is built through {@link ItemFixture} and dispatched through the real {@link ItemObject#wieldSlot()}

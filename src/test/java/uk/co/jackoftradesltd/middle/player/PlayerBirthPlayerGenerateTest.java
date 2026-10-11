@@ -17,18 +17,13 @@
 
 package uk.co.jackoftradesltd.middle.player;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftradesltd.middle.objects.ElementInfo;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
@@ -42,16 +37,11 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerBirth#playerGenerate(Player, PlayerRace, PlayerClass, boolean)}, the port of
- * C's {@code player_generate} ({@code player-birth.c:980-1028}).
+ * C's {@code player_generate} ({@code player-birth.c}).
  *
  * <p>The C is a short sequence of assignments, and every expected value below is read off it
  * rather than off the port:
@@ -81,7 +71,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * <p><b>The two clauses worth pressing on.</b> The loop over levels never runs, because the level
  * was set to 1 two lines earlier — so maximum hit points come entirely from the entry the loop
  * skips, and dropping {@code player_hp[0] = hitdie} leaves a character with none. And the method is
- * called again for every choice made on the birth screen ({@code player-birth.c:1099, 1110}), so
+ * called again for every choice made on the birth screen ({@code player-birth.c}), so
  * regeneration after a change of race has to overwrite that entry rather than leave the previous
  * race's behind. Both are tested directly.
  *
@@ -417,7 +407,7 @@ class PlayerBirthPlayerGenerateTest {
         /**
          * A null class means "keep the one the character has", which is how C's race-choice caller
          * works — {@code player_generate(player, player_id2race(choice), NULL, false)}
-         * ({@code player-birth.c:1099}). The kept class still contributes to the recomputed hit
+         * ({@code player-birth.c}). The kept class still contributes to the recomputed hit
          * die, so the assertion is on the arithmetic and not only on the name.
          */
         @Test
@@ -434,7 +424,7 @@ class PlayerBirthPlayerGenerateTest {
 
         /**
          * A null race means the same the other way about, which is the class-choice caller
-         * ({@code player-birth.c:1110}).
+         * ({@code player-birth.c}).
          */
         @Test
         @DisplayName("a null race keeps the character's own")
@@ -534,7 +524,7 @@ class PlayerBirthPlayerGenerateTest {
 
         /**
          * With the flag set the existing text is left standing. This is the quickstart path
-         * ({@code player-birth.c:1042}), where a restored character's background must not be
+         * ({@code player-birth.c}), where a restored character's background must not be
          * silently rerolled.
          *
          * @throws Exception if the field cannot be reached

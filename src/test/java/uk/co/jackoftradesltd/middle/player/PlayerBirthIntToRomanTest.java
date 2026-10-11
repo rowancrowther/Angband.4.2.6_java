@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests {@code PlayerBirth.intToRoman(int)}, the port of C's {@code int_to_roman}
- * ({@code player-birth.c:1379-1424}). The method is private and static, so every test reaches it
+ * ({@code player-birth.c}). The method is private and static, so every test reaches it
  * through reflection.
  *
  * <p>The expected values throughout come from hand-tracing C's {@code int_to_roman}, not from the

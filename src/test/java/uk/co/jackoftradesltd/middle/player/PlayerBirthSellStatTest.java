@@ -17,11 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.player;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
@@ -44,14 +40,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerBirth#sellStat(Stats, Map, Map, Map, int, boolean)}, the port of C's
- * {@code sell_stat} ({@code player-birth.c:777-807}).
+ * {@code sell_stat} ({@code player-birth.c}).
  *
  * <p>The C:
  *
@@ -110,12 +103,12 @@ class PlayerBirthSellStatTest {
     private static final int START_GOLD = 600;
 
     /**
-     * C's {@code MAX_BIRTH_POINTS} ({@code player-birth.c:683}), {@code 3 * (1+1+1+1+1+1+2)}.
+     * C's {@code MAX_BIRTH_POINTS} ({@code player-birth.c}), {@code 3 * (1+1+1+1+1+1+2)}.
      */
     private static final int MAX_BIRTH_POINTS = 20;
 
     /**
-     * {@code birth_stat_costs[11..16]} ({@code player-birth.c:679}) - the cost of any point between
+     * {@code birth_stat_costs[11..16]} ({@code player-birth.c}) - the cost of any point between
      * base 10 and 16.
      */
     private static final int COST_FLAT = 1;

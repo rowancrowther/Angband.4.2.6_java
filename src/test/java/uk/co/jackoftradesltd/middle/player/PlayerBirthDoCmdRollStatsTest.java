@@ -25,6 +25,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
 import uk.co.jackoftradesltd.middle.enums.Stats;
+import uk.co.jackoftradesltd.middle.game.enums.CommandCode;
+import uk.co.jackoftradesltd.middle.game.enums.CommandContext;
 import uk.co.jackoftradesltd.middle.game.event.EventHandlerInterface;
 import uk.co.jackoftradesltd.middle.game.event.EventsHandler;
 import uk.co.jackoftradesltd.middle.game.gameengine.Command;
@@ -34,8 +36,6 @@ import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.data.CarryCapData;
 import uk.co.jackoftradesltd.middle.game.globals.data.GameConstantsData;
 import uk.co.jackoftradesltd.middle.game.globals.data.PlayerData;
-import uk.co.jackoftradesltd.middle.game.enums.CommandCode;
-import uk.co.jackoftradesltd.middle.game.enums.CommandContext;
 import uk.co.jackoftradesltd.testsupport.CalcBonusesFixture;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
@@ -45,13 +45,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerBirth#doCmdRollStats}, the port of C's {@code do_cmd_roll_stats}
- * ({@code player-birth.c:1181-1215}).
+ * ({@code player-birth.c}).
  *
  * <p>The C:
  *
@@ -164,7 +162,7 @@ class PlayerBirthDoCmdRollStatsTest {
     /**
      * Builds a {@code CMD_ROLL_STATS} command - {@code do_cmd_roll_stats} never reads {@code cmd},
      * so this carries no args, matching the one real producer in the C tree
-     * ({@code ui-birth.c:1130}).
+     * ({@code ui-birth.c}).
      *
      * @return the command
      */

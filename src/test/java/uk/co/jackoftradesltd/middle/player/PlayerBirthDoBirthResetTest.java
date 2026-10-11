@@ -17,11 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.player;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.enums.Stats;
@@ -51,7 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests the private {@link PlayerBirth#doBirthReset}, the port of C's {@code do_birth_reset}
- * ({@code player-birth.c:1045-1058}) - the four-step reset the birth screen runs to undo every
+ * ({@code player-birth.c}) - the four-step reset the birth screen runs to undo every
  * choice made so far: reload quickstart data if there is any to reload, rebuild the derived
  * character fields, drop the character back to town, and recompute everything that depends on the
  * now-current stats.

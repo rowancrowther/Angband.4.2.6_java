@@ -51,13 +51,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerBirth#doCmdBirthReset}, the port of C's {@code do_cmd_birth_reset}
- * ({@code player-birth.c:1101-1106}) - the {@code CMD_BIRTH_RESET} handler that puts the character
+ * ({@code player-birth.c}) - the {@code CMD_BIRTH_RESET} handler that puts the character
  * and its point-buy state back to how they'd be on entering the birth screen fresh.
  *
  * <p>Every expected value below is read off {@code do_cmd_birth_reset} itself, not off the port:
@@ -109,13 +107,13 @@ class PlayerBirthDoCmdBirthResetTest {
     private static final int START_GOLD = 600;
 
     /**
-     * C's {@code MAX_BIRTH_POINTS} ({@code player-birth.c:683}), {@code 3 * (1+1+1+1+1+1+2)}.
+     * C's {@code MAX_BIRTH_POINTS} ({@code player-birth.c}), {@code 3 * (1+1+1+1+1+1+2)}.
      */
     private static final int MAX_BIRTH_POINTS = 20;
 
     /**
      * The cost {@code birth_stat_costs} charges to raise a stat from 10 - {@code birth_stat_costs[11]}
-     * ({@code player-birth.c:679}) - which every real stat's increment cost must equal once reset.
+     * ({@code player-birth.c}) - which every real stat's increment cost must equal once reset.
      */
     private static final int COST_AT_TEN = 1;
 

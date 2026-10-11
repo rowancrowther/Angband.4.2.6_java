@@ -17,11 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.player;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataBoolean;
@@ -54,14 +50,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerBirth#doCmdBirthInit}, the port of C's {@code do_cmd_birth_init}
- * ({@code player-birth.c:1061-1096}) - the {@code CMD_BIRTH_INIT} handler that starts the birth
+ * ({@code player-birth.c}) - the {@code CMD_BIRTH_INIT} handler that starts the birth
  * screen, either restoring a quickstart character or generating a fresh one from the first race
  * and class.
  *
@@ -102,7 +95,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * PlayerRegistry}'s race and class lists are swapped for single-entry fixtures so the no-quickstart
  * branch's {@code player_id2race(0)}/{@code player_id2class(0)} lookups are deterministic.
  *
- * <p>Class PlayerBirthDoCmdBirthInitTest coded on 260907, commented in full on 260907.
+ * <p><b>Name length.</b> C hands {@code int_to_roman} {@code sizeof(full_name) - offset} bytes, so
+ * the successor name must be at most 31 characters, and on failure - an empty numeral or one that
+ * does not fit - the buffer is cleared from the suffix start, leaving the prefix and its space.
+ * The two cases that pin the boundary are a 30-character name ({@code II} to {@code III}, 31
+ * characters, fits) and a 31-character one (32 characters, refused).
+ *
+ * <p>Class PlayerBirthDoCmdBirthInitTest coded on 260907, commented in full on 261011.
  *
  * @author Rowan Crowther
  */
@@ -427,9 +426,92 @@ class PlayerBirthDoCmdBirthInitTest {
             assertTrue(bus.hasDispatch(GameEventType.EVENT_MESSAGE));
             EventDataMessage message = bus.lastOfType(EventDataMessage.class);
             assertEquals(MessageType.MSG_GENERIC, message.type());
-            assertEquals("Sorry, couldn't deal with suffix.", message.message());
+            assertEquals("Sorry, could not deal with suffix", message.message(),
+                    "C's msg() string, word for word - no contraction and no full stop");
             assertTrue(PlayerBirthStateRegistry.isQuickstartAllowed(),
                     "quickstart_allowed is still set true regardless of the rename outcome");
+        }
+
+        /**
+         * A numeral that grows by a letter: {@code "II"} to {@code "III"}. C's {@code int_to_roman}
+         * has {@code bufsize = sizeof(full_name) - (buf - full_name)} = 32 - 4 = 28 here, so the
+         * three-letter numeral fits with room to spare.
+         */
+        @Test
+        @DisplayName("a suffix that grows by a letter is written back in full")
+        void growingSuffixIsWritten() {
+            player.setHeightBirth(70);
+            player.setFullName("Bob II");
+
+            PlayerBirth.doCmdBirthInit(null);
+
+            assertEquals("Bob III", player.getFullName());
+            assertFalse(bus.hasDispatch(GameEventType.EVENT_MESSAGE));
+        }
+
+        /**
+         * The exact fit. {@code "Aragorn the Great of Gondor II"} is 30 characters and the suffix
+         * starts at offset 28, so C's {@code bufsize} is 32 - 28 = 4. Building {@code "III"} checks
+         * {@code strlen + strlen("I") + 1 > bufsize} at lengths 0, 1 and 2, i.e. 2, 3 and 4 against
+         * 4 - never over - so it succeeds and the new name is 31 characters, the longest that
+         * {@code full_name} can hold. A test that measures the whole name plus the numeral (30 + 3)
+         * wrongly refuses it, which is why this case is here.
+         */
+        @Test
+        @DisplayName("a successor name of exactly 31 characters fits")
+        void thirtyOneCharacterSuccessorFits() {
+            player.setHeightBirth(70);
+            player.setFullName("Aragorn the Great of Gondor II");
+            assertEquals(30, player.getFullName().length(), "fixture is 30 characters");
+
+            PlayerBirth.doCmdBirthInit(null);
+
+            assertEquals("Aragorn the Great of Gondor III", player.getFullName());
+            assertEquals(31, player.getFullName().length());
+            assertFalse(bus.hasDispatch(GameEventType.EVENT_MESSAGE), "it fits, so no message");
+        }
+
+        /**
+         * One character over. {@code "Aragorn the Great of Gondors II"} is 31 characters, the suffix
+         * starts at offset 29 and {@code bufsize} is 32 - 29 = 3. Building {@code "III"} reaches
+         * {@code strlen 2 + 1 + 1 = 4 > 3} on its third letter and C breaks out with {@code n > 0};
+         * it then sets {@code roman[0] = '\0'}, which cuts {@code full_name} at the suffix start.
+         * The name is left as the prefix, still ending in its space, and the message is shown.
+         */
+        @Test
+        @DisplayName("a successor that would reach 32 characters drops the suffix and shows the message")
+        void thirtyTwoCharacterSuccessorDropsSuffix() {
+            player.setHeightBirth(70);
+            player.setFullName("Aragorn the Great of Gondors II");
+            assertEquals(31, player.getFullName().length(), "fixture is 31 characters");
+
+            PlayerBirth.doCmdBirthInit(null);
+
+            assertEquals("Aragorn the Great of Gondors ", player.getFullName(),
+                    "C clears the buffer from the suffix start, leaving the prefix and its space");
+            assertTrue(bus.hasDispatch(GameEventType.EVENT_MESSAGE));
+            assertEquals("Sorry, could not deal with suffix",
+                    bus.lastOfType(EventDataMessage.class).message());
+            assertEquals("Aragorn the Great of Gondors ",
+                    PlayerBirthStateRegistry.getQuickstartPrev().getName(),
+                    "save_roller_data reads the name after the failed rename");
+        }
+
+        /**
+         * A numeral that shrinks never overflows: {@code "VIII"} to {@code "IX"} replaces four
+         * letters with two, so a 30-character name ends at 28 and is accepted.
+         */
+        @Test
+        @DisplayName("a suffix that shrinks is accepted on a long name")
+        void shrinkingSuffixOnLongNameIsAccepted() {
+            player.setHeightBirth(70);
+            player.setFullName("Aragorn the Great of Gond VIII");
+            assertEquals(30, player.getFullName().length(), "fixture is 30 characters");
+
+            PlayerBirth.doCmdBirthInit(null);
+
+            assertEquals("Aragorn the Great of Gond IX", player.getFullName());
+            assertFalse(bus.hasDispatch(GameEventType.EVENT_MESSAGE));
         }
 
         /**

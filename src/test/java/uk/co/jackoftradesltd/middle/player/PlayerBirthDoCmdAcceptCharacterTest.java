@@ -17,15 +17,10 @@
 
 package uk.co.jackoftradesltd.middle.player;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import uk.co.jackoftradesltd.channel.Channels;
 import uk.co.jackoftradesltd.channel.StartupOptions;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.messages.UIMessage;
 import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
@@ -47,7 +42,6 @@ import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftradesltd.middle.objects.KnownObject;
 import uk.co.jackoftradesltd.middle.objects.ObjectKind;
 import uk.co.jackoftradesltd.middle.objects.Rune;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerHistoryType;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerOptionEnum;
 import uk.co.jackoftradesltd.testsupport.CalcBonusesFixture;
@@ -57,13 +51,11 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerBirth#doCmdAcceptCharacter}, the port of C's {@code do_cmd_accept_character}
- * ({@code player-birth.c:1258-1343}) - the final step of character creation.
+ * ({@code player-birth.c}) - the final step of character creation.
  *
  * <p><b>A real bootstrap, but a wiring-scoped fixture.</b> Unlike
  * {@code PlayerBirthDoCmdBirthInitTest}, which fakes out everything {@code doCmdBirthInit} touches,
@@ -92,7 +84,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * {@code playerOutfit}'s per-item loop from running at all while leaving everything this suite does
  * assert on - the option guards, the closing state, the history clear - running against real data.
  *
- * <p>Class PlayerBirthDoCmdAcceptCharacterTest coded on 260908, commented in full on 260908.
+ * <p>Class PlayerBirthDoCmdAcceptCharacterTest coded on 260908, commented in full on 261011.
  *
  * @author Rowan Crowther
  */
@@ -208,7 +200,7 @@ class PlayerBirthDoCmdAcceptCharacterTest {
         GameState.setPlayer(player);
         PlayerBirth.playerGenerate(player, humanRace(), emptyStartItemsClass(), false);
 
-        // player_init() ([C] player-birth.c:396) is what normally sizes obj_k against the loaded
+        // player_init() ([C] player-birth.c) is what normally sizes obj_k against the loaded
         // registries; nothing in the port's birth flow reaches it yet (PlayerBirth#playerInit's own
         // Javadoc records the gap), so this fixture does that one step of it by hand.
         KnownObject itemKnowledge = new KnownObject();
@@ -359,7 +351,7 @@ class PlayerBirthDoCmdAcceptCharacterTest {
      * sets every combat rune's <em>value</em> to 1 unconditionally regardless of this option, and
      * {@link KnownObject#toAIsKnown()} reads that same value, so a combat rune is always "known"
      * whichever way this guard goes. {@code learnInnate}, which runs unconditionally, learns a
-     * resistance only when the race itself carries it ({@code player-birth.c:1286-1300}), and the
+     * resistance only when the race itself carries it ({@code player-birth.c}), and the
      * shipped "Human" has no resistances at all, so fire resistance is known afterwards only if
      * {@code learnAllRunes} itself ran.
      */
@@ -423,12 +415,16 @@ class PlayerBirthDoCmdAcceptCharacterTest {
     /**
      * {@code OP_birth_randarts}. {@link uk.co.jackoftradesltd.middle.objects.ObjectRandart#doRandart}
      * and {@link uk.co.jackoftradesltd.backend.io.Datafile#deactivateRandartFile()} are both stubs, so
-     * this pins down only that the branch is reachable without throwing - there is no observable
-     * effect yet for a passing test to tell apart from the branch not running.
+     * the branch's own effects cannot be seen. What can be seen is the one write C makes to a global
+     * before calling them: {@code seed_randart = randint0(0x10000000)}. The seed is primed with
+     * {@code -1}, which {@code randint0} can never return, so a value in {@code [0, 0x10000000)}
+     * afterwards proves the draw was made and stored; the unchanged sentinel proves it was not.
      */
     @Nested
     @DisplayName("OP_birth_randarts")
     class RandartsGuard {
+
+        private static final long UNSET = -1L;
 
         @Test
         @DisplayName("on: the branch runs to completion")
@@ -438,6 +434,41 @@ class PlayerBirthDoCmdAcceptCharacterTest {
             PlayerBirth.doCmdAcceptCharacter(null);
 
             assertTrue(GameState.getCharacterGenerated());
+        }
+
+        @Test
+        @DisplayName("on: seed_randart is rolled in [0, 0x10000000) and stored in the game state")
+        void onStoresTheRolledSeed() throws ReflectiveOperationException {
+            long previousSeed = GameState.getSeedRandart();
+            try {
+                GameState.setSeedRandart(UNSET);
+                birthOptions(player).on(PlayerOptionEnum.OP_birth_randarts);
+
+                PlayerBirth.doCmdAcceptCharacter(null);
+
+                long seed = GameState.getSeedRandart();
+                assertTrue(seed >= 0 && seed < 0x10000000L,
+                        "randint0(0x10000000) is 0 to 0x0FFFFFFF inclusive, but the seed was " + seed);
+            } finally {
+                GameState.setSeedRandart(previousSeed);
+            }
+        }
+
+        @Test
+        @DisplayName("off: seed_randart is left alone")
+        void offLeavesTheSeedAlone() throws ReflectiveOperationException {
+            long previousSeed = GameState.getSeedRandart();
+            try {
+                GameState.setSeedRandart(UNSET);
+                birthOptions(player).off(PlayerOptionEnum.OP_birth_randarts);
+
+                PlayerBirth.doCmdAcceptCharacter(null);
+
+                assertEquals(UNSET, GameState.getSeedRandart(),
+                        "the seed is only drawn inside the birth_randarts branch");
+            } finally {
+                GameState.setSeedRandart(previousSeed);
+            }
         }
     }
 }

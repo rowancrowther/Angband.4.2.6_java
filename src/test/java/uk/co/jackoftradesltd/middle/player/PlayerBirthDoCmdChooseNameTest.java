@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Tests {@link PlayerBirth#doCmdChooseName}, the port of C's {@code do_cmd_choose_name}
- * ({@code player-birth.c:1234-1241}).
+ * ({@code player-birth.c}).
  *
  * <p>The C is short:
  *
@@ -53,7 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  * <p><b>The deliberate divergence.</b> C never checks {@code cmd_get_arg_string}'s return value, so
  * on the arg-missing path {@code str} is left uninitialised and {@code my_strcpy} would read through
  * a garbage pointer - undefined behaviour, not a designed fallback. Every real producer of
- * {@code CMD_NAME_CHOICE} in the C tree ({@code ui-birth.c:1321}) sets the arg before the command
+ * {@code CMD_NAME_CHOICE} in the C tree ({@code ui-birth.c}) sets the arg before the command
  * runs, and the port's own caller, {@link PlayerBirth#playerMakeSimple}, does the same
  * ({@code PlayerBirth.java:748}), so this path is unreachable in practice on either side. The port
  * still guards it explicitly with {@code if (name.isEmpty()) return;} rather than following C's

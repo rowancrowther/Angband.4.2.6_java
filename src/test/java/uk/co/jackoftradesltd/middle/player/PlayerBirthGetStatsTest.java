@@ -36,14 +36,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerBirth#getStats(Player, Map)}, the port of C's {@code get_stats}
- * ({@code player-birth.c:231-275}), together with the five accessors it writes the character
+ * ({@code player-birth.c}), together with the five accessors it writes the character
  * through — {@link Player#setStatMax(Stats, int)}, {@link Player#setCurrStatValue(Stats, int)},
  * {@link Player#setCurrStatMap(Stats, Stats)}, {@link Player#setStatBirth(Stats, int)} and
  * {@link Player#getStatMax(Stats)}.
@@ -116,7 +113,7 @@ class PlayerBirthGetStatsTest {
     private static final int STAT_MAX = 5;
 
     /**
-     * The base added to each stat's three dice ({@code player-birth.c:256}).
+     * The base added to each stat's three dice ({@code player-birth.c}).
      */
     private static final int BASE = 5;
 
@@ -231,7 +228,7 @@ class PlayerBirthGetStatsTest {
      * values are built from. Re-derived here from the C rather than called through
      * {@link PlayerUtils}, so that this class does not agree with the port it is checking:
      * a point is worth one below 18 and ten at or above it, and a penalty is worth ten down to 18
-     * and one below that, with a floor of 3 ({@code player-util.c:342-372}).
+     * and one below that, with a floor of 3 ({@code player-util.c}).
      *
      * @param value  the rolled value
      * @param amount the adjustment in points
@@ -488,7 +485,7 @@ class PlayerBirthGetStatsTest {
 
         /**
          * "Start fully healed": the current value is seeded equal to the maximum for every stat
-         * ({@code player-birth.c:265}), whatever the character held before.
+         * ({@code player-birth.c}), whatever the character held before.
          */
         @Test
         @DisplayName("seeds every current value from the maximum")
@@ -503,7 +500,7 @@ class PlayerBirthGetStatsTest {
 
         /**
          * "Start with unscrambled stats": every slot points at itself, C's
-         * {@code p->stat_map[i] = i} ({@code player-birth.c:268}). A scrambled map left over from a
+         * {@code p->stat_map[i] = i} ({@code player-birth.c}). A scrambled map left over from a
          * previous character is overwritten rather than kept.
          *
          * @throws Exception if the map cannot be reached
@@ -520,7 +517,7 @@ class PlayerBirthGetStatsTest {
 
         /**
          * The birth record is the rolled maximum, taken after it was stored
-         * ({@code player-birth.c:274}) and so before any adjustment — the two must agree stat by
+         * ({@code player-birth.c}) and so before any adjustment — the two must agree stat by
          * stat.
          *
          * @throws Exception if the map cannot be reached
@@ -594,7 +591,7 @@ class PlayerBirthGetStatsTest {
 
         /**
          * A second call re-rolls rather than adding to what is there — {@code do_cmd_roll_stats}
-         * calls it once per re-roll ({@code player-birth.c:1167}), so the previous character's
+         * calls it once per re-roll ({@code player-birth.c}), so the previous character's
          * figures must be gone. Fifteen dice agreeing twice over is possible; twenty births
          * agreeing every time is not.
          */

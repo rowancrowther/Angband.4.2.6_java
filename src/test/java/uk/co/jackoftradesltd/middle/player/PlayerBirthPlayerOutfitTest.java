@@ -17,32 +17,17 @@
 
 package uk.co.jackoftradesltd.middle.player;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.magic.ClassMagic;
 import uk.co.jackoftradesltd.middle.numerics.Random;
-import uk.co.jackoftradesltd.middle.objects.Brand;
-import uk.co.jackoftradesltd.middle.objects.ItemObject;
-import uk.co.jackoftradesltd.middle.objects.ObjectBase;
-import uk.co.jackoftradesltd.middle.objects.ObjectKind;
-import uk.co.jackoftradesltd.middle.objects.ObjectProperty;
-import uk.co.jackoftradesltd.middle.objects.ObjectPropertyTypeWrapper;
-import uk.co.jackoftradesltd.middle.objects.Slay;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjPropertyType;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlagID;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlagType;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectKindFlag;
-import uk.co.jackoftradesltd.middle.objects.enums.TValue;
+import uk.co.jackoftradesltd.middle.objects.*;
+import uk.co.jackoftradesltd.middle.objects.enums.*;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerOptionEnum;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerSkill;
@@ -56,22 +41,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerBirth#playerOutfit(Player)}, the port of C's {@code player_outfit}
- * ({@code player-birth.c:586-672}).
+ * ({@code player-birth.c}).
  *
  * <p>The expected values throughout are derived from the C original, not from the port: the gold
- * deducted for a fixed-price item is {@code kind.cost * quantity} ({@code obj-power.c:1101}'s
+ * deducted for a fixed-price item is {@code kind.cost * quantity} ({@code obj-power.c}'s
  * non-variable-power branch), and the four {@link StartOptionExclusion} cases in
  * {@link ExclusionOptions} are read straight off C's sign-encoded {@code eopts} walk
- * ({@code player-birth.c:621-639}) rather than off the port's own {@code if}/{@code else}. Every
+ * ({@code player-birth.c}) rather than off the port's own {@code if}/{@code else}. Every
  * item built here uses a fixed-price tval ({@code TV_FOOD}, {@code TV_POTION}, {@code TV_SCROLL}) so
  * that pricing goes through the simple {@code cost * quantity} route rather than the
  * {@code objectPower} curve every wearable tval takes — {@code playerOutfit} prices every start
@@ -87,7 +67,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * item is constructed — every {@link ItemObject} constructor reads it, as
  * {@code PlayerBirthWieldAllTest} already documents.
  *
- * <p>Class PlayerBirthPlayerOutfitTest coded on 260905, commented in full on 260905.
+ * <p>Class PlayerBirthPlayerOutfitTest coded on 260905, commented in full on 261011.
  *
  * @author Rowan Crowther
  */
@@ -303,6 +283,30 @@ class PlayerBirthPlayerOutfitTest {
         assertTrue(food.isAware(), "flavourAware should have run for the new item");
     }
 
+    /**
+     * C's {@code player_outfit} sets {@code obj->known->pval = obj->pval}. The food kind's pval is
+     * fixed at 7 and the stack is 3, so the two cannot be confused: the known shadow must read 7.
+     * A shadow that copied the stack size would read 3.
+     */
+    @Test
+    @DisplayName("the known shadow copies the object's pval, not its stack size")
+    void knownShadowCopiesPvalNotNumber() throws Exception {
+        ObjectKind food = kind(TValue.TV_FOOD, "Ration of Food", 3);
+        ItemFixture.set(food, "pVal", new Random(7, 0, 0, 0, false));
+        Player player = buildPlayer(List.of(startItem(TValue.TV_FOOD, "Ration of Food", 3, 3)));
+        setOption(player, PlayerOptionEnum.OP_birth_start_kit, true);
+        player.setAU(100);
+
+        PlayerBirth.playerOutfit(player);
+
+        ItemObject carried = gearItemOfKind(player, food);
+        assertNotNull(carried, "the food item should have been carried");
+        assertEquals(3, carried.getNumber(), "fixture: the stack is 3");
+        assertEquals(7, carried.getpValue(), "fixture: objectPrep rolled the kind's pval of 7");
+        assertNotNull(carried.getKnown());
+        assertEquals(7, carried.getKnown().getpValue());
+    }
+
     @Test
     @DisplayName("without birth_start_kit, only food and light are granted, forced to one")
     void withoutStartKitOnlyFoodIsGrantedAtOne() throws Exception {
@@ -353,7 +357,7 @@ class PlayerBirthPlayerOutfitTest {
     /**
      * The four cases {@link PlayerBirth#playerOutfit}'s {@code eopts} walk has to distinguish -
      * negated x option-set - matching C's sign-encoded {@code eopts} array
-     * ({@code player-birth.c:621-639}) exactly.
+     * ({@code player-birth.c}) exactly.
      */
     @org.junit.jupiter.api.Nested
     @DisplayName("exclusion options")

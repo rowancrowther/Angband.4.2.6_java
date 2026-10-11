@@ -48,14 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/player/EquipSlot.java`
-
-0 missing, 3 low
-
-- L55: method `getItem` - LOW
-- L62: method `getType` - LOW
-- L69: method `getName` - LOW
-
 ### `middle/player/PlayerHistoryChart.java`
 
 0 missing, 3 low

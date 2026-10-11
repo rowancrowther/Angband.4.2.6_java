@@ -128,14 +128,27 @@ public class ObjectProperty {
     private String name;
     /**
      * Adjective describing the positive form of the property — C's {@code obj_property->adjective}.
+     * C reads it in {@code desc_stat} ({@code effect-handler-general.c}) for a {@code stat}
+     * property, where it words a stat gain.
      *
-     * <p>Field adjective coded before 260827, commented in full on 260924.
+     * <p>Where the data file gives no {@code adjective:} line, C leaves the pointer {@code NULL}.
+     * The grammar's default is {@code ""} and the assembler passes it straight through, so the
+     * port's "no adjective" value is the empty string, not {@code null}. There is no accessor yet:
+     * the port has no caller for it until {@code desc_stat} is ported.
+     *
+     * <p>Field adjective coded before 260827, commented in full on 261011.
      */
     private String adjective;
     /**
      * Adjective describing the negative form of the property — C's {@code obj_property->neg_adj}.
+     * C reads it in {@code desc_stat} ({@code effect-handler-general.c}) for a {@code stat}
+     * property, where it words a stat loss.
      *
-     * <p>Field negAdjective coded before 260827, commented in full on 260924.
+     * <p>Where the data file gives no {@code neg-adjective:} line, C leaves the pointer
+     * {@code NULL}; the port holds {@code ""} instead, as for {@link #adjective}. There is no
+     * accessor yet, for the same reason.
+     *
+     * <p>Field negAdjective coded before 260827, commented in full on 261011.
      */
     private String negAdjective;
     /**
@@ -152,9 +165,14 @@ public class ObjectProperty {
     private String message;
     /**
      * Human-readable description of the property, shown in object info screens — C's
-     * {@code obj_property->desc}.
+     * {@code obj_property->desc}. C reads it in {@code ui-knowledge.c}, where the knowledge menus
+     * list the protection, ability, melee and bad-flag properties.
      *
-     * <p>Field description coded before 260827, commented in full on 260924.
+     * <p>Where the data file gives no {@code desc:} line, C leaves the pointer {@code NULL}; the
+     * port holds {@code ""} instead, as for {@link #adjective}. There is no accessor yet: the
+     * knowledge menus are a later chapter.
+     *
+     * <p>Field description coded before 260827, commented in full on 261011.
      */
     private String description;
     /**

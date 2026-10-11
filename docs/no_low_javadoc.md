@@ -48,14 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/monsters/MonsterRace.java`
-
-0 missing, 3 low
-
-- L380: method `getFlags` - LOW
-- L397: method `getName` - LOW
-- L442: method `getLevel` - LOW
-
 ### `middle/monsters/MonsterShape.java`
 
 0 missing, 3 low

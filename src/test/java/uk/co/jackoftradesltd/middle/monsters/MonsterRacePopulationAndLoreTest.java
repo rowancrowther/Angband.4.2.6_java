@@ -24,9 +24,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.lang.reflect.Field;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link MonsterRace#setCurNum(int)}, {@link MonsterRace#setMaxNum(int)} and
@@ -103,17 +101,29 @@ class MonsterRacePopulationAndLoreTest {
     }
 
     @Test
-    @DisplayName("a fresh race carries no lore")
+    @DisplayName("a fresh race has no lore, hasLore says so, and getLore fails loudly")
     void freshRaceHasNoLore() {
-        assertNull(new MonsterRace().getLore());
+        MonsterRace race = new MonsterRace();
+
+        assertFalse(race.hasLore());
+        assertThrows(IllegalStateException.class, race::getLore);
+    }
+
+    @Test
+    @DisplayName("hasLore turns true once a record is attached")
+    void hasLoreTrueAfterSetLore() {
+        MonsterRace race = new MonsterRace();
+
+        race.setLore(new MonsterLore());
+
+        assertTrue(race.hasLore());
     }
 
     @Test
     @DisplayName("getLore returns the exact reference passed to setLore, not a copy")
     void getLoreReturnsSameReference() {
         MonsterRace race = new MonsterRace();
-        MonsterLore lore = new MonsterLore(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                null, null, null, null, null, null, null, null);
+        MonsterLore lore = new MonsterLore();
 
         race.setLore(lore);
 

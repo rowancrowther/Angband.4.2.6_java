@@ -50,18 +50,9 @@ import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@code PlayerBirth.playerInit}, the port of C's {@code player_init}
@@ -195,8 +186,7 @@ class PlayerBirthPlayerInitTest {
     }
 
     private static MonsterLore freshLore() {
-        return new MonsterLore(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                null, null, null, null, null, null, null, null);
+        return new MonsterLore();
     }
 
     private static void makeUnique(MonsterRace race) throws Exception {

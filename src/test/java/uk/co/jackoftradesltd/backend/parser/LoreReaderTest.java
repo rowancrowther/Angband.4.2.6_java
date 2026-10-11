@@ -57,6 +57,16 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@link #eachRecordIsAttachedToItsMonsterRace()} still needs a {@code GameConstants.init()}
  * bootstrap this class does not provide.
  *
+ * <p>Parked with the reader: the hand-off replaces rather than fills. {@code monsterLore} ends
+ * with {@code race.setLore($lore)}, which swaps whatever {@code MonsterLore} the race already
+ * holds for a freshly built one. C's {@code lore_parser} ({@code parse_lore_name} in
+ * {@code [C] src/mon-init.c}) instead points at {@code l_list[race->ridx]} and every later
+ * directive writes into that record in place, so a field a lore entry omits keeps whatever the
+ * record held before. Once blank records are seeded per race, the Java hand-off would drop the
+ * blank's value for any omitted field; the grammar will need to fill the race's existing
+ * {@code MonsterLore} (or start from it) rather than construct a new one. No spec below
+ * covers this yet.
+ *
  * <p>The tests seed {@link uk.co.jackoftradesltd.middle.game.globals.registry.MonsterRegistry}
  * themselves rather than running
  * {@link uk.co.jackoftradesltd.middle.game.globals.GameConstants#init()}, so they stay hermetic and

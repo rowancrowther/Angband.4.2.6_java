@@ -173,12 +173,6 @@ public class MonsterRegistry {
      */
     private static List<PitProfile> monsterPitProfiles;
     /**
-     * Monster lore. Nothing in this class assigns it or reads it, so it is always null here.
-     *
-     * <p>Field monsterLore coded before 261009, commented in full on 261009.
-     */
-    private static List<MonsterLore> monsterLore;
-    /**
      * The colour-cycling table for animated monster colours. Null until {@link #setVisualsCyclerTable} runs.
      *
      * <p>Field visualsCyclerTable coded before 261009, commented in full on 261009.
@@ -641,4 +635,17 @@ public class MonsterRegistry {
         return visualsCyclerTable;
     }
 
+    /**
+     * Overwrites the longest-blow-list counter with a given value, with no check against the races.
+     * {@link #setMonsterRaces} already sets the counter to the longest blow list of any loaded race,
+     * as {@code finish_parse_monster} ({@code mon-init.c}) does for {@code z_info->mon_blows_max},
+     * and C has no separate setter. No code in {@code src/main} or {@code src/test} calls this method.
+     *
+     * <p>Function setMonsterBlowsMax coded before 261011, commented in full on 261011.
+     *
+     * @param blowsCount the value to store in {@code monsterBlowsMax}
+     */
+    public static void setMonsterBlowsMax(int blowsCount) {
+        monsterBlowsMax = blowsCount;
+    }
 }

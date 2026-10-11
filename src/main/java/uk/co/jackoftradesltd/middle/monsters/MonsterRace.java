@@ -19,6 +19,7 @@ package uk.co.jackoftradesltd.middle.monsters;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.TestOnly;
 import uk.co.jackoftradesltd.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
@@ -67,10 +68,11 @@ import java.util.Map;
  */
 public class MonsterRace {
     /**
-     * Log4j logger for this class. Nothing in this class logs through it at present: a data problem
-     * found while resolving friends or shapes is raised as an exception instead.
+     * Log4j logger for this class. Only {@link #getLore()} logs through it, at fatal level, just
+     * before it throws for a race with no lore record. A data problem found while resolving friends
+     * or shapes is raised as an exception without logging here.
      *
-     * <p>Field logger coded before 261010, commented in full on 261010.
+     * <p>Field logger coded before 261010, commented in full on 261011.
      */
     public static final Logger logger = LogManager.getLogger();
 
@@ -411,11 +413,11 @@ public class MonsterRace {
     /**
      * The player's accumulated lore about this monster. C keeps these records in the global
      * {@code l_list}, one per race, found by {@code get_lore}; here the record is a field of the
-     * race. It is {@code null} until {@link #setLore(MonsterLore)} is called. The only production
-     * caller is the lore-file reader ({@code LoreGrammar.g4}), which attaches a record to the race
-     * named in each lore entry; loading {@code monster.txt} does not attach one, where C's
-     * {@code finish_parse_monster} allocates a blank record for every race. A race that no lore
-     * entry names therefore has {@code null} here.
+     * race. It is {@code null} until {@link #setLore(MonsterLore)} is called. Two production callers
+     * attach one. {@code MonsterDataLoader.loadMonsters} gives every loaded race a blank record, as
+     * C's {@code finish_parse_monster} does, and the lore-file reader ({@code LoreGrammar.g4})
+     * attaches a record to the race named in each lore entry. A race built by hand, as the tests do,
+     * has {@code null} here until one is attached.
      *
      * <p>Field lore coded before 261010, commented in full on 261011.
      */
@@ -518,9 +520,12 @@ public class MonsterRace {
     /**
      * Attach this race's accumulated lore record. This is the Java stand-in for the allocation of
      * C's {@code l_list} at the end of {@code finish_parse_monster}, which gives every race a lore
-     * record with room for {@code mon_blows_max} blows, except that it is called by the lore-file
-     * reader ({@code LoreGrammar.g4}) once per lore entry rather than once per race by the race
-     * loader. Nothing checks the argument, so passing {@code null} clears the record.
+     * record with room for {@code mon_blows_max} blows. {@code MonsterDataLoader.loadMonsters}
+     * calls it once for each race that has no record yet, and the lore-file reader
+     * ({@code LoreGrammar.g4}) calls it once per lore entry. A call replaces any record already
+     * attached rather than filling it in, which C's {@code lore_parser} does not do: it fills
+     * {@code l_list[race->ridx]} in place. Nothing checks the argument, so passing {@code null}
+     * clears the record.
      *
      * <p>Function setLore coded before 261010, commented in full on 261011.
      *
@@ -536,18 +541,27 @@ public class MonsterRace {
      * as a field (see {@link #setLore(MonsterLore)}) rather than reproducing that lookup table, so
      * this accessor is a plain field read rather than a search.
      *
-     * <p>C's {@code get_lore} asserts that the race is not {@code NULL} and always hands back a
-     * valid record, because {@code finish_parse_monster} allocates one for every race. This
-     * accessor has no such guarantee: it returns {@code null} until {@link #setLore(MonsterLore)}
-     * has been called (today only the lore-file reader calls it), so a caller that dereferences the
-     * result, as {@code PlayerBirth} does, fails with a {@link NullPointerException} for any race
-     * that was never given a record.
+     * <p>C's {@code get_lore} ({@code mon-lore.c}) asserts that the race is not {@code NULL} and
+     * always hands back a valid record, because {@code finish_parse_monster} allocates one for every
+     * race. A race loaded through {@code MonsterDataLoader.loadMonsters} has the same guarantee.
+     * For a race that has no record, such as one built by hand, this accessor never returns
+     * {@code null}: it logs at fatal level and throws {@link IllegalStateException} naming the
+     * race, so a caller fails here rather than later with a {@link NullPointerException}. Use
+     * {@link #hasLore()} first where a missing record is expected.
      *
      * <p>Function getLore coded on 260903, commented in full on 261011.
      *
-     * @return this race's lore record, or {@code null} if none has been attached
+     * @return this race's lore record, never {@code null}
+     * @throws IllegalStateException if no lore record has been attached to this race
      */
+    @NotNull
     public MonsterLore getLore() {
+        if (lore == null) {
+            String msg = "No lore record attached to race " + name +
+                    "; MonsterDataLoader.loadMonsters attaches one to every loaded race";
+            logger.fatal(msg);
+            throw new IllegalStateException(msg);
+        }
         return lore;
     }
 
@@ -698,5 +712,19 @@ public class MonsterRace {
      */
     public int getLight() {
         return light;
+    }
+
+    /**
+     * Tests whether a lore record is attached to this race. C has no equivalent, because
+     * {@code finish_parse_monster} gives every race a record, so this exists to let
+     * {@code MonsterDataLoader.loadMonsters} and any caller that may see a hand-built race avoid the
+     * {@link IllegalStateException} that {@link #getLore()} throws.
+     *
+     * <p>Function hasLore coded before 261011, commented in full on 261011.
+     *
+     * @return true if {@link #setLore(MonsterLore)} has attached a record that has not been cleared
+     */
+    public boolean hasLore() {
+        return lore != null;
     }
 }

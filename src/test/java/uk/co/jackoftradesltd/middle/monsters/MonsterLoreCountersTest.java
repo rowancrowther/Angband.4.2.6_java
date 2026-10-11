@@ -44,8 +44,7 @@ class MonsterLoreCountersTest {
      * @return the lore under test
      */
     private static MonsterLore zeroedLore() {
-        return new MonsterLore(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                null, null, null, null, null, null, null, null);
+        return new MonsterLore();
     }
 
     /**

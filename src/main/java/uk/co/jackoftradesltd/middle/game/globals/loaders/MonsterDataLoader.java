@@ -45,21 +45,51 @@ import java.io.IOException;
  * pit profiles. It was split out of {@code GameConstants} as one domain slice of the loader/registry
  * refactor.
  *
+ * <p>Class MonsterDataLoader coded before 261011, commented in full on 261011 (the class block and
+ * {@link #loadMonsters()} only; the other loaders were not revisited on that date).
+ *
  * @author Rowan Crowther
  */
 public class MonsterDataLoader {
+    /**
+     * Log4j logger for this class, used by every loader to report a data problem or an IO failure.
+     *
+     * <p>Field logger coded before 261011, commented in full on 261011.
+     */
     private static final Logger logger = LogManager.getLogger(MonsterDataLoader.class);
 
     /**
      * Load the monster races from {@code monster.txt} into {@link MonsterRegistry}, then run a second
-     * pass resolving each race's friend and shape references (mirroring C's {@code finish_parse_monster})
-     * now that every race exists. Must run after bases, visuals, blow methods and spell types.
+     * pass over every race that stands in for the end of C's {@code finish_parse_monster}
+     * ({@code mon-init.c}). Must run after bases, visuals, blow methods and spell types.
+     * <p>
+     * The second pass does three things for each race, in this order, now that every race exists:
+     * <ol>
+     *   <li>{@link MonsterRace#resolveFriends()} points each friend entry at its race.</li>
+     *   <li>{@link MonsterRace#resolveShapes()} points each shape entry at its base or race.</li>
+     *   <li>The race is given a blank {@link MonsterLore} if it has none, and
+     *       {@link MonsterLore#initblows(int)} gives that lore one blank blow per blow the race has.
+     *       This is the Java form of C's {@code l_list} allocation, which gives every race a lore
+     *       record and sizes its {@code blows} array. After this pass {@link MonsterRace#getLore()}
+     *       can be called on every loaded race, including the {@code <player>} record at element 0.</li>
+     * </ol>
+     * C finishes all the name resolution before it allocates any lore, where this loop does the three
+     * steps race by race. Resolution only looks up races that are already registered, so the result
+     * is the same. C sizes each lore's blows to the longest blow list of any race
+     * ({@code z_info->mon_blows_max}); this sizes each to its own race's blow count, as the race's
+     * blow list is not padded either (see {@link MonsterLore}).
      * <p>
      * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the races that did
      * assemble are registered regardless, per the partial-results contract. An IO failure is logged
      * and <em>swallowed</em>. Watch the second pass here: friend and shape references are resolved
      * against the races just registered, so a race dropped by a soft error becomes an unresolvable
-     * reference for its neighbours rather than a silent absence.
+     * reference for its neighbours rather than a silent absence. A reference that cannot be resolved
+     * throws from {@link MonsterRace#resolveFriends()} or {@link MonsterRace#resolveShapes()} and is
+     * not caught here, which stops the pass part-way, so only the races before it have lore.
+     * <p>
+     * A race that already has a lore record keeps it, and only has its blows sized.
+     *
+     * <p>Function loadMonsters coded before 261011, commented in full on 261011.
      */
     public static void loadMonsters() {
         MonsterReader parser = new MonsterReader();
@@ -71,18 +101,18 @@ public class MonsterDataLoader {
             ErrorParsing.reportAndCheck(filename, result, logger);
 
             MonsterRegistry.setMonsterRaces(result.items());
-
+            
             // Second pass: friend and shape references to other races can only be resolved once every
             // race exists (a monster may reference one defined later in the file). Mirrors C's
             // finish_parse_monster.
             for (MonsterRace race : MonsterRegistry.getMonsterRaces()) {
                 race.resolveFriends();
                 race.resolveShapes();
+                
+                if (!race.hasLore())
+                    race.setLore(new MonsterLore());
+                race.getLore().initblows(race.getBlows().size());
             }
-            
-            // Calculate max blows and pit types
-            int blowsCount = 0;
-            int pitCount = 0;
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
         }

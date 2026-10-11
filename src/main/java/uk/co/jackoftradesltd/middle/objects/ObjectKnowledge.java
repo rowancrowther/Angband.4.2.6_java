@@ -23,13 +23,34 @@ import uk.co.jackoftradesltd.middle.objects.enums.CombatRunes;
 import uk.co.jackoftradesltd.middle.objects.enums.RuneVariety;
 import uk.co.jackoftradesltd.middle.player.PlayerKnowledge;
 
+/**
+ * Questions about what an individual item carries and what handling it can teach, ported from the
+ * object half of C's {@code obj-knowledge.c}: {@link #objectHasRune} (does this item have the
+ * property a rune stands for) and {@link #objectFlavourTried} (mark an item's kind as tried).
+ *
+ * <p>Everything here is a static function over an {@link ItemObject}, as in C, and none of it
+ * touches the player's own rune knowledge. That store is {@link KnownObject}, reached through
+ * {@link PlayerKnowledge}'s {@code learnRune} wrappers; this class supplies the facts about the
+ * item those wrappers weigh it against.
+ *
+ * <p>Class ObjectKnowledge coded before 260905, commented in full on 261011.
+ *
+ * @author Rowan Crowther
+ */
 public class ObjectKnowledge {
+    /**
+     * Reports the "unknown object passed in" case of {@link #objectFlavourTried}, the only place
+     * this class logs. C has no equivalent: it asserts, and the assertion compiles out of release
+     * builds.
+     *
+     * <p>Field logger coded before 260905, commented in full on 261011.
+     */
     private static final Logger logger = LogManager.getLogger(ObjectKnowledge.class);
 
     /**
      * Reports whether an item actually carries the property a rune stands for — not whether the
      * player has learned that property, which is {@link KnownObject}'s question. Ports C's
-     * {@code object_has_rune} ({@code obj-knowledge.c:609}), the fact-finding half of the
+     * {@code object_has_rune} ({@code obj-knowledge.c}), the fact-finding half of the
      * rune-based identification system that {@link PlayerKnowledge}'s {@code learnRune} wrappers
      * use to decide what a played object teaches.
      *
@@ -47,6 +68,14 @@ public class ObjectKnowledge {
      * as C asks {@code !object_has_standard_to_h(obj)}; see that method for the three-way test
      * behind the answer.
      *
+     * <p><b>A resistance rune treats an element the item has no entry for as level zero.</b> C's
+     * {@code el_info} is a fixed array with a slot for every element, each unset slot reading back
+     * as zeroed, so {@code obj->el_info[index].res_level} is always safe. {@link ItemObject}'s map
+     * is only dense for an item built by {@code objectPrep}; one assembled by hand, or whose map was
+     * never allocated ({@link ItemObject#getElInfo()} then answers an empty map), has no entry for
+     * most elements. The lookup is therefore null-checked, and an absent entry reads as "no
+     * resistance, no vulnerability" — the answer C gives from the zeroed slot — rather than failing.
+     *
      * <p>Brands and slays are matched by the same test {@link Rune#initRunes()} used to group them
      * in the first place — name for brands, {@link Slay#sameMonsterSlain} for slays — so an object
      * carrying any member of a group is reported as having the rune that represents it, not only the
@@ -55,7 +84,7 @@ public class ObjectKnowledge {
      * convention for the same reason C tests {@code obj->curses[r->index].power}: an absent curse and
      * one stacked to nothing must agree.
      *
-     * <p>Function objectHasRune coded before 260905, commented in full on 260905.
+     * <p>Function objectHasRune coded before 260905, commented in full on 261011.
      *
      * @param obj  the item to examine
      * @param rune the rune to test for
@@ -77,7 +106,7 @@ public class ObjectKnowledge {
                     return true;
             }
             case RuneVariety.ResistKey resKey -> {
-                if (obj.getElInfo().get(resKey.key()).getResLevel() != 0)
+                if (obj.getElInfo().get(resKey.key()) != null && obj.getElInfo().get(resKey.key()).getResLevel() != 0)
                     return true;
             }
             case RuneVariety.BrandKey brandKey -> {
@@ -122,7 +151,7 @@ public class ObjectKnowledge {
     /**
      * Marks this item's kind as tried - something the player has used, read, or otherwise
      * experienced without thereby becoming aware of what it does. Ports C's
-     * {@code object_flavor_tried} ({@code obj-knowledge.c:2350}), the guarding wrapper that keeps
+     * {@code object_flavor_tried} ({@code obj-knowledge.c}), the guarding wrapper that keeps
      * {@link ObjectKind#setTried} from ever being called on an artifact kind.
      *
      * <p>C guards by position - {@code obj->kind->kidx >= z_info->ordinary_kind_max} - this method
@@ -134,7 +163,7 @@ public class ObjectKnowledge {
      * null check that logs and returns rather than asserting, since Java has no equivalent of a
      * compiled-out assertion.
      *
-     * <p>Function objectFlavourTried coded before 260905, commented in full on 260905.
+     * <p>Function objectFlavourTried coded before 260905, commented in full on 261011.
      *
      * @param obj the item whose kind should be marked tried
      */

@@ -20,18 +20,12 @@ package uk.co.jackoftradesltd.middle.objects;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.cave.Loc;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftradesltd.middle.numerics.Random;
-import uk.co.jackoftradesltd.middle.objects.enums.CombatRunes;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectNotice;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum;
-import uk.co.jackoftradesltd.middle.objects.enums.RuneVariety;
-import uk.co.jackoftradesltd.middle.objects.enums.TValue;
+import uk.co.jackoftradesltd.middle.objects.enums.*;
 import uk.co.jackoftradesltd.testsupport.CurseFixture;
 
 import java.lang.reflect.Field;
@@ -45,8 +39,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests {@link ObjectKnowledge#objectHasRune}, the port of C's {@code object_has_rune}
- * ({@code obj-knowledge.c:609}), and {@link ObjectKnowledge#objectFlavourTried}, the port of
- * C's {@code object_flavor_tried} ({@code obj-knowledge.c:2350}).
+ * ({@code obj-knowledge.c}), and {@link ObjectKnowledge#objectFlavourTried}, the port of
+ * C's {@code object_flavor_tried} ({@code obj-knowledge.c}).
  *
  * <p>Every case is expected against what the C branch it corresponds to would do, not against
  * this port's own behaviour — the combat-rune cases in particular are here because the to-hit
@@ -55,12 +49,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p>Items are built with the long constructor rather than the no-argument one, and with live
  * mutable collections in every slot the no-argument constructor leaves {@code null} — matching
- * what {@code ObjectUtils}'s object-creation path actually hands a played item, where every
- * element up to {@code ELEM_MAX} is present (C's zero-filled {@code el_info} array has the same
- * guarantee) and {@code modifiers}/{@code flags} are never bare references. That is what lets each
- * case call the item's own adders and setters directly instead of reaching past them.
+ * what {@code ObjectUtils}'s object-creation path actually hands a played item, where
+ * {@code modifiers}/{@code flags} are never bare references. That is what lets each case call the
+ * item's own adders and setters directly instead of reaching past them. The element map is the
+ * exception: the fixture leaves it empty, where a played item has an entry for every real element
+ * (C's zero-filled {@code el_info} array), so the resistance cases can test an absent entry.
  *
- * <p>Class ObjectKnowledgeTest coded on 260905, commented in full on 260905.
+ * <p>Class ObjectKnowledgeTest coded on 260905, commented in full on 261011.
  *
  * @author Rowan Crowther
  */
@@ -305,11 +300,12 @@ class ObjectKnowledgeTest {
     }
 
     /**
-     * Elemental resistances — {@code obj->el_info[r->index].res_level != 0} in C. The port's map is
-     * sparse in general, but every element the resist runes cover is populated by the time a real
-     * object exists ({@code ObjectUtils}'s creation path fills {@code ELEM_NONE}..{@code ELEM_MAX}
-     * unconditionally, matching C's zero-filled array), so the fixtures here set every element they
-     * touch explicitly rather than leaving one implicitly absent.
+     * Elemental resistances — {@code obj->el_info[r->index].res_level != 0} in C. C's array has a
+     * zeroed slot for every element, so an element an item never mentions reads as level zero and
+     * the rune is absent. The port's map is dense only for an item built by {@code ObjectUtils}'s
+     * {@code objectPrep}; the {@link #item} fixture starts with an empty map, so the cases that name
+     * an element set it explicitly and the {@code absent...} cases leave it out on purpose — a
+     * missing entry must answer false, as C's zeroed slot does, and not throw.
      *
      * @author Rowan Crowther
      */
@@ -356,6 +352,35 @@ class ObjectKnowledgeTest {
 
             assertFalse(ObjectKnowledge.objectHasRune(obj,
                     new Rune(new RuneVariety.ResistKey(ElementEnum.ELEM_COLD, null))));
+        }
+
+        @Test
+        @DisplayName("is absent for an element the item has no entry for (C's zeroed slot)")
+        void absentWhenNoEntryForElement() {
+            ItemObject obj = item(TValue.TV_RING, null);
+
+            assertFalse(ObjectKnowledge.objectHasRune(obj,
+                    new Rune(new RuneVariety.ResistKey(ElementEnum.ELEM_FIRE, null))));
+        }
+
+        @Test
+        @DisplayName("is absent for an unmentioned element even when another element is resisted")
+        void absentWhenOnlyOtherElementHasEntry() {
+            ItemObject obj = item(TValue.TV_RING, null);
+            obj.setElInfoResLevel(ElementEnum.ELEM_FIRE, 3);
+
+            assertFalse(ObjectKnowledge.objectHasRune(obj,
+                    new Rune(new RuneVariety.ResistKey(ElementEnum.ELEM_COLD, null))));
+        }
+
+        @Test
+        @DisplayName("is absent when the item's element map was never allocated")
+        void absentWhenMapNeverAllocated() {
+            ItemObject obj = item(TValue.TV_RING, null);
+            obj.setElInfo(null);
+
+            assertFalse(ObjectKnowledge.objectHasRune(obj,
+                    new Rune(new RuneVariety.ResistKey(ElementEnum.ELEM_FIRE, null))));
         }
     }
 
@@ -535,7 +560,7 @@ class ObjectKnowledgeTest {
 
     /**
      * {@link ObjectKnowledge#objectFlavourTried} — C's {@code object_flavor_tried}
-     * ({@code obj-knowledge.c:2350}). The only branch is the special-artifact guard, so that is
+     * ({@code obj-knowledge.c}). The only branch is the special-artifact guard, so that is
      * the one thing worth pinning beyond the ordinary set-to-true path; the null cases pin the
      * substitution for C's compiled-out {@code assert}s noted on the port itself.
      *

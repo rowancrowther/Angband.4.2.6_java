@@ -21,11 +21,14 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
+import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.Curse;
 import uk.co.jackoftradesltd.middle.objects.CurseData;
-import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.ObjectKind;
+import uk.co.jackoftradesltd.middle.objects.enums.ObjectKindFlag;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -393,5 +396,141 @@ class ItemObjectReaderTest {
 
         assertTrue(result.items().isEmpty());
         assertTrue(result.hasErrors());
+    }
+
+    // ---- kind flags and IGNORE_ element flags (obj-init.c: parse_object_flags) --------------
+
+    /**
+     * C's {@code grab_flag} against {@code kind_flags[]}: a {@code KF_} token on the kind's
+     * {@code flags:} line lands in the kind's kind flags, and the base's kind flags are unioned in
+     * ({@code finish_parse_object}). {@code sword} in {@code object_base.txt} carries
+     * {@code SHOW_DICE}.
+     */
+    @Test
+    void kindFlagTokenReachesKindFlagsAndBaseFlagsAreUnioned() throws IOException {
+        ParseResult<ObjectKind> result = load("kf.txt", withHeader(1,
+                obj("kf", HEAD + "flags:EASY_KNOW\n")));
+
+        assertFalse(result.hasErrors(), result.errors()::toString);
+        ObjectKind kind = result.items().get(0);
+        assertTrue(kind.getKindFlags().has(ObjectKindFlag.KF_EASY_KNOW));
+        assertTrue(kind.getKindFlags().has(ObjectKindFlag.KF_SHOW_DICE));
+        assertFalse(kind.getKindFlags().has(ObjectKindFlag.KF_GOOD));
+    }
+
+    /**
+     * C's {@code grab_element_flag}: {@code IGNORE_FIRE} sets {@code EL_INFO_IGNORE} on the
+     * <em>fire</em> slot of the kind's own {@code el_info}, and on no other element.
+     */
+    @Test
+    void ignoreTokenSetsIgnoreOnThatElementOfTheKindOnly() throws IOException {
+        ParseResult<ObjectKind> result = load("ign.txt", withHeader(1,
+                obj("ign", HEAD + "flags:IGNORE_FIRE\n")));
+
+        assertFalse(result.hasErrors(), result.errors()::toString);
+        ObjectKind kind = result.items().get(0);
+        assertTrue(kind.getElInfo(ElementEnum.ELEM_FIRE).has(ElementInfoEnum.EL_INFO_IGNORE));
+        assertFalse(kind.getElInfo(ElementEnum.ELEM_ACID).has(ElementInfoEnum.EL_INFO_IGNORE));
+        assertFalse(kind.getElInfo(ElementEnum.ELEM_COLD).has(ElementInfoEnum.EL_INFO_IGNORE));
+    }
+
+    /**
+     * Several {@code IGNORE_} tokens, in one {@code flags:} line with a kind flag between them,
+     * all take effect; nothing is lost to the kind flag, and none becomes a kind flag.
+     */
+    @Test
+    void severalIgnoreTokensAndAKindFlagShareOneLine() throws IOException {
+        ParseResult<ObjectKind> result = load("ign2.txt", withHeader(1,
+                obj("ign2", HEAD + "flags:IGNORE_ACID | EASY_KNOW | IGNORE_FIRE\n")));
+
+        assertFalse(result.hasErrors(), result.errors()::toString);
+        ObjectKind kind = result.items().get(0);
+        assertTrue(kind.getElInfo(ElementEnum.ELEM_ACID).has(ElementInfoEnum.EL_INFO_IGNORE));
+        assertTrue(kind.getElInfo(ElementEnum.ELEM_FIRE).has(ElementInfoEnum.EL_INFO_IGNORE));
+        assertFalse(kind.getElInfo(ElementEnum.ELEM_ELEC).has(ElementInfoEnum.EL_INFO_IGNORE));
+        assertTrue(kind.getKindFlags().has(ObjectKindFlag.KF_EASY_KNOW));
+    }
+
+    /**
+     * In C the ignore goes on the kind ({@code k->el_info}), never on the base ({@code kb_info}),
+     * so one kind's {@code IGNORE_FIRE} must not make its siblings fire-proof.
+     */
+    @Test
+    void ignoreOnOneKindDoesNotReachItsBaseOrItsSiblings() throws IOException {
+        ParseResult<ObjectKind> result = load("sib.txt", withHeader(2,
+                obj("fireproof", HEAD + "flags:IGNORE_FIRE\n")
+                        + obj("plain", HEAD)));
+
+        assertFalse(result.hasErrors(), result.errors()::toString);
+        ObjectKind fireproof = result.items().get(0);
+        ObjectKind plain = result.items().get(1);
+        assertFalse(plain.getElInfo(ElementEnum.ELEM_FIRE).has(ElementInfoEnum.EL_INFO_IGNORE));
+        assertFalse(fireproof.getBase().getElementMap().containsKey(ElementEnum.ELEM_FIRE)
+                        && fireproof.getBase().getElementMap().get(ElementEnum.ELEM_FIRE)
+                        .has(ElementInfoEnum.EL_INFO_IGNORE),
+                "the shared base must not gain the kind's ignore");
+    }
+
+    /**
+     * C requires the {@code IGNORE_} (or {@code HATES_}) prefix: a bare element name is not a flag
+     * and is {@code PARSE_ERROR_INVALID_FLAG}. The kind is dropped with an "unknown flag" error.
+     */
+    @Test
+    void bareElementNameIsNotAFlag() throws IOException {
+        ParseResult<ObjectKind> result = load("bare.txt", withHeader(1,
+                obj("bare", HEAD + "flags:FIRE\n")));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown flag")),
+                result.errors()::toString);
+    }
+
+    /**
+     * A token shorter than {@code IGNORE_} is an unknown flag, reported softly like any other. It
+     * must not escape as a runtime exception that aborts the whole load.
+     */
+    @Test
+    void shortUnknownTokenIsASoftError() throws IOException {
+        ParseResult<ObjectKind> result = load("short.txt", withHeader(1,
+                obj("short", HEAD + "flags:FOO\n")));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown flag")),
+                result.errors()::toString);
+    }
+
+    /**
+     * A seven-or-more-character token that merely ends in an element name is not an ignore flag.
+     * C compares the whole prefix, so {@code NOTIGNORE_FIRE} fails.
+     */
+    @Test
+    void tokenWithWrongPrefixButAnElementSuffixIsNotAnIgnoreFlag() throws IOException {
+        ParseResult<ObjectKind> result = load("prefix.txt", withHeader(1,
+                obj("prefix", HEAD + "flags:XXXXXXXFIRE\n")));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown flag")),
+                result.errors()::toString);
+    }
+
+    /**
+     * The real file, against {@code object.txt} as shipped: the Lantern carries only
+     * {@code IGNORE_FIRE}; the Mithril Arrow carries {@code IGNORE_ACID | IGNORE_FIRE}.
+     */
+    @Test
+    void realFileLanternAndMithrilArrowIgnoreExactlyTheirElements() throws IOException {
+        ParseResult<ObjectKind> result = new ItemObjectReader().parseWithResults(REAL_FILE);
+
+        ObjectKind lantern = result.items().stream()
+                .filter(k -> "Lantern".equals(k.getsValueName())).findFirst().orElseThrow();
+        assertTrue(lantern.getElInfo(ElementEnum.ELEM_FIRE).has(ElementInfoEnum.EL_INFO_IGNORE));
+        assertFalse(lantern.getElInfo(ElementEnum.ELEM_ACID).has(ElementInfoEnum.EL_INFO_IGNORE));
+        assertTrue(lantern.getKindFlags().has(ObjectKindFlag.KF_EASY_KNOW));
+
+        ObjectKind arrow = result.items().stream()
+                .filter(k -> "Mithril Arrow".equals(k.getsValueName())).findFirst().orElseThrow();
+        assertTrue(arrow.getElInfo(ElementEnum.ELEM_ACID).has(ElementInfoEnum.EL_INFO_IGNORE));
+        assertTrue(arrow.getElInfo(ElementEnum.ELEM_FIRE).has(ElementInfoEnum.EL_INFO_IGNORE));
+        assertFalse(arrow.getElInfo(ElementEnum.ELEM_ELEC).has(ElementInfoEnum.EL_INFO_IGNORE));
     }
 }

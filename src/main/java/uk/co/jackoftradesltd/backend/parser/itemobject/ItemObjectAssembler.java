@@ -18,15 +18,16 @@
 package uk.co.jackoftradesltd.backend.parser.itemobject;
 
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftradesltd.backend.parser.grammars.EffectAssembler;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
-import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
-import uk.co.jackoftradesltd.backend.parser.grammars.EffectAssembler;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.effect.Effect;
+import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
+import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.*;
 import uk.co.jackoftradesltd.middle.objects.enums.*;
 
@@ -266,9 +267,11 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
             boolean illegalFlag = false;
             Flag<ObjectFlag> oFlags = new Flag<>(ObjectFlag.class);
             Flag<ObjectKindFlag> oKindFlags = new Flag<>(ObjectKindFlag.class);
+            Flag<ElementEnum> eFlags = new Flag<>(ElementEnum.class);
             for (String flag : record.flags()) {
                 ObjectFlag oFlag;
                 ObjectKindFlag kFlag;
+                ElementEnum eFlag;
                 try {
                     oFlag = ObjectFlag.valueOf("OF_" + flag);
                     oFlags.on(oFlag);
@@ -277,9 +280,20 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
                         kFlag = ObjectKindFlag.valueOf("KF_" + flag);
                         oKindFlags.on(kFlag);
                     } catch (IllegalArgumentException e1) {
-                        errors.add("Object kind starting at line: " + line + " has " +
-                                "an unknown flag: " + flag);
-                        illegalFlag = true;
+                        try {
+                            if (flag.startsWith("IGNORE_")) {
+                                eFlag = ElementEnum.valueOf("ELEM_" + flag.substring(7));
+                                eFlags.on(eFlag);
+                            } else {
+                                errors.add("Object kind starting at line: " + line + " has " +
+                                        "an unknown flag: " + flag);
+                                illegalFlag = true;
+                            }
+                        } catch (IllegalArgumentException e2) {
+                            errors.add("Object kind starting at line: " + line + " has " +
+                                    "an unknown flag: " + flag);
+                            illegalFlag = true;
+                        }
                     }
                 }
             }
@@ -409,8 +423,14 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
 
             Flag<IgnoreFlag> ignoreFlags = new Flag<>(IgnoreFlag.class);
             
-            if (base != null)
+            if (base != null) {
                 oKindFlags.union(base.getKindFlags());
+            }
+            
+            for (ElementEnum elem : eFlags) {
+                ElementInfo info = elInfo.computeIfAbsent(elem, k -> new ElementInfo());
+                info.getFlags().on(ElementInfoEnum.EL_INFO_IGNORE);
+            }
             
             itemObjects.add(new ObjectKind(name, description, base, 0, pVal,
                     attToh, attTod, acToa, ac, attBase, dd, ds,

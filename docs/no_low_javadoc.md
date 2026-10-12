@@ -48,13 +48,7 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-38
-
-### `middle/game/gameengine/argumentdata/ArgumentItem.java`
-
-1 missing, 0 low
-
-- L46: method `getValue` - MISSING
+37
 
 ### `middle/game/gameengine/argumentdata/ArgumentNumber.java`
 

@@ -23,23 +23,22 @@ import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.utils.Flag;
-import uk.co.jackoftradesltd.middle.cave.enums.TerrainFlags;
-import uk.co.jackoftradesltd.middle.combat.Target;
-import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
-import uk.co.jackoftradesltd.middle.game.globals.registry.TerrainRegistry;
-import uk.co.jackoftradesltd.middle.numerics.RandomValueUtils;
 import uk.co.jackoftradesltd.middle.Message;
 import uk.co.jackoftradesltd.middle.cave.enums.DirectionEnum;
 import uk.co.jackoftradesltd.middle.cave.enums.SquareEnum;
 import uk.co.jackoftradesltd.middle.cave.enums.TerrainFeatureFlags;
+import uk.co.jackoftradesltd.middle.cave.enums.TerrainFlags;
+import uk.co.jackoftradesltd.middle.combat.Target;
 import uk.co.jackoftradesltd.middle.enums.TrapEnum;
-import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
-import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
+import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
+import uk.co.jackoftradesltd.middle.game.globals.registry.TerrainRegistry;
 import uk.co.jackoftradesltd.middle.monsters.Monster;
 import uk.co.jackoftradesltd.middle.monsters.MonsterGroup;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
+import uk.co.jackoftradesltd.middle.numerics.RandomValueUtils;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
 import uk.co.jackoftradesltd.middle.objects.Pile;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectNotice;
@@ -172,11 +171,13 @@ public class Chunk {
      * Location of the player's decoy, C's {@code c->decoy}. {@link Loc#zero} means there is none,
      * as C uses {@code loc(0, 0)}. {@link #caveFindDecoy()} is its only reader. Nothing in
      * {@code middle/} assigns it after the constructor, so it stays {@link Loc#zero} until the
-     * decoy-placing code is ported.
+     * decoy-placing code is ported. It is initialised at its declaration and again in the
+     * constructor, and is never {@code null}.
      *
-     * <p>Field decoy coded before 260930, commented in full on 261001.
+     * <p>Field decoy coded before 260930, commented in full on 261001, field initialiser added on
+     * 261012.
      */
-    private Loc decoy;
+    private Loc decoy = Loc.zero;
 
     /**
      * Master list of the objects in this chunk, the counterpart of C's {@code c->objects} array.
@@ -3447,11 +3448,14 @@ public class Chunk {
      * ({@code cave.c}), which simply returns {@code c->decoy}.
      *
      * <p>A result of {@link Loc#zero} means no decoy exists, matching C's {@code loc(0, 0)}; callers
-     * such as {@code ChunkUtils} test it with {@link Loc#isZero()}. C returns the {@code struct loc}
-     * by value, so the caller gets a copy. {@link Loc} is immutable here, so handing back the
-     * stored reference is equivalent and no defensive copy is needed.
+     * such as {@code ChunkUtils.projectionPath} compare path grids against it with
+     * {@link Loc#equals(Object)}, as C's {@code project_path} does with {@code loc_eq}, and need
+     * no zero test. C returns the {@code struct loc} by value, so the caller gets a copy.
+     * {@link Loc} is immutable here, so handing back the stored reference is equivalent and no
+     * defensive copy is needed.
      *
-     * <p>Function caveFindDecoy coded before 260930, commented in full on 261001.
+     * <p>Function caveFindDecoy coded before 260930, commented in full on 261001, caller note
+     * corrected on 261012.
      *
      * @return the decoy's grid, or {@link Loc#zero} when there is none
      */

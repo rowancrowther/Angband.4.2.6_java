@@ -53,9 +53,12 @@ public class Trap {
     private TrapKind kind;
 
     /**
-     * The grid this trap occupies, C's {@code struct loc grid}.
+     * The grid this trap occupies, C's {@code struct loc grid}. It starts at {@link Loc#zero}, as
+     * C's zero-filled struct does, and is never {@code null}.
+     *
+     * <p>Field grid initialised to {@code Loc.zero} on 261012.
      */
-    private Loc grid;
+    private Loc grid = Loc.zero;
 
     /**
      * The trap's power, C's {@code power}. For a player trap it is the visibility: {@code Chunk}'s reveal logic

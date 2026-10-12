@@ -18,6 +18,7 @@
 package uk.co.jackoftradesltd.middle.monsters;
 
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.messages.data.PlayerEventStatusUpdate;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.cave.Heatmap;
@@ -29,7 +30,6 @@ import uk.co.jackoftradesltd.middle.monsters.enums.MonsterFlag;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftradesltd.middle.numerics.RandomValueUtils;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.player.Player;
 import uk.co.jackoftradesltd.middle.player.PlayerKnowledge;
@@ -39,6 +39,7 @@ import uk.co.jackoftradesltd.middle.player.enums.PlayerOptionEnum;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * A live monster on the current level — an instance of a {@link MonsterRace} with
@@ -74,7 +75,10 @@ public class Monster {
      */
     private MonsterRace originalRace;
     /**
-     * The monster's current grid location.
+     * The monster's current grid location. Never {@code null}: the constructor turns a missing grid
+     * into {@link Loc#zero}, C's zeroed {@code mon->grid} before a monster is placed.
+     *
+     * <p>Field grid null-to-{@code Loc.zero} rule added on 261012.
      */
     private Loc grid;
 
@@ -160,14 +164,19 @@ public class Monster {
      * <p>The constructor is not side-effect free. {@link #setHp(int)} and {@link #setMaxHp(int)}
      * write the legacy {@code PlayerEventStatusUpdate} cache, and if {@code monsterFlag} is
      * non-null with {@code MFLAG_VISIBLE} set, {@link #updateCached(Boolean)} refreshes the rest of
-     * it. Nothing else is validated: every argument may be {@code null}, and the accessors that
-     * dereference a field do not guard it.
+     * it. Nothing else is validated: every argument other than {@code grid} may be {@code null},
+     * and the accessors that dereference a field do not guard it.
      *
-     * <p>Constructor Monster coded before 261009, commented in full on 261009.
+     * <p>A {@code null} {@code grid} is stored as {@link Loc#zero}, which is what C's zero-filled
+     * {@code mon->grid} holds until the monster is placed. {@link #getGrid()} therefore never
+     * returns {@code null}, and callers such as {@code Chunk.deleteMonster} need no guard.
+     *
+     * <p>Constructor Monster coded before 261009, commented in full on 261009, {@code null} grid
+     * stored as {@code Loc.zero} on 261012.
      *
      * @param monsterRace    current race
      * @param originalRace   original race (pre-shapechange)
-     * @param grid           current location
+     * @param grid           current location, or {@code null} for {@link Loc#zero}
      * @param hp             current hit points
      * @param maxHp          maximum hit points
      * @param mTimed         active timed effects
@@ -192,7 +201,7 @@ public class Monster {
                    int minRange, int bestRange) {
         this.monsterRace = monsterRace;
         this.originalRace = originalRace;
-        this.grid = grid;
+        this.grid = Objects.requireNonNullElse(grid, Loc.zero);
         setHp(hp);
         setMaxHp(maxHp);
         this.mTimed = mTimed;
@@ -259,11 +268,12 @@ public class Monster {
 
     /**
      * Read the monster's current grid (C: {@code mon->grid}). The {@link Loc} itself is returned,
-     * not a copy.
+     * not a copy. Never {@code null}: a monster built without a grid answers {@link Loc#zero}.
      *
-     * <p>Method getGrid coded before 261009, commented in full on 261009.
+     * <p>Method getGrid coded before 261009, commented in full on 261009, never-{@code null} answer
+     * noted on 261012.
      *
-     * @return this monster's current grid location
+     * @return this monster's current grid location, {@link Loc#zero} if it has none
      */
     public Loc getGrid() {
         return grid;

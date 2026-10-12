@@ -67,6 +67,8 @@ import static uk.co.jackoftradesltd.middle.game.enums.CommandArgumentType.arg_CH
  * @author Rowan Crowther
  */
 public class Command {
+    public static final int CMD_MAX_ARGS = 4;
+    
     /**
      * The context this command was issued in (splash, birth, game, store, death).
      *
@@ -303,10 +305,15 @@ public class Command {
      * Stores {@code value} as this command's {@code argName} point argument - the port of C's
      * {@code cmd_set_arg_point}. A point is a grid location on the map, distinct from a direction.
      *
-     * <p>Function setArgPoint coded on 260830, commented in full on 261001.
+     * <p>A {@code null} {@code value} is stored as {@link Loc#zero}: C passes a {@code struct loc}
+     * by value, which cannot be null, and {@link ArgumentPoint}'s constructor makes that choice, so
+     * this method has no guard of its own.
+     *
+     * <p>Function setArgPoint coded on 260830, commented in full on 261001, {@code null} handling
+     * moved to {@code ArgumentPoint} on 261012.
      *
      * @param argName the name the argument is looked up by
-     * @param value   the grid location to store
+     * @param value   the grid location to store, or {@code null} for {@link Loc#zero}
      */
     public void setArgPoint(String argName, Loc value) {
         ArgumentPoint arg = new ArgumentPoint(value);
@@ -483,7 +490,12 @@ public class Command {
      * Reads this command's {@code argName} argument as a point - the port of C's
      * {@code cmd_get_arg_point}. Empty when unset or when set to another type.
      *
-     * <p>Function getArgPoint coded on 260830, commented in full on 261001.
+     * <p>Empty stands for C's {@code CMD_ARG_NOT_FOUND}, which leaves the caller's {@code struct loc}
+     * untouched. It is not {@link Loc#zero}: a point stored at the origin comes back as
+     * {@code Optional.of(Loc.zero)}, so the two cases stay apart.
+     *
+     * <p>Function getArgPoint coded on 260830, commented in full on 261001, unset name changed to
+     * answer empty on 261012.
      *
      * @param argName the name to look up
      * @return the stored grid location, or empty if no argument of that name is set or it is not a point
@@ -958,11 +970,11 @@ public class Command {
      * {@code CMD_REPEAT} and (above {@code 1}) cannot trigger bloodlust. The name is misspelt
      * ("Bacground"); it is left as is so existing callers keep compiling.
      *
-     * <p>Function setBacgroundCommand coded on 260830, commented in full on 261001.
+     * <p>Function setBackgroundCommand coded on 260830, commented in full on 261001.
      *
      * @param i the new flag value: 0, 1 or greater than 1
      */
-    public void setBacgroundCommand(int i) {
+    public void setBackgroundCommand(int i) {
         backgroundCommand = i;
     }
 }

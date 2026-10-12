@@ -123,13 +123,13 @@ public class Player {
      *
      * <p>Field grid coded before 260815, commented in full on 261008.
      */
-    private Loc grid;
+    private Loc grid = Loc.zero;
     /**
      * The player's grid before leaving for an arena - the port of C's {@code p->old_grid}.
      *
      * <p>Field oldGrid coded before 260815, commented in full on 261008.
      */
-    private Loc oldGrid;
+    private Loc oldGrid = Loc.zero;
     /**
      * Number of sides on the player's hit die - the port of C's {@code p->hitdie}.
      *

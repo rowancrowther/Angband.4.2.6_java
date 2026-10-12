@@ -17,14 +17,16 @@
 
 package uk.co.jackoftradesltd.middle.game.event;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
 import uk.co.jackoftradesltd.channel.messages.data.*;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.middle.cave.Loc;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
 import uk.co.jackoftradesltd.middle.enums.Stats;
-import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
 
 import java.util.ArrayList;
@@ -58,6 +60,8 @@ import java.util.Map;
  * @author Rowan Crowther
  */
 public interface EventsHandler {
+    Logger logger = LogManager.getLogger(EventsHandler.class);
+    
     /**** Abstract methods ****/
 
     /**
@@ -277,10 +281,22 @@ public interface EventsHandler {
     /**
      * Send a signal to dispatch all the events of a given type with a Loc data type
      *
+     * <p>A {@code null} {@code point} is rejected, logged at fatal level and thrown as an
+     * {@link IllegalArgumentException}. C passes the point by value, so it cannot be null there,
+     * and (0, 0) is a real grid that the receiver would act on, so it is not substituted.
+     *
+     * <p>Function eventSignalPoint(Loc) null check added on 261012.
+     *
      * @param eventType The event type we are signalling
      * @param point     The Loc we are using to signal the event
+     * @throws IllegalArgumentException if {@code point} is {@code null}
      */
     default void eventSignalPoint(GameEventType eventType, Loc point) {
+        if (point == null) {
+            String msg = "Unable to deal with null incoming value for point";
+            logger.fatal(msg);
+            throw new IllegalArgumentException(msg);
+        }
         gameEventDispatch(eventType, new EventDataGrid(point.getY(), point.getX()));
     }
 
@@ -347,6 +363,12 @@ public interface EventsHandler {
     /**
      * Send a signal to dispatch all events of a given type with an Explosion
      *
+     * <p>The payload constructor rejects a {@code null} {@code blastGrid}, a {@code null}
+     * {@code centre} and a {@code null} element of {@code blastGrid}, so this method throws before
+     * anything is dispatched. See {@link EventDataExplosion#EventDataExplosion}.
+     *
+     * <p>Function eventSignalBlast null rule noted on 261012.
+     *
      * @param eventType      The event we are signalling
      * @param projType       The projection type - TODO: currently integer, probably will change to an enum
      * @param numGrids       The number of grids affected by the explosion
@@ -355,6 +377,8 @@ public interface EventsHandler {
      * @param playerSeesGrid Whether the player sees the explosion on a particular grid
      * @param blastGrid      The grids we are blasting with this explosion
      * @param centre         The centre of the explosion
+     * @throws IllegalArgumentException if {@code blastGrid} or {@code centre} is {@code null}, or
+     *                                  if {@code blastGrid} holds a {@code null} element
      */
     default void eventSignalBlast(GameEventType eventType,
                                   int projType,

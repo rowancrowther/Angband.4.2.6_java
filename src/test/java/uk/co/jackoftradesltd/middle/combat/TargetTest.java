@@ -467,10 +467,25 @@ class TargetTest {
     }
 
     @Test
-    @DisplayName("targetOkay: a set target whose grid was never stored (null here, zeroed in C) is false")
-    void okayGridNull() throws ReflectiveOperationException {
-        rawTarget(true, 0, null);
+    @DisplayName("targetOkay: a set target whose grid was never stored (Loc.zero here, zeroed in C) is false")
+    void okayGridNeverStored() throws ReflectiveOperationException {
+        // the fixture's reset leaves the grid at Loc.zero; only the set flag is raised
+        setField("targetSet", true);
+        setField("targetMonsterIndex", 0);
+
+        assertSame(Loc.zero, Target.getGrid());
         assertFalse(Target.targetOkay());
+    }
+
+    @Test
+    @DisplayName("setGrid: a null grid is stored as Loc.zero, so getGrid never answers null")
+    void setGridNullStoresOrigin() {
+        Target.setGrid(at(4, 5));
+        assertEquals(at(4, 5), Target.getGrid());
+
+        Target.setGrid(null);
+
+        assertSame(Loc.zero, Target.getGrid());
     }
 
     @Test

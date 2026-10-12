@@ -24,33 +24,16 @@ import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.Activation;
+import uk.co.jackoftradesltd.middle.cave.Loc;
 import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftradesltd.middle.numerics.Random;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectNotice;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum;
-import uk.co.jackoftradesltd.middle.objects.enums.TValue;
+import uk.co.jackoftradesltd.middle.objects.enums.*;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static uk.co.jackoftradesltd.testsupport.ItemFixture.read;
 import static uk.co.jackoftradesltd.testsupport.ItemFixture.set;
 
@@ -163,11 +146,22 @@ class ItemObjectConstructionTest {
                     () -> assertNull(item.getEgo()),
                     () -> assertNull(read(item, "artifact")),
                     () -> assertNull(item.getKnown()),
-                    () -> assertNull(read(item, "location")),
                     () -> assertNull(read(item, "effectMessage")),
                     () -> assertNull(read(item, "activation")),
                     () -> assertNull(read(item, "originRace")),
                     () -> assertNull(read(item, "note")));
+        }
+
+        /**
+         * C's zeroed {@code struct loc} is (0, 0), a value rather than a pointer, so the port holds
+         * {@link Loc#zero} in the field itself and not {@code null}.
+         */
+        @Test
+        @DisplayName("the grid C zeroes to (0, 0) is Loc.zero in the field, not null")
+        void gridIsLocZero() {
+            assertAll(
+                    () -> assertSame(Loc.zero, read(item, "location")),
+                    () -> assertSame(Loc.zero, item.getGrid()));
         }
 
         @Test
@@ -258,6 +252,20 @@ class ItemObjectConstructionTest {
                     6, 1, "", 2, 3, flags, callerModifiers, callerElInfo, callerBrands, callerSlays,
                     curses, callerEffect, "It hums.", null, time, 9, 7, notice, 5, 6,
                     ObjectOriginEnum.ORIGIN_FLOOR, 8, null, "@w1");
+        }
+
+        /**
+         * {@code build} passes a {@code null} location, which is stored as {@link Loc#zero}: C's
+         * grid is a {@code struct loc} by value and cannot be null.
+         */
+        @Test
+        @DisplayName("a null location argument is stored as Loc.zero, not null")
+        void nullLocationBecomesOrigin() {
+            ItemObject built = build("12", "", callerCurses, callerFlags, new Flag<>(ObjectNotice.class));
+
+            assertAll(
+                    () -> assertSame(Loc.zero, read(built, "location")),
+                    () -> assertTrue(built.getGrid().isZero()));
         }
 
         @Test

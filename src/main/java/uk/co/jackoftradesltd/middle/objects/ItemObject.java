@@ -304,23 +304,22 @@ public class ItemObject {
     private ItemObject known;
 
     /**
-     * The grid this item lies on, or {@code null} when it has none. C's {@code obj->grid}, a
-     * {@code struct loc}: "position on map, or (0, 0)".
+     * The grid this item lies on. C's {@code obj->grid}, a {@code struct loc}: "position on map, or
+     * (0, 0)".
      *
-     * <p>{@code null} and the origin both mean "not on the floor", and {@link #getGrid()} reads
-     * them alike: it answers {@link Loc#zero} for a {@code null} field, so no caller sees the
-     * {@code null}. A grid at the origin makes {@link #objectAbsorb} skip excising a known object
-     * from a pile. The test compares coordinates, as C's {@code loc_is_zero} does, and
-     * {@link #copy} copies the {@link Loc} (leaving a {@code null} as {@code null}) so the copy can
-     * move without moving the original.
-     *
-     * <p>The no-argument constructor and {@link #wipe} leave it {@code null}, which stands for C's
-     * zeroed grid; {@link #setGrid} stores whatever it is given, {@code null} included.
+     * <p>Never {@code null}. An item that is not on the floor holds {@link Loc#zero}, C's zeroed
+     * grid, so the origin means "not on the floor" and there is no separate "no grid" value. Every
+     * way of setting the field keeps to that: the field initialiser, the full constructor,
+     * {@link #setGrid} and {@link #wipe} all turn a missing grid into {@link Loc#zero}. A grid at
+     * the origin makes {@link #objectAbsorb} skip excising a known object from a pile. The test
+     * compares coordinates, as C's {@code loc_is_zero} does, and {@link #copy} copies the
+     * {@link Loc} so the copy can move without moving the original.
      *
      * <p>Field location commented in full on 261002, wipe reset added on 261002, {@code Loc.zero}
-     * read through {@link #getGrid()} noted on 261007.
+     * read through {@link #getGrid()} noted on 261007, changed on 261012 to be initialised to
+     * {@code Loc.zero} and never {@code null}.
      */
-    private Loc location;
+    private Loc location = Loc.zero;
 
     /**
      * The item type value, copied from the kind. C's {@code obj->tval}, a {@code uint8_t}.
@@ -876,11 +875,13 @@ public class ItemObject {
      *
      * <p>{@link #time} is a zero {@link Random} (C's four zero dice) and is never {@code null}.
      *
+     * <p>{@link #location} is {@link Loc#zero}, C's grid of (0, 0), which is what {@link #getGrid()}
+     * answers for an item that is not on the floor.
+     *
      * <p>The rest stay {@code null}: {@link #kind}, {@link #ego}, {@link #artifact}, {@link #known},
-     * {@link #location}, {@link #baseDamage}, {@link #effectMessage}, {@link #activation},
-     * {@link #originRace} and {@link #note}. Unlike an item that {@link #wipe} has blanked, this one
-     * has no activation list. {@link #location} being {@code null} stands for C's grid of (0, 0),
-     * which is what {@link #getGrid()} answers for it ({@link Loc#zero}).
+     * {@link #baseDamage}, {@link #effectMessage}, {@link #activation}, {@link #originRace} and
+     * {@link #note}. Unlike an item that {@link #wipe} has blanked, this one has no activation
+     * list.
      *
      * <p>{@link #player} is set from {@link GameState#getPlayer()}, so an item built before a
      * character exists holds {@code null} there. {@code PlayerBirth} builds the known counterpart
@@ -987,14 +988,14 @@ public class ItemObject {
      * <p>Constructor ItemObject(...) coded before 260904, commented in full on 261002; the claim
      * that it copies the curse map was removed on 261002, and the by-reference note rewritten on
      * 261007 to match the code, which copies that map, and to cover {@code flags} and
-     * {@code notice}.
+     * {@code notice}; a {@code null} {@code location} became {@link Loc#zero} on 261012.
      *
      * @param kind            object kind
      * @param ego             ego type, if any
      * @param artifact        artifact, if any
      * @param known           known/identified view
-     * @param location        floor location; {@code null} reads back from {@link #getGrid()} as
-     *                        {@link Loc#zero}
+     * @param location        floor location; {@code null} is stored as {@link Loc#zero}, "not on
+     *                        the floor"
      * @param tValue          item type value
      * @param sValue          sub-type value
      * @param pValue          extra-parameter value (as string)
@@ -1048,7 +1049,7 @@ public class ItemObject {
         this.ego = ego;
         this.artifact = artifact;
         this.known = known;
-        this.location = location;
+        this.location = Objects.requireNonNullElse(location, Loc.zero);
         this.tValue = tValue;
         this.sValue = sValue;
         if (pValue.isEmpty())
@@ -1215,17 +1216,18 @@ public class ItemObject {
      *
      * <p>Never {@code null}. An item that has never been placed, has been wiped, or was given a
      * {@code null} by {@link #setGrid} answers {@link Loc#zero}, the (0, 0) grid C holds for an
-     * item that is not on the map. The {@link #location} field itself stays {@code null} in those
-     * cases. A caller that must tell "on the floor" from "not" tests {@code isZero()} on the
-     * result, as {@link #objectAbsorb} does.
+     * item that is not on the map. The {@link #location} field holds that same {@link Loc#zero}, so
+     * the answer is the field itself. A caller that must tell "on the floor" from "not" tests
+     * {@code isZero()} on the result, as {@link #objectAbsorb} does.
      *
      * <p>Function getGrid coded before 260904, commented in full on 261002, rewritten on 261007
-     * for the never-null answer.
+     * for the never-null answer, simplified on 261012 to return the field now that it is never
+     * {@code null}.
      *
      * @return the grid this object occupies, or {@link Loc#zero} if it is not on the map
      */
     public Loc getGrid() {
-        return location == null ? Loc.zero : location;
+        return location;
     }
 
     /**
@@ -1234,17 +1236,17 @@ public class ItemObject {
      * <p>Stores the {@link Loc} given. {@link Loc} is immutable, so sharing it with the caller is
      * safe where C copies its {@code struct loc} by value. {@code null} and the origin both mean
      * "not on the floor", the reading {@link #objectAbsorb} gives them; see {@link #location}.
-     * A {@code null} is stored as {@code null}, not as {@link Loc#zero}, and {@link #getGrid()}
-     * then answers {@link Loc#zero} for it.
+     * A {@code null} is stored as {@link Loc#zero}, so the field is never {@code null} and
+     * {@link #getGrid()} answers {@link Loc#zero} for it.
      *
      * <p>Function setGrid coded before 260904, commented in full on 261002, {@code Loc.zero} read
-     * noted on 261007.
+     * noted on 261007, changed on 261012 to store {@link Loc#zero} for a {@code null}.
      *
      * @param grid the map location, or {@code null} if the object is not on the floor; read back
      *             as {@link Loc#zero}
      */
     public void setGrid(Loc grid) {
-        location = grid;
+        location = Objects.requireNonNullElse(grid, Loc.zero);
     }
 
     /**
@@ -4032,7 +4034,7 @@ public class ItemObject {
      * <p>The excise is skipped for a known object at the origin, because a zero grid means it is
      * not on the floor to be excised from - C's {@code loc_is_zero}, which compares coordinates.
      * {@link #getGrid()} answers {@link Loc#zero} for an item with no grid, so the test never meets
-     * a {@code null}. The port must compare coordinates too: {@code Loc.zero} is one particular
+     * a {@code null} and needs no guard for one. The port must compare coordinates too: {@code Loc.zero} is one particular
      * instance, and an independently constructed {@code Loc(0, 0)} is a different object with the
      * same value.
      *
@@ -4041,7 +4043,8 @@ public class ItemObject {
      * old count.
      *
      * <p>Function objectAbsorb coded on 260822, corrected on 261002 to refresh the player, commented
-     * in full on 261002, grid note added on 261007.
+     * in full on 261002, grid note added on 261007, redundant {@code null} test on the known grid
+     * removed on 261012.
      *
      * @param toAbsorb the stack to fold in; it does not survive the call
      */
@@ -4057,7 +4060,7 @@ public class ItemObject {
         this.objectAbsorbMerge(toAbsorb, player, true);
         if (known != null) {
             Chunk cave = player.getCave();
-            if (cave != null && known.getGrid() != null && !known.getGrid().isZero())
+            if (cave != null && !known.getGrid().isZero())
                 cave.getSquare(known.getGrid()).pileExcise(known);
             if (cave != null) {
                 cave.delistObject(known);
@@ -6111,6 +6114,9 @@ public class ItemObject {
      * rebuilt as insertion-ordered {@link LinkedHashMap}s and the curse map through
      * {@link #cursesFactory()}, so the copy walks them in the same order as the original.
      *
+     * <p>The grid is copied too, through {@link Loc#copy()}. It is never {@code null}, so there is no
+     * branch for a missing one: an item that is not on the floor copies its {@link Loc#zero}.
+     *
      * <p>Shared deliberately: the kind, ego and artifact templates, which C shares as pointers and
      * which every item built on them points at; the origin race, for the same reason - identity is
      * what tells two origins apart, so copying it would make two items from the same monster look
@@ -6138,7 +6144,7 @@ public class ItemObject {
      * port yet; C uses it only in the store code, which belongs to Chapter 8.
      *
      * <p>Function copy coded before 260827, commented in full on 261002, map order and shared
-     * effect notes added on 261007.
+     * effect notes added on 261007, grid note added on 261012.
      *
      * @param includingKnown {@code true} to copy the known half as well
      * @return a new item that shares no mutable state with this one, bar the noted templates
@@ -6156,10 +6162,7 @@ public class ItemObject {
             else
                 copy.known = this.known.copy(false);
         }
-        if (this.location == null)
-            copy.location = null;
-        else
-            copy.location = this.location.copy();
+        copy.location = this.location.copy();
         copy.tValue = this.tValue;
         copy.sValue = this.sValue;
         copy.pValue = this.pValue;
@@ -6604,12 +6607,13 @@ public class ItemObject {
      * convention the no-arg {@link #ItemObject()} constructor already uses. {@code tValue} resets to
      * {@link TValue#TV_NONE}, which is C's tval 0.
      *
-     * <p>Two fields come back as {@code null} where C's zero is a value. {@code location} is
-     * {@code null} where C's grid is (0, 0); {@link #getGrid()} answers {@link Loc#zero} for it, and
-     * {@link #objectAbsorb} reads both as "not on the floor". {@code baseDamage} has no C counterpart at all. {@code time} is not one of the two:
-     * it comes back as a zero {@link Random}, which is C's four zeros, and {@link #numberCharging}
-     * reads that as nothing charging. Unlike a freshly built item, a wiped one has an empty
-     * {@code activation} list rather than {@code null}.
+     * <p>{@code location} resets to {@link Loc#zero}, C's grid of (0, 0), which {@link #getGrid()}
+     * answers and {@link #objectAbsorb} reads as "not on the floor".
+     *
+     * <p>One field comes back as {@code null}: {@code baseDamage}, which has no C counterpart at
+     * all. {@code time} is not null: it comes back as a zero {@link Random}, which is C's four
+     * zeros, and {@link #numberCharging} reads that as nothing charging. Unlike a freshly built
+     * item, a wiped one has an empty {@code activation} list rather than {@code null}.
      *
      * <p>C's {@code memset} also zeroes {@code prev} and {@code next}, the pile pointers, and
      * {@code oidx}, the item-list index. The port keeps no index, and {@code owningPile} stands for
@@ -6618,7 +6622,8 @@ public class ItemObject {
      *
      * <p>Function wipe coded before 260904, commented in full on 261002; the pile and map notes and
      * the C line number were removed on 261002, the {@code time} note corrected on 261003, the
-     * count of null fields corrected on 261007, {@code Loc.zero} read noted on 261007.
+     * count of null fields corrected on 261007, {@code Loc.zero} read noted on 261007, location
+     * reset to {@code Loc.zero} rather than {@code null} on 261012.
      *
      * @author Rowan Crowther
      */
@@ -6627,7 +6632,7 @@ public class ItemObject {
         ego = null;
         artifact = null;
         known = null;
-        location = null;
+        location = Loc.zero;
         tValue = TValue.TV_NONE;
         sValue = 0;
         pValue = 0;

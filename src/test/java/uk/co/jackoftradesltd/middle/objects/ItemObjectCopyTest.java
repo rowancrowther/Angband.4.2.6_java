@@ -17,7 +17,6 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
-import uk.co.jackoftradesltd.middle.numerics.Random;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -26,23 +25,15 @@ import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.cave.Loc;
 import uk.co.jackoftradesltd.middle.monsters.MonsterRace;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectNotice;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum;
-import uk.co.jackoftradesltd.middle.objects.enums.TValue;
-import uk.co.jackoftradesltd.testsupport.ItemFixture;
+import uk.co.jackoftradesltd.middle.numerics.Random;
+import uk.co.jackoftradesltd.middle.objects.enums.*;
 import uk.co.jackoftradesltd.testsupport.CurseFixture;
+import uk.co.jackoftradesltd.testsupport.ItemFixture;
 
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static uk.co.jackoftradesltd.testsupport.ItemFixture.read;
 import static uk.co.jackoftradesltd.testsupport.ItemFixture.set;
 
@@ -353,15 +344,14 @@ class ItemObjectCopyTest {
 
         /**
          * A recharge interval that has somehow been left null arrives as a zero one, so the copy
-         * never holds a null that the getter would fail on; no damage dice and no grid arrive as
-         * none, rather than failing on the copy of nothing.
+         * never holds a null that the getter would fail on; no damage dice arrive as none, rather
+         * than failing on the copy of nothing.
          */
         @Test
-        @DisplayName("null dice become a zero recharge interval, and grid stays null")
-        void diceAndGridStayNull() {
+        @DisplayName("null dice become a zero recharge interval, and base damage stays null")
+        void diceStayNull() {
             set(original, "time", null);
             set(original, "baseDamage", null);
-            set(original, "location", null);
 
             ItemObject copy = original.copy(false);
 
@@ -371,7 +361,22 @@ class ItemObjectCopyTest {
             assertEquals(0, time.getSides());
             assertEquals(0, time.getMBonus());
             assertNull(read(copy, "baseDamage"));
-            assertNull(read(copy, "location"));
+        }
+
+        /**
+         * The grid is never null, so an item that is not on the floor copies its {@link Loc#zero}
+         * and the copy answers the origin, as C's {@code memcpy} of a zeroed {@code struct loc}
+         * does.
+         */
+        @Test
+        @DisplayName("an item with no grid copies as the origin, never null")
+        void gridCopiesAsOrigin() {
+            original.setGrid(null);
+
+            ItemObject copy = original.copy(false);
+
+            assertEquals(Loc.zero, read(copy, "location"));
+            assertTrue(copy.getGrid().isZero());
         }
     }
 

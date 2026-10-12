@@ -28,6 +28,8 @@ import uk.co.jackoftradesltd.middle.monsters.Monster;
 import uk.co.jackoftradesltd.middle.player.Player;
 import uk.co.jackoftradesltd.middle.player.enums.TimedEffect;
 
+import java.util.Objects;
+
 /**
  * The player's current attack/spell target: either a specific {@link Monster} or a bare grid
  * {@link Loc} the player is aiming at. This is the Java home of the file-level state in the C
@@ -48,8 +50,13 @@ public class Target {
     /**
      * The targeted grid location, {@code target.grid} in C. {@link Loc#zero} when nothing is
      * targeted.
+     *
+     * <p>Never {@code null}: it starts as {@link Loc#zero}, as C's zeroed file-scope {@code target}
+     * does, and {@link #setGrid} turns a {@code null} into {@link Loc#zero}.
+     *
+     * <p>Field grid initialised to {@code Loc.zero} on 261012.
      */
-    private static Loc grid;
+    private static Loc grid = Loc.zero;
 
     /**
      * Whether the target is fixed for the duration of a spell, {@code target_fixed} in C. While it
@@ -166,24 +173,29 @@ public class Target {
      * monster index alone. C has no function for this; {@code target_okay} assigns the field
      * directly, and {@link #targetOkay()} calls this method to do the same.
      *
-     * <p>Method setGrid coded before 261009, commented in full on 261009.
+     * <p>A {@code null} argument is stored as {@link Loc#zero}, so the stored grid is never
+     * {@code null}. C's {@code struct loc} is passed by value and cannot be null.
      *
-     * @param grid the grid to store
+     * <p>Method setGrid coded before 261009, commented in full on 261009, {@code null} stored as
+     * {@code Loc.zero} on 261012.
+     *
+     * @param grid the grid to store, or {@code null} for {@link Loc#zero}
      */
     public static void setGrid(Loc grid) {
-        Target.grid = grid;
+        Target.grid = Objects.requireNonNullElse(grid, Loc.zero);
     }
 
     /**
      * Returns the stored target grid, the port of C's {@code target_get} ({@code target.c}), which
      * copies {@code target.grid} out through a pointer. Java returns the immutable {@link Loc}
-     * itself. The result is {@link Loc#zero} after the target has been reset, but {@code null}
-     * before the first target is ever set or reset, because the static {@link #grid} starts
-     * uninitialised where C's file-scope {@code target} starts zeroed.
+     * itself. The result is {@link Loc#zero} after the target has been reset and before the first
+     * target is ever set, because the static {@link #grid} starts at {@link Loc#zero} as C's
+     * file-scope {@code target} starts zeroed. It is never {@code null}.
      *
-     * <p>Method getGrid coded before 261009, commented in full on 261009.
+     * <p>Method getGrid coded before 261009, commented in full on 261009, never-{@code null} answer
+     * noted on 261012.
      *
-     * @return the stored grid, which may be {@code null} before any target has been set
+     * @return the stored grid, which is {@link Loc#zero} before any target has been set
      */
     public static Loc getGrid() {
         return grid;
@@ -204,11 +216,13 @@ public class Target {
      * grid considered, and then the answer is {@code true} when both its x and y are non-zero, so
      * a grid on row 0 or column 0 is not a usable target.
      *
-     * <p>Java adds a {@code null} guard on the stored grid, which is {@code null} until a target
-     * is first set or reset (see {@link #getGrid()}); C's zeroed grid fails the non-zero test in
-     * the same way, so the answer is {@code false} in both.
+     * <p>The stored grid is never {@code null} (see {@link #getGrid()}), so there is no guard for
+     * one: before any target is set it is {@link Loc#zero}, which fails the non-zero test exactly
+     * as C's zeroed grid does. The test is on each coordinate, as in C, and is not
+     * {@link Loc#isZero()}: a grid on row 0 or column 0 fails it although it is not the origin.
      *
-     * <p>Function targetOkay coded before 260903, commented in full on 261009.
+     * <p>Function targetOkay coded before 260903, commented in full on 261009, {@code null} guard
+     * removed on 261012.
      *
      * @return {@code true} while the current target may be used
      */
@@ -223,7 +237,7 @@ public class Target {
                 // Good target
                 return true;
             }
-        } else if (getGrid() != null && getGrid().getY() != 0 && getGrid().getX() != 0) {
+        } else if (getGrid().getY() != 0 && getGrid().getX() != 0) {
             // Allow a direction without a monster
             return true;
         }

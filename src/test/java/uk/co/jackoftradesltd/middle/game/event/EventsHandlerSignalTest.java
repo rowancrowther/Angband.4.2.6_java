@@ -22,27 +22,16 @@ import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
-import uk.co.jackoftradesltd.channel.messages.data.EventDataBoolean;
-import uk.co.jackoftradesltd.channel.messages.data.EventDataBolt;
-import uk.co.jackoftradesltd.channel.messages.data.EventDataColourString;
-import uk.co.jackoftradesltd.channel.messages.data.EventDataFullStat;
-import uk.co.jackoftradesltd.channel.messages.data.EventDataGrid;
-import uk.co.jackoftradesltd.channel.messages.data.EventDataInt;
-import uk.co.jackoftradesltd.channel.messages.data.EventDataMessage;
-import uk.co.jackoftradesltd.channel.messages.data.EventDataSize;
-import uk.co.jackoftradesltd.channel.messages.data.EventDataStat;
-import uk.co.jackoftradesltd.channel.messages.data.EventDataString;
-import uk.co.jackoftradesltd.channel.messages.data.EventDataStrings;
-import uk.co.jackoftradesltd.channel.messages.data.EventDataTunnel;
-import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
+import uk.co.jackoftradesltd.channel.messages.data.*;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.middle.cave.Loc;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Unit tests for the {@code eventSignal*} family on {@link EventsHandler} — the port of C's
@@ -154,6 +143,45 @@ class EventsHandlerSignalTest {
 
         assertEquals(fromLoc, fromCoordinates,
                 "signalling the same square as (x, y) and as a Loc must build the same payload");
+    }
+
+    /**
+     * C passes the point by value, so it cannot be null there, and (0, 0) is a real grid that a
+     * receiver would act on. A {@code null} {@link Loc} is therefore rejected rather than
+     * replaced with {@link Loc#zero}, and nothing is dispatched.
+     */
+    @Test
+    void aNullPointIsRejectedAndNothingIsDispatched() {
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                () -> handler.eventSignalPoint(GameEventType.EVENT_MAP, (Loc) null));
+
+        assertTrue(thrown.getMessage().contains("point"), thrown.getMessage());
+        assertNull(handler.lastType, "a rejected point must not reach the bus");
+        assertNull(handler.lastData);
+    }
+
+    /**
+     * The payload constructor rejects a null blast list, centre or element, and the signal
+     * method builds the payload before it dispatches, so the throw leaves the bus untouched.
+     * Each of the three nulls is driven through the signal to say so.
+     */
+    @Test
+    void aBlastSignalWithANullGridOrCentreIsRejectedAndNothingIsDispatched() {
+        ArrayList<Loc> withNullElement = new ArrayList<>(Arrays.asList(Loc.row(1).col(2), null));
+        ArrayList<Loc> grids = new ArrayList<>(List.of(Loc.row(1).col(2)));
+
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class, () -> blast(null, Loc.row(1).col(2))),
+                () -> assertThrows(IllegalArgumentException.class, () -> blast(grids, null)),
+                () -> assertThrows(IllegalArgumentException.class, () -> blast(withNullElement, Loc.row(1).col(2))));
+
+        assertNull(handler.lastType, "a rejected explosion must not reach the bus");
+        assertNull(handler.lastData);
+    }
+
+    private void blast(ArrayList<Loc> blastGrid, Loc centre) {
+        handler.eventSignalBlast(GameEventType.EVENT_EXPLOSION, 1, 1, new ArrayList<>(List.of(0)), true,
+                new ArrayList<>(List.of(true)), blastGrid, centre);
     }
 
     /**

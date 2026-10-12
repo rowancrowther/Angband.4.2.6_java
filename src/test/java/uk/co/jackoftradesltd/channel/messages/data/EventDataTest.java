@@ -24,18 +24,9 @@ import uk.co.jackoftradesltd.middle.cave.Loc;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
 import uk.co.jackoftradesltd.middle.enums.Stats;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Unit tests for the {@link GameEventData} payload shapes — the port of the arms of C's
@@ -608,6 +599,70 @@ class EventDataTest {
             assertEquals(1, explosion.getNumGrids());
             assertEquals(0, explosion.getDistanceToGrid().get(0));
             assertEquals(explosion.getCentre(), explosion.getBlastGrid().get(0));
+        }
+
+        /**
+         * Builds an explosion with the given blast list and centre and valid everything else.
+         */
+        private EventDataExplosion explosionWith(ArrayList<Loc> grids, Loc centre) {
+            return new EventDataExplosion(1, 1, new ArrayList<>(List.of(0)), true,
+                    new ArrayList<>(List.of(true)), grids, centre);
+        }
+
+        /**
+         * C fills {@code blast_grid} with {@code num_grids} real grids, and (0, 0) is a real grid on
+         * the map, so a missing list is a caller bug and is rejected rather than replaced.
+         */
+        @Test
+        void aNullBlastGridListIsRejectedByName() {
+            IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                    () -> explosionWith(null, Loc.row(3).col(4)));
+
+            assertTrue(thrown.getMessage().contains("blastGrid"), thrown.getMessage());
+            assertFalse(thrown.getMessage().contains("centre"), thrown.getMessage());
+        }
+
+        /**
+         * C passes {@code centre} as a {@code struct loc} by value, which cannot be null; storing
+         * {@link Loc#zero} would draw the blast in the top-left corner and hide the bug.
+         */
+        @Test
+        void aNullCentreIsRejectedByName() {
+            IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                    () -> explosionWith(new ArrayList<>(List.of(Loc.row(3).col(4))), null));
+
+            assertTrue(thrown.getMessage().contains("centre"), thrown.getMessage());
+            assertFalse(thrown.getMessage().contains("blastGrid"), thrown.getMessage());
+        }
+
+        /**
+         * A null element is rejected, and the message gives the index of the first null so the
+         * producer can find it. The list has two nulls, to show it is the first that is reported.
+         */
+        @Test
+        void aNullBlastGridElementIsRejectedWithItsIndex() {
+            ArrayList<Loc> grids = new ArrayList<>(Arrays.asList(
+                    Loc.row(1).col(1), null, Loc.row(2).col(2), null));
+
+            IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                    () -> explosionWith(grids, Loc.row(1).col(1)));
+
+            assertTrue(thrown.getMessage().contains("blastGrid"), thrown.getMessage());
+            assertTrue(thrown.getMessage().contains("value: 1 "), thrown.getMessage());
+        }
+
+        /**
+         * The origin is a real grid, not a stand-in for a missing one: a list that holds
+         * {@link Loc#zero} deliberately, and a centre at the origin, are accepted and kept as given.
+         */
+        @Test
+        void theOriginIsAnAcceptedGridAndCentre() {
+            ArrayList<Loc> grids = new ArrayList<>(List.of(Loc.zero, Loc.row(1).col(1)));
+
+            EventDataExplosion explosion = explosionWith(grids, Loc.zero);
+
+            assertSame(grids, explosion.getBlastGrid());
+            assertSame(Loc.zero, explosion.getCentre());
         }
     }
 }

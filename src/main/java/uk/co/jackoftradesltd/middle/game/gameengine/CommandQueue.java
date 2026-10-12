@@ -394,8 +394,8 @@ public class CommandQueue {
         for (CommandArgument arg : currentCommand.getArgs()) {
             if (arg.getData() instanceof ArgumentItem argumentItem) {
                 ItemObject obj = argumentItem.getValue();
-                Loc grid = (obj == null) ? null : obj.getGrid();
-                if (grid != null && !grid.isZero()) {
+                Loc grid = (obj == null) ? Loc.zero : obj.getGrid();
+                if (!grid.isZero()) {
                     repeatPrevAllowed = false;
                     break;
                 }

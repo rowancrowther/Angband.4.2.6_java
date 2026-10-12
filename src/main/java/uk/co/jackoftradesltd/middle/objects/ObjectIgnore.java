@@ -170,7 +170,7 @@ public class ObjectIgnore {
                      * drop, and the drop will not trigger
                      * bloodlust.
                      */
-                    dropCommand.setBacgroundCommand(2);
+                    dropCommand.setBackgroundCommand(2);
                 }
             }
         }

@@ -27,9 +27,12 @@ package uk.co.jackoftradesltd.middle.cave;
  */
 public class Connector {
     /**
-     * The grid where this connection is made.
+     * The grid where this connection is made, C's {@code struct loc grid}. It starts at
+     * {@link Loc#zero}, as C's zero-filled struct does, and is never {@code null}.
+     *
+     * <p>Field grid initialised to {@code Loc.zero} on 261012.
      */
-    private Loc grid;
+    private Loc grid = Loc.zero;
     /**
      * The terrain feature to place at the connection grid.
      */

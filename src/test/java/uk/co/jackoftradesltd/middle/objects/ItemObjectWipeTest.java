@@ -21,36 +21,20 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.Activation;
 import uk.co.jackoftradesltd.middle.cave.Loc;
 import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.middle.monsters.MonsterRace;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectNotice;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum;
-import uk.co.jackoftradesltd.middle.objects.enums.TValue;
+import uk.co.jackoftradesltd.middle.objects.enums.*;
 import uk.co.jackoftradesltd.testsupport.CurseFixture;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link ItemObject#wipe()} and {@link ItemObject#getObjectFlags()}.
@@ -218,9 +202,9 @@ class ItemObjectWipeTest {
         assertNull(read(item, "ego"));
         assertFalse(item.isArtifact());
         assertFalse(item.isKnown());
-        // C's zeroed grid is (0, 0); getGrid answers that for a null location
+        // C's zeroed grid is (0, 0), a value rather than a pointer, so the field holds Loc.zero
         assertTrue(item.getGrid().isZero());
-        assertNull(read(item, "location"));
+        assertSame(Loc.zero, read(item, "location"));
         // C's zeroed tval byte is ordinal 0, which is TV_NONE in both C's list-tvals.h and TValue
         assertEquals(TValue.TV_NONE, item.gettValue());
         assertEquals(0, item.getsValue());

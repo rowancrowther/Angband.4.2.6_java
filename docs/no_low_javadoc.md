@@ -48,20 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/objects/enums/ObjectFlag.java`
-
-1 missing, 1 low
-
-- L32: method `OF_MAX` - MISSING
-- L91: method `getFlag` - LOW
-
-### `middle/objects/enums/ObjectKindFlag.java`
-
-1 missing, 1 low
-
-- L33: method `KF_MAX` - MISSING
-- L75: method `getFlag` - LOW
-
 ### `middle/strings/Quark.java`
 
 1 missing, 1 low

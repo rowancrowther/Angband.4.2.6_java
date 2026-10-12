@@ -39,31 +39,54 @@ import java.util.Map;
  * init/cleanup lifecycle. New keys are always allocated above the current
  * maximum so that removing an entry never causes a later {@link #add(String)}
  * to accidentally reuse a stale key.
+ * <p>
+ * As in C, {@link #add(String)} returns the existing key when the text is already stored, so two
+ * equal strings never hold two keys and a caller may compare keys instead of text. Key 0 is never
+ * issued: C reserves it to mean "no quark" (an object with no inscription), and
+ * {@link #getQuark(int)} returns {@code null} for it.
+ * <p>
+ * Accepted deviation (decided 261009): C keeps a blank record in slot 0, so {@code nr_quarks} is
+ * one more than the number of strings held. This table holds only real records, and
+ * {@link #size()} is the plain count of them. {@link #merge(Quark)} and {@link #containsText(String)}
+ * have no C counterpart.
+ * <p>Class Quark coded before 261012, commented in full on 261012.
  *
  * @author Rowan Crowther
  */
 public class Quark implements AngbandModule {
     /**
      * This module's display name, set during {@link #init()}.
+     * <p>Field name coded before 261012, commented in full on 261012.
      */
     private String name;
     /**
-     * The key-to-string table; insertion-ordered so iteration is stable.
+     * The key-to-string table; insertion-ordered so iteration is stable. It is the Java counterpart of
+     * the {@code quarks} array in {@code z-quark.c}, except that it holds no blank record for key 0 and
+     * so has no separate {@code nr_quarks} or {@code alloc_quarks} counters: the map grows by itself and
+     * its size is the record count.
      * {@code null} until {@link #init()} runs and again after {@link #cleanup()}.
+     * <p>Field quarks coded before 261012, commented in full on 261012.
      */
     private Map<Integer, String> quarks;
     /**
      * Logger used to report misuse (e.g. operating on an uninitialized table).
+     * <p>Field logger coded before 261012, commented in full on 261012.
      */
     private final Logger logger = LogManager.getLogger();
 
     /**
-     * Add a string to this set of quarks and return a unique value to it
+     * Add a string to this set of quarks and return its key, as {@code quark_add()} in {@code z-quark.c}
+     * does. The existing entries are scanned first, and if one holds exactly the same text (case
+     * sensitive, as {@code streq} is) its key is returned and the table is left untouched. Only when no
+     * entry matches is a new one stored, under a key one higher than the highest in use.
+     * <p>
+     * Allocating above the highest key, rather than from the size, means a gap in the keys can never cause
+     * a later add to reuse a stale key. Keys start at 1; 0 is never issued.
+     * <p>Function add coded on 261012, commented in full on 261012.
      *
      * @param string The string to add
-     * @return a unique key for it where the key value is 1 higher than the previous highest value in this map.
-     * This allows deletions from the middle of the map without looking at the deleted position by accident in the
-     * future.
+     * @return the key of the stored string: the existing key if the text was already present, otherwise a
+     * new key 1 higher than the previous highest value in this map.
      * @throws NullPointerException if this collection of quarks is null
      */
     @CheckReturnValue
@@ -74,6 +97,11 @@ public class Quark implements AngbandModule {
             NullPointerException n = new NullPointerException(message);
             logger.error(message, n);
             throw n;
+        }
+        
+        for (int index : quarks.keySet()) {
+            if (quarks.get(index).equals(string))
+                return index;
         }
 
         int i = quarks.size();
@@ -87,7 +115,14 @@ public class Quark implements AngbandModule {
     }
 
     /**
-     * Merge a set of quarks from one another Quark into this one
+     * Merge the strings of another Quark into this one. C has no equivalent, since there is only ever one
+     * global table.
+     * <p>
+     * Each incoming string is stored under its own key plus an offset of this table's highest key plus 1,
+     * so nothing already here is overwritten. That means the incoming key 1 lands at the highest key plus
+     * 2, leaving the key at highest plus 1 unused. The merge does not deduplicate: text held by both tables
+     * is stored twice, under two keys. A null or empty {@code other} changes nothing, and {@code other} itself is never modified.
+     * <p>Function merge coded before 261012, commented in full on 261012.
      *
      * @param other the other Quark to merge this one with
      */
@@ -107,7 +142,10 @@ public class Quark implements AngbandModule {
     }
 
     /**
-     * Gets the value of the quark with given quark key
+     * Gets the value of the quark with given quark key, as {@code quark_str()} in {@code z-quark.c} does.
+     * Key 0 (C's blank slot, "no quark") and any key that was never issued give {@code null}, which is
+     * what C returns for slot 0 and for a key at or past {@code nr_quarks}.
+     * <p>Function getQuark coded before 261012, commented in full on 261012.
      *
      * @param key the key of the string we wish to obtain from the map
      * @return if the key is a valid key (contained in the key set), then return the appropriate string - otherwise
@@ -129,7 +167,11 @@ public class Quark implements AngbandModule {
     }
 
     /**
-     * Get the number of quarks in the list
+     * Get the number of quarks in the list. This is the count of real strings held, so it is 0 for a fresh
+     * table where C's {@code nr_quarks} would be 1 (accepted deviation, decided 261009). Unlike
+     * {@link #add(String)} and {@link #getQuark(int)} it does not check for an uninitialized table, and
+     * throws a bare {@link NullPointerException} before {@link #init()} or after {@link #cleanup()}.
+     * <p>Function size coded before 261012, commented in full on 261012.
      *
      * @return The number of quarks in this quark list
      */
@@ -140,6 +182,10 @@ public class Quark implements AngbandModule {
     }
 
     /**
+     * The module name, which is {@code "Quark"} once {@link #init()} has run (C's is {@code "z-quark"}) and
+     * {@code null} before that.
+     * <p>Function getName coded before 261012, commented in full on 261012.
+     *
      * @return the name of this module
      */
     @Override
@@ -150,7 +196,10 @@ public class Quark implements AngbandModule {
     }
 
     /**
-     * Initialize this module
+     * Initialize this module: gives it an empty table and its name, as {@code quarks_init()} in
+     * {@code z-quark.c} does. Any earlier contents are discarded, so calling it again after
+     * {@link #cleanup()} (or on a used table) starts keys from 1 once more.
+     * <p>Function init coded before 261012, commented in full on 261012.
      */
     @Contract(mutates = "this")
     @Override
@@ -160,7 +209,11 @@ public class Quark implements AngbandModule {
     }
 
     /**
-     * Clean up set the linked hash map to null to allow for recycling
+     * Clean up this module by setting the table to {@code null}, which releases the strings for garbage
+     * collection; this is the Java counterpart of {@code quarks_free()} in {@code z-quark.c}, which frees
+     * each string and then the array. The module name is left as it was. Until {@link #init()} runs again,
+     * {@link #add(String)} and {@link #getQuark(int)} throw.
+     * <p>Function cleanup coded before 261012, commented in full on 261012.
      */
     @Contract(mutates = "this")
     @Override
@@ -168,6 +221,15 @@ public class Quark implements AngbandModule {
         quarks = null;
     }
 
+    /**
+     * Whether any stored string equals {@code text} exactly (case sensitive, whole string, no substring
+     * match). C has no equivalent; {@code quark_add()} does this scan internally. Like {@link #size()} it
+     * throws a bare {@link NullPointerException} on an uninitialized table.
+     * <p>Function containsText coded before 261012, commented in full on 261012.
+     *
+     * @param text the text to look for
+     * @return {@code true} if a quark holds exactly that text
+     */
     public boolean containsText(String text) {
         for (Integer key : quarks.keySet()) {
             if (quarks.get(key).equals(text)) return true;

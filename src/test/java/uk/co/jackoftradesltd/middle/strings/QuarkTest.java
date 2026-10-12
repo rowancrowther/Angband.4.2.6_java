@@ -21,12 +21,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Unit tests for {@link Quark}, the port of the C source's string-interning table
@@ -105,16 +100,74 @@ class QuarkTest {
         }
 
         @Test
-        void addingTheSameTextTwiceIssuesTwoHandles() {
-            // This table does not deduplicate on the way in - worth pinning, because a
-            // caller assuming otherwise would compare handles instead of strings.
+        void addingTheSameTextTwiceReturnsTheSameHandle() {
+            // quark_add() scans for a streq match before allocating, so equal text never
+            // holds two handles and callers may compare handles instead of strings.
             int first = quark.add("hello");
             int second = quark.add("hello");
 
-            assertNotEquals(first, second);
-            assertEquals(2, quark.size());
+            assertEquals(first, second);
+            assertEquals(1, quark.size());
             assertEquals("hello", quark.getQuark(first));
-            assertEquals("hello", quark.getQuark(second));
+        }
+
+        @Test
+        void aRepeatedAddDoesNotConsumeAHandle() {
+            // Walk of quark_add(): "a" -> 1, "b" -> 2, "a" again -> 1 (nr_quarks stays 3 in C),
+            // then "c" -> 3, not 4.
+            assertEquals(1, quark.add("a"));
+            assertEquals(2, quark.add("b"));
+            assertEquals(1, quark.add("a"));
+            assertEquals(3, quark.add("c"));
+            assertEquals(3, quark.size());
+        }
+
+        @Test
+        void theMatchIsCaseSensitiveAndWholeString() {
+            // streq is an exact comparison, so near-misses get their own handles.
+            int lower = quark.add("!d");
+            int upper = quark.add("!D");
+            int longer = quark.add("!d ");
+            int prefix = quark.add("!");
+
+            assertEquals(4, quark.size());
+            assertNotEquals(lower, upper);
+            assertNotEquals(lower, longer);
+            assertNotEquals(lower, prefix);
+        }
+
+        @Test
+        void theEmptyStringDeduplicatesToo() {
+            int first = quark.add("");
+            int second = quark.add("");
+
+            assertEquals(first, second);
+            assertEquals(1, quark.size());
+        }
+
+        @Test
+        void aMatchIsFoundAmongManyEntries() {
+            // The C scan runs from q = 1 to nr_quarks - 1; make sure the first and last
+            // entries are both reachable, not just the middle.
+            for (int i = 1; i <= 20; i++) quark.add("note" + i);
+
+            assertEquals(1, quark.add("note1"));
+            assertEquals(20, quark.add("note20"));
+            assertEquals(20, quark.size());
+        }
+
+        @Test
+        void aRepeatedAddAfterAMergeStillFindsTheMergedText() {
+            quark.add("mine");
+            Quark other = new Quark();
+            other.init();
+            other.add("theirs");
+            quark.merge(other);
+
+            int found = quark.add("theirs");
+
+            assertEquals("theirs", quark.getQuark(found));
+            assertEquals(2, quark.size());
         }
 
         @Test

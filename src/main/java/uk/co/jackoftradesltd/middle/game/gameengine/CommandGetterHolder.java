@@ -42,7 +42,7 @@ public final class CommandGetterHolder {
     /**
      * The implementation currently answering command-fetch requests; never {@code null}.
      */
-    private static CommandGetter instance = new DefaultCommandGetter();
+    private static volatile CommandGetter instance = new DefaultCommandGetter();
 
     /**
      * Not instantiable - all state and behaviour is static.

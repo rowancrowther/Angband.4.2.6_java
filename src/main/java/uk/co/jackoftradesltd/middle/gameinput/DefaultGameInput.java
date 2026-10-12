@@ -171,6 +171,12 @@ public class DefaultGameInput implements GameInput {
         return true;
     }
 
+    /**
+     * {@inheritDoc} This default does nothing, as C's {@code view_ability_menu} does when
+     * {@code view_abilities_hook} is unset.
+     *
+     * <p>Function viewAbilityMenu coded before 261012, commented in full on 261012.
+     */
     @Override
     public void viewAbilityMenu(List<PlayerProperty> propertyList) {
         

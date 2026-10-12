@@ -48,13 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/player/PlayerName.java`
-
-2 missing, 0 low
-
-- L24: class `PlayerName` - MISSING
-- L25: field `logger` - MISSING
-
 ### `middle/player/enums/PlayerOptionTypes.java`
 
 2 missing, 0 low

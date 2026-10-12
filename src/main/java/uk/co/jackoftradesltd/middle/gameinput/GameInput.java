@@ -17,13 +17,13 @@
 
 package uk.co.jackoftradesltd.middle.gameinput;
 
+import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.Message;
 import uk.co.jackoftradesltd.middle.cave.Loc;
 import uk.co.jackoftradesltd.middle.cave.enums.DirectionEnum;
 import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.middle.game.enums.CommandCode;
-import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
 import uk.co.jackoftradesltd.middle.magic.MagicSpell;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
@@ -53,6 +53,17 @@ import java.util.function.Predicate;
  */
 public interface GameInput {
 
+    /**
+     * Shows the player a browsable menu of their abilities - the port of C's {@code view_ability_menu}
+     * ({@code game-input.c}), called from {@code view_abilities()} in {@code player-properties.c}.
+     * C passed an array and a separate {@code num_abilities} count; the port passes a {@link List},
+     * which carries its own size. There is nothing to return and no abort channel - the menu is
+     * display only.
+     *
+     * <p>Function viewAbilityMenu coded before 261012, commented in full on 261012.
+     *
+     * @param propertyList the abilities to list
+     */
     void viewAbilityMenu(List<PlayerProperty> propertyList);
 
     /**
@@ -141,11 +152,18 @@ public interface GameInput {
      * warn about the effects, flush the messages, then defer to {@link #getCheck}. An implementation
      * overrides it only to supply a UI-specific confirmation.
      *
+     * <p><b>Known deviation from C:</b> the warning is three messages here, where {@code confirm_debug}
+     * in {@code game-input.c} prints two. The third, "Your experience beyond this point is not
+     * guaranteed in any way!", has no C counterpart and is deliberate.
+     *
+     * <p>Function confirmDebug updated on 261012 to record the known deviation.
+     *
      * @return {@code true} if the player confirmed
      */
     default boolean confirmDebug() {
         Message.message("%s", "You are about to use the dangerous, unsupported, debug commands!");
         Message.message("%s", "Your machine may crash, and your savefile may become corrupted!");
+        // Known deviation: no C counterpart (see the Javadoc above).
         Message.message("%s", "Your experience beyond this point is not guaranteed in any way!");
 
         GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_MESSAGE_FLUSH);

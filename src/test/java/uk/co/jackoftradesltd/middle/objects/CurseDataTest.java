@@ -27,11 +27,7 @@ import uk.co.jackoftradesltd.testsupport.CurseFixture;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link CurseData}, the port of C's {@code struct curse_data} ({@code src/object.h}) — the
@@ -51,7 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * cursed items stacking for a reason the player cannot see; a copy constructor that copied by
  * reference would let one cursed sword count down the template every other sword is made from.
  *
- * <p>Class CurseDataTest coded on 260817, commented in full on 260817.
+ * <p>Class CurseDataTest coded on 260817, commented in full on 260817, extended on 261012.
  *
  * @author Rowan Crowther
  */
@@ -92,8 +88,8 @@ class CurseDataTest {
 
         /**
          * The hash has to follow equality or two curses of the same power at different timeouts land
-         * in different buckets, and the map comparison that {@code cursesAreEqual} relies on stops
-         * working for reasons that have nothing to do with curses.
+         * in different buckets, and any hashed comparison of curse data stops working for reasons
+         * that have nothing to do with curses.
          */
         @Test
         @DisplayName("the hash follows equality rather than the timeout")
@@ -116,12 +112,14 @@ class CurseDataTest {
         }
 
         /**
-         * The reason equality is defined at all: {@code ItemObject.cursesAreEqual} compares two
-         * curse maps with {@code Map.equals}, which defers to this for the values. This asserts the
-         * composition rather than the parts, since that is what the stacking code actually does.
+         * What a plain {@code Map.equals} makes of this: it defers to {@code equals} for the
+         * values, so two maps holding the same curse at the same power are equal whatever the
+         * timeouts. {@code ItemObject.cursesAreEqual} does not use {@code Map.equals} (it walks the
+         * curse registry, as C does), so this is the composition for any other caller, not the
+         * stacking rule.
          */
         @Test
-        @DisplayName("map comparison reaches C's answer through it")
+        @DisplayName("map comparison defers to it for the values")
         void mapComparisonUsesIt() {
             Curse siren = curse("siren");
 
@@ -131,6 +129,40 @@ class CurseDataTest {
             right.put(siren, new CurseData(2, 31));
 
             assertTrue(left.equals(right));
+        }
+
+        /**
+         * Where {@code Map.equals} and C part company. C's {@code curses_are_equal} indexes both
+         * arrays by curse, so a curse absent from one object (power zero) matches a zero-power
+         * entry on the other. A map has no such slot: an entry at power zero is a key the other
+         * map lacks, so the maps are unequal. This pins that gap so nobody swaps
+         * {@code cursesAreEqual} for {@code Map.equals} believing the two are the same test.
+         */
+        @Test
+        @DisplayName("a zero-power entry is not equal to an absent one under Map.equals")
+        void zeroPowerEntryDiffersFromAbsentUnderMapEquals() {
+            Curse siren = curse("siren");
+
+            Map<Curse, CurseData> carries = new HashMap<>();
+            carries.put(siren, new CurseData(0, 7));
+
+            assertFalse(carries.equals(new HashMap<Curse, CurseData>()));
+        }
+
+        /**
+         * Hash follows power and stays put when only the timeout moves, which is the half of the
+         * contract {@link #hashFollowsEquality()} does not reach: the same instance, ticked.
+         */
+        @Test
+        @DisplayName("ticking the timeout does not move the hash")
+        void tickingDoesNotMoveHash() {
+            CurseData data = new CurseData(3, 10);
+            int before = data.hashCode();
+
+            data.decrementTimeout();
+            data.setTimeout(99);
+
+            assertEquals(before, data.hashCode());
         }
     }
 
@@ -211,6 +243,102 @@ class CurseDataTest {
             CurseData original = new CurseData(4, 12);
 
             assertEquals(original, new CurseData(original));
+        }
+
+        /**
+         * C's {@code struct curse_data} is two bare {@code int}s with no validation, so the
+         * constructor stores whatever it is given: zero, a permanent power of 100 or more (the
+         * {@code power >= 100} test in {@code uncurse_object}, {@code effect-handler-general.c}),
+         * and a negative timeout.
+         */
+        @Test
+        @DisplayName("the constructor stores both fields unchecked")
+        void constructorStoresUnchecked() {
+            CurseData zero = new CurseData(0, 0);
+            CurseData permanent = new CurseData(100, 5);
+            CurseData negative = new CurseData(2, -3);
+
+            assertAll(
+                    () -> assertEquals(0, zero.getPower()),
+                    () -> assertEquals(0, zero.getTimeout()),
+                    () -> assertEquals(100, permanent.getPower()),
+                    () -> assertEquals(5, permanent.getTimeout()),
+                    () -> assertEquals(-3, negative.getTimeout()));
+        }
+
+        /**
+         * Setting the power is a plain field write, C's {@code obj->curses[pick].power = power} in
+         * {@code append_object_curse}. It is not {@code remove_object_curse}, which zeroes the
+         * timeout alongside the power: here the timeout survives a power of zero, and the
+         * timeout does not move when the power is raised.
+         */
+        @Test
+        @DisplayName("setting the power leaves the timeout alone")
+        void setPowerLeavesTimeout() {
+            CurseData data = new CurseData(2, 8);
+
+            data.setPower(5);
+            assertAll(
+                    () -> assertEquals(5, data.getPower()),
+                    () -> assertEquals(8, data.getTimeout()));
+
+            data.setPower(0);
+            assertAll(
+                    () -> assertEquals(0, data.getPower()),
+                    () -> assertEquals(8, data.getTimeout()));
+        }
+
+        /**
+         * Setting the timeout does not touch the power, and the stored value is exactly the one
+         * given — the dice roll ({@code randcalc(c->obj->time, 0, RANDOMISE)}) is the caller's.
+         */
+        @Test
+        @DisplayName("setting the timeout leaves the power alone")
+        void setTimeoutLeavesPower() {
+            CurseData data = new CurseData(7, 1);
+
+            data.setTimeout(0);
+
+            assertAll(
+                    () -> assertEquals(7, data.getPower()),
+                    () -> assertEquals(0, data.getTimeout()));
+        }
+
+        /**
+         * One cursed item through C's {@code decrease_timeouts}: with power set, the timeout is
+         * decremented and the effect fires when it lands on exactly zero, after which the timeout
+         * is re-armed. From 2 that is a quiet turn at 1, then the firing turn at 0. The loop here
+         * is the caller's, written out from C; the test pins that the decrement alone produces the
+         * values the loop tests.
+         */
+        @Test
+        @DisplayName("a countdown from 2 reaches zero on the second tick")
+        void countdownFiresOnZero() {
+            CurseData data = new CurseData(3, 2);
+
+            data.decrementTimeout();
+            assertEquals(1, data.getTimeout());
+
+            data.decrementTimeout();
+            assertEquals(0, data.getTimeout());
+
+            data.setTimeout(30);
+            assertEquals(30, data.getTimeout());
+        }
+
+        /**
+         * The unclamped step again, from the far end. C's {@code !curse[j].timeout} test is true
+         * only at exactly zero, so a timeout that starts negative (never re-armed) ticks further
+         * down without firing: -1 becomes -2, and none of the values on the way is zero.
+         */
+        @Test
+        @DisplayName("a negative timeout keeps falling and never reads as zero")
+        void negativeTimeoutKeepsFalling() {
+            CurseData data = new CurseData(3, -1);
+
+            data.decrementTimeout();
+
+            assertEquals(-2, data.getTimeout());
         }
     }
 }

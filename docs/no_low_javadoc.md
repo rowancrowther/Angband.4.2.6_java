@@ -48,13 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/magic/ClassMagic.java`
-
-0 missing, 2 low
-
-- L84: method `isCaster` - LOW
-- L186: method `getNumBooks` - LOW
-
 ### `middle/objects/CurseData.java`
 
 0 missing, 2 low

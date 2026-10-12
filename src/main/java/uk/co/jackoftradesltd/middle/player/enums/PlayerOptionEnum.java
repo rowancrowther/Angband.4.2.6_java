@@ -46,9 +46,6 @@ package uk.co.jackoftradesltd.middle.player.enums;
  *   <li>Descriptions use Oxford spelling ("flavours", "Colour:", "multi-coloured") where C
  *       uses US ("flavors", "Color:", "multi-colored"). "Center map continuously" is
  *       unchanged from C.</li>
- *   <li>{@link PlayerOptionTypes} declares its constants in a different order from the C
- *       {@code OP_INTERFACE .. OP_SPECIAL} enum, so its ordinals do not match the C values.
- *       Nothing in this enum depends on them.</li>
  * </ul>
  *
  * <p>The 46 constants are not documented individually: each is a verbatim row of

@@ -48,13 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/player/PlayerKnowledge.java`
-
-2 missing, 0 low
-
-- L87: field `logger` - MISSING
-- L1885: method `objectLearnOnWield` - MISSING
-
 ### `middle/player/PlayerName.java`
 
 2 missing, 0 low

@@ -48,13 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/objects/CurseData.java`
-
-0 missing, 2 low
-
-- L76: method `getPower` - LOW
-- L83: method `getTimeout` - LOW
-
 ### `middle/player/PlayerHistoryEntry.java`
 
 0 missing, 2 low

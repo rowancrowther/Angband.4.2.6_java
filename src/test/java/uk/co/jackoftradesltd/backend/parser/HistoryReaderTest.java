@@ -153,7 +153,8 @@ class HistoryReaderTest {
         PlayerHistoryEntry first = entriesOf(byNumber(charts, 1)).get(0);
 
         assertEquals(10, first.getRoll());
-        assertEquals("You are the illegitimate and unacknowledged child", first.getText());
+        // The phrase keeps its trailing space, as in C's history.txt; get_history joins phrases raw.
+        assertEquals("You are the illegitimate and unacknowledged child ", first.getText());
     }
 
     @Test

@@ -18,11 +18,10 @@
 package uk.co.jackoftradesltd.middle.objects.enums;
 
 import org.junit.jupiter.api.Test;
+import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.player.enums.SustainStat;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Unit tests for {@link ObjectFlag}, the port of C's {@code OF_*} list in
@@ -129,6 +128,34 @@ class ObjectFlagTest {
                 SustainStat.SUS_STAT_WIS, SustainStat.SUS_STAT_DEX, SustainStat.SUS_STAT_CON};
         for (int stat = 0; stat < stats.length; stat++) {
             assertEquals(stat + 1, ObjectFlag.getSustainStatFlag(stats[stat]).ordinal());
+        }
+    }
+
+    /**
+     * C's header says at most five characters of a label are used, and every label in it is five
+     * characters long except {@code " Bless"}, which is six. A label trimmed or padded to fit the
+     * comment would fail here.
+     */
+    @Test
+    void labelsAreFiveCharactersExceptBlessed() {
+        for (int i = 1; i < ObjectFlag.OF_MAX.ordinal(); i++) {
+            ObjectFlag flag = ObjectFlag.values()[i];
+            int expected = flag == ObjectFlag.OF_BLESSED ? 6 : 5;
+            assertEquals(expected, flag.getFlag().length(), "label length of " + flag.name());
+        }
+    }
+
+    /**
+     * Every Stats value in C's 0 to 4 range goes through sustain_flag() (stat + 1) to the flag at
+     * that index, so the Stats, SustainStat and ObjectFlag orders must all agree.
+     */
+    @Test
+    void statsToSustainToFlagFollowsStatPlusOne() {
+        Stats[] stats = {Stats.STAT_STR, Stats.STAT_INT, Stats.STAT_WIS, Stats.STAT_DEX, Stats.STAT_CON};
+        for (Stats stat : stats) {
+            SustainStat sustain = SustainStat.getSustainFromStat(stat);
+            assertEquals(stat.getValue() + 1, sustain.getSustainValue());
+            assertEquals(stat.getValue() + 1, ObjectFlag.getSustainStatFlag(sustain).ordinal());
         }
     }
 

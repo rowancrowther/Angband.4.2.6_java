@@ -115,7 +115,7 @@ class ItemObjectOrderingTest {
 
         return new PlayerClass("Test Caster", List.of(), stats, skills, extra, 0, 0,
                 new Flag<>(ObjectFlag.class), new Flag<>(PlayerFlag.class),
-                5, 30, 5, List.of(), new ClassMagic(1, 300, 1, List.of(book)));
+                5, 30, 5, List.of(), new ClassMagic(1, 300, List.of(book)));
     }
 
     /**

@@ -264,7 +264,7 @@ class PlayerUpdateStuffTest {
 
         PlayerClass playerClass = new PlayerClass("Test Class", List.of(), stats, skills, extra,
                 0, 0, new Flag<>(ObjectFlag.class), new Flag<>(PlayerFlag.class),
-                5, 30, 5, List.of(), new ClassMagic(5, 300, books.size(), books));
+                5, 30, 5, List.of(), new ClassMagic(5, 300, books));
 
         set("playerClass", playerClass);
     }

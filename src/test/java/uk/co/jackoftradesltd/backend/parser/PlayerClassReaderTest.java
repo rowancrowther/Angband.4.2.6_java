@@ -459,6 +459,103 @@ class PlayerClassReaderTest {
         assertTrue(hasError(r, "unknown realm: notarealm"), r.errors()::toString);
     }
 
+    // ---- ClassMagicAssembler: declared book count -------------------------
+
+    /**
+     * C's {@code parse_class_book} returns {@code PARSE_ERROR_TOO_MANY_ENTRIES} for a
+     * {@code book:} line once {@code num_books} has reached the count declared on the
+     * {@code magic:} line. Two books against a declared one must be reported.
+     */
+    @Test
+    void moreBooksThanDeclaredIsReported() throws IOException {
+        ParseResult<PlayerClass> r = load("too-many-books.txt", withHeader(1,
+                "name:Caster\nmagic:1:100:1\n"
+                        + "book:magic book:town:[Book One]:1:arcane\n"
+                        + "spell:S1:1:1:20:4\n"
+                        + "effect:BOLT:MISSILE\n"
+                        + "dice:1\n"
+                        + "book:magic book:town:[Book Two]:1:arcane\n"
+                        + "spell:S2:1:1:20:4\n"
+                        + "effect:BOLT:MISSILE\n"
+                        + "dice:1\n"));
+
+        assertTrue(hasError(r, "different number of books"), r.errors()::toString);
+    }
+
+    /**
+     * The declared count matching the books actually listed is the ordinary case, and must raise
+     * nothing.
+     */
+    @Test
+    void declaredBookCountMatchingIsAccepted() throws IOException {
+        ParseResult<PlayerClass> r = load("two-books.txt", withHeader(1,
+                "name:Caster\nmagic:1:100:2\n"
+                        + "book:magic book:town:[Book One]:1:arcane\n"
+                        + "spell:S1:1:1:20:4\n"
+                        + "effect:BOLT:MISSILE\n"
+                        + "dice:1\n"
+                        + "book:magic book:town:[Book Two]:1:arcane\n"
+                        + "spell:S2:1:1:20:4\n"
+                        + "effect:BOLT:MISSILE\n"
+                        + "dice:1\n"));
+
+        assertFalse(hasError(r, "different number of books"), r.errors()::toString);
+    }
+
+    /**
+     * C accepts fewer {@code book:} lines than declared: the declared count only sizes the array,
+     * and {@code num_books} ends at the number actually read. The port does the same, and the class
+     * keeps the one book it was given.
+     */
+    @Test
+    void fewerBooksThanDeclaredIsAcceptedAsInC() throws Exception {
+        ParseResult<PlayerClass> r = load("too-few-books.txt", withHeader(1,
+                "name:Caster\nmagic:1:100:2\n"
+                        + "book:magic book:town:[Book One]:1:arcane\n"
+                        + "spell:S1:1:1:20:4\n"
+                        + "effect:BOLT:MISSILE\n"
+                        + "dice:1\n"));
+
+        assertFalse(r.hasErrors(), () -> r.errors().toString());
+        assertEquals(1, castMagic(r).getNumBooks());
+    }
+
+    /**
+     * A book dropped for its own fault (here an unknown realm) is reported once, for that fault.
+     * The books that remain are within the declared count, so no count error follows, and the
+     * class keeps its casting profile, with zero books.
+     */
+    @Test
+    void aDroppedBookDoesNotAlsoRaiseACountError() throws Exception {
+        ParseResult<PlayerClass> r = load("dropped-book.txt", withHeader(1,
+                "name:Caster\nmagic:1:100:1\n"
+                        + "book:magic book:town:[B]:1:notarealm\n"
+                        + "spell:S:1:1:1:1\n"));
+
+        assertTrue(hasError(r, "unknown realm: notarealm"), r.errors()::toString);
+        assertFalse(hasError(r, "different number of books"), r.errors()::toString);
+        assertEquals(0, castMagic(r).getNumBooks());
+    }
+
+    /**
+     * Known gap against C. C refuses the second {@code book:} line of a class that declared one,
+     * whether or not the first was good. The port counts only the books that survive, so one
+     * dropped book plus one good book against a declared one passes silently.
+     */
+    @Test
+    void aDroppedBookHidesAnExtraBookFromTheCountCheck() throws Exception {
+        ParseResult<PlayerClass> r = load("dropped-plus-extra.txt", withHeader(1,
+                "name:Caster\nmagic:1:100:1\n"
+                        + "book:magic book:town:[B]:1:notarealm\n"
+                        + "spell:S:1:1:1:1\n"
+                        + "book:magic book:town:[Book Two]:1:arcane\n"
+                        + "spell:S2:1:1:20:4\n"
+                        + "effect:BOLT:MISSILE\n"
+                        + "dice:1\n"));
+
+        assertFalse(hasError(r, "different number of books"), r.errors()::toString);
+    }
+
     // ---- EffectAssembler (reached via a spell) ---------------------------
 
     @Test

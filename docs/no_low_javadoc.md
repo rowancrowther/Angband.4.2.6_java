@@ -48,13 +48,6 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-### `middle/strings/Quark.java`
-
-1 missing, 1 low
-
-- L145: method `getName` - LOW
-- L171: method `containsText` - MISSING
-
 ### `middle/magic/ClassMagic.java`
 
 0 missing, 2 low

@@ -96,7 +96,7 @@ class PlayerSpellsInitTest {
     private static PlayerClass casterClass(int totalSpells) {
         ClassMagic magic = totalSpells == 0
                 ? ClassMagic.NONE
-                : new ClassMagic(1, 300, 1, List.of(book(totalSpells)));
+                : new ClassMagic(1, 300, List.of(book(totalSpells)));
         return new PlayerClass("Test Class", List.of(), Map.of(), Map.of(), Map.of(), 0, 0,
                 new Flag<>(ObjectFlag.class), new Flag<>(PlayerFlag.class),
                 0, 0, 0, List.of(), magic);

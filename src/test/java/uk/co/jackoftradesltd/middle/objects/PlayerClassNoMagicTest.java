@@ -38,9 +38,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests that {@link PlayerClass} turns a {@code null} spellcasting definition into
@@ -84,7 +82,7 @@ class PlayerClassNoMagicTest {
     @Test
     @DisplayName("a real magic definition is kept as given")
     void realMagicKept() {
-        ClassMagic magic = new ClassMagic(1, 300, 0, List.of());
+        ClassMagic magic = new ClassMagic(1, 300, List.of());
 
         assertSame(magic, classWith(magic).getMagic());
     }

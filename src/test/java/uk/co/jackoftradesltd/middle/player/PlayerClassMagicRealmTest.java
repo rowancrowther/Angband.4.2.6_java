@@ -98,8 +98,7 @@ class PlayerClassMagicRealmTest {
     @DisplayName("books sharing a realm collapse to one")
     void duplicatesCollapse() {
         MagicRealm arcane = realm("arcane", Stats.STAT_INT);
-        PlayerClass c = playerClass(new ClassMagic(1, 300, 2,
-                List.of(book("first", arcane), book("second", arcane))));
+        PlayerClass c = playerClass(new ClassMagic(1, 300, List.of(book("first", arcane), book("second", arcane))));
 
         List<MagicRealm> realms = c.magicRealm();
 
@@ -115,8 +114,7 @@ class PlayerClassMagicRealmTest {
     @Test
     @DisplayName("realms are the same when their names match, whatever the objects")
     void deduplicatedByName() {
-        PlayerClass c = playerClass(new ClassMagic(1, 300, 2,
-                List.of(book("first", realm("arcane", Stats.STAT_INT)),
+        PlayerClass c = playerClass(new ClassMagic(1, 300, List.of(book("first", realm("arcane", Stats.STAT_INT)),
                         book("second", realm("arcane", Stats.STAT_INT)))));
 
         assertEquals(1, c.magicRealm().size());
@@ -129,8 +127,7 @@ class PlayerClassMagicRealmTest {
     @Test
     @DisplayName("genuinely different realms are both kept")
     void distinctRealmsKept() {
-        PlayerClass c = playerClass(new ClassMagic(1, 300, 2,
-                List.of(book("arcane book", realm("arcane", Stats.STAT_INT)),
+        PlayerClass c = playerClass(new ClassMagic(1, 300, List.of(book("arcane book", realm("arcane", Stats.STAT_INT)),
                         book("divine book", realm("divine", Stats.STAT_WIS)))));
 
         assertEquals(2, c.magicRealm().size());
@@ -158,8 +155,7 @@ class PlayerClassMagicRealmTest {
         MagicRealm arcane = realm("arcane", Stats.STAT_INT);
         MagicRealm divine = realm("divine", Stats.STAT_WIS);
         MagicRealm nature = realm("nature", Stats.STAT_WIS);
-        PlayerClass c = playerClass(new ClassMagic(1, 300, 3,
-                List.of(book("a", arcane), book("b", divine), book("c", nature))));
+        PlayerClass c = playerClass(new ClassMagic(1, 300, List.of(book("a", arcane), book("b", divine), book("c", nature))));
 
         assertEquals(List.of(nature, divine, arcane), c.magicRealm());
     }
@@ -173,8 +169,7 @@ class PlayerClassMagicRealmTest {
     void repeatedRealmKeepsFirstPosition() {
         MagicRealm arcane = realm("arcane", Stats.STAT_INT);
         MagicRealm divine = realm("divine", Stats.STAT_WIS);
-        PlayerClass c = playerClass(new ClassMagic(1, 300, 3,
-                List.of(book("a", arcane), book("b", divine), book("c", arcane))));
+        PlayerClass c = playerClass(new ClassMagic(1, 300, List.of(book("a", arcane), book("b", divine), book("c", arcane))));
 
         assertEquals(List.of(divine, arcane), c.magicRealm());
     }
@@ -188,8 +183,7 @@ class PlayerClassMagicRealmTest {
     void firstObjectWins() {
         MagicRealm first = realm("arcane", Stats.STAT_INT);
         MagicRealm second = realm("arcane", Stats.STAT_INT);
-        PlayerClass c = playerClass(new ClassMagic(1, 300, 2,
-                List.of(book("a", first), book("b", second))));
+        PlayerClass c = playerClass(new ClassMagic(1, 300, List.of(book("a", first), book("b", second))));
 
         assertSame(first, c.magicRealm().getFirst());
     }

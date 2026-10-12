@@ -17,23 +17,19 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.magic.ClassMagic;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftradesltd.middle.player.PlayerClass;
-import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
-import uk.co.jackoftradesltd.middle.player.enums.PlayerSkill;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 import uk.co.jackoftradesltd.middle.player.Player;
+import uk.co.jackoftradesltd.middle.player.PlayerClass;
 import uk.co.jackoftradesltd.middle.player.PlayerState;
+import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
+import uk.co.jackoftradesltd.middle.player.enums.PlayerSkill;
 import uk.co.jackoftradesltd.testsupport.ItemFixture;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
@@ -41,11 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests the pack-order rules of {@link ItemObject#earlierObject} that {@link ItemObjectOrderingTest}
@@ -99,7 +91,7 @@ class ItemObjectEarlierObjectRulesTest {
 
         return new PlayerClass("Test Warrior", List.of(), stats, skills, extra, 0, 0,
                 new Flag<>(ObjectFlag.class), new Flag<>(PlayerFlag.class),
-                5, 30, 5, List.of(), new ClassMagic(1, 300, 1, List.of()));
+                5, 30, 5, List.of(), new ClassMagic(1, 300, List.of()));
     }
 
     /**

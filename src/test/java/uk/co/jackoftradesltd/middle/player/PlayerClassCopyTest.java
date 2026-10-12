@@ -143,7 +143,7 @@ class PlayerClassCopyTest {
 
         MagicRealm arcane = new MagicRealm("arcane", Stats.STAT_INT, "cast", "spell",
                 TValue.TV_MAGIC_BOOK);
-        magic = new ClassMagic(1, 300, 1, List.of(
+        magic = new ClassMagic(1, 300, List.of(
                 new MagicBook(TValue.TV_MAGIC_BOOK, "Magic for Beginners", false, arcane, null,
                         0, 0, 0, 0,
                         List.of(new MagicSpell("Magic Missile", 1, 1, 25, 0, List.of(), "")))));

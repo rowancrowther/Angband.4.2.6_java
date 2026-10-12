@@ -193,7 +193,7 @@ class PlayerBirthGenerateStatsTest {
         MagicRealm realm = new MagicRealm("Test Realm", stat, "casts", "spell", TValue.TV_MAGIC_BOOK);
         MagicBook book = new MagicBook(TValue.TV_MAGIC_BOOK, "Test Book", false, realm, null,
                 0, 0, 0, 0, new java.util.ArrayList<>(java.util.Collections.nCopies(1, new uk.co.jackoftradesltd.middle.magic.MagicSpell("spell", 1, 1, 1, 0, List.of(), ""))));
-        return new ClassMagic(1, 0, 1, List.of(book));
+        return new ClassMagic(1, 0, List.of(book));
     }
 
     /**

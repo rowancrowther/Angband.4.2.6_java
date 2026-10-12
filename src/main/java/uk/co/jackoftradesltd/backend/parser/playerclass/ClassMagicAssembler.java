@@ -79,8 +79,18 @@ public class ClassMagicAssembler implements Assembler<ClassMagicParseRecord, Lis
                 continue;
             }
             List<MagicBook> magicBooks = new ClassSpellBookAssembler().assemble(record.books(), errors);
+            
+            if (magicBooks.size() > numBooks) {
+                errors.add("Line: " + line + " has a different number of books from " +
+                        "that declared");
+                continue;
+            }
+            if (record.books().size() > magicBooks.size()) {
+                errors.add("A book that was in the game datafile contained an error");
+                continue;
+            }
 
-            results.add(new ClassMagic(firstSpell, spellWeight, numBooks, magicBooks));
+            results.add(new ClassMagic(firstSpell, spellWeight, magicBooks));
         }
 
         return results;

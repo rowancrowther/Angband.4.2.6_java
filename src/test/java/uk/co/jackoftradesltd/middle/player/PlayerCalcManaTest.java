@@ -109,7 +109,7 @@ class PlayerCalcManaTest {
         return new PlayerClass("Test Caster", List.of(), stats, skills, extra, 0, 0,
                 new Flag<>(ObjectFlag.class), new Flag<>(PlayerFlag.class),
                 5, 30, 5, List.of(),
-                new ClassMagic(FIRST_SPELL_LEVEL, SPELL_WEIGHT, 1, List.of(book)));
+                new ClassMagic(FIRST_SPELL_LEVEL, SPELL_WEIGHT, List.of(book)));
     }
 
     /**

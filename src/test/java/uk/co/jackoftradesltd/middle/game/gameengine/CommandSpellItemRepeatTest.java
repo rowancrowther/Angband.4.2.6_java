@@ -107,7 +107,7 @@ class CommandSpellItemRepeatTest {
                 null, 0, 0, 0, 0, new ArrayList<>(List.of(a, b)));
         MagicBook second = new MagicBook(TValue.TV_MAGIC_BOOK, "Second", false, arcane,
                 null, 0, 0, 0, 0, new ArrayList<>(List.of(c, d)));
-        return classWith(new ClassMagic(1, 300, 2, List.of(first, second)));
+        return classWith(new ClassMagic(1, 300, List.of(first, second)));
     }
 
     private static PlayerClass classWith(ClassMagic magic) {

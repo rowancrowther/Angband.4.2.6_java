@@ -77,7 +77,7 @@ class ObjectKindCanBrowseTest {
      * Makes the current player a class holding the given books.
      */
     private static void playAsClassWith(List<MagicBook> books) throws ReflectiveOperationException {
-        ClassMagic magic = books == null ? null : new ClassMagic(1, 300, books.size(), books);
+        ClassMagic magic = books == null ? null : new ClassMagic(1, 300, books);
         PlayerClass playerClass = new PlayerClass("Test Class", List.of(), new HashMap<Stats, Integer>(),
                 new HashMap<PlayerSkill, Integer>(), new HashMap<>(), 0, 0,
                 new Flag<>(ObjectFlag.class), new Flag<>(PlayerFlag.class),

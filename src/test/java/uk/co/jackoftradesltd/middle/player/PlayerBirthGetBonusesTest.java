@@ -158,7 +158,7 @@ class PlayerBirthGetBonusesTest {
         return new PlayerClass("Test Caster", List.of(), stats, skills, extra, 0, 0,
                 new Flag<>(ObjectFlag.class), new Flag<>(PlayerFlag.class),
                 5, 30, 5, List.of(),
-                new ClassMagic(FIRST_SPELL_LEVEL, 300, 1, List.of(book)));
+                new ClassMagic(FIRST_SPELL_LEVEL, 300, List.of(book)));
     }
 
     /**

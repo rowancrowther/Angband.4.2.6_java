@@ -17,11 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.game.gameengine;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.cave.Loc;
@@ -56,8 +52,9 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p>Not covered here: {@code cmd_get_spell}, the shapechange mask in {@code getItem}, the
  * repeat-cancel rule and the sharing of an item argument by {@code clone}, which are in
- * {@link CommandSpellItemRepeatTest}. Covered by neither: the {@code DIR_TARGET} stale-target branch
- * of {@code getTarget}, because {@code GameState.targetOkay} is still a stub that always answers true.
+ * {@link CommandSpellItemRepeatTest}. The stored-5 rules of {@code getDirection} and {@code getTarget},
+ * including the stale-target branch, and the stored-{@code null} rules are in
+ * {@link CommandNullAndFiveTest}.
  *
  * <p>Class CommandTest coded on 261001, commented in full on 261003.
  *

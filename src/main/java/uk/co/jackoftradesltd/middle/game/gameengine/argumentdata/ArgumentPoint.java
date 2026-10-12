@@ -103,6 +103,7 @@ public record ArgumentPoint(Loc value) implements CommandArgumentData {
      *
      * @return a new {@code ArgumentPoint} whose {@link #value()} equals this one's
      */
+    @Override
     public CommandArgumentData copy() {
         return new ArgumentPoint(value.copy());
     }

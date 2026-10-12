@@ -62,13 +62,35 @@ import static uk.co.jackoftradesltd.middle.game.enums.CommandArgumentType.arg_CH
  * ({@code CMD_OK}, {@code CMD_ARG_NOT_PRESENT}, {@code CMD_ARG_WRONG_TYPE}, {@code CMD_ARG_ABORTED})
  * and filled an out-parameter, the port returns an {@link Optional}, empty for every non-OK code.
  *
- * <p>Class Command coded on 260830, commented in full on 261003.
+ * <p>A stored {@code null} is handled by kind. C's direction and target are plain ints, so a
+ * {@code null} {@link DirectionEnum} has no C meaning and {@code ArgumentDirection} and
+ * {@code ArgumentTarget} refuse it at construction, which makes {@code setArgDirection} and
+ * {@code setArgTarget} throw {@link IllegalArgumentException}. C's item and string are pointers
+ * and may legitimately be {@code NULL} ({@code cmd-wizard.c} stores {@code NULL} under
+ * {@code "original_item"}; {@code string_make(NULL)} returns {@code NULL}), so {@code setArgItem}
+ * and {@code setArgString} accept {@code null} and the matching getter answers empty for it. The
+ * cost is that "stored {@code null}" and "not stored" are one outcome in Java but two in C,
+ * which no C caller tells apart.
+ *
+ * <p>Direction and target codes follow C's integer values, where {@code DIR_NONE} and
+ * {@code DIR_TARGET} are both 5; wherever C tests for 5, {@link #getDirection} and
+ * {@link #getTarget} test for both constants.
+ *
+ * <p>Class Command coded on 260830, commented in full on 261012.
  *
  * @author Rowan Crowther
  */
 public class Command {
+    /**
+     * The number of argument slots C's {@code struct command} carries - the port of
+     * {@code CMD_MAX_ARGS} ({@code cmd-core.h}, 4). Nothing in this class reads it: the argument
+     * list is unbounded, so the limit is not enforced, and {@code GameConstants.MAX_COMMAND_ARGUMENTS}
+     * holds the same value.
+     *
+     * <p>Field CMD_MAX_ARGS coded on 260830, commented in full on 261012.
+     */
     public static final int CMD_MAX_ARGS = 4;
-    
+
     /**
      * The context this command was issued in (splash, birth, game, store, death).
      *
@@ -276,10 +298,15 @@ public class Command {
      * sentinel meaning "the current health-bar target"), which is why it is a distinct argument
      * variant even though C physically stored a target and a direction in the same union int.
      *
-     * <p>Function setArgTarget coded on 260830, commented in full on 261001.
+     * <p>{@code value} must not be {@code null}: C stores an int, which has no such state, and
+     * {@code ArgumentTarget}'s constructor throws before anything is stored, so a rejected call
+     * leaves the argument list as it was, an earlier value under the same name included.
+     *
+     * <p>Function setArgTarget coded on 260830, commented in full on 261012.
      *
      * @param argName the name the argument is looked up by
-     * @param value   the target code to store
+     * @param value   the target code to store, never {@code null}
+     * @throws IllegalArgumentException if {@code value} is {@code null}
      */
     public void setArgTarget(String argName, DirectionEnum value) {
         ArgumentTarget arg = new ArgumentTarget(value);
@@ -291,10 +318,14 @@ public class Command {
      * {@code cmd_set_arg_string}. C deep-copied the string here because the command owned the heap
      * buffer; a Java {@code String} is immutable, so the reference is stored as-is.
      *
-     * <p>Function setArgString coded on 260830, commented in full on 261001.
+     * <p>A {@code null} {@code value} is accepted, as C's {@code string_make(NULL)} returns
+     * {@code NULL} and {@code cmd_set_arg_string} stores it. {@link #getArgString} then answers
+     * empty for it. An empty string is a different value and reads back as present.
+     *
+     * <p>Function setArgString coded on 260830, commented in full on 261012.
      *
      * @param argName the name the argument is looked up by
-     * @param value   the string to store
+     * @param value   the string to store, or {@code null}
      */
     public void setArgString(String argName, String value) {
         ArgumentString arg = new ArgumentString(value);
@@ -338,10 +369,14 @@ public class Command {
      * Stores {@code value} as this command's {@code argName} item argument - the port of C's
      * {@code cmd_set_arg_item}. The stored reference is the selected object itself.
      *
-     * <p>Function setArgItem coded on 260830, commented in full on 261001.
+     * <p>A {@code null} {@code value} is accepted: C stores {@code NULL} here, and
+     * {@code cmd-wizard.c} does so under {@code "original_item"} to end a play session.
+     * {@link #getArgItem} then answers empty for it.
+     *
+     * <p>Function setArgItem coded on 260830, commented in full on 261012.
      *
      * @param argName the name the argument is looked up by
-     * @param value   the item to store
+     * @param value   the item to store, or {@code null}
      */
     public void setArgItem(String argName, ItemObject value) {
         ArgumentItem arg = new ArgumentItem(value);
@@ -352,10 +387,15 @@ public class Command {
      * Stores {@code value} as this command's {@code argName} direction argument - the port of C's
      * {@code cmd_set_arg_direction}.
      *
-     * <p>Function setArgDirection coded on 260830, commented in full on 261001.
+     * <p>{@code value} must not be {@code null}: C stores an int, which has no such state, and
+     * {@code ArgumentDirection}'s constructor throws before anything is stored, so a rejected call
+     * leaves the argument list as it was, an earlier value under the same name included.
+     *
+     * <p>Function setArgDirection coded on 260830, commented in full on 261012.
      *
      * @param argName the name the argument is looked up by
-     * @param value   the direction to store
+     * @param value   the direction to store, never {@code null}
+     * @throws IllegalArgumentException if {@code value} is {@code null}
      */
     public void setArgDirection(String argName, DirectionEnum value) {
         ArgumentDirection arg = new ArgumentDirection(value);
@@ -429,9 +469,10 @@ public class Command {
 
     /**
      * Reads this command's {@code argName} argument as a direction - the port of C's
-     * {@code cmd_get_arg_direction}. Empty when unset or when set to another type.
+     * {@code cmd_get_arg_direction}. Empty when unset or when set to another type. A stored
+     * direction is never {@code null}, because {@link #setArgDirection} refuses it.
      *
-     * <p>Function getArgDirection coded on 260830, commented in full on 261001.
+     * <p>Function getArgDirection coded on 260830, commented in full on 261012.
      *
      * @param argName the name to look up
      * @return the stored direction, or empty if no argument of that name is set or it is not a direction
@@ -450,18 +491,30 @@ public class Command {
      * Reads this command's {@code argName} argument as an item - the port of C's
      * {@code cmd_get_arg_item}. Empty when unset or when set to another type.
      *
-     * <p>Function getArgItem coded on 260830, commented in full on 261001.
+     * <p>Empty is also the answer when the argument is an item argument holding {@code null}, which
+     * is the stored link that is {@code null} (the argument and its {@code ArgumentItem} exist; the
+     * item inside does not). C returns {@code CMD_OK} with a {@code NULL} pointer there, and
+     * {@code cmd-wizard.c} reads {@code "original_item"} as {@code CMD_OK && orig_obj}, so for that
+     * caller the two outcomes agree. {@link #getItem} and {@link #getSpell} also take empty as
+     * absent, where C would hand a stored {@code NULL} on; C never stores {@code NULL} under their
+     * arguments.
+     *
+     * <p>Function getArgItem coded on 260830, commented in full on 261012.
      *
      * @param argName the name to look up
-     * @return the stored item, or empty if no argument of that name is set or it is not an item
+     * @return the stored item, or empty if no argument of that name is set, it is not an item, or
+     * the item stored is {@code null}
      */
     public Optional<ItemObject> getArgItem(@NotNull String argName) {
         CommandArgument argument = findArg(argName);
 
         if (argument == null)
             return Optional.empty();
-        if (argument.getData() instanceof ArgumentItem(ItemObject value))
+        if (argument.getData() instanceof ArgumentItem(ItemObject value)) {
+            if (value == null)
+                return Optional.empty();
             return Optional.of(value);
+        }
 
         return Optional.empty();
     }
@@ -490,11 +543,11 @@ public class Command {
      * Reads this command's {@code argName} argument as a point - the port of C's
      * {@code cmd_get_arg_point}. Empty when unset or when set to another type.
      *
-     * <p>Empty stands for C's {@code CMD_ARG_NOT_FOUND}, which leaves the caller's {@code struct loc}
+     * <p>Empty stands for C's {@code CMD_ARG_NOT_PRESENT}, which leaves the caller's {@code struct loc}
      * untouched. It is not {@link Loc#zero}: a point stored at the origin comes back as
      * {@code Optional.of(Loc.zero)}, so the two cases stay apart.
      *
-     * <p>Function getArgPoint coded on 260830, commented in full on 261001, unset name changed to
+     * <p>Function getArgPoint coded on 260830, commented in full on 261012, unset name changed to
      * answer empty on 261012.
      *
      * @param argName the name to look up
@@ -515,18 +568,27 @@ public class Command {
      * Reads this command's {@code argName} argument as a string - the port of C's
      * {@code cmd_get_arg_string}. Empty when unset or when set to another type.
      *
-     * <p>Function getArgString coded on 260830, commented in full on 261001.
+     * <p>Empty is also the answer when the argument is a string argument holding {@code null}, the
+     * stored link that is {@code null} (the argument and its {@code ArgumentString} exist; the
+     * text inside does not). C returns {@code CMD_OK} with a {@code NULL} pointer there. An empty
+     * string is a present value and comes back as {@code Optional.of("")}.
+     * {@link #getString} treats the {@code null} case as absent and prompts.
+     *
+     * <p>Function getArgString coded on 260830, commented in full on 261012.
      *
      * @param argName the name to look up
-     * @return the stored string, or empty if no argument of that name is set or it is not a string
+     * @return the stored string, or empty if no argument of that name is set, it is not a string,
+     * or the string stored is {@code null}
      */
     public Optional<String> getArgString(@NotNull String argName) {
         CommandArgument argument = findArg(argName);
 
         if (argument == null)
             return Optional.empty();
-        if (argument.getData() instanceof ArgumentString(String value))
+        if (argument.getData() instanceof ArgumentString(String value)) {
+            if (value == null) return Optional.empty();
             return Optional.of(value);
+        }
 
         return Optional.empty();
     }
@@ -535,9 +597,10 @@ public class Command {
      * Reads this command's {@code argName} argument as a target - the port of C's
      * {@code cmd_get_arg_target}. Empty when unset or when set to another type. Note this is a
      * raw read: it does <em>not</em> validate that the target is still reachable - that live check
-     * belongs to {@link #getTarget}.
+     * belongs to {@link #getTarget}. A stored target is never {@code null}, because
+     * {@link #setArgTarget} refuses it.
      *
-     * <p>Function getArgTarget coded on 260830, commented in full on 261001.
+     * <p>Function getArgTarget coded on 260830, commented in full on 261012.
      *
      * @param argName the name to look up
      * @return the stored target code, or empty if no argument of that name is set or it is not a target
@@ -557,14 +620,17 @@ public class Command {
      * Gets a direction for this command, taking a queued argument when there is one and otherwise
      * prompting the player - the port of C's {@code cmd_get_direction}.
      *
-     * <p>A stored direction is trusted only when it is a real direction: a queued {@link
-     * DirectionEnum#DIR_NONE} is treated as absent and falls through to the prompt, exactly as C
-     * re-checks {@code *dir != DIR_NONE} before returning a stored arg. On abort (the player
-     * declines to choose) the in-flight repeat is cancelled via {@link CommandQueue#cancelRepeat} -
-     * a failed direction must stop a repeating command dead - and an empty {@link Optional} is
-     * returned to signal C's {@code CMD_ARG_ABORTED}.
+     * <p>A stored direction is trusted only when it is not the value 5: C re-checks
+     * {@code *dir != DIR_NONE} before returning a stored arg, and {@code DIR_NONE} and
+     * {@code DIR_TARGET} are both 5 in {@code cave.h}. The port keeps them as two constants, so a
+     * queued {@link DirectionEnum#DIR_NONE} or {@link DirectionEnum#DIR_TARGET} is treated as absent
+     * and falls through to the prompt. {@link DirectionEnum#DIR_UNKNOWN} (0) is accepted, as in C.
      *
-     * <p>Function getDirection coded on 260830, commented in full on 261001.
+     * <p>On abort (the player declines to choose) the in-flight repeat is cancelled via
+     * {@link CommandQueue#cancelRepeat} - a failed direction must stop a repeating command dead -
+     * and an empty {@link Optional} is returned to signal C's {@code CMD_ARG_ABORTED}.
+     *
+     * <p>Function getDirection coded on 260830, commented in full on 261012.
      *
      * @param argName the name the direction argument is stored under
      * @param allow5  whether the "5"/self target is a permitted answer (C's {@code allow_5})
@@ -572,7 +638,8 @@ public class Command {
      */
     public Optional<DirectionEnum> getDirection(String argName, boolean allow5) {
         Optional<DirectionEnum> result = getArgDirection(argName);
-        if (result.isPresent() && result.get() != DirectionEnum.DIR_NONE) return result;
+        if (result.isPresent() && result.get() != DirectionEnum.DIR_NONE 
+                && result.get() != DirectionEnum.DIR_TARGET) return result;
 
         Optional<DirectionEnum> repDir = GameInputHolder.getInstance().getRepDir(allow5);
         if (repDir.isEmpty()) {
@@ -689,13 +756,15 @@ public class Command {
      * <p>A stored target is trusted only when it is still usable: it must not be {@link
      * DirectionEnum#DIR_UNKNOWN}, and a {@link DirectionEnum#DIR_TARGET} (meaning "the current
      * health-bar target") is only honoured while that target is still valid ({@link
-     * Target#targetOkay}). Anything else - no arg, an unknown target, or a stale health-bar
+     * Target#targetOkay}). C tests the integer 5, which is both {@code DIR_TARGET} and
+     * {@code DIR_NONE}, so a stored {@link DirectionEnum#DIR_NONE} gets the same validity check.
+     * Anything else - no arg, an unknown target, or a stale health-bar
      * target - falls through to the aim prompt, matching C's re-check before it calls
      * {@code get_aim_dir}. The aimed direction returns as the {@link Optional} value (C's out-param
      * {@code *target}); empty is C's {@code CMD_ARG_ABORTED}. Unlike {@link #getDirection}, an
      * aborted aim does not cancel the repeat.
      *
-     * <p>Function getTarget coded on 260830, commented in full on 261001.
+     * <p>Function getTarget coded on 260830, commented in full on 261012.
      *
      * @param argName the name the target argument is stored under
      * @return the chosen target, or empty if the player aborted
@@ -705,7 +774,8 @@ public class Command {
 
         if (result.isPresent()) {
             DirectionEnum target = result.get();
-            if (target != DirectionEnum.DIR_UNKNOWN && (target != DirectionEnum.DIR_TARGET || Target.targetOkay()))
+            if (target != DirectionEnum.DIR_UNKNOWN && ((target != DirectionEnum.DIR_NONE  
+                    && target != DirectionEnum.DIR_TARGET) || Target.targetOkay()))
                 return result;
         }
 
@@ -967,10 +1037,9 @@ public class Command {
     /**
      * Sets the tri-state repeat/bloodlust flag (see {@link #backgroundCommand}). Used when a
      * command is queued on the player's behalf rather than typed, so it cannot be the target of
-     * {@code CMD_REPEAT} and (above {@code 1}) cannot trigger bloodlust. The name is misspelt
-     * ("Bacground"); it is left as is so existing callers keep compiling.
+     * {@code CMD_REPEAT} and (above {@code 1}) cannot trigger bloodlust.
      *
-     * <p>Function setBackgroundCommand coded on 260830, commented in full on 261001.
+     * <p>Function setBackgroundCommand coded on 260830, commented in full on 261012.
      *
      * @param i the new flag value: 0, 1 or greater than 1
      */

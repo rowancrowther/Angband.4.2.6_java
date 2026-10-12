@@ -57,6 +57,7 @@ public record ArgumentChoice(int value) implements CommandArgumentData {
      *
      * @return {@link CommandArgumentType#arg_CHOICE}
      */
+    @Override
     public CommandArgumentType type() {
         return CommandArgumentType.arg_CHOICE;
     }

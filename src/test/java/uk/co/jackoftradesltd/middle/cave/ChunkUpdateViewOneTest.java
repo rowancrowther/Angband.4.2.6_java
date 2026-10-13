@@ -17,11 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.cave;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.cave.enums.SquareEnum;
@@ -41,9 +37,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@code Chunk.updateViewOne}, the port of C's {@code update_view_one} ({@code cave-view.c}).
@@ -125,7 +119,7 @@ class ChunkUpdateViewOneTest {
         for (TerrainFeatureFlags flag : flags)
             set.on(flag);
         return new Feature(null, "test", "", null, 0, 0, set, null, "", "", "", "", "", "", "",
-                new Flag<>(MonsterRaceFlag.class), 0);
+                MonsterRaceFlag.RF_NONE);
     }
 
     /**

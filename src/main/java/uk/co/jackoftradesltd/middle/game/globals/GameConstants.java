@@ -219,11 +219,11 @@ public class GameConstants {
 
     /**
      * The number of stores, which C keeps in {@code z_info->store_max}. Written by
-     * {@link #setStoreMax(int)} (the terrain-feature assembler calls it with the number of shops it
-     * handed out) and read by {@link #getStoreMax()}. Most of C's other array bounds are not held
-     * here, because the lists they bound are {@code ArrayList}s whose size is the bound.
+     * {@link #setStoreMax(int)} ({@code TerrainDataLoader.loadTerrainFeatures()} calls it with the
+     * number of shops it numbered) and read by {@link #getStoreMax()}. Most of C's other array bounds
+     * are not held here, because the lists they bound are {@code ArrayList}s whose size is the bound.
      *
-     * <p>Field storeMax coded before 261010, commented in full on 261010.
+     * <p>Field storeMax coded before 261010, commented in full on 261013.
      */
     private static int storeMax;
     /**
@@ -670,10 +670,11 @@ public class GameConstants {
     }
 
     /**
-     * The number of stores, C's {@code z_info->store_max}. It is set from the terrain-feature
-     * assembler rather than {@code constants.txt}, so it is 0 until {@code terrain.txt} has loaded.
+     * The number of stores, C's {@code z_info->store_max}. It is set by
+     * {@code TerrainDataLoader.loadTerrainFeatures()} rather than from {@code constants.txt}, so it
+     * is 0 until {@code terrain.txt} has loaded.
      *
-     * <p>Function getStoreMax coded before 261010, commented in full on 261010.
+     * <p>Function getStoreMax coded before 261010, commented in full on 261013.
      *
      * @return the configured value of {@code storeMax}
      */
@@ -682,10 +683,11 @@ public class GameConstants {
     }
 
     /**
-     * Records the number of stores, C's {@code z_info->store_max}. Called by the terrain-feature
-     * assembler with the number of shops it handed out.
+     * Records the number of stores, C's {@code z_info->store_max}. Called by
+     * {@code TerrainDataLoader.loadTerrainFeatures()} with the number of shops it numbered, after
+     * the parse has been checked and before the features are installed.
      *
-     * <p>Function setStoreMax coded before 261010, commented in full on 261010.
+     * <p>Function setStoreMax coded before 261010, commented in full on 261013.
      *
      * @param storeMax the number of stores
      */

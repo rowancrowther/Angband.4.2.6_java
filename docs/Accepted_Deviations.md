@@ -74,6 +74,25 @@ recorded here as the summary states them; fill in the detail when you next touch
   record, the grammar, the assembler and the `MonsterBase` constructor.
 - **Accepted:** 2026-10-10. Marked in the `MonsterBase` and `MonsterBaseParseRecord` Javadoc.
 
+## Terrain
+
+### An unknown terrain colour is rejected, where C reads it as white
+
+- **Java:** the `COLOUR_VALUES` token in `AngbandDisplayCharacter.g4` (used by `TerrainFeatureGrammar.g4`) and
+  `TerrainFeatureAssembler.assemble`, through `ColourEnum.fromCode`. **C:** `parse_feat_graphics` (`init.c`), with
+  `color_text_to_attr` and `color_char_to_attr` (`z-color.c`).
+- **Differs:** both C look-ups fall back to `COLOUR_WHITE` for a colour they do not know, so a `graphics:` line never
+  fails in practice and `PARSE_ERROR_INVALID_COLOR` is unreachable. Java has lexer tokens only for the colours in C's
+  table, so an unknown colour is a hard grammar error that fails the whole file. If a token ever got past the lexer,
+  the assembler drops the record with an `Unknown colour` soft error, and the load carries on without an entry for
+  that code.
+- **Reach:** none from shipped data; every `graphics:` line in `terrain.txt` names a colour in C's table. Hand-edited
+  files only.
+- **Revisit:** if a hand-edited terrain file is ever meant to load with a white fallback, or if the colour handling of
+  the other readers is brought back into line with C.
+- **Accepted:** 2026-10-13. Pinned by the `ColourCheck` tests in `TerrainDataLoaderFeaturesTest`; marked in the
+  `TerrainDataLoader` Javadoc.
+
 ## Pending your decision
 
 - The five `objDescNameFormat` divergences (Part G; `docs/ItemObject_round2/part_G.md`). All unreachable from shipped

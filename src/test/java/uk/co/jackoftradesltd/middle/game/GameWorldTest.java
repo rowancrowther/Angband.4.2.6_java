@@ -17,27 +17,27 @@
 
 package uk.co.jackoftradesltd.middle.game;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.backend.parser.GameConstantsReader;
+import uk.co.jackoftradesltd.channel.colour.ColourEnum;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataMessage;
 import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.cave.Chunk;
 import uk.co.jackoftradesltd.middle.cave.Feature;
+import uk.co.jackoftradesltd.middle.cave.Loc;
 import uk.co.jackoftradesltd.middle.cave.enums.TerrainFeatureFlags;
 import uk.co.jackoftradesltd.middle.cave.enums.TerrainFlags;
-import uk.co.jackoftradesltd.middle.game.enums.CommandContext;
-import uk.co.jackoftradesltd.middle.cave.Loc;
+import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
+import uk.co.jackoftradesltd.middle.enums.Stats;
+import uk.co.jackoftradesltd.middle.game.enums.CommandCode;
+import uk.co.jackoftradesltd.middle.game.enums.CommandContext;
 import uk.co.jackoftradesltd.middle.game.event.EventHandlerInterface;
 import uk.co.jackoftradesltd.middle.game.event.EventsHandler;
-import uk.co.jackoftradesltd.middle.game.enums.CommandCode;
 import uk.co.jackoftradesltd.middle.game.gameengine.CommandQueue;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
@@ -45,15 +45,11 @@ import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.data.GameConstantsData;
 import uk.co.jackoftradesltd.middle.game.globals.data.StoreData;
 import uk.co.jackoftradesltd.middle.game.globals.data.WorldData;
+import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftradesltd.middle.monsters.Monster;
 import uk.co.jackoftradesltd.middle.monsters.MonsterRace;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterFlag;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
-import uk.co.jackoftradesltd.middle.player.Player;
-import uk.co.jackoftradesltd.channel.colour.ColourEnum;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
-import uk.co.jackoftradesltd.middle.effect.Effect;
-import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.Artifact;
 import uk.co.jackoftradesltd.middle.objects.Curse;
@@ -61,17 +57,8 @@ import uk.co.jackoftradesltd.middle.objects.CurseData;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
-import uk.co.jackoftradesltd.middle.enums.Stats;
-import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
-import uk.co.jackoftradesltd.middle.player.enums.PlayerNotice;
-import uk.co.jackoftradesltd.middle.player.enums.PlayerRedraw;
-import uk.co.jackoftradesltd.middle.player.PlayerOptions;
-import uk.co.jackoftradesltd.middle.player.PlayerTimedEffect;
-import uk.co.jackoftradesltd.middle.player.PlayerUtils;
-import uk.co.jackoftradesltd.middle.player.TimedGrade;
-import uk.co.jackoftradesltd.middle.player.enums.PlayerUpdateEnum;
-import uk.co.jackoftradesltd.middle.player.enums.PlayerOptionEnum;
-import uk.co.jackoftradesltd.middle.player.enums.TimedEffect;
+import uk.co.jackoftradesltd.middle.player.*;
+import uk.co.jackoftradesltd.middle.player.enums.*;
 import uk.co.jackoftradesltd.testsupport.CalcBonusesFixture;
 import uk.co.jackoftradesltd.testsupport.CurseFixture;
 import uk.co.jackoftradesltd.testsupport.ItemFixture;
@@ -86,11 +73,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.UnaryOperator;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests the clock and per-turn machinery in {@link GameWorld}, the port of C's {@code game-world.c}.
@@ -2198,7 +2181,7 @@ class GameWorldTest {
             Flag<TerrainFeatureFlags> set = new Flag<>(TerrainFeatureFlags.class);
             for (TerrainFeatureFlags flag : flags) set.on(flag);
             return new Feature(TerrainFlags.FEAT_GRANITE, "test wall", "", null, 0, 0, set, null, "", "", "",
-                    "", "", "", "", new Flag<>(uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag.class), 0);
+                    "", "", "", "", uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag.RF_NONE);
         }
 
         /**

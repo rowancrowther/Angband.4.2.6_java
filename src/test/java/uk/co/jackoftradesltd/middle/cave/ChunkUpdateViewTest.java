@@ -17,11 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.cave;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
@@ -34,11 +30,7 @@ import uk.co.jackoftradesltd.middle.game.event.EventsHandler;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
-import uk.co.jackoftradesltd.middle.game.globals.data.CarryCapData;
-import uk.co.jackoftradesltd.middle.game.globals.data.GameConstantsData;
-import uk.co.jackoftradesltd.middle.game.globals.data.LevelMaxData;
-import uk.co.jackoftradesltd.middle.game.globals.data.PlayerData;
-import uk.co.jackoftradesltd.middle.game.globals.data.WorldData;
+import uk.co.jackoftradesltd.middle.game.globals.data.*;
 import uk.co.jackoftradesltd.middle.game.globals.registry.TerrainRegistry;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftradesltd.middle.player.Player;
@@ -52,9 +44,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@code Chunk.updateView}, the port of C's {@code update_view} ({@code cave-view.c}).
@@ -212,7 +202,7 @@ class ChunkUpdateViewTest {
         for (TerrainFeatureFlags flag : setOn) flags.on(flag);
 
         return new Feature(code, name, "", null, 0, 0, flags, null, "", "", "", "", "", "", "",
-                new Flag<>(MonsterRaceFlag.class), 0);
+                MonsterRaceFlag.RF_NONE);
     }
 
     /**

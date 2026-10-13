@@ -29,9 +29,7 @@ import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Runs every terrain class in {@code terrain.txt} that carries a rock-related flag through the six
@@ -112,7 +110,7 @@ class SquareTerrainClassTest {
             set.on(flag);
         }
         Feature feature = new Feature(null, "test", "", null, 0, 0, set, null, "", "", "", "", "", "", "",
-                new Flag<>(MonsterRaceFlag.class), 0);
+                MonsterRaceFlag.RF_NONE);
         return new Square(feature, 0, 0);
     }
 

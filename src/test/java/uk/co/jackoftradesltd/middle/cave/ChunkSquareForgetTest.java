@@ -17,13 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.cave;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.cave.enums.TerrainFeatureFlags;
@@ -186,7 +180,7 @@ class ChunkSquareForgetTest {
         for (TerrainFeatureFlags flag : setOn) flags.on(flag);
 
         return new Feature(code, name, "", null, 0, 0, flags, null,
-                null, null, null, null, null, null, null, null, 0);
+                null, null, null, null, null, null, null, null);
     }
 
     /**

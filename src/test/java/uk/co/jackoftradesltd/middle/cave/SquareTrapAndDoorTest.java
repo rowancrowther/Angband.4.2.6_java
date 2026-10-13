@@ -17,11 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.cave;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.cave.enums.SquareEnum;
 import uk.co.jackoftradesltd.middle.cave.enums.TerrainFeatureFlags;
@@ -34,12 +30,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests the {@link Square} predicates that read the trap list and the door terrain — the trap scans
@@ -122,7 +113,7 @@ class SquareTrapAndDoorTest {
             set.on(flag);
         }
         return new Feature(null, "test", "", null, 0, 0, set, null, "", "", "", "", "", "", "",
-                new Flag<>(MonsterRaceFlag.class), 0);
+                MonsterRaceFlag.RF_NONE);
     }
 
     /**

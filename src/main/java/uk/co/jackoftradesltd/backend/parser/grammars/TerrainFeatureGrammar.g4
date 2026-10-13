@@ -180,15 +180,10 @@ look_in_preposition
 // "resist-flag:<RF_FLAG>" - monster race flag for resisting this terrain
 // (e.g. fire-resistant monsters ignoring lava damage).
 resist_flag
-        returns[List<String> resistFlag]
-        @init {
-            $resistFlag = new ArrayList<>();
-        }
+        returns[String resistFlag]
         :   RESIST_FLAG f1=FLAG {
-                $resistFlag.add($f1.getText());
-            } (FLAG_OR f2=FLAG {
-                $resistFlag.add($f2.getText());
-            })* FLAG_EOL
+                $resistFlag = $f1.getText(); }
+            FLAG_EOL
         ;
 
 // "desc:<text>" - flavour description.
@@ -226,7 +221,7 @@ terrain
             String confInit = "";
             String prefixInit = "";
             String prepositionInit = "";
-            List<String> resistInit = new ArrayList<>();
+            String resistInit = "";
             String descInit = "";
             int lineNo = 0;
         }
@@ -284,7 +279,7 @@ terrain
                     prepositionInit = $look_in_preposition.prepositionStr;
                 }
               | resist_flag {
-                    resistInit.addAll($resist_flag.resistFlag);
+                    resistInit = $resist_flag.resistFlag;
                 }
               | desc {
                     descInit = descInit + $desc.descStr;

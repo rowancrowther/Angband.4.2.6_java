@@ -25,9 +25,7 @@ import uk.co.jackoftradesltd.middle.cave.enums.TerrainFeatureFlags;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests the four predicates {@link Square} answers about who is standing on it — {@link
@@ -73,7 +71,7 @@ class SquareOccupancyTest {
             set.on(flag);
         }
         return new Feature(null, "test", "", null, 0, 0, set, null, "", "", "", "", "", "", "",
-                new Flag<>(MonsterRaceFlag.class), 0);
+                MonsterRaceFlag.RF_NONE);
     }
 
     /**

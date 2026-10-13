@@ -29,11 +29,7 @@ import uk.co.jackoftradesltd.middle.game.globals.registry.TerrainRegistry;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link TerrainRegistry} against the C globals it stands in for: {@code z_info->trap_max}, set by
@@ -59,7 +55,7 @@ class TerrainRegistryTest {
 
     private static Feature feature(TerrainFlags code, String name) {
         return new Feature(code, name, "", null, 0, 0, new Flag<>(TerrainFeatureFlags.class), null,
-                null, null, null, null, null, null, null, null, 0);
+                null, null, null, null, null, null, null, null);
     }
 
     @BeforeEach

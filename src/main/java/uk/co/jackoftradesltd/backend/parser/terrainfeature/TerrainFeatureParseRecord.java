@@ -58,5 +58,5 @@ public record TerrainFeatureParseRecord(String code, String name, String desc,
                                         String colour, String walkMsg, String runMsg,
                                         String hurtMsg, String dieMsg, String confusedMsg,
                                         String lookPrefix, String lookInPreposition,
-                                        List<String> resistFlags, int line) {
+                                        String resistFlags, int line) {
 }

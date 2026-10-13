@@ -50,12 +50,6 @@ the existing doc comment for context.
 
 29
 
-### `middle/game/globals/loaders/ObjectDataLoader.java`
-
-1 missing, 0 low
-
-- L50: field `logger` - MISSING
-
 ### `middle/game/globals/loaders/TerrainDataLoader.java`
 
 1 missing, 0 low

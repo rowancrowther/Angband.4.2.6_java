@@ -217,8 +217,13 @@ public class MonsterRegistry {
      * @param monsterPains the pain records, in file order
      */
     public static void setMonsterPains(List<MonsterPain> monsterPains) {
-        MonsterRegistry.monsterPains = monsterPains;
-        monsterPainMsgMax = monsterPains.size();
+        if (monsterPains != null) {
+            MonsterRegistry.monsterPains = monsterPains;
+            monsterPainMsgMax = monsterPains.size();
+        } else {
+            MonsterRegistry.monsterPains = Collections.emptyList();
+            monsterPainMsgMax = 0;
+        }
     }
 
     /**

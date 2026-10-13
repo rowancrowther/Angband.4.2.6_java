@@ -17,11 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.cave;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.function.Executable;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.cave.enums.TerrainFeatureFlags;
@@ -33,13 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Checks {@link Feature} against the C original: the {@code feat_is_*()} predicates in
@@ -85,18 +75,22 @@ class FeatureTest {
 
     private static Feature feature(TerrainFlags code, String name, TerrainFlags mimic, int shopNum,
                                    TerrainFeatureFlags... on) {
-        return new Feature(code, name, "", mimic, 0, 0, flags(on), null,
-                "", "", "", "", "", "", "", new Flag<>(MonsterRaceFlag.class), shopNum);
+        Feature feature = new Feature(code, name, "", mimic, 0, 0, flags(on), null,
+                "", "", "", "", "", "", "", MonsterRaceFlag.RF_NONE);
+        feature.setShopNum(shopNum);
+        return feature;
     }
 
     private static Feature withFlags(TerrainFeatureFlags... on) {
         return feature(null, null, on);
     }
 
-    private static Feature sharing(Flag<TerrainFeatureFlags> flags, Flag<MonsterRaceFlag> resist, String name,
+    private static Feature sharing(Flag<TerrainFeatureFlags> flags, MonsterRaceFlag resist, String name,
                                    TerrainFlags mimic, int shopNum) {
-        return new Feature(TerrainFlags.FEAT_STORE_ARMOR, name, "", mimic, 0, 0, flags, null,
-                "", "", "", "", "", "", "", resist, shopNum);
+        Feature feature = new Feature(TerrainFlags.FEAT_STORE_ARMOR, name, "", mimic, 0, 0, flags, null,
+                "", "", "", "", "", "", "", resist);
+        feature.setShopNum(shopNum);
+        return feature;
     }
 
     /**
@@ -317,12 +311,13 @@ class FeatureTest {
     @DisplayName("equals and hashCode agree for the same instance and for features sharing their Flag objects")
     void equalsAndHashCodeWithSharedFlags() {
         Flag<TerrainFeatureFlags> flags = flags(TerrainFeatureFlags.TF_SHOP);
-        Flag<MonsterRaceFlag> resist = new Flag<>(MonsterRaceFlag.class);
+        MonsterRaceFlag resist = MonsterRaceFlag.RF_IM_FIRE;
         Feature a = sharing(flags, resist, "Armoury", null, 2);
         Feature same = sharing(flags, resist, "Armoury", null, 2);
         Feature otherShop = sharing(flags, resist, "Armoury", null, 3);
         Feature otherName = sharing(flags, resist, "Armory", null, 2);
         Feature otherMimic = sharing(flags, resist, "Armoury", TerrainFlags.FEAT_GRANITE, 2);
+        Feature otherResist = sharing(flags, MonsterRaceFlag.RF_IM_COLD, "Armoury", null, 2);
 
         assertAll(
                 () -> assertEquals(a, a),
@@ -332,6 +327,7 @@ class FeatureTest {
                 () -> assertNotEquals(a, otherShop),
                 () -> assertNotEquals(a, otherName),
                 () -> assertNotEquals(a, otherMimic),
+                () -> assertNotEquals(a, otherResist),
                 () -> assertNotEquals(null, a),
                 () -> assertNotEquals("Armoury", a));
     }
@@ -339,7 +335,7 @@ class FeatureTest {
     /**
      * Deliberately disabled: this documents a defect in {@code Feature.equals} and
      * {@code Feature.hashCode}, not a mistake in the test. {@code Flag} defines no {@code equals}
-     * or {@code hashCode}, so the {@code flags} and {@code resistFlag} comparisons are by identity
+     * or {@code hashCode}, so the {@code flags} comparison is by identity
      * and two features built from separate but identical {@code Flag} objects are not equal.
      * Enable it once {@code Flag} (or {@code Feature.equals}, using {@code isEqual}) is fixed.
      */

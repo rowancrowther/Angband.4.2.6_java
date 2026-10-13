@@ -195,7 +195,7 @@ public class Feature {
      *
      * <p>Field resistFlag coded before 260930, commented in full on 260930.
      */
-    private Flag<MonsterRaceFlag> resistFlag;
+    private MonsterRaceFlag resistFlag;
 
     /**
      * Build a feature definition from its parsed data-file fields. The
@@ -220,7 +220,6 @@ public class Feature {
      * @param lookPrefix        look-output prefix
      * @param lookInPreposition look-output "in" preposition
      * @param resistFlag        race flag granting resistance
-     * @param shopNum           shop number, or 0 when this is not a shop entrance
      */
     public Feature(TerrainFlags code,
                    String name,
@@ -237,8 +236,7 @@ public class Feature {
                    String confusedMsg,
                    String lookPrefix,
                    String lookInPreposition,
-                   Flag<MonsterRaceFlag> resistFlag,
-                   int shopNum) {
+                   MonsterRaceFlag resistFlag) {
         this.code = code;
         this.name = name;
         this.description = description;
@@ -255,7 +253,6 @@ public class Feature {
         this.lookPrefix = lookPrefix;
         this.lookInPreposition = lookInPreposition;
         this.resistFlag = resistFlag;
-        this.shopNum = shopNum;
     }
 
     /**
@@ -905,5 +902,9 @@ public class Feature {
         result = 31 * result + Objects.hashCode(lookInPreposition);
         result = 31 * result + Objects.hashCode(resistFlag);
         return result;
+    }
+
+    public void setShopNum(int shopNum) {
+        this.shopNum = shopNum;
     }
 }

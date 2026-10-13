@@ -95,7 +95,8 @@ class BrandReaderTest {
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(10, result.items().size());
-        assertEquals("ACID_3", result.items().get(0).getCode());
+        // C's brands[] runs in reverse file order, so the last record, POIS_2, is first
+        assertEquals("POIS_2", result.items().get(0).getCode());
     }
 
     @Test

@@ -55,11 +55,16 @@ public class SlayAssembler implements Assembler<SlayParseRecord, List<Slay>> {
      * any record whose race-flag/base choice is invalid or whose numeric fields
      * do not parse.
      *
-     * <p>Function assemble coded before 260915, commented in full on 260915.
+     * <p>The result is in reverse file order, because C's parser prepends each slay to a list and
+     * {@code finish_parse_slay} ({@code obj-init.c}) copies that list into {@code slays[]} from the
+     * head: the last record in {@code slay.txt} comes first, as {@code slays[1]}. Consumers that
+     * keep the first of several equivalent slays, such as {@code Rune.initRunes}, depend on this.
+     *
+     * <p>Function assemble coded before 260915, commented in full on 261013.
      *
      * @param records the raw slay records from the parser
      * @param errors  the soft-error sink, appended to in place; never thrown
-     * @return the successfully assembled slays, in file order
+     * @return the successfully assembled slays, in reverse file order (C's {@code slays[]} order)
      */
     @Override
     public List<Slay> assemble(@NotNull List<SlayParseRecord> records, @NotNull List<String> errors) {
@@ -128,7 +133,7 @@ public class SlayAssembler implements Assembler<SlayParseRecord, List<Slay>> {
             String meleeVerb = record.meleeVerb();
             String rangeVerb = record.rangeVerb();
 
-            slays.add(new Slay(code, name, monsterBase, meleeVerb, rangeVerb,
+            slays.addFirst(new Slay(code, name, monsterBase, meleeVerb, rangeVerb,
                     monsterRaceFlag, multiplier, oMult, power));
         }
 

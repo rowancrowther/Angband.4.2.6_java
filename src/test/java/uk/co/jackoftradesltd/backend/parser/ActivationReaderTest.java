@@ -77,7 +77,8 @@ class ActivationReaderTest {
         // No errors implies the file's declared record-count matched the records found.
         assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertFalse(result.items().isEmpty());
-        assertEquals("CURE_POISON", result.items().get(0).getName());
+        // C's activations[] runs in reverse file order, so the last record, DRAGON_POWER, is first
+        assertEquals("DRAGON_POWER", result.items().get(0).getName());
     }
 
     @Test
@@ -85,7 +86,8 @@ class ActivationReaderTest {
         List<Activation> activations = new ActivationReader().parse(REAL_FILE);
 
         assertFalse(activations.isEmpty());
-        assertEquals("CURE_POISON", activations.get(0).getName());
+        // C's activations[] runs in reverse file order, so the last record, DRAGON_POWER, is first
+        assertEquals("DRAGON_POWER", activations.get(0).getName());
     }
 
     @Test

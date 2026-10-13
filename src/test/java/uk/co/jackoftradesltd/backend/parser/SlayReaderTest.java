@@ -136,7 +136,8 @@ class SlayReaderTest {
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(11, result.items().size());
-        assertEquals("EVIL_2", result.items().get(0).getCode());
+        // C's slays[] runs in reverse file order, so the last record, UNDEAD_5, is first
+        assertEquals("UNDEAD_5", result.items().get(0).getCode());
     }
 
     @Test

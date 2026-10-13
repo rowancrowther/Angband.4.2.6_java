@@ -18,8 +18,8 @@
 package uk.co.jackoftradesltd.backend.parser.activation;
 
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.backend.parser.grammars.EffectAssembler;
+import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.middle.Activation;
 import uk.co.jackoftradesltd.middle.effect.Effect;
 
@@ -45,12 +45,16 @@ public class ActivationAssembler implements Assembler<ActivationParseRecord, Lis
      * Assemble the parsed activation records into resolved {@link Activation}s, skipping
      * (with a logged soft error) any record whose integer fields or effects fail to resolve.
      *
-     * <p>Function assemble coded before 260915, commented in full on 260915.
+     * <p>The result is in reverse file order, because C's parser prepends each activation to a list
+     * and {@code finish_parse_act} ({@code obj-init.c}) copies that list into {@code activations[]}
+     * from the head: the last record in {@code activation.txt} comes first, as {@code activations[1]}.
+     *
+     * <p>Function assemble coded before 260915, commented in full on 261013.
      *
      * @param records the raw activation records captured by the grammar
      * @param errors  the soft-error channel; assembly failures are appended here and the
      *                offending record is dropped rather than aborting the whole file
-     * @return the successfully assembled activations, in source order
+     * @return the successfully assembled activations, in reverse file order (C's {@code activations[]} order)
      */
     @Override
     public List<Activation> assemble(@NotNull List<ActivationParseRecord> records, @NotNull List<String> errors) {
@@ -59,10 +63,6 @@ public class ActivationAssembler implements Assembler<ActivationParseRecord, Lis
         for (ActivationParseRecord record : records) {
             int line = record.line();
             String name = record.name();
-            // C assigns each activation its position in the flat activations[] table
-            // during a final pass (obj-init.c: activations[count].index = count). That
-            // flatten-and-number step isn't ported yet, so index is left 0 for now.
-            int index = 0;
             boolean aim = record.aim().equals("1");
             int level = 0;
             if (!record.level().isEmpty()) {
@@ -92,10 +92,16 @@ public class ActivationAssembler implements Assembler<ActivationParseRecord, Lis
             String message = record.message();
             String desc = record.desc();
 
-            activations.add(new Activation(name, index, aim, level,
+            activations.addFirst(new Activation(name, 0, aim, level,
                     power, effects, message, desc));
         }
 
+        int index = 0;
+        for (Activation a : activations) {
+            a.setIndex(index);
+            index++;
+        }
+        
         return activations;
     }
 }

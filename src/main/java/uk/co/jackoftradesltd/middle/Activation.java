@@ -29,6 +29,14 @@ import java.util.List;
  * messages. This is the Java port of the C original's {@code struct activation}
  * ({@code src/object.h}).
  *
+ * <p>Each activation also carries its {@link #index}, its slot in the registry's activation list,
+ * which C's {@code finish_parse_act} ({@code obj-init.c}) numbers once the whole file is read and
+ * the savefile code ({@code save.c}, {@code load.c}) writes and reads back to identify an
+ * activation. {@code ActivationAssembler} numbers it through {@link #setIndex(int)}. There is no
+ * getter yet; the savefile is not ported.
+ *
+ * <p>Class Activation coded before 261013, commented in full on 261013.
+ *
  * @author Rowan Crowther
  */
 public class Activation {
@@ -38,7 +46,16 @@ public class Activation {
     private String name;
 
     /**
-     * Index of this activation in the global activation table.
+     * Index of this activation in the global activation table — C's {@code activation->index}.
+     *
+     * <p>It is the activation's position in the registry's activation list, counting from 0 at the
+     * head of the list, which holds the file's last record first. C counts from 1 for the same
+     * records, because slot 0 of {@code activations[]} is a blank record the port does not keep (an
+     * accepted deviation recorded in {@code ObjectRegistry}), so every Java index is C's minus one.
+     * The constructor takes whatever it is given; {@code ActivationAssembler} passes 0 and sets the
+     * real value with {@link #setIndex(int)} once the list is complete.
+     *
+     * <p>Field index coded before 261013, commented in full on 261013.
      */
     private int index;
 
@@ -131,5 +148,26 @@ public class Activation {
      */
     public int getPower() {
         return power;
+    }
+
+    /**
+     * Sets this activation's slot number — the port of the assignment
+     * {@code activations[count].index = count} in C's {@code finish_parse_act}
+     * ({@code obj-init.c}), which has no function of its own.
+     *
+     * <p>It is a separate step from construction because C numbers an activation only after the
+     * whole file is read and the list is in its final order, so the number cannot be known when the
+     * record is assembled. The value is stored as given, with no range check, as C stores it. The
+     * caller counts in the list's own order from 0; see {@link #index} for how that differs from
+     * C's count.
+     *
+     * <p>{@link #copy()} carries the index across, so a copy keeps its original's slot.
+     *
+     * <p>Function setIndex coded on 261013, commented in full on 261013.
+     *
+     * @param index the activation's position in the registry's activation list, from 0
+     */
+    public void setIndex(int index) {
+        this.index = index;
     }
 }

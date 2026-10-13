@@ -56,11 +56,17 @@ public class BrandAssembler implements Assembler<BrandParseRecord, List<Brand>> 
      * Resolve each parse record into a {@link Brand}, skipping (with a soft
      * error) any record whose flags or numeric fields do not resolve.
      *
-     * <p>Function assemble coded before 260915, commented in full on 260915.
+     * <p>The result is in reverse file order, because C's parser prepends each brand to a list and
+     * {@code finish_parse_brand} ({@code obj-init.c}) copies that list into {@code brands[]} from
+     * the head: the last record in {@code brand.txt} comes first, as {@code brands[1]}. Consumers
+     * that keep the first of several brands with one name, such as {@code Rune.initRunes}, depend
+     * on this.
+     *
+     * <p>Function assemble coded before 260915, commented in full on 261013.
      *
      * @param records the raw brand records from the parser
      * @param errors  the soft-error sink, appended to in place; never thrown
-     * @return the successfully assembled brands, in file order
+     * @return the successfully assembled brands, in reverse file order (C's {@code brands[]} order)
      */
     @Override
     public List<Brand> assemble(@NotNull List<BrandParseRecord> records, @NotNull List<String> errors) {
@@ -120,7 +126,7 @@ public class BrandAssembler implements Assembler<BrandParseRecord, List<Brand>> 
                 continue;
             }
 
-            brands.add(new Brand(code, name, verb, rFlag, vFlag, mult, oMult, power));
+            brands.addFirst(new Brand(code, name, verb, rFlag, vFlag, mult, oMult, power));
         }
 
         return brands;

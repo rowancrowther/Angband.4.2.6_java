@@ -20,10 +20,10 @@ package uk.co.jackoftradesltd.middle.game.globals.loaders;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftradesltd.backend.parser.*;
+import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
 import uk.co.jackoftradesltd.channel.parser.ErrorParsing;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.Activation;
-import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.objects.*;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectNotice;
@@ -40,11 +40,36 @@ import java.io.IOException;
  * {@code addObjectKind}.
  *
  * <p>This is the write side of the object slice, paired with {@code ObjectRegistry} (the read
- * side). Its loaders are invoked by {@code GameConstants.init()} in dependency order — bases before
+ * side). Each file loader is the port of one C {@code file_parser} in {@code obj-init.c} (or, for
+ * chest traps, {@code obj-chest.c}): the reader stands in for the parser's {@code init_parse_*} and
+ * {@code run_parse_*}, and the registry setter stands in for its {@code finish_parse_*}, which in C
+ * copies the parsed linked list into the direct-access array and sets the {@code z_info} counter.
+ * The loaders are invoked by {@code GameConstants.init()} in dependency order — bases before
  * slays/brands/curses; curses and item objects before ego items and artifacts. {@code loadItemObjects}
- * registers the ordinary object kinds and {@code loadArtifacts} synthesizes the special artifact
- * kinds into the same table, so their order is load-bearing. It was split out of
- * {@code GameConstants} as one domain slice of the loader/registry refactor.
+ * registers the ordinary object kinds, and the artifact reader {@code loadArtifacts} drives
+ * synthesizes the special artifact kinds into the same table, so their order is load-bearing. It was
+ * split out of {@code GameConstants} as one domain slice of the loader/registry refactor.
+ *
+ * <p>Failure behaviour is the same in every file loader, and it is C's: a file that is missing or
+ * unreadable stops the load, as {@code parse_file_quit_not_found} and {@code init_arrays}
+ * ({@code init.c}) quit the game in C. Here each loader logs the failure at {@code FATAL} and
+ * throws a {@link RuntimeException}, so nothing is swallowed; a parse that reports errors and
+ * assembles no record at all stops the load the same way. Soft errors on individual records are a
+ * deliberate departure: they are logged through {@link ErrorParsing#reportAndCheck} and the records
+ * that did assemble are registered regardless (the partial-results contract), where C fails the
+ * whole parse on the first one. The user-directory override that C's {@code parse_file} tries first
+ * is not ported: only the gamedata directory is read.
+ *
+ * <p>The {@code *Max} counters the registry keeps are the plain record counts. C's {@code z_info}
+ * counters are one higher for the placeholder slot its arrays carry (see {@link ObjectRegistry}),
+ * which is an accepted deviation, not a skipped record.
+ *
+ * <p>List order is C's slot order, which is not always file order. C's parsers prepend each slay,
+ * brand, curse and activation to a linked list and the matching {@code finish_parse_*} copies from
+ * the head, so slot 1 of those four arrays holds the <em>last</em> record in the file. Object
+ * kinds, ego items, artifacts and object properties are copied tail-first and keep file order, as
+ * do the chest traps. The loader reorders nothing: the slay, brand, curse and activation
+ * assemblers hand back lists already reversed, and the loader stores what it is given.
  *
  * <p>One member is not a file loader: {@link #parseCurseKinds()} finishes the curses once the kind
  * table is complete, giving each curse's own object the {@code <curse object>} kind. It runs after
@@ -52,21 +77,32 @@ import java.io.IOException;
  * {@code obj-init.c}.
  *
  * <p>Class ObjectDataLoader coded before 261005, class description updated for the curse-kind pass
- * on 261005.
+ * on 261005, commented in full on 261013.
  *
  * @author Rowan Crowther
  */
 public class ObjectDataLoader {
+    /**
+     * The log every loader here writes to: soft parse errors through
+     * {@link ErrorParsing#reportAndCheck}, and the {@code FATAL} line that precedes a thrown
+     * {@link RuntimeException}.
+     *
+     * <p>Field logger coded before 261005, commented in full on 261013.
+     */
     private static final Logger logger = LogManager.getLogger(ObjectDataLoader.class);
 
     /**
-     * Load the object properties from {@code object_property.txt} into {@link ObjectRegistry}. Must
-     * run after the UI entries, which the property assembler resolves {@code bindui} targets against.
+     * Load the object properties from {@code object_property.txt} into {@link ObjectRegistry} — the
+     * port of C's {@code object_property_parser} ({@code obj-init.c}), whose
+     * {@code finish_parse_object_property} builds {@code obj_properties}. Must run after the UI
+     * entries, which the property assembler resolves {@code bindui} targets against.
      * <p>
      * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the properties that
-     * did assemble are registered regardless, per the partial-results contract. An IO failure is
-     * logged and <em>swallowed</em>; only the renderer reads these, so the cost is a blank entry on
-     * the character sheet rather than a failed load.
+     * did assemble are registered regardless, per the partial-results contract. An IO failure, or a
+     * file that yields no properties while reporting errors, is logged and <em>rethrown</em> as a
+     * {@link RuntimeException}, as C quits when this file cannot be read.
+     *
+     * <p>Function loadObjectProperties coded before 261005, commented in full on 261013.
      */
     public static void loadObjectProperties() {
         ObjectPropertyReader parser = new ObjectPropertyReader();
@@ -75,26 +111,37 @@ public class ObjectDataLoader {
         try {
             ParseResult<ObjectProperty> result = parser.parseWithResults(filename);
 
-            ErrorParsing.reportAndCheck(filename, result, logger);
+            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
+                String message = "Error parsing file: " + filename;
+                logger.error(message);
+                throw new RuntimeException(message);
+            }
 
             ObjectRegistry.setObjectProperties(result.items());
         } catch (IOException e) {
-            logger.error("Error while loading file {}", filename, e);
+            String message = "Error while loading file " + filename;
+            logger.fatal(message, e);
+            throw new RuntimeException(message, e);
         }
     }
 
     /**
-     * Load the chest traps from {@code chest_trap.txt} into {@link ObjectRegistry}. Must run after
-     * summons, which the {@code SUMMON} trap's effect resolves against - and so, transitively, after
-     * monster bases and pains. Nothing else in the object slice depends on this list, so it may run
-     * late.
+     * Load the chest traps from {@code chest_trap.txt} into {@link ObjectRegistry} — the port of C's
+     * {@code chest_trap_parser} ({@code obj-chest.c}), whose {@code finish_parse_chest_trap} does
+     * nothing beyond destroying the parser. Must run after summons, which the {@code SUMMON} trap's
+     * effect resolves against - and so, transitively, after monster bases and pains. Nothing else in
+     * the object slice depends on this list, so it may run late.
      * <p>
      * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and whatever assembled is
      * registered regardless, per the partial-results contract. Note that this file is validated as a
      * whole rather than record by record: if it breaks any of the structural rules stated at the top
-     * of {@code chest_trap.txt}, the assembler returns an empty list and the registry is left with no
-     * traps at all rather than a partial set. An IO failure is logged and <em>swallowed</em>; the
-     * cost is chests that generate untrapped.
+     * of {@code chest_trap.txt}, the assembler returns an empty list rather than a partial set. That
+     * empty result comes with errors, so {@link ErrorParsing#reportAndCheck} answers {@code false}
+     * and the loader throws; the registry is never left holding a partial trap list. An IO failure
+     * is logged and <em>rethrown</em> as a {@link RuntimeException}, as C quits when this file cannot
+     * be read.
+     *
+     * <p>Function loadChestTraps coded before 261005, commented in full on 261013.
      */
     public static void loadChestTraps() {
         ChestTrapReader parser = new ChestTrapReader();
@@ -103,25 +150,45 @@ public class ObjectDataLoader {
         try {
             ParseResult<ChestTrap> result = parser.parseWithResults(filename);
 
-            ErrorParsing.reportAndCheck(filename, result, logger);
+            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
+                String message = "Error parsing file: " + filename;
+                logger.error(message);
+                throw new RuntimeException(message);
+            }
 
             ObjectRegistry.setChestTraps(result.items());
         } catch (IOException e) {
-            logger.error("Error while loading file {}", filename, e);
+            String message = "Error while loading file " + filename;
+            logger.fatal(message, e);
+            throw new RuntimeException(message, e);
         }
     }
 
     /**
-     * Load the artifacts from {@code artifact.txt} into {@link ObjectRegistry}, synthesizing a special
-     * {@link uk.co.jackoftradesltd.middle.objects.ObjectKind} for each into the shared object-kind table.
-     * Must run after item objects (so the ordinary kinds are already registered) and after
-     * activations, brands, slays and curses, which artifacts reference.
+     * Load the artifacts from {@code artifact.txt} into {@link ObjectRegistry} — the port of C's
+     * {@code artifact_parser} ({@code obj-init.c}). Artifacts whose {@code base-object:} names no
+     * kind in {@code object.txt} get a special
+     * {@link uk.co.jackoftradesltd.middle.objects.ObjectKind} synthesized into the shared object-kind
+     * table, as C's {@code write_dummy_object_record} does while parsing. Must run after item objects
+     * (so the ordinary kinds are already registered) and after activations, brands, slays and
+     * curses, which artifacts reference.
      * <p>
      * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the artifacts that
-     * did assemble are registered regardless, per the partial-results contract. An IO failure is
-     * logged and <em>swallowed</em>. Note the synthesis side effect: a dropped artifact also means
-     * its special object kind is never added, so the kind table silently differs from the C
-     * original's - worth remembering when comparing counts.
+     * did assemble are registered regardless, per the partial-results contract. An IO failure, or a
+     * file that yields no artifacts while reporting errors, is logged and <em>rethrown</em> as a
+     * {@link RuntimeException}. Note the synthesis side effect: a dropped artifact also means its
+     * special object kind is never added, so the kind table silently differs from the C original's -
+     * worth remembering when comparing counts.
+     * <p>
+     * This is also the loader {@code PlayerBirth} runs a second time to restore the standard
+     * artifacts after a randart set, as C re-runs {@code artifact_parser} in
+     * {@code player-birth.c}. The artifact assembler only synthesizes a kind when its lookup of the
+     * artifact's {@code base-object:} finds none, so the second run finds the special kinds the first
+     * left behind and does not register them again. Unlike C's {@code finish_parse_artifact}, the
+     * second run does not repeat the curse-kind pass; the curses are not reloaded, so
+     * {@link #parseCurseKinds()} has nothing to redo.
+     *
+     * <p>Function loadArtifacts coded before 261005, commented in full on 261013.
      */
     public static void loadArtifacts() {
         ArtifactReader parser = new ArtifactReader();
@@ -130,22 +197,32 @@ public class ObjectDataLoader {
         try {
             ParseResult<Artifact> result = parser.parseWithResults(filename);
 
-            ErrorParsing.reportAndCheck(filename, result, logger);
+            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
+                String message = "Error parsing file: " + filename;
+                logger.error(message);
+                throw new RuntimeException(message);
+            }
 
             ObjectRegistry.setArtifacts(result.items());
         } catch (IOException e) {
-            logger.error("Error while loading file {}", filename, e);
+            String message = "Error while loading file " + filename;
+            logger.fatal(message, e);
+            throw new RuntimeException(message, e);
         }
     }
 
     /**
-     * Load the ego items from {@code ego_item.txt} into {@link ObjectRegistry}. Must run after
-     * activations, brands, slays and curses, and after the object kinds its {@code poss-items:}
-     * lines resolve against.
+     * Load the ego items from {@code ego_item.txt} into {@link ObjectRegistry} — the port of C's
+     * {@code ego_parser} ({@code obj-init.c}), whose {@code finish_parse_ego} builds {@code e_info}.
+     * Must run after activations, brands, slays and curses, and after the object kinds its
+     * {@code poss-items:} lines resolve against.
      * <p>
      * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the ego items that
-     * did assemble are registered regardless, per the partial-results contract. An IO failure is
-     * logged and <em>swallowed</em>, leaving item generation with fewer ego types to choose from.
+     * did assemble are registered regardless, per the partial-results contract. An IO failure, or a
+     * file that yields no ego items while reporting errors, is logged and <em>rethrown</em> as a
+     * {@link RuntimeException}.
+     *
+     * <p>Function loadEgoItems coded before 261005, commented in full on 261013.
      */
     public static void loadEgoItems() {
         EgoItemReader reader = new EgoItemReader();
@@ -154,22 +231,40 @@ public class ObjectDataLoader {
         try {
             ParseResult<EgoItem> results = reader.parseWithResults(filename);
 
-            ErrorParsing.reportAndCheck(filename, results, logger);
+            if (!ErrorParsing.reportAndCheck(filename, results, logger)) {
+                String message = "Error parsing file: " + filename;
+                logger.error(message);
+                throw new RuntimeException(message);
+            }
 
             ObjectRegistry.setEgoItems(results.items());
         } catch (IOException e) {
-            logger.error("Error while loading file {}", filename, e);
+            String message = "Error while loading file " + filename;
+            logger.fatal(message, e);
+            throw new RuntimeException(message, e);
         }
     }
 
     /**
-     * Load the activations from {@code activation.txt} into {@link ObjectRegistry}. Must run before
-     * ego items and artifacts, which name an activation directly.
+     * Load the activations from {@code activation.txt} into {@link ObjectRegistry} — the port of C's
+     * {@code act_parser} ({@code obj-init.c}), whose {@code finish_parse_act} builds
+     * {@code activations}. Must run before ego items and artifacts, which name an activation
+     * directly (C's {@code findact}).
      * <p>
      * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the activations that
-     * did assemble are registered regardless, per the partial-results contract. An IO failure is
-     * logged and <em>swallowed</em>; a dropped activation surfaces as an unresolved name in the two
-     * loaders that follow.
+     * did assemble are registered regardless, per the partial-results contract; a dropped activation
+     * surfaces as an unresolved name in the two loaders that follow. An IO failure, or a file that
+     * yields no activations while reporting errors, is logged and <em>rethrown</em> as a
+     * {@link RuntimeException}.
+     * <p>
+     * The list is stored in reverse file order, as the assembler returns it, which is C's
+     * {@code activations[]} order. C's {@code finish_parse_act} also numbers each activation by its
+     * slot ({@code activations[count].index}), which the save file records. The loader does not do
+     * that: {@code ActivationAssembler} numbers the list through {@code Activation.setIndex} once
+     * it is in order, from 0 at the head, where C counts from 1. {@code Activation} has no getter
+     * for the index yet, because the savefile is not ported.
+     *
+     * <p>Function loadActivations coded before 261005, commented in full on 261013.
      */
     public static void loadActivations() {
         ActivationReader reader = new ActivationReader();
@@ -178,26 +273,51 @@ public class ObjectDataLoader {
         try {
             ParseResult<Activation> results = reader.parseWithResult(filename);
 
-            ErrorParsing.reportAndCheck(filename, results, logger);
+            if (!ErrorParsing.reportAndCheck(filename, results, logger)) {
+                String message = "Error parsing file: " + filename;
+                logger.error(message);
+                throw new RuntimeException(message);
+            }
 
             ObjectRegistry.setActivations(results.items());
         } catch (IOException e) {
-            logger.error("Error while loading file {}", filename, e);
+            String message = "Error while loading file " + filename;
+            logger.fatal(message, e);
+            throw new RuntimeException(message, e);
         }
     }
 
     /**
-     * Load the object kinds from {@code object.txt} into {@link ObjectRegistry}. Must run after
-     * object bases, summons, curses, brands and slays, and before the artifacts, ego items,
-     * flavours and player classes that resolve a kind.
+     * Load the object kinds from {@code object.txt} into {@link ObjectRegistry} — the port of C's
+     * {@code object_parser} ({@code obj-init.c}), whose {@code finish_parse_object} builds
+     * {@code k_info} and records {@code ordinary_kind_max}. Must run after object bases, summons,
+     * curses, brands and slays, and before the artifacts, ego items, flavours and player classes
+     * that resolve a kind.
+     * <p>
+     * Each kind is registered through {@link ObjectRegistry#addObjectKind}, which hands it the next
+     * sval under its base and its index in the table, as C's parser does while reading the file
+     * (the kind's base kind flags are merged in earlier, at assembly, as {@code finish_parse_object}
+     * does). Once the file's kinds are in, {@link ObjectRegistry#updateObjectBaseKindMax} records the
+     * ordinary-kind ceiling - C's {@code ordinary_kind_max} - so that the special artifact kinds
+     * {@link #loadArtifacts()} adds later fall above it.
+     * <p>
+     * {@link ObjectRegistry#loadUnknownKinds} then resolves the {@code <unknown item>} and
+     * {@code <unknown treasure>} sentinels. C does that at the end of {@code finish_parse_artifact},
+     * after the artifacts; the port does it here because the kinds it names are ordinary ones and
+     * nothing between the two reads them. C resolves a third sentinel there, {@code pile_kind}, which
+     * has no Java counterpart yet.
      * <p>
      * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the kinds that did
      * assemble are registered regardless, per the partial-results contract - note this loader adds
      * kinds one at a time rather than setting a list, so a partial parse leaves a genuinely partial
-     * table. An IO failure is logged and <em>rethrown</em>: this is the widest dependency in the
-     * suite, and continuing without it turns one failure into many.
+     * table. An IO failure, or a file that yields no kinds while reporting errors, is logged and
+     * <em>rethrown</em> as a {@link RuntimeException}: this is the widest dependency in the suite,
+     * and continuing without it turns one failure into many.
      *
-     * @throws IOException an IO error occurred during parsing
+     * <p>Function loadItemObjects coded before 261005, commented in full on 261013.
+     *
+     * @throws IOException declared but never thrown: the {@code IOException} from the parse is caught
+     *                     inside and rethrown wrapped in a {@link RuntimeException}
      */
     public static void loadItemObjects() throws IOException {
         ItemObjectReader parser = new ItemObjectReader();
@@ -206,7 +326,11 @@ public class ObjectDataLoader {
         try {
             ParseResult<ObjectKind> results = parser.parseWithResults(filename);
 
-            ErrorParsing.reportAndCheck(filename, results, logger);
+            if (!ErrorParsing.reportAndCheck(filename, results, logger)) {
+                String message = "Error parsing file: " + filename;
+                logger.error(message);
+                throw new RuntimeException(message);
+            }
 
             for (ObjectKind kind : results.items()) {
                 ObjectRegistry.addObjectKind(kind);
@@ -215,21 +339,37 @@ public class ObjectDataLoader {
             ObjectRegistry.updateObjectBaseKindMax();
             ObjectRegistry.loadUnknownKinds();
         } catch (IOException e) {
-            logger.error("Error while loading file {}", filename, e);
-            throw e;
+            String message = "Error while loading file " + filename;
+            logger.fatal(message, e);
+            throw new RuntimeException(message, e);
         }
     }
 
     /**
-     * Load the curses from {@code curse.txt} into {@link ObjectRegistry}. Must run after object
-     * bases and summons, and before the object kinds, ego items and artifacts that carry a curse.
+     * Load the curses from {@code curse.txt} into {@link ObjectRegistry} — the port of C's
+     * {@code curse_parser} ({@code obj-init.c}), whose {@code finish_parse_curse} builds
+     * {@code curses}. Must run after object bases and summons, and before the object kinds, ego
+     * items and artifacts that carry a curse. The curse objects loaded here have no kind yet;
+     * {@link #parseCurseKinds()} gives them one once the kind table is complete.
      * <p>
      * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the curses that did
      * assemble are registered regardless, per the partial-results contract. The catch is on
      * {@code Exception} rather than {@code IOException} and <em>rethrows</em>, so any failure stops
-     * the load.
+     * the load. That includes the {@link RuntimeException} this method throws itself when
+     * {@link ErrorParsing#reportAndCheck} answers {@code false}, which is caught and wrapped a
+     * second time, so the exception that escapes reads "Error while loading file" with the "Error
+     * parsing file" one as its cause.
+     * <p>
+     * The list is stored in reverse file order, as {@code CurseAssembler} returns it, which is C's
+     * {@code curses[]} order. The two checks C makes in {@code finish_parse_curse} - no more than
+     * 254 curses, and no {@code MULTIPLY_WEIGHT} curse with a negative weight - are made in that
+     * assembler, not here.
      *
-     * @throws IOException an IO error occurred during parsing
+     * <p>Function loadCurses coded before 261005, commented in full on 261013.
+     *
+     * @throws IOException declared but never thrown: every failure, the {@code IOException}
+     *                     included, is caught inside and rethrown wrapped in a
+     *                     {@link RuntimeException}
      */
     public static void loadCurses() throws IOException {
         CurseReader parser = new CurseReader();
@@ -238,24 +378,39 @@ public class ObjectDataLoader {
         try {
             ParseResult<Curse> result = parser.parseWithResults(filename);
 
-            ErrorParsing.reportAndCheck(filename, result, logger);
+            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
+                String message = "Error parsing file: " + filename;
+                logger.error(message);
+                throw new RuntimeException(message);
+            }
 
             ObjectRegistry.setCurses(result.items());
         } catch (Exception e) {
-            logger.error("Error while loading file {}", filename, e);
-            throw e;
+            String message = "Error while loading file " + filename;
+            logger.fatal(message, e);
+            throw new RuntimeException(message, e);
         }
     }
 
     /**
-     * Load the brands from {@code brand.txt} into {@link ObjectRegistry}. Must run before the
-     * object kinds, ego items and artifacts that name a brand.
+     * Load the brands from {@code brand.txt} into {@link ObjectRegistry} — the port of C's
+     * {@code brand_parser} ({@code obj-init.c}), whose {@code finish_parse_brand} builds
+     * {@code brands}. Must run before the object kinds, ego items and artifacts that name a brand.
      * <p>
      * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the brands that did
-     * assemble are registered regardless, per the partial-results contract. An IO failure is logged
-     * and <em>rethrown</em>, since three later loaders resolve against this list.
+     * assemble are registered regardless, per the partial-results contract. An IO failure, or a file
+     * that yields no brands while reporting errors, is logged and <em>rethrown</em> as a
+     * {@link RuntimeException}, since three later loaders resolve against this list.
+     * <p>
+     * The list is stored in reverse file order, as the assembler returns it, which is C's
+     * {@code brands[]} order. C's {@code finish_parse_brand} also fails the parse when the file
+     * holds more than 254 brands ({@code PARSE_ERROR_TOO_MANY_ENTRIES}); neither this loader nor
+     * {@code BrandAssembler} applies that limit, so a longer file would register in full.
      *
-     * @throws IOException an IO error occurred during parsing
+     * <p>Function loadBrands coded before 261005, commented in full on 261013.
+     *
+     * @throws IOException declared but never thrown: the {@code IOException} from the parse is caught
+     *                     inside and rethrown wrapped in a {@link RuntimeException}
      */
     public static void loadBrands() throws IOException {
         BrandReader parser = new BrandReader();
@@ -264,28 +419,41 @@ public class ObjectDataLoader {
         try {
             ParseResult<Brand> result = parser.parseWithResults(filename);
 
-            ErrorParsing.reportAndCheck(filename, result, logger);
+            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
+                String message = "Error parsing file: " + filename;
+                logger.error(message);
+                throw new RuntimeException(message);
+            }
 
             ObjectRegistry.setBrands(result.items());
         } catch (IOException e) {
-            logger.error("Exception while loading file {}", filename, e);
-            throw e;
+            String message = "Error while loading file " + filename;
+            logger.fatal(message, e);
+            throw new RuntimeException(message, e);
         }
     }
 
     /**
-     * Load the slays from {@code slay.txt} into {@link ObjectRegistry}. Must run after monster
-     * bases, whose names each slay targets, and before the object kinds, ego items and artifacts
-     * that name a slay.
+     * Load the slays from {@code slay.txt} into {@link ObjectRegistry} — the port of C's
+     * {@code slay_parser} ({@code obj-init.c}), whose {@code finish_parse_slay} builds {@code slays}.
+     * Must run after monster bases, whose names each slay targets, and before the object kinds, ego
+     * items and artifacts that name a slay.
      * <p>
      * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the slays that did
-     * assemble are registered regardless, per the partial-results contract. An IO failure is logged
-     * and <em>rethrown</em>, matching brands - the symmetric loader beside it - since three later
-     * loaders resolve against this list. (It previously caught {@code Exception} without
-     * rethrowing, which swallowed unchecked exceptions too; that made it the one loader out of step
-     * with its neighbours.)
+     * assemble are registered regardless, per the partial-results contract. An IO failure, or a file
+     * that yields no slays while reporting errors, is logged and <em>rethrown</em> as a
+     * {@link RuntimeException}, matching brands - the symmetric loader beside it - since three later
+     * loaders resolve against this list.
+     * <p>
+     * The list is stored in reverse file order, as the assembler returns it, which is C's
+     * {@code slays[]} order. C's {@code finish_parse_slay} also fails the parse when the file holds
+     * more than 254 slays ({@code PARSE_ERROR_TOO_MANY_ENTRIES}); neither this loader nor
+     * {@code SlayAssembler} applies that limit, so a longer file would register in full.
      *
-     * @throws IOException an IO error occurred during parsing
+     * <p>Function loadSlays coded before 261005, commented in full on 261013.
+     *
+     * @throws IOException declared but never thrown: the {@code IOException} from the parse is caught
+     *                     inside and rethrown wrapped in a {@link RuntimeException}
      */
     public static void loadSlays() throws IOException {
         SlayReader parser = new SlayReader();
@@ -294,30 +462,41 @@ public class ObjectDataLoader {
         try {
             ParseResult<Slay> result = parser.parseWithResults(filename);
 
-            ErrorParsing.reportAndCheck(filename, result, logger);
+            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
+                String message = "Error parsing file: " + filename;
+                logger.error(message);
+                throw new RuntimeException(message);
+            }
 
             ObjectRegistry.setSlays(result.items());
         } catch (IOException e) {
-            logger.error("Error while loading file {}", filename, e);
-            throw e;
+            String message = "Error while loading file " + filename;
+            logger.fatal(message, e);
+            throw new RuntimeException(message, e);
         }
     }
 
     /**
      * Load the object bases (the per-tval defaults every object kind inherits) from
-     * {@code object_base.txt} into {@link ObjectRegistry}. The first object-side loader to run, and
-     * a prerequisite for curses, object kinds and everything downstream of them.
+     * {@code object_base.txt} into {@link ObjectRegistry} — the port of C's
+     * {@code object_base_parser} ({@code obj-init.c}), whose {@code finish_parse_object_base} fills
+     * {@code kb_info}, indexed by tval. The first object-side loader to run, and a prerequisite for
+     * curses, object kinds and everything downstream of them.
      * <p>
      * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the bases that did
-     * assemble are registered regardless, per the partial-results contract. An IO failure is logged
-     * and <em>rethrown</em>.
+     * assemble are registered regardless, per the partial-results contract. An IO failure, or a file
+     * that yields no bases while reporting errors, is logged and <em>rethrown</em> as a
+     * {@link RuntimeException}.
      * <p>
      * This is the loader whose earlier swallow-and-skip behaviour proved the case for the
      * partial-results contract: a rejected file left {@link ObjectRegistry} holding {@code null}
      * rather than an empty list, and the failure surfaced fifteen loaders later as an
      * {@code IllegalStateException} from an unrelated assembler.
      *
-     * @throws IOException an IO error occurred during parsing
+     * <p>Function loadObjectBases coded before 261005, commented in full on 261013.
+     *
+     * @throws IOException declared but never thrown: the {@code IOException} from the parse is caught
+     *                     inside and rethrown wrapped in a {@link RuntimeException}
      */
     public static void loadObjectBases() throws IOException {
         ObjectBaseReader parser = new ObjectBaseReader();
@@ -326,12 +505,17 @@ public class ObjectDataLoader {
         try {
             ParseResult<ObjectBase> result = parser.parseWithResults(filename);
 
-            ErrorParsing.reportAndCheck(filename, result, logger);
+            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
+                String message = "Error parsing file: " + filename;
+                logger.error(message);
+                throw new RuntimeException(message);
+            }
 
             ObjectRegistry.setObjectBases(result.items());
         } catch (IOException e) {
-            logger.error("Exception while loading file {}", filename, e);
-            throw e;
+            String message = "Error while loading file " + filename;
+            logger.fatal(message, e);
+            throw new RuntimeException(message, e);
         }
     }
 
@@ -394,7 +578,7 @@ public class ObjectDataLoader {
                 curse.getItemObject().setKnown(new ItemObject());
             curse.getItemObject().getKnown().setKind(curseObjectKind);
             curse.getItemObject().getKnown().setsValue(sVal);
-            // Mark it as tounched, so it can be fully known
+            // Mark it as touched, so it can be fully known
             curse.getItemObject().getKnown().setNoticeOn(ObjectNotice.OBJ_NOTICE_ASSESSED);
         }
     }

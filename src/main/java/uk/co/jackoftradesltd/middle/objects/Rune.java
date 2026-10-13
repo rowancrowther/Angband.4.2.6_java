@@ -115,12 +115,12 @@ public class Rune {
      *
      * <p>Both the order of the runes and the entry that represents a group follow C's arrays, and
      * C's brand, slay and curse arrays run in reverse data-file order, because their loaders build
-     * a list newest-first and copy it into the array from the head. {@link ObjectRegistry} holds
-     * brands and slays in data-file order, so this method walks those two lists backwards: the
-     * rune order is then C's (poison before acid, undead before evil creatures) and the
-     * representative is the last member in the file, as in C ({@code POIS_2}, not {@code POIS_3}).
-     * Curses need no such step, because {@code CurseAssembler} already reverses them to match C.
-     * The order matters, since it is the knowledge-menu order and C's savefile records
+     * a list newest-first and copy it into the array from the head. The assemblers reverse brands,
+     * slays and curses to match ({@code BrandAssembler}, {@code SlayAssembler} and
+     * {@code CurseAssembler}), so {@link ObjectRegistry} already holds all three in C's order and
+     * this method walks the lists as they stand: the rune order is C's (poison before acid, undead
+     * before evil creatures) and the representative is the last member in the file, as in C
+     * ({@code POIS_2}, not {@code POIS_3}). The order matters, since it is the knowledge-menu order and C's savefile records
      * auto-inscriptions by position. Which member represents a group never changes which objects
      * match it.
      *
@@ -135,8 +135,8 @@ public class Rune {
      * at 0. The blank record is never a rune, so the rune list is unaffected, and
      * {@link ObjectRegistry#getMaxRunes()} is the plain size of the list.
      *
-     * <p>Function initRunes coded before 261010, commented in full on 261010 after brands and slays
-     * were walked in C's array order.
+     * <p>Function initRunes coded before 261010, commented in full on 261013 after the assemblers
+     * took over reversing brands and slays into C's array order.
      *
      * @throws RuntimeException if a modifier, flag or element cannot be resolved to its definition
      */
@@ -193,7 +193,7 @@ public class Rune {
         }
 
         // Brands sharing a name are the same property at different strengths, so they share a rune
-        List<Brand> brands = ObjectRegistry.getBrands().reversed();
+        List<Brand> brands = ObjectRegistry.getBrands();
         Set<String> brandNames = new HashSet<>();
         for (Brand brand : brands) {
             if (brand.getName() == null) continue;
@@ -204,7 +204,7 @@ public class Rune {
             }
         }
 
-        List<Slay> slays = ObjectRegistry.getSlays().reversed();
+        List<Slay> slays = ObjectRegistry.getSlays();
         // Slays group by the monsters they kill rather than by name, so there is no key to hash on;
         // needs to stay a nested for loop as we need the sameMonsterSlain test
         for (int i = 0; i < slays.size(); i++) {

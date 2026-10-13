@@ -77,11 +77,13 @@ class BrandTest {
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(REAL_BRANDS.size(), result.items().size());
+        // C's brands[] runs in reverse file order, so the list is the file read backwards
+        List<Brand> inFileOrder = result.items().reversed();
         for (int i = 0; i < REAL_BRANDS.size(); i++) {
             Row row = REAL_BRANDS.get(i);
             Brand expected = new Brand(row.code(), row.name(), row.verb(), row.resist(), row.vuln(),
                     row.mult(), row.oMult(), row.power());
-            assertEquals(expected, result.items().get(i), "record " + row.code());
+            assertEquals(expected, inFileOrder.get(i), "record " + row.code());
         }
     }
 

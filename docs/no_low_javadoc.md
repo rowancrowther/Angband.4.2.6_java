@@ -48,25 +48,7 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-36
-
-### `middle/game/gameengine/argumentdata/ArgumentPoint.java`
-
-1 missing, 0 low
-
-- L35: method `type` - MISSING
-
-### `middle/game/gameengine/argumentdata/ArgumentString.java`
-
-1 missing, 0 low
-
-- L34: method `type` - MISSING
-
-### `middle/game/gameengine/argumentdata/ArgumentTarget.java`
-
-1 missing, 0 low
-
-- L38: method `type` - MISSING
+32
 
 ### `middle/game/globals/loaders/DungeonLoader.java`
 

@@ -22,7 +22,6 @@ import org.apache.logging.log4j.Logger;
 import uk.co.jackoftradesltd.middle.cave.profiles.dungeon.CaveProfile;
 import uk.co.jackoftradesltd.middle.cave.profiles.room.RoomTemplate;
 import uk.co.jackoftradesltd.middle.cave.profiles.vault.Vault;
-import uk.co.jackoftradesltd.middle.player.Quest;
 
 import java.util.List;
 
@@ -50,7 +49,7 @@ public class DungeonRegistry {
     
     /**
      * Every vault the game may place, in file order — C's {@code vaults} linked list
-     * ({@code [C] src/generate.h:316}).
+     * ({@code [C] src/generate.h}).
      *
      * <p>Holds all six vault types plus the interesting rooms, since {@code vault.txt} carries them
      * in one file and distinguishes them only by the {@code type:} line.

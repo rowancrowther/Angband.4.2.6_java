@@ -36,7 +36,7 @@ import java.util.List;
  * {@link Vault}s — the port of the validation C spreads across {@code parse_vault_type}/
  * {@code parse_vault_rating}/{@code parse_vault_rows}/{@code parse_vault_columns}/
  * {@code parse_vault_min_depth}/{@code parse_vault_max_depth}/{@code parse_vault_flags}/
- * {@code parse_vault_d} in {@code generate.c} ([C] src/generate.c:479-593).
+ * {@code parse_vault_d} in {@code generate.c} ([C] src/generate.c).
  *
  * <p>Follows the partial-results contract every {@link Assembler} does: a record with a problem is
  * skipped (via {@code continue}) rather than aborting the whole file, and the problem is appended
@@ -81,7 +81,7 @@ public class VaultAssembler implements Assembler <VaultParseRecord, List<Vault>>
             // "Interesting room" drops a word to reach INTERESTING, and the three "(new)" types
             // move the qualifier to the front (NEW_LESSER_VAULT). Listing the seven names the
             // file may legally use is both the honest mapping and a check that no eighth appears.
-            // C does the equivalent by streq against room_builders[i].name ([C] src/generate.c:517)
+            // C does the equivalent by streq against room_builders[i].name ([C] src/generate.c)
             // and treats no match as PARSE_ERROR_NO_ROOM_FOUND.
             switch (typeString.toUpperCase()) {
                 case "LESSER VAULT" -> type = RoomType.LESSER_VAULT;
@@ -107,7 +107,7 @@ public class VaultAssembler implements Assembler <VaultParseRecord, List<Vault>>
                 continue;
             }
             // Mirrors C's parse_vault_rows, which rejects a vault taller than its own room
-            // builder's max_height (PARSE_ERROR_VAULT_TOO_BIG, [C] src/generate.c:521). The cap is
+            // builder's max_height (PARSE_ERROR_VAULT_TOO_BIG, [C] src/generate.c). The cap is
             // per type, not global — a lesser vault gets 22 rows where a greater vault gets 44 —
             // which is why this has to run after the type has resolved.
             if (rows <= 0 || rows > type.getMaxHeight()) {
@@ -124,7 +124,7 @@ public class VaultAssembler implements Assembler <VaultParseRecord, List<Vault>>
                         "an invalid column integer: " + record.cols());
                 continue;
             }
-            // As above, for parse_vault_columns ([C] src/generate.c:540).
+            // As above, for parse_vault_columns ([C] src/generate.c).
             if (columns <= 0 || columns > type.getMaxWidth()) {
                 errors.add("Vault profile at line: " + line + " has " +
                         "an invalid column value (should be between 1 " +
@@ -134,7 +134,7 @@ public class VaultAssembler implements Assembler <VaultParseRecord, List<Vault>>
             // The layout has to match what the record declared, or every later read of it is
             // wrong: the flat mapText is indexed as text[y * columns + x], so a single row of the
             // wrong length shifts the whole vault. C enforces the width line by line as it parses
-            // (strlen(desc) != v->wid, [C] src/generate.c:588) and never checks the row count at
+            // (strlen(desc) != v->wid, [C] src/generate.c) and never checks the row count at
             // all; checking both here costs nothing and catches a truncated record too.
             boolean badMap = false;
             List<String> mapLines = record.map();
@@ -176,13 +176,13 @@ public class VaultAssembler implements Assembler <VaultParseRecord, List<Vault>>
                 continue;
             }
             // max-depth:0 in the file means "no maximum", not "never appears". C rewrites it to
-            // z_info->max_depth while parsing ([C] src/generate.c:561), so nothing downstream ever
+            // z_info->max_depth while parsing ([C] src/generate.c), so nothing downstream ever
             // sees a zero and no caller needs to special-case it; 129 of the 162 shipped records
             // rely on this. min-depth:0 needs no equivalent - zero is already the right floor.
             if (maxLevel == 0)
                 maxLevel = GameConstants.getWorldMaxDepth();
             // A record may carry several flags: lines, each OR'd into the same set - the file's
-            // own header says so, and C appends rather than replaces ([C] src/generate.c:565).
+            // own header says so, and C appends rather than replaces ([C] src/generate.c).
             // The grammar therefore hands over one flat list however many lines produced it.
             boolean badFlag = false;
             Flag<RoomFlags> flags = new Flag<>(RoomFlags.class);

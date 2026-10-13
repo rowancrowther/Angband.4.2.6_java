@@ -48,13 +48,7 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-31
-
-### `middle/game/globals/loaders/MiscDataLoader.java`
-
-1 missing, 0 low
-
-- L51: field `logger` - MISSING
+30
 
 ### `middle/game/globals/loaders/MonsterDataLoader.java`
 

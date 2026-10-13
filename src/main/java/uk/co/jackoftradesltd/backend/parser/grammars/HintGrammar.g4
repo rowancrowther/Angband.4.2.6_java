@@ -27,5 +27,5 @@ file
         returns[String declaredRecordCount, List<HintParseRecord> hints]
         @init { $hints = new ArrayList<>(); }
         :   recordCount { $declaredRecordCount = $recordCount.count; }
-            ( hintRecord { $hints.add($hintRecord.record); })+ EOF
+            ( hintRecord { $hints.add($hintRecord.record); })* EOF
         ;

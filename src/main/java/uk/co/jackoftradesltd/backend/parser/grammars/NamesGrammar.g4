@@ -31,12 +31,12 @@ record
             $rec = new NamesParseRecord(sec, wordList);
         }
         :   section { sec = $section.sectionNum; }
-            (word { wordList.add($word.wordVal); })+
+            (word { wordList.add($word.wordVal); })*
         ;
 
 file
     returns[String declaredRecordCount, List<NamesParseRecord> records]
     @init { $records = new ArrayList<>(); }
     :   recordCount { $declaredRecordCount = $recordCount.count; }
-        (record { $records.add($record.rec); })+ EOF
+        (record { $records.add($record.rec); })* EOF
     ;

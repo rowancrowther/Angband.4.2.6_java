@@ -37,9 +37,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@code MiscDataLoader.loadNames}: a good {@code names.txt} fills the registry, and a bad
- * one is handled in one of two ways. A missing file is logged and swallowed, as for the other misc
- * loaders. An out-of-range {@code section:} that {@code MiscRegistry.setNames} rejects is thrown on,
- * so that {@code GameConstants.init} stops start-up as C does.
+ * one stops start-up as C does, in three ways. A missing file throws, as C's
+ * {@code parse_file_quit_not_found} quits. A hard grammar error, which leaves no records and
+ * reports errors, throws. An out-of-range {@code section:} that {@code MiscRegistry.setNames}
+ * rejects is thrown on, so that {@code GameConstants.init} stops start-up. Soft errors that leave a
+ * record are logged and the record still registers.
  *
  * <p>The range is C's {@code parse_names_section} ({@code init.c}): a section at or above
  * {@code RANDNAME_NUM_TYPES} (3) is {@code PARSE_ERROR_OUT_OF_BOUNDS}. The port also rejects
@@ -107,6 +109,54 @@ class MiscDataLoaderNamesTest {
     }
 
     @Test
+    @DisplayName("a file with no section: block and record-count:0 loads, as C accepts it, with every section empty")
+    void emptyFileLoadsEmptySections() throws IOException {
+        writeNames("record-count:1\nsection:1\nword:beleg\nsection:2\nword:aar\n");
+        MiscDataLoader.loadNames();
+        writeNames("record-count:0\n");
+
+        MiscDataLoader.loadNames();
+
+        assertEquals(List.of(), MiscRegistry.getNameSection(RandnameType.RANDNAME_TOLKIEN));
+        assertEquals(List.of(), MiscRegistry.getNameSection(RandnameType.RANDNAME_SCROLL));
+        assertTrue(MiscRegistry.getNames().isEmpty());
+    }
+
+    @Test
+    @DisplayName("a section: line with no word: lines is accepted, as in C, and leaves that section empty")
+    void sectionWithNoWordsLoads() throws IOException {
+        writeNames("record-count:2\nsection:1\nsection:2\nword:aar\n");
+
+        MiscDataLoader.loadNames();
+
+        assertEquals(List.of(), MiscRegistry.getNameSection(RandnameType.RANDNAME_TOLKIEN));
+        assertEquals(List.of("aar"), MiscRegistry.getNameSection(RandnameType.RANDNAME_SCROLL));
+    }
+
+    @Test
+    @DisplayName("a record-count promising sections the file lacks leaves no records with errors, which stops start-up")
+    void promisedSectionsMissingThrows() throws IOException {
+        writeNames("record-count:1\nsection:1\nword:beleg\n");
+        MiscDataLoader.loadNames();
+        writeNames("record-count:2\n");
+
+        RuntimeException thrown = assertThrows(RuntimeException.class, MiscDataLoader::loadNames);
+
+        assertTrue(thrown.getMessage().contains("names.txt"));
+        assertEquals(List.of("beleg"), MiscRegistry.getNameSection(RandnameType.RANDNAME_TOLKIEN));
+    }
+
+    @Test
+    @DisplayName("a word: line before any section: line stays a hard error, though C files it under section 0")
+    void wordBeforeSectionThrows() throws IOException {
+        writeNames("record-count:1\nword:orphan\nsection:1\nword:beleg\n");
+
+        RuntimeException thrown = assertThrows(RuntimeException.class, MiscDataLoader::loadNames);
+
+        assertTrue(thrown.getMessage().contains("names.txt"));
+    }
+
+    @Test
     @DisplayName("section 3, C's PARSE_ERROR_OUT_OF_BOUNDS, escapes so that start-up stops")
     void sectionAtMarkerEscapes() throws IOException {
         writeNames("record-count:2\nsection:1\nword:beleg\nsection:3\nword:bad\n");
@@ -134,13 +184,38 @@ class MiscDataLoaderNamesTest {
     }
 
     @Test
-    @DisplayName("a missing file is swallowed and leaves the registry as it was")
-    void missingFileLeavesRegistryAlone() throws IOException {
+    @DisplayName("a missing file stops start-up, as parse_file_quit_not_found does, and leaves the registry as it was")
+    void missingFileThrows() throws IOException {
         writeNames("record-count:1\nsection:1\nword:beleg\n");
         MiscDataLoader.loadNames();
         Files.delete(tempDir.resolve("names.txt"));
 
-        assertDoesNotThrow(MiscDataLoader::loadNames);
+        RuntimeException thrown = assertThrows(RuntimeException.class, MiscDataLoader::loadNames);
+
+        assertInstanceOf(IOException.class, thrown.getCause());
+        assertTrue(thrown.getMessage().contains("names.txt"));
+        assertEquals(List.of("beleg"), MiscRegistry.getNameSection(RandnameType.RANDNAME_TOLKIEN));
+    }
+
+    @Test
+    @DisplayName("a hard grammar error yields no records with errors, which stops start-up")
+    void hardGrammarErrorThrows() throws IOException {
+        writeNames("record-count:1\nsection:1\nword:beleg\n");
+        MiscDataLoader.loadNames();
+        writeNames("section:1\nword:no-record-count-header\n");
+
+        RuntimeException thrown = assertThrows(RuntimeException.class, MiscDataLoader::loadNames);
+
+        assertTrue(thrown.getMessage().contains("names.txt"));
+        assertEquals(List.of("beleg"), MiscRegistry.getNameSection(RandnameType.RANDNAME_TOLKIEN));
+    }
+
+    @Test
+    @DisplayName("a soft error that leaves a record is logged and the record still registers")
+    void softErrorWithRecordsStillRegisters() throws IOException {
+        writeNames("record-count:5\nsection:1\nword:beleg\n");
+
+        MiscDataLoader.loadNames();
 
         assertEquals(List.of("beleg"), MiscRegistry.getNameSection(RandnameType.RANDNAME_TOLKIEN));
     }

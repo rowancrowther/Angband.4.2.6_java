@@ -445,7 +445,7 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
                             ":" + numberStr + ":" + nameStr + role);
                     badFriend = true;
                 }
-                if (chance < 0 || chance > 100) {
+                if (chance < 0) {
                     errors.add("Monster at line: " + line + " has " +
                             "a friends chance value out of bounds.");
                     badFriend = true;

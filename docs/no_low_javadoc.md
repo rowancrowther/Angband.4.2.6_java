@@ -48,13 +48,7 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-24
-
-### `middle/monsters/MonsterFriends.java`
-
-1 missing, 0 low
-
-- L35: field `logger` - MISSING
+23
 
 ### `middle/monsters/enums/MonTimed.java`
 

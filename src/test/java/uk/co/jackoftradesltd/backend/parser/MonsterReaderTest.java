@@ -25,12 +25,11 @@ import uk.co.jackoftradesltd.channel.Channels;
 import uk.co.jackoftradesltd.channel.StartupOptions;
 import uk.co.jackoftradesltd.channel.messages.UIMessage;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.channel.uichannel.UIEntrySpec;
 import uk.co.jackoftradesltd.frontend.entries.UIEntry;
 import uk.co.jackoftradesltd.frontend.ui.globals.UIDataLoader;
 import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
-import uk.co.jackoftradesltd.middle.numerics.Random;
-import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.middle.game.gameengine.Core;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.registry.MonsterRegistry;
@@ -38,6 +37,7 @@ import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.monsters.*;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterGroupRole;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
+import uk.co.jackoftradesltd.middle.numerics.Random;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -656,10 +656,17 @@ class MonsterReaderTest {
     }
 
     @Test
-    void aFriendChanceOutOfBoundsIsReportedAndTheRecordDropped() throws Exception {
-        ParseResult<MonsterRace> r = load("bad-friend-chance.txt", withHeader(1, rec("Nope", "friends:200:1d1:Some Monster")));
-        assertTrue(r.items().isEmpty());
-        assertTrue(hasError(r, "friends chance value out of bounds"), r.errors()::toString);
+    void aFriendChanceAboveOneHundredIsKeptAsWritten() throws Exception {
+        // C's parse_monster_friends reads the chance with parser_getuint and applies no upper
+        // bound, so 101 and 200 are valid and stored unchanged (they only ever behave as 100).
+        ParseResult<MonsterRace> r = load("big-friend-chance.txt", withHeader(1, rec("Boss",
+                "friends:101:1d1:Some Monster", "friends:200:1d1:Another Monster")));
+        assertEquals(1, r.items().size());
+        assertFalse(hasError(r, "out of bounds"), r.errors()::toString);
+        List<?> friends = field(r.items().get(0), "friends");
+        assertEquals(2, friends.size());
+        assertEquals(Integer.valueOf(101), declaredField(friends.get(0), "percentChance"));
+        assertEquals(Integer.valueOf(200), declaredField(friends.get(1), "percentChance"));
     }
 
     @Test

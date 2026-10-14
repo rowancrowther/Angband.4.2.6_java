@@ -17,8 +17,6 @@
 
 package uk.co.jackoftradesltd.middle.gameinput;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.cave.Loc;
 import uk.co.jackoftradesltd.middle.cave.enums.DirectionEnum;
@@ -49,13 +47,24 @@ import java.util.function.Predicate;
  * it inherits {@link GameInput}'s generic fall-back (mention the effects, flush, then defer to
  * {@link #getCheck}), which given this stub's "no" answer declines.
  *
+ * <p>In C each wrapper in {@code game-input.c} tests its own file-scope hook pointer
+ * ({@code get_string_hook}, {@code get_check_hook}, …), all of which start {@code NULL} until
+ * {@code textui_input_init()} installs the real ones. This class is every wrapper with its hook
+ * left {@code NULL}: the {@code false}, {@code 0} and {@code -1} returns become
+ * {@link Optional#empty()}, the out-parameter writes that never happen become an empty result, and
+ * the {@code void} hooks do nothing. It holds no state, so one instance can be shared freely.
+ *
+ * <p>Class DefaultGameInput coded before 261012, commented in full on 261014.
+ *
  * @author Rowan Crowther
  */
 public class DefaultGameInput implements GameInput {
-    private static final Logger logger = LogManager.getLogger();
-
     /**
-     * {@inheritDoc} This default always aborts.
+     * Stands in for C's {@code get_rep_dir} with {@code get_rep_dir_hook} unset, where the wrapper
+     * returns {@code false} and never writes {@code *dir}. The port reports that as empty: no
+     * direction is chosen, whatever {@code allow5} (C's {@code allow_none}) says.
+     *
+     * <p>Function getRepDir coded before 261012, commented in full on 261014.
      */
     @Override
     public Optional<DirectionEnum> getRepDir(boolean allow5) {
@@ -63,7 +72,11 @@ public class DefaultGameInput implements GameInput {
     }
 
     /**
-     * {@inheritDoc} This default always aborts.
+     * Stands in for C's {@code get_aim_dir} with {@code get_aim_dir_hook} unset, where the wrapper
+     * returns {@code false} and never writes {@code *dir}. The port reports that as empty: no aim
+     * direction or target is chosen.
+     *
+     * <p>Function getAimDir coded before 261012, commented in full on 261014.
      */
     @Override
     public Optional<DirectionEnum> getAimDir() {
@@ -71,7 +84,12 @@ public class DefaultGameInput implements GameInput {
     }
 
     /**
-     * {@inheritDoc} This default always aborts.
+     * Stands in for C's {@code get_item} with {@code get_item_hook} unset, where the wrapper returns
+     * {@code false} and leaves {@code *choice} untouched. The port reports that as empty. Unlike the
+     * real picker, which shows {@code errorMessage} when nothing is eligible, this default displays
+     * nothing, as the C wrapper does; the arguments are all ignored.
+     *
+     * <p>Function getItem coded before 261012, commented in full on 261014.
      */
     @Override
     public Optional<ItemObject> getItem(String prompt, String errorMessage, CommandCode code, Predicate<ItemObject> filter, Flag<GetItemFlags> mode) {
@@ -79,7 +97,11 @@ public class DefaultGameInput implements GameInput {
     }
 
     /**
-     * {@inheritDoc} This default always aborts.
+     * Stands in for C's {@code get_quantity} with {@code get_quantity_hook} unset, where the wrapper
+     * returns {@code 0}. Since a real answer is always in {@code [1, max]}, C's {@code 0} means
+     * "cancelled", and the port reports it as empty whatever {@code max} is.
+     *
+     * <p>Function getQuantity coded before 261012, commented in full on 261014.
      */
     @Override
     public Optional<Integer> getQuantity(String prompt, int max) {
@@ -87,7 +109,12 @@ public class DefaultGameInput implements GameInput {
     }
 
     /**
-     * {@inheritDoc} This default always aborts.
+     * Stands in for C's {@code get_string} with {@code get_string_hook} unset, where the wrapper
+     * returns {@code false} and leaves the caller's buffer as it was. The port reports that as
+     * empty - not as {@code userString} handed back, and not as an empty string, which a real UI
+     * would treat as an accepted answer.
+     *
+     * <p>Function getString coded before 261012, commented in full on 261014.
      */
     @Override
     public Optional<String> getString(String prompt, String userString) {
@@ -95,7 +122,11 @@ public class DefaultGameInput implements GameInput {
     }
 
     /**
-     * {@inheritDoc} This default always aborts.
+     * Stands in for C's {@code get_spell_from_book} with {@code get_spell_from_book_hook} unset,
+     * where the wrapper returns {@code -1}. The port reports that negative "selection failed" value
+     * as empty; the player, book, filter and error message are all ignored.
+     *
+     * <p>Function getSpellFromBook coded before 261012, commented in full on 261014.
      */
     @Override
     public Optional<MagicSpell> getSpellFromBook(Player player, String verb, ItemObject magicBook, String errorMessage, BiPredicate<Player, MagicSpell> spellFilter) {
@@ -103,7 +134,12 @@ public class DefaultGameInput implements GameInput {
     }
 
     /**
-     * {@inheritDoc} This default always aborts.
+     * Stands in for C's {@code get_spell} with {@code get_spell_hook} unset, where the wrapper
+     * returns {@code -1} and never writes {@code *rtn_book}. The port reports that as empty, so
+     * there is no half-answer: neither a book nor a spell comes back, and the {@code magicBook}
+     * the caller offered is not echoed.
+     *
+     * <p>Function getSpell coded before 261012, commented in full on 261014.
      */
     @Override
     public Optional<SpellSelection> getSpell(Player player, String verb, Predicate<ItemObject> bookFilter, CommandCode commandCode, String bookErrorMessage, BiPredicate<Player, MagicSpell> spellFilter, String spellError, ItemObject magicBook) {
@@ -111,9 +147,13 @@ public class DefaultGameInput implements GameInput {
     }
 
     /**
-     * {@inheritDoc} With no UI hook, this default mirrors C's non-hook fall-back: it selects
-     * {@link EffectChoice.Random} when {@code allowRandom} is set, and otherwise
-     * {@link EffectChoice.Aborted}.
+     * Stands in for C's {@code get_effect_from_list} with {@code get_effect_from_list_hook} unset.
+     * This is the one value hook with a fall-back that is not a plain abort: C returns
+     * {@code allow_random ? -2 : -1}, so the port returns {@link EffectChoice.Random} when
+     * {@code allowRandom} is set and {@link EffectChoice.Aborted} otherwise. It never returns an
+     * {@link EffectChoice.Index}, and {@code prompt}, {@code effects} and {@code count} are ignored.
+     *
+     * <p>Function getEffectFromList coded before 261009, commented in full on 261014.
      */
     @Override
     public EffectChoice getEffectFromList(String prompt, List<Effect> effects, int count, boolean allowRandom) {
@@ -122,7 +162,12 @@ public class DefaultGameInput implements GameInput {
     }
 
     /**
-     * {@inheritDoc} This default declines - it answers "no" (C's absent-hook fall-back).
+     * Stands in for C's {@code get_check} with {@code get_check_hook} unset, where the wrapper
+     * returns {@code false}: the prompt is not shown and the answer is "no". Because
+     * {@link GameInput#confirmDebug} defers to this method, the debug commands are also refused
+     * under this default.
+     *
+     * <p>Function getCheck coded before 261012, commented in full on 261014.
      */
     @Override
     public boolean getCheck(String prompt) {
@@ -130,7 +175,11 @@ public class DefaultGameInput implements GameInput {
     }
 
     /**
-     * {@inheritDoc} This default aborts - no keypress is offered.
+     * Stands in for C's {@code get_com} with {@code get_com_hook} unset, where the wrapper returns
+     * {@code false} and never writes {@code *command}. The port reports that as empty: no keypress
+     * is offered, which the caller treats as the player escaping.
+     *
+     * <p>Function getCom coded before 261012, commented in full on 261014.
      */
     @Override
     public Optional<Character> getCom(String prompt) {
@@ -138,7 +187,11 @@ public class DefaultGameInput implements GameInput {
     }
 
     /**
-     * {@inheritDoc} This default aborts - no curse is chosen.
+     * Stands in for C's {@code get_curse} with {@code get_curse_hook} unset, where the wrapper
+     * returns {@code false} and never writes {@code *choice}. The port reports that as empty, so no
+     * curse index comes back; the object and dice string are ignored.
+     *
+     * <p>Function getCurse coded before 261012, commented in full on 261014.
      */
     @Override
     public Optional<Integer> getCurse(ItemObject object, String diceString) {
@@ -146,7 +199,12 @@ public class DefaultGameInput implements GameInput {
     }
 
     /**
-     * {@inheritDoc} This default reports no panel bounds (C's no-op leaves them unset).
+     * Stands in for C's {@code get_panel} with {@code get_panel_hook} unset, where the {@code void}
+     * wrapper does nothing and leaves the four coordinate out-parameters as the caller set them.
+     * The port has no out-parameters to leave alone, so it reports empty - "no bounds available" -
+     * and a caller must not read that as a zero-sized panel.
+     *
+     * <p>Function getPanel coded before 261012, commented in full on 261014.
      */
     @Override
     public Optional<GameInput.Rectangle> getPanel() {
@@ -154,8 +212,12 @@ public class DefaultGameInput implements GameInput {
     }
 
     /**
-     * {@inheritDoc} This default returns {@code true}, faithfully mirroring C's absent-hook
-     * fall-back: with no UI to consult, every grid is treated as on the panel.
+     * Stands in for C's {@code panel_contains} with {@code panel_contains_hook} unset, where the
+     * wrapper returns {@code true}: with no UI to consult, every grid is treated as on the panel,
+     * so non-UI logic does not cull anything. The location is ignored, and this is one of the two
+     * hooks (with {@link #mapIsVisible}) whose fall-back is "yes" rather than a decline.
+     *
+     * <p>Function panelContains coded before 261012, commented in full on 261014.
      */
     @Override
     public boolean panelContains(Loc location) {
@@ -163,8 +225,10 @@ public class DefaultGameInput implements GameInput {
     }
 
     /**
-     * {@inheritDoc} This default returns {@code true}, faithfully mirroring C's absent-hook
-     * fall-back: with no UI to consult, the map is treated as visible.
+     * Stands in for C's {@code map_is_visible} with {@code map_is_visible_hook} unset, where the
+     * wrapper returns {@code true}: with no UI to consult, the map is treated as visible.
+     *
+     * <p>Function mapIsVisible coded before 261012, commented in full on 261014.
      */
     @Override
     public boolean mapIsVisible() {
@@ -173,9 +237,10 @@ public class DefaultGameInput implements GameInput {
 
     /**
      * {@inheritDoc} This default does nothing, as C's {@code view_ability_menu} does when
-     * {@code view_abilities_hook} is unset.
+     * {@code view_abilities_hook} is unset: the {@code void} wrapper has no else branch, so no menu
+     * is shown and the list is neither read nor changed. There is no abort channel to report.
      *
-     * <p>Function viewAbilityMenu coded before 261012, commented in full on 261012.
+     * <p>Function viewAbilityMenu coded before 261012, commented in full on 261014.
      */
     @Override
     public void viewAbilityMenu(List<PlayerProperty> propertyList) {

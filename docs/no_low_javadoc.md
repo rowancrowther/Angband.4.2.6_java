@@ -48,13 +48,7 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-27
-
-### `middle/game/globals/registry/DungeonRegistry.java`
-
-1 missing, 0 low
-
-- L38: field `logger` - MISSING
+26
 
 ### `middle/gameinput/DefaultGameInput.java`
 

@@ -20,11 +20,12 @@ package uk.co.jackoftradesltd.middle.monsters.enums;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.Map;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests for {@link MonsterSpell} as the stand-in for C's {@code RSF_*} list
@@ -206,6 +207,66 @@ class MonsterSpellTableTest {
         for (MonsterSpellTypeEnum t : MonsterSpellTypeEnum.values()) {
             assertEquals(damage.contains(t), t.isDamage(), "isDamage of " + t);
         }
+    }
+
+    /**
+     * How many rows of {@code list-mon-spells.h} carry each {@code RST_} type, counted from the C
+     * file with {@code grep -cw}: bolt 17, ball 15, breath 19, direct 3, annoy 15, haste 3,
+     * heal 1, heal-other 1, tactic 2, escape 4, summon 16, innate 27, archery 3, and none 0
+     * (no row names {@code RST_NONE}; the two sentinel rows use a bare {@code 0}).
+     *
+     * <p>Function typeCountsMatchTheCHeader coded on 261014, commented in full on 261014.
+     */
+    @Test
+    @DisplayName("The number of spells carrying each RST_ type matches the C header")
+    void typeCountsMatchTheCHeader() {
+        Map<MonsterSpellTypeEnum, Integer> expected = new EnumMap<>(MonsterSpellTypeEnum.class);
+        expected.put(MonsterSpellTypeEnum.RST_NONE, 0);
+        expected.put(MonsterSpellTypeEnum.RST_BOLT, 17);
+        expected.put(MonsterSpellTypeEnum.RST_BALL, 15);
+        expected.put(MonsterSpellTypeEnum.RST_BREATH, 19);
+        expected.put(MonsterSpellTypeEnum.RST_DIRECT, 3);
+        expected.put(MonsterSpellTypeEnum.RST_ANNOY, 15);
+        expected.put(MonsterSpellTypeEnum.RST_HASTE, 3);
+        expected.put(MonsterSpellTypeEnum.RST_HEAL, 1);
+        expected.put(MonsterSpellTypeEnum.RST_HEAL_OTHER, 1);
+        expected.put(MonsterSpellTypeEnum.RST_TACTIC, 2);
+        expected.put(MonsterSpellTypeEnum.RST_ESCAPE, 4);
+        expected.put(MonsterSpellTypeEnum.RST_SUMMON, 16);
+        expected.put(MonsterSpellTypeEnum.RST_INNATE, 27);
+        expected.put(MonsterSpellTypeEnum.RST_ARCHERY, 3);
+
+        assertEquals(MonsterSpellTypeEnum.values().length, expected.size());
+        for (MonsterSpellTypeEnum type : MonsterSpellTypeEnum.values()) {
+            int count = 0;
+            for (MonsterSpell spell : MonsterSpell.values()) {
+                if (spell.getTypes().has(type)) {
+                    count++;
+                }
+            }
+            assertEquals(expected.get(type), count, "spells with " + type);
+        }
+    }
+
+    /**
+     * The name lookup the {@code MonsterSpellAssembler} uses, {@code valueOf("RSF_" + name)}, as
+     * against C's {@code grab_name()} over {@code r_info_spell_flags[]} (case-sensitive
+     * {@code streq}, every row including {@code NONE} and {@code MAX}, the index being the
+     * position): {@code NONE} and {@code MAX} resolve to index 0 and 92, a lower-case or unknown
+     * name does not resolve, and the position of a name is its ordinal.
+     *
+     * <p>Function nameLookupMirrorsGrabName coded on 261014, commented in full on 261014.
+     */
+    @Test
+    @DisplayName("valueOf(\"RSF_\" + name) resolves as grab_name does over r_info_spell_flags")
+    void nameLookupMirrorsGrabName() {
+        assertEquals(0, MonsterSpell.valueOf("RSF_" + "NONE").ordinal());
+        assertEquals(92, MonsterSpell.valueOf("RSF_" + "MAX").ordinal());
+        assertEquals(44, MonsterSpell.valueOf("RSF_" + "WOUND").ordinal(),
+                "WOUND is the 45th RSF() row of the header, so index 44");
+        assertThrows(IllegalArgumentException.class, () -> MonsterSpell.valueOf("RSF_" + "shriek"));
+        assertThrows(IllegalArgumentException.class, () -> MonsterSpell.valueOf("RSF_" + "ACID"));
+        assertThrows(IllegalArgumentException.class, () -> MonsterSpell.valueOf("RSF_" + ""));
     }
 
     /**

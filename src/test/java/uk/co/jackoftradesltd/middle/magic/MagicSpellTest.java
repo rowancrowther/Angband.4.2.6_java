@@ -23,7 +23,6 @@ import uk.co.jackoftradesltd.backend.parser.playerclass.ClassSpellAssembler;
 import uk.co.jackoftradesltd.backend.parser.playerclass.ClassSpellParseRecord;
 import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.middle.enums.Stats;
-import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -73,7 +72,7 @@ class MagicSpellTest {
      * @return the realm
      */
     private static MagicRealm realm(String name) {
-        return new MagicRealm(name, Stats.STAT_INT, "cast", "spell", TValue.TV_MAGIC_BOOK);
+        return new MagicRealm(name, Stats.STAT_INT, "cast", "spell", "magic book");
     }
 
     /**

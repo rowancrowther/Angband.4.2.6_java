@@ -115,7 +115,7 @@ class MagicBookTest {
     }
 
     private static MagicRealm arcane() {
-        return new MagicRealm("arcane", Stats.STAT_INT, "cast", "spell", TValue.TV_MAGIC_BOOK);
+        return new MagicRealm("arcane", Stats.STAT_INT, "cast", "spell", "magic book");
     }
 
     private static List<MagicSpell> spells(int count) {

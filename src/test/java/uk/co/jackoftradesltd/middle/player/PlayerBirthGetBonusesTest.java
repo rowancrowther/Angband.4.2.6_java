@@ -138,7 +138,7 @@ class PlayerBirthGetBonusesTest {
      */
     private static PlayerClass casterClass() {
         MagicRealm arcane = new MagicRealm("arcane", Stats.STAT_INT, "cast", "spell",
-                TValue.TV_MAGIC_BOOK);
+                "magic book");
         MagicBook book = new MagicBook(TValue.TV_MAGIC_BOOK, "Magic for Beginners", false,
                 arcane, null, 0, 0, 0, 0, new java.util.ArrayList<>(java.util.Collections.nCopies(1, new uk.co.jackoftradesltd.middle.magic.MagicSpell("spell", 1, 1, 1, 0, List.of(), ""))));
 

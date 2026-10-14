@@ -22,15 +22,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.magic.MagicRealm;
-import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerRegistry#lookupRealm}, added on 260831.
@@ -86,7 +83,7 @@ class PlayerRegistryLookupRealmTest {
      * @return the realm
      */
     private static MagicRealm realm(String name) {
-        return new MagicRealm(name, Stats.STAT_INT, "cast", "spell", TValue.TV_MAGIC_BOOK);
+        return new MagicRealm(name, Stats.STAT_INT, "cast", "spell", "magic book");
     }
 
     /**

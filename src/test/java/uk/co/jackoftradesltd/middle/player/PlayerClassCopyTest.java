@@ -142,7 +142,7 @@ class PlayerClassCopyTest {
         pFlags.on(PlayerFlag.PF_BRAVERY_30);
 
         MagicRealm arcane = new MagicRealm("arcane", Stats.STAT_INT, "cast", "spell",
-                TValue.TV_MAGIC_BOOK);
+                "magic book");
         magic = new ClassMagic(1, 300, List.of(
                 new MagicBook(TValue.TV_MAGIC_BOOK, "Magic for Beginners", false, arcane, null,
                         0, 0, 0, 0,

@@ -22,7 +22,6 @@ import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.magic.MagicRealm;
-import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -37,10 +36,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@code RealmGrammar} -> {@link uk.co.jackoftradesltd.backend.parser.realm.RealmParseRecord} ->
  * {@link uk.co.jackoftradesltd.backend.parser.realm.RealmAssembler} -> {@link MagicRealm}.
  *
- * <p>The realm assembler resolves entirely against compile-time enums — the primary casting
- * {@link Stats} (via a {@code STAT_} prefix) and the spellbook {@link TValue} (via a {@code TV_}
- * prefix over the underscored, upper-cased {@code book-noun} text) — with no cross-file references,
- * so no {@code GameConstants} seeding is required.
+ * <p>The realm assembler resolves only the primary casting {@link Stats} (via a {@code STAT_}
+ * prefix); the verb, spell-noun and book-noun are kept as the free text C stores, so any book-noun
+ * loads. There are no cross-file references, so no {@code GameConstants} seeding is required.
  *
  * <p>{@link MagicRealm} exposes only {@code getName()}, so the remaining assertions read its private
  * fields reflectively via {@link #field}.
@@ -103,20 +101,27 @@ class RealmReaderTest {
         assertEquals(Stats.STAT_INT, field(arcane, "stat"));
         assertEquals("cast", field(arcane, "verb"));
         assertEquals("spell", field(arcane, "spellNoun"));
-        // book-noun "magic book" -> TV_MAGIC_BOOK: proves the spaced free-text resolves to a tval.
-        assertEquals(TValue.TV_MAGIC_BOOK, field(arcane, "book"));
+        // book-noun is kept as the raw text, spaces and all, exactly as lib/gamedata/realm.txt has it.
+        assertEquals("magic book", field(arcane, "bookNoun"));
     }
 
     @Test
-    void eachRealmMapsToItsOwnStatAndBookType() throws Exception {
+    void eachRealmKeepsItsOwnStatVerbNounsFromTheRealFile() throws Exception {
         List<MagicRealm> realms = new RealmReader().parse(REAL_FILE);
 
+        // Expected values are lib/gamedata/realm.txt in the C tree.
         assertEquals(Stats.STAT_WIS, field(byName(realms, "divine"), "stat"));
-        assertEquals(TValue.TV_PRAYER_BOOK, field(byName(realms, "divine"), "book"));
+        assertEquals("recite", field(byName(realms, "divine"), "verb"));
+        assertEquals("prayer", field(byName(realms, "divine"), "spellNoun"));
+        assertEquals("prayer book", field(byName(realms, "divine"), "bookNoun"));
         assertEquals(Stats.STAT_WIS, field(byName(realms, "nature"), "stat"));
-        assertEquals(TValue.TV_NATURE_BOOK, field(byName(realms, "nature"), "book"));
+        assertEquals("chant", field(byName(realms, "nature"), "verb"));
+        assertEquals("verse", field(byName(realms, "nature"), "spellNoun"));
+        assertEquals("nature book", field(byName(realms, "nature"), "bookNoun"));
         assertEquals(Stats.STAT_INT, field(byName(realms, "shadow"), "stat"));
-        assertEquals(TValue.TV_SHADOW_BOOK, field(byName(realms, "shadow"), "book"));
+        assertEquals("perform", field(byName(realms, "shadow"), "verb"));
+        assertEquals("ritual", field(byName(realms, "shadow"), "spellNoun"));
+        assertEquals("shadow book", field(byName(realms, "shadow"), "bookNoun"));
     }
 
     // ---- Soft errors: drop the record, keep the rest ---------------------
@@ -132,13 +137,16 @@ class RealmReaderTest {
     }
 
     @Test
-    void unknownBookNounIsReportedAndTheRealmDropped() throws IOException {
-        ParseResult<MagicRealm> result = load("bad-book.txt",
-                withHeader(1, realm("weird", "INT", "not a book")));
+    void anyBookNounLoadsAsRawText() throws Exception {
+        // C's tests/parse/realm.c (test_book_noun0) loads "exercise manual" and "hymnal"; the
+        // parser stores the text and nothing in C resolves it, so neither may drop the realm.
+        ParseResult<MagicRealm> result = load("free-book.txt", withHeader(2,
+                realm("gym", "INT", "exercise manual") + realm("choir", "WIS", "hymnal")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(s -> s.contains("unknown book noun")),
-                result.errors()::toString);
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(2, result.items().size());
+        assertEquals("exercise manual", field(byName(result.items(), "gym"), "bookNoun"));
+        assertEquals("hymnal", field(byName(result.items(), "choir"), "bookNoun"));
     }
 
     @Test
@@ -246,7 +254,7 @@ class RealmReaderTest {
         assertEquals("weird", r.getName());
         assertEquals(Stats.STAT_INT, field(r, "stat"));
         assertEquals("cast", field(r, "verb"));
-        assertEquals(TValue.TV_MAGIC_BOOK, field(r, "book"));
+        assertEquals("magic book", field(r, "bookNoun"));
     }
 
     @Test

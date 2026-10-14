@@ -102,7 +102,7 @@ class CommandSpellItemRepeatTest {
      * A caster with two books of two spells each, so flattened indices 0-1 are book one and 2-3 book two.
      */
     private static PlayerClass casterClass(MagicSpell a, MagicSpell b, MagicSpell c, MagicSpell d) {
-        MagicRealm arcane = new MagicRealm("arcane", Stats.STAT_INT, "cast", "spell", TValue.TV_MAGIC_BOOK);
+        MagicRealm arcane = new MagicRealm("arcane", Stats.STAT_INT, "cast", "spell", "magic book");
         MagicBook first = new MagicBook(TValue.TV_MAGIC_BOOK, "First", false, arcane,
                 null, 0, 0, 0, 0, new ArrayList<>(List.of(a, b)));
         MagicBook second = new MagicBook(TValue.TV_MAGIC_BOOK, "Second", false, arcane,

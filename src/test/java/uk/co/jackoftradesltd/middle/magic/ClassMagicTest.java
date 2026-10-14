@@ -77,7 +77,7 @@ class ClassMagicTest {
     private static MagicBook book(String name, MagicSpell... spells) {
         List<MagicSpell> list = new ArrayList<>(List.of(spells));
         return new MagicBook(TValue.TV_MAGIC_BOOK, name, false,
-                new MagicRealm("arcane", Stats.STAT_INT, "cast", "spell", TValue.TV_MAGIC_BOOK),
+                new MagicRealm("arcane", Stats.STAT_INT, "cast", "spell", "magic book"),
                 null, 0, 0, 0, 0, list);
     }
 

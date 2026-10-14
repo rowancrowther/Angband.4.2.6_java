@@ -63,7 +63,7 @@ class PlayerClassMagicRealmTest {
      * @return the realm
      */
     private static MagicRealm realm(String name, Stats stat) {
-        return new MagicRealm(name, stat, "cast", "spell", TValue.TV_MAGIC_BOOK);
+        return new MagicRealm(name, stat, "cast", "spell", "magic book");
     }
 
     /**

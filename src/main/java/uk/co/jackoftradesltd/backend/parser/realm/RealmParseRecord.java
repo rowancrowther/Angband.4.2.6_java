@@ -22,15 +22,17 @@ package uk.co.jackoftradesltd.backend.parser.realm;
  * {@link uk.co.jackoftradesltd.backend.parser.grammars.realm.RealmGrammar} before any validation. It is
  * the hand-off from the ANTLR parse to
  * {@link uk.co.jackoftradesltd.backend.parser.realm.RealmAssembler}, which turns the raw text into a
- * typed {@link uk.co.jackoftradesltd.middle.magic.MagicRealm} (resolving the stat name and book-noun).
- * Keeping the values as strings here lets a malformed entry be reported against its {@link #line}
- * rather than throwing inside the parser.
+ * typed {@link uk.co.jackoftradesltd.middle.magic.MagicRealm} (resolving the stat name; the other
+ * three texts pass through as they are). Keeping the values as strings here lets a malformed entry
+ * be reported against its {@link #line} rather than throwing inside the parser.
+ *
+ * <p>Record RealmParseRecord coded before 260915, commented in full on 261014.
  *
  * @param name      the {@code name:} value — the realm's display name (e.g. {@code "arcane"})
  * @param stat      the {@code stat:} value — the primary casting stat's name (e.g. {@code "INT"})
  * @param verb      the {@code verb:} value — the casting verb (e.g. {@code "cast"})
  * @param spellNoun the {@code spell-noun:} value — what a casting is called (e.g. {@code "spell"})
- * @param bookNoun  the {@code book-noun:} value — the spellbook's item-type name (e.g. {@code "magic book"})
+ * @param bookNoun  the {@code book-noun:} value — the noun for the realm's spellbooks, free text (e.g. {@code "magic book"})
  * @param line      the 1-based source line of this record's {@code name:} directive, used in error messages
  * @author Rowan Crowther
  */

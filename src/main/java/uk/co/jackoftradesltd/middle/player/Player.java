@@ -3154,7 +3154,7 @@ public class Player {
     /**
      * Resets both spell-tracking lists and refills each to {@code numSpells} entries - the
      * port of C's paired {@code mem_zalloc} calls for {@code p->spell_flags} and
-     * {@code p->spell_order} in {@code player_spells_init} ({@code player-spell.c:147-152}).
+     * {@code p->spell_order} in {@code player_spells_init} ({@code player-spell.c}).
      * Both lists are cleared before refilling, so a repeat call reproduces C's fresh,
      * freshly-zeroed allocation rather than appending onto whatever was left from a previous
      * call. {@code spellFlags} is refilled with {@code 0} (no spell yet learned in that
@@ -3162,7 +3162,7 @@ public class Player {
      * {@link PlayerMagic#playerSpellsInit(Player)}, always passes as {@code 99} - C's
      * sentinel for "no learned spell occupies this order slot".
      *
-     * <p>Function initSpellOrder coded on 260908, commented in full on 260908.
+     * <p>Function initSpellOrder coded on 260908, commented in full on 261014.
      *
      * @param numSpells the number of spell slots to allocate, taken from the player's
      *                  class's total spell count

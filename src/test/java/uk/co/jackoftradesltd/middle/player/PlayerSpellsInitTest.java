@@ -43,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests {@link Player#initSpellOrder(int, int)} and {@link PlayerMagic#playerSpellsInit(Player)},
- * the port of C's {@code player_spells_init} ({@code player-spell.c:139-153}).
+ * the port of C's {@code player_spells_init} in {@code player-spell.c}.
  *
  * <p>C allocates {@code spell_flags} and {@code spell_order} together with two
  * {@code mem_zalloc} calls, so the two are always the same length and always freshly zeroed —
@@ -97,6 +97,28 @@ class PlayerSpellsInitTest {
         ClassMagic magic = totalSpells == 0
                 ? ClassMagic.NONE
                 : new ClassMagic(1, 300, List.of(book(totalSpells)));
+        return classWith(magic);
+    }
+
+    /**
+     * A class with one book per entry of {@code bookSizes}, holding that many spells each.
+     *
+     * @param bookSizes the spell count of each book
+     * @return the class
+     */
+    private static PlayerClass multiBookClass(int... bookSizes) {
+        List<MagicBook> books = new ArrayList<>();
+        for (int size : bookSizes) books.add(book(size));
+        return classWith(new ClassMagic(1, 300, books));
+    }
+
+    /**
+     * A bare class carrying the given magic.
+     *
+     * @param magic the class's magic
+     * @return the class
+     */
+    private static PlayerClass classWith(ClassMagic magic) {
         return new PlayerClass("Test Class", List.of(), Map.of(), Map.of(), Map.of(), 0, 0,
                 new Flag<>(ObjectFlag.class), new Flag<>(PlayerFlag.class),
                 0, 0, 0, List.of(), magic);
@@ -162,6 +184,38 @@ class PlayerSpellsInitTest {
             assertEquals(List.of(99), listField("spellOrder"));
             assertEquals(List.of(0), listField("spellFlags"));
         }
+
+        /**
+         * C sizes both arrays from {@code magic.total_spells}, the sum over every book, not the
+         * size of the first book or the number of books.
+         */
+        @Test
+        @DisplayName("a multi-book class is sized to the sum of its books' spells")
+        void multiBookClassIsSizedToTheSum() throws Exception {
+            player.setClass(multiBookClass(2, 3));
+
+            PlayerMagic.playerSpellsInit(player);
+
+            assertEquals(List.of(99, 99, 99, 99, 99), listField("spellOrder"));
+            assertEquals(List.of(0, 0, 0, 0, 0), listField("spellFlags"));
+        }
+
+        /**
+         * A repeat call through {@code playerSpellsInit} itself (the player's class having been
+         * changed in between) discards the earlier contents, as a fresh {@code mem_zalloc} would.
+         */
+        @Test
+        @DisplayName("a second call for a smaller class resets both lists to the new size")
+        void repeatCallResizesBothLists() throws Exception {
+            player.setClass(casterClass(4));
+            PlayerMagic.playerSpellsInit(player);
+
+            player.setClass(casterClass(2));
+            PlayerMagic.playerSpellsInit(player);
+
+            assertEquals(List.of(99, 99), listField("spellOrder"));
+            assertEquals(List.of(0, 0), listField("spellFlags"));
+        }
     }
 
     /**
@@ -188,6 +242,24 @@ class PlayerSpellsInitTest {
 
             assertEquals(List.of(), listField("spellOrder"));
             assertEquals(List.of(), listField("spellFlags"));
+        }
+
+        /**
+         * C's early return happens before either array is touched - it does not free or clear
+         * them either. Lists already populated for an earlier class therefore survive a
+         * non-caster call unchanged.
+         */
+        @Test
+        @DisplayName("does not clear lists that an earlier call populated")
+        void earlierContentsSurvive() throws Exception {
+            player.setClass(casterClass(2));
+            PlayerMagic.playerSpellsInit(player);
+
+            player.setClass(casterClass(0));
+            PlayerMagic.playerSpellsInit(player);
+
+            assertEquals(List.of(99, 99), listField("spellOrder"));
+            assertEquals(List.of(0, 0), listField("spellFlags"));
         }
     }
 

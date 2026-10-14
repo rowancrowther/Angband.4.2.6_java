@@ -48,13 +48,7 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-17
-
-### `middle/player/PlayerCalcs.java`
-
-1 missing, 0 low
-
-- L83: field `logger` - MISSING
+16
 
 ### `middle/player/PlayerMagic.java`
 

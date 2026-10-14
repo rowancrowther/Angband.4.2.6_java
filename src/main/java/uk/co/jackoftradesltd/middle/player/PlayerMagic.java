@@ -17,20 +17,37 @@
 
 package uk.co.jackoftradesltd.middle.player;
 
+/**
+ * Player-side spell bookkeeping - the port of the player-owned parts of C's
+ * {@code player-spell.c}. Only {@code player_spells_init} is ported so far; the learning,
+ * casting and spell-lookup functions of that file arrive in a later chapter.
+ *
+ * <p>Holds no state of its own: every method is static and works on the {@link Player} it is
+ * given. The per-spell lists it initializes ({@code spellFlags}, {@code spellOrder}) are
+ * fields of {@link Player}.
+ *
+ * <p>Class PlayerMagic coded on 260908, commented in full on 261014.
+ */
 public class PlayerMagic {
     /**
      * Allocates and resets the player's per-spell tracking lists - the port of C's
-     * {@code player_spells_init} ({@code player-spell.c:139-153}). Reads the player's
-     * class's total spell count and, if it is zero (a class with no spellbook), returns
-     * immediately without touching {@code spellFlags}/{@code spellOrder} at all, matching
-     * C's early {@code if (!num_spells) return;}. Otherwise hands off to
+     * {@code player_spells_init} in {@code player-spell.c}. Reads the player's class's total
+     * spell count and, if it is zero (a class with no spellbook), returns immediately without
+     * touching {@code spellFlags}/{@code spellOrder} at all, matching C's early
+     * {@code if (!num_spells) return;}. Otherwise hands off to
      * {@link Player#initSpellOrder(int, int)} to clear and refill both lists, passing
      * {@code 99} as the "no spell learned" sentinel C always uses for {@code spell_order}.
      *
-     * <p>Called from {@code PlayerBirth.doCmdAcceptCharacter} ({@code PlayerBirth.java:2446}),
-     * once per character birth.
+     * <p>Because the zero-spell return happens before any list is touched, a non-caster's
+     * lists keep whatever they already held - empty for a freshly constructed {@link Player},
+     * exactly as C's never-allocated null pointers.
      *
-     * <p>Function playerSpellsInit coded on 260908, commented in full on 260908.
+     * <p>Called from {@code PlayerBirth.doCmdAcceptCharacter}, once per character birth, after
+     * the class has been embodied and the starting money given. C also calls it when loading
+     * a savefile ({@code load.c}) and from the borg's reincarnation code; neither of those
+     * paths calls this method in the port yet.
+     *
+     * <p>Function playerSpellsInit coded on 260908, commented in full on 261014.
      *
      * @param player the player whose spell-tracking lists are (re)initialized
      */

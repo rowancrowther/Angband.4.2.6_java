@@ -28,14 +28,11 @@ import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
 import java.lang.reflect.Field;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerCalcs#calcHitpoints()}, the port of C's {@code calc_hitpoints}
- * ({@code player-calcs.c:1562-1588}) — the maximum every wound, potion and killing blow is measured
+ * ({@code player-calcs.c}) — the maximum every wound, potion and killing blow is measured
  * against.
  *
  * <p><b>What is worth pinning here is the arithmetic's edges, not the happy path.</b> The bonus from

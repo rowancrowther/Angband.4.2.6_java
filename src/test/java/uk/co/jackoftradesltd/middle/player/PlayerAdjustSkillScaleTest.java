@@ -24,13 +24,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerCalcs#adjustSkillScale(int, int, int, int)}, the port of C's
- * {@code adjust_skill_scale} ({@code player-calcs.c:1781-1792}) — the way every temporary skill
+ * {@code adjust_skill_scale} ({@code player-calcs.c}) — the way every temporary skill
  * bonus and penalty in {@code calcBonuses} is applied.
  *
  * <p><b>The negative branch is not the positive one with a sign flipped</b>, and that is the whole

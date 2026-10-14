@@ -21,11 +21,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
+import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.objects.Curse;
 import uk.co.jackoftradesltd.middle.objects.ElementInfo;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
-import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
@@ -36,13 +36,11 @@ import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerCalcs#calcBonuses}, the port of C's {@code calc_bonuses}
- * ({@code player-calcs.c:1877-2325}) — the derivation every other number about a character rests on.
+ * ({@code player-calcs.c}) — the derivation every other number about a character rests on.
  *
  * <p><b>Absolute totals are mostly not what is asserted.</b> Almost every quantity here is a sum of
  * race, class, level, gear, shape, statuses and a stat-table adjustment, so pinning a total means
@@ -111,7 +109,7 @@ class PlayerCalcBonusesTest {
 
         /**
          * Speed starts at 110 and blows at one — C's two explicit defaults after the wipe
-         * ({@code player-calcs.c:1898-1900}). A character with nothing on contributes nothing to
+         * ({@code player-calcs.c}). A character with nothing on contributes nothing to
          * either, so these come through untouched.
          */
         @Test
@@ -127,7 +125,7 @@ class PlayerCalcBonusesTest {
 
         /**
          * A class with no spells is marked as having no mana at all — the flag {@code calcBonuses}
-         * sets from a zero maximum ({@code player-calcs.c:2316-2319}).
+         * sets from a zero maximum ({@code player-calcs.c}).
          */
         @Test
         @DisplayName("a non-caster is flagged as having no mana")
@@ -171,7 +169,7 @@ class PlayerCalcBonusesTest {
 
         /**
          * A modifier counts only when the character can read the rune for it — C multiplies every
-         * modifier by {@code p->obj_k->modifiers[]} ({@code player-calcs.c:1943-1970}). The same ring
+         * modifier by {@code p->obj_k->modifiers[]} ({@code player-calcs.c}). The same ring
          * on the same finger is worth five points of speed or nothing at all, and the difference is
          * knowledge rather than anything about the ring.
          */
@@ -197,7 +195,7 @@ class PlayerCalcBonusesTest {
         /**
          * Base armour class and the armour enchantment are separate totals — C adds {@code obj->ac}
          * unconditionally to {@code state->ac} and {@code obj->to_a} to {@code state->to_a} under a
-         * knowledge test ({@code player-calcs.c:1993-1996}). A single plate mail therefore lands in
+         * knowledge test ({@code player-calcs.c}). A single plate mail therefore lands in
          * two places, and an early version of this port added its enchantment twice while leaving
          * its armour at zero.
          */
@@ -222,7 +220,7 @@ class PlayerCalcBonusesTest {
 
         /**
          * The weapon and launcher slots withhold to-hit and to-damage, so that wielding a weapon
-         * does not improve unrelated actions ({@code player-calcs.c:1997-1998}). Asserted as a
+         * does not improve unrelated actions ({@code player-calcs.c}). Asserted as a
          * difference between the same item in two slots, which isolates the slot rule from the stat
          * adjustments that also feed the total.
          */
@@ -254,7 +252,7 @@ class PlayerCalcBonusesTest {
 
         /**
          * A light source's radius reaches the state through {@code calcLight}, which sums every worn
-         * item rather than taking the brightest ({@code player-calcs.c:1622-1645}).
+         * item rather than taking the brightest ({@code player-calcs.c}).
          */
         @Test
         @DisplayName("a worn light contributes its radius")
@@ -271,7 +269,7 @@ class PlayerCalcBonusesTest {
 
         /**
          * A fuelled light that has burnt out gives nothing — its whole contribution is zeroed, not
-         * just its innate part ({@code player-calcs.c:1638-1642}).
+         * just its innate part ({@code player-calcs.c}).
          */
         @Test
         @DisplayName("a burnt-out light gives no radius at all")
@@ -299,7 +297,7 @@ class PlayerCalcBonusesTest {
         /**
          * The curse pass runs at all — an item's curses are examined after the item itself, so a
          * curse's modifier reaches the state alongside the item's
-         * ({@code player-calcs.c:2005-2020}).
+         * ({@code player-calcs.c}).
          */
         @Test
         @DisplayName("a curse on a worn item contributes its modifiers")
@@ -317,7 +315,7 @@ class PlayerCalcBonusesTest {
 
         /**
          * A curse recorded at zero power is inert — C only visits an index whose power is non-zero
-         * ({@code player-calcs.c:2009}).
+         * ({@code player-calcs.c}).
          */
         @Test
         @DisplayName("a curse at zero power contributes nothing")
@@ -355,7 +353,7 @@ class PlayerCalcBonusesTest {
         /**
          * A curse's modifiers survive the restricted calculation while everything else about it does
          * not — the consequence of the curse template's blank known object
-         * ({@code obj-init.c:188-194}). This is the behaviour most likely to be "fixed" by someone
+         * ({@code obj-init.c}). This is the behaviour most likely to be "fixed" by someone
          * who reads it as a gap.
          */
         @Test
@@ -386,7 +384,7 @@ class PlayerCalcBonusesTest {
         /**
          * An unidentified item's enchantment stays hidden: with no known counterpart, the guard on
          * {@code obj->known->to_a} fails and the bonus is not counted
-         * ({@code player-calcs.c:1994-1995}). Its base armour is counted regardless, because C adds
+         * ({@code player-calcs.c}). Its base armour is counted regardless, because C adds
          * that unconditionally.
          */
         @Test

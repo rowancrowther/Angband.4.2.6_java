@@ -48,13 +48,7 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-18
-
-### `middle/objects/enums/ObjectOriginEnum.java`
-
-1 missing, 0 low
-
-- L31: method `ORIGIN_MAX` - MISSING
+17
 
 ### `middle/player/PlayerCalcs.java`
 

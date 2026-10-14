@@ -78,23 +78,29 @@ import java.util.*;
  * lookup tables the derivations read are not here either - the {@code adj_*} tables live in
  * {@link StatTables}, and the per-item questions are methods on the objects themselves.
  *
- * <p>Class PlayerCalcs commented in full on 260901.
+ * <p>One member of the {@code calc*} family is not yet a port: {@link #calcSpells} is a stub that
+ * does nothing, awaiting the magic subsystem, so {@code PU_SPELLS} is serviced by clearing its flag
+ * and no more. {@link Extras} is the only type the file declares.
+ *
+ * <p>Class PlayerCalcs commented in full on 261014.
  *
  * @author Rowan Crowther
  */
 public class PlayerCalcs {
     /**
-     * The class's log4j logger, used by {@link #calcInventory} to report a pack or quiver
-     * whose item counts do not add up.
+     * The class's log4j logger. Only {@link #calcInventory} writes to it: each of the three "cannot
+     * happen" guards that stand in for C's {@code assert()}s logs its message at error level just
+     * before throwing it as a {@link RuntimeException}, so the reason survives even if the caller
+     * swallows the exception.
      *
-     * <p>Field logger coded before 260901, commented in full on 260929.
+     * <p>Field logger coded before 260901, commented in full on 261014.
      */
     private static final Logger logger = LogManager.getLogger(PlayerCalcs.class);
 
     /**
      * Recomputes everything about the character that is derived rather than stored, filling
      * {@code state} from the player's race, class, level, equipment, shape and running statuses —
-     * the port of C's {@code calc_bonuses} ({@code player-calcs.c:1877-2325}).
+     * the port of C's {@code calc_bonuses} ({@code player-calcs.c}).
      *
      * <p>This is the game's central derivation. Nothing here is remembered between calls: the state
      * is wiped and rebuilt from scratch every time, so there is no incremental update to get wrong
@@ -127,8 +133,9 @@ public class PlayerCalcs {
      * one they have, by admitting a contribution only where the corresponding rune has been learned.
      * It is what the character sheet displays, so that unidentified gear does not give away its
      * properties. Note what it does to a curse: a curse's template object has a blank known
-     * counterpart ({@code obj-init.c:188-194}), so under {@code knownOnly} a curse contributes its
-     * modifiers and nothing else — no flags, no resistances, no combat bonuses.
+     * counterpart ({@code obj-init.c}, function {@code write_curse_kinds()}), so under
+     * {@code knownOnly} a curse contributes its modifiers and nothing else — no flags, no
+     * resistances, no combat bonuses.
      *
      * <p>{@code update} distinguishes a real recalculation from a hypothetical one. When it is
      * clear, the method must not write anything back to the player: the mana calculation stops short
@@ -139,13 +146,24 @@ public class PlayerCalcs {
      *
      * <p><b>The equipment walk is the part that looks least like its original.</b> C runs a
      * {@code while (obj)} loop that binds one pointer first to the slot's item and then, in turn, to
-     * the template object of each curse on it ({@code player-calcs.c:1929-2020}) — one body,
-     * {@code n + 1} passes. The port cannot do that directly because a {@link Curse} has no object
-     * of its own, so the passes are built as a list of {@link BonusSource} and the body reads
-     * whichever is current. The behaviour is the same, including that curse objects' own curses are
-     * never walked and that a curse recorded at zero power contributes nothing.
+     * the template object of each curse on it — one body, {@code n + 1} passes. The port cannot do
+     * that directly because a {@link Curse} has no object of its own, so the passes are built as a
+     * list of {@link BonusSource} and the body reads whichever is current. The behaviour is the
+     * same, including that curse objects' own curses are never walked and that a curse recorded at
+     * zero power contributes nothing. C starts its curse scan at index 1 because slot 0 of its
+     * curse table is blank; the port's curse map holds real curses only, so there is nothing to skip.
      *
-     * <p>Function calcBonuses commented in full on 260820.
+     * <p><b>Three smaller departures, none of which changes a result.</b> A launcher whose kind is
+     * {@code null} leaves the ammunition type at {@code TV_NONE}, where C would dereference the kind.
+     * The temporary-resistance loop reads each effect's element through
+     * {@link PlayerRegistry#lookupPlayerTimedEffect} and skips an effect that has none, where C
+     * indexes {@code timed_effects[]} and tests for {@code -1}. And
+     * {@link Player#playerFlags} is handed the state being built so that it can ask whether it
+     * carries {@code PF_BRAVERY_30}; C asks {@code player_has()}, which reads the <em>previous</em>
+     * {@code p->state}, so the two differ only on the first calculation after birth, when C's
+     * state is still zeroed.
+     *
+     * <p>Function calcBonuses commented in full on 261014.
      *
      * @param player    the character being measured: race, class, level, equipment, curses, shape,
      *                  hunger and timed effects are all read from them
@@ -641,7 +659,7 @@ public class PlayerCalcs {
 
     /**
      * Carries out the pending one-off notice actions - the port of C's {@code notice_stuff}
-     * ({@code player-calcs.c:2536}). Returns at once when no {@code PN_*} flag is raised.
+     * ({@code player-calcs.c}). Returns at once when no {@code PN_*} flag is raised.
      *
      * <p>Three actions, in C's order: {@code PN_IGNORE} drops items that have become ignorable,
      * {@code PN_COMBINE} merges stacks in the pack, and {@code PN_MON_MESSAGE} flushes the queued
@@ -662,7 +680,7 @@ public class PlayerCalcs {
      * {@code PN_MON_MESSAGE} currently clears the flag and discards the messages rather than
      * showing them.
      *
-     * <p>Function noticeStuff coded on 260822, commented in full on 260824.
+     * <p>Function noticeStuff coded on 260822, commented in full on 261014.
      *
      * @param player the character whose pending notices are serviced; each flag is cleared as it
      *               is dealt with
@@ -694,7 +712,7 @@ public class PlayerCalcs {
 
     /**
      * Pays off both halves of the player's pending debt - the port of C's {@code handle_stuff}
-     * ({@code player-calcs.c:2728}).
+     * ({@code player-calcs.c}).
      *
      * <p>Code that changes the model never recomputes or repaints anything itself; it raises a
      * {@code PU_*} flag on {@link PlayerUpkeep} for a stale derived quantity, or a {@code PR_*} flag
@@ -705,7 +723,7 @@ public class PlayerCalcs {
      * <p>It is only a guarded pair of calls, and both guards are the plain "is anything pending"
      * test C makes on its two bitmasks: {@link PlayerUpkeep#getUpdate()} for the update set, an
      * empty check on the snapshot from {@link PlayerUpkeep#getRedrawFlags()} for the redraw set.
-     * Neither call clears anything - each of {@link #updateStuff(Player)} ()} and
+     * Neither guard clears anything - each of {@link #updateStuff(Player)} and
      * {@link #redrawStuff(Player)} owns the clearing of the flags it services.
      *
      * <p>The order matters and follows C: recalculation runs first, repaint second. A recalculation
@@ -714,7 +732,7 @@ public class PlayerCalcs {
      * serviced on this same pass rather than waiting for the next one. The reverse order would
      * repaint the old values and leave the new ones a turn behind.
      *
-     * <p>Function handleStuff coded before 260828, commented in full on 260828.
+     * <p>Function handleStuff coded before 260828, commented in full on 261014.
      *
      * @param player the character whose pending updates and redraws are settled
      * @see #updateStuff(Player)
@@ -835,7 +853,7 @@ public class PlayerCalcs {
     /**
      * Repaints whichever screen regions have been flagged stale, by signalling one UI event per
      * raised flag and then clearing the flags it dealt with — the port of C's {@code redraw_stuff}
-     * ({@code player-calcs.c}, function {@code redraw_stuff}).
+     * ({@code player-calcs.c}, function {@code redraw_stuff()}).
      *
      * <p>This is the redraw half of the pair {@link #updateStuff(Player)} begins: code that changes the
      * model raises a {@link PlayerRedraw} ({@code PR_*}) flag on {@link PlayerUpkeep} and moves on,
@@ -864,9 +882,10 @@ public class PlayerCalcs {
      *
      * <p>Then the speed hack C keeps: while resting or running, the screen is only refreshed on
      * every hundredth turn of either counter, because a rest that repaints each turn takes visibly
-     * longer to sit through. A pending message or map redraw overrides the hack. Note that the
-     * narrowing above happens first, so with the map hidden neither override can be present and the
-     * hack always returns.
+     * longer to sit through. A pending message or map redraw overrides the hack. A character who is
+     * neither resting nor running has both counters at zero, a multiple of a hundred, so the hack
+     * does not apply to them at all. Note that the narrowing above happens first, so with the map
+     * hidden neither override can be present and a resting or running character always returns.
      *
      * <p>Most flags are signalled bare through {@link PlayerRedraw#getEventType()}, but a number carry a
      * payload instead, because there is no shared {@code player} on the front-end side for a handler
@@ -882,8 +901,9 @@ public class PlayerCalcs {
      * {@code player->au}; {@code PR_TITLE} calls {@code eventSignalStrings} with the class title, the wizard flag, the
      * total-winner flag and the shape name, guarding {@link Player#getShape} against {@code null}
      * first, since nothing has ported the shapechange effect yet and a null shape has no name to
-     * read; and {@code PR_MISC} calls it twice, once with the race name, class name and shapechanged
-     * flag and once with the full name. {@code PR_EXP} is the one flag that dispatches twice under
+     * read; and {@code PR_MISC} sends two signals under two events, {@code eventSignalStrings} under
+     * {@code EVENT_RACE_CLASS} with the race name, class name and shapechanged flag, then
+     * {@code eventSignalString} under {@code EVENT_PLAYER_NAME} with the full name. {@code PR_EXP} is the one flag that dispatches twice under
      * its own event: {@code eventSignalLongStat} sends the (current, maximum) experience pair as
      * C's {@code player->exp}/{@code max_exp} comparison needs it, and a second, separate
      * {@code eventSignalLong} sends whatever C's local {@code xp} in {@code prt_exp} would hold —
@@ -894,34 +914,34 @@ public class PlayerCalcs {
      * {@link uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter} per equipment slot,
      * built by calling {@link ItemObject#getItemObjectADC()} on each occupied slot and falling
      * back to a blank white space for an empty one — C's {@code prt_equippy}
-     * ({@code [C] ui-display.c}) reads {@code player->body} directly instead, and also blanks a
+     * ({@code ui-display.c}) reads {@code player->body} directly instead, and also blanks a
      * slot whose graphics tile is wider or taller than one character cell, a check this arm does
      * not reproduce: tile width/height are UI-side state with no core-side counterpart to read
      * from here, so that fallback is deferred until tiles, as opposed to characters, are ported.
      * {@code PR_STATS} calls {@code eventSignalFullStat} once per stat, in
      * {@link uk.co.jackoftradesltd.middle.enums.Stats} order, each carrying that stat's index
      * alongside its current value, recorded maximum and displayed use figure - C's {@code prt_stat}
-     * ({@code [C] ui-display.c}) reads {@code player->stat_cur}/{@code stat_max}/
+     * ({@code ui-display.c}) reads {@code player->stat_cur}/{@code stat_max}/
      * {@code state.stat_use}, indexed by stat, directly instead of receiving them as an argument.
      * {@code PR_ARMOR} calls {@code eventSignalInt} with the player's armour class, computed here as
      * {@link PlayerState#getBaseAc()} plus {@link PlayerState#getToAc()} on
-     * {@link Player#getKnownState()} — C's {@code prt_ac} ({@code [C] ui-display.c}) reads
+     * {@link Player#getKnownState()} — C's {@code prt_ac} ({@code ui-display.c}) reads
      * {@code player->known_state.ac}/{@code to_a} directly instead of receiving the sum as an
      * argument.
      * {@code PR_HEALTH} calls {@code eventSignalMonInfo} once, packing what C's
-     * {@code prt_health_aux} and {@code monster_health_attr} ({@code [C] ui-display.c}) read off
+     * {@code prt_health_aux} and {@code monster_health_attr} ({@code ui-display.c}) read off
      * {@code player->upkeep->health_who} at draw time: whether a monster is tracked
      * ({@link PlayerUpkeep#healthWho()}), and if so its hit points, maximum hit points, visibility
      * and the seven timed effects the bar colours by, each reduced to "is the timer non-zero".
      * The player's {@code TMD_IMAGE} (hallucination) is read whether or not a monster is tracked;
      * every monster-derived component is a placeholder ({@code 0}/{@code false}) when none is.
      * {@code PR_SPEED} calls {@code eventSignalPlayerSpeed} once, packing what C's
-     * {@code prt_speed_aux} ({@code [C] ui-display.c}) reads at draw time: the speed from
+     * {@code prt_speed_aux} ({@code ui-display.c}) reads at draw time: the speed from
      * {@code player->state.speed}, the {@code effective_speed} option, and
      * {@link ChannelRegistry#extractEnergy} at the speed and at 110, C's {@code extract_energy[]}.
      * A player with no state yet sends speed {@code 0}, where C would already have one.
      * {@code PR_DEPTH} calls {@code eventSignalInt} with {@code player.getDepth()}, C's
-     * {@code player->depth}, which C's {@code prt_depth} ({@code [C] ui-display.c}) reads directly;
+     * {@code player->depth}, which C's {@code prt_depth} ({@code ui-display.c}) reads directly;
      * the level is sent rather than the feet, so the {@code * 50} stays on the drawing side.
      * The map is handled separately again, because it also carries data:
      * {@code EVENT_MAP} with the point {@code (-1, -1)}, C's sentinel for "the whole map, not one
@@ -936,7 +956,7 @@ public class PlayerCalcs {
      * honoured is the map coming after the rest of the events, and {@code EVENT_END} coming last of
      * all.
      *
-     * <p>Function redrawStuff coded on 260828, commented in full on 260928.
+     * <p>Function redrawStuff coded on 260828, commented in full on 261014.
      *
      * @param player the character whose flagged display elements are re-sent to the front end
      * @see #updateStuff(Player)
@@ -1122,7 +1142,7 @@ public class PlayerCalcs {
 
     /**
      * Works out the player's maximum mana, and whether their armour is heavy enough to cost them
-     * some — the port of C's {@code calc_mana} ({@code player-calcs.c:1480-1554}).
+     * some — the port of C's {@code calc_mana} ({@code player-calcs.c}).
      *
      * <p>Three questions in order. Can the class cast at all: a class with no spells has its mana
      * zeroed outright and the method returns. What does level give: mana grows with the levels
@@ -1137,7 +1157,11 @@ public class PlayerCalcs {
      * recalculation leaves the character's mana alone. When the maximum does change, current mana is
      * capped to it and a redraw is asked for.
      *
-     * <p>Function calcMana commented in full on 260820.
+     * <p>The one exception to that split is the first question: the no-spells arm zeroes maximum
+     * mana, current mana and the fractional credit on the player whatever {@code update} says, as C
+     * does, and returns before the state's encumbrance flag is touched.
+     *
+     * <p>Function calcMana commented in full on 261014.
      *
      * @param player the character whose class, level and spell stat set the maximum, and on whom
      *               that maximum is stored when {@code update} is set
@@ -1218,14 +1242,14 @@ public class PlayerCalcs {
     /**
      * The stat table index a caster's mana is scaled by, averaged over every realm the class draws
      * on — the port of C's {@code average_spell_stat}
-     * ({@code player-calcs.c:1247-1259}).
+     * ({@code player-calcs.c}).
      *
      * <p>Averages the compressed <em>indices</em>, not the stat values, because that is what indexes
      * the mana table. A class casting from one realm gets that realm's stat unchanged; a class
      * spanning two is held to the mean of both, so neglecting either costs mana. The division rounds
      * up.
      *
-     * <p>Function averageSpellStat commented in full on 260820.
+     * <p>Function averageSpellStat commented in full on 261014.
      *
      * @param player the character whose class supplies the realms to average over
      * @param state  the state whose stat indices to read
@@ -1246,7 +1270,7 @@ public class PlayerCalcs {
 
     /**
      * Blows per turn with a given weapon, scaled by 100 — the port of C's {@code calc_blows}
-     * ({@code player-calcs.c:1703-1735}).
+     * ({@code player-calcs.c}).
      *
      * <p>Strength is weighed against the weapon: {@code adjStrBlow[STR]} times the class's attack
      * multiplier, divided by the weapon's weight. A heavy weapon in a weak arm lands on a low rung,
@@ -1262,7 +1286,7 @@ public class PlayerCalcs {
      * <p>The floor at the end is one blow, or two under the percentage-damage birth option, where
      * blows are worth proportionally less.
      *
-     * <p>Function calcBlows commented in full on 260820.
+     * <p>Function calcBlows commented in full on 261014.
      *
      * @param player     the character whose class supplies the minimum weapon weight, attack
      *                   multiplier, maximum attacks and birth options
@@ -1300,7 +1324,7 @@ public class PlayerCalcs {
 
     /**
      * Adds the player's current shape's contribution to the state — the port of C's
-     * {@code calc_shapechange} ({@code player-calcs.c:1798-1853}).
+     * {@code calc_shapechange} ({@code player-calcs.c}).
      *
      * <p>A shape contributes on the same terms as a piece of equipment: combat bonuses, skills,
      * object and player flags, stats, the seven other modifiers, and resistances. It is applied
@@ -1313,13 +1337,17 @@ public class PlayerCalcs {
      * <ul>
      *   <li><b>A null shape returns the totals untouched.</b> C cannot reach this state — a player
      *       always has a shape, "normal", assigned at birth and restored on changing back
-     *       ({@code player-birth.c:456}, {@code player-util.c:1050}) — but the port allows the field
-     *       to be absent, and an absent shape must contribute nothing rather than throw.</li>
-     *   <li><b>The extra blows and shots travel by value.</b> C passes four pointers and adds into
-     *       the caller's storage; see {@link Extras}.</li>
+     *       ({@code player-birth.c}, function {@code player_init()}; {@code player-util.c}, function
+     *       {@code player_resume_normal_shape()}) — but the port allows the field to be absent, and
+     *       an absent shape must contribute nothing rather than throw.</li>
+     *   <li><b>The extra blows, shots, might and moves travel by value.</b> C passes four pointers
+     *       and adds into the caller's storage; see {@link Extras}.</li>
      * </ul>
      *
-     * <p>Function calcShapechange commented in full on 260820.
+     * <p>A shape that lacks an entry for a skill, modifier or element contributes zero for it, where
+     * C reads the zeroed array slot.
+     *
+     * <p>Function calcShapechange commented in full on 261014.
      *
      * @param state           the state being filled, mutated in place
      * @param vulnerabilities the running set of elements something has made the player vulnerable
@@ -1388,7 +1416,7 @@ public class PlayerCalcs {
 
     /**
      * Works out the radius of light the player sheds — the port of C's {@code calc_light}
-     * ({@code player-calcs.c:1598-1646}).
+     * ({@code player-calcs.c}).
      *
      * <p>Sums rather than picks: every worn item's contribution is added, so a lantern and a glowing
      * ring both count. An item's contribution is its innate radius from {@code OF_LIGHT_2} or
@@ -1398,11 +1426,14 @@ public class PlayerCalcs {
      * has burnt out contributes nothing at all — its whole contribution is zeroed, not just its
      * innate part.
      *
-     * <p>In the town by day the answer is simply zero and the method returns early, but not before
-     * checking whether that differs from the player's current light and asking for a redraw if so —
-     * which is why the early return is inside the {@code update} branch rather than around it.
+     * <p>In the town by day, on a real recalculation, the answer is simply zero and the method
+     * returns early, but not before checking whether that differs from the light the player's
+     * current state records and, if so, raising {@code PU_MONSTERS} and {@code PU_UPDATE_VIEW}. A
+     * hypothetical recalculation ({@code update} clear) takes no such shortcut and sums the
+     * equipment as it would anywhere else. The port also guards the comparison against the player
+     * having no state yet, which C cannot be without.
      *
-     * <p>Function calcLight commented in full on 260820.
+     * <p>Function calcLight commented in full on 261014.
      *
      * @param player the character whose equipment, timed effects and surroundings supply the light
      * @param state  the state to write the light radius to
@@ -1453,8 +1484,9 @@ public class PlayerCalcs {
 
     /**
      * Scales a skill by a fraction of itself — the port of C's {@code adjust_skill_scale}
-     * ({@code player-calcs.c:1781-1792}), the way every temporary skill penalty and bonus in
-     * {@code calcBonuses} is applied.
+     * ({@code player-calcs.c}), the way every temporary skill penalty and bonus in
+     * {@code calcBonuses} is applied. C adjusts through a pointer; the port returns the new value
+     * for the caller to store.
      *
      * <p>Proportional rather than flat: blessing improves device skill by a twentieth of what it
      * already is, so it is worth more to a character who is already good. The adjustment is computed
@@ -1468,7 +1500,7 @@ public class PlayerCalcs {
      * Truncating instead would make a penalty slightly gentler than the equivalent multiplication,
      * and the two idioms are used interchangeably in the original.
      *
-     * <p>Function adjustSkillScale commented in full on 260820.
+     * <p>Function adjustSkillScale commented in full on 261014.
      *
      * @param value       the skill value to adjust
      * @param numerator   the fraction's numerator; negative for a penalty
@@ -1488,7 +1520,7 @@ public class PlayerCalcs {
 
     /**
      * Recalculates the character's maximum hit points and clamps the current total to it — the port
-     * of C's {@code calc_hitpoints} ({@code player-calcs.c:1562-1588}).
+     * of C's {@code calc_hitpoints} ({@code player-calcs.c}).
      *
      * <p>Two numbers make the maximum. {@code playerHP[level - 1]} is the running total of the hit
      * dice rolled at each level, fixed at birth and never re-rolled, and {@code adjConMhp} adds a
@@ -1512,10 +1544,9 @@ public class PlayerCalcs {
      *
      * <p>The constitution read is {@code state}'s <em>derived</em> stat index, so this must run after
      * {@code calcBonuses} has filled it. C guarantees that by ordering the flags in
-     * {@code update_stuff}, where {@code PU_BONUS} is handled before {@code PU_HP}
-     * ({@code player-calcs.c:2575-2588}).
+     * {@code update_stuff}, where {@code PU_BONUS} is handled before {@code PU_HP}.
      *
-     * <p>Function calcHitpoints commented in full on 260820.
+     * <p>Function calcHitpoints commented in full on 261014.
      *
      * @param player the character whose maximum hit points are recomputed and stored
      */
@@ -1547,7 +1578,7 @@ public class PlayerCalcs {
 
     /**
      * Recalculates the character's whole derived state and then reports what moved — the port of
-     * C's {@code update_bonuses} ({@code player-calcs.c:2336-2456}), and the only caller of
+     * C's {@code update_bonuses} ({@code player-calcs.c}), and the only caller of
      * {@link PlayerCalcs#calcBonuses}.
      *
      * <p>The method is in two halves. The first derives a fresh state from scratch; the second sets
@@ -1555,9 +1586,8 @@ public class PlayerCalcs {
      * downstream cares about, and finally installs the new state over the old. Nothing here draws
      * anything or recalculates hit points itself — it only records that those things are now due,
      * and {@code updateStuff} runs them in its own order afterwards. C guarantees that ordering by
-     * handling {@code PU_BONUS} before {@code PU_HP}, {@code PU_MANA} and {@code PU_SPELLS}
-     * ({@code player-calcs.c:2570-2600}), so a flag raised here is always serviced after this
-     * returns and never during.
+     * handling {@code PU_BONUS} before {@code PU_HP}, {@code PU_MANA} and {@code PU_SPELLS}, so a
+     * flag raised here is always serviced after this returns and never during.
      *
      * <p><b>The two {@code copy} calls are the load-bearing line of the method.</b> C opens with
      * {@code struct player_state state = p->state;} — a by-value copy of the entire struct, taken
@@ -1589,12 +1619,12 @@ public class PlayerCalcs {
      * derived number, and constitution is singled out because it is the one that feeds hit points.
      *
      * <p>The message block is skipped in partial-update mode. C sets {@code only_partial} around the
-     * full-screen rebuild on arriving at a new level ({@code ui-display.c:2522-2557}), where the
-     * state is being recomputed wholesale rather than responding to anything the character did;
-     * announcing "you have trouble wielding such a heavy bow" there would be reporting a change that
-     * never happened.
+     * full-screen rebuild on arriving at a new level ({@code ui-display.c}, function
+     * {@code new_level_display_update()}), where the state is being recomputed wholesale rather
+     * than responding to anything the character did; announcing "you have trouble wielding such a
+     * heavy bow" there would be reporting a change that never happened.
      *
-     * <p>Function updateBonuses commented in full on 260820.
+     * <p>Function updateBonuses commented in full on 261014.
      *
      * @param player the character whose real and known states are rebuilt
      */
@@ -1712,7 +1742,7 @@ public class PlayerCalcs {
 
     /**
      * Rebuilds the pack and quiver views over the gear - the port of C's {@code calc_inventory}
-     * ({@code player-calcs.c:1023}).
+     * ({@code player-calcs.c}).
      *
      * <p>The gear is the one true list of what the player carries; {@code upkeep.inventory} and
      * {@code upkeep.quiver} are only views onto it, arrays that give the display and the commands
@@ -1740,9 +1770,9 @@ public class PlayerCalcs {
      * ammunition's. Splitting is refused once {@code numStackSplit} would pass
      * {@code numPackRemaining}, the free pack slots measured before any of this ran: overfilling
      * the pack by one slot is tolerated, by more is not, and the object simply stays unassigned
-     * rather than forcing the pack past that. {@code Player#invenCanStackPartial} declines to make
-     * quiver-bound partial stacks for the same reason - a stack combined there would only be split
-     * again here.
+     * rather than forcing the pack past that. {@code ObjectUtils#invenCanStackPartial} declines to
+     * make quiver-bound partial stacks for the same reason - a stack combined there would only be
+     * split again here.
      *
      * <p>C's asserts on those invariants are thrown as {@link RuntimeException}s: an oversized gear
      * list, a split that would not shrink the stack, and a split attempted with no room for it.
@@ -1756,7 +1786,27 @@ public class PlayerCalcs {
      * either. Neither message is given before the dungeon exists, which is character creation
      * stocking the pack.
      *
-     * <p>Function calcInventory stubbed on 260822, coded on 260826, commented in full on 260827.
+     * <p><b>The gear is walked from the top index down.</b> C walks {@code p->gear} from its head,
+     * the oldest item, to its tail; {@link uk.co.jackoftradesltd.middle.objects.Pile} keeps its head at
+     * the last index, so {@code get(size() - 1)} is C's first item and {@code get(0)} its last. Every
+     * walk here goes from the last index to 0, so ties in {@code earlier_object()} and contested
+     * inscribed slots are settled in favour of the older item, as in C. The {@code assigned} list
+     * is built to match that indexing, with the flag for each item at its {@code get} position.
+     * C's {@code gear_insert_end()} appends at the tail without disturbing earlier positions;
+     * {@code Pile.insertEnd} puts the remainder at index 0 and moves every item up one. So after a
+     * split a new {@code false} goes in at the front of {@code assigned}, the index of the item just
+     * placed is one higher, and the inscribed pass revisits the position it was on so that the item
+     * which moved up into it is not skipped.
+     *
+     * <p>The one difference of form is the ordering test. C calls the free function
+     * {@code earlier_object()}; the port calls {@link ItemObject#earlierObject} on a throwaway
+     * {@code new ItemObject()}. The instance is a throwaway: the method compares only the two
+     * objects it is handed, plus the ammunition type of the current player, which it re-reads from
+     * {@code GameState} into the instance's own {@code player} field before using it, as C reads
+     * the global {@code player}.
+     *
+     * <p>Function calcInventory stubbed on 260822, coded on 260826, gear order and index handling
+     * corrected on 261014, commented in full on 261014.
      *
      * @param player the character whose pack and quiver are re-sorted
      */
@@ -1780,7 +1830,7 @@ public class PlayerCalcs {
                 logger.error(message);
                 throw new RuntimeException(message);
             }
-            assigned.add(player.getPlayerBody().itemIsEquipped(current));
+            assigned.addFirst(player.getPlayerBody().itemIsEquipped(current));
         }
         // Now the rest of the gear slots
         for (int index = count; index < numMax; index++) {
@@ -1797,9 +1847,11 @@ public class PlayerCalcs {
             player.getPlayerUpkeep().getQuiver()[index] = null;
             index++;
         }
+        
+        boolean splitHappened = false;
 
         // Fill the quiver - allocate inscribed items first
-        for (index = 0; index < player.getGear().size(); index++) {
+        for (index = player.getGear().size() - 1; index >= 0; index--) {
             ItemObject quiverCurrent = player.getGear().get(index);
             if (assigned.get(index)) continue; // skip already assigned (equipped) items
 
@@ -1827,6 +1879,8 @@ public class PlayerCalcs {
                         // Split off the portion that goes into the pack.
                         toQuiver = quiverCurrent;
                         ObjectUtils.gearInsertEnd(player, quiverCurrent.objectSplit(quiverCurrent.getNumber() - numSplit));
+                        splitHappened = true;
+                        assigned.addFirst(false);
                         numStackSplit++;
                     } else {
                         toQuiver = null;
@@ -1838,7 +1892,12 @@ public class PlayerCalcs {
                     player.getPlayerUpkeep().setQuiverCount(player.getPlayerUpkeep().getQuiverCount() + toQuiver.getNumber() * mult);
 
                     // Mark that item done
-                    assigned.set(index, true);
+                    int toMark = splitHappened ? index + 1 : index;
+                    assigned.set(toMark, true);
+                    
+                    if (splitHappened) index++;
+                    
+                    splitHappened = false;
                 }
             }
         }
@@ -1853,12 +1912,12 @@ public class PlayerCalcs {
 
             // Find the quiver object that should go there.
             // At this point we are at the first empty quiver slot
-            int gearIndex = -1;
+            int gearIndex = player.getGear().size();
             ItemObject current;
 
             while (true) {
-                gearIndex++;
-                if (gearIndex >= player.getGear().size()) break;
+                gearIndex--;
+                if (gearIndex < 0) break;
 
                 current = player.getGear().get(gearIndex);
 
@@ -1888,12 +1947,16 @@ public class PlayerCalcs {
                     throw new RuntimeException(message);
                 }
                 ObjectUtils.gearInsertEnd(player, first.objectSplit(first.getNumber() - GameConstants.getCarryCapQuiverSlotSize()));
+                assigned.addFirst(false);
+                splitHappened = true;
             }
             player.getPlayerUpkeep().getQuiver()[quiverIndex] = first;
             player.getPlayerUpkeep().setQuiverCount(player.getPlayerUpkeep().getQuiverCount() + first.getNumber());
 
             // Mark that item as assigned
-            assigned.set(firstIndex, true);
+            int toMark = splitHappened ? firstIndex + 1 : firstIndex;
+            assigned.set(toMark, true);
+            splitHappened = false;
         }
 
         // Note reordering
@@ -1920,7 +1983,7 @@ public class PlayerCalcs {
             int firstIndex = -1;
 
             // Find the object that should go there
-            for (int gearIndex = 0; gearIndex < player.getGear().size(); gearIndex++) { // Changes numMax to getGear().size()
+            for (int gearIndex = player.getGear().size() - 1; gearIndex >= 0; gearIndex--) { // Changes numMax to getGear().size()
                 ItemObject current = player.getGear().get(gearIndex);
 
                 // Consider if it if hasn't already been handled
@@ -1942,7 +2005,7 @@ public class PlayerCalcs {
 
         // Note reordering
         if (GameWorld.hasCharacterDungeon() && player.getPlayerUpkeep().getInventoryCount() == oldInventoryCount) {
-            for (int checkIndex = 0; checkIndex < oldInventoryCount; checkIndex++) {
+            for (int checkIndex = 0; checkIndex < GameConstants.getCarryCapPackSize(); checkIndex++) {
                 if (oldPack[checkIndex] != null
                         && oldPack[checkIndex] != player.getPlayerUpkeep().getInventory()[checkIndex]
                         && !player.getPlayerBody().itemIsEquipped(oldPack[checkIndex])) {
@@ -1973,10 +2036,12 @@ public class PlayerCalcs {
      * actions.
      *
      * <p>Exists only because of a difference in how the two languages pass things. C declares four
-     * {@code int}s and passes their addresses ({@code player-calcs.c:2030-2031}), so
+     * {@code int}s and passes their addresses (in {@code calc_bonuses}, {@code player-calcs.c}), so
      * {@code calc_shapechange} adds into the caller's own storage. The port cannot take an address,
      * so the four travel together as a value in and a value out, and the caller assigns the result
      * back over its locals.
+     *
+     * <p>Record Extras coded before 261014, commented in full on 261014.
      *
      * @param blows extra blows per turn, unscaled
      * @param shots extra shots per turn, unscaled

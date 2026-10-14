@@ -17,19 +17,11 @@
 
 package uk.co.jackoftradesltd.middle.player;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
-import uk.co.jackoftradesltd.channel.messages.data.EventDataColourString;
-import uk.co.jackoftradesltd.channel.messages.data.EventDataGrid;
-import uk.co.jackoftradesltd.channel.messages.data.EventDataStat;
-import uk.co.jackoftradesltd.channel.messages.data.EventDataStrings;
-import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
+import uk.co.jackoftradesltd.channel.messages.data.*;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.game.event.EventHandlerInterface;
@@ -48,25 +40,17 @@ import uk.co.jackoftradesltd.testsupport.CalcBonusesFixture;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerCalcs#redrawStuff()}, the port of C's {@code redraw_stuff}
- * ({@code player-calcs.c:2678}).
+ * ({@code player-calcs.c}).
  *
  * <p>Nothing is painted by the method, so what is worth pinning is which events reach the bus, which
  * flags are cleared, and which of C's four ways out was taken. All of it is read off the C function
- * and its {@code redraw_events} table ({@code player-calcs.c:2634}) rather than off the port: the
+ * and its {@code redraw_events} table ({@code player-calcs.c}) rather than off the port: the
  * flag-to-event pairing below is a transcription of that table, with {@code PR_MAP} - which the
  * table deliberately omits - handled separately, as C does, because it carries data. {@code PR_HP}
  * carries data too, but for a port-only reason: C's table treats it like any other flag because its
@@ -101,7 +85,7 @@ class PlayerRedrawStuffTest {
      */
     private static final Map<PlayerRedraw, GameEventType> C_TABLE = new EnumMap<>(PlayerRedraw.class);
     /**
-     * C's {@code PR_SUBWINDOW} group ({@code player-calcs.h:95-96}), the only flags that survive a
+     * C's {@code PR_SUBWINDOW} group ({@code player-calcs.h}), the only flags that survive a
      * hidden map.
      */
     private static final Set<PlayerRedraw> C_SUBWINDOW = Set.of(PlayerRedraw.PR_MONSTER,

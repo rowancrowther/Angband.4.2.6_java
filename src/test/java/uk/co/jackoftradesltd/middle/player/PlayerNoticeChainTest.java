@@ -17,11 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.player;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.cave.Chunk;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
@@ -45,16 +41,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static uk.co.jackoftradesltd.testsupport.ItemFixture.set;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * Tests {@link PlayerCalcs#noticeStuff(Player)} and the inventory rebuild it ends with — the port
- * of C's {@code notice_stuff} ({@code player-calcs.c:2536}) and the top of {@code calc_inventory}.
+ * of C's {@code notice_stuff} ({@code player-calcs.c}) and the top of {@code calc_inventory}.
  *
  * <p>The dispatcher's shape is what these tests are about. Each flag is cleared <em>before</em> the
  * work it asks for runs, and that ordering is deliberate: {@code ignoreDrop} raises the combine flag
@@ -203,13 +195,17 @@ class PlayerNoticeChainTest {
         savedPlayer = GameState.getPlayer();
         savedCave = GameState.getCave();
 
+        // The curse table must exist before the first Player is built: its constructor makes a
+        // KnownObject, which indexes it. Seeding it afterwards made this class pass only when an
+        // earlier class had left a table behind.
+        savedCurses = curseField().get(null);
+        curseField().set(null, new ArrayList<uk.co.jackoftradesltd.middle.objects.Curse>());
+
         player = new Player();
         level = new Chunk("level", 0, 0, 0, 0, 0, false, 6, 6, 0, 4, 2, 0, 0, 0, player);
         level.setCurrentLevel(level);
         GameState.setCave(level);
         GameState.setPlayer(player);
-        savedCurses = curseField().get(null);
-        curseField().set(null, new ArrayList<uk.co.jackoftradesltd.middle.objects.Curse>());
         set(player, "itemKnowledge", new KnownObject());
     }
 

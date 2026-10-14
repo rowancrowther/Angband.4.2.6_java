@@ -54,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerCalcs#updateStuff(Player)}, the port of C's {@code update_stuff}
- * ({@code player-calcs.c:2565}).
+ * ({@code player-calcs.c}).
  *
  * <p>The method is a dispatcher, so what is worth pinning is not arithmetic but which calculations
  * run, in what order, and which flags are left behind. Every expectation below is read off the C

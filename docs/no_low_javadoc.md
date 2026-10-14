@@ -48,13 +48,7 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-20
-
-### `middle/objects/EgoItem.java`
-
-1 missing, 0 low
-
-- L402: method `clearIgnoreType` - MISSING
+19
 
 ### `middle/objects/ObjectIgnore.java`
 

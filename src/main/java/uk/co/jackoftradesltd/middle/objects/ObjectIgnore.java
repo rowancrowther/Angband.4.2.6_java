@@ -36,12 +36,25 @@ import uk.co.jackoftradesltd.middle.player.enums.PlayerUpdateEnum;
 import java.util.Iterator;
 
 /**
- * The decision half of the ignore subsystem - the port of the questions C's {@code obj-ignore.c}
- * asks, and of the one action it takes.
+ * The ignore and autoinscription half of the object subsystem - the port of the functions in C's
+ * {@code obj-ignore.c} that decide whether an object is hidden, act on that decision, and put
+ * inscriptions on objects.
  *
- * <p><b>Why these live here rather than on {@link Player}.</b> They were written as static methods
- * on {@code Player}, because {@code ignore_drop} is reached from {@code notice_stuff} and the
- * player is the only argument C passes. They read almost nothing of the player, though: the
+ * <p><b>Ignoring.</b> {@link #isIgnored} is the question (C's {@code object_is_ignored}),
+ * {@link #ignoreItemOK} adds the player's unignoring toggle to it ({@code ignore_item_ok}),
+ * {@link #ignoreKnownItemOk} is the same question put about a known copy
+ * ({@code ignore_known_item_ok}, still a stub), and {@link #ignoreDrop} is the one action taken on
+ * the answer. {@link #kindIsIgnoredUnaware} and {@link #kindIgnoreWhenAware} read and set a kind's
+ * ignore bits, and {@link #ignoreBirthInit} resets every setting for a new character.
+ *
+ * <p><b>Autoinscribing.</b> {@link #applyAutoinscription} is the core (C's
+ * {@code apply_autoinscription}); {@link #autoinscribePack} and {@link #autoinscribeGround} run it
+ * over the gear and over the floor beneath the player. {@link #runesAutoinscribe},
+ * {@link #runeAddAutoinscription} and {@link #getAutoinscription} are its private helpers.
+ *
+ * <p><b>Why the ignore methods live here rather than on {@link Player}.</b> They were written as
+ * static methods on {@code Player}, because {@code ignore_drop} is reached from {@code notice_stuff}
+ * and the player is the only argument C passes. They read almost nothing of the player, though: the
  * unignoring toggle and the gear list, and everything else they ask is asked of an
  * {@link ItemObject}. Gathering them here puts the ignore decision beside the object state it
  * actually reads, and leaves {@code Player} the character rather than the rules. The methods moved
@@ -49,19 +62,27 @@ import java.util.Iterator;
  * ({@code PlayerCalcs.noticeStuff} for {@link #ignoreDrop}, {@code GridData} for
  * {@link #ignoreKnownItemOk}).
  *
- * <p><b>What is elsewhere.</b> Only the decision is here. The settings it reads sit with the things
- * they describe - the per-quality bands in {@code ObjectIgnoreTables.ignoreLevel}, the aware/unaware kind
- * flags on {@link ObjectKind}, the per-category ego marks on {@code EgoItem} - and the per-object
- * judgements it calls are methods on {@link ItemObject}: {@code getIgnoreTypeOf},
- * {@code ignoreLevelOf}, {@code egoIsIgnored}, {@code checkForInscription}. So this class is three
- * short methods of policy over machinery that belongs to the objects themselves.
+ * <p><b>What is elsewhere.</b> The settings these methods read sit with the things they describe -
+ * the per-quality bands in {@code ObjectIgnoreTables.ignoreLevel}, the aware/unaware kind flags and
+ * autoinscription notes on {@link ObjectKind}, the per-category ego marks on {@code EgoItem} - and
+ * the per-object judgements they call are methods on {@link ItemObject}: {@code getIgnoreTypeOf},
+ * {@code ignoreLevelOf}, {@code egoIsIgnored}, {@code checkForInscription}. So this class is policy
+ * over machinery that belongs to the objects themselves. The rest of {@code obj-ignore.c} (the menu
+ * toggles, {@code add_autoinscription} and {@code remove_autoinscription}, {@code ignore_name_for_type}
+ * and the package's init and cleanup) is not ported here yet.
  *
  * <p>Class ObjectIgnore assembled on 260901 from methods coded on 260822, commented in full on
- * 260901.
+ * 261014.
  *
  * @author Rowan Crowther
  */
 public class ObjectIgnore {
+    /**
+     * Logs the failure {@link #ignoreDrop} throws on when the command it has just pushed cannot be
+     * peeked back.
+     *
+     * <p>Field logger commented in full on 261014.
+     */
     private static final Logger logger = LogManager.getLogger(ObjectIgnore.class);
 
     /**
@@ -83,7 +104,7 @@ public class ObjectIgnore {
      * anything else; the port's signature drops the argument and will need it back when the
      * cave's object index is available to resolve the real object.
      *
-     * <p>Function ignoreKnownItemOk stubbed on 260822, commented in full on 260901.
+     * <p>Function ignoreKnownItemOk stubbed on 260822, commented in full on 261014.
      *
      * @param item the known copy of the item to test
      * @return {@code false} always, for now
@@ -109,7 +130,9 @@ public class ObjectIgnore {
      * <p>The two flags at the foot are raised whatever happened above, because a chain that dropped
      * earlier items still needs the gear rebuilt and the pack recombined. C asserts that the
      * command it just pushed is really there; the port throws, for the same reason - an early
-     * return would skip those flags.
+     * return would skip those flags. C also asserts that every gear entry has a kind
+     * ({@code assert(obj->kind)}); the port skips an entry whose kind is {@code null} instead of
+     * failing, since {@link ItemObject#getKind()} answers {@code null} for a wiped item.
      *
      * <p>Its caller is {@code PlayerCalcs.noticeStuff}, which clears {@code PN_IGNORE} before
      * calling and runs its combine block afterwards - so the {@code PN_COMBINE} raised below is
@@ -117,7 +140,7 @@ public class ObjectIgnore {
      * at the foot matters, and it is tested from the dispatcher's side in
      * {@code PlayerNoticeChainTest}.
      *
-     * <p>Function ignoreDrop coded on 260822, commented in full on 260824, moved here from
+     * <p>Function ignoreDrop coded on 260822, commented in full on 261014, moved here from
      * {@code Player} on 260901.
      *
      * @param player the character whose gear is walked; their unignoring toggle decides whether
@@ -189,11 +212,11 @@ public class ObjectIgnore {
      * <p>Nothing is ignorable while the player is unignoring, which is the state the "show ignored
      * items" toggle puts them in; otherwise the question is passed to {@link #isIgnored}.
      *
-     * <p>Private because {@link #ignoreDrop} is its only caller so far. C exports it and asks it
-     * from all over - pickup, pile handling, monster movement, object description - so it turns
-     * public as the first of those is ported, rather than being reached around.
+     * <p>Public, as in C, where it is asked from all over - pickup, pile handling, monster movement,
+     * object description. In the port its callers so far are {@link #ignoreDrop} and
+     * {@link #applyAutoinscription}, which both sit in this class.
      *
-     * <p>Function ignoreItemOK coded on 260822, commented in full on 260824, moved here from
+     * <p>Function ignoreItemOK coded on 260822, commented in full on 261014, moved here from
      * {@code Player} on 260901.
      *
      * @param player the character whose unignoring toggle is read
@@ -228,7 +251,12 @@ public class ObjectIgnore {
      * the index from the real one, so an ego the player has not yet learned does not make the
      * object ignorable.
      *
-     * <p>Function isIgnored coded on 260822, commented in full on 260824, moved here from
+     * <p>The quality tests index {@code ObjectIgnoreTables.ignoreLevel} by the object's ignore type
+     * and compare {@link QualityValueEnum} ordinals, which run in the same order as C's
+     * {@code IGNORE_NONE} to {@code IGNORE_MAX} values; the table is filled for every type when
+     * the class loads, so the lookup never answers {@code null}.
+     *
+     * <p>Function isIgnored coded on 260822, commented in full on 261014, moved here from
      * {@code Player} on 260901.
      *
      * @param item the object to test
@@ -279,16 +307,27 @@ public class ObjectIgnore {
      * "for now" rather than settled. Only after that do the four early-return guards apply, in
      * C's order: no autoinscription configured, already inscribed, not carried, or ignored under
      * the player's settings ({@link #ignoreItemOK}) - each answering the caller with {@code 0} the
-     * same way C's {@code int} return does. Passing every guard writes the note and reports the
-     * autoinscription with a message, returning {@code 1}, exactly as C does with its {@code msg}
-     * call and its own {@code return 1}.
+     * same way C's {@code int} return does. Passing every guard describes the object, writes the
+     * note and reports the autoinscription with a message, returning {@code 1}, exactly as C does
+     * with its {@code msg} call and its own {@code return 1}.
+     *
+     * <p>A kind whose note is the empty string passes every guard too, because an empty note is
+     * still a note. C then leaves {@code obj->note} unset ({@code if (note[0] != 0) ... else
+     * obj->note = 0}) but still prints the message and returns {@code 1}, and the port does the
+     * same; the note is already {@code null} by then, thanks to the already-inscribed guard.
+     *
+     * <p>C describes the object into an 80-byte buffer, so a very long description is truncated in
+     * its message; the port builds an unbounded {@link String} and does not truncate.
      *
      * <p>The {@code obj != null} check on the {@code note} line mirrors a check C itself never needs: C
      * dereferences {@code obj->kind->aware} to compute {@code aware} one line above its own
      * {@code obj ? ... : NULL} ternary, so the null branch there is as unreachable in the
      * original as it is here.
      *
-     * <p>Function applyAutoinscription coded on 260905, commented in full on 260905.
+     * <p>Its callers are {@link #autoinscribePack}, {@link #autoinscribeGround} and
+     * {@code ObjectGear}.
+     *
+     * <p>Function applyAutoinscription coded on 260905, commented in full on 261014.
      *
      * @param player the character whose gear and ignore settings are consulted
      * @param obj    the object to inscribe
@@ -328,7 +367,9 @@ public class ObjectIgnore {
                 ObjectDescription.ODESC_EXTRA);
         String oName = ObjectUtils.objectDesc(obj, descFlags, player);
 
-        obj.setNote(note);
+        if (!note.isEmpty()) {
+            obj.setNote(note);
+        }
 
         Message.message("You autoinscribe " + oName + ".");
 
@@ -348,7 +389,10 @@ public class ObjectIgnore {
      * boundary between "the object has it" and "the player may be told" is exactly what the pair
      * of checks enforces.
      *
-     * <p>Function runesAutoinscribe coded on 260905, commented in full on 260905.
+     * <p>Its one caller is {@link #applyAutoinscription}, which runs it before the kind's own note is
+     * considered, so a rune's note goes onto the object first.
+     *
+     * <p>Function runesAutoinscribe coded on 260905, commented in full on 261014.
      *
      * @param player the player whose knowledge gates which runes get inscribed
      * @param obj    the object to inscribe
@@ -377,7 +421,7 @@ public class ObjectIgnore {
      * C's buffer would not truncate here. Every rune note in the shipped data is short enough
      * that the two haven't been observed to diverge in practice.
      *
-     * <p>Function runeAddAutoinscription coded on 260905, commented in full on 260905.
+     * <p>Function runeAddAutoinscription coded on 260905, commented in full on 261014.
      *
      * @param obj  the object to inscribe
      * @param rune the rune whose note is being added
@@ -408,7 +452,7 @@ public class ObjectIgnore {
      * the caller decides which side of the boundary to ask for, the way {@code apply_autoinscription}
      * passes {@code obj->kind->aware} in explicitly rather than this function reading it itself.
      *
-     * <p>Function getAutoinscription coded on 260905, commented in full on 260905.
+     * <p>Function getAutoinscription coded on 260905, commented in full on 261014.
      *
      * @param kind  the object kind to look up, or {@code null}
      * @param aware {@code true} to fetch the aware autoinscription, {@code false} for the unaware one
@@ -432,7 +476,11 @@ public class ObjectIgnore {
      * through {@link ObjectKind#hasIgnoreFlag}, so this wrapper does nothing C's version doesn't - it
      * just names the one flag being asked about.
      *
-     * <p>Function kindIsIgnoredUnaware coded on 260905, commented in full on 260905.
+     * <p>Nothing outside this class calls it yet. {@link #isIgnored} asks
+     * {@link ObjectKind#isIgnoredUnaware()} directly, which reads the same bit. C's callers are the
+     * ignore menus, the savefile writer and {@code object_flavor_aware}.
+     *
+     * <p>Function kindIsIgnoredUnaware coded on 260905, commented in full on 261014.
      *
      * @param kind the object kind to test
      * @return {@code true} if unidentified items of this kind are ignored
@@ -456,7 +504,10 @@ public class ObjectIgnore {
      * C's function is the one being called - only wherever a caller already raises {@code PN_IGNORE}
      * itself, the way {@code object_flavor_aware} does.
      *
-     * <p>Function kindIgnoreWhenAware coded on 260905, commented in full on 260905.
+     * <p>Nothing outside this class calls it yet. C's callers are the ignore menu, the savefile
+     * loader and {@code object_flavor_aware}.
+     *
+     * <p>Function kindIgnoreWhenAware coded on 260905, commented in full on 261014.
      *
      * @param kind   the object kind to mark ignored once identified
      * @param player the character whose upkeep receives the {@code PN_IGNORE} notice flag
@@ -477,7 +528,9 @@ public class ObjectIgnore {
      * Nothing {@link #applyAutoinscription} does changes gear membership, so the iterator never sees
      * the list it is walking mutate underneath it.
      *
-     * <p>Function autoinscribePack coded on 260905, commented in full on 260905.
+     * <p>Its caller is {@code PlayerKnowledge}, which runs it after {@link #autoinscribeGround}.
+     *
+     * <p>Function autoinscribePack coded on 260905, commented in full on 261014.
      *
      * @param player the character whose gear is walked
      */
@@ -507,7 +560,9 @@ public class ObjectIgnore {
      * different pile: walk the square's objects forward and call {@link #applyAutoinscription} on
      * each in turn, matching C's {@code obj->next} chain from the square's object list.
      *
-     * <p>Function autoinscribeGround coded on 260905, commented in full on 260905.
+     * <p>Its caller is {@code PlayerKnowledge}.
+     *
+     * <p>Function autoinscribeGround coded on 260905, commented in full on 261014.
      *
      * @param player the character whose square is inspected
      */
@@ -541,7 +596,11 @@ public class ObjectIgnore {
      * {@code player-birth.c} calls {@code ignore_birth_init} - the borg's own call to the C function
      * has no equivalent here, since the borg is not part of this port.
      *
-     * <p>Function ignoreBirthInit coded on 260907, commented in full on 260908.
+     * <p>C's loops run to {@code z_info->k_max} and {@code z_info->e_max}, which count a blank
+     * trailing slot, while the registry lists here hold only real records; the sweeps therefore
+     * cover the same records without it (the accepted blank-slot deviation).
+     *
+     * <p>Function ignoreBirthInit coded on 260907, commented in full on 261014.
      */
     public static void ignoreBirthInit() {
         // Reset ignore bits

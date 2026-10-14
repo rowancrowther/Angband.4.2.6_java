@@ -17,11 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataMessage;
@@ -32,28 +28,15 @@ import uk.co.jackoftradesltd.middle.game.event.EventHandlerInterface;
 import uk.co.jackoftradesltd.middle.game.event.EventsHandler;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectNotice;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum;
-import uk.co.jackoftradesltd.middle.objects.enums.RuneVariety;
-import uk.co.jackoftradesltd.middle.objects.enums.TValue;
+import uk.co.jackoftradesltd.middle.objects.enums.*;
 import uk.co.jackoftradesltd.middle.player.Player;
 import uk.co.jackoftradesltd.testsupport.ItemFixture;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static uk.co.jackoftradesltd.testsupport.ItemFixture.set;
 
 /**
@@ -447,6 +430,43 @@ class ObjectIgnoreApplyAutoinscriptionTest {
             assertEquals("{tried}", obj.getNote());
             assertEquals(1, bus.messages.size());
             assertEquals("You autoinscribe .", bus.messages.get(0));
+        }
+
+        /**
+         * A kind whose note is the empty string still has a note, so every guard passes. C's tail
+         * is {@code if (note[0] != 0) obj->note = quark_add(note); else obj->note = 0;} followed by
+         * the message and {@code return 1}: the object stays uninscribed, but the message is sent
+         * and the caller is told it was autoinscribed.
+         */
+        @Test
+        @DisplayName("an empty configured note leaves the note unset but still reports and returns 1")
+        void emptyNoteStillReportsAndReturnsOne() {
+            ItemObject obj = item(kind(false, null, ""));
+            player.getGear().insertEnd(obj);
+
+            int result = apply(obj);
+
+            assertEquals(1, result);
+            assertNull(obj.getNote());
+            assertEquals(1, bus.messages.size());
+            assertEquals("You autoinscribe .", bus.messages.get(0));
+        }
+
+        /**
+         * The same empty note on an aware kind, reached through the aware side of
+         * {@code get_autoinscription}, behaves the same way.
+         */
+        @Test
+        @DisplayName("an empty aware note behaves like an empty unaware note")
+        void emptyAwareNoteBehavesTheSame() {
+            ItemObject obj = item(kind(true, "", null));
+            player.getGear().insertEnd(obj);
+
+            int result = apply(obj);
+
+            assertEquals(1, result);
+            assertNull(obj.getNote());
+            assertEquals(1, bus.messages.size());
         }
     }
 }

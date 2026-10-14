@@ -48,13 +48,7 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-15
-
-### `middle/player/PlayerTimed.java`
-
-1 missing, 0 low
-
-- L82: field `logger` - MISSING
+14
 
 ### `middle/player/TimedFailure.java`
 

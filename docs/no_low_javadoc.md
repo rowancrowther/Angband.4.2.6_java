@@ -48,13 +48,7 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-14
-
-### `middle/player/TimedFailure.java`
-
-1 missing, 0 low
-
-- L250: method `getCode` - MISSING
+13
 
 ### `middle/utils/NumberUtils.java`
 

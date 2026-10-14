@@ -93,6 +93,38 @@ recorded here as the summary states them; fill in the detail when you next touch
 - **Accepted:** 2026-10-13. Pinned by the `ColourCheck` tests in `TerrainDataLoaderFeaturesTest`; marked in the
   `TerrainDataLoader` Javadoc.
 
+## Rational
+
+### `Rational` holds signed 63-bit values, where C's `my_rational` holds unsigned 32-bit ones
+
+- **Java:** `Rational` (`multi`, `add`, `toUint`, and the constructors). **C:** `struct my_rational`,
+  `my_rational_construct`, `my_rational_product`, `my_rational_sum` and `my_rational_to_uint` (`z-util.c`, `z-util.h`).
+- **Differs:** C stores two `unsigned int` and, when an exact result will not fit, approximates and saturates at
+  `UINT_MAX`. Java stores two `long`, runs the same approximation algorithm at `Long.MAX_VALUE`, and saturates at
+  `Long.MAX_VALUE`. Results agree exactly while every numerator and denominator stays below 2^32; above that Java is
+  exact where C has approximated (`4294967295 + 1` is `4294967296/1` in Java and `4294967295/1` in C). `toUint` does not
+  saturate at `UINT_MAX` either. Java also takes negative values and a negative denominator, and throws
+  `IllegalArgumentException` on a zero denominator where C asserts.
+- **Reach:** none from the game. C's callers (`obj-info.c`, `player-path.c`, `obj-randart.c`, `wiz-stats.c`, and `mean`
+  and `variance` in `z-util.c`) work on dice, counts and turn figures far below 2^32.
+- **Revisit:** if a port ever needs C's exact `UINT_MAX` saturation, for example to reproduce a displayed figure.
+- **Accepted:** 2026-10-14. Marked in the `Rational` Javadoc.
+
+## NumberUtils
+
+### `variance` saturates at `INT_MAX` for a value between `INT_MAX` and `INT_MAX + 1`
+
+- **Java:** `NumberUtils.variance`. **C:** `variance` (`z-util.c`).
+- **Differs:** C returns `INT_MAX` with a zero fraction only when the whole part of the variance is above `INT_MAX`,
+  that is when the value is at least `INT_MAX + 1`. A value such as `INT_MAX + 1/2` comes back as `INT_MAX` with the
+  fraction kept. Java returns one `Rational` and tests whether the value is above `Integer.MAX_VALUE`, so that
+  `INT_MAX + 1/2` becomes `INT_MAX` exactly and the fraction is lost. Values up to `INT_MAX` and values from
+  `INT_MAX + 1` upward agree.
+- **Reach:** none shown. A differential run of 80,000 random cases against the compiled C found no difference, and a
+  search for a small integer input inside the range found none (n = 2 cannot produce one).
+- **Revisit:** if a displayed or compared variance ever needs the fraction of a value just above `INT_MAX`.
+- **Accepted:** 2026-10-14. To be marked in the `variance` Javadoc by the stage 2 pass.
+
 ## Pending your decision
 
 - The five `objDescNameFormat` divergences (Part G; `docs/ItemObject_round2/part_G.md`). All unreachable from shipped

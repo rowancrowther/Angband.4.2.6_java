@@ -199,7 +199,7 @@ public class VaultAssembler implements Assembler <VaultParseRecord, List<Vault>>
             // flags reports all three in one run instead of one per re-run.
             if (badFlag) continue;
             
-            vaults.add(new Vault(name, type, mapText, mapLines, flags, rating,
+            vaults.addFirst(new Vault(name, type, mapText, mapLines, flags, rating,
                     rows, columns, minLevel, maxLevel));
         }
         

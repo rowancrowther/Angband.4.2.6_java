@@ -100,18 +100,18 @@ class RoomProfileReaderTest {
         assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(EXPECTED_TEMPLATES, result.items().size());
 
-        // File order is preserved.
-        assertEquals("Tiny hidden room", result.items().getFirst().getName());
-        assertEquals("Rod chamber", result.items().getLast().getName());
+        // C prepends each record (parse_room_name), so the list runs in reverse file order.
+        assertEquals("Rod chamber", result.items().getFirst().getName());
+        assertEquals("Tiny hidden room", result.items().getLast().getName());
     }
 
     /**
-     * The first record, pinned field by field — the plainest shape in the file: numeric
+     * The first record in the file (the tail of C's reverse-ordered list), pinned field by field — the plainest shape in the file: numeric
      * {@code tval:0}, no {@code flags:} line, a square map.
      */
     @Test
     void theFirstTemplateResolvesEveryField() throws IOException {
-        RoomTemplate tiny = new RoomProfileReader().parseWithResults(REAL_FILE).items().getFirst();
+        RoomTemplate tiny = new RoomProfileReader().parseWithResults(REAL_FILE).items().getLast();
 
         assertEquals("Tiny hidden room", tiny.getName());
         assertEquals(1, tiny.getType());
@@ -133,12 +133,12 @@ class RoomProfileReaderTest {
     }
 
     /**
-     * The last record exercises the two legs the first one does not: a named (rather than numeric)
+     * The last record in the file (the head of C's reverse-ordered list) exercises the two legs the first one does not: a named (rather than numeric)
      * {@code tval:} and a {@code flags:} line.
      */
     @Test
     void aNamedTvalAndAFlagsLineBothResolve() throws IOException {
-        RoomTemplate rod = new RoomProfileReader().parseWithResults(REAL_FILE).items().getLast();
+        RoomTemplate rod = new RoomProfileReader().parseWithResults(REAL_FILE).items().getFirst();
 
         assertEquals("Rod chamber", rod.getName());
         assertEquals(3, rod.getRating());

@@ -61,7 +61,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * lair, gauntlet, hard centre; 500 in {@code room_template.txt}, from "Tiny hidden room" to "Rod
  * chamber"; 162 in {@code vault.txt}, from "Round" to "Golden Flower". C's
  * {@code finish_parse_profile} fills its array back to front from a prepended list, so the
- * finished array is in file order; the port must be too.
+ * finished array is in file order; the port must be too. The room and vault lists are prepended
+ * and kept as they stand, so C's {@code room_templates} and {@code vaults} run in <em>reverse</em>
+ * file order, and the tests below expect "Rod chamber" and "Golden Flower" at the head.
  *
  * <p><b>The C failure behaviour.</b> {@code parse_file_quit_not_found} quits on a missing file, and
  * {@code run_template_parser} quits when a parser reports an error. The port stops the same way for
@@ -233,10 +235,11 @@ class DungeonLoaderTest {
         }
 
         /**
-         * All 500 templates, first, second and last as the file lists them.
+         * All 500 templates, in C's reverse file order: the file's last record at the head, its
+         * second record second from the tail, and its first record at the tail.
          */
         @Test
-        @DisplayName("the 500 room templates load in file order")
+        @DisplayName("the 500 room templates load in reverse file order, as C's list does")
         void rooms() throws Exception {
             useRealGamedata();
 
@@ -244,17 +247,19 @@ class DungeonLoaderTest {
 
             List<RoomTemplate> rooms = registryList("roomTemplates");
             assertEquals(500, rooms.size(), "template count");
-            assertEquals("Tiny hidden room", rooms.get(0).getName());
-            assertEquals("Ladder", rooms.get(1).getName());
-            assertEquals("Rod chamber", rooms.get(rooms.size() - 1).getName());
+            // C prepends each record, so its list runs from the last record in the file to the first
+            assertEquals("Rod chamber", rooms.get(0).getName());
+            assertEquals("Ladder", rooms.get(rooms.size() - 2).getName());
+            assertEquals("Tiny hidden room", rooms.get(rooms.size() - 1).getName());
         }
 
         /**
-         * All 162 vaults, with the first record's fields as {@code vault.txt} gives them. Its
+         * All 162 vaults, in C's reverse file order, with the fields of the file's first record
+         * (now the tail) as {@code vault.txt} gives them. Its
          * {@code max-depth:0} becomes {@code z_info->max_depth}, 128 in {@code constants.txt}.
          */
         @Test
-        @DisplayName("the 162 vaults load in file order, max-depth:0 becoming the world maximum")
+        @DisplayName("the 162 vaults load in reverse file order, max-depth:0 becoming the world maximum")
         void vaults() throws Exception {
             useRealGamedata();
 
@@ -262,7 +267,9 @@ class DungeonLoaderTest {
 
             List<Vault> vaults = registryList("vaultTemplates");
             assertEquals(162, vaults.size(), "vault count");
-            Vault round = vaults.get(0);
+            // C prepends each record, so its list runs from the last record in the file to the first
+            assertEquals("Golden Flower", vaults.get(0).getName().trim());
+            Vault round = vaults.get(vaults.size() - 1);
             assertEquals("Round", round.getName());
             assertEquals(RoomType.LESSER_VAULT, round.getType());
             assertEquals(5, round.getRating());
@@ -270,7 +277,6 @@ class DungeonLoaderTest {
             assertEquals(20, round.getWidth());
             assertEquals(0, round.getMinLevel());
             assertEquals(128, round.getMaxLevel(), "max-depth:0 rewritten to z_info->max_depth");
-            assertEquals("Golden Flower", vaults.get(vaults.size() - 1).getName().trim());
         }
     }
 

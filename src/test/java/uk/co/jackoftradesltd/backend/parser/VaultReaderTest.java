@@ -138,7 +138,7 @@ class VaultReaderTest {
     }
 
     /**
-     * @return the names of the vaults that survived assembly, in file order
+     * @return the names of the vaults that survived assembly, in the list's order (C's reverse file order)
      */
     private static List<String> names(ParseResult<Vault> result) {
         return result.items().stream().map(Vault::getName).toList();
@@ -165,7 +165,8 @@ class VaultReaderTest {
     void readsTheFirstVaultsFields() throws Exception {
         List<Vault> vaults = new VaultReader().parse(REAL_FILE);
 
-        Vault round = vaults.getFirst();
+        // C prepends each record (parse_vault_name), so the file's first vault is the tail.
+        Vault round = vaults.getLast();
         assertEquals("Round", round.getName());
         assertEquals(RoomType.LESSER_VAULT, round.getType());
         assertEquals(5, round.getRating());
@@ -244,7 +245,10 @@ class VaultReaderTest {
         long flagged = vaults.stream().filter(v -> !v.getFlags().isEmpty()).count();
         assertEquals(EXPECTED_FLAGGED, flagged);
 
-        Vault cross = byName(vaults, "Cross");
+        // vault.txt has two vaults called "Cross"; the flagged one is the Lesser vault.
+        Vault cross = vaults.stream()
+                .filter(v -> v.getName().equals("Cross") && v.getType() == RoomType.LESSER_VAULT)
+                .findFirst().orElseThrow();
         assertTrue(cross.getFlags().has(RoomFlags.FEW_ENTRANCES));
         assertEquals(1, cross.getFlags().count());
     }

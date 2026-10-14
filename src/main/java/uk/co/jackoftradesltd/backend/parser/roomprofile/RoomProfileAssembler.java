@@ -182,7 +182,7 @@ public class RoomProfileAssembler implements Assembler<RoomProfileParseRecord, L
             }
             String mapText = sb.toString();
 
-            profiles.add(new RoomTemplate(name, mapText, map, roomFlags, type, rating, rows,
+            profiles.addFirst(new RoomTemplate(name, mapText, map, roomFlags, type, rating, rows,
                     columns, doors, tValue));
         }
 

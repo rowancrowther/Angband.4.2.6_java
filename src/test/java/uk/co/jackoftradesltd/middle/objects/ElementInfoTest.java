@@ -23,11 +23,7 @@ import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link ElementInfo}, the port of C's {@code struct element_info} ({@code src/object.h}).
@@ -79,6 +75,36 @@ class ElementInfoTest {
          * A negative level is a vulnerability rather than a resistance, and is stored as given.
          * C's field is an {@code int16_t}, so nothing clamps it at zero and neither does this.
          */
+        /**
+         * The three values {@code obj-info.c} tests for: -1 vulnerable, 1 resist, 3 immune. Each
+         * must come back exactly as stored.
+         */
+        @Test
+        @DisplayName("keeps C's vulnerable, resistant and immune levels distinct")
+        void keepsCsThreeLevels() {
+            ElementInfo info = new ElementInfo();
+
+            for (int level : new int[]{-1, 1, 3}) {
+                info.setResLevel(level);
+                assertEquals(level, info.getResLevel());
+            }
+        }
+
+        /**
+         * C's field is an {@code int16_t}, so 40000 would wrap to -25536 there. The port stores an
+         * {@code int} and does not narrow; the data files never go near the range, so this pins the
+         * documented behaviour rather than a divergence anyone depends on.
+         */
+        @Test
+        @DisplayName("does not narrow to sixteen bits")
+        void doesNotNarrow() {
+            ElementInfo info = new ElementInfo();
+
+            info.setResLevel(40000);
+
+            assertEquals(40000, info.getResLevel());
+        }
+
         @Test
         @DisplayName("stores a negative level unchanged")
         void keepsNegative() {
@@ -143,6 +169,20 @@ class ElementInfoTest {
         }
 
         /**
+         * C's {@code EL_INFO_HATES}, {@code EL_INFO_IGNORE} and {@code EL_INFO_RANDOM} are 0x01,
+         * 0x02 and 0x04 in {@code object.h}, in that order; the savefile writes the byte, so the
+         * port's enum must keep the same order for the bit positions to line up.
+         */
+        @Test
+        @DisplayName("the enum keeps C's hates, ignore, random order")
+        void enumOrderMatchesCBits() {
+            assertEquals(0, ElementInfoEnum.EL_INFO_HATES.ordinal());
+            assertEquals(1, ElementInfoEnum.EL_INFO_IGNORE.ordinal());
+            assertEquals(2, ElementInfoEnum.EL_INFO_RANDOM.ordinal());
+            assertEquals(3, ElementInfoEnum.values().length);
+        }
+
+        /**
          * {@code getFlags} deliberately hands out the live set, matching C, where
          * {@code el_info[i].flags} is a bitflag inside the owning struct that callers manipulate in
          * place. This pins that down, because the opposite choice would look equally reasonable
@@ -182,6 +222,27 @@ class ElementInfoTest {
 
             assertEquals(2, copy.getResLevel());
             assertTrue(copy.has(ElementInfoEnum.EL_INFO_IGNORE));
+        }
+
+        /**
+         * C's struct assignment copies the whole {@code bitflag}, so all three flags and a
+         * negative level must survive, not just one of each.
+         */
+        @Test
+        @DisplayName("carries all three flags and a vulnerability across")
+        void copiesEveryFlag() {
+            ElementInfo original = new ElementInfo();
+            original.setResLevel(-1);
+            original.on(ElementInfoEnum.EL_INFO_HATES);
+            original.on(ElementInfoEnum.EL_INFO_IGNORE);
+            original.on(ElementInfoEnum.EL_INFO_RANDOM);
+
+            ElementInfo copy = original.copy();
+
+            assertEquals(-1, copy.getResLevel());
+            assertTrue(copy.has(ElementInfoEnum.EL_INFO_HATES));
+            assertTrue(copy.has(ElementInfoEnum.EL_INFO_IGNORE));
+            assertTrue(copy.has(ElementInfoEnum.EL_INFO_RANDOM));
         }
 
         /**

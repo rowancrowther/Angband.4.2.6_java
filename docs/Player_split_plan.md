@@ -108,7 +108,7 @@ These are not player code at all and go to existing homes in `middle.objects`:
 | record `SplitBetweenPackAndQuiver`                                                                                         | 6222-6242                                             | —                | with `quiverAbsorbNum`      | Y    |
 | `updateMonsters`                                                                                                           | 2515-2552                                             | `mon-util.c`     | `middle.monsters` utils     | Y    |
 | `embody`                                                                                                                   | 4799-4817                                             | `player-birth.c` | future `PlayerBirth.java`   | Y    |
-| `playerOfHasNotTimed`, `playerIsImmune`, `attackRandomMonster`, `playerRestingCount`, `restingIsSpecial`, `setRecallDepth` | 1763-1787, 2649-2666, 3361-3424, 3440-3454, 3485-3494 | `player-util.c`  | existing `PlayerUtils.java` | Y    | 
+| `playerHasObjectFlagIgnoringTimed`, `playerIsImmune`, `attackRandomMonster`, `playerRestingCount`, `restingIsSpecial`, `setRecallDepth` | 1763-1787, 2649-2666, 3361-3424, 3440-3454, 3485-3494 | `player-util.c`  | existing `PlayerUtils.java` | Y    | 
 | `isQuest`                                                                                                                  | 3509-3526                                             | `player-quest.c` | future `PlayerQuest.java`   | Y    |
 
 `updateMaxLevel` (3571-3578) and `updateDungeonDepth` (3579-3591) have no C original found; leave them on `Player` until

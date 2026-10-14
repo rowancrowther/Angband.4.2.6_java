@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.player;
 
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.cave.Loc;
 import uk.co.jackoftradesltd.middle.cave.store.Store;
@@ -24,7 +25,6 @@ import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.numerics.RandomValueUtils;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerOverExertion;
 import uk.co.jackoftradesltd.middle.player.enums.TimedEffect;
@@ -408,14 +408,14 @@ public class PlayerUtils {
      * <p>Empty slots are skipped; the scratch set handed to {@link ItemObject#objectFlags} is wiped
      * on entry there, so items accumulate into the collector rather than overwriting one another.
      *
-     * <p>Function playerOfHasNotTimed coded on 260829, commented in full on 260829.
+     * <p>Function playerHasObjectFlagIgnoringTimed coded on 260829, commented in full on 260829.
      *
      * @param player     the character to ask about; its race, class, level and worn equipment are
      *                   what the answer is built from
      * @param objectFlag the flag to ask about
      * @return {@code true} if the race, the class or a worn item grants it, ignoring timed effects
      */
-    public static boolean playerOfHasNotTimed(Player player, ObjectFlag objectFlag) {
+    public static boolean playerHasObjectFlagIgnoringTimed(Player player, ObjectFlag objectFlag) {
         Flag<ObjectFlag> collectFlags = new Flag<>(ObjectFlag.class);
         Flag<ObjectFlag> flags = new Flag<>(ObjectFlag.class);
 

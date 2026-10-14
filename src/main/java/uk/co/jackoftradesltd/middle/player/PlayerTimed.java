@@ -20,6 +20,7 @@ package uk.co.jackoftradesltd.middle.player;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.Message;
 import uk.co.jackoftradesltd.middle.cave.enums.DirectionEnum;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
@@ -27,7 +28,6 @@ import uk.co.jackoftradesltd.middle.game.event.projection.Source;
 import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftradesltd.middle.monsters.Monster;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerRedraw;
@@ -49,8 +49,10 @@ import java.util.List;
  * the parser at the top of {@code player-timed.c} and the functions below it; the port keeps only the
  * functions, because the parsing is already done by the time anything here runs.
  *
- * <p><b>Everything funnels into {@link #setTimed}.</b> That is where the message, the disturb, the
- * redraw flags and the update flags happen, and it is the only method here that touches any of them.
+ * <p><b>Everything funnels into {@link #setTimed}.</b> That is where the change message, the disturb,
+ * the redraw flags and the update flags happen, and it is the only method here that touches any of
+ * them. (The one other message in the class is {@link #incCheck}'s "You resist the effect!", which
+ * reports a veto rather than a change.)
  * {@link #playerIncTimed}, {@link #playerDecTimed} and {@link #playerClearTimed} each work out a new
  * total and hand it over, exactly as C's {@code player_inc_timed}, {@code player_dec_timed} and
  * {@code player_clear_timed} all end in {@code player_set_timed}. The consequence is that a caller who
@@ -75,7 +77,7 @@ import java.util.List;
  * {@link uk.co.jackoftradesltd.middle.game.GameWorld}; they report no change and do nothing. The
  * implemented routes are the {@code player}-prefixed ones.
  *
- * <p>Class PlayerTimed commented in full on 261006.
+ * <p>Class PlayerTimed commented in full on 261014.
  *
  * @author Rowan Crowther
  */
@@ -175,6 +177,14 @@ public class PlayerTimed {
      * there. Only an effect that survives every condition answers {@code true}, so an effect with no
      * declared conditions always passes.
      *
+     * <p><b>The walk runs last-declared first.</b> C's parser pushes each {@code fail:} line onto the
+     * head of a linked list, so {@code player_inc_check} meets the conditions in the reverse of
+     * their order in {@code player_timed.txt}. {@code PlayerTimedAssembler} appends them in file
+     * order instead, and the walk here reverses the list to compensate. The order is observable:
+     * the live path learns equipment as it goes and stops at the first veto, so for poison, which
+     * declares the resist and then the {@code OPP_POIS} timed effect, the timed effect is tested
+     * first and the resist rune is never offered for learning while it is running.
+     *
      * <p><b>What {@code lore} selects.</b> A lore check asks what the player <em>believes</em> would
      * stop the effect, and so reads {@code Player#knownState} and nothing else; it is a query, and leaves
      * the character untouched. The live check reads the calculated state from
@@ -210,7 +220,7 @@ public class PlayerTimed {
      * rather than indexing past an array. The unreachable {@code TYPE_NONE} answers C's
      * {@code assert(0)} with a logged throw.
      *
-     * <p>Function incCheck coded on 260831, commented in full on 261006.
+     * <p>Function incCheck coded on 260831, commented in full on 261014.
      *
      * @param player the character the conditions are tested against - their state, equipment,
      *               knowledge and running effects; C's {@code struct player *p}
@@ -221,7 +231,7 @@ public class PlayerTimed {
      */
     public static boolean incCheck(Player player, TimedEffect index, boolean lore) {
         PlayerTimedEffect effect = PlayerRegistry.lookupPlayerTimedEffect(index);
-        List<TimedFailure> failures = effect.getFail();
+        List<TimedFailure> failures = effect.getFail().reversed();
 
         for (TimedFailure failure : failures) {
             switch (failure.getCode()) {
@@ -326,6 +336,13 @@ public class PlayerTimed {
      * ordering and is compared directly here. Both walks stop at the last grade rather than running
      * off the end, which is what makes the upper-bound test above meaningful.
      *
+     * <p>The two "don't mention" tests read what the player has learned, not what is true: the
+     * temporary-resist test needs the element's resist rune to be known ({@code getElementResistInfo()}
+     * on {@code Player.itemKnowledge}, standing in for C's {@code p->obj_k->el_info}) <em>and</em>
+     * the player to be actually immune; the synonym test needs the flag to be known and to be held
+     * for keeps, which is why it asks {@link PlayerUtils#playerHasObjectFlagIgnoringTimed} rather
+     * than the calculated state, where the running effect would already have folded the flag in.
+     *
      * <p>Messages follow C's precedence exactly. Moving up a grade always speaks, and forces
      * {@code notify}; moving down speaks only if the grade being entered carries a down message, and
      * then also forces {@code notify}. Failing both, a caller-requested {@code notify} produces the
@@ -352,7 +369,7 @@ public class PlayerTimed {
      * stubs, so the transition chains and the disturbance are stored-up work rather than observable
      * behaviour.
      *
-     * <p>Function setTimed coded on 260829, commented in full on 260829.
+     * <p>Function setTimed coded on 260829, commented in full on 261014.
      *
      * @param player      the character whose effect is written, and who receives any message,
      *                    disturb, redraw and update the change calls for; C's {@code struct player *p}
@@ -420,7 +437,7 @@ public class PlayerTimed {
         }
         if (effect.isoFlagExactlySyn() && effect.getoFlagDup() != ObjectFlag.OF_NONE
                 && player.itemKnowledge.flagIsKnown(effect.getoFlagDup())
-                && PlayerUtils.playerOfHasNotTimed(player, effect.getoFlagDup())) {
+                && PlayerUtils.playerHasObjectFlagIgnoringTimed(player, effect.getoFlagDup())) {
             notify = false;
         }
 
@@ -523,13 +540,18 @@ public class PlayerTimed {
      * loop would stop at that grade and its null name would answer {@code false} regardless; the
      * guard states the C condition rather than changing the result.
      *
+     * <p>A value above the top grade's {@code max} cannot arise, because {@link #setTimed} caps every
+     * stored value there. C's {@code while} would walk off the end of the list and dereference
+     * {@code NULL} if it ever did; the port's loop simply ends and the method answers {@code false}.
+     * That is a difference only for a state C could not survive.
+     *
      * <p>The null definition guard has no counterpart in C, which indexes a static table that is
      * always populated. Here the effects are loaded from {@code player_timed.txt} into
      * {@link PlayerRegistry}, and {@link PlayerRegistry#lookupPlayerTimedEffect} answers null for
      * an effect with no loaded definition — {@link TimedEffect#TMD_NONE} being the standing
      * example, though its zero value means it never reaches this far.
      *
-     * <p>Function timedGradeEq coded on 260818, commented in full on 261006.
+     * <p>Function timedGradeEq coded on 260818, commented in full on 261014.
      *
      * @param player the character whose current count for the effect decides the grade; C's
      *               {@code struct player *p}
@@ -649,8 +671,9 @@ public class PlayerTimed {
      * nothing, {@code notify} is overridden to {@code true} so the "you feel yourself again"
      * message and the accompanying redraw cannot be suppressed. The turn-by-turn decay in
      * {@code decrease_timeouts} in {@code game-world.c} relies on exactly this: it decrements every
-     * running effect by one with {@code notify} false, silently, and gets told only about the tick on which an effect
-     * actually lapses.
+     * running effect with {@code notify} false - by one for most, by a constitution-based amount for
+     * cuts, poison and stun, and by nothing for food, which is handled elsewhere - so the decay is
+     * silent, and it is told only about the tick on which an effect actually lapses.
      *
      * <p>Nothing is clamped at this level. A subtraction that overshoots produces a negative value
      * and that negative value is what {@code setTimed} receives, where {@code Math.max} against the
@@ -671,7 +694,7 @@ public class PlayerTimed {
      * analogue here. The {@code getOrDefault} default costs nothing and is never used: the
      * constructor seeds the map with every {@link TimedEffect} at zero.
      *
-     * <p>Function playerDecTimed coded on 260831, commented in full on 261006.
+     * <p>Function playerDecTimed coded on 260831, commented in full on 261014.
      *
      * @param player     the character whose effect is shortened, passed on to {@link #setTimed}; C's
      *                   {@code struct player *p}
@@ -706,7 +729,10 @@ public class PlayerTimed {
      * passes the caller's {@code notify} through untouched. Clearing an effect silently is
      * therefore possible and is deliberately used: {@code on_leave_level} in {@code game-world.c}
      * clears {@code TMD_COMMAND} with {@code notify} false when a level ends, because the player is
-     * not to be told about bookkeeping. The asymmetry is real and is in the C.
+     * not to be told about bookkeeping. The asymmetry is real and is in the C. The other
+     * {@code TMD_COMMAND} clear in that file, in {@code decrease_timeouts}, goes the other way - it
+     * announces and may disturb - because there the player has just lost sight of the monster they
+     * were commanding.
      *
      * <p>Zero is not a special value to {@code setTimed}; it is an ordinary target that happens to
      * be the floor for most effects. So the usual rules apply - an effect already at zero is
@@ -718,7 +744,7 @@ public class PlayerTimed {
      * {@link TimedEffect} makes an out-of-range index unrepresentable, so the assertions have no
      * analogue here.
      *
-     * <p>Function playerClearTimed coded on 260831, commented in full on 261006.
+     * <p>Function playerClearTimed coded on 260831, commented in full on 261014.
      *
      * @param player     the character whose effect is cancelled, passed on to {@link #setTimed}; C's
      *                   {@code struct player *p}

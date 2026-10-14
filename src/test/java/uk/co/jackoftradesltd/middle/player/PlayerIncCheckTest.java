@@ -17,14 +17,9 @@
 
 package uk.co.jackoftradesltd.middle.player;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataMessage;
 import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
@@ -40,16 +35,15 @@ import uk.co.jackoftradesltd.middle.monsters.Monster;
 import uk.co.jackoftradesltd.middle.monsters.MonsterRace;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterFlag;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
+import uk.co.jackoftradesltd.middle.numerics.RandomValueUtils;
 import uk.co.jackoftradesltd.middle.objects.ElementInfo;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
 import uk.co.jackoftradesltd.middle.objects.KnownObject;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 import uk.co.jackoftradesltd.middle.player.enums.TimedEffect;
 import uk.co.jackoftradesltd.middle.player.enums.TimedEffectReasonType;
-import uk.co.jackoftradesltd.middle.numerics.RandomValueUtils;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -57,13 +51,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerTimed#incCheck}, the port of C's {@code player_inc_check}
@@ -244,7 +232,8 @@ class PlayerIncCheckTest {
      * Registers {@link #SUBJECT} with the given failure conditions, and {@link #REFERENT} with none,
      * so that both lookups in a test answer.
      *
-     * @param failures the conditions, in the order the walk should meet them
+     * @param failures the conditions in declaration order, as {@code player_timed.txt} lists them;
+     *                 the walk meets them last-declared first, as C's prepended list does
      */
     private void conditions(TimedFailure... failures) {
         PlayerRegistry.setPlayerTimedEffects(List.of(
@@ -402,36 +391,63 @@ class PlayerIncCheckTest {
 
         /**
          * C returns from inside the switch, so a condition that holds ends the function rather than
-         * the iteration. Anything the later conditions would have done never happens — and on the
+         * the iteration. Anything the conditions behind it would have done never happens — and on the
          * live path those conditions have visible side effects, which is what makes this observable
          * at all.
+         *
+         * <p>The conditions are declared the way {@code player_timed.txt} declares {@code POISONED}
+         * — the resist first, the timed effect second — and C's parser prepends each {@code fail:}
+         * line, so C walks them in the opposite order: the timed effect is met first, vetoes, and
+         * the resist behind it is never reached.
          */
         @Test
-        @DisplayName("a veto stops the walk, so later conditions never learn from equipment")
+        @DisplayName("a veto stops the walk, so conditions behind it never learn from equipment")
         void vetoStopsTheWalk() throws Exception {
             ItemObject counterpart = unknownItem();
-            conditions(timedEffect(REFERENT), resist(ElementEnum.ELEM_FIRE));
+            conditions(resist(ElementEnum.ELEM_FIRE), timedEffect(REFERENT));
             running(REFERENT, 5);
 
             assertAll(
-                    () -> assertFalse(PlayerTimed.incCheck(player, SUBJECT, false), "the first condition holds"),
+                    () -> assertFalse(PlayerTimed.incCheck(player, SUBJECT, false),
+                            "the timed-effect condition is met first and holds"),
                     () -> assertFalse(learnedAbout(counterpart, ElementEnum.ELEM_FIRE),
                             "the resist condition was never reached, so nothing was learned"));
         }
 
         /**
-         * The control for the case above: reached, the same condition does learn.
+         * The control for the case above: with the timed effect not running, nothing vetoes, the
+         * walk reaches the resist condition, and the same condition does learn.
          */
         @Test
         @DisplayName("a condition that is reached learns from equipment on the way past")
         void reachedConditionLearns() throws Exception {
             ItemObject counterpart = unknownItem();
-            conditions(timedEffect(REFERENT), resist(ElementEnum.ELEM_FIRE));
+            conditions(resist(ElementEnum.ELEM_FIRE), timedEffect(REFERENT));
 
             assertAll(
                     () -> assertTrue(PlayerTimed.incCheck(player, SUBJECT, false), "neither condition holds"),
                     () -> assertTrue(learnedAbout(counterpart, ElementEnum.ELEM_FIRE),
                             "the resist condition was reached and learned from the equipment"));
+        }
+
+        /**
+         * The same two conditions declared the other way round pin the direction from the other
+         * side: now the resist is met first, learns, and only then does the timed effect veto. A
+         * port that walked in declaration order would pass the veto test above for the wrong reason
+         * and fail here.
+         */
+        @Test
+        @DisplayName("conditions are walked last-declared first, as C's prepended list is")
+        void walkRunsLastDeclaredFirst() throws Exception {
+            ItemObject counterpart = unknownItem();
+            conditions(timedEffect(REFERENT), resist(ElementEnum.ELEM_FIRE));
+            running(REFERENT, 5);
+
+            assertAll(
+                    () -> assertFalse(PlayerTimed.incCheck(player, SUBJECT, false),
+                            "the timed-effect condition holds, once the walk gets to it"),
+                    () -> assertTrue(learnedAbout(counterpart, ElementEnum.ELEM_FIRE),
+                            "the resist condition was met first, so it learned before the veto"));
         }
     }
 

@@ -48,13 +48,7 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-16
-
-### `middle/player/PlayerMagic.java`
-
-1 missing, 0 low
-
-- L20: class `PlayerMagic` - MISSING
+15
 
 ### `middle/player/PlayerTimed.java`
 

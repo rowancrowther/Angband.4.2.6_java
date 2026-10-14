@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.cave.Loc;
+import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
 import uk.co.jackoftradesltd.middle.objects.ObjectKind;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
@@ -32,7 +33,6 @@ import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerSkill;
 import uk.co.jackoftradesltd.middle.player.enums.TimedEffect;
-import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
 import java.lang.reflect.Field;
@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@link PlayerUtils#playerOfHasNotTimed(Player, ObjectFlag)}, the port of C's
+ * Tests {@link PlayerUtils#playerHasObjectFlagIgnoringTimed(Player, ObjectFlag)}, the port of C's
  * {@code player_of_has_not_timed}
  * ({@code player-timed.c:747}).
  *
@@ -205,7 +205,7 @@ class PlayerOfHasNotTimedTest {
      * @return what the method returned
      */
     private boolean has(ObjectFlag flag) {
-        return PlayerUtils.playerOfHasNotTimed(player, flag);
+        return PlayerUtils.playerHasObjectFlagIgnoringTimed(player, flag);
     }
 
     /**

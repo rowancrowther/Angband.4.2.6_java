@@ -159,9 +159,15 @@ public class PlayerRegistry {
     private static int PY_FOOD_FULL;
 
     /**
-     * The "Starving" grade's ceiling. Below it the character takes damage from hunger every turn.
+     * The "Starving" grade's ceiling. Below it the character takes damage from hunger every
+     * game-world turn: {@code process_world} in {@code game-world.c} deals
+     * {@code (PY_FOOD_STARVE - food) / 10}, so the deeper the shortfall the harder the hit.
      *
-     * <p>Function getPyFoodStarve commented in full on 260902.
+     * <p>It is also the floor of food-based regeneration. {@code player_regen_hp} in
+     * {@code player-util.c} gives the "fainting" rate from this value up to {@code PY_FOOD_FAINT},
+     * and below it no rate at all, so a starving character does not regenerate.
+     *
+     * <p>Function getPyFoodStarve coded before 260902, commented in full on 261014.
      *
      * @return C's {@code PY_FOOD_STARVE}, or zero if the timed effects are not loaded yet
      */
@@ -171,8 +177,14 @@ public class PlayerRegistry {
 
     /**
      * The "Faint" grade's ceiling - the band in which the character passes out at random.
+     * {@code process_world} in {@code game-world.c} gives a one-in-ten chance each game-world turn
+     * of paralysis for one to five turns that bypasses free action.
      *
-     * <p>Function getPyFoodFaint commented in full on 260902.
+     * <p>{@code player_regen_hp} in {@code player-util.c} also uses it as the boundary between the
+     * "weak" and "fainting" regeneration rates: from this value up to {@code PY_FOOD_WEAK} the
+     * character regenerates at the weak rate.
+     *
+     * <p>Function getPyFoodFaint coded before 260902, commented in full on 261014.
      *
      * @return C's {@code PY_FOOD_FAINT}, or zero if the timed effects are not loaded yet
      */
@@ -181,9 +193,11 @@ public class PlayerRegistry {
     }
 
     /**
-     * The "Weak" grade's ceiling.
+     * The "Weak" grade's ceiling, and the point from which food-based regeneration runs at the
+     * full "normal" rate: {@code player_regen_hp} in {@code player-util.c} uses the normal rate at
+     * or above this value, and the lower weak and fainting rates beneath it.
      *
-     * <p>Function getPyFoodWeak commented in full on 260902.
+     * <p>Function getPyFoodWeak coded before 260902, commented in full on 261014.
      *
      * @return C's {@code PY_FOOD_WEAK}, or zero if the timed effects are not loaded yet
      */
@@ -558,11 +572,11 @@ public class PlayerRegistry {
      * registration rather than during parsing keeps the assembler free of the dependency, and the
      * end state is the same because the only thing that reads the thresholds is the running game.
      *
-     * <p>C's matching is not confined to {@code FOOD}: it runs on every grade of every effect. The
-     * port only searches {@code FOOD}'s grades. The two agree because no other effect in
-     * {@code player_timed.txt} has a grade bearing any of the six names. The {@code null} skip also
-     * covers the implicit zero grade at the head of each grade list, which C allocates with no
-     * name.
+     * <p>C's matching is confined to {@code FOOD} too: the whole block sits inside
+     * {@code if (food_scl != 1)}, and {@code food_scl} is {@code z_info->food_value} only for the
+     * effect named {@code FOOD} and 1 for every other. The port gets the same confinement by
+     * searching only {@code FOOD}'s grades. The {@code null} skip covers the grades C reduces to a
+     * {@code NULL} name, among them the implicit zero grade at the head of each grade list.
      *
      * <p>The grade maxima arrive already multiplied by {@code player:food-value}: the assembler
      * applies that scale as C does, so the values stored here are the same
@@ -579,7 +593,7 @@ public class PlayerRegistry {
      * {@code constants.txt} sets the value to 100 - and the divergence is a difference in what
      * degenerate data does, not in what the game does.
      *
-     * <p>Function setPlayerTimedEffects commented in full on 261008.
+     * <p>Function setPlayerTimedEffects coded before 261008, commented in full on 261014.
      *
      * @param playerTimedEffects the assembled timed-effect definitions, in file order
      */

@@ -32,7 +32,6 @@ import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.game.GameWorld;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
-import uk.co.jackoftradesltd.middle.game.globals.Food;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftradesltd.middle.game.globals.registry.StatTables;
@@ -386,14 +385,14 @@ public class PlayerCalcs {
 
         // Effects of food outside the "fed" range
         if (!PlayerTimed.timedGradeEq(player, TimedEffect.TMD_FOOD, "Fed")) {
-            int excess = player.getTimedEffect(TimedEffect.TMD_FOOD) - Food.PY_FOOD_FULL.getFoodValue();
-            int lack = Food.PY_FOOD_HUNGRY.getFoodValue() - player.getTimedEffect(TimedEffect.TMD_FOOD);
+            int excess = player.getTimedEffect(TimedEffect.TMD_FOOD) - PlayerRegistry.getPyFoodFull();
+            int lack = PlayerRegistry.getPyFoodHungry() - player.getTimedEffect(TimedEffect.TMD_FOOD);
             if (excess > 0 && player.getTimedEffect(TimedEffect.TMD_ATT_VAMP) == 0) {
-                excess = (excess * 10) / (Food.PY_FOOD_MAX.getFoodValue() - Food.PY_FOOD_FULL.getFoodValue());
+                excess = (excess * 10) / (PlayerRegistry.getPyFoodMax() - PlayerRegistry.getPyFoodFull());
                 state.setSpeed(state.getSpeed() - excess);
             } else if (lack > 0) {
                 // Scale to 1/20 of range
-                lack = (lack * 20) / Food.PY_FOOD_HUNGRY.getFoodValue();
+                lack = (lack * 20) / PlayerRegistry.getPyFoodHungry();
 
                 // Apply effects progressively
                 state.toHitAdd(-lack);

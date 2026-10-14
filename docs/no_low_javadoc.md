@@ -48,13 +48,7 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-12
-
-### `middle/game/gameengine/CommandGetterHolder.java`
-
-0 missing, 1 low
-
-- L56: method `getInstance` - LOW
+11
 
 ### `middle/game/globals/Food.java`
 

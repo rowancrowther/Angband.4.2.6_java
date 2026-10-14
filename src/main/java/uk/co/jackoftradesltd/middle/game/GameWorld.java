@@ -19,9 +19,7 @@ package uk.co.jackoftradesltd.middle.game;
 
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
-import uk.co.jackoftradesltd.middle.effect.EffectSubTypeWrapper;
-import uk.co.jackoftradesltd.middle.enums.DamageAspect;
-import uk.co.jackoftradesltd.middle.numerics.RandomValueUtils;
+import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.Message;
 import uk.co.jackoftradesltd.middle.cave.Chunk;
@@ -31,19 +29,20 @@ import uk.co.jackoftradesltd.middle.cave.Loc;
 import uk.co.jackoftradesltd.middle.cave.enums.DirectionEnum;
 import uk.co.jackoftradesltd.middle.combat.Target;
 import uk.co.jackoftradesltd.middle.effect.EffectSubTypeEnum;
+import uk.co.jackoftradesltd.middle.effect.EffectSubTypeWrapper;
 import uk.co.jackoftradesltd.middle.effect.EffectUtil;
+import uk.co.jackoftradesltd.middle.enums.DamageAspect;
 import uk.co.jackoftradesltd.middle.enums.EffectEnum;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
 import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.game.enums.CommandCode;
 import uk.co.jackoftradesltd.middle.game.enums.CommandContext;
-import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.middle.game.event.projection.Source;
 import uk.co.jackoftradesltd.middle.game.event.projection.SourceWhat;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
-import uk.co.jackoftradesltd.middle.game.globals.Food;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
+import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftradesltd.middle.game.globals.registry.StatTables;
 import uk.co.jackoftradesltd.middle.monsters.Monster;
 import uk.co.jackoftradesltd.middle.monsters.MonsterTurn;
@@ -52,6 +51,7 @@ import uk.co.jackoftradesltd.middle.monsters.enums.MonTimed;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonTimedFlags;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterFlag;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
+import uk.co.jackoftradesltd.middle.numerics.RandomValueUtils;
 import uk.co.jackoftradesltd.middle.objects.Curse;
 import uk.co.jackoftradesltd.middle.objects.CurseData;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
@@ -877,8 +877,8 @@ public class GameWorld {
      * <p>Next, food. Unless the counter is in the "Full" grade, every hundredth turn digests an
      * amount scaled from {@link #turnEnergy(int)} by {@code food_value}, doubled for regeneration,
      * halved for slow digestion and floored at one; a player with timed healing also burns
-     * {@code 8 * food_value} each turn and loses the healing if they fall below
-     * {@link Food#PY_FOOD_HUNGRY}. A gorged ("Full") player instead burns {@code 5000 / food_value}
+     * {@code 8 * food_value} each turn and loses the healing if they fall below Hungry.
+     * A gorged ("Full") player instead burns {@code 5000 / food_value}
      * and is flagged for a bonus recalculation. The Faint grade may paralyse the player (1 in 10, if
      * not already paralysed); the Starving grade deals {@code (PY_FOOD_STARVE - food) / 10}.
      *
@@ -899,8 +899,8 @@ public class GameWorld {
      * {@link Chunk#illuminate(boolean)}, {@link Chunk#pickAndPlaceDistantMonster} and
      * {@link Chunk#resetNoise()}. The faint effect calls the {@link PlayerTimed#incTimed} overload
      * that takes no {@link Player}, which is also a stub; {@link PlayerTimed#playerIncTimed} is the
-     * implemented route. The starving damage and the {@code Hungry} test read {@link Food}'s fixed
-     * values rather than the figures {@code PlayerRegistry} loads; they agree for the shipped data.
+     * implemented route. The starving damage and the {@code Hungry} test read
+     * the figures {@code PlayerRegistry} loads.
      *
      * <p>Method processWorld coded before 261006, commented in full on 261006.
      */
@@ -1046,7 +1046,7 @@ public class GameWorld {
             // Fast metabolism
             if (player.getTimedEffect(TimedEffect.TMD_HEAL) != 0) {
                 PlayerTimed.playerDecTimed(player, TimedEffect.TMD_FOOD, 8 * GameConstants.getPlayerFoodValue(), false, true);
-                if (player.getTimedEffect(TimedEffect.TMD_FOOD) < Food.PY_FOOD_HUNGRY.getFoodValue()) {
+                if (player.getTimedEffect(TimedEffect.TMD_FOOD) < PlayerRegistry.getPyFoodHungry()) {
                     PlayerTimed.setTimed(player, TimedEffect.TMD_HEAL, 0, true, true);
                 }
             }
@@ -1068,7 +1068,7 @@ public class GameWorld {
                         true, true, false);
             }
         } else if (PlayerTimed.timedGradeEq(player, TimedEffect.TMD_FOOD, "Starving")) {
-            int damage = (Food.PY_FOOD_STARVING.getFoodValue() - player.getTimedEffect(TimedEffect.TMD_FOOD)) / 10;
+            int damage = (PlayerRegistry.getPyFoodStarve() - player.getTimedEffect(TimedEffect.TMD_FOOD)) / 10;
 
             PlayerUtils.takeHit(PlayerUtils.applyDamageReduction(damage), "starvation");
 

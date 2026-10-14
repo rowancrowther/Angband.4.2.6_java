@@ -103,6 +103,18 @@ class PlayerCalcBonusesDerivedTest {
     private boolean savedCharacterDungeon;
 
     /**
+     * The registry fields {@code setPlayerTimedEffects} fills from the {@code FOOD} grades - C's
+     * {@code PY_FOOD_*} globals, listed lowest threshold first.
+     */
+    private static final String[] FOOD_THRESHOLDS = {"PY_FOOD_STARVE", "PY_FOOD_FAINT", "PY_FOOD_WEAK",
+            "PY_FOOD_HUNGRY", "PY_FOOD_FULL", "PY_FOOD_MAX"};
+
+    /**
+     * The six food thresholds before the test, in {@link #FOOD_THRESHOLDS} order, put back afterwards.
+     */
+    private final int[] savedThresholds = new int[FOOD_THRESHOLDS.length];
+
+    /**
      * Installs the timed-effect definitions the tests need, builds a plain fed character.
      *
      * @throws Exception if a field cannot be reached
@@ -119,7 +131,12 @@ class PlayerCalcBonusesDerivedTest {
         effects.add(effect(TimedEffect.TMD_STUN, null,
                 grade(1, 50, "Stun"), grade(2, 150, "Heavy Stun"), grade(3, 10000, "Knocked Out")));
         effects.add(effect(TimedEffect.TMD_OPP_FIRE, ElementEnum.ELEM_FIRE));
-        registry.set(null, effects);
+        // Goes through the setter, not the field: C fills PY_FOOD_* while parsing the grades, and the
+        // speed and to-hit arithmetic divides by them.
+        for (int i = 0; i < FOOD_THRESHOLDS.length; i++) {
+            savedThresholds[i] = thresholdField(FOOD_THRESHOLDS[i]).getInt(null);
+        }
+        PlayerRegistry.setPlayerTimedEffects(effects);
 
         savedCharacterDungeon = GameWorld.hasCharacterDungeon();
 
@@ -137,7 +154,23 @@ class PlayerCalcBonusesDerivedTest {
         Field registry = PlayerRegistry.class.getDeclaredField("playerTimedEffects");
         registry.setAccessible(true);
         registry.set(null, savedEffects);
+        for (int i = 0; i < FOOD_THRESHOLDS.length; i++) {
+            thresholdField(FOOD_THRESHOLDS[i]).setInt(null, savedThresholds[i]);
+        }
         GameWorld.setCharacterDungeon(savedCharacterDungeon);
+    }
+
+    /**
+     * One of the registry's food threshold fields, made reachable.
+     *
+     * @param name the field, one of {@link #FOOD_THRESHOLDS}
+     * @return the field
+     * @throws Exception if the field does not exist
+     */
+    private static Field thresholdField(String name) throws Exception {
+        Field field = PlayerRegistry.class.getDeclaredField(name);
+        field.setAccessible(true);
+        return field;
     }
 
     /**

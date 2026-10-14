@@ -48,13 +48,7 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-7
-
-### `middle/monsters/enums/MonsterSpellTypeEnum.java`
-
-0 missing, 1 low
-
-- L85: method `isDamage` - LOW
+6
 
 ### `middle/numerics/RandomChance.java`
 

@@ -48,13 +48,7 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-22
-
-### `middle/monsters/enums/MonsterFlag.java`
-
-1 missing, 0 low
-
-- L30: method `MFLAG_MAX` - MISSING
+21
 
 ### `middle/monsters/enums/MonsterMessage.java`
 

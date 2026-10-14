@@ -38,15 +38,38 @@ import java.util.*;
  * This is the Java port of the C original's {@code struct ego_item}
  * ({@code src/object.h}).
  *
+ * <p>Two things differ in shape from C. First, C's fixed-length arrays indexed by brand, slay, curse
+ * and modifier ({@code bool *brands}, {@code bool *slays}, {@code int *curses},
+ * {@code modifiers[OBJ_MOD_MAX]}) become sets and maps that hold only the entries this ego actually
+ * has, so a key that is absent is C's zero or {@code false} slot. Second, the player's ignore
+ * choices are not part of {@code struct ego_item} in C: they live in a separate table,
+ * {@code ego_ignore_types[eidx][itype]} in {@code obj-ignore.c}. Here each ego carries its own row
+ * of that table ({@link #ignoreTypes}), read and written through {@link #getIgnoreType},
+ * {@link #setIgnoreType} and {@link #clearIgnoreType}.
+ *
+ * <p>An instance is a template, one per record of {@code ego_item.txt}; it holds no per-object
+ * state, which belongs on the item the ego is applied to.
+ *
+ * <p>Class EgoItem coded before 260816, commented in full on 261014.
+ *
  * @author Rowan Crowther
  */
 public class EgoItem {
     /**
-     * The ego type's name (e.g. "of Slaying").
+     * The ego type's name, the port of C's {@code ego->name}, from the {@code name:} line of
+     * {@code ego_item.txt}. Most carry the leading "of" ("of Shadows"); a few are bracketed
+     * instead ("(Everburning)", "(Holy Avenger)"). Several egos may share one name, as the data
+     * file's header notes for the armour and shield "of Resistance".
+     *
+     * <p>Field name coded before 260816, commented in full on 261014.
      */
     private String name;
     /**
-     * Flavour/description text.
+     * The ego's description, the port of C's {@code ego->text}, built from the {@code desc:} lines
+     * of {@code ego_item.txt} (C appends each line to the last). The constructor's {@code desc}
+     * parameter is stored here.
+     *
+     * <p>Field text coded before 260816, commented in full on 261014.
      */
     private String text;
     /**
@@ -61,108 +84,213 @@ public class EgoItem {
     private List<ObjectKind> possItems;
 
     /**
-     * Index in the global ego-item table.
+     * This ego's position in the ego table, the port of C's {@code ego->eidx}.
+     *
+     * <p>C assigns it in {@code finish_parse_ego} when it copies the parsed records into
+     * {@code e_info}, so it is the record's place in {@code ego_item.txt} order. {@code EgoItemAssembler}
+     * passes a counter that starts at {@code 0} and moves on after each ego it builds, so the first
+     * ego holds {@code 0} and the numbers follow file order, as in C. A record the assembler drops for
+     * an error does not use a number, so the egos after it sit one lower than C would number them;
+     * C instead abandons the whole parse on an error. This class never revises the value, and nothing
+     * in it reads it: the ignore choices C indexes by it are held per instance here instead.
+     *
+     * <p>Field egoIndex coded before 260816, commented in full on 261014.
      */
     private int egoIndex;
 
     /**
-     * Added cost, as a dice expression.
+     * The ego's added value, the port of C's {@code ego->cost}, from the first number on the
+     * {@code info:} line of {@code ego_item.txt}. A plain integer, not a dice expression.
+     *
+     * <p>Field cost coded before 260816, commented in full on 261014.
      */
     private int cost;
 
     /**
-     * Object flags this ego adds.
+     * The object flags this ego adds to the item, the port of C's {@code ego->flags}. Read through
+     * {@link #getFlags()}.
+     *
+     * <p>Field flags coded before 260816, commented in full on 261014.
      */
     private Flag<ObjectFlag> flags;
     /**
-     * Object flags this ego removes.
+     * The object flags this ego removes from the item, the port of C's {@code ego->flags_off}, from
+     * the {@code flags-off:} line of {@code ego_item.txt}. Read through {@link #getOffFlags()}.
+     *
+     * <p>Field flagsOff coded before 260816, commented in full on 261014.
      */
     private Flag<ObjectFlag> flagsOff;
     /**
-     * Kind flags this ego adds.
+     * The kind flags this ego adds, the port of C's {@code ego->kind_flags}. In {@code ego_item.txt}
+     * the {@code flags:} line takes object flags and kind flags alike, and C sorts each token into
+     * whichever set knows it; this is the kind-flag half.
+     *
+     * <p>Field kindFLags coded before 260816, commented in full on 261014.
      */
     private Flag<ObjectKindFlag> kindFLags;
 
     /**
-     * Modifiers this ego grants, as dice expressions.
+     * The ranges this ego rolls for the object modifiers it grants, the port of C's
+     * {@code ego->modifiers[]}, from the {@code values:} line. A modifier the ego does not touch has
+     * no entry, where C holds a zeroed {@code random_value}. Read through
+     * {@link #getModifier(ObjectModifier)}.
+     *
+     * <p>Field modifiers coded before 260816, commented in full on 261014.
      */
     private Map<ObjectModifier, Random> modifiers;
     /**
-     * Minimum guaranteed values for the granted modifiers.
+     * The floors for the granted modifiers, the port of C's {@code ego->min_modifiers[]}, from the
+     * {@code min-values:} line. A modifier with no entry has no floor, as a zero in C's array.
+     *
+     * <p>Field minModifiers coded before 260816, commented in full on 261014.
      */
     private Map<ObjectModifier, Integer> minModifiers;
     /**
-     * Per-element relation info added by this ego.
+     * The resistances and vulnerabilities this ego confers, the port of C's {@code ego->el_info[]}.
+     * Read through {@link #getElInfo()}.
+     *
+     * <p>Field elInfo coded before 260816, commented in full on 261014.
      */
     private Map<ElementEnum, ElementInfo> elInfo;
 
     /**
-     * Brands this ego adds (intrinsic flag).
+     * The brands this ego confers, the port of C's {@code ego->brands}, from the {@code brand:}
+     * lines. C holds a {@code bool} per brand index; here the brands that are set are the members.
+     * Read through {@link #getBrands()}.
+     *
+     * <p>Field brands coded before 260816, commented in full on 261014.
      */
     private Set<Brand> brands;
     /**
-     * Slays this ego adds (intrinsic flag).
+     * The slays this ego confers, the port of C's {@code ego->slays}, from the {@code slay:} lines.
+     * C holds a {@code bool} per slay index; here the slays that are set are the members. Read
+     * through {@link #getSlays()}.
+     *
+     * <p>Field slays coded before 260816, commented in full on 261014.
      */
     private Set<Slay> slays;
     /**
-     * Curses this ego adds, with their power.
+     * The curses this ego carries, the port of C's {@code ego->curses}, from the {@code curse:}
+     * lines. C holds only a power per curse index ({@code int *curses}); the map's
+     * {@link CurseData} is the instance record an object's own curse uses, and the assembler fills
+     * it with the ego's power and a timeout of {@code 0}, adding only a curse whose power is above
+     * {@code 0} as C's {@code parse_ego_curse} does. The timeout is not an ego property: C rolls
+     * it from the curse's own {@code time} when it appends the curse to an object
+     * ({@code append_object_curse} in {@code obj-curse.c}). Read through {@link #getCurses()}.
+     *
+     * <p>Field curses coded before 260816, commented in full on 261014.
      */
     private Map<Curse, CurseData> curses;
 
     /**
-     * Level-feeling rating contribution, as an integer expression.
+     * How much this ego adds to the level-feeling rating, the port of C's {@code ego->rating}, from
+     * the second number on the {@code info:} line.
+     *
+     * <p>Field rating coded before 260816, commented in full on 261014.
      */
     private int rating;
     /**
-     * Allocation probability, as an integer expression.
+     * How common this ego is, the port of C's {@code ego->alloc_prob}, from the {@code alloc:}
+     * line's commonness. C's allocation table skips an ego whose value is zero.
+     *
+     * <p>Field allocProb coded before 260816, commented in full on 261014.
      */
     private int allocProb;
     /**
-     * Minimum allocation depth.
+     * The shallowest depth this ego is normally generated at, the port of C's {@code ego->alloc_min}
+     * (the "min" of the {@code alloc:} line's {@code min to max}). It can appear earlier by a chance
+     * that falls with the depth shortfall.
+     *
+     * <p>Field allocMin coded before 260816, commented in full on 261014.
      */
     private int allocMin;
     /**
-     * Maximum allocation depth.
+     * The deepest depth this ego is generated at, the port of C's {@code ego->alloc_max} (the "max"
+     * of the {@code alloc:} line). Unlike {@link #allocMin} it is a hard limit: the data file says the
+     * ego will never appear deeper.
+     *
+     * <p>Field allocMax coded before 260816, commented in full on 261014.
      */
     private int allocMax;
 
     /**
-     * To-hit bonus range, as a dice expression.
+     * The extra to-hit this ego rolls, the port of C's {@code ego->to_h}, from the first value of the
+     * {@code combat:} line. A range, not a number, because it is rolled per object. {@code null} when
+     * the data file gives no {@code combat:} line.
+     *
+     * <p>Field toHit coded before 260816, commented in full on 261014.
      */
     private Random toHit;
     /**
-     * To-damage bonus range, as a dice expression.
+     * The extra to-damage this ego rolls, the port of C's {@code ego->to_d}, from the second value of
+     * the {@code combat:} line. {@code null} when the data file gives no {@code combat:} line.
+     *
+     * <p>Field toDam coded before 260816, commented in full on 261014.
      */
     private Random toDam;
     /**
-     * To-armour-class bonus range, as a dice expression.
+     * The extra to-armour-class this ego rolls, the port of C's {@code ego->to_a}, from the third
+     * value of the {@code combat:} line. {@code null} when the data file gives no {@code combat:}
+     * line.
+     *
+     * <p>Field toAC coded before 260816, commented in full on 261014.
      */
     private Random toAC;
 
     /**
-     * Minimum guaranteed to-hit bonus.
+     * The floor on the to-hit bonus, the port of C's {@code ego->min_to_h}, from the
+     * {@code min-combat:} line. <b>C's value {@code 255} ({@code NO_MINIMUM} in
+     * {@code obj-make.h}) means "no minimum"</b>, which is how zero stays a usable floor; C's
+     * {@code parse_ego_name} starts every ego at {@code 255} and {@code ego_apply_magic} raises a
+     * bonus only when the floor is not {@code 255}. {@code EgoItemAssembler} does the same: it starts
+     * the field at {@code 255} and replaces it only when the {@code min-combat:} line gives a value,
+     * so an ego without the line holds {@code 255} here. This class has no getter for the field yet,
+     * so nothing applies the floor.
+     *
+     * <p>Field minToHit coded before 260816, commented in full on 261014.
      */
     private int minToHit;
     /**
-     * Minimum guaranteed to-damage bonus.
+     * The floor on the to-damage bonus, the port of C's {@code ego->min_to_d}; {@code 255} means no
+     * minimum. See {@link #minToHit}.
+     *
+     * <p>Field minToDam coded before 260816, commented in full on 261014.
      */
     private int minToDam;
     /**
-     * Minimum guaranteed to-armour-class bonus.
+     * The floor on the to-armour-class bonus, the port of C's {@code ego->min_to_a}; {@code 255}
+     * means no minimum. See {@link #minToHit}.
+     *
+     * <p>Field minToAC coded before 260816, commented in full on 261014.
      */
     private int minToAC;
 
     /**
-     * An activation this ego grants, if any.
+     * The activation this ego grants, the port of C's {@code ego->activation}, from the {@code act:}
+     * line; {@code null} for an ego that grants none.
+     *
+     * <p>Field activation coded before 260816, commented in full on 261014.
      */
     private Activation activation;
     /**
-     * Recharge time for the activation, as a dice expression.
+     * The recharge time of the granted activation, the port of C's {@code ego->time}, from the
+     * {@code time:} line. {@code null} when the line is absent.
+     *
+     * <p>Field time coded before 260816, commented in full on 261014.
      */
     private Random time;
 
     /**
-     * Whether the player has ever seen this ego type.
+     * Whether the player has met an identified item of this ego, the port of C's {@code ego->everseen}.
+     * It is what keeps the ignore menus from spoiling egos the player has not yet seen. Read through
+     * {@link #isEverSeen()}.
+     *
+     * <p>The assembler passes {@code false}, and {@link #setEverSeen(boolean)} is the only later
+     * write. C sets it in {@code object_desc} ({@code obj-desc.c}) when the player's known copy of an
+     * object names its ego, and restores it from the savefile ({@code load.c}); nothing calls the
+     * setter for either yet.
+     *
+     * <p>Field everSeen coded before 260816, commented in full on 261014.
      */
     private boolean everSeen;
 
@@ -172,42 +300,52 @@ public class EgoItem {
      *
      * <p>A map where C has a fixed array, but not a sparse one: the constructor fills it with a
      * {@code false} for every category, so it answers for all of them from the start.
-     * {@link #getIgnoreType(IgnoreType)} unboxes the value directly and relies on that.
+     * {@link #getIgnoreType(IgnoreType)} unboxes the value directly and relies on that. C's row has
+     * {@code ITYPE_MAX} entries, so {@link IgnoreType#ITYPE_MAX} has no slot there; here it gets a
+     * key like the rest, and it is the callers' loops that stop short of it.
+     *
+     * <p>Field ignoreTypes coded before 261014, commented in full on 261014.
      */
     private Map<IgnoreType, Boolean> ignoreTypes;
 
     /**
      * Build an ego-item template from its parsed data-file fields.
      *
-     * <p>Constructor EgoItem coded before 260817, commented in full on 260817.
+     * <p>Every argument is stored as given, with no copy: the collections and the flag sets become
+     * this ego's own, shared with the caller, which is why {@link #copy()} builds fresh ones before
+     * calling this. The one thing the constructor makes itself is {@link #ignoreTypes}, which it
+     * fills with {@code false} for every {@link IgnoreType} (the zero-filled row C allocates for
+     * each ego in its ignore table), so a new ego starts with nothing marked as ignorable.
      *
-     * @param name         ego name
-     * @param desc         flavour text, stored as this ego's {@code text}
-     * @param egoIndex     ego-table index
-     * @param cost         added cost
-     * @param flags        added object flags
-     * @param flagsOff     removed object flags
-     * @param kindFLags    added kind flags
-     * @param modifiers    granted modifiers
-     * @param minModifiers minimum modifier values
+     * <p>Constructor EgoItem coded before 260817, commented in full on 261014.
+     *
+     * @param name         ego name, as in {@code ego->name}
+     * @param desc         description, stored as this ego's {@code text}
+     * @param egoIndex     ego-table index, as in {@code ego->eidx}
+     * @param cost         the ego's added value; a plain integer
+     * @param flags        object flags this ego adds
+     * @param flagsOff     object flags this ego removes
+     * @param kindFLags    kind flags this ego adds
+     * @param modifiers    the ranges rolled for the modifiers this ego grants
+     * @param minModifiers the floors for those modifiers
      * @param elInfo       per-element resistances and vulnerabilities this ego adds
-     * @param brands       added brands
-     * @param slays        added slays
-     * @param curses       added curses, each with the power and timeout this ego rolls for it
-     * @param rating       rating contribution
-     * @param allocProb    allocation probability
-     * @param allocMin     minimum allocation depth
-     * @param allocMax     maximum allocation depth
-     * @param possItems    applicable base kinds
-     * @param toHit        to-hit bonus range
-     * @param toDam        to-damage bonus range
-     * @param toAC         to-AC bonus range
-     * @param minToHit     minimum to-hit bonus
-     * @param minToDam     minimum to-damage bonus
-     * @param minToAC      minimum to-AC bonus
-     * @param activation   granted activation
-     * @param time         activation recharge time
-     * @param everSeen     whether ever seen
+     * @param brands       brands this ego adds
+     * @param slays        slays this ego adds
+     * @param curses       curses this ego carries, each holding the ego's power for it
+     * @param rating       level-feeling rating contribution
+     * @param allocProb    commonness; zero keeps the ego out of the allocation table
+     * @param allocMin     shallowest normal depth
+     * @param allocMax     deepest depth, never exceeded
+     * @param possItems    the base kinds this ego may be applied to
+     * @param toHit        to-hit bonus range, or {@code null}
+     * @param toDam        to-damage bonus range, or {@code null}
+     * @param toAC         to-AC bonus range, or {@code null}
+     * @param minToHit     floor on the to-hit bonus; C's {@code 255} means none
+     * @param minToDam     floor on the to-damage bonus; C's {@code 255} means none
+     * @param minToAC      floor on the to-AC bonus; C's {@code 255} means none
+     * @param activation   granted activation, or {@code null}
+     * @param time         activation recharge time, or {@code null}
+     * @param everSeen     whether the player has already seen this ego
      */
     public EgoItem(String name, String desc, int egoIndex,
                    int cost, Flag<ObjectFlag> flags,
@@ -275,6 +413,24 @@ public class EgoItem {
     }
 
     /**
+     * Records whether the player has met an identified item of this ego, the port of writing C's
+     * {@code ego->everseen}.
+     *
+     * <p>A plain write of the value given. C's one routine write is {@code object_desc}
+     * ({@code obj-desc.c}), which sets it {@code true} whenever the player's known copy of an object
+     * names its ego (and the call is not a spoiler), and never clears it; {@code load.c} also writes it
+     * from the savefile, either way. This method does neither of those tests: deciding when to call it
+     * is the caller's, and nothing calls it yet. {@link #isEverSeen()} is the read.
+     *
+     * <p>Function setEverSeen coded on 261014, commented in full on 261014.
+     *
+     * @param seen {@code true} once the player has seen an identified item of this ego
+     */
+    public void setEverSeen(boolean seen) {
+        this.everSeen = seen;
+    }
+
+    /**
      * Returns the object flags this ego confers, the port of reading C's {@code ego->flags}.
      *
      * <p>These are the flags an ego of this type <em>always</em> grants, which is what makes them
@@ -314,7 +470,14 @@ public class EgoItem {
      * Returns the elemental resistances and vulnerabilities this ego confers, the port of reading
      * C's {@code ego->el_info}.
      *
-     * <p>Function getElInfo commented in full on 260816.
+     * <p>Each {@link ElementInfo} is what the ego adds for that element, from the resist, immunity and
+     * vulnerability tokens on the {@code flags:} line and the element values on the {@code values:}
+     * line of {@code ego_item.txt}. C keeps a full {@code ELEM_MAX} array, so a caller that finds no
+     * entry here is looking at a slot C would have left zeroed.
+     *
+     * <p>The map is handed out as is, not copied; callers must not modify it.
+     *
+     * <p>Function getElInfo coded before 260816, commented in full on 261014.
      *
      * @return this ego's element info by element, shared with this instance
      */
@@ -325,7 +488,11 @@ public class EgoItem {
     /**
      * Returns the brands this ego confers, the port of reading C's {@code ego->brands}.
      *
-     * <p>Function getBrands commented in full on 260816.
+     * <p>C holds a {@code bool} per brand index and tests {@code ego->brands[i]}; here a brand the ego
+     * confers is a member of the set and every other brand is absent. The set is handed out as is, not
+     * copied; callers must not modify it.
+     *
+     * <p>Function getBrands coded before 260816, commented in full on 261014.
      *
      * @return this ego's brands, shared with this instance
      */
@@ -336,7 +503,11 @@ public class EgoItem {
     /**
      * Returns the slays this ego confers, the port of reading C's {@code ego->slays}.
      *
-     * <p>Function getSlays commented in full on 260816.
+     * <p>C holds a {@code bool} per slay index and tests {@code ego->slays[i]}; here a slay the ego
+     * confers is a member of the set and every other slay is absent. The set is handed out as is, not
+     * copied; callers must not modify it.
+     *
+     * <p>Function getSlays coded before 260816, commented in full on 261014.
      *
      * @return this ego's slays, shared with this instance
      */
@@ -347,10 +518,14 @@ public class EgoItem {
     /**
      * Returns the curses this ego carries, the port of reading C's {@code ego->curses}.
      *
-     * <p>Each is mapped to the {@link CurseData} the ego rolls for it — a power and a timeout — not
-     * to whether the player knows of it, which is not a property of the ego at all.
+     * <p>Each curse is mapped to a {@link CurseData} whose power is the one the ego's {@code curse:}
+     * line gives, not to whether the player knows of it, which is not a property of the ego at all. C
+     * stores that power alone ({@code int *curses}, indexed by curse); the timeout half of the
+     * {@code CurseData} is not an ego property. C rolls it from the curse's own {@code time} when the
+     * curse is appended to an object, and the assembler leaves it at {@code 0} here. A curse with no
+     * entry is one C would hold as a zero power.
      *
-     * <p>Function getCurses commented in full on 260816.
+     * <p>Function getCurses coded before 260816, commented in full on 261014.
      *
      * @return this ego's curses and their data, shared with this instance
      */
@@ -363,10 +538,13 @@ public class EgoItem {
      * , the {@code flags-off:} line in {@code ego_item.txt}.
      *
      * <p>Subtractive rather than additive, and applied after the additive sets: {@code object_flags_known}
-     * unions in the ego's flags and then differences these out again ({@code obj-util.c:375-378}), so
-     * an ego can cancel a flag its base kind granted.
+     * in {@code obj-util.c} unions in the ego's flags and then differences these out again, and
+     * {@code ego_apply_magic} in {@code obj-make.c} does the same to the object's real flags, so an
+     * ego can cancel a flag its base kind granted. The data file's own example is the Everburning
+     * lantern, whose {@code flags-off:TAKES_FUEL} line removes the fuel requirement the lantern kind
+     * carries.
      *
-     * <p>Function getOffFlags commented in full on 260820.
+     * <p>Function getOffFlags coded before 260820, commented in full on 261014.
      *
      * @return a read-only view of the flags this ego suppresses
      */
@@ -397,10 +575,13 @@ public class EgoItem {
      * Marks this ego as ignorable under one category - the port of setting C's
      * {@code ego->ignore_types[type] = true}.
      *
-     * <p>One-way: there is no counterpart that clears the mark, matching a data-driven load where
-     * the categories are written once and not revised.
+     * <p>Only the table write: C's {@code ego_ignore} (called from the item ignore command in
+     * {@code ui-object.c}) also sets {@code PN_IGNORE} in {@code player->upkeep->notice} so the pack
+     * is re-checked, and that is the caller's to do. {@link #clearIgnoreType(IgnoreType)} is the
+     * opposite write. C's savefile reader ({@code load.c}) restores the marks by toggling rather than
+     * setting, which has no method here.
      *
-     * <p>Function setIgnoreType commented in full on 260827.
+     * <p>Function setIgnoreType coded before 260827, commented in full on 261014.
      *
      * @param ignoreType the ignore category to mark
      */
@@ -408,6 +589,23 @@ public class EgoItem {
         ignoreTypes.put(ignoreType, true);
     }
 
+    /**
+     * Clears this ego's ignorable mark for one category - the port of setting C's
+     * {@code ego_ignore_types[eidx][itype] = false}.
+     *
+     * <p>Used two ways in C: {@code ego_ignore_clear} does it for the category of one object, and
+     * {@code ignore_birth_init} ({@code obj-ignore.c}) does it for every category of every ego when a
+     * new character is born, which is what {@code ObjectIgnore.ignoreBirthInit} calls this for.
+     * Clearing a category that is not marked is harmless.
+     *
+     * <p>Only the table write: C's {@code ego_ignore_clear} also sets {@code PN_IGNORE} in
+     * {@code player->upkeep->notice}, and that is the caller's to do. C's {@code ego_ignore_toggle}
+     * flips the entry instead, and has no method here.
+     *
+     * <p>Function clearIgnoreType coded before 261014, commented in full on 261014.
+     *
+     * @param ignoreType the ignore category to unmark
+     */
     public void clearIgnoreType(IgnoreType ignoreType) {
         ignoreTypes.put(ignoreType, false);
     }
@@ -466,14 +664,14 @@ public class EgoItem {
         int newAllocProb = this.allocProb;
         int newAllocMin = this.allocMin;
         int newAllocMax = this.allocMax;
-        Random toHit = this.toHit.copy();
-        Random toDam = this.toDam.copy();
-        Random toAC = this.toAC.copy();
+        Random toHit = this.toHit == null ? null : this.toHit.copy();
+        Random toDam = this.toDam == null ? null : this.toDam.copy();
+        Random toAC = this.toAC == null ? null : this.toAC.copy();
         int newMinToHit = this.minToHit;
         int newMinToDam = this.minToDam;
         int newMinToAC = this.minToAC;
-        Activation newActivation = this.activation.copy();
-        Random time = this.time.copy();
+        Activation newActivation = this.activation == null ? null : this.activation.copy();
+        Random time = this.time == null ? null : this.time.copy();
         boolean newEverSeen = this.everSeen;
         Map<IgnoreType, Boolean> newIgnoreTypes = new HashMap<>();
         for (IgnoreType type : this.ignoreTypes.keySet()) {

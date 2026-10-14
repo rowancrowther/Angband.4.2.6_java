@@ -19,14 +19,17 @@ package uk.co.jackoftradesltd.backend.parser.egoitem;
 
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
-import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.Activation;
 import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
+import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.*;
-import uk.co.jackoftradesltd.middle.objects.enums.*;
+import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
+import uk.co.jackoftradesltd.middle.objects.enums.ObjectKindFlag;
+import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
+import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 
 import java.util.*;
 
@@ -64,6 +67,8 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
     @Override
     public List<EgoItem> assemble(@NotNull List<EgoItemParseRecord> records, @NotNull List<String> errors) {
         List<EgoItem> items = new ArrayList<>();
+        
+        int index = 0;
 
         for (EgoItemParseRecord record : records) {
             int line = record.line();
@@ -246,8 +251,10 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
                 } else {
                     try {
                         int power = Integer.parseInt(cursePower);
-                        CurseData data = new CurseData(power, 0);
-                        curses.put(c, data);
+                        if (power > 0) {
+                            CurseData data = new CurseData(power, 0);
+                            curses.put(c, data);
+                        }
                     } catch (NumberFormatException e) {
                         errors.add("EgoItem beginning at line: " + line + " has " +
                                 "an malformed curse power: " + cursePower);
@@ -348,7 +355,7 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
                     continue;
                 }
             }
-            int minToh = 0;
+            int minToh = 255;
             if (!record.minToH().isEmpty()) {
                 try {
                     minToh = Integer.parseInt(record.minToH());
@@ -358,7 +365,7 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
                     continue;
                 }
             }
-            int minTod = 0;
+            int minTod = 255;
             if (!record.minToD().isEmpty()) {
                 try {
                     minTod = Integer.parseInt(record.minToD());
@@ -368,7 +375,7 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
                     continue;
                 }
             }
-            int minToa = 0;
+            int minToa = 255;
             if (!record.minToA().isEmpty()) {
                 try {
                     minToa = Integer.parseInt(record.minToA());
@@ -398,12 +405,13 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
             }
             String desc = record.desc();
 
-            items.add(new EgoItem(name, desc, 0,
+            items.add(new EgoItem(name, desc, index,
                     cost, oFlags, oFlagsOff, kFlags,
                     modifiers, minModifiers, elInfo, brands,
                     slays, curses, rating, commonness, lower,
                     upper, possItems, toH, toD, toA, minToh,
                     minTod, minToa, activation, time, false));
+            index++;
         }
 
         return items;

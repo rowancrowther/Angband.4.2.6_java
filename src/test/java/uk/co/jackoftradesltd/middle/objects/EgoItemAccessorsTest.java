@@ -20,34 +20,22 @@ package uk.co.jackoftradesltd.middle.objects;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.numerics.Random;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
+import uk.co.jackoftradesltd.middle.objects.enums.IgnoreType;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectKindFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
 
-import java.util.ArrayList;
+import java.util.*;
 
-import uk.co.jackoftradesltd.middle.objects.enums.IgnoreType;
-
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests the {@link EgoItem} accessors the ego-recognition code reads through —
- * {@code isEverSeen}, {@code getFlags}, {@code getModifier}, {@code getElInfo}, {@code getBrands},
- * {@code getSlays} and {@code getCurses}.
+ * {@code isEverSeen}, {@code setEverSeen}, {@code getFlags}, {@code getModifier}, {@code getElInfo},
+ * {@code getBrands}, {@code getSlays} and {@code getCurses}.
  *
  * <p><b>Plain reads, but two of them carry a decision.</b> The collection getters hand back the
  * template's own objects rather than copies, which is right — an ego template is loaded once and
@@ -102,6 +90,55 @@ class EgoItemAccessorsTest {
         assertFalse(bareEgo().isEverSeen());
         assertTrue(ego(new Flag<>(ObjectFlag.class), new HashMap<>(), new HashMap<>(),
                 new HashSet<>(), new HashSet<>(), new HashMap<>(), true).isEverSeen());
+    }
+
+    /**
+     * C's {@code object_desc} writes {@code ego->everseen = true}, and {@code load.c} writes the
+     * savefile's bit either way ({@code (flags & 0x02) ? true : false}), so the setter must take the
+     * value as given in both directions.
+     */
+    @Test
+    @DisplayName("setEverSeen stores the value given, true or false")
+    void setEverSeenStoresValue() {
+        EgoItem item = bareEgo();
+
+        item.setEverSeen(true);
+        assertTrue(item.isEverSeen());
+
+        item.setEverSeen(false);
+        assertFalse(item.isEverSeen());
+    }
+
+    /**
+     * The flag is per ego type: marking one template seen says nothing about another, which is what
+     * keeps the ignore menus from spoiling egos the player has not met.
+     */
+    @Test
+    @DisplayName("setEverSeen on one ego leaves another unseen")
+    void setEverSeenIsPerEgo() {
+        EgoItem seen = bareEgo();
+        EgoItem unseen = bareEgo();
+
+        seen.setEverSeen(true);
+
+        assertTrue(seen.isEverSeen());
+        assertFalse(unseen.isEverSeen());
+    }
+
+    /**
+     * A copy starts with the flag the original had, then the two are independent.
+     */
+    @Test
+    @DisplayName("a copy carries the seen flag, then is independent of the original")
+    void setEverSeenOnCopyIsIndependent() {
+        EgoItem original = bareEgo();
+        original.setEverSeen(true);
+
+        EgoItem copy = original.copy();
+        assertTrue(copy.isEverSeen());
+
+        copy.setEverSeen(false);
+        assertTrue(original.isEverSeen());
     }
 
     /**
@@ -276,8 +313,8 @@ class EgoItemAccessorsTest {
         }
 
         /**
-         * Marking is one-way — there is no counterpart that clears a category — and it touches only
-         * the category named.
+         * Marking touches only the category named. The opposite write, {@code clearIgnoreType}, is
+         * tested in {@link EgoItemClearAndCopyTest}.
          */
         @Test
         @DisplayName("marking one category leaves the others alone")

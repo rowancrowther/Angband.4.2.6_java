@@ -23,15 +23,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
-import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
+import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.CurseData;
 import uk.co.jackoftradesltd.middle.objects.EgoItem;
 import uk.co.jackoftradesltd.middle.objects.ElementInfo;
 import uk.co.jackoftradesltd.middle.objects.ObjectKind;
-import uk.co.jackoftradesltd.middle.objects.enums.*;
+import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
+import uk.co.jackoftradesltd.middle.objects.enums.ObjectKindFlag;
+import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
+import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -380,7 +383,70 @@ class EgoItemReaderTest {
         assertEquals(255, (int) field(e, "minToAC"));
     }
 
+    /**
+     * C's {@code parse_ego_name} starts all three minimums at {@code NO_MINIMUM} (255), so an ego with
+     * no {@code min-combat:} line has no minimum rather than a minimum of 0.
+     */
+    @Test
+    void absentMinCombatDefaultsToNoMinimum() throws Exception {
+        EgoItem e = loadOne("no-min-combat.txt", "type:sword\n");
+
+        assertEquals(255, (int) field(e, "minToHit"));
+        assertEquals(255, (int) field(e, "minToDam"));
+        assertEquals(255, (int) field(e, "minToAC"));
+    }
+
+    /**
+     * "of Accuracy" in the real {@code ego_item.txt} reads {@code min-combat:15:255:0}: a floor of 15
+     * to-hit, no floor on damage, and a floor of 0 to-AC (which 255 exists to keep distinct).
+     */
+    @Test
+    void realAccuracyEgoKeepsItsMinimums() throws Exception {
+        ParseResult<EgoItem> result = new EgoItemReader().parseWithResults(REAL_FILE);
+
+        EgoItem accuracy = result.items().get(33);
+        assertEquals("of Accuracy", field(accuracy, "name"));
+        assertEquals(15, (int) field(accuracy, "minToHit"));
+        assertEquals(255, (int) field(accuracy, "minToDam"));
+        assertEquals(0, (int) field(accuracy, "minToAC"));
+    }
+
+    /**
+     * C's {@code finish_parse_ego} sets {@code eidx} to the record's place in the file, from 0. The
+     * first, third and last records of the real file are "of Shadows", "(Everburning)" and "of Speed".
+     */
+    @Test
+    void egoIndexIsFileOrderFromZero() throws Exception {
+        ParseResult<EgoItem> result = new EgoItemReader().parseWithResults(REAL_FILE);
+
+        for (int i = 0; i < result.items().size(); i++) {
+            assertEquals(i, (int) field(result.items().get(i), "egoIndex"), "record " + i);
+        }
+        assertEquals("of Shadows", field(result.items().get(0), "name"));
+        assertEquals("(Everburning)", field(result.items().get(2), "name"));
+        assertEquals("of Speed", field(result.items().get(106), "name"));
+    }
+
     // ---- brand / slay / curse --------------------------------------------
+
+    /**
+     * C's {@code parse_ego_curse} adds a curse "only if it has power": a power of 0 or less is
+     * skipped, with no error, and the record loads without that curse.
+     */
+    @Test
+    void curseWithNoPowerIsSkippedNotRejected() throws Exception {
+        ParseResult<EgoItem> zero = load("curse-zero.txt",
+                withHeader(1, ego("test", "type:sword\ncurse:vulnerability:0\n")));
+        ParseResult<EgoItem> negative = load("curse-negative.txt",
+                withHeader(1, ego("test", "type:sword\ncurse:vulnerability:-3\n")));
+
+        for (ParseResult<EgoItem> result : List.of(zero, negative)) {
+            assertFalse(result.hasErrors(), () -> result.errors().toString());
+            assertEquals(1, result.items().size());
+            Map<?, ?> curses = field(result.items().get(0), "curses");
+            assertTrue(curses.isEmpty());
+        }
+    }
 
     @Test
     void brandAndSlayAndCurseResolveAgainstTheirRegistries() throws Exception {

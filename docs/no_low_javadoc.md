@@ -48,13 +48,7 @@ Grouped by file, sorted by total findings (most work first; ties broken by more 
 `line: kind name - STATUS` and, for LOW entries, the first line of
 the existing doc comment for context.
 
-23
-
-### `middle/monsters/enums/MonTimed.java`
-
-1 missing, 0 low
-
-- L30: method `MON_TMD_MAX` - MISSING
+22
 
 ### `middle/monsters/enums/MonsterFlag.java`
 

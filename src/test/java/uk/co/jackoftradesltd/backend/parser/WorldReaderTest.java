@@ -34,9 +34,9 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p>These tests run the full reader-through-assembler pipeline, so they assert on the assembled
  * {@link World} domain records — not the intermediate {@code WorldParseRecord} DTOs. In particular
- * the {@code "None"} sentinel that the grammar extracts verbatim for the up/down fields is resolved
- * to {@code null} by {@link uk.co.jackoftradesltd.backend.parser.world.WorldAssembler}, so the town has
- * a {@code null} previous level and the deepest level a {@code null} next level.
+ * the {@code "None"} sentinel that the grammar extracts verbatim for the up/down fields is kept as the
+ * literal text {@code "None"} by {@link uk.co.jackoftradesltd.backend.parser.world.WorldAssembler}, so the
+ * town has {@code "None"} as its previous level and the deepest level {@code "None"} as its next level.
  *
  * <p>The happy-path test runs against the real shipped {@code lib/gamedata/world.txt}; a clean load
  * is itself the assertion that the file's declared {@code record-count} matched the records found.
@@ -79,11 +79,11 @@ class WorldReaderTest {
         List<World> levels = result.items();
         assertEquals(128, levels.size());
 
-        // Town: level 0, nothing above it (the "None" sentinel is mapped to null by the assembler).
+        // Town: level 0, nothing above it (the "None" sentinel is kept as text by the assembler).
         World town = levels.get(0);
         assertEquals(0, town.levelNumber());
         assertEquals("Town", town.levelName());
-        assertNull(town.prevLevel());
+        assertEquals("None", town.prevLevel());
         assertEquals("Angband 1", town.nextLevel());
 
         // The deepest level: nothing below it.
@@ -91,7 +91,7 @@ class WorldReaderTest {
         assertEquals(127, deepest.levelNumber());
         assertEquals("Angband 127", deepest.levelName());
         assertEquals("Angband 126", deepest.prevLevel());
-        assertNull(deepest.nextLevel());
+        assertEquals("None", deepest.nextLevel());
     }
 
     @Test

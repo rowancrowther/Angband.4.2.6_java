@@ -26,11 +26,15 @@ import java.util.List;
 
 /**
  * Turns the raw {@link WorldParseRecord}s from {@code world.txt} into {@link World} level
- * objects — Java port of {@code parse_world_level} in {@code src/init.c}. The one piece of real
- * interpretation is the {@code "None"} sentinel: C's {@code streq(up, "None") ? NULL : ...} (and
- * the equivalent for {@code down}) is mirrored here by turning the literal string {@code "None"}
- * into a Java {@code null}, so a level with no level above/below it carries a real {@code null}
- * rather than the placeholder text.
+ * objects — Java port of {@code parse_world_level} in {@code src/init.c}. It does no interpretation
+ * of the {@code up} and {@code down} fields: C's {@code streq(up, "None") ? NULL : ...} (and the
+ * equivalent for {@code down}) is deliberately <em>not</em> mirrored, so the literal string
+ * {@code "None"} passes through unchanged and a level with no level above or below it carries
+ * {@code "None"} in {@link World#prevLevel()} or {@link World#nextLevel()}, never {@code null}.
+ * {@code WorldDataLoader} is where the sentinel is tested, when it checks that every named neighbour
+ * exists.
+ *
+ * <p>Class WorldAssembler coded before 260915, commented in full on 261014.
  *
  * <p>Unlike most assemblers in this suite this one has no soft-error channel: {@code errors} is
  * accepted to satisfy the {@link Assembler} contract but never written to, because every field a
@@ -43,9 +47,10 @@ public class WorldAssembler
         implements Assembler<WorldParseRecord, List<World>> {
     /**
      * Assembles the {@link World} record from the {@link WorldParseRecord}
-     * records passed in. Doesn't raise any errors.
+     * records passed in. Doesn't raise any errors. The {@code up} and {@code down} text, including
+     * {@code "None"}, is copied into the {@link World} as it was read.
      *
-     * <p>Function assemble coded before 260915, commented in full on 260915.
+     * <p>Function assemble coded before 260915, commented in full on 261014.
      *
      * @param records List of {@link WorldParseRecord} objects
      * @param errors  List of errors as string messages - ignored
@@ -59,8 +64,8 @@ public class WorldAssembler
         for (WorldParseRecord record : records) {
             int levelNumber = Integer.parseInt(record.getLevelNumber());
             String levelName = record.getLevelName();
-            String up = record.getUp().equals("None") ? null : record.getUp();
-            String down = record.getDown().equals("None") ? null : record.getDown();
+            String up = record.getUp();
+            String down = record.getDown();
 
             results.add(new World(levelNumber, levelName, up, down));
         }

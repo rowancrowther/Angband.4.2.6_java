@@ -202,33 +202,46 @@ class QuestReaderTest {
         assertEquals("cave spider", result.items().get(0).getRace().getName());
     }
 
-    // ---- Soft errors (record dropped, parse continues) -------------------
+    // ---- Hard errors from the assembler (the load aborts, as in C) --------
 
+    /**
+     * C's {@code parse_quest_race} returns {@code PARSE_ERROR_INVALID_MONSTER}, which stops the whole
+     * {@code quest.txt} load. The assembler throws, and {@code GrammarDriver.run} does not catch it.
+     */
     @Test
-    void unknownRaceIsASoftErrorAndDropsTheRecord() throws IOException {
-        ParseResult<Quest> result = load("badrace.txt",
-                withHeader(1, quest("Impossible", "5", "Xyzzy the Nonexistent", "1")));
+    void unknownRaceAbortsTheLoad() {
+        RuntimeException e = assertThrows(RuntimeException.class, () -> load("badrace.txt",
+                withHeader(1, quest("Impossible", "5", "Xyzzy the Nonexistent", "1"))));
 
-        assertTrue(result.items().isEmpty(), "the record with the unknown race must be dropped");
-        assertTrue(result.hasErrors());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown monster race")),
-                () -> result.errors().toString());
+        assertTrue(e.getMessage().contains("unknown monster race"), e.getMessage());
     }
 
     /**
-     * The grammar constrains {@code level:} to an INTEGER token, so a non-numeric value is a hard
-     * lexer error, never the assembler's {@code NumberFormatException}. The one value that is a valid
-     * INTEGER token yet still fails {@code Integer.parseInt} is one that overflows {@code int} - that
-     * is the only way to reach (and hence the only way to test) the assembler's level guard.
+     * C rejects a leading {@code -} on a {@code uint} field with {@code PARSE_ERROR_NOT_NUMBER}, and
+     * the lexer's INTEGER token does allow one, so a negative level reaches the assembler and aborts
+     * the load.
      */
     @Test
-    void overflowingLevelIsASoftErrorAndDropsTheRecord() throws IOException {
+    void negativeLevelAbortsTheLoad() {
+        assertThrows(IllegalArgumentException.class, () -> load("neglevel.txt",
+                withHeader(1, quest("Below", "-3", "Sauron, the Sorcerer", "1"))));
+    }
+
+    // ---- Soft errors (record dropped, parse continues) -------------------
+
+    /**
+     * 99999999999 is above {@code int} but within {@code unsigned long}, so C accepts it and stores
+     * the low byte: it is 0x174876E7FF, giving level 255. The port keeps the record. (Only a level
+     * above {@code Long.MAX_VALUE} is dropped, which {@code QuestAssemblerTest} covers.)
+     */
+    @Test
+    void levelBeyondIntWrapsToAByteAndIsKept() throws IOException {
         ParseResult<Quest> result = load("biglevel.txt",
                 withHeader(1, quest("Deep", "99999999999", "Sauron, the Sorcerer", "1")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("invalid level integer")),
-                () -> result.errors().toString());
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(1, result.items().size());
+        assertEquals(255, result.items().get(0).getLevel());
     }
 
     @Test
@@ -259,7 +272,8 @@ class QuestReaderTest {
      */
     @Test
     void indicesAreContiguousAfterADroppedRecord() throws IOException {
-        String body = quest("Dropped", "5", "Xyzzy the Nonexistent", "1")
+        // An unknown race now aborts the load, so the first record is dropped by an oversized number.
+        String body = quest("Dropped", "5", "Sauron, the Sorcerer", "99999999999")
                 + "\n"
                 + quest("Kept", "10", "Morgoth, Lord of Darkness", "1");
         ParseResult<Quest> result = load("gap.txt", withHeader(2, body));

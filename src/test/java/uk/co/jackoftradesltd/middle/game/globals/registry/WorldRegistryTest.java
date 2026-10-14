@@ -117,7 +117,7 @@ class WorldRegistryTest {
         World town = WorldRegistry.getLevelByName("Town").orElseThrow();
 
         assertEquals(0, town.levelNumber());
-        assertNull(town.prevLevel());
+        assertEquals("None", town.prevLevel());
         assertEquals("Angband 1", town.nextLevel());
     }
 
@@ -130,7 +130,7 @@ class WorldRegistryTest {
 
         assertEquals(127, bottom.levelNumber());
         assertEquals("Angband 126", bottom.prevLevel());
-        assertNull(bottom.nextLevel());
+        assertEquals("None", bottom.nextLevel());
     }
 
     @Test

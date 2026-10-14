@@ -81,7 +81,7 @@ public class MagicRealm {
     /**
      * The stat casting in this realm is governed by — C's {@code realm->stat}. Read when working
      * out a caster's mana: {@code calc_mana} averages this stat's table index across every realm the
-     * class draws on ({@code average_spell_stat}, {@code player-calcs.c:1247-1259}), so a class with
+     * class draws on ({@code average_spell_stat}, {@code player-calcs.c}), so a class with
      * two realms is limited by the mean of two stats rather than either one.
      *
      * @return the governing stat

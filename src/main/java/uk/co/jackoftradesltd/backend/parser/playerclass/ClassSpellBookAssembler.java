@@ -217,6 +217,10 @@ public class ClassSpellBookAssembler implements Assembler<ClassSpellBookParseRec
                 }
             }
             List<MagicSpell> spells = new ClassSpellAssembler().assemble(record.spells(), errors);
+            
+            for (MagicSpell spell : spells) {
+                spell.setRealm(realm);
+            }
 
             // Synthesize the object kind that backs this book (C: write_book_kind). Spellbooks are
             // not in object.txt, so the kind is built from the base plus this book's properties and

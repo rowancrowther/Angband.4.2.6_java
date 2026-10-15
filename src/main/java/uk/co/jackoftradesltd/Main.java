@@ -94,7 +94,7 @@ public class Main {
      *
      * <p>coded on 2026-10-15 / commented in full on 2026-10-15
      */
-    private static boolean debug = false;
+    public static boolean debug = false;
 
     /**
      * The UI thread's body: build the front end, put its window up on the EDT, and then become the
@@ -341,7 +341,7 @@ public class Main {
                     if (error != null) {
                         logger.fatal(error);
                         System.err.println(error);
-                        System.exit(1);
+                        System.exit(-1);
                     }
                     String[] dirs = arg.substring(2).split("=", 2);
                     AngbandDirs.setDirectory(dirs[0], dirs[1]);
@@ -568,6 +568,14 @@ public class Main {
      * The frame {@link #displayText} fills. A bare {@link JFrame} subclass that adds nothing yet;
      * it exists to give these pre-game windows a name of their own, separate from the game window
      * {@code SwingUI} builds.
+     *
+     * <p>Java-only: C has no counterpart. Its {@code usage()} and {@code list_saves()} ({@code main.c})
+     * print to the terminal, and this frame, filled by {@link #displayText}, is the port's stand-in
+     * for that. It has no fields, methods or constructor of its own, so a plain {@link JFrame}
+     * would behave identically; everything about the window is set from outside by
+     * {@link #displayText}.
+     *
+     * <p>coded before 2026-10-14 / commented in full on 2026-10-15
      *
      * @author Rowan Crowther
      */

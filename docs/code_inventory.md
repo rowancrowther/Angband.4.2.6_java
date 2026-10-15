@@ -165,21 +165,21 @@
 
 **Responsible for:** The entry point: parse the command line, then either answer it and stop, or build the two halves of the game, start them, and wait for both to finish.
 
-**class `Main`** — class Javadoc: ✔ · type stamp: —
+**class `Main`** — class Javadoc: ✔ · type stamp: ported 260915
 
 - Fields (0/1 documented): ✘ `logger`
 
 | Function | Ported (coded) | Javadoc |
-|---|---|---|
-| `startSwingUI(UIChannel, EDTChannel, StartupOptions)` | — | ✔ |
-| `startCore(CoreChannel, StartupOptions)` | — | ✔ |
-| `main(String[])` | — | ✔ |
-| `checkDirectoryOption(String)` | — | ✔ |
-| `printUsage()` | — | ✔ |
-| `listSaves()` | — | ✔ |
-| `displayText(List<String>, boolean)` | — | ✔ |
+|---|----------------|---------|
+| `startSwingUI(UIChannel, EDTChannel, StartupOptions)` | ✔             | ✔      |
+| `startCore(CoreChannel, StartupOptions)` | ✔             | ✔      |
+| `main(String[])` | ✔             | ✔      |
+| `checkDirectoryOption(String)` | ✔             | ✔      |
+| `printUsage()` | ✔              | ✔      |
+| `listSaves()` | ✔              | ✔      |
+| `displayText(List<String>, boolean)` | ✔              | ✔      |
 
-**class `Main.OutputWindow`** — class Javadoc: ✔ · type stamp: —
+**class `Main.OutputWindow`** — class Javadoc: ✔ · type stamp: coded before 261015, ported 261015
 
 
 ## backend

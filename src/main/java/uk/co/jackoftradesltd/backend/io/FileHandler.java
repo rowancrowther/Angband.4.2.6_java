@@ -402,7 +402,8 @@ public class FileHandler {
         try {
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8));
             writer.write(line);
-            writer.close();
+            writer.write("\n");
+            writer.flush();
             return true;
         } catch (Exception e) {
             logger.error("An exception has occured: " + e.getMessage(), e);

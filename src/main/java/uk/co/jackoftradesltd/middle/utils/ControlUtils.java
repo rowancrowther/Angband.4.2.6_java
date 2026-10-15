@@ -76,7 +76,7 @@ public abstract class ControlUtils {
      */
     public static void quit() {
         Quit q = new Quit();
-        q.quit("");
+        q.quit(null);
     }
 
     /**

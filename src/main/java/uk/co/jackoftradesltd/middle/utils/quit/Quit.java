@@ -19,70 +19,107 @@ package uk.co.jackoftradesltd.middle.utils.quit;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 
 /**
- * Default {@link QuitAux} implementation: the standard way the game terminates.
- * It corresponds to the C original's {@code quit_aux} hook ({@code src/z-util.c}),
- * which lets the front end substitute its own shutdown behaviour.
+ * Default {@link QuitAux} implementation: how the game terminates when nothing has
+ * substituted a shutdown behaviour of its own. It stands in for the body of C's
+ * {@code quit()} ({@code z-util.c}) - log the message, then end the process.
+ *
+ * <p>It is not C's {@code quit_aux} itself. In C that is a hook which defaults to
+ * {@code NULL}, and {@code main.c} points it at {@code quit_hook()}, which nukes the
+ * terminal windows before {@code quit()} carries on. The port has no terminal to restore,
+ * so nothing here corresponds to {@code quit_hook()}; closing the windows belongs to
+ * the front end, on the shutdown path described below.
+ *
+ * <p>Like C, the two kinds of quit are told apart by whether there is a message at all.
+ * A {@code null} message is the clean quit ({@code quit(NULL)}: nothing logged, exit with
+ * success). Any string, the empty string included, is a failure ({@code plog()} the
+ * string, exit with failure).
  *
  * <p>Unlike C, this does not end the process itself. The game runs as two threads,
- * {@code angband-ui} and {@code angband-core}, that only end cleanly through a
- * channel handshake - the core answering a shutdown request with {@code STOPPED},
- * which is what lets the front end dispose its windows and lets the save (once there
- * is one) finish before the JVM does. A bare {@code System.exit} here would cut
- * straight through that, on whichever thread happened to call {@link #quit(String)}.
- * So {@link #quit(String)} logs the message and throws {@link GameQuitException}
- * instead, and lets it surface as an uncaught exception - both halves already have a
- * crash path that turns an uncaught exception on their own thread into the same
- * shutdown the handshake produces, so quitting this way rides that path rather than
- * bypassing it.
+ * {@code angband-ui} and {@code angband-core}, so {@link #quit(String)} logs the message
+ * and throws {@link GameQuitException} instead, and lets it surface as an uncaught
+ * exception on whichever thread called it. Each half already has a path for that: the
+ * {@code catch} in {@code Main.startSwingUI} for the UI half, and the core thread's
+ * uncaught-exception handler in {@code Main.main}. Both read the exception's message to
+ * tell a clean quit from a failure - no message means no {@code died} log and exit
+ * status 0, a message means a fatal log and exit status -1 - then post their shutdown
+ * message and call {@code System.exit} themselves.
  *
- * <p>Class Quit commented in full on 260909.
+ * <p>Outstanding: both handlers in {@code Main} send the shutdown message and then exit
+ * straight away, so nothing waits for the other half's reply, and the UI half's
+ * {@code finally} (which disposes the windows) never runs on that path. They also
+ * identify a clean quit by {@code getMessage() == null} rather than by the type
+ * {@link GameQuitException}, so any other {@link RuntimeException} thrown without a
+ * message would be read as a clean quit.
+ *
+ * <p>coded before 2026-09-09, clean-quit path added 2026-10-15 / commented in full on 2026-10-15
  *
  * @author Rowan Crowther
  */
 public class Quit implements QuitAux {
     /**
-     * Logger used to record the quit message before (eventually) exiting.
+     * Logger used to record a failure quit's message at fatal severity before the exception
+     * is thrown. Used directly rather than through {@code ControlUtils.plog}, which logs at
+     * warn; C's {@code plog_aux} hook is not consulted.
+     *
+     * <p>coded before 2026-09-09 / commented in full on 2026-10-15
      */
     private final Logger logger = LogManager.getLogger();
 
     /**
-     * Standard quit - logs {@code quitMessage} at fatal severity, then throws
-     * {@link GameQuitException} carrying the same message rather than ending the JVM
-     * directly (see the class Javadoc for why).
+     * Ends the game, logging {@code quitMessage} first if there is one - the port of C's
+     * {@code quit()} ({@code z-util.c}), with the process exit replaced by an exception
+     * (see the class Javadoc for why).
      *
-     * <p>Function quit commented in full on 260909.
+     * <p>The two cases C distinguishes map as follows:
+     * <ul>
+     *   <li>{@code null} - C's {@code quit(NULL)}: nothing is logged and the exit is a
+     *       success. Here nothing is logged and {@link GameQuitException} is thrown with no
+     *       message.</li>
+     *   <li>any string - C's {@code plog(str)} followed by a failure exit. Here the string is
+     *       logged at fatal severity and {@link GameQuitException} is thrown carrying it.
+     *       The empty string is a failure, as it is in C, not a clean quit.</li>
+     * </ul>
      *
-     * @param quitMessage the message to log and to carry on the thrown exception
+     * <p>coded before 2026-09-09, clean-quit branch added 2026-10-15 / commented in full on 2026-10-15
+     *
+     * @param quitMessage the message to log and carry on the exception, or {@code null} for a
+     *                    clean quit
      * @throws GameQuitException always; this method does not return
      */
     @Override
-    public void quit(@NotNull String quitMessage) {
-        logger.fatal(quitMessage);
-
-        throw new GameQuitException(quitMessage);
+    public void quit(String quitMessage) {
+        if (quitMessage != null) {
+            logger.fatal(quitMessage);
+            throw new GameQuitException(quitMessage);
+        } else 
+            throw new GameQuitException(null);
     }
 
     /**
-     * Thrown by {@link #quit(String)} in place of ending the JVM directly - the fatal
-     * quit C would have carried out as {@code System.exit}, now an unchecked exception
-     * so it can surface through the ordinary crash path on whichever thread called
-     * {@link #quit(String)} instead of cutting through the shutdown handshake between
-     * {@code angband-ui} and {@code angband-core} (see the class Javadoc).
+     * Thrown by {@link #quit(String)} in place of C's {@code exit()}, as an unchecked
+     * exception so it can surface through each half's shutdown path on whichever thread
+     * called {@link #quit(String)} (see the class Javadoc).
      *
-     * <p>Unchecked because a fatal quit is not a condition {@link #quit(String)}'s
-     * callers should have to declare or catch - it is meant to be left alone and let
-     * the crash path deal with it.
+     * <p>Its message is the whole signal. A {@code null} message means the quit was clean
+     * ({@code quit(NULL)} in C); any other message, empty included, means a failure and is
+     * the text {@link #quit(String)} already logged. The handlers in {@code Main} read it
+     * with {@code getMessage()}.
      *
-     * <p>Class GameQuitException commented in full on 260909.
+     * <p>Unchecked because a quit is not a condition {@link #quit(String)}'s callers should
+     * have to declare or catch - it is meant to be left alone and let the shutdown path
+     * deal with it.
+     *
+     * <p>coded before 2026-09-09, clean-quit meaning added 2026-10-15 / commented in full on 2026-10-15
      *
      * @author Rowan Crowther
      */
     public static class GameQuitException extends RuntimeException {
         /**
-         * @param message the quit message, the same one {@link #quit(String)} already logged
+         * @param message the failure message {@link #quit(String)} already logged, or
+         *                {@code null} for a clean quit; passed to the superclass unchanged so
+         *                {@code getMessage()} returns exactly what was given
          */
         public GameQuitException(String message) {
             super(message);

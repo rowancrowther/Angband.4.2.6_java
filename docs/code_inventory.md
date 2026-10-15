@@ -11322,18 +11322,18 @@
 
 | Function | Ported (coded) | Javadoc |
 |---|---|---|
-| ctor `TextBlock()` | — | ✔ |
-| `convertToString()` | — | ✔ |
-| `append(char, ColourEnum)` | — | ✔ |
-| `append(AngbandDisplayCharacter)` | — | ✔ |
-| `append(TextBlock)` | — | ✔ |
-| `append(String, Object)` | — | ✔ |
-| `append(ColourEnum, String, Object)` | — | ✔ |
-| `length()` | — | ✔ |
-| `calculateLines(int)` | — | ✔ |
-| `append(String, List<ColourEnum>)` | — | ✔ |
-| `toFile(AngFile, int, int)` | — | ✔ |
-| `toString()` | — | ✔ |
+| ctor `TextBlock()` | ✔ | ✔ |
+| `convertToString()` | ✔ | ✔ |
+| `append(char, ColourEnum)` | ✔ | ✔ |
+| `append(AngbandDisplayCharacter)` | ✔ | ✔ |
+| `append(TextBlock)` | ✔ | ✔ |
+| `append(String, Object)` | ✔ | ✔ |
+| `append(ColourEnum, String, Object)` | ✔ | ✔ |
+| `length()` | ✔ | ✔ |
+| `calculateLines(int)` | ✔ | ✔ |
+| `append(String, List<ColourEnum>)` | ✔ | ✔ |
+| `toFile(AngFile, int, int)` | ✔ | ✔ |
+| `toString()` | ✔ | ✔ |
 
 
 ## middle/utils
@@ -11388,13 +11388,13 @@
 
 | Function | Ported (coded) | Javadoc |
 |---|---|---|
-| `quit(String)` | — | ✔ |
+| `quit(String)` | ✔ | ✔ |
 
 **class `Quit.GameQuitException`** — class Javadoc: ✔ · type stamp: —
 
 | Function | Ported (coded) | Javadoc |
 |---|---|---|
-| ctor `GameQuitException(String)` | — | ✔ |
+| ctor `GameQuitException(String)` | ✔ | ✔ |
 
 
 ##### `QuitAux.java`

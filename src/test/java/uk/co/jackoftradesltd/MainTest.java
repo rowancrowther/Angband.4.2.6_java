@@ -17,11 +17,7 @@
 
 package uk.co.jackoftradesltd;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -30,16 +26,16 @@ import uk.co.jackoftradesltd.channel.Channels;
 import uk.co.jackoftradesltd.channel.EDTChannel;
 import uk.co.jackoftradesltd.channel.StartupOptions;
 import uk.co.jackoftradesltd.channel.UIChannel;
+import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
 import uk.co.jackoftradesltd.channel.enums.CoreLifecycleEvent;
 import uk.co.jackoftradesltd.channel.enums.UILifecycleEvent;
 import uk.co.jackoftradesltd.channel.messages.CoreMessage;
 import uk.co.jackoftradesltd.channel.messages.UIMessage;
-import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
 
-import javax.swing.SwingUtilities;
-import java.awt.Frame;
-import java.awt.GraphicsEnvironment;
+import javax.swing.*;
+import java.awt.*;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -459,11 +455,26 @@ class MainTest {
          */
         private Set<Frame> framesBefore;
 
+        /**
+         * Sets {@code Main.debug}, which stops the UI body's {@code catch} ending the JVM with
+         * {@code System.exit}. Without it the first crash test takes the Gradle test worker down
+         * with it (exit status 255) and every test after it never runs.
+         *
+         * @param value the value to give the private flag
+         * @throws Exception if the private field cannot be reached
+         */
+        private static void setMainDebug(boolean value) throws Exception {
+            Field debug = Main.class.getDeclaredField("debug");
+            debug.setAccessible(true);
+            debug.setBoolean(null, value);
+        }
+
         @BeforeEach
-        void setUp() {
+        void setUp() throws Exception {
             assumeFalse(GraphicsEnvironment.isHeadless(),
                     "needs a display: the UI body builds a JFrame");
 
+            setMainDebug(true);
             channels = Channels.create();
             framesBefore = new HashSet<>(Arrays.asList(Frame.getFrames()));
         }
@@ -472,13 +483,18 @@ class MainTest {
          * Leaves no thread blocked on a queue and no window on screen, however the test ended.
          */
         @AfterEach
-        void tearDown() throws InterruptedException {
-            if (uiThread != null && uiThread.isAlive()) {
-                uiThread.interrupt();
-                uiThread.join(SHOULD_FINISH_MILLIS);
-            }
-            for (Frame frame : framesCreatedByThisTest()) {
-                SwingUtilities.invokeLater(frame::dispose);
+        void tearDown() throws Exception {
+            try {
+                if (uiThread != null && uiThread.isAlive()) {
+                    uiThread.interrupt();
+                    uiThread.join(SHOULD_FINISH_MILLIS);
+                }
+                for (Frame frame : framesCreatedByThisTest()) {
+                    SwingUtilities.invokeLater(frame::dispose);
+                }
+            } finally {
+                // Last, so a thread still dying here cannot reach System.exit.
+                setMainDebug(false);
             }
         }
 

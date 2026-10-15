@@ -19,19 +19,33 @@ package uk.co.jackoftradesltd.middle.utils.quit;
 
 /**
  * Strategy interface for terminating the game, mirroring the swappable
- * {@code quit_aux} function pointer in the original C source. Abstracting the
- * quit behaviour behind an interface lets the front end decide what "quit"
- * actually does (clean exit, save-and-exit, error abort, …) without the core
+ * {@code quit_aux} function pointer in the original C source ({@code z-util.c}).
+ * Abstracting the quit behaviour behind an interface lets the front end decide what
+ * "quit" actually does (clean exit, save-and-exit, error abort, …) without the core
  * game code needing to know.
+ *
+ * <p>Nothing swaps it yet: {@code ControlUtils} constructs {@link Quit} directly at each
+ * call, so there is no counterpart to C assigning {@code quit_aux} at start-up.
+ *
+ * <p>coded before 2026-09-09 / commented in full on 2026-10-15
  *
  * @author Rowan Crowther
  */
 public interface QuitAux {
 
     /**
-     * Quits the system with a specific message
+     * Ends the game - the contract of the function C's {@code quit()} calls through
+     * {@code quit_aux}. In C the hook runs first and {@code quit()} then logs and exits;
+     * here an implementation is the whole quit, and is expected not to return.
      *
-     * @param quitMessage The message to pass from the program as it quits
+     * <p>A {@code null} message is the clean quit and any string, the empty string included,
+     * is a failure, as in C. See {@link Quit#quit(String)} for how the default implementation
+     * handles each.
+     *
+     * <p>coded before 2026-09-09 / commented in full on 2026-10-15
+     *
+     * @param quitMessage the failure message to report as the game quits, or {@code null} for
+     *                    a clean quit
      */
     void quit(String quitMessage);
 }

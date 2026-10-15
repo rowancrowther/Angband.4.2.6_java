@@ -22,13 +22,13 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.VisibleForTesting;
 import uk.co.jackoftradesltd.backend.io.AngDir;
 import uk.co.jackoftradesltd.channel.*;
+import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
 import uk.co.jackoftradesltd.channel.enums.CoreLifecycleEvent;
 import uk.co.jackoftradesltd.channel.enums.UILifecycleEvent;
 import uk.co.jackoftradesltd.channel.messages.CoreMessage;
 import uk.co.jackoftradesltd.channel.messages.UIMessage;
 import uk.co.jackoftradesltd.frontend.SwingUI;
 import uk.co.jackoftradesltd.middle.game.gameengine.Core;
-import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
 
 import javax.swing.*;
 import java.awt.*;
@@ -52,8 +52,14 @@ import java.util.List;
  * <p><b>Waiting is the point, not politeness.</b> The last thing the core does before its thread
  * ends is answer the shutdown handshake, so a {@code main} that returned early would let the JVM
  * race the save. Joining both is what turns "the save finished before the process did" from a
- * hope into a guarantee - and it is why nothing on either half calls {@link System#exit}: the
- * program ends by running out of threads.
+ * hope into a guarantee on the ordinary path, where the program ends by running out of threads.
+ *
+ * <p><b>A quit or a crash is the exception.</b> It reaches a handler - the {@code catch} in
+ * {@link #startSwingUI} for the UI half, the uncaught-exception handler in {@link #main} for the
+ * core - and that handler posts its shutdown message and then calls {@link System#exit} itself,
+ * with status 0 for a clean quit and -1 otherwise, without waiting for the other half. A
+ * rejected {@code -d} also exits, with status 1, before any thread exists. The {@code debug}
+ * flag switches off the two handler exits, which is what lets a test drive them.
  *
  * <p>This is also the only class that names both halves. {@link SwingUI} and {@link Core}
  * are imported here and nowhere across the boundary from each other; everything they say to one
@@ -65,11 +71,31 @@ import java.util.List;
  * the game never starts. Those windows close the process themselves through
  * {@code EXIT_ON_CLOSE}, which is why returning is enough.
  *
+ * <p>coded before 2026-10-15 / commented in full on 2026-10-15
+ *
  * @author Rowan Crowther
  */
 public class Main {
+    /**
+     * Logger for the fatal lines the two crash handlers and the {@code -d} check write.
+     *
+     * <p>coded before 2026-10-15 / commented in full on 2026-10-15
+     */
     private static final Logger logger = LogManager.getLogger(Main.class);
-    
+
+    /**
+     * When {@code true}, the UI half's {@code catch} and the core thread's uncaught-exception
+     * handler skip their {@link System#exit} call and finish normally instead. It exists for
+     * tests: a test that crashes either half would otherwise end the whole test JVM (status 255
+     * under Gradle) and stop every test after it. {@code MainTest} sets it by reflection around
+     * the crash-path tests and puts it back afterwards; nothing in {@code src/main} ever sets it.
+     *
+     * <p>The {@code -d} rejection in {@link #main} does not honour it and always exits.
+     *
+     * <p>coded on 2026-10-15 / commented in full on 2026-10-15
+     */
+    private static boolean debug = false;
+
     /**
      * The UI thread's body: build the front end, put its window up on the EDT, and then become the
      * loop that reads this half's inbox.
@@ -98,13 +124,22 @@ public class Main {
      * handler to do. The core's half of the same problem has the opposite shape and so takes the
      * opposite answer; see {@link #main}.
      *
-     * <p>A dead UI half owes two messages, and the {@code catch} and the {@code finally} send one
-     * each. {@code SAVE_AND_STOP} is what unparks the core, which would otherwise sit in
-     * {@code receive()} forever waiting for a front end that no longer exists; nothing waits for
-     * the {@code STOPPED} that comes back, and it simply rests unread on an inbox whose reader has
-     * gone. Disposing the windows is the other, and it is what actually ends the process: the EDT
-     * is kept alive by displayable windows, so until they go the JVM outlives both halves - a
-     * running program with nothing running in it.
+     * <p>A dead or quitting UI half owes two things, and the {@code catch} and the {@code finally}
+     * cover one each. {@code SAVE_AND_STOP}, sent from the {@code catch}, is what unparks the core,
+     * which would otherwise sit in {@code receive()} forever waiting for a front end that no longer
+     * exists; nothing waits for the {@code STOPPED} that comes back, and it simply rests unread on
+     * an inbox whose reader has gone. Disposing the windows, queued from the {@code finally}, is the
+     * other: the EDT is kept alive by displayable windows, so until they go the JVM outlives both
+     * halves - a running program with nothing running in it.
+     *
+     * <p>The {@code catch} also tells a quit from a crash by the exception's message. {@code Quit}
+     * throws a {@code GameQuitException} with no message for a clean quit, so a {@code null}
+     * message logs nothing and means exit status 0; any message is logged at fatal as
+     * {@code angband-ui died.} and means -1. Unless {@code debug} is set, the {@code catch} then
+     * calls {@link System#exit} straight after sending, so the JVM ends there and the
+     * {@code finally}'s disposal is never reached - the windows go with the process. With
+     * {@code debug} set, as {@code MainTest} does, the {@code catch} falls through to the
+     * {@code finally} and the thread ends by returning.
      *
      * <p>The disposal is in a {@code finally} because it is owed on the clean path too, where
      * {@code startLoop()} returns normally after {@code UILoop} has already queued a
@@ -115,12 +150,19 @@ public class Main {
      * <p>Two limits worth knowing before they bite. Only {@link RuntimeException} is caught, so an
      * {@link Error} - {@code OutOfMemoryError}, a stack overflow - still leaves by the default
      * handler and still hangs; that is a considered line rather than an oversight, since a JVM in
-     * that state cannot be relied on to send anything. And the disposal only releases the EDT if
-     * <em>every</em> displayable window goes: {@link SwingUI#closeDown()} walks the front end's own
-     * list, which today holds the single game window, but the {@code -l} and usage frames built by
-     * {@link #displayText} are not in it and neither would a dialog be.
+     * that state cannot be relied on to send anything. And on the paths that do reach the
+     * {@code finally}, the disposal only releases the EDT if <em>every</em> displayable window
+     * goes: {@link SwingUI#closeDown()} walks the front end's own list, which today holds the
+     * single game window, but the {@code -l} and usage frames built by {@link #displayText} are
+     * not in it and neither would a dialog be.
      *
-     * @param uiChannel      the UI thread's pair of ends - its inbox, and its way of reaching the
+     * <p>Outstanding: a clean quit is recognised by {@code getMessage() == null}, not by the type
+     * {@code GameQuitException}, so any other {@link RuntimeException} thrown without a message
+     * would be read as a clean quit - no log, exit status 0.
+     *
+     * <p>coded before 2026-10-15 / commented in full on 2026-10-15
+     *
+     * @param uiChannel     the UI thread's pair of ends - its inbox, and its way of reaching the
      *                       core
      * @param edtChannel     the send-only end the window listener posts close requests on
      * @param startupOptions the parsed command line
@@ -134,8 +176,15 @@ public class Main {
                 SwingUtilities.invokeLater(swingUI::init);
                 swingUI.startLoop();
             } catch (RuntimeException e) {
-                logger.fatal("angband-ui died.", e);
+                boolean success = e.getMessage() == null;
+                
+                if (!success)
+                    logger.fatal("angband-ui died.", e);
+                
                 uiChannel.uiSender().send(new UIMessage.LifecycleUIMessage(UILifecycleEvent.SAVE_AND_STOP));
+                
+                if (!debug)
+                    System.exit(success ? 0 : -1);
             } finally {
                 SwingUtilities.invokeLater(swingUI::closeDown);
             }
@@ -185,6 +234,14 @@ public class Main {
      * {@code STOPPED} its thread did not live to send, and a crash leaves by the shutdown path that
      * already exists rather than by a second one written for the purpose.
      *
+     * <p>The handler covers a quit as well as a crash: a {@code GameQuitException} thrown on the
+     * core thread arrives here like any other exception. A {@code null} message is a clean quit,
+     * logged as nothing and exiting with status 0; any message is logged at fatal as
+     * {@code angband-core died.} and exits with -1. Unless {@code debug} is set, the handler
+     * calls {@link System#exit} straight after posting {@code STOPPED}, so nothing waits for the
+     * UI half to answer. Outstanding: as in {@link #startSwingUI}, the clean quit is recognised
+     * by {@code getMessage() == null} rather than by the exception's type.
+     *
      * <p>It is installed <em>before</em> {@link Thread#start()}, which is the whole reason those
      * two lines are separated. A handler set afterwards is a race: a thread that dies in its first
      * instruction dies before its handler exists, and the default handler prints to
@@ -193,14 +250,16 @@ public class Main {
      * <p><b>Only the core is handled here, and the asymmetry is deliberate.</b> The UI half needs
      * to dispose its windows as well as unpark its opposite number, and the front end it must
      * dispose is a local inside {@link #startSwingUI}'s lambda that this method never sees - so
-     * that half is caught where it can be acted on, which is also why its thread ends by returning
-     * rather than by throwing. Neither shape is the "right" one: each is where the thing that needs
-     * shutting down happens to be in scope.
+     * that half is caught where it can be acted on, which is also why its thread does not throw -
+     * it exits from the {@code catch}, or returns when {@code debug} is set. Neither shape is the
+     * "right" one: each is where the thing that needs shutting down happens to be in scope.
      *
      * <p>What no handler here can do is rescue the EDT. It is not a thread this method started, so
      * it cannot be named, joined or handled; it ends only when the last displayable window is
-     * disposed. That is why the UI half's shutdown is the one that actually ends the process, and
-     * why a crash on that side that skipped the disposal would hang the JVM around a dead program.
+     * disposed. The {@link System#exit} in each handler sidesteps that, so the EDT does not hold the
+     * JVM open on those paths. Where the exit is skipped ({@code debug}), or the failure is an
+     * {@link Error} the {@code catch} does not cover, the UI half's disposal is what ends the
+     * process, and a crash that skipped it would hang the JVM around a dead program.
      *
      * <p>The order of the two {@code join} calls does not matter. Neither thread can finish before
      * the other has played its part in the handshake, so whichever is waited on first, the second
@@ -219,7 +278,10 @@ public class Main {
      * a directory override has to be in force before anything opens a file under it - the same
      * reason C rewrites its {@code ANGBAND_DIR_*} buffers before {@code init_angband()}. Each one
      * is validated three ways (well-formed, a known directory name, an existing path) before it
-     * is applied.
+     * is applied. A rejected one logs the message at fatal, prints it to {@code System.err} and
+     * exits with status 1, before any thread has been created.
+     *
+     * <p>coded before 2026-10-15 / commented in full on 2026-10-15
      *
      * @param args the raw command line
      * @throws IOException if {@code -l} cannot read the save directory
@@ -304,8 +366,11 @@ public class Main {
         Thread coreThread = new Thread(startCore(channels.coreChannel(), options), "angband-core");
 
         coreThread.setUncaughtExceptionHandler((t, e) -> {
-            logger.fatal("{} died.", t.getName(), e);
+            boolean success = e.getMessage() == null;
+            if (!success)
+                logger.fatal("{} died.", t.getName(), e);
             channels.coreChannel().coreSender().send(new CoreMessage.LifecycleCoreMessage(CoreLifecycleEvent.STOPPED));
+            if (!debug) System.exit(success ? 0 : -1);
         });
 
         // The UIThread catch of a dead thread without a closedown message is in startSwingUI. 

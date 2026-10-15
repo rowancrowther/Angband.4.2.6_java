@@ -190,11 +190,11 @@
 
 **interface `AngbandModule`** — class Javadoc: ✔ · type stamp: —
 
-| Function | Ported (coded) | Javadoc |
-|---|---|---|
-| `getName()` | — | ✔ |
-| `init()` | — | ✔ |
-| `cleanup()` | — | ✔ |
+| Function    | Ported (coded) | Javadoc |
+|-------------|----------------|---|
+| `getName()` | 261015         | ✔ |
+| `init()`    | 261015              | ✔ |
+| `cleanup()` | 261015              | ✔ |
 
 
 ## backend/io

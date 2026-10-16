@@ -191,31 +191,6 @@
 
 **class `FileHandler`** — class Javadoc: ✔ · type stamp: —
 
-- Fields (5/5 documented): ✔ `filePath`, `inputStream`, `outputStream`, `option`, `logger`
-
-| Function | Ported (coded) | Javadoc |
-|---|---|---|
-| ctor `FileHandler(String)` | — | ✔ |
-| `isOpen()` | — | ✔ |
-| `delete()` | — | ✔ |
-| `fileMove(Path)` | — | ✔ |
-| `fileExists()` | — | ✔ |
-| `createFile(FileModeEnum, FileTypeEnum)` | — | ✔ |
-| `fileGetSavefile(String, String)` | — | ✔ |
-| `fileNewer(String, String)` | — | ✔ |
-| `openInputStream()` | — | ✔ |
-| `openOutputStream(boolean)` | — | ✔ |
-| `open(FileModeEnum, FileTypeEnum)` | — | ✔ |
-| `skipBytes(long)` | — | ✔ |
-| `close()` | — | ✔ |
-| `readCharacter()` | — | ✔ |
-| `writeCharacter(int)` | — | ✔ |
-| `read(int)` | — | ✔ |
-| `write(String)` | — | ✔ |
-| `getLine()` | — | ✔ |
-| `putLine(String)` | — | ✔ |
-
-
 ## backend/io/bespokeexceptions
 
 ##### `InvalidTokenFoundDuringParse.java`

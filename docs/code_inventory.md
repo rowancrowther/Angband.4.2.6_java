@@ -7,8 +7,8 @@
 - One section per package, one sub-section per file; paths are relative to `src/main/java/uk/co/jackoftradesltd/`.
 - **Responsible for** is the first sentence of the top type's Javadoc; the 14 files with no class Javadoc (or no type at all, for `module-info.java`) have a hand-written summary.
 - **Function** rows cover every method and constructor (including private and abstract ones, and those in nested types). Initialisers, lambdas and anonymous-class / enum-constant-body members are not listed.
-- **Ported (coded)** is read from the house provenance stamp in the member's Javadoc (`coded on YYMMDD` = written that day; `coded before YYMMDD` = predates that day's stamping). `—` means the member carries no stamp. It is not read from `docs/ported_functions.md` (that file is keyed on C functions).
-- **Javadoc** ✔ = a `/** … */` block is attached to the declaration. ✘ (override) = an `@Override` method with no block of its own. A block is counted regardless of its quality — see `docs/no_low_javadoc.md` for the thin-block sweep.
+- **Ported (coded)** is read from the house provenance stamp in the member's Javadoc (`coded on YYMMDD` = written that day; `coded before YYMMDD` = predates that day's stamping). `—` means the member carries no stamp. It is not read from `Old Docs/ported_functions.md` (that file is keyed on C functions).
+- **Javadoc** ✔ = a `/** … */` block is attached to the declaration. ✘ (override) = an `@Override` method with no block of its own. A block is counted regardless of its quality — see `Old Docs/no_low_javadoc.md` for the thin-block sweep.
 - Fields, enum constants and record components are shown as compact lists: ✔ documented, ✘ undocumented. Record components count as documented when the record's Javadoc has a matching `@param`.
 - ANTLR-generated files (any file with a `// Generated from … by ANTLR` header) are excluded.
 
@@ -165,103 +165,25 @@
 
 **Responsible for:** The entry point: parse the command line, then either answer it and stop, or build the two halves of the game, start them, and wait for both to finish.
 
-**class `Main`** — class Javadoc: ✔ · type stamp: ported 260915
-
-- Fields (0/1 documented): ✘ `logger`
-
-| Function | Ported (coded) | Javadoc |
-|---|----------------|---------|
-| `startSwingUI(UIChannel, EDTChannel, StartupOptions)` | ✔             | ✔      |
-| `startCore(CoreChannel, StartupOptions)` | ✔             | ✔      |
-| `main(String[])` | ✔             | ✔      |
-| `checkDirectoryOption(String)` | ✔             | ✔      |
-| `printUsage()` | ✔              | ✔      |
-| `listSaves()` | ✔              | ✔      |
-| `displayText(List<String>, boolean)` | ✔              | ✔      |
-
-**class `Main.OutputWindow`** — class Javadoc: ✔ · type stamp: coded before 261015, ported 261015
-
-
-## backend
-
 ##### `AngbandModule.java`
 
 **Responsible for:** Common lifecycle contract for the game's pluggable subsystems (quark tables, data stores, etc.).
-
-**interface `AngbandModule`** — class Javadoc: ✔ · type stamp: —
-
-| Function    | Ported (coded) | Javadoc |
-|-------------|----------------|---|
-| `getName()` | 261015         | ✔ |
-| `init()`    | 261015              | ✔ |
-| `cleanup()` | 261015              | ✔ |
-
-
-## backend/io
 
 ##### `AngDir.java`
 
 **Responsible for:** A thin wrapper around a single filesystem directory handle, opened once and read one entry at a time.
 
-**class `AngDir`** — class Javadoc: ✔ · type stamp: before 260914
-
-- Fields (7/8 documented): ✔ `directoryPath`, `onlyFiles`, `directories`, `stream`, `iterator`, `currentRead`, `prevRead` — ✘ `logger`
-
-| Function | Ported (coded) | Javadoc |
-|---|---|---|
-| ctor `AngDir(String)` | before 260914 | ✔ |
-| `angDirFactory(String)` | before 260914 | ✔ |
-| `close()` | before 260914 | ✔ |
-| `alterOnlyFiles(boolean)` | before 260914 | ✔ |
-| `read()` | on 260914 | ✔ |
-| `readFiles(Path)` | on 260914 | ✔ |
-
-
 ##### `AngFile.java`
 
 **Responsible for:** High-level handle for a single game file, pairing a fixed access FileModeEnum with the lower-level FileHandler that performs the actual stream I/O.
-
-**class `AngFile`** — class Javadoc: ✔ · type stamp: before 260914
-
-- Fields (2/2 documented): ✔ `mode`, `fileHandler`
-
-| Function | Ported (coded) | Javadoc |
-|---|---|---|
-| ctor `AngFile(String, FileModeEnum)` | before 260914 | ✔ |
-| `open(FileTypeEnum)` | before 260914 | ✔ |
-| `close()` | before 260914 | ✔ |
-| `fileSkip(long)` | before 260914 | ✔ |
-| `readChar()` | before 260914 | ✔ |
-| `isOpen()` | before 260914 | ✔ |
-| `writeChar(int)` | before 260914 | ✔ |
-| `read(int)` | before 260914 | ✔ |
-| `write(String)` | before 260914 | ✔ |
-| `getLine()` | before 260914 | ✔ |
-| `putLine(String)` | before 260914 | ✔ |
-| `putFormattedLine(String, Object)` | before 260914 | ✔ |
-| `dirExists(String)` | before 260914 | ✔ |
-| `dirCreate(String)` | before 260914 | ✔ |
-
 
 ##### `AngPath.java`
 
 **Responsible for:** This is a stem class
 
-**class `AngPath`** — class Javadoc: ✔ · type stamp: —
-
-- Fields (1/1 documented): ✔ `pathString`
-
-
 ##### `Datafile.java`
 
 **Responsible for:** Stub home for data-file helpers; currently only a no-op `deactivateRandartFile` (C's randart-file switch-off), awaiting its real port.
-
-**class `Datafile`** — class Javadoc: ✘ · type stamp: —
-
-| Function | Ported (coded) | Javadoc |
-|---|---|---|
-| `deactivateRandartFile()` | — | ✘ |
-
 
 ##### `FileHandler.java`
 

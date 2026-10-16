@@ -141,6 +141,8 @@ public class GameConstants {
      * <p>Field MAX_PVAL coded before 261010, commented in full on 261010.
      */
     public static final int MAX_PVAL = 32_767;
+    
+    public static final int TAB_COLUMNS = 4;
     /**
      * How many arguments a queued command may carry - the port of C's {@code CMD_MAX_ARGS}
      * ({@code cmd-core.h}, 4), the size of the fixed argument array in {@code struct command}.

@@ -1,14 +1,14 @@
-# Code inventory — `src/test/java`
+# Code inventory — `../../src/test/java`
 
 *Generated 2026-10-14 from a real Java parse (JavaParser 3.27.1, Java 21 language level), not a regex sweep.*
 
 ## How to read this
 
-- One section per package, one sub-section per file; paths are relative to `src/test/java/uk/co/jackoftradesltd/`.
+- One section per package, one sub-section per file; paths are relative to `../../src/test/java/uk/co/jackoftradesltd`.
 - **Responsible for** is the first sentence of the top type's Javadoc; the 1 files with no class Javadoc (or no type at all, for `module-info.java`) have a hand-written summary.
 - **Function** rows cover every method and constructor (including private and abstract ones, and those in nested types). Initialisers, lambdas and anonymous-class / enum-constant-body members are not listed.
-- **Ported (coded)** is read from the house provenance stamp in the member's Javadoc (`coded on YYMMDD` = written that day; `coded before YYMMDD` = predates that day's stamping). `—` means the member carries no stamp. It is not read from `docs/ported_functions.md` (that file is keyed on C functions).
-- **Javadoc** ✔ = a `/** … */` block is attached to the declaration. ✘ (override) = an `@Override` method with no block of its own. A block is counted regardless of its quality — see `docs/no_low_javadoc.md` for the thin-block sweep.
+- **Ported (coded)** is read from the house provenance stamp in the member's Javadoc (`coded on YYMMDD` = written that day; `coded before YYMMDD` = predates that day's stamping). `—` means the member carries no stamp. It is not read from `ported_functions.md` (that file is keyed on C functions).
+- **Javadoc** ✔ = a `/** … */` block is attached to the declaration. ✘ (override) = an `@Override` method with no block of its own. A block is counted regardless of its quality — see `no_low_javadoc.md` for the thin-block sweep.
 - Fields, enum constants and record components are shown as compact lists: ✔ documented, ✘ undocumented. Record components count as documented when the record's Javadoc has a matching `@param`.
 - ANTLR-generated files (any file with a `// Generated from … by ANTLR` header) are excluded.
 

@@ -1,10 +1,10 @@
 # No / low Javadoc sweep
 
-Full sweep of `src/main/java` for classes, interfaces, enums, records, methods, fields, constructors and enum constants
+Full sweep of `../../src/main/java` for classes, interfaces, enums, records, methods, fields, constructors and enum constants
 that carry no Javadoc, or a Javadoc block thin enough to add little (e.g. a bare `@return`/`@param` tag with no
 descriptive sentence, or a one-line stub).
 
-**Method**: a heuristic brace-depth parser (not a real Java parser) walked every `.java` file under `src/main/java`,
+**Method**: a heuristic brace-depth parser (not a real Java parser) walked every `.java` file under `../../src/main/java`,
 tracking whether each declaration sits directly in a type body versus inside a method/lambda/initializer block, then
 checked for an immediately preceding `/** ... */` block.
 

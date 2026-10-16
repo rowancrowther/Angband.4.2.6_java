@@ -1,7 +1,7 @@
 ### How does Angband run in Java ###
 
 *Written 2026-08-13, at the end of stage 4 of `Architecture_migration.md`. This replaces the startup narrative in
-`Old_java_map.md`, which is kept as the record of how the program ran before the two-channel migration — everything from
+`Old Docs/Old_java_map.md`, which is kept as the record of how the program ran before the two-channel migration — everything from
 its step 5 onwards describes a program that no longer exists.*
 
 It assumes that it can be launched from a terminal.

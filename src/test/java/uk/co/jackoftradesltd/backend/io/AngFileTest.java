@@ -23,14 +23,12 @@ import uk.co.jackoftradesltd.backend.io.enums.FileModeEnum;
 import uk.co.jackoftradesltd.backend.io.enums.FileTypeEnum;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Unit tests for {@link AngFile}, the port of C's {@code ang_file} abstraction
@@ -87,18 +85,37 @@ class AngFileTest {
         assertEquals("hello", file.getLine());
     }
 
+    /**
+     * C has no lazy open: {@code file_writec} takes an {@code ang_file *} that {@code file_open}
+     * has already produced, so a write before the open has no handle to go to.
+     */
     @Test
-    void writeCharLazilyOpensWithThisFilesOwnModeNotAHardcodedOne(@TempDir Path root)
+    void writeCharRefusesAndTouchesNothingWhenTheFileWasNeverOpened(@TempDir Path root)
             throws IOException {
         Path path = root.resolve("append.txt");
         Files.writeString(path, "AB");
 
         AngFile file = new AngFile(path.toString(), FileModeEnum.MODE_APPEND);
+        assertFalse(file.writeChar('C'));
+        assertFalse(file.isOpen());
+        file.close();
+
+        assertEquals("AB", Files.readString(path));
+    }
+
+    @Test
+    void writeCharAppendsInAppendModeOnceTheFileIsOpened(@TempDir Path root)
+            throws IOException {
+        Path path = root.resolve("append.txt");
+        Files.writeString(path, "AB");
+
+        AngFile file = new AngFile(path.toString(), FileModeEnum.MODE_APPEND);
+        assertTrue(file.open(FileTypeEnum.FTYPE_TEXT));
         assertTrue(file.writeChar('C'));
         file.close();
 
         assertEquals("ABC", Files.readString(path),
-                "MODE_APPEND must append on its first lazy open, not truncate as MODE_WRITE would");
+                "file_open(\"a+\") appends rather than truncating as \"wb\" would");
     }
 
     @Test
@@ -114,6 +131,7 @@ class AngFileTest {
     void readCharDistinguishesARealByteFromEndOfFile(@TempDir Path root) {
         Path path = root.resolve("chars.bin");
         AngFile writer = new AngFile(path.toString(), FileModeEnum.MODE_WRITE);
+        assertTrue(writer.open(FileTypeEnum.FTYPE_TEXT));
         assertTrue(writer.writeChar('A'));
         writer.close();
 
@@ -126,6 +144,7 @@ class AngFileTest {
     void readCharDistinguishesANulByteFromEndOfFile(@TempDir Path root) {
         Path path = root.resolve("nul.bin");
         AngFile writer = new AngFile(path.toString(), FileModeEnum.MODE_WRITE);
+        assertTrue(writer.open(FileTypeEnum.FTYPE_TEXT));
         assertTrue(writer.writeChar(0));
         writer.close();
 
@@ -142,14 +161,15 @@ class AngFileTest {
         Files.writeString(path, "Hello World");
 
         AngFile file = new AngFile(path.toString(), FileModeEnum.MODE_READ);
-        assertEquals("Hello", file.read(5));
+        assertArrayEquals("Hello".getBytes(java.nio.charset.StandardCharsets.UTF_8), file.read(5));
     }
 
     @Test
     void writeThenGetLineRoundTrips(@TempDir Path root) {
         Path path = root.resolve("line.txt");
         AngFile writer = new AngFile(path.toString(), FileModeEnum.MODE_WRITE);
-        assertTrue(writer.write("first line"));
+        assertTrue(writer.open(FileTypeEnum.FTYPE_TEXT));
+        assertTrue(writer.write("first line".getBytes(StandardCharsets.UTF_8)));
         writer.close();
 
         AngFile reader = new AngFile(path.toString(), FileModeEnum.MODE_READ);
@@ -161,7 +181,7 @@ class AngFileTest {
         Path path = root.resolve("missing.txt");
         AngFile file = new AngFile(path.toString(), FileModeEnum.MODE_READ);
 
-        assertFalse(file.write("should not be written"));
+        assertFalse(file.write("should not be written".getBytes(StandardCharsets.UTF_8)));
         assertFalse(Files.exists(path));
     }
 
@@ -178,6 +198,7 @@ class AngFileTest {
     void putFormattedLineFormatsThenWrites(@TempDir Path root) {
         Path path = root.resolve("formatted.txt");
         AngFile writer = new AngFile(path.toString(), FileModeEnum.MODE_WRITE);
+        assertTrue(writer.open(FileTypeEnum.FTYPE_TEXT));
         assertTrue(writer.putFormattedLine("%s scored %d", "Rowan", 42));
         writer.close();
 
@@ -220,6 +241,7 @@ class AngFileTest {
     void fileSkipSkipsForwardPastBytesInAnOpenStream(@TempDir Path root) {
         Path path = root.resolve("skip.bin");
         AngFile writer = new AngFile(path.toString(), FileModeEnum.MODE_WRITE);
+        assertTrue(writer.open(FileTypeEnum.FTYPE_TEXT));
         for (char c : "ABCDE".toCharArray()) writer.writeChar(c);
         writer.close();
 
@@ -229,18 +251,41 @@ class AngFileTest {
         assertEquals(Optional.of((int) 'D'), reader.readChar());
     }
 
+    /**
+     * Accepted deviation (docs/Accepted_Deviations.md): C's {@code file_skip} is
+     * {@code fseek(f->fh, bytes, SEEK_CUR)} and seeks backwards for a negative count. The
+     * shared buffered stream cannot, so a negative count is refused and the position is left
+     * where it was. The only C caller (savefile.c) skips forward.
+     */
     @Test
-    void fileSkipCanSeekBackwardsLikeCsFseek(@TempDir Path root) {
+    void fileSkipRefusesANegativeCountAndLeavesThePosition(@TempDir Path root) {
         Path path = root.resolve("skip-back.bin");
         AngFile writer = new AngFile(path.toString(), FileModeEnum.MODE_WRITE);
+        assertTrue(writer.open(FileTypeEnum.FTYPE_TEXT));
         for (char c : "ABCDE".toCharArray()) writer.writeChar(c);
         writer.close();
 
         AngFile reader = new AngFile(path.toString(), FileModeEnum.MODE_READ);
         reader.readChar();
         reader.readChar();
-        assertTrue(reader.fileSkip(-1),
-                "file_skip() is fseek(f->fh, bytes, SEEK_CUR); a negative offset seeks backwards");
+        assertFalse(reader.fileSkip(-1));
+        assertEquals(Optional.of((int) 'C'), reader.readChar());
+    }
+
+    /**
+     * C's {@code fseek(f->fh, 0, SEEK_CUR)} succeeds and does not move.
+     */
+    @Test
+    void fileSkipOfZeroSucceedsAndDoesNotMove(@TempDir Path root) {
+        Path path = root.resolve("skip-zero.bin");
+        AngFile writer = new AngFile(path.toString(), FileModeEnum.MODE_WRITE);
+        assertTrue(writer.open(FileTypeEnum.FTYPE_TEXT));
+        for (char c : "ABCDE".toCharArray()) writer.writeChar(c);
+        writer.close();
+
+        AngFile reader = new AngFile(path.toString(), FileModeEnum.MODE_READ);
+        reader.readChar();
+        assertTrue(reader.fileSkip(0));
         assertEquals(Optional.of((int) 'B'), reader.readChar());
     }
 }

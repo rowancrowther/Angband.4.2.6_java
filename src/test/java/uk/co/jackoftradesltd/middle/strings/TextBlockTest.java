@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftradesltd.backend.io.AngFile;
 import uk.co.jackoftradesltd.backend.io.enums.FileModeEnum;
+import uk.co.jackoftradesltd.backend.io.enums.FileTypeEnum;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 
@@ -396,6 +397,7 @@ class TextBlockTest {
         void writesEachWrappedLineWithATrailingNewline(@TempDir Path root) throws IOException {
             Path path = root.resolve("out.txt");
             AngFile file = new AngFile(path.toString(), FileModeEnum.MODE_WRITE);
+            assertTrue(file.open(FileTypeEnum.FTYPE_TEXT));
 
             white("aaa bbb ccc").toFile(file, 0, 7);
             file.close();
@@ -411,6 +413,7 @@ class TextBlockTest {
         void indentsEachLineAndWrapsAtWrapMinusIndent(@TempDir Path root) throws IOException {
             Path path = root.resolve("out.txt");
             AngFile file = new AngFile(path.toString(), FileModeEnum.MODE_WRITE);
+            assertTrue(file.open(FileTypeEnum.FTYPE_TEXT));
 
             white("aaa bbb ccc").toFile(file, 2, 9);
             file.close();
@@ -426,6 +429,7 @@ class TextBlockTest {
         void aBlankLineIsStillIndented(@TempDir Path root) throws IOException {
             Path path = root.resolve("out.txt");
             AngFile file = new AngFile(path.toString(), FileModeEnum.MODE_WRITE);
+            assertTrue(file.open(FileTypeEnum.FTYPE_TEXT));
 
             white("ab\n\ncd").toFile(file, 1, 8);
             file.close();
@@ -440,6 +444,7 @@ class TextBlockTest {
         void anEmptyBlockWritesNothing(@TempDir Path root) throws IOException {
             Path path = root.resolve("out.txt");
             AngFile file = new AngFile(path.toString(), FileModeEnum.MODE_WRITE);
+            assertTrue(file.open(FileTypeEnum.FTYPE_TEXT));
 
             assertDoesNotThrow(() -> new TextBlock().toFile(file, 0, 10));
             file.close();
@@ -455,6 +460,7 @@ class TextBlockTest {
         void aWidthOfZeroOrLessIsRejected(@TempDir Path root) throws IOException {
             Path path = root.resolve("out.txt");
             AngFile file = new AngFile(path.toString(), FileModeEnum.MODE_WRITE);
+            assertTrue(file.open(FileTypeEnum.FTYPE_TEXT));
             TextBlock tb = white("abc");
 
             assertThrows(IllegalArgumentException.class, () -> tb.toFile(file, 5, 5));
@@ -474,6 +480,7 @@ class TextBlockTest {
         void aNegativeIndentIsClampedToZeroUnlikeC(@TempDir Path root) throws IOException {
             Path path = root.resolve("out.txt");
             AngFile file = new AngFile(path.toString(), FileModeEnum.MODE_WRITE);
+            assertTrue(file.open(FileTypeEnum.FTYPE_TEXT));
 
             white("aaa bbb ccc").toFile(file, -5, 7);
             file.close();
@@ -488,6 +495,7 @@ class TextBlockTest {
         @Test
         void theWidthGuardUsesTheRawIndent(@TempDir Path root) {
             AngFile file = new AngFile(root.resolve("out.txt").toString(), FileModeEnum.MODE_WRITE);
+            assertTrue(file.open(FileTypeEnum.FTYPE_TEXT));
 
             assertDoesNotThrow(() -> white("abc").toFile(file, -5, -2));
         }

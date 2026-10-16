@@ -1,12 +1,12 @@
 # Loc null-versus-`Loc.zero` audit
 
-Audit of 2026-10-12. Paths are relative to `src/main/java/uk/co/jackoftradesltd/` unless they start
-with `src/test`. Every file named here was read on the day of the audit, so check a line number
+Audit of 2026-10-12. Paths are relative to `../../src/main/java/uk/co/jackoftradesltd` unless they start
+with `../../src/test`. Every file named here was read on the day of the audit, so check a line number
 before relying on it. `ArgumentPointTest` was the only test run.
 
 ## Scope and result
 
-- Nothing in `src/main` holds a `Loc` in a `Map`, `Optional<Loc>` field, array or `@Nullable` slot. The only `Optional`s are `Command.getArgPoint` and `GameInput.getPanel`.
+- Nothing in `../../src/main` holds a `Loc` in a `Map`, `Optional<Loc>` field, array or `@Nullable` slot. The only `Optional`s are `Command.getArgPoint` and `GameInput.getPanel`.
 - Only two of the 17 real Loc holders already say "no location" with `Loc.zero`. `Chunk.decoy` always holds `Loc.zero` or a value, and `PlayerUpkeep.pathDestination` is the same.
 - Four holders can be null: `ItemObject.location`, `Target.grid`, `Monster.grid` and `ArgumentPoint.value`. Two more, `Trap.grid` and `Connector.grid`, are null and never read.
 - Two of these are bugs in `Command.java`, not convention questions (see "Bugs found on the way").
@@ -51,7 +51,7 @@ before relying on it. `ArgumentPointTest` was the only test run.
 
 ## Tests that pin null and would need rewriting
 
-All paths are under `src/test/java/uk/co/jackoftradesltd/`.
+All paths are under `../../src/test/java/uk/co/jackoftradesltd`.
 
 - `middle/objects/ItemObjectWipeTest.java:223`: `assertNull(read(item, "location"))`.
 - `middle/objects/ItemObjectConstructionTest.java:166`: `assertNull(read(item, "location"))`.

@@ -8,7 +8,7 @@ verifies and tests, primers on demand.
 
 ## 1. Where we are, where we're going
 
-**Now** (per `Old_java_map.md`): `main()` → EDT → `SwingUI` → creates `Core` → starts the game thread. The core
+**Now** (per `Old Docs/Old_java_map.md`): `main()` → EDT → `SwingUI` → creates `Core` → starts the game thread. The core
 reaches the UI through three static holders (`StatusDisplayHolder`,
 `CommandGetterHolder`, `GameInputHolder`); the UI reaches the core through the `Core` it holds (`start()` /
 `requestStop()`). Shutdown is `SwingUI.closeDown()` calling `System.exit(0)`
@@ -592,7 +592,7 @@ The structure finally matches the document's Startup section. Mostly *moving* co
 
 - [x] `Main.main()`: create the `Channels`; create and start the core thread and the UI thread;
   `join()` both; return. (The `-l`/usage windows stay exactly as they are — they run before either thread exists, as
-  `Old_java_map.md` already notes.)
+  `Old Docs/Old_java_map.md` already notes.)
 - [x] Core side: `GameRunner` absorbs its last responsibilities and becomes the core's `Runnable`
   (suggested rename: `Core`) — constructed with the channels and the startup options, no longer constructed *by the UI*.
 - [x] UI side: a `Runnable` (inside `SwingUI` or wrapping it) that does the Swing bootstrap on the EDT (`invokeLater`
@@ -607,7 +607,7 @@ The structure finally matches the document's Startup section. Mostly *moving* co
 *Primer candidate:* `Thread.join()` and structured teardown — why "main waits" is what makes
 "save before exit" a guarantee rather than a race.
 
-**Done when:** `Old_java_map.md`'s startup narrative can be rewritten to match `Architecture.md`'s Startup section line
+**Done when:** `Old Docs/Old_java_map.md`'s startup narrative can be rewritten to match `Architecture.md`'s Startup section line
 for
 line — because they now describe the same program.
 
@@ -633,7 +633,7 @@ line — because they now describe the same program.
     - `middle.**` may not name `frontend.**`;
     - `backend.**` may not name `frontend.**`.
 
-  This turns `Old_java_map.md`'s "you can check by reading the import statements" from a habit into a regression test.
+  This turns `Old Docs/Old_java_map.md`'s "you can check by reading the import statements" from a habit into a regression test.
   The
   first rule would have been red before stage 0 and green after; the other two catch backsliding.
 
@@ -664,7 +664,7 @@ line — because they now describe the same program.
   `struct file_parser` of function pointers — and `struct ui_entry` is an incomplete type in `ui-entry.h`, so nothing
   outside the front end can see its fields even in principle. The front end parses its own data files. Moving the
   readers, assemblers and registries to match is the fix for both baselines, and it is chapter-sized.
-- [x] Docs pass: `Old_java_map.md` rewritten; `big_map.md`'s ending checked (it already points this direction); a
+- [x] Docs pass: `Old Docs/Old_java_map.md` rewritten; `big_map.md`'s ending checked (it already points this direction); a
   verdict paragraph recorded here, set-piece style — what it cost, what it paid.
     - This has been a learning experience. I have implemented threads, both via thread.start and via invoke later. I
       have learned about LinkedBlockingQueues, and have implemented queues with two ends and ones with 'one' end which

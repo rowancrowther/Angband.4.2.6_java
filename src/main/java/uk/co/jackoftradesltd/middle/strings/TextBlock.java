@@ -412,7 +412,7 @@ public class TextBlock {
         List<TextBlock> blocks = calculateLines(wrapAt - indent);
 
         for (TextBlock tb : blocks) {
-            if (!angFile.putLine(indentString + tb.toString())) {
+            if (!angFile.putLine(indentString + tb.toString() + "\n")) {
                 String message = "Error writing to text block file.";
                 logger.error(message);
                 throw new RuntimeException(message);

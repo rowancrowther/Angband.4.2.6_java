@@ -204,11 +204,6 @@
 
 **Responsible for:** Specifies what type a file is when writing.
 
-**enum `FileTypeEnum`** — class Javadoc: ✔ · type stamp: —
-
-- Enum constants (5/5 documented): ✔ `FTYPE_TEXT`, `FTYPE_SAVE`, `FTYPE_RAW`, `FTYPE_HTML`, `FTYPE_NULL`
-
-
 ## backend/io/savefiles
 
 ##### `Savefile.java`

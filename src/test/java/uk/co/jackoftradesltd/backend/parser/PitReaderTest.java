@@ -48,6 +48,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -498,7 +499,9 @@ class PitReaderTest {
      * The assembler's unknown-colour arm has no fixture because it cannot be reached from a file:
      * {@code COLOUR_CHAR} only matches the 28 codes the shared {@code Colours} alphabet lists, and
      * {@code ColourEnum.fromCode} resolves every one of them. A colour the lexer does not know is a
-     * hard lexer error instead, and the file fails closed.
+     * hard lexer error instead, and the file fails closed. C never rejects a colour:
+     * {@code color_char_to_attr} answers {@code COLOUR_WHITE} for a letter that is not in
+     * {@code color_table}, so {@code color:q} loads there as white.
      */
     @Test
     void anUnknownColourCodeIsALexerErrorNotASoftOne() throws IOException {
@@ -527,5 +530,454 @@ class PitReaderTest {
     void aMissingFileThrows() {
         assertThrows(IOException.class,
                 () -> new PitReader().parseWithResults(tempDir.resolve("absent.txt").toString()));
+    }
+
+    // ---- The reader against the upstream pit.txt -------------------------
+
+    /**
+     * Every record of the upstream {@code pit.txt}, worked out by hand from the file and from
+     * {@code parse_pit_*} in {@code mon-init.c}, not read back from the Java parser. One row per record,
+     * in file order, ';'-separated: name, room digit, alloc rarity, alloc level, obj-rarity,
+     * {@code freq_innate} (100 / the innate-freq percentage, 0 when absent), flags-req, flags-ban,
+     * spell-req, spell-ban, mon-base names, color letters, mon-ban names. The multi-value columns are
+     * ','-separated.
+     */
+    private static final String[] UPSTREAM = {
+            "Orc;1;1;25;0;0;;;;;orc;;",
+            "Troll;1;1;45;0;0;;;;;troll;;",
+            "Giant;1;1;65;0;0;;;;;giant;;",
+            "Acid dragons;1;6;85;0;0;;;BR_ACID;BR_ELEC;dragon,ancient dragon;;",
+            "Electric dragons;1;6;85;0;0;;;BR_ELEC;BR_ACID;dragon,ancient dragon;;",
+            "Fire dragons;1;6;85;0;0;;;BR_FIRE;BR_COLD;dragon,ancient dragon;;",
+            "Ice dragons;1;6;85;0;0;;;BR_COLD;BR_FIRE;dragon,ancient dragon;;",
+            "Poison dragons;1;6;85;0;0;;;BR_POIS;BR_FIRE;dragon,ancient dragon;;",
+            "Multi-hued dragons;1;6;85;0;0;;;BR_ACID,BR_ELEC,BR_FIRE,BR_COLD,BR_POIS;;dragon,ancient dragon;;",
+            "Demons;1;1;105;0;0;;;;;major demon;;Horned Reaper",
+            "Jelly;2;1;20;5;0;;;;;icky thing,jelly,mold,mushroom;;",
+            "Animals;2;1;50;10;0;ANIMAL;;;;;;",
+            "Undead;2;1;80;20;0;UNDEAD;;;;;;",
+            "Ants;2;1;15;5;0;;KILL_BODY;;;ant;;",
+            "Kobolds;1;1;15;0;0;;;;;kobold;;",
+            "Creepy crawlies;2;1;20;5;0;;;;BLINK,CONF,SLOW;centipede,killer beetle,spider;;",
+            "Minor demons;1;1;20;5;0;;;;S_DEMON;minor demon;;",
+            "Spellcasters;1;1;20;0;0;;;MISSILE;;;;",
+            "Archers;1;1;50;0;25;;;ARROW;;;;",
+            "Naga;1;1;25;0;0;;;;;naga;;",
+            "Thieves;1;1;25;0;0;;;;;person;b;",
+            "Warriors;1;1;25;0;0;;;;DARKNESS,ARROW;person;u,s,M;",
+            "Dark dwarves;1;1;40;0;0;;;;BRAIN_SMASH;humanoid;D,B,u,P,s,R;",
+            "Eyes;1;1;30;5;0;;;;S_UNDEAD,S_KIN;eye;;",
+            "Ogres;1;1;30;0;0;;;;;ogre;;",
+            "Believers;1;1;35;0;0;;;HEAL;S_ANIMAL;person;;",
+            "Serpents;2;1;40;5;0;;;;BA_POIS,BR_FIRE;snake,naga,hydra;;",
+            "Lesser undead;2;1;40;10;0;;;;BO_NETH,TELE_AWAY;skeleton,zombie,wraith;;",
+            "Wizards;1;1;45;0;0;;;CONF;;person;;",
+            "Vampires;1;1;55;0;0;UNDEAD;;;;bat,vampire;;",
+            "Hydra;2;1;60;8;0;;;;;hydra;;",
+            "Golems;1;1;65;10;0;;DRAGON,UNDEAD,DEMON;;;golem;;",
+            "Gold dragons;1;6;85;0;0;;;BR_SOUN;BR_SHAR;dragon,ancient dragon;;",
+            "Ainur;1;1;90;0;0;;;;;ainu;;",
+            "Insects;3;2;15;0;0;;;;;ant,centipede,dragon fly,insect,killer beetle;;",
+            "Reptiles;3;1;20;0;0;;;;;naga,snake,reptile;;",
+            "Cave dwellers;3;1;25;0;0;;;;;yeek,kobold,orc,troll,ogre;;",
+            "Moria dwellers;3;8;30;0;0;;;;;orc,ogre,troll,giant;;",
+            "Creatures of Earth;3;8;35;0;0;;;;;xorn;;",
+            "Elemental creatures;3;1;40;0;0;;;;;elemental,vortex;;",
+    };
+
+    /**
+     * The colour letters pit.txt uses, with the colour each names in {@code color_table} in
+     * {@code z-color.c}: 'b' Blue, 'u' Umber, 's' Slate, 'M' Mustard, 'D' Light Dark, 'B' Light Blue,
+     * 'P' Light Purple and 'R' Light Red.
+     */
+    private static final Map<String, ColourEnum> COLOUR_LETTERS = Map.of(
+            "b", ColourEnum.COLOUR_BLUE,
+            "u", ColourEnum.COLOUR_UMBER,
+            "s", ColourEnum.COLOUR_SLATE,
+            "M", ColourEnum.COLOUR_MUSTARD,
+            "D", ColourEnum.COLOUR_LIGHT_DARK,
+            "B", ColourEnum.COLOUR_LIGHT_BLUE,
+            "P", ColourEnum.COLOUR_LIGHT_PURPLE,
+            "R", ColourEnum.COLOUR_LIGHT_RED);
+
+    private static List<String> split(String column) {
+        return column.isEmpty() ? List.of() : List.of(column.split(","));
+    }
+
+    /**
+     * Every field of every record, against {@link #UPSTREAM}. The profiles must also come back in file
+     * order, which is {@code pit_info} order in C: {@code parse_pit_name} pushes each record on the head
+     * of a chain and {@code finish_parse_pit} fills the array downward from the end, so slot 0 is the
+     * first record. The room digit is C's {@code room_type} and {@link PitRoomType} is declared in the
+     * same order, so the digit is the ordinal.
+     */
+    @Test
+    void realFileMatchesTheUpstreamFileRecordForRecordInFileOrder() throws Exception {
+        List<PitProfile> pits = new PitReader().parseWithResults(REAL_FILE).items();
+
+        assertEquals(UPSTREAM.length, pits.size());
+        for (int i = 0; i < UPSTREAM.length; i++) {
+            String[] row = UPSTREAM[i].split(";", -1);
+            assertEquals(13, row.length, "fixture row " + i);
+            String label = "record " + i + " (" + row[0] + ")";
+            PitProfile pit = pits.get(i);
+
+            assertEquals(row[0], field(pit, "name"), label);
+            assertEquals(PitRoomType.values()[Integer.parseInt(row[1])], field(pit, "roomType"), label);
+            int rarity = field(pit, "rarity");
+            int ave = field(pit, "ave");
+            int objectRarity = field(pit, "objectRarity");
+            int freqInnate = field(pit, "freqInnate");
+            assertEquals(Integer.parseInt(row[2]), rarity, label + " rarity");
+            assertEquals(Integer.parseInt(row[3]), ave, label + " ave");
+            assertEquals(Integer.parseInt(row[4]), objectRarity, label + " obj-rarity");
+            assertEquals(Integer.parseInt(row[5]), freqInnate, label + " freq_innate");
+
+            assertFlags(row[6], field(pit, "flags"), "RF_", label + " flags-req");
+            assertFlags(row[7], field(pit, "forbiddenFlags"), "RF_", label + " flags-ban");
+            assertSpells(row[8], field(pit, "spellsFlags"), label + " spell-req");
+            assertSpells(row[9], field(pit, "forbiddenSpellFlags"), label + " spell-ban");
+
+            List<MonsterBase> bases = field(pit, "bases");
+            assertEquals(split(row[10]), bases.stream().map(MonsterBase::getCodeName).toList(), label + " mon-base");
+            List<ColourEnum> colours = field(pit, "colours");
+            assertEquals(split(row[11]).stream().map(COLOUR_LETTERS::get).toList(), colours, label + " color");
+            List<MonsterRace> banned = field(pit, "forbiddenMonsters");
+            // monster.txt spells the race "horned reaper"; lookup_monster matches the file's "Horned Reaper"
+            // to it ignoring case, so the comparison here does too.
+            assertEquals(split(row[12]).stream().map(String::toLowerCase).toList(),
+                    banned.stream().map(r -> r.getName().toLowerCase()).toList(), label + " mon-ban");
+        }
+    }
+
+    private static void assertFlags(String column, Flag<MonsterRaceFlag> flags, String prefix, String label) {
+        List<String> expected = split(column);
+        assertEquals(expected.size(), flags.count(), label);
+        for (String code : expected) {
+            assertTrue(flags.has(MonsterRaceFlag.valueOf(prefix + code)), label + " " + code);
+        }
+    }
+
+    private static void assertSpells(String column, Flag<MonsterSpell> flags, String label) {
+        List<String> expected = split(column);
+        assertEquals(expected.size(), flags.count(), label);
+        for (String code : expected) {
+            assertTrue(flags.has(MonsterSpell.valueOf("RSF_" + code)), label + " " + code);
+        }
+    }
+
+    // ---- Where the directives meet: what C keeps, what it overwrites -----
+
+    /**
+     * Writes a file of the given records with a matching {@code record-count:} header and loads it.
+     */
+    private ParseResult<PitProfile> load(String name, String... records) throws IOException {
+        String path = tempFile(name, "record-count:" + records.length + "\n" + String.join("\n", records) + "\n");
+        return new PitReader().parseWithResults(path);
+    }
+
+    /**
+     * {@code parse_pit_room}, {@code parse_pit_alloc}, {@code parse_pit_obj_rarity} and
+     * {@code parse_pit_innate_freq} each assign their fields, so a second line replaces the first.
+     */
+    @Test
+    void aRepeatedScalarDirectiveKeepsTheLastValue() throws Exception {
+        ParseResult<PitProfile> result = load("repeat-scalars.txt", String.join("\n",
+                "name:Twice",
+                "room:1", "room:3",
+                "alloc:1:2", "alloc:5:60",
+                "obj-rarity:1", "obj-rarity:7",
+                "innate-freq:10", "innate-freq:50"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        PitProfile pit = result.items().getFirst();
+        assertEquals(PitRoomType.PIT_TYPE_OTHER, field(pit, "roomType"));
+        int rarity = field(pit, "rarity");
+        int ave = field(pit, "ave");
+        int objectRarity = field(pit, "objectRarity");
+        int freqInnate = field(pit, "freqInnate");
+        assertEquals(5, rarity);
+        assertEquals(60, ave);
+        assertEquals(7, objectRarity);
+        assertEquals(2, freqInnate);
+    }
+
+    /**
+     * {@code flags-req}, {@code flags-ban}, {@code spell-req} and {@code spell-ban} set bits in the
+     * profile's bit set, and {@code mon-base}, {@code mon-ban} and {@code color} push onto a list, so a
+     * repeated line adds to what is there. A flag named on two lines is one bit, not two.
+     */
+    @Test
+    void aRepeatedListDirectiveAccumulates() throws Exception {
+        ParseResult<PitProfile> result = load("repeat-lists.txt", String.join("\n",
+                "name:Lists",
+                "flags-req:ANIMAL", "flags-req:EVIL | ANIMAL",
+                "flags-ban:UNIQUE", "flags-ban:UNDEAD",
+                "spell-req:BR_ACID", "spell-req:BR_FIRE",
+                "spell-ban:BR_COLD", "spell-ban:BR_POIS | BR_COLD",
+                "mon-base:orc", "mon-base:troll",
+                "mon-ban:Horned Reaper", "mon-ban:Grip, Farmer Maggot's Dog",
+                "color:r", "color:g"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        PitProfile pit = result.items().getFirst();
+        Flag<MonsterRaceFlag> flags = field(pit, "flags");
+        Flag<MonsterRaceFlag> forbiddenFlags = field(pit, "forbiddenFlags");
+        Flag<MonsterSpell> spells = field(pit, "spellsFlags");
+        Flag<MonsterSpell> forbiddenSpells = field(pit, "forbiddenSpellFlags");
+        assertEquals(2, flags.count());
+        assertEquals(2, forbiddenFlags.count());
+        assertEquals(2, spells.count());
+        assertEquals(2, forbiddenSpells.count());
+        assertEquals(2, ((List<?>) field(pit, "bases")).size());
+        assertEquals(2, ((List<?>) field(pit, "forbiddenMonsters")).size());
+        assertEquals(List.of(ColourEnum.COLOUR_RED, ColourEnum.COLOUR_GREEN), field(pit, "colours"));
+    }
+
+    /**
+     * C pushes each base, colour and forbidden monster on the head of its list, so it holds them in
+     * reverse file order; the Java lists are in file order. {@code mon_pit_hook} only asks whether a
+     * race matches some entry, so the difference is not observable, and this pins the Java order so
+     * it is not rediscovered as a mismatch.
+     */
+    @Test
+    void listsInsideAProfileAreInFileOrderHereWhereCHoldsThemReversed() throws Exception {
+        ParseResult<PitProfile> result = load("list-order.txt", String.join("\n",
+                "name:Order",
+                "mon-base:orc", "mon-base:troll", "mon-base:giant",
+                "color:r", "color:g", "color:b"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        List<MonsterBase> bases = field(result.items().getFirst(), "bases");
+        assertEquals(List.of("orc", "troll", "giant"), bases.stream().map(MonsterBase::getCodeName).toList());
+        assertEquals(List.of(ColourEnum.COLOUR_RED, ColourEnum.COLOUR_GREEN, ColourEnum.COLOUR_BLUE),
+                field(result.items().getFirst(), "colours"));
+    }
+
+    /**
+     * {@code parse_pit_name} never looks for an existing record of the same name, so two records called
+     * the same both load, in file order.
+     */
+    @Test
+    void twoRecordsWithTheSameNameBothLoad() throws Exception {
+        ParseResult<PitProfile> result = load("dup-names.txt",
+                "name:Same\nalloc:1:10", "name:Same\nalloc:2:20");
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(List.of("Same", "Same"), names(result));
+        int first = field(result.items().get(0), "ave");
+        int second = field(result.items().get(1), "ave");
+        assertEquals(10, first);
+        assertEquals(20, second);
+    }
+
+    /**
+     * {@code lookup_monster} matches the exact name case-insensitively (and otherwise the first name
+     * containing the text), so a {@code mon-ban:} in upper case bans the race {@code monster.txt}
+     * spells in lower case.
+     */
+    @Test
+    void aMonBanNameMatchesCaseInsensitivelyAsLookupMonsterDoes() throws Exception {
+        ParseResult<PitProfile> result = load("ban-case.txt", "name:Case\nmon-ban:HORNED REAPER");
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        List<MonsterRace> banned = field(result.items().getFirst(), "forbiddenMonsters");
+        assertEquals("horned reaper", banned.getFirst().getName());
+    }
+
+    /**
+     * {@code lookup_monster_base} compares with {@code streq}, so {@code mon-base:Orc} names no base.
+     * C stops the load with {@code PARSE_ERROR_UNRECOGNISED_TVAL}; here the record is skipped.
+     */
+    @Test
+    void aMonBaseNameIsCaseSensitive() throws Exception {
+        ParseResult<PitProfile> result = load("base-case.txt", "name:Case\nmon-base:Orc", GOOD_RECORD);
+
+        assertEquals(List.of("Good pit"), names(result));
+        assertTrue(result.errors().stream().anyMatch(e -> e.contains("an unknown monster base: Orc")),
+                result.errors()::toString);
+    }
+
+    // ---- Where the grammar is stricter than C ----------------------------
+    // Each of these loads in C. They are pinned so the difference is on record; see docs/grammar_issues.md.
+
+    /**
+     * {@code flags-req ?str flags}: the value is optional, and {@code parse_pit_flags_req} returns
+     * without error when it is absent. The grammar needs at least one code after the colon.
+     */
+    @Test
+    void anEmptyFlagListIsAHardErrorHereWhereCAcceptsIt() throws IOException {
+        ParseResult<PitProfile> result = load("empty-flags.txt", "name:Empty\nflags-req:", GOOD_RECORD);
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.items().isEmpty(), result.items()::toString);
+    }
+
+    /**
+     * The handlers split the value with {@code strtok(flags, " |")}, so a space separates codes as well
+     * as a bar, and leading, trailing and doubled separators are skipped. The lexer only knows
+     * {@code FLAG_OR}, a bar with an optional space either side.
+     */
+    @Test
+    void spaceSeparatedOrPaddedFlagListsAreAHardErrorHereWhereCSplitsOnSpaceToo() throws IOException {
+        for (String line : List.of("flags-req:ANIMAL EVIL", "flags-req: ANIMAL", "flags-req:ANIMAL ",
+                "flags-req:ANIMAL |", "spell-ban:BR_FIRE BR_COLD")) {
+            ParseResult<PitProfile> result = load("padded-flags.txt", "name:Padded\n" + line);
+
+            assertTrue(result.hasErrors(), line);
+            assertTrue(result.items().isEmpty(), line);
+        }
+    }
+
+    /**
+     * {@code parse_pit_color} takes a colour name longer than one character through
+     * {@code color_text_to_attr}, which matches {@code color_table} names case-insensitively. The
+     * lexer takes one letter only.
+     */
+    @Test
+    void aColourNameIsAHardErrorHereWhereCAcceptsIt() throws IOException {
+        ParseResult<PitProfile> result = load("colour-name.txt", "name:Named\ncolor:Red");
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.items().isEmpty(), result.items()::toString);
+    }
+
+    /**
+     * {@code room}, {@code alloc} and {@code obj-rarity} are {@code uint} in {@code init_parse_pit}, and
+     * {@code parser_parse} refuses a token that starts with '-'. The lexer takes a leading minus, and
+     * the assembler stores the number, or {@code PIT_TYPE_NONE} for a room.
+     */
+    @Test
+    void aNegativeUnsignedValueIsAcceptedHereWhereCRejectsIt() throws Exception {
+        ParseResult<PitProfile> result = load("negatives.txt",
+                "name:Negative\nroom:-1\nalloc:-2:-3\nobj-rarity:-4");
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        PitProfile pit = result.items().getFirst();
+        assertEquals(PitRoomType.PIT_TYPE_NONE, field(pit, "roomType"));
+        int rarity = field(pit, "rarity");
+        int ave = field(pit, "ave");
+        int objectRarity = field(pit, "objectRarity");
+        assertEquals(-2, rarity);
+        assertEquals(-3, ave);
+        assertEquals(-4, objectRarity);
+    }
+
+    /**
+     * {@code finish_parse_pit} copes with a chain of no records ({@code pit_max} becomes 1 and
+     * {@code pit_info} holds the blank slot), so an empty file loads. The grammar needs one record.
+     */
+    @Test
+    void aFileWithNoRecordsIsAHardErrorHereWhereCLoadsNothing() throws IOException {
+        String path = tempFile("no-records.txt", "record-count:0\n");
+
+        ParseResult<PitProfile> result = new PitReader().parseWithResults(path);
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.items().isEmpty(), result.items()::toString);
+    }
+
+    // ---- Hard errors, which C also treats as fatal -----------------------
+
+    /**
+     * A directive before the first {@code name:} has no record to fill. C's handlers return
+     * {@code PARSE_ERROR_MISSING_RECORD_HEADER}; the grammar has no rule that starts with anything but
+     * {@code name:}.
+     */
+    @Test
+    void aDirectiveBeforeAnyNameIsAHardError() throws IOException {
+        String path = tempFile("no-header.txt", "record-count:1\nroom:1\n" + GOOD_RECORD + "\n");
+
+        ParseResult<PitProfile> result = new PitReader().parseWithResults(path);
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.items().isEmpty(), result.items()::toString);
+    }
+
+    /**
+     * {@code name str name} is not optional, so C refuses a {@code name:} line with nothing after it
+     * ({@code PARSE_ERROR_MISSING_FIELD}); so does the grammar.
+     */
+    @Test
+    void aNameLineWithNoNameIsAHardError() throws IOException {
+        ParseResult<PitProfile> result = load("empty-name.txt", "name:\nroom:1");
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.items().isEmpty(), result.items()::toString);
+    }
+
+    /**
+     * {@code alloc uint rarity uint level} needs both fields; with one, C returns
+     * {@code PARSE_ERROR_MISSING_FIELD}.
+     */
+    @Test
+    void anAllocLineWithOneNumberIsAHardError() throws IOException {
+        ParseResult<PitProfile> result = load("alloc-one.txt", "name:One\nalloc:3");
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.items().isEmpty(), result.items()::toString);
+    }
+
+    /**
+     * {@code grab_flag} compares with {@code streq} against the upper-case names in
+     * {@code r_info_flags}, so a lower-case code names no flag and C stops the load with
+     * {@code PARSE_ERROR_INVALID_FLAG}. The lexer's flag alphabet is upper case, so the file fails
+     * closed here.
+     */
+    @Test
+    void aLowerCaseFlagCodeIsAHardError() throws IOException {
+        ParseResult<PitProfile> result = load("lower-flag.txt", "name:Lower\nflags-req:animal");
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.items().isEmpty(), result.items()::toString);
+    }
+
+    /**
+     * The {@code record-count:} header is the Java port's own and C has no such line, so the driver's
+     * soft check cannot help when it is missing: the grammar's first rule is the header, and a file
+     * without one is a syntax error that loads nothing.
+     */
+    @Test
+    void aMissingRecordCountHeaderIsAHardError() throws IOException {
+        String path = tempFile("no-count.txt", GOOD_RECORD + "\n");
+
+        ParseResult<PitProfile> result = new PitReader().parseWithResults(path);
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.items().isEmpty(), result.items()::toString);
+    }
+
+    /**
+     * {@code parser_parse} skips blank lines and lines starting with '#' wherever they fall, and a file
+     * with no final newline or with Windows line ends is read like any other.
+     */
+    @Test
+    void blankLinesCommentsCrlfAndNoFinalNewlineAreAllRead() throws Exception {
+        String text = "# header\r\n\r\nrecord-count:1\r\n\r\n# note\r\nname:Plain\r\n\r\nroom:2\r\n# tail\r\nalloc:3:4";
+
+        ParseResult<PitProfile> result = new PitReader().parseWithResults(tempFile("layout.txt", text));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(List.of("Plain"), names(result));
+        assertEquals(PitRoomType.PIT_TYPE_NEST, field(result.items().getFirst(), "roomType"));
+        int ave = field(result.items().getFirst(), "ave");
+        assertEquals(4, ave);
+    }
+
+    /**
+     * A hard error and a soft error in the same file: the hard one wins, and the result is empty with
+     * its message, as the extractor's ordering promises.
+     */
+    @Test
+    void aHardErrorDiscardsTheItemsAndTheCountMismatchIsNotAlsoReported() throws IOException {
+        String path = tempFile("hard-and-count.txt",
+                "record-count:9\n" + GOOD_RECORD + "\nname:Broken\nalloc:3\n");
+
+        ParseResult<PitProfile> result = new PitReader().parseWithResults(path);
+
+        assertTrue(result.items().isEmpty(), result.items()::toString);
+        assertTrue(result.hasErrors());
+        assertTrue(result.errors().stream().noneMatch(e -> e.contains("record-count header declares")),
+                result.errors()::toString);
     }
 }

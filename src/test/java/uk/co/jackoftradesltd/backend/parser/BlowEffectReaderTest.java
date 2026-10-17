@@ -20,17 +20,20 @@ package uk.co.jackoftradesltd.backend.parser;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.game.event.projection.Projection;
 import uk.co.jackoftradesltd.middle.game.globals.registry.WorldRegistry;
 import uk.co.jackoftradesltd.middle.monsters.BlowEffect;
 import uk.co.jackoftradesltd.middle.monsters.enums.BlowEffectType;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -214,5 +217,159 @@ class BlowEffectReaderTest {
         assertEquals(40, hurt.getPower());
         assertEquals(0, hurt.getEval());
         assertEquals("attack", hurt.getDesc());
+    }
+
+    // ---- The reader itself: ordering, error channels, file handling -------
+
+    /** Writes {@code text} to a fresh file under {@code dir} and returns its path as a string. */
+    private static String write(Path dir, String text) throws IOException {
+        Path file = dir.resolve("blow_effects.txt");
+        Files.writeString(file, text);
+        return file.toString();
+    }
+
+    @Test
+    void recordsComeBackInTheOrderTheFileListsThem() throws IOException {
+        // The order of the `name:` lines in upstream lib/gamedata/blow_effects.txt. C's
+        // finish_parse_eff reverses its linked list back into file order, so blow_effects[0] is
+        // NONE and the last real record is BLACK_BREATH.
+        List<String> expected = List.of("NONE", "HURT", "POISON", "DISENCHANT", "DRAIN_CHARGES",
+                "EAT_GOLD", "EAT_ITEM", "EAT_FOOD", "EAT_LIGHT", "ACID", "ELEC", "FIRE", "COLD",
+                "BLIND", "CONFUSE", "TERRIFY", "PARALYZE", "LOSE_STR", "LOSE_INT", "LOSE_WIS",
+                "LOSE_DEX", "LOSE_CON", "LOSE_ALL", "SHATTER", "EXP_10", "EXP_20", "EXP_40",
+                "EXP_80", "HALLU", "BLACK_BREATH");
+
+        assertEquals(expected, realFile().stream().map(BlowEffect::getName).toList());
+    }
+
+    @Test
+    void parseReturnsTheSameEffectsAsParseWithResults() throws IOException {
+        BlowEffectReader reader = new BlowEffectReader();
+
+        List<String> viaParse = reader.parse(REAL_FILE).stream().map(BlowEffect::getName).toList();
+        List<String> viaResults = reader.parseWithResults(REAL_FILE).items().stream()
+                .map(BlowEffect::getName).toList();
+
+        assertEquals(viaResults, viaParse);
+        assertEquals(30, viaParse.size());
+    }
+
+    @Test
+    void missingFileIsAnIOExceptionNotAnEmptyResult(@TempDir Path dir) {
+        // C: parse_file_quit_not_found() quits with "Cannot open 'blow_effects.txt'".
+        String missing = dir.resolve("no_such_file.txt").toString();
+
+        assertThrows(IOException.class, () -> new BlowEffectReader().parseWithResults(missing));
+        assertThrows(IOException.class, () -> new BlowEffectReader().parse(missing));
+    }
+
+    @Test
+    void syntaxErrorYieldsNoItemsAndAnErrorMessage(@TempDir Path dir) throws IOException {
+        // A directive before any name: has no record to belong to. C asserts or returns
+        // PARSE_ERROR_MISSING_RECORD_HEADER; either way nothing is loaded.
+        String file = write(dir, "record-count:1\n\npower:5\n");
+
+        ParseResult<BlowEffect> result = new BlowEffectReader().parseWithResults(file);
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
+    }
+
+    @Test
+    void parseDropsErrorsSoASyntaxErrorLooksLikeAnEmptyList(@TempDir Path dir) throws IOException {
+        String file = write(dir, "record-count:1\n\npower:5\n");
+
+        assertTrue(new BlowEffectReader().parse(file).isEmpty());
+    }
+
+    @Test
+    void recordCountMismatchIsASoftErrorAndTheRecordsStillLoad(@TempDir Path dir) throws IOException {
+        // record-count: is a Java-only header; upstream has no count to check.
+        String file = write(dir, "record-count:5\n\nname:NONE\npower:0\n\nname:HURT\npower:40\n");
+
+        ParseResult<BlowEffect> result = new BlowEffectReader().parseWithResults(file);
+
+        assertEquals(2, result.items().size());
+        assertEquals(1, result.errors().size());
+        assertTrue(result.errors().get(0).contains("5"), result.errors().toString());
+    }
+
+    @Test
+    void matchingRecordCountLeavesNoErrors(@TempDir Path dir) throws IOException {
+        String file = write(dir, "record-count:2\n\nname:NONE\npower:0\n\nname:HURT\npower:40\n");
+
+        ParseResult<BlowEffect> result = new BlowEffectReader().parseWithResults(file);
+
+        assertFalse(result.hasErrors(), result.errors().toString());
+        assertEquals(2, result.items().size());
+    }
+
+    @Test
+    void nonNumericRecordCountIsAHardErrorHere(@TempDir Path dir) throws IOException {
+        // The grammar only accepts an INTEGER after record-count:, so a bad count is a syntax
+        // error rather than the soft one checkRecordCount reports: nothing loads.
+        String file = write(dir, "record-count:many\n\nname:NONE\npower:0\n");
+
+        ParseResult<BlowEffect> result = new BlowEffectReader().parseWithResults(file);
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.items().isEmpty());
+    }
+
+    @Test
+    void aBadRecordIsSkippedAndTheRestStillLoadInOrder(@TempDir Path dir) throws IOException {
+        // C stops at the first parse error; the port's partial-results contract keeps going. A
+        // resist: with no effect-type: is rejected by the assembler (not the grammar), so it is
+        // the soft channel that carries it.
+        String file = write(dir, "record-count:3\n\nname:NONE\npower:0\n\nname:HURT\nresist:POIS\n\nname:POISON\npower:20\n");
+
+        ParseResult<BlowEffect> result = new BlowEffectReader().parseWithResults(file);
+
+        assertEquals(List.of("NONE", "POISON"), result.items().stream().map(BlowEffect::getName).toList());
+        assertEquals(1, result.errors().size());
+        assertTrue(result.errors().get(0).contains("POIS"), result.errors().toString());
+    }
+
+    @Test
+    void repeatedDirectiveKeepsTheLastValue(@TempDir Path dir) throws IOException {
+        // C: parse_eff_power just overwrites eff->power.
+        String file = write(dir, "record-count:1\n\nname:HURT\npower:10\npower:40\n");
+
+        assertEquals(40, new BlowEffectReader().parseWithResults(file).items().get(0).getPower());
+    }
+
+    @Test
+    void duplicateNamesAreBothKept(@TempDir Path dir) throws IOException {
+        // C's parse_eff_name allocates a new record every time and never looks for a clash.
+        String file = write(dir, "record-count:2\n\nname:HURT\npower:10\n\nname:HURT\npower:40\n");
+
+        List<BlowEffect> items = new BlowEffectReader().parseWithResults(file).items();
+
+        assertEquals(2, items.size());
+        assertEquals(10, items.get(0).getPower());
+        assertEquals(40, items.get(1).getPower());
+    }
+
+    @Test
+    void resistMayPrecedeEffectTypeUnlikeC(@TempDir Path dir) throws IOException {
+        // C resolves resist: while parsing, so effect-type: must come first (the other way round
+        // reads a null effect_type). The port resolves from the finished record, so order is free.
+        String file = write(dir, "record-count:1\n\nname:POISON\nresist:POIS\neffect-type:element\n");
+
+        BlowEffect poison = new BlowEffectReader().parseWithResults(file).items().get(0);
+
+        assertEquals(BlowEffectType.BET_ELEMENT, poison.getEffectType());
+        assertEquals(ElementEnum.ELEM_POIS, poison.getElementEnumResist());
+    }
+
+    @Test
+    void resistWithNoEffectTypeIsASoftErrorAndTheRecordIsSkipped(@TempDir Path dir) throws IOException {
+        // C: PARSE_ERROR_MISSING_BLOW_EFF_TYPE.
+        String file = write(dir, "record-count:1\n\nname:POISON\nresist:POIS\n");
+
+        ParseResult<BlowEffect> result = new BlowEffectReader().parseWithResults(file);
+
+        assertTrue(result.items().isEmpty());
+        assertEquals(1, result.errors().size());
     }
 }

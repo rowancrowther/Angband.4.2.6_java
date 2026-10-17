@@ -210,45 +210,13 @@
 
 **Responsible for:** Stub home for save-file helpers; currently only `savefileGetDescription`, which returns an empty string until save files are ported.
 
-**class `Savefile`** — class Javadoc: ✘ · type stamp: —
-
-| Function | Ported (coded) | Javadoc |
-|---|---|---|
-| `savefileGetDescription(Path)` | — | ✘ |
-
-
 ##### `SavefileDetails.java`
 
 **Responsible for:** Holds the information that can be read back from a SavefileGetterImpl for one savefile found while enumerating the savefile directory.
 
-**class `SavefileDetails`** — class Javadoc: ✔ · type stamp: before 260915
-
-- Fields (3/3 documented): ✔ `fileName`, `description`, `offset`
-
-| Function | Ported (coded) | Javadoc |
-|---|---|---|
-| ctor `SavefileDetails()` | before 260915 | ✔ |
-| `getFileName()` | before 260915 | ✔ |
-| `setFileName(String)` | before 260915 | ✔ |
-| `getDescription()` | before 260915 | ✔ |
-| `setDescription(String)` | before 260915 | ✔ |
-| `getOffset()` | before 260915 | ✔ |
-| `setOffset(int)` | before 260915 | ✔ |
-
-
 ##### `SavefileGetterImpl.java`
 
 **Responsible for:** Enumerates the savefiles available to the current player, one call to #gotSavefile() at a time.
-
-**class `SavefileGetterImpl`** — class Javadoc: ✔ · type stamp: on 260915
-
-- Fields (5/6 documented): ✔ `directory`, `details`, `haveDetails`, `haveSaveDir`, `directoryExhausted` — ✘ `logger`
-
-| Function | Ported (coded) | Javadoc |
-|---|---|---|
-| ctor `SavefileGetterImpl()` | on 260915 | ✔ |
-| `gotSavefile()` | on 260915 | ✔ |
-
 
 ## backend/parser
 
@@ -256,46 +224,13 @@
 
 **Responsible for:** Loads the relevant data-file entries into Activation objects by driving the matching ANTLR-generated lexer/parser.
 
-**class `ActivationReader`** — class Javadoc: ✔ · type stamp: —
-
-- Fields (1/1 documented): ✔ `logger`
-
-| Function | Ported (coded) | Javadoc |
-|---|---|---|
-| `parse(String)` | before 260915 | ✔ |
-| `extract(ActivationsGrammar, ParseErrors, List<String>)` | before 260915 | ✔ |
-| `parseWithResult(String)` | before 260915 | ✔ |
-
-
 ##### `ArtifactReader.java`
 
-**Responsible for:** Loads the relevant data-file entries into the corresponding data objects objects by driving the matching ANTLR-generated lexer/parser.
-
-**class `ArtifactReader`** — class Javadoc: ✔ · type stamp: —
-
-- Fields (1/1 documented): ✔ `logger`
-
-| Function | Ported (coded) | Javadoc |
-|---|---|---|
-| `parse(String)` | before 260915 | ✔ |
-| `extract(ArtifactGrammar, ParseErrors, List<String>)` | before 260915 | ✔ |
-| `parseWithResults(String)` | before 260915 | ✔ |
-
+**Responsible for:** Loads the relevant data-file entries into the corresponding data objects objects by driving the matching ANTLR-generated lexer/parser
 
 ##### `BlowEffectReader.java`
 
 **Responsible for:** Loads the relevant data-file entries into BlowEffect objects by driving the matching ANTLR-generated lexer/parser.
-
-**class `BlowEffectReader`** — class Javadoc: ✔ · type stamp: —
-
-- Fields (1/1 documented): ✔ `logger`
-
-| Function | Ported (coded) | Javadoc |
-|---|---|---|
-| `parse(String)` | before 260915 | ✔ |
-| `extract(BlowEffectGrammar, ParseErrors, List<String>)` | — | ✔ |
-| `parseWithResults(String)` | — | ✔ |
-
 
 ##### `BlowMethodReader.java`
 

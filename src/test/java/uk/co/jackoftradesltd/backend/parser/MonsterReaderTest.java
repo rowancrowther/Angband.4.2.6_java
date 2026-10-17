@@ -44,6 +44,7 @@ import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -73,6 +74,13 @@ import static org.junit.jupiter.api.Assertions.*;
  *   <li><b>A selection of individual error sites</b> — one minimal file per reachable soft-error site,
  *       each otherwise valid so the injected fault is the only error reported.</li>
  * </ol>
+ *
+ * <p>Three more sections pin the reader's own contract against {@code mon-init.c} (file order with
+ * {@code <player>} first, every real race's stats and entry counts read independently from the text of the
+ * file, the entry points, the Java-only header, directives in any order) and the places where the grammar
+ * ({@code docs/grammar_issues.md}) or the assembler ({@code docs/Assembler_Issues.md}) differs from C. A
+ * test in those last two sections asserts what Java does today, and its name says what C does instead, so
+ * fixing the difference turns that test red on purpose.
  *
  * <p>Each crafted record carries an explicit {@code glyph:t} and {@code color:w}: the glyph keeps the
  * record past the assembler's per-monster glyph check, and the colour past its colour check, so those
@@ -702,5 +710,478 @@ class MonsterReaderTest {
         ParseResult<MonsterRace> r = load("bad-count.txt", withHeader(99, rec("Solo")));
         assertEquals(1, r.items().size(), r.errors()::toString);
         assertTrue(hasError(r, "record-count header declares 99 records, but file contains 1"), r.errors()::toString);
+    }
+
+    // =====================================================================
+    // (4) THE READER'S OWN CONTRACT (mon-init.c: run_parse_monster / finish_parse_monster)
+    // =====================================================================
+
+    /**
+     * One race as C's parse_monster_* handlers would store it, read straight from the text of
+     * monster.txt: the scalar stats and the number of entries each repeatable directive gave.
+     */
+    private record ExpectedRace(String name, Map<String, Integer> numbers) {
+    }
+
+    /**
+     * Applies C's rules to the raw lines of a monster.txt-format file: hearing and smell are scaled
+     * by {@code max_sight / 20}, and {@code drop:} and {@code drop-base:} share one list.
+     */
+    private static List<ExpectedRace> expectedFrom(List<String> lines) {
+        Map<String, String> scalars = Map.of("speed", "speed", "hit-points", "averageHP", "light", "light",
+                "hearing", "hearing", "smell", "smell", "armor-class", "ac", "sleepiness", "sleep",
+                "depth", "level", "rarity", "rarity", "experience", "mexp");
+        Map<String, String> counted = Map.of("blow", "blow", "drop", "drops", "drop-base", "drops",
+                "friends", "friends", "friends-base", "friendsBase", "mimic", "mimicKinds", "shape", "shapes");
+        List<ExpectedRace> out = new ArrayList<>();
+        ExpectedRace current = null;
+        for (String line : lines) {
+            if (line.isEmpty() || line.startsWith("#") || line.startsWith("record-count:")) continue;
+            int colon = line.indexOf(':');
+            String key = line.substring(0, colon);
+            String value = line.substring(colon + 1);
+            if (key.equals("name")) {
+                current = new ExpectedRace(value, new HashMap<>());
+                out.add(current);
+            } else if (scalars.containsKey(key)) {
+                int n = Integer.parseInt(value.trim());
+                if (key.equals("hearing") || key.equals("smell")) {
+                    n = n * GameConstants.getPlayerMaxSight() / 20;
+                }
+                current.numbers().put(scalars.get(key), n);
+            } else if (counted.containsKey(key)) {
+                current.numbers().merge(counted.get(key), 1, Integer::sum);
+            }
+        }
+        return out;
+    }
+
+    @Test
+    void theRealFileComesBackInFileOrderWithThePlayerRecordFirst() {
+        // C's chain is built head-first, but finish_parse_monster counts ridx down from r_max - 1 as
+        // it walks from the head, so r_info is in file order. The expected names are the name:
+        // lines of the data file itself.
+        List<String> expected = fileNames(MONSTER_FILE);
+        List<String> actual = real.items().stream().map(MonsterRace::getName).toList();
+
+        assertEquals(EXPECTED_RACES, expected.size());
+        assertEquals(expected, actual);
+        assertEquals("<player>", actual.get(0));
+        assertEquals("Morgoth, Lord of Darkness", actual.get(EXPECTED_RACES - 1));
+    }
+
+    private static List<String> fileNames(String file) {
+        try {
+            return Files.readAllLines(Path.of(file)).stream()
+                    .filter(l -> l.startsWith("name:"))
+                    .map(l -> l.substring("name:".length()))
+                    .toList();
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    @Test
+    void everyRealRacesStatsAndEntryCountsMatchAnIndependentReadOfTheText() throws Exception {
+        // Everything but spell power, which is pinned separately below. A mismatch on any race would
+        // mean the grammar or assembler lost, repeated or rescaled a directive.
+        List<ExpectedRace> expected = expectedFrom(Files.readAllLines(Path.of(MONSTER_FILE)));
+        assertEquals(EXPECTED_RACES, expected.size());
+        assertEquals(EXPECTED_RACES, real.items().size());
+
+        List<String> mismatches = new ArrayList<>();
+        for (int i = 0; i < expected.size(); i++) {
+            ExpectedRace e = expected.get(i);
+            MonsterRace race = real.items().get(i);
+            for (String fieldName : List.of("speed", "averageHP", "light", "hearing", "smell", "ac", "sleep",
+                    "level", "rarity", "mexp")) {
+                int actual = field(race, fieldName);
+                int wanted = e.numbers().getOrDefault(fieldName, 0);
+                if (actual != wanted) {
+                    mismatches.add(e.name() + "." + fieldName + ": C " + wanted + ", Java " + actual);
+                }
+            }
+            for (String listName : List.of("blow", "drops", "friends", "friendsBase", "mimicKinds", "shapes")) {
+                int actual = ((List<?>) field(race, listName)).size();
+                int wanted = e.numbers().getOrDefault(listName, 0);
+                if (actual != wanted) {
+                    mismatches.add(e.name() + "." + listName + ": C " + wanted + ", Java " + actual);
+                }
+            }
+        }
+        assertTrue(mismatches.isEmpty(), mismatches.size() + " differ, first ones: "
+                + mismatches.subList(0, Math.min(10, mismatches.size())));
+    }
+
+    @Test
+    void parseReturnsTheSameRacesAsParseWithResults() throws IOException {
+        List<String> viaParse = new MonsterReader().parse(MONSTER_FILE).stream().map(MonsterRace::getName).toList();
+        List<String> viaResults = real.items().stream().map(MonsterRace::getName).toList();
+
+        assertEquals(viaResults, viaParse);
+    }
+
+    @Test
+    void aMissingFileThrowsFromBothEntryPoints() {
+        String absent = tempDir.resolve("absent.txt").toString();
+
+        assertThrows(IOException.class, () -> new MonsterReader().parseWithResults(absent));
+        assertThrows(IOException.class, () -> new MonsterReader().parse(absent));
+    }
+
+    @Test
+    void aSyntaxErrorGivesAnEmptyListFromParseAndTheMessageFromParseWithResults() throws IOException {
+        Path file = tempDir.resolve("syntax.txt");
+        Files.writeString(file, withHeader(1, "name:Nope\nbase:townsfolk\nspeed:fast\n"));
+
+        assertTrue(new MonsterReader().parse(file.toString()).isEmpty());
+        ParseResult<MonsterRace> r = new MonsterReader().parseWithResults(file.toString());
+        assertTrue(r.items().isEmpty());
+        assertTrue(r.hasErrors());
+    }
+
+    @Test
+    void aMissingRecordCountHeaderIsAHardError() throws IOException {
+        // The header is a Java-only requirement; the upstream file has none.
+        ParseResult<MonsterRace> r = load("no-header.txt", rec("Solo"));
+        assertTrue(r.items().isEmpty());
+        assertTrue(r.hasErrors());
+    }
+
+    @Test
+    void aDirectiveBeforeTheFirstNameIsAHardError() throws IOException {
+        // C: every handler but parse_monster_name returns PARSE_ERROR_MISSING_RECORD_HEADER.
+        ParseResult<MonsterRace> r = load("no-name.txt", withHeader(1, "speed:110\n" + rec("Solo")));
+        assertTrue(r.items().isEmpty());
+        assertTrue(r.hasErrors());
+    }
+
+    @Test
+    void directivesInAnyOrderLoadTheSameAsC() throws Exception {
+        // C registers each directive separately, so only name: has to come first.
+        ParseResult<MonsterRace> r = load("any-order.txt", withHeader(1,
+                "name:Shuffled\nspeed:120\nglyph:t\ndepth:7\ncolor:w\nhit-points:33\nbase:townsfolk\n"
+                        + "experience:9\nrarity:2\n"));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+
+        MonsterRace m = byName(r, "Shuffled");
+        assertNotNull(m);
+        assertEquals(120, (int) field(m, "speed"));
+        assertEquals(7, (int) field(m, "level"));
+        assertEquals(33, (int) field(m, "averageHP"));
+        assertEquals(9, (int) field(m, "mexp"));
+        assertEquals(2, (int) field(m, "rarity"));
+    }
+
+    @Test
+    void aRepeatedScalarDirectiveTakesTheLastValueAsInC() throws Exception {
+        ParseResult<MonsterRace> r = load("repeat.txt", withHeader(1, rec("Twice", "speed:100", "speed:130")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        assertEquals(130, (int) field(byName(r, "Twice"), "speed"));
+    }
+
+    @Test
+    void duplicateNamesAreBothKeptInFileOrderAsInCsRInfo() throws IOException {
+        // C's chain is reversed but r_info is filled from the top, so the first record is the
+        // lower index; lookup_monster therefore finds the first.
+        ParseResult<MonsterRace> r = load("dup.txt", withHeader(2,
+                rec("Twin", "hit-points:1") + rec("Twin", "hit-points:2")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        assertEquals(2, r.items().size());
+        assertEquals("Twin", r.items().get(0).getName());
+        assertEquals("Twin", r.items().get(1).getName());
+    }
+
+    @Test
+    void repeatedDescLinesAreJoinedEndToEndLikeCsStringAppend() throws Exception {
+        ParseResult<MonsterRace> r = load("desc.txt", withHeader(1, rec("Wordy", "desc:It is a ", "desc:wordy monster.")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        assertEquals("It is a wordy monster.", field(byName(r, "Wordy"), "text"));
+    }
+
+    @Test
+    void anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent() throws IOException {
+        // parser_parse skips leading isspace before reading the directive.
+        ParseResult<MonsterRace> r = load("indent.txt", withHeader(1, rec("Solo", "  speed:110")));
+        assertTrue(r.items().isEmpty());
+        assertTrue(r.hasErrors());
+    }
+
+    // =====================================================================
+    // (5) WHERE THE GRAMMAR DIFFERS FROM C (see docs/grammar_issues.md)
+    // =====================================================================
+
+    @Test
+    void aRecordWithOnlyANameIsAHardErrorHereWhereCAcceptsIt() throws IOException {
+        ParseResult<MonsterRace> r = load("name-only.txt", withHeader(1, "name:Bare\n"));
+        assertTrue(r.items().isEmpty());
+        assertTrue(r.hasErrors());
+    }
+
+    @Test
+    void aFileOfOnlyTheHeaderIsAHardErrorHereWhereCAcceptsAnEmptyFile() throws IOException {
+        ParseResult<MonsterRace> r = load("empty.txt", withHeader(0, ""));
+        assertTrue(r.items().isEmpty());
+        assertTrue(r.hasErrors());
+    }
+
+    @Test
+    void anEmptyPluralIsAHardErrorHereWhereCTakesItAsNoPlural() throws IOException {
+        // plural is ?str in C, and an empty value leaves race->plural NULL.
+        ParseResult<MonsterRace> r = load("plural-empty.txt", withHeader(1, rec("Solo", "plural:")));
+        assertTrue(r.items().isEmpty());
+        assertTrue(r.hasErrors());
+    }
+
+    @Test
+    void anEmptyFlagsValueIsAHardErrorHereWhereCAcceptsIt() throws IOException {
+        // flags is ?str in C and parse_monster_flags returns when there is no value.
+        ParseResult<MonsterRace> r = load("flags-empty.txt", withHeader(1, rec("Solo", "flags:")));
+        assertTrue(r.items().isEmpty());
+        assertTrue(r.hasErrors());
+    }
+
+    @Test
+    void spaceSeparatedFlagsAreAHardErrorHereWhereCSplitsOnSpaceToo() throws IOException {
+        // strtok(flags, " |") splits on a space as well as a bar.
+        ParseResult<MonsterRace> r = load("flags-space.txt", withHeader(1, rec("Solo", "flags:MALE FEMALE")));
+        assertTrue(r.items().isEmpty());
+        assertTrue(r.hasErrors());
+    }
+
+    @Test
+    void aColourNameIsAHardErrorHereWhereCAcceptsOne() throws IOException {
+        // parse_monster_color: a value longer than one character goes through color_text_to_attr.
+        ParseResult<MonsterRace> r = load("colour-name.txt", withHeader(1,
+                "name:Nope\nbase:townsfolk\nglyph:t\ncolor:white\n"));
+        assertTrue(r.items().isEmpty());
+        assertTrue(r.hasErrors());
+    }
+
+    @Test
+    void aMessageWithNoTextIsAHardErrorHereWhereCTakesItAsEmpty() throws IOException {
+        // message-vis is "sym spell ?str message" in C; a missing or blank message becomes "".
+        ParseResult<MonsterRace> r = load("msg-notext.txt", withHeader(1,
+                rec("Solo", "spells:SHRIEK", "message-vis:SHRIEK")));
+        assertTrue(r.items().isEmpty());
+        assertTrue(r.hasErrors());
+    }
+
+    @Test
+    void aMessageContainingAColonIsAHardErrorHereWhereCKeepsTheRestOfTheLine() throws IOException {
+        // The last field of a directive takes the rest of the line in C, colons included.
+        ParseResult<MonsterRace> r = load("msg-colon.txt", withHeader(1,
+                rec("Solo", "spells:SHRIEK", "message-vis:SHRIEK:It says: hello")));
+        assertTrue(r.items().isEmpty());
+        assertTrue(r.hasErrors());
+    }
+
+    @Test
+    void aBareNumberFriendCountIsAHardErrorHereWhereCReadsItAsARandomValue() throws IOException {
+        // parse_random accepts "5" (a base and no dice); the lexer reads it as FRIEND_INTEGER.
+        ParseResult<MonsterRace> r = load("friend-bare.txt", withHeader(1, rec("Solo", "friends:100:5:Somebody")));
+        assertTrue(r.items().isEmpty());
+        assertTrue(r.hasErrors());
+    }
+
+    @Test
+    void aLeadingZeroSpeedIsReadAsDecimalHereWhereCReadsOctal() throws Exception {
+        // strtol(tok, &z, 0): 010 is 8 in C.
+        ParseResult<MonsterRace> r = load("speed-octal.txt", withHeader(1, rec("Solo", "speed:010")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        assertEquals(10, (int) field(byName(r, "Solo"), "speed"));
+    }
+
+    @Test
+    void aHexSpeedIsAHardErrorHereWhereCReadsItAsSixteen() throws IOException {
+        ParseResult<MonsterRace> r = load("speed-hex.txt", withHeader(1, rec("Solo", "speed:0x10")));
+        assertTrue(r.items().isEmpty());
+        assertTrue(r.hasErrors());
+    }
+
+    @Test
+    void aNegativeSpellPowerIsAcceptedHereWhereCRejectsAUint() throws Exception {
+        // spell-power is "uint" in C and parser_parse refuses a leading minus.
+        ParseResult<MonsterRace> r = load("power-negative.txt", withHeader(1, rec("Solo", "spell-power:-1")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        assertEquals(-1, (int) field(byName(r, "Solo"), "spellPower"));
+    }
+
+    @Test
+    void aNegativeDropChanceIsAcceptedHereWhereCRejectsAUint() throws Exception {
+        ParseResult<MonsterRace> r = load("drop-negative.txt", withHeader(1,
+                rec("Solo", "drop:scroll:Phase Door:-5:1:1")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        List<?> drops = field(byName(r, "Solo"), "drops");
+        assertEquals(Integer.valueOf(-5), declaredField(drops.get(0), "percentChance"));
+    }
+
+    // =====================================================================
+    // (6) WHERE THE ASSEMBLER DIFFERS FROM C (see docs/Assembler_Issues.md)
+    // =====================================================================
+
+    @Test
+    void aMonsterWithNoSpellPowerLineGetsSpellPowerZeroHereWhereCUsesItsLevel() throws Exception {
+        // parse_monster_depth sets spell_power = level; spell-power: only overrides it afterwards.
+        // C would give 20 here.
+        ParseResult<MonsterRace> r = load("power-default.txt", withHeader(1, rec("Solo", "depth:20")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        assertEquals(0, (int) field(byName(r, "Solo"), "spellPower"));
+    }
+
+    @Test
+    void theRealFilesSpellPowerIsZeroForRacesWithNoSpellPowerLineWhereCUsesTheirLevel() throws Exception {
+        // grey mold is depth:1 with no spell-power: line, so C stores 1.
+        MonsterRace mold = byName(real, "grey mold");
+        assertNotNull(mold);
+        assertEquals(1, (int) field(mold, "level"));
+        assertEquals(0, (int) field(mold, "spellPower"));
+    }
+
+    @Test
+    void aSpellPowerLineBeforeDepthKeepsItsValueHereWhereCOverwritesItWithTheLevel() throws Exception {
+        // C: depth: runs after spell-power: and sets spell_power = level, so C gives 20.
+        ParseResult<MonsterRace> r = load("power-then-depth.txt", withHeader(1,
+                rec("Solo", "spell-power:5", "depth:20")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        assertEquals(5, (int) field(byName(r, "Solo"), "spellPower"));
+    }
+
+    @Test
+    void aMonsterWithNoPluralLineHasAnEmptyPluralHereWhereCHasNull() throws Exception {
+        ParseResult<MonsterRace> r = load("plural-absent.txt", withHeader(1, rec("Solo")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        assertEquals("", field(byName(r, "Solo"), "plural"));
+    }
+
+    @Test
+    void aMonsterWithNoColourLineIsSkippedHereWhereCLeavesTheAttrAtZero() throws IOException {
+        ParseResult<MonsterRace> r = load("no-colour.txt", withHeader(1, "name:Grey\nbase:townsfolk\nglyph:t\n"));
+        assertTrue(r.items().isEmpty());
+        assertTrue(hasError(r, "unknown colour type"), r.errors()::toString);
+    }
+
+    @Test
+    void aMessageForAnUnknownSpellIsAcceptedHereWhereCReportsAnInvalidSpellName() throws Exception {
+        ParseResult<MonsterRace> r = load("msg-unknown-spell.txt", withHeader(1,
+                rec("Solo", "spells:SHRIEK", "message-vis:NOTASPELL:Hello")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        Map<String, MonsterSpellMessage> messages = field(byName(r, "Solo"), "spellMessages");
+        assertFalse(messages.containsKey("NOTASPELL"));
+    }
+
+    @Test
+    void anUnknownColourCycleGroupIsASoftErrorButTheRaceIsKeptWhereCIsSilent() throws Exception {
+        // visuals_cycler_set_cycle_for_race returns quietly when the cycle is not found.
+        ParseResult<MonsterRace> r = load("cycle-group.txt", withHeader(1,
+                rec("Solo", "color-cycle:nogroup:nocycle")));
+        assertEquals(1, r.items().size());
+        assertTrue(hasError(r, "unknown colour cycle name"), r.errors()::toString);
+        assertNull(field(byName(r, "Solo"), "cycler"));
+    }
+
+    @Test
+    void anUnknownColourCycleNameInAKnownGroupIsSilentAsInC() throws Exception {
+        ParseResult<MonsterRace> r = load("cycle-name.txt", withHeader(1,
+                rec("Solo", "color-cycle:fancy:nocycle")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        assertNull(field(byName(r, "Solo"), "cycler"));
+    }
+
+    @Test
+    void aDropWithMinOrMaxAbove99IsAcceptedHereWhereCReportsAnInvalidItemNumber() throws Exception {
+        ParseResult<MonsterRace> r = load("drop-big.txt", withHeader(1,
+                rec("Solo", "drop:scroll:Phase Door:100:100:100")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        List<?> drops = field(byName(r, "Solo"), "drops");
+        assertEquals(Integer.valueOf(100), declaredField(drops.get(0), "min"));
+    }
+
+    @Test
+    void dropsAreInFileOrderHereWhereCsChainHoldsThemReversed() throws Exception {
+        // parse_monster_drop pushes on the head of r->drops, so C walks the later line first.
+        ParseResult<MonsterRace> r = load("drop-order.txt", withHeader(1, rec("Solo",
+                "drop:scroll:Phase Door:10:1:1", "drop:potion:Cure Light Wounds:20:1:1")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        List<?> drops = field(byName(r, "Solo"), "drops");
+        assertEquals(Integer.valueOf(10), declaredField(drops.get(0), "percentChance"));
+        assertEquals(Integer.valueOf(20), declaredField(drops.get(1), "percentChance"));
+    }
+
+    @Test
+    void aDropFollowedByADropBaseKeepsThatOrderHereWhereCWalksTheDropBaseFirst() throws Exception {
+        // One chain in C, so the later drop-base: line is first. Here drop: lines come before
+        // drop-base: lines whatever the file order.
+        ParseResult<MonsterRace> r = load("drop-mixed.txt", withHeader(1, rec("Solo",
+                "drop:scroll:Phase Door:100:1:1", "drop-base:mushroom:100:1:2")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        List<?> drops = field(byName(r, "Solo"), "drops");
+        assertNotNull(declaredField(drops.get(0), "kind"));
+        assertNull(declaredField(drops.get(1), "kind"));
+    }
+
+    @Test
+    void friendsAreInFileOrderHereWhereCsChainHoldsThemReversed() throws Exception {
+        ParseResult<MonsterRace> r = load("friend-order.txt", withHeader(1, rec("Solo",
+                "friends:100:1d1:Alpha", "friends:100:1d1:Beta")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        List<?> friends = field(byName(r, "Solo"), "friends");
+        assertEquals("Alpha", declaredField(friends.get(0), "name"));
+        assertEquals("Beta", declaredField(friends.get(1), "name"));
+    }
+
+    @Test
+    void aFriendsBaseChanceAbove100IsASoftErrorHereWhereCKeepsIt() throws IOException {
+        // parse_monster_friends_base stores parser_getuint(chance) with no upper bound.
+        ParseResult<MonsterRace> r = load("fb-chance.txt", withHeader(1, rec("Solo", "friends-base:150:1d2:spider")));
+        assertTrue(r.items().isEmpty());
+        assertTrue(hasError(r, "friends base chance value out of bounds"), r.errors()::toString);
+    }
+
+    @Test
+    void aFriendRoleInCapitalsIsAcceptedHereWhereCComparesCaseSensitively() throws Exception {
+        // streq(role_name, "servant") in C, so "Servant" is PARSE_ERROR_INVALID_MONSTER_ROLE.
+        ParseResult<MonsterRace> r = load("role-case.txt", withHeader(1, rec("Solo",
+                "friends:100:1d2:Somebody:Servant", "friends-base:100:1d2:spider:Bodyguard")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        MonsterRace solo = byName(r, "Solo");
+        List<?> friends = field(solo, "friends");
+        List<?> friendsBase = field(solo, "friendsBase");
+        assertEquals(MonsterGroupRole.MON_GROUP_SERVANT, declaredField(friends.get(0), "role"));
+        assertEquals(MonsterGroupRole.MON_GROUP_BODYGUARD, declaredField(friendsBase.get(0), "role"));
+    }
+
+    @Test
+    void aFriendCountThatOverflowsIntThrowsHereWhereCReportsAParserError() {
+        // Random.parseStr lets the NumberFormatException out; nothing in the assembler or
+        // GrammarDriver.run catches it, so the whole load fails instead of the record being skipped.
+        assertThrows(NumberFormatException.class, () -> load("die-overflow.txt", withHeader(1,
+                rec("Solo", "friends:100:99999999999d2:Somebody"))));
+    }
+
+    @Test
+    void aBlowDamageThatOverflowsIntThrowsHereWhereCReportsAParserError() {
+        assertThrows(NumberFormatException.class, () -> load("blow-overflow.txt", withHeader(1,
+                rec("Solo", "blow:CLAW:HURT:99999999999d2"))));
+    }
+
+    @Test
+    void aFlagsOffLineBeforeBaseRemovesTheBaseFlagHereWhereCAddsItBack() throws Exception {
+        // C: parse_monster_base does rf_union with the base's flags when base: is read, after
+        // flags-off: has run, so SPIRIT (a townsfolk flag) is set in C.
+        ParseResult<MonsterRace> r = load("flagsoff-first.txt", withHeader(1,
+                "name:Solo\nflags-off:SPIRIT\nbase:townsfolk\ncolor:w\nglyph:t\n"));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        assertFalse(byName(r, "Solo").hasMonsterRaceFlag(MonsterRaceFlag.RF_SPIRIT));
+    }
+
+    @Test
+    void aGlyphLineBeforeBaseKeepsItsGlyphHereWhereCOverwritesItWithTheBases() throws Exception {
+        // C: parse_monster_base sets d_char from the base ('t' for townsfolk) when base: is read.
+        ParseResult<MonsterRace> r = load("glyph-first.txt", withHeader(1,
+                "name:Solo\nglyph:x\nbase:townsfolk\ncolor:w\n"));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        AngbandDisplayCharacter adc = field(byName(r, "Solo"), "adc");
+        assertEquals('x', adc.getCharacter());
     }
 }

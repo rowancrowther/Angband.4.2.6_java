@@ -95,7 +95,7 @@ public class BlowMethodAssembler implements Assembler<BlowMethodParseRecord, Lis
             List<String> act = record.act();
             String desc = record.desc();
 
-            methods.add(new BlowMethod(name, cut, stun, miss, phys, msgT, act, desc));
+            methods.addFirst(new BlowMethod(name, cut, stun, miss, phys, msgT, act, desc));
         }
 
         return methods;

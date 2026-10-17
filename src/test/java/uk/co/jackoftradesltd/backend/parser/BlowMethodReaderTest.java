@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@code BlowMethodLexer}/{@code BlowMethodGrammar} -&gt; {@code BlowMethodParseRecord} -&gt;
  * {@code BlowMethodAssembler} -&gt; {@link BlowMethod}.
  * <p>
- * The interesting seams here are all on the assembler side. {@code blow_methods.txt} is
+ * The interesting boundaries here are all on the assembler side. {@code blow_methods.txt} is
  * structurally simple - eight fixed directives, only {@code act:} repeating - so the tests
  * concentrate on the two places where C semantics have to be reproduced by hand:
  * <ul>
@@ -86,6 +86,14 @@ class BlowMethodReaderTest {
         return new BlowMethodReader().parseWithResults(file.toString());
     }
 
+    private static BlowMethod byName(List<BlowMethod> methods, String name) {
+        return methods.stream().filter(m -> m.getName().equals(name)).findFirst().orElseThrow();
+    }
+
+    private static List<String> names(List<BlowMethod> methods) {
+        return methods.stream().map(BlowMethod::getName).toList();
+    }
+
     // ---- Happy path: the real shipped file -------------------------------
 
     @Test
@@ -97,10 +105,10 @@ class BlowMethodReaderTest {
     }
 
     @Test
-    void firstMethodHitHasAllEightFieldsPopulated() throws IOException {
+    void methodHitHasAllEightFieldsPopulated() throws IOException {
         ParseResult<BlowMethod> result = new BlowMethodReader().parseWithResults(REAL_FILE);
 
-        BlowMethod hit = result.items().get(0);
+        BlowMethod hit = byName(result.items(), "HIT");
         assertEquals("HIT", hit.getName());
         assertTrue(hit.isCut());
         assertTrue(hit.isStun());
@@ -144,6 +152,130 @@ class BlowMethodReaderTest {
         assertFalse(drool.isStun());
         assertFalse(drool.isMiss());
         assertFalse(drool.isPhys());
+    }
+
+    // ---- List order: C's, which is the reverse of the file's -------------
+
+    @Test
+    void realFileComesBackInReverseFileOrderAsCFillsBlowMethods() throws IOException {
+        // The order of the `name:` lines in upstream lib/gamedata/blow_methods.txt is HIT first,
+        // MOAN last. parse_meth_name pushes each record on the head of a chain and
+        // finish_parse_meth then fills blow_methods[1], [2], ... from that head, so slot 1 is
+        // MOAN and the last slot is HIT. (finish_parse_eff counts down and keeps file order; this
+        // one does not.)
+        List<String> expected = List.of("MOAN", "INSULT", "BEG", "SPORE", "WAIL", "GAZE", "SPIT",
+                "DROOL", "CRAWL", "ENGULF", "CRUSH", "BUTT", "STING", "BITE", "CLAW", "KICK",
+                "PUNCH", "TOUCH", "HIT");
+
+        assertEquals(expected, names(new BlowMethodReader().parseWithResults(REAL_FILE).items()));
+    }
+
+    @Test
+    void parseReturnsTheSameMethodsInTheSameOrderAsParseWithResults() throws IOException {
+        BlowMethodReader reader = new BlowMethodReader();
+
+        assertEquals(names(reader.parseWithResults(REAL_FILE).items()),
+                names(reader.parse(REAL_FILE)));
+    }
+
+    @Test
+    void duplicateNamesPutTheLaterRecordFirstSoALookupFindsItAsFindmethDoes() throws IOException {
+        // findmeth walks from blow_methods[1], the last record in the file, and stops at the
+        // first name match - so with two records called POKE the later one wins.
+        String body = entry("POKE", 0, 0, 1, 1, "MON_HIT", "first")
+                + entry("PROD", 0, 0, 1, 1, "MON_HIT", "middle")
+                + entry("POKE", 0, 0, 1, 1, "MON_HIT", "second");
+        ParseResult<BlowMethod> result = load("dupes.txt", withHeader(3, body));
+
+        assertEquals(List.of("POKE", "PROD", "POKE"), names(result.items()));
+        assertEquals("second", byName(result.items(), "POKE").getDesc());
+    }
+
+    @Test
+    void aSkippedRecordLeavesTheOthersInReverseFileOrder() throws IOException {
+        String body = entry("A", 0, 0, 1, 1, "MON_HIT", "a")
+                + entry("BAD", 0, 0, 1, 1, "NO_SUCH_MESSAGE", "bad")
+                + entry("C", 0, 0, 1, 1, "MON_HIT", "c");
+        ParseResult<BlowMethod> result = load("skip-middle.txt", withHeader(3, body));
+
+        assertEquals(List.of("C", "A"), names(result.items()));
+        assertTrue(result.hasErrors());
+    }
+
+    @Test
+    void actLinesWithinARecordStayInFileOrderWhileTheRecordsReverse() throws IOException {
+        // Only the records reverse. C also reverses each record's act: list, but that order is
+        // never observable (the message is picked by random index), so the port keeps file order.
+        String body = "name:ONE\ncut:0\nstun:0\nmiss:1\nphys:1\nmsg:MON_HIT\nact:a\nact:b\ndesc:one\n"
+                + "name:TWO\ncut:0\nstun:0\nmiss:1\nphys:1\nmsg:MON_HIT\nact:c\nact:d\ndesc:two\n";
+        ParseResult<BlowMethod> result = load("acts.txt", withHeader(2, body));
+
+        assertEquals(List.of("TWO", "ONE"), names(result.items()));
+        assertEquals(List.of("a", "b"), byName(result.items(), "ONE").getBlowMessage());
+    }
+
+    // ---- The reader's own contract ---------------------------------------
+
+    @Test
+    void missingFileIsAnIOExceptionNotAnEmptyResult() {
+        // [C] parse_file_quit_not_found quits when the file is absent.
+        assertThrows(IOException.class,
+                () -> new BlowMethodReader().parseWithResults(tempDir.resolve("absent.txt").toString()));
+        assertThrows(IOException.class,
+                () -> new BlowMethodReader().parse(tempDir.resolve("absent.txt").toString()));
+    }
+
+    @Test
+    void parseDropsTheErrorsSoASyntaxErrorLooksLikeAnEmptyList() throws IOException {
+        Path file = tempDir.resolve("broken.txt");
+        Files.writeString(file, withHeader(1, "name:POKE\ncut:0\n"));
+
+        assertTrue(new BlowMethodReader().parse(file.toString()).isEmpty());
+        assertTrue(new BlowMethodReader().parseWithResults(file.toString()).hasErrors());
+    }
+
+    @Test
+    void actBeforeAnyNameIsAHardError() throws IOException {
+        // [C] parse_meth_act_msg returns PARSE_ERROR_MISSING_RECORD_HEADER when no name: has
+        // been seen; the other handlers would assert. Either way the load fails.
+        ParseResult<BlowMethod> result = load("act-first.txt",
+                withHeader(1, "act:pokes {target}\n" + entry("POKE", 0, 0, 1, 1, "MON_HIT", "poke")));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
+    }
+
+    // ---- Where the grammar is stricter than C (docs/grammar_issues.md) ---
+
+    @Test
+    void repeatedDescIsAHardErrorHereWhereCAppendsTheLines() throws IOException {
+        // [C] parse_meth_desc does string_append, so two desc: lines would join. The grammar
+        // closes a record on its one desc:, so the second is a syntax error.
+        String twice = "name:POKE\ncut:0\nstun:0\nmiss:1\nphys:1\nmsg:MON_HIT\nact:p\ndesc:po\ndesc:ke\n";
+        ParseResult<BlowMethod> result = load("desc-twice.txt", withHeader(1, twice));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
+    }
+
+    @Test
+    void nameOnlyRecordIsAHardErrorHereWhereCAcceptsIt() throws IOException {
+        // [C] src/tests/parse/blowm.c test_name0: a bare name: leaves every flag false and
+        // desc NULL, and parses without error.
+        ParseResult<BlowMethod> result = load("name-only.txt", withHeader(1, "name:POKE\n"));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
+    }
+
+    @Test
+    void leadingZeroFlagReadsTrueHereWhereCReadsZero() throws IOException {
+        // [C] parser_getuint uses strtoul base 0, so "00" is the number 0 and the flag is false.
+        // The assembler tests the text against "0", so "00" is true. Pinned as a known gap.
+        String body = "name:POKE\ncut:00\nstun:0\nmiss:1\nphys:1\nmsg:MON_HIT\nact:p\ndesc:poke\n";
+        ParseResult<BlowMethod> result = load("zero-zero.txt", withHeader(1, body));
+
+        assertTrue(result.items().get(0).isCut(), "C would give false");
     }
 
     // ---- The optional msg: directive -------------------------------------

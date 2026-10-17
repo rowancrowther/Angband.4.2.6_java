@@ -2,20 +2,8 @@
 
 Collected from the "Things not to drop" section of every precis in `docs/precis/` (260815 to 261016).
 Boxes are all unticked. Items the precis marked DONE or FIXED were removed from here and from the precis.
+Items deferred to a later chapter were moved out to `Chapter_4_Worklist.md` and `Chapter_7_Worklist.md`.
 Wording is the precis's own, so line numbers and "today" refer to the date in each heading.
-
-## 2026-08-16 (precis 260816.md)
-
-- [ ] **The build is broken and `Player.java` is half-edited.** You stopped mid-change at line 684, working out how to reconcile the curse map's shape differing from one place to another; nineteen call sites still reference `ItemObject.getCurses`, which was removed in favour of the new mutators, and nothing can be run or tested until they are converted.
-- [ ] The four curse-rune finders on `Player` are read-only and need only `getAllCurses()`, which takes eight of those nineteen sites off the board mechanically.
-- [ ] `GameWorld`'s curse timeout tick is the one caller that genuinely writes through the returned map, and it is the case that decides whether shared `CurseData` values are the contract you want.
-- [ ] `knowObject`'s curses block still zeroes the item's real curse where C zeroes the known copy, and has lost C's arm for an item with no curse map at all.
-- [ ] `CurseData` needs `equals` and `hashCode` or `similar` and `isFullyKnown` stay wrong for cursed items whatever shape the map ends up.
-- [ ] Javadoc is owed on `objectSetBaseKnown`, `gearToLabel`, `knowsEgo` and `nonCurseRunesKnown`, all four now correct and all four held back until the build returns.
-- [ ] `Square.lightSpot` is deferred to Chapter 4 and `ItemObject.description` to Chapter 7; both are recorded in the worklist and in the Javadoc of everything that waits on them.
-- [ ] `PlayerUpkeep.steps` is now null rather than an empty list, deliberately, so that the pathfinder can carry across C's assertion that no walk is already queued.
-- [ ] `equippedItemSlot` reports "not equipped" as a slot number in range, faithfully to C, so any future caller needs the guard C's own `inven_takeoff` carries and its `cmd-obj.c` caller does not.
-- [ ] Two reply-format rules were set today and are in memory: never offer to edit code, and give multi-point answers as numbered point / summary / call-to-action with one point per finding rather than per function.
 
 ## 2026-08-18 (precis 260818.md)
 
@@ -208,7 +196,6 @@ Wording is the precis's own, so line numbers and "today" refer to the date in ea
 
 - [ ] `Feature.equals` and `hashCode` treat `flags` and `resistFlag` by identity, because `Flag` defines no `equals` or `hashCode`; `FeatureTest` has a disabled spec that expects value equality.
 - [ ] `TerrainFeatureAssembler` does not set the C `store_max` that `finish_parse_feat` derives from the shop count.
-- [ ] `Chunk.resetNoise` is a stub waiting on Chapter 4, and its disabled spec in `ChunkGeometryTest` expects C's behaviour of zeroing the interior and leaving the border ring alone.
 
 ## 2026-10-02 (precis 261002.md)
 
@@ -240,7 +227,6 @@ Wording is the precis's own, so line numbers and "today" refer to the date in ea
 
 ## 2026-10-07 (precis 261007.md)
 
-- [ ] `equipLearnElement`, like the other messages here, prints `{DESCRIPTION_TAG}` for the item name until `ItemObject.description` is ported in Chapter 7, and `ObjectUtils.objectDesc` is a second stub returning an empty string that nothing in `PlayerKnowledge` calls any more; decide which of the two survives when the description subsystem is ported.
 - [ ] C's `object_learn_unknown_rune`, `object_find_unknown_rune`, `object_learn_on_use`, `shape_learn_on_assume` and `missile_learn_on_ranged_attack` have no Java port yet, and `equip_learn_after_time` exists only as a stub in `ObjectUtils`.
 - [ ] `applyCurseAttributes` uses (`curse == curseToIgnore`), while its neighbours go through `CURSE_ORDER`, Flagged in part C.
 - [ ] C line numbers remain in the Javadoc of `ObjectRegistry.java`, `FlagSet.java`, `ElementSet.java` and `ElementPowers.java` (Part D's report lists them); strip them when you next touch those files.

@@ -30,6 +30,7 @@ import uk.co.jackoftradesltd.middle.objects.ItemObject;
 import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
+import uk.co.jackoftradesltd.testsupport.Bodies;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -139,7 +140,7 @@ class PlayerBirthEmbodyTest {
 
         savedBodies = registryField("playerBodies").get(null);
         savedRaces = registryField("playerRaces").get(null);
-        PlayerBody humanoid = new PlayerBody("Humanoid", new ArrayList<>(List.of(
+        PlayerBody humanoid = Bodies.of("Humanoid", new ArrayList<>(List.of(
                 new EquipSlot(EquipmentSlotsEnum.EQUIP_WEAPON, "weapon"))));
         registryField("playerBodies").set(null, new ArrayList<>(List.of(humanoid)));
         registryField("playerRaces").set(null, new ArrayList<>(List.of(race(humanoid))));
@@ -162,13 +163,11 @@ class PlayerBirthEmbodyTest {
     /**
      * With no race there is no body to take, and the call is harmless rather than an error — the
      * character is built in stages and this one may run before the race is chosen.
-     *
-     * @throws Exception if a fixture field cannot be reached
      */
     @Test
     @DisplayName("a player with no race keeps the body they already had")
-    void noRaceIsHarmless() throws Exception {
-        set(player, "race", null);
+    void noRaceIsHarmless() {
+        player.setRace(null);
         PlayerBody before = player.getPlayerBody();
 
         PlayerBirth.embody(player);
@@ -186,9 +185,9 @@ class PlayerBirthEmbodyTest {
     @Test
     @DisplayName("the body is copied from the race, not shared with it")
     void bodyIsCopiedFromTheRace() throws Exception {
-        PlayerRace testRace = race(new PlayerBody("Humanoid", new ArrayList<>(List.of(
+        PlayerRace testRace = race(Bodies.of("Humanoid", new ArrayList<>(List.of(
                 new EquipSlot(EquipmentSlotsEnum.EQUIP_WEAPON, "weapon")))));
-        set(player, "race", testRace);
+        player.setRace(testRace);
 
         PlayerBirth.embody(player);
 
@@ -210,11 +209,11 @@ class PlayerBirthEmbodyTest {
     @Test
     @DisplayName("name, slot count, order, types and names all carry across")
     void layoutIsCarriedAcross() throws Exception {
-        PlayerBody template = new PlayerBody("Humanoid", new ArrayList<>(List.of(
+        PlayerBody template = Bodies.of("Humanoid", new ArrayList<>(List.of(
                 new EquipSlot(EquipmentSlotsEnum.EQUIP_WEAPON, "weapon"),
                 new EquipSlot(EquipmentSlotsEnum.EQUIP_RING, "right hand"),
                 new EquipSlot(EquipmentSlotsEnum.EQUIP_RING, "left hand"))));
-        set(player, "race", race(template));
+        player.setRace(race(template));
 
         PlayerBirth.embody(player);
 
@@ -239,10 +238,10 @@ class PlayerBirthEmbodyTest {
     @Test
     @DisplayName("the new body is unworn, whatever the template holds")
     void theCopyIsUnworn() throws Exception {
-        PlayerBody template = new PlayerBody("Humanoid", new ArrayList<>(List.of(
+        PlayerBody template = Bodies.of("Humanoid", new ArrayList<>(List.of(
                 new EquipSlot(EquipmentSlotsEnum.EQUIP_WEAPON, "weapon"))));
         set(template.getSlot(0), "item", new ItemObject());
-        set(player, "race", race(template));
+        player.setRace(race(template));
 
         PlayerBirth.embody(player);
 
@@ -260,11 +259,11 @@ class PlayerBirthEmbodyTest {
     @Test
     @DisplayName("two characters of a race do not share slots")
     void twoCharactersOfARaceAreIndependent() throws Exception {
-        PlayerRace shared = race(new PlayerBody("Humanoid", new ArrayList<>(List.of(
+        PlayerRace shared = race(Bodies.of("Humanoid", new ArrayList<>(List.of(
                 new EquipSlot(EquipmentSlotsEnum.EQUIP_WEAPON, "weapon")))));
         Player other = new Player();
-        set(player, "race", shared);
-        set(other, "race", shared);
+        player.setRace(shared);
+        other.setRace(shared);
 
         PlayerBirth.embody(player);
         PlayerBirth.embody(other);

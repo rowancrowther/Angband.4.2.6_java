@@ -17,13 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -35,22 +29,14 @@ import uk.co.jackoftradesltd.frontend.ui.entryrenderer.reader.UIEntryRendererRea
 import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlagType;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectKindFlag;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
-import uk.co.jackoftradesltd.middle.objects.enums.TValue;
+import uk.co.jackoftradesltd.middle.objects.enums.*;
 import uk.co.jackoftradesltd.middle.player.Player;
 import uk.co.jackoftradesltd.testsupport.ItemFixture;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static uk.co.jackoftradesltd.testsupport.ItemFixture.read;
@@ -546,7 +532,7 @@ class ItemObjectValueTest {
             EgoItem ego = new EgoItem("of Testing", "a test ego", 1, 0,
                     new Flag<>(ObjectFlag.class), new Flag<>(ObjectFlag.class),
                     new Flag<>(ObjectKindFlag.class), new HashMap<>(), new HashMap<>(),
-                    new HashMap<>(), new HashSet<>(), new HashSet<>(), new HashMap<>(),
+                    new HashMap<>(), new HashSet<>(), new HashSet<>(), new TreeMap<>(Curse.CURSE_ORDER),
                     0, 0, 0, 0, new ArrayList<>(), null, null, null, 0, 0, 0,
                     null, null, false);
             ItemObject egoTorch = ItemFixture.item(TValue.TV_LIGHT)

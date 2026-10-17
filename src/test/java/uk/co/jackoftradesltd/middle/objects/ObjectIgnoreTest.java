@@ -39,9 +39,9 @@ import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
 import java.lang.reflect.Proxy;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static uk.co.jackoftradesltd.testsupport.ItemFixture.set;
@@ -157,7 +157,7 @@ class ObjectIgnoreTest {
     private static Artifact artifact() {
         return new Artifact("Test", null, TValue.TV_SWORD, null, 0, 0, 0, 0, "0", 0, 0,
                 new Flag<>(ObjectFlag.class), Map.of(), Map.of(), Set.of(), Set.of(),
-                new LinkedHashMap<>(), 0, 0, 0, 0, null, null, null);
+                new TreeMap<>(Curse.CURSE_ORDER), 0, 0, 0, 0, null, null, null);
     }
 
     /**

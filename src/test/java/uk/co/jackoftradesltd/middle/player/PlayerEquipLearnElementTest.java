@@ -17,54 +17,34 @@
 
 package uk.co.jackoftradesltd.middle.player;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataMessage;
 import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.Message;
+import uk.co.jackoftradesltd.middle.effect.Effect;
+import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
 import uk.co.jackoftradesltd.middle.game.event.EventHandlerInterface;
 import uk.co.jackoftradesltd.middle.game.event.EventsHandler;
 import uk.co.jackoftradesltd.middle.game.event.projection.Projection;
-import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
-import uk.co.jackoftradesltd.middle.objects.Curse;
-import uk.co.jackoftradesltd.middle.objects.CurseData;
-import uk.co.jackoftradesltd.middle.objects.ElementInfo;
-import uk.co.jackoftradesltd.middle.objects.ItemObject;
-import uk.co.jackoftradesltd.middle.objects.KnownObject;
-import uk.co.jackoftradesltd.middle.objects.Rune;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
-import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
+import uk.co.jackoftradesltd.middle.objects.*;
 import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.RuneVariety;
-import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
+import uk.co.jackoftradesltd.testsupport.Bodies;
 import uk.co.jackoftradesltd.testsupport.CurseFixture;
+import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerKnowledge#equipLearnElement}, the port of C's {@code equip_learn_element}
@@ -273,8 +253,8 @@ class PlayerEquipLearnElementTest {
             slots.add(slot);
         }
         slots.add(new EquipSlot(EquipmentSlotsEnum.EQUIP_CLOAK, "on your back"));
-        body = new PlayerBody("Humanoid", slots);
-        set(player, "body", body);
+        body = Bodies.of("Humanoid", slots);
+        player.setBody(body);
     }
 
     private List<String> announced() {
@@ -285,12 +265,10 @@ class PlayerEquipLearnElementTest {
      * How many times something was said to glow. The rune learning announces the runes it learns
      * too, so a count of everything would not say what a test about the glow wants to know.
      *
-     * <p>Matched loosely because the two glow messages name the item by different routes.
-     * {@code equipLearnElement} goes through {@code ObjectUtils.objectDesc}, a stub answering the
-     * empty string; {@code objectCursesFindElement} goes through {@link ItemObject#description},
-     * which answers a placeholder tag. C reaches {@code object_desc} in both places, so this is a
-     * difference in how far the port's two naming paths have got rather than one in behaviour, and
-     * a test that pinned either exact string would fail the day the stub is filled in.
+     * <p>Matched loosely because both glow messages, from {@code equipLearnElement} and from
+     * {@code objectCursesFindElement}, name the item through {@link ItemObject#description}, which
+     * is still a stub answering a placeholder tag. C reaches {@code object_desc} in both places,
+     * and a test that pinned the exact string would fail the day the stub is filled in.
      */
     private long glows() {
         return announced().stream().filter(m -> m.matches("Your .*glows\\..*")).count();

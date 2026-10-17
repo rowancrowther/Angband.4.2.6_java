@@ -27,7 +27,7 @@ import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 import uk.co.jackoftradesltd.middle.player.EquipSlot;
 import uk.co.jackoftradesltd.middle.player.Player;
-import uk.co.jackoftradesltd.middle.player.PlayerBody;
+import uk.co.jackoftradesltd.testsupport.Bodies;
 import uk.co.jackoftradesltd.testsupport.ItemFixture;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
@@ -211,7 +211,7 @@ class ItemObjectWieldSlotTest {
                 slots.add(new EquipSlot(slot.getType(), slot.getName()));
             }
         }
-        player.setBody(new PlayerBody("no-amulet", slots));
+        player.setBody(Bodies.of("no-amulet", slots));
 
         assertEquals(slots.size(), item(TValue.TV_AMULET).wieldSlot());
         assertEquals(-1, item(TValue.TV_POTION).wieldSlot(), "-1 is still what a never-worn type gets");
@@ -230,7 +230,7 @@ class ItemObjectWieldSlotTest {
         int underFirstPlayer = amulet.wieldSlot();
 
         Player second = new Player();
-        second.setBody(new PlayerBody("one slot",
+        second.setBody(Bodies.of("one slot",
                 List.of(new EquipSlot(EquipmentSlotsEnum.EQUIP_AMULET, "neck"))));
         GameState.setPlayer(second);
 

@@ -97,7 +97,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * tests touch the turn counter, the player, the cave, the event bus and the constants table, so
  * each is saved before every test and put back afterwards.
  *
- * <p>Class GameWorldTest coded on 261006, commented in full on 261006.
+ * <p>Class GameWorldTest coded on 261006, commented in full on 261006, timed effects installed
+ * through {@code setPlayerTimedEffects} on 261016 so the food thresholds are filled.
  *
  * @author Rowan Crowther
  */
@@ -169,6 +170,18 @@ class GameWorldTest {
      * The timed-effect list the registry held before the test.
      */
     private Object savedTimedEffects;
+
+    /**
+     * The registry fields {@code setPlayerTimedEffects} fills from the {@code FOOD} grades - C's
+     * {@code PY_FOOD_*} globals, listed lowest threshold first.
+     */
+    private static final String[] FOOD_THRESHOLDS = {"PY_FOOD_STARVE", "PY_FOOD_FAINT", "PY_FOOD_WEAK",
+            "PY_FOOD_HUNGRY", "PY_FOOD_FULL", "PY_FOOD_MAX"};
+
+    /**
+     * The six food thresholds before the test, in {@link #FOOD_THRESHOLDS} order, put back afterwards.
+     */
+    private final int[] savedThresholds = new int[FOOD_THRESHOLDS.length];
 
     /**
      * The player {@code PlayerUtils} had cached before the test.
@@ -368,7 +381,12 @@ class GameWorldTest {
         bus = new CapturingBus();
         GameEngine.setEventsBusHandler(bus);
         field(PlayerUtils.class, "player").set(null, player);
-        field(PlayerRegistry.class, "playerTimedEffects").set(null, timedEffects());
+        // Goes through the setter, not the field: C fills PY_FOOD_* while parsing the grades, and
+        // calcBonuses divides by them on every timed-effect change the world pass makes.
+        for (int i = 0; i < FOOD_THRESHOLDS.length; i++) {
+            savedThresholds[i] = field(PlayerRegistry.class, FOOD_THRESHOLDS[i]).getInt(null);
+        }
+        PlayerRegistry.setPlayerTimedEffects(timedEffects());
         GameState.setCommandQueue(new CommandQueue(player));
 
         world = new GameWorld();
@@ -389,6 +407,9 @@ class GameWorldTest {
         field(GameWorld.class, "dayCount").set(null, savedDayCount);
         GameWorld.setCharacterDungeon(savedCharacterDungeon);
         field(PlayerRegistry.class, "playerTimedEffects").set(null, savedTimedEffects);
+        for (int i = 0; i < FOOD_THRESHOLDS.length; i++) {
+            field(PlayerRegistry.class, FOOD_THRESHOLDS[i]).setInt(null, savedThresholds[i]);
+        }
         field(PlayerUtils.class, "player").set(null, savedUtilsPlayer);
         GameState.setCommandQueue(savedQueue);
     }
@@ -1541,7 +1562,7 @@ class GameWorldTest {
      * what is checked here is what {@code GameWorld} adds: which items are visited, which flags it
      * raises for each of the three groups, and when the player is told. The player's options and
      * the items' inscriptions decide whether a notice is spoken; the object name comes from
-     * {@code ObjectUtils.objectDesc}, which is still a stub, so the wording is checked with the name
+     * {@code ItemObject.description}, which is still a stub, so the wording is checked with the name
      * left as a wildcard.
      */
     @Nested

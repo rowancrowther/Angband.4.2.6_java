@@ -24,12 +24,9 @@ import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.HashSet;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link ObjectUtils#copySlays}, the port of C's {@code copy_slays} ({@code obj-slays.c}).
@@ -37,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * <p>C stores a {@code bool} per slot in a fixed global table, ORs source into dest, and then walks
  * every pair of set indices clearing whichever has the lower multiplier when both name the same
  * monsters ({@link Slay#sameMonsterSlain}). The port holds actual {@link Slay} instances, so the
- * dedup is a name-free scan of {@code destSlays} comparing {@link Slay#getMultiplier()} directly.
+ * dedup is a name-free scan of the item's slays comparing {@link Slay#getMultiplier()} directly.
  * Private, so reached by reflection rather than through its only caller,
  * {@link ObjectUtils#objectPrep}.
  *
@@ -58,14 +55,14 @@ class ObjectUtilsCopySlaysTest {
     /**
      * Runs the method under test.
      *
-     * @param destSlays the set the merge writes into
-     * @param slays     the slays being added
+     * @param dest   the item the merge writes into
+     * @param source the kind whose slays are being added
      */
-    private static void copySlays(Set<Slay> destSlays, Set<Slay> slays) {
+    private static void copySlays(ItemObject dest, ObjectKind source) {
         try {
-            Method method = ObjectUtils.class.getDeclaredMethod("copySlays", Set.class, Set.class);
+            Method method = ObjectUtils.class.getDeclaredMethod("copySlays", ItemObject.class, ObjectKind.class);
             method.setAccessible(true);
-            method.invoke(null, destSlays, slays);
+            method.invoke(null, dest, source);
         } catch (InvocationTargetException e) {
             throw new IllegalStateException("copySlays threw", e.getCause());
         } catch (ReflectiveOperationException e) {
@@ -90,7 +87,7 @@ class ObjectUtilsCopySlaysTest {
     }
 
     /**
-     * The ordinary path: slays against races {@code destSlays} does not yet cover.
+     * The ordinary path: slays against races the item's slays does not yet cover.
      */
     @Nested
     @DisplayName("adding slays for new monster groups")
@@ -102,12 +99,14 @@ class ObjectUtilsCopySlaysTest {
         @Test
         @DisplayName("an empty dest gains every slay from source")
         void addsToEmptyDest() {
-            Set<Slay> dest = new HashSet<>();
+            ItemObject dest = new ItemObject();
             Slay evil = slay("EVIL_2", "evil creatures", EVIL, 2);
 
-            copySlays(dest, Set.of(evil));
+            ObjectKind source = new ObjectKind();
+            source.addSlay(evil);
+            copySlays(dest, source);
 
-            assertEquals(Set.of(evil), dest);
+            assertEquals(Set.of(evil), dest.getSlays());
         }
 
         /**
@@ -117,14 +116,16 @@ class ObjectUtilsCopySlaysTest {
         @Test
         @DisplayName("slays for distinct monster groups coexist")
         void distinctGroupsCoexist() {
-            Set<Slay> dest = new HashSet<>();
-            dest.add(slay("EVIL_2", "evil creatures", EVIL, 2));
+            ItemObject dest = new ItemObject();
+            dest.addSlay(slay("EVIL_2", "evil creatures", EVIL, 2));
             Slay orcs = slay("ORC_3", "orcs", ORC, 3);
 
-            copySlays(dest, Set.of(orcs));
+            ObjectKind source = new ObjectKind();
+            source.addSlay(orcs);
+            copySlays(dest, source);
 
-            assertEquals(2, dest.size());
-            assertTrue(dest.contains(orcs));
+            assertEquals(2, dest.getSlays().size());
+            assertTrue(dest.containsSlay(orcs));
         }
     }
 
@@ -143,15 +144,17 @@ class ObjectUtilsCopySlaysTest {
         @Test
         @DisplayName("a stronger source slay replaces a weaker dest one")
         void strongerSourceReplacesWeakerDest() {
-            Set<Slay> dest = new HashSet<>();
+            ItemObject dest = new ItemObject();
             Slay weak = slay("EVIL_2", "evil creatures", EVIL, 2);
-            dest.add(weak);
+            dest.addSlay(weak);
             Slay strong = slay("EVIL_2", "greater evil", EVIL, 5);
 
-            copySlays(dest, Set.of(strong));
+            ObjectKind source = new ObjectKind();
+            source.addSlay(strong);
+            copySlays(dest, source);
 
-            assertEquals(1, dest.size(), "same-group slays must merge into one entry");
-            Slay survivor = dest.iterator().next();
+            assertEquals(1, dest.getSlays().size(), "same-group slays must merge into one entry");
+            Slay survivor = dest.getSlays().iterator().next();
             assertEquals(5, survivor.getMultiplier());
             assertEquals("greater evil", survivor.getName());
         }
@@ -164,15 +167,17 @@ class ObjectUtilsCopySlaysTest {
         @Test
         @DisplayName("a weaker source slay leaves the stronger dest one exactly as it was")
         void weakerSourceLeavesStrongerDestAlone() {
-            Set<Slay> dest = new HashSet<>();
+            ItemObject dest = new ItemObject();
             Slay strong = slay("EVIL_2", "greater evil", EVIL, 5);
-            dest.add(strong);
+            dest.addSlay(strong);
             Slay weak = slay("EVIL_2", "evil creatures", EVIL, 2);
 
-            copySlays(dest, Set.of(weak));
+            ObjectKind source = new ObjectKind();
+            source.addSlay(weak);
+            copySlays(dest, source);
 
-            assertEquals(1, dest.size());
-            assertSame(strong, dest.iterator().next(),
+            assertEquals(1, dest.getSlays().size());
+            assertSame(strong, dest.getSlays().iterator().next(),
                     "the surviving instance must be dest's own, not a copy of the loser");
         }
     }
@@ -185,18 +190,18 @@ class ObjectUtilsCopySlaysTest {
     class EmptySource {
 
         /**
-         * Leaves {@code destSlays} exactly as it was.
+         * Leaves the item's slays exactly as it was.
          */
         @Test
         @DisplayName("dest is unchanged")
         void leavesDestUnchanged() {
-            Set<Slay> dest = new HashSet<>();
+            ItemObject dest = new ItemObject();
             Slay evil = slay("EVIL_2", "evil creatures", EVIL, 2);
-            dest.add(evil);
+            dest.addSlay(evil);
 
-            copySlays(dest, Set.of());
+            copySlays(dest, new ObjectKind());
 
-            assertEquals(Set.of(evil), dest);
+            assertEquals(Set.of(evil), dest.getSlays());
         }
     }
 }

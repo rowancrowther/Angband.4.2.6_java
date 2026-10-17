@@ -17,12 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
@@ -39,6 +34,7 @@ import uk.co.jackoftradesltd.middle.player.Player;
 import uk.co.jackoftradesltd.middle.player.PlayerBody;
 import uk.co.jackoftradesltd.middle.player.PlayerRace;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
+import uk.co.jackoftradesltd.testsupport.Bodies;
 import uk.co.jackoftradesltd.testsupport.ItemFixture;
 
 import java.lang.reflect.Field;
@@ -46,12 +42,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static uk.co.jackoftradesltd.testsupport.ItemFixture.set;
 import static uk.co.jackoftradesltd.testsupport.ItemFixture.setStatic;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests the three rules that decide whether two stacks may become one — {@code checkForInscription},
@@ -142,7 +135,7 @@ class ItemObjectStackingTest {
 
         savedBodies = registryField("playerBodies").get(null);
         savedRaces = registryField("playerRaces").get(null);
-        PlayerBody humanoid = new PlayerBody("test",
+        PlayerBody humanoid = Bodies.of("test",
                 List.of(new EquipSlot(EquipmentSlotsEnum.EQUIP_WEAPON, "weapon")));
         registryField("playerBodies").set(null, new ArrayList<>(List.of(humanoid)));
         registryField("playerRaces").set(null, new ArrayList<>(List.of(testRace(humanoid))));

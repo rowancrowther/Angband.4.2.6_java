@@ -29,6 +29,7 @@ import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerSkill;
 import uk.co.jackoftradesltd.middle.player.enums.TimedEffect;
+import uk.co.jackoftradesltd.testsupport.Bodies;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
 import java.lang.reflect.Field;
@@ -173,7 +174,7 @@ class PlayerBirthPlayerGenerateTest {
                 new EquipSlot(EquipmentSlotsEnum.EQUIP_WEAPON, "weapon")));
         Map<ElementEnum, ElementInfo> resists = new EnumMap<>(ElementEnum.class);
         return new PlayerRace(name, 0, raceMhp, raceExp, 14, 6, 72, 6, 180, 25, 0,
-                new PlayerBody("Humanoid", slots),
+                Bodies.of("Humanoid", slots),
                 new EnumMap<>(Stats.class), new EnumMap<>(PlayerSkill.class),
                 new Flag<>(ObjectFlag.class), new Flag<>(PlayerFlag.class),
                 chart(1, 0, 100, phrase), resists);

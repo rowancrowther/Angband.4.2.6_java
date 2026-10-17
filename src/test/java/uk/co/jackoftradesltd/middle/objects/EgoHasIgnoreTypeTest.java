@@ -25,10 +25,7 @@ import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectKindFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -56,7 +53,7 @@ class EgoHasIgnoreTypeTest {
         return new EgoItem("of Testing", "a test ego", 1, 0,
                 new Flag<>(ObjectFlag.class), new Flag<>(ObjectFlag.class),
                 new Flag<>(ObjectKindFlag.class), new HashMap<>(), new HashMap<>(),
-                new HashMap<>(), new HashSet<>(), new HashSet<>(), new HashMap<>(),
+                new HashMap<>(), new HashSet<>(), new HashSet<>(), new TreeMap<>(Curse.CURSE_ORDER),
                 0, 0, 0, 0, new ArrayList<>(List.of(kinds)), null, null, null, 0, 0, 0,
                 null, null, false);
     }

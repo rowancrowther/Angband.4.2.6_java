@@ -131,7 +131,7 @@ class PlayerOfHasNotTimedTest {
     private static PlayerRace race(Flag<ObjectFlag> oFlags) {
         Map<Stats, Integer> stats = Map.of();
         Map<PlayerSkill, Integer> skills = Map.of();
-        return new PlayerRace("Test Race", 0, 10, 100, 14, 6, 72, 6, 180, 25, 0, null,
+        return new PlayerRace("Test Race", 0, 10, 100, 14, 6, 72, 6, 180, 25, 0, SeededPlayerRegistry.humanoidBody(),
                 stats, skills, oFlags, new Flag<>(PlayerFlag.class), null, Map.of());
     }
 
@@ -192,8 +192,8 @@ class PlayerOfHasNotTimedTest {
         state = new PlayerState();
         body = SeededPlayerRegistry.humanoidBody();
         setField(player, Player.class, "state", state);
-        setField(player, Player.class, "body", body);
-        setField(player, Player.class, "race", race(flagsOf()));
+        player.setBody(body);
+        player.setRace(race(flagsOf()));
         setField(player, Player.class, "playerClass", playerClass(flagsOf()));
         setField(player, Player.class, "level", 1);
     }
@@ -226,7 +226,7 @@ class PlayerOfHasNotTimedTest {
     @Test
     @DisplayName("a racial flag counts")
     void racialFlagCounts() throws Exception {
-        setField(player, Player.class, "race", race(flagsOf(ObjectFlag.OF_FREE_ACT)));
+        player.setRace(race(flagsOf(ObjectFlag.OF_FREE_ACT)));
         assertTrue(has(ObjectFlag.OF_FREE_ACT));
         assertFalse(has(ObjectFlag.OF_SEE_INVIS));
     }
@@ -237,7 +237,7 @@ class PlayerOfHasNotTimedTest {
     @Test
     @DisplayName("a class flag counts, alongside the race's")
     void classFlagCounts() throws Exception {
-        setField(player, Player.class, "race", race(flagsOf(ObjectFlag.OF_FREE_ACT)));
+        player.setRace(race(flagsOf(ObjectFlag.OF_FREE_ACT)));
         setField(player, Player.class, "playerClass", playerClass(flagsOf(ObjectFlag.OF_HOLD_LIFE)));
         assertTrue(has(ObjectFlag.OF_FREE_ACT));
         assertTrue(has(ObjectFlag.OF_HOLD_LIFE));
@@ -304,7 +304,7 @@ class PlayerOfHasNotTimedTest {
     @Test
     @DisplayName("innate and worn flags are collected together")
     void innateAndWornCombine() throws Exception {
-        setField(player, Player.class, "race", race(flagsOf(ObjectFlag.OF_FREE_ACT)));
+        player.setRace(race(flagsOf(ObjectFlag.OF_FREE_ACT)));
         wear("neck", itemWithFlags(flagsOf(ObjectFlag.OF_SEE_INVIS)));
 
         assertTrue(has(ObjectFlag.OF_FREE_ACT));

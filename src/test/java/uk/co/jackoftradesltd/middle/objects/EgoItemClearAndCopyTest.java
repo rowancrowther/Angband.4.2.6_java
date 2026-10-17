@@ -25,6 +25,7 @@ import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.enums.*;
 
+import uk.co.jackoftradesltd.testsupport.ItemFixture;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -53,7 +54,7 @@ class EgoItemClearAndCopyTest {
         return new EgoItem("of Testing", "a test ego", 1, 0,
                 new Flag<>(ObjectFlag.class), new Flag<>(ObjectFlag.class),
                 new Flag<>(ObjectKindFlag.class), new HashMap<>(), new HashMap<>(),
-                new HashMap<>(), new HashSet<>(), new HashSet<>(), new HashMap<>(),
+                new HashMap<>(), new HashSet<>(), new HashSet<>(), new TreeMap<>(Curse.CURSE_ORDER),
                 0, 0, 0, 0, new ArrayList<>(), null, null, null, 0, 0, 0,
                 null, null, false);
     }
@@ -78,7 +79,7 @@ class EgoItemClearAndCopyTest {
         ElementInfo fire = new ElementInfo();
         fire.setResLevel(1);
         elInfo.put(ElementEnum.ELEM_FIRE, fire);
-        Map<Curse, CurseData> curses = new HashMap<>();
+        TreeMap<Curse, CurseData> curses = new TreeMap<>(Curse.CURSE_ORDER);
         curses.put(curse, new CurseData(20, 0));
         List<ObjectKind> kinds = new ArrayList<>();
         kinds.add(kind);
@@ -266,21 +267,25 @@ class EgoItemClearAndCopyTest {
         }
 
         /**
-         * The brand and slay sets are rebuilt so that adding to one does not add to the other.
+         * The brand and slay sets are rebuilt so that adding to one does not add to the other. The
+         * getters hand out read-only views, so the original's backing sets are written directly.
          */
         @Test
         @DisplayName("brand and slay sets are independent")
         void brandAndSlaySetsIndependent() {
             EgoItem original = loadedEgo(new ObjectKind(null, 0, 0, 0, 0, "Dagger", TValue.TV_SWORD, "test",
                     null, false), curse());
+            Set<Slay> originalSlays = new HashSet<>();
+            Set<Brand> originalBrands = new HashSet<>();
+            ItemFixture.set(original, "slays", originalSlays);
+            ItemFixture.set(original, "brands", originalBrands);
             EgoItem copy = original.copy();
 
-            Set<Slay> originalSlays = original.getSlays();
             originalSlays.add(null);
+            originalBrands.add(null);
 
-            assertNotSame(originalSlays, copy.getSlays());
             assertTrue(copy.getSlays().isEmpty());
-            assertNotSame(original.getBrands(), copy.getBrands());
+            assertTrue(copy.getBrands().isEmpty());
         }
 
         /**

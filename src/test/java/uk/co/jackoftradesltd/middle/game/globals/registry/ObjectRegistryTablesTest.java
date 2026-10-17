@@ -17,32 +17,18 @@
 
 package uk.co.jackoftradesltd.middle.game.globals.registry;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.numerics.Random;
-import uk.co.jackoftradesltd.middle.objects.Artifact;
-import uk.co.jackoftradesltd.middle.objects.EgoItem;
-import uk.co.jackoftradesltd.middle.objects.ItemObject;
-import uk.co.jackoftradesltd.middle.objects.ObjectKind;
+import uk.co.jackoftradesltd.middle.objects.*;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectKindFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link ObjectRegistry}'s three loaded object tables — items, egos and artifacts — and the
@@ -119,7 +105,7 @@ class ObjectRegistryTablesTest {
                 new Flag<>(ObjectFlag.class), new Flag<>(ObjectFlag.class),
                 new Flag<>(ObjectKindFlag.class),
                 new HashMap<>(), new HashMap<>(), new HashMap<>(),
-                new HashSet<>(), new HashSet<>(), new HashMap<>(),
+                new HashSet<>(), new HashSet<>(), new TreeMap<>(Curse.CURSE_ORDER),
                 0, 0, 0, 0, new ArrayList<ObjectKind>(),
                 null, null, null, 0, 0, 0, null, null, false);
     }
@@ -134,7 +120,7 @@ class ObjectRegistryTablesTest {
         return new Artifact(name, "", TValue.TV_SWORD, "long sword",
                 0, 0, 0, 0, "1d1", 0, 0,
                 new Flag<>(ObjectFlag.class), new HashMap<>(), new HashMap<>(),
-                new HashSet<>(), new HashSet<>(), new HashMap<>(),
+                new HashSet<>(), new HashSet<>(), new TreeMap<>(Curse.CURSE_ORDER),
                 0, 0, 0, 0, null, "", new Random(0, 1, 1, 1, false));
     }
 

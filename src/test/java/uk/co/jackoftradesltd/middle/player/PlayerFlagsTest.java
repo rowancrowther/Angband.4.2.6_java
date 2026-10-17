@@ -24,16 +24,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
+import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link Player#playerFlags}, the port of C's {@code player_flags} ({@code player.c:290}).
@@ -92,7 +89,7 @@ class PlayerFlagsTest {
      * @return the race
      */
     private static PlayerRace race(Flag<ObjectFlag> oFlags) {
-        return new PlayerRace("Test Race", 0, 10, 100, 14, 6, 72, 6, 180, 25, 0, null,
+        return new PlayerRace("Test Race", 0, 10, 100, 14, 6, 72, 6, 180, 25, 0, SeededPlayerRegistry.humanoidBody(),
                 Map.of(), Map.of(), oFlags, new Flag<>(PlayerFlag.class), null, Map.of());
     }
 
@@ -161,7 +158,7 @@ class PlayerFlagsTest {
      */
     private void giveRaceAndClass(Flag<ObjectFlag> raceFlags, Flag<ObjectFlag> classFlags)
             throws Exception {
-        setField(player, Player.class, "race", race(raceFlags));
+        player.setRace(race(raceFlags));
         setField(player, Player.class, "playerClass", playerClass(classFlags));
     }
 

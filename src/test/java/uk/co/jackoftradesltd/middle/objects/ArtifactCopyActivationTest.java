@@ -27,17 +27,9 @@ import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests the activation arm of {@link Artifact#copy()}: the activation, its message, and the
@@ -71,7 +63,7 @@ class ArtifactCopyActivationTest {
         Map<ElementEnum, ElementInfo> elInfo = new HashMap<>();
         Set<Brand> brands = new HashSet<>();
         Set<Slay> slays = new HashSet<>();
-        Map<Curse, CurseData> curses = new HashMap<>();
+        TreeMap<Curse, CurseData> curses = new TreeMap<>(Curse.CURSE_ORDER);
         return new Artifact("Test Blade", "It gleams.", TValue.TV_SWORD, "long sword",
                 5, 6, 7, 8, "3d5", 120, 4500, flags, modifiers, elInfo, brands, slays, curses,
                 40, 11, 12, 13, activation, message, time);

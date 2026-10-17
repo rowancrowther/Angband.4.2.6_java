@@ -614,7 +614,7 @@ public class GameWorld {
 
         // Describe (briefly)
         Flag<ObjectDescription> flag = new Flag<>(ObjectDescription.class);
-        String oName = ObjectUtils.objectDesc(item, flag, player);
+        String oName = item.description(flag, player);
 
         // Disturb the player
         PlayerUtils.disturb();

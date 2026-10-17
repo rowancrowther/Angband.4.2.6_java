@@ -43,6 +43,7 @@ import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerNotice;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerRedraw;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerSkill;
+import uk.co.jackoftradesltd.testsupport.Bodies;
 import uk.co.jackoftradesltd.testsupport.CalcBonusesFixture;
 import uk.co.jackoftradesltd.testsupport.ItemFixture;
 
@@ -127,7 +128,7 @@ class ObjectGearInvenCarryTest {
 
         savedBodies = registryField("playerBodies").get(null);
         savedRaces = registryField("playerRaces").get(null);
-        body = new PlayerBody("test", List.of(new EquipSlot(EquipmentSlotsEnum.EQUIP_WEAPON, "weapon")));
+        body = Bodies.of("test", List.of(new EquipSlot(EquipmentSlotsEnum.EQUIP_WEAPON, "weapon")));
         registryField("playerBodies").set(null, new ArrayList<>(List.of(body)));
         registryField("playerRaces").set(null, new ArrayList<>(List.of(plainRace(body, new Flag<>(PlayerFlag.class)))));
 
@@ -240,7 +241,7 @@ class ObjectGearInvenCarryTest {
     private void grantRaceFlag(PlayerFlag flag) throws Exception {
         Flag<PlayerFlag> raceFlags = new Flag<>(PlayerFlag.class);
         raceFlags.on(flag);
-        set(player, "race", plainRace(body, raceFlags));
+        player.setRace(plainRace(body, raceFlags));
         PlayerCalcs.updateBonuses(player);
     }
 

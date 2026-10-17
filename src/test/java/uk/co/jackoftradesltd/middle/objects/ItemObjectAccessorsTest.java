@@ -20,10 +20,10 @@ package uk.co.jackoftradesltd.middle.objects;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.cave.Loc;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectNotice;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum;
@@ -31,17 +31,9 @@ import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 import uk.co.jackoftradesltd.testsupport.CurseFixture;
 
 import java.lang.reflect.Field;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link ItemObject}'s construction and its plain accessors — the port of C's
@@ -136,7 +128,7 @@ class ItemObjectAccessorsTest {
      */
     private static Artifact artifact() {
         return new Artifact("Test", null, TValue.TV_SWORD, null, 0, 0, 0, 0, "0", 0, 0,
-                new Flag<>(ObjectFlag.class), Map.of(), Map.of(), Set.of(), Set.of(), new LinkedHashMap<>(),
+                new Flag<>(ObjectFlag.class), Map.of(), Map.of(), Set.of(), Set.of(), new TreeMap<>(Curse.CURSE_ORDER),
                 0, 0, 0, 0, null, null, null);
     }
 
@@ -371,23 +363,27 @@ class ItemObjectAccessorsTest {
         }
 
         /**
-         * The brand set is handed out live, matching C, where {@code obj->brands} is an array on the
-         * struct that callers read and write in place. Stated because the opposite choice would look
-         * equally reasonable from the signature.
+         * The brand set is handed out as a read-only view of the live set: a write through
+         * {@link ItemObject#addBrand} shows in a view taken earlier, and a write through the view
+         * itself is refused. C's {@code obj->brands} is an array callers write in place; here the
+         * writing goes through the item's own methods.
          */
         @Test
-        @DisplayName("getBrands returns the live set")
+        @DisplayName("getBrands returns a read-only view of the live set")
         void brandsAreLive() {
             Brand acid = new Brand("ACID_2", "acid", "burns", MonsterRaceFlag.RF_IM_FIRE,
                     MonsterRaceFlag.RF_HURT_FIRE, 17, 3, 15);
             ItemObject item = new ItemObject();
             Set<Brand> brands = new java.util.HashSet<>();
             set(item, "brands", brands);
+            Set<Brand> view = item.getBrands();
 
-            item.getBrands().add(acid);
+            item.addBrand(acid);
 
-            assertSame(brands, item.getBrands());
+            assertNotSame(brands, view);
             assertTrue(brands.contains(acid));
+            assertTrue(view.contains(acid), "the view sees a write made through the item");
+            assertThrows(UnsupportedOperationException.class, () -> view.add(acid));
         }
 
         /**

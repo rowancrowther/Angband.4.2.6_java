@@ -105,7 +105,7 @@ class ObjectIgnoreBirthInitTest {
         return new EgoItem("of Testing", "a test ego", 1, 0,
                 new Flag<>(ObjectFlag.class), new Flag<>(ObjectFlag.class),
                 new Flag<>(ObjectKindFlag.class), new HashMap<>(), new HashMap<>(),
-                new HashMap<>(), new HashSet<>(), new HashSet<>(), new HashMap<>(),
+                new HashMap<>(), new HashSet<>(), new HashSet<>(), new TreeMap<>(Curse.CURSE_ORDER),
                 0, 0, 0, 0, new ArrayList<>(), null, null, null, 0, 0, 0,
                 null, null, false);
     }

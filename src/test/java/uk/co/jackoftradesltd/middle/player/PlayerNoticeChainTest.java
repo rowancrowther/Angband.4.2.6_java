@@ -33,6 +33,7 @@ import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerNotice;
+import uk.co.jackoftradesltd.testsupport.Bodies;
 import uk.co.jackoftradesltd.testsupport.ItemFixture;
 
 import java.lang.reflect.Field;
@@ -187,7 +188,7 @@ class PlayerNoticeChainTest {
 
         savedBodies = registryField("playerBodies").get(null);
         savedRaces = registryField("playerRaces").get(null);
-        PlayerBody humanoid = new PlayerBody("Humanoid", new ArrayList<>(List.of(
+        PlayerBody humanoid = Bodies.of("Humanoid", new ArrayList<>(List.of(
                 new EquipSlot(EquipmentSlotsEnum.EQUIP_WEAPON, "weapon"))));
         registryField("playerBodies").set(null, new ArrayList<>(List.of(humanoid)));
         registryField("playerRaces").set(null, new ArrayList<>(List.of(race(humanoid))));

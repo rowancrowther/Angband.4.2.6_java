@@ -791,9 +791,7 @@ class PlayerSetTimedTest {
             for (ObjectFlag flag : flags) {
                 ((uk.co.jackoftradesltd.channel.utils.Flag<ObjectFlag>) oFlags.get(race)).on(flag);
             }
-            Field f = Player.class.getDeclaredField("race");
-            f.setAccessible(true);
-            f.set(player, race);
+            player.setRace(race);
         }
     }
 

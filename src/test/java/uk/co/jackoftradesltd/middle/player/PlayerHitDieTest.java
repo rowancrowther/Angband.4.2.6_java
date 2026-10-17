@@ -22,14 +22,15 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.objects.ElementInfo;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerSkill;
+import uk.co.jackoftradesltd.testsupport.Bodies;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
 import java.util.ArrayList;
@@ -87,7 +88,7 @@ class PlayerHitDieTest {
                 new EquipSlot(EquipmentSlotsEnum.EQUIP_WEAPON, "weapon")));
         Map<ElementEnum, ElementInfo> resists = new EnumMap<>(ElementEnum.class);
         return new PlayerRace(name, 0, raceMhp, 100, 14, 6, 69, 10, 165, 35, 0,
-                new PlayerBody("Humanoid", slots),
+                Bodies.of("Humanoid", slots),
                 new EnumMap<>(Stats.class), new EnumMap<>(PlayerSkill.class),
                 new Flag<>(ObjectFlag.class), new Flag<>(PlayerFlag.class),
                 new PlayerHistoryChart(1, 2), resists);

@@ -32,6 +32,7 @@ import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerSkill;
+import uk.co.jackoftradesltd.testsupport.Bodies;
 import uk.co.jackoftradesltd.testsupport.CalcBonusesFixture;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
@@ -187,7 +188,7 @@ class PlayerBirthDoBirthResetTest {
         PlayerHistoryChart chart = new PlayerHistoryChart(1, 0);
         chart.addEntry(new PlayerHistoryEntry(100, phrase));
         return new PlayerRace(name, 0, hitDie, expFact, 14, 6, 72, 6, 180, 25, 0,
-                new PlayerBody("Humanoid", slots), stats, skills,
+                Bodies.of("Humanoid", slots), stats, skills,
                 new Flag<>(ObjectFlag.class), new Flag<>(PlayerFlag.class), chart, new HashMap<>());
     }
 

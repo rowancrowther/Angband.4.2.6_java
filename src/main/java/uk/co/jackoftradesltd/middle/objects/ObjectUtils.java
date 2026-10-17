@@ -74,11 +74,12 @@ import java.util.*;
  * round, as {@link #combinePack} does.
  *
  * <p><b>Status:</b> every routine here is ported except {@link #packOverflow},
- * {@link #equipLearnAfterTime}, {@link #objectDesc} and {@link #doCurseEffect}, which are still the
- * stubs landed to unblock the game loop, and each says so for itself.
+ * {@link #equipLearnAfterTime} and {@link #doCurseEffect}, which are still the stubs landed to
+ * unblock the game loop, and each says so for itself. The item-description stub that used to be
+ * listed here as {@code objectDesc} is now {@link ItemObject#description}.
  *
  * <p>Class ObjectUtils commented in full on 261007, stale {@code Player.slotByName()} example
- * removed on 261007.
+ * removed on 261007, stale {@code objectDesc} reference corrected on 261017.
  *
  * @author Rowan Crowther
  */
@@ -168,37 +169,6 @@ public class ObjectUtils {
      */
     public static void equipLearnAfterTime(Player player) {
         // Stub class TODO: implement
-    }
-
-    /**
-     * Builds the display name of an object as this player would see it — the port of C's
-     * {@code object_desc} ({@code obj-desc.c}), which writes into a caller-supplied buffer where the
-     * port returns a string.
-     *
-     * <p>The {@code description} flags select how much of the name to include. C treats them as a
-     * bit mask (the anonymous enum in {@code obj-desc.h}), so an empty set is C's {@code ODESC_BASE == 0x00} — the
-     * bare name with no combat bonuses, charges or inscription — and callers OR in extras such as
-     * {@code ODESC_COMBAT} or {@code ODESC_PREFIX} from there.
-     *
-     * <p>The player is a parameter rather than a global because the name depends on what they know:
-     * an unidentified potion shows its flavour, an unlearned ego stays anonymous.
-     *
-     * <p><b>Stub:</b> not yet implemented, awaiting the object-naming and knowledge runtimes;
-     * returns an empty string, so callers currently produce messages with a blank where the item
-     * name belongs. Note that C's {@code ODESC_ALTNUM} passes a count through the high 16 bits of
-     * the mode word, which a flag set cannot carry — it will need a separate parameter when this is
-     * ported.
-     *
-     * <p>Function objectDesc coded before 261005 as a stub, commented in full on 261005.
-     *
-     * @param item        the object to name
-     * @param description the {@link ObjectDescription} flags selecting how much detail to include
-     * @param player      the player whose knowledge governs what the name reveals
-     * @return the object's display name
-     */
-    public static String objectDesc(ItemObject item, Flag<ObjectDescription> description, Player player) {
-        // Stub class TODO: implement
-        return "";
     }
 
     /**
@@ -1162,8 +1132,8 @@ public class ObjectUtils {
         obj.setToAC(kind.getToA().randCalc(level, damageAspect));
 
         // Default slays/brands/curses
-        copySlays(obj.getSlays(), kind.getSlays());
-        copyBrands(obj.getBrands(), kind.getBrands());
+        copySlays(obj, kind);
+        copyBrands(obj, kind);
         copyCurses(obj, kind.getCurses());
 
         // Default resists
@@ -1247,7 +1217,7 @@ public class ObjectUtils {
         if (source == null)
             return;
 
-        Map<Curse, CurseData> destCurseMap = new TreeMap<>(ItemObject.CURSE_ORDER);
+        Map<Curse, CurseData> destCurseMap = new TreeMap<>(Curse.CURSE_ORDER);
         destCurseMap.putAll(dest.getCurses());
 
         for (Curse curse : ObjectRegistry.getCurses()) {
@@ -1278,39 +1248,53 @@ public class ObjectUtils {
     }
 
     /**
-     * Adds every brand in {@code sourceBrands} to {@code destBrands}, keeping only the stronger of
-     * two brands that share a name - the port of C's {@code copy_brands} ({@code obj-slays.c}).
+     * Adds every brand a kind carries to an item, keeping only the stronger of two brands that
+     * share a name - the port of C's {@code copy_brands} ({@code obj-slays.c}).
      *
      * <p>C stores brands as one {@code bool} per index into a fixed global table, so it first ORs
      * the two arrays together and then walks every pair of set indices, clearing whichever of the
      * two has the lower multiplier when both name the same element; on an exact multiplier tie it
      * keeps whichever sits at the higher table index, a rule with no Java equivalent since a
      * {@link Brand} here is a value the object holds directly rather than a bit into a shared table.
-     * The port instead scans {@code destBrands} for a name match and keeps whichever of the pair has
+     * The port instead scans the item's brands for a name match and keeps whichever of the pair has
      * the higher {@link Brand#getMultiplier()} outright, replacing the loser with the winner rather
      * than clearing a flag. The two land on the same brand for every combination {@code brand.txt}
      * actually defines - no two brands there share both a name and a multiplier, so the tie-break
      * neither approach can express symmetrically never has to run.
      *
+     * <p>Where C's table order matters, it is applied here and not carried by the collection: the
+     * brand sets are unordered {@link java.util.HashSet}s, by decision, where curses are a
+     * {@code TreeMap} in {@code CURSE_ORDER}. This method is the one place a brand's table position
+     * could decide an outcome, and it does not need it today because the tie never occurs in
+     * {@code brand.txt}. If a tie ever became possible, the position to compare is the brand's index
+     * in {@link uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry#getBrands()}, and
+     * the sort belongs inside this method, not on the set.
+     *
      * <p>The replacement is {@link Brand#copy}, not the source's own reference - see that method's
      * Javadoc for why a copy is needed here where C only ever flips a bit. A source brand with no
-     * same-named partner in {@code destBrands} is added as the kind's own instance, not a copy, so
-     * the two sets then share it.
+     * same-named partner on the item is added as the kind's own instance, not a copy, so the
+     * kind's set and the item's then share it.
      *
-     * <p>Assumes {@code sourceBrands} is never {@code null}, unlike C's {@code copy_brands}, which
-     * guards against a null source before doing anything else. Every {@link ObjectKind} this is
-     * called with builds its brand set as an empty {@link java.util.HashSet}, never {@code null}, so
-     * the guard has nothing to catch under any input {@link #objectPrep} - the method's only
-     * caller - can currently produce.
+     * <p>The merge is worked out on lists taken from {@link ObjectKind#getBrands()} and
+     * {@link ItemObject#getBrands()}, which are read-only views, and the result is written back
+     * through {@link ItemObject#clearBrands} and {@link ItemObject#addBrand}, so the item's own set
+     * is the only thing changed and the kind's is not touched. Because {@code addBrand} applies its
+     * own replace-if-stronger rule, the writes cannot undo the merge.
      *
-     * <p>Function copyBrands coded before 260904, commented in full on 261005.
+     * <p>Unlike C's {@code copy_brands}, which guards against a null source before doing anything
+     * else, this has no guard of its own and does not need one for the brand sets: both getters
+     * answer an empty set for a set that was never built. The kind and the item themselves are
+     * assumed non-null, which the method's only caller, {@link #objectPrep}, always supplies.
      *
-     * @param destBrands   the brand set the merge writes into
-     * @param sourceBrands the brands being added
+     * <p>Function copyBrands coded before 260904, commented in full on 261005, ordering note added
+     * on 261017, rewritten for the item and kind arguments on 261017.
+     *
+     * @param dest   the item whose brands the merge writes into
+     * @param source the kind whose brands are being added
      */
-    private static void copyBrands(Set<Brand> destBrands, Set<Brand> sourceBrands) {
-        List<Brand> sourceList = sourceBrands.stream().toList();
-        List<Brand> destList = new ArrayList<>(destBrands.stream().toList());
+    private static void copyBrands(ItemObject dest, ObjectKind source) {
+        List<Brand> sourceList = source.getBrands().stream().toList();
+        List<Brand> destList = new ArrayList<>(dest.getBrands().stream().toList());
 
         for (Brand sourceBrand : sourceList) {
             boolean found = false;
@@ -1328,36 +1312,53 @@ public class ObjectUtils {
             }
         }
 
-        destBrands.clear();
-        destBrands.addAll(destList);
+        dest.clearBrands();
+        for (Brand resBrand : destList) {
+            dest.addBrand(resBrand);
+        }
     }
 
     /**
-     * Adds every slay in {@code slays} to {@code destSlays}, keeping only the stronger of two slays
-     * that kill the same monsters - the port of C's {@code copy_slays} ({@code obj-slays.c}).
+     * Adds every slay a kind carries to an item, keeping only the stronger of two slays that kill
+     * the same monsters - the port of C's {@code copy_slays} ({@code obj-slays.c}).
      *
      * <p>Same shape as {@link #copyBrands}, and for the same reason: C's array-and-index dedup
-     * becomes a scan of {@code destSlays} for a {@link Slay#sameMonsterSlain} match, with the
+     * becomes a scan of the item's slays for a {@link Slay#sameMonsterSlain} match, with the
      * stronger of the pair kept by comparing {@link Slay#getMultiplier()} directly rather than by
      * table position. The two approaches agree wherever {@code slay.txt} does not declare two slays
      * for the same race with the same multiplier, which it never does - every race's tiers (2/3, or
      * 3/5 for the ones with a "kill" tier) are distinct values, so C's index-based tie-break is never
      * the thing deciding the outcome.
      *
-     * <p>Assumes {@code slays} is never {@code null}, as {@link #copyBrands} assumes of
-     * {@code sourceBrands} and for the same reason - see that method's Javadoc. As there, a slay
-     * with no partner is added as the kind's own instance and only a replacement is a
-     * {@link Slay#copy}.
+     * <p>The ordering rule is the one {@link #copyBrands} records: the slay sets are unordered
+     * {@link java.util.HashSet}s by decision, and C's table order is applied inside this method if
+     * a tie ever needs it, comparing positions in
+     * {@link uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry#getSlays()}, never
+     * carried by the set.
      *
-     * <p>Function copySlays coded before 260904, commented in full on 261005.
+     * <p>The merge is read from and written back through the same read-only views and item methods
+     * as {@link #copyBrands}, with {@link ItemObject#clearSlays} and {@link ItemObject#addSlay}
+     * doing the writing, so the kind's set is not touched. As there, a slay with no partner is
+     * added as the kind's own instance and only a replacement is a {@link Slay#copy}.
      *
-     * @param destSlays the slay set the merge writes into
-     * @param slays     the slays being added
+     * <p>Unlike {@link #copyBrands}, this returns without doing anything if either the item or the
+     * kind is {@code null}; {@link #objectPrep} never passes a null, so the early return has nothing
+     * to catch. A kind or item whose slay set
+     * was never built is already covered, as for brands, by the getters answering an empty set.
+     *
+     * <p>Function copySlays coded before 260904, commented in full on 261005, ordering note added
+     * on 261017, rewritten for the item and kind arguments on 261017.
+     *
+     * @param dest   the item whose slays the merge writes into
+     * @param source the kind whose slays are being added
      */
-    private static void copySlays(Set<Slay> destSlays, Set<Slay> slays) {
-        List<Slay> sourceList = slays.stream().toList();
-        List<Slay> destList = new ArrayList<>(destSlays.stream().toList());
-
+    private static void copySlays(ItemObject dest, ObjectKind source) {
+        if (source == null || dest == null)
+            return;
+        
+        List<Slay> sourceList = source.getSlays().stream().toList();
+        List<Slay> destList = new ArrayList<>(dest.getSlays().stream().toList());
+        
         for (Slay sourceSlay : sourceList) {
             boolean found = false;
             for (Slay destSlay : destList) {
@@ -1368,14 +1369,14 @@ public class ObjectUtils {
                     found = true;
                 }
             }
-
-            if (!found) {
-                destList.add(sourceSlay);
-            }
+            
+            if (!found) destList.add(sourceSlay);
         }
-
-        destSlays.clear();
-        destSlays.addAll(destList);
+        
+        dest.clearSlays();
+        for (Slay resSlay : destList) {
+            dest.addSlay(resSlay);
+        }
     }
 
     /**

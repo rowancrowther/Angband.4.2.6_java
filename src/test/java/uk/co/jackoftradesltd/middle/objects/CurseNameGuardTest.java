@@ -55,7 +55,7 @@ class CurseNameGuardTest {
     @Test
     @DisplayName("two curses on one index are ordered by name and both kept")
     void tiedIndexOrdersByName() {
-        TreeMap<Curse, Integer> map = new TreeMap<>(ItemObject.CURSE_ORDER);
+        TreeMap<Curse, Integer> map = new TreeMap<>(Curse.CURSE_ORDER);
         map.put(curse("b", 0), 1);
         map.put(curse("a", 0), 2);
         assertEquals(List.of("a", "b"), map.keySet().stream().map(Curse::getName).toList());
@@ -64,7 +64,7 @@ class CurseNameGuardTest {
     @Test
     @DisplayName("a lower index sorts first whatever the names")
     void indexBeatsName() {
-        TreeMap<Curse, Integer> map = new TreeMap<>(ItemObject.CURSE_ORDER);
+        TreeMap<Curse, Integer> map = new TreeMap<>(Curse.CURSE_ORDER);
         map.put(curse("a", 1), 1);
         map.put(curse("z", 0), 2);
         assertEquals(List.of("z", "a"), map.keySet().stream().map(Curse::getName).toList());

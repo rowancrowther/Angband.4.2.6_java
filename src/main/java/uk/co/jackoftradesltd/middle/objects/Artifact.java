@@ -17,10 +17,10 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
-import uk.co.jackoftradesltd.middle.numerics.Random;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.Activation;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
+import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
@@ -170,11 +170,13 @@ public class Artifact {
     private Set<Slay> slays;
     /**
      * Curses the artifact carries, each with its instance data — C's {@code artifact->curses}, an
-     * array of curse powers indexed by curse.
+     * array of curse powers indexed by curse. Held as a {@link TreeMap} so that iteration follows
+     * curse index order; {@code ArtifactAssembler} and {@link #copy()} both build it with
+     * {@link Curse#CURSE_ORDER}.
      *
-     * <p>Field curses coded before 260827, commented in full on 261008.
+     * <p>Field curses coded before 260827, commented in full on 261008, ordering noted on 261017.
      */
-    private Map<Curse, CurseData> curses;
+    private TreeMap<Curse, CurseData> curses;
 
     /**
      * The artifact's difficulty level — C's {@code artifact->level}, which C documents as the
@@ -287,7 +289,7 @@ public class Artifact {
                     int weight, int cost, Flag<ObjectFlag> flags,
                     Map<ObjectModifier, Integer> modifiers,
                     Map<ElementEnum, ElementInfo> elInfo, Set<Brand> brands,
-                    Set<Slay> slays, Map<Curse, CurseData> curses, int level,
+                    Set<Slay> slays, TreeMap<Curse, CurseData> curses, int level,
                     int allocProb, int allocMin, int allocMax, Activation activation,
                     String activationMessage, Random time) {
         this.name = name;
@@ -477,39 +479,57 @@ public class Artifact {
     }
 
     /**
-     * Reads the brands the artifact carries, C's {@code artifact->brands}. The live set is
-     * returned, not a copy.
+     * Reads the brands the artifact carries, C's {@code artifact->brands}. A read-only view of the
+     * artifact's own set is returned, not a copy: it cannot be written through, and it follows any
+     * change to the set behind it. An artifact with no brand set answers an empty set, where C
+     * holds {@code NULL}.
      *
-     * <p>Function getBrands coded before 260827, commented in full on 261008.
+     * <p>Function getBrands coded before 260827, commented in full on 261008, read-only view on
+     * 261017.
      *
-     * @return the brands the artifact adds to its attacks
+     * @return a read-only view of the brands the artifact adds to its attacks
      */
     public Set<Brand> getBrands() {
-        return brands;
+        if (brands == null) 
+            return Set.of();
+        
+        return Collections.unmodifiableSet(brands);
     }
 
     /**
-     * Reads the slays the artifact carries, C's {@code artifact->slays}. The live set is returned,
-     * not a copy.
+     * Reads the slays the artifact carries, C's {@code artifact->slays}. A read-only view of the
+     * artifact's own set is returned, not a copy: it cannot be written through, and it follows any
+     * change to the set behind it. An artifact with no slay set answers an empty set, where C
+     * holds {@code NULL}.
      *
-     * <p>Function getSlays coded before 260827, commented in full on 261008.
+     * <p>Function getSlays coded before 260827, commented in full on 261008, read-only view on
+     * 261017.
      *
-     * @return the slays the artifact adds to its attacks
+     * @return a read-only view of the slays the artifact adds to its attacks
      */
     public Set<Slay> getSlays() {
-        return slays;
+        if (slays == null) 
+            return Set.of();
+        
+        return Collections.unmodifiableSet(slays);
     }
 
     /**
-     * Reads the curses the artifact carries, C's {@code artifact->curses}. The live map is
-     * returned, not a copy.
+     * Reads the curses the artifact carries, C's {@code artifact->curses}. A read-only view of the
+     * artifact's own map is returned, not a copy: the map cannot be changed through it, but the
+     * {@link CurseData} values in it can be, and they are the artifact's own. An artifact with no
+     * curse map answers an empty map.
      *
-     * <p>Function getCurses coded before 260827, commented in full on 261008.
+     * <p>Function getCurses coded before 260827, commented in full on 261008, read-only view on
+     * 261017.
      *
-     * @return the curses attached to the artifact, keyed by curse
+     * @return a read-only view of the curses attached to the artifact, keyed by curse
      */
     public Map<Curse, CurseData> getCurses() {
-        return curses;
+        if (curses == null)
+            return Map.of();
+        
+        return Collections.unmodifiableMap(curses);
     }
 
     /**
@@ -608,7 +628,8 @@ public class Artifact {
      * <p>Shallow-copied deliberately: the brand and slay sets are rebuilt as new sets, but their
      * members are shared, because a {@code Brand} and a {@code Slay} are immutable registry entries
      * that every object carrying them points at - exactly as C shares its {@code brands[]} and
-     * {@code slays[]} rows. Primitives and {@link String}s are passed straight through.
+     * {@code slays[]} rows. A {@code null} brand or slay set becomes an immutable empty set in the
+     * copy. Primitives and {@link String}s are passed straight through.
      *
      * <p>The activation is deep-copied even though C shares the registry's {@code activation}
      * pointer between every object built from the artifact; the port treats the copy as wholly its
@@ -624,7 +645,7 @@ public class Artifact {
      * for any technical reason.
      *
      * <p>Function copy coded on 260827, activation and message carried across on 261008, commented
-     * in full on 261008.
+     * in full on 261008, null brand and slay sets noted on 261017.
      *
      * @return a new artifact that shares no mutable state with this one
      */
@@ -650,9 +671,19 @@ public class Artifact {
         for (ElementEnum element : elInfo.keySet()) {
             newElInfo.put(element, elInfo.get(element).copy());
         }
-        Set<Brand> newBrands = new HashSet<>(brands);
-        Set<Slay> newSlays = new HashSet<>(slays);
-        Map<Curse, CurseData> newCurses = new HashMap<>();
+        Set<Brand> newBrands;
+        if (brands != null) {
+            newBrands = new HashSet<>(brands);
+        } else {
+            newBrands = Set.of();
+        }
+        Set<Slay> newSlays;
+        if (slays != null) {
+            newSlays = new HashSet<>(slays);
+        } else {
+            newSlays = Set.of();
+        }
+        TreeMap<Curse, CurseData> newCurses = new TreeMap<>(Curse.CURSE_ORDER);
         for (Curse curse : curses.keySet()) {
             newCurses.put(curse, new CurseData(curses.get(curse)));
         }

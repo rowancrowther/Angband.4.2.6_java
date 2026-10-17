@@ -33,6 +33,7 @@ import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerRedraw;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerSkill;
+import uk.co.jackoftradesltd.testsupport.Bodies;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
 import java.lang.reflect.Field;
@@ -124,7 +125,7 @@ class PlayerCalcManaTest {
 
         set("playerClass", casterClass(1));
         set("level", 10);
-        set("body", new PlayerBody("Humanoid", new ArrayList<>(List.of(
+        player.setBody(Bodies.of("Humanoid", new ArrayList<>(List.of(
                 new EquipSlot(EquipmentSlotsEnum.EQUIP_BODY_ARMOR, "body"),
                 new EquipSlot(EquipmentSlotsEnum.EQUIP_WEAPON, "weapon")))));
 

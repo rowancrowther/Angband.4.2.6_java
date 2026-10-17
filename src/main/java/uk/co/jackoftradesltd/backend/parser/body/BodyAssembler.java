@@ -79,7 +79,9 @@ public class BodyAssembler implements Assembler<BodyParseRecord, List<PlayerBody
 
             if (illegalSlot) continue;
 
-            bodies.add(new PlayerBody(bodyName, equipSlots));
+            PlayerBody body = new PlayerBody(bodyName);
+            body.setSlots(equipSlots);
+            bodies.add(body);
         }
 
         return bodies;

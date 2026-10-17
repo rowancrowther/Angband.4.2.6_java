@@ -506,7 +506,7 @@ public class Player {
         options.initDefaults();
 
         // Java initialization
-        body = PlayerRegistry.lookupPlayerBody(0);
+        setBody(PlayerRegistry.lookupPlayerBody(0));
         // TO be changed to a chunk on level creation
         cave = null;
         gear = new Pile();
@@ -581,7 +581,7 @@ public class Player {
         options.initDefaults();
 
         // Java initialization
-        body = PlayerRegistry.lookupPlayerBody(0);
+        setBody(PlayerRegistry.lookupPlayerBody(0));
         // TO be changed to a chunk on level creation
         cave = null;
         gear = new Pile();
@@ -809,22 +809,31 @@ public class Player {
      *
      * <p><b>The body passed in must belong to this player alone.</b> C has no equivalent setter
      * because {@code p->body} is an embedded struct rather than a pointer, so its assignment in
-     * {@code player_embody} ({@code player-birth.c:369}) copies by construction. In Java the field
+     * {@code player_embody} ({@code player-birth.c}) copies by construction. In Java the field
      * is a reference, and that safety has to be supplied by the caller: pass a
      * {@link PlayerBody#copy} of a race's template, never the template itself, or every character of
      * the race ends up wearing the same equipment and writing into the registry's data.
      *
-     * <p>The one caller is {@code PlayerBirth.embody}, which does exactly that. The constructor
-     * fills the field separately, from {@code PlayerRegistry.lookupPlayerBody(0)} — which copies
-     * before handing the body back — so a player has a body of their own before this is ever
-     * called, and this replaces it once the race is known.
+     * <p>Three callers: {@code PlayerBirth.embody}, which passes a copy of the race's body once the
+     * race is known, and the constructor and {@link #wipe()}, which each pass
+     * {@code PlayerRegistry.lookupPlayerBody(0)} — that copies before handing the body back — so a
+     * player has a body of their own before {@code embody} replaces it.
      *
-     * <p>Function setBody commented in full on 260901.
+     * <p><b>Side effect with no C counterpart.</b> A non-null body also has its slot count pushed to
+     * the character sheet through {@link PlayerEventStatusUpdate#updatePlayerCharSheetBodyCount}; see
+     * {@link PlayerBody#setSlots} for why. A {@code null} body is stored and nothing is pushed.
      *
-     * @param body the player's own body, not a shared template
+     * <p>Function setBody commented in full on 260901, callers and sheet push corrected on 261017.
+     *
+     * @param body the player's own body, not a shared template, or {@code null}
      */
     public void setBody(PlayerBody body) {
         this.body = body;
+        
+        if (body == null)
+            return;
+        
+        PlayerEventStatusUpdate.updatePlayerCharSheetBodyCount(body.getCount());
     }
 
     /**
@@ -2674,10 +2683,6 @@ public class Player {
      */
     public void setRace(PlayerRace race) {
         this.race = race;
-
-        // Cache the player race name and body count
-        PlayerEventStatusUpdate.updatePlayerStatusRaceName(this.race.getName());
-        PlayerEventStatusUpdate.updatePlayerCharSheetBodyCount(this.race.getBody().getCount());
     }
 
     /**

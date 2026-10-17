@@ -17,44 +17,31 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
-import uk.co.jackoftradesltd.testsupport.ItemFixture;
-import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
+import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
+import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftradesltd.middle.numerics.Random;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectStackEnum;
-import uk.co.jackoftradesltd.middle.objects.enums.TValue;
-import uk.co.jackoftradesltd.middle.player.Player;
+import uk.co.jackoftradesltd.middle.objects.enums.*;
 import uk.co.jackoftradesltd.middle.player.EquipSlot;
-import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
+import uk.co.jackoftradesltd.middle.player.Player;
 import uk.co.jackoftradesltd.middle.player.PlayerBody;
 import uk.co.jackoftradesltd.middle.player.PlayerRace;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
-import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
-import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
+import uk.co.jackoftradesltd.testsupport.Bodies;
 import uk.co.jackoftradesltd.testsupport.CurseFixture;
+import uk.co.jackoftradesltd.testsupport.ItemFixture;
+import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link ItemObject#similar}, the port of C's {@code object_similar} ({@code obj-util.c}) —
@@ -120,16 +107,14 @@ class ItemObjectSimilarTest {
         // there is put back afterwards, the registry being process-wide.
         savedBodies = registryField("playerBodies").get(null);
         savedRaces = registryField("playerRaces").get(null);
-        PlayerBody humanoid = new PlayerBody("test",
+        PlayerBody humanoid = Bodies.of("test",
                 List.of(new EquipSlot(EquipmentSlotsEnum.EQUIP_WEAPON, "weapon")));
         registryField("playerBodies").set(null, new ArrayList<>(List.of(humanoid)));
         registryField("playerRaces").set(null, new ArrayList<>(List.of(testRace(humanoid))));
 
         Player player = new Player();
-        Field body = Player.class.getDeclaredField("body");
-        body.setAccessible(true);
         // One slot, not none: PlayerBody refuses an empty slot list, and nothing here reads it.
-        body.set(player, new PlayerBody("test",
+        player.setBody(Bodies.of("test",
                 List.of(new EquipSlot(EquipmentSlotsEnum.EQUIP_WEAPON, "weapon"))));
 
         GameState.setPlayer(player);
@@ -265,7 +250,7 @@ class ItemObjectSimilarTest {
     private static EgoItem ego() {
         return new EgoItem("of Testing", null, 0, 0, new Flag<>(ObjectFlag.class),
                 new Flag<>(ObjectFlag.class), null, Map.of(), Map.of(), Map.of(),
-                java.util.Set.of(), java.util.Set.of(), Map.of(), 0, 0, 0, 0, List.of(),
+                java.util.Set.of(), java.util.Set.of(), new TreeMap<>(Curse.CURSE_ORDER), 0, 0, 0, 0, List.of(),
                 null, null, null, 0, 0, 0, null, null, false);
     }
 
@@ -371,7 +356,7 @@ class ItemObjectSimilarTest {
 
             set(second, "artifact", new Artifact("Test", null, TValue.TV_SWORD, null, 0, 0, 0, 0,
                     "0", 0, 0, new Flag<>(ObjectFlag.class), Map.of(), Map.of(), java.util.Set.of(),
-                    java.util.Set.of(), Map.of(), 0, 0, 0, 0, null, null, null));
+                    java.util.Set.of(), new TreeMap<>(Curse.CURSE_ORDER), 0, 0, 0, 0, null, null, null));
             assertFalse(first.similar(second, mode()));
         }
     }

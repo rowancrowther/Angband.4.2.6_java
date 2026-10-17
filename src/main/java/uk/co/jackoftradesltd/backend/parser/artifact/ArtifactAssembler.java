@@ -19,15 +19,18 @@ package uk.co.jackoftradesltd.backend.parser.artifact;
 
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
-import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.Activation;
 import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
+import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.*;
-import uk.co.jackoftradesltd.middle.objects.enums.*;
+import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
+import uk.co.jackoftradesltd.middle.objects.enums.ObjectKindFlag;
+import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
+import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 
 import java.util.*;
 
@@ -219,7 +222,7 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
             }
             if (illegalSlay) continue;
             boolean illegalCurses = false;
-            Map<Curse, CurseData> curses = new HashMap<>();
+            TreeMap<Curse, CurseData> curses = new TreeMap<>(Curse.CURSE_ORDER);
             for (String key : record.curse().keySet()) {
                 Curse curse = ObjectRegistry.lookupCurse(key);
                 if (curse == null) {

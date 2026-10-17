@@ -90,7 +90,7 @@ class PlayerBirthGetAHWTest {
     private static PlayerRace race(String name, int baseAge, int modAge, int baseHeight,
                                    int modHeight, int baseWeight, int modWeight) {
         return new PlayerRace(name, 0, 10, 100, baseAge, modAge, baseHeight, modHeight, baseWeight,
-                modWeight, 0, null, Map.of(), Map.of(), new Flag<>(ObjectFlag.class),
+                modWeight, 0, SeededPlayerRegistry.humanoidBody(), Map.of(), Map.of(), new Flag<>(ObjectFlag.class),
                 new Flag<>(PlayerFlag.class), null, Map.of());
     }
 
@@ -129,12 +129,9 @@ class PlayerBirthGetAHWTest {
      * Gives the player a race, which C has already asserted is set by the time {@code get_ahw} runs.
      *
      * @param race the race to be born into
-     * @throws Exception if the field cannot be reached
      */
-    private void giveRace(PlayerRace race) throws Exception {
-        Field field = Player.class.getDeclaredField("race");
-        field.setAccessible(true);
-        field.set(player, race);
+    private void giveRace(PlayerRace race) {
+        player.setRace(race);
     }
 
     /**

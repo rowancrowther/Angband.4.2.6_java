@@ -365,7 +365,7 @@ public class ObjectIgnore {
         Flag<ObjectDescription> descFlags = new Flag<>(ObjectDescription.class,
                 ObjectDescription.ODESC_PREFIX, ObjectDescription.ODESC_COMBAT,
                 ObjectDescription.ODESC_EXTRA);
-        String oName = ObjectUtils.objectDesc(obj, descFlags, player);
+        String oName = obj.description(descFlags, player);
 
         if (!note.isEmpty()) {
             obj.setNote(note);

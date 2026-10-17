@@ -74,6 +74,7 @@ public class ObjectKind {
      * <p>Field name coded before 261008, commented in full on 261008.
      */
     private String name;
+    
     /**
      * The kind's description — C's {@code kind->text}, built from the {@code desc:} lines of
      * {@code object.txt}. Not the flavour: that is {@link #flavour}, a separate record.
@@ -259,7 +260,7 @@ public class ObjectKind {
      *
      * <p>Field curses commented in full on 260817.
      */
-    private Map<Curse, CurseData> curses;
+    private TreeMap<Curse, CurseData> curses;
 
     /**
      * The default display glyph and colour — C's {@code kind->d_char} and {@code kind->d_attr}
@@ -462,7 +463,7 @@ public class ObjectKind {
         effect = new ArrayList<>();
         brands = new HashSet<>();
         slays = new HashSet<>();
-        curses = new HashMap<>();
+        curses = new TreeMap<>(Curse.CURSE_ORDER);
         ignore = new Flag<>(IgnoreFlag.class);
         isSpecialArtifactKind = false;
     }
@@ -536,7 +537,7 @@ public class ObjectKind {
         modifiers = new HashMap<>();
         brands = new HashSet<>();
         slays = new HashSet<>();
-        curses = new HashMap<>();
+        curses = new TreeMap<>(Curse.CURSE_ORDER);
         activations = new ArrayList<>();
         effect = new ArrayList<>();
         isSpecialArtifactKind = false;
@@ -665,7 +666,7 @@ public class ObjectKind {
         this.elInfo = elInfo;
         this.brands = brands;
         this.slays = slays;
-        this.curses = new HashMap<>();
+        this.curses = new TreeMap<>(Curse.CURSE_ORDER);
         for (Curse curse : curses.keySet()) {
             this.curses.put(curse, new CurseData(curses.get(curse)));
         }
@@ -728,7 +729,7 @@ public class ObjectKind {
         this.elInfo = new HashMap<>();
         this.brands = new HashSet<>();
         this.slays = new HashSet<>();
-        this.curses = new HashMap<>();
+        this.curses = new TreeMap<>(Curse.CURSE_ORDER);
         this.activations = new ArrayList<>();
         this.effect = new ArrayList<>();
         this.sValueName = sValName;
@@ -1562,7 +1563,85 @@ public class ObjectKind {
      * @return this kind's slays
      */
     public Set<Slay> getSlays() {
-        return slays;
+        if (slays == null)
+            return Set.of();
+        
+        return Collections.unmodifiableSet(slays);
+    }
+    
+    /**
+     * Tests whether this kind carries a slay - the port of reading C's {@code kind->slays[i]} as a
+     * boolean. A kind whose set was never built carries none, so the answer is {@code false}.
+     *
+     * <p>Membership is by {@link Slay#equals}, which compares every field of the slay. Nothing in
+     * {@code src/main} calls it yet.
+     *
+     * <p>Function containsSlay coded on 261017, commented in full on 261017.
+     *
+     * @param slay the slay to look for
+     * @return {@code true} if the kind carries exactly this slay
+     */
+    public boolean containsSlay(Slay slay) {
+        if (slays == null) return false;
+        
+        return slays.contains(slay);
+    }
+    
+    /**
+     * Adds a slay to this kind - the port of C's {@code kind->slays[i] = true}.
+     *
+     * <p>A plain set add, unlike {@link ItemObject#addSlay}: there is no replace-if-stronger rule
+     * here, so nothing stops two slays against the same monsters being held together. A kind whose
+     * set was never built cannot take the slay, because this does not create the set, and answers
+     * {@code false}. Nothing in {@code src/main} calls it yet.
+     *
+     * <p>Function addSlay coded on 261017, commented in full on 261017.
+     *
+     * @param slay the slay to add
+     * @return {@code true} if the kind did not already carry this slay and now does; {@code false} if
+     *         it already did, or if the set was never built
+     */
+    public boolean addSlay(Slay slay) {
+        if (slays == null) return false;
+
+        return slays.add(slay);
+    }
+    
+    /**
+     * Removes a slay from this kind - the port of C's {@code kind->slays[i] = false}.
+     *
+     * <p>Removing a slay the kind does not carry is not an error. Removal is by {@link Slay#equals},
+     * so only a slay equal in every field comes off. A kind whose set was never built has nothing to
+     * remove and answers {@code false}. Nothing in {@code src/main} calls it yet.
+     *
+     * <p>Function removeSlay coded on 261017, commented in full on 261017.
+     *
+     * @param slay the slay to take off
+     * @return {@code true} if the kind carried the slay and it was removed; {@code false} if it did
+     *         not, including when the set was never built
+     */
+    public boolean removeSlay(Slay slay) {
+        if (slays == null) return false;
+
+        return slays.remove(slay);
+    }
+    
+    /**
+     * Removes every slay from this kind, leaving it with an empty set. As {@link ItemObject#clearSlays}
+     * does, it first creates the set if the {@code slays} field was {@code null}, so it never throws
+     * and the kind ends with an empty set rather than {@code null}. This is the one mutator here that
+     * builds a missing set; {@link #addSlay} and {@link #removeSlay} still answer {@code false} on
+     * one, so after a clear an {@link #addSlay} can succeed where it could not before. Nothing in
+     * {@code src/main} calls it yet.
+     *
+     * <p>Function clearSlays coded on 261017, commented in full on 261017, null set handled on
+     * 261017.
+     */
+    public void clearSlays() {
+        if (slays == null)
+            slays = new HashSet<>();
+        
+        slays.clear();
     }
 
     /**
@@ -1573,7 +1652,87 @@ public class ObjectKind {
      * @return this kind's brands
      */
     public Set<Brand> getBrands() {
-        return brands;
+        if (brands == null)
+            return Set.of();
+        
+        return Collections.unmodifiableSet(brands);
+    }
+    
+    /**
+     * Tests whether this kind carries a brand - the port of reading C's {@code kind->brands[i]} as a
+     * boolean. A kind whose set was never built carries none, so the answer is {@code false}.
+     *
+     * <p>Membership is by {@link Brand#equals}, which compares every field of the brand, so the same
+     * element at a different strength is a different brand here. Nothing in {@code src/main} calls
+     * it yet.
+     *
+     * <p>Function containsBrand coded on 261017, commented in full on 261017.
+     *
+     * @param brand the brand to look for
+     * @return {@code true} if the kind carries exactly this brand
+     */
+    public boolean containsBrand(Brand brand) {
+        if (brands == null) return false;
+        
+        return brands.contains(brand);
+    }
+    
+    /**
+     * Adds a brand to this kind - the port of C's {@code kind->brands[i] = true}.
+     *
+     * <p>A plain set add, unlike {@link ItemObject#addBrand}: there is no replace-if-stronger rule
+     * here, so nothing stops two brands of the same element being held together. A kind whose set
+     * was never built cannot take the brand, because this does not create the set, and answers
+     * {@code false}. Nothing in {@code src/main} calls it yet.
+     *
+     * <p>Function addBrand coded on 261017, commented in full on 261017.
+     *
+     * @param brand the brand to add
+     * @return {@code true} if the kind did not already carry this brand and now does; {@code false}
+     *         if it already did, or if the set was never built
+     */
+    public boolean addBrand(Brand brand) {
+        if (brands == null) return false;
+
+        return brands.add(brand);
+    }
+    
+    /**
+     * Removes a brand from this kind - the port of C's {@code kind->brands[i] = false}.
+     *
+     * <p>Removing a brand the kind does not carry is not an error. Removal is by
+     * {@link Brand#equals}, so only a brand equal in every field comes off. A kind whose set was
+     * never built has nothing to remove and answers {@code false}. Nothing in {@code src/main} calls
+     * it yet.
+     *
+     * <p>Function removeBrand coded on 261017, commented in full on 261017.
+     *
+     * @param brand the brand to take off
+     * @return {@code true} if the kind carried the brand and it was removed; {@code false} if it did
+     *         not, including when the set was never built
+     */
+    public boolean removeBrand(Brand brand) {
+        if (brands == null) return false;
+
+        return brands.remove(brand);
+    }
+    
+    /**
+     * Removes every brand from this kind, leaving it with an empty set. As
+     * {@link ItemObject#clearBrands} does, it first creates the set if the {@code brands} field was
+     * {@code null}, so it never throws and the kind ends with an empty set rather than {@code null}.
+     * This is the one mutator here that builds a missing set; {@link #addBrand} and
+     * {@link #removeBrand} still answer {@code false} on one, so after a clear an {@link #addBrand}
+     * can succeed where it could not before. Nothing in {@code src/main} calls it yet.
+     *
+     * <p>Function clearBrands coded on 261017, commented in full on 261017, null set handled on
+     * 261017.
+     */
+    public void clearBrands() {
+        if (brands == null)
+            brands = new HashSet<>();
+        
+        brands.clear();
     }
 
     /**
@@ -1585,7 +1744,10 @@ public class ObjectKind {
      * @return this kind's curses
      */
     public Map<Curse, CurseData> getCurses() {
-        return curses;
+        if (curses == null)
+            return Map.of();
+
+        return Collections.unmodifiableMap(curses);
     }
 
     /**

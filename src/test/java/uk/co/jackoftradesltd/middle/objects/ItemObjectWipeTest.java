@@ -93,7 +93,7 @@ class ItemObjectWipeTest {
      */
     private static Artifact artifact() {
         return new Artifact("Test", null, TValue.TV_SWORD, null, 0, 0, 0, 0, "0", 0, 0,
-                new Flag<>(ObjectFlag.class), Map.of(), Map.of(), Set.of(), Set.of(), new LinkedHashMap<>(),
+                new Flag<>(ObjectFlag.class), Map.of(), Map.of(), Set.of(), Set.of(), new TreeMap<>(Curse.CURSE_ORDER),
                 0, 0, 0, 0, null, null, null);
     }
 
@@ -105,7 +105,7 @@ class ItemObjectWipeTest {
     private static EgoItem ego() {
         return new EgoItem("of Testing", null, 0, 0, new Flag<>(ObjectFlag.class),
                 new Flag<>(ObjectFlag.class), null, Map.of(), Map.of(), Map.of(),
-                Set.of(), Set.of(), Map.of(), 0, 0, 0, 0, List.of(),
+                Set.of(), Set.of(), new TreeMap<>(Curse.CURSE_ORDER), 0, 0, 0, 0, List.of(),
                 null, null, null, 0, 0, 0, null, null, false);
     }
 

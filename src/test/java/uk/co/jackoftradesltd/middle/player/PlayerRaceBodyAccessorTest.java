@@ -28,10 +28,7 @@ import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 import java.lang.reflect.Field;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static uk.co.jackoftradesltd.testsupport.ItemFixture.set;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link Player#getRace} and {@link Player#setBody} — the two ends of the ownership rule that
@@ -98,7 +95,7 @@ class PlayerRaceBodyAccessorTest {
         @DisplayName("the race read back is the object that was set")
         void raceReadBackIsTheObjectSet() throws Exception {
             PlayerRace race = PlayerRegistry.getPlayerRaces().getFirst();
-            set(player, "race", race);
+            player.setRace(race);
 
             assertSame(race, player.getRace());
         }
@@ -106,13 +103,11 @@ class PlayerRaceBodyAccessorTest {
         /**
          * And it answers {@code null} rather than failing when there is no race yet, which is the
          * state a half-built character is in and the state {@code embody} guards against.
-         *
-         * @throws Exception if the field cannot be reached
          */
         @Test
         @DisplayName("a raceless player answers null")
-        void racelessPlayerAnswersNull() throws Exception {
-            set(player, "race", null);
+        void racelessPlayerAnswersNull() {
+            player.setRace(null);
 
             assertNull(player.getRace());
         }

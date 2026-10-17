@@ -20,13 +20,11 @@ package uk.co.jackoftradesltd.middle.objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftradesltd.channel.utils.Flag;
-import uk.co.jackoftradesltd.middle.effect.Effect;
-import uk.co.jackoftradesltd.middle.numerics.Random;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.List;
+import java.util.TreeMap;
 
 /**
  * The definition of a curse (as loaded from {@code curse.txt}) — a negative
@@ -75,6 +73,22 @@ public class Curse {
      * <p>Field logger coded before 261005, commented in full on 261005.
      */
     private static final Logger logger = LogManager.getLogger(Curse.class);
+    
+    /**
+     * The order in which curses are held in a curse map: by {@link #index}, then by {@link #name}.
+     * Passed to the {@link TreeMap} constructor wherever a curse map is built, so that iterating a
+     * map visits the curses in the order of C's {@code curses[]}, where an object's curses sit in an
+     * array indexed by curse.
+     *
+     * <p>The comparison reads the live {@link #index}, which {@link #setIndex(int)} can change. A
+     * curse must therefore not be re-indexed while it is a key in a map ordered by this comparator.
+     * The name tie-break only matters for two curses given the same index, and it treats a
+     * {@code null} name as first, though the constructor never lets one through.
+     *
+     * <p>Field CURSE_ORDER coded on 261017, commented in full on 261017.
+     */
+    public static final Comparator<Curse> CURSE_ORDER =Comparator.comparing(Curse::getIndex)
+            .thenComparing(Curse::getName, Comparator.nullsFirst(Comparator.naturalOrder()));
     
     /**
      * The curse's name (C: {@code curse->name}), from the {@code name:} line of {@code curse.txt}.

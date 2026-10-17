@@ -23,24 +23,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.cave.Loc;
-import uk.co.jackoftradesltd.middle.objects.enums.IgnoreType;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectKindFlag;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectNotice;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum;
-import uk.co.jackoftradesltd.middle.objects.enums.TValue;
+import uk.co.jackoftradesltd.middle.objects.enums.*;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
 import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests the {@link ItemObject} accessors that classify an item rather than store something about it
@@ -293,7 +282,7 @@ class ItemObjectClassificationTest {
                     new Flag<>(ObjectFlag.class), new Flag<>(ObjectFlag.class),
                     new Flag<>(ObjectKindFlag.class),
                     new HashMap<>(), new HashMap<>(), new HashMap<>(),
-                    new HashSet<>(), new HashSet<>(), new HashMap<>(),
+                    new HashSet<>(), new HashSet<>(), new TreeMap<>(Curse.CURSE_ORDER),
                     0, 0, 0, 0, new java.util.ArrayList<ObjectKind>(),
                     null, null, null, 0, 0, 0, null, null, false);
 

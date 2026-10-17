@@ -20,21 +20,18 @@ package uk.co.jackoftradesltd.middle.objects;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.Activation;
 import uk.co.jackoftradesltd.middle.numerics.Random;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.*;
+import static uk.co.jackoftradesltd.testsupport.ItemFixture.set;
 
 /**
  * Tests {@link Artifact}'s data-file accessors and its copy.
@@ -61,7 +58,7 @@ class ArtifactAccessorsTest {
         return new Artifact("Test Blade", "It gleams.", TValue.TV_SWORD, "long sword",
                 5, 6, 7, 8, "3d5", 120, 4500,
                 new Flag<>(ObjectFlag.class), new HashMap<>(), new HashMap<>(),
-                new HashSet<>(), new HashSet<>(), new HashMap<>(),
+                new HashSet<>(), new HashSet<>(), new TreeMap<>(Curse.CURSE_ORDER),
                 40, 11, 12, 13,
                 new Activation("test activation", 1, false, 5, 30, new ArrayList<>(), "It fires.", "fires"),
                 "The blade glows.", new Random(0, 1, 1, 20, false));
@@ -236,11 +233,12 @@ class ArtifactAccessorsTest {
         void brandMembersShared() {
             Artifact original = artifact();
             Brand fire = new Brand("FIRE_2", "fire", "burns", null, null, 2, 3, 20);
-            original.getBrands().add(fire);
+            Set<Brand> brands = new HashSet<>(Set.of(fire));
+            set(original, "brands", brands);
 
             Artifact duplicate = original.copy();
+            brands.clear();
 
-            assertNotSame(original.getBrands(), duplicate.getBrands());
             assertEquals(1, duplicate.getBrands().size());
             assertSame(fire, duplicate.getBrands().iterator().next());
         }

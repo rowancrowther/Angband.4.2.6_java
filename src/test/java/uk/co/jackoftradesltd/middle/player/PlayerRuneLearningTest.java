@@ -36,6 +36,7 @@ import uk.co.jackoftradesltd.middle.objects.*;
 import uk.co.jackoftradesltd.middle.objects.enums.*;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerSkill;
+import uk.co.jackoftradesltd.testsupport.Bodies;
 import uk.co.jackoftradesltd.testsupport.CurseFixture;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
@@ -349,7 +350,7 @@ class PlayerRuneLearningTest {
             }
             slots.add(slot);
         }
-        return new PlayerBody("humanoid", slots);
+        return Bodies.of("humanoid", slots);
     }
 
     /**
@@ -395,7 +396,7 @@ class PlayerRuneLearningTest {
             }
             slots.add(slot);
         }
-        return new PlayerBody("humanoid", slots);
+        return Bodies.of("humanoid", slots);
     }
 
     /**
@@ -429,8 +430,8 @@ class PlayerRuneLearningTest {
      * false on a fresh {@link PlayerUpkeep}, and {@link PlayerKnowledge#cursesFindFlags} gates its
      * message on it, so a test about messages has to say so.
      */
-    private void startPlaying() throws Exception {
-        poke(player.getPlayerUpkeep(), "playing", true);
+    private void startPlaying() {
+        player.getPlayerUpkeep().setPlaying(true);
     }
 
     /**
@@ -889,7 +890,7 @@ class PlayerRuneLearningTest {
                 oFlags.on(f);
             }
 
-            return new PlayerRace("Test-Race", 1, 10, 100, 20, 10, 70, 6, 150, 25, 0, null,
+            return new PlayerRace("Test-Race", 1, 10, 100, 20, 10, 70, 6, 150, 25, 0, SeededPlayerRegistry.humanoidBody(),
                     Map.<Stats, Integer>of(), Map.<PlayerSkill, Integer>of(), oFlags,
                     new Flag<>(PlayerFlag.class), null, resists);
         }
@@ -906,7 +907,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("an innate resistance is learned")
         void resistance() throws Exception {
-            set(player, "race", race(resistMap(ElementEnum.ELEM_FIRE, 1)));
+            player.setRace(race(resistMap(ElementEnum.ELEM_FIRE, 1)));
 
             PlayerKnowledge.learnInnate(player);
 
@@ -920,7 +921,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("an innate vulnerability is learned too")
         void vulnerability() throws Exception {
-            set(player, "race", race(resistMap(ElementEnum.ELEM_FIRE, -1)));
+            player.setRace(race(resistMap(ElementEnum.ELEM_FIRE, -1)));
 
             PlayerKnowledge.learnInnate(player);
 
@@ -930,7 +931,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("an innate flag is learned")
         void flag() throws Exception {
-            set(player, "race", race(new HashMap<>(), ObjectFlag.OF_SUST_STR));
+            player.setRace(race(new HashMap<>(), ObjectFlag.OF_SUST_STR));
 
             PlayerKnowledge.learnInnate(player);
 
@@ -940,7 +941,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("elements and flags are learned in the same pass")
         void both() throws Exception {
-            set(player, "race", race(resistMap(ElementEnum.ELEM_FIRE, 1), ObjectFlag.OF_SUST_STR));
+            player.setRace(race(resistMap(ElementEnum.ELEM_FIRE, 1), ObjectFlag.OF_SUST_STR));
 
             PlayerKnowledge.learnInnate(player);
 
@@ -957,7 +958,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("learns in silence")
         void silent() throws Exception {
-            set(player, "race", race(resistMap(ElementEnum.ELEM_FIRE, 1), ObjectFlag.OF_SUST_STR));
+            player.setRace(race(resistMap(ElementEnum.ELEM_FIRE, 1), ObjectFlag.OF_SUST_STR));
 
             PlayerKnowledge.learnInnate(player);
 
@@ -972,7 +973,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("a race with no innate properties learns nothing and survives the walk")
         void nothingInnate() throws Exception {
-            set(player, "race", race(new HashMap<>()));
+            player.setRace(race(new HashMap<>()));
 
             assertDoesNotThrow(() -> PlayerKnowledge.learnInnate(player));
 
@@ -988,7 +989,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("a resistance level of zero is not learned")
         void zeroLevel() throws Exception {
-            set(player, "race", race(resistMap(ElementEnum.ELEM_FIRE, 0)));
+            player.setRace(race(resistMap(ElementEnum.ELEM_FIRE, 0)));
 
             PlayerKnowledge.learnInnate(player);
 
@@ -1003,7 +1004,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("only the race's own properties are learned")
         void nothingElse() throws Exception {
-            set(player, "race", race(resistMap(ElementEnum.ELEM_FIRE, 1), ObjectFlag.OF_SUST_STR));
+            player.setRace(race(resistMap(ElementEnum.ELEM_FIRE, 1), ObjectFlag.OF_SUST_STR));
 
             PlayerKnowledge.learnInnate(player);
 
@@ -1028,7 +1029,7 @@ class PlayerRuneLearningTest {
             shards.setResLevel(1);
             resists.put(ElementEnum.ELEM_SHARD, shards);
 
-            set(player, "race", race(resists));
+            player.setRace(race(resists));
 
             assertDoesNotThrow(() -> PlayerKnowledge.learnInnate(player));
 
@@ -1205,7 +1206,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("empty slots are stepped over, not fallen at")
         void emptySlotsAreSkipped() throws Exception {
-            set(player, "body", bodyWearing(null, null));
+            player.setBody(bodyWearing(null, null));
 
             assertDoesNotThrow(() -> PlayerKnowledge.equipLearnOnDefend(player));
 
@@ -1215,7 +1216,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("a cursed item in a slot teaches the to-AC rune")
         void cursedItemTeaches() throws Exception {
-            set(player, "body", bodyWearing(null, itemWith(cursed(vulnerability, 20))));
+            player.setBody(bodyWearing(null, itemWith(cursed(vulnerability, 20))));
 
             PlayerKnowledge.equipLearnOnDefend(player);
 
@@ -1230,7 +1231,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("an uncursed item with no bonus teaches nothing")
         void uncursedItemWithNoBonusTeachesNothing() throws Exception {
-            set(player, "body", bodyWearing(itemWith()));
+            player.setBody(bodyWearing(itemWith()));
 
             PlayerKnowledge.equipLearnOnDefend(player);
 
@@ -1245,7 +1246,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("an uncursed item with a to-AC bonus teaches the rune")
         void uncursedItemWithABonusTeaches() throws Exception {
-            set(player, "body", bodyWearing(itemWithCombat(0, 0, 5)));
+            player.setBody(bodyWearing(itemWithCombat(0, 0, 5)));
 
             PlayerKnowledge.equipLearnOnDefend(player);
 
@@ -1259,7 +1260,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("a to-AC penalty teaches as readily as a bonus")
         void aPenaltyTeachesToo() throws Exception {
-            set(player, "body", bodyWearing(itemWithCombat(0, 0, -5)));
+            player.setBody(bodyWearing(itemWithCombat(0, 0, -5)));
 
             PlayerKnowledge.equipLearnOnDefend(player);
 
@@ -1275,7 +1276,7 @@ class PlayerRuneLearningTest {
         @DisplayName("nothing is examined once the to-AC rune is already known")
         void alreadyKnownStopsAtTheDoor() throws Exception {
             knowledge.learnToA();
-            set(player, "body", bodyWearing(itemWith(cursed(vulnerability, 20))));
+            player.setBody(bodyWearing(itemWith(cursed(vulnerability, 20))));
 
             PlayerKnowledge.equipLearnOnDefend(player);
 
@@ -1290,7 +1291,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("the walk stops at the first slot that teaches")
         void stopsAtTheFirstSlotThatTeaches() throws Exception {
-            set(player, "body", bodyWearing(
+            player.setBody(bodyWearing(
                     itemWith(cursed(vulnerability, 20)),
                     itemWith(cursed(enveloping, 20))));
 
@@ -1308,8 +1309,8 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("an assumed shape's armour class teaches the rune")
         void shapeTeaches() throws Exception {
-            set(player, "body", emptyBody());
-            set(player, "shape", shapeWithToAc(5));
+            player.setBody(emptyBody());
+            player.setShape(shapeWithToAc(5));
 
             PlayerKnowledge.equipLearnOnDefend(player);
 
@@ -1319,8 +1320,8 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("a shape with no armour class teaches nothing")
         void shapeWithoutArmourClass() throws Exception {
-            set(player, "body", emptyBody());
-            set(player, "shape", shapeWithToAc(0));
+            player.setBody(emptyBody());
+            player.setShape(shapeWithToAc(0));
 
             PlayerKnowledge.equipLearnOnDefend(player);
 
@@ -1333,7 +1334,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("no shape is not an error")
         void noShape() throws Exception {
-            set(player, "body", emptyBody());
+            player.setBody(emptyBody());
 
             assertDoesNotThrow(() -> PlayerKnowledge.equipLearnOnDefend(player));
 
@@ -1501,7 +1502,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("empty slots are stepped over, not fallen at")
         void emptySlotsAreSkipped() throws Exception {
-            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES), (ItemObject) null));
+            player.setBody(bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES), (ItemObject) null));
 
             assertDoesNotThrow(() -> PlayerKnowledge.equipLearnOnRangedAttack(player));
 
@@ -1517,7 +1518,7 @@ class PlayerRuneLearningTest {
         void theWeaponSlotIsSkipped() throws Exception {
             ItemObject sword = itemWith(cursed(enveloping, 20));
             poke(sword, "toHit", 8);
-            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_WEAPON), sword));
+            player.setBody(bodyOf(List.of(EquipmentSlotsEnum.EQUIP_WEAPON), sword));
 
             PlayerKnowledge.equipLearnOnRangedAttack(player);
 
@@ -1536,7 +1537,7 @@ class PlayerRuneLearningTest {
         void theShootingSlotIsSkipped() throws Exception {
             ItemObject bow = itemWith(cursed(enveloping, 20));
             poke(bow, "toHit", 8);
-            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_BOW), bow));
+            player.setBody(bodyOf(List.of(EquipmentSlotsEnum.EQUIP_BOW), bow));
 
             PlayerKnowledge.equipLearnOnRangedAttack(player);
 
@@ -1552,7 +1553,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("a curse in any other slot teaches the to-hit rune")
         void aCursedRingTeaches() throws Exception {
-            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_RING),
+            player.setBody(bodyOf(List.of(EquipmentSlotsEnum.EQUIP_RING),
                     itemWith(cursed(enveloping, 20))));
 
             PlayerKnowledge.equipLearnOnRangedAttack(player);
@@ -1570,7 +1571,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("an item at its kind's to-hit teaches nothing")
         void anItemAtItsKindsToHitTeachesNothing() throws Exception {
-            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_RING),
+            player.setBody(bodyOf(List.of(EquipmentSlotsEnum.EQUIP_RING),
                     weaponWithToHit(0)));
 
             PlayerKnowledge.equipLearnOnRangedAttack(player);
@@ -1585,7 +1586,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("an item off its kind's to-hit teaches the rune")
         void anItemOffItsKindsToHitTeaches() throws Exception {
-            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_RING),
+            player.setBody(bodyOf(List.of(EquipmentSlotsEnum.EQUIP_RING),
                     weaponWithToHit(5)));
 
             PlayerKnowledge.equipLearnOnRangedAttack(player);
@@ -1602,7 +1603,7 @@ class PlayerRuneLearningTest {
         @DisplayName("nothing is examined once the to-hit rune is already known")
         void alreadyKnownStopsAtTheDoor() throws Exception {
             knowledge.learnToH();
-            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_RING),
+            player.setBody(bodyOf(List.of(EquipmentSlotsEnum.EQUIP_RING),
                     itemWith(cursed(enveloping, 20))));
 
             PlayerKnowledge.equipLearnOnRangedAttack(player);
@@ -1618,7 +1619,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("the walk stops at the first slot that teaches")
         void stopsAtTheFirstSlotThatTeaches() throws Exception {
-            set(player, "body", bodyOf(
+            player.setBody(bodyOf(
                     List.of(EquipmentSlotsEnum.EQUIP_RING, EquipmentSlotsEnum.EQUIP_AMULET),
                     itemWith(cursed(enveloping, 20)),
                     itemWith(cursed(siren, 20))));
@@ -1638,8 +1639,8 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("an assumed shape's to-hit teaches the rune")
         void shapeTeaches() throws Exception {
-            set(player, "body", emptyBody());
-            set(player, "shape", shapeWith(0, 5, 0));
+            player.setBody(emptyBody());
+            player.setShape(shapeWith(0, 5, 0));
 
             PlayerKnowledge.equipLearnOnRangedAttack(player);
 
@@ -1655,8 +1656,8 @@ class PlayerRuneLearningTest {
         void shapeToDamageIsNotLearned() throws Exception {
             List<Rune> previousRunes = withToDRune();
             try {
-                set(player, "body", emptyBody());
-                set(player, "shape", shapeWith(0, 0, 7));
+                player.setBody(emptyBody());
+                player.setShape(shapeWith(0, 0, 7));
 
                 PlayerKnowledge.equipLearnOnRangedAttack(player);
 
@@ -1669,7 +1670,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("no shape is not an error")
         void noShape() throws Exception {
-            set(player, "body", emptyBody());
+            player.setBody(emptyBody());
 
             assertDoesNotThrow(() -> PlayerKnowledge.equipLearnOnRangedAttack(player));
 
@@ -1715,7 +1716,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("empty slots are stepped over, not fallen at")
         void emptySlotsAreSkipped() throws Exception {
-            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES), (ItemObject) null));
+            player.setBody(bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES), (ItemObject) null));
 
             assertDoesNotThrow(() -> PlayerKnowledge.equipLearnOnMeleeAttack(player));
 
@@ -1733,7 +1734,7 @@ class PlayerRuneLearningTest {
         void theShootingSlotIsSkipped() throws Exception {
             ItemObject bow = itemWith(cursed(enveloping, 20));
             poke(bow, "toDam", 8);
-            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_BOW), bow));
+            player.setBody(bodyOf(List.of(EquipmentSlotsEnum.EQUIP_BOW), bow));
 
             PlayerKnowledge.equipLearnOnMeleeAttack(player);
 
@@ -1750,7 +1751,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("the melee weapon is read")
         void theWeaponSlotIsRead() throws Exception {
-            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_WEAPON),
+            player.setBody(bodyOf(List.of(EquipmentSlotsEnum.EQUIP_WEAPON),
                     itemWithCombat(0, 6, 0)));
 
             PlayerKnowledge.equipLearnOnMeleeAttack(player);
@@ -1766,7 +1767,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("an item's to-damage teaches the to-damage rune and not the to-hit one")
         void toDamageAloneTeachesOnlyItsOwnRune() throws Exception {
-            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES),
+            player.setBody(bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES),
                     itemWithCombat(0, 6, 0)));
 
             PlayerKnowledge.equipLearnOnMeleeAttack(player);
@@ -1783,7 +1784,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("a to-damage penalty teaches as readily as a bonus")
         void aToDamagePenaltyTeaches() throws Exception {
-            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES),
+            player.setBody(bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES),
                     itemWithCombat(0, -6, 0)));
 
             PlayerKnowledge.equipLearnOnMeleeAttack(player);
@@ -1798,7 +1799,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("an item with no bonus teaches nothing")
         void anUnremarkableItemTeachesNothing() throws Exception {
-            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES),
+            player.setBody(bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES),
                     itemWithCombat(0, 0, 0)));
 
             PlayerKnowledge.equipLearnOnMeleeAttack(player);
@@ -1814,7 +1815,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("a weapon off its kind's to-hit teaches the to-hit rune")
         void toHitAloneTeachesOnlyItsOwnRune() throws Exception {
-            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_WEAPON),
+            player.setBody(bodyOf(List.of(EquipmentSlotsEnum.EQUIP_WEAPON),
                     weaponWithToHit(5)));
 
             PlayerKnowledge.equipLearnOnMeleeAttack(player);
@@ -1833,7 +1834,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("an item at its kind's to-hit teaches nothing")
         void anItemAtItsKindsToHitTeachesNothing() throws Exception {
-            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_WEAPON),
+            player.setBody(bodyOf(List.of(EquipmentSlotsEnum.EQUIP_WEAPON),
                     weaponWithToHit(0)));
 
             PlayerKnowledge.equipLearnOnMeleeAttack(player);
@@ -1849,7 +1850,7 @@ class PlayerRuneLearningTest {
         @DisplayName("knowing to-damage alone does not stop the walk")
         void oneRuneKnownIsNotEnoughToStop() throws Exception {
             knowledge.learnToD();
-            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_WEAPON),
+            player.setBody(bodyOf(List.of(EquipmentSlotsEnum.EQUIP_WEAPON),
                     weaponWithToHit(5)));
 
             PlayerKnowledge.equipLearnOnMeleeAttack(player);
@@ -1864,7 +1865,7 @@ class PlayerRuneLearningTest {
         @DisplayName("knowing to-hit alone does not stop the walk")
         void theOtherRuneKnownIsNotEnoughEither() throws Exception {
             knowledge.learnToH();
-            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES),
+            player.setBody(bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES),
                     itemWithCombat(0, 6, 0)));
 
             PlayerKnowledge.equipLearnOnMeleeAttack(player);
@@ -1881,7 +1882,7 @@ class PlayerRuneLearningTest {
         void bothKnownStopsAtTheDoor() throws Exception {
             knowledge.learnToH();
             knowledge.learnToD();
-            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_WEAPON),
+            player.setBody(bodyOf(List.of(EquipmentSlotsEnum.EQUIP_WEAPON),
                     itemWith(cursed(enveloping, 20))));
 
             PlayerKnowledge.equipLearnOnMeleeAttack(player);
@@ -1898,7 +1899,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("the walk stops at the first slot that teaches both")
         void stopsOnceBothAreKnown() throws Exception {
-            set(player, "body", bodyOf(
+            player.setBody(bodyOf(
                     List.of(EquipmentSlotsEnum.EQUIP_WEAPON, EquipmentSlotsEnum.EQUIP_GLOVES),
                     itemWith(cursed(enveloping, 20)),
                     itemWith(cursed(siren, 20))));
@@ -1919,7 +1920,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("a slot that teaches one rune does not end the walk")
         void aPartialSlotDoesNotEndTheWalk() throws Exception {
-            set(player, "body", bodyOf(
+            player.setBody(bodyOf(
                     List.of(EquipmentSlotsEnum.EQUIP_GLOVES, EquipmentSlotsEnum.EQUIP_BOOTS),
                     itemWithCombat(0, 6, 0),
                     weaponWithToHit(5)));
@@ -1938,8 +1939,8 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("an assumed shape teaches both its figures")
         void shapeTeachesBoth() throws Exception {
-            set(player, "body", emptyBody());
-            set(player, "shape", shapeWith(0, 5, 7));
+            player.setBody(emptyBody());
+            player.setShape(shapeWith(0, 5, 7));
 
             PlayerKnowledge.equipLearnOnMeleeAttack(player);
 
@@ -1955,8 +1956,8 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("a shape with only one of the two teaches only that one")
         void shapeWithOneFigureTeachesOnlyIt() throws Exception {
-            set(player, "body", emptyBody());
-            set(player, "shape", shapeWith(0, 0, 7));
+            player.setBody(emptyBody());
+            player.setShape(shapeWith(0, 0, 7));
 
             PlayerKnowledge.equipLearnOnMeleeAttack(player);
 
@@ -1968,7 +1969,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("no shape is not an error")
         void noShape() throws Exception {
-            set(player, "body", emptyBody());
+            player.setBody(emptyBody());
 
             assertDoesNotThrow(() -> PlayerKnowledge.equipLearnOnMeleeAttack(player));
 
@@ -2216,7 +2217,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("a null flag or a sentinel is ignored rather than walked")
         void sentinelsAreRefused() throws Exception {
-            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES),
+            player.setBody(bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES),
                     itemFlagged(ObjectFlag.OF_AFRAID)));
 
             assertDoesNotThrow(() -> PlayerKnowledge.equipLearnFlag(player, null));
@@ -2231,7 +2232,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("empty slots are stepped over, not fallen at")
         void emptySlotsAreSkipped() throws Exception {
-            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES), (ItemObject) null));
+            player.setBody(bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES), (ItemObject) null));
 
             assertDoesNotThrow(() -> PlayerKnowledge.equipLearnFlag(player, ObjectFlag.OF_AFRAID));
 
@@ -2246,7 +2247,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("an item carrying the flag teaches and announces it")
         void anItemWithTheFlagTeaches() throws Exception {
-            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES),
+            player.setBody(bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES),
                     itemFlagged(ObjectFlag.OF_AFRAID)));
 
             PlayerKnowledge.equipLearnFlag(player, ObjectFlag.OF_AFRAID);
@@ -2266,7 +2267,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("two items carrying the same flag announce it once")
         void theFlagIsAnnouncedOnce() throws Exception {
-            set(player, "body", bodyOf(
+            player.setBody(bodyOf(
                     List.of(EquipmentSlotsEnum.EQUIP_GLOVES, EquipmentSlotsEnum.EQUIP_BOOTS),
                     itemFlagged(ObjectFlag.OF_AFRAID),
                     itemFlagged(ObjectFlag.OF_AFRAID)));
@@ -2287,7 +2288,7 @@ class PlayerRuneLearningTest {
         @DisplayName("an already-known flag is not announced again")
         void anAlreadyKnownFlagIsSilent() throws Exception {
             knowledge.learnFlag(ObjectFlag.OF_AFRAID);
-            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES),
+            player.setBody(bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES),
                     itemFlagged(ObjectFlag.OF_AFRAID)));
 
             PlayerKnowledge.equipLearnFlag(player, ObjectFlag.OF_AFRAID);
@@ -2317,7 +2318,7 @@ class PlayerRuneLearningTest {
         void anItemWithoutTheFlagRecordsTheAbsence() throws Exception {
             ItemObject item = itemFlagged();
             giveKnownCounterpart(item);
-            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES), item));
+            player.setBody(bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES), item));
 
             PlayerKnowledge.equipLearnFlag(player, ObjectFlag.OF_AFRAID);
 
@@ -2337,7 +2338,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("an item with no known counterpart is stepped over, not fallen at")
         void aCounterpartlessItemIsSurvivable() throws Exception {
-            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES), itemFlagged()));
+            player.setBody(bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES), itemFlagged()));
 
             assertDoesNotThrow(() -> PlayerKnowledge.equipLearnFlag(player, ObjectFlag.OF_AFRAID));
         }
@@ -2350,7 +2351,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("a curse carrying the flag is found even when the item does not have it")
         void cursesAreConsultedToo() throws Exception {
-            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES),
+            player.setBody(bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES),
                     itemCursed(cursed(cowardice, 20))));
 
             PlayerKnowledge.equipLearnFlag(player, ObjectFlag.OF_AFRAID);
@@ -2367,7 +2368,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("only the flag being learned is looked for on the curses")
         void theCurseSetHoldsOnlyThisFlag() throws Exception {
-            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES),
+            player.setBody(bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES),
                     itemCursed(cursed(cowardice, 20))));
 
             PlayerKnowledge.equipLearnFlag(player, ObjectFlag.OF_AFRAID);
@@ -2383,7 +2384,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("the walk does not stop at the slot that teaches")
         void everySlotIsVisited() throws Exception {
-            set(player, "body", bodyOf(
+            player.setBody(bodyOf(
                     List.of(EquipmentSlotsEnum.EQUIP_GLOVES, EquipmentSlotsEnum.EQUIP_BOOTS),
                     itemFlagged(ObjectFlag.OF_AFRAID),
                     itemCursed(cursed(cowardice, 20))));

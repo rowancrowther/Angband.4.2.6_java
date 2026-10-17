@@ -17,33 +17,20 @@
 
 package uk.co.jackoftradesltd.testsupport;
 
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.cave.Loc;
 import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.magic.ClassMagic;
-import uk.co.jackoftradesltd.middle.objects.Curse;
-import uk.co.jackoftradesltd.middle.objects.CurseData;
-import uk.co.jackoftradesltd.middle.objects.ElementInfo;
-import uk.co.jackoftradesltd.middle.objects.ItemObject;
-import uk.co.jackoftradesltd.middle.objects.KnownObject;
-import uk.co.jackoftradesltd.middle.objects.ObjectKind;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectNotice;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum;
-import uk.co.jackoftradesltd.middle.objects.enums.TValue;
+import uk.co.jackoftradesltd.middle.objects.*;
+import uk.co.jackoftradesltd.middle.objects.enums.*;
 import uk.co.jackoftradesltd.middle.player.*;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerSkill;
 import uk.co.jackoftradesltd.middle.player.enums.TimedEffect;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * A builder for the character {@code calcBonuses} needs, and the state it fills.
@@ -101,14 +88,14 @@ public final class CalcBonusesFixture {
         player = supplied;
         body = SeededPlayerRegistry.humanoidBody();
 
-        set("body", body);
-        set("race", SeededPlayerRegistry.plainRace(body));
+        player.setBody(body);
+        player.setRace(SeededPlayerRegistry.plainRace(body));
         set("playerClass", plainClass());
         set("itemKnowledge", new KnownObject());
         set("state", new PlayerState());
         set("level", 1);
         set("depth", 1);
-        set("shape", null);
+        player.setShape(null);
 
         Map<Stats, Integer> cur = new HashMap<>();
         Map<Stats, Integer> max = new HashMap<>();
@@ -289,10 +276,9 @@ public final class CalcBonusesFixture {
      *
      * @param race the race
      * @return this fixture
-     * @throws ReflectiveOperationException if the field cannot be reached
      */
-    public CalcBonusesFixture race(PlayerRace race) throws ReflectiveOperationException {
-        set("race", race);
+    public CalcBonusesFixture race(PlayerRace race) {
+        player.setRace(race);
         return this;
     }
 
@@ -313,10 +299,9 @@ public final class CalcBonusesFixture {
      *
      * @param shape the shape, or {@code null} for none
      * @return this fixture
-     * @throws ReflectiveOperationException if the field cannot be reached
      */
-    public CalcBonusesFixture shape(PlayerShape shape) throws ReflectiveOperationException {
-        set("shape", shape);
+    public CalcBonusesFixture shape(PlayerShape shape) {
+        player.setShape(shape);
         return this;
     }
 

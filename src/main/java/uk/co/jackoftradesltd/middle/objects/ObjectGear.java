@@ -95,11 +95,13 @@ public class ObjectGear {
      *
      * <p><b>Outstanding:</b> C builds the message description with the aggregate {@code total}
      * packed into the high 16 bits of the mode word ({@code ODESC_ALTNUM}). The port sets the flag
-     * but cannot pass the count, because {@link ObjectUtils#objectDesc} is a stub with no count
-     * parameter, so the "You have ..." text will show the stack's own count until that is ported.
+     * but cannot pass the count, because {@link ItemObject#description} is a stub that takes only
+     * the flags and the player, so the "You have ..." text is the placeholder tag it returns and
+     * will not show the aggregate count until the description subsystem is ported.
      *
      * <p>Function invenCarry coded before 260905, commented in full on 261011, fixed on 260905 so
-     * the paranoia guard checks for exceeding pack capacity rather than firing on the ordinary case.
+     * the paranoia guard checks for exceeding pack capacity rather than firing on the ordinary case,
+     * stub reference corrected on 261017.
      *
      * @param player  the player receiving the item
      * @param obj     the item being carried; on a successful combine this is reassigned to the gear
@@ -212,7 +214,7 @@ public class ObjectGear {
             Flag<ObjectDescription> descFlags = new Flag<>(ObjectDescription.class,
                     ObjectDescription.ODESC_PREFIX, ObjectDescription.ODESC_EXTRA,
                     ObjectDescription.ODESC_COMBAT, ObjectDescription.ODESC_ALTNUM);
-            oName = ObjectUtils.objectDesc(obj, descFlags, player);
+            oName = obj.description(descFlags, player);
             char label = ObjectUtils.gearToLabel(player, first);
             if (total > first.getNumber()) {
                 Message.message("You have " + oName + " (1st " + label + ").");

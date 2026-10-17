@@ -239,7 +239,7 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
                     slays.add(s);
             }
             if (illegalSlay) continue;
-            Map<Curse, CurseData> curses = new HashMap<>();
+            TreeMap<Curse, CurseData> curses = new TreeMap<>(Curse.CURSE_ORDER);
             boolean illegalCurse = false;
             for (String key : record.curses().keySet()) {
                 String cursePower = record.curses().get(key);

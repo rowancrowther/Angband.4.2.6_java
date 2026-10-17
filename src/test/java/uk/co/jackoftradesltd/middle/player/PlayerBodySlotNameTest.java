@@ -22,14 +22,13 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
 import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
+import uk.co.jackoftradesltd.testsupport.Bodies;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerBody#equippedItemBySlotName}, the port of C's
@@ -82,7 +81,7 @@ class PlayerBodySlotNameTest {
      * @return a body named "Humanoid" with those slots
      */
     private static PlayerBody bodyOf(EquipSlot... slots) {
-        return new PlayerBody("Humanoid", new ArrayList<>(List.of(slots)));
+        return Bodies.of("Humanoid", new ArrayList<>(List.of(slots)));
     }
 
     @BeforeEach

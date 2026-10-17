@@ -180,7 +180,7 @@ public class EgoItem {
      *
      * <p>Field curses coded before 260816, commented in full on 261014.
      */
-    private Map<Curse, CurseData> curses;
+    private TreeMap<Curse, CurseData> curses;
 
     /**
      * How much this ego adds to the level-feeling rating, the port of C's {@code ego->rating}, from
@@ -354,9 +354,8 @@ public class EgoItem {
                    Map<ObjectModifier, Random> modifiers,
                    Map<ObjectModifier, Integer> minModifiers,
                    Map<ElementEnum, ElementInfo> elInfo,
-                   Set<Brand> brands,
-                   Set<Slay> slays,
-                   Map<Curse, CurseData> curses, int rating,
+                   Set<Brand> brands, Set<Slay> slays,
+                   TreeMap<Curse, CurseData> curses, int rating,
                    int allocProb, int allocMin, int allocMax,
                    List<ObjectKind> possItems, Random toHit,
                    Random toDam, Random toAC, int minToHit,
@@ -489,30 +488,40 @@ public class EgoItem {
      * Returns the brands this ego confers, the port of reading C's {@code ego->brands}.
      *
      * <p>C holds a {@code bool} per brand index and tests {@code ego->brands[i]}; here a brand the ego
-     * confers is a member of the set and every other brand is absent. The set is handed out as is, not
-     * copied; callers must not modify it.
+     * confers is a member of the set and every other brand is absent. What comes back is a read-only
+     * view of this ego's own set, not a copy: it cannot be written through, and it follows any change
+     * to the set behind it. An ego with no brand set answers an empty set.
      *
-     * <p>Function getBrands coded before 260816, commented in full on 261014.
+     * <p>Function getBrands coded before 260816, commented in full on 261014, read-only view on
+     * 261017.
      *
-     * @return this ego's brands, shared with this instance
+     * @return a read-only view of this ego's brands
      */
     public Set<Brand> getBrands() {
-        return brands;
+        if (brands == null) 
+            return Set.of();
+        
+        return Collections.unmodifiableSet(brands);
     }
 
     /**
      * Returns the slays this ego confers, the port of reading C's {@code ego->slays}.
      *
      * <p>C holds a {@code bool} per slay index and tests {@code ego->slays[i]}; here a slay the ego
-     * confers is a member of the set and every other slay is absent. The set is handed out as is, not
-     * copied; callers must not modify it.
+     * confers is a member of the set and every other slay is absent. What comes back is a read-only
+     * view of this ego's own set, not a copy: it cannot be written through, and it follows any change
+     * to the set behind it. An ego with no slay set answers an empty set.
      *
-     * <p>Function getSlays coded before 260816, commented in full on 261014.
+     * <p>Function getSlays coded before 260816, commented in full on 261014, read-only view on
+     * 261017.
      *
-     * @return this ego's slays, shared with this instance
+     * @return a read-only view of this ego's slays
      */
     public Set<Slay> getSlays() {
-        return slays;
+        if (slays == null)
+            return Set.of();
+        
+        return Collections.unmodifiableSet(slays);
     }
 
     /**
@@ -525,12 +534,20 @@ public class EgoItem {
      * curse is appended to an object, and the assembler leaves it at {@code 0} here. A curse with no
      * entry is one C would hold as a zero power.
      *
-     * <p>Function getCurses coded before 260816, commented in full on 261014.
+     * <p>What comes back is a read-only view of this ego's own map, not a copy: the map cannot be
+     * changed through it, but the {@link CurseData} values in it can be, and they are the ego's own.
+     * An ego with no curse map answers an empty map.
      *
-     * @return this ego's curses and their data, shared with this instance
+     * <p>Function getCurses coded before 260816, commented in full on 261014, read-only view on
+     * 261017.
+     *
+     * @return a read-only view of this ego's curses and their data
      */
     public Map<Curse, CurseData> getCurses() {
-        return curses;
+        if (curses == null)
+            return Map.of();
+
+        return Collections.unmodifiableMap(curses);
     }
 
     /**
@@ -621,12 +638,13 @@ public class EgoItem {
      * <p>Shared deliberately: the brand and slay sets are rebuilt but their members are not, because
      * a {@code Brand} and a {@code Slay} are immutable registry entries every carrier points at; the
      * possible-items list is likewise rebuilt around shared {@code ObjectKind} templates, as C
-     * shares its {@code kind} pointers.
+     * shares its {@code kind} pointers. A {@code null} brand or slay set becomes an immutable empty
+     * set in the copy.
      *
      * <p>The ignore-category map is assigned after construction because the constructor does not
      * take it.
      *
-     * <p>Function copy commented in full on 260827.
+     * <p>Function copy commented in full on 260827, null brand and slay sets noted on 261017.
      *
      * @return a new ego template that shares no mutable state with this one, bar the noted exception
      */
@@ -654,9 +672,19 @@ public class EgoItem {
         for (ElementEnum em : this.elInfo.keySet()) {
             newElInfo.put(em, this.elInfo.get(em).copy());
         }
-        Set<Brand> newBrands = new HashSet<>(this.brands);
-        Set<Slay> newSlays = new HashSet<>(this.slays);
-        Map<Curse, CurseData> newCurses = new HashMap<>();
+        Set<Brand> newBrands;
+        if (brands != null) {
+            newBrands = new HashSet<>(brands);
+        } else {
+            newBrands = Set.of();
+        }
+        Set<Slay> newSlays;
+        if (slays != null) {
+            newSlays = new HashSet<>(this.slays);
+        } else {
+            newSlays = Set.of();
+        }
+        TreeMap<Curse, CurseData> newCurses = new TreeMap<>(Curse.CURSE_ORDER);
         for (Curse c : this.curses.keySet()) {
             newCurses.put(c, new CurseData(this.curses.get(c)));
         }

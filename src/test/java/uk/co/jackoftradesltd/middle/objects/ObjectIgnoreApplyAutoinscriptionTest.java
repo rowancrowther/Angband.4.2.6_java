@@ -50,11 +50,13 @@ import static uk.co.jackoftradesltd.testsupport.ItemFixture.set;
  * the guard from the other side — the unignoring toggle overrides the ignore mark, so the same
  * item that stays alone above gets inscribed once unignoring is on.
  *
- * <p>{@link ObjectUtils#objectDesc} is still a stub that always answers {@code ""}, so every
- * successful-inscription message here reads {@code "You autoinscribe ."} rather than naming the
- * item — a fact about the stub, not about this method.
+ * <p>{@link ItemObject#description} is still a stub that always answers
+ * {@code "{DESCRIPTION_TAG}"}, so every successful-inscription message here reads
+ * {@code "You autoinscribe {DESCRIPTION_TAG}."} rather than naming the item — a fact about the
+ * stub, not about this method.
  *
- * <p>Class ObjectIgnoreApplyAutoinscriptionTest coded on 260905, commented in full on 260905.
+ * <p>Class ObjectIgnoreApplyAutoinscriptionTest coded on 260905, commented in full on 260905,
+ * expected name moved to the {@code description} placeholder on 261016.
  *
  * @author Rowan Crowther
  */
@@ -271,7 +273,7 @@ class ObjectIgnoreApplyAutoinscriptionTest {
             assertEquals(1, result);
             assertEquals("{tried}", obj.getNote());
             assertEquals(1, bus.messages.size());
-            assertEquals("You autoinscribe .", bus.messages.get(0));
+            assertEquals("You autoinscribe {DESCRIPTION_TAG}.",bus.messages.get(0));
         }
     }
 
@@ -429,7 +431,7 @@ class ObjectIgnoreApplyAutoinscriptionTest {
             assertEquals(1, result);
             assertEquals("{tried}", obj.getNote());
             assertEquals(1, bus.messages.size());
-            assertEquals("You autoinscribe .", bus.messages.get(0));
+            assertEquals("You autoinscribe {DESCRIPTION_TAG}.",bus.messages.get(0));
         }
 
         /**
@@ -449,7 +451,7 @@ class ObjectIgnoreApplyAutoinscriptionTest {
             assertEquals(1, result);
             assertNull(obj.getNote());
             assertEquals(1, bus.messages.size());
-            assertEquals("You autoinscribe .", bus.messages.get(0));
+            assertEquals("You autoinscribe {DESCRIPTION_TAG}.",bus.messages.get(0));
         }
 
         /**

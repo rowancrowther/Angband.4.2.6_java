@@ -21,6 +21,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
 import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
+import uk.co.jackoftradesltd.testsupport.Bodies;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,7 +56,7 @@ class PlayerBodyEquippedSlotTest {
     }
 
     private static PlayerBody bodyOf(EquipSlot... slots) {
-        return new PlayerBody("test", new ArrayList<>(List.of(slots)));
+        return Bodies.of("test", new ArrayList<>(List.of(slots)));
     }
 
     /** Weapon, ring, ring, body — the ring pair being the C humanoid body's repeated type. */

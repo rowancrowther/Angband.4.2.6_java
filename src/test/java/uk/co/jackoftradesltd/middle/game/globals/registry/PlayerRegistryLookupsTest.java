@@ -29,12 +29,9 @@ import uk.co.jackoftradesltd.middle.game.event.EventsHandler;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
 import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftradesltd.middle.player.EquipSlot;
-import uk.co.jackoftradesltd.middle.player.PlayerBody;
-import uk.co.jackoftradesltd.middle.player.PlayerHistoryChart;
-import uk.co.jackoftradesltd.middle.player.PlayerRace;
-import uk.co.jackoftradesltd.middle.player.PlayerShape;
+import uk.co.jackoftradesltd.middle.player.*;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
+import uk.co.jackoftradesltd.testsupport.Bodies;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -42,13 +39,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests the shape, body, race and history-chart side of {@link PlayerRegistry}, added on 261008:
@@ -127,7 +118,7 @@ class PlayerRegistryLookupsTest {
     private static PlayerBody body(String name, int slots) {
         List<EquipSlot> list = new ArrayList<>();
         for (int i = 0; i < slots; i++) list.add(new EquipSlot(EquipmentSlotsEnum.EQUIP_WEAPON, "slot" + i));
-        return new PlayerBody(name, list);
+        return Bodies.of(name, list);
     }
 
     /**

@@ -17,13 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataMessage;
 import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
@@ -51,6 +45,7 @@ import uk.co.jackoftradesltd.middle.player.PlayerBody;
 import uk.co.jackoftradesltd.middle.player.PlayerRace;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerSkill;
+import uk.co.jackoftradesltd.testsupport.Bodies;
 import uk.co.jackoftradesltd.testsupport.CalcBonusesFixture;
 import uk.co.jackoftradesltd.testsupport.ItemFixture;
 
@@ -61,15 +56,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static uk.co.jackoftradesltd.testsupport.ItemFixture.read;
-import static uk.co.jackoftradesltd.testsupport.ItemFixture.set;
-import static uk.co.jackoftradesltd.testsupport.ItemFixture.setStatic;
+import static org.junit.jupiter.api.Assertions.*;
+import static uk.co.jackoftradesltd.testsupport.ItemFixture.*;
 
 /**
  * Tests the gear routines of {@link ObjectUtils} that had no direct coverage: {@code combinePack}
@@ -153,7 +141,7 @@ class ObjectUtilsGearTest {
 
         savedBodies = registryField("playerBodies").get(null);
         savedRaces = registryField("playerRaces").get(null);
-        body = new PlayerBody("test", List.of(new EquipSlot(EquipmentSlotsEnum.EQUIP_WEAPON, "weapon")));
+        body = Bodies.of("test", List.of(new EquipSlot(EquipmentSlotsEnum.EQUIP_WEAPON, "weapon")));
         registryField("playerBodies").set(null, new ArrayList<>(List.of(body)));
         registryField("playerRaces").set(null, new ArrayList<>(List.of(plainRace(body))));
 

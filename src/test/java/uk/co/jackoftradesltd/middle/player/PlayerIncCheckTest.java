@@ -44,6 +44,7 @@ import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 import uk.co.jackoftradesltd.middle.player.enums.TimedEffect;
 import uk.co.jackoftradesltd.middle.player.enums.TimedEffectReasonType;
+import uk.co.jackoftradesltd.testsupport.Bodies;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -278,7 +279,7 @@ class PlayerIncCheckTest {
         List<EquipSlot> slots = new ArrayList<>();
         slots.add(slot);
         slots.add(new EquipSlot(EquipmentSlotsEnum.EQUIP_CLOAK, "on your back"));
-        set(player, "body", new PlayerBody("Humanoid", slots));
+        player.setBody(Bodies.of("Humanoid", slots));
 
         return counterpart;
     }

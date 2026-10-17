@@ -20,15 +20,16 @@ package uk.co.jackoftradesltd.middle.player;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
 import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.objects.ElementInfo;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerSkill;
+import uk.co.jackoftradesltd.testsupport.Bodies;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -36,12 +37,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerRace#copy()}, the method {@code PlayerBirth.playerGenerate} hands a player its
@@ -150,7 +146,7 @@ class PlayerRaceCopyTest {
         List<EquipSlot> slots = new ArrayList<>(List.of(
                 new EquipSlot(EquipmentSlotsEnum.EQUIP_WEAPON, "weapon"),
                 new EquipSlot(EquipmentSlotsEnum.EQUIP_RING, "on right hand")));
-        body = new PlayerBody("Humanoid", slots);
+        body = Bodies.of("Humanoid", slots);
 
         history = new PlayerHistoryChart(1, 2);
 

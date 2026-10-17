@@ -109,9 +109,11 @@ class PlayerKnowledgeKnowsEgoTest {
                                Set<Brand> brands,
                                Set<Slay> slays,
                                Map<Curse, CurseData> curses) {
+        TreeMap<Curse, CurseData> curseTree = new TreeMap<>(Curse.CURSE_ORDER);
+        curseTree.putAll(curses);
         return new EgoItem("of Testing", "a test ego", 1, 0,
                 flags, new Flag<>(ObjectFlag.class), new Flag<>(ObjectKindFlag.class),
-                modifiers, new HashMap<>(), elInfo, brands, slays, curses,
+                modifiers, new HashMap<>(), elInfo, brands, slays, curseTree,
                 0, 0, 0, 0, new ArrayList<ObjectKind>(),
                 null, null, null, 0, 0, 0,
                 null, null, false);
@@ -501,7 +503,7 @@ class PlayerKnowledgeKnowsEgoTest {
     class Curses {
 
         private EgoItem egoWithCurse(Curse curse) {
-            Map<Curse, CurseData> curses = new HashMap<>();
+            TreeMap<Curse, CurseData> curses = new TreeMap<>(Curse.CURSE_ORDER);
             curses.put(curse, new CurseData(20, 0));
             return ego(flags(), new HashMap<>(), new HashMap<>(), new HashSet<>(), new HashSet<>(), curses);
         }
@@ -542,7 +544,7 @@ class PlayerKnowledgeKnowsEgoTest {
             elements.put(ElementEnum.ELEM_FIRE, info);
             Map<ObjectModifier, Random> modifiers = new HashMap<>();
             modifiers.put(ObjectModifier.OM_STR, new Random(2, 0, 0, 0, false));
-            Map<Curse, CurseData> curses = new HashMap<>();
+            TreeMap<Curse, CurseData> curses = new TreeMap<>(Curse.CURSE_ORDER);
             curses.put(siren, new CurseData(20, 0));
             return ego(flags(ObjectFlag.OF_FEATHER), modifiers, elements, new HashSet<>(Set.of(fire)),
                     new HashSet<>(Set.of(animal)), curses);

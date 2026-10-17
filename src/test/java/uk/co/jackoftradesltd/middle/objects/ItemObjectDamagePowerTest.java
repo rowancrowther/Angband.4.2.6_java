@@ -17,13 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -36,9 +30,9 @@ import uk.co.jackoftradesltd.middle.objects.enums.ObjectKindFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 import uk.co.jackoftradesltd.middle.player.Player;
+import uk.co.jackoftradesltd.testsupport.CurseFixture;
 import uk.co.jackoftradesltd.testsupport.ItemFixture;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
-import uk.co.jackoftradesltd.testsupport.CurseFixture;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -46,6 +40,7 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -243,7 +238,7 @@ class ItemObjectDamagePowerTest {
     private static EgoItem ego() {
         return new EgoItem("of Testing", null, 0, 0, new Flag<>(ObjectFlag.class),
                 new Flag<>(ObjectFlag.class), null, Map.of(), Map.of(), Map.of(),
-                java.util.Set.of(), java.util.Set.of(), Map.of(), 0, 0, 0, 0, List.of(),
+                java.util.Set.of(), java.util.Set.of(), new TreeMap<>(Curse.CURSE_ORDER), 0, 0, 0, 0, List.of(),
                 null, null, null, 0, 0, 0, null, null, false);
     }
 
@@ -430,7 +425,7 @@ class ItemObjectDamagePowerTest {
         @DisplayName("a weapon with a brand is still priced from its dice alone")
         void weaponWithBrand() throws Exception {
             ItemObject sword = item(TValue.TV_SWORD, 2, 5, 0);
-            sword.getBrands().add(brand("FIRE_2", 120));
+            sword.addBrand(brand("FIRE_2", 120));
 
             assertEquals(15, priceAlone(sword, "damageDicePower"));
         }
@@ -453,9 +448,9 @@ class ItemObjectDamagePowerTest {
         @DisplayName("a non-weapon with a brand or a slay is credited with a flat 60")
         void ringWithBrandOrSlay() throws Exception {
             ItemObject branded = item(TValue.TV_RING);
-            branded.getBrands().add(brand("FIRE_2", 120));
+            branded.addBrand(brand("FIRE_2", 120));
             ItemObject slaying = item(TValue.TV_RING);
-            slaying.getSlays().add(slay("EVIL", 2, 120));
+            slaying.addSlay(slay("EVIL", 2, 120));
 
             assertEquals(60, priceAlone(branded, "damageDicePower"));
             assertEquals(60, priceAlone(slaying, "damageDicePower"));
@@ -483,7 +478,7 @@ class ItemObjectDamagePowerTest {
         @DisplayName("a launcher is priced at zero even with brands and might")
         void launcherIsZero() throws Exception {
             ItemObject bow = with(item(TValue.TV_BOW, 2, 5, 0), ObjectModifier.OM_MIGHT, 1);
-            bow.getBrands().add(brand("FIRE_2", 120));
+            bow.addBrand(brand("FIRE_2", 120));
 
             assertEquals(0, priceAlone(bow, "damageDicePower"));
         }
@@ -938,7 +933,7 @@ class ItemObjectDamagePowerTest {
         @DisplayName("one brand is scaled by the dice squared and verbose changes nothing")
         void oneBrand() throws Exception {
             ItemObject sword = item(TValue.TV_SWORD);
-            sword.getBrands().add(brand("FIRE_2", 120));
+            sword.addBrand(brand("FIRE_2", 120));
 
             assertEquals(101, price(sword, 100, false, 15));
             assertEquals(101, price(sword, 100, true, 15));
@@ -951,7 +946,7 @@ class ItemObjectDamagePowerTest {
         @DisplayName("the same brand is worth more on a larger dice term")
         void largerDice() throws Exception {
             ItemObject ring = item(TValue.TV_RING);
-            ring.getBrands().add(brand("FIRE_2", 130));
+            ring.addBrand(brand("FIRE_2", 130));
 
             assertEquals(143, price(ring, 100, false, 60));
         }
@@ -965,8 +960,8 @@ class ItemObjectDamagePowerTest {
         @DisplayName("the best brand or slay is used, not the sum")
         void bestOfSeveral() throws Exception {
             ItemObject sword = item(TValue.TV_SWORD);
-            sword.getBrands().add(brand("FIRE_2", 110));
-            sword.getSlays().add(slay("EVIL", 2, 120));
+            sword.addBrand(brand("FIRE_2", 110));
+            sword.addSlay(slay("EVIL", 2, 120));
 
             // best 120: 900 * 20 / 2500 = 7, plus slay-and-brand 1 * 1 * 30 / 25 = 1
             assertEquals(108, price(sword, 100, false, 30));
@@ -980,7 +975,7 @@ class ItemObjectDamagePowerTest {
         @DisplayName("a weak brand prices negatively, truncating toward zero")
         void weakBrand() throws Exception {
             ItemObject sword = item(TValue.TV_SWORD);
-            sword.getBrands().add(brand("FIRE_2", 80));
+            sword.addBrand(brand("FIRE_2", 80));
 
             assertEquals(99, price(sword, 100, false, 15));
         }
@@ -994,7 +989,7 @@ class ItemObjectDamagePowerTest {
         @DisplayName("the best figure starts at one, so a worthless brand costs 99 and not 100")
         void floorOfOne() throws Exception {
             ItemObject sword = item(TValue.TV_SWORD);
-            sword.getBrands().add(brand("FIRE_2", 0));
+            sword.addBrand(brand("FIRE_2", 0));
 
             assertEquals(92, price(sword, 100, false, 15));
         }
@@ -1007,8 +1002,8 @@ class ItemObjectDamagePowerTest {
         @DisplayName("several slays earn a bonus")
         void multipleSlays() throws Exception {
             ItemObject sword = item(TValue.TV_SWORD);
-            sword.getSlays().add(slay("EVIL", 2, 110));
-            sword.getSlays().add(slay("ORC", 2, 120));
+            sword.addSlay(slay("EVIL", 2, 110));
+            sword.addSlay(slay("ORC", 2, 120));
 
             assertEquals(111, price(sword, 100, false, 30));
         }
@@ -1021,8 +1016,8 @@ class ItemObjectDamagePowerTest {
         @DisplayName("several brands earn a bonus")
         void multipleBrands() throws Exception {
             ItemObject sword = item(TValue.TV_SWORD);
-            sword.getBrands().add(brand("FIRE_2", 110));
-            sword.getBrands().add(brand("COLD_2", 130));
+            sword.addBrand(brand("FIRE_2", 110));
+            sword.addBrand(brand("COLD_2", 130));
 
             assertEquals(119, price(sword, 100, false, 30));
         }
@@ -1035,8 +1030,8 @@ class ItemObjectDamagePowerTest {
         @DisplayName("one slay and one brand earn the pair bonus only")
         void slayAndBrand() throws Exception {
             ItemObject sword = item(TValue.TV_SWORD);
-            sword.getSlays().add(slay("EVIL", 2, 120));
-            sword.getBrands().add(brand("FIRE_2", 110));
+            sword.addSlay(slay("EVIL", 2, 120));
+            sword.addBrand(brand("FIRE_2", 110));
 
             assertEquals(108, price(sword, 100, false, 30));
         }
@@ -1049,8 +1044,8 @@ class ItemObjectDamagePowerTest {
         @DisplayName("several kills earn their own bonus")
         void multipleKills() throws Exception {
             ItemObject sword = item(TValue.TV_SWORD);
-            sword.getSlays().add(slay("EVIL", 5, 150));
-            sword.getSlays().add(slay("UNDEAD", 5, 160));
+            sword.addSlay(slay("EVIL", 5, 150));
+            sword.addSlay(slay("UNDEAD", 5, 160));
 
             assertEquals(135, price(sword, 100, false, 30));
         }
@@ -1063,8 +1058,8 @@ class ItemObjectDamagePowerTest {
         @DisplayName("one kill and one slay earn no multiple bonus")
         void killAndSlay() throws Exception {
             ItemObject sword = item(TValue.TV_SWORD);
-            sword.getSlays().add(slay("EVIL", 5, 140));
-            sword.getSlays().add(slay("UNDEAD", 2, 120));
+            sword.addSlay(slay("EVIL", 5, 140));
+            sword.addSlay(slay("UNDEAD", 2, 120));
 
             assertEquals(114, price(sword, 100, false, 30));
         }
@@ -1079,8 +1074,8 @@ class ItemObjectDamagePowerTest {
         @DisplayName("a multiplier of three is a slay and of four is a kill")
         void killBoundary(int mult, int expectedBonus) throws Exception {
             ItemObject sword = item(TValue.TV_SWORD);
-            sword.getSlays().add(slay("EVIL", mult, 100));
-            sword.getSlays().add(slay("ORC", mult, 100));
+            sword.addSlay(slay("EVIL", mult, 100));
+            sword.addSlay(slay("ORC", mult, 100));
 
             assertEquals(100 + expectedBonus, price(sword, 100, false, 30));
         }
@@ -1096,7 +1091,7 @@ class ItemObjectDamagePowerTest {
             String[] monsters = {"EVIL", "UNDEAD", "ANIMAL", "ORC", "TROLL", "GIANT", "DEMON", "DRAGON"};
             ItemObject sword = item(TValue.TV_SWORD);
             for (int i = 0; i < count; i++) {
-                sword.getSlays().add(slay(monsters[i], 2, 100));
+                sword.addSlay(slay(monsters[i], 2, 100));
             }
 
             assertEquals(100 + expectedBonus, price(sword, 100, false, 30));
@@ -1113,7 +1108,7 @@ class ItemObjectDamagePowerTest {
             String[] codes = {"ACID_2", "ELEC_2", "FIRE_2", "COLD_2", "POIS_2"};
             ItemObject sword = item(TValue.TV_SWORD);
             for (int i = 0; i < count; i++) {
-                sword.getBrands().add(brand(codes[i], 100));
+                sword.addBrand(brand(codes[i], 100));
             }
 
             assertEquals(100 + expectedBonus, price(sword, 100, false, 30));
@@ -1130,7 +1125,7 @@ class ItemObjectDamagePowerTest {
             String[] monsters = {"EVIL", "UNDEAD", "DEMON"};
             ItemObject sword = item(TValue.TV_SWORD);
             for (int i = 0; i < count; i++) {
-                sword.getSlays().add(slay(monsters[i], 5, 100));
+                sword.addSlay(slay(monsters[i], 5, 100));
             }
 
             assertEquals(100 + expectedBonus, price(sword, 100, false, 30));
@@ -1144,8 +1139,8 @@ class ItemObjectDamagePowerTest {
         @DisplayName("a dice term of zero leaves the total unchanged")
         void zeroDice() throws Exception {
             ItemObject sword = item(TValue.TV_SWORD);
-            sword.getBrands().add(brand("FIRE_2", 150));
-            sword.getBrands().add(brand("COLD_2", 150));
+            sword.addBrand(brand("FIRE_2", 150));
+            sword.addBrand(brand("COLD_2", 150));
 
             assertEquals(100, price(sword, 100, false, 0));
         }

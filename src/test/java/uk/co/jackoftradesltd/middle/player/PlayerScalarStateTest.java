@@ -33,13 +33,7 @@ import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link Player}'s scalar state — the counters, flags and countdowns the turn loop reads and
@@ -240,16 +234,14 @@ class PlayerScalarStateTest {
         /**
          * The shape test is not a null check: a player in the "normal" shape has one, and is not
          * changed. That is why the method compares the name rather than the reference.
-         *
-         * @throws Exception if the field cannot be reached
          */
         @Test
         @DisplayName("the normal shape does not count as changed")
-        void normalShapeIsNotChanged() throws Exception {
-            set("shape", shapeNamed("normal"));
+        void normalShapeIsNotChanged() {
+            player.setShape(shapeNamed("normal"));
             assertFalse(player.isShapeChanged());
 
-            set("shape", shapeNamed("bear"));
+            player.setShape(shapeNamed("bear"));
             assertTrue(player.isShapeChanged());
         }
 
@@ -270,15 +262,13 @@ class PlayerScalarStateTest {
          * The shape is handed back by identity, not copied. It is the registry's own description of
          * the form — C's {@code p->shape} points into the {@code shapes} list — so a caller that
          * wrote through it would change that form for every character assuming it.
-         *
-         * @throws Exception if the field cannot be reached
          */
         @Test
         @DisplayName("the shape is handed back by identity")
-        void shapeIsHandedBackByIdentity() throws Exception {
+        void shapeIsHandedBackByIdentity() {
             PlayerShape bat = shapeNamed("bat");
 
-            set("shape", bat);
+            player.setShape(bat);
 
             assertSame(bat, player.getShape());
         }

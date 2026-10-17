@@ -17,31 +17,22 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
-import uk.co.jackoftradesltd.middle.numerics.Random;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
-import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
+import uk.co.jackoftradesltd.channel.utils.Flag;
+import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.enums.IgnoreFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectKindFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 import uk.co.jackoftradesltd.testsupport.CurseFixture;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests the parts of {@link ObjectKind} that do work rather than assign — the curse copying in the
@@ -104,7 +95,7 @@ class ObjectKindTest {
     private static ObjectKind artifactKind() {
         Artifact artifact = new Artifact("Test", null, TValue.TV_SWORD, null, 0, 0, 0, 0, "0",
                 0, 0, new Flag<>(ObjectFlag.class), Map.of(), Map.of(), Set.of(), Set.of(),
-                Map.of(), 7, 0, 0, 0, null, null, null);
+                new TreeMap<>(Curse.CURSE_ORDER), 7, 0, 0, 0, null, null, null);
         return new ObjectKind(artifact, "Test", base());
     }
 

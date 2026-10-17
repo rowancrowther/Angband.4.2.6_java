@@ -28,30 +28,12 @@ import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftradesltd.middle.numerics.Random;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectNotice;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum;
-import uk.co.jackoftradesltd.middle.objects.enums.TValue;
+import uk.co.jackoftradesltd.middle.objects.enums.*;
 import uk.co.jackoftradesltd.testsupport.CurseFixture;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests the parts of {@link ItemObject}'s field surface that the other accessor tests leave open:
@@ -267,12 +249,16 @@ class ItemObjectFieldSurfaceTest {
             Set<Slay> slays = new HashSet<>();
             List<Effect> effect = new ArrayList<>();
             ItemObject item = full(modifiers, elInfo, brands, slays, new LinkedHashMap<>(), effect, "0", "0");
+            Brand fire = brand("FIRE_2");
+            Slay evil = slay("EVIL_2");
+            brands.add(fire);
+            slays.add(evil);
 
             assertAll(
                     () -> assertSame(modifiers, item.getModifiers()),
                     () -> assertSame(elInfo, item.getElInfo()),
-                    () -> assertSame(brands, item.getBrands()),
-                    () -> assertSame(slays, item.getSlays()),
+                    () -> assertTrue(item.containsBrand(fire), "the item shares the caller's brand set"),
+                    () -> assertTrue(item.containsSlay(evil), "the item shares the caller's slay set"),
                     () -> assertSame(effect, item.getEffect()));
         }
 
@@ -502,7 +488,10 @@ class ItemObjectFieldSurfaceTest {
         void setSlaysStoresAndNull() {
             Set<Slay> given = new HashSet<>(Set.of(slay("EVIL_2")));
             item.setSlays(given);
-            assertSame(given, item.getSlays());
+            assertEquals(given, item.getSlays());
+            Slay orc = slay("ORC_2");
+            given.add(orc);
+            assertTrue(item.containsSlay(orc), "the item holds the set it was given");
 
             item.setSlays(null);
 

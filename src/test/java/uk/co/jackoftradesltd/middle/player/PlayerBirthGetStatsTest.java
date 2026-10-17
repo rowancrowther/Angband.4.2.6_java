@@ -199,7 +199,7 @@ class PlayerBirthGetStatsTest {
             if (skill == PlayerSkill.SKILL_NONE || skill == PlayerSkill.SKILL_MAX) continue;
             skills.put(skill, 0);
         }
-        return new PlayerRace("Test Race", 0, 10, 100, 14, 6, 72, 6, 180, 25, 0, null,
+        return new PlayerRace("Test Race", 0, 10, 100, 14, 6, 72, 6, 180, 25, 0, SeededPlayerRegistry.humanoidBody(),
                 new HashMap<>(adjust), skills, new Flag<>(ObjectFlag.class),
                 new Flag<>(PlayerFlag.class), null, new HashMap<>());
     }
@@ -255,7 +255,7 @@ class PlayerBirthGetStatsTest {
     @BeforeEach
     void newCharacter() throws Exception {
         player = new Player();
-        set("race", race(RACE_ADJUST));
+        player.setRace(race(RACE_ADJUST));
         set("playerClass", playerClass(CLASS_ADJUST));
         statUse = new EnumMap<>(Stats.class);
     }

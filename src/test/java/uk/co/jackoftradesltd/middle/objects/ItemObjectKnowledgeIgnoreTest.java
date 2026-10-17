@@ -26,27 +26,13 @@ import org.junit.jupiter.params.provider.CsvSource;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.channel.utils.FlagView;
 import uk.co.jackoftradesltd.middle.numerics.Random;
-import uk.co.jackoftradesltd.middle.objects.enums.IgnoreType;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectKindFlag;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectNotice;
-import uk.co.jackoftradesltd.middle.objects.enums.QualityValueEnum;
-import uk.co.jackoftradesltd.middle.objects.enums.TValue;
+import uk.co.jackoftradesltd.middle.objects.enums.*;
 import uk.co.jackoftradesltd.testsupport.ItemFixture;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static uk.co.jackoftradesltd.testsupport.ItemFixture.set;
 
 /**
@@ -154,7 +140,7 @@ class ItemObjectKnowledgeIgnoreTest {
         return new EgoItem("of Test", "", 1, 0,
                 flags, flagsOff, new Flag<>(ObjectKindFlag.class),
                 new HashMap<>(), new HashMap<>(), new HashMap<>(),
-                new HashSet<>(), new HashSet<>(), new HashMap<>(),
+                new HashSet<>(), new HashSet<>(), new TreeMap<>(Curse.CURSE_ORDER),
                 0, 0, 0, 0, new java.util.ArrayList<ObjectKind>(),
                 null, null, null, 0, 0, 0, null, null, false);
     }
@@ -176,7 +162,7 @@ class ItemObjectKnowledgeIgnoreTest {
     private static Artifact artifact() {
         return new Artifact("Test", null, TValue.TV_SWORD, null, 0, 0, 0, 0, "0", 0, 0,
                 new Flag<>(ObjectFlag.class), Map.of(), Map.of(), Set.of(), Set.of(),
-                new LinkedHashMap<>(), 0, 0, 0, 0, null, null, null);
+                new TreeMap<>(Curse.CURSE_ORDER), 0, 0, 0, 0, null, null, null);
     }
 
     /**

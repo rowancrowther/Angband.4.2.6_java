@@ -22,17 +22,13 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
 import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
+import uk.co.jackoftradesltd.testsupport.Bodies;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerBody#copy}, which stands in for the copying half of C's {@code player_embody}
@@ -86,7 +82,7 @@ class PlayerBodyCopyTest {
      */
     private static PlayerBody bodyOf(EquipSlot... slots) {
         List<EquipSlot> list = new ArrayList<>(List.of(slots));
-        return new PlayerBody("Humanoid", list);
+        return Bodies.of("Humanoid", list);
     }
 
     @BeforeEach

@@ -25,15 +25,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
 import uk.co.jackoftradesltd.middle.objects.ObjectUtils;
 import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
+import uk.co.jackoftradesltd.testsupport.Bodies;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link Player}'s equipment slot lookups — the port of C's {@code slot_by_type},
@@ -66,7 +65,7 @@ class PlayerSlotLookupTest {
      * @return the body
      */
     private static PlayerBody humanoidBody() {
-        return new PlayerBody("Humanoid", new ArrayList<>(List.of(
+        return Bodies.of("Humanoid", new ArrayList<>(List.of(
                 new EquipSlot(EquipmentSlotsEnum.EQUIP_WEAPON, "weapon"),
                 new EquipSlot(EquipmentSlotsEnum.EQUIP_BOW, "shooting"),
                 new EquipSlot(EquipmentSlotsEnum.EQUIP_RING, "right hand"),
@@ -89,12 +88,9 @@ class PlayerSlotLookupTest {
      * Installs a body on the player under test.
      *
      * @param body the body to install
-     * @throws Exception if the field cannot be reached
      */
-    private void setBody(PlayerBody body) throws Exception {
-        Field field = Player.class.getDeclaredField("body");
-        field.setAccessible(true);
-        field.set(player, body);
+    private void setBody(PlayerBody body) {
+        player.setBody(body);
     }
 
     /**
@@ -182,7 +178,7 @@ class PlayerSlotLookupTest {
         @Test
         @DisplayName("a body without that slot type answers one past the end")
         void missingTypeAnswersPastTheEnd() throws Exception {
-            setBody(new PlayerBody("Torso", new ArrayList<>(List.of(
+            setBody(Bodies.of("Torso", new ArrayList<>(List.of(
                     new EquipSlot(EquipmentSlotsEnum.EQUIP_WEAPON, "weapon")))));
 
             assertEquals(1, ObjectUtils.slotByType(player, EquipmentSlotsEnum.EQUIP_RING, false),
@@ -199,7 +195,7 @@ class PlayerSlotLookupTest {
         @DisplayName("a body with no slots cannot be built in the first place")
         void emptyBodyIsRefused() {
             assertThrows(IllegalArgumentException.class,
-                    () -> new PlayerBody("Nothing", new ArrayList<>()));
+                    () -> Bodies.of("Nothing", new ArrayList<>()));
         }
     }
 

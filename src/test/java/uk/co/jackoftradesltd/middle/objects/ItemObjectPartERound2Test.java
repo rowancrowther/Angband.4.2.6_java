@@ -17,12 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -165,7 +160,7 @@ class ItemObjectPartERound2Test {
     @DisplayName("a weak brand is penalised by its distance below 100")
     void weakBrandBelowBaseline(int brandPower, int expected) throws Exception {
         ItemObject sword = item(TValue.TV_SWORD);
-        sword.getBrands().add(brand("FIRE_2", brandPower));
+        sword.addBrand(brand("FIRE_2", brandPower));
 
         assertEquals(expected, slayPrice(sword, 0, 60));
     }
@@ -179,8 +174,8 @@ class ItemObjectPartERound2Test {
     @DisplayName("the same slay added twice is counted once")
     void duplicateSlay() throws Exception {
         ItemObject sword = item(TValue.TV_SWORD);
-        sword.getSlays().add(slay("EVIL", 2, 120));
-        sword.getSlays().add(slay("EVIL", 2, 120));
+        sword.addSlay(slay("EVIL", 2, 120));
+        sword.addSlay(slay("EVIL", 2, 120));
 
         assertEquals(28, slayPrice(sword, 0, 60));
     }
@@ -192,8 +187,8 @@ class ItemObjectPartERound2Test {
     @DisplayName("two different slays earn the multiple-slays bonus")
     void twoSlays() throws Exception {
         ItemObject sword = item(TValue.TV_SWORD);
-        sword.getSlays().add(slay("EVIL", 2, 120));
-        sword.getSlays().add(slay("ORC", 2, 120));
+        sword.addSlay(slay("EVIL", 2, 120));
+        sword.addSlay(slay("ORC", 2, 120));
 
         assertEquals(37, slayPrice(sword, 0, 60));
     }
@@ -206,8 +201,8 @@ class ItemObjectPartERound2Test {
     @DisplayName("a kill and a brand earn no pair bonus")
     void killAndBrand() throws Exception {
         ItemObject sword = item(TValue.TV_SWORD);
-        sword.getBrands().add(brand("FIRE_2", 161));
-        sword.getSlays().add(slay("DRAGON", 5, 110));
+        sword.addBrand(brand("FIRE_2", 161));
+        sword.addSlay(slay("DRAGON", 5, 110));
 
         assertEquals(87, slayPrice(sword, 0, 60));
     }

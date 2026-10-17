@@ -37,8 +37,9 @@ import java.util.List;
  * body, and so does this class. The templates are built once by {@code BodyAssembler} and held in
  * the registry, with every slot empty. At character birth {@link #copy()} makes the player's body
  * from the race's template, and from then on the {@link EquipSlot}s of that copy are filled and
- * emptied by the wield code (C's {@code equip_slot.obj}). The list itself never changes after
- * construction, the slots in it do; so the class is only "immutable" in the sense that no slot is
+ * emptied by the wield code (C's {@code equip_slot.obj}). The list is installed once, by
+ * {@link #setSlots}, after the constructor has built the body empty; from then on the list never
+ * changes and the slots in it do, so the class is only "immutable" in the sense that no slot is
  * added, removed or reordered. The three gear queries here ({@link #itemIsEquipped},
  * {@link #equippedItemSlot}, {@link #equippedItemBySlotName}) are meaningful on the player's copy
  * only, a template having nothing worn.
@@ -49,13 +50,14 @@ import java.util.List;
  * position is significant — e.g. the two {@code RING} slots ("right hand", "left hand") are distinct
  * only by their index and name.
  *
- * <p>Class PlayerBody coded before 260815, commented in full on 261010.
+ * <p>Class PlayerBody coded before 260815, commented in full on 261010, construction and slot
+ * installation described as two steps on 261017.
  *
  * @author Rowan Crowther
  */
 public class PlayerBody {
     /**
-     * Logger for this class, used to report a body built without slots before the constructor
+     * Logger for this class, used to report a null or empty slot list before {@link #setSlots}
      * throws. C has no equivalent: its bodies come from a parser that has already rejected a
      * malformed {@code body.txt}, and a body with no slots is simply an array of length zero.
      *
@@ -73,48 +75,65 @@ public class PlayerBody {
 
     /**
      * The equipment slots in declared (body) order; a slot's index is its identity (C:
-     * {@code player_body.slots}, with {@code count} being this list's size). The list is fixed at
-     * construction; the {@link EquipSlot}s in it are not, as each one's worn item changes.
+     * {@code player_body.slots}, with {@code count} being this list's size). The constructor starts
+     * it empty and {@link #setSlots} installs the real list, once; the {@link EquipSlot}s in it are
+     * not fixed, as each one's worn item changes.
      *
-     * <p>Field slots coded before 260815, commented in full on 261010.
+     * <p>Field slots coded before 260815, commented in full on 261010, updated on 261017 for
+     * {@link #setSlots}.
      */
-    private final List<EquipSlot> slots;
+    private List<EquipSlot> slots;
 
     /**
-     * Creates a body from a name and an ordered slot list.
+     * Creates a body with a name and no slots yet; {@link #setSlots} supplies them.
      *
-     * <p>The slot list is copied into a list of the body's own, so the caller adding to or clearing
-     * its list afterwards changes nothing here; the {@link EquipSlot}s themselves are not copied,
-     * and are shared with the caller's list. A null or empty list is refused with an
-     * {@link IllegalArgumentException}, after a fatal log entry, because C can never produce one:
-     * its bodies come from a parser that has already rejected the file.
+     * <p>Until {@link #setSlots} has run the slot list is empty, so {@link #getCount()} answers zero
+     * and the gear queries find nothing. Both callers, {@code BodyAssembler} and {@link #copy()},
+     * call {@link #setSlots} straight away. Nothing is pushed to the character sheet here; that
+     * happens in {@link #setSlots}.
      *
-     * <p><b>Side effect with no C counterpart.</b> A successful construction also pushes the slot
-     * count to the character sheet through
-     * {@link PlayerEventStatusUpdate#updatePlayerCharSheetBodyCount}. In C the sheet reads
-     * {@code player->body.count} on demand; the cache-to-messages migration replaces that read with
-     * this push. The push happens for every body built, so it fires once per template when
-     * {@code body.txt} is loaded and again for each {@link #copy()}, and what the sheet holds is
-     * whichever body was constructed last.
+     * <p>Constructor PlayerBody coded before 260815, commented in full on 261010, rewritten on
+     * 261017 once the slot list moved to {@link #setSlots}.
      *
-     * <p>Constructor PlayerBody coded before 260815, commented in full on 261010.
-     *
-     * @param name  the body's display name
-     * @param slots the equipment slots in declared order (copied into a list of this body's own)
-     * @throws IllegalArgumentException if {@code slots} is {@code null} or empty
+     * @param name the body's display name
      */
-    public PlayerBody(String name, List<EquipSlot> slots) {
+    public PlayerBody(String name) {
         this.name = name;
         this.slots = new ArrayList<>();
+    }
+
+    /**
+     * Installs this body's slots, in declared order.
+     *
+     * <p>The list is copied into one of the body's own, so the caller adding to or clearing its list
+     * afterwards changes nothing here; the {@link EquipSlot}s themselves are not copied, and are
+     * shared with the caller's list. A null or empty list is refused with an
+     * {@link IllegalArgumentException}, after a fatal log entry, because C can never produce one:
+     * its bodies come from a parser that has already rejected the file. The previous list is left
+     * in place when the call is refused.
+     *
+     * <p><b>Side effect with no C counterpart.</b> A successful call also pushes the slot count to
+     * the character sheet through {@link PlayerEventStatusUpdate#updatePlayerCharSheetBodyCount}. In
+     * C the sheet reads {@code player->body.count} on demand; the cache-to-messages migration
+     * replaces that read with this push. The push happens for every body given slots, so it fires
+     * once per template when {@code body.txt} is loaded and again for each {@link #copy()}, and what
+     * the sheet holds is whichever body was given slots last.
+     *
+     * <p>Function setSlots coded on 261017, commented in full on 261017.
+     *
+     * @param slots the equipment slots in body order
+     * @throws IllegalArgumentException if {@code slots} is {@code null} or empty
+     */
+    public void setSlots(List<EquipSlot> slots) {
         if (slots == null || slots.isEmpty()) {
             logger.fatal("Invalid slot list. Slot list is null or empty.");
             throw new IllegalArgumentException("Invalid slot list. Slot list is null or empty.");
         } else {
-            this.slots.addAll(slots);
+            this.slots = new ArrayList<>(slots);
             PlayerEventStatusUpdate.updatePlayerCharSheetBodyCount(slots.size());
-        }
+        } 
     }
-
+    
     /**
      * Copies this body plan into a new, unworn one — the port of the copying half of C's
      * {@code player_embody} ({@code player-birth.c}).
@@ -148,11 +167,12 @@ public class PlayerBody {
      * of its own. It also matches {@code ElementInfo.copy}, the same decision taken elsewhere in
      * the port.
      *
-     * <p>The copy goes through the public constructor, so it also pushes the new body's slot count to
-     * the character sheet, which {@code player_embody} does not do; see
-     * {@link #PlayerBody(String, List)}.
+     * <p>The copy goes through the constructor and {@link #setSlots}, so it also pushes the new
+     * body's slot count to the character sheet, which {@code player_embody} does not do; see
+     * {@link #setSlots}.
      *
-     * <p>Function copy coded on 260818, commented in full on 261010.
+     * <p>Function copy coded on 260818, commented in full on 261010, updated on 261017 for
+     * {@link #setSlots}.
      *
      * @return a new body with this one's name and slot layout, and every slot empty
      */
@@ -162,7 +182,9 @@ public class PlayerBody {
         for (EquipSlot slot : this.slots) {
             slots.add(new EquipSlot(slot.getType(), slot.getName()));
         }
-        return new PlayerBody(name, slots);
+        PlayerBody copy = new PlayerBody(name);
+        copy.setSlots(slots);
+        return copy;
     }
 
     /**
@@ -340,10 +362,12 @@ public class PlayerBody {
      * is compared as {@code name.equals(slotName)} would be were the argument known good.
      *
      * <p>C's other guard, {@code if (p->body.slots)}, has no counterpart: it protects against a
-     * player whose body has not been built yet, where the slot array is still NULL. The constructor
-     * here refuses to build a body without slots, so the list always exists.
+     * player whose body has not been built yet, where the slot array is still NULL. The list here is
+     * never null, as the constructor starts it empty and {@link #setSlots} refuses a null one; before
+     * {@link #setSlots} has run it is empty and the search finds nothing.
      *
-     * <p>Function equippedItemBySlotName coded on 260818, commented in full on 261010.
+     * <p>Function equippedItemBySlotName coded on 260818, commented in full on 261010, slot-list
+     * note corrected on 261017.
      *
      * @param name the slot's name from {@code body.txt}, or {@code null}
      * @return the item worn in that slot, or {@code null} if the slot is empty, the name is unknown,

@@ -43,6 +43,7 @@ import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerSkill;
+import uk.co.jackoftradesltd.testsupport.Bodies;
 import uk.co.jackoftradesltd.testsupport.CalcBonusesFixture;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
@@ -144,12 +145,30 @@ class PlayerBirthDoCmdChooseRaceTest {
     private boolean realCharacterGenerated;
     private Object savedConstants;
     private List<PlayerRace> savedRaces;
+    private int[] savedFoodThresholds;
 
     private Map<Stats, Integer> savedRegistryStats;
     private Map<Stats, Integer> savedRegistryPointsSpent;
     private Map<Stats, Integer> savedRegistryPointsInc;
     private int savedRegistryPointsLeft;
     private boolean savedRolledStats;
+
+    /**
+     * The registry's six food thresholds, in ascending order, and the shipped values they are given
+     * for the run. The point-buy stat generation reaches {@code calcBonuses}, whose hunger arm
+     * divides by the "Hungry" threshold, and a birth reset starts the character below "Fed"; with
+     * the thresholds left at zero that is a divide by zero, not a test of anything here.
+     */
+    private static final String[] FOOD_FIELDS = {
+            "PY_FOOD_STARVE", "PY_FOOD_FAINT", "PY_FOOD_WEAK",
+            "PY_FOOD_HUNGRY", "PY_FOOD_FULL", "PY_FOOD_MAX"};
+    private static final int[] FOOD_VALUES = {100, 400, 800, 1500, 9000, 10000};
+
+    private static Field foodField(String name) throws Exception {
+        Field field = PlayerRegistry.class.getDeclaredField(name);
+        field.setAccessible(true);
+        return field;
+    }
 
     private static Field constantsField() throws Exception {
         Field field = GameConstants.class.getDeclaredField("data");
@@ -201,7 +220,7 @@ class PlayerBirthDoCmdChooseRaceTest {
         PlayerHistoryChart chart = new PlayerHistoryChart(1, 0);
         chart.addEntry(new PlayerHistoryEntry(100, "A fixed phrase.  "));
         return new PlayerRace(name, 0, 10, 100, 14, 6, 72, 6, 180, 25, 0,
-                new PlayerBody("Humanoid", slots), stats, skills,
+                Bodies.of("Humanoid", slots), stats, skills,
                 new Flag<>(ObjectFlag.class), new Flag<>(PlayerFlag.class), chart, new HashMap<>());
     }
 
@@ -249,13 +268,19 @@ class PlayerBirthDoCmdChooseRaceTest {
         savedConstants = constantsField().get(null);
         seedConstants();
 
+        savedFoodThresholds = new int[FOOD_FIELDS.length];
+        for (int i = 0; i < FOOD_FIELDS.length; i++) {
+            savedFoodThresholds[i] = foodField(FOOD_FIELDS[i]).getInt(null);
+            foodField(FOOD_FIELDS[i]).setInt(null, FOOD_VALUES[i]);
+        }
+
         savedRaces = (List<PlayerRace>) registryField("playerRaces").get(null);
         PlayerRegistry.setPlayerRaces(List.of(race(OTHER_RACE_NAME), race(CHOSEN_RACE_NAME)));
 
         player = new Player();
         CalcBonusesFixture.plainCharacter(player);
         writeInstance(player, "playerClass", warriorClass());
-        writeInstance(player, "race", race(OTHER_RACE_NAME));
+        player.setRace(race(OTHER_RACE_NAME));
 
         realPlayer = GameState.getPlayer();
         GameState.setPlayer(player);
@@ -297,6 +322,9 @@ class PlayerBirthDoCmdChooseRaceTest {
         GameEngine.setEventsBusHandler(realBus);
         constantsField().set(null, savedConstants);
         registryField("playerRaces").set(null, savedRaces);
+        for (int i = 0; i < FOOD_FIELDS.length; i++) {
+            foodField(FOOD_FIELDS[i]).setInt(null, savedFoodThresholds[i]);
+        }
         Field characterGenerated = GameState.class.getDeclaredField("characterGenerated");
         characterGenerated.setAccessible(true);
         characterGenerated.set(null, realCharacterGenerated);

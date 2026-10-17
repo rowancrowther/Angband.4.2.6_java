@@ -27,6 +27,7 @@ import uk.co.jackoftradesltd.middle.objects.enums.IgnoreType;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectKindFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
+import uk.co.jackoftradesltd.testsupport.CurseFixture;
 
 import java.util.*;
 
@@ -66,7 +67,7 @@ class EgoItemAccessorsTest {
                                Map<ElementEnum, ElementInfo> elInfo,
                                Set<Brand> brands,
                                Set<Slay> slays,
-                               Map<Curse, CurseData> curses,
+                               TreeMap<Curse, CurseData> curses,
                                boolean everSeen) {
         return new EgoItem("of Testing", "a test ego", 1, 0,
                 flags, new Flag<>(ObjectFlag.class), new Flag<>(ObjectKindFlag.class),
@@ -81,7 +82,7 @@ class EgoItemAccessorsTest {
      */
     private static EgoItem bareEgo() {
         return ego(new Flag<>(ObjectFlag.class), new HashMap<>(), new HashMap<>(),
-                new HashSet<>(), new HashSet<>(), new HashMap<>(), false);
+                new HashSet<>(), new HashSet<>(), new TreeMap<>(Curse.CURSE_ORDER), false);
     }
 
     @Test
@@ -89,7 +90,7 @@ class EgoItemAccessorsTest {
     void everSeenIsCarried() {
         assertFalse(bareEgo().isEverSeen());
         assertTrue(ego(new Flag<>(ObjectFlag.class), new HashMap<>(), new HashMap<>(),
-                new HashSet<>(), new HashSet<>(), new HashMap<>(), true).isEverSeen());
+                new HashSet<>(), new HashSet<>(), new TreeMap<>(Curse.CURSE_ORDER), true).isEverSeen());
     }
 
     /**
@@ -151,7 +152,7 @@ class EgoItemAccessorsTest {
         Flag<ObjectFlag> flags = new Flag<>(ObjectFlag.class);
         flags.on(ObjectFlag.OF_FEATHER);
         EgoItem item = ego(flags, new HashMap<>(), new HashMap<>(),
-                new HashSet<>(), new HashSet<>(), new HashMap<>(), false);
+                new HashSet<>(), new HashSet<>(), new TreeMap<>(Curse.CURSE_ORDER), false);
 
         assertSame(flags, item.getFlags());
         assertTrue(item.getFlags().has(ObjectFlag.OF_FEATHER));
@@ -164,7 +165,7 @@ class EgoItemAccessorsTest {
         Map<ObjectModifier, Random> modifiers = new HashMap<>();
         modifiers.put(ObjectModifier.OM_STEALTH, stealth);
         EgoItem item = ego(new Flag<>(ObjectFlag.class), modifiers, new HashMap<>(),
-                new HashSet<>(), new HashSet<>(), new HashMap<>(), false);
+                new HashSet<>(), new HashSet<>(), new TreeMap<>(Curse.CURSE_ORDER), false);
 
         assertSame(stealth, item.getModifier(ObjectModifier.OM_STEALTH));
     }
@@ -188,7 +189,7 @@ class EgoItemAccessorsTest {
         fire.setResLevel(1);
         elInfo.put(ElementEnum.ELEM_FIRE, fire);
         EgoItem item = ego(new Flag<>(ObjectFlag.class), new HashMap<>(), elInfo,
-                new HashSet<>(), new HashSet<>(), new HashMap<>(), false);
+                new HashSet<>(), new HashSet<>(), new TreeMap<>(Curse.CURSE_ORDER), false);
 
         assertSame(elInfo, item.getElInfo());
         assertNotNull(item.getElInfo().get(ElementEnum.ELEM_FIRE));
@@ -196,21 +197,35 @@ class EgoItemAccessorsTest {
     }
 
     /**
-     * The three remaining collections, all read the same way by {@code knowsEgo} and all sharing
-     * rather than copying.
+     * The three remaining collections, all read the same way by {@code knowsEgo}. Each getter is a
+     * read-only view onto the held collection, so a change to the collection shows through the view
+     * but the view itself refuses writes.
      */
     @Test
-    @DisplayName("brands, slays and curses are shared, not copied")
+    @DisplayName("brands, slays and curses are read-only views of the held collections")
     void collectionsAreShared() {
         Set<Brand> brands = new HashSet<>();
         Set<Slay> slays = new HashSet<>();
-        Map<Curse, CurseData> curses = new HashMap<>();
+        TreeMap<Curse, CurseData> curses = new TreeMap<>(Curse.CURSE_ORDER);
         EgoItem item = ego(new Flag<>(ObjectFlag.class), new HashMap<>(), new HashMap<>(),
                 brands, slays, curses, false);
 
-        assertSame(brands, item.getBrands());
-        assertSame(slays, item.getSlays());
-        assertSame(curses, item.getCurses());
+        Brand fire = new Brand("FIRE_2", "fire", "burns", null, null, 2, 3, 20);
+        Slay evil = new Slay("EVIL_2", "evil", null, "smite", "pierces", null, 2, 2, 5);
+        brands.add(fire);
+        slays.add(evil);
+        assertTrue(item.getBrands().contains(fire), "the view sees the held set");
+        assertTrue(item.getSlays().contains(evil), "the view sees the held set");
+        assertThrows(UnsupportedOperationException.class, () -> item.getBrands().add(fire));
+        assertThrows(UnsupportedOperationException.class, () -> item.getSlays().add(evil));
+
+        Curse siren = CurseFixture.curse("siren", null, 0, null, null, null, null,
+                0, 0, 0, null, null, null, null, 0);
+        CurseData data = new CurseData(3, 0);
+        curses.put(siren, data);
+        assertSame(data, item.getCurses().get(siren), "the getter is a view of the held map");
+        assertThrows(UnsupportedOperationException.class,
+                () -> item.getCurses().put(siren, new CurseData(1, 0)));
     }
 
     /**
@@ -239,7 +254,7 @@ class EgoItemAccessorsTest {
     void sharingIsLive() {
         Set<Slay> slays = new HashSet<>();
         EgoItem item = ego(new Flag<>(ObjectFlag.class), new HashMap<>(), new HashMap<>(),
-                new HashSet<>(), slays, new HashMap<>(), false);
+                new HashSet<>(), slays, new TreeMap<>(Curse.CURSE_ORDER), false);
 
         assertTrue(item.getSlays().isEmpty());
         slays.add(null);
@@ -271,7 +286,7 @@ class EgoItemAccessorsTest {
             EgoItem item = new EgoItem("of Testing", "a test ego", 1, 0,
                     granted, suppressed, new Flag<>(ObjectKindFlag.class),
                     new HashMap<>(), new HashMap<>(), new HashMap<>(),
-                    new HashSet<>(), new HashSet<>(), new HashMap<>(),
+                    new HashSet<>(), new HashSet<>(), new TreeMap<>(Curse.CURSE_ORDER),
                     0, 0, 0, 0, new ArrayList<ObjectKind>(),
                     null, null, null, 0, 0, 0,
                     null, null, false);

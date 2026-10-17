@@ -105,7 +105,8 @@ import static uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum.ORIGIN
  * and take changes through named mutators ({@link #getObjectFlags()} is the live exception);
  * {@link #getNoticeHas} tests one notice flag without a copy. The modifier, element, brand, slay and curse collections are edited
  * through add, put, remove and clear methods, because their getters answer an immutable empty
- * collection for a field that was never built. A setter that takes a whole collection stores it
+ * collection for a field that was never built. The brand, slay and curse getters answer a
+ * read-only view of the live collection otherwise, so a write through the view is refused. A setter that takes a whole collection stores it
  * as given, except {@link #setCurses} and {@link #clearAndPutCurses}, which copy the map they are
  * handed.
  *
@@ -139,30 +140,6 @@ public class ItemObject {
      * note added on 261008.
      */
     private static final Logger logger = LogManager.getLogger();
-
-    /**
-     * The order an item's {@link #curses} map keeps its entries in: ascending curse index, with the
-     * name as a tie-break. It stands in for the order of C's {@code obj->curses[i]} array, which is
-     * walked from slot 0 up because the array is indexed by curse.
-     *
-     * <p>Every map built by {@link #cursesFactory()} uses it, so {@link #getCurses()} iterates in
-     * C's order whatever order the curses were added in. The name only matters for two curses that
-     * share an index, which a loaded registry never has; the test curses built by hand all carry
-     * index zero, so for them the name decides.
-     *
-     * <p>The name comparison is null-safe ({@code nullsFirst}), so a {@code null} name on a tied
-     * index sorts first rather than throwing from {@link TreeMap#put(Object, Object)}. It is a second layer: the
-     * {@link Curse} constructor rejects a {@code null} or empty name, so no {@link Curse} reaches
-     * this comparator with one. C has no counterpart, as its curses are array slots and carry no
-     * comparator.
-     *
-     * <p>Package-private so {@link ObjectUtils#copyCurses} can build its merged map with the same
-     * ordering.
-     *
-     * <p>Field CURSE_ORDER commented in full on 261003, amended on 261007.
-     */
-    static final Comparator<Curse> CURSE_ORDER = Comparator.comparing(Curse::getIndex)
-            .thenComparing(Curse::getName, Comparator.nullsFirst(Comparator.naturalOrder()));
 
     /**
      * The player this object's calculations are asked about - the equipment slots it would be worn
@@ -833,7 +810,7 @@ public class ItemObject {
      * they are handed, and leave it untouched when handed {@code null}, as C's {@code copy_curses}
      * returns early on a {@code NULL} source.
      *
-     * <p>The map is a {@link TreeMap} ordered by {@link #CURSE_ORDER}, so it walks in ascending curse
+     * <p>The map is a {@link TreeMap} ordered by {@link Curse#CURSE_ORDER}, so it walks in ascending curse
      * index, as C's loop over {@code obj->curses[i]} does, regardless of the order the curses were
      * added in. Every path that builds a map for it goes through {@link #cursesFactory()}, which
      * is what keeps that true; the one exception is a copy of an item whose map was never built,
@@ -1092,7 +1069,7 @@ public class ItemObject {
 
     /**
      * Builds the empty map every curse field starts from and is replaced with, ordered by
-     * {@link #CURSE_ORDER}.
+     * {@link Curse#CURSE_ORDER}.
      *
      * <p>The single place the field's ordering is decided, so a path that assigned a plain
      * {@link java.util.HashMap} or {@link LinkedHashMap} to {@link #curses} would change what
@@ -1104,7 +1081,7 @@ public class ItemObject {
      * @return a new, empty curse map in C's index order
      */
     private TreeMap<Curse, CurseData> cursesFactory() {
-        TreeMap<Curse, CurseData> result = new TreeMap<>(CURSE_ORDER);
+        TreeMap<Curse, CurseData> result = new TreeMap<>(Curse.CURSE_ORDER);
         return result;
     }
 
@@ -1819,7 +1796,7 @@ public class ItemObject {
      * <p>Only the curses the object carries are present, where C's array has a slot for every
      * curse in the game; see {@link #curses} for how absence, power zero and C's null and
      * all-zero arrays line up. The entries walk in ascending curse index, which is the order of
-     * C's loop over the array ({@link #CURSE_ORDER}).
+     * C's loop over the array ({@link Curse#CURSE_ORDER}).
      *
      * <p>A lookup by a {@code null} curse has no C counterpart, as C's key is an integer index. It
      * throws {@link NullPointerException} on a non-empty map, whose comparator reads the key's
@@ -1846,7 +1823,7 @@ public class ItemObject {
      *
      * <p>The field is assigned a new map from {@link #cursesFactory()} and the argument's entries
      * are put into it, so the argument map is not kept and the curses end up in curse index order
-     * ({@link #CURSE_ORDER}) whatever order the argument holds them in. The {@link CurseData}
+     * ({@link Curse#CURSE_ORDER}) whatever order the argument holds them in. The {@link CurseData}
      * values are shared, not copied, and whatever the object carried before is discarded. Because
      * the field is reassigned before the entries are read, passing this object's own
      * {@link #getCurses()} view is safe.
@@ -1978,7 +1955,7 @@ public class ItemObject {
      *
      * <p>The field is replaced with a new map from {@link #cursesFactory()}, filled from the
      * argument, so the argument map itself is not kept, later changes to it do not reach this
-     * object, and the curses walk in curse index order ({@link #CURSE_ORDER}). The
+     * object, and the curses walk in curse index order ({@link Curse#CURSE_ORDER}). The
      * {@link CurseData} values are shared, not copied. Because the field is reassigned before the
      * entries are read, passing this object's own {@link #getCurses()} view is safe and leaves the
      * curses as they were. The same holds for {@link #setCurses}.
@@ -3285,7 +3262,8 @@ public class ItemObject {
      *
      * <p>Like C, this relies on the set never holding two brands of one name, which each append
      * keeps true. A set filled any other way (see {@code ObjectUtils.copyBrands}, which dedupes in
-     * bulk) must already satisfy it, or only the first match found is considered.
+     * bulk and then adds the result back one at a time through {@link #addBrand}) must already
+     * satisfy it, or only the first match found is considered.
      *
      * <p>The set is created here on demand. {@link #getBrands()} answers {@code Set.of()} for an item
      * whose set has never been created, and an immutable empty set takes no writes. The knowledge
@@ -3324,6 +3302,25 @@ public class ItemObject {
 
         return false;
     }
+    
+    /**
+     * Adds a brand to this item - an alias for {@link #appendBrand}, the port of C's
+     * {@code append_brand} ({@code obj-slays.c}), under the name the other collections' mutators use.
+     *
+     * <p>It is not a plain set add. The brand goes on only if the item has no brand of the same name,
+     * or a weaker one, which it then displaces; see {@link #appendBrand} for the three outcomes and
+     * for the on-demand creation of the set. {@code ObjectUtils.copyBrands} writes its merged result
+     * back through this method.
+     *
+     * <p>Function addBrand coded on 261017, commented in full on 261017.
+     *
+     * @param brand the brand offered to this item
+     * @return {@code true} if the item now carries {@code brand}; {@code false} if it already holds a
+     *         brand of the same name that is at least as strong, and so was left unchanged
+     */
+    public boolean addBrand(Brand brand) {
+        return appendBrand(brand);
+    }
 
     /**
      * Records that this item does not carry a brand, the port of C's {@code obj->brands[i] = false}.
@@ -3332,35 +3329,21 @@ public class ItemObject {
      * has a slot for every brand and writes a boolean into it. The two agree because nothing here
      * stores a brand it does not mean.
      *
-     * <p>Removing a brand the item does not carry is not an error; C assigns false over false.
+     * <p>Removing a brand the item does not carry is not an error; C assigns false over false. An
+     * item whose set was never built has nothing to remove, so the set stays unbuilt rather than
+     * being created empty.
      *
-     * <p>Function removeBrand coded on 260817, commented in full on 260817.
+     * <p>Function removeBrand coded on 260817, commented in full on 260817, {@code boolean} result
+     * and no set creation on 261017.
      *
      * @param brand the brand to take off
+     * @return {@code true} if the item carried the brand and it was removed; {@code false} if it
+     *         did not, including when the set was never built
      */
-    public void removeBrand(Brand brand) {
-        if (brands == null) {
-            brands = new HashSet<>();
-        }
-        brands.remove(brand);
-    }
-
-    /**
-     * Takes every brand off this item, the port of C freeing the brand array and nulling the pointer.
-     *
-     * <p>{@code knowObject} uses it on a counterpart whose item turned out to carry no brand the
-     * player recognizes — C's {@code if (!known_brand) { mem_free(...); obj->known->brands = NULL; }}.
-     *
-     * <p>Leaves an empty set rather than a null one. Callers cannot tell the two apart, {@link
-     * #getBrands()} reporting empty for both, which is why the null field never needs restoring.
-     *
-     * <p>Function clearBrands coded on 260817, commented in full on 260817.
-     */
-    public void clearBrands() {
-        if (brands == null) {
-            brands = new HashSet<>();
-        }
-        brands.clear();
+    public boolean removeBrand(Brand brand) {
+        if (brands == null) return false;
+        
+        return brands.remove(brand);
     }
 
     /**
@@ -3410,33 +3393,6 @@ public class ItemObject {
         }
 
         return false;
-    }
-
-    /**
-     * Records that this item does not carry a slay, the port of C's {@code obj->slays[i] = false}.
-     * See {@link #removeBrand} for why absence stands in for C's stored false.
-     *
-     * <p>Function removeSlay coded on 260817, commented in full on 260817.
-     *
-     * @param slay the slay to take off
-     */
-    public void removeSlay(Slay slay) {
-        if (slays == null) {
-            slays = new HashSet<>();
-        }
-        slays.remove(slay);
-    }
-
-    /**
-     * Takes every slay off this item, the port of C freeing the slay array. See {@link #clearBrands}.
-     *
-     * <p>Function clearSlays coded on 260817, commented in full on 260817.
-     */
-    public void clearSlays() {
-        if (slays == null) {
-            slays = new HashSet<>();
-        }
-        slays.clear();
     }
 
     /**
@@ -3592,7 +3548,7 @@ public class ItemObject {
      * <p>The curses are applied in ascending curse index, as C's loop over its curse array does, and
      * that order matters because the weight changes do not commute (adding ten then doubling is not
      * doubling then adding ten). Nothing here sorts: {@link #getCurses()} walks a {@link TreeMap}
-     * ordered by {@link #CURSE_ORDER}, so the order is the map's own whatever order the curses were
+     * ordered by {@link Curse#CURSE_ORDER}, so the order is the map's own whatever order the curses were
      * added in. C starts its loop at index 1 because slot 0 of its array is a placeholder; the port
      * numbers its curses from 0 and has no placeholder, so it skips nothing.
      *
@@ -4071,24 +4027,67 @@ public class ItemObject {
     }
 
     /**
-     * Returns the live brand set, not a copy, matching how C hands out {@code obj->brands} — an
-     * array on the struct that callers read and write in place.
+     * Returns a read-only view of this item's brands, not a copy. C hands out {@code obj->brands} as
+     * an array on the struct that callers read and write in place; here the view follows any change
+     * made to the set behind it, but a write through the view itself is refused.
      *
      * <p>The brands here are the ones the item actually has, each at its own strength. That is a
      * different question from whether the player can read them, which is
      * {@link KnownObject#brandIsKnown} and is not per-item at all.
      *
-     * <p>An immutable empty set while the field is {@code null}, which takes no writes; use
-     * {@link #appendBrand}, {@link #removeBrand} and {@link #clearBrands} to change the brands.
+     * <p>An immutable empty set while the field is {@code null}. To change the brands use
+     * {@link #appendBrand} (or its alias {@link #addBrand}), {@link #removeBrand} and
+     * {@link #clearBrands}; {@link #containsBrand} tests for one.
      *
-     * <p>Function getBrands coded before 260817, commented in full on 261002.
+     * <p>Function getBrands coded before 260817, commented in full on 261002, read-only view on
+     * 261017.
      *
-     * @return this item's brands, shared with this instance
+     * @return a read-only view of this item's brands
      */
     public @NotNull Set<Brand> getBrands() {
         if (brands == null)
             return Set.of();
-        return brands;
+        
+        return Collections.unmodifiableSet(brands);
+    }
+    
+    /**
+     * Removes every brand from this item, leaving it with an empty set.
+     *
+     * <p>A set that was never built is created empty first, so the item ends with an empty set rather
+     * than {@code null}, and clearing the brands of an item that never had any needs no guard.
+     * {@link #getBrands()} reads the same either way. The production callers are
+     * {@code PlayerKnowledge.knowObject}, which clears the known counterpart's brands when the
+     * player knows none of the item's, and {@code ObjectUtils.copyBrands}, which clears before
+     * writing back its merged result.
+     *
+     * <p>Function clearBrands coded on 261017, commented in full on 261017.
+     */
+    public void clearBrands() {
+        if (brands == null)
+            brands = new HashSet<>();
+        
+        brands.clear();
+    }
+    
+    /**
+     * Tests whether this item carries a brand - the port of reading C's {@code obj->brands[i]} as a
+     * boolean.
+     *
+     * <p>Membership is by {@link Brand#equals}, which compares the brand's fields and not just its
+     * name, so a brand of the same element at a different strength is a different brand here. An
+     * item whose set was never built carries none, so the answer is {@code false} and the set is not
+     * created.
+     *
+     * <p>Function containsBrand coded on 261017, commented in full on 261017.
+     *
+     * @param brand the brand to look for
+     * @return {@code true} if the item carries exactly this brand
+     */
+    public boolean containsBrand(Brand brand) {
+        if (brands == null) return false;
+        
+        return brands.contains(brand);
     }
 
     /**
@@ -4116,15 +4115,100 @@ public class ItemObject {
      * <p>The slays the item actually has. Whether the player can read one is a separate question
      * and not a per-item one — see {@link KnownObject#slayIsKnown}.
      *
-     * <p>Function getSlays commented in full on 260816.
+     * <p>What comes back is a read-only view of this item's own set, not a copy: it follows any
+     * change made to the set behind it, but a write through the view itself is refused. An
+     * immutable empty set while the field is {@code null}. To change the slays use
+     * {@link #appendSlay} (or its alias {@link #addSlay}), {@link #removeSlay} and
+     * {@link #clearSlays}; {@link #containsSlay} tests for one.
      *
-     * @return this item's slays, shared with this instance
+     * <p>Function getSlays commented in full on 260816, read-only view on 261017.
+     *
+     * @return a read-only view of this item's slays
      */
     public @NotNull Set<Slay> getSlays() {
         if (slays == null) {
             return Set.of();
         }
-        return slays;
+        
+        return Collections.unmodifiableSet(slays);
+    }
+    
+    /**
+     * Tests whether this item carries a slay - the port of reading C's {@code obj->slays[i]} as a
+     * boolean.
+     *
+     * <p>Membership is by {@link Slay#equals}, which compares every field of the slay, so the same
+     * monsters slain at a different multiplier is a different slay here. An item whose set was never
+     * built carries none, so the answer is {@code false} and the set is not created.
+     *
+     * <p>Function containsSlay coded on 261017, commented in full on 261017.
+     *
+     * @param slay the slay to look for
+     * @return {@code true} if the item carries exactly this slay
+     */
+    public boolean containsSlay(Slay slay) {
+        if (slays == null) return false;
+        
+        return slays.contains(slay);
+    }
+    
+    /**
+     * Adds a slay to this item - an alias for {@link #appendSlay}, the port of C's
+     * {@code append_slay} ({@code obj-slays.c}), under the name the other collections' mutators use.
+     *
+     * <p>It is not a plain set add. The slay goes on only if the item has no slay against the same
+     * monsters ({@link Slay#sameMonsterSlain}), or a weaker one, which it then displaces; see
+     * {@link #appendSlay} for the three outcomes and for the on-demand creation of the set.
+     * {@code ObjectUtils.copySlays} writes its merged result back through this method.
+     *
+     * <p>Function addSlay coded on 261017, commented in full on 261017.
+     *
+     * @param slay the slay offered to this item
+     * @return {@code true} if the item now carries {@code slay}; {@code false} if it already holds a
+     *         slay on the same monsters that is at least as strong, and so was left unchanged
+     */
+    public boolean addSlay(Slay slay) {
+        return appendSlay(slay);
+    }
+    
+    /**
+     * Records that this item does not carry a slay, the port of C's {@code obj->slays[i] = false}.
+     * The slay counterpart of {@link #removeBrand}, with the same reasoning: absence is how this
+     * port says "does not slay", where C has a slot for every slay and writes a boolean into it.
+     *
+     * <p>Removing a slay the item does not carry is not an error, and an item whose set was never
+     * built has nothing to remove, so the set stays unbuilt rather than being created empty.
+     * Removal is by {@link Slay#equals}, so only a slay equal in every field comes off.
+     *
+     * <p>Function removeSlay coded on 261017, commented in full on 261017.
+     *
+     * @param slay the slay to take off
+     * @return {@code true} if the item carried the slay and it was removed; {@code false} if it did
+     *         not, including when the set was never built
+     */
+    public boolean removeSlay(Slay slay) {
+        if (slays == null) return false;
+
+        return slays.remove(slay);
+    }
+    
+    /**
+     * Removes every slay from this item, leaving it with an empty set. The slay counterpart of
+     * {@link #clearBrands}.
+     *
+     * <p>A set that was never built is created empty first, so the item ends with an empty set rather
+     * than {@code null}, and clearing the slays of an item that never had any needs no guard. The
+     * production callers are {@code PlayerKnowledge.knowObject}, which clears the known
+     * counterpart's slays when the player knows none of the item's, and
+     * {@code ObjectUtils.copySlays}, which clears before writing back its merged result.
+     *
+     * <p>Function clearSlays coded on 261017, commented in full on 261017.
+     */
+    public void clearSlays() {
+        if (slays == null)
+            slays = new HashSet<>();
+        
+        slays.clear();
     }
 
     /**
@@ -4695,7 +4779,7 @@ public class ItemObject {
      * treats these. The log text from C's {@code log_obj} is written at info level.
      *
      * <p>Both passes walk the curses in C's order. The {@link #curses} map is a {@code TreeMap}
-     * under {@link #CURSE_ORDER}, so iterating it gives ascending curse index whatever order the
+     * under {@link Curse#CURSE_ORDER}, so iterating it gives ascending curse index whatever order the
      * curses were added in. C's loop starts at slot 1 because slot 0 is a placeholder; the port's
      * registry has no placeholder, so nothing is skipped.
      *
@@ -4966,7 +5050,8 @@ public class ItemObject {
      *
      * <p>The curses are applied in ascending registry index, which is C's order and matters because
      * the weight changes do not commute. {@link #getCurses()} walks a {@link TreeMap} ordered by
-     * {@link #CURSE_ORDER}, so that order needs no sorting here. Each active curse - present, with a power other than zero -
+     * {@link Curse#CURSE_ORDER}, so that order needs no sorting here. Each active curse -
+     * present, with a power other than zero -
      * first changes the weight through {@link Curse#modifyWeightForCurse(int)}. Its to-armour,
      * to-hit and to-damage figures are then added to the object's through the saturating 16-bit
      * add, so a long chain cannot wrap round; its flags are unioned in; and its modifiers are added

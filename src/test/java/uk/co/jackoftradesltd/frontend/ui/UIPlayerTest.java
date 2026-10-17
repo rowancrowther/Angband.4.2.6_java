@@ -17,17 +17,13 @@
 
 package uk.co.jackoftradesltd.frontend.ui;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.enums.ChannelEntryFlag;
 import uk.co.jackoftradesltd.channel.globals.ChannelRegistry;
-import uk.co.jackoftradesltd.channel.messages.data.PlayerEventStatusUpdate;
 import uk.co.jackoftradesltd.channel.messages.data.PlayerCharSheetView;
+import uk.co.jackoftradesltd.channel.messages.data.PlayerEventStatusUpdate;
 import uk.co.jackoftradesltd.channel.messages.data.PlayerStatusView;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.channel.utils.Flag;
@@ -44,7 +40,7 @@ import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftradesltd.middle.player.EquipSlot;
 import uk.co.jackoftradesltd.middle.player.Player;
-import uk.co.jackoftradesltd.middle.player.PlayerBody;
+import uk.co.jackoftradesltd.testsupport.Bodies;
 import uk.co.jackoftradesltd.testsupport.CalcBonusesFixture;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
@@ -54,13 +50,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link UIPlayer#haveValidCharSheetConfig()} against C's
@@ -154,17 +144,13 @@ class UIPlayerTest {
      * switch changing {@code player->body.count} out from under a cached layout.
      *
      * @param slotCount the number of slots the replacement body should have
-     * @throws Exception if the field cannot be reached
      */
-    private void setPlayerBodySlotCount(int slotCount) throws Exception {
+    private void setPlayerBodySlotCount(int slotCount) {
         List<EquipSlot> slots = new ArrayList<>();
         for (int i = 0; i < slotCount; i++) {
             slots.add(new EquipSlot(EquipmentSlotsEnum.EQUIP_WEAPON, "slot" + i));
         }
-        PlayerBody body = new PlayerBody("Test", slots);
-        Field field = Player.class.getDeclaredField("body");
-        field.setAccessible(true);
-        field.set(player, body);
+        player.setBody(Bodies.of("Test", slots));
     }
 
     /**

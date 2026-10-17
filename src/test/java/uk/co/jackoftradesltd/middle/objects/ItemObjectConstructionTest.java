@@ -719,17 +719,16 @@ class ItemObjectConstructionTest {
         }
 
         @Test
-        @DisplayName("removeBrand and removeSlay on a null field leave an empty set, not null")
-        void removeOnNullFieldMakesEmptySet() {
+        @DisplayName("removeBrand and removeSlay on a null field answer false and the item reads as empty")
+        void removeOnNullFieldAnswersFalse() {
             nullField(item, "brands");
             nullField(item, "slays");
 
-            item.removeBrand(brand("FIRE_3"));
-            item.removeSlay(slay("EVIL_2"));
-
             assertAll(
-                    () -> assertNotNull(read(item, "brands")),
-                    () -> assertNotNull(read(item, "slays")));
+                    () -> assertFalse(item.removeBrand(brand("FIRE_3"))),
+                    () -> assertFalse(item.removeSlay(slay("EVIL_2"))),
+                    () -> assertTrue(item.getBrands().isEmpty()),
+                    () -> assertTrue(item.getSlays().isEmpty()));
         }
 
         @Test
@@ -799,7 +798,9 @@ class ItemObjectConstructionTest {
             given.add(slay("EVIL_2"));
 
             item.setSlays(given);
-            assertSame(given, item.getSlays());
+            assertEquals(given, item.getSlays());
+            given.add(slay("ORC_2"));
+            assertEquals(2, item.getSlays().size(), "the item holds the set it was given");
 
             item.setSlays(null);
             assertTrue(item.getSlays().isEmpty());

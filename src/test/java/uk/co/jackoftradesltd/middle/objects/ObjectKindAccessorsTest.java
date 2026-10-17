@@ -30,24 +30,14 @@ import uk.co.jackoftradesltd.middle.objects.enums.IgnoreFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
-import uk.co.jackoftradesltd.testsupport.ItemFixture;
 import uk.co.jackoftradesltd.testsupport.CurseFixture;
+import uk.co.jackoftradesltd.testsupport.ItemFixture;
 
 import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static uk.co.jackoftradesltd.testsupport.ItemFixture.set;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests {@link ObjectKind}'s accessors — the template every object of a type is built from, and the
@@ -693,12 +683,13 @@ class ObjectKindAccessorsTest {
             slays.add(slay);
             set(kind, "slays", slays);
 
-            assertSame(slays, kind.getSlays());
+            assertEquals(slays, kind.getSlays());
             assertTrue(kind.getSlays().contains(slay));
+            assertThrows(UnsupportedOperationException.class, () -> kind.getSlays().add(slay));
         }
 
         /**
-         * {@link ObjectKind#getBrands} reads back exactly what the field holds, with no copying.
+         * {@link ObjectKind#getBrands} reads back what the field holds, as a read-only view.
          *
          * @throws Exception if the field cannot be reached
          */
@@ -710,8 +701,9 @@ class ObjectKindAccessorsTest {
             brands.add(brand);
             set(kind, "brands", brands);
 
-            assertSame(brands, kind.getBrands());
+            assertEquals(brands, kind.getBrands());
             assertTrue(kind.getBrands().contains(brand));
+            assertThrows(UnsupportedOperationException.class, () -> kind.getBrands().add(brand));
         }
 
         /**
@@ -721,17 +713,19 @@ class ObjectKindAccessorsTest {
          * @throws Exception if the field cannot be reached
          */
         @Test
-        @DisplayName("getCurses reads back the stored map")
+        @DisplayName("getCurses reads back the stored map as a read-only view")
         void getCursesReadsBackStoredMap() throws Exception {
             Curse curse = CurseFixture.curse("siren", null, 0, null, null, null, null,
                     0, 0, 0, null, null, null, null, 0);
             CurseData data = new CurseData(3, 0);
-            Map<Curse, CurseData> curses = new HashMap<>();
+            Map<Curse, CurseData> curses = new TreeMap<>(Curse.CURSE_ORDER);
             curses.put(curse, data);
             set(kind, "curses", curses);
 
-            assertSame(curses, kind.getCurses());
+            assertEquals(curses, kind.getCurses());
             assertSame(data, kind.getCurses().get(curse));
+            assertThrows(UnsupportedOperationException.class,
+                    () -> kind.getCurses().put(curse, new CurseData(1, 0)));
         }
     }
 

@@ -24,20 +24,16 @@ import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.HashSet;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link ObjectUtils#copyBrands}, the port of C's {@code copy_brands}
  * ({@code obj-slays.c}).
  *
  * <p>Same shape as {@link ObjectUtilsCopySlaysTest}: C ORs a fixed-index {@code bool} table and
- * dedups by clearing the weaker of any pair sharing a name; the port scans {@code destBrands} for a
+ * dedups by clearing the weaker of any pair sharing a name; the port scans the item's brands for a
  * name match and keeps whichever of the pair has the higher {@link Brand#getMultiplier()}. Private,
  * so reached by reflection rather than through its only caller, {@link ObjectUtils#objectPrep}.
  *
@@ -48,14 +44,14 @@ class ObjectUtilsCopyBrandsTest {
     /**
      * Runs the method under test.
      *
-     * @param destBrands   the set the merge writes into
-     * @param sourceBrands the brands being added
+     * @param dest   the item the merge writes into
+     * @param source the kind whose brands are being added
      */
-    private static void copyBrands(Set<Brand> destBrands, Set<Brand> sourceBrands) {
+    private static void copyBrands(ItemObject dest, ObjectKind source) {
         try {
-            Method method = ObjectUtils.class.getDeclaredMethod("copyBrands", Set.class, Set.class);
+            Method method = ObjectUtils.class.getDeclaredMethod("copyBrands", ItemObject.class, ObjectKind.class);
             method.setAccessible(true);
-            method.invoke(null, destBrands, sourceBrands);
+            method.invoke(null, dest, source);
         } catch (InvocationTargetException e) {
             throw new IllegalStateException("copyBrands threw", e.getCause());
         } catch (ReflectiveOperationException e) {
@@ -78,7 +74,7 @@ class ObjectUtilsCopyBrandsTest {
     }
 
     /**
-     * The ordinary path: brands for elements {@code destBrands} does not yet cover.
+     * The ordinary path: brands for elements the item's brands does not yet cover.
      */
     @Nested
     @DisplayName("adding brands for new elements")
@@ -90,12 +86,14 @@ class ObjectUtilsCopyBrandsTest {
         @Test
         @DisplayName("an empty dest gains every brand from source")
         void addsToEmptyDest() {
-            Set<Brand> dest = new HashSet<>();
+            ItemObject dest = new ItemObject();
             Brand acid = brand("ACID_3", "acid", 3);
 
-            copyBrands(dest, Set.of(acid));
+            ObjectKind source = new ObjectKind();
+            source.addBrand(acid);
+            copyBrands(dest, source);
 
-            assertEquals(Set.of(acid), dest);
+            assertEquals(Set.of(acid), dest.getBrands());
         }
 
         /**
@@ -105,14 +103,16 @@ class ObjectUtilsCopyBrandsTest {
         @Test
         @DisplayName("brands for distinct elements coexist")
         void distinctElementsCoexist() {
-            Set<Brand> dest = new HashSet<>();
-            dest.add(brand("ACID_3", "acid", 3));
+            ItemObject dest = new ItemObject();
+            dest.addBrand(brand("ACID_3", "acid", 3));
             Brand cold = brand("COLD_3", "cold", 3);
 
-            copyBrands(dest, Set.of(cold));
+            ObjectKind source = new ObjectKind();
+            source.addBrand(cold);
+            copyBrands(dest, source);
 
-            assertEquals(2, dest.size());
-            assertTrue(dest.contains(cold));
+            assertEquals(2, dest.getBrands().size());
+            assertTrue(dest.containsBrand(cold));
         }
     }
 
@@ -131,15 +131,17 @@ class ObjectUtilsCopyBrandsTest {
         @Test
         @DisplayName("a stronger source brand replaces a weaker dest one")
         void strongerSourceReplacesWeakerDest() {
-            Set<Brand> dest = new HashSet<>();
+            ItemObject dest = new ItemObject();
             Brand weak = brand("ACID_2", "acid", 2);
-            dest.add(weak);
+            dest.addBrand(weak);
             Brand strong = brand("ACID_3", "acid", 3);
 
-            copyBrands(dest, Set.of(strong));
+            ObjectKind source = new ObjectKind();
+            source.addBrand(strong);
+            copyBrands(dest, source);
 
-            assertEquals(1, dest.size(), "same-name brands must merge into one entry");
-            Brand survivor = dest.iterator().next();
+            assertEquals(1, dest.getBrands().size(), "same-name brands must merge into one entry");
+            Brand survivor = dest.getBrands().iterator().next();
             assertEquals(3, survivor.getMultiplier());
             assertEquals("ACID_3", survivor.getCode());
         }
@@ -151,13 +153,15 @@ class ObjectUtilsCopyBrandsTest {
         @Test
         @DisplayName("the surviving stronger brand is a copy, not source's own instance")
         void survivorIsACopyOfSource() {
-            Set<Brand> dest = new HashSet<>();
-            dest.add(brand("ACID_2", "acid", 2));
+            ItemObject dest = new ItemObject();
+            dest.addBrand(brand("ACID_2", "acid", 2));
             Brand strong = brand("ACID_3", "acid", 3);
 
-            copyBrands(dest, Set.of(strong));
+            ObjectKind source = new ObjectKind();
+            source.addBrand(strong);
+            copyBrands(dest, source);
 
-            assertNotSame(strong, dest.iterator().next());
+            assertNotSame(strong, dest.getBrands().iterator().next());
         }
 
         /**
@@ -167,15 +171,17 @@ class ObjectUtilsCopyBrandsTest {
         @Test
         @DisplayName("a weaker source brand leaves the stronger dest one exactly as it was")
         void weakerSourceLeavesStrongerDestAlone() {
-            Set<Brand> dest = new HashSet<>();
+            ItemObject dest = new ItemObject();
             Brand strong = brand("ACID_3", "acid", 3);
-            dest.add(strong);
+            dest.addBrand(strong);
             Brand weak = brand("ACID_2", "acid", 2);
 
-            copyBrands(dest, Set.of(weak));
+            ObjectKind source = new ObjectKind();
+            source.addBrand(weak);
+            copyBrands(dest, source);
 
-            assertEquals(1, dest.size());
-            assertSame(strong, dest.iterator().next(),
+            assertEquals(1, dest.getBrands().size());
+            assertSame(strong, dest.getBrands().iterator().next(),
                     "the surviving instance must be dest's own, not a copy of the loser");
         }
     }
@@ -188,18 +194,18 @@ class ObjectUtilsCopyBrandsTest {
     class EmptySource {
 
         /**
-         * Leaves {@code destBrands} exactly as it was.
+         * Leaves the item's brands exactly as it was.
          */
         @Test
         @DisplayName("dest is unchanged")
         void leavesDestUnchanged() {
-            Set<Brand> dest = new HashSet<>();
+            ItemObject dest = new ItemObject();
             Brand acid = brand("ACID_3", "acid", 3);
-            dest.add(acid);
+            dest.addBrand(acid);
 
-            copyBrands(dest, Set.of());
+            copyBrands(dest, new ObjectKind());
 
-            assertEquals(Set.of(acid), dest);
+            assertEquals(Set.of(acid), dest.getBrands());
         }
     }
 }

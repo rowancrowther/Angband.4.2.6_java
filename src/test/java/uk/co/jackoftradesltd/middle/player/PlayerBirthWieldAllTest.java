@@ -28,6 +28,7 @@ import uk.co.jackoftradesltd.middle.objects.ItemObject;
 import uk.co.jackoftradesltd.middle.objects.KnownObject;
 import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
+import uk.co.jackoftradesltd.testsupport.Bodies;
 import uk.co.jackoftradesltd.testsupport.ItemFixture;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
@@ -139,7 +140,7 @@ class PlayerBirthWieldAllTest {
                 slots.add(new EquipSlot(slot.getType(), slot.getName()));
             }
         }
-        return new PlayerBody("no-" + missing, slots);
+        return Bodies.of("no-" + missing, slots);
     }
 
     /**
@@ -150,7 +151,7 @@ class PlayerBirthWieldAllTest {
      * @return a single-slot body
      */
     private static PlayerBody singleSlotBody(EquipmentSlotsEnum type) {
-        return new PlayerBody("single", List.of(new EquipSlot(type, "slot")));
+        return Bodies.of("single", List.of(new EquipSlot(type, "slot")));
     }
 
     /**

@@ -22,6 +22,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
 import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
+import uk.co.jackoftradesltd.testsupport.Bodies;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -110,7 +111,7 @@ class EquipSlotConstructionTest {
     void aBodyCopyGivesEmptySlotsWithTheSameTypeAndName() {
         EquipSlot original = new EquipSlot(EquipmentSlotsEnum.EQUIP_LIGHT, "light");
         original.setItem(new ItemObject());
-        PlayerBody body = new PlayerBody("Humanoid", new java.util.ArrayList<>(java.util.List.of(original)));
+        PlayerBody body = Bodies.of("Humanoid", new java.util.ArrayList<>(java.util.List.of(original)));
 
         EquipSlot copied = body.copy().getSlot(0);
 

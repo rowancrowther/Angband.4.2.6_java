@@ -21,15 +21,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
 import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
+import uk.co.jackoftradesltd.testsupport.Bodies;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerBody#itemIsEquipped}, the port of C's {@code object_is_equipped}
@@ -70,7 +68,7 @@ class PlayerBodyEquippedTest {
     }
 
     private static PlayerBody bodyOf(EquipSlot... slots) {
-        return new PlayerBody("test", new ArrayList<>(List.of(slots)));
+        return Bodies.of("test", new ArrayList<>(List.of(slots)));
     }
 
     @Test

@@ -160,7 +160,6 @@
 
 **Responsible for:** The Java module descriptor: declares module `uk.co.jackoftradesltd`, the libraries it requires (log4j, ANTLR runtime, JNA, commons, Swing) and the two packages it exports.
 
-
 ##### `Main.java`
 
 **Responsible for:** The entry point: parse the command line, then either answer it and stop, or build the two halves of the game, start them, and wait for both to finish.
@@ -189,22 +188,11 @@
 
 **Responsible for:** The interface class between the file system and Angband.
 
-**class `FileHandler`** — class Javadoc: ✔ · type stamp: —
-
 ## backend/io/bespokeexceptions
 
 ##### `InvalidTokenFoundDuringParse.java`
 
 **Responsible for:** Unchecked exception thrown when one of the data-file parsers encounters a token it cannot interpret.
-
-**class `InvalidTokenFoundDuringParse`** — class Javadoc: ✔ · type stamp: —
-
-- Fields (1/1 documented): ✔ `logger`
-
-| Function | Ported (coded) | Javadoc |
-|---|---|---|
-| ctor `InvalidTokenFoundDuringParse(String)` | — | ✔ |
-
 
 ## backend/io/enums
 
@@ -215,7 +203,6 @@
 **enum `FileModeEnum`** — class Javadoc: ✔ · type stamp: —
 
 - Enum constants (3/3 documented): ✔ `MODE_WRITE`, `MODE_READ`, `MODE_APPEND`
-
 
 ##### `FileTypeEnum.java`
 

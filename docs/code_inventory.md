@@ -200,10 +200,6 @@
 
 **Responsible for:** The type of access required for a file as used in fileOpen()
 
-**enum `FileModeEnum`** — class Javadoc: ✔ · type stamp: —
-
-- Enum constants (3/3 documented): ✔ `MODE_WRITE`, `MODE_READ`, `MODE_APPEND`
-
 ##### `FileTypeEnum.java`
 
 **Responsible for:** Specifies what type a file is when writing.

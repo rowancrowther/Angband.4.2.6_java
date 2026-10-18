@@ -98,6 +98,9 @@ Found 2026-10-17 during `/port backend/parser/PainReader.java`. Not fixed.
 - `PainReaderTest.indentedDirectiveLineIsAHardErrorHereWhereCSkipsTheIndent` and
   `indentedCommentLineIsAHardErrorHereWhereCSkipsIt` pin this for `PainLexer`.
   `MonsterReaderTest.anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent` pins it for `MonsterLexer`.
+  `ActivationReaderTest.anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent` pins it for `ActivationsLexer`,
+  `ObjectPropertyReaderTest.anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent` pins it for `ObjectPropertyLexer`, and
+  `ProjectionReaderTest.anIndentedDirectiveIsAHardErrorWhereCSkipsTheIndent` pins it for `ProjectionLexer`.
 
 ### Impact
 
@@ -610,3 +613,737 @@ Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. Not fixed.
   the Java result.
 - None on the shipped data, which writes plain decimal numbers with no sign on an unsigned field. Same family as the
   `MonsterBaseLexer.g4` `pain:` entry above.
+
+## `SlayGrammar.g4`: a second `race-flag:` or `base:` in one record overwrites, C rejects it
+
+Found 2026-10-17 during `/port backend/parser/SlayReader.java`. Not fixed.
+
+- `parse_slay_race_flag` and `parse_slay_base` in `obj-init.c` both return `PARSE_ERROR_INVALID_SLAY` when the slay
+  already has a race flag or a base ("Flag or base, not both nor multiple race flags"), and the load stops.
+- `SlayGrammar.g4`, rule `slay`: `raceFlag { raceFlagInit = ... }` and `base { baseInit = ... }` simply overwrite, so the
+  last of two `race-flag:` lines wins. `SlayAssembler.java` only rejects the case where both strings are non-empty, so
+  two `race-flag:` lines, or two `base:` lines, load as one slay with no error.
+- The grammar comment says a repeated directive keeps the last value "as in C". That holds for `name:`, the three
+  numbers and both verbs, and not for these two.
+- `SlayReaderTest.secondRaceFlagInOneRecordKeepsTheLastHereWhereCRejects` and
+  `secondBaseInOneRecordKeepsTheLastHereWhereCRejects` pin the Java result.
+- None on the shipped data, where every record has exactly one `race-flag:` and no `base:`.
+
+## `SlayLexer.g4`: `INTEGER` accepts a leading minus and decimal only, and the comment says the assembler checks the range
+
+Found 2026-10-17 during `/port backend/parser/SlayReader.java`. Not fixed.
+
+- `multiplier`, `o-multiplier` and `power` are registered as `uint`. `parser_parse` in `parser.c` reads a `uint` with
+  `strtoul(tok, &z, 0)` and returns `PARSE_ERROR_NOT_NUMBER` when the token starts with `-`, and base 0 means `010` is 8
+  and `0x10` is 16.
+- `SlayLexer.g4`: `INTEGER : '-'? ('0'..'9')+`. `multiplier:-2` lexes, `SlayAssembler.java` keeps it, and the slay loads
+  with a multiplier of -2. `multiplier:010` is 10 here and 8 in C, and `multiplier:0x10` is a lexer error.
+- The comment above `INTEGER` says "range is validated in the assembler". `SlayAssembler.java` only calls
+  `Integer.parseInt`, so nothing checks the sign.
+- `SlayReaderTest.negativeMultiplierLoadsHereWhereCParserGetUintRejectsIt` pins the Java result.
+- None on the shipped data, which writes plain unsigned decimals. Same family as the `MonsterLexer.g4` integers entry
+  above.
+
+## `SlayGrammar.g4`: a file with no slay records is a syntax error
+
+Found 2026-10-17 during `/port backend/parser/SlayReader.java`. Not fixed.
+
+- `run_parse_slay` and `finish_parse_slay` accept a `slay.txt` with no records: the chain is empty and `slay_max` ends
+  at 1.
+- `SlayGrammar.g4`, rule `file`: `(slay { ... })+` needs at least one, so a header-only file is a hard error with no
+  items.
+- `SlayReaderTest.headerOnlyFileIsAHardErrorHereWhereCAcceptsAnEmptyFile` pins it.
+- None in practice, since the game always ships a populated `slay.txt`.
+
+## `SlayGrammar.g4` and `SlayLexer.g4`: comments cite C line numbers
+
+Found 2026-10-17 during `/port backend/parser/SlayReader.java`. Not fixed.
+
+- `SlayGrammar.g4` cites `init_parse_slay() (src/obj-init.c:786)`, and `SlayLexer.g4` cites `init_parse_slay()
+  (src/obj-init.c:786-798)` and `slay_parser (src/obj-init.c:851)`.
+- The line numbers drift whenever a function in `obj-init.c` is stamped as ported. Name the file and function only.
+
+## `BrandGrammar.g4`: directives must come in one fixed order, and a missing or repeated one is a syntax error that costs the whole file
+
+Found 2026-10-17 during `/port backend/parser/BrandReader.java`. Not fixed.
+
+- `init_parse_brand` in `obj-init.c` registers each directive on its own, so `parser_parse` runs them in whatever order
+  the file gives, a left-out directive leaves the zero-filled field (`power` 0, `resist_flag` 0, `name` and `verb`
+  `NULL`), and a repeated one overwrites (`parse_brand_name` frees the old string first).
+- `BrandGrammar.g4`, rule `brand`: `code name verb multiplier o-multiplier power resist-flag (vuln-flag)?` in exactly
+  that order. `verb:` before `name:`, a missing `power:` or `resist-flag:`, a second `name:` and a `vuln-flag:` ahead of
+  `resist-flag:` are all syntax errors.
+- A syntax error is a hard error, so one malformed record empties the whole file, where C stops at the line that failed.
+- `BrandReaderTest.directivesOutOfOrderAreAHardErrorHereWhereCTakesAnyOrder`, `missingPowerIsAHardErrorHereWhereCLeavesItZero`,
+  `missingResistFlagIsAHardErrorHereWhereCLeavesFlagZero`, `oneBadRecordSyntaxCostsTheWholeFileHereWhereCStopsAtThatRecord`
+  and `repeatedNameIsAHardErrorHereWhereCOverwrites` pin the Java result.
+- None on the shipped data, where every record has the same eight directives in this order (`vuln-flag:` only on four).
+  Same family as the `SlayGrammar.g4` entry above.
+
+## `BrandGrammar.g4`: a file with no brand records is a syntax error
+
+Found 2026-10-17 during `/port backend/parser/BrandReader.java`. Not fixed.
+
+- `run_parse_brand` and `finish_parse_brand` accept a `brand.txt` with no records: the chain is empty and `brand_max`
+  ends at 1.
+- `BrandGrammar.g4`, rule `file`: `(brand { ... })+` needs at least one, so a header-only file is a hard error with no
+  items.
+- `BrandReaderTest.headerOnlyFileIsAHardErrorHereWhereCAcceptsAnEmptyFile` pins it.
+- None in practice, since the game always ships a populated `brand.txt`.
+
+## `BrandLexer.g4`: `INTEGER` accepts a leading minus and decimal only, and the comment says the assembler checks the range
+
+Found 2026-10-17 during `/port backend/parser/BrandReader.java`. Not fixed.
+
+- `multiplier`, `o-multiplier` and `power` are registered as `uint`, so `parser_parse` in `parser.c` reads them with
+  `strtoul(tok, &z, 0)`, refuses a token that starts with `-`, and reads `010` as 8 and `0x10` as 16.
+- `BrandLexer.g4`: `INTEGER : '-'? ('0'..'9')+`. `multiplier:-2` lexes and loads as -2, `multiplier:010` is 10, and
+  `multiplier:0x10` is a lexer error. The comment above `INTEGER` says "range is validated in the assembler", and
+  `BrandAssembler.java` only calls `Integer.parseInt`.
+- `BrandReaderTest.negativeMultiplierLoadsHereWhereCParserGetUintRejectsIt`, `leadingZeroNumberIsDecimalHereWhereCReadsOctal`
+  and `hexNumberIsAHardErrorHereWhereCReadsItAsSixteen` pin the Java result.
+- None on the shipped data, which writes plain unsigned decimals. Same family as the `SlayLexer.g4` entry above.
+
+## `BrandLexer.g4`: spaces after a flag are swallowed, C keeps them and fails the lookup
+
+Found 2026-10-17 during `/port backend/parser/BrandReader.java`. Not fixed.
+
+- `parse_brand_resist_flag` and `parse_brand_vuln_flag` take a `sym`, which `parser_parse` splits on `:` only, so
+  `resist-flag:IM_FIRE ` reaches `lookup_flag` as `"IM_FIRE "`, which matches nothing, and the load stops with
+  `PARSE_ERROR_INVALID_FLAG`.
+- `BrandLexer.g4`: `FLAG` pops its mode, and the default-mode `EOL` rule (`' '* '\r'? '\n'`) then eats the trailing
+  spaces, so the same line loads.
+- `BrandReaderTest.spaceAfterAFlagIsIgnoredHereWhereCLooksUpTheTextWithTheSpace` pins it. Lenient rather than harmful.
+- None on the shipped data.
+
+## `BrandGrammar.g4` and `BrandLexer.g4`: comments cite a C line number, already stale
+
+Found 2026-10-17 during `/port backend/parser/BrandReader.java`. Not fixed.
+
+- `BrandGrammar.g4` cites `init_parse_brand() (src/obj-init.c:959)` and `BrandLexer.g4` cites the same line for the
+  directive table. `init_parse_brand` is no longer at 959, and the number moves again whenever a function in
+  `obj-init.c` is stamped as ported. Name the file and function only.
+
+## `BrandGrammar.g4`: the comment on rule `brand` says six of ten brands carry a `vuln-flag:`, it is four
+
+Found 2026-10-17 during `/port backend/parser/BrandReader.java`. Not fixed.
+
+- The comment above rule `brand` reads "only six of ten shipped brands carry a vuln-flag". `brand.txt` has four
+  `vuln-flag:` lines (FIRE_3, COLD_3, FIRE_2, COLD_2), in the shipped copy and in the upstream file.
+- `BrandReaderTest.realFileHoldsEveryFieldOfEveryRecordInCsLastFirstOrder` pins which four.
+
+## `ItemObjectGrammar.g4`: a record with only a `name:` line is a syntax error, C accepts it
+
+Found 2026-10-17 during `/port backend/parser/ItemObjectReader.java`. Not fixed.
+
+- `parse_object_name` in `obj-init.c` starts the record and nothing else is required, so a `name:` line on its own is
+  a kind with every field 0.
+- `ItemObjectGrammar.g4:249`: the directives after `name:` are a `( ... )+` loop, so at least one must follow.
+- `ItemObjectReaderTest.aRecordWithOnlyANameLineIsASyntaxErrorHereWhereCAcceptsIt` pins it.
+- None on the shipped data, where every record has a `type:` at least. A modded `object.txt` with a bare name loads in
+  C and loads as nothing in Java.
+- Same family as the `BlowEffectGrammar.g4` name-only-record difference in `docs/precis/261017.md`.
+
+## `ItemObjectGrammar.g4`: a later `curse:` for the same name replaces an earlier one, C only ever raises it
+
+Found 2026-10-17 during `/port backend/parser/ItemObjectReader.java`. Not fixed.
+
+- `parse_object_curse` in `obj-init.c` writes `k->curses[i] = power` only when `power > 0`, and nothing clears a slot.
+  So `curse:teleportation:50` then `curse:teleportation:0` leaves 50, and `0` then `50` leaves 50.
+- `ItemObjectGrammar.g4:245`: `curseInit.put(name, power)` keeps the last line per name, so the `0` replaces the `50`, and
+  `ItemObjectAssembler.java` then drops it as a zero-power curse. The reverse order does keep the 50, as C does.
+- Two lines for the same curse with different non-zero powers give the last in both, so only a trailing zero differs.
+- `ItemObjectReaderTest.aLaterZeroPowerCurseDropsAnEarlierOneHereWhereCKeepsIt` and
+  `aZeroPowerCurseBeforeANonZeroOneLeavesTheNonZeroOne` pin the two orders.
+- None on the shipped data: the only `curse:` lines are the two `curse:teleportation:100`.
+
+## `ItemObjectLexer.g4`: the spaces around `to` in `alloc:` are optional, C requires them
+
+Found 2026-10-17 during `/port backend/parser/ItemObjectReader.java`. Not fixed.
+
+- `parse_object_alloc` hands the range text to `grab_int_range` with the separator `to`. That function requires white
+  space after the first number and after the separator, so `alloc:5:1to100` and `alloc:5:1 to100` are
+  `PARSE_ERROR_INVALID_ALLOCATION`.
+- `ItemObjectLexer.g4:133-135`: `ALLOC_TO` is `' '? 'to' ' '?`, so both load.
+- `ItemObjectReaderTest.allocWithNoSpacesAroundToIsAcceptedHereWhereCRejectsIt` pins it. `allocWithoutToIsAHardError`
+  pins that a missing `to` is refused in both.
+- Lenient rather than harmful; none on the shipped data, which always writes `N to M`.
+
+## `imports/AngbandDisplayCharacter.g4`: an unknown `graphics:` colour is a lexer error, C falls back to white
+
+Found 2026-10-17 during `/port backend/parser/ItemObjectReader.java`. Not fixed.
+
+- `parse_object_graphics` in `obj-init.c` calls `color_text_to_attr` for a colour longer than one character and
+  `color_char_to_attr` for one character. Both answer white when nothing matches, so `graphics:|:q` is a white `|`.
+- `imports/AngbandDisplayCharacter.g4:103`: `COLOUR_VALUES` is a fixed set of colour codes and names. `q` and `9` match
+  nothing, so the lexer reports `token recognition error` and the whole file loads as nothing, not just the record.
+  `ItemObjectAssembler.java` has an "invalid colour" soft error, which can now only fire for a code the lexer accepts
+  and `ColourEnum.fromCode` does not.
+- `ItemObjectReaderTest.anUnknownColourIsAHardErrorHereWhereCFallsBackToWhite` pins it for `9` and `q`.
+- None on the shipped data. The import is shared, so every grammar with a `graphics:` line has the same behaviour; the
+  C handlers differ from one another in how they treat an unknown colour.
+
+## `ItemObjectGrammar.g4` and `EffectBlock.g4`: `effect-msg:` is accepted on an object, C has no such directive
+
+Found 2026-10-17 during `/port backend/parser/ItemObjectReader.java`. Not fixed.
+
+- `init_parse_object` in `obj-init.c` registers `effect`, `effect-yx`, `dice` and `expr` but no `effect-msg`, so C
+  gives `PARSE_ERROR_UNDEFINED_DIRECTIVE`. The object-level texts are `msg:` and `vis-msg:`.
+- `ItemObjectGrammar.g4:235` takes the shared `effectBlock`, which accepts `effect-msg:`.
+- `ItemObjectReaderTest.effectMsgIsAcceptedHereWhereCHasNoSuchDirective` pins it. Same shared-block cause as the
+  `MonsterSpellGrammar.g4` entry above, which also covers the `effect-yx:` / `dice:` shape.
+- None on the shipped data.
+
+## `ObjectBaseGrammar.g4`: a fixed shape of directives, C takes any order and any omission
+
+Found 2026-10-17 during `/port backend/parser/ObjectBaseReader.java`. Not fixed.
+
+### What C does
+
+- `init_parse_object_base` in `obj-init.c` registers `default`, `name`, `graphics`, `break`, `max-stack` and `flags` as
+  independent handlers.
+- `parse_object_base_defaults` can run any number of times, anywhere, including never. Each call overwrites one field
+  of the parser's defaults, and `parse_object_base_name` copies those defaults into the record it starts, so a
+  `default:` line only affects the records after it.
+- The four record handlers only need a record to exist (`PARSE_ERROR_MISSING_RECORD_HEADER` otherwise). They can come
+  in any order, any can be left out, and a repeated `graphics:`, `break:` or `max-stack:` overwrites. A record with
+  no `graphics:` keeps colour 0.
+- `finish_parse_object_base` accepts a file with no record at all.
+
+### What Java does
+
+- `ObjectBaseGrammar.g4:162`: the `file` rule is `recordCount (default_value)+ (object_base)+ EOF`, so the file needs at
+  least one `default:` line, all of them before the first `name:`, and at least one record.
+- `ObjectBaseGrammar.g4:125`: the `object_base` rule is `name graphics (break_chance)? (max_stack)? (flags)*`, so
+  `graphics:` is compulsory, `break:` must precede `max-stack:`, `flags:` must come last, and `break:` or `max-stack:`
+  may appear once.
+- Each departure is a syntax error, and a syntax error returns no items, so one misplaced line costs the whole file.
+- `ObjectBaseReaderTest` pins seven of them: `aFileWithNoDefaultLineIsAHardErrorWhereCAcceptsIt`,
+  `aDefaultLineAfterARecordIsAHardErrorWhereCAcceptsIt`, `aFileWithNoRecordIsAHardErrorWhereCAcceptsIt`,
+  `aRecordWithNoGraphicsLineIsAHardErrorWhereCAcceptsIt`, `maxStackBeforeBreakIsAHardErrorWhereCAcceptsAnyOrder`,
+  `aRepeatedBreakLineIsAHardErrorWhereCLetsItOverwrite` and `flagsSeparatedBySpacesAloneAreAHardErrorWhereCAcceptsThem`.
+
+### Impact
+
+- None on the shipped data, which has the one shape the grammar wants.
+- A modded `object_base.txt` that reorders directives, drops `graphics:` or sets the defaults part-way down loads in C
+  and fails in Java.
+- The same comparison applies to every grammar that wrote a fixed record shape; `BrandGrammar.g4` is the same family.
+
+## `ObjectBaseLexer.g4`: `flags:` needs a pipe between names, C splits on spaces as well
+
+Found 2026-10-17 during `/port backend/parser/ObjectBaseReader.java`. Not fixed.
+
+- `parse_object_base_flags` in `obj-init.c` runs `strtok(s, " |")`, so `flags:HATES_ACID HATES_FIRE` is two flags in C.
+- `ObjectBaseLexer.g4:124`: `FLAG_OR` is `' '? '|' ' '?`, so a bare space is not a separator; the second name is a
+  token recognition error and the whole file loads as nothing.
+- `ObjectBaseReaderTest.flagsSeparatedBySpacesAloneAreAHardErrorWhereCAcceptsThem` pins it.
+- None on the shipped data, which always writes ` | `. `A|B` with no spaces works in both.
+
+## `ObjectBaseLexer.g4`: the header comment names handlers C does not have
+
+Found 2026-10-17 during `/port backend/parser/ObjectBaseReader.java`. Not fixed.
+
+- `ObjectBaseLexer.g4:23` refers to `parse_object_base_default_*`, which suggests one handler per default. C has a single
+  `parse_object_base_defaults` that tests the label (`break-chance` or `max-stack`) and returns
+  `PARSE_ERROR_UNDEFINED_DIRECTIVE` for any other.
+- A comment fix only; no behaviour difference.
+
+## `CurseGrammar.g4`: a second `msg:` replaces the first, C appends it
+
+Found 2026-10-17 during `/port backend/parser/CurseReader.java`. Not fixed.
+
+- `parse_curse_msg` in `obj-init.c` runs `curse->obj->effect_msg = string_append(curse->obj->effect_msg, parser_getstr(p, "text"))`,
+  so two `msg:` lines in one record run together with no separator, as `desc:` does.
+- `CurseGrammar.g4:135`: `msg { msgInit = $msg.msgStr; }` assigns, so the second line replaces the first.
+- `CurseReaderTest.aSecondMsgLineReplacesTheFirstHereWhereCAppendsIt` pins it (`msg:A` then `msg:B` gives `B`, C gives `AB`).
+- None on the shipped data: no curse has two `msg:` lines.
+- Same family as the `BlowEffectGrammar.g4` `desc:` entry at the top of this file. `desc:` is fine here: `CurseGrammar.g4`
+  collects every line and `CurseAssembler` joins them with no separator, as C does.
+
+## `CurseGrammar.g4`: a record needs a directive after `name:` and the file needs a record, C accepts neither rule
+
+Found 2026-10-17 during `/port backend/parser/CurseReader.java`. Not fixed.
+
+- `parse_curse_name` in `obj-init.c` builds a complete record from the name alone, and `finish_parse_curse` copes with an
+  empty chain (`curse_max` becomes 1, only the blank slot).
+- `CurseGrammar.g4:139`: the `)+` closing the directive alternatives in `curseRecord` needs at least one directive after
+  `name:`, so a name-only record is a syntax error and the whole file loads as nothing.
+- `CurseGrammar.g4:146`: `file` is `recordCount (curseRecord ...)+ EOF`, so a file with the header and no records is a
+  syntax error too.
+- `CurseReaderTest.aRecordWithOnlyANameIsAHardErrorHereWhereCAcceptsIt` and
+  `aFileWithNoRecordsIsAHardErrorHereWhereCLoadsNothing` pin both.
+- None on the shipped data: all 27 records carry directives. Same family as the `PitGrammar.g4` entry above.
+
+## `CurseGrammar.g4` and `EffectBlock.g4`: the effect lines are a fixed block, and a second `dice:` is a syntax error
+
+Found 2026-10-17 during `/port backend/parser/CurseReader.java`. Not fixed.
+
+- `parse_curse_effect_yx`, `parse_curse_dice` and `parse_curse_expr` in `obj-init.c` act on the curse's last effect, in any
+  order, and return `PARSE_ERROR_NONE` without doing anything when there is no effect yet. `parse_curse_dice` frees the
+  effect's old dice and installs the new ones, so a second `dice:` line replaces the first.
+- `CurseGrammar.g4:127`: the `effectBlock` alternative is the shared block, which is `effect:`, then `effect-yx:` or one
+  optional `dice:`, then an optional `effect-msg:`. So these are all syntax errors in Java and fine in C:
+  a `dice:` before the first `effect:`, `effect-yx:` and `dice:` on the same effect, and two `dice:` lines on one effect.
+- `effect-msg:` is the other way round: `init_parse_curse` registers no such directive, so C gives
+  `PARSE_ERROR_UNDEFINED_DIRECTIVE`, and Java accepts it because the shared block does.
+- `CurseReaderTest.aDiceLineBeforeAnyEffectIsAHardErrorHereWhereCIgnoresIt`,
+  `effectYxAndDiceOnTheSameEffectAreAHardErrorHereWhereCTakesBoth`,
+  `aSecondDiceLineOnOneEffectIsAHardErrorHereWhereCReplacesTheFirst` and
+  `effectMsgIsAcceptedHereWhereCHasNoSuchDirective` pin the four. Several `effect:` lines on one curse work in both
+  (`severalEffectsOnOneCurseAllLoadInOrder`).
+- None on the shipped data: no curse uses `effect-yx:` or `effect-msg:`, and every `dice:` follows its `effect:`.
+- Same shared-block cause as the `MonsterSpellGrammar.g4` and `ItemObjectGrammar.g4` entries above; the second-`dice:`
+  case is new to this one.
+
+## `CurseLexer.g4`: `flags:`, `values:` and `conflict-flags:` need a pipe between names, C splits on spaces as well
+
+Found 2026-10-17 during `/port backend/parser/CurseReader.java`. Not fixed.
+
+- `parse_curse_flags`, `parse_curse_values` and `parse_curse_conflict_flags` in `obj-init.c` each run `strtok(s, " |")`, so
+  `flags:AGGRAVATE AFRAID` is two flags in C and `values:STR[-1] INT[-1]` is two values.
+- `CurseLexer.g4:81` (`FLAG_OR`) and `CurseLexer.g4:63` (`VALUE_OR`) are `' '? '|' ' '?`, so a bare space is not a
+  separator; the second name is a token recognition error and the whole file loads as nothing.
+- `CurseReaderTest.flagsSeparatedBySpacesAloneAreAHardErrorHereWhereCAcceptsThem`,
+  `valuesSeparatedBySpacesAloneAreAHardErrorHereWhereCAcceptsThem` and
+  `conflictFlagsSeparatedBySpacesAloneAreAHardErrorHereWhereCAcceptsThem` pin it.
+- None on the shipped data, which always writes ` | `. Same family as the `ObjectBaseLexer.g4` entry above.
+
+## `CurseLexer.g4`: integers are decimal-only with no plus sign, C reads them with `strtol` base 0
+
+Found 2026-10-17 during `/port backend/parser/CurseReader.java`. Not fixed.
+
+- `parser_parse` in `parser.c` reads an `int` field (`weight:` and the three `combat:` numbers) with `strtol(tok, &z, 0)`.
+  Base 0 means `010` is 8, `0x10` is 16 and `+1` is 1.
+- `imports/EffectBlockLexer.g4:137`: `INTEGER` is `'-'? ('0'..'9')+`. So `weight:010` loads as 10, `weight:0x10` is a syntax error
+  and `combat:+1:0:0` is a syntax error.
+- `CurseReaderTest.aLeadingZeroWeightIsDecimalHereWhereCReadsOctal`, `aHexWeightIsAHardErrorHereWhereCReadsItAsSixteen`
+  and `aPlusSignOnACombatNumberIsAHardErrorHereWhereCAcceptsIt` pin the three.
+- None on the shipped data, which writes plain decimal numbers. Same family as the `BrandLexer.g4` and `SlayLexer.g4`
+  entries above.
+
+## `ActivationsGrammar.g4`: a second `desc:` or `msg:` replaces the first, C appends it
+
+Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. Not fixed.
+
+- `parse_act_desc` and `parse_act_msg` in `obj-init.c` run `act->desc = string_append(act->desc, ...)` and
+  `act->message = string_append(act->message, ...)`, so two lines in one record run together with no separator. A space
+  has to be written into the data file, which is why the shipped continuation line is `desc: could go`.
+- `ActivationsGrammar.g4:181` and `:188`: `msg { messageInit = $msg.message; }` and `desc { descInit = $desc.descStr; }`
+  assign, so the second line replaces the first. `ActivationAssembler.java:92-93` takes both as they come.
+- Unlike the `BlowEffectGrammar.g4` and `CurseGrammar.g4` entries above, this one **does** hit the shipped data. `TELE_LONG`
+  and `RESIST_ALL` each split their description over two `desc:` lines, so Java loads `" could go"` for the first (C gives
+  `"teleports you randomly about 60 per cent of the largest distance you could go"`) and `" for 1d20+20 turns"` for the
+  second (C gives `"grants temporary resistance to acid, electricity, fire, cold and poison for 1d20+20 turns"`).
+- No Java code reads `Activation.desc` yet, so nothing shows it today. `obj-info.c` prints it in the item description, so
+  it will once that is ported.
+- `ActivationReaderTest.aSecondDescLineReplacesTheFirstHereWhereCAppendsIt`,
+  `theShippedTeleLongAndResistAllLoseTheirFirstDescLine` and `aSecondMsgLineReplacesTheFirstHereWhereCAppendsIt` pin the
+  Java result.
+- This is the first grammar found where the fault reaches the shipped data. It answers the open question at the end of the
+  `BlowEffectGrammar.g4` entry (other grammars with the same fault); a search of the rest is still needed.
+
+## `ActivationsGrammar.g4`: a record needs a directive after `name:` and the file needs a record, C accepts neither rule
+
+Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. Not fixed.
+
+- `parse_act_name` in `obj-init.c` builds a complete record from the name alone, and `finish_parse_act` copes with an
+  empty chain (`act_max` becomes 1, only the blank slot).
+- `ActivationsGrammar.g4:188`: the `)+` closing the directive alternatives in `activation` needs at least one directive
+  after `name:`, so a name-only record is a syntax error and the whole file loads as nothing.
+- `ActivationsGrammar.g4:205`: `file` is `recordCount (activation ...)+ EOF`, so a file with the header and no records is
+  a syntax error too.
+- `ActivationReaderTest.aRecordWithOnlyANameIsAHardErrorHereWhereCAcceptsIt` and
+  `aFileWithNoRecordsIsAHardErrorHereWhereCLoadsNothing` pin both.
+- None on the shipped data: all 163 records carry directives. Same family as the `CurseGrammar.g4` and `PitGrammar.g4`
+  entries above.
+
+## `ActivationsLexer.g4`: `name:` takes only upper case, digits and underscore, and trailing blanks are dropped
+
+Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. Not fixed.
+
+- `init_parse_act` registers `name str name`, and a `str` field takes the whole rest of the line, so `name:lower`,
+  `name:TWO WORDS` and `name:T  ` are accepted and the last keeps its trailing blanks.
+- `ActivationsLexer.g4:121-122`: `NAME_STRING` is `('A'..'Z' | '0'..'9' | '_')+`. A lower-case letter or an inner space has
+  no lexer rule, so it is a hard error and the file loads as nothing. Trailing blanks are swallowed by the `EOL` rule, so
+  `T  ` loads as `T`.
+- `ActivationReaderTest.aLowerCaseNameIsAHardErrorHereWhereCTakesAnyString` and
+  `aNameWithTrailingBlanksIsTrimmedHereWhereCKeepsThem` pin both.
+- None on the shipped data: all 163 names are upper case with underscores and digits. A modded name written in lower case
+  would fail the whole file here. Same family as the `BlowMethodGrammar.g4` `name:` entry above.
+
+## `EffectBlockLexer.g4`: `aim:`, `level:` and `power:` are decimal-only, and a leading minus is accepted on the unsigned two
+
+Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. Not fixed.
+
+- `init_parse_act` registers `aim uint`, `level int` and `power uint`. `parser_parse` reads an `int` with
+  `strtol(tok, &z, 0)`, base 0, so `010` is 8 and `0x10` is 16, and refuses a `uint` token that starts with `-` as
+  `PARSE_ERROR_NOT_NUMBER`.
+- `imports/EffectBlockLexer.g4:137-139`: `INTEGER` is `'-'? ('0'..'9')+`, and `ActivationsGrammar.g4` uses it for all three.
+  So `level:010` is 10 here and 8 in C, `level:0x10` is a lexer error, and `power:-3` and `aim:-1` get as far as the
+  assembler, which keeps the first as -3 and reads the second as false.
+- `ActivationReaderTest.aLeadingZeroLevelIsReadAsDecimalHereWhereCReadsOctal`,
+  `aHexLevelIsAHardErrorHereWhereCReadsItAsSixteen`, `aNegativePowerIsAcceptedHereWhereCRejectsAUint` and
+  `aNegativeAimIsAcceptedAndReadAsFalseHereWhereCRejectsAUint` pin the Java result.
+- None on the shipped data, which writes plain unsigned decimals. Same family as the `MonsterLexer.g4` integers entry above.
+
+## `ActivationsGrammar.g4` and `EffectBlock.g4`: an effect takes `effect-yx:` or `dice:` but not both, its lines cannot come first, and `effect-msg:` is accepted
+
+Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. Not fixed.
+
+- This is the shape described in the `MonsterSpellGrammar.g4` and `EffectBlock.g4` entry above, and it applies to
+  `activation.txt` unchanged: `parse_act_effect_yx`, `parse_act_dice` and `parse_act_expr` act on the last effect in any
+  order and ignore a line that arrives before any effect.
+- Java makes `effect-yx:` and `dice:` on one effect a syntax error in either order, and a `dice:` or `effect-yx:` before
+  the first `effect:` one too. `act_parser` registers no `effect-msg:`, so C gives `PARSE_ERROR_UNDEFINED_DIRECTIVE`, and
+  Java accepts it.
+- `ActivationReaderTest.aDiceLineBeforeAnyEffectIsAHardErrorHereWhereCIgnoresIt`,
+  `anEffectYxLineBeforeAnyEffectIsAHardErrorHereWhereCIgnoresIt`,
+  `effectYxAndDiceOnTheSameEffectAreAHardErrorHereWhereCTakesBoth` and
+  `effectMsgIsAcceptedHereWhereCHasNoSuchDirective` pin the four.
+- None on the shipped data: 11 `effect-yx:` lines and 157 `dice:` lines, every one after its `effect:`, and never both on
+  one effect.
+
+## `ActivationsGrammar.g4` and `ActivationsLexer.g4`: the header comments cite C line numbers, and say the index is removed
+
+Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. Not fixed.
+
+- Both files open with the same block, `ActivationsGrammar.g4:26-28` and `ActivationsLexer.g4:26-28`, citing
+  `obj-init.c:1678`, `obj-init.c:1600-1630` and `obj-init.c:1635`. They should name `act_parser`, `init_parse_act` and
+  `finish_parse_act` without a line number.
+- The same block says the sequential index "is removed, as in Java we are using the object itself from a fixed List". It
+  is not: `ActivationAssembler` numbers every activation through `Activation.setIndex` (from 0, where C counts from 1),
+  because the savefile will need the slot.
+- Not a behaviour difference; recorded here because the fix is in the grammar comments.
+
+## `ObjectPropertyGrammar.g4`: a second `msg:` or `desc:` appends, C replaces it
+
+Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. Not fixed.
+
+- `parse_object_property_msg` and `parse_object_property_desc` in `obj-init.c` run `string_free` on the old string and
+  `string_make` on the new one, so a second line replaces the first. This is the reverse of the `desc:` entries above,
+  where C appends and Java replaces.
+- `ObjectPropertyGrammar.g4:166` and `:171`: `msgSB.append($msg.msgLine)` and `descSB.append($desc.line)` append to a
+  `StringBuilder`, so `msg:A` then `msg:B` gives `AB` in Java and `B` in C. The file comment at `ObjectPropertyGrammar.g4:18-20`
+  knows this and calls it harmless.
+- `ObjectPropertyReaderTest.aSecondMsgOrDescLineIsAppendedHereWhereCReplacesIt` pins the Java result.
+- None on the shipped data: no record has two `msg:` or two `desc:` lines (21 carry one `msg:`, 22 one `desc:`).
+
+## `ObjectPropertyGrammar.g4`: a second `bindui:` replaces the first, C binds every line
+
+Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. Not fixed.
+
+- The header of `object_property.txt` says `bindui` "can appear multiple times to bind a property to more than one user
+  interface element". `parse_object_property_bindui` in `obj-init.c` calls `bind_object_property_to_ui_entry_by_name` for
+  each line as it reads it.
+- `ObjectPropertyGrammar.g4:167-170`: the `bindui` alternative assigns `binduiInit`, `tagInit`, `valueInit` and `auxInit`,
+  which are single locals, so the last line wins and the earlier ones are gone before `ObjectPropertyAssembler` runs.
+  `ObjectPropertyParseRecord` holds one binding, and the assembler's comment saying the list shape "allows more than one
+  bind" is true only of the list.
+- `ObjectPropertyReaderTest.aSecondBinduiLineReplacesTheFirstHereWhereCBindsBoth` pins the Java result.
+- None on the shipped data: all 66 `bindui:` lines are in different records, so no record has two.
+- It will matter for a modded file, and for the day a second UI entry is bound to a stat.
+
+## `ObjectPropertyGrammar.g4`: a record is `name:` then `type:` then at least one directive, and the file needs a record
+
+Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. Not fixed.
+
+- C accepts the directives of a record in any order. Only `code:` and `bindui:` need `type:` to have come first, and
+  `type:` itself can be left out (the record stays `OBJ_PROPERTY_NONE`) or come after `power:` or `mult:`. A second `type:`
+  overwrites the first. `parse_object_property_name` builds a complete record from the name alone, and
+  `finish_parse_object_property` copes with an empty chain (`property_max` becomes 1).
+- `ObjectPropertyGrammar.g4:156-157` makes `name` then `type` the fixed start of `objectProperty`, and the `)+` at `:171`
+  needs one more directive. `type` is not among the repeatable alternatives. `ObjectPropertyGrammar.g4:182` is
+  `(objectProperty ...)+ EOF`, so a file with the header and no records is a syntax error as well.
+- So a record with no `type:`, a `type:` after another directive, a second `type:`, a record that is only a name and a
+  file with no records are all syntax errors, and the whole file loads as nothing.
+- `ObjectPropertyReaderTest.aMissingOrLateTypeIsAHardErrorHereWhereCAcceptsIt`,
+  `aSecondTypeLineIsAHardErrorHereWhereCOverwrites`, `codeBeforeTypeIsAHardError` and
+  `aFileWithNoRecordsIsAHardErrorHereWhereCLoadsNothing` pin them. `codeBeforeTypeIsAHardError` is a fault in C too.
+- None on the shipped data: all 79 records open with `name:` then `type:`. Same family as the `CurseGrammar.g4` and
+  `PitGrammar.g4` entries above.
+
+## `ObjectPropertyLexer.g4`: `adjective:` and `neg-adjective:` take one lower-case word, C takes any string
+
+Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. Not fixed.
+
+- `init_parse_object_property` registers `adjective str adj` and `neg-adjective str neg_adj`, and a `str` field takes the
+  whole rest of the line, so `adjective:very strong` and `adjective:Strong` are accepted.
+- `ObjectPropertyGrammar.g4:85` and `:90` take an `LCASE` token, and `ObjectPropertyLexer.g4:92` makes that
+  `('a'..'z' | '0'..'9' | '_')+`. A space or a capital has no lexer rule, so it is a hard error and the file loads as
+  nothing.
+- `ObjectPropertyReaderTest.anAdjectiveWithASpaceOrACapitalIsAHardErrorHereWhereCTakesAnyString` pins it.
+- None on the shipped data: the five adjectives and five negative adjectives are single lower-case words (`strong`,
+  `weak`, `smart`, `stupid`, ...). Same family as the `ActivationsLexer.g4` `name:` entry above.
+
+## `ObjectPropertyGrammar.g4` and `ObjectPropertyLexer.g4`: a numeric tval in `type-mult:` is a syntax error, C accepts it
+
+Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. Not fixed.
+
+- `parse_object_property_type_mult` in `obj-init.c` calls `tval_find_idx` in `obj-tval.c`. That function first reads the
+  name with `strtoul`, and if digits were read it returns the number when only spaces follow and it is below `TV_MAX`. So
+  `type-mult:3:2` names tval 3.
+- `ObjectPropertyGrammar.g4:78` wants `STRING_BETWEEN_COLONS` for the tval. In `DELIMITER` mode a bare number matches
+  `DELIM_INTEGER` first (`ObjectPropertyLexer.g4:118`), so `3` is the wrong token and the line is a syntax error.
+- `ObjectPropertyReaderTest.aNumericTvalInTypeMultIsAHardErrorHereWhereCAcceptsIt` pins it.
+- None on the shipped data, which names every tval in words (275 lines). `TValue.fromName(int)` already has the numeric
+  lookup, so only the lexer stands in the way.
+
+## `ObjectPropertyLexer.g4`: integers are decimal-only with no plus sign, C reads them with `strtol` base 0
+
+Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. Not fixed.
+
+- `parser_parse` in `parser.c` reads an `int` field (`power:`, `mult:`, the `type-mult:` figure and both `bindui:` figures)
+  with `strtol(tok, &z, 0)`. Base 0 means `010` is 8, `0x10` is 16 and `+1` is 1.
+- `ObjectPropertyLexer.g4:79` and `:118`: `INTEGER` and `DELIM_INTEGER` are `'-'? ('0'..'9')+`. So `power:010` loads as 10,
+  and `power:0x10` and `power:+5` are lexer errors.
+- `ObjectPropertyReaderTest.integersAreDecimalOnlyHereWhereCReadsBaseZero` pins the three.
+- None on the shipped data, which writes plain decimal numbers. Same family as the `CurseLexer.g4` entry above.
+
+## `EgoItemsGrammar.g4`: a record is `name:` then at least one directive, and the file needs a record
+
+Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. Not fixed.
+
+- `parse_ego_name` in `obj-init.c` builds a complete record from the name alone, and `finish_parse_ego` copes with an empty
+  chain (`e_max` ends up as 1 with a blank `e_info[0]`).
+- `EgoItemsGrammar.g4:149` starts `egoItem` with `name` and the `)+` at `:213` needs one more directive. `:216-220` is
+  `( egoItem ... )+ EOF`, so a file with the header and no records is a syntax error as well.
+- So a record that is only a name and a file with no records are both syntax errors, and the whole file loads as nothing.
+- `EgoItemReaderTest.aRecordOfOnlyANameIsASyntaxErrorHereWhereCAcceptsIt` and
+  `aFileWithNoRecordsIsASyntaxErrorHereWhereCLoadsNothing` pin them.
+- None on the shipped data: all 107 records carry directives. Same family as the `CurseGrammar.g4`, `PitGrammar.g4` and
+  `ObjectPropertyGrammar.g4` entries above.
+
+## `EgoItemsGrammar.g4`: `flags:` and `flags-off:` need a flag, C takes an empty list
+
+Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. Not fixed.
+
+- `init_parse_ego` registers `flags ?str flags` and `flags-off ?str flags`. The `?` makes the field optional, and
+  `parse_ego_flags` and `parse_ego_flags_off` return no error when `parser_hasval` is false. So `flags:` with nothing after
+  the colon loads in C and sets nothing.
+- `EgoItemsGrammar.g4:77` (`FLAGS f1=FLAG`) and `:87` (`FLAGS_OFF f1=FLAG`) need at least one `FLAG` token, so an empty line
+  is a syntax error and the file loads as nothing.
+- `EgoItemReaderTest.emptyFlagsAndFlagsOffLinesAreSyntaxErrorsHereWhereCAcceptsThem` pins both.
+- None on the shipped data: every `flags:` and `flags-off:` line names at least one flag.
+
+## `EgoItemsGrammar.g4` and `EgoItemsLexer.g4`: C splits flags and values on any run of spaces and bars, the grammar wants one bar between two
+
+Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. Not fixed.
+
+- `parse_ego_flags`, `parse_ego_flags_off`, `parse_ego_values` and `parse_ego_min_val` walk the text with
+  `strtok(text, " |")`. Any run of spaces and bars is one separator, so `SEE_INVIS FREE_ACT`, `SEE_INVIS || FREE_ACT`, a
+  leading `|` and a trailing `|` all load in C. A tab is not a separator, so it ends up inside a token and fails there too.
+- `EgoItemsLexer.g4:149-150` and `:163-164` make `VALUE_OR` and `FLAG_OR` a single `|` with at most one space either side.
+  `EgoItemsGrammar.g4:77-81` and `:84-91` allow one trailing `FLAG_OR?` after the last flag, and `:94-115` allow none after
+  the last value.
+- So flags separated by a space alone, a doubled or leading bar, and values separated by a space alone, doubled or trailed by
+  a bar, are syntax errors. The whole file loads as nothing.
+- `EgoItemReaderTest.flagsSeparatedBySpaceAloneOrByOddBarsAreSyntaxErrorsHereWhereCAcceptsThem` and
+  `valuesSeparatedBySpaceAloneOrEndingInABarAreSyntaxErrorsHereWhereCAcceptsThem` pin them.
+- On the shipped data only the trailing bar on the `flags:FREE_ACT |` line shows, and that one the grammar accepts.
+
+## `EgoItemsLexer.g4`: `alloc:` wants exactly `N to N`, C accepts any spacing round the figures
+
+Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. Not fixed.
+
+- `parse_ego_alloc` hands the `minmax` text to `grab_int_range` in `datafile.c` with the separator `"to"`. That reads
+  `<int><whitespace>to<whitespace><int>` with `strtol`, which skips leading whitespace, and accepts trailing spaces.
+- `EgoItemsLexer.g4:123-124` makes `ALLOC_TO` the literal `' to '` and gives the figures no whitespace of their own. So two
+  spaces, a tab, a space after the colon and a space at the end of the line are all lexer errors, and the file loads as
+  nothing.
+- `EgoItemReaderTest.allocSpacingOtherThanOneSpaceEitherSideOfToIsASyntaxErrorHereWhereCAcceptsIt` pins the four.
+- None on the shipped data: all 107 `alloc:` lines are `N:N to N`.
+
+## `EgoItemsLexer.g4`: integers are decimal-only with no plus sign or leading space, C reads them with `strtol` base 0
+
+Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. Not fixed.
+
+- `parser_parse` in `parser.c` reads an `int` field (`info:`, `alloc:`'s commonness, `min-combat:`) with `strtol(tok, &z, 0)`,
+  so leading whitespace is skipped, `+5` is 5 and `0x10` is 16. The bracketed figure of a `RES_` value and of `min-values:`
+  is read by `find_value_arg` in `datafile.c` with `strtol` base 10, which also accepts `+1`.
+- `EgoItemsLexer.g4:77` and `:115`: `INTEGER` and `ALLOC_INT` are `'-'? ('0'..'9')+`, and the bracketed figure is a
+  `VALUE_DICE` (`:141`), which has no plus sign either. So `info: 5: 6`, `info:+5:6`, `info:0x10:6`, `RES_FIRE[+1]` and
+  `min-values:STEALTH[+2]` are lexer errors and the file loads as nothing.
+- `EgoItemReaderTest.integersWithLeadingSpaceAPlusSignOrAHexPrefixAreErrorsHereWhereCAcceptsThem` pins the five.
+- None on the shipped data, which writes plain decimal numbers. Same family as the `ObjectPropertyLexer.g4` and
+  `CurseLexer.g4` entries above.
+
+## `ArtifactGrammar.g4`: a record is `name:` then at least one directive, and the file needs a record
+
+Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. Not fixed.
+
+- `parse_artifact_name` in `obj-init.c` builds a complete record from the name alone, and `finish_parse_artifact` copes with an
+  empty chain (`a_max` ends up as 1).
+- `ArtifactGrammar.g4:181` starts `artifact` with `name` and the `)+` at `:204` needs one more directive; `file` is
+  `recordCount (artifact)+ EOF`. So a name-only record and a header with no records are both syntax errors and the file loads as
+  nothing.
+- `ArtifactReaderTest.aRecordOfOnlyANameOrAFileOfNoRecordsIsASyntaxErrorHereWhereCAcceptsThem` pins both.
+- None on the shipped data. Same family as the `EgoItemsGrammar.g4` entry above.
+
+## `ArtifactGrammar.g4`: `flags:` needs a flag, C takes an empty list
+
+Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. Not fixed.
+
+- `init_parse_artifact` registers `flags ?str flags` and `parse_artifact_flags` returns no error when `parser_hasval` is false.
+- `ArtifactGrammar.g4:80` (`FLAGS f1=FLAG`) needs one `FLAG` token, so `flags:` alone is a syntax error.
+- `ArtifactReaderTest.anEmptyFlagsLineIsASyntaxErrorHereWhereCAcceptsIt` pins it.
+- None on the shipped data: all 118 `flags:` lines name a flag.
+
+## `ArtifactLexer.g4` and `ArtifactGrammar.g4`: C splits flags and values on any run of spaces and bars, the lexer wants one bar between two
+
+Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. Not fixed.
+
+- `parse_artifact_flags` and `parse_artifact_values` use `strtok(s, " |")`, so a space alone, a doubled or a leading bar all
+  separate names in C.
+- `ArtifactLexer.g4:145` and `:171` make `FLAG_OR` and `VALUES_OR` one `|` with at most one space either side, and the grammar
+  (`:80-84`, `:110-113`) allows one trailing bar. A space-only list, `||` or a leading bar is a syntax error.
+- `ArtifactReaderTest.flagsOrValuesSeparatedBySpaceAloneOrByOddBarsAreSyntaxErrorsHereWhereCAcceptsThem` pins four.
+- None on the shipped data.
+
+## `ArtifactLexer.g4`: a blank after the last flag, value or alloc figure is a lexer error, C accepts it
+
+Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. Not fixed.
+
+- C's `strtok` and `strtol` ignore trailing blanks. The upstream `artifact.txt` has such a line: the `flags:` line of
+  "'Bladeturner'" ends `PROT_CONF ` with a space.
+- `FLAG_EOL`, `VALUES_EOL` and `ALLOC_EOL` need the newline straight after the last token, so the untouched upstream file
+  fails with `token recognition error at: ' \n'` and then loses the next line as well. A trailing blank after a bar, or after an
+  integer or dice string, is fine.
+- This repository's `lib/gamedata/artifact.txt` has had its trailing blanks trimmed, which is why the shipped file loads.
+- `ArtifactReaderTest.aBlankAfterTheLastFlagValueOrAllocFigureIsALexerErrorHereWhereCAcceptsIt` pins three.
+
+## `ArtifactLexer.g4`: `alloc:` wants exactly `N to N`, C accepts any spacing round the figures
+
+Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. Not fixed.
+
+- `parse_artifact_alloc` hands the text to `grab_int_range` with separator `"to"`, which uses `strtol` and skips blanks.
+- `ArtifactLexer.g4:103` makes `ALLOC_TO` the literal `' to '`, so two spaces or none are lexer errors.
+- `ArtifactReaderTest.allocSpacingOtherThanOneSpaceEitherSideOfToIsASyntaxErrorHereWhereCAcceptsIt` pins two.
+- None on the shipped data.
+
+## `ArtifactLexer.g4`: integers are decimal-only with no plus sign or leading space, C reads them with `strtol` base 0
+
+Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. Not fixed.
+
+- `parser_parse` reads an `int` with `strtol(tok, &z, 0)`: leading blanks skipped, `+5` is 5, `0x10` is 16, `010` is 8.
+- `ArtifactLexer.g4:85` `INT_FRAGMENT` is `'-'? ('0'..'9')+`, so the first three are lexer errors and `010` reads as 10. The
+  bracketed figure of `values:` has no plus sign either.
+- `ArtifactReaderTest.integersWithLeadingSpaceAPlusSignOrAHexPrefixAreErrorsAndALeadingZeroIsDecimalHereWhereCDiffers` pins them.
+- None on the shipped data. Same family as the `EgoItemsLexer.g4` entry above.
+
+## `ArtifactLexer.g4` and `ArtifactGrammar.g4`: a number in `base-object:` is a syntax error, C accepts it
+
+Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. Not fixed.
+
+- `tval_find_idx` returns a number as the tval, and `lookup_sval` returns a number as the sval.
+- `ArtifactGrammar.g4:26` takes `STRING_BETWEEN_COLONS` twice, but the lexer's `DELIM_INTEGER` wins for digits, so
+  `base-object:23:Dagger` and `base-object:sword:1` fail.
+- `ArtifactReaderTest.aNumericTvalOrSvalInBaseObjectIsASyntaxErrorHereWhereCAcceptsIt` pins both.
+- None on the shipped data.
+
+## `ArtifactGrammar.g4`: a later `curse:` for the same name replaces an earlier one, C only ever raises it
+
+Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. Not fixed.
+
+- `parse_artifact_curse` stores a power only above zero, so `curse:air swing:30` then `curse:air swing:0` leaves 30.
+- `ArtifactGrammar.g4:202` does `curseInit.putAll`, keyed by name, so the 0 replaces the 30 and the assembler then drops it.
+- `ArtifactReaderTest.aLaterCurseWithNoPowerErasesAnEarlierOneHereWhereCKeepsIt` pins it.
+- None on the shipped data, which has one `curse:` line.
+
+## `ProjectionGrammar.g4`: a record is a fixed sequence with five mandatory directives, C takes any directives in any order
+
+Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. Not fixed.
+
+- `init_parse_projection` in `obj-init.c` registers each of the fifteen directives on its own, so `parser_parse` runs them in
+  whatever order the file gives. A left-out directive leaves the zero-filled field (`NULL` strings, 0 numbers, message 0,
+  colour 0), and a repeated string replaces the first (each handler frees the old one).
+- `ProjectionGrammar.g4:229-255`, rule `projection`: `code name? type desc player-desc? blind-desc lash-desc? numerator?
+  denominator? divisor? damage-cap? msgt? obvious wake? color`. `type:`, `desc:`, `blind-desc:`, `obvious:` and `color:` are
+  required.
+- A repeated `desc:`, a `name:` after `type:`, a directive ahead of `code:` and a missing required one are all syntax errors.
+  A syntax error is a hard error, so one bad record empties the whole file, where C stops at the line that failed.
+- `ProjectionReaderTest.aRepeatedOrMisplacedDirectiveIsAHardErrorWhereCTakesAnyOrder` and
+  `aLeftOutTypeDescBlindDescObviousOrColourIsAHardErrorWhereCLeavesItZero` pin the Java result.
+- None on the shipped data, where all 56 records follow this order. Same family as the `BrandGrammar.g4` entry above.
+
+## `ProjectionGrammar.g4`: the file needs a `record-count:` header and a record, and the upstream file has no header
+
+Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. Not fixed.
+
+- The `record-count:` header is a Java addition. The upstream `projection.txt` starts its records with `code:ACID` and has no
+  header; `lib/gamedata/projection.txt` here has `record-count:56` added at line 17.
+- `ProjectionGrammar.g4:262-271`, rule `file`, is `recordCount (projection)+ EOF`. The unchanged upstream file fails with
+  `mismatched input 'code:' expecting 'record-count:'` and loads as nothing. A header with no records, and an empty file, are
+  syntax errors too.
+- C has no header to miss. For an empty file `finish_parse_projection` quits on "Too few elements", so no records fails there
+  as well; only the missing header is new.
+- `ProjectionReaderTest.theUpstreamFileWithNoRecordCountHeaderIsAHardError` and
+  `aHeaderWithNoRecordsAndAnEmptyFileAreHardErrors` pin it.
+- A non-numeric header (`record-count:abc`) is a hard error; a header that is a number but wrong is a soft error, and the
+  records load.
+
+## `ProjectionLexer.g4`: `msgt:` values must be upper-case identifiers, and one bad value costs the rest of the file
+
+Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. Not fixed.
+
+- C reads `msgt:` as a `sym` and `message_lookup_by_name` in `message.c` matches it case-insensitively against the names in
+  `list-message.h`, or takes a number below `MSG_MAX`.
+- `msgt:` pushes `FLAG_MODE`, whose only token is `FLAG`, `('A'..'Z') ('A'..'Z' | '_' | '0'..'9')*` from `imports/Flags.g4`. So
+  `msgt:br_acid` and `msgt:20` are lexer errors.
+- The mode is only popped by a `FLAG`, so the lexer stays in `FLAG_MODE` and every later line errors as well: 34 errors for one
+  lower-case `msgt:` in the shipped file, 29 for `msgt:20`.
+- The number and any-case handling in `ProjectionAssembler.java`'s `resolveMsgt` cannot be reached from a data file.
+- `ProjectionReaderTest.aLowerCaseOrNumericMsgtIsAHardErrorWhereCAcceptsBoth` pins both.
+- None on the shipped data, which uses upper-case names. Same family as the `SummonLexer.g4` entry above.
+
+## `ProjectionLexer.g4`: a blank after the `code:` or `msgt:` value is dropped, C keeps it and rejects the line
+
+Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. Not fixed.
+
+- C keeps a trailing blank in a `str` or `sym`. `code:ACID ` is not `element_names[0]` (`PARSE_ERROR_ELEMENT_NAME_MISMATCH`), and
+  `msgt:BR_ACID ` matches no name (`PARSE_ERROR_INVALID_MESSAGE`).
+- After a `FLAG` the `EOL` rule from `imports/CommentsAndEol.g4` takes the blanks before the newline, so both lines load
+  cleanly in Java. Java accepts what C rejects.
+- `type:` and `color:` keep the blank in Java as C does (`element ` is no longer an element; `Slate ` is White), so the two
+  directives that read through `FLAG_MODE` are the only ones that differ.
+- `ProjectionReaderTest.aBlankAfterCodeOrMsgtIsDroppedWhereCKeepsItAndRejectsTheLine` and `aBlankAfterATypeOrColourIsKeptAsCKeepsIt`
+  pin the two sides.
+- None on the shipped data.
+
+## `ProjectionLexer.g4`: integers are decimal-only with a leading minus, C reads them with `strtoul` base 0
+
+Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. Not fixed.
+
+- `numerator:`, `divisor:`, `damage-cap:`, `obvious:` and `wake:` are `uint` in C. `parser_parse` calls `strtoul(tok, &z, 0)` and
+  refuses a value only when no digit was read or the first character is `-`. So ` 1`, `+1`, `0x10` (16), `010` (8) and `1abc`
+  (1) are all accepted.
+- `ProjectionLexer.g4:462`, `INTEGER` is `'-'? ('0'..'9')+`. `+1`, `0x1`, `1abc` and ` 1` are lexer errors, and `010` reads as 10.
+  `-1` lexes, and the assembler then drops the record (`Assembler_Issues.md` has the values it keeps).
+- `ProjectionReaderTest.aPlusSignHexPrefixTrailingTextOrLeadingBlankInAnIntegerIsAHardErrorWhereCAcceptsIt` and
+  `aLeadingZeroIntegerReadsAsDecimalWhereCReadsOctal` pin them.
+- None on the shipped data, which writes plain decimal numbers. Same family as the `ArtifactLexer.g4` entry above.
+
+## `ProjectionLexer.g4` and `DiceStrings.g4`: `denominator:` accepts a lower-case `m` and rejects a leading blank
+
+Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. Not fixed.
+
+- `parse_random` in `parser.c` reads the value with `strtoul`, which skips leading blanks, and treats only an upper-case `M` as
+  the modifier. `5+1d4m2` falls to the trailing-text test and is refused.
+- `imports/DiceStrings.g4` makes `DICE_M` `'M' | 'm'`, so `denominator:5+1d4m2` lexes, and the assembler loads it as `5+1d4M2`.
+  `DICE_MODE` has no rule for a blank, so `denominator: 3` is a lexer error.
+- The other seventeen forms checked agree with `parse_random`, including the negated ones: `3`, `0`, `08`, `-3`, `5 `, `d4`,
+  `1d4`, `5+1d4`, `5+d4`, `2d6M3`, `5+d4M2`, `M2`, `5+M2`, `-5+1d4`, `-d4`, `-2d6M3` and `-M2`.
+- `ProjectionReaderTest.aLeadingBlankInADenominatorIsAHardErrorAndALowerCaseMIsAcceptedWhereCTakesTheOpposite` pins the two, and
+  `denominatorFormsGiveTheValuesOfCsParseRandom` pins the agreeing forms.
+- `DiceStrings.g4` is shared, so every lexer that imports it accepts a lower-case `m` too.
+- None on the shipped data, whose denominators are `3` and `8+1d4`.
+
+## `ProjectionGrammar.g4` and `ProjectionLexer.g4` cite C line numbers, and one comment points at a note that is not there
+
+Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. Not fixed.
+
+- `ProjectionGrammar.g4:23-24` and `ProjectionLexer.g4:25-26` cite `obj-init.c:470` and `obj-init.c:400-414`. Both should name
+  `projection_parser` and `init_parse_projection` without a line number.
+- `ProjectionGrammar.g4:227`, the comment on rule `projection`, says the shape was "confirmed to match every record in
+  projection.txt (see top-of-file note)". The comment at the top of the file (`:18-27`) has no such note.
+- Not a behaviour difference; recorded here because the fix is in the grammar comments.

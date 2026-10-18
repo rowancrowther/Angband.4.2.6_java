@@ -492,6 +492,34 @@ class ProjectionAssemblerTest {
     }
 
     /**
+     * {@code message_lookup_by_name} takes a number as the index into {@code list-message.h}, where
+     * {@code GENERIC} is 0, {@code BIRTH} is 1 and {@code MSG_MAX} is 153, so 152 ({@code SCRAMBLE}) is
+     * the last valid number. {@link MessageType} has {@code MSG_NONE} at ordinal 0, which
+     * {@code resolveMsgt} indexes directly, so every number lands one constant late in C's terms and
+     * 153, which C rejects, is accepted. A data
+     * file cannot reach this path ({@code ProjectionLexer} only lexes upper-case names), so the
+     * record is built by hand. Written up in {@code docs/Assembler_Issues.md}.
+     */
+    @Test
+    void numericMsgtIsOneConstantLateAndOneNumberTooWideWhereCCountsFromGeneric() throws Exception {
+        java.lang.reflect.Field msgt = Projection.class.getDeclaredField("msgt");
+        msgt.setAccessible(true);
+        Object[][] cases = {{"0", MessageType.MSG_NONE}, {"1", MessageType.MSG_GENERIC},
+                {"2", MessageType.MSG_BIRTH}, {"153", MessageType.MSG_SCRAMBLE}};
+
+        for (Object[] c : cases) {
+            List<ProjectionParseRecord> records = validFile();
+            records.set(MAKE_DOOR, withMsgt(records.get(MAKE_DOOR), (String) c[0]));
+            List<String> errors = new ArrayList<>();
+
+            List<Projection> result = assemble(records, errors);
+
+            assertEquals(56, result.size(), "msgt '" + c[0] + "': " + errors);
+            assertEquals(c[1], msgt.get(result.get(MAKE_DOOR)), "msgt '" + c[0] + "'");
+        }
+    }
+
+    /**
      * Names are matched case-insensitively after a {@code MSG_} prefix, as {@code my_stricmp} does.
      */
     @Test

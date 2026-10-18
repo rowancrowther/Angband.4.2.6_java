@@ -32,8 +32,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * push into {@code FREE_TEXT} (one {@code STRING} token to end of line, spaces and punctuation
  * included), and {@code denominator:} pushes into {@code DICE_MODE} (one {@code SIMPLE_DICE} token,
  * via the imported {@code DiceStrings} fragment, covering both a bare number and dice notation).
- * Symbolic fields (code/msgt) stay in the default mode as {@code TAG}; numeric fields are the single
- * sign-capable {@code INTEGER} (C7).
+ * Symbolic fields (code/msgt) are read in {@code FLAG_MODE} as a {@code FLAG} (the token was named {@code TAG}
+ * until the parser was regenerated on 261018); numeric fields are the single sign-capable {@code INTEGER} (C7).
  *
  * @author Rowan Crowther
  */
@@ -74,11 +74,11 @@ class ProjectionLexerTest {
     }
 
     @Test
-    void aWholeRecordExercisesTagFreeTextDiceAndInteger() {
+    void aWholeRecordExercisesFlagFreeTextDiceAndInteger() {
         // One directive of each interesting shape, showing the FREE_TEXT and DICE_MODE push/pop
         // return cleanly to the default mode between directives.
         assertEquals(
-                List.of("CODE=code:", "TAG=ACID",
+                List.of("CODE=code:", "FLAG=ACID",
                         "NAME=name:", "STRING=acid",
                         "TYPE=type:", "STRING=element",
                         "DENOMINATOR=denominator:", "SIMPLE_DICE=8+1d4",
@@ -111,7 +111,7 @@ class ProjectionLexerTest {
     void commentsAndBlankLinesAreSkippedAndCrlfIsClean() {
         String src = "# header\r\n\r\nrecord-count:56\r\ncode:ACID\r\n";
         assertEquals(
-                List.of("RECORD_COUNT=record-count:", "INTEGER=56", "CODE=code:", "TAG=ACID"),
+                List.of("RECORD_COUNT=record-count:", "INTEGER=56", "CODE=code:", "FLAG=ACID"),
                 tokens(src));
         assertEquals(0, lexErrors(src));
     }

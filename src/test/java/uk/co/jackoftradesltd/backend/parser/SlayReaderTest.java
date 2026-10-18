@@ -50,6 +50,14 @@ import static org.junit.jupiter.api.Assertions.*;
  * results into the private static fields by reflection, restoring them afterwards so no global state
  * leaks to other suites.
  *
+ * <p>The reader's own contract is pinned against values worked out from the upstream
+ * {@code slay.txt} and {@code obj-init.c}: every field of all eleven records, C's last-first list
+ * order, directive order and repeats, and the missing-file {@link IOException}. A final group pins
+ * the places the grammar and assembler differ from C, each named for the C behaviour it departs
+ * from, so that an assembler or grammar fix shows up here as a test to flip.
+ *
+ * <p>Class SlayReaderTest coded before 261017, extended and commented in full on 261017.
+ *
  * @author Rowan Crowther
  */
 class SlayReaderTest {
@@ -292,6 +300,238 @@ class SlayReaderTest {
                 result.errors()::toString);
         assertTrue(result.errors().stream().anyMatch(e -> e.contains("both")),
                 result.errors()::toString);
+    }
+
+    // ---- Contract of the reader itself (expected values from C's slay.txt and obj-init.c) ----
+
+    /**
+     * The text {@link Slay#toString()} gives for a race-flag slay, so a whole record can be checked in
+     * one assertion against the values in the upstream {@code slay.txt}.
+     */
+    private static String expected(String code, String name, String flag, int mult, int oMult,
+                                   int power, String melee, String range) {
+        return "Slay{code='" + code + "', name='" + name + "', base=null, meleeVerb='" + melee
+                + "', rangedVerb='" + range + "', raceFlag=RF_" + flag + ", multiplier=" + mult
+                + ", oMultiplier=" + oMult + ", power=" + power + "}";
+    }
+
+    /**
+     * The eleven records of the upstream {@code lib/gamedata/slay.txt}, in the order the file lists
+     * them, worked out from that file and not from the Java output.
+     */
+    private static List<String> upstreamInFileOrder() {
+        String smite = "smite";
+        String pierces = "pierces";
+        String fierce = "fiercely smite";
+        String deep = "deeply pierces";
+        return List.of(
+                expected("EVIL_2", "evil creatures", "EVIL", 2, 18, 200, smite, pierces),
+                expected("ANIMAL_2", "animals", "ANIMAL", 2, 20, 115, smite, pierces),
+                expected("ORC_3", "orcs", "ORC", 3, 25, 101, smite, pierces),
+                expected("TROLL_3", "trolls", "TROLL", 3, 25, 101, smite, pierces),
+                expected("GIANT_3", "giants", "GIANT", 3, 25, 102, smite, pierces),
+                expected("DEMON_3", "demons", "DEMON", 3, 25, 110, smite, pierces),
+                expected("DRAGON_3", "dragons", "DRAGON", 3, 25, 105, smite, pierces),
+                expected("UNDEAD_3", "undead", "UNDEAD", 3, 25, 115, smite, pierces),
+                expected("DEMON_5", "demons", "DEMON", 5, 35, 120, fierce, deep),
+                expected("DRAGON_5", "dragons", "DRAGON", 5, 35, 110, fierce, deep),
+                expected("UNDEAD_5", "undead", "UNDEAD", 5, 35, 130, fierce, deep));
+    }
+
+    @Test
+    void everyRecordOfTheRealFileMatchesTheUpstreamTextAndComesBackInCsOrder() throws IOException {
+        // finish_parse_slay copies the head-first chain into slays[1..], so the last record in the
+        // file is slot 1 and the first record is last: the list is the file order reversed.
+        List<String> reversed = new java.util.ArrayList<>(upstreamInFileOrder());
+        java.util.Collections.reverse(reversed);
+
+        List<String> actual = new SlayReader().parseWithResults(REAL_FILE).items().stream()
+                .map(Slay::toString).toList();
+
+        assertEquals(reversed, actual);
+    }
+
+    @Test
+    void realFileCodesRunFromUndead5BackToEvil2() throws IOException {
+        List<String> codes = new SlayReader().parseWithResults(REAL_FILE).items().stream()
+                .map(Slay::getCode).toList();
+
+        assertEquals(List.of("UNDEAD_5", "DRAGON_5", "DEMON_5", "UNDEAD_3", "DRAGON_3", "DEMON_3",
+                "GIANT_3", "TROLL_3", "ORC_3", "ANIMAL_2", "EVIL_2"), codes);
+    }
+
+    @Test
+    void parseReturnsTheSameSlaysAsParseWithResults() throws IOException {
+        List<Slay> viaParse = new SlayReader().parse(REAL_FILE);
+        List<Slay> viaResults = new SlayReader().parseWithResults(REAL_FILE).items();
+
+        assertEquals(viaResults, viaParse);
+        assertEquals(11, viaParse.size());
+    }
+
+    @Test
+    void parseDropsErrorsSoASyntaxErrorLooksLikeAnEmptyList() throws IOException {
+        Path file = tempDir.resolve("bad-syntax.txt");
+        Files.writeString(file, withHeader(1, "name:orphan\n"));
+
+        assertTrue(new SlayReader().parse(file.toString()).isEmpty());
+    }
+
+    @Test
+    void missingFileIsAnIOExceptionNotAnEmptyResult() {
+        // run_parse_slay is parse_file_quit_not_found: a missing file is fatal in C, so it must not
+        // come back as "no slays".
+        String missing = tempDir.resolve("no-such-file.txt").toString();
+
+        assertThrows(IOException.class, () -> new SlayReader().parseWithResults(missing));
+        assertThrows(IOException.class, () -> new SlayReader().parse(missing));
+    }
+
+    @Test
+    void directivesMayComeInAnyOrderAfterTheCodeLine() throws IOException {
+        // C dispatches on the keyword, so only code: has to come first.
+        String body = "code:ORC_3\nrange-verb:pierces\npower:101\nmelee-verb:smite\n"
+                + "o-multiplier:25\nrace-flag:ORC\nmultiplier:3\nname:orcs\n";
+        ParseResult<Slay> result = load("any-order.txt", withHeader(1, body));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(List.of(expected("ORC_3", "orcs", "ORC", 3, 25, 101, "smite", "pierces")),
+                result.items().stream().map(Slay::toString).toList());
+    }
+
+    @Test
+    void repeatedDirectiveKeepsTheLastValueAsCOverwrites() throws IOException {
+        // parse_slay_name, _multiplier and _melee_verb free or overwrite the earlier value.
+        String body = "code:ORC_3\nname:first\nname:orcs\nrace-flag:ORC\nmultiplier:9\nmultiplier:3\n"
+                + "o-multiplier:25\npower:101\nmelee-verb:hit\nmelee-verb:smite\nrange-verb:pierces\n";
+        ParseResult<Slay> result = load("repeat.txt", withHeader(1, body));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(expected("ORC_3", "orcs", "ORC", 3, 25, 101, "smite", "pierces"),
+                result.items().get(0).toString());
+    }
+
+    @Test
+    void duplicateCodesAreBothKeptLastFirst() throws IOException {
+        // C does not check codes for uniqueness: both records go onto the chain.
+        String body = raceFlagSlay("EVIL_2", "EVIL")
+                + slay("EVIL_2", "race-flag:ORC", "3", "25", "101");
+        ParseResult<Slay> result = load("dup.txt", withHeader(2, body));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(2, result.items().size());
+        assertEquals(3, result.items().get(0).getMultiplier());
+        assertEquals(2, result.items().get(1).getMultiplier());
+    }
+
+    @Test
+    void textValuesRunToTheEndOfTheLineColonsAndSpacesIncluded() throws IOException {
+        // parser_getstr takes the rest of the line, so a colon in a name or verb is data.
+        String body = "code:EVIL_2\nname:evil: creatures of note\nrace-flag:EVIL\nmultiplier:2\n"
+                + "o-multiplier:18\npower:200\nmelee-verb:smite: hard\nrange-verb:pierces\n";
+        ParseResult<Slay> result = load("colons.txt", withHeader(1, body));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals("evil: creatures of note", result.items().get(0).getName());
+        assertTrue(result.items().get(0).toString().contains("meleeVerb='smite: hard'"));
+    }
+
+    @Test
+    void commentsAndBlankLinesBetweenDirectivesAreSkipped() throws IOException {
+        String body = "# a comment\n\ncode:EVIL_2\n# between\nname:evil creatures\n\nrace-flag:EVIL\n"
+                + "multiplier:2\no-multiplier:18\npower:200\nmelee-verb:smite\nrange-verb:pierces\n";
+        ParseResult<Slay> result = load("comments.txt", withHeader(1, body));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(1, result.items().size());
+    }
+
+    // ---- Known differences from C (see docs/grammar_issues.md and docs/Assembler_Issues.md) ----
+
+    @Test
+    void secondRaceFlagInOneRecordKeepsTheLastHereWhereCRejects() throws IOException {
+        // C: parse_slay_race_flag returns PARSE_ERROR_INVALID_SLAY when race_flag is already set
+        // ("not both nor multiple race flags") and the load stops. Here the grammar keeps the last.
+        String body = "code:EVIL_2\nname:evil creatures\nrace-flag:ORC\nrace-flag:EVIL\nmultiplier:2\n"
+                + "o-multiplier:18\npower:200\nmelee-verb:smite\nrange-verb:pierces\n";
+        ParseResult<Slay> result = load("two-flags.txt", withHeader(1, body));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertTrue(result.items().get(0).toString().contains("raceFlag=RF_EVIL"));
+    }
+
+    @Test
+    void secondBaseInOneRecordKeepsTheLastHereWhereCRejects() throws IOException {
+        String body = "code:DRAGON_5\nname:dragons\nbase:" + KNOWN_BASE + "\nbase:no such base\n"
+                + "multiplier:5\no-multiplier:35\npower:110\nmelee-verb:smite\nrange-verb:pierces\n";
+        ParseResult<Slay> result = load("two-bases.txt", withHeader(1, body));
+
+        // The last base: wins, and it is the unknown one, so the record is skipped for that reason
+        // and not because there were two of them.
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown monster base")),
+                result.errors()::toString);
+    }
+
+    @Test
+    void missingPowerSkipsTheRecordHereWhereCLeavesItZero() throws IOException {
+        // C allocates the slay zeroed, so a record with no power: loads with power 0.
+        String body = "code:EVIL_2\nname:evil creatures\nrace-flag:EVIL\nmultiplier:2\n"
+                + "o-multiplier:18\nmelee-verb:smite\nrange-verb:pierces\n";
+        ParseResult<Slay> result = load("no-power.txt", withHeader(1, body));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.errors().stream().anyMatch(e -> e.contains("power")),
+                result.errors()::toString);
+    }
+
+    @Test
+    void missingMultiplierSkipsTheRecordHereWhereCLeavesItZero() throws IOException {
+        String body = "code:EVIL_2\nname:evil creatures\nrace-flag:EVIL\n"
+                + "o-multiplier:18\npower:200\nmelee-verb:smite\nrange-verb:pierces\n";
+        ParseResult<Slay> result = load("no-mult.txt", withHeader(1, body));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.errors().stream().anyMatch(e -> e.contains("multiplier")),
+                result.errors()::toString);
+    }
+
+    @Test
+    void negativeMultiplierLoadsHereWhereCParserGetUintRejectsIt() throws IOException {
+        // C reads the three numbers with parser_getuint, which refuses a leading minus sign.
+        ParseResult<Slay> result = load("negative.txt",
+                withHeader(1, raceFlagSlayWith("EVIL_2", "EVIL", "-2", "18", "200")));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(-2, result.items().get(0).getMultiplier());
+    }
+
+    @Test
+    void raceFlagNoneLoadsHereWhereCLookupFlagSkipsIt() throws IOException {
+        // lookup_flag starts at FLAG_START (1), so "NONE" at index 0 is never found and C returns
+        // PARSE_ERROR_INVALID_FLAG. RF_NONE is a real constant here, so the record is accepted.
+        ParseResult<Slay> result = load("none-flag.txt",
+                withHeader(1, slay("EVIL_2", "race-flag:NONE", "2", "18", "200")));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertTrue(result.items().get(0).toString().contains("raceFlag=RF_NONE"));
+    }
+
+    @Test
+    void codeWithNoUnderscoreEscapesAsAnExceptionNotASoftError() {
+        // C never takes the code apart. The Slay constructor does, and the assembler does not guard
+        // the call, so a code such as BANE aborts the load rather than skipping the record.
+        assertThrows(RuntimeException.class, () -> load("no-underscore.txt",
+                withHeader(1, raceFlagSlay("BANE", "EVIL"))));
+    }
+
+    @Test
+    void headerOnlyFileIsAHardErrorHereWhereCAcceptsAnEmptyFile() throws IOException {
+        // The file rule needs at least one slay record after record-count:.
+        ParseResult<Slay> result = load("empty.txt", withHeader(0, ""));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
     }
 
     /**

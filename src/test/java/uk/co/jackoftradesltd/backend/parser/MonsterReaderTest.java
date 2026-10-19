@@ -749,6 +749,12 @@ class MonsterReaderTest {
                     n = n * GameConstants.getPlayerMaxSight() / 20;
                 }
                 current.numbers().put(scalars.get(key), n);
+                if (key.equals("depth")) {
+                    // parse_monster_depth: "Level is default spell power". A later spell-power: overwrites it.
+                    current.numbers().put("spellPower", n);
+                }
+            } else if (key.equals("spell-power")) {
+                current.numbers().put("spellPower", Integer.parseInt(value.trim()));
             } else if (counted.containsKey(key)) {
                 current.numbers().merge(counted.get(key), 1, Integer::sum);
             }
@@ -783,8 +789,9 @@ class MonsterReaderTest {
 
     @Test
     void everyRealRacesStatsAndEntryCountsMatchAnIndependentReadOfTheText() throws Exception {
-        // Everything but spell power, which is pinned separately below. A mismatch on any race would
-        // mean the grammar or assembler lost, repeated or rescaled a directive.
+        // Spell power is included: depth: sets it to the level and spell-power: overwrites it, in file
+        // order. A mismatch on any race would mean the grammar or assembler lost, repeated or rescaled
+        // a directive.
         List<ExpectedRace> expected = expectedFrom(Files.readAllLines(Path.of(MONSTER_FILE)));
         assertEquals(EXPECTED_RACES, expected.size());
         assertEquals(EXPECTED_RACES, real.items().size());
@@ -794,7 +801,7 @@ class MonsterReaderTest {
             ExpectedRace e = expected.get(i);
             MonsterRace race = real.items().get(i);
             for (String fieldName : List.of("speed", "averageHP", "light", "hearing", "smell", "ac", "sleep",
-                    "level", "rarity", "mexp")) {
+                    "level", "rarity", "mexp", "spellPower")) {
                 int actual = field(race, fieldName);
                 int wanted = e.numbers().getOrDefault(fieldName, 0);
                 if (actual != wanted) {
@@ -1021,30 +1028,55 @@ class MonsterReaderTest {
     // =====================================================================
 
     @Test
-    void aMonsterWithNoSpellPowerLineGetsSpellPowerZeroHereWhereCUsesItsLevel() throws Exception {
+    void aMonsterWithNoSpellPowerLineGetsItsLevelAsSpellPower() throws Exception {
         // parse_monster_depth sets spell_power = level; spell-power: only overrides it afterwards.
-        // C would give 20 here.
         ParseResult<MonsterRace> r = load("power-default.txt", withHeader(1, rec("Solo", "depth:20")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        assertEquals(20, (int) field(byName(r, "Solo"), "spellPower"));
+    }
+
+    @Test
+    void aMonsterWithNeitherDepthNorSpellPowerHasSpellPowerZero() throws Exception {
+        // A zeroed race: level 0, so spell_power 0.
+        ParseResult<MonsterRace> r = load("power-none.txt", withHeader(1, rec("Solo")));
         assertFalse(r.hasErrors(), r.errors()::toString);
         assertEquals(0, (int) field(byName(r, "Solo"), "spellPower"));
     }
 
     @Test
-    void theRealFilesSpellPowerIsZeroForRacesWithNoSpellPowerLineWhereCUsesTheirLevel() throws Exception {
+    void theRealFilesRacesWithNoSpellPowerLineGetTheirLevelAsSpellPower() throws Exception {
         // grey mold is depth:1 with no spell-power: line, so C stores 1.
         MonsterRace mold = byName(real, "grey mold");
         assertNotNull(mold);
         assertEquals(1, (int) field(mold, "level"));
-        assertEquals(0, (int) field(mold, "spellPower"));
+        assertEquals(1, (int) field(mold, "spellPower"));
     }
 
     @Test
-    void aSpellPowerLineBeforeDepthKeepsItsValueHereWhereCOverwritesItWithTheLevel() throws Exception {
+    void aSpellPowerLineAfterDepthOverridesTheLevel() throws Exception {
+        // parse_monster_spell_power runs after parse_monster_depth, so the explicit value wins.
+        ParseResult<MonsterRace> r = load("depth-then-power.txt", withHeader(1,
+                rec("Solo", "depth:20", "spell-power:5")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        assertEquals(5, (int) field(byName(r, "Solo"), "spellPower"));
+    }
+
+    @Test
+    void aSpellPowerLineBeforeDepthIsOverwrittenByTheLevel() throws Exception {
         // C: depth: runs after spell-power: and sets spell_power = level, so C gives 20.
         ParseResult<MonsterRace> r = load("power-then-depth.txt", withHeader(1,
                 rec("Solo", "spell-power:5", "depth:20")));
         assertFalse(r.hasErrors(), r.errors()::toString);
-        assertEquals(5, (int) field(byName(r, "Solo"), "spellPower"));
+        assertEquals(20, (int) field(byName(r, "Solo"), "spellPower"));
+    }
+
+    @Test
+    void aSecondDepthLineResetsSpellPowerToTheNewLevel() throws Exception {
+        // Each depth: line runs parse_monster_depth again, so it overwrites an earlier spell-power: too.
+        ParseResult<MonsterRace> r = load("depth-power-depth.txt", withHeader(1,
+                rec("Solo", "depth:10", "spell-power:5", "depth:20")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        assertEquals(20, (int) field(byName(r, "Solo"), "spellPower"));
     }
 
     @Test

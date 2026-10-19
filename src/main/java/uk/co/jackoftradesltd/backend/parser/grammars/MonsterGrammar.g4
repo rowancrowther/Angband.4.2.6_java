@@ -302,7 +302,8 @@ monster
                           colourCycleNameInit = $colourCycle.nameStr; }
         |   armourClass { armourClassInit = $armourClass.armourClassVal; }
         |   sleepiness { sleepinessInit = $sleepiness.sleepinessVal; }
-        |   depthLevel { depthInit = $depthLevel.depthVal; }
+        |   depthLevel { depthInit = $depthLevel.depthVal; 
+                         spellPowerInit = $depthLevel.depthVal; }
         |   rarity { rarityInit = $rarity.rarityVal; }
         |   experience { experienceInit = $experience.experienceVal; }
         |   blow { blowsList.add(new MonsterParseRecord.MonsterBlowParseRecord($blow.blowType,

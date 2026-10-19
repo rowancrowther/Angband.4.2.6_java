@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Tests for {@link LoreReader}, which reads {@code lib/user/lore.txt} — the player's per-save
  * monster-knowledge record, not a {@code lib/gamedata} file. The port of C's
- * {@code lore_parser} ({@code [C] src/mon-init.c:2646}).
+ * {@code lore_parser} ({@code mon-init.c}).
  *
  * <p>{@code LoreGrammar.g4}'s {@code monsterLore} rule used to write {@code race.setLore($Lore)}
  * with a capital L against a {@code $lore} return value, which ANTLR rejected outright

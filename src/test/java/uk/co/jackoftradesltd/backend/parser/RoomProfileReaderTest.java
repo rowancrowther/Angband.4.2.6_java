@@ -427,6 +427,222 @@ class RoomProfileReaderTest {
                 viaParse.stream().map(RoomTemplate::getName).toList());
     }
 
+    // ---- Where the grammar is stricter than C's parser --------------------
+    //
+    // C registers nine independent one-line directives in init_parse_room, so after a name:
+    // they may come in any order, repeat, or be left out, and parser.c skips leading
+    // whitespace, ignores anything after a numeric value, and reads a uint with strtoul in base
+    // zero. RoomProfileGrammar fixes the order and count, so each case below is a whole-file
+    // failure here (no items, one hard error) where C loads the record.
+
+    /**
+     * Runs {@code content} through the reader and asserts the whole file was refused: hard errors
+     * and no templates at all.
+     */
+    private void assertWholeFileRefused(String fileName, String content) throws IOException {
+        ParseResult<RoomTemplate> result = new RoomProfileReader().parseWithResults(tempFile(fileName, content));
+
+        assertTrue(result.hasErrors(), "expected a hard error");
+        assertTrue(result.items().isEmpty(), result.items()::toString);
+    }
+
+    /**
+     * C: {@code parse_room_type} and {@code parse_room_rating} are independent handlers, so
+     * {@code rating:} before {@code type:} is fine. Here the directive order is fixed.
+     */
+    @Test
+    void directivesInAnotherOrderAreRefusedHereWhereCAcceptsThem() throws IOException {
+        String swapped = GOOD_RECORD.replace("type:1\nrating:1", "rating:1\ntype:1");
+
+        assertWholeFileRefused("swapped.txt", "record-count:1\n" + swapped + "\n");
+    }
+
+    /**
+     * C: {@code parse_room_flags} ORs into {@code t->flags}, so a second {@code flags:} line adds to
+     * the first. The grammar takes at most one.
+     */
+    @Test
+    void aRepeatedFlagsLineIsRefusedHereWhereCAccumulatesIt() throws IOException {
+        String twice = GOOD_RECORD.replace("tval:0", "tval:0\nflags:FEW_ENTRANCES\nflags:FEW_ENTRANCES");
+
+        assertWholeFileRefused("two-flags.txt", "record-count:1\n" + twice + "\n");
+    }
+
+    /**
+     * C: {@code parse_room_flags} splits on {@code strtok(s, " |")}, so a space alone separates
+     * flags. {@code FLAG_OR} in the lexer needs the {@code |}. The {@code |} form, with or without
+     * spaces round it, is the control.
+     */
+    @Test
+    void flagsSeparatedByASpaceAloneAreRefusedHereWhereCSplitsOnIt() throws IOException {
+        String piped = GOOD_RECORD.replace("tval:0", "tval:0\nflags:FEW_ENTRANCES | FEW_ENTRANCES");
+        String spaced = GOOD_RECORD.replace("tval:0", "tval:0\nflags:FEW_ENTRANCES FEW_ENTRANCES");
+
+        ParseResult<RoomTemplate> control = new RoomProfileReader()
+                .parseWithResults(tempFile("piped.txt", "record-count:1\n" + piped + "\n"));
+        assertFalse(control.hasErrors(), () -> control.errors().toString());
+        assertTrue(control.items().getFirst().getFlags().has(RoomFlags.FEW_ENTRANCES));
+
+        assertWholeFileRefused("spaced.txt", "record-count:1\n" + spaced + "\n");
+    }
+
+    /**
+     * C: {@code finish_parse_room} hands {@code room_templates} whatever the file produced, so a
+     * file with no {@code name:} loads an empty list. The grammar wants one or more records.
+     */
+    @Test
+    void aFileWithNoTemplatesIsRefusedHereWhereCLoadsAnEmptyList() throws IOException {
+        assertWholeFileRefused("empty.txt", "record-count:0\n");
+    }
+
+    /**
+     * C: {@code parser_parse} skips leading whitespace on a line before looking for the directive.
+     * An indented directive is a lexer error here.
+     */
+    @Test
+    void anIndentedDirectiveIsRefusedHereWhereCSkipsTheIndent() throws IOException {
+        String indented = GOOD_RECORD.replace("rating:1", "  rating:1");
+
+        assertWholeFileRefused("indented.txt", "record-count:1\n" + indented + "\n");
+    }
+
+    /**
+     * C: {@code rows} is a {@code uint}, read with {@code strtoul} in base zero, so {@code 0x3} is
+     * 3. The lexer's {@code INTEGER} is decimal only.
+     */
+    @Test
+    void aHexadecimalRowCountIsRefusedHereWhereCReadsBaseZero() throws IOException {
+        String hex = GOOD_RECORD.replace("rows:3", "rows:0x3");
+
+        assertWholeFileRefused("hex.txt", "record-count:1\n" + hex + "\n");
+    }
+
+    /**
+     * C: an {@code int} or {@code uint} field is tokenized on {@code :}, so {@code type:1:7} reads 1
+     * and drops the rest. Here the extra field is a syntax error.
+     */
+    @Test
+    void aFieldAfterTheValueIsRefusedHereWhereCIgnoresIt() throws IOException {
+        String extra = GOOD_RECORD.replace("type:1", "type:1:7");
+
+        assertWholeFileRefused("extra-field.txt", "record-count:1\n" + extra + "\n");
+    }
+
+    /**
+     * C: {@code parser_parse} skips a {@code #} comment with or without a final newline. The lexer's
+     * {@code COMMENT} rule ends on {@code \n}, so a comment on the last line with no newline is a
+     * lexer error.
+     */
+    @Test
+    void aFinalCommentWithoutANewlineIsRefusedHereWhereCSkipsIt() throws IOException {
+        assertWholeFileRefused("tail-comment.txt", "record-count:1\n" + GOOD_RECORD + "\n# the end");
+    }
+
+    /**
+     * C: {@code tval} is a {@code sym}, tokenized on {@code :}, so {@code tval:rod:junk} reads
+     * {@code rod}. The lexer hands the whole rest of the line to the assembler, which cannot resolve
+     * {@code rod:junk}, so the record is dropped as a soft error.
+     */
+    @Test
+    void textAfterATvalNameIsTreatedAsPartOfTheNameHereWhereCDropsIt() throws IOException {
+        String extra = GOOD_RECORD.replace("tval:0", "tval:rod:junk");
+        String path = tempFile("tval-extra.txt", "record-count:1\n" + extra + "\n");
+
+        ParseResult<RoomTemplate> result = new RoomProfileReader().parseWithResults(path);
+
+        assertTrue(result.items().isEmpty(), result.items()::toString);
+        assertTrue(result.errors().stream().anyMatch(e -> e.contains("invalid tValue: rod:junk")),
+                result.errors()::toString);
+    }
+
+    /**
+     * C: {@code tval_find_idx} accepts a number followed only by spaces ({@code contains_only_spaces}),
+     * so {@code tval:0 } is tval 0. The port resolves it the same way.
+     */
+    @Test
+    void aTvalNumberWithATrailingSpaceResolvesAsInC() throws IOException {
+        String trailing = GOOD_RECORD.replace("tval:0", "tval:0 ");
+        String path = tempFile("tval-space.txt", "record-count:1\n" + trailing + "\n");
+
+        ParseResult<RoomTemplate> result = new RoomProfileReader().parseWithResults(path);
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(TValue.TV_NONE, result.items().getFirst().getTval());
+    }
+
+    /**
+     * C: {@code type} and {@code doors} are {@code uint}, and {@code parser_parse} refuses a token
+     * that starts with {@code -} ({@code PARSE_ERROR_NOT_NUMBER}). {@code INTEGER} takes a minus
+     * sign and the assembler does not range-check these two, so both load as -1.
+     */
+    @Test
+    void aNegativeTypeAndDoorCountLoadHereWhereCRefusesThem() throws IOException {
+        String negative = GOOD_RECORD.replace("type:1", "type:-1").replace("doors:1", "doors:-1");
+        String path = tempFile("negative.txt", "record-count:1\n" + negative + "\n");
+
+        ParseResult<RoomTemplate> result = new RoomProfileReader().parseWithResults(path);
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(-1, result.items().getFirst().getType());
+        assertEquals(-1, result.items().getFirst().getDoors());
+    }
+
+    /**
+     * C: {@code typ}, {@code rat}, {@code hgt}, {@code wid} and {@code dor} are {@code uint8_t}, so
+     * {@code type:257} is stored as 1. The Java fields keep 257.
+     */
+    @Test
+    void aTypeThatDoesNotFitAByteIsKeptHereWhereCTruncatesIt() throws IOException {
+        String big = GOOD_RECORD.replace("type:1", "type:257");
+        String path = tempFile("big-type.txt", "record-count:1\n" + big + "\n");
+
+        ParseResult<RoomTemplate> result = new RoomProfileReader().parseWithResults(path);
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(257, result.items().getFirst().getType());
+    }
+
+    // ---- Where the grammar matches C ----------------------------------------
+
+    /**
+     * C: {@code parse_room_d} uses {@code parser_getstr}, which for a {@code str} field is
+     * {@code strtok(sp, "")}; an empty one is a null token and so
+     * {@code PARSE_ERROR_MISSING_FIELD}. An empty {@code D:} line is refused here as well.
+     */
+    @Test
+    void anEmptyMapLineFailsClosedAsInC() throws IOException {
+        String empty = GOOD_RECORD.replace("D:%.%", "D:");
+
+        assertWholeFileRefused("empty-d.txt", "record-count:1\n" + empty + "\n");
+    }
+
+    /**
+     * C reads the last line of a file whether or not it ends in a newline; so does the lexer, so a
+     * final {@code D:} line with no terminator still loads.
+     */
+    @Test
+    void aFinalLineWithoutANewlineStillLoads() throws IOException {
+        ParseResult<RoomTemplate> result = new RoomProfileReader()
+                .parseWithResults(tempFile("no-eol.txt", "record-count:1\n" + GOOD_RECORD));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals("%%%%.%%%%", result.items().getFirst().getMapText());
+    }
+
+    /**
+     * {@code parse_room_name} points each new record's {@code next} at the previous head, so the
+     * list runs backwards; two records in a fixture come out second then first.
+     */
+    @Test
+    void theResultRunsInReverseFileOrderAsInC() throws IOException {
+        String second = GOOD_RECORD.replace("name:Good room", "name:Second room");
+        String path = tempFile("two.txt", "record-count:2\n" + GOOD_RECORD + "\n" + second + "\n");
+
+        List<RoomTemplate> items = new RoomProfileReader().parseWithResults(path).items();
+
+        assertEquals(List.of("Second room", "Good room"), items.stream().map(RoomTemplate::getName).toList());
+    }
+
     @Test
     void aMissingFileThrows() {
         assertThrows(IOException.class,

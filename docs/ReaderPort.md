@@ -45,19 +45,19 @@ Each target is `src/main/java/uk/co/jackoftradesltd/backend/parser/<Name>.java`,
 11. [X] `PlayerPropertyReader`
 12. [X] `TerrainReader`
 13. [X] `WorldReader`
-14. `GameConstantsReader`
+14. [X] `GameConstantsReader`
 
 ## Batch 4 — other C files (confirm in stage 1)
 
-1. `QuestReader`
-2. `VaultReader`
-3. `RoomProfileReader`
-4. `DungeonProfileReader`
-5. `ChestTrapReader`
-6. `PlayerTimedReader`
-7. `RandomReader`
-8. `VisualsReader`
+1. [X] `QuestReader`
+2. [X] `VaultReader`
+3. [X] `RoomProfileReader`
+4. [X] `DungeonProfileReader`
+5. [X] `ChestTrapReader`
+6. [X] `PlayerTimedReader`
+7. [X] `RandomReader`
+8. [X] `VisualsReader`
 
 ## Last
 
-1. `LoreReader` — its parsing is deliberately parked, so port only what exists.
+1. [X] `LoreReader` — its parsing is deliberately parked, so port only what exists.

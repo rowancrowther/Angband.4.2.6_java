@@ -35,12 +35,37 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Reads {@code lib/gamedata/dungeon_profile.txt} into {@link CaveProfile}s.
+ * Reads {@code lib/gamedata/dungeon_profile.txt} into {@link CaveProfile}s. The four
+ * {@code dungeon_profile}-specific pieces — {@link DungeonProfileLexer}, {@link DungeonProfileGrammar},
+ * {@link #extract} and {@link DungeonProfileAssembler} — are handed to {@link GrammarDriver}, which
+ * owns the shared lex/parse/assemble ritual every {@code lib/gamedata} reader follows.
  *
- * <p>A thin binding: everything invariant lives in {@link GrammarDriver}, and this supplies the
- * four things that vary — the lexer, the parser, the {@link #extract} step, and the assembler.
- * The port of {@code run_parse_profile} (generate.c:219) plus the record-marshalling half of
- * {@code finish_parse_profile} (generate.c:223).
+ * <p><b>C counterpart:</b> {@code profile_parser} in {@code generate.c}, run as the first of the
+ * three parsers in {@code run_template_parser}. Its seven
+ * {@code parse_profile_*} handlers, registered by {@code init_parse_profile}, are performed by
+ * {@link DungeonProfileAssembler} and its tunnel, streamer and room sub-assemblers, as is the
+ * list-building half of {@code finish_parse_profile}; {@code run_parse_profile}
+ * ({@code parse_file_quit_not_found}) is the file open inside {@link GrammarDriver}, where a
+ * missing file is an {@link IOException} for the caller to turn into a fatal error. This class
+ * itself only wires the grammar to the driver, so it has no C logic of its own to mismatch.
+ *
+ * <p><b>Order and count of the result:</b> C builds the list by prepending, then
+ * {@code finish_parse_profile} fills {@code cave_profiles} from the far end, so the array runs in
+ * file order, and {@code z_info->profile_max} is the number of records. The result here is also in
+ * file order, and the count is just the size of the list; nothing in the Java needs a separate
+ * counter.
+ *
+ * <p><b>Where the Java differs from C</b> (the grammar half is recorded in
+ * {@code docs/grammar_issues.md}, the assembler half in {@code docs/Assembler_Issues.md}): C
+ * registers seven independent one-line directives, so after the opening {@code name:} it accepts
+ * them in any order, repeated, left out, indented or followed by extra fields, and accepts a file
+ * with no profiles at all. {@code DungeonProfileGrammar} demands a {@code record-count:} header,
+ * which the shipped C file does not carry and which {@link GrammarDriver#checkRecordCount}
+ * checks, and then one or more profiles, each a {@code name:} and at least one directive. A bad
+ * number costs its own profile (or room) in Java where it can be caught in the assembler, where
+ * every one of C's {@code PARSE_ERROR_*} results stops the load.
+ *
+ * <p>Class DungeonProfileReader coded before 260915, commented in full on 261019.
  *
  * @author Rowan Crowther
  */
@@ -48,20 +73,27 @@ public class DungeonProfileReader implements Reader<CaveProfile> {
     /**
      * Logger handed to {@link GrammarDriver#run}, explicitly scoped to
      * {@code DungeonProfileReader.class} rather than inferred, so an I/O failure opening the data
-     * file is reported under this reader's name.
+     * file is reported under this reader's name. C has no counterpart: it reports a missing file
+     * through {@code quit()}.
      *
-     * <p>Field logger commented in full on 260915.
+     * <p>Field logger coded before 260915, commented in full on 261019.
      */
     private static final Logger logger = LogManager.getLogger(DungeonProfileReader.class);
 
     /**
      * Parses {@code filename} and returns just the assembled cave profiles, discarding the
-     * soft-error channel (use {@link #parseWithResults} to inspect errors).
+     * soft-error channel.
      *
-     * <p>Function parse coded before 260915, commented in full on 260915.
+     * <p>This is {@link #parseWithResults} with its errors thrown away, so a caller that needs to
+     * know a profile or room was dropped (an overflowing number, a record-count mismatch) must use
+     * that method instead. A hard grammar error gives an empty list here, indistinguishable from a
+     * file with no profiles. The C counterpart is the {@code profile_parser} run as a whole
+     * ({@code generate.c}); C has no partial result.
+     *
+     * <p>Function parse coded before 260915, commented in full on 261019.
      *
      * @param filename the data file to read
-     * @return the cave profiles read from the file
+     * @return the cave profiles read from the file, in file order
      * @throws IOException if the file cannot be read
      */
     @Override
@@ -71,14 +103,18 @@ public class DungeonProfileReader implements Reader<CaveProfile> {
 
     /**
      * The one grammar-specific step {@link GrammarDriver} cannot perform for itself: run the
-     * parser's entry rule and hand back the parse records.
+     * parser's {@code file} rule and hand back the parse records.
      *
-     * <p>The ordering matters and is the reason this lives here rather than in the driver.
-     * {@link ParseErrors#throwIfAny()} fires after the parse but before the record count is
-     * checked, so a file with hard syntax errors is abandoned rather than being reported as having
-     * the wrong number of records.
+     * <p>Ordering is deliberate. {@link ParseErrors#throwIfAny()} fires straight after the parse,
+     * before the record count is checked, so a file with a hard syntax error is abandoned rather
+     * than being reported as having the wrong number of records. {@link GrammarDriver#checkRecordCount}
+     * then compares the file's {@code record-count:} header with the number of profiles parsed and
+     * records a soft error on a mismatch; C's own parser never reads this header, so that check is
+     * stricter than the original. The records come back in file order, and the grammar's own
+     * {@code ArrayList} is copied so the caller owns the result. {@link DungeonProfileAssembler}
+     * then converts them, and is where the narrowing from text to {@code int} happens.
      *
-     * <p>Function extract commented in full before 260915, provenance stamp added on 260915.
+     * <p>Function extract coded before 260915, commented in full on 261019.
      *
      * @param parser       the parser, positioned at the start of the file
      * @param errorCatcher collects hard lexer/parser errors; fails the parse if any were seen
@@ -100,12 +136,17 @@ public class DungeonProfileReader implements Reader<CaveProfile> {
     }
 
     /**
-     * Parse the file and return the profiles together with any soft errors gathered on the way.
+     * As {@link #parse}, but keeps the soft errors alongside the assembled profiles rather than
+     * discarding them. The preferred entry point when the caller wants to gate on
+     * {@link ParseResult#hasErrors()}.
      *
-     * <p>Prefer this over {@link #parse} where the caller wants to report data problems:
-     * {@code parse} keeps only the items and drops the messages.
+     * <p>A missing or unreadable file is an {@link IOException} (C: {@code parse_file_quit_not_found}
+     * quits). A hard grammar or lexer error gives an empty list with the messages as errors. A number
+     * that will not convert, where C stops on a {@code PARSE_ERROR_*}, is a soft error that drops
+     * that one profile (or, on a {@code room:} line, that one room) and leaves the rest. An unknown
+     * profile or room name is not an error here at all; see {@code docs/Assembler_Issues.md}.
      *
-     * <p>Function parseWithResults commented in full before 260915, provenance stamp added on 260915.
+     * <p>Function parseWithResults coded before 260915, commented in full on 261019.
      *
      * @param filename the data file to read
      * @return the assembled profiles and any soft errors

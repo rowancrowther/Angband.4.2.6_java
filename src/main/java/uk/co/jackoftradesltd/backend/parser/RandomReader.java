@@ -20,59 +20,109 @@ package uk.co.jackoftradesltd.backend.parser;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftradesltd.channel.parser.Reader;
-import uk.co.jackoftradesltd.middle.numerics.Random;
+import org.jetbrains.annotations.Nullable;
 import uk.co.jackoftradesltd.backend.parser.random.RandomLexer;
 import uk.co.jackoftradesltd.backend.parser.random.RandomParser;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import uk.co.jackoftradesltd.channel.parser.ParseErrors;
+import uk.co.jackoftradesltd.channel.parser.Reader;
+import uk.co.jackoftradesltd.middle.numerics.Random;
 
 /**
- * Loads the relevant data-file entries into {@link Random} objects by driving the
- * matching ANTLR-generated lexer/parser. The thin hand-written bridge between
- * the generated grammar code and the game, implementing the shared
- * {@link Reader} contract (Java port of the equivalent C data-file parser).
+ * Turns one dice-notation string (for example {@code "2d6"}, {@code "1+1d3"}, {@code "M80"} or
+ * {@code "4d$S"}) into a {@link Random} by driving the generated {@code RandomLexer}/
+ * {@code RandomParser}. It is the thin hand-written bridge between that grammar and
+ * {@link Random#parseStr}, the caller that strips any leading {@code -} before handing the text over.
+ * A leading {@code -} given to the reader directly is also understood: the grammar flags the value
+ * as negated and {@link Random} shifts the base so the whole range flips sign, as the negation block
+ * of {@code parse_random} in {@code parser.c} does.
+ *
+ * <p><b>Why it is not like the other readers.</b> It does not implement {@link Reader}. The input is
+ * a string, not a data file, and there is exactly one value to read, not a list, so there is no
+ * {@code GrammarDriver} run, no assembler, no {@code record-count:} header and no soft-error channel
+ * - only the grammar's own hard errors.
+ *
+ * <p><b>Two C parsers, one grammar.</b> C has two parsers for this notation. {@code parse_random} in
+ * {@code parser.c} reads every {@code rand} field of the data files and has no {@code $} variables;
+ * {@code dice_parse_string} in {@code z-dice.c} reads the {@code dice:} and {@code time:} lines of an
+ * effect and does. This reader serves both through {@code Random.g4}, so it is a superset of the
+ * first in places and stricter in others: it accepts a lower-case {@code m}, a base straight into
+ * {@code M} ({@code "5M3"}) and {@code $} variables, and it refuses blanks anywhere and a repeated
+ * {@code d} or {@code M} ({@code "dd1"}, {@code "M1M2"}), which C's loop lets through. Wherever
+ * both accept a string they produce the same four terms. The differences are written up in
+ * {@code docs/grammar_issues.md}.
+ *
+ * <p>Class commented in full on 261019.
  *
  * @author Rowan Crowther
  */
-public class RandomReader implements Reader<Random> {
+public class RandomReader {
     /**
-     * Logger used to report file-loading failures.
+     * Logger used to report dice strings that fail to parse.
      *
-     * <p>Field logger commented in full on 260915.
+     * <p>Field logger commented in full on 260915, reworded on 261019.
      */
     private static final Logger logger = LogManager.getLogger();
 
     /**
-     * Parses a dice-notation expression (for example {@code "2d6"}) and returns a single-element
-     * list holding the resulting {@link Random}. Unlike every other reader in this package,
-     * {@code filename} is not a path - it is read directly as the dice text via
-     * {@link CharStreams#fromString}, and there is no {@code parseWithResults}/soft-error channel
-     * to discard: any failure is a hard {@code IOException} straight out of the grammar.
+     * Parses one dice-notation string (for example {@code "2d6"}) into a single {@link Random}.
+     * Despite the parameter name, {@code filename} is not a path: the text itself is read via
+     * {@link CharStreams#fromString}.
      *
-     * <p>Function parse coded before 260915, commented in full on 260915.
+     * <p>The ways it can end:
+     * <ul>
+     *   <li><b>Success:</b> the {@link Random} the grammar's {@code dice} rule built.</li>
+     *   <li><b>Malformed text:</b> a lexer or grammar error is collected by {@link ParseErrors}
+     *       and logged, and the method returns {@code null}. This is the only case that returns
+     *       {@code null}; {@link Random#parseStr} passes it on. It covers a number missing after
+     *       {@code M} or {@code d} ({@code "5M"}, {@code "-1d"}) as much as stray characters: ANTLR
+     *       conjures a placeholder token for the gap, the grammar's {@code numberOrMissing} turns it
+     *       into a marker instead of parsing it, and the collected error then ends the parse here. C
+     *       rejects the same strings.</li>
+     *   <li><b>A number too large for an {@code int}:</b> the {@link NumberFormatException} is
+     *       logged and rethrown unchecked, so it is not mistaken for malformed text. C's
+     *       {@code parse_random} rejects anything above {@code INT_MAX}, so this is a deliberate
+     *       difference; {@code 2147483647} itself is accepted by both. {@link Random#parseStr}
+     *       rethrows it to its own callers.</li>
+     *   <li><b>No value produced:</b> a defensive check for a parse that finished without a
+     *       {@link Random} throws a plain {@link Exception} ("Invalid random token"), which is why
+     *       the signature is {@code throws Exception}. A missing number already ends in the
+     *       {@code null} case above, so this is not reached by any string tried against C.</li>
+     * </ul>
+     *
+     * <p>Function parse coded before 260915, commented in full on 260915; return type and error
+     * handling changed and re-commented on 261019, and the missing-number case moved into the grammar
+     * the same day.
      *
      * @param filename the dice-notation text to parse, despite the name (e.g. {@code "2d6"})
-     * @return a single-element list containing the parsed {@link Random}
-     * @throws IOException if the text cannot be parsed as a dice expression
+     * @return the parsed {@link Random}, or {@code null} if the text is malformed
+     * @throws NumberFormatException if a number in the text does not fit an {@code int}
+     * @throws Exception             if the parse finishes without producing a value
      */
-    @Override
-    public @NotNull List<Random> parse(@NotNull String filename) throws IOException {
+    public @Nullable Random parse(@NotNull String filename) throws Exception {
         try {
             CharStream stream = CharStreams.fromString(filename);
             RandomLexer lexer = new RandomLexer(stream);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
             RandomParser parser = new RandomParser(tokens);
+
+            ParseErrors errorCatcher = ParseErrors.install(lexer, parser, filename);
+
             RandomParser.DiceContext output = parser.dice();
 
-            List<Random> randoms = new ArrayList<>();
-            randoms.add(output.random);
-            return randoms;
+            errorCatcher.throwIfAny();
+
+            if (output.random == null) {
+                throw new Exception("Invalid random token");
+            }
+
+            return output.random;
+        } catch (ParseCancellationException pce) {
+            logger.error("Error while parsing random string: {}", filename, pce);
+            return null;
         } catch (Exception e) {
             logger.error("Error while reading random {}", filename, e);
             throw e;

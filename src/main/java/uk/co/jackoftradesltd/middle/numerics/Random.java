@@ -20,11 +20,8 @@ package uk.co.jackoftradesltd.middle.numerics;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.*;
-import uk.co.jackoftradesltd.middle.enums.DamageAspect;
 import uk.co.jackoftradesltd.backend.parser.RandomReader;
-
-import java.io.IOException;
-import java.util.List;
+import uk.co.jackoftradesltd.middle.enums.DamageAspect;
 
 /**
  * A parameterized random value of the classic Angband form
@@ -297,17 +294,23 @@ public class Random {
         // randomString is always positive at this point
 
         RandomReader reader = new RandomReader();
-        List<Random> randoms;
+        Random random = null;
+        
+        NumberFormatException nfex = null;
+        
         try {
-            randoms = reader.parse(randomString);
-        } catch (IOException e) {
+            random = reader.parse(randomString);
+        } catch (NumberFormatException nfe) {
+            nfex = nfe;
+        } catch (Exception e) {
             logger.error("Error while parsing random string: {}", randomString, e);
             return null;
         }
-
-        if (randoms.isEmpty()) return null;
-
-        Random random = randoms.getFirst();
+        
+        if (nfex != null) {
+            throw nfex;
+        }
+        
         if (random == null) return null;
 
         if (negFound) {

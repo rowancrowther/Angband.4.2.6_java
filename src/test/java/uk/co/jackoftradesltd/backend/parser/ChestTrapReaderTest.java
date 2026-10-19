@@ -208,7 +208,7 @@ class ChestTrapReaderTest {
 
     @Test
     void pvalsAreOneBitPerTrapInFileOrder() throws IOException {
-        // C synthesises these while parsing (t->pval = h->pval * 2, obj-chest.c:64-72); here they
+        // C synthesises these while parsing (t->pval = h->pval * 2 in parse_chest_trap_name); here they
         // come from ChestTrapCode as 1 << ordinal(). Same numbers either way.
         List<ChestTrap> traps = loadReal();
 
@@ -478,5 +478,188 @@ class ChestTrapReaderTest {
         assertTrue(result.items().isEmpty());
         assertTrue(result.errors().stream().anyMatch(e -> e.contains("NOT_A_REAL_EFFECT")),
                 () -> result.errors().toString());
+    }
+
+    // ---- Where this reader differs from C's chest_trap_parser --------------
+
+    @Test
+    void theUpstreamFileWithNoHeaderIsRefusedHereWhereCLoadsIt() throws IOException {
+        // Upstream chest_trap.txt has no record-count: line; C's parser registers no such
+        // directive. The grammar's file rule opens with recordCount, so the unmodified upstream
+        // file is a hard error and loads as nothing.
+        ParseResult<ChestTrap> result = new ChestTrapReader()
+                .parseWithResults("/home/rowan/Desktop/Angband-4.2.6/lib/gamedata/chest_trap.txt");
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.items().isEmpty());
+    }
+
+    @Test
+    void aFileWithAHeaderAndNoTrapsIsRefusedHereWhereCLoadsAnEmptyList() throws IOException {
+        // C's run_parse_chest_trap accepts a file with no name: lines and leaves chest_traps NULL.
+        ParseResult<ChestTrap> result = parse("empty.txt", "record-count:0\n");
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.items().isEmpty());
+    }
+
+    @Test
+    void aRepeatedMsgLineKeepsTheLastHereWhereCConcatenatesThem() throws IOException {
+        // parse_chest_trap_msg does t->msg = string_append(t->msg, text), so C would hold
+        // "A puff of green gas surrounds you!Twice." Here the later line overwrites the earlier.
+        ParseResult<ChestTrap> result = parse("two-msg.txt",
+                FULL_FILE.replace("msg:A puff of green gas surrounds you!",
+                        "msg:A puff of green gas surrounds you!\nmsg:Twice."));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals("Twice.", byCode(result.items(), ChestTrapCode.POISON).getMessage());
+    }
+
+    @Test
+    void aRepeatedMsgDeathLineKeepsTheLastHereWhereCConcatenatesThem() throws IOException {
+        // Same string_append in parse_chest_trap_msg_death: C would hold "a poison needlenow".
+        ParseResult<ChestTrap> result = parse("two-death.txt",
+                FULL_FILE.replaceFirst("msg-death:a poison needle",
+                        "msg-death:a poison needle\nmsg-death:now"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals("now", byCode(result.items(), ChestTrapCode.LOSE_STR).getMessageDeath());
+    }
+
+    @Test
+    void aDiceLineBeforeAnyEffectIsRefusedHereWhereCIgnoresIt() throws IOException {
+        // parse_chest_trap_dice returns PARSE_ERROR_NONE when the trap has no effect yet ("assume
+        // that this is human and not parser error"), so C loads the record without the dice.
+        ParseResult<ChestTrap> result = parse("stray-dice.txt",
+                FULL_FILE.replace("level:1\n\nname:gas trap", "level:1\ndice:1d4\n\nname:gas trap"));
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.items().isEmpty());
+    }
+
+    @Test
+    void aNonZeroDestroyOtherThanOneIsFalseHereWhereCSetsIt() throws IOException {
+        // parse_chest_trap_destroy sets t->destroy = true for any non-zero val; the assembler
+        // tests for the text "1".
+        ParseResult<ChestTrap> result = parse("destroy-2.txt",
+                FULL_FILE.replace("destroy:1", "destroy:2"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertFalse(byCode(result.items(), ChestTrapCode.EXPLODE).isDestroy());
+    }
+
+    @Test
+    void aNonZeroMagicOtherThanOneIsFalseHereWhereCSetsIt() throws IOException {
+        ParseResult<ChestTrap> result = parse("magic-3.txt",
+                FULL_FILE.replace("magic:1", "magic:3"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertFalse(byCode(result.items(), ChestTrapCode.SUMMON).isMagic());
+    }
+
+    @Test
+    void destroyAndMagicOfZeroAreFalseAsInC() throws IOException {
+        ParseResult<ChestTrap> result = parse("zero-flags.txt",
+                FULL_FILE.replace("destroy:1", "destroy:0").replace("magic:1", "magic:0"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertTrue(result.items().stream().noneMatch(t -> t.isDestroy() || t.isMagic()));
+    }
+
+    @Test
+    void aHexadecimalLevelIsRefusedHereWhereCReadsBaseZero() throws IOException {
+        // parser_getint is strtol in base zero, so C reads level:0x19 as 25.
+        ParseResult<ChestTrap> result = parse("hex-level.txt",
+                FULL_FILE.replace("level:25", "level:0x19"));
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.items().isEmpty());
+    }
+
+    @Test
+    void aDirectiveBeforeAnyNameIsRefusedAsInC() throws IOException {
+        // C answers PARSE_ERROR_MISSING_RECORD_HEADER for every directive but name:.
+        ParseResult<ChestTrap> result = parse("no-name.txt",
+                "record-count:7\nlevel:1\n" + FULL_FILE.replace("record-count:7\n", ""));
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.items().isEmpty());
+    }
+
+    // ---- The shipped file against the upstream table ------------------------
+
+    @Test
+    void everyRecordAgreesWithTheUpstreamFile() throws IOException {
+        // Values read off the upstream chest_trap.txt, one row per record:
+        // name, code, level, effect count, destroy, magic, msg, msg-death.
+        List<ChestTrap> traps = loadReal();
+
+        assertEquals(7, traps.size());
+        assertTrap(traps.get(0), "locked", ChestTrapCode.NO_TRAP, 1, 0, false, false, "", "");
+        assertTrap(traps.get(1), "gas trap", ChestTrapCode.POISON, 1, 1, false, false,
+                "A puff of green gas surrounds you!", "");
+        assertTrap(traps.get(2), "poison needle", ChestTrapCode.LOSE_STR, 2, 2, false, false,
+                "A small needle has pricked you!", "a poison needle");
+        assertTrap(traps.get(3), "poison needle", ChestTrapCode.LOSE_CON, 3, 2, false, false,
+                "A small needle has pricked you!", "a poison needle");
+        assertTrap(traps.get(4), "summoning runes", ChestTrapCode.SUMMON, 15, 1, false, true,
+                "You are enveloped in a cloud of smoke!", "");
+        assertTrap(traps.get(5), "gas trap", ChestTrapCode.PARALYZE, 19, 1, false, false,
+                "A puff of yellow gas surrounds you!", "");
+        assertTrap(traps.get(6), "explosion device", ChestTrapCode.EXPLODE, 25, 1, true, false,
+                "There is a sudden explosion! Everything inside the chest is destroyed!",
+                "an exploding chest");
+    }
+
+    private static void assertTrap(ChestTrap trap, String name, ChestTrapCode code, int level,
+                                   int effects, boolean destroy, boolean magic, String msg,
+                                   String msgDeath) {
+        assertEquals(name, trap.getName());
+        assertEquals(code, trap.getCode());
+        assertEquals(level, trap.getLevel());
+        assertEquals(effects, trap.getEffect().size());
+        assertEquals(destroy, trap.isDestroy());
+        assertEquals(magic, trap.isMagic());
+        assertEquals(msg, trap.getMessage());
+        assertEquals(msgDeath, trap.getMessageDeath());
+    }
+
+    // ---- Reader surface -------------------------------------------------------
+
+    @Test
+    void parseReturnsTheSameTrapsAsParseWithResults() throws IOException {
+        List<ChestTrap> viaParse = new ChestTrapReader().parse(REAL_FILE);
+
+        assertEquals(7, viaParse.size());
+        assertEquals(loadReal().stream().map(ChestTrap::getCode).toList(),
+                viaParse.stream().map(ChestTrap::getCode).toList());
+    }
+
+    @Test
+    void aMissingFileIsAnIOExceptionWhereCQuits() {
+        // run_parse_chest_trap uses parse_file_quit_not_found.
+        assertThrows(IOException.class, () ->
+                new ChestTrapReader().parseWithResults(tempDir.resolve("absent.txt").toString()));
+    }
+
+    @Test
+    void aNonNumericRecordCountIsAHardError() throws IOException {
+        ParseResult<ChestTrap> result = parse("bad-header.txt",
+                FULL_FILE.replace("record-count:7", "record-count:abc"));
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.items().isEmpty());
+    }
+
+    @Test
+    void theSummonTrapNeedsSummonsLoadedFirst() throws Exception {
+        // C runs summon_parser before chest_trap_parser in init_arrays; running this reader first
+        // throws out of MonsterRegistry.lookupSummon rather than reporting a soft error.
+        Object loaded = setStatic("summons", null);
+        try {
+            assertThrows(IllegalStateException.class, () -> parse("early.txt", FULL_FILE));
+        } finally {
+            setStatic("summons", loaded);
+        }
     }
 }

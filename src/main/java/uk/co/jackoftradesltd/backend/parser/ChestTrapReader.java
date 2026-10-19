@@ -38,13 +38,29 @@ import java.util.List;
  * Reader for {@code lib/gamedata/chest_trap.txt}, producing one {@link ChestTrap} per record (the
  * "locked" no-trap entry, gas traps, poison needles, summoning runes, the explosion device). Wires
  * the generated {@code ChestTrapLexer}/{@code ChestTrapGrammar} to {@link ChestTrapAssembler}
- * through the shared {@link GrammarDriver}, mirroring the C {@code chest_trap_parser} in
- * {@code src/obj-chest.c}. This is the reader {@code ObjectDataLoader.loadChestTraps()} drives.
+ * through the shared {@link GrammarDriver}. This is the reader {@code ObjectDataLoader.loadChestTraps()}
+ * drives.
+ *
+ * <p><b>What it stands in for.</b> The whole of C's {@code chest_trap_parser} in {@code obj-chest.c}:
+ * {@code init_parse_chest_trap} is the grammar, {@code run_parse_chest_trap} is
+ * {@link GrammarDriver#run}, and {@code finish_parse_chest_trap} is nothing at all - it only destroys
+ * the parser. The ten {@code parse_chest_trap_*} handlers are split between the grammar (which
+ * directive is legal where) and {@link ChestTrapAssembler} (what each value means). C's pval doubling
+ * in {@code parse_chest_trap_name} is not done here either; {@code ChestTrapCode} derives each bit
+ * from its position.
  *
  * <p><b>Load order.</b> The {@code SUMMON} trap's effect resolves a summon name, so
- * {@code summon.txt} must already be loaded when this runs - and summons in turn need monster bases,
- * which need pains. Running this first instead throws {@code IllegalStateException} out of the
- * registry rather than reporting a soft error.
+ * {@code summon.txt} must already be loaded when this runs - as in C's {@code init_arrays}, where
+ * {@code summon_parser} comes before {@code chest_trap_parser} - and summons in turn need monster
+ * bases, which need pains. Running this first instead throws {@code IllegalStateException} out of
+ * {@code MonsterRegistry.lookupSummon} rather than reporting a soft error.
+ *
+ * <p><b>Where it differs from C.</b> The file needs a {@code record-count:} header that the upstream
+ * file does not carry, and a record needs {@code code:} straight after {@code name:}; both are
+ * grammar choices, written up in {@code docs/grammar_issues.md}. The assembler rejects the whole file
+ * if its structural rules fail, which C cannot do (see {@code docs/Assembler_Issues.md}).
+ *
+ * <p>Class commented in full on 261019.
  *
  * @author Rowan Crowther
  */
@@ -52,9 +68,10 @@ public class ChestTrapReader implements Reader<ChestTrap> {
     /**
      * Logger handed to {@link GrammarDriver#run}, explicitly scoped to {@code ChestTrapReader.class}
      * rather than inferred, so an I/O failure opening the data file is reported under this reader's
-     * name.
+     * name. C has no counterpart: {@code run_parse_chest_trap} calls {@code parse_file_quit_not_found},
+     * which quits on a missing file, where this reader logs and throws an {@code IOException}.
      *
-     * <p>Field logger commented in full on 260915.
+     * <p>Field logger coded before 260915, commented in full on 261019.
      */
     private static final Logger logger = LogManager.getLogger(ChestTrapReader.class);
 
@@ -65,9 +82,11 @@ public class ChestTrapReader implements Reader<ChestTrap> {
      *
      * <p>The count is this port's own addition - C's chest trap parser registers no
      * {@code record-count} directive - so the check exists to catch a hand-edited file, not to
-     * mirror the original.
+     * mirror the original. A wrong count is a soft error and the records still come back; a
+     * non-numeric count is a hard error and stops the parse. The returned list is a copy, so the
+     * assembler cannot disturb the parse tree.
      *
-     * <p>Function extract commented in full before 260915, provenance stamp added on 260915.
+     * <p>Function extract coded before 260915, commented in full on 261019.
      *
      * @param parser       the grammar positioned at the start of the file
      * @param errorCatcher collects hard lexer/parser errors; {@code throwIfAny} aborts on failure
@@ -92,7 +111,10 @@ public class ChestTrapReader implements Reader<ChestTrap> {
      * Parses {@code filename} and returns just the assembled chest traps, discarding the
      * soft-error channel (use {@link #parseWithResults} to inspect errors).
      *
-     * <p>Function parse coded before 260915, commented in full on 260915.
+     * <p>A file broken enough to be rejected whole comes back as an empty list with no hint why;
+     * callers that need the reason use {@link #parseWithResults}.
+     *
+     * <p>Function parse coded before 260915, commented in full on 261019.
      *
      * @param filename the data file to read
      * @return the chest traps read from the file
@@ -113,7 +135,11 @@ public class ChestTrapReader implements Reader<ChestTrap> {
      * {@code chest_trap.txt} states in prose, so an empty result with errors reported means the file
      * was rejected outright rather than that it held no traps.
      *
-     * <p>Function parseWithResults commented in full before 260915, provenance stamp added on 260915.
+     * <p>A missing file is an {@code IOException}, where C quits. Hard grammar or lexer failures come
+     * back as errors with no traps, not as an exception. This is the port of
+     * {@code run_parse_chest_trap}; C's {@code finish_parse_chest_trap} has nothing to port.
+     *
+     * <p>Function parseWithResults coded before 260915, commented in full on 261019.
      *
      * @param filename path to the chest trap data file
      * @return the parse result: the chest traps and any errors collected

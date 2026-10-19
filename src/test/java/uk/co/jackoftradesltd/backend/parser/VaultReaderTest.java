@@ -49,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@code VaultGrammar} -> {@code VaultParseRecord} -> {@code VaultAssembler} -> {@link Vault}.
  *
  * <p>Expected values are taken from {@code lib/gamedata/vault.txt} itself and from the C parser it
- * ports, {@code init_parse_vault} ({@code [C] src/generate.c:595}).
+ * ports, {@code init_parse_vault} in {@code generate.c}.
  *
  * @author Rowan Crowther
  */
@@ -178,7 +178,7 @@ class VaultReaderTest {
 
     /**
      * C's {@code parse_vault_max_depth} turns a declared 0 into {@code z_info->max_depth}
-     * ({@code [C] src/generate.c:561}), so no assembled vault may keep a 0 maximum.
+     * ({@code generate.c}), so no assembled vault may keep a 0 maximum.
      *
      * <p>129 of the 162 records declare 0 and so come out at the world maximum; the other 33
      * declare a real cap and must keep it untouched.
@@ -205,7 +205,7 @@ class VaultReaderTest {
      * The layout is stored twice: as one line per row, and as the rows concatenated into the flat
      * string C keeps in {@code vault.text} and indexes as {@code text[y * wid + x]}. Both must agree
      * with the declared {@code rows:}/{@code columns:} - the port of the length check in
-     * {@code parse_vault_d} ({@code [C] src/generate.c:588}).
+     * {@code parse_vault_d} ({@code generate.c}).
      */
     @Test
     void everyLayoutMatchesItsDeclaredDimensions() throws Exception {
@@ -224,7 +224,7 @@ class VaultReaderTest {
     /**
      * No vault may be larger than the cap its room type carries from {@code list-rooms.h}, the
      * check C makes in {@code parse_vault_rows}/{@code parse_vault_columns}
-     * ({@code [C] src/generate.c:521, 540}).
+     * ({@code generate.c}).
      */
     @Test
     void noVaultExceedsItsRoomTypeSizeCap() throws Exception {
@@ -288,7 +288,7 @@ class VaultReaderTest {
 
     /**
      * A {@code type:} matching none of the seven room-builder names — C's
-     * {@code PARSE_ERROR_NO_ROOM_FOUND} ({@code [C] src/generate.c:517}). Soft here: the record is
+     * {@code PARSE_ERROR_NO_ROOM_FOUND} ({@code generate.c}). Soft here: the record is
      * dropped and its neighbour still loads, where C would fail the whole file.
      */
     @Test
@@ -325,7 +325,7 @@ class VaultReaderTest {
     /**
      * {@code rows:} outside {@code 1..}{@link RoomType#getMaxHeight()} — C's
      * {@code PARSE_ERROR_VAULT_TOO_BIG} in {@code parse_vault_rows}
-     * ({@code [C] src/generate.c:521}). The bound is per type, so a lesser vault is capped at 22;
+     * ({@code generate.c}). The bound is per type, so a lesser vault is capped at 22;
      * the check is {@code <= 0 || > max}, so a zero is rejected at the other end.
      */
     @Test
@@ -347,7 +347,7 @@ class VaultReaderTest {
 
     /**
      * The same bound on the other axis ({@code parse_vault_columns},
-     * {@code [C] src/generate.c:540}).
+     * {@code generate.c}).
      */
     @Test
     void columnsOutsideTheTypesBoundsAreRejectedAtBothEnds() throws IOException {
@@ -389,7 +389,7 @@ class VaultReaderTest {
 
     /**
      * A {@code D:} line whose length disagrees with {@code columns:} — C checks this line by line
-     * as it parses ({@code strlen(desc) != v->wid}, {@code [C] src/generate.c:588}). Here it is one
+     * as it parses ({@code strlen(desc) != v->wid}, {@code generate.c}). Here it is one
      * report for the record however many rows are wrong, since the assembler only flags the map.
      */
     @Test
@@ -445,7 +445,7 @@ class VaultReaderTest {
 
     /**
      * Several {@code flags:} lines OR into one set rather than the last one winning — the file's
-     * own header says so, and C appends ({@code [C] src/generate.c:565}). {@link RoomFlags} carries
+     * own header says so, and C appends ({@code generate.c}). {@link RoomFlags} carries
      * only the one real flag, so accumulation shows up two ways: repeating it is idempotent (a
      * {@code Flag} is a set), and a bad name on the <em>second</em> line is still reported, which is
      * what proves the line was read at all rather than overwritten.
@@ -575,5 +575,232 @@ class VaultReaderTest {
     void aMissingFileThrows() {
         assertThrows(IOException.class,
                 () -> new VaultReader().parseWithResults(tempDir.resolve("absent.txt").toString()));
+    }
+
+    // ---- Reader contract and the differences from C -----------------------
+
+    /**
+     * Parses a one-record file made from {@link #GOOD_RECORD} with {@code from} replaced by
+     * {@code to}, with the {@code record-count:} header C's file does not carry.
+     */
+    private ParseResult<Vault> parseVariant(String fileName, String from, String to)
+            throws IOException {
+        String record = GOOD_RECORD.replace(from, to);
+        return new VaultReader().parseWithResults(
+                tempFile(fileName, "record-count:1\n" + record + "\n"));
+    }
+
+    /**
+     * C's {@code parse_vault_name} points each new record's {@code next} at the previous head, so
+     * {@code vaults} runs from the last record in {@code vault.txt} to the first. The list handed
+     * back is in that order: "Golden Flower " is the final {@code name:} in the file.
+     */
+    @Test
+    void theListRunsFromTheLastVaultInTheFileToTheFirst() throws IOException {
+        List<Vault> vaults = new VaultReader().parse(REAL_FILE);
+
+        assertEquals("Golden Flower ", vaults.getFirst().getName());
+        assertEquals("Round", vaults.getLast().getName());
+    }
+
+    /**
+     * Two records in one file come out second-first, whatever their names.
+     */
+    @Test
+    void twoRecordsComeBackSecondFirst() throws IOException {
+        String first = GOOD_RECORD.replace("name:Good vault", "name:First");
+        String second = GOOD_RECORD.replace("name:Good vault", "name:Second");
+        String path = tempFile("two.txt", "record-count:2\n" + first + "\n" + second + "\n");
+
+        ParseResult<Vault> result = new VaultReader().parseWithResults(path);
+
+        assertEquals(List.of("Second", "First"), names(result));
+    }
+
+    /**
+     * A {@code str} directive takes the whole rest of the line, so the trailing space on
+     * "Golden Flower " in the shipped file is part of the name, as it is in C.
+     */
+    @Test
+    void aNameKeepsItsTrailingSpaceAndAnyColon() throws IOException {
+        ParseResult<Vault> result = parseVariant("name.txt", "name:Good vault", "name:Odd: name ");
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals("Odd: name ", result.items().getFirst().getName());
+    }
+
+    /**
+     * The count of each room-builder type in {@code vault.txt}, taken by counting the {@code type:}
+     * lines of the upstream file: 14 + 15 + 27 lesser, medium and greater vaults, 12 + 15 + 13 of
+     * their {@code (new)} variants, and 66 interesting rooms (162 in all).
+     */
+    @Test
+    void theShippedFileHasTheExpectedNumberOfEachType() throws IOException {
+        List<Vault> vaults = new VaultReader().parse(REAL_FILE);
+
+        java.util.Map<RoomType, Long> counts = new java.util.EnumMap<>(RoomType.class);
+        for (Vault vault : vaults) {
+            counts.merge(vault.getType(), 1L, Long::sum);
+        }
+        assertEquals(14L, counts.get(RoomType.LESSER_VAULT));
+        assertEquals(15L, counts.get(RoomType.MEDIUM_VAULT));
+        assertEquals(27L, counts.get(RoomType.GREATER_VAULT));
+        assertEquals(12L, counts.get(RoomType.NEW_LESSER_VAULT));
+        assertEquals(15L, counts.get(RoomType.NEW_MEDIUM_VAULT));
+        assertEquals(13L, counts.get(RoomType.NEW_GREATER_VAULT));
+        assertEquals(66L, counts.get(RoomType.INTERESTING));
+    }
+
+    /**
+     * The size caps at their exact edge, from {@code list-rooms.h}: a lesser vault may be 22 by 22
+     * and no more, and C's test is {@code > max}, so the cap itself is accepted.
+     */
+    @Test
+    void aVaultAtExactlyItsSizeCapIsAccepted() throws IOException {
+        String row = "D:" + "#".repeat(22) + "\n";
+        String record = String.join("\n", "name:Full size", "type:Lesser vault", "rating:1",
+                "rows:22", "columns:22", "min-depth:0", "max-depth:0") + "\n" + row.repeat(22);
+        String path = tempFile("full.txt", "record-count:1\n" + record);
+
+        ParseResult<Vault> result = new VaultReader().parseWithResults(path);
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(22 * 22, result.items().getFirst().getMapLines().length());
+    }
+
+    /**
+     * C reads {@code min-depth:} and {@code max-depth:} with {@code parser_getuint}, which refuses
+     * a leading minus with {@code PARSE_ERROR_NOT_NUMBER}. The lexer's {@code INTEGER} is signed,
+     * so both load here as negative numbers. Pinned so a fix to the grammar has to change it.
+     */
+    @Test
+    void negativeDepthsLoadHereWhereCRefusesThem() throws IOException {
+        ParseResult<Vault> minimum = parseVariant("neg-min.txt", "min-depth:0", "min-depth:-5");
+        ParseResult<Vault> maximum = parseVariant("neg-max.txt", "max-depth:0", "max-depth:-5");
+
+        assertFalse(minimum.hasErrors(), () -> minimum.errors().toString());
+        assertEquals(-5, minimum.items().getFirst().getMinLevel());
+        assertFalse(maximum.hasErrors(), () -> maximum.errors().toString());
+        assertEquals(-5, maximum.items().getFirst().getMaxLevel(),
+                "only a declared 0 is rewritten to the world maximum");
+    }
+
+    /**
+     * {@code rating:} is the one signed field: C reads it with {@code parser_getint}, so a negative
+     * rating is legal there and here.
+     */
+    @Test
+    void aNegativeRatingIsAccepted() throws IOException {
+        ParseResult<Vault> result = parseVariant("neg-rating.txt", "rating:5", "rating:-3");
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(-3, result.items().getFirst().getRating());
+    }
+
+    /**
+     * C stores {@code rows:} in a {@code uint8_t}-sized field after a {@code > max_height} test, so
+     * {@code rows:0} is accepted there and leaves a vault with no height. The assembler refuses
+     * it as well as anything over the cap.
+     */
+    @Test
+    void zeroRowsAreRefusedHereWhereCAcceptsThem() throws IOException {
+        ParseResult<Vault> result = parseVariant("zero-rows.txt", "rows:3", "rows:0");
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.errors().stream().anyMatch(e -> e.contains("an invalid row value")),
+                result.errors()::toString);
+    }
+
+    /**
+     * C accepts the directives in any order and any may be missing; here a {@code type:} that
+     * arrives after {@code rows:} is a grammar error and the file yields nothing.
+     */
+    @Test
+    void typeAfterRowsIsRefusedHereWhereCTakesItInAnyOrder() throws IOException {
+        String reordered = GOOD_RECORD.replace("type:Lesser vault\nrating:5\nrows:3",
+                "rating:5\nrows:3\ntype:Lesser vault");
+        String path = tempFile("type-late.txt", "record-count:1\n" + reordered + "\n");
+
+        ParseResult<Vault> result = new VaultReader().parseWithResults(path);
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.items().isEmpty());
+    }
+
+    /**
+     * A header and no records. C accepts an empty vault file and leaves {@code vaults} null; the
+     * grammar wants at least one record, so the file is refused.
+     */
+    @Test
+    void aFileWithNoVaultsIsRefusedHereWhereCLoadsAnEmptyList() throws IOException {
+        ParseResult<Vault> result = new VaultReader().parseWithResults(
+                tempFile("empty.txt", "record-count:0\n"));
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.items().isEmpty());
+    }
+
+    /**
+     * C's {@code parser_parse} skips leading whitespace on a line before it looks at it. The shared
+     * lexer rules do not, so an indented directive is a lexer error and the file yields nothing.
+     */
+    @Test
+    void anIndentedDirectiveIsRefusedHereWhereCSkipsTheIndent() throws IOException {
+        ParseResult<Vault> result = parseVariant("indent.txt", "rating:5", "  rating:5");
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.items().isEmpty());
+    }
+
+    /**
+     * C reads {@code uint} fields with {@code strtoul} in base zero, so {@code rows:0x3} is 3 there.
+     * The lexer is decimal-only, so it is refused here.
+     */
+    @Test
+    void aHexadecimalRowCountIsRefusedHereWhereCReadsBaseZero() throws IOException {
+        ParseResult<Vault> result = parseVariant("hex.txt", "rows:3", "rows:0x3");
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.items().isEmpty());
+    }
+
+    /**
+     * C splits the flag list on spaces and bars alike ({@code strtok(s, " |")}), so spaces around
+     * the bar are separators. The lexer's {@code OR} rule takes an optional space either side.
+     */
+    @Test
+    void spacesAroundTheBarSeparateFlags() throws IOException {
+        ParseResult<Vault> result = parseVariant("flag-spaces.txt", "max-depth:0",
+                "max-depth:0\nflags:FEW_ENTRANCES | FEW_ENTRANCES");
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertTrue(result.items().getFirst().getFlags().has(RoomFlags.FEW_ENTRANCES));
+    }
+
+    /**
+     * The upstream file ends without a final newline after its last {@code D:} line; the lexer's
+     * {@code REST_OF_LINE} mode ends at end of file instead.
+     */
+    @Test
+    void aFinalMapRowWithoutANewlineStillLoads() throws IOException {
+        String path = tempFile("no-newline.txt", "record-count:1\n" + GOOD_RECORD);
+
+        ParseResult<Vault> result = new VaultReader().parseWithResults(path);
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals("###", result.items().getFirst().getMap().getLast());
+    }
+
+    /**
+     * A hard grammar error fails closed: {@link VaultReader#parse} hands back an empty list, the
+     * same as for a file with no vaults, while {@link VaultReader#parseWithResults} says why.
+     */
+    @Test
+    void parseCannotTellAHardErrorFromAnEmptyFile() throws IOException {
+        String path = tempFile("garbage.txt", "record-count:1\nthis is not a vault\n");
+        VaultReader reader = new VaultReader();
+
+        assertTrue(reader.parse(path).isEmpty());
+        assertTrue(reader.parseWithResults(path).hasErrors());
     }
 }

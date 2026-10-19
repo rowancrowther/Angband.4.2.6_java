@@ -1258,3 +1258,225 @@ Found 2026-10-19 during `/port GameConstantsReader.java`. Not fixed.
 
 - None on the shipped data: every value in `constants.txt` outside the two critical handlers is zero or more.
 - A negative constant in a modded file loads and flows into the game, where C refuses the file.
+
+## `vault/VaultAssembler.java`: zero rows or columns, a case-insensitive `type:` and a row-count check differ from C, and a bad record is dropped instead of stopping the load
+
+Found 2026-10-19 during `/port VaultReader.java`. Not fixed.
+
+### What C does
+
+- `parse_vault_rows` and `parse_vault_columns` in `generate.c` refuse only a value over the room builder's `max_height` or `max_width`
+  (`PARSE_ERROR_VAULT_TOO_BIG`), so `rows:0` and `columns:0` are accepted.
+- The `type:` string is matched against `room_builders[i].name` with `streq`, so `lesser vault` is `PARSE_ERROR_NO_ROOM_FOUND`.
+- `parse_vault_d` refuses a `D:` line whose length is not `columns`, and nothing checks that there are `rows` of them.
+- `parse_vault_flags` stops at the first name `grab_flag` rejects and returns `PARSE_ERROR_INVALID_FLAG`.
+- Every `PARSE_ERROR_*` from a data file is fatal at start-up, through `quit("Cannot initialize vaults")`.
+
+### What Java does
+
+- `VaultAssembler.java`: `rows <= 0` and `columns <= 0` are refused as well as anything over the cap, so a zero-sized vault is dropped.
+- `VaultAssembler.java`: the `type:` text goes through `toUpperCase()` before the `switch`, so `lesser vault` resolves to `LESSER_VAULT`.
+- `VaultAssembler.java`: the number of `D:` lines must equal `rows`, and a mismatch in either direction drops the record with one "bad map"
+  message.
+- `VaultAssembler.java`: every bad flag in a record is reported, then the record is dropped.
+- A dropped record is a soft error, so the other vaults load; `DungeonLoader.loadVaultTemplates` stops start-up only when the result has
+  errors and no vaults.
+- `VaultReaderTest.zeroRowsAreRefusedHereWhereCAcceptsThem`, `theVaultTypeNameIsMatchedCaseInsensitively`, `tooFewMapRowsDropsTheRecord` and
+  `unknownFlagsDropTheRecordAndReportEveryBadFlag` pin them.
+
+### Impact
+
+- None on the shipped data: all 162 records have a positive size within their cap, a type spelt as C spells it, the right number of
+  rows, and only `FEW_ENTRANCES`.
+- A modded `vault.txt` with a zero-sized vault or a ragged layout loads without that vault in Java, where C refuses the file or, for a short
+  row count, leaves the tail of `vault.text` unwritten.
+
+## `roomprofile/RoomProfileAssembler.java`: zero rows or columns, a map-shape check C does not make, an unbounded `type:`, `rating:` and `doors:`, and a Javadoc that gets the order wrong
+
+Found 2026-10-19 during `/port RoomProfileReader.java`. Not fixed.
+
+### What C does
+
+- `parse_room_height` and `parse_room_width` in `generate.c` refuse only a value over the `room template` builder's `max_height` or
+  `max_width` (`PARSE_ERROR_VAULT_TOO_BIG`), so `rows:0` and `columns:0` are accepted.
+- `parse_room_d` appends each `D:` line to `t->text` with no length check, and nothing checks that there are `rows` of them.
+- `typ`, `rat`, `hgt`, `wid`, `dor` and `tval` in `struct room_template` are `uint8_t`, so a value over 255 wraps (`type:257` is stored as 1)
+  and a negative `rating:` wraps too (`-1` is 255).
+- `parse_room_flags` stops at the first name `grab_flag` rejects and returns `PARSE_ERROR_INVALID_FLAG`.
+- `parse_room_name` points each new record's `next` at the previous head, so `room_templates` runs from the last template in the file to the
+  first.
+- Every `PARSE_ERROR_*` from a data file is fatal at start-up, through `quit("Cannot initialize room templates")`.
+
+### What Java does
+
+- `RoomProfileAssembler.java`: `rows < 1` and `columns < 1` are refused as well as anything over the cap, so a zero-sized template is
+  dropped.
+- `RoomProfileAssembler.java`: every `D:` line must be exactly `columns` long and there must be exactly `rows` of them; each wrong-length
+  line is reported, then the record is dropped, and a wrong count drops it with one "wrong number of rows" message.
+- `RoomProfileAssembler.java`: `type`, `rating` and `doors` are stored as `int` with no range check, so `type:257` keeps 257, where the C
+  field would hold 1. (A negative `type:` or `doors:` is the lexer's doing, see `docs/grammar_issues.md`.)
+- `RoomProfileAssembler.java`: every bad flag in a record is reported, then the record is dropped.
+- `RoomProfileAssembler.java`: `assemble` prepends each template with `addFirst`, which matches C's reverse order, but its Javadoc says the
+  result is "in file order".
+- `RoomProfileReaderTest.columnsOutsideTheTemplateBoundsAreRejectedAtBothEnds`, `aRaggedMapRowDropsTheRecordAndReportsEveryBadRow`,
+  `tooFewMapRowsDropsTheRecord`, `anUnknownFlagDropsTheRecordAndReportsEveryBadFlag`, `aTypeThatDoesNotFitAByteIsKeptHereWhereCTruncatesIt`
+  and `theResultRunsInReverseFileOrderAsInC` pin them.
+
+### Impact
+
+- None on the shipped data: all 500 records have a positive size within 11 by 33, rectangular maps with the right number of rows, a
+  `type:` of 1, and only `FEW_ENTRANCES`.
+- A modded `room_template.txt` with a zero-sized or ragged template loads without that template in Java, where C refuses the file for an oversized
+  one and loads a ragged or zero-sized one. A `type:` over 255 is kept, so it never matches the builder's type 1 where C's wrapped value
+  might.
+
+## `dungeonprofile/DungeonProfileAssembler.java` and `RoomAssembler.java`: absent lines default to -1, `pit:01` is not a pit, names are never checked, and a bad tunnel or streamer keeps the profile
+
+Found 2026-10-19 during `/port DungeonProfileReader.java`. Not fixed.
+
+### What C does
+
+- `parse_profile_name` makes each record with `mem_zalloc`, so an absent `params:` or `alloc:` leaves `block_size`, `dun_rooms`, `dun_unusual`,
+  `max_rarity` and `alloc` at 0. The weighted pick in `generate.c` skips any profile with `alloc <= 0`, and only `alloc == -1` makes the
+  moria and labyrinth profiles reachable by the hard-coded tests.
+- `parse_profile_room` stores `r->pit = (parser_getint(p, "pit") == 1)`, and `parser_getint` is `strtol` in base zero, so `pit:01` is 1.
+- `parse_profile_name` returns `PARSE_ERROR_NO_BUILDER_FOUND` when the name is not in `cave_builders[]`, and `parse_profile_room` returns
+  `PARSE_ERROR_NO_ROOM_FOUND` when the room name is not in `room_builders[]`. Both are fatal at start-up.
+- A malformed number in any line is fatal for the whole file.
+
+### What Java does
+
+- `DungeonProfileAssembler.java`: `blockSize`, `rooms`, `unusual` and `rarity` start at -1 and keep it when there is no `params:` line, and
+  `alloc` is -1 when there is no `alloc:` line. A modded `moria` or `labyrinth` with no `alloc:` is therefore selectable here and not in C.
+- `RoomAssembler.java`: `pit` is `record.pit().equals("1")`, so `pit:01` is false.
+- `DungeonProfileAssembler.java` never checks `profileName`, and `RoomAssembler.java` calls `RoomType.getRoomTypeFromName` and uses the
+  result without a null check, so an unknown name loads with no error (a room keeps a null `RoomType`).
+- `DungeonProfileAssembler.java`: a `params:`, `min-level:` or `alloc:` value that will not convert drops the profile, but a bad `tunnel:`
+  or `streamer:` value is reported by its sub-assembler and the profile is kept with a null `tun` or `str`. A bad `room:` value drops only
+  that room.
+- `DungeonProfileAssembler.java`: `roomProfiles` is initialized to a new list and straight away overwritten, and the class Javadoc cites
+  C line numbers (`generate.c:111-204`) and says a failed conversion costs "its own profile and no more", which is not true of the
+  tunnel and streamer lines.
+- `DungeonProfileReaderTest.anAbsentAllocIsMinusOneHereWhereCLeavesZero`, `absentDirectivesLeaveSentinelsRatherThanZeroes`,
+  `aPitWrittenWithALeadingZeroIsNotAPitHereWhereCReadsOne`, `anUnknownProfileNameLoadsHereWhereCRefusesIt`,
+  `unknownRoomNameLeavesANullRoomTypeAndNoError` and `anOverflowingTunnelKeepsTheProfileWithoutATunnel` pin them.
+
+### Impact
+
+- None on the shipped data: all 9 profiles give `params:` and `alloc:`, every name is a real builder, and the only pit is written `1`.
+- A modded file that omits `alloc:` or `params:`, writes `pit:01`, or misspells a profile or room name loads without complaint in Java and
+  would build a level with the wrong weight, a missing pit flag or a null builder, where C refuses the file or leaves the weight at 0.
+
+## `chesttrap/ChestTrapAssembler.java`: `destroy:` and `magic:` accept only `1`, and the file is rejected whole where C cannot reject it
+
+Found 2026-10-19 during `/port ChestTrapReader.java`. Not fixed.
+
+### What C does
+
+- `parse_chest_trap_destroy` and `parse_chest_trap_magic` read an int and set the flag for any non-zero value.
+- Nothing in `obj-chest.c` checks the order, the levels or the count of the records. The rules at the top of `chest_trap.txt` (first
+  record is the no-trap, levels ascend, at most fourteen traps) are comments only, and the pval bit is just the doubling in
+  `parse_chest_trap_name`.
+- A level that will not convert is a fatal parse error for the whole file, as here.
+
+### What Java does
+
+- `ChestTrapAssembler.java`: `destroy` and `magic` are `"1".equals(...)`, so `destroy:2` or `magic:3` give false.
+- `ChestTrapAssembler.java`: the records must match `ChestTrapCode.values()` position by position, levels must not descend, and any
+  failure (or a short file) returns an empty list, so a modded file with a reordered, missing or extra trap loses every trap, where C
+  loads whatever the file holds.
+- `ChestTrapAssembler.java`: the `record.effect() == null` branch can never run, because the grammar's `@init` always supplies a list.
+- `ChestTrapReaderTest.aNonZeroDestroyOtherThanOneIsFalseHereWhereCSetsIt`, `aNonZeroMagicOtherThanOneIsFalseHereWhereCSetsIt`,
+  `codesOutOfEnumOrderAreRejected`, `levelsThatDescendAreRejected` and `aValidPrefixOfTheFileIsStillRejectedAsIncomplete` pin them.
+
+### Impact
+
+- None on the shipped data: `destroy:` and `magic:` appear only as `1`, and the seven records are in `ChestTrapCode` order with ascending
+  levels.
+- A modded file with `destroy:2` loses the destroy behaviour; one with an extra or reordered trap is refused whole.
+
+## `playertimed/PlayerTimedAssembler.java`: a one-character down message is dropped, `lower-bound:` is unchecked, unknown `flags:` tokens are ignored, `fail:` lines run in file order, and `exact` is a string test
+
+Found 2026-10-19 during `/port PlayerTimedReader.java`. Not fixed.
+
+### What C does
+
+- `parse_player_timed_grade` nulls the `name` and `up_msg` when they are one character long (a dummy such as `-`), and copies
+  `down_msg` as it stands, whatever its length.
+- `parse_player_timed_effect_lower_bound` refuses a bound below 0 or above 32767 (`PARSE_ERROR_INVALID_VALUE`), because the duration
+  is stored as an `int16_t`.
+- `parse_player_timed_effect_flags` accepts only `NONSTACKING` and refuses any other token (`PARSE_ERROR_INVALID_FLAG`).
+- `parse_player_timed_fail` links each new condition in at the head of the list, so `player_inc_check` walks the `fail:` lines from the
+  last to the first.
+- `parse_player_timed_flag_synonym` reads `exact` as an int and tests `!= 0`.
+
+### What Java does
+
+- `PlayerTimedAssembler.java`: `msgDown` is `length() > 1 ? msgDown : null`, so a one-character down message such as `:X` becomes null.
+- `PlayerTimedAssembler.java`: `lowerBound` is whatever `Integer.parseInt` returns, so `lower-bound:40000` and `lower-bound:-1` load.
+- `PlayerTimedAssembler.java`: the `flags` loop looks for `NONSTACKING` and ignores every other token, so `flags:WIBBLE` loads clean.
+- `PlayerTimedAssembler.java`: `fails` is appended to in file order, so the list runs first line to last. A live resist check calls
+  `equip_learn_element` before it tests, so the order is observable (see the disabled
+  `PlayerTimedReaderTest.failLinesAreWalkedInTheOrderCBuildsThem`).
+- `PlayerTimedAssembler.java`: `exactlySyn` is `!record.flagSynonymValue().equals("0")`, so `flag-synonym:AFRAID:00` is exact where C
+  reads 0.
+- `PlayerTimedReaderTest.aOneCharacterDownMessageIsKeptByCAndDroppedHere`, `aLowerBoundAbove32767LoadsHereWhereCRefusesIt`,
+  `aNegativeLowerBoundLoadsHereWhereCRefusesIt`, `anUnknownFlagsTokenIsIgnoredHereWhereCRefusesIt` and
+  `aFlagSynonymExactWrittenAsDoubleZeroIsExactHereWhereCReadsZero` pin them.
+
+### Impact
+
+- None on the shipped data: no `grade:` gives a down message of exactly one character (six give one at all, five of several characters and one empty), `lower-bound:1` appears once,
+  `flags:NONSTACKING` appears once, and `exact` is written `0` or `1`.
+- A modded file with a one-character down message loses it, one with an out-of-range lower bound loads a value the `int16_t` duration
+  cannot hold in C, and a misspelt flag goes unreported. The `fail:` order only matters to which item is learned first, and only
+  for effects with more than one `fail:` line (`POISONED` is the one that does).
+
+## `visuals/VisualsCycleAssembler.java` and `VisualsFlickerAssembler.java`: no caps on groups, cycles or steps, a file with no `cycle:` block loads empty, and flicker cycles keep every step listed
+
+Found 2026-10-19 during `/port VisualsReader.java`. Not fixed.
+
+### What C does
+
+- `visuals_parse_context_new` in `ui-visuals.c` sizes the parse context from three caps: `VISUALS_GROUPS_MAX` (8) group names,
+  `VISUALS_CYCLES_MAX` (64) cycles per group, and `VISUALS_STEPS_MAX` (32) steps per cycle. The cycle list holds `8 * 64 + 1` entries
+  and starts at 1.
+- `visuals_parse_cycle_color` returns `PARSE_ERROR_TOO_MANY_ENTRIES` for a 33rd colour on one cycle, and `visuals_parse_cycle` does the
+  same for a 513th `cycle:` line. Both are fatal.
+- A ninth distinct group name finds no slot, and a 65th distinct cycle name in a group finds no free slot. Both are dropped without an
+  error, so those cycles never reach `visuals_parse_context_convert`.
+- A cycle with the same group and name as an earlier one replaces it.
+- `visuals_file_parser_finish` returns `PARSE_ERROR_INTERNAL` when the cycler is NULL, and `visuals_cycler_new(0)` is NULL, so a file with
+  no `cycle:` block fails the load and `ui_visuals_module_init` quits.
+- `visuals_flicker_new(MAX_COLORS, 3)` gives every colour a cycle of exactly three steps. `visuals_flicker_set_color` ignores a step
+  index of 3 or more, and a colour with fewer than three lines keeps colour 0 (dark) in the remaining steps.
+
+### What Java does
+
+- `VisualsCycleAssembler.java`: `byGroup.computeIfAbsent(group, ...).put(name, ...)` has no limit, so 9 groups, 65 cycles in a group,
+  513 cycles and 33 steps all load. A repeated group and name replaces the earlier cycle, as C does.
+- `VisualsCycleAssembler.java`: an empty record list returns a one-element list holding an empty `VisualsCycler` with no error, so a
+  flicker-only file loads. `MonsterDataLoader.loadVisualTables` documents that C fails here, but nothing on the Java side can, because
+  the cycler is never null.
+- `VisualsFlickerAssembler.java`: `byAttr` holds one `ColourCycle` per `flicker:` block with every step listed, and only for the base
+  colours the file names. A colour with five lines keeps five steps, one with one line keeps one, and an unlisted colour has no entry.
+- `VisualsReaderTest.aThirtyThirdCycleColourLoadsHereWhereCRefusesTheFile`, `aNinthGroupIsKeptHereWhereCDropsItsCycles`,
+  `aSixtyFifthCycleInAGroupIsKeptHereWhereCDropsIt`, `aFiveHundredAndThirteenthCycleBlockLoadsHereWhereCRefusesTheFile` and
+  `flickerOnlyFileYieldsAnEmptyCyclerButNoErrors` pin the cycler side. The flicker side has no test, because `FlickerTable` has no
+  accessor, and `ColourCycle.colourCycle` returns `null` for an empty step list, which the assembler would store; the grammar keeps
+  that from happening on a real file.
+
+### Impact
+
+- None on the shipped data: `visuals.txt` has 2 groups, 10 and 28 cycles, at most 16 steps per cycle and exactly 3 per flicker colour,
+  all 28 flicker base colours, and both kinds of block.
+- A modded file that goes past a cap loads in Java where C refuses it (a 33rd step, a 513th block) or silently drops the extra (a ninth
+  group, a 65th cycle). A modded file with only `flicker:` blocks loads here and stops start-up in C.
+- A flicker cycle with other than three steps will show a different number of frames than C once the runtime lookup exists, and an
+  unlisted base colour will have no cycle where C's reads dark.
+
+### Question for Rowan
+
+- Should the caps be enforced, or is "no limit" the intended Java behaviour? Refusing a 33rd step and a file with no `cycle:` block
+  would match C; the dropped ninth group and 65th cycle are quiet data loss in C that Java need not copy. Whichever is chosen, the
+  flicker table will want a three-step rule when `FlickerTable` gets its read path.

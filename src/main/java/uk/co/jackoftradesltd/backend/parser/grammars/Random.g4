@@ -52,6 +52,16 @@ grammar Random;
     import uk.co.jackoftradesltd.middle.numerics.Random;
 }
 
+@parser::members {
+    /** The value of a NUMBER token, or -1 if ANTLR conjured it during     
+      error recovery. */
+    private static int numberOrMissing(Token t) {
+        String text = t.getText();
+        return text.equals("<missing NUMBER>") ? -1 
+                                               : Integer.parseInt(text);
+    }
+}
+
 // The only rule in this grammar: parses one whole dice string as
 // base/dice/sides/bonus, where each of the 4 fields is independently
 // absent, a literal NUMBER, or (base/sides only - see problems 1/2/4/5) a
@@ -68,10 +78,13 @@ dice
             String sidesStr = "";
             int sidesInit = 0;
             int mBonusInit = 0;
+            boolean negated = false;
         }
         @after {
-            if (baseStr.isEmpty() && sidesStr.isEmpty())
-                $random = new Random(baseInit, mBonusInit, diceInit, sidesInit, false);
+            if (mBonusInit == -1 || diceInit == -1 || sidesInit == -1 || mBonusInit == -1)
+                $random = null;            
+            else if (baseStr.isEmpty() && sidesStr.isEmpty())
+                $random = new Random(baseInit, mBonusInit, diceInit, sidesInit, negated);
             else if (baseStr.isEmpty())
                 $random = new Random(baseInit, mBonusInit, diceInit, sidesStr);
             else
@@ -79,114 +92,120 @@ dice
         }
         :   (base=DOLLAR_LETTER PLUS diceNum=NUMBER D sides=NUMBER M m_bonus=NUMBER {
                 baseStr = $base.getText();
-                diceInit = Integer.parseInt($diceNum.getText());
-                sidesInit = Integer.parseInt($sides.getText());
-                mBonusInit = Integer.parseInt($m_bonus.getText());
+                diceInit = numberOrMissing($diceNum);
+                sidesInit = numberOrMissing($sides);
+                mBonusInit = numberOrMissing($m_bonus);
             }
         |   base=DOLLAR_LETTER PLUS diceNum=NUMBER D sides=NUMBER {
                 baseStr = $base.getText();
-                diceInit = Integer.parseInt($diceNum.getText());
-                sidesInit = Integer.parseInt($sides.getText());
+                diceInit = numberOrMissing($diceNum);
+                sidesInit = numberOrMissing($sides);
             }
         |   MINUS base=NUMBER PLUS diceNum=NUMBER D sides=NUMBER M m_bonus=NUMBER {
-                baseInit = -1 * Integer.parseInt($base.getText());
-                diceInit = Integer.parseInt($diceNum.getText());
-                sidesInit = Integer.parseInt($sides.getText());
-                mBonusInit = Integer.parseInt($m_bonus.getText());
+                negated = true;
+                baseInit = numberOrMissing($base);
+                diceInit = numberOrMissing($diceNum);
+                sidesInit = numberOrMissing($sides);
+                mBonusInit = numberOrMissing($m_bonus);
             }
         |   base=NUMBER PLUS diceNum=NUMBER D sides=NUMBER M m_bonus=NUMBER {
-                baseInit = Integer.parseInt($base.getText());
-                diceInit = Integer.parseInt($diceNum.getText());
-                sidesInit = Integer.parseInt($sides.getText());
-                mBonusInit = Integer.parseInt($m_bonus.getText());
+                baseInit = numberOrMissing($base);
+                diceInit = numberOrMissing($diceNum);
+                sidesInit = numberOrMissing($sides);
+                mBonusInit = numberOrMissing($m_bonus);
             }
         |   MINUS base=NUMBER PLUS D sides=NUMBER M m_bonus=NUMBER {
-                baseInit = -1 * Integer.parseInt($base.getText());
+                negated = true;
+                baseInit = numberOrMissing($base);
                 diceInit = 1;
-                sidesInit = Integer.parseInt($sides.getText());
-                mBonusInit = Integer.parseInt($m_bonus.getText());
+                sidesInit = numberOrMissing($sides);
+                mBonusInit = numberOrMissing($m_bonus);
             }
         |   base=DOLLAR_LETTER PLUS D sides=NUMBER M m_bonus=NUMBER {
                 baseStr=$base.getText();
                 diceInit = 1;
-                sidesInit = Integer.parseInt($sides.getText());
-                mBonusInit = Integer.parseInt($m_bonus.getText());
+                sidesInit = numberOrMissing($sides);
+                mBonusInit = numberOrMissing($m_bonus);
             }
         |   base=NUMBER PLUS D sides=NUMBER M m_bonus=NUMBER {
-                baseInit = Integer.parseInt($base.getText());
+                baseInit = numberOrMissing($base);
                 diceInit = 1;
-                sidesInit = Integer.parseInt($sides.getText());
-                mBonusInit = Integer.parseInt($m_bonus.getText());
+                sidesInit = numberOrMissing($sides);
+                mBonusInit = numberOrMissing($m_bonus);
             }
         |   diceNum=NUMBER D sides=NUMBER M m_bonus=NUMBER {
-                diceInit = Integer.parseInt($diceNum.getText());
-                sidesInit = Integer.parseInt($sides.getText());
-                mBonusInit = Integer.parseInt($m_bonus.getText());
+                diceInit = numberOrMissing($diceNum);
+                sidesInit = numberOrMissing($sides);
+                mBonusInit = numberOrMissing($m_bonus);
             }
         |   D sides=NUMBER M m_bonus=NUMBER {
                 diceInit = 1;
-                sidesInit = Integer.parseInt($sides.getText());
-                mBonusInit = Integer.parseInt($m_bonus.getText());
+                sidesInit = numberOrMissing($sides);
+                mBonusInit = numberOrMissing($m_bonus);
             }
         |   base=NUMBER M m_bonus=NUMBER {
-                baseInit = Integer.parseInt($base.getText());
-                mBonusInit = Integer.parseInt($m_bonus.getText());
+                baseInit = numberOrMissing($base);
+                mBonusInit = numberOrMissing($m_bonus);
             }
         |   base=NUMBER PLUS M m_bonus=NUMBER {
-                baseInit = Integer.parseInt($base.getText());
-                mBonusInit = Integer.parseInt($m_bonus.getText());
+                baseInit = numberOrMissing($base);
+                mBonusInit = numberOrMissing($m_bonus);
             }
         |   base=DOLLAR_LETTER M m_bonus=NUMBER {
                 baseStr = $base.getText();
-                mBonusInit = Integer.parseInt($m_bonus.getText());
+                mBonusInit = numberOrMissing($m_bonus);
             }
         |   MINUS base=NUMBER PLUS diceNum=NUMBER D sides=NUMBER {
-                baseInit = -1 * Integer.parseInt($base.getText());
-                diceInit = Integer.parseInt($diceNum.getText());
-                sidesInit = Integer.parseInt($sides.getText());
+                negated = true;
+                baseInit = numberOrMissing($base);
+                diceInit = numberOrMissing($diceNum);
+                sidesInit = numberOrMissing($sides);
             }
         |   base=NUMBER PLUS diceNum=NUMBER D sides=NUMBER {
-                baseInit = Integer.parseInt($base.getText());
-                diceInit = Integer.parseInt($diceNum.getText());
-                sidesInit = Integer.parseInt($sides.getText());
+                baseInit = numberOrMissing($base);
+                diceInit = numberOrMissing($diceNum);
+                sidesInit = numberOrMissing($sides);
             }
         |   MINUS base=NUMBER PLUS D sides=NUMBER {
-                baseInit = -1 * Integer.parseInt($base.getText());
+                negated = true;
+                baseInit = numberOrMissing($base);
                 diceInit = 1;
-                sidesInit = Integer.parseInt($sides.getText());
+                sidesInit = numberOrMissing($sides);
             }
         |   base=NUMBER PLUS D sides=NUMBER {
-                baseInit = Integer.parseInt($base.getText());
+                baseInit = numberOrMissing($base);
                 diceInit = 1;
-                sidesInit = Integer.parseInt($sides.getText());
+                sidesInit = numberOrMissing($sides);
             }
         |   diceNum=NUMBER D sides=NUMBER {
-                diceInit = Integer.parseInt($diceNum.getText());
-                sidesInit = Integer.parseInt($sides.getText());
+                diceInit = numberOrMissing($diceNum);
+                sidesInit = numberOrMissing($sides);
             }
         |   D sides=NUMBER {
                 diceInit = 1;
-                sidesInit = Integer.parseInt($sides.getText());
+                sidesInit = numberOrMissing($sides);
             }
         |   base=DOLLAR_LETTER {
                 baseStr = $base.getText();
             }
         |   base=NUMBER {
-                baseInit = Integer.parseInt($base.getText());
+                baseInit = numberOrMissing($base);
             }
         |   MINUS base=NUMBER {
-                baseInit = -1 * Integer.parseInt($base.getText());
+                negated = true;
+                baseInit = numberOrMissing($base);
             }
         |   diceNum=NUMBER D sides=DOLLAR_LETTER {
-                diceInit = Integer.parseInt($diceNum.getText());
+                diceInit = numberOrMissing($diceNum);
                 sidesStr = $sides.getText();
             }
         |   MINUS diceNum=NUMBER D sides=NUMBER {
-                diceInit = -1 * Integer.parseInt($diceNum.getText());
-                sidesInit = Integer.parseInt($sides.getText());
+                negated = true;
+                diceInit = numberOrMissing($diceNum);
+                sidesInit = numberOrMissing($sides);
             }
         |   M m_bonus=NUMBER{
-                mBonusInit = Integer.parseInt($m_bonus.getText());
+                mBonusInit = numberOrMissing($m_bonus);
             }) EOF
         ;
 

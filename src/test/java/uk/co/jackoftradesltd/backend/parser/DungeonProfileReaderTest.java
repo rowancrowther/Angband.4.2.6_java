@@ -400,7 +400,7 @@ class DungeonProfileReaderTest {
     /**
      * A gap in the port, pinned here so it is noticed if it is ever closed: an unknown room name
      * silently yields a {@link RoomProfile} with a null {@link RoomType}, with nothing appended to
-     * the errors. C's {@code parse_profile_room} (generate.c:150) instead fails the parse outright
+     * the errors. C's {@code parse_profile_room} instead fails the parse outright
      * when the name matches no entry in {@code room_builders[]}.
      */
     @Test
@@ -497,5 +497,267 @@ class DungeonProfileReaderTest {
     void aMissingFileThrows() {
         assertThrows(IOException.class,
                 () -> new DungeonProfileReader().parseWithResults(tempDir.resolve("absent.txt").toString()));
+    }
+
+    // ---- C-derived: the shipped file, profile by profile -------------------
+
+    /**
+     * Every profile of the shipped file against its directives in the C file's own
+     * {@code dungeon_profile.txt}: {@code name}, {@code params}, {@code min-level} (0 when the line
+     * is absent, as {@code mem_zalloc} leaves it) and {@code alloc}, and the number of
+     * {@code room:} lines each carries (0, 0, 0, 14, 20, 12, 20, 0 and 0).
+     */
+    @Test
+    void everyShippedProfileMatchesTheCFileLineForLine() throws IOException {
+        List<CaveProfile> profiles = new DungeonProfileReader().parseWithResults(REAL_FILE).items();
+
+        // block, rooms, unusual, rarity, min-level, alloc, room lines
+        int[][] expected = {
+                {1, 0, 200, 0, 0, -1, 0},      // town
+                {1, 0, 200, 0, 0, -1, 0},      // labyrinth
+                {1, 0, 200, 0, 15, 10, 0},     // cavern
+                {11, 50, 200, 2, 0, 90, 14},   // classic
+                {1, 50, 300, 2, 0, 97, 20},    // modified
+                {1, 50, 250, 2, 0, -1, 12},    // moria
+                {1, 50, 500, 2, 20, 1, 20},    // lair
+                {1, 0, 200, 0, 20, 1, 0},      // gauntlet
+                {1, 0, 200, 0, 50, 1, 0},      // hard centre
+        };
+        assertEquals(expected.length, profiles.size());
+        for (int i = 0; i < expected.length; i++) {
+            CaveProfile p = profiles.get(i);
+            int[] e = expected[i];
+            int index = i;
+            assertEquals(e[0], p.getBlockSize(), () -> p.getName() + " block (index " + index + ")");
+            assertEquals(e[1], p.getDunRooms(), () -> p.getName() + " rooms");
+            assertEquals(e[2], p.getDunUnusual(), () -> p.getName() + " unusual");
+            assertEquals(e[3], p.getMaxRarity(), () -> p.getName() + " rarity");
+            assertEquals(e[4], p.getMinLevel(), () -> p.getName() + " min-level");
+            assertEquals(e[5], p.getAlloc(), () -> p.getName() + " alloc");
+            assertEquals(e[6], p.getRoomProfiles().size(), () -> p.getName() + " room count");
+        }
+    }
+
+    /**
+     * The tunnel and streamer lines of the three profiles that differ from {@code classic}: moria
+     * has {@code jct} 30 where the others have 50, and the town has a streamer but no tunnel,
+     * while labyrinth, cavern, gauntlet and hard centre have neither.
+     */
+    @Test
+    void tunnelAndStreamerLinesAreAttachedToTheRightProfiles() throws IOException {
+        List<CaveProfile> profiles = new DungeonProfileReader().parseWithResults(REAL_FILE).items();
+
+        assertEquals(30, byName(profiles, "moria").getTun().getJct());
+        assertEquals(50, byName(profiles, "modified").getTun().getJct());
+        assertEquals(50, byName(profiles, "lair").getTun().getJct());
+        assertEquals(90, byName(profiles, "lair").getStr().getMc());
+
+        for (String bare : List.of("labyrinth", "cavern", "gauntlet", "hard centre")) {
+            assertNull(byName(profiles, bare).getTun(), bare + " has no tunnel: line");
+            assertNull(byName(profiles, bare).getStr(), bare + " has no streamer: line");
+        }
+    }
+
+    /**
+     * Rooms whose names hold spaces and parentheses, and the rarity/cutoff fields on the last room
+     * of moria, are read from the right columns: {@code room:Greater vault (new):0:44:66:35:0:0:100}
+     * and {@code room:monster pit:0:11:33:5:1:2:12}.
+     */
+    @Test
+    void roomNamesWithSpacesAndParenthesesAreReadWhole() throws IOException {
+        List<RoomProfile> rooms =
+                byName(new DungeonProfileReader().parseWithResults(REAL_FILE).items(), "moria").getRoomProfiles();
+
+        RoomProfile second = rooms.get(1);
+        assertEquals("Greater vault (new)", second.getName());
+        assertEquals(RoomType.NEW_GREATER_VAULT, second.getRoomType());
+        assertEquals(100, second.getCutoff());
+
+        RoomProfile pit = rooms.stream().filter(RoomProfile::isPit).findFirst().orElseThrow();
+        assertEquals("monster pit", pit.getName());
+        assertEquals(12, pit.getCutoff());
+        assertEquals(2, pit.getRarity());
+
+        assertEquals("moria room", rooms.get(rooms.size() - 2).getName());
+    }
+
+    // ---- Where the Java and C differ, pinned so a change is noticed --------
+
+    /**
+     * C: an absent {@code alloc:} leaves the field at 0, which the weighted pick skips ({@code alloc
+     * <= 0}). Java: the assembler defaults it to -1, which means "reachable by the hard-coded
+     * checks", so a modded {@code moria} or {@code labyrinth} with no {@code alloc:} line would be
+     * selectable here and not in C. The shipped file always gives {@code alloc:}.
+     */
+    @Test
+    void anAbsentAllocIsMinusOneHereWhereCLeavesZero() throws IOException {
+        String path = tempFile("no-alloc.txt", String.join("\n",
+                "record-count:1",
+                "name:moria",
+                "params:1:50:250:2",
+                ""));
+
+        ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(-1, result.items().getFirst().getAlloc(), "C would hold 0");
+    }
+
+    /**
+     * C: {@code r->pit = (parser_getint(p, "pit") == 1)}, and {@code parser_getint} is
+     * {@code strtol} in base 0, so {@code pit:01} is 1 and the room is a pit. Java compares the
+     * text with {@code "1"}, so {@code 01} is not a pit.
+     */
+    @Test
+    void aPitWrittenWithALeadingZeroIsNotAPitHereWhereCReadsOne() throws IOException {
+        String path = tempFile("pit-01.txt", String.join("\n",
+                "record-count:1",
+                "name:classic",
+                "alloc:1",
+                "room:monster pit:0:11:33:5:01:2:8",
+                ""));
+
+        ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertFalse(result.items().getFirst().getRoomProfiles().getFirst().isPit(), "C would say true");
+    }
+
+    /**
+     * C: {@code parse_profile_name} fails with {@code PARSE_ERROR_NO_BUILDER_FOUND} when the name
+     * is not in {@code cave_builders[]}. Java loads the profile under whatever name it is given.
+     */
+    @Test
+    void anUnknownProfileNameLoadsHereWhereCRefusesIt() throws IOException {
+        String path = tempFile("unknown-profile.txt", String.join("\n",
+                "record-count:1",
+                "name:no such profile",
+                "alloc:1",
+                ""));
+
+        ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals("no such profile", result.items().getFirst().getName());
+    }
+
+    /**
+     * C refuses a malformed number in any line (a fatal parse error), so none of the file loads.
+     * Here a tunnel or streamer sub-record that will not convert is reported but its profile is
+     * kept, with a null {@code tun}/{@code str}, where an overflowing {@code params:} value drops
+     * the whole profile (see {@link #anOverflowingParamsValueDropsOnlyItsOwnProfile()}).
+     */
+    @Test
+    void anOverflowingTunnelKeepsTheProfileWithoutATunnel() throws IOException {
+        String path = tempFile("overflow-tunnel.txt", String.join("\n",
+                "record-count:1",
+                "name:classic",
+                "params:11:50:200:2",
+                "tunnel:99999999999:30:15:25:50",
+                "alloc:90",
+                ""));
+
+        ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
+
+        assertEquals(1, result.items().size());
+        assertNull(result.items().getFirst().getTun());
+        assertTrue(result.errors().stream().anyMatch(e -> e.contains("99999999999")), result.errors()::toString);
+    }
+
+    /**
+     * C: a file with no profiles is accepted ({@code profile_max} 0). The grammar's
+     * {@code (profile)+} makes it a syntax error here, so the header with nothing after it gives
+     * no profiles and an error.
+     */
+    @Test
+    void aFileWithNoProfilesIsRefusedHereWhereCLoadsAnEmptyList() throws IOException {
+        String path = tempFile("no-profiles.txt", "record-count:0\n");
+
+        ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.items().isEmpty(), result.items()::toString);
+    }
+
+    /**
+     * C: every directive but {@code name:} needs a current record
+     * ({@code PARSE_ERROR_MISSING_RECORD_HEADER}). The grammar agrees, as the profile rule starts
+     * with {@code name}, so a leading {@code params:} loses the file.
+     */
+    @Test
+    void aDirectiveBeforeAnyNameFailsClosedAsInC() throws IOException {
+        String path = tempFile("headless.txt", String.join("\n",
+                "record-count:1",
+                "params:1:0:200:0",
+                "name:town",
+                "alloc:-1",
+                ""));
+
+        ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.items().isEmpty(), result.items()::toString);
+    }
+
+    /**
+     * C: {@code parser_getint} reads in base 0 and ignores anything after the value up to the
+     * next {@code :}, and the parser skips leading whitespace, so {@code alloc:0x10}, an indented
+     * {@code alloc:5} and {@code alloc:5:junk} are all accepted. Each is a lexer or syntax error
+     * here and costs the whole file.
+     */
+    @Test
+    void hexIndentedAndTrailingFieldValuesAreRefusedHereWhereCAcceptsThem() throws IOException {
+        for (String line : List.of("alloc:0x10", "  alloc:5", "alloc:5:junk")) {
+            String path = tempFile("odd.txt", String.join("\n",
+                    "record-count:1",
+                    "name:odd",
+                    line,
+                    ""));
+
+            ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
+
+            assertTrue(result.hasErrors(), line);
+            assertTrue(result.items().isEmpty(), line);
+        }
+    }
+
+    /**
+     * C: a {@code params:} line with a field missing is {@code PARSE_ERROR_MISSING_FIELD}, which is
+     * fatal. The grammar agrees: three fields where four are needed is a syntax error.
+     */
+    @Test
+    void aParamsLineWithAFieldMissingFailsClosedAsInC() throws IOException {
+        String path = tempFile("short-params.txt", String.join("\n",
+                "record-count:1",
+                "name:short",
+                "params:1:0:200",
+                ""));
+
+        ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.items().isEmpty(), result.items()::toString);
+    }
+
+    /**
+     * The profile order is the file's, whatever the names: C prepends then fills the array from
+     * the far end, so {@code cave_profiles[0]} is the first {@code name:} in the file.
+     */
+    @Test
+    void profilesComeBackInFileOrderWhateverTheirNames() throws IOException {
+        String path = tempFile("order.txt", String.join("\n",
+                "record-count:3",
+                "name:zeta",
+                "alloc:1",
+                "name:alpha",
+                "alloc:1",
+                "name:mid",
+                "alloc:1",
+                ""));
+
+        ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
+
+        assertEquals(List.of("zeta", "alpha", "mid"),
+                result.items().stream().map(CaveProfile::getName).toList());
     }
 }

@@ -1879,3 +1879,418 @@ Found 2026-10-19 during `/port GameConstantsReader.java`. Not fixed.
   whole file, and the lexer message does not say why.
 - The header comments of both grammars still cite C line numbers (`init.c:1051`, `init.c:949-980`), and the lexer's `GC_MSG` comment
   names `GameConstantsReader` as the place that checks the message, which is `GameConstantsAssembler`.
+
+## `QuestGrammar.g4` and `QuestLexer.g4`: the grammar fixes the directive order and count, and the lexer shares the comment, indent and number differences
+
+Found 2026-10-19 during `/port QuestReader.java`. Not fixed.
+
+### What C does
+
+- `init_parse_quest` in `player-quest.c` registers four independent one-line shapes: `name str`, `level uint`, `race str` and `number uint`.
+  `parse_quest_name` allocates a new quest and makes it current; the other three fill in the current quest, so they can come in any order
+  after a `name:`, can repeat (the last wins), and can be left out (the field stays zero, and a missing `race:` leaves a null race).
+  A `level:`, `race:` or `number:` before any `name:` trips an `assert`.
+- `finish_parse_quest` accepts any number of quests, including none, and sets `z_info->quest_max` to the count.
+- `parser_parse` in `parser.c` skips leading whitespace and a `#` comment with or without a final newline, tokenizes an `uint` on `:` so
+  anything after the value is ignored, and reads an `uint` with `strtoul` in base zero, so `0x10` is 16 and `010` is 8. A `str` is the rest
+  of the line, and an empty one is `PARSE_ERROR_MISSING_FIELD`.
+
+### What Java does
+
+- `QuestGrammar.g4`: `file` is `recordCount (quest)+ EOF` and `quest` is `name level race number` in that order. Out of order, a missing
+  or repeated directive, or a header with no quest after it is a syntax error, and `GrammarDriver.run` returns no quests at all.
+- `QuestLexer.g4` and `CommentsAndEol.g4`: an indented line and a last-line comment with no newline are lexer errors, a field after the value
+  is a syntax error, `0x10` is a syntax error and `010` is read as 10 (the assembler documents the decimal-only choice).
+- The shared `NAME` and `RACE` modes take the rest of the line after `name:` and `race:` with colons kept, as C does, and an empty value is
+  refused by both.
+- `QuestReaderTest.directivesInAnotherOrderAreRefusedHereWhereCAcceptsThem`, `aMissingDirectiveIsRefusedHereWhereCLeavesTheFieldZero`,
+  `aRepeatedDirectiveIsRefusedHereWhereCTakesTheLastOne`, `aFileWithNoQuestsIsRefusedHereWhereCLoadsAnEmptyList`,
+  `aFieldAfterTheValueIsRefusedHereWhereCIgnoresIt`, `anIndentedLineIsRefusedHereWhereCSkipsTheIndent`,
+  `aFinalCommentWithoutANewlineIsRefusedHereWhereCSkipsIt`, `aHexadecimalLevelIsRefusedHereWhereCReadsBaseZero` and
+  `aLeadingZeroLevelIsReadAsDecimalWhereCReadsItAsOctal` pin them.
+
+### Impact
+
+- None on the shipped data: `lib/gamedata/quest.txt` has the header and two records in the grammar's order, with no indents and a newline
+  after every line.
+- A hand-edited or modded `quest.txt` that reorders, omits or repeats a line, or empties the list, loses the whole file in Java, and
+  `WorldDataLoader.loadQuests` then stops start-up. C loads such a file, with zero fields where lines are missing.
+
+## `VaultGrammar.g4` and `VaultLexer.g4`: the grammar fixes the directive order and count, `min-depth:` and `max-depth:` take a minus sign, and the lexer shares the comment, indent and number differences
+
+Found 2026-10-19 during `/port VaultReader.java`. Not fixed.
+
+### What C does
+
+- `init_parse_vault` in `generate.c` registers nine independent one-line shapes: `name str`, `type str`, `rating int`, `rows uint`,
+  `columns uint`, `min-depth uint`, `max-depth uint`, `flags str` and `D str`. `parse_vault_name` allocates a new vault and makes it
+  current; the other eight fill in the current vault, so they can come in any order after a `name:`, can repeat, and can be left out.
+  A directive before any `name:` is `PARSE_ERROR_MISSING_RECORD_HEADER`.
+- `parse_vault_rows` and `parse_vault_columns` look the vault's `type` up in `room_builders`, so they do need `type:` first, but nothing
+  else is order-dependent except the `D:` length check, which needs `columns:`.
+- `run_parse_vault` accepts a file with no vaults and leaves `vaults` null.
+- `parser_parse` in `parser.c` skips leading whitespace and a `#` comment with or without a final newline, tokenizes an `uint` on `:` so
+  anything after the value is ignored, and reads an `uint` with `strtoul` in base zero, so `0x10` is 16. It fails with
+  `PARSE_ERROR_NOT_NUMBER` when no digits were read or when the token starts with `-`.
+
+### What Java does
+
+- `VaultGrammar.g4`: `file` is `recordCount (profileRecord)+ EOF` and `profileRecord` is `name type rating rows columns minDepth maxDepth`,
+  any number of `flag`, then one or more `d`, in that order. Out of order, a missing directive, or a header with no record after it is a
+  syntax error, and `GrammarDriver.run` returns no vaults at all. The `record-count:` header is a Java-only addition that the upstream
+  `vault.txt` does not carry.
+- `VaultLexer.g4`: `INTEGER` is `'-'? ('0'..'9')+` for every numeric directive, so `min-depth:-5` and `max-depth:-5` lex and the
+  assembler loads them as negative depths, where C refuses the file. `rating:` is the one `int` and rightly takes a minus sign. A maximum
+  of `-5` is not rewritten, since only a declared 0 becomes the world maximum.
+- `VaultLexer.g4` and `CommentsAndEol.g4`: an indented directive is a lexer error, `rows:0x3` is a syntax error, and a field after a
+  value is a syntax error.
+- `VaultReaderTest.negativeDepthsLoadHereWhereCRefusesThem`, `typeAfterRowsIsRefusedHereWhereCTakesItInAnyOrder`,
+  `aFileWithNoVaultsIsRefusedHereWhereCLoadsAnEmptyList`, `anIndentedDirectiveIsRefusedHereWhereCSkipsTheIndent` and
+  `aHexadecimalRowCountIsRefusedHereWhereCReadsBaseZero` pin them.
+
+### Impact
+
+- None on the shipped data: `lib/gamedata/vault.txt` has 162 records in the grammar's order, every depth zero or more, no indents and no
+  hex values.
+- A hand-edited or modded `vault.txt` that reorders, omits or indents a directive, or empties the list, loses the whole file in Java, and
+  `DungeonLoader.loadVaultTemplates` then stops start-up. A negative depth loads where C would refuse it.
+
+## `RoomProfileGrammar.g4` and `RoomProfileLexer.g4`: the grammar fixes the directive order and count, `flags:` takes one `|`-separated line, `type:` and `doors:` take a minus sign, and the lexer shares the comment, indent and number differences
+
+Found 2026-10-19 during `/port RoomProfileReader.java`. Not fixed.
+
+### What C does
+
+- `init_parse_room` in `generate.c` registers nine independent one-line shapes: `name str`, `type uint`, `rating int`, `rows uint`,
+  `columns uint`, `doors uint`, `tval sym`, `flags str` and `D str`. `parse_room_name` allocates a new template and makes it current; the
+  other eight fill in the current template, so they can come in any order after a `name:`, can repeat, and can be left out. A directive
+  before any `name:` is `PARSE_ERROR_MISSING_RECORD_HEADER`.
+- `parse_room_flags` ORs into `t->flags`, so a second `flags:` line adds to the first, and it splits the text with `strtok(s, " |")`, so a
+  space on its own separates two flags.
+- `tval` is a `sym`, tokenized on `:`, so `tval:rod:junk` reads `rod`.
+- `run_parse_room` accepts a file with no templates and leaves `room_templates` null.
+- `parser_parse` in `parser.c` skips leading whitespace and a `#` comment with or without a final newline, tokenizes an `int` or `uint` on
+  `:` so anything after the value is ignored, and reads a `uint` with `strtoul` in base zero, so `0x3` is 3. It fails with
+  `PARSE_ERROR_NOT_NUMBER` when no digits were read or, for a `uint`, when the token starts with `-`. A `str` field that is empty is
+  `PARSE_ERROR_MISSING_FIELD`, which the Java grammar also refuses.
+
+### What Java does
+
+- `RoomProfileGrammar.g4`: `file` is `recordCount (roomProfile)+ EOF` and `roomProfile` is `name type rating rows columns doors tval`, at most
+  one `flags`, then one or more `D` lines, in that order. Out of order, a missing directive, a repeated `flags:` or a header with no record
+  after it is a syntax error, and `GrammarDriver.run` returns no templates at all. The `record-count:` header is a Java-only addition that the
+  upstream `room_template.txt` does not carry.
+- `RoomProfileLexer.g4`: in flag mode `FLAG_OR` is `' '? '|' ' '?`, so `flags:FEW_ENTRANCES FEW_ENTRANCES` is a lexer error. `TVAL`
+  hands the whole rest of the line to `REST_OF_LINE`, so `rod:junk` reaches the assembler as the name and the record is dropped.
+- `RoomProfileLexer.g4`: `INTEGER` is `'-'? ('0'..'9')+` for every numeric directive, so `type:-1` and `doors:-1` lex and load as -1, where C
+  refuses the file. `rows:-1` and `columns:-1` are caught by the assembler's size check.
+- `RoomProfileLexer.g4` and `CommentsAndEol.g4`: an indented directive is a lexer error, `rows:0x3` is a syntax error, a field after a
+  value (`type:1:7`) is a syntax error, and a `#` comment on the last line with no newline is a lexer error.
+- `RoomProfileReaderTest.directivesInAnotherOrderAreRefusedHereWhereCAcceptsThem`, `aRepeatedFlagsLineIsRefusedHereWhereCAccumulatesIt`,
+  `flagsSeparatedByASpaceAloneAreRefusedHereWhereCSplitsOnIt`, `aFileWithNoTemplatesIsRefusedHereWhereCLoadsAnEmptyList`,
+  `anIndentedDirectiveIsRefusedHereWhereCSkipsTheIndent`, `aHexadecimalRowCountIsRefusedHereWhereCReadsBaseZero`,
+  `aFieldAfterTheValueIsRefusedHereWhereCIgnoresIt`, `aFinalCommentWithoutANewlineIsRefusedHereWhereCSkipsIt`,
+  `textAfterATvalNameIsTreatedAsPartOfTheNameHereWhereCDropsIt` and `aNegativeTypeAndDoorCountLoadHereWhereCRefusesThem` pin them.
+
+### Impact
+
+- None on the shipped data: `lib/gamedata/room_template.txt` has 500 records in the grammar's order, `flags:` only as a single
+  `FEW_ENTRANCES`, no indents, no hex values, no negative numbers and a newline after every line.
+- A hand-edited or modded `room_template.txt` that reorders, omits or indents a directive, repeats or space-separates `flags:`, or empties
+  the list, loses the whole file in Java, and the loader then stops start-up. A negative `type:` or `doors:` loads where C refuses the file.
+
+### Question for Rowan
+
+- `flags:` is the one directive with a free-form value in this file, and C lets a modder write several lines or use spaces. Is the single
+  `|`-separated line a deliberate choice for this file (only `FEW_ENTRANCES` exists), as the same lexer shape is for `vault.txt`?
+
+## `DungeonProfileGrammar.g4`: no empty list, a bare `name:` is refused, and the shared indent, base-zero and trailing-field cases
+
+Found 2026-10-19 during `/port DungeonProfileReader.java`. Not fixed.
+
+### What C does
+
+- `init_parse_profile` in `generate.c` registers seven independent directives. Only `name:` creates a record
+  (`parse_profile_name`); the other six fill in the current one, so they can come in any order after a `name:`, can repeat (the last
+  wins), and can be left out. A directive before any `name:` is `PARSE_ERROR_MISSING_RECORD_HEADER`.
+- A `name:` with nothing after it is a valid record, zeroed apart from its name.
+- `run_parse_profile` accepts a file with no records, and `finish_parse_profile` then sets `z_info->profile_max` to 0.
+- `parser_parse` in `parser.c` skips leading whitespace, reads an `int` with `strtol` in base zero (so `0x10` is 16 and `010` is 8),
+  and ignores anything after the value up to the next `:`. A missing field is `PARSE_ERROR_MISSING_FIELD`.
+
+### What Java does
+
+- `DungeonProfileGrammar.g4`: `file` is `recordCount (profile)+ EOF`, so a file with the header and no profile is a syntax error and
+  `GrammarDriver.run` returns no profiles at all. The `record-count:` header is a Java-only addition that the upstream
+  `dungeon_profile.txt` does not carry.
+- `DungeonProfileGrammar.g4`: `profile` is a `name` followed by `( ... )+`, so a `name:` with no directive after it is a syntax error
+  and the whole file is lost.
+- `DungeonProfileLexer.g4`: `INTEGER` is `'-'? ('0'..'9')+`, so `alloc:0x10` and a field after the value (`alloc:5:junk`) are errors, and an
+  indented directive (`  alloc:5`) is a lexer error.
+- A directive before any `name:` and a `params:` line with a field missing are refused, as in C.
+- `DungeonProfileReaderTest.aFileWithNoProfilesIsRefusedHereWhereCLoadsAnEmptyList`, `aProfileWithNoDirectivesFailsClosed`,
+  `hexIndentedAndTrailingFieldValuesAreRefusedHereWhereCAcceptsThem`, `aDirectiveBeforeAnyNameFailsClosedAsInC` and
+  `aParamsLineWithAFieldMissingFailsClosedAsInC` pin them.
+
+### Impact
+
+- None on the shipped data: `lib/gamedata/dungeon_profile.txt` has 9 profiles, each with `params:` and `alloc:`, no indents, no hex values and
+  nothing after a value.
+- A modded file that empties the list, leaves a `name:` bare, indents a line or writes a value in hex loses the whole file in Java, and the
+  loader then stops start-up, where C would load it.
+
+### Question for Rowan
+
+- Is requiring at least one directive after each `name:` deliberate? C allows it, but a profile with no `params:` has a block size of 0 and
+  no use, so it may be worth refusing on purpose; if so the grammar comment should say so.
+
+## `ChestTrapGrammar.g4` and `ChestTrapLexer.g4`: the file needs a `record-count:` header and a record, `code:` must follow `name:`, and a repeated `msg:` overwrites where C appends
+
+Found 2026-10-19 during `/port ChestTrapReader.java`. Not fixed.
+
+### What C does
+
+- `init_parse_chest_trap` in `obj-chest.c` registers ten independent directives and no `record-count:`. Only `name:` creates a record
+  (`parse_chest_trap_name`); the rest fill in the current one in any order, can repeat, and can be left out. A directive before any
+  `name:` is `PARSE_ERROR_MISSING_RECORD_HEADER`.
+- `parse_chest_trap_msg` and `parse_chest_trap_msg_death` use `string_append`, so a repeated `msg:` or `msg-death:` line is joined
+  onto the text already held, with no separator.
+- `parse_chest_trap_dice` and `parse_chest_trap_expr` return `PARSE_ERROR_NONE` when the trap has no effect yet (and, for `expr:`, no
+  dice yet), "assuming that this is human and not parser error". The line is dropped and the file still loads.
+- `run_parse_chest_trap` accepts a file with no records and leaves `chest_traps` NULL.
+- `parser_parse` in `parser.c` reads an `int` with `strtol` in base zero (so `0x19` is 25), skips leading whitespace, and ignores
+  anything after the value up to the next `:`.
+
+### What Java does
+
+- `ChestTrapGrammar.g4`: `file` is `recordCount (chestTrap)+ EOF`. The upstream `chest_trap.txt` has no header, so it is a syntax
+  error here as it stands; `lib/gamedata/chest_trap.txt` has `record-count:7` added. A header with no trap is also a syntax error.
+- `ChestTrapGrammar.g4`: `chestTrap` is `name code (...)*`, so a `name:` not followed at once by `code:` is a syntax error and the
+  whole file is lost. C would keep a record with a NULL code.
+- `ChestTrapGrammar.g4`: `msg` and `msgDeath` assign to a single local, so the last line wins. A modded record with two `msg:` lines
+  reads the second only; C reads both joined.
+- `ChestTrapGrammar.g4`: `dice:` and `expr:` belong to the `effectBlock` rule, so one before any `effect:` line is a syntax error
+  rather than a dropped line.
+- `ChestTrapLexer.g4`: `INTEGER` takes no hex or octal, so `level:0x19` is an error, and an indented directive or a field after the
+  value is an error too.
+- `ChestTrapReaderTest.theUpstreamFileWithNoHeaderIsRefusedHereWhereCLoadsIt`,
+  `aFileWithAHeaderAndNoTrapsIsRefusedHereWhereCLoadsAnEmptyList`, `aMissingCodeLineIsAHardParseErrorAndRejectsTheFile`,
+  `aRepeatedMsgLineKeepsTheLastHereWhereCConcatenatesThem`, `aRepeatedMsgDeathLineKeepsTheLastHereWhereCConcatenatesThem`,
+  `aDiceLineBeforeAnyEffectIsRefusedHereWhereCIgnoresIt` and `aHexadecimalLevelIsRefusedHereWhereCReadsBaseZero` pin them.
+
+### Impact
+
+- None on the shipped data: `lib/gamedata/chest_trap.txt` has the header, seven records each with `name:` then `code:`, no repeated
+  `msg:`, no stray `dice:`, decimal levels and no indents.
+- A modded file that drops the header, leaves `code:` out, splits a message over two lines, or has a stray `dice:` loses the whole file
+  in Java, and the loader then stops start-up, where C would load it (with the second message line appended).
+- Copying the upstream `chest_trap.txt` over this one fails until `record-count:7` is added.
+
+### Question for Rowan
+
+- Requiring `code:` is deliberate (the lexer comment says the code is load-bearing here), but should a repeated `msg:` be joined as in
+  C, or refused as an error, instead of silently dropping the first line?
+
+## `PlayerTimedGrammar.g4` and `PlayerTimedLexer.g4`: the file needs a `record-count:` header and a record, several lines C reads are refused, and repeated text lines overwrite where C appends
+
+Found 2026-10-19 during `/port PlayerTimedReader.java`. Not fixed.
+
+### What C does
+
+- `init_parse_player_timed` in `player-timed.c` registers twenty independent directives and no `record-count:`. Only `name:` picks a
+  record (`parse_player_timed_name` points at `timed_effects[index]`); the rest fill it in, in any order, and can be left out. A
+  directive before any `name:` is `PARSE_ERROR_MISSING_RECORD_HEADER`.
+- `desc:`, `on-end:`, `on-increase:`, `on-decrease:` and `effect-msg:` use `string_append`, so a repeated line is joined onto the text
+  already held. A second `name:` for the same effect carries on with the same record, and `on-begin-effect:` and `on-end-effect:`
+  chain a new effect on the end of the list.
+- `on-begin-effect:` and `on-end-effect:` take `eff ?type ?radius ?other` through `grab_effect_data`, and the four `effect-*`
+  directives (`effect-yx`, `effect-dice`, `effect-expr`, `effect-msg`) fill the effect just opened, whichever of the two it was.
+  `effect-dice` takes a dice string such as `1d4`.
+- `flags` is `?str flags`, so a bare `flags:` is legal and does nothing. A `grade:` colour of more than one character is a colour
+  name, read by `color_text_to_attr`.
+- `parser_parse` in `parser.c` reads an `int` with `strtol` in base zero (so `0x10` is 16), skips leading whitespace, and ignores
+  anything after the value up to the next `:`.
+- `run_parse_player_timed` accepts a file with no records.
+- `grab_name` compares with `streq`, so a lower-case `name:fast` is refused in C as well.
+
+### What Java does
+
+- `PlayerTimedGrammar.g4`: `file` is `recordCount (playerTimed)+ EOF`. The upstream `player_timed.txt` has no header, so it is a syntax
+  error here as it stands; `lib/gamedata/player_timed.txt` is the upstream file with `record-count:53` added and nothing else
+  changed. A header with no record is also a syntax error.
+- `PlayerTimedGrammar.g4`: `desc`, `onEnd`, `onIncrease` and `onDecrease` assign to a single local, so the last line wins. Likewise a
+  second `on-begin-effect:` or `on-end-effect:` replaces the first, where C keeps both. A second `name:` opens a second record for the
+  same effect, where C continues the first.
+- `PlayerTimedGrammar.g4`: `onBeginEffect` takes a type and an optional sub-type and nothing more, so a radius or `other` value is a
+  syntax error. `onEndEffectBlock` takes one optional `effect-dice:` followed by a bare `INTEGER`, so `effect-dice:1d4` is an error, and
+  `effect-dice:` after an `on-begin-effect:` is an error. `effect-yx:`, `effect-expr:` and `effect-msg:` are not tokens at all.
+- `PlayerTimedGrammar.g4`: `flags` needs a first `FLAG`, so a bare `flags:` is a syntax error. `PlayerTimedLexer.g4`: the `grade:`
+  colour must be a single colour code, so `grade:Yellow:...` is an error.
+- `PlayerTimedLexer.g4`: `INTEGER` and `DELIM_INTEGER` take no hex or octal, so `lower-bound:0x10` is an error, and an indented
+  directive is an error too.
+- `PlayerTimedReaderTest.aHeaderWithNoRecordIsRefusedHereWhereCLoadsAnEmptyList`, `missingRecordCountHeaderIsAHardError`,
+  `aRepeatedDescLineKeepsTheLastHereWhereCConcatenatesThem`, `aRepeatedEndIncreaseOrDecreaseLineKeepsTheLastHereWhereCConcatenatesThem`,
+  `aRepeatedNameLineMakesASecondRecordHereWhereCContinuesTheFirst`, `anOnBeginEffectWithARadiusIsRefusedHereWhereCReadsIt`,
+  `effectYxEffectExprAndEffectMsgAreRefusedHereWhereCReadsThem`, `anEffectDiceAfterAnOnBeginEffectIsRefusedHereWhereCAcceptsIt`,
+  `aDiceStringInEffectDiceIsRefusedHereWhereCParsesIt`, `aBareFlagsLineIsRefusedHereWhereCAcceptsIt`,
+  `aGradeColourWrittenAsAWordIsRefusedHereWhereCReadsIt`, `aHexadecimalLowerBoundIsRefusedHereWhereCReadsBaseZero` and
+  `anIndentedDirectiveIsRefusedHereWhereCSkipsLeadingWhitespace` pin them. The repeated `on-begin-effect:` and `on-end-effect:` case
+  is read from the grammar and has no test.
+
+### Impact
+
+- None on the shipped data: `lib/gamedata/player_timed.txt` has 53 records, none of which repeats `desc:`, `on-end:`, `on-increase:` or
+  `on-decrease:`, one
+  `on-begin-effect:` and two `on-end-effect:` lines (one with `effect-dice:100`), no `effect-yx`, `effect-expr` or `effect-msg`, colour
+  codes of one character, no hex values and no indents.
+- A modded file that drops the header, empties the list, gives an effect a radius, a dice string or an `effect-msg:`, writes a colour
+  by name, or indents a line loses the whole file in Java, and the loader then stops start-up, where C would load it. A modded file
+  that splits a description over two `desc:` lines, or repeats a `name:`, loads with only the last line, or a split record.
+- Copying the upstream `player_timed.txt` over this one fails until `record-count:53` is added.
+
+### Question for Rowan
+
+- Should `effect-yx`, `effect-expr` and `effect-msg` be supported on timed effects? `EffectParseRecord` already carries those fields for
+  other grammars, and C lets the begin and end effects use them, so the only cost is grammar work. Today no shipped effect needs them.
+
+## `Random.g4`: a lower-case `m`, a base straight into `M` and `$` variables are accepted, blanks and a repeated `d` or `M` are refused, and a number above `INT_MAX` throws where C rejects
+
+Found 2026-10-19 during `/port RandomReader.java`. Not fixed.
+
+### What C does
+
+- C has two parsers for this notation. `parse_random` in `parser.c` reads every `rand` field of the data files and has no `$` variables. `dice_parse_string` in `z-dice.c` reads the `dice:` and `time:` lines of an effect and does.
+- `parse_random` takes an optional leading `-` for the whole value (the base is then shifted by the bonus and the dice so the range flips sign), then `strtoul` for each number. It refuses a number above `INT_MAX` and a number that starts with `+`.
+- Only an upper-case `M` marks the bonus. A plain number followed by anything but `d`, `+` or the end is refused, so `5M3` is refused and `5+M3` is not.
+- The loop lets a second `d` or `M` through: `dd1` is 1d1, `MM1` is a bonus of 1, and in `M1M2` the last bonus wins. `strtoul` reads a signed zero, so `2d-0` is 2d0.
+- Leading whitespace is skipped by `strtoul` and trailing blanks or tabs are allowed, so ` 2d6` and `2d6 ` both load.
+
+### What Java does
+
+- `Random.g4`: the lexer's `M` is `'M' | 'm'`, so `2d6m3` loads. There is an alternative for a base straight into `M`, so `5M3` loads as base 5, bonus 3. `$` variables are accepted in the base and sides slots (`$S`, `4d$S`).
+- `Random.g4`: there is no rule for a blank, a repeated `d` or `M`, or a signed number after the first character, so `dd1`, `MM1`, `M1M2` and `2d-0` are syntax errors, and so is any blank. A `$` dice count (`$Dd5`, `$B+d$S`) is also a syntax error; the file header already lists these two as known gaps.
+- `Random.g4`: a number above `INT_MAX` reaches `Integer.parseInt` in `numberOrMissing` and throws `NumberFormatException`. `RandomReader.parse` logs it and rethrows it unchecked, by design.
+- `Random.g4` now applies a leading `-` itself, with the same shift as C, and `Random.parseStr` strips the `-` first, so `--1` loads as -1 where C refuses it.
+- A number missing after `M` or `d` (`5M`, `-1d`, `$S+dM`) used to throw `NumberFormatException` from the action; `numberOrMissing` now turns ANTLR's placeholder token into a marker, the collected error ends the parse and the reader returns `null`, as C refuses it.
+- `RandomReaderTest` pins each of these: `aLowerCaseMIsAcceptedHereWhereParseRandomRefusesIt`, `aBaseStraightIntoMIsAcceptedHereWhereParseRandomRefusesIt`, `dollarVariablesAreAcceptedHereWhereParseRandomHasNone`, `aDoubleMinusIsAcceptedByParseStrWhereCRefusesIt`, `blanksAreRefusedHereWhereCAllowsThemAtTheEnds`, `aRepeatedDOrMIsRefusedHereWhereCsLoopLetsItThrough`, `aSignedZeroInsideTheStringIsRefusedHereWhereStrtoulReadsIt`, `aVariableDiceCountIsRefusedHereWhereZDiceReadsIt` and `aNumberAboveIntMaxThrowsHereWhereCRejectsIt`. Two sweeps over every string of up to five characters from `0 1 2 d M + -` (19,607 strings) check that nothing else differs from a transliteration of `parse_random`.
+
+### Impact
+
+- None seen on the shipped data: the reader tests that load the real files still pass with the new parser, and nothing in them hit a refused dice string. I did not diff every dice string in `lib/gamedata` against C by hand.
+- A modded file that writes a lower-case `m`, a base straight into `M`, or a `$` variable in a `rand` field loads here and is refused by C; one that puts a blank around a dice string, repeats a `d` or an `M`, or uses a `$` dice count loses the value in Java where C loads it.
+- A modded file with a number above `INT_MAX` in a dice string throws out of the assembler instead of recording a line-numbered error, so it stops start-up where C would report a bad value.
+
+### Question for Rowan
+
+- Should a number above `INT_MAX` return `null` like every other malformed string, so the assemblers record a line-numbered error as C does? The current Javadoc on `RandomReader.parse` calls the throw deliberate, so this is only a question of whether it should stay that way.
+
+## `VisualsGrammar.g4` and `VisualsLexer.g4`: a colour is one listed letter, `flicker-color:` and `cycle-color:` must follow their header at once, the name takes the rest of the line, and indented lines are refused
+
+Found 2026-10-19 during `/port VisualsReader.java`. Not fixed.
+
+### What C does
+
+- `visuals_parse_flicker`, `visuals_parse_flicker_color` and `visuals_parse_cycle_color` in `ui-visuals.c` read the colour as a `sym`
+  and pass only its first character to `color_char_to_attr` in `z-color.c`. That function never fails: a character it does not know is
+  `COLOUR_WHITE`, and a space is `COLOUR_DARK`. The `attr < 0` test that returns `PARSE_ERROR_INVALID_COLOR` cannot fire.
+- So `cycle-color:q`, `cycle-color:red`, `flicker:dd:name` and `flicker-color:d` followed by a blank all load.
+- `cycle sym group sym name` is tokenized on `:`, so a field after the name is dropped: `cycle:fancy:rainbow:junk` is the cycle
+  `rainbow`. `flicker sym color str name` takes the rest of the line as the name.
+- The parse context remembers the last `flicker:` header (`flicker_cycle_index`, `flicker_color_index`). A `flicker-color:` line
+  extends it however many `cycle:` lines came between, a leading `flicker-color:` writes to cycle 0 (dark), and a `flicker:` with no
+  colour lines is legal, its three steps staying at colour 0.
+- A `cycle-color:` before any `cycle:` dereferences `cycles[0]`, which is NULL, so C crashes. A `cycle:` with no `cycle-color:`
+  parses, then fails in `visuals_file_parser_finish` (`visuals_color_cycle_new` refuses zero steps), and so does an empty file (no
+  groups). Java refuses all three too, so those do not differ.
+- `parser_parse` in `parser.c` skips leading whitespace before it looks at the line.
+
+### What Java does
+
+- `VisualsLexer.g4`: after `flicker:`, `flicker-color:` and `cycle-color:` the lexer is in `COLOUR` mode, whose only colour token is
+  `COLOUR_CHAR`, one of the shared 28 letters. A name, an unlisted letter, a second letter, or a blank before the newline is a lexer
+  error and the file loads as nothing.
+- `VisualsGrammar.g4`: `flickerBlock` is `flicker (flickerColour)+` and `cycleBlock` is `cycle (cycleColour)+`, so a colour line must
+  follow its own header at once, and a header with no colour line is a syntax error. A leading colour line is a syntax error too.
+- `VisualsGrammar.g4`: after `cycle:` the group is `STRING_BETWEEN_COLON`, then `DELIM_COLON`, then `STRING`, which is the rest of the
+  line, so `cycle:fancy:rainbow:junk` is the cycle `rainbow:junk`.
+- `imports/CommentsAndEol.g4` does not skip indentation; the gap is written up under "Leading whitespace on a line" above.
+- `VisualsReaderTest.anUnlistedColourLetterOnACycleColourIsAHardErrorHereWhereCReadsItAsWhite`,
+  `aColourWrittenAsAWordIsAHardErrorHereWhereCTakesItsFirstLetter`,
+  `aTwoLetterBaseColourOnAFlickerHeaderIsAHardErrorHereWhereCTakesTheFirst`,
+  `aBlankAfterAColourLetterIsAHardErrorHereWhereCReadsTheLetter`,
+  `aFieldAfterTheCycleNameBecomesPartOfTheNameHereWhereCIgnoresIt`,
+  `aFlickerColourAfterAnInterveningCycleBlockIsAHardErrorHereWhereCAttachesIt`,
+  `aColourLineBeforeAnyHeaderIsAHardErrorHereWhereCWritesToCycleZero` and
+  `anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent` pin them. `flickerBlockWithNoColourLinesIsAHardError` pins the bare
+  `flicker:` header.
+
+### Impact
+
+- None on the shipped data: `lib/gamedata/visuals.txt` is identical to the upstream file, every colour is one listed letter with
+  nothing after it, no name carries a second `:`, each colour line follows its header, and nothing is indented.
+- A modded file with a colour word, a mistyped colour letter, a trailing blank after a colour, an indented line, or a `flicker-color:`
+  separated from its header loses the whole file in Java and the loader then stops start-up, where C loads it (a mistyped letter as a
+  white step). A stray `:` field after a cycle name loads in both but under a different name.
+- The cycler lookup is by name, so a cycle named `rainbow:junk` is simply never found by `color-cycle:fancy:rainbow` in `monster.txt`.
+
+### Question for Rowan
+
+- Should the lexer accept any single character as a colour and map the unlisted ones to white as C does, or stay strict? A typo
+  becoming a silent white step is arguably worse than a refused file, so the strictness may be worth keeping on purpose; if so the
+  grammar comment should say so. Several grammars (`PitLexer.g4` above) share the same question.
+
+## `LoreGrammar.g4` and `LoreLexer.g4`: the cast counts are dropped, `base:` and `drop-base:` never match, and `blow:`, `flags:` and `friends:` are narrower than C
+
+Found 2026-10-19 during `/port backend/parser/LoreReader.java`. Not fixed, and parked with the lore reader: nothing calls it, and no
+parser is generated from this grammar today.
+
+### What C does
+
+- `parse_lore_counts` in `mon-init.c` stores all seven counts, including `cast_innate` and `cast_spell`.
+- `parse_lore_base` sets `all_known` and every race flag, and refuses an unknown base name.
+- `parse_lore_blow` takes `blow:method` with the effect, damage, seen count and index all optional, and records a blow only when the
+  seen count is not zero, at the slot the index names.
+- `parse_lore_flags` splits on any run of spaces and `|`, and a bare `flags:` is accepted.
+- `parse_lore_drop_base` is registered, and `parse_lore_drop`, `parse_lore_drop_base`, `parse_lore_friends`,
+  `parse_lore_friends_base` and `parse_lore_mimic` prepend to their lists, so the lists end up in reverse file order.
+- `parse_lore_friends` and `parse_lore_friends_base` default the role to `MON_GROUP_MEMBER` and accept only `servant` and `bodyguard`.
+- `parse_lore_drop` refuses a `min` or `max` above 99.
+- `init_parse_lore` also registers the monster.txt directives (`plural`, `glyph`, `color`, `speed`, `desc`, `shape` and the rest) and
+  ignores them.
+- An unknown `name:` leaves the private pointer `NULL`, so every following directive of that record is skipped.
+
+### What Java does
+
+- `LoreGrammar.g4:291-299` reads `$counts.innate` and `$counts.spell` into locals called `innate` and `spell`, but the `@after` block at
+  `LoreGrammar.g4:277-289` passes `castInnate` and `castSpell`, which stay 0. The two counts are lost.
+- `LoreGrammar.g4:129-135` matches `BASE MONSTER_NAME`, but `LoreLexer.g4` only produces `MONSTER_NAME` in the mode that `name:` pushes
+  and `BASE` pushes no mode, so by reading the lexer the rule can never match. If it did, it would store the base and neither set
+  `all_known` nor the flags, and an unknown name gives `null` with no error.
+- `LoreGrammar.g4:163-179` builds `dropBase` with no `@after` block, so `$monsterDropBase` is never set, and `monsterLore` at
+  `LoreGrammar.g4:291-324` has no alternative for it. A `drop-base:` line is a syntax error.
+- `LoreLexer.g4` has one token for the whole `blow:` value (`BLOW_MODE_VALUES`), with all five fields, upper-case names and a dice
+  string in the `0+1d10M0` form. `blow:HIT` and `blow:HIT:HURT` are refused, a seen count of 0 is recorded, and the index is read and
+  thrown away.
+- `LoreLexer.g4` takes `flags:` and `spells:` as names joined by exactly ` | `, with at least one name, so a bare `flags:` or a
+  separator without spaces is refused. An unknown name throws from `valueOf` (the parked soft-error gap).
+- `LoreGrammar.g4:187` defaults a `friends:` role to `MON_GROUP_NONE`, and `LoreGrammar.g4:206` and `LoreGrammar.g4:232` accept any
+  `MonsterGroupRole` name, so `leader` and `summon` load where C refuses them.
+- `LoreLexer.g4` takes the `friends:` and `friends-base:` number only as `DICE_STRING`, the `0+2d3M0` form, but `lore_save` in
+  `mon-lore.c` writes it as `2d3`, so a `friends:` or `friends-base:` line from the game is refused.
+- The grammar appends to the drop, friends, friends-base and mimic lists, so they come out in file order, and it has no 99 limit.
+- The lexer has no tokens for the monster.txt directives C ignores, so a file containing one is a syntax error.
+- An unknown `name:` still builds a `MonsterLore` and adds it to `loreEntries`; only the `race.setLore` call is skipped.
+- The `@after` block of `monsterLore` calls a 19-argument `MonsterLore` constructor with a `Map<MonsterBlow, Integer>`, and
+  `MonsterLore.java` has only the no-argument and the 25-argument `List<MonsterBlow>` constructors, so the grammar would not compile as
+  it stands (`MonsterLore.java` already says so).
+
+### Impact
+
+- None on the game today: the reader is a stub and `lib/user/lore.txt` only holds `name:`, `counts:`, `blow:` and `flags:` lines.
+- Once the parser is picked up, the cast counts would read back as 0, and a file written by `lore_save` with `base:`, `drop-base:` or
+  a `friends:` line would be refused whole. Lists that C reads in reverse order would come back in file order.
+
+### Question for Rowan
+
+- When the lore parser is picked up, should the grammar follow C's optional `blow:` fields and ignored monster.txt directives, or stay
+  with the shapes `lore_save` writes? Either way the cast counts, `base:`, `drop-base:` and the `friends:` dice want fixing.

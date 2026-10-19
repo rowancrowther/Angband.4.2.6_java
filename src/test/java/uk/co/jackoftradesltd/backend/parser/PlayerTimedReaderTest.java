@@ -165,7 +165,7 @@ class PlayerTimedReaderTest {
 
         // FAST has a single grade: line; STUN three; CUT seven — the repeatable grade: line. Each
         // list carries one more than that: the implicit "off" band the assembler prepends, which C
-        // gets from the mem_zalloc'd head node in parse_player_timed_grade (player-timed.c:270-273).
+        // gets from the mem_zalloc'd head node in parse_player_timed_grade (player-timed.c).
         assertEquals(1 + 1, byName(effects, TimedEffect.TMD_FAST).getGrade().size());
         assertEquals(3 + 1, byName(effects, TimedEffect.TMD_STUN).getGrade().size());
         assertEquals(7 + 1, byName(effects, TimedEffect.TMD_CUT).getGrade().size());
@@ -174,7 +174,7 @@ class PlayerTimedReaderTest {
     @Test
     void everyEffectIsHeadedByTheImplicitOffGrade() throws IOException {
         // C allocates a zeroed head node before the first grade: line of every effect and numbers
-        // the real bands from one (player-timed.c:270-273, 287). The head is what a counter of zero
+        // the real bands from one (player-timed.c, parse_player_timed_grade). The head is what a counter of zero
         // maps to, so the band walk in player_set_timed and player_timed_grade_eq needs no separate
         // "is it off?" test; its null messages are also what routes a lapse to the on_end text
         // rather than to a grade message. All 53 effects in the shipped file carry a grade: line, so
@@ -433,5 +433,356 @@ class PlayerTimedReaderTest {
 
         assertTrue(result.items().isEmpty());
         assertTrue(result.hasErrors());
+    }
+
+    // ---- Reader surface ---------------------------------------------------
+
+    /**
+     * The 53 {@code TMD()} entries of C's {@code list-player-timed.h}, in order. C indexes
+     * {@code timed_effects[]} by this list, and {@code player_timed.txt} must name them in the same
+     * order for the port's list position to line up with the {@code TMD_*} value.
+     */
+    private static final String[] LIST_PLAYER_TIMED_H = {
+            "FAST", "SLOW", "BLIND", "PARALYZED", "CONFUSED", "AFRAID", "IMAGE", "POISONED", "CUT",
+            "STUN", "FOOD", "PROTEVIL", "INVULN", "HERO", "SHERO", "SHIELD", "BLESSED", "SINVIS",
+            "SINFRA", "OPP_ACID", "OPP_ELEC", "OPP_FIRE", "OPP_COLD", "OPP_POIS", "OPP_CONF",
+            "AMNESIA", "TELEPATHY", "STONESKIN", "TERROR", "SPRINT", "BOLD", "SCRAMBLE", "TRAPSAFE",
+            "FASTCAST", "ATT_ACID", "ATT_ELEC", "ATT_FIRE", "ATT_COLD", "ATT_POIS", "ATT_CONF",
+            "ATT_EVIL", "ATT_DEMON", "ATT_VAMP", "HEAL", "COMMAND", "ATT_RUN", "COVERTRACKS",
+            "POWERSHOT", "TAUNT", "BLOODLUST", "BLACKBREATH", "STEALTH", "FREE_ACT"};
+
+    @Test
+    void theRealFileListsTheEffectsInListPlayerTimedHOrder() throws IOException {
+        List<PlayerTimedEffect> effects = new PlayerTimedReader().parseWithResults(REAL_FILE).items();
+
+        assertEquals(LIST_PLAYER_TIMED_H.length, effects.size());
+        for (int i = 0; i < LIST_PLAYER_TIMED_H.length; i++) {
+            assertEquals(TimedEffect.valueOf("TMD_" + LIST_PLAYER_TIMED_H[i]), effects.get(i).getName(),
+                    "position " + i);
+        }
+    }
+
+    @Test
+    void parseReturnsTheSameEffectsAsParseWithResults() throws IOException {
+        List<PlayerTimedEffect> viaParse = new PlayerTimedReader().parse(REAL_FILE);
+        List<PlayerTimedEffect> viaResults = new PlayerTimedReader().parseWithResults(REAL_FILE).items();
+
+        assertEquals(viaResults.size(), viaParse.size());
+        for (int i = 0; i < viaParse.size(); i++) {
+            assertEquals(viaResults.get(i).getName(), viaParse.get(i).getName());
+        }
+    }
+
+    @Test
+    void aMissingFileIsAnIOExceptionWhereCQuits() {
+        assertThrows(IOException.class,
+                () -> new PlayerTimedReader().parseWithResults(tempDir.resolve("absent.txt").toString()));
+    }
+
+    @Test
+    void aHeaderWithNoRecordIsRefusedHereWhereCLoadsAnEmptyList() throws IOException {
+        // run_parse_player_timed accepts a file with no name: lines; the grammar wants at least one.
+        ParseResult<PlayerTimedEffect> result = load("header-only.txt", "record-count:0\n");
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
+    }
+
+    @Test
+    void aHeaderCountTooBigToParseIsASoftErrorAndTheRecordsStillLoad() throws IOException {
+        ParseResult<PlayerTimedEffect> result = load("huge-count.txt", withHeader(0, "name:FAST\ngrade:G:100:Test:Message\n")
+                .replace("record-count:0", "record-count:99999999999"));
+
+        assertEquals(1, result.items().size());
+        assertTrue(result.errors().stream().anyMatch(e -> e.contains("Invalid number format")),
+                result.errors()::toString);
+    }
+
+    // ---- Fields: what C accepts and the grammar does not ------------------
+
+    @Test
+    void aRepeatedDescLineKeepsTheLastHereWhereCConcatenatesThem() throws IOException {
+        // parse_player_timed_desc uses string_append, so C would hold "FirstSecond".
+        ParseResult<PlayerTimedEffect> result = load("two-desc.txt", withHeader(1,
+                "name:FAST\ndesc:First\ndesc:Second\ngrade:G:100:Test:Message\n"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals("Second", result.items().get(0).getDescription());
+    }
+
+    @Test
+    void aRepeatedEndIncreaseOrDecreaseLineKeepsTheLastHereWhereCConcatenatesThem() throws IOException {
+        ParseResult<PlayerTimedEffect> result = load("two-messages.txt", withHeader(1,
+                "name:FAST\ngrade:G:100:Test:Message\n"
+                        + "on-end:One\non-end:Two\n"
+                        + "on-increase:One\non-increase:Two\n"
+                        + "on-decrease:One\non-decrease:Two\n"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        PlayerTimedEffect fast = result.items().get(0);
+        assertEquals("Two", fast.getOnEnd());
+        assertEquals("Two", fast.getOnIncrease());
+        assertEquals("Two", fast.getOnDecrease());
+    }
+
+    @Test
+    void aRepeatedNameLineMakesASecondRecordHereWhereCContinuesTheFirst() throws IOException {
+        // parse_player_timed_name points at timed_effects[index] again, so C merges the two blocks.
+        ParseResult<PlayerTimedEffect> result = load("two-names.txt", withHeader(2,
+                "name:FAST\ngrade:G:100:Test:Message\nname:FAST\ndesc:Again\n"));
+
+        assertEquals(2, result.items().size());
+        assertEquals(TimedEffect.TMD_FAST, result.items().get(0).getName());
+        assertEquals(TimedEffect.TMD_FAST, result.items().get(1).getName());
+    }
+
+    @Test
+    void anOnBeginEffectWithARadiusIsRefusedHereWhereCReadsIt() throws IOException {
+        // "on-begin-effect sym eff ?sym type ?int radius ?int other"
+        ParseResult<PlayerTimedEffect> result = load("radius.txt", withHeader(1,
+                "name:FAST\ngrade:G:100:Test:Message\non-begin-effect:SCRAMBLE_STATS:STR:3\n"));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
+    }
+
+    @Test
+    void effectYxEffectExprAndEffectMsgAreRefusedHereWhereCReadsThem() throws IOException {
+        for (String line : List.of("effect-yx:1:2", "effect-expr:A:B:C", "effect-msg:Hello")) {
+            ParseResult<PlayerTimedEffect> result = load("effect-line.txt", withHeader(1,
+                    "name:FAST\ngrade:G:100:Test:Message\non-end-effect:TIMED_INC_NO_RES:SLOW\n" + line + "\n"));
+
+            assertTrue(result.items().isEmpty(), line);
+            assertTrue(result.hasErrors(), line);
+        }
+    }
+
+    @Test
+    void anEffectDiceAfterAnOnBeginEffectIsRefusedHereWhereCAcceptsIt() throws IOException {
+        ParseResult<PlayerTimedEffect> result = load("begin-dice.txt", withHeader(1,
+                "name:FAST\ngrade:G:100:Test:Message\non-begin-effect:SCRAMBLE_STATS\neffect-dice:5\n"));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
+    }
+
+    @Test
+    void aDiceStringInEffectDiceIsRefusedHereWhereCParsesIt() throws IOException {
+        ParseResult<PlayerTimedEffect> result = load("dice-string.txt", withHeader(1,
+                "name:FAST\ngrade:G:100:Test:Message\non-end-effect:TIMED_INC_NO_RES:SLOW\neffect-dice:1d4\n"));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
+    }
+
+    @Test
+    void aBareFlagsLineIsRefusedHereWhereCAcceptsIt() throws IOException {
+        // "flags ?str flags": parse_player_timed_effect_flags returns early when the value is absent.
+        ParseResult<PlayerTimedEffect> result = load("bare-flags.txt", withHeader(1,
+                "name:FAST\ngrade:G:100:Test:Message\nflags:\n"));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
+    }
+
+    @Test
+    void aGradeColourWrittenAsAWordIsRefusedHereWhereCReadsIt() throws IOException {
+        // strlen(color) > 1 goes through color_text_to_attr in parse_player_timed_grade.
+        ParseResult<PlayerTimedEffect> result = load("word-colour.txt", withHeader(1,
+                "name:FAST\ngrade:Yellow:100:Test:Message\n"));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
+    }
+
+    @Test
+    void aLowerCaseNameIsRefusedAndCIsCaseSensitiveToo() throws IOException {
+        // grab_name compares with streq, so C refuses "fast" as well; both lose the file or record.
+        ParseResult<PlayerTimedEffect> result = load("lower-name.txt", withHeader(1,
+                "name:fast\ngrade:G:100:Test:Message\n"));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
+    }
+
+    @Test
+    void aHexadecimalLowerBoundIsRefusedHereWhereCReadsBaseZero() throws IOException {
+        ParseResult<PlayerTimedEffect> result = load("hex-bound.txt", withHeader(1,
+                "name:FAST\ngrade:G:100:Test:Message\nlower-bound:0x10\n"));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
+    }
+
+    @Test
+    void anIndentedDirectiveIsRefusedHereWhereCSkipsLeadingWhitespace() throws IOException {
+        ParseResult<PlayerTimedEffect> result = load("indent.txt", withHeader(1,
+                "name:FAST\n  grade:G:100:Test:Message\n"));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
+    }
+
+    // ---- Values: what C checks and the assembler does not -----------------
+
+    @Test
+    void aOneCharacterDownMessageIsKeptByCAndDroppedHere() throws IOException {
+        // C nulls only a one-character name and up_msg; down_msg is copied as it stands.
+        ParseResult<PlayerTimedEffect> result = load("short-down.txt", withHeader(1,
+                "name:FAST\ngrade:G:100:Test:Message:X\n"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertNull(result.items().get(0).getGrade().get(1).downMsg());
+    }
+
+    @Test
+    void aOneCharacterNameAndUpMessageAreDummiesAsInC() throws IOException {
+        ParseResult<PlayerTimedEffect> result = load("dummies.txt", withHeader(1,
+                "name:FAST\ngrade:G:100:-:-\n"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        TimedGrade grade = result.items().get(0).getGrade().get(1);
+        assertNull(grade.status());
+        assertNull(grade.upMsg());
+    }
+
+    @Test
+    void aLowerBoundAbove32767LoadsHereWhereCRefusesIt() throws IOException {
+        // parse_player_timed_effect_lower_bound: bound < 0 || bound > 32767 is PARSE_ERROR_INVALID_VALUE.
+        ParseResult<PlayerTimedEffect> result = load("big-bound.txt", withHeader(1,
+                "name:FAST\ngrade:G:100:Test:Message\nlower-bound:40000\n"));
+
+        assertEquals(1, result.items().size());
+        assertEquals(40000, result.items().get(0).getLowerBound());
+    }
+
+    @Test
+    void aNegativeLowerBoundLoadsHereWhereCRefusesIt() throws IOException {
+        ParseResult<PlayerTimedEffect> result = load("negative-bound.txt", withHeader(1,
+                "name:FAST\ngrade:G:100:Test:Message\nlower-bound:-1\n"));
+
+        assertEquals(1, result.items().size());
+        assertEquals(-1, result.items().get(0).getLowerBound());
+    }
+
+    @Test
+    void theLowerBoundEdgesOfCsRangeLoad() throws IOException {
+        for (int bound : new int[]{0, 32767}) {
+            ParseResult<PlayerTimedEffect> result = load("edge-bound.txt", withHeader(1,
+                    "name:FAST\ngrade:G:100:Test:Message\nlower-bound:" + bound + "\n"));
+
+            assertFalse(result.hasErrors(), () -> result.errors().toString());
+            assertEquals(bound, result.items().get(0).getLowerBound());
+        }
+    }
+
+    @Test
+    void anUnknownFlagsTokenIsIgnoredHereWhereCRefusesIt() throws IOException {
+        // Only NONSTACKING is a timed-effect flag; anything else is PARSE_ERROR_INVALID_FLAG in C.
+        ParseResult<PlayerTimedEffect> result = load("bad-flag.txt", withHeader(1,
+                "name:FAST\ngrade:G:100:Test:Message\nflags:WIBBLE\n"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(1, result.items().size());
+        assertFalse(result.items().get(0).isNonStacking());
+    }
+
+    @Test
+    void nonStackingAmongOtherTokensIsStillRead() throws IOException {
+        ParseResult<PlayerTimedEffect> result = load("two-flags.txt", withHeader(1,
+                "name:FAST\ngrade:G:100:Test:Message\nflags:NONSTACKING | NONSTACKING\n"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertTrue(result.items().get(0).isNonStacking());
+    }
+
+    @Test
+    void aFlagSynonymExactWrittenAsDoubleZeroIsExactHereWhereCReadsZero() throws IOException {
+        // "exact" is an int in C: parser_getint(p, "exact") != 0, and "00" is 0.
+        ParseResult<PlayerTimedEffect> result = load("synonym-00.txt", withHeader(1,
+                "name:FAST\ngrade:G:100:Test:Message\nflag-synonym:AFRAID:00\n"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertTrue(result.items().get(0).isoFlagExactlySyn());
+    }
+
+    @Test
+    void aFlagSynonymExactOfTwoIsExactAsInC() throws IOException {
+        ParseResult<PlayerTimedEffect> result = load("synonym-2.txt", withHeader(1,
+                "name:FAST\ngrade:G:100:Test:Message\nflag-synonym:AFRAID:2\n"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertTrue(result.items().get(0).isoFlagExactlySyn());
+    }
+
+    @Test
+    void anUnknownFlagSynonymIsReportedAndSkipped() throws IOException {
+        ParseResult<PlayerTimedEffect> result = load("bad-synonym.txt", withHeader(1,
+                "name:FAST\ngrade:G:100:Test:Message\nflag-synonym:NOTAFLAG:1\n"));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown flag-synonym")),
+                result.errors()::toString);
+    }
+
+    @Test
+    void eachFailCodeOneToFiveResolvesItsOwnKindOfName() throws IOException {
+        // TMD_FAIL_FLAG_OBJECT, _RESIST, _VULN, _PLAYER, _TIMED_EFFECT = 1..5 in player-timed.h.
+        ParseResult<PlayerTimedEffect> result = load("fail-codes.txt", withHeader(1,
+                "name:FAST\ngrade:G:100:Test:Message\n"
+                        + "fail:1:FREE_ACT\nfail:2:POIS\nfail:3:FIRE\nfail:4:ROCK\nfail:5:OPP_POIS\n"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        List<TimedFailure> fails = result.items().get(0).getFail();
+        assertEquals(5, fails.size());
+        assertEquals(TimedEffectReasonType.TYPE_OBJECT_FLAG, fails.get(0).getCode());
+        assertEquals(TimedEffectReasonType.TYPE_RESIST, fails.get(1).getCode());
+        assertEquals(TimedEffectReasonType.TYPE_VULN, fails.get(2).getCode());
+        assertEquals(TimedEffectReasonType.TYPE_PLAYER_FLAG, fails.get(3).getCode());
+        assertEquals(TimedEffectReasonType.TYPE_TIMED_EFFECT, fails.get(4).getCode());
+    }
+
+    @Test
+    void aFailCodeOutsideOneToFiveIsReportedAndSkipped() throws IOException {
+        for (String code : List.of("0", "6")) {
+            ParseResult<PlayerTimedEffect> result = load("fail-code.txt", withHeader(1,
+                    "name:FAST\ngrade:G:100:Test:Message\nfail:" + code + ":POIS\n"));
+
+            assertTrue(result.items().isEmpty(), code);
+            assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown fail type")),
+                    result.errors()::toString);
+        }
+    }
+
+    @Test
+    void aFailNameFromTheWrongListIsReportedAndSkipped() throws IOException {
+        // POIS is an element, so it is not an object flag.
+        ParseResult<PlayerTimedEffect> result = load("fail-wrong-list.txt", withHeader(1,
+                "name:FAST\ngrade:G:100:Test:Message\nfail:1:POIS\n"));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.errors().stream().anyMatch(e -> e.contains("invalid fail line")),
+                result.errors()::toString);
+    }
+
+    @Test
+    void aSlayThatIsNotLoadedIsReportedAndSkipped() throws IOException {
+        ParseResult<PlayerTimedEffect> result = load("bad-slay.txt", withHeader(1,
+                "name:ATT_EVIL\ngrade:G:100:Test:Message\nslay:NOTASLAY\n"));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown slay")),
+                result.errors()::toString);
+    }
+
+    @Test
+    void anEffectNameAndTheDirectivesAfterItDoNotNeedAGrade() throws IOException {
+        // Only a grade: line is optional in C; a record of just name: and desc: is legal.
+        ParseResult<PlayerTimedEffect> result = load("no-grade.txt", withHeader(1,
+                "name:FAST\ndesc:Quick\n"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(1, result.items().size());
+        assertEquals(1, result.items().get(0).getGrade().size());
     }
 }

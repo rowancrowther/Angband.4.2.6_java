@@ -32,19 +32,19 @@ Each target is `src/main/java/uk/co/jackoftradesltd/backend/parser/<Name>.java`,
 
 ## Batch 3 — `init.c`
 
-1. `RealmReader`
-2. `ShapeReader`
-3. `HintReader`
-4. `FlavourReader`
-5. `NamesReader`
-6. `HistoryReader`
-7. `BodyReader`
-8. `PlayerRaceReader`
-9. `PlayerClassReader`
-10. `TrapReader`
-11. `PlayerPropertyReader`
-12. `TerrainReader`
-13. `WorldReader`
+ 1. [X] `RealmReader`
+ 2. [X] `ShapeReader`
+ 3. [X] `HintReader`
+ 4. [X] `FlavourReader`
+ 5. [X] `NamesReader`
+ 6. [X] `HistoryReader`
+ 7. [X] `BodyReader`
+ 8. [X] `PlayerRaceReader`
+ 9. [X] `PlayerClassReader`
+10. [X] `TrapReader`
+11. [X] `PlayerPropertyReader`
+12. [X] `TerrainReader`
+13. [X] `WorldReader`
 14. `GameConstantsReader`
 
 ## Batch 4 — other C files (confirm in stage 1)

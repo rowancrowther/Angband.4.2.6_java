@@ -234,4 +234,302 @@ class NamesReaderTest {
         assertTrue(errors.stream().anyMatch(e -> e.contains("invalid integer")),
                 () -> errors.toString());
     }
+
+    // ---- The shipped file against the upstream one -----------------------
+
+    /**
+     * The upstream {@code lib/gamedata/names.txt} puts 601 words under {@code section:1} (file lines
+     * 63-663) and 587 under {@code section:2} (lines 667-1253); the shipped copy adds only the
+     * {@code record-count:2} header and strips trailing spaces from comments. The expected side is a
+     * plain line split of the file, not the reader's output.
+     */
+    @Test
+    void everyShippedWordComesBackUnderItsSectionInFileOrder() throws IOException {
+        List<List<String>> expected = new ArrayList<>();
+        for (String line : Files.readAllLines(Path.of(REAL_FILE))) {
+            if (line.startsWith("section:")) {
+                expected.add(new ArrayList<>());
+            } else if (line.startsWith("word:")) {
+                expected.get(expected.size() - 1).add(line.substring(5));
+            }
+        }
+        List<Name> names = new NamesReader().parse(REAL_FILE);
+
+        assertEquals(EXPECTED_SECTIONS, expected.size());
+        assertEquals(EXPECTED_SECTIONS, names.size());
+        for (int s = 0; s < expected.size(); s++) {
+            assertEquals(expected.get(s), names.get(s).getWord(), "section " + (s + 1));
+        }
+        assertEquals(TOLKIEN_WORDS + SCROLL_WORDS,
+                names.stream().mapToInt(n -> n.getWord().size()).sum());
+    }
+
+    /** Spot values read off the upstream file: the first, a middle and the last word of each section. */
+    @Test
+    void spotValuesAgreeWithTheUpstreamFile() throws IOException {
+        List<Name> names = new NamesReader().parse(REAL_FILE);
+
+        assertEquals("adanedhel", names.get(0).getWord().get(0));
+        assertEquals("yavanna", names.get(0).getWord().get(600));
+        assertEquals("abracadabra", names.get(1).getWord().get(0));
+        assertEquals("vultus", names.get(1).getWord().get(586));
+    }
+
+    // ---- Sections --------------------------------------------------------
+
+    /**
+     * C keeps one word list per section number, so a repeated {@code section:1} adds to the first. The
+     * reader cannot join them: it returns one {@link Name} per block and leaves the joining to
+     * {@code MiscRegistry.setNames}.
+     */
+    @Test
+    void aRepeatedSectionGivesTwoRecordsWhereCJoinsThemIntoOneList() throws IOException {
+        ParseResult<Name> result = load("repeat.txt", withHeader(3,
+                "section:1\nword:a\nsection:2\nword:b\nsection:1\nword:c\n"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(3, result.items().size());
+        assertEquals(1, result.items().get(0).getSection());
+        assertEquals(2, result.items().get(1).getSection());
+        assertEquals(1, result.items().get(2).getSection());
+        assertEquals(List.of("c"), result.items().get(2).getWord());
+    }
+
+    /** A section with no {@code word:} lines is a valid, empty record; the next block starts a new one. */
+    @Test
+    void aSectionWithNoWordsIsAnEmptyRecord() throws IOException {
+        ParseResult<Name> result = load("empty-section.txt", withHeader(2,
+                "section:1\nsection:2\nword:a\n"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(2, result.items().size());
+        assertTrue(result.items().get(0).getWord().isEmpty());
+        assertEquals(List.of("a"), result.items().get(1).getWord());
+    }
+
+    /**
+     * C accepts any {@code section:} below {@code RANDNAME_NUM_TYPES} (3), so 0, 1 and 2, and rejects
+     * the rest with {@code PARSE_ERROR_OUT_OF_BOUNDS}. The range check is not the reader's job here:
+     * {@code MiscRegistry.setNames} makes it, so 0 and 3 both come back from the reader untouched.
+     */
+    @Test
+    void theReaderDoesNotRangeCheckTheSectionNumber() throws IOException {
+        ParseResult<Name> result = load("range.txt", withHeader(3,
+                "section:0\nword:a\nsection:2\nword:b\nsection:3\nword:c\n"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(List.of(0, 2, 3),
+                result.items().stream().map(Name::getSection).toList());
+    }
+
+    /** A zero-padded section is read in decimal; C reads it with base 0, which agrees below 010. */
+    @Test
+    void aZeroPaddedSectionIsReadInDecimal() throws IOException {
+        ParseResult<Name> result = load("padded.txt", withHeader(2,
+                "section:02\nword:a\nsection:010\nword:b\n"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(2, result.items().get(0).getSection());
+        assertEquals(10, result.items().get(1).getSection(), "C's strtoul base 0 reads 010 as octal 8");
+    }
+
+    // ---- The text of a word ----------------------------------------------
+
+    /**
+     * C's {@code parser_parse} gives a {@code str} field the rest of the line untouched, so spaces
+     * before and after the word belong to it.
+     */
+    @Test
+    void leadingAndTrailingSpacesAreKeptAsCDoes() throws IOException {
+        ParseResult<Name> result = load("spaces.txt", withHeader(1, "section:1\nword: pad \n"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(" pad ", result.items().get(0).getWord().get(0));
+    }
+
+    /** Only the first {@code :} splits the directive off, so a word may contain a colon or a hash. */
+    @Test
+    void colonsAndHashesInTheTextSurvive() throws IOException {
+        ParseResult<Name> result = load("colon.txt", withHeader(1, "section:1\nword::a:b#c\n"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(":a:b#c", result.items().get(0).getWord().get(0));
+    }
+
+    /** The same word twice is two entries: the letter counts in {@code build_prob} depend on it. */
+    @Test
+    void duplicateWordsAreBothKept() throws IOException {
+        ParseResult<Name> result = load("dup.txt", withHeader(1, "section:1\nword:ab\nword:ab\n"));
+
+        assertEquals(List.of("ab", "ab"), result.items().get(0).getWord());
+    }
+
+    @Test
+    void wordsComeBackInFileOrderWhereCsListIsReversed() throws IOException {
+        ParseResult<Name> result = load("order.txt", withHeader(1, "section:1\nword:a\nword:b\nword:c\n"));
+
+        assertEquals(List.of("a", "b", "c"), result.items().get(0).getWord());
+    }
+
+    /** A final word needs no newline after it, and a Windows line ending leaves no carriage return. */
+    @Test
+    void finalWordNeedsNoNewlineAndCarriageReturnsAreDropped() throws IOException {
+        ParseResult<Name> noNewline = load("nonl.txt", withHeader(1, "section:1\nword:last"));
+        ParseResult<Name> crlf = load("crlf.txt", "record-count:1\r\nsection:1\r\nword:abc\r\n");
+
+        assertEquals("last", noNewline.items().get(0).getWord().get(0));
+        assertFalse(crlf.hasErrors(), () -> crlf.errors().toString());
+        assertEquals("abc", crlf.items().get(0).getWord().get(0));
+    }
+
+    /** Comment and blank lines between and after the lines are skipped, as C skips them. */
+    @Test
+    void commentsAndBlankLinesAreSkipped() throws IOException {
+        ParseResult<Name> result = load("comments.txt", withHeader(1,
+                "# top\nsection:1\n\n# between\nword:one\n\nword:two\n# last\n"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(List.of("one", "two"), result.items().get(0).getWord());
+    }
+
+    // ---- Counts ----------------------------------------------------------
+
+    /** C accepts a file with no sections at all; the header then says zero and the list is empty. */
+    @Test
+    void aFileWithNoSectionsLoadsEmptyWhenTheHeaderSaysZero() throws IOException {
+        ParseResult<Name> result = load("zero.txt", "record-count:0\n# nothing here\n");
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertTrue(result.items().isEmpty());
+    }
+
+    /** The header counts {@code section:} blocks, not words: 2 blocks with 3 words is a count of 2. */
+    @Test
+    void theHeaderCountsSectionsNotWords() throws IOException {
+        assertFalse(load("two.txt", withHeader(2, "section:1\nword:a\nword:b\nsection:2\nword:c\n"))
+                .hasErrors());
+        assertTrue(load("three.txt", withHeader(3, "section:1\nword:a\nword:b\nsection:2\nword:c\n"))
+                .hasErrors());
+    }
+
+    @Test
+    void aHeaderDeclaringTooFewIsASoftErrorToo() throws IOException {
+        ParseResult<Name> result = load("toofew.txt", withHeader(1,
+                "section:1\nword:a\nsection:2\nword:b\n"));
+
+        assertEquals(2, result.items().size());
+        assertTrue(result.errors().stream().anyMatch(e -> e.contains("record-count header declares")),
+                () -> result.errors().toString());
+    }
+
+    // ---- Hard errors (fail-closed) ---------------------------------------
+
+    /**
+     * Where C and the grammar differ, written up in {@code docs/grammar_issues.md}: C keeps a running
+     * section that starts at 0, so a {@code word:} before any {@code section:} lands in section 0.
+     * The {@code record} rule starts with {@code section}, so the grammar rejects it.
+     */
+    @Test
+    void aWordBeforeAnySectionIsAHardErrorWhereCFilesItUnderSectionZero() throws IOException {
+        ParseResult<Name> result = load("orphan.txt", withHeader(1, "word:orphan\nsection:1\nword:a\n"));
+
+        assertTrue(result.items().isEmpty(), "a hard grammar error must fail closed");
+        assertTrue(result.hasErrors());
+    }
+
+    /** C's {@code section} is a {@code uint}, so {@code parser_parse} rejects a minus sign. */
+    @Test
+    void aNegativeSectionLoadsHereWhereCRejectsIt() throws IOException {
+        ParseResult<Name> result = load("neg.txt", withHeader(1, "section:-1\nword:a\n"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(-1, result.items().get(0).getSection());
+    }
+
+    /** C needs text after {@code word:} (MISSING_FIELD otherwise); the lexer cannot produce a STRING for it. */
+    @Test
+    void aWordLineWithNoTextIsAHardError() throws IOException {
+        ParseResult<Name> result = load("emptyword.txt", withHeader(1, "section:1\nword:\n"));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
+    }
+
+    @Test
+    void aSectionLineWithNoNumberIsAHardError() throws IOException {
+        ParseResult<Name> result = load("nonum.txt", withHeader(1, "section:\nword:a\n"));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
+    }
+
+    /** C only has {@code section:} and {@code word:}, and its directive names are case-sensitive. */
+    @Test
+    void anUnknownDirectiveIsAHardError() throws IOException {
+        for (String bad : List.of("name:abc\n", "Word:abc\n", "SECTION:1\n")) {
+            ParseResult<Name> result = load("bad.txt", withHeader(1, "section:1\n" + bad));
+
+            assertTrue(result.items().isEmpty(), bad);
+            assertTrue(result.hasErrors(), bad);
+        }
+    }
+
+    @Test
+    void anEmptyFileIsAHardErrorForWantOfTheHeader() throws IOException {
+        ParseResult<Name> result = load("empty.txt", "");
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
+    }
+
+    @Test
+    void theHeaderMustComeFirstAndOnlyOnce() throws IOException {
+        for (String bad : List.of("section:1\nrecord-count:1\n",
+                "record-count:1\nrecord-count:1\nsection:1\n")) {
+            ParseResult<Name> result = load("header.txt", bad);
+
+            assertTrue(result.items().isEmpty(), bad);
+            assertTrue(result.hasErrors(), bad);
+        }
+    }
+
+    /**
+     * Where C and the grammar differ, written up in {@code docs/grammar_issues.md}: C skips leading
+     * whitespace on a line before it reads the directive, so an indented line, an indented comment
+     * and a tab-only line are all fine to it. The lexer takes none of them, and a comment on the
+     * last line needs its newline.
+     */
+    @Test
+    void leadingWhitespaceBeforeADirectiveIsAHardErrorWhereCSkipsIt() throws IOException {
+        for (String bad : List.of("  word:indented\n", "  # indented comment\n", "\t\n",
+                "# no newline")) {
+            ParseResult<Name> result = load("ws.txt", withHeader(1, "section:1\n" + bad));
+
+            assertTrue(result.items().isEmpty(), bad);
+            assertTrue(result.hasErrors(), bad);
+        }
+    }
+
+    // ---- File access -----------------------------------------------------
+
+    /** C's {@code parse_file_quit_not_found} quits for a missing file; here it is an {@link IOException}. */
+    @Test
+    void aMissingFileIsAnIOException() {
+        String missing = tempDir.resolve("nope.txt").toString();
+
+        assertThrows(IOException.class, () -> new NamesReader().parseWithResults(missing));
+        assertThrows(IOException.class, () -> new NamesReader().parse(missing));
+    }
+
+    @Test
+    void parseReturnsTheSameNamesAsParseWithResults() throws IOException {
+        List<Name> plain = new NamesReader().parse(REAL_FILE);
+        List<Name> full = new NamesReader().parseWithResults(REAL_FILE).items();
+
+        assertEquals(full.size(), plain.size());
+        for (int i = 0; i < full.size(); i++) {
+            assertEquals(full.get(i).getSection(), plain.get(i).getSection());
+            assertEquals(full.get(i).getWord(), plain.get(i).getWord());
+        }
+    }
 }

@@ -919,3 +919,342 @@ Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. Not fixed.
   an error. The grammar also limits the code to an upper-case identifier.
 - `ProjectionReaderTest.anUnknownCodeBeyondTheElementBlockSkipsTheRecordWhereCNeverReadsTheCode` pins it.
 - None on the shipped data. The assembler's `resolveCode` Javadoc already says C does not look the code up.
+
+## `realm/RealmAssembler.java`: `stat:` is matched with case, accepts `NONE`, and a realm with no `stat:` is dropped
+
+Found 2026-10-18 during `/port backend/parser/RealmReader.java`. Not fixed.
+
+### What C does
+
+- `parse_realm_stat` in `init.c` calls `stat_name_to_idx` in `player.c`, which compares the text with `my_stricmp` against
+  `stat_name_list`: `STR`, `INT`, `WIS`, `DEX`, `CON`, then `MAX`. There is no `NONE`.
+- No match gives `-1`, and `parse_realm_stat` returns `PARSE_ERROR_INVALID_SPELL_STAT`.
+- A realm with no `stat:` line never reaches that handler. `parse_realm_name` allocates it with `mem_zalloc`, so its stat is `0`,
+  which is `STAT_STR`.
+
+### What Java does
+
+- `RealmAssembler.java:75` uses `Stats.valueOf("STAT_" + record.stat())`, which is case-sensitive. `stat:int` loads in C and is a
+  soft error here, and the record is skipped.
+- The same call accepts `NONE`, since `STAT_NONE` is a constant, so Java loads a realm that C rejects. `MAX` is accepted by both.
+- The grammar hands over `""` for a missing `stat:`, which resolves to nothing, so the realm is skipped where C keeps it as
+  Strength.
+- `RealmReaderTest.aLowerCaseStatIsRejectedHereWhereCAcceptsItIgnoringCase`, `statNoneIsAcceptedHereWhereCRejectsIt` and
+  `aRealmWithNoStatIsDroppedHereWhereCKeepsItAsStrength` pin the three.
+- An unknown stat is a soft error that drops the record, where C raises a parse error and quits. The assembler's Javadoc records
+  that policy as deliberate.
+- None on the shipped data, whose stats are upper-case `INT` and `WIS`.
+
+## `shape/ShapeAssembler.java`: the list and each shape's blows are in file order, C's chains are reversed
+
+Found 2026-10-18 during `/port backend/parser/ShapeReader.java`. Not fixed.
+
+### What C does
+
+- `parse_shape_name` in `init.c` pushes each new shape on the head of `shapes` and numbers it `sidx = z_info->shape_max++`, so
+  the list runs in reverse file order while `sidx` runs in file order.
+- `lookup_player_shape` in `player-util.c` returns the first match walking from the head, so of two shapes with one name it
+  finds the one later in the file.
+- `parse_shape_blow` pushes each blow on the head of `shape->blows`. `player-attack.c` picks `randint0(num_blows)` and walks that
+  many steps from the head, so index 0 is the last `blow:` line in the file.
+
+### What Java does
+
+- `ShapeAssembler.java` appends in file order, for the shapes and for `blowList`. `PlayerRegistry` records the shape order as
+  deliberate and looks up first-match, so the first of two same-named shapes is found.
+- A roll of `n` picks the `n`th `blow:` line from the top where C picks the `n`th from the bottom. With a real generator the
+  odds are the same; with a fixed seed or a test that fixes the roll, the verb differs.
+- `ShapeReaderTest.shapesComeBackInFileOrderWhereCsListIsReversed`, `twoShapesWithOneNameBothLoadInFileOrder` and the blows column
+  of `everyShippedShapeAgreesWithTheUpstreamFile` pin the order.
+- None on the shipped data, whose nine shape names are unique.
+
+## `shape/ShapeAssembler.java`: the `NONE` and `MAX` names are accepted for modifiers and elements, C has neither
+
+Found 2026-10-18 during `/port backend/parser/ShapeReader.java`. Not fixed.
+
+- `parse_shape_values` in `init.c` looks each token up with `grab_int_value`, against `obj_mods` (the stats, then
+  `list-object-modifiers.h`), and with `grab_index_and_int` against `list_element_names`. Neither table has a `NONE` or `MAX`, so a
+  token that matches neither stops the loop and the handler returns `PARSE_ERROR_INVALID_VALUE`.
+- `ShapeAssembler.java` resolves `"OM_" + key` and `"ELEM_" + key` with `valueOf`, so `values:NONE[1]` and `values:MAX[2]` load
+  as `OM_NONE` and `OM_MAX`, and `RES_NONE[1]` and `RES_MAX[2]` as `ELEM_NONE` and `ELEM_MAX`.
+- `ShapeReaderTest.theNoneAndMaxNamesAreAcceptedForModifiersAndElementsWhereCHasNeither` pins it.
+- The same gap is written up for `EgoItemAssembler.java`; every assembler that resolves these through the enums has it.
+- None on the shipped data.
+
+## `flavour/FlavourAssembler.java` and `flavour/FlavourKindAssembler.java`: an unknown colour name, a negative or hex index, a bad glyph, a bad tval and a bad `fixed:` sval differ from C
+
+Found 2026-10-18 during `/port backend/parser/FlavourReader.java`. Not fixed.
+
+### What C does
+
+- `parse_flavor_flavor` in `init.c` reads a one-character `attr` with `color_char_to_attr`, which fails with
+  `PARSE_ERROR_INVALID_COLOR`, and a longer one with `color_text_to_attr`, which falls back to `COLOUR_WHITE` for a name it does not
+  know.
+- `index` is a `uint`: `parser_parse` rejects a leading `-` and reads the digits with `strtoul` base 0, so `0x10` is 16.
+- `lookup_sval` in `obj-util.c` reads a number or compares names with `my_stricmp`, and returns -1 for no match. The flavour is kept
+  with that sval and no error is raised.
+- An unrecognised tval is `PARSE_ERROR_UNRECOGNISED_TVAL`, and a glyph longer than one character is
+  `PARSE_ERROR_FIELD_TOO_LONG`; both stop the load.
+
+### What Java does
+
+- `FlavourAssembler.java` uses `ColourEnum.fromCode`, which returns null for an unknown multi-character name, so the flavour is
+  dropped with `unknown colour`, where C paints it white.
+- It reads the index with `Integer.parseInt`, which takes `-5` and refuses `0x10`.
+- `FlavourKindAssembler.java` drops a block with an unknown tval or a glyph that is not one character, and drops the whole block when
+  one `fixed:` sval resolves to no kind. Each is a soft error, so the other blocks load. The class Javadoc records the block-dropping
+  as deliberate.
+- `FlavourReaderTest.anUnknownColourNameDropsTheFlavourHereWhereCPaintsItWhite`,
+  `aNegativeIndexLoadsHereWhereCRejectsItAndAHexIndexFailsWhereCReadsIt`, `unknownTvalDropsTheKindBlock`,
+  `multiCharacterGlyphDropsTheKindBlock` and `unresolvableFixedSvalDropsTheWholeBlock` pin them.
+- None on the shipped data, whose colours are all names `ColourEnum` knows, whose indexes are plain decimals and whose eight
+  `fixed:` svals all resolve.
+
+## `names/NamesAssembler.java`: a negative or zero-padded section is read in decimal, C's `strtoul` base 0 differs
+
+Found 2026-10-18 during `/port backend/parser/NamesReader.java`. Not fixed.
+
+### What C does
+
+- `parse_names_section` in `init.c` takes a `uint` read with `strtoul` base 0, so `010` is octal 8 and a leading `-` is a
+  parse error. Anything at or above `RANDNAME_NUM_TYPES` (3) is `PARSE_ERROR_OUT_OF_BOUNDS`, which stops the load.
+
+### What Java does
+
+- `NamesAssembler.java` uses `Integer.parseInt`, so `010` is 10 and `-1` is accepted as -1. The range check is later, in
+  `MiscRegistry.setNames`, and the Javadoc there and on `Name` records that section 0 is rejected where C accepts it.
+- `NamesReaderTest.aZeroPaddedSectionIsReadInDecimal` and `aNegativeSectionLoadsHereWhereCRejectsIt` pin the two.
+- None on the shipped data, whose sections are the plain `1` and `2`.
+
+## `history/HistoryAssembler.java`: a dangling successor and a mixed successor are soft errors, and the numbers are read in decimal
+
+Found 2026-10-18 during `/port backend/parser/HistoryReader.java`. Not fixed.
+
+### What C does
+
+- `finish_parse_history` runs `findchart` on every non-zero `isucc` and returns `-1` when it finds no chart, which stops the load.
+  The successor is stored on each entry, so entries of one chart may name different successors. `chart` is a `uint` read with
+  `strtoul` base 0 and `next` and `roll` are ints read with `strtol` base 0, so `010` is 8 and a negative chart is a parse error.
+
+### What Java does
+
+- `HistoryAssembler.java` records a soft error for an unknown successor and keeps the chart with no successor, so the other charts
+  load. `PlayerDataLoader.loadPlayerHistories()` registers the result if any chart assembled.
+- It keeps one successor per chart and rejects a later record that names a different one, dropping that record's phrase. The
+  class Javadoc of `PlayerHistoryChart` records this as deliberate and the shipped file never varies.
+- It reads all three numbers with `Integer.parseInt`, so `010` is 10 and a chart number of -1 is accepted. A value above
+  `Integer.MAX_VALUE` is a soft `malformed ... integer` error where C narrows the `strtol` result to an `int`.
+- `HistoryReaderTest.danglingSuccessorIsReportedButChartStillLoads`, `mismatchedSuccessorWithinChartIsReportedAndEntrySkipped`,
+  `aZeroPaddedChartIsReadInDecimalWhereCReadsItInOctal`, `aNegativeChartNumberLoadsHereWhereCRejectsIt` and
+  `integerOverflowInPercentIsReportedAndRecordSkipped` pin them.
+- None on the shipped data, whose 44 charts all resolve, never vary a successor and use plain decimals.
+
+## `body/BodyAssembler.java`: the slot types `NONE` and `MAX` load, and a bad slot type drops the body softly where C stops the load
+
+Found 2026-10-18 during `/port backend/parser/BodyReader.java`. Not fixed.
+
+### What C does
+
+- `parse_body_slot` in `init.c` calls `lookup_flag` over its `slots` table, built from `list-equip-slots.h`, and returns
+  `PARSE_ERROR_INVALID_FLAG` when the result is 0.
+- `NONE` is entry 0 of that table, so it is found at index 0 and rejected the same way as an unknown name. The table has
+  no `MAX`, so that is rejected too.
+- A parser error from a data file is fatal at start-up.
+
+### What Java does
+
+- `BodyAssembler.java` resolves the type with `EquipmentSlotsEnum.valueOf("EQUIP_" + slotType)`, and the enum has
+  `EQUIP_NONE` and `EQUIP_MAX`, so `slot:NONE:x` and `slot:MAX:x` both load as ordinary slots.
+- Any other unknown type is a soft error that drops the whole body and lets the other bodies load.
+- `BodyReaderTest.slotTypeNoneLoadsHereWhereCRejectsIt` and `slotTypeMaxLoadsHereWhereCRejectsIt` pin the first; the
+  existing `invalidSlotTypeRejectsTheWholeBody` and `oneBadBodyIsDroppedButOtherBodiesStillLoad` pin the second.
+- None on the shipped data, whose twelve slot types are all real.
+
+## `playerrace/PlayerRaceAssembler.java`: the race index is never numbered, a missing or unknown history drops the race, and the flag and resist names `NONE` and `MAX` load
+
+Found 2026-10-18 during `/port backend/parser/PlayerRaceReader.java`. Not fixed.
+
+### What C does
+
+- `finish_parse_p_race` in `init.c` walks the list and sets `ridx` to 0 for the first race in the file up to one less than the count
+  for the last.
+- `parse_p_race_history` stores whatever `findchart` returns, so a `history:` naming a chart that does not exist stores NULL without
+  an error, and a race with no `history:` line keeps the NULL it was allocated with.
+- `parse_p_race_obj_flags` and `parse_p_race_play_flags` call `grab_flag`, whose `lookup_flag` starts at `FLAG_START` (1). The
+  object-flag table has `"NONE"` as entry 0 and the player-flag table's first entry is `NONE` too, so both are skipped and
+  rejected as `PARSE_ERROR_INVALID_FLAG`. Neither table has `MAX`.
+- `parse_p_race_values` looks the name up in `list_element_names`, built from `list-elements.h`, which has no `NONE` or `MAX`, so
+  `RES_NONE` and `RES_MAX` are `PARSE_ERROR_INVALID_VALUE`.
+- A parser error from a data file is fatal at start-up.
+
+### What Java does
+
+- `PlayerRaceAssembler.java` passes 0 as the second argument of `new PlayerRace(...)` for every race, so `rIndex` is 0 for all
+  eleven. Nothing reads it except `PlayerRace.copy`, which carries it across; the race is found by its position in the list.
+- It looks the history up with `PlayerRegistry.lookupPlayerHistoryChart` and records a soft error, dropping the race, when the
+  result is null or the text is not a number. A race with no `history:` line has the empty string and is dropped as "invalid
+  history chart integer format".
+- It resolves flags with `ObjectFlag.valueOf("OF_" + name)` and `PlayerFlag.valueOf("PF_" + name)`, and the enums have `OF_NONE`,
+  `OF_MAX` and `PF_NONE`, so `obj-flags:NONE`, `obj-flags:MAX` and `player-flags:NONE` load. `PF_MAX` is not in `PlayerFlag`,
+  so that one is rejected as C does.
+- It resolves resists with `ElementEnum.valueOf("ELEM_" + name)`, and the enum has `ELEM_NONE` and `ELEM_MAX`, so `RES_NONE[1]` and
+  `RES_MAX[1]` load as ordinary resists.
+- Any other unknown name is a soft error that drops the whole race and lets the other races load.
+- `PlayerRaceReaderTest.everyRaceKeepsAnIndexOfZeroHereWhereCNumbersThemFromZero`,
+  `aRaceWithNoHistoryLineIsDroppedHereWhereCLoadsItWithANullHistory`, `aHistoryChartNoneDefinesDropsTheRaceHereWhereCStoresNull`,
+  `objectFlagNoneLoadsHereWhereCRejectsIt`, `objectFlagMaxLoadsHereWhereCRejectsIt`, `playerFlagNoneLoadsHereWhereCRejectsIt` and
+  `resistNoneAndMaxLoadHereWhereCRejectsThem` pin them.
+
+### Impact
+
+- None on the shipped data: every race has a `history:` naming a real chart, and every flag and resist is a real one.
+- A race that names a missing chart is dropped here where C loads it with a NULL history. Dropping it is arguably safer, but it
+  is a difference, and it removes the race from the birth menu.
+
+## `playerclass/ClassSpellBookAssembler.java` and `playerclass/ClassMagicAssembler.java`: a book keeps more spells than it declares, and a class whose books were all dropped loads as a non-caster
+
+Found 2026-10-18 during `/port backend/parser/PlayerClassReader.java`. Not fixed.
+
+### What C does
+
+- `parse_class_book` in `init.c` allocates `spells` slots and remembers the count in `book_max_spells`; `parse_class_spell` returns
+  `PARSE_ERROR_TOO_MANY_ENTRIES` for a `spell:` line once the book holds that many.
+- A bad book (unknown tval, too many books, unknown realm) stops the load, so no class is ever left with fewer books than its file
+  gives it.
+
+### What Java does
+
+- `ClassSpellBookAssembler.java` ignores the declared spell count: the code that read it is commented out, with a note that the
+  count comes from the size of the spell list. A book declaring 1 spell and followed by 2 loads with 2.
+- `ClassMagicAssembler.java` records a soft error and moves on when a book was dropped, which returns an empty list, so
+  `PlayerClassAssembler.java` stores `ClassMagic.NONE`. The class loads as a non-caster alongside the error.
+- `PlayerClassReaderTest.moreSpellsThanDeclaredLoadHereWhereCRejectsThem` and
+  `aClassWhoseOnlyBookIsDroppedLoadsAsANonCasterAlongsideTheError` pin them.
+
+### Impact
+
+- None on the shipped data: every book's declared count matches its spells, and every book resolves.
+- A miscounted book loads with all its spells here where C stops, which hides a typo in the count. A class that lost every book is
+  in the registry as a non-caster; `PlayerDataLoader.loadPlayerClasses()` sees the error, but anything calling the reader directly
+  gets the class.
+
+## `trap/TrapAssembler.java`: a bad effect line keeps the trap with a `null` effect list, and an absent `graphics:` or `visibility:` line gives a `null` display character or power
+
+Found 2026-10-18 during `/port backend/parser/TrapReader.java`. Not fixed.
+
+### What C does
+
+- `parse_trap_effect` and `parse_trap_effect_xtra` in `init.c` return the error from `grab_effect_data` for an unknown effect, so the load
+  stops.
+- `mem_zalloc` leaves a record's `d_char`, `d_attr` and `power` at zero when `graphics:` or `visibility:` never ran, and
+  `place_trap` in `trap.c` goes on to `randcalc(new_trap->kind->power, ...)`, which is 0 for a zero `random_value`.
+- `parse_trap_flags` and `parse_trap_save_flags` look each name up with `lookup_flag`. `trap_flags` and `list_obj_flag_names` both start
+  with `NONE`, and neither holds a `MAX`.
+- `trap.c` tests `kind->msg`, `msg_good`, `msg_bad` and `msg_xtra` for `NULL` before printing them, and the four are `NULL` when the
+  line is absent.
+
+### What Java does
+
+- `TrapAssembler.java` (`assemble`, the two `EffectAssembler.assemble` calls) keeps the result without a null check. The `EffectAssembler`
+  Javadoc says it returns `null` when any effect failed and that every caller drops the whole record; this one does not, and it has
+  already counted the record in `trapKindIndex`.
+- So `effect:NOTANEFFECT` records a soft error and the kind loads with a `null` effect list. `TrapKind.getEffect()` and `getEffectXtra()`
+  then throw `NullPointerException` from `Collections.unmodifiableList(null)`.
+- With no `graphics:` line the display character is `null`, and with no `visibility:` line the power is `null`. Five shipped kinds
+  have no `visibility:` line (`no trap`, `glyph of warding`, `decoy`, `door lock` and `web`), so their power is `null` where C's is a zero
+  `random_value`.
+- An absent `msg:`, `msg-good:`, `msg-bad:` or `msg-xtra:` line is the empty string, not `null`, and so is `desc:`.
+- `TrapEnum.valueOf("TRF_" + flag)` and `ObjectFlag.valueOf("OF_" + flag)` accept the sentinels, so `flags:MAX` and `save:MAX` load. `NONE`
+  is valid in both languages.
+- `TrapReaderTest.aBadEffectKeepsTheTrapWithNullEffectsHereWhereCQuits`, `aBadExtraEffectKeepsTheTrapWithNullExtraEffectsHereWhereCQuits`,
+  `aKindWithNoGraphicsLineHasNoDisplayCharacterHereWhereCHasZeroes`, `aKindWithNoVisibilityLineHasNullPowerHereWhereCHasAZeroRandom`,
+  `fiveShippedKindsHaveNullPowerHereWhereCHasAZeroRandom`, `anAbsentMessageIsEmptyTextHereWhereCHasNull`, `flagMaxLoadsHereWhereCRejectsIt`
+  and `saveMaxLoadsHereWhereCRejectsIt` pin them.
+
+### Impact
+
+- None on the shipped data: every effect resolves, and every record has `graphics:`.
+- A bad effect line in a modded `trap.txt` loads a trap that crashes the first time its effects are read, and `TerrainDataLoader.loadTraps()`
+  does not look at the kinds beyond the first.
+- The five kinds with a `null` power are the glyph, decoy, door lock and web that `cave-square.c` looks up by name and hands to `place_trap`, so the
+  trap-placing port will hit a `null` power unless the assembler or the caller supplies `Random.Zero()`. Code that prints a trap message will need to
+  test for empty text where C tests for `NULL`.
+- Javadoc: the "Error policy" paragraph of the `TrapAssembler` class block lists colour, flag, save flag and number failures but not
+  effects, and names an unresolvable colour as a reachable case when the lexer already rejects it.
+
+## `playerproperty/PlayerPropertyAssembler.java`: a `code:` on an element record loads, a `value:` on a player or object record is kept, an `aux` of `00` or `-0` is set, `code:MAX` loads for an object, and an unknown code drops the record
+
+Found 2026-10-18 during `/port PlayerPropertyReader.java`. Not fixed.
+
+### What C does
+
+- `parse_player_prop_code` in `init.c` looks the code up with `code_index_in_array` only when the type is `player` (`player_info_flags`) or
+  `object` (`list_obj_flag_names`). For any other type the index stays -1, so a `code:` on an `element` record is
+  `PARSE_ERROR_INVALID_PLAY_PROP_CODE`, and so is a name that is not in the list. The load stops.
+- `list_obj_flag_names` is `NONE` and the object flags, with no `MAX`.
+- `finish_parse_player_prop` copies `type`, `index`, `desc` and `name` for a record that is not an `element`, and not `value`, which
+  `mem_zalloc` leaves at 0. An `element` record's `value` is copied to each expansion.
+- `aux` is an `int` that `parse_player_prop_bindui` tests with `parser_getint(p, "aux") != 0`, and `strtol` reads `00` and `-0` as 0.
+- A `bindui:` value that is not `special` is read with `strtol`; a failure is `PARSE_ERROR_NOT_NUMBER` and INT_MIN or INT_MAX is
+  `PARSE_ERROR_INVALID_VALUE`, both hard errors.
+- `bind_player_ability_to_ui_entry_by_name` returns 1 when `ui_entry_search` finds no entry, and `finish_parse_player_prop` ignores the
+  result, so the binding is lost without a message.
+
+### What Java does
+
+- `PlayerPropertyAssembler.java` (`assemble`): when `record.code()` is not empty it resolves it for an `element` record as well, with
+  `ElementEnum.valueOf("ELEM_" + code)`, then overwrites the result with each element in the expansion. `code:ACID` on an element record
+  loads 25 properties with no error, and `code:BOGUS` drops the record with a soft error.
+- `assemble` passes `value` to the `PlayerProperty` for every type, so a `value:` on a `player` or `object` record is kept.
+- `assemble` sets `aux` with `!b.get(2).equals("0")`, a string test, so `00` and `-0` are set.
+- `ObjectFlag.valueOf("OF_" + record.code())` accepts the sentinel, so `code:MAX` on an `object` record loads with `OF_MAX`. `PlayerFlag` has
+  no `PF_MAX`, so the same line on a `player` record is dropped with a soft error, as C rejects it.
+- An unresolvable code, whatever the type, adds "Record starting at line: n has illegal code" and `continue`s, dropping the record where C
+  stops the load.
+- A `bindui:` value that is not a number, or is INT_MIN or INT_MAX, drops just that binding with a soft error; the record still loads. The
+  limits themselves match C.
+- The binding keeps the raw entry name, `name + tag`, and nothing looks it up, so an entry that does not exist is never noticed.
+  The UI layer is meant to resolve them; the open item is in `docs/ThingsNotToDrop_UPTO_20261016.md`.
+- `PlayerPropertyReaderTest.aCodeOnAnElementRecordIsAcceptedHereWhereCRejectsIt`, `aValueOnAPlayerRecordIsKeptHereWhereCDropsIt`,
+  `aValueOnAnObjectRecordIsKeptHereWhereCDropsIt`, `anAuxOfDoubleZeroIsAuxHereWhereCReadsZero`,
+  `anAuxOfMinusZeroIsAuxHereWhereCReadsZero`, `codeMaxLoadsForAnObjectRecordHereWhereCRejectsIt`,
+  `aCodeInTheOtherFlagListIsDroppedHereWhereCQuits`, `aBadBindingValueDropsOnlyThatBindingHereWhereCQuits`,
+  `aBindingToAnUnknownEntryIsKeptHereWhereCDropsTheBindingQuietly` and
+  `bindingValuesAtTheEdgesOfIntAreRejectedExactlyAtTheLimits` pin them.
+
+### Impact
+
+- None on the shipped data: every code resolves, only the three `element` records carry a `value:`, no `aux` is written as `00` or `-0`,
+  and no `element` record has a `code:`.
+- A `value:` kept on a `player` or `object` property is read as an element strength by nothing today, but any code that tests
+  `getValue()` without checking the type will see a number C would have zero.
+- A bad code in a modded file loses one property in Java and the whole load in C, with a message in the error list that
+  `PlayerDataLoader.loadPlayerProperties()` reports.
+- The Javadoc of `assemble` lists "whole-record skip" for an unresolvable code but not that an `element` record's code is resolved and then
+  discarded, and the class block still cites C line numbers for `finish_parse_player_prop` and `my_strcap`.
+
+## `GameConstantsAssembler`: negative values and overflow differ from C
+
+Found 2026-10-19 during `/port GameConstantsReader.java`. Not fixed.
+
+### What C does
+
+- The `parse_constants_*` handlers for `level-max`, `mon-gen`, `mon-play`, `dun-gen`, `world`, `carry-cap`, `store`, `obj-make` and
+  `player` return `PARSE_ERROR_INVALID_VALUE` when `value < 0`. The `melee-critical`, `ranged-critical`, `o-melee-critical` and
+  `o-ranged-critical` handlers have no such check, and `melee-critical:chance-offset:-60` relies on that.
+- An `int` is read with `strtol`, so a value too big for an `int` is truncated without complaint.
+
+### What Java does
+
+- `GameConstantsAssembler.java`: the nine scalar handlers store whatever `coerceInt` returns, so `level-max:monsters:-1` and
+  `world:max-depth:-1` load with no error.
+- `coerceInt` is `Integer.parseInt`, so `world:max-depth:99999999999` is a soft error, "is not an integer", where C truncates it. The
+  wording is also wrong for a number that merely does not fit.
+- The `o-melee-critical-level` and `o-ranged-critical-level` rows do match C: a zero or negative `chance` and a negative `dice` are
+  refused, by the builder.
+- `GameConstantsReaderTest.aNegativeConstantLoadsHereWhereCRefusesIt` and `anOverflowingValueIsRefusedHereWhereCTruncatesIt` pin them.
+
+### Impact
+
+- None on the shipped data: every value in `constants.txt` outside the two critical handlers is zero or more.
+- A negative constant in a modded file loads and flows into the game, where C refuses the file.

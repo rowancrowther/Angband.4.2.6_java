@@ -369,4 +369,236 @@ class FlavourReaderTest {
         assertTrue(r.hasErrors());
         assertTrue(r.items().isEmpty());
     }
+
+    // =====================================================================
+    // (4) READER CONTRACT  (init_parse_flavor / run_parse_flavor / finish_parse_flavor)
+    // =====================================================================
+
+    /**
+     * Expected figures worked out from the upstream {@code flavor.txt} with awk, not from the port:
+     * per {@code kind:} block, the flavour count, how many of them are {@code fixed:}, the sum of
+     * the {@code index} column, and the {@code index} of the first and of the last line in the file.
+     * {@code FlavourKind} stores a block last file line first, so the first and last are swapped
+     * when read back.
+     */
+    @Test
+    void everyShippedBlockAgreesWithTheUpstreamFile() {
+        //                    tval              flavours fixed indexSum firstInFile lastInFile
+        assertBlock(TValue.TV_RING,     43, 4,   946,   1,  43);
+        assertBlock(TValue.TV_AMULET,   24, 4,  1332,  52,  67);
+        assertBlock(TValue.TV_STAFF,    35, 0,  2975,  68, 102);
+        assertBlock(TValue.TV_WAND,     35, 0,  4200, 103, 137);
+        assertBlock(TValue.TV_ROD,      35, 0,  5425, 138, 172);
+        assertBlock(TValue.TV_MUSHROOM, 20, 0,  3650, 173, 192);
+        assertBlock(TValue.TV_POTION,   59, 0, 13098, 193, 251);
+        assertBlock(TValue.TV_SCROLL,   51, 0, 14127, 252, 302);
+    }
+
+    private static void assertBlock(TValue tval, int count, int fixed, int indexSum,
+                                    int firstInFile, int lastInFile) {
+        FlavourKind block = kind(tval);
+        assertNotNull(block, () -> tval + " block missing");
+        assertEquals(count, block.getFlavours().size(), () -> tval + " flavours");
+        assertEquals(fixed, block.getFlavours().stream().filter(Flavour::isFixed).count(), () -> tval + " fixed");
+        assertEquals(indexSum, block.getFlavours().stream().mapToInt(Flavour::getIndex).sum(),
+                () -> tval + " index sum");
+        assertEquals(lastInFile, block.getFlavours().getFirst().getIndex(), () -> tval + " stored first");
+        assertEquals(firstInFile, block.getFlavours().getLast().getIndex(), () -> tval + " stored last");
+    }
+
+    /**
+     * C threads each {@code struct flavor} onto the head of {@code flavors}, so a block runs last file
+     * line first; {@code FlavourKind} reverses what it is given to match, so the reader's items come
+     * back newest-first within a block.
+     */
+    @Test
+    void aBlockComesBackLastFileLineFirst() throws IOException {
+        ParseResult<FlavourKind> r = load("order.txt", withHeader(1,
+                "kind:ring:=\nflavor:2:Green:First\nflavor:3:Violet:Second\nflavor:4:Red:Third\n"));
+        assertFalse(r.hasErrors(), () -> r.errors().toString());
+        assertEquals(java.util.List.of(4, 3, 2),
+                r.items().getFirst().getFlavours().stream().map(Flavour::getIndex).toList());
+    }
+
+    /**
+     * {@code parse} is {@code parseWithResults(...).items()}: the soft errors are dropped, and the
+     * flavours that did assemble still come back.
+     */
+    @Test
+    void parseReturnsTheItemsAndDiscardsTheSoftErrors() throws IOException {
+        Path file = tempDir.resolve("parse.txt");
+        Files.writeString(file, withHeader(7, "kind:ring:=\nflavor:2:Green:Foo\nflavor:3:Notacolour:Bar\n"));
+        java.util.List<FlavourKind> items = new FlavourReader().parse(file.toString());
+        assertEquals(1, items.size());
+        assertEquals(1, items.getFirst().getFlavours().size());
+        assertEquals("Foo", items.getFirst().getFlavours().getFirst().getText());
+    }
+
+    /**
+     * C's {@code run_parse_flavor} is {@code parse_file_quit_not_found}, which quits when
+     * {@code flavor.txt} is missing; the reader raises an {@link IOException} and leaves the quit to
+     * the loader.
+     */
+    @Test
+    void aMissingFileIsAnIOException() {
+        assertThrows(IOException.class,
+                () -> new FlavourReader().parseWithResults(tempDir.resolve("nothere.txt").toString()));
+    }
+
+    /**
+     * A description is the rest of the line after the colour, so its spaces and hyphens survive:
+     * {@code flavor:67:Light Slate:Mother-of-Pearl} and {@code fixed:1:Ring of Power:Yellow:Plain Gold}.
+     */
+    @Test
+    void descriptionsKeepTheirSpacesAndHyphens() {
+        assertNotNull(byText(kind(TValue.TV_AMULET), "Mother-of-Pearl"));
+        assertNotNull(byText(kind(TValue.TV_RING), "Plain Gold"));
+    }
+
+    /**
+     * Comment lines, blank lines and CRLF line ends are skipped, as {@code parser_parse} skips
+     * them.
+     */
+    @Test
+    void commentsBlankLinesAndCrlfAreSkipped() throws IOException {
+        ParseResult<FlavourKind> r = load("crlf.txt",
+                "# header\r\n\r\nrecord-count:1\r\n# note\r\nkind:ring:=\r\n\r\nflavor:2:Green:Foo\r\n");
+        assertFalse(r.hasErrors(), () -> r.errors().toString());
+        assertEquals(1, r.items().size());
+        assertEquals("Foo", r.items().getFirst().getFlavours().getFirst().getText());
+    }
+
+    /**
+     * C keeps one flat {@code flavors} list, so two {@code kind:} lines for one tval simply add
+     * flavours to it; the port makes two {@code FlavourKind} blocks, and the record-count header
+     * counts both.
+     */
+    @Test
+    void twoBlocksForOneTvalStayTwoBlocks() throws IOException {
+        ParseResult<FlavourKind> r = load("twice.txt", withHeader(2,
+                "kind:ring:=\nflavor:2:Green:Foo\nkind:ring:=\nflavor:3:Violet:Bar\n"));
+        assertFalse(r.hasErrors(), () -> r.errors().toString());
+        assertEquals(2, r.items().size());
+    }
+
+    // =====================================================================
+    // (5) WHERE THE GRAMMAR DIFFERS FROM C  (docs/grammar_issues.md)
+    // =====================================================================
+
+    private void assertHardError(String name, String body) throws IOException {
+        ParseResult<FlavourKind> r = load(name, body);
+        assertTrue(r.hasErrors(), () -> name + " should be rejected");
+        assertTrue(r.items().isEmpty(), () -> name + " should give no items");
+    }
+
+    /**
+     * {@code parse_flavor_kind} just sets the tval and glyph, so C accepts a {@code kind:} with no
+     * flavour under it; the {@code section} rule needs one or more.
+     */
+    @Test
+    void aKindWithNoFlavoursIsAHardErrorHereWhereCAcceptsIt() throws IOException {
+        assertHardError("emptykind.txt", withHeader(1, "kind:ring:=\n"));
+    }
+
+    /**
+     * Before any {@code kind:} line C's {@code flavor_tval} and {@code flavor_glyph} are zero and a
+     * {@code flavor:} line is accepted with them; the {@code file} rule needs a {@code kind:} first.
+     */
+    @Test
+    void aFlavourBeforeAnyKindIsAHardErrorHereWhereCAcceptsIt() throws IOException {
+        assertHardError("nokind.txt", withHeader(1, "flavor:2:Green:Foo\n"));
+    }
+
+    /**
+     * {@code desc} is a {@code str}, which {@code parser_parse} does not split on {@code :}, so C
+     * keeps {@code A: B} whole; {@code STRING} stops at the colon and the rule then sees a stray
+     * {@code COLON}.
+     */
+    @Test
+    void aColonInTheDescriptionIsAHardErrorHereWhereCKeepsItInTheText() throws IOException {
+        assertHardError("colontext.txt", withHeader(1, "kind:ring:=\nflavor:2:Green:A: B\n"));
+    }
+
+    /**
+     * With nothing after the last colon {@code parser_parse} finds no token for the optional
+     * {@code desc} and stops, so C reads {@code flavor:2:Green:} as a flavour with no description;
+     * the {@code flavour} rule wants a {@code STRING} after the colon.
+     */
+    @Test
+    void aTrailingColonAfterTheColourIsAHardErrorHereWhereCAcceptsIt() throws IOException {
+        assertHardError("trailingcolon.txt", withHeader(1, "kind:ring:=\nflavor:2:Green:\n"));
+    }
+
+    /**
+     * {@code parser_parse} skips leading whitespace; {@code CommentsAndEol.g4} does not, so an
+     * indented directive is a syntax error. The shared gap is already recorded for the realm
+     * reader.
+     */
+    @Test
+    void anIndentedLineIsAHardErrorHereWhereCSkipsLeadingWhitespace() throws IOException {
+        assertHardError("indent.txt", withHeader(1, "kind:ring:=\n  flavor:2:Green:Foo\n"));
+    }
+
+    /**
+     * The {@code glyph} is a {@code char}: {@code parser_parse} takes one character and, if a colon
+     * follows, skips it and ignores the rest of the line, so C reads {@code kind:ring:=:extra} as
+     * glyph {@code =}. {@code FlavourGrammar} sees a stray {@code COLON STRING}.
+     */
+    @Test
+    void textAfterTheGlyphIsAHardErrorHereWhereCIgnoresIt() throws IOException {
+        assertHardError("glyphextra.txt", withHeader(1, "kind:ring:=:extra\nflavor:2:Green:Foo\n"));
+    }
+
+    /**
+     * {@code record-count:0} with no {@code kind:} line: C reads an empty file and ends with an empty
+     * {@code flavors} list; the {@code file} rule needs one or more sections.
+     */
+    @Test
+    void anEmptyFileWithAZeroCountIsAHardErrorHereWhereCAcceptsIt() throws IOException {
+        assertHardError("empty.txt", "record-count:0\n");
+    }
+
+    /**
+     * A directive C does not register is {@code PARSE_ERROR_UNDEFINED_DIRECTIVE}, which quits; here
+     * the lexer has no token for it and the parse is a hard error with no items.
+     */
+    @Test
+    void anUnknownDirectiveIsAHardError() throws IOException {
+        assertHardError("unknown.txt", withHeader(1, "kind:ring:=\nname:Foo\n"));
+    }
+
+    // =====================================================================
+    // (6) WHERE THE ASSEMBLERS DIFFER FROM C  (docs/Assembler_Issues.md)
+    // =====================================================================
+
+    /**
+     * {@code color_text_to_attr} falls back to {@code COLOUR_WHITE} for a name it does not know, so
+     * C paints {@code flavor:2:Notacolour:Foo} white; {@code ColourEnum.fromCode} returns null and
+     * the flavour is dropped with an error. Only a one-character code that matches nothing is an
+     * error in C ({@code PARSE_ERROR_INVALID_COLOR}).
+     */
+    @Test
+    void anUnknownColourNameDropsTheFlavourHereWhereCPaintsItWhite() throws IOException {
+        ParseResult<FlavourKind> r = load("whitefallback.txt", withHeader(1,
+                "kind:ring:=\nflavor:2:Notacolour:Foo\nflavor:3:Green:Bar\n"));
+        assertTrue(hasError(r, "unknown colour"));
+        assertEquals(1, r.items().getFirst().getFlavours().size());
+    }
+
+    /**
+     * {@code index} is a {@code uint}: {@code parser_parse} rejects a leading {@code -} with
+     * {@code PARSE_ERROR_NOT_NUMBER}, and reads the digits with {@code strtoul} base 0, so
+     * {@code 0x10} is 16. {@code Integer.parseInt} takes {@code -5} and refuses {@code 0x10}.
+     */
+    @Test
+    void aNegativeIndexLoadsHereWhereCRejectsItAndAHexIndexFailsWhereCReadsIt() throws IOException {
+        ParseResult<FlavourKind> negative = load("negindex.txt", withHeader(1,
+                "kind:ring:=\nflavor:-5:Green:Foo\n"));
+        assertFalse(negative.hasErrors(), () -> negative.errors().toString());
+        assertEquals(-5, negative.items().getFirst().getFlavours().getFirst().getIndex());
+
+        ParseResult<FlavourKind> hex = load("hexindex.txt", withHeader(1,
+                "kind:ring:=\nflavor:0x10:Green:Foo\n"));
+        assertTrue(hasError(hex, "malformed integer"));
+    }
 }

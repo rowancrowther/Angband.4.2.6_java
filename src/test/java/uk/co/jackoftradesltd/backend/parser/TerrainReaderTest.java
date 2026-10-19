@@ -276,4 +276,295 @@ class TerrainReaderTest {
                         e -> e.contains("Illegal terrain") && e.contains("NOTAFLAG")),
                 errors::toString);
     }
+
+    // =====================================================================
+    // Helpers for the contract and difference tests below
+    // =====================================================================
+
+    private ParseResult<Feature> load(String name, String content) throws IOException {
+        return new TerrainReader().parseWithResults(tempFile(name, content));
+    }
+
+    private static String withHeader(int count, String records) {
+        return "record-count:" + count + "\n" + records;
+    }
+
+    /** A hard grammar or lexer error: nothing loads and the messages come back. */
+    private static void assertHardError(ParseResult<Feature> r) {
+        assertTrue(r.hasErrors(), "expected the messages of a hard error");
+        assertTrue(r.items().isEmpty(), r.items()::toString);
+    }
+
+    // =====================================================================
+    // The real file, worked out from the upstream terrain.txt and list-terrain.h
+    // =====================================================================
+
+    /**
+     * Code and name of every {@code code:} record in the upstream file, in file order, which is the
+     * order of {@code list-terrain.h}: the slot {@code f_info} files each one under.
+     */
+    private static final String[][] SHIPPED = {
+            {"NONE", "unknown grid"}, {"FLOOR", "open floor"}, {"CLOSED", "closed door"},
+            {"OPEN", "open door"}, {"BROKEN", "broken door"}, {"LESS", "up staircase"},
+            {"MORE", "down staircase"}, {"STORE_GENERAL", "General Store"}, {"STORE_ARMOR", "Armoury"},
+            {"STORE_WEAPON", "Weapon Smiths"}, {"STORE_BOOK", "Bookseller"},
+            {"STORE_ALCHEMY", "Alchemy Shop"}, {"STORE_MAGIC", "Magic Shop"},
+            {"STORE_BLACK", "Black Market"}, {"HOME", "Home"}, {"SECRET", "secret door"},
+            {"RUBBLE", "pile of rubble"}, {"MAGMA", "magma vein"}, {"QUARTZ", "quartz vein"},
+            {"MAGMA_K", "magma vein with treasure"}, {"QUARTZ_K", "quartz vein with treasure"},
+            {"GRANITE", "granite wall"}, {"PERM", "permanent wall"}, {"LAVA", "lava"},
+            {"PASS_RUBBLE", "pile of passable rubble"}
+    };
+
+    @Test
+    void theRealFileLoadsEveryRecordInFileOrder() throws IOException {
+        List<Feature> items = new TerrainReader().parseWithResults(REAL_FILE).items();
+
+        assertEquals(SHIPPED.length, items.size());
+        for (int i = 0; i < SHIPPED.length; i++) {
+            assertEquals(TerrainFlags.valueOf("FEAT_" + SHIPPED[i][0]), items.get(i).getCodeFlags(),
+                    "record " + i);
+            assertEquals(SHIPPED[i][1], items.get(i).getName(), "record " + i);
+        }
+    }
+
+    /** The upstream file has eight records with {@code TF_SHOP}, STORE_GENERAL to HOME. */
+    @Test
+    void theRealFileHasEightShopsAndOneMimic() throws IOException {
+        List<Feature> items = new TerrainReader().parseWithResults(REAL_FILE).items();
+
+        assertEquals(8, items.stream().filter(Feature::isShop).count());
+        assertEquals(List.of(TerrainFlags.FEAT_SECRET),
+                items.stream().filter(Feature::isMimicing).map(Feature::getCodeFlags).toList());
+    }
+
+    /**
+     * The shipped file differs from upstream in the {@code record-count:25} header with the blank
+     * line after it, one trailing space on a comment, and the trailing space on the lava
+     * {@code walk-msg:} and {@code run-msg:} lines; every other line is identical. The trailing
+     * spaces are part of the C message, as {@code str} takes the rest of the line.
+     */
+    @Test
+    void theShippedFileDiffersFromUpstreamInTheHeaderAndThreeTrailingSpaces() throws IOException {
+        List<String> lines = Files.readAllLines(Path.of(REAL_FILE));
+
+        assertEquals(1, lines.stream().filter(l -> l.startsWith("record-count:")).count());
+        assertTrue(lines.contains("record-count:25"));
+        assertTrue(lines.contains("walk-msg:The lava will scald you!  Really step in?"));
+        assertTrue(lines.contains("run-msg:Lava blocks your path.  Step into it?"));
+    }
+
+    // =====================================================================
+    // The reader's contract
+    // =====================================================================
+
+    @Test
+    void parseReturnsTheSameFeaturesAsParseWithResults() throws Exception {
+        List<Feature> items = new TerrainReader().parse(REAL_FILE);
+
+        // Feature.equals compares Flag by identity, so compare what each record is called instead.
+        assertEquals(new TerrainReader().parseWithResults(REAL_FILE).items().stream().map(Feature::getName).toList(),
+                items.stream().map(Feature::getName).toList());
+    }
+
+    /** C's {@code parse_file_quit_not_found} quits; the port throws so the loader can stop. */
+    @Test
+    void aMissingFileIsAnIOException() {
+        assertThrows(IOException.class,
+                () -> new TerrainReader().parseWithResults(tempDir.resolve("absent.txt").toString()));
+    }
+
+    @Test
+    void aHardGrammarErrorReturnsNoFeaturesAndTheMessages() throws IOException {
+        assertHardError(load("hard.txt", withHeader(2, VALID_RECORD + "nonsense:1\n")));
+    }
+
+    // =====================================================================
+    // What the grammar does the way C does
+    // =====================================================================
+
+    /** C: {@code parse_feat_priority}, {@code parse_feat_digging} and {@code parse_feat_mimic} assign, so the last wins. */
+    @Test
+    void aRepeatedPriorityDiggingOrMimicKeepsTheLastLine() throws IOException {
+        ParseResult<Feature> r = load("repeat-assign.txt", withHeader(1, VALID_RECORD
+                + "priority:1\npriority:7\ndigging:2\ndigging:4\nmimic:NONE\nmimic:GRANITE\n"));
+
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        String text = r.items().get(0).toString();
+        assertTrue(text.contains("priority=7"), text);
+        assertTrue(text.contains("dig=4"), text);
+        assertTrue(text.contains("mimic=FEAT_GRANITE"), text);
+    }
+
+    /** C: {@code parse_feat_desc} calls {@code string_append}, so lines join with no separator added. */
+    @Test
+    void descLinesJoinInFileOrderKeepingTheLeadingBlank() throws IOException {
+        ParseResult<Feature> r = load("desc.txt", withHeader(1, VALID_RECORD
+                + "desc:An open floor or bare ground.  Can be walked across by anything, and can\n"
+                + "desc: hold traps or items.\n"));
+
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        assertTrue(r.items().get(0).toString().contains(
+                "description='An open floor or bare ground.  Can be walked across by anything, and can"
+                        + " hold traps or items.'"), r.items().get(0)::toString);
+    }
+
+    /** C: {@code name} is a {@code str}, which takes the rest of the line, colons included. */
+    @Test
+    void aColonInTheNameIsKept() throws IOException {
+        ParseResult<Feature> r = load("colon-name.txt", withHeader(1,
+                "code:FLOOR\nname:a: b:c\ngraphics:.:w\n"));
+
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        assertEquals("a: b:c", r.items().get(0).getName());
+    }
+
+    /** C: any order of the optional lines is accepted after the three header lines. */
+    @Test
+    void optionalLinesMayComeInAnyOrder() throws IOException {
+        ParseResult<Feature> r = load("order.txt", withHeader(1, VALID_RECORD
+                + "resist-flag:RAND_50\ndesc:d\nlook-prefix:a\nflags:LOS | PROJECT\npriority:3\n"
+                + "flags:PASSABLE\n"));
+
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        assertTrue(r.items().get(0).isPassable());
+        assertTrue(r.items().get(0).isLos());
+    }
+
+    // =====================================================================
+    // Where the grammar is stricter than C (docs/grammar_issues.md)
+    // =====================================================================
+
+    /** C: {@code parse_feat_code} is the only line a record needs. */
+    @Test
+    void aRecordWithOnlyACodeIsAHardErrorHereWhereCAcceptsIt() throws IOException {
+        assertHardError(load("code-only.txt", withHeader(1, "code:FLOOR\n")));
+    }
+
+    @Test
+    void aRecordWithNoGraphicsIsAHardErrorHereWhereCAcceptsIt() throws IOException {
+        assertHardError(load("no-graphics.txt", withHeader(1, "code:FLOOR\nname:open floor\n")));
+    }
+
+    @Test
+    void aRecordWithNoNameIsAHardErrorHereWhereCAcceptsIt() throws IOException {
+        assertHardError(load("no-name.txt", withHeader(1, "code:FLOOR\ngraphics:.:w\n")));
+    }
+
+    /** C: after {@code code:} the handlers run in whatever order the lines come. */
+    @Test
+    void graphicsBeforeTheNameIsAHardErrorHereWhereCAcceptsAnyOrder() throws IOException {
+        assertHardError(load("graphics-first.txt", withHeader(1,
+                "code:FLOOR\ngraphics:.:w\nname:open floor\n")));
+    }
+
+    /** C: {@code parse_feat_graphics} assigns, so a second line replaces the first. */
+    @Test
+    void aRepeatedGraphicsLineIsAHardErrorHereWhereCKeepsTheLast() throws IOException {
+        assertHardError(load("two-graphics.txt", withHeader(1, VALID_RECORD + "graphics:#:r\n")));
+    }
+
+    /** C: {@code string_append} on a {@code walk-msg:} line that already has text, so the lines join. */
+    @Test
+    void repeatedMessageLinesReplaceEachOtherHereWhereCAppendsThem() throws IOException {
+        String[][] directives = {
+                {"walk-msg", "walkMsg"}, {"run-msg", "runMsg"}, {"hurt-msg", "hurtMsg"},
+                {"die-msg", "dieMsg"}, {"confused-msg", "confusedMsg"}
+        };
+        for (String[] d : directives) {
+            ParseResult<Feature> r = load(d[0] + ".txt", withHeader(1, VALID_RECORD
+                    + d[0] + ":first\n" + d[0] + ":second\n"));
+
+            assertFalse(r.hasErrors(), r.errors()::toString);
+            String text = r.items().get(0).toString();
+            assertTrue(text.contains(d[1] + "='second'"), d[0] + ": " + text);
+        }
+    }
+
+    /** C: the same append, then {@code finish_parse_feat} adds one trailing space. */
+    @Test
+    void repeatedLookLinesReplaceEachOtherHereWhereCAppendsThem() throws IOException {
+        ParseResult<Feature> r = load("look.txt", withHeader(1, VALID_RECORD
+                + "look-prefix:first\nlook-prefix:second\n"
+                + "look-in-preposition:in\nlook-in-preposition:to\n"));
+
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        String text = r.items().get(0).toString();
+        assertTrue(text.contains("lookPrefix='second '"), text);
+        assertTrue(text.contains("lookInPreposition='to '"), text);
+    }
+
+    /** C: {@code strtok(flags, " |")}, so a space alone separates two flags. */
+    @Test
+    void flagsSeparatedByASpaceAloneAreAHardErrorHereWhereCSplitsOnSpaceToo() throws IOException {
+        assertHardError(load("space-flags.txt", withHeader(1, VALID_RECORD + "flags:LOS PASSABLE\n")));
+    }
+
+    /** C: {@code flags} is {@code ?str}, and an absent value is {@code PARSE_ERROR_NONE}. */
+    @Test
+    void anEmptyFlagsLineIsAHardErrorHereWhereCAcceptsIt() throws IOException {
+        assertHardError(load("empty-flags.txt", withHeader(1, VALID_RECORD + "flags:\n")));
+    }
+
+    /** C: a file with a header and no records runs {@code finish_parse_feat} over a zeroed table. */
+    @Test
+    void aHeaderWithNoRecordsIsAHardErrorHereWhereCAcceptsAnEmptyFile() throws IOException {
+        assertHardError(load("empty.txt", "record-count:0\n"));
+    }
+
+    /** C: {@code strtoul(tok, &z, 0)}, so {@code 0x3} is 3. */
+    @Test
+    void aHexadecimalPriorityIsAHardErrorHereWhereCReadsBaseZero() throws IOException {
+        assertHardError(load("hex-priority.txt", withHeader(1, VALID_RECORD + "priority:0x3\n")));
+    }
+
+    /** C: {@code strtoul} stops at the {@code x} and {@code z != tok}, so {@code 3x} is 3. */
+    @Test
+    void textAfterThePriorityNumberIsAHardErrorHereWhereCIgnoresIt() throws IOException {
+        assertHardError(load("junk-priority.txt", withHeader(1, VALID_RECORD + "priority:3x\n")));
+    }
+
+    /** C: an {@code int} is tokenised on a colon and nothing checks what follows the last field. */
+    @Test
+    void aSecondFieldAfterTheDiggingNumberIsAHardErrorHereWhereCIgnoresIt() throws IOException {
+        assertHardError(load("junk-digging.txt", withHeader(1, VALID_RECORD + "digging:2:junk\n")));
+    }
+
+    /** C: {@code resist-flag} is a {@code sym}, tokenised on a colon, so the text after it is ignored. */
+    @Test
+    void aSecondFieldAfterTheResistFlagIsAHardErrorHereWhereCIgnoresIt() throws IOException {
+        assertHardError(load("junk-resist.txt", withHeader(1, VALID_RECORD + "resist-flag:RAND_50:x\n")));
+    }
+
+    /** C: {@code color_text_to_attr} answers white for a name it does not know. */
+    @Test
+    void anUnknownColourNameIsAHardErrorHereWhereCDrawsItWhite() throws IOException {
+        assertHardError(load("bad-colour.txt", withHeader(1, "code:FLOOR\nname:x\ngraphics:.:nonsense\n")));
+    }
+
+    /** C: {@code parser_parse} skips leading whitespace before it reads the directive. */
+    @Test
+    void anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent() throws IOException {
+        assertHardError(load("indented.txt", withHeader(1, VALID_RECORD + "  priority:3\n")));
+    }
+
+    // =====================================================================
+    // Where the list differs from f_info
+    // =====================================================================
+
+    /**
+     * C: {@code f_info} is allocated with {@code FEAT_MAX} slots and each record fills the slot of its
+     * {@code code:}, so MORE (6) would come after FLOOR (1) whatever the file order. The list holds the
+     * records in file order and nothing else.
+     */
+    @Test
+    void recordsComeBackInFileOrderHereWhereCFilesEachUnderItsCode() throws IOException {
+        ParseResult<Feature> r = load("order.txt", withHeader(2,
+                "code:MORE\nname:down staircase\ngraphics:>:w\n"
+                        + "code:FLOOR\nname:open floor\ngraphics:.:w\n"));
+
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        assertEquals(List.of(TerrainFlags.FEAT_MORE, TerrainFlags.FEAT_FLOOR),
+                r.items().stream().map(Feature::getCodeFlags).toList());
+    }
 }

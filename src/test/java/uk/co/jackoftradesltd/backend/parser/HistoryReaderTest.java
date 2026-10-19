@@ -262,4 +262,189 @@ class HistoryReaderTest {
         assertTrue(result.items().isEmpty());
         assertTrue(result.hasErrors());
     }
+
+    // ---- Against the upstream file and C's parser ------------------------
+
+    /**
+     * The 44 charts of the upstream {@code history.txt} as {@code chart:next:entries:rolls}, in the
+     * order each chart first appears. Worked out from the upstream file with a line-by-line split,
+     * not from the reader.
+     */
+    private static final String UPSTREAM_CHARTS =
+            "1:2:4:10,20,95,100|2:3:7:40,65,80,90,96,99,100|3:50:3:20,80,100|4:1:8:15,30,50,70,85,95,98,100|5:6:2:60,100|6:9:3:40,70,100|7:8:2:60,100|8:9:3:75,95,100|9:54:6:40,70,87,95,99,100|10:11:2:85,100|11:3:8:20,30,40,50,80,95,99,100|13:14:2:85,100|14:3:5:20,50,75,95,100|16:17:2:25,100|17:18:6:10,25,75,90,99,100|18:57:3:15,85,100|19:20:2:25,100|20:2:2:20,100|21:22:6:30,60,75,90,95,100|22:62:4:5,95,99,100|23:24:3:20,80,100|24:25:6:15,40,70,85,95,100|25:26:5:25,50,75,95,100|26:67:3:20,95,100|50:51:6:20,60,70,80,90,100|51:52:3:70,90,100|52:53:5:30,70,80,90,100|53:0:5:10,30,80,90,100|54:55:3:85,95,100|55:56:2:75,100|56:0:4:75,85,95,100|57:58:2:99,100|58:59:2:90,100|59:60:2:75,100|60:61:4:25,60,90,100|61:0:1:100|62:63:4:60,85,99,100|63:64:3:33,66,100|64:65:3:33,66,100|65:66:4:25,50,75,100|66:0:3:33,66,100|67:68:5:10,40,80,99,100|68:69:4:40,60,95,100|69:0:3:10,90,100";
+
+    @Test
+    void everyShippedChartAgreesWithTheUpstreamTableInFirstAppearanceOrder() throws IOException {
+        List<PlayerHistoryChart> charts = new HistoryReader().parseWithResults(REAL_FILE).items();
+
+        StringBuilder actual = new StringBuilder();
+        for (PlayerHistoryChart chart : charts) {
+            if (actual.length() > 0) actual.append('|');
+            actual.append(chart.getChartNumber()).append(':').append(chart.getSuccessorNumber()).append(':')
+                    .append(entriesOf(chart).size()).append(':')
+                    .append(entriesOf(chart).stream().map(e -> String.valueOf(e.getRoll()))
+                            .collect(java.util.stream.Collectors.joining(",")));
+        }
+        assertEquals(UPSTREAM_CHARTS, actual.toString());
+    }
+
+    @Test
+    void everyShippedPhraseComesBackWhole() throws IOException {
+        // Split the file by hand, chart line then phrase line, and compare each chart's entries in
+        // order. C's str field takes everything after 'phrase:', so trailing spaces are kept.
+        List<PlayerHistoryChart> charts = new HistoryReader().parseWithResults(REAL_FILE).items();
+        java.util.Map<Integer, List<String>> expected = new java.util.LinkedHashMap<>();
+        int chart = -1;
+        for (String line : Files.readAllLines(Path.of(REAL_FILE))) {
+            if (line.startsWith("chart:")) {
+                chart = Integer.parseInt(line.split(":")[1]);
+            } else if (line.startsWith("phrase:")) {
+                expected.computeIfAbsent(chart, k -> new java.util.ArrayList<>()).add(line.substring(7));
+            }
+        }
+
+        assertEquals(REAL_CHART_COUNT, expected.size());
+        for (PlayerHistoryChart c : charts) {
+            List<String> texts = entriesOf(c).stream().map(PlayerHistoryEntry::getText).toList();
+            assertEquals(expected.get(c.getChartNumber()), texts, "chart " + c.getChartNumber());
+        }
+    }
+
+    @Test
+    void chartsComeBackInFirstAppearanceOrderWhereCListsThemNewestFirst() throws IOException {
+        // C pushes each new chart on the front of 'histories'; the port keeps them in a List.
+        ParseResult<PlayerHistoryChart> result = load("order.txt", withHeader(3,
+                record(7, 0, 100, "a") + record(3, 0, 100, "b") + record(5, 0, 100, "c")));
+
+        assertEquals(List.of(7, 3, 5),
+                result.items().stream().map(PlayerHistoryChart::getChartNumber).toList());
+    }
+
+    @Test
+    void aMissingFileIsAnIOExceptionWhereCQuits() {
+        assertThrows(IOException.class,
+                () -> new HistoryReader().parseWithResults(tempDir.resolve("nothing-here.txt").toString()));
+    }
+
+    @Test
+    void aPhraseKeepsColonsAndLeadingSpaces() throws IOException {
+        // C's 'str text' field consumes the rest of the line, so nothing in it is a separator.
+        ParseResult<PlayerHistoryChart> result = load("raw.txt", withHeader(1,
+                record(1, 0, 100, "  a: b:c ")));
+
+        assertFalse(result.hasErrors(), result.errors()::toString);
+        assertEquals("  a: b:c ", entriesOf(byNumber(result.items(), 1)).get(0).getText());
+    }
+
+    @Test
+    void commentsAndBlankLinesBetweenTheLinesAreSkipped() throws IOException {
+        ParseResult<PlayerHistoryChart> result = load("comments.txt",
+                "# header\n\nrecord-count:1\n\n# note\nchart:1:0:100\n\n# between\nphrase:kept\n\n");
+
+        assertFalse(result.hasErrors(), result.errors()::toString);
+        assertEquals("kept", entriesOf(byNumber(result.items(), 1)).get(0).getText());
+    }
+
+    @Test
+    void aNegativeNextAndRollAreAcceptedAsInC() throws IOException {
+        // 'next' and 'roll' are plain ints in C, so a minus sign is fine.
+        ParseResult<PlayerHistoryChart> result = load("negative-roll.txt", withHeader(1,
+                record(1, 0, -5, "x")));
+
+        assertFalse(result.hasErrors(), result.errors()::toString);
+        assertEquals(-5, entriesOf(byNumber(result.items(), 1)).get(0).getRoll());
+    }
+
+    // ---- Where the grammar differs from C --------------------------------
+
+    @Test
+    void aChartWithNoPhraseBetweenTwoRecordsIsAHardErrorHereWhereCAcceptsIt() throws IOException {
+        // C makes an entry with NULL text; the grammar needs a phrase after every chart line.
+        ParseResult<PlayerHistoryChart> result = load("no-phrase-mid.txt", withHeader(2,
+                "chart:1:0:50\n" + record(1, 0, 100, "x")));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
+    }
+
+    @Test
+    void aSecondPhraseLineIsAHardErrorHereWhereCAppendsItToTheEntry() throws IOException {
+        // parse_history_phrase string_appends onto the newest entry, so C reads 'onetwo'.
+        ParseResult<PlayerHistoryChart> result = load("two-phrases.txt", withHeader(1,
+                "chart:1:0:100\nphrase:one\nphrase:two\n"));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
+    }
+
+    @Test
+    void anEmptyPhraseIsAHardErrorAsInC() throws IOException {
+        // C: strtok on an empty remainder gives NULL, so PARSE_ERROR_MISSING_FIELD. Both refuse it.
+        ParseResult<PlayerHistoryChart> result = load("empty-phrase.txt", withHeader(1,
+                "chart:1:0:100\nphrase:\n"));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
+    }
+
+    @Test
+    void aNegativeChartNumberLoadsHereWhereCRejectsIt() throws IOException {
+        // 'chart' is a uint in init_parse_history and parser_parse refuses a leading '-'.
+        ParseResult<PlayerHistoryChart> result = load("negative-chart.txt", withHeader(1,
+                record(-1, 0, 100, "x")));
+
+        assertFalse(result.hasErrors(), result.errors()::toString);
+        assertEquals(-1, result.items().get(0).getChartNumber());
+    }
+
+    @Test
+    void textAfterTheRollIsAHardErrorHereWhereCIgnoresIt() throws IOException {
+        // The last int field is the final strtok token on ':' and the rest is dropped, so C reads
+        // roll 10 from both 'chart:1:0:10:extra' and 'chart:1:0:10abc'.
+        for (String tail : new String[]{":extra", "abc"}) {
+            ParseResult<PlayerHistoryChart> result = load("tail.txt", withHeader(1,
+                    "chart:1:0:10" + tail + "\nphrase:x\n"));
+
+            assertTrue(result.items().isEmpty(), tail);
+            assertTrue(result.hasErrors(), tail);
+        }
+    }
+
+    @Test
+    void aHexRollIsAHardErrorHereWhereCReadsItInBaseSixteen() throws IOException {
+        // strtol base 0 gives 16 for 0x10.
+        ParseResult<PlayerHistoryChart> result = load("hex.txt", withHeader(1,
+                "chart:1:0:0x10\nphrase:x\n"));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
+    }
+
+    @Test
+    void aZeroPaddedChartIsReadInDecimalWhereCReadsItInOctal() throws IOException {
+        // strtoul base 0 reads 010 as 8.
+        ParseResult<PlayerHistoryChart> result = load("octal.txt", withHeader(1,
+                "chart:010:0:100\nphrase:x\n"));
+
+        assertFalse(result.hasErrors(), result.errors()::toString);
+        assertEquals(10, result.items().get(0).getChartNumber());
+    }
+
+    @Test
+    void anIndentedLineIsAHardErrorHereWhereCSkipsLeadingWhitespace() throws IOException {
+        // parser_parse skips leading whitespace, so C reads an indented directive.
+        ParseResult<PlayerHistoryChart> result = load("indented.txt", withHeader(1,
+                "  chart:1:0:100\nphrase:x\n"));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
+    }
+
+    @Test
+    void aHeaderWithNoRecordsIsAHardErrorHereWhereCAcceptsAnEmptyFile() throws IOException {
+        ParseResult<PlayerHistoryChart> result = load("empty.txt", "record-count:0\n");
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
+    }
 }

@@ -267,4 +267,165 @@ class RealmReaderTest {
         assertTrue(result.items().isEmpty());
         assertTrue(result.hasErrors());
     }
+
+    // ---- Added 261018: C-derived expectations (init.c parse_realm_*, finish_parse_realm) ----
+
+    @Test
+    void realFileComesBackInReverseFileOrderAsCsRealmsListDoes() throws IOException {
+        // C: parse_realm_name pushes each new realm onto the head (realm->next = h) and
+        // finish_parse_realm keeps that list, so realm.txt's arcane, divine, nature, shadow
+        // is walked as shadow, nature, divine, arcane.
+        List<MagicRealm> realms = new RealmReader().parse(REAL_FILE);
+
+        assertEquals(List.of("shadow", "nature", "divine", "arcane"),
+                realms.stream().map(MagicRealm::getName).toList());
+    }
+
+    @Test
+    void realFileGivesTheFullTableOfFlavourFieldsInCsOrder() throws Exception {
+        // Expected rows are lib/gamedata/realm.txt in the C tree, in C's list order.
+        String[][] expected = {
+                {"shadow", "STAT_INT", "perform", "ritual", "shadow book"},
+                {"nature", "STAT_WIS", "chant", "verse", "nature book"},
+                {"divine", "STAT_WIS", "recite", "prayer", "prayer book"},
+                {"arcane", "STAT_INT", "cast", "spell", "magic book"}};
+        List<MagicRealm> realms = new RealmReader().parse(REAL_FILE);
+
+        assertEquals(expected.length, realms.size());
+        for (int i = 0; i < expected.length; i++) {
+            MagicRealm r = realms.get(i);
+            assertEquals(expected[i][0], r.getName());
+            assertEquals(expected[i][1], field(r, "stat").toString());
+            assertEquals(expected[i][2], field(r, "verb"));
+            assertEquals(expected[i][3], field(r, "spellNoun"));
+            assertEquals(expected[i][4], field(r, "bookNoun"));
+        }
+    }
+
+    @Test
+    void aMissingFileIsAnIOExceptionWhereCQuits() {
+        // C: run_parse_realm calls parse_file_quit_not_found, which quits the game.
+        assertThrows(IOException.class,
+                () -> new RealmReader().parseWithResults(tempDir.resolve("no-such-file.txt").toString()));
+    }
+
+    @Test
+    void parseDiscardsTheErrorsThatParseWithResultsKeeps() throws IOException {
+        String text = withHeader(2, realm("good", "INT", "magic book") + realm("bad", "ZZZ", "magic book"));
+        Path file = tempDir.resolve("both-forms.txt");
+        Files.writeString(file, text);
+
+        assertEquals(1, new RealmReader().parse(file.toString()).size());
+        assertTrue(new RealmReader().parseWithResults(file.toString()).hasErrors());
+    }
+
+    @Test
+    void theUnknownStatMessageNamesTheRecordsLineAndTheStat() throws IOException {
+        // Line 1 is the header, line 2 the blank line below it, line 3 the name: of the bad record.
+        ParseResult<MagicRealm> result = load("bad-stat-line.txt",
+                "record-count:1\n\n" + realm("weird", "ZZZ", "magic book"));
+
+        assertEquals(List.of("Record at line: 3 has an unknown stat: ZZZ"), result.errors());
+    }
+
+    @Test
+    void aRepeatedDirectiveKeepsTheLastValueAsCsHandlersOverwrite() throws Exception {
+        // C: parse_realm_verb frees the old verb and stores the new one; the other handlers do the same.
+        ParseResult<MagicRealm> result = load("repeat.txt", withHeader(1,
+                "name:weird\nstat:INT\nverb:cast\nverb:invoke\nspell-noun:spell\nbook-noun:magic book\n"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals("invoke", field(result.items().get(0), "verb"));
+    }
+
+    @Test
+    void aDirectiveBeforeAnyNameIsAHardErrorAsCsMissingRecordHeaderIs() throws IOException {
+        // C: parse_realm_stat returns PARSE_ERROR_MISSING_RECORD_HEADER when no name: has been read.
+        ParseResult<MagicRealm> result = load("no-header.txt", withHeader(1,
+                "stat:INT\nname:weird\nverb:cast\nspell-noun:spell\nbook-noun:magic book\n"));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
+    }
+
+    @Test
+    void aHeaderWithNoRealmsIsAHardErrorWhereCAcceptsAnEmptyFile() throws IOException {
+        // C would end with an empty realms list; the grammar's file rule needs at least one realm.
+        ParseResult<MagicRealm> result = load("empty.txt", "record-count:0\n");
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
+    }
+
+    @Test
+    void aRecordCountMismatchMessageGivesBothCounts() throws IOException {
+        ParseResult<MagicRealm> result = load("count-text.txt",
+                withHeader(3, realm("solo", "INT", "magic book")));
+
+        assertEquals(List.of("record-count header declares 3 records, but file contains 1"), result.errors());
+    }
+
+    @Test
+    void everyRealStatNameResolvesToItsIndex() throws Exception {
+        // C: stat_name_list is STR, INT, WIS, DEX, CON and stat_name_to_idx returns the index.
+        String[][] cases = {{"STR", "STAT_STR"}, {"INT", "STAT_INT"}, {"WIS", "STAT_WIS"},
+                {"DEX", "STAT_DEX"}, {"CON", "STAT_CON"}};
+        for (String[] c : cases) {
+            ParseResult<MagicRealm> result = load("stat-" + c[0] + ".txt",
+                    withHeader(1, realm("r", c[0], "magic book")));
+            assertFalse(result.hasErrors(), () -> result.errors().toString());
+            assertEquals(c[1], field(result.items().get(0), "stat").toString());
+        }
+    }
+
+    // ---- Known differences from C: pinned so a fix is noticed (docs/Assembler_Issues.md, docs/grammar_issues.md) ----
+
+    @Test
+    void aLowerCaseStatIsRejectedHereWhereCAcceptsItIgnoringCase() throws IOException {
+        // C: stat_name_to_idx compares with my_stricmp, so "stat:int" is STAT_INT.
+        ParseResult<MagicRealm> result = load("lower-stat.txt",
+                withHeader(1, realm("weird", "int", "magic book")));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
+    }
+
+    @Test
+    void statNoneIsAcceptedHereWhereCRejectsIt() throws IOException {
+        // C: "NONE" is not in stat_name_list, so stat_name_to_idx returns -1 and the parse fails.
+        ParseResult<MagicRealm> result = load("none-stat.txt",
+                withHeader(1, realm("weird", "NONE", "magic book")));
+
+        assertEquals(1, result.items().size());
+    }
+
+    @Test
+    void aRealmWithNoStatIsDroppedHereWhereCKeepsItAsStrength() throws IOException {
+        // C: the realm is zero-filled and parse_realm_stat is never called, so stat stays 0 (STAT_STR).
+        ParseResult<MagicRealm> result = load("no-stat.txt", withHeader(1,
+                "name:weird\nverb:cast\nspell-noun:spell\nbook-noun:magic book\n"));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
+    }
+
+    @Test
+    void anIndentedDirectiveIsAHardErrorHereWhereCSkipsLeadingWhitespace() throws IOException {
+        // C: parser_parse skips leading isspace characters before it reads the directive name.
+        ParseResult<MagicRealm> result = load("indented.txt", withHeader(1,
+                "name:weird\n  stat:INT\nverb:cast\nspell-noun:spell\nbook-noun:magic book\n"));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
+    }
+
+    @Test
+    void textAfterASecondColonOnTheStatLineIsPartOfTheStatHereWhereCIgnoresIt() throws IOException {
+        // C: stat is a sym, tokenized on ':', so "stat:INT:extra" reads INT and drops the rest.
+        ParseResult<MagicRealm> result = load("stat-colon.txt",
+                withHeader(1, realm("weird", "INT:extra", "magic book")));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
+    }
 }

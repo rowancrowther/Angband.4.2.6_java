@@ -188,4 +188,114 @@ class BodyReaderTest {
         assertTrue(result.items().isEmpty());
         assertTrue(result.hasErrors());
     }
+
+    // ---- Reader contract and the C-derived table -------------------------
+
+    @Test
+    void theRealFileSlotsAgreeWithTheUpstreamFileLineForLine() throws IOException {
+        // Expected pairs are the twelve slot: lines of Angband-4.2.6/lib/gamedata/body.txt, in order.
+        String[][] upstream = {
+                {"WEAPON", "weapon"}, {"BOW", "shooting"}, {"RING", "right hand"}, {"RING", "left hand"},
+                {"AMULET", "neck"}, {"LIGHT", "light"}, {"BODY_ARMOR", "body"}, {"CLOAK", "back"},
+                {"SHIELD", "arm"}, {"HAT", "head"}, {"GLOVES", "hands"}, {"BOOTS", "feet"}};
+
+        PlayerBody body = new BodyReader().parseWithResults(REAL_FILE).items().get(0);
+
+        assertEquals(upstream.length, body.getCount());
+        for (int i = 0; i < upstream.length; i++) {
+            assertEquals(EquipmentSlotsEnum.valueOf("EQUIP_" + upstream[i][0]), body.getSlot(i).getType(), "type " + i);
+            assertEquals(upstream[i][1], body.getSlot(i).getName(), "name " + i);
+        }
+    }
+
+    @Test
+    void parseReturnsTheSameBodiesAsParseWithResults() throws IOException {
+        List<PlayerBody> viaParse = new BodyReader().parse(REAL_FILE);
+        List<PlayerBody> viaResults = new BodyReader().parseWithResults(REAL_FILE).items();
+
+        assertEquals(1, viaParse.size());
+        assertEquals(viaResults.get(0).getName(), viaParse.get(0).getName());
+        assertEquals(viaResults.get(0).getCount(), viaParse.get(0).getCount());
+    }
+
+    @Test
+    void parseReturnsNothingForAHardGrammarError() throws IOException {
+        Path file = tempDir.resolve("hard.txt");
+        Files.writeString(file, "body:Solo\nslot:WEAPON:weapon\n");
+
+        assertTrue(new BodyReader().parse(file.toString()).isEmpty());
+    }
+
+    @Test
+    void aMissingFileIsAnIOExceptionWhereCQuits() {
+        assertThrows(IOException.class,
+                () -> new BodyReader().parseWithResults(tempDir.resolve("absent.txt").toString()));
+    }
+
+    @Test
+    void bodiesComeBackInFileOrderWhereCListsThemNewestFirst() throws IOException {
+        // C's parse_body_body pushes each body on the front, so its list would read Third, Second, First.
+        ParseResult<PlayerBody> result = load("order.txt", withHeader(3,
+                "body:First\nslot:WEAPON:a\nbody:Second\nslot:BOW:b\nbody:Third\nslot:LIGHT:c\n"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(List.of("First", "Second", "Third"),
+                result.items().stream().map(PlayerBody::getName).toList());
+    }
+
+    @Test
+    void aBodyAndSlotNameKeepTheirSpacesAndColonsWhole() throws IOException {
+        ParseResult<PlayerBody> result = load("names.txt", withHeader(1,
+                "body:Two Words: more\nslot:RING:on the left hand\n"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals("Two Words: more", result.items().get(0).getName());
+        assertEquals("on the left hand", result.items().get(0).getSlot(0).getName());
+    }
+
+    @Test
+    void theRecordCountMismatchMessageNamesBothCounts() throws IOException {
+        ParseResult<PlayerBody> result = load("count-text.txt", withHeader(5,
+                "body:Solo\nslot:WEAPON:weapon\n"));
+
+        assertTrue(result.errors().stream().anyMatch(e -> e.contains("declares 5") && e.contains("contains 1")),
+                result.errors()::toString);
+    }
+
+    // ---- Differences from C ------------------------------------------------
+
+    @Test
+    void slotTypeNoneLoadsHereWhereCRejectsIt() throws IOException {
+        // C: lookup_flag(slots, "NONE") returns 0, so parse_body_slot returns PARSE_ERROR_INVALID_FLAG.
+        ParseResult<PlayerBody> result = load("none.txt", withHeader(1, "body:Odd\nslot:NONE:nothing\n"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(EquipmentSlotsEnum.EQUIP_NONE, result.items().get(0).getSlot(0).getType());
+    }
+
+    @Test
+    void slotTypeMaxLoadsHereWhereCRejectsIt() throws IOException {
+        // C: "MAX" is not in the slots table, so lookup_flag returns 0 and the line is an invalid flag.
+        ParseResult<PlayerBody> result = load("max.txt", withHeader(1, "body:Odd\nslot:MAX:nothing\n"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(EquipmentSlotsEnum.EQUIP_MAX, result.items().get(0).getSlot(0).getType());
+    }
+
+    @Test
+    void aLowerCaseSlotTypeIsAHardLexerErrorWhereCReportsAnInvalidFlag() throws IOException {
+        // Both fail the load; only the channel differs (C: parser error, Java: the lexer's SLOT_NAME is A-Z and _).
+        ParseResult<PlayerBody> result = load("lower.txt", withHeader(1, "body:Odd\nslot:weapon:weapon\n"));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
+    }
+
+    @Test
+    void aHeaderWithNoBodiesIsAHardErrorHereWhereCAcceptsAnEmptyFile() throws IOException {
+        ParseResult<PlayerBody> result = load("header-only.txt", withHeader(0, ""));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
+    }
 }

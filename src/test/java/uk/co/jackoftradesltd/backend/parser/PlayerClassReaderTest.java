@@ -656,4 +656,301 @@ class PlayerClassReaderTest {
         assertTrue(hasError(r, "Non-birth options are not supported: OP_use_sound"),
                 r.errors()::toString);
     }
+
+    // =====================================================================
+    // (4) READER CONTRACT  (what PlayerClassReader itself promises)
+    // =====================================================================
+
+    private static List<String> namesOf(List<PlayerClass> classes) throws Exception {
+        List<String> names = new ArrayList<>();
+        for (PlayerClass c : classes) names.add(field(c, "name"));
+        return names;
+    }
+
+    /**
+     * C builds {@code classes} newest first, because {@code parse_class_name} puts each new class on
+     * the front of the list, and {@code finish_parse_class} then counts {@code cidx} down the list
+     * so that the first class in the file is {@code cidx} 0. The reader's list position is that
+     * {@code cidx}, so the list must come back in file order.
+     */
+    @Test
+    void classesComeBackInFileOrderSoThatPositionIsCsClassIndex() throws Exception {
+        assertEquals(List.of("Warrior", "Mage", "Druid", "Priest", "Necromancer",
+                "Paladin", "Rogue", "Ranger", "Blackguard"), namesOf(result.items()));
+    }
+
+    @Test
+    void classIndexLookupFollowsFileOrder() throws Exception {
+        Object saved = setStatic("playerClasses", result.items());
+        try {
+            assertEquals("Warrior", field(PlayerClass.getClassFromIndex(0), "name"));
+            assertEquals("Blackguard", field(PlayerClass.getClassFromIndex(8), "name"));
+            assertNull(PlayerClass.getClassFromIndex(9));
+        } finally {
+            setStatic("playerClasses", saved);
+        }
+    }
+
+    @Test
+    void parseReturnsTheSameClassesAsParseWithResults() throws Exception {
+        List<PlayerClass> items = new PlayerClassReader().parse(CLASS_FILE);
+
+        assertEquals(namesOf(result.items()), namesOf(items));
+    }
+
+    /** C's {@code parse_file_quit_not_found} quits; the port throws so the loader can stop. */
+    @Test
+    void aMissingFileIsAnIOException() {
+        assertThrows(IOException.class,
+                () -> new PlayerClassReader().parseWithResults(tempDir.resolve("absent.txt").toString()));
+    }
+
+    @Test
+    void aHardGrammarErrorReturnsNoClassesAndTheMessages() throws IOException {
+        ParseResult<PlayerClass> r = load("hard.txt", withHeader(2,
+                "name:Good\ntitle:X\nname:Bad\nnonsense:1\n"));
+
+        assertTrue(r.items().isEmpty(), "a hard error must not leak the classes that did parse");
+        assertTrue(r.hasErrors());
+    }
+
+    @Test
+    void classesComeBackInFileOrderForASyntheticFile() throws Exception {
+        ParseResult<PlayerClass> r = load("order.txt", withHeader(3,
+                "name:Third\ntitle:X\nname:First\ntitle:X\nname:Second\ntitle:X\n"));
+
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        assertEquals(List.of("Third", "First", "Second"), namesOf(r.items()));
+    }
+
+    /**
+     * C stops the load on a bad class. The port drops it and loads the rest, so every class after
+     * it moves up one place and takes a different {@code cidx} than the file order suggests.
+     */
+    @Test
+    void aDroppedClassMovesTheLaterClassesUpOnePlace() throws Exception {
+        ParseResult<PlayerClass> r = load("dropped-middle.txt", withHeader(3,
+                "name:A\ntitle:X\n"
+                        + "name:B\nobj-flags:NOTAFLAG\n"
+                        + "name:C\ntitle:X\n"));
+
+        assertTrue(hasError(r, "unknown obj-flag: NOTAFLAG"), r.errors()::toString);
+        assertEquals(List.of("A", "C"), namesOf(r.items()));
+    }
+
+    // =====================================================================
+    // (5) WHERE THE GRAMMAR OR ASSEMBLER DIFFERS FROM init.c
+    // =====================================================================
+
+    /** C: a {@code name:} line alone allocates a zeroed class, and nothing else is required. */
+    @Test
+    void aNameOnlyClassIsAHardErrorHereWhereCAcceptsIt() throws IOException {
+        ParseResult<PlayerClass> r = load("name-only.txt", withHeader(1, "name:Empty\n"));
+
+        assertTrue(r.items().isEmpty());
+        assertTrue(r.hasErrors());
+    }
+
+    /** C: a file with no {@code name:} line leaves {@code classes} NULL and loads without error. */
+    @Test
+    void aHeaderWithNoClassesIsAHardErrorHereWhereCAcceptsAnEmptyFile() throws IOException {
+        ParseResult<PlayerClass> r = load("no-classes.txt", withHeader(0, ""));
+
+        assertTrue(r.items().isEmpty());
+        assertTrue(r.hasErrors());
+    }
+
+    /** C: {@code strtok(flags, " |")} splits on a space as well as a bar. */
+    @Test
+    void playerFlagsSeparatedByASpaceAreAHardErrorHereWhereCSplitsOnSpaceToo() throws IOException {
+        ParseResult<PlayerClass> r = load("flag-space.txt", withHeader(1,
+                "name:X\nplayer-flags:NO_MANA SHIELD_BASH\n"));
+
+        assertTrue(r.items().isEmpty());
+        assertTrue(r.hasErrors());
+    }
+
+    @Test
+    void objectFlagsSeparatedByASpaceAreAHardErrorHereWhereCSplitsOnSpaceToo() throws IOException {
+        ParseResult<PlayerClass> r = load("oflag-space.txt", withHeader(1,
+                "name:X\nobj-flags:PROT_FEAR SUST_STR\n"));
+
+        assertTrue(r.items().isEmpty());
+        assertTrue(r.hasErrors());
+    }
+
+    /** C: {@code obj-flags ?str flags} — the argument is optional, so an empty list is accepted. */
+    @Test
+    void anEmptyFlagListIsAHardErrorHereWhereCAcceptsIt() throws IOException {
+        ParseResult<PlayerClass> r = load("empty-flags.txt", withHeader(1,
+                "name:X\nplayer-flags:\n"));
+
+        assertTrue(r.items().isEmpty());
+        assertTrue(r.hasErrors());
+    }
+
+    /** C: {@code parse_class_magic} returns {@code PARSE_ERROR_REPEATED_DIRECTIVE}. */
+    @Test
+    void aRepeatedMagicLineReplacesTheFirstHereWhereCRejectsIt() throws Exception {
+        ParseResult<PlayerClass> r = load("two-magic.txt", withHeader(1,
+                "name:Caster\n"
+                        + "magic:1:100:1\n"
+                        + "book:magic book:town:[First]:1:arcane\n"
+                        + "spell:A:1:1:1:1\n"
+                        + "effect:BOLT:MISSILE\ndice:1\n"
+                        + "magic:2:200:1\n"
+                        + "book:magic book:town:[Second]:1:arcane\n"
+                        + "spell:B:1:1:1:1\n"
+                        + "effect:BOLT:MISSILE\ndice:1\n"));
+
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        ClassMagic magic = castMagic(r);
+        assertEquals(2, (int) field(magic, ClassMagic.class, "firstSpellLevel"));
+        assertEquals(200, (int) field(magic, ClassMagic.class, "spellWeight"));
+    }
+
+    /** C: a class may have a {@code magic:} line declaring books and then no {@code book:} lines. */
+    @Test
+    void aMagicLineWithNoBookIsAHardErrorHereWhereCAcceptsIt() throws IOException {
+        ParseResult<PlayerClass> r = load("magic-no-book.txt", withHeader(1,
+                "name:X\nmagic:1:100:1\ntitle:Y\n"));
+
+        assertTrue(r.items().isEmpty());
+        assertTrue(r.hasErrors());
+    }
+
+    /** C: a book declaring {@code spells} 0 needs no {@code spell:} lines. */
+    @Test
+    void aBookWithNoSpellLineIsAHardErrorHereWhereCAcceptsIt() throws IOException {
+        ParseResult<PlayerClass> r = load("book-no-spell.txt", withHeader(1,
+                "name:X\nmagic:1:100:1\nbook:magic book:town:[B]:0:arcane\n"));
+
+        assertTrue(r.items().isEmpty());
+        assertTrue(r.hasErrors());
+    }
+
+    /** C: {@code parse_class_spell} returns {@code PARSE_ERROR_TOO_MANY_ENTRIES} past the declared count. */
+    @Test
+    void moreSpellsThanDeclaredLoadHereWhereCRejectsThem() throws Exception {
+        ParseResult<PlayerClass> r = load("extra-spell.txt", withHeader(1,
+                "name:Caster\nmagic:1:100:1\n"
+                        + "book:magic book:town:[B]:1:arcane\n"
+                        + "spell:A:1:1:1:1\neffect:BOLT:MISSILE\ndice:1\n"
+                        + "spell:B:2:1:1:1\neffect:BOLT:MISSILE\ndice:1\n"));
+
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        MagicBook book = this.<List<MagicBook>>field(castMagic(r), ClassMagic.class, "magicBooks").getFirst();
+        assertEquals(2, this.<List<?>>field(book, MagicBook.class, "spells").size());
+    }
+
+    /** C: {@code lookup_realm} compares with {@code my_stricmp}, so the realm name is case-blind. */
+    @Test
+    void aRealmNameInADifferentCaseResolvesAsInC() throws IOException {
+        ParseResult<PlayerClass> r = load("realm-case.txt", withHeader(1,
+                "name:Caster\nmagic:1:100:1\n"
+                        + "book:magic book:town:[B]:1:Arcane\n"
+                        + "spell:S:1:1:1:1\neffect:BOLT:MISSILE\ndice:1\n"));
+
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        assertEquals(1, r.items().size());
+    }
+
+    /** C: any directive may follow {@code magic:} before its first {@code book:}. */
+    @Test
+    void aTitleBetweenMagicAndItsFirstBookIsAHardErrorHereWhereCAcceptsIt() throws IOException {
+        ParseResult<PlayerClass> r = load("magic-title.txt", withHeader(1,
+                "name:Caster\nmagic:1:100:1\ntitle:Y\n"
+                        + "book:magic book:town:[B]:1:arcane\n"
+                        + "spell:S:1:1:1:1\neffect:BOLT:MISSILE\ndice:1\n"));
+
+        assertTrue(r.items().isEmpty());
+        assertTrue(r.hasErrors());
+    }
+
+    /** C: {@code dice:} with no effect before it is ignored ("assume that this is human"). */
+    @Test
+    void aDiceLineWithNoEffectIsAHardErrorHereWhereCIgnoresIt() throws IOException {
+        ParseResult<PlayerClass> r = load("dice-no-effect.txt", withHeader(1,
+                "name:Caster\nmagic:1:100:1\n"
+                        + "book:magic book:town:[B]:1:arcane\n"
+                        + "spell:S:1:1:1:1\ndice:1\n"));
+
+        assertTrue(r.items().isEmpty());
+        assertTrue(r.hasErrors());
+    }
+
+    // ---- boundaries and ordinary behaviour C and Java agree on -----------
+
+    /** C: {@code N_ELEMENTS(c->title)} is 10; the eleventh title is {@code TOO_MANY_ENTRIES}. */
+    @Test
+    void tenTitlesLoadAndAnEleventhIsReported() throws Exception {
+        StringBuilder ten = new StringBuilder("name:X\n");
+        for (int i = 1; i <= 10; i++) ten.append("title:T").append(i).append('\n');
+
+        ParseResult<PlayerClass> ok = load("ten-titles.txt", withHeader(1, ten.toString()));
+        assertFalse(ok.hasErrors(), ok.errors()::toString);
+        assertEquals(1, ok.items().size());
+
+        ParseResult<PlayerClass> bad = load("eleven-titles.txt",
+                withHeader(1, ten + "title:T11\n"));
+        assertTrue(hasError(bad, "too many titles: 11"), bad.errors()::toString);
+        assertTrue(bad.items().isEmpty());
+    }
+
+    /** C: {@code si->min > 99 || si->max > 99} is {@code PARSE_ERROR_INVALID_ITEM_NUMBER}. */
+    @Test
+    void equipCountsOfNinetyNineLoadAndOneHundredIsReported() throws Exception {
+        ParseResult<PlayerClass> ok = load("equip-99.txt", withHeader(1,
+                "name:X\nequip:food:Ration of Food:99:99:none\n"));
+        assertFalse(ok.hasErrors(), ok.errors()::toString);
+        assertEquals(1, ok.items().getFirst().getStartItems().size());
+
+        ParseResult<PlayerClass> badMin = load("equip-min-100.txt", withHeader(1,
+                "name:X\nequip:food:Ration of Food:100:1:none\n"));
+        assertTrue(hasError(badMin, "Invalid minimum number"), badMin.errors()::toString);
+
+        ParseResult<PlayerClass> badMax = load("equip-max-100.txt", withHeader(1,
+                "name:X\nequip:food:Ration of Food:1:100:none\n"));
+        assertTrue(hasError(badMax, "Invalid maximum number"), badMax.errors()::toString);
+    }
+
+    /** C: each handler overwrites, so the last {@code hitdie:} wins. */
+    @Test
+    void aRepeatedScalarTakesTheLastValueAsInC() throws Exception {
+        ParseResult<PlayerClass> r = load("repeat-hitdie.txt", withHeader(1,
+                "name:X\nhitdie:3\nhitdie:9\n"));
+
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        assertEquals(9, (int) field(r.items().getFirst(), "hpAdj"));
+    }
+
+    /** C: {@code parse_class_desc} appends with {@code string_append}, so desc lines join in order. */
+    @Test
+    void descLinesJoinInFileOrderAndMayContainAColon() throws Exception {
+        ParseResult<PlayerClass> r = load("desc.txt", withHeader(1,
+                "name:Caster\nmagic:1:100:1\n"
+                        + "book:magic book:town:[B]:1:arcane\n"
+                        + "spell:S:1:1:1:1\n"
+                        + "effect:BOLT:MISSILE\ndice:1\n"
+                        + "desc:First part: with a colon,\n"
+                        + "desc: then the second.\n"));
+
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        MagicBook book = this.<List<MagicBook>>field(castMagic(r), ClassMagic.class, "magicBooks").getFirst();
+        Object spell = this.<List<?>>field(book, MagicBook.class, "spells").getFirst();
+        assertEquals("First part: with a colon, then the second.", field(spell, spell.getClass(), "spellDescription"));
+    }
+
+    /** C quits on a bad book; the port reports it and keeps the class, with no magic at all. */
+    @Test
+    void aClassWhoseOnlyBookIsDroppedLoadsAsANonCasterAlongsideTheError() throws Exception {
+        ParseResult<PlayerClass> r = load("dropped-book.txt", withHeader(1,
+                "name:Caster\nmagic:1:100:1\n"
+                        + "book:magic book:town:[B]:1:notarealm\n"
+                        + "spell:S:1:1:1:1\neffect:BOLT:MISSILE\ndice:1\n"));
+
+        assertTrue(hasError(r, "unknown realm: notarealm"), r.errors()::toString);
+        assertEquals(1, r.items().size());
+        assertSame(ClassMagic.NONE, castMagic(r));
+    }
 }

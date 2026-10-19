@@ -25,6 +25,7 @@ import uk.co.jackoftradesltd.middle.game.Hint;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -124,5 +125,235 @@ class HintReaderTest {
 
         assertTrue(result.items().isEmpty(), "a hard grammar error must fail closed");
         assertTrue(result.hasErrors());
+    }
+
+    // ---- The shipped file against the upstream one -----------------------
+
+    /**
+     * Every {@code H:} line of the shipped file comes back, in file order, as the text after the
+     * {@code H:}. The expected side is a plain line split of the file, not the reader's output. C
+     * would hand the list over reversed, but nothing can tell: {@code random_hint} in
+     * {@code ui-store.c} treats every position alike.
+     */
+    @Test
+    void everyShippedHintComesBackInFileOrder() throws IOException {
+        List<String> expected = new ArrayList<>();
+        for (String line : Files.readAllLines(Path.of(REAL_FILE))) {
+            if (line.startsWith("H:")) {
+                expected.add(line.substring(2));
+            }
+        }
+        List<Hint> hints = new HintReader().parse(REAL_FILE);
+
+        assertEquals(EXPECTED_HINTS, expected.size());
+        assertEquals(expected.size(), hints.size());
+        for (int i = 0; i < expected.size(); i++) {
+            assertEquals(expected.get(i), hints.get(i).getHint(), "hint " + i);
+        }
+    }
+
+    /**
+     * Spot values read off the upstream {@code lib/gamedata/hints.txt}: the first, a middle one and
+     * the last, and the five whose upstream line ends in a space. The shipped file has that space
+     * removed, so these load without it; the upstream file would load with it (see
+     * {@link #trailingSpacesAreKeptAsCDoes}).
+     */
+    @Test
+    void spotValuesAgreeWithTheUpstreamFile() throws IOException {
+        List<Hint> hints = new HintReader().parse(REAL_FILE);
+
+        assertEquals("Cure Critical Wounds potions will cure blindness and confusion; carry lots.",
+                hints.get(0).getHint());
+        assertEquals("Potions of Heroism or Berserk Strength will protect you from being scared.",
+                hints.get(2).getHint());
+        assertEquals("Never underestimate the value of constitution. Hitpoints keep you alive.",
+                hints.get(10).getHint());
+        assertEquals("You can never teleport into a vault, even if you're already standing in it.",
+                hints.get(22).getHint());
+        assertEquals("+10 speed means you move twice as fast as normal.",
+                hints.get(24).getHint());
+        assertEquals("If you have more than 40 items in your quiver, it will take up more slots.",
+                hints.get(49).getHint());
+        assertEquals("You always get the first move when entering a level.",
+                hints.get(74).getHint());
+        assertEquals("When shapechanged inspect items with I. Resume your shape with m or p.",
+                hints.get(98).getHint());
+    }
+
+    // ---- The text of a hint ----------------------------------------------
+
+    /**
+     * C's {@code parser_parse} gives a {@code str} field the rest of the line untouched
+     * ({@code strtok(sp, "")}), so a trailing space belongs to the hint. Five upstream lines end in one.
+     */
+    @Test
+    void trailingSpacesAreKeptAsCDoes() throws IOException {
+        ParseResult<Hint> result = load("trailing.txt", withHeader(1, "H:Keep alive. \n"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals("Keep alive. ", result.items().get(0).getHint());
+    }
+
+    /** Spaces straight after {@code H:} are part of the text too, and a line of only spaces is a hint. */
+    @Test
+    void leadingAndAllSpaceTextIsKept() throws IOException {
+        ParseResult<Hint> result = load("spaces.txt", withHeader(2, "H: leading\nH:   \n"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(" leading", result.items().get(0).getHint());
+        assertEquals("   ", result.items().get(1).getHint());
+    }
+
+    /** Only the first {@code :} splits the directive off, so a hint may begin with or contain one. */
+    @Test
+    void colonsInTheTextSurvive() throws IOException {
+        ParseResult<Hint> result = load("colon.txt", withHeader(1, "H::a:b\n"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(":a:b", result.items().get(0).getHint());
+    }
+
+    @Test
+    void nonAsciiTextSurvives() throws IOException {
+        ParseResult<Hint> result = load("utf8.txt", withHeader(1, "H:caf\u00e9 \u2014 ok\n"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals("caf\u00e9 \u2014 ok", result.items().get(0).getHint());
+    }
+
+    /** A hint on the last line needs no newline after it. */
+    @Test
+    void finalHintNeedsNoTrailingNewline() throws IOException {
+        ParseResult<Hint> result = load("nofinalnl.txt", withHeader(1, "H:last"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals("last", result.items().get(0).getHint());
+    }
+
+    /** A Windows line ending does not leave a carriage return on the hint. */
+    @Test
+    void carriageReturnIsNotPartOfTheText() throws IOException {
+        ParseResult<Hint> result = load("crlf.txt", "record-count:1\r\nH:abc\r\n");
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals("abc", result.items().get(0).getHint());
+    }
+
+    /** Comment and blank lines between and after hints are skipped, as C skips them. */
+    @Test
+    void commentsAndBlankLinesAreSkipped() throws IOException {
+        ParseResult<Hint> result = load("comments.txt",
+                withHeader(2, "# a comment\nH:one\n\n# another\nH:two\n# last\n"));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(List.of("one", "two"),
+                result.items().stream().map(Hint::getHint).toList());
+    }
+
+    @Test
+    void hintsComeBackInFileOrderWhereCsListIsReversed() throws IOException {
+        ParseResult<Hint> result = load("order.txt", withHeader(3, "H:a\nH:b\nH:c\n"));
+
+        assertEquals(List.of("a", "b", "c"),
+                result.items().stream().map(Hint::getHint).toList());
+    }
+
+    // ---- Counts ----------------------------------------------------------
+
+    /** C accepts a file with no {@code H:} line (and leaves {@code hints} NULL); here it is an empty list. */
+    @Test
+    void aFileWithNoHintsLoadsEmptyWhenTheHeaderSaysZero() throws IOException {
+        ParseResult<Hint> result = load("zero.txt", "record-count:0\n# nothing here\n");
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertTrue(result.items().isEmpty());
+    }
+
+    @Test
+    void aHeaderDeclaringTooFewIsASoftErrorToo() throws IOException {
+        ParseResult<Hint> result = load("toofew.txt", withHeader(1, "H:a\nH:b\n"));
+
+        assertEquals(2, result.items().size());
+        assertTrue(result.errors().stream().anyMatch(e -> e.contains("record-count header declares")),
+                () -> result.errors().toString());
+    }
+
+    // ---- Hard errors (fail-closed) ---------------------------------------
+
+    /** C needs text after {@code H:} (MISSING_FIELD otherwise); the lexer cannot produce a STRING for it. */
+    @Test
+    void anHLineWithNoTextIsAHardError() throws IOException {
+        ParseResult<Hint> result = load("emptyh.txt", withHeader(1, "H:\n"));
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
+    }
+
+    /** C only has the {@code H:} directive, and its directive names are case-sensitive. */
+    @Test
+    void anUnknownDirectiveIsAHardError() throws IOException {
+        for (String bad : List.of("X:abc\n", "h:abc\n")) {
+            ParseResult<Hint> result = load("bad.txt", withHeader(1, bad));
+
+            assertTrue(result.items().isEmpty(), bad);
+            assertTrue(result.hasErrors(), bad);
+        }
+    }
+
+    @Test
+    void anEmptyFileIsAHardErrorForWantOfTheHeader() throws IOException {
+        ParseResult<Hint> result = load("empty.txt", "");
+
+        assertTrue(result.items().isEmpty());
+        assertTrue(result.hasErrors());
+    }
+
+    @Test
+    void theHeaderMustComeFirstAndOnlyOnce() throws IOException {
+        for (String bad : List.of("H:a\nrecord-count:1\n", "record-count:1\nrecord-count:1\nH:a\n")) {
+            ParseResult<Hint> result = load("header.txt", bad);
+
+            assertTrue(result.items().isEmpty(), bad);
+            assertTrue(result.hasErrors(), bad);
+        }
+    }
+
+    /**
+     * Where C and the grammar differ, written up in {@code docs/grammar_issues.md}: C skips leading
+     * whitespace on a line before it reads the directive, so an indented {@code H:}, an indented
+     * comment and a tab-only line are all fine to it. The lexer takes none of them, and a comment
+     * on the last line needs its newline.
+     */
+    @Test
+    void leadingWhitespaceBeforeADirectiveIsAHardErrorWhereCSkipsIt() throws IOException {
+        for (String bad : List.of("  H:indented\n", "  # indented comment\nH:a\n", "\t\nH:a\n",
+                "H:a\n# no newline")) {
+            ParseResult<Hint> result = load("ws.txt", withHeader(1, bad));
+
+            assertTrue(result.items().isEmpty(), bad);
+            assertTrue(result.hasErrors(), bad);
+        }
+    }
+
+    // ---- File access -----------------------------------------------------
+
+    /** C's {@code parse_file_quit_not_found} quits for a missing file; here it is an {@link IOException}. */
+    @Test
+    void aMissingFileIsAnIOException() {
+        String missing = tempDir.resolve("nope.txt").toString();
+
+        assertThrows(IOException.class, () -> new HintReader().parseWithResults(missing));
+        assertThrows(IOException.class, () -> new HintReader().parse(missing));
+    }
+
+    @Test
+    void parseReturnsTheSameHintsAsParseWithResults() throws IOException {
+        List<Hint> plain = new HintReader().parse(REAL_FILE);
+        List<Hint> full = new HintReader().parseWithResults(REAL_FILE).items();
+
+        assertEquals(full.size(), plain.size());
+        for (int i = 0; i < full.size(); i++) {
+            assertEquals(full.get(i).getHint(), plain.get(i).getHint());
+        }
     }
 }

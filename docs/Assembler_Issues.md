@@ -340,15 +340,18 @@ Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. Not fixed.
 
 ## `monster/MonsterAssembler.java`: an unknown spell name in `message-vis:`, `message-invis:` or `message-miss:` is ignored
 
-Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. [**CLOSED** 26-10-20]
 
 - The three handlers call `grab_name("monster spell", spell, r_info_spell_flags, ...)` and return
   `PARSE_ERROR_INVALID_SPELL_NAME` when the name is not a spell. A message is kept for a spell the race does not cast.
-- `MonsterAssembler.java` builds `spellMessages` only from the names in `record.spells()` and looks the messages up by
-  them, so a message naming an unknown spell, or a spell the race does not list, is dropped with no error.
-- The message for a spell the race does not cast is never shown in C either, so only the unknown-name case is visible.
-- `MonsterReaderTest.aMessageForAnUnknownSpellIsAcceptedHereWhereCReportsAnInvalidSpellName` pins it.
-- None on the shipped data.
+- Was: `MonsterAssembler.java` built `spellMessages` only from the names in `record.spells()`, so a message naming an
+  unknown spell, or a spell the race does not list, was dropped with no error.
+- Now: `spellMessages` is one `List<MonsterSpellText>` in reverse file order, as C's `r->spell_msgs` chain is. Each
+  message name goes through `MonsterSpell.valueOf("RSF_" + name)`. An unknown name adds an "illegal spell message" error
+  and skips the record, and a message for a spell the race does not cast is kept.
+- `MonsterReaderTest.aMessageForAnUnknownSpellIsRejectedAsInC` and `aMessageForASpellTheMonsterDoesNotCastIsKeptAsInC`
+  pin it, and `spellMessagesShareOneListInReverseFileOrderWithTheTypesInterleaved` pins the order.
+- Still open, in `grammar_issues.md`: a message with no text, or with a colon, is a syntax error here.
 
 ## `monster/MonsterAssembler.java`: an unknown `color-cycle:` group is an error, C is silent
 

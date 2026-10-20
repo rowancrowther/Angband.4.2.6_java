@@ -81,7 +81,8 @@ row "Bad record".
 - **Unresolved names: match C both ways.** Where C is silent (unknown `act:`, `fallback:`, `mon-ban:`, `color-cycle:` group, projection
   `code:` after the 25 elements) the record loads silently. Where C raises an error (unknown spell in `message-*:`, unknown
   `type-mult:` tval, `subtype:` on a non-flag, which C stores) the Java follows C: a soft error and a skipped record for the first two,
-  and the `subtype:` stored.
+  and the `subtype:` stored. [**CLOSED** 26-10-20 for the unknown spell in `message-*:` in `MonsterGrammar.g4` and
+  `MonsterAssembler.java`; still open for `type-mult:` and `subtype:`]
 - **Limits and range checks: enforce everything C enforces.** The `drop:` bounds, unsigned negatives, `alloc:` 0 to 255, the 254-brand,
   slay and curse limits (the curse limit counts records, not survivors) and the Visuals caps. This answers the Stage 0 question on
   `VisualsCycleAssembler` caps: enforce the 8, 64 and 32 limits.
@@ -159,6 +160,7 @@ These change what a loaded game holds today, even where nothing reads the value 
 None of these show on the shipped data. Each turns a bad modded line into an exception, a `null` that blows up later, or a quiet loss.
 
 - A: `monster/MonsterAssembler.java` a die that overflows `int`, and G: `Random.g4` a number above `INT_MAX`. One fix in `Random.java` or the call sites; the Stage 0 answer decides which.
+- A: `monster/MonsterAssembler.java` a `friends:` or `friends-base:` die that `Random.parseStr` rejects. C reads the `number` field with `parse_random` in `parser.c` before `parse_monster_friends` or `parse_monster_friends_base` runs, so a bad die is a parse error and no friend is stored. The Java records the soft error and sets `badFriend` (or `badFriendBase`), then still calls `numberDie.getDice()` with `numberDie` `null` in `friends.add(...)` (`MonsterAssembler.java:471`) and `friendsBase.add(...)` (`MonsterAssembler.java:529`). The load ends in a `NullPointerException` where the record should be skipped. Once the entry above makes an overflowing die return `null`, that is the input that reaches these lines. Fix by leaving out the `add` when `numberDie` is `null`, and do it with the entry above.
 - A: `slay/SlayAssembler.java` a code the `Slay` constructor cannot split aborts the whole load.
 - A: `curse/CurseAssembler.java` the 254-curse limit throws out of the reader and counts survivors.
 - A: `itemobject/ItemObjectAssembler.java` a record with no `type:` leaves a `null` base that `ObjectRegistry.addObjectKind` dereferences.
@@ -251,7 +253,7 @@ Only the observable cases were put in Stage 1. The Stage 0 answer "always echo C
 Local edits with no effect on the shipped data. Group by file when the file is open for something else.
 
 - Soft error where C is silent: A: `summon` unresolved `fallback:`, `pit` unresolved `mon-ban:`, `monster` unknown `color-cycle:` group, `projection` unknown `code:` after the 25 elements.
-- Record dropped where C keeps it: A: `egoitem` and `artifact` unknown `act:`, `objectproperty` `subtype:` on a non-flag, `monster` unknown spell name in `message-*:`.
+- Record dropped where C keeps it: A: `egoitem` and `artifact` unknown `act:`, `objectproperty` `subtype:` on a non-flag. (`monster` unknown spell name in `message-*:` moved out: C rejects it too, and the Java now does. [**CLOSED** 26-10-20])
 - Stricter or looser than C by a small margin: A: `monster` `friends-base:` chance above 100, `monster` group role case, `monster` directive-order effects, `artifact` `graphics:` on a non-`INSTA_ART` kind, `objectproperty` unknown `type-mult:` tval keeps the record.
 - Glyphs outside the Basic Multilingual Plane: A: `monsterbase`, `monster`.
 - Limits: A: `brand` no 254-brand limit, `visuals` caps (per the Stage 0 answer).
@@ -324,7 +326,7 @@ Each pattern is one recipe applied to many grammars. Do the recipe once on the s
 
 ### 7i. Free-text fields the lexer constrains too tightly
 
-- G: `ActivationsLexer.g4` `name:`, `ObjectPropertyLexer.g4` adjectives, `MonsterGrammar.g4` message with a colon, `FlavourLexer.g4` colon in a description, `TrapLexer.g4` colon in a description, `RealmLexer.g4` second colon on `stat:`, `PlayerPropertyLexer.g4` `bindui:` symbols and tags, `WorldLexer.g4` level names, `GameConstantsLexer.g4` message and category names, `RoomProfileLexer.g4` `tval:`.
+- G: `ActivationsLexer.g4` `name:`, `ObjectPropertyLexer.g4` adjectives, `MonsterGrammar.g4` message with a colon or with no text (`message-vis:SHRIEK` is a syntax error, where C stores `""`), `FlavourLexer.g4` colon in a description, `TrapLexer.g4` colon in a description, `RealmLexer.g4` second colon on `stat:`, `PlayerPropertyLexer.g4` `bindui:` symbols and tags, `WorldLexer.g4` level names, `GameConstantsLexer.g4` message and category names, `RoomProfileLexer.g4` `tval:`.
 
 ## Stage 8: grammar one-offs
 

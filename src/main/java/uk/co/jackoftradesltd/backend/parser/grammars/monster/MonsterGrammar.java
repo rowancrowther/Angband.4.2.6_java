@@ -14,6 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
+
 // Generated from MonsterGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.monster;
 
@@ -30,9 +31,7 @@ import uk.co.jackoftradesltd.backend.parser.monster.MonsterParseRecord;
 import uk.co.jackoftradesltd.backend.parser.monster.MonsterParseRecord.*;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue", "this-escape"})
 public class MonsterGrammar extends Parser {
@@ -2447,12 +2446,9 @@ public class MonsterGrammar extends Parser {
 		            String spellFreqInit = "";
 		            String spellPowerInit = "";
 		            List<String> spellsList = new ArrayList<>();
-		            Map<String, String> visSB = new HashMap<>();
-		            Map<String, String> invisSB = new HashMap<>();
-		            Map<String, String> missSB = new HashMap<>();
+		            List<MessageTypeParseRecord> messagesInit = new ArrayList<>();
 		            StringBuilder descSB = new StringBuilder();
 		            List<MonsterDropParseRecord> dropsList = new ArrayList<>();
-		            List<MonsterDropBaseParseRecord> dropsBaseList = new ArrayList<>();
 		            List<MonsterMimicParseRecord> mimics = new ArrayList();
 		            List<MonsterFriendsParseRecord> friendsList = new ArrayList<>();
 		            List<MonsterFriendsParseRecord> friendsBaseList = new ArrayList<>();
@@ -2540,7 +2536,7 @@ public class MonsterGrammar extends Parser {
 					{
 					setState(310);
 					((MonsterContext)_localctx).shape = shape();
-					 shapeInit.add(((MonsterContext)_localctx).shape.shapeStr); 
+					 shapeInit.addFirst(((MonsterContext)_localctx).shape.shapeStr); 
 					}
 					break;
 				case COLOUR_CYCLE:
@@ -2641,21 +2637,21 @@ public class MonsterGrammar extends Parser {
 					{
 					setState(352);
 					((MonsterContext)_localctx).messageVis = messageVis();
-					 visSB.put(((MonsterContext)_localctx).messageVis.spell, ((MonsterContext)_localctx).messageVis.line); 
+					 messagesInit.addFirst(new MessageTypeParseRecord("vis", ((MonsterContext)_localctx).messageVis.spell, ((MonsterContext)_localctx).messageVis.line)); 
 					}
 					break;
 				case MESSAGE_INVIS:
 					{
 					setState(355);
 					((MonsterContext)_localctx).messageInvis = messageInvis();
-					 invisSB.put(((MonsterContext)_localctx).messageInvis.spell, ((MonsterContext)_localctx).messageInvis.line); 
+					 messagesInit.addFirst(new MessageTypeParseRecord("invis", ((MonsterContext)_localctx).messageInvis.spell, ((MonsterContext)_localctx).messageInvis.line)); 
 					}
 					break;
 				case MESSAGE_MISS:
 					{
 					setState(358);
 					((MonsterContext)_localctx).messageMiss = messageMiss();
-					 missSB.put(((MonsterContext)_localctx).messageMiss.spell, ((MonsterContext)_localctx).messageMiss.line); 
+					 messagesInit.addFirst(new MessageTypeParseRecord("miss", ((MonsterContext)_localctx).messageMiss.spell, ((MonsterContext)_localctx).messageMiss.line)); 
 					}
 					break;
 				case DESC:
@@ -2669,7 +2665,7 @@ public class MonsterGrammar extends Parser {
 					{
 					setState(364);
 					((MonsterContext)_localctx).drop = drop();
-					 dropsList.add(new MonsterDropParseRecord(((MonsterContext)_localctx).drop.typeStr,
+					 dropsList.addFirst(new MonsterDropParseRecord(((MonsterContext)_localctx).drop.typeStr,
 					                ((MonsterContext)_localctx).drop.nameStr, ((MonsterContext)_localctx).drop.chanceVal, ((MonsterContext)_localctx).drop.min, ((MonsterContext)_localctx).drop.max)); 
 					}
 					break;
@@ -2677,7 +2673,7 @@ public class MonsterGrammar extends Parser {
 					{
 					setState(367);
 					((MonsterContext)_localctx).dropBase = dropBase();
-					 dropsBaseList.add(new MonsterDropBaseParseRecord(((MonsterContext)_localctx).dropBase.typeStr,
+					 dropsList.addFirst(new MonsterDropParseRecord(((MonsterContext)_localctx).dropBase.typeStr, "",
 					                ((MonsterContext)_localctx).dropBase.chanceVal, ((MonsterContext)_localctx).dropBase.min, ((MonsterContext)_localctx).dropBase.max)); 
 					}
 					break;
@@ -2685,14 +2681,14 @@ public class MonsterGrammar extends Parser {
 					{
 					setState(370);
 					((MonsterContext)_localctx).mimic = mimic();
-					 mimics.add(new MonsterMimicParseRecord(((MonsterContext)_localctx).mimic.tVal, ((MonsterContext)_localctx).mimic.sVal)); 
+					 mimics.addFirst(new MonsterMimicParseRecord(((MonsterContext)_localctx).mimic.tVal, ((MonsterContext)_localctx).mimic.sVal)); 
 					}
 					break;
 				case FRIENDS:
 					{
 					setState(373);
 					((MonsterContext)_localctx).friends = friends();
-					 friendsList.add(new MonsterFriendsParseRecord(((MonsterContext)_localctx).friends.chance,
+					 friendsList.addFirst(new MonsterFriendsParseRecord(((MonsterContext)_localctx).friends.chance,
 					                ((MonsterContext)_localctx).friends.number, ((MonsterContext)_localctx).friends.nameStr, ((MonsterContext)_localctx).friends.role)); 
 					}
 					break;
@@ -2700,7 +2696,7 @@ public class MonsterGrammar extends Parser {
 					{
 					setState(376);
 					((MonsterContext)_localctx).friendsBase = friendsBase();
-					 friendsBaseList.add(new MonsterFriendsParseRecord(((MonsterContext)_localctx).friendsBase.chance,
+					 friendsBaseList.addFirst(new MonsterFriendsParseRecord(((MonsterContext)_localctx).friendsBase.chance,
 					                ((MonsterContext)_localctx).friendsBase.number, ((MonsterContext)_localctx).friendsBase.nameStr, ((MonsterContext)_localctx).friendsBase.role)); 
 					}
 					break;
@@ -2720,8 +2716,8 @@ public class MonsterGrammar extends Parser {
 			                smellInit, shapeInit, colourCycleGroupInit, colourCycleNameInit,
 			                armourClassInit, sleepinessInit, depthInit, rarityInit, experienceInit,
 			                blowsList, flagsList, flagsOffList, innateFreqInit, spellFreqInit,
-			                spellPowerInit, spellsList, visSB, invisSB, missSB,
-			                descSB.toString(), dropsList, dropsBaseList, mimics, friendsList,
+			                spellPowerInit, spellsList, messagesInit,
+			                descSB.toString(), dropsList, mimics, friendsList,
 			                friendsBaseList, line);
 			        
 		}

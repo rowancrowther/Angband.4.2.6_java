@@ -37,6 +37,7 @@ import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.monsters.*;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterGroupRole;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
+import uk.co.jackoftradesltd.middle.monsters.enums.MonsterSpell;
 import uk.co.jackoftradesltd.middle.numerics.Random;
 
 import java.io.IOException;
@@ -260,6 +261,14 @@ class MonsterReaderTest {
         // blow:BEG (method only) and blow:TOUCH:EAT_GOLD (method + effect, no dice).
         assertEquals(2, ((List<?>) field(urchin, "blow")).size());
 
+        // C appends each blow, so blows run in file order (unlike drops, friends, mimics, shapes and
+        // spell messages, which C prepends): BEG first, then TOUCH:EAT_GOLD.
+        List<MonsterBlow> blows = urchin.getBlows();
+        assertEquals("BEG", blows.get(0).getMethod().getName());
+        assertEquals("NONE", blows.get(0).getEffect().getName(), "no effect given, so C uses NONE");
+        assertEquals("TOUCH", blows.get(1).getMethod().getName());
+        assertEquals("EAT_GOLD", blows.get(1).getEffect().getName());
+
         // friends:50:2d1:Scrawny cat / friends:50:2d1:Scruffy little dog / friends:100:3d4:Same
         assertEquals(3, ((List<?>) field(urchin, "friends")).size());
     }
@@ -351,19 +360,20 @@ class MonsterReaderTest {
         // fully-loaded global registry. filthy street urchin's friends are:
         //   Scrawny cat / Scruffy little dog -- both defined LATER in the file (forward refs) and
         //   case-mismatched vs their lowercase race names -- and Same (the self-reference).
+        // The list is in reverse file order, as C's head-pushed chain is: Same, dog, cat.
         MonsterRace urchin = MonsterRegistry.lookupMonsterRace("filthy street urchin");
         assertNotNull(urchin);
 
         List<?> friends = field(urchin, "friends");
         assertEquals(3, friends.size());
 
-        assertEquals("scrawny cat",
-                ((MonsterRace) declaredField(friends.get(0), "race")).getName(),
-                "Scrawny cat -> scrawny cat (forward ref, case-insensitive)");
+        assertSame(urchin, declaredField(friends.get(0), "race"), "Same -> the owning race itself");
         assertEquals("scruffy little dog",
                 ((MonsterRace) declaredField(friends.get(1), "race")).getName(),
                 "Scruffy little dog -> scruffy little dog (forward ref)");
-        assertSame(urchin, declaredField(friends.get(2), "race"), "Same -> the owning race itself");
+        assertEquals("scrawny cat",
+                ((MonsterRace) declaredField(friends.get(2), "race")).getName(),
+                "Scrawny cat -> scrawny cat (forward ref, case-insensitive)");
 
         // None of the three names a role, so each must take the MEMBER default (not NONE).
         for (Object f : friends) {
@@ -450,24 +460,48 @@ class MonsterReaderTest {
     // ---- spell messages, drop base-vs-specific, friends-base, explicit role, zero-dice ----
 
     @Test
-    void perSpellMessagesAreAssembledOntoTheOwningMonster() throws Exception {
-        // The spell-message map is built per record; a regression once shared one map across every
-        // monster. Assert the messages land keyed by spell, and an absent leg stays null.
+    void spellMessagesShareOneListInReverseFileOrderWithTheTypesInterleaved() throws Exception {
+        // C's add_alternate_spell_message pushes message-vis, message-invis and message-miss onto the
+        // head of the one r->spell_msgs chain, so the chain is in reverse file order with the three
+        // types interleaved as they appeared.
         ParseResult<MonsterRace> r = load("spell-messages.txt", withHeader(1, rec("Yeller",
-                "spells:SHRIEK",
+                "spells:SHRIEK | BLINK",
                 "message-vis:SHRIEK:It lets out a piercing shriek!",
-                "message-invis:SHRIEK:Something shrieks nearby.")));
+                "message-invis:BLINK:Something blinks nearby.",
+                "message-miss:SHRIEK:The shriek misses.")));
         assertFalse(r.hasErrors(), r.errors()::toString);
 
         MonsterRace yeller = byName(r, "Yeller");
         assertNotNull(yeller);
 
-        Map<String, MonsterSpellMessage> messages = field(yeller, "spellMessages");
-        MonsterSpellMessage m = messages.get("SHRIEK");
-        assertNotNull(m, () -> messages.keySet().toString());
-        assertEquals("It lets out a piercing shriek!", m.vis());
-        assertEquals("Something shrieks nearby.", m.invis());
-        assertNull(m.miss(), "no message-miss line -> null");
+        List<MonsterSpellText> messages = field(yeller, "spellMessages");
+        assertEquals(3, messages.size(), () -> messages.toString());
+
+        assertEquals(MonsterSpellText.MonsterSpellMessageType.MISS, messages.get(0).getSpellType());
+        assertEquals(MonsterSpell.RSF_SHRIEK, messages.get(0).getDamageType());
+        assertEquals("The shriek misses.", messages.get(0).getSpellMessage());
+
+        assertEquals(MonsterSpellText.MonsterSpellMessageType.INVIS, messages.get(1).getSpellType());
+        assertEquals(MonsterSpell.RSF_BLINK, messages.get(1).getDamageType());
+        assertEquals("Something blinks nearby.", messages.get(1).getSpellMessage());
+
+        assertEquals(MonsterSpellText.MonsterSpellMessageType.VIS, messages.get(2).getSpellType());
+        assertEquals(MonsterSpell.RSF_SHRIEK, messages.get(2).getDamageType());
+        assertEquals("It lets out a piercing shriek!", messages.get(2).getSpellMessage());
+    }
+
+    @Test
+    void spellMessagesDoNotLeakBetweenMonsters() throws Exception {
+        // The list is built fresh per record; a regression once shared one across every monster.
+        ParseResult<MonsterRace> r = load("spell-messages-two.txt", withHeader(2,
+                rec("Yeller", "spells:SHRIEK", "message-vis:SHRIEK:Loud.")
+                        + rec("Quiet", "spells:SHRIEK")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+
+        List<MonsterSpellText> yeller = field(byName(r, "Yeller"), "spellMessages");
+        List<MonsterSpellText> quiet = field(byName(r, "Quiet"), "spellMessages");
+        assertEquals(1, yeller.size());
+        assertTrue(quiet.isEmpty(), () -> quiet.toString());
     }
 
     @Test
@@ -673,8 +707,9 @@ class MonsterReaderTest {
         assertFalse(hasError(r, "out of bounds"), r.errors()::toString);
         List<?> friends = field(r.items().get(0), "friends");
         assertEquals(2, friends.size());
-        assertEquals(Integer.valueOf(101), declaredField(friends.get(0), "percentChance"));
-        assertEquals(Integer.valueOf(200), declaredField(friends.get(1), "percentChance"));
+        // Reverse file order, as C's head-pushed chain holds them.
+        assertEquals(Integer.valueOf(200), declaredField(friends.get(0), "percentChance"));
+        assertEquals(Integer.valueOf(101), declaredField(friends.get(1), "percentChance"));
     }
 
     @Test
@@ -1094,12 +1129,24 @@ class MonsterReaderTest {
     }
 
     @Test
-    void aMessageForAnUnknownSpellIsAcceptedHereWhereCReportsAnInvalidSpellName() throws Exception {
+    void aMessageForAnUnknownSpellIsRejectedAsInC() throws Exception {
+        // C: grab_name fails -> PARSE_ERROR_INVALID_SPELL_NAME. Here the record is skipped with an error.
         ParseResult<MonsterRace> r = load("msg-unknown-spell.txt", withHeader(1,
                 rec("Solo", "spells:SHRIEK", "message-vis:NOTASPELL:Hello")));
+        assertTrue(r.hasErrors());
+        assertTrue(hasError(r, "illegal spell message"), r.errors()::toString);
+        assertTrue(r.items().isEmpty());
+    }
+
+    @Test
+    void aMessageForASpellTheMonsterDoesNotCastIsKeptAsInC() throws Exception {
+        // C keeps every message whose spell name is valid, whether or not spells: lists it.
+        ParseResult<MonsterRace> r = load("msg-uncast-spell.txt", withHeader(1,
+                rec("Solo", "spells:SHRIEK", "message-vis:BLINK:Hello")));
         assertFalse(r.hasErrors(), r.errors()::toString);
-        Map<String, MonsterSpellMessage> messages = field(byName(r, "Solo"), "spellMessages");
-        assertFalse(messages.containsKey("NOTASPELL"));
+        List<MonsterSpellText> messages = field(byName(r, "Solo"), "spellMessages");
+        assertEquals(1, messages.size());
+        assertEquals(MonsterSpell.RSF_BLINK, messages.get(0).getDamageType());
     }
 
     @Test
@@ -1130,36 +1177,57 @@ class MonsterReaderTest {
     }
 
     @Test
-    void dropsAreInFileOrderHereWhereCsChainHoldsThemReversed() throws Exception {
+    void dropsAreInReverseFileOrderAsInCsChain() throws Exception {
         // parse_monster_drop pushes on the head of r->drops, so C walks the later line first.
         ParseResult<MonsterRace> r = load("drop-order.txt", withHeader(1, rec("Solo",
                 "drop:scroll:Phase Door:10:1:1", "drop:potion:Cure Light Wounds:20:1:1")));
         assertFalse(r.hasErrors(), r.errors()::toString);
         List<?> drops = field(byName(r, "Solo"), "drops");
-        assertEquals(Integer.valueOf(10), declaredField(drops.get(0), "percentChance"));
-        assertEquals(Integer.valueOf(20), declaredField(drops.get(1), "percentChance"));
+        assertEquals(2, drops.size());
+        assertEquals(Integer.valueOf(20), declaredField(drops.get(0), "percentChance"));
+        assertEquals(Integer.valueOf(10), declaredField(drops.get(1), "percentChance"));
     }
 
     @Test
-    void aDropFollowedByADropBaseKeepsThatOrderHereWhereCWalksTheDropBaseFirst() throws Exception {
-        // One chain in C, so the later drop-base: line is first. Here drop: lines come before
-        // drop-base: lines whatever the file order.
+    void aDropFollowedByADropBaseHasTheDropBaseFirstAsInC() throws Exception {
+        // drop: and drop-base: share one chain in C, each pushed on the head, so the later
+        // drop-base: line is walked first. drop-base: carries no kind, drop: does.
         ParseResult<MonsterRace> r = load("drop-mixed.txt", withHeader(1, rec("Solo",
                 "drop:scroll:Phase Door:100:1:1", "drop-base:mushroom:100:1:2")));
         assertFalse(r.hasErrors(), r.errors()::toString);
         List<?> drops = field(byName(r, "Solo"), "drops");
-        assertNotNull(declaredField(drops.get(0), "kind"));
-        assertNull(declaredField(drops.get(1), "kind"));
+        assertEquals(2, drops.size());
+        assertNull(declaredField(drops.get(0), "kind"));
+        assertNotNull(declaredField(drops.get(1), "kind"));
     }
 
     @Test
-    void friendsAreInFileOrderHereWhereCsChainHoldsThemReversed() throws Exception {
+    void dropAndDropBaseLinesInterleaveInReverseFileOrderAsInC() throws Exception {
+        // Three lines alternating kinds: the single chain is the whole file reversed, which a
+        // drop:-list-then-drop-base:-list split could not reproduce.
+        ParseResult<MonsterRace> r = load("drop-interleave.txt", withHeader(1, rec("Solo",
+                "drop:scroll:Phase Door:10:1:1",
+                "drop-base:mushroom:20:1:2",
+                "drop:potion:Cure Light Wounds:30:1:1")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        List<?> drops = field(byName(r, "Solo"), "drops");
+        assertEquals(3, drops.size());
+        assertEquals(Integer.valueOf(30), declaredField(drops.get(0), "percentChance"));
+        assertNotNull(declaredField(drops.get(0), "kind"));
+        assertEquals(Integer.valueOf(20), declaredField(drops.get(1), "percentChance"));
+        assertNull(declaredField(drops.get(1), "kind"));
+        assertEquals(Integer.valueOf(10), declaredField(drops.get(2), "percentChance"));
+        assertNotNull(declaredField(drops.get(2), "kind"));
+    }
+
+    @Test
+    void friendsAreInReverseFileOrderAsInCsChain() throws Exception {
         ParseResult<MonsterRace> r = load("friend-order.txt", withHeader(1, rec("Solo",
                 "friends:100:1d1:Alpha", "friends:100:1d1:Beta")));
         assertFalse(r.hasErrors(), r.errors()::toString);
         List<?> friends = field(byName(r, "Solo"), "friends");
-        assertEquals("Alpha", declaredField(friends.get(0), "name"));
-        assertEquals("Beta", declaredField(friends.get(1), "name"));
+        assertEquals("Beta", declaredField(friends.get(0), "name"));
+        assertEquals("Alpha", declaredField(friends.get(1), "name"));
     }
 
     @Test

@@ -266,12 +266,9 @@ monster
             String spellFreqInit = "";
             String spellPowerInit = "";
             List<String> spellsList = new ArrayList<>();
-            Map<String, String> visSB = new HashMap<>();
-            Map<String, String> invisSB = new HashMap<>();
-            Map<String, String> missSB = new HashMap<>();
+            List<MessageTypeParseRecord> messagesInit = new ArrayList<>();
             StringBuilder descSB = new StringBuilder();
             List<MonsterDropParseRecord> dropsList = new ArrayList<>();
-            List<MonsterDropBaseParseRecord> dropsBaseList = new ArrayList<>();
             List<MonsterMimicParseRecord> mimics = new ArrayList();
             List<MonsterFriendsParseRecord> friendsList = new ArrayList<>();
             List<MonsterFriendsParseRecord> friendsBaseList = new ArrayList<>();
@@ -283,8 +280,8 @@ monster
                 smellInit, shapeInit, colourCycleGroupInit, colourCycleNameInit,
                 armourClassInit, sleepinessInit, depthInit, rarityInit, experienceInit,
                 blowsList, flagsList, flagsOffList, innateFreqInit, spellFreqInit,
-                spellPowerInit, spellsList, visSB, invisSB, missSB,
-                descSB.toString(), dropsList, dropsBaseList, mimics, friendsList,
+                spellPowerInit, spellsList, messagesInit,
+                descSB.toString(), dropsList, mimics, friendsList,
                 friendsBaseList, line);
         }
         :   name { nameInit = $name.nameStr; line = $start.getLine(); }
@@ -297,7 +294,7 @@ monster
         |   light { lightInit = $light.lightVal; }
         |   hearing { hearingInit = $hearing.hearingVal; }
         |   smell { smellInit = $smell.smellVal; }
-        |   shape { shapeInit.add($shape.shapeStr); }
+        |   shape { shapeInit.addFirst($shape.shapeStr); }
         |   colourCycle { colourCycleGroupInit = $colourCycle.groupStr;
                           colourCycleNameInit = $colourCycle.nameStr; }
         |   armourClass { armourClassInit = $armourClass.armourClassVal; }
@@ -314,18 +311,18 @@ monster
         |   spellFreq { spellFreqInit = $spellFreq.spellFreqVal; }
         |   spellPower { spellPowerInit = $spellPower.spellPowerVal; }
         |   spells { spellsList.addAll($spells.spellList); }
-        |   messageVis { visSB.put($messageVis.spell, $messageVis.line); }
-        |   messageInvis { invisSB.put($messageInvis.spell, $messageInvis.line); }
-        |   messageMiss { missSB.put($messageMiss.spell, $messageMiss.line); }
+        |   messageVis { messagesInit.addFirst(new MessageTypeParseRecord("vis", $messageVis.spell, $messageVis.line)); }
+        |   messageInvis { messagesInit.addFirst(new MessageTypeParseRecord("invis", $messageInvis.spell, $messageInvis.line)); }
+        |   messageMiss { messagesInit.addFirst(new MessageTypeParseRecord("miss", $messageMiss.spell, $messageMiss.line)); }
         |   desc { descSB.append($desc.line); }
-        |   drop { dropsList.add(new MonsterDropParseRecord($drop.typeStr,
+        |   drop { dropsList.addFirst(new MonsterDropParseRecord($drop.typeStr,
                 $drop.nameStr, $drop.chanceVal, $drop.min, $drop.max)); }
-        |   dropBase  { dropsBaseList.add(new MonsterDropBaseParseRecord($dropBase.typeStr,
+        |   dropBase  { dropsList.addFirst(new MonsterDropParseRecord($dropBase.typeStr, "",
                 $dropBase.chanceVal, $dropBase.min, $dropBase.max)); }
-        |   mimic { mimics.add(new MonsterMimicParseRecord($mimic.tVal, $mimic.sVal)); }
-        |   friends { friendsList.add(new MonsterFriendsParseRecord($friends.chance,
+        |   mimic { mimics.addFirst(new MonsterMimicParseRecord($mimic.tVal, $mimic.sVal)); }
+        |   friends { friendsList.addFirst(new MonsterFriendsParseRecord($friends.chance,
                 $friends.number, $friends.nameStr, $friends.role)); }
-        |   friendsBase { friendsBaseList.add(new MonsterFriendsParseRecord($friendsBase.chance,
+        |   friendsBase { friendsBaseList.addFirst(new MonsterFriendsParseRecord($friendsBase.chance,
                 $friendsBase.number, $friendsBase.nameStr, $friendsBase.role)); }
         )+;
 

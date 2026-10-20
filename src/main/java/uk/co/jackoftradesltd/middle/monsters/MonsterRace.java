@@ -31,7 +31,6 @@ import uk.co.jackoftradesltd.middle.monsters.enums.MonsterSpell;
 import uk.co.jackoftradesltd.middle.objects.ObjectKind;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * The full definition of a kind of monster (as loaded from {@code monster.txt})
@@ -50,10 +49,17 @@ import java.util.Map;
  *       C's {@code spell_flags} bitfield is the {@link Flag} of {@link MonsterSpell} called
  *       {@code spells}.</li>
  *   <li>C's singly linked lists become {@link List}s. C builds the blow list by appending, so blows
- *       run in file order, but it builds the friends, friends-base, drops, mimic and shape lists by
- *       prepending, so a walk from the head runs in <em>reverse</em> file order. The Java lists are
- *       all in file order, as the assembler adds them. Anything that ports a loop over one of those
- *       lists, and consumes random numbers as it goes, will see them in a different order from C.</li>
+ *       run in file order, but it builds the friends, friends-base, drops, mimic, shape and spell
+ *       message lists by prepending, so a walk from the head runs in <em>reverse</em> file order. The
+ *       Java lists keep C's order: {@code MonsterGrammar.g4} pushes each of those six onto the front
+ *       as it reads the line, so they too run in reverse file order, and only the blow list runs in
+ *       file order. A loop ported from C over any of them, consuming random numbers as it goes, sees
+ *       them in the same order as C.</li>
+ *   <li>C's {@code spell_msgs} chain holds one {@code monster_altmsg} for each {@code message-vis:},
+ *       {@code message-invis:} and {@code message-miss:} line, carrying the message, which of the
+ *       spell's messages it overrides and the spell's index. {@link #spellMessages} keeps that
+ *       shape: one {@link MonsterSpellText} per line, holding the type, the {@link MonsterSpell} and
+ *       the message text.</li>
  *   <li>C's {@code finish_parse_monster} copies each race's blows into an array padded with blank
  *       records out to {@code mon_blows_max}. The Java blow list holds only the real blows.</li>
  * </ul>
@@ -62,7 +68,7 @@ import java.util.Map;
  * stand in for the name-to-race conversion loop at the end of {@code finish_parse_monster}
  * ({@code mon-init.c}); {@code MonsterDataLoader} runs them once every race has been registered.
  *
- * <p>Class MonsterRace coded before 261010, commented in full on 261010.
+ * <p>Class MonsterRace coded before 261010, commented in full on 261020.
  *
  * @author Rowan Crowther
  */
@@ -147,15 +153,18 @@ public class MonsterRace {
 
     /**
      * A visible / invisible / miss triple of spell-cast messages. <b>Nothing in the main code uses
-     * it</b>: the assembler builds {@link MonsterSpellMessage}, a record with the same three
-     * components under different names, and that is what the {@link #spellMessages} field holds.
-     * This nested record is exercised only by {@code MonsterRaceResolutionTest}.
+     * it</b>, and it is not what the {@link #spellMessages} field holds: the assembler builds one
+     * {@link MonsterSpellText} for each {@code message-vis:}, {@code message-invis:} and
+     * {@code message-miss:} line. Nothing else in the main code uses {@link MonsterSpellMessage},
+     * a record with the same three components under different names, either. This nested record is
+     * exercised only by {@code MonsterRaceResolutionTest}.
      *
      * <p>It is also not a port of anything in C. C's {@code monster_altmsg} holds <em>one</em>
      * message per record, with a {@code msg_type} saying which of the spell's messages it overrides
      * and an {@code index} saying which spell, so a spell with three overrides is three records.
+     * {@link MonsterSpellText} has that shape.
      *
-     * <p>Record MonsterSpellMessages coded before 261010, commented in full on 261010.
+     * <p>Record MonsterSpellMessages coded before 261010, commented in full on 261020.
      *
      * @param visible   message shown when the casting monster is visible
      * @param invisible message shown when the caster is unseen but the spell is noticed
@@ -164,6 +173,18 @@ public class MonsterRace {
      */
     public record MonsterSpellMessages(String visible, String invisible, String miss) {
     }
+
+    /**
+     * The alternate spell messages, C's {@code race->spell_msgs}: one {@link MonsterSpellText} for
+     * each {@code message-vis:}, {@code message-invis:} and {@code message-miss:} line, naming its
+     * message type, the spell it overrides and the text. The list is in reverse file order with the
+     * three types interleaved as they appeared, because C pushes each message on the head of its
+     * chain and {@code MonsterGrammar.g4} pushes onto the front of the list in the same way. It is
+     * empty for a race with no message lines. There is no accessor for it yet.
+     *
+     * <p>Field spellMessages coded before 261020, commented in full on 261020.
+     */
+    private List<MonsterSpellText> spellMessages;
 
     /**
      * The monster's name, C's {@code race->name}, the text of the {@code name:} line. The registry's
@@ -181,10 +202,11 @@ public class MonsterRace {
     private String text;
     /**
      * The optional plural form of the name, C's {@code race->plural}. C leaves it {@code NULL} when
-     * the {@code plural:} line is absent or empty, so a {@code null} here is meaningful, not a
-     * missing value.
+     * the {@code plural:} line is absent or empty. Here the grammar starts the record's plural as an
+     * empty string and the assembler passes it on unchanged, so a loaded race has {@code ""} where
+     * C has {@code NULL}. A caller testing for C's {@code NULL} has to test for an empty string.
      *
-     * <p>Field plural coded before 261010, commented in full on 261010.
+     * <p>Field plural coded before 261010, commented in full on 261020.
      */
     private String plural;
 
@@ -257,28 +279,33 @@ public class MonsterRace {
     private int mexp;
 
     /**
-     * Innate-attack frequency, C's {@code race->freq_innate}. C stores {@code 100 / pct} from the
-     * {@code innate-freq:} line, so it holds the "one in N" figure rather than the percentage, and
-     * leaves it zero when the line is absent. <b>Outstanding:</b> the assembler stores the raw line
-     * value and defaults it to {@code 4} when absent, and I found no conversion to {@code 100 / pct}
-     * in this class or the assembler, so this field does not yet hold what C's does.
+     * Innate-attack frequency, C's {@code race->freq_innate}. It holds the "one in N" figure
+     * {@code 100 / pct}, not the percentage on the {@code innate-freq:} line. The assembler does the
+     * division and rejects a line outside 1 to 100. With no such line the value is zero, unless the
+     * race has an innate spell (one of type {@code RST_INNATE}), when the assembler sets it to
+     * {@code 4}, as C's {@code parse_monster_spells} does.
      *
-     * <p>Field freqInnate coded before 261010, commented in full on 261010.
+     * <p>Field freqInnate coded before 261010, commented in full on 261020.
      */
     private int freqInnate;
     /**
-     * Spell-casting frequency, C's {@code race->freq_spell}. Same convention, and same outstanding
-     * difference, as {@link #freqInnate}: C stores {@code 100 / pct} from the {@code spell-freq:}
-     * line.
+     * Spell-casting frequency, C's {@code race->freq_spell}. Same convention as {@link #freqInnate}:
+     * {@code 100 / pct} from the {@code spell-freq:} line, which the assembler also limits to 1 to
+     * 100. With no such line the value is zero, unless the race has a spell that is neither innate
+     * nor a breath, when the assembler sets it to {@code 4}, as C's {@code parse_monster_spells}
+     * does.
      *
-     * <p>Field freqSpell coded before 261010, commented in full on 261010.
+     * <p>Field freqSpell coded before 261010, commented in full on 261020.
      */
     private int freqSpell;
     /**
-     * The power of the monster's spells, C's {@code race->spell_power}, from the
-     * {@code spell-power:} line.
+     * The power of the monster's spells, C's {@code race->spell_power}. The level is the default: C's
+     * {@code parse_monster_depth} sets it to the race's level when it reads the {@code depth:} line,
+     * and a {@code spell-power:} line overrides it. {@code MonsterGrammar.g4} does the same, so the
+     * order of the lines matters in both: a {@code spell-power:} line that comes before the
+     * {@code depth:} line is overwritten by the level. It is zero when neither line is present.
      *
-     * <p>Field spellPower coded before 261010, commented in full on 261010.
+     * <p>Field spellPower coded before 261010, commented in full on 261020.
      */
     private int spellPower;
 
@@ -338,67 +365,66 @@ public class MonsterRace {
     /**
      * Maximum population allowed on a level, C's {@code race->max_num}: normally {@code 100}, and
      * {@code 1} for a unique. C declares it {@code uint8_t}; here it is an {@code int} and
-     * {@link #setMaxNum(int)} does not range-check it.
+     * {@link #setMaxNum(int)} does not range-check it. It is zero until set: the constructor does
+     * not assign it, and the loop over the races in {@code PlayerBirth.java} gives every race after
+     * the first the cap of 100, or 1 if it has {@code RF_UNIQUE}.
      *
-     * <p>Field maxNum coded before 261010, commented in full on 261010.
+     * <p>Field maxNum coded before 261010, commented in full on 261020.
      */
     private int maxNum;
     /**
-     * Population on the current level, C's {@code race->cur_num}. See {@link #setCurNum(int)}.
+     * Population on the current level, C's {@code race->cur_num}. See {@link #setCurNum(int)}. It is
+     * zero until set, and the loop over the races in {@code PlayerBirth.java} resets it to zero for
+     * every race after the first.
      *
-     * <p>Field curNum coded before 261010, commented in full on 261010.
+     * <p>Field curNum coded before 261010, commented in full on 261020.
      */
     private int curNum;
-
+    
     /**
-     * Alternate spell-cast messages, standing in for C's {@code race->spell_msgs} list of
-     * {@code monster_altmsg}. Keyed by spell name, with one {@link MonsterSpellMessage} (visible,
-     * invisible and miss text) per spell, where C keeps a separate record for each overridden
-     * message.
+     * What the monster may drop on death, C's {@code race->drops}, in reverse file order, as C's
+     * chain runs. C pushes each {@code drop:} and {@code drop-base:} line on the head of one chain,
+     * and {@code MonsterGrammar.g4} pushes onto the front of one list in the same way, so the two
+     * kinds are interleaved as they appeared. The assembler builds a {@code drop-base:} entry
+     * without an object kind, which is how the two are told apart.
      *
-     * <p>Field spellMessages coded before 261010, commented in full on 261010.
-     */
-    private Map<String, MonsterSpellMessage> spellMessages;
-    /**
-     * What the monster may drop on death, C's {@code race->drops}, in file order (C's list runs in
-     * reverse file order, see the class block).
-     *
-     * <p>Field drops coded before 261010, commented in full on 261010.
+     * <p>Field drops coded before 261010, commented in full on 261020.
      */
     private List<MonsterDrop> drops;
 
     /**
-     * Companion races that may be generated with this monster, C's {@code race->friends}, in file
-     * order (C's list runs in reverse). Each entry names its race as text until
-     * {@link #resolveFriends()} points it at the race itself.
+     * Companion races that may be generated with this monster, C's {@code race->friends}, in
+     * reverse file order, as C's chain runs. {@link #friendsBase} is a separate list and is never
+     * merged with this one. Each entry names its race as text until {@link #resolveFriends()}
+     * points it at the race itself.
      *
-     * <p>Field friends coded before 261010, commented in full on 261010.
+     * <p>Field friends coded before 261010, commented in full on 261020.
      */
     private List<MonsterFriends> friends;
     /**
      * Companion base types that may be generated with this monster, C's {@code race->friends_base},
-     * in file order (C's list runs in reverse). Unlike {@link #friends} these are resolved when
+     * in reverse file order, as C's chain runs. Unlike {@link #friends} these are resolved when
      * parsed, as C does, because a base is always loaded before any race.
      *
-     * <p>Field friendsBase coded before 261010, commented in full on 261010.
+     * <p>Field friendsBase coded before 261010, commented in full on 261020.
      */
     private List<MonsterFriendsBase> friendsBase;
 
     /**
-     * The object kinds this monster can pose as, C's {@code race->mimic_kinds}, in file order (C's
-     * list runs in reverse). C wraps each kind in a {@code monster_mimic} record; here the list
+     * The object kinds this monster can pose as, C's {@code race->mimic_kinds}, in reverse file
+     * order, as C's chain runs. C wraps each kind in a {@code monster_mimic} record; here the list
      * holds the kinds directly.
      *
-     * <p>Field mimicKinds coded before 261010, commented in full on 261010.
+     * <p>Field mimicKinds coded before 261010, commented in full on 261020.
      */
     private List<ObjectKind> mimicKinds;
 
     /**
-     * The shapes this monster can change into, C's {@code race->shapes}, in file order (C's list
-     * runs in reverse). Each entry holds its name until {@link #resolveShapes()} fills in a base or
+     * The shapes this monster can change into, C's {@code race->shapes}, in reverse file order, as
+     * C's chain runs. Each entry holds its name until {@link #resolveShapes()} fills in a base or
      * a race.
      *
-     * <p>Field shapes coded before 261010, commented in full on 261010.
+     * <p>Field shapes coded before 261010, commented in full on 261020.
      */
     private List<MonsterShape> shapes;
     /**
@@ -413,13 +439,14 @@ public class MonsterRace {
     /**
      * The player's accumulated lore about this monster. C keeps these records in the global
      * {@code l_list}, one per race, found by {@code get_lore}; here the record is a field of the
-     * race. It is {@code null} until {@link #setLore(MonsterLore)} is called. Two production callers
-     * attach one. {@code MonsterDataLoader.loadMonsters} gives every loaded race a blank record, as
-     * C's {@code finish_parse_monster} does, and the lore-file reader ({@code LoreGrammar.g4})
-     * attaches a record to the race named in each lore entry. A race built by hand, as the tests do,
-     * has {@code null} here until one is attached.
+     * race. It is {@code null} until {@link #setLore(MonsterLore)} is called. The only caller that
+     * runs today is {@code MonsterDataLoader.loadMonsters}, which gives every loaded race a blank
+     * record, as C's {@code finish_parse_monster} does. {@code LoreGrammar.g4} also attaches a
+     * record to the race named in each lore entry, but {@code LoreReader.parse} is a parked stub
+     * that never opens the lore file, so that path is not reached yet. A race built by hand, as the
+     * tests do, has {@code null} here until one is attached.
      *
-     * <p>Field lore coded before 261010, commented in full on 261011.
+     * <p>Field lore coded before 261010, commented in full on 261020.
      */
     private MonsterLore lore;
 
@@ -439,13 +466,15 @@ public class MonsterRace {
      * defaulting), and the lists and flag sets are kept by reference, not copied. The lore record
      * is not an argument; attach it with {@link #setLore(MonsterLore)}. Friend and shape names are
      * still unresolved text, to be resolved by {@link #resolveFriends()} and
-     * {@link #resolveShapes()}.
+     * {@link #resolveShapes()}. The lists are stored in the order they are given, and the assembler
+     * gives the drops, friends, friends-base, mimic, shape and spell message lists in reverse file
+     * order and the blows in file order, to match C (see the class block).
      *
-     * <p>Constructor coded before 261010, commented in full on 261010.
+     * <p>Constructor coded before 261010, commented in full on 261020.
      *
      * @param name          monster name
      * @param text          flavour text
-     * @param plural        plural name form, or {@code null} if the data gives none
+     * @param plural        plural name form; the assembler passes {@code ""} when the data gives none
      * @param base          base type
      * @param averageHP     average hit points
      * @param ac            armour class
@@ -455,21 +484,21 @@ public class MonsterRace {
      * @param speed         base speed
      * @param light         emitted light radius
      * @param mexp          experience for killing
-     * @param freqInnate    innate-attack frequency
-     * @param freqSpell     spell frequency
+     * @param freqInnate    innate-attack frequency, as the "one in N" figure {@code 100 / pct}
+     * @param freqSpell     spell frequency, as the "one in N" figure {@code 100 / pct}
      * @param spellPower    spell power
      * @param flags         set race flags
      * @param spells        castable spells
-     * @param blow          melee blows
+     * @param blow          melee blows, in file order
      * @param level         native level
      * @param rarity        rarity weighting
      * @param adc           display glyph/colour
-     * @param spellMessages alternate spell messages
-     * @param drops         death drops
-     * @param friends       companion races
-     * @param friendsBase   companion base types
-     * @param mimicKinds    mimic object kinds
-     * @param shapes        shape names
+     * @param spellMessages alternate spell messages, in reverse file order
+     * @param drops         death drops, in reverse file order
+     * @param friends       companion races, in reverse file order
+     * @param friendsBase   companion base types, in reverse file order
+     * @param mimicKinds    mimic object kinds, in reverse file order
+     * @param shapes        shape names, in reverse file order
      * @param numShapes     number of shapes
      * @param cycler        colour-cycling animation for the display glyph, or {@code null} if it does
      *                      not animate
@@ -481,7 +510,7 @@ public class MonsterRace {
                        Flag<MonsterSpell> spells,
                        List<MonsterBlow> blow, int level, int rarity,
                        AngbandDisplayCharacter adc,
-                       Map<String, MonsterSpellMessage> spellMessages,
+                       List<MonsterSpellText> spellMessages,
                        List<MonsterDrop> drops, List<MonsterFriends> friends,
                        List<MonsterFriendsBase> friendsBase,
                        List<ObjectKind> mimicKinds, List<MonsterShape> shapes, int numShapes,
@@ -521,13 +550,13 @@ public class MonsterRace {
      * Attach this race's accumulated lore record. This is the Java stand-in for the allocation of
      * C's {@code l_list} at the end of {@code finish_parse_monster}, which gives every race a lore
      * record with room for {@code mon_blows_max} blows. {@code MonsterDataLoader.loadMonsters}
-     * calls it once for each race that has no record yet, and the lore-file reader
-     * ({@code LoreGrammar.g4}) calls it once per lore entry. A call replaces any record already
-     * attached rather than filling it in, which C's {@code lore_parser} does not do: it fills
-     * {@code l_list[race->ridx]} in place. Nothing checks the argument, so passing {@code null}
-     * clears the record.
+     * calls it once for each race that has no record yet. {@code LoreGrammar.g4} also calls it once
+     * per lore entry, but {@code LoreReader.parse} is a parked stub that never opens the lore file,
+     * so that call is not reached yet. A call replaces any record already attached rather than
+     * filling it in, which C's {@code lore_parser} does not do: it fills {@code l_list[race->ridx]}
+     * in place. Nothing checks the argument, so passing {@code null} clears the record.
      *
-     * <p>Function setLore coded before 261010, commented in full on 261011.
+     * <p>Function setLore coded before 261010, commented in full on 261020.
      *
      * @param lore the lore to attach
      */

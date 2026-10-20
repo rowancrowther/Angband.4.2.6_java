@@ -18,7 +18,6 @@
 package uk.co.jackoftradesltd.backend.parser.monster;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * The raw, unresolved result of parsing one {@code monster.txt} record: every field is captured as the
@@ -58,13 +57,9 @@ import java.util.Map;
  * @param spellPower       the spell power as text ({@code spell-power:}), empty if not given
  * @param spells           the monster spell codes ({@code spells:}), each without its
  *                         {@code RSF_} prefix, unresolved
- * @param messageVis       per-spell "seen" cast messages, keyed by the spell code
- * @param messageInvis     per-spell "unseen" cast messages, keyed by the spell code
- * @param messageMiss      per-spell miss messages, keyed by the spell code
  * @param desc             the monster's descriptive text ({@code desc:})
- * @param drops            the {@code drop:} entries naming a specific object kind
- * @param dropsBase        the {@code drop-base:} entries naming only a tval (any kind of that
- *                         type)
+ * @param drops            the {@code drop:} and {@code dropBase:} entries naming a specific object kind
+ *                         as well as generic base kind
  * @param mimics           the {@code mimic:} entries this monster can disguise itself as
  * @param friends          the {@code friends:} entries: other races/bases summoned alongside
  *                         this one
@@ -99,17 +94,20 @@ public record MonsterParseRecord(String name,
                                  String spellFreq,
                                  String spellPower,
                                  List<String> spells,
-                                 Map<String, String> messageVis,
-                                 Map<String, String> messageInvis,
-                                 Map<String, String> messageMiss,
+                                 List<MessageTypeParseRecord> spellMessages,
                                  String desc,
                                  List<MonsterDropParseRecord> drops,
-                                 List<MonsterDropBaseParseRecord> dropsBase,
                                  List<MonsterMimicParseRecord> mimics,
                                  List<MonsterFriendsParseRecord> friends,
                                  List<MonsterFriendsParseRecord> friendsBase,
                                  int line) {
 
+    public record MessageTypeParseRecord(String messageType,
+                                         String spellName,
+                                         String messageString) {
+        
+    }
+    
     /**
      * One {@code mimic:} entry: the tval/sval pair of an object kind this monster can disguise
      * itself as, unresolved.
@@ -153,22 +151,6 @@ public record MonsterParseRecord(String name,
                                          String chance,
                                          String min,
                                          String max) {
-    }
-
-    /**
-     * One {@code drop-base:} entry: an unresolved-kind drop naming only a tval, with its
-     * allocation chance and quantity range, all unresolved.
-     *
-     * @param type   the object tval name as text
-     * @param chance the drop chance percentage as text
-     * @param min    the minimum quantity as text
-     * @param max    the maximum quantity as text
-     * @author Rowan Crowther
-     */
-    public record MonsterDropBaseParseRecord(String type,
-                                             String chance,
-                                             String min,
-                                             String max) {
     }
 
     /**

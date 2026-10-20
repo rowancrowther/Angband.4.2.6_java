@@ -37,7 +37,6 @@ import uk.co.jackoftradesltd.middle.objects.ObjectKind;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -347,14 +346,28 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
             // Per-record message map keyed by spell name -- one MonsterSpellMessage per spell the
             // monster casts, holding its optional vis/invis/miss lines. Built fresh each record so
             // messages never leak between monsters.
-            Map<String, MonsterSpellMessage> spellMessages = new HashMap<>();
-            for (String spellName : record.spells()) {
-                String visMsg = record.messageVis().get(spellName);
-                String invisMsg = record.messageInvis().get(spellName);
-                String missMsg = record.messageMiss().get(spellName);
-
-                spellMessages.put(spellName, new MonsterSpellMessage(visMsg, invisMsg, missMsg));
+            List<MonsterSpellText> spellMessages = new ArrayList<>();
+            boolean badSpellMessage = false;
+            for (MonsterParseRecord.MessageTypeParseRecord messageType : record.spellMessages()) {
+                try {
+                    String visInvisMiss = messageType.messageType();
+                    String spellName = messageType.spellName();
+                    String messageString = messageType.messageString();
+                    
+                    MonsterSpell damageType = MonsterSpell.valueOf("RSF_" + spellName);
+                    MonsterSpellText.MonsterSpellMessageType visType = 
+                            MonsterSpellText.MonsterSpellMessageType.valueOf(visInvisMiss.toUpperCase());
+                    
+                    MonsterSpellText monMessage = new MonsterSpellText(visType, damageType, messageString);
+                    spellMessages.add(monMessage);
+                } catch (IllegalArgumentException e) {
+                    errors.add("Monster at line: " + line + " has " +
+                            "an illegal spell message: message-" + messageType.messageType() + ":"
+                            + messageType.spellName() + ":" + messageType.messageString());
+                    badSpellMessage = true;
+                }
             }
+            if (badSpellMessage) continue;
             // drop: and drop-base: both feed this single list. A drop: resolves to a specific
             // ObjectKind; a drop-base: (the loop further down) leaves the kind null, meaning "any
             // object of this tval" -- the two are told apart later by whether the kind is null.
@@ -375,8 +388,12 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
                             badDrop = true;
                             continue;
                         }
-                        ObjectKind kind = ObjectRegistry.lookupObjectKind(tValue, dropName);
-                        if (kind == null) {
+                        ObjectKind kind;
+                        if (dropName.isEmpty())
+                            kind = null;
+                        else
+                            kind = ObjectRegistry.lookupObjectKind(tValue, dropName);
+                        if (kind == null && !dropName.isEmpty()) {
                             errors.add("Monster at line: " + line + " has " +
                                     "an unknown drop base: " + dropName);
                             badDrop = true;
@@ -385,7 +402,10 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
                         int percentage = Integer.parseInt(chance);
                         int min = Integer.parseInt(minStr);
                         int max = Integer.parseInt(maxStr);
-                        drops.add(new MonsterDrop(tValue, kind, percentage, min, max));
+                        if (kind != null)
+                            drops.add(new MonsterDrop(tValue, kind, percentage, min, max));
+                        else
+                            drops.add(new MonsterDrop(tValue, percentage, min, max));
                     } catch (NumberFormatException e) {
                         errors.add("Monster at line: " + line + " has " +
                                 "a malformed integer in it's drop line: " + dropTvalStr);
@@ -394,33 +414,6 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
                 }
             }
             if (badDrop) continue;
-            boolean badDropBase = false;
-            for (MonsterParseRecord.MonsterDropBaseParseRecord dropBase : record.dropsBase()) {
-                String dropTvalStr = dropBase.type();
-                String chance = dropBase.chance();
-                String minStr = dropBase.min();
-                String maxStr = dropBase.max();
-                if (!chance.isEmpty() && !minStr.isEmpty() && !maxStr.isEmpty()) {
-                    try {
-                        TValue tValue = TValue.fromName(dropTvalStr);
-                        if (tValue == null) {
-                            errors.add("Monster at line: " + line + " has " +
-                                    "an unknown TV type: " + dropTvalStr);
-                            badDropBase = true;
-                            continue;
-                        }
-                        int percentage = Integer.parseInt(chance);
-                        int min = Integer.parseInt(minStr);
-                        int max = Integer.parseInt(maxStr);
-                        drops.add(new MonsterDrop(tValue, percentage, min, max));
-                    } catch (NumberFormatException e) {
-                        errors.add("Monster at line: " + line + " has " +
-                                "a malformed integer in it's drop line: " + dropTvalStr);
-                        badDropBase = true;
-                    }
-                }
-            }
-            if (badDropBase) continue;
             boolean badFriend = false;
             List<MonsterFriends> friends = new ArrayList<>();
             for (MonsterParseRecord.MonsterFriendsParseRecord friend : record.friends()) {

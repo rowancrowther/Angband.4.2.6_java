@@ -233,22 +233,25 @@ Found 2026-10-17 during `/port backend/parser/MonsterBaseReader.java`. Not fixed
 
 ## `monster/MonsterAssembler.java`: `spell_power` is never defaulted to the level
 
-Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. [**CLOSED** 26-10-20]
 
 - `parse_monster_depth` in `mon-init.c` sets `r->spell_power = r->level` ("Level is default spell power"), and
   `parse_monster_spell_power` overrides it only if a `spell-power:` line follows. A `spell-power:` line that comes before
   `depth:` is overwritten by the level.
-- `MonsterAssembler.java` starts `spellPower` at 0 and sets it only from `record.spellPower()`. A race with no
-  `spell-power:` line keeps 0, and a `spell-power:` line before `depth:` keeps its value.
-- Of the 624 races in the shipped `monster.txt`, 595 have no `spell-power:` line (12 do) and so differ: `grey mold`
-  (depth 1) is 0 here and 1 in C. Every other stat the reader loads, and every entry count, agrees with an independent
-  reading of the file (`MonsterReaderTest.everyRealRacesStatsAndEntryCountsMatchAnIndependentReadOfTheText`).
+- Was: `MonsterAssembler.java` started `spellPower` at 0 and set it only from `record.spellPower()`. A race with no
+  `spell-power:` line kept 0, and a `spell-power:` line before `depth:` kept its value. 595 of the 624 shipped races
+  differed from C: `grey mold` (depth 1) was 0 here and 1 in C.
+- Now: the `depthLevel` alternative in `MonsterGrammar.g4` sets `spellPowerInit` to the depth as well, and a later
+  `spellPower` alternative overrides it, so the order of the lines matters as it does in C. `MonsterRace.java` (field
+  `spellPower`) says so.
 - `race->spell_power` picks the lore description and the cast message for each spell, in `mon_spell_lore_description`
-  and `spell_message` in `mon-spell.c`, and it is the value of the `SPELL_POWER` base in `effects.c`. So the lowest spell
-  level is the one a race with no `spell-power:` line uses.
-- `MonsterReaderTest.aMonsterWithNoSpellPowerLineGetsSpellPowerZeroHereWhereCUsesItsLevel`,
-  `theRealFilesSpellPowerIsZeroForRacesWithNoSpellPowerLineWhereCUsesTheirLevel` and
-  `aSpellPowerLineBeforeDepthKeepsItsValueHereWhereCOverwritesItWithTheLevel` pin the Java result.
+  and `spell_message` in `mon-spell.c`, and it is the value of the `SPELL_POWER` base in `effects.c`.
+- `MonsterReaderTest.aMonsterWithNoSpellPowerLineGetsItsLevelAsSpellPower`,
+  `theRealFilesRacesWithNoSpellPowerLineGetTheirLevelAsSpellPower`, `aSpellPowerLineAfterDepthOverridesTheLevel`,
+  `aSpellPowerLineBeforeDepthIsOverwrittenByTheLevel` and `aSecondDepthLineResetsSpellPowerToTheNewLevel` pin it, and
+  `everyRealRacesStatsAndEntryCountsMatchAnIndependentReadOfTheText` checks all 624 races.
+- Still open, in the numbers entries: a negative `spell-power:` is accepted here where C's `uint` refuses it
+  (`aNegativeSpellPowerIsAcceptedHereWhereCRejectsAUint`).
 
 ## `monster/MonsterAssembler.java`: no `plural:` line gives `""`, C leaves NULL
 

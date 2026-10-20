@@ -33,10 +33,10 @@ import uk.co.jackoftradesltd.middle.objects.enums.TValue;
  *   <li>C's {@code next} pointer is not carried. The drops of a race are held in a
  *       {@code List<MonsterDrop>} on {@link MonsterRace} (and on {@link MonsterLore}), where C
  *       chains them. C prepends each entry as it parses, so its chain runs in reverse file order;
- *       the Java list is in file order (see the class block of {@link MonsterRace}). A loop that
- *       rolls {@code randint0} for each drop, as {@code mon_create_drop_count} and
- *       {@code mon_create_drop} in {@code mon-make.c} do, will see the entries in a different
- *       order from C.</li>
+ *       the Java list on a race is in the same reverse order, and {@code drop:} and
+ *       {@code drop-base:} lines share the one list (see the class block of {@link MonsterRace}).
+ *       A loop that rolls {@code randint0} for each drop, as {@code mon_create_drop_count} and
+ *       {@code mon_create_drop} in {@code mon-make.c} do, sees the entries in the same order as C.</li>
  *   <li>C leaves {@code tval} at 0 for a specific drop and takes the type from
  *       {@code kind->tval}; it sets {@code tval} only for a base drop. Java records the tval on
  *       both, and for a specific drop it is always the tval of the kind.</li>

@@ -141,8 +141,8 @@ counts, `base:`, `drop-base:` and the `friends:` dice form are fixed either way.
 
 These change what a loaded game holds today, even where nothing reads the value yet.
 
-1. **A: `monster/MonsterAssembler.java` `spell_power`.** Never defaulted to the level; 595 of 624 races differ from C.
-2. **A: `monster/MonsterAssembler.java` list order.** Drops, friends, mimics and shapes are reversed in C, drops are grouped, and 34 races differ. The order is observable in drop and mimic picks. Per the Stage 0 answer "always echo C's ordering", these lists end up in C's order.
+1. **A: `monster/MonsterAssembler.java` `spell_power`.** Never defaulted to the level; 595 of 624 races differ from C. [**CLOSED** 26-10-20: `MonsterGrammar.g4` sets `spellPowerInit` from `depth:` and a later `spell-power:` overrides it, in file order as in C; `MonsterReaderTest` passes with the flipped tests.]
+2. **A: `monster/MonsterAssembler.java` list order.** Drops, friends, mimics and shapes are reversed in C, drops are grouped, and 34 races differ. The order is observable in drop and mimic picks. Per the Stage 0 answer "always echo C's ordering", these lists end up in C's order. [**CLOSED** 26-10-20: `MonsterGrammar.g4` pushes `drop:` and `drop-base:` onto one list, and `mimic:`, `friends:`, `friends-base:` and `shape:` onto theirs, with `addFirst`, as C's head-pushed chains do; `MonsterAssembler.java` keeps that order and the second-pass resolution does not reorder it. `MonsterReaderTest` passes (87 tests) with order tests for drops, mixed drops, friends, friends-base, mimics and shapes.]
 3. **A: `egoitem/EgoItemAssembler.java` eligible kinds.** Run first to last, C runs last to first; 99 of 107 egos differ and `object_info_ego` takes the head. Same Stage 0 answer: the list is built in C's order.
 4. **A: `itemobject/ItemObjectAssembler.java` null dice.** `ObjectUtils.objectPrep` already throws on `& Ration~ of Food` and on `Cure Light Wounds`. Start the five dice as `Random.Zero()`.
 5. **A: `egoitem/EgoItemAssembler.java` null `combat:` and `time:` dice.** 71 of 107 egos; same fix as the item dice, so do the two together.

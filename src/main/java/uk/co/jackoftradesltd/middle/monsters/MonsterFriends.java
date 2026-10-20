@@ -40,7 +40,7 @@ import uk.co.jackoftradesltd.middle.monsters.enums.MonsterGroupRole;
  * <p>The record is held in a {@code List<MonsterFriends>} on {@link MonsterRace}, where C
  * chains the entries with a {@code next} pointer, so that field has no counterpart here. C
  * prepends each entry as it parses, so its chain runs in reverse file order; the Java list is
- * in file order (see the class block of {@link MonsterRace}).
+ * in the same reverse order (see the class block of {@link MonsterRace}).
  *
  * <p>The class is a plain holder: nothing reads the role, chance or dice yet. Their readers
  * are C's {@code place_new_monster} in {@code mon-make.c}, which rolls the chance and the

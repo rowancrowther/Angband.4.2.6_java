@@ -1231,6 +1231,47 @@ class MonsterReaderTest {
     }
 
     @Test
+    void friendsBaseAreInReverseFileOrderAsInCsChain() throws Exception {
+        // parse_monster_friends_base pushes on the head of r->friends_base, so C walks the later
+        // line first.
+        ParseResult<MonsterRace> r = load("friend-base-order.txt", withHeader(1, rec("Solo",
+                "friends-base:100:1d1:spider", "friends-base:100:1d1:ant")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        List<?> friendsBase = field(byName(r, "Solo"), "friendsBase");
+        assertEquals(2, friendsBase.size());
+        MonsterBase first = declaredField(friendsBase.get(0), "base");
+        MonsterBase second = declaredField(friendsBase.get(1), "base");
+        assertEquals("ant", first.getCodeName());
+        assertEquals("spider", second.getCodeName());
+    }
+
+    @Test
+    void mimicsAreInReverseFileOrderAsInCsChain() throws Exception {
+        // parse_monster_mimic pushes on the head of r->mimic_kinds, so C walks the later line first.
+        ParseResult<MonsterRace> r = load("mimic-order.txt", withHeader(1, rec("Solo",
+                "mimic:gold:copper", "mimic:potion:Cure Light Wounds")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        List<?> mimics = field(byName(r, "Solo"), "mimicKinds");
+        assertEquals(2, mimics.size());
+        assertEquals("Cure Light Wounds", declaredField(mimics.get(0), "name"));
+        assertEquals("copper", declaredField(mimics.get(1), "name"));
+    }
+
+    @Test
+    void shapesAreInReverseFileOrderAsInCsChain() throws Exception {
+        // parse_monster_shape pushes on the head of r->shapes, so C walks the later line first. The
+        // names stay unresolved here: resolveShapes runs only once every race is loaded.
+        ParseResult<MonsterRace> r = load("shape-order.txt", withHeader(1, rec("Solo",
+                "shape:Alpha", "shape:Beta", "shape:Gamma")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        List<?> shapes = field(byName(r, "Solo"), "shapes");
+        assertEquals(3, shapes.size());
+        assertEquals("Gamma", declaredField(shapes.get(0), "name"));
+        assertEquals("Beta", declaredField(shapes.get(1), "name"));
+        assertEquals("Alpha", declaredField(shapes.get(2), "name"));
+    }
+
+    @Test
     void aFriendsBaseChanceAbove100IsASoftErrorHereWhereCKeepsIt() throws IOException {
         // parse_monster_friends_base stores parser_getuint(chance) with no upper bound.
         ParseResult<MonsterRace> r = load("fb-chance.txt", withHeader(1, rec("Solo", "friends-base:150:1d2:spider")));

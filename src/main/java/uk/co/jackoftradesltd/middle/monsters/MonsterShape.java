@@ -24,7 +24,8 @@ package uk.co.jackoftradesltd.middle.monsters;
  *
  * <p>C keeps a race's shapes as a singly linked list (the {@code next} pointer), built in reverse
  * file order, with a separate {@code num_shapes} count. Here the shapes sit in a
- * {@code List<MonsterShape>} on {@link MonsterRace}, in file order, so the class has no {@code next}.
+ * {@code List<MonsterShape>} on {@link MonsterRace}, in the same reverse file order, so the class has
+ * no {@code next}.
  * C also frees {@code name} once the shape is resolved; here it is kept, which does no harm.
  *
  * <p>The class is a plain holder with no behaviour of its own. {@link MonsterRace#resolveShapes()}

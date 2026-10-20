@@ -1365,9 +1365,9 @@ public class ObjectKind {
         copy.effectMessage = this.effectMessage;
         copy.visMessage = this.visMessage;
         copy.time = this.time.copy();
-        copy.charge = this.charge.copy();
+        copy.charge = this.charge == null ? null : this.charge.copy();
         copy.genMultProb = this.genMultProb;
-        copy.stackSize = this.stackSize.copy();
+        copy.stackSize = this.stackSize == null ? null : this.stackSize.copy();
         copy.flavour = this.flavour;
         copy.noteAware = this.noteAware;
         copy.noteUnaware = this.noteUnaware;

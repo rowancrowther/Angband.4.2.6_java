@@ -19,11 +19,11 @@ package uk.co.jackoftradesltd.middle.effect;
 
 import org.jetbrains.annotations.Contract;
 import uk.co.jackoftradesltd.middle.cave.enums.DirectionEnum;
+import uk.co.jackoftradesltd.middle.enums.EffectBaseType;
+import uk.co.jackoftradesltd.middle.enums.EffectEnum;
 import uk.co.jackoftradesltd.middle.game.event.projection.Source;
 import uk.co.jackoftradesltd.middle.game.gameengine.Command;
 import uk.co.jackoftradesltd.middle.numerics.Random;
-import uk.co.jackoftradesltd.middle.enums.EffectBaseType;
-import uk.co.jackoftradesltd.middle.enums.EffectEnum;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
 
 import java.util.ArrayList;
@@ -272,7 +272,7 @@ public class Effect {
         for (Expression e : this.expression) {
             expression.add(e.copy());
         }
-        Random newDice = this.dice.copy();
+        Random newDice = this.dice == null ? null : this.dice.copy();
 
         EffectSubTypeWrapper newWrapper = this.value.copy();
 

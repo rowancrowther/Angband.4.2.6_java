@@ -835,7 +835,7 @@ class ItemObjectReaderTest {
         assertEquals("A line of shimmering blue light appears.", kindField(wand, "visMessage"));
         assertEquals("", kindField(wand, "effectMessage"));
         assertEquals("", kindField(ring, "visMessage"));
-        assertNull(ring.getCharge());
+        assertEquals("0+0d0m0", dice(ring.getCharge()));
     }
 
     /**
@@ -1046,26 +1046,25 @@ class ItemObjectReaderTest {
 
     /**
      * C leaves every field of a record 0 unless a directive sets it, so a kind with no {@code attack:},
-     * {@code armor:}, {@code charges:}, {@code pile:} or {@code pval:} line holds a zero
-     * {@code struct random} for each. The port leaves them {@code null}, apart from {@code time:},
-     * which it zeroes. {@code ObjectUtils.objectPrep} calls {@code randCalc} on {@code getToH()},
-     * {@code getToD()} and {@code getToA()} unconditionally, and on {@code getPVal()} for a potion,
-     * food, flask or launcher, so a plain kind such as a ration reaches a null. Recorded in
-     * {@code docs/Assembler_Issues.md}; this test pins the current result and needs to change with any fix.
+     * {@code armor:}, {@code charges:}, {@code pile:}, {@code pval:} or {@code time:} line holds a zero
+     * {@code struct random} for each, and the port does the same. {@code ObjectUtils.objectPrep} calls
+     * {@code randCalc} on {@code getToH()}, {@code getToD()} and {@code getToA()} unconditionally, and on
+     * {@code getPVal()} for a potion, food, flask or launcher, so a plain kind such as a ration needs
+     * them non-null.
      */
     @Test
-    void absentDiceAreNullHereWhereCHoldsAZeroRandom() throws Exception {
+    void absentDiceAreAZeroRandomAsInC() throws Exception {
         List<ObjectKind> kinds = new ItemObjectReader().parse(REAL_FILE);
         ObjectKind pile = kindNamed(kinds, "<pile>", TValue.TV_NONE);
 
-        assertNull(pile.getToH());
-        assertNull(pile.getToD());
-        assertNull(pile.getToA());
-        assertNull(pile.getCharge());
-        assertNull(kindField(pile, "stackSize"));
-        assertNull(pile.getPVal());
-        assertNotNull(pile.getTime(), "time is the one dice field the assembler zeroes");
+        assertEquals("0+0d0m0", dice(pile.getToH()));
+        assertEquals("0+0d0m0", dice(pile.getToD()));
+        assertEquals("0+0d0m0", dice(pile.getToA()));
+        assertEquals("0+0d0m0", dice(pile.getCharge()));
+        assertEquals("0+0d0m0", dice(kindField(pile, "stackSize")));
+        assertEquals("0+0d0m0", dice(pile.getPVal()));
         assertEquals("0+0d0m0", dice(pile.getTime()));
+        assertEquals("0+0d0m0", dice(kindField(pile, "baseDamage")));
     }
 
     /**

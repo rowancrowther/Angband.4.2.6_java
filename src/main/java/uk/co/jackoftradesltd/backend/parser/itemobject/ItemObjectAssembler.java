@@ -155,7 +155,7 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
             String attackBase = record.attackBaseDamage();
             String attackToh = record.attackToh();
             String attackTod = record.attackTod();
-            Random attBase = null;
+            Random attBase = Random.Zero();
             if (!attackBase.isEmpty()) {
                 attBase = Random.parseStr(attackBase);
                 if (attBase == null) {
@@ -164,7 +164,7 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
                     continue;
                 }
             }
-            Random attToh = null;
+            Random attToh = Random.Zero();
             if (!attackToh.isEmpty()) {
                 attToh = Random.parseStr(attackToh);
                 if (attToh == null) {
@@ -173,7 +173,7 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
                     continue;
                 }
             }
-            Random attTod = null;
+            Random attTod = Random.Zero();
             if (!attackTod.isEmpty()) {
                 attTod = Random.parseStr(attackTod);
                 if (attTod == null) {
@@ -192,7 +192,7 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
                     continue;
                 }
             }
-            Random acToa = null;
+            Random acToa = Random.Zero();
             if (!record.armourToa().isEmpty()) {
                 acToa = Random.parseStr(record.armourToa());
                 if (acToa == null) {
@@ -233,7 +233,7 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
                     continue;
                 }
             }
-            Random charges = null;
+            Random charges = Random.Zero();
             if (!record.charges().isEmpty()) {
                 charges = Random.parseStr(record.charges());
                 if (charges == null) {
@@ -243,7 +243,7 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
                 }
             }
             int pileChance = 0;
-            Random pileAmount = null;
+            Random pileAmount = Random.Zero();
             if (!record.pileChance().isEmpty()) {
                 try {
                     pileChance = Integer.parseInt(record.pileChance());
@@ -386,7 +386,7 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
                 }
             }
             if (illegalCurse) continue;
-            Random pVal = null;
+            Random pVal = Random.Zero();
             if (!record.pVal().isEmpty()) {
                 pVal = Random.parseStr(record.pVal());
                 if (pVal == null)
@@ -408,8 +408,8 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
             // rather than loading it with an effect silently missing.
             List<Effect> effects = EffectAssembler.assemble(record.effects(), errors);
             if (effects == null) continue;
-            int dd = attBase == null ? 0 : attBase.getDice();
-            int ds = attBase == null ? 0 : attBase.getSides();
+            int dd = attBase.getDice();
+            int ds = attBase.getSides();
 
             Random time = Random.Zero();
             if (!record.time().isEmpty()) {

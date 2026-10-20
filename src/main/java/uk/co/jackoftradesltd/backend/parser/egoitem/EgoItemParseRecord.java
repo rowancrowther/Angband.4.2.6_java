@@ -37,9 +37,6 @@ import java.util.Map;
  * @param minToH      the minimum combat to-hit bound, unparsed
  * @param minToD      the minimum combat to-damage bound, unparsed
  * @param minToA      the minimum combat to-AC bound, unparsed
- * @param tVals       whole-tvalue {@code item:} lines; every
- *                    {@link uk.co.jackoftradesltd.middle.objects.ObjectKind} of each named
- *                    tvalue is eligible to carry this ego
  * @param itemRefs    specific tvalue/svalue {@code item:} pairs naming individual object kinds
  * @param flags       the {@code flags:} directive's raw tokens; an {@code IGNORE_}-prefixed
  *                    token sets an element-ignore flag, everything else is an object or
@@ -63,7 +60,6 @@ public record EgoItemParseRecord(String name,
                                  String commonness, String lower, String upper,
                                  String toH, String toD, String toA,
                                  String minToH, String minToD, String minToA,
-                                 List<String> tVals,
                                  List<ItemRef> itemRefs,
                                  List<String> flags,
                                  List<String> flagsOff,

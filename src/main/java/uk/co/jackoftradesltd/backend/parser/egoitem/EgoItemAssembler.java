@@ -75,31 +75,6 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
 
             String name = record.name();
             List<ObjectKind> possItems = new ArrayList<>();
-            boolean illegalTValue = false;
-            for (String tVal : record.tVals()) {
-                try {
-                    TValue tValue = TValue.fromName(tVal);
-                    if (tValue == null) {
-                        errors.add("EgoItem beginning at line: " + line + " has " +
-                                "an unknown TValue: " + tVal);
-                        illegalTValue = true;
-                        continue;
-                    }
-                    List<ObjectKind> o = ObjectRegistry.lookupObjectKind(tValue);
-                    if (!o.isEmpty()) {
-                        possItems.addAll(o);
-                    } else {
-                        errors.add("EgoItem beginning at line: " + line + " has " +
-                                "no known ObjectKinds associated with TValue: " + tVal);
-                        illegalTValue = true;
-                    }
-                } catch (IllegalArgumentException e) {
-                    errors.add("EgoItem beginning at line: " + line + " has " +
-                            "an unknown type TValue: " + tVal);
-                    illegalTValue = true;
-                }
-            }
-            if (illegalTValue) continue;
             int cost = 0;
             if (!record.cost().isEmpty()) {
                 try {
@@ -313,13 +288,26 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
                         illegalTvalSvalPair = true;
                         continue;
                     }
-                    ObjectKind o = ObjectRegistry.lookupObjectKind(tValue, item.sVal());
-                    if (o != null) {
-                        possItems.add(o);
+                    ObjectKind o;
+                    if (!item.sVal().isEmpty()) {
+                        o = ObjectRegistry.lookupObjectKind(tValue, item.sVal());
+                        if (o == null) {
+                            errors.add("EgoItem beginning at line: " + line + " has " +
+                                    "an illegal sValue in its item: " + item.sVal());
+                            illegalTvalSvalPair = true;
+                        } else
+                            possItems.add(o);
                     } else {
-                        errors.add("EgoItem beginning at line: " + line + " has " +
-                                "an illegal sValue in its item: " + item.sVal());
-                        illegalTvalSvalPair = true;
+                        List<ObjectKind> objectKinds = ObjectRegistry.lookupObjectKind(tValue);
+                        if (objectKinds.isEmpty()) {
+                            errors.add("EgoItem beginning at line: " + line + " has " +
+                                    "no known ObjectKinds associated with TValue: " + item.tVal());
+                            illegalTvalSvalPair = true;
+                        } else {
+                            for (ObjectKind objectKind : objectKinds.reversed()) {
+                                possItems.add(objectKind);
+                            }
+                        }
                     }
                 } catch (IllegalArgumentException e) {
                     errors.add("EgoItem beginning at line: " + line + " has " +

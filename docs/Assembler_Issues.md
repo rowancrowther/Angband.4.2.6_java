@@ -755,7 +755,7 @@ Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. Not fixed.
 
 ## `egoitem/EgoItemAssembler.java`: eligible kinds run first to last, C builds the list last to first
 
-Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. [**CLOSED** 26-10-20]
 
 - `parse_ego_type` and `parse_ego_item` push each kind on the head of `poss_items`. After `type:sword` and
   `item:light:Lantern` the list is Lantern, then the swords from the highest `kidx` down.

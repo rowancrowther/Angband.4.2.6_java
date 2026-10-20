@@ -1208,19 +1208,67 @@ class EgoItemReaderTest {
     /**
      * {@code parse_ego_type} and {@code parse_ego_item} push each kind on the head of
      * {@code poss_items}, so the list runs from the last kind added back to the first, and
-     * {@code object_info_ego} takes the head as the example item. The assembler keeps every
-     * {@code type:} line's kinds in {@code k_info} order, then every {@code item:} line's, whatever
-     * order the lines came in.
+     * {@code object_info_ego} takes the head as the example item. The whole list is the reverse of
+     * the order the kinds were pushed: a later line sits in front of an earlier one whether it is
+     * {@code type:} or {@code item:}, and one {@code type:} line's kinds run from the highest
+     * {@code kidx} down.
      */
     @Test
-    void eligibleKindsRunFirstToLastHereWhereCRunsLastToFirst() throws Exception {
+    void eligibleKindsRunLastToFirstAsInC() throws Exception {
         EgoItem e = loadOne("poss-order.txt", "item:light:Lantern\ntype:sword\n");
 
-        List<ObjectKind> poss = field(e, "possItems");
-        List<ObjectKind> swords = ObjectRegistry.lookupObjectKind(TValue.TV_SWORD);
-        assertEquals(swords.size() + 1, poss.size());
-        assertEquals(swords, poss.subList(0, swords.size()), "type: kinds first, in k_info order");
-        assertEquals("Lantern", poss.get(poss.size() - 1).getsValueName(), "item: kinds after them");
+        List<ObjectKind> expected = new ArrayList<>(ObjectRegistry.lookupObjectKind(TValue.TV_SWORD).reversed());
+        expected.add(ObjectRegistry.lookupObjectKind(TValue.TV_LIGHT, "Lantern"));
+        assertEquals(expected, field(e, "possItems"));
+    }
+
+    @Test
+    void aSingleTypeLineRunsFromTheHighestKidxDown() throws Exception {
+        EgoItem e = loadOne("poss-type.txt", "type:sword\n");
+
+        assertEquals(ObjectRegistry.lookupObjectKind(TValue.TV_SWORD).reversed(), field(e, "possItems"));
+    }
+
+    @Test
+    void aLaterTypeLineSitsInFrontOfAnEarlierOne() throws Exception {
+        EgoItem e = loadOne("poss-types.txt", "type:sword\ntype:hafted\n");
+
+        List<ObjectKind> expected = new ArrayList<>(ObjectRegistry.lookupObjectKind(TValue.TV_HAFTED).reversed());
+        expected.addAll(ObjectRegistry.lookupObjectKind(TValue.TV_SWORD).reversed());
+        assertEquals(expected, field(e, "possItems"));
+    }
+
+    @Test
+    void anItemLineAfterATypeLineSitsAtTheHead() throws Exception {
+        EgoItem e = loadOne("poss-type-item.txt", "type:sword\nitem:light:Lantern\n");
+
+        List<ObjectKind> expected = new ArrayList<>();
+        expected.add(ObjectRegistry.lookupObjectKind(TValue.TV_LIGHT, "Lantern"));
+        expected.addAll(ObjectRegistry.lookupObjectKind(TValue.TV_SWORD).reversed());
+        assertEquals(expected, field(e, "possItems"));
+    }
+
+    @Test
+    void aLaterItemLineSitsInFrontOfAnEarlierOne() throws Exception {
+        EgoItem e = loadOne("poss-items.txt", "item:light:Lantern\nitem:light:Wooden Torch\n");
+
+        assertEquals(List.of(ObjectRegistry.lookupObjectKind(TValue.TV_LIGHT, "Wooden Torch"),
+                ObjectRegistry.lookupObjectKind(TValue.TV_LIGHT, "Lantern")), field(e, "possItems"));
+    }
+
+    @Test
+    void mixedLinesInterleaveInReverseFileOrder() throws Exception {
+        EgoItem e = loadOne("poss-mixed.txt",
+                "type:sword\ntype:hafted\nitem:light:Lantern\nitem:light:Wooden Torch\ntype:polearm\nitem:light:Lantern\n");
+
+        List<ObjectKind> expected = new ArrayList<>();
+        expected.add(ObjectRegistry.lookupObjectKind(TValue.TV_LIGHT, "Lantern"));
+        expected.addAll(ObjectRegistry.lookupObjectKind(TValue.TV_POLEARM).reversed());
+        expected.add(ObjectRegistry.lookupObjectKind(TValue.TV_LIGHT, "Wooden Torch"));
+        expected.add(ObjectRegistry.lookupObjectKind(TValue.TV_LIGHT, "Lantern"));
+        expected.addAll(ObjectRegistry.lookupObjectKind(TValue.TV_HAFTED).reversed());
+        expected.addAll(ObjectRegistry.lookupObjectKind(TValue.TV_SWORD).reversed());
+        assertEquals(expected, field(e, "possItems"));
     }
 
     // ---- The table ----------------------------------------------------------------

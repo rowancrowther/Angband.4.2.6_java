@@ -161,7 +161,6 @@ egoItem
             String minTohInit = "";
             String minTodInit = "";
             String minToaInit = "";
-            List<String> tValsInit = new ArrayList<>();
             List<EgoItemParseRecord.ItemRef> itemRefsInit = new ArrayList<>();
             List<String> flagsInit = new ArrayList<>();
             List<String> flagsOffInit = new ArrayList<>();
@@ -181,7 +180,7 @@ egoItem
             $record = new EgoItemParseRecord(nameInit,
             costInit, ratingInit, commonInit, lowerInit, upperInit,
             tohInit, todInit, toaInit, minTohInit, minTodInit, minToaInit,
-            tValsInit, itemRefsInit, flagsInit, flagsOffInit,
+            itemRefsInit, flagsInit, flagsOffInit,
             valuesInit, minValuesInit, actInit, timeoutInit,
             brandsInit, slaysInit, cursesInit, descInit, line);
         }
@@ -198,10 +197,9 @@ egoItem
         |   minCombat { minTohInit = $minCombat.minToh;
                         minTodInit = $minCombat.minTod;
                         minToaInit = $minCombat.minToa; }
-        |   type { tValsInit.add($type.tVal); }
-        |   item { ItemRef ref = new ItemRef($item.tVal, $item.sVal);
-                   itemRefsInit.add(ref); }
-        |   flags { flagsInit.addAll($flags.flagList);  }
+        |   type { itemRefsInit.addFirst(new ItemRef($type.tVal, "")); }
+        |   item { itemRefsInit.addFirst(new ItemRef($item.tVal, $item.sVal)); }
+        |   flags { flagsInit.addAll($flags.flagList); }
         |   flagsOff { flagsOffInit.addAll($flagsOff.flagList); }
         |   values { valuesInit.putAll($values.valueMap); }
         |   minValues { minValuesInit.putAll($minValues.valueMap); }

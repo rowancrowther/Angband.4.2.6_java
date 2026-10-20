@@ -47,6 +47,11 @@ import uk.co.jackoftradesltd.channel.colour.ColourEnum;
  * <p>Class AngbandDisplayCharacter coded before 2026-09-15, commented in full on 2026-09-15.
  */
 public final class AngbandDisplayCharacter {
+    /**
+     * Class logger. Declared but not yet used: nothing in this class logs.
+     *
+     * <p>Field logger coded before 2026-10-20, commented in full on 2026-10-20.
+     */
     private static final Logger logger = LogManager.getLogger();
     /**
      * The glyph drawn for this cell - stored exactly as given, including {@code '\0'} and
@@ -63,6 +68,16 @@ public final class AngbandDisplayCharacter {
      * <p>Field attributeColour coded before 2026-09-15, commented in full on 2026-09-15.
      */
     private final ColourEnum attributeColour;
+
+    /**
+     * The shared empty cell: a space drawn in {@link ColourEnum#COLOUR_DARK}. Safe to hand out
+     * by reference because instances are immutable. {@code TrapAssembler} uses it as the
+     * default graphic for a trap record that supplies none, so nothing that draws the record
+     * has to cope with a {@code null} cell.
+     *
+     * <p>Field blank coded before 2026-10-20, commented in full on 2026-10-20.
+     */
+    public static final AngbandDisplayCharacter blank = new AngbandDisplayCharacter(' ', ColourEnum.COLOUR_DARK);
 
     /**
      * Builds a display cell directly from an already-resolved colour - the constructor to
@@ -90,12 +105,17 @@ public final class AngbandDisplayCharacter {
      * see {@link ColourEnum#fromCode(char)} for why that is a deliberate departure from the C
      * original, which defaults to white.
      *
+     * <p>C's {@code color_char_to_attr()} ({@code [C] src/z-color.c}) returns
+     * {@code COLOUR_DARK} for {@code ' '} and {@code '\0'} before it searches the colour table,
+     * and {@link ColourEnum#fromCode(char)} does the same, so both resolve to
+     * {@link ColourEnum#COLOUR_DARK} rather than leaving {@link #attributeColour} {@code null}.
+     *
      * @param character the glyph to display
      * @param colour    the single-character colour index code, e.g. {@code 'r'} for
      *                  {@link ColourEnum#COLOUR_RED}
      *
      * <p>Constructor AngbandDisplayCharacter(char, char) coded before 2026-09-15, commented
-     * in full on 2026-09-15.
+     * in full on 2026-09-15, updated on 2026-10-20 to record the space and NUL handling.
      */
     public AngbandDisplayCharacter(char character, char colour) {
         this.character = character;
@@ -108,14 +128,16 @@ public final class AngbandDisplayCharacter {
      * mirrors the length check {@code [C] src/ui-prefs.c}'s {@code parse_prefs_message()}
      * makes before choosing between {@code color_char_to_attr()} and
      * {@code color_text_to_attr()}; the same branch is made once, in
-     * {@link ColourEnum#fromCode(String)}.
+     * {@link ColourEnum#fromCode(String)}. A one-character string therefore takes the
+     * single-character path, including its space and NUL behaviour described on
+     * {@link #AngbandDisplayCharacter(char, char)}.
      *
      * @param character the glyph to display
      * @param colour    a single-character colour index code, or a full colour display name
      *                  (matched case-insensitively)
      *
      * <p>Constructor AngbandDisplayCharacter(char, String) coded before 2026-09-15, commented
-     * in full on 2026-09-15.
+     * in full on 2026-09-15, updated on 2026-10-20 to point at the single-character path.
      */
     public AngbandDisplayCharacter(char character, @NotNull String colour) {
         this.character = character;

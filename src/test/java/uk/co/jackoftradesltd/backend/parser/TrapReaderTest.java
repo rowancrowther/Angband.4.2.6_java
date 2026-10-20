@@ -308,7 +308,7 @@ class TrapReaderTest {
 
     /**
      * Renders a kind the way {@link #UPSTREAM_ROWS} does, so one string compare covers every
-     * field the reader fills. {@code none} stands for a {@code null} power.
+     * field the reader fills. a record with no {@code visibility:} line shows {@code 0,0,0,0}, C's zero {@code random_value}.
      */
     private static String rowOf(TrapKind t) throws Exception {
         AngbandDisplayCharacter adc = field(t, "angbandDisplayCharacter");
@@ -330,7 +330,7 @@ class TrapReaderTest {
                 String.valueOf(adc.getCharacter()), ColourEnum.attributeToString(adc.getAttributeColour()),
                 String.valueOf((int) field(t, "rarity")), String.valueOf((int) field(t, "minDepth")),
                 String.valueOf((int) field(t, "maxNum")),
-                power == null ? "none" : power.getBase() + "," + power.getDice() + ","
+                power.getBase() + "," + power.getDice() + ","
                         + power.getSides() + "," + power.getMBonus(),
                 flags, save, t.getText(),
                 field(t, "message"), field(t, "messageOnSave"), field(t, "messageOnFailure"),
@@ -342,17 +342,17 @@ class TrapReaderTest {
      * One row per kind of the upstream {@code trap.txt}, worked out from that file and from C's
      * {@code color_table} in {@code z-color.c}, not from the Java reader. The fields are
      * index, {@code name:} field one, {@code name:} field two, glyph, colour name, the three
-     * {@code appear:} numbers, {@code base,dice,sides,m_bonus} of {@code visibility:} ({@code none}
+     * {@code appear:} numbers, {@code base,dice,sides,m_bonus} of {@code visibility:} (all zeroes
      * where the record has no such line), trap flags, save flags, the joined {@code desc:} text,
      * then {@code msg:}, {@code msg-good:}, {@code msg-bad:}, {@code msg-xtra:}, the effect types
      * and the extra effect types.
      */
     private static final String[] UPSTREAM_ROWS = {
-            "0|no trap|no trap| |White|0|0|0|none|||||||||",
-            "1|glyph of warding|glyph of warding|;|Yellow|0|0|0|none|GLYPH+VISIBLE+FLOOR||A magical rune which monsters cannot pass without difficulty.||||||",
-            "2|decoy|decoy|;|Light Green|0|0|0|none|GLYPH+VISIBLE+FLOOR||A magical decoy which sounds and looks like the player.||||||",
-            "3|door lock|door lock| |White|0|0|0|none|INVISIBLE+LOCK||A device which makes a closed door harder to open.||||||",
-            "4|web|web|%|Yellow|0|0|0|none|VISIBLE+WEB||A tangle of sticky spider webs.||||||",
+            "0|no trap|no trap| |White|0|0|0|0,0,0,0|||||||||",
+            "1|glyph of warding|glyph of warding|;|Yellow|0|0|0|0,0,0,0|GLYPH+VISIBLE+FLOOR||A magical rune which monsters cannot pass without difficulty.||||||",
+            "2|decoy|decoy|;|Light Green|0|0|0|0,0,0,0|GLYPH+VISIBLE+FLOOR||A magical decoy which sounds and looks like the player.||||||",
+            "3|door lock|door lock| |White|0|0|0|0,0,0,0|INVISIBLE+LOCK||A device which makes a closed door harder to open.||||||",
+            "4|web|web|%|Yellow|0|0|0|0,0,0,0|VISIBLE+WEB||A tangle of sticky spider webs.||||||",
             "5|trap door|trap door|^|White|1|2|0|0,2,10,50|TRAP+FLOOR+DOWN|FEATHER|It looks like floor, but step incautiously and you will fall through.|You fall through a trap door!|You float gently down to the next level.|||DAMAGE|",
             "6|pit|pit|^|Slate|1|2|0|90,0,0,0|TRAP+FLOOR+PIT|FEATHER|A hole dug to snare the unwary.|You fall into a pit!|You float gently to the bottom of the pit.|||DAMAGE|",
             "7|pit|spiked pit|^|Slate|1|2|0|80,0,0,0|TRAP+FLOOR+PIT|FEATHER|A hole dug to snare the unwary, with spikes.|You fall into a spiked pit!|You float gently to the bottom of the pit, neatly avoiding the spikes.||You are impaled!|DAMAGE|DAMAGE,TIMED_INC",
@@ -734,31 +734,37 @@ class TrapReaderTest {
         assertEquals(1, r.items().size());
     }
 
-    /** C: {@code mem_zalloc} leaves {@code d_char} and {@code d_attr} at 0. */
+    /**
+     * C: {@code mem_zalloc} leaves {@code d_char} and {@code d_attr} at 0. The kind holds
+     * {@link AngbandDisplayCharacter#blank} rather than {@code null}, so nothing that draws it can
+     * dereference a {@code null}.
+     */
     @Test
-    void aKindWithNoGraphicsLineHasNoDisplayCharacterHereWhereCHasZeroes() throws Exception {
+    void aKindWithNoGraphicsLineHasTheBlankDisplayCharacter() throws Exception {
         TrapKind t = load("no-graphics.txt", withHeader(1, "name:a:b\ndesc:x\n")).items().getFirst();
 
-        assertNull(field(t, "angbandDisplayCharacter"));
+        assertSame(AngbandDisplayCharacter.blank, field(t, "angbandDisplayCharacter"));
     }
 
     /** C: {@code mem_zalloc} leaves {@code power} as a zero {@code random_value}, which {@code randcalc} accepts. */
     @Test
-    void aKindWithNoVisibilityLineHasNullPowerHereWhereCHasAZeroRandom() throws Exception {
+    void aKindWithNoVisibilityLineHasAZeroRandomPowerAsInC() throws Exception {
         TrapKind t = load("no-vis.txt", withHeader(1, "name:a:b\ngraphics:^:w\n")).items().getFirst();
 
-        assertNull(field(t, "power"));
+        Random power = field(t, "power");
+        assertNotNull(power);
+        assertEquals(0, power.getBase());
+        assertEquals(0, power.getDice());
+        assertEquals(0, power.getSides());
+        assertEquals(0, power.getMBonus());
     }
 
-    /** The shipped file: five of the forty kinds, the ones with no {@code visibility:} line. */
+    /** The shipped file: no kind holds a {@code null} power, including the five with no {@code visibility:} line. */
     @Test
-    void fiveShippedKindsHaveNullPowerHereWhereCHasAZeroRandom() throws Exception {
-        List<String> noPower = new java.util.ArrayList<>();
+    void noShippedKindHasANullPowerAsInC() throws Exception {
         for (TrapKind t : loadReal()) {
-            if (field(t, "power") == null) noPower.add(t.getDescription());
+            assertNotNull(field(t, "power"), t.getDescription());
         }
-
-        assertEquals(List.of("no trap", "glyph of warding", "decoy", "door lock", "web"), noPower);
     }
 
     /** C: an absent {@code msg:} is {@code NULL}, and {@code trap.c} tests the pointer; here it is empty text. */
@@ -775,27 +781,34 @@ class TrapReaderTest {
 
     /**
      * C: a bad effect stops the load. {@code EffectAssembler.assemble} answers {@code null} for a
-     * block with a bad effect, its contract says the caller drops the record, and
-     * {@code TrapAssembler} builds the kind anyway, so {@code getEffect()} throws.
+     * block with a bad effect, and {@code TrapAssembler} drops the record, as every other caller
+     * does. The port's usual soft error skips the record instead of stopping the load.
      */
     @Test
-    void aBadEffectKeepsTheTrapWithNullEffectsHereWhereCQuits() throws Exception {
+    void aBadEffectDropsTheTrap() throws Exception {
         ParseResult<TrapKind> r = load("bad-effect.txt", withHeader(1,
                 "name:a:b\ngraphics:^:w\neffect:NOTANEFFECT\ndice:1\n"));
 
         assertTrue(hasError(r, "NOTANEFFECT"), r.errors()::toString);
-        assertEquals(1, r.items().size());
-        assertNull(field(r.items().getFirst(), "effect"));
-        assertThrows(NullPointerException.class, () -> r.items().getFirst().getEffect());
+        assertEquals(0, r.items().size());
     }
 
     @Test
-    void aBadExtraEffectKeepsTheTrapWithNullExtraEffectsHereWhereCQuits() throws Exception {
+    void aBadExtraEffectDropsTheTrap() throws Exception {
         ParseResult<TrapKind> r = load("bad-xtra.txt", withHeader(1,
                 "name:a:b\ngraphics:^:w\neffect-xtra:NOTANEFFECT\ndice-xtra:1\n"));
 
         assertTrue(hasError(r, "NOTANEFFECT"), r.errors()::toString);
+        assertEquals(0, r.items().size());
+    }
+
+    @Test
+    void aTrapAfterABadEffectTakesTheIndexTheBadOneWouldHaveHad() throws Exception {
+        ParseResult<TrapKind> r = load("bad-then-good.txt", withHeader(2,
+                "name:a:b\ngraphics:^:w\neffect:NOTANEFFECT\ndice:1\nname:c:d\ngraphics:^:w\n"));
+
         assertEquals(1, r.items().size());
-        assertNull(field(r.items().getFirst(), "effectXtra"));
+        assertEquals(0, r.items().getFirst().getTrapKindIndex());
+        assertEquals("d", r.items().getFirst().getDescription());
     }
 }

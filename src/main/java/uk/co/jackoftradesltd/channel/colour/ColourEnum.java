@@ -22,6 +22,31 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * The game's named colours - the Java form of C's {@code COLOUR_*} defines
+ * ({@code [C] src/z-color.h}) together with the name and translation columns of its
+ * {@code color_table[]} ({@code [C] src/z-color.c}).
+ * <p>
+ * Each constant carries the three things a {@code color_type} row holds: the one-character
+ * index code used in data files ({@code index_char}), the display name ({@code name}), and a
+ * nine-entry translation row saying what the colour becomes under each
+ * {@link ColourTranslation} ({@code color_translate}). Declaration order is C's colour
+ * numbering, so {@link #ordinal()} is the C colour index.
+ * <p>
+ * The translation rows differ from C in one respect. C stores each entry as a colour number;
+ * here each entry is the target colour's index code, resolved at use through
+ * {@link #fromCode(char)}. A mistyped code therefore shows up as {@code null} from
+ * {@link #forTranslation(ColourTranslation)} rather than as a wrong colour.
+ * <p>
+ * The RGB values live elsewhere: in the frontend's {@code Colour} class, the Java form of C's
+ * {@code angband_color_table[][]}.
+ * <p>
+ * {@link #COLOUR_SHADE} is the odd one out, because C gives it no {@code color_table[]} row.
+ *
+ * @author Rowan Crowther
+ *
+ * <p>Class ColourEnum coded before 2026-10-20, commented in full on 2026-10-20.
+ */
 public enum ColourEnum {
     COLOUR_DARK('d', "Dark",
             new char[]{'d', 'd', 'd', 'd', 'D', 'd', 'D', 'D', 'd'}),
@@ -79,28 +104,71 @@ public enum ColourEnum {
             new char[]{'z', 'w', 'W', 's', 'Z', 's', 'Z', 'Z', 'W'}),
     COLOUR_DEEP_LIGHT_BLUE('Z', "Deep Light Blue",
             new char[]{'Z', 'w', 'B', 'W', 'B', 'z', 'B', 'B', 'B'}),
+    /**
+     * The shaded-background colour, number 28 in C ({@code COLOUR_SHADE},
+     * {@code [C] src/z-color.h}). C has an RGB row for it but no {@code color_table[]} row, so
+     * its index character is {@code '\0'}, its name empty and its translation row all zeros.
+     * <p>
+     * Nothing can name it by character: {@link #fromCode(char)} turns both {@code ' '} and
+     * {@code '\0'} into {@link #COLOUR_DARK} before it searches, the same early return C makes.
+     * It is a fixed point only under {@link ColourTranslation#ATTR_FULL}; under every other
+     * translation C reads the zero row and gets {@code COLOUR_DARK}, and the row here
+     * ({@code 'd'} in each of the eight other columns) gives the same answer.
+     * <p>
+     * The code {@code ' '} and the name {@code "Shade"} are Java inventions. The name does
+     * resolve through {@link #fromCode(String)}, where in C no colour name matches, and
+     * {@link #attributeToString(ColourEnum)} returns it where C's {@code attr_to_text()}
+     * returns the empty name of the zero row.
+     *
+     * <p>Constant COLOUR_SHADE coded before 2026-10-20, commented in full on 2026-10-20.
+     */
     COLOUR_SHADE(' ', "Shade",
-            new char[]{' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '});
+            new char[]{' ', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd'});
 
+    /**
+     * The number of named colours, 29 - C's {@code BASIC_COLORS} ({@code [C] src/z-color.h}).
+     * It counts every constant in this enum, {@link #COLOUR_SHADE} included, so the largest
+     * valid {@link #ordinal()} is {@code basicColours - 1}. The frontend's
+     * {@code Colour.basicColours} carries the same number for its RGB table.
+     *
+     * <p>Field basicColours coded before 2026-10-20, commented in full on 2026-10-20.
+     */
     public final static int basicColours = 29;
     /**
-     * Single-character code identifying this colour in data files/preferences.
+     * Single-character code identifying this colour in data files and preferences - C's
+     * {@code index_char}. Searched, case-sensitively, by {@link #fromCode(char)}.
+     *
+     * <p>Field colourCharacter coded before 2026-10-20, commented in full on 2026-10-20.
      */
     private final char colourCharacter;
     /**
-     * Human-readable name of this colour.
+     * Human-readable name of this colour, such as {@code "Light Green"} - C's {@code name}.
+     * Searched, case-insensitively, by {@link #fromCode(String)} and returned by
+     * {@link #attributeToString(ColourEnum)}.
+     *
+     * <p>Field colourName coded before 2026-10-20, commented in full on 2026-10-20.
      */
     private final String colourName;
     /**
-     * Per-context translation table: indexed by {@link ColourTranslation}.
+     * What this colour becomes under each display mode: nine index codes, positioned by
+     * {@link ColourTranslation#getValue()} - C's {@code color_translate}, with codes in place
+     * of colour numbers. Column 0 ({@code ATTR_FULL}) is the colour's own code and is never
+     * read, since {@link #forTranslation(ColourTranslation)} returns early for it.
+     *
+     * <p>Field colourTranslate coded before 2026-10-20, commented in full on 2026-10-20.
      */
     private final char[] colourTranslate;
     /**
-     * Build a colour-table entry.
+     * Builds one colour-table entry. Called only by the constant declarations above, each of
+     * which transcribes one {@code color_table[]} row.
      *
      * @param c      the single-character colour code
      * @param name   the colour's display name
-     * @param table  the 9-entry per-context translation table
+     * @param table  the 9-entry per-context translation table, one code per
+     *               {@link ColourTranslation}
+     *
+     * <p>Constructor ColourEnum(char, String, char[]) coded before 2026-10-20, commented in
+     * full on 2026-10-20.
      */
     ColourEnum(char c, String name, char[] table) {
         colourCharacter = c;
@@ -112,8 +180,15 @@ public enum ColourEnum {
      * The colour's display name, as data files spell it - the port of
      * {@code attr_to_text()} ({@code [C] src/z-color.c}).
      *
+     * <p>C's version takes a colour number and answers {@code "Icky"} for one past
+     * {@code BASIC_COLORS}; an enum constant cannot be out of range, so that branch has no
+     * Java counterpart. The one other difference is {@link #COLOUR_SHADE}, which gets
+     * {@code "Shade"} here and the empty name of its zero row in C.
+     *
      * @param colour the colour to name
      * @return its display name, e.g. {@code "Light Green"}
+     *
+     * <p>Function attributeToString coded before 2026-10-20, commented in full on 2026-10-20.
      */
     @NotNull
     @Contract(pure = true)
@@ -130,19 +205,22 @@ public enum ColourEnum {
      * data file may use either.
      *
      * <p>An unrecognized name yields {@code null}, which is the whole point: it is what lets a
-     * reader report {@code unknown colour} against the offending line. C's
-     * {@code color_text_to_attr()} likewise answers {@code -1} and leaves the decision to its
-     * caller - the data-file parsers raise {@code PARSE_ERROR_INVALID_COLOR} rather than
-     * substituting anything.
+     * reader report {@code unknown colour} against the offending line. This is a deliberate
+     * departure from C, whose {@code color_text_to_attr()} ends with {@code "Default to white"}
+     * and so cannot tell a caller that a name failed to match. Here the caller decides what an
+     * unknown colour means, and one that wants white says so itself.
      *
-     * <p>This once returned {@code COLOUR_WHITE} for an unmatched name. That took the choice away
-     * from every caller and silently recoloured bad data instead of rejecting it, which
-     * disagreed with both C and the sibling overload below, and left the readers unable to detect
-     * a colour they could not resolve. Any caller that genuinely wants white on failure should
-     * say so itself.
+     * <p>This once returned {@code COLOUR_WHITE} for an unmatched name, as C does. That took the
+     * choice away from every caller and silently recoloured bad data instead of rejecting it,
+     * and left the readers unable to detect a colour they could not resolve.
+     *
+     * <p>A one-character string is handed to {@link #fromCode(char)}, so the blank handling
+     * described there applies to it as well.
      *
      * @param code a one-character index code, or a full display name
      * @return the matching colour, or {@code null} if the code names none
+     *
+     * <p>Function fromCode(String) coded before 2026-10-20, commented in full on 2026-10-20.
      */
     @Nullable
     @CheckReturnValue
@@ -167,13 +245,28 @@ public enum ColourEnum {
      * <p>Case matters, and catches people out: {@code 'w'} is White but {@code 'W'} is Light
      * Slate, {@code 'v'} is Violet but {@code 'V'} is Light Purple.
      *
+     * <p>Like C, a space or a {@code '\0'} answers {@link #COLOUR_DARK} without searching, so
+     * a blank colour field means "no colour" rather than failing. That early return is also
+     * why {@link #COLOUR_SHADE} can never be named by character.
+     *
+     * <p>Unlike C, whose version ends with {@code "we assume white"}, a character that matches
+     * no colour yields {@code null} so the caller can reject it - see
+     * {@link #fromCode(String)} for the reasoning.
+     *
      * @param c the index character from a data file
-     * @return the matching colour, or {@code null} if no colour uses that character
+     * @return the matching colour, {@link #COLOUR_DARK} for a space or {@code '\0'}, or
+     *         {@code null} if no colour uses that character
+     *
+     * <p>Function fromCode(char) coded before 2026-10-20, commented in full on 2026-10-20.
      */
     @Nullable
     @CheckReturnValue
     @Contract(pure = true)
     public static ColourEnum fromCode(char c) {
+        if (c == ' ' || c == '\0') {
+            return ColourEnum.COLOUR_DARK;
+        }
+        
         for (ColourEnum colour : ColourEnum.values()) {
             if (colour.colourCharacter == c) {
                 return colour;
@@ -183,18 +276,61 @@ public enum ColourEnum {
         return null;
     }
 
+    /**
+     * What this colour becomes under one display mode - one step of C's {@code get_color()}
+     * ({@code [C] src/z-color.c}), which reads {@code color_table[a].color_translate[attr]}.
+     * <p>
+     * {@link ColourTranslation#ATTR_FULL} answers this colour unchanged without consulting the
+     * table, as {@code get_color()} does for a zero {@code attr}. Every other mode looks up the
+     * target's index code in {@link #colourTranslate} and resolves it with
+     * {@link #fromCode(char)}, so a row entry of {@code ' '} or {@code '\0'} would come back as
+     * {@link #COLOUR_DARK}; {@link #COLOUR_SHADE}'s row uses {@code 'd'} for that reason.
+     * <p>
+     * C's {@code get_color()} also returns a graphical attr (high bit set) untouched; there is
+     * no Java counterpart, since the high bit is not part of this enum.
+     *
+     * @param index the display mode to translate for
+     * @return the translated colour, or {@code null} if the table row holds a code that names no
+     *         colour - a transcription error, which {@code ColourEnumTest} checks cannot happen
+     *
+     * <p>Function forTranslation coded before 2026-10-20, commented in full on 2026-10-20.
+     */
     @Nullable
     @CheckReturnValue
     @Contract(pure = true)
     public ColourEnum forTranslation(ColourTranslation index) {
+        if (index == ColourTranslation.ATTR_FULL)
+            return this;
+        
         return ColourEnum.fromCode(colourTranslate[index.getValue()]);
     }
 
+    /**
+     * Applies a display-mode translation repeatedly - the port of {@code get_color()}
+     * ({@code [C] src/z-color.c}), whose {@code n} is {@code numberOfTimes}. The ui-map code
+     * uses it to lighten or darken terrain, for example {@code ATTR_DARK} once for a lit grid
+     * and twice for a dark one.
+     * <p>
+     * {@link ColourTranslation#ATTR_FULL} returns {@code startColour} at once, whatever
+     * {@code numberOfTimes} is. For any other mode, {@code numberOfTimes} of zero or less
+     * returns {@code startColour}, and a {@code null} anywhere in the chain stays {@code null}
+     * rather than throwing.
+     *
+     * @param startColour   the colour to translate
+     * @param translation   the display mode to translate for
+     * @param numberOfTimes how many steps to apply
+     * @return the colour after the steps, or {@code null} if a step reached an unresolvable code
+     *
+     * <p>Function translateColour coded before 2026-10-20, commented in full on 2026-10-20.
+     */
     @Nullable
     @CheckReturnValue
     @Contract(pure = true)
     public static ColourEnum translateColour(@NotNull ColourEnum startColour, @NotNull ColourTranslation translation,
                                              int numberOfTimes) {
+        if (translation == ColourTranslation.ATTR_FULL)
+            return startColour;
+        
         ColourEnum currentColour = startColour;
 
         for (int i = 0; i < numberOfTimes; i++) {

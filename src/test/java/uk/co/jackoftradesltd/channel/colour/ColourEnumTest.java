@@ -22,13 +22,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import java.lang.reflect.Field;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Unit tests for {@link ColourEnum} and {@link ColourTranslation}, the port of the C
@@ -80,8 +78,22 @@ class ColourEnumTest {
         }
 
         @Test
-        void theShadeColourIsCodedAsASpace() {
-            assertSame(ColourEnum.COLOUR_SHADE, ColourEnum.fromCode(' '));
+        void aSpaceResolvesToDarkNotShade() {
+            // C's color_char_to_attr() answers COLOUR_DARK for ' ' before it searches the
+            // table, so no data-file character can name COLOUR_SHADE.
+            assertSame(ColourEnum.COLOUR_DARK, ColourEnum.fromCode(' '));
+        }
+
+        @Test
+        void aNulCharacterResolvesToDark() {
+            // The other half of the same C early return; entry 28 (Shade) has a '\0' index
+            // character in C, but the early return means it is never reached.
+            assertSame(ColourEnum.COLOUR_DARK, ColourEnum.fromCode('\0'));
+        }
+
+        @Test
+        void aOneCharacterSpaceStringTakesTheSameRouteAsTheCharacter() {
+            assertSame(ColourEnum.COLOUR_DARK, ColourEnum.fromCode(" "));
         }
 
         @Test
@@ -157,13 +169,35 @@ class ColourEnumTest {
         @ParameterizedTest
         @EnumSource(ColourEnum.class)
         void theFullColourTranslationIsTheIdentity(ColourEnum colour) {
-            // ATTR_FULL is "draw it as it is" - the first column of the table is always the
-            // colour's own code, which is what makes it safe to translate unconditionally.
-            //
-            // This doubles as the uniqueness check on the codes themselves: fromCode returns
-            // the first match, so if two colours shared a code the later one could never
-            // round-trip back to itself here.
+            // ATTR_FULL is "draw it as it is": C's get_color() returns the colour without
+            // reading the table, and forTranslation does the same.
             assertSame(colour, colour.forTranslation(ColourTranslation.ATTR_FULL));
+        }
+
+        @ParameterizedTest
+        @EnumSource(ColourEnum.class)
+        void everyColourExceptShadeIsFoundByItsOwnCode(ColourEnum colour) throws Exception {
+            // fromCode returns the first match, so if two colours shared a code the later one
+            // could never round-trip back to itself here - this is the uniqueness check on the
+            // codes. Shade is excluded because C's early return for ' ' and '\0' means no code
+            // can name it.
+            if (colour == ColourEnum.COLOUR_SHADE) return;
+
+            Field code = ColourEnum.class.getDeclaredField("colourCharacter");
+            code.setAccessible(true);
+            assertSame(colour, ColourEnum.fromCode(code.getChar(colour)));
+        }
+
+        @ParameterizedTest
+        @EnumSource(ColourEnum.class)
+        void theFirstColumnOfEveryRowIsTheColoursOwnCode(ColourEnum colour) throws Exception {
+            // Column 0 is never read, but it is what the C table's "full" column holds, so a
+            // row that disagrees with its own colour is a transcription slip.
+            Field code = ColourEnum.class.getDeclaredField("colourCharacter");
+            Field row = ColourEnum.class.getDeclaredField("colourTranslate");
+            code.setAccessible(true);
+            row.setAccessible(true);
+            assertEquals(code.getChar(colour), ((char[]) row.get(colour))[0]);
         }
 
         @Test
@@ -205,12 +239,32 @@ class ColourEnumTest {
         }
 
         @Test
-        void shadeIsUnchangedByEveryTranslation() {
-            // Its whole row is spaces, so it is the fixed point of every display mode.
+        void shadeIsUnchangedOnlyByTheFullTranslation() {
+            // C's get_color() returns the colour as it is for ATTR_FULL without reading the
+            // table. Shade has no row in C's color_table (the entries stop at index 27), so
+            // every other translation reads zeros, which is COLOUR_DARK.
+            assertSame(ColourEnum.COLOUR_SHADE,
+                    ColourEnum.COLOUR_SHADE.forTranslation(ColourTranslation.ATTR_FULL));
             for (ColourTranslation translation : ColourTranslation.values()) {
-                assertSame(ColourEnum.COLOUR_SHADE,
-                        ColourEnum.COLOUR_SHADE.forTranslation(translation));
+                if (translation == ColourTranslation.ATTR_FULL) continue;
+                assertSame(ColourEnum.COLOUR_DARK,
+                        ColourEnum.COLOUR_SHADE.forTranslation(translation),
+                        () -> "Shade under " + translation);
             }
+        }
+
+        @Test
+        void translateColourLeavesShadeAloneUnderTheFullTranslationHoweverManyTimes() {
+            assertSame(ColourEnum.COLOUR_SHADE, ColourEnum.translateColour(
+                    ColourEnum.COLOUR_SHADE, ColourTranslation.ATTR_FULL, 0));
+            assertSame(ColourEnum.COLOUR_SHADE, ColourEnum.translateColour(
+                    ColourEnum.COLOUR_SHADE, ColourTranslation.ATTR_FULL, 3));
+        }
+
+        @Test
+        void translateColourSendsShadeToDarkUnderAnyOtherTranslation() {
+            assertSame(ColourEnum.COLOUR_DARK, ColourEnum.translateColour(
+                    ColourEnum.COLOUR_SHADE, ColourTranslation.ATTR_DARK, 1));
         }
 
         @Test

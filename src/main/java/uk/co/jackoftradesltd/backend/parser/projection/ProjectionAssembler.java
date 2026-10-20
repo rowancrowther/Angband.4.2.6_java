@@ -25,12 +25,12 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
-import uk.co.jackoftradesltd.middle.numerics.Random;
-import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
+import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.middle.combat.enums.ProjectionType;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
 import uk.co.jackoftradesltd.middle.game.event.projection.Projection;
+import uk.co.jackoftradesltd.middle.numerics.Random;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -457,7 +457,7 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
             result = ColourEnum.fromCode(colour);
             if (result == null)
                 return ColourEnum.COLOUR_WHITE;
-            if (result.ordinal() > ColourEnum.basicColours)
+            if (result.ordinal() >= ColourEnum.basicColours)
                 return ColourEnum.COLOUR_WHITE;
         }
         return result;

@@ -18,15 +18,15 @@
 package uk.co.jackoftradesltd.backend.parser.trap;
 
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftradesltd.channel.colour.ColourEnum;
-import uk.co.jackoftradesltd.middle.numerics.Random;
-import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.backend.parser.grammars.EffectAssembler;
+import uk.co.jackoftradesltd.channel.colour.ColourEnum;
+import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.cave.TrapKind;
 import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.middle.enums.TrapEnum;
+import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 
 import java.util.ArrayList;
@@ -47,6 +47,14 @@ import java.util.List;
  *       {@link AngbandDisplayCharacter}; {@code visibility:} becomes the {@code power}
  *       {@link Random}; the {@code appear:} triple becomes {@code rarity}/{@code minDepth}/
  *       {@code maxNum};</li>
+ *   <li>a directive the record leaves out takes C's zeroed value, because C's {@code mem_zalloc}
+ *       leaves the fields at zero: {@code power} is {@link Random#Zero()} (five shipped kinds,
+ *       {@code no trap}, {@code glyph of warding}, {@code decoy}, {@code door lock} and
+ *       {@code web}, have no {@code visibility:} line), the display character is
+ *       {@link AngbandDisplayCharacter#blank}, and the {@code appear:} numbers are 0. The messages
+ *       are the exception: an absent {@code msg:}, {@code msg-good:}, {@code msg-bad:} or
+ *       {@code msg-xtra:} is empty text here, where C holds {@code NULL} and tests the pointer
+ *       before printing;</li>
  *   <li>{@code flags:} resolve to {@link TrapEnum} ({@code TRF_}) and {@code save:} to
  *       {@link ObjectFlag} ({@code OF_}) — two distinct flag vocabularies;</li>
  *   <li>primary and extra effects are delegated to {@link EffectAssembler}; and
@@ -57,19 +65,38 @@ import java.util.List;
  * </ul>
  *
  * <p><b>Error policy:</b> soft errors follow the suite's skip-and-continue contract — an
- * unresolvable colour, flag or save flag, or a non-integer {@code appear:}/{@code visibility:}
- * value, logs a message to {@code errors} and drops that one trap ({@code continue}), leaving the
- * rest of the file to load. Hard grammar/lexer errors are handled upstream by {@code GrammarDriver}.
+ * unresolvable colour, flag or save flag, a non-integer {@code appear:}/{@code visibility:}
+ * value, or a primary or extra effect block that {@link EffectAssembler} rejects (it returns
+ * {@code null}), logs a message to {@code errors} and drops that one trap ({@code continue}),
+ * leaving the rest of the file to load. C stops the load at a bad effect; the port skips the
+ * record instead, as it does for every other bad value. A dropped record takes no
+ * {@code trapKindIndex}, because the index is only advanced once the record has fully assembled.
+ * Hard grammar/lexer errors are handled upstream by {@code GrammarDriver}.
+ *
+ * <p>Still accepted here that C rejects: the sentinels, so {@code flags:MAX} and {@code save:MAX}
+ * load, because {@code valueOf} finds {@code TRF_MAX} and {@code OF_MAX}. {@code NONE} is valid in
+ * both languages.
+ *
+ * <p>Class TrapAssembler coded before 260915, commented in full on 260915, updated on 261020 when
+ * absent {@code power} and {@code graphics:} stopped being {@code null} and a bad effect started
+ * dropping the record.
  *
  * @author Rowan Crowther
  */
 public class TrapAssembler implements Assembler<TrapParseRecord, List<TrapKind>> {
     /**
      * Assembles every parsed trap record into a {@link TrapKind}, skipping (with a logged soft
-     * error) any record whose colour, flags, save flags, or numeric {@code appear:}/
-     * {@code visibility:} fields fail to resolve.
+     * error) any record whose colour, flags, save flags, numeric {@code appear:}/
+     * {@code visibility:} fields or effect blocks fail to resolve.
      *
-     * <p>Function assemble coded before 260915, commented in full on 260915.
+     * <p>A kind never leaves here with a {@code null} power, display character or effect list: an
+     * absent {@code visibility:} line gives {@link Random#Zero()}, an absent {@code graphics:} line
+     * gives {@link AngbandDisplayCharacter#blank}, and a bad effect block drops the record.
+     * {@code blank} is a space in white, where C's zeroed {@code d_attr} is {@code COLOUR_DARK};
+     * no shipped record is without {@code graphics:}, so the difference shows only in a modded file.
+     *
+     * <p>Function assemble coded before 260915, commented in full on 260915, updated on 261020 for
+     * the zeroed defaults and the dropped bad-effect record.
      *
      * @param records the raw trap records captured by the grammar
      * @param errors  the soft-error channel; assembly failures are appended here and the offending
@@ -91,7 +118,7 @@ public class TrapAssembler implements Assembler<TrapParseRecord, List<TrapKind>>
             String failMessage = record.failMessage();
             String extraMessage = record.xtraMessage();
             char glyphChar;
-            AngbandDisplayCharacter adc = null;
+            AngbandDisplayCharacter adc = AngbandDisplayCharacter.blank;
             String glyph = record.glyph();
             String colour = record.colour();
             // Check that they both exist
@@ -138,7 +165,7 @@ public class TrapAssembler implements Assembler<TrapParseRecord, List<TrapKind>>
                     continue;
                 }
             }
-            Random power = null;
+            Random power = Random.Zero();
             String powerStr = record.power();
             if (!powerStr.isEmpty()) {
                 power = Random.parseStr(powerStr);
@@ -173,7 +200,9 @@ public class TrapAssembler implements Assembler<TrapParseRecord, List<TrapKind>>
             }
             if (badSaveFlag) continue;
             List<Effect> effects = EffectAssembler.assemble(record.effects(), errors);
+            if (effects == null) continue;
             List<Effect> xtraEffects = EffectAssembler.assemble(record.xtraEffects(), errors);
+            if (xtraEffects == null) continue;
             index++;
 
             traps.add(new TrapKind(trapKindName, trapText, trapDescription,

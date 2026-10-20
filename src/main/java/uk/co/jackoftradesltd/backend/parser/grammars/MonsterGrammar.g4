@@ -242,7 +242,7 @@ monster
         returns[MonsterParseRecord monsterRecord]
         @init {
             String nameInit = "";
-            String pluralInit = "";
+            String pluralInit = null;
             String baseInit = "";
             String glyphInit = "";
             String colourInit = "";

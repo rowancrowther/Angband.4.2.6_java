@@ -788,11 +788,11 @@ class CurseReaderTest {
     // ---- msg: and time: --------------------------------------------------
 
     @Test
-    void absentMsgLeavesAnEmptyStringWhereCLeavesNull() throws Exception {
+    void absentMsgLeavesNullAsCDoes() throws Exception {
         // Recorded in docs/Assembler_Issues.md: C's effect_msg stays NULL when there is no msg: line.
         ParseResult<Curse> result = load("no-msg.txt", withHeader(1, curse("quiet", "type:cloak\ndesc:x\n")));
 
-        assertEquals("", effectMessage(result.items().get(0)));
+        assertNull(effectMessage(result.items().get(0)));
     }
 
     @Test
@@ -805,13 +805,13 @@ class CurseReaderTest {
     }
 
     @Test
-    void aSecondMsgLineReplacesTheFirstHereWhereCAppendsIt() throws Exception {
+    void aSecondMsgLineIsAppendedToTheFirstAsCDoes() throws Exception {
         // parse_curse_msg is string_append, so C holds "AB". Recorded in docs/grammar_issues.md.
         ParseResult<Curse> result = load("msg2.txt", withHeader(1,
                 curse("loud", "type:cloak\neffect:WAKE\nmsg:A\nmsg:B\ndesc:x\n")));
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
-        assertEquals("B", effectMessage(result.items().get(0)));
+        assertEquals("AB", effectMessage(result.items().get(0)));
     }
 
     @Test

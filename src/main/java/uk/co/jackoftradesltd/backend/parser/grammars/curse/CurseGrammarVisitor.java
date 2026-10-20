@@ -18,14 +18,6 @@
 // Generated from CurseGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.curse;
 
-    import uk.co.jackoftradesltd.backend.parser.curse.CurseParseRecord;
-    import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
-
-    import java.util.Map;
-    import java.util.List;
-    import java.util.HashMap;
-    import java.util.ArrayList;
-
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
 /**

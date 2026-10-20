@@ -18,6 +18,14 @@
 // Generated from MonsterGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.monster;
 
+    import uk.co.jackoftradesltd.backend.parser.monster.MonsterParseRecord;
+    import uk.co.jackoftradesltd.backend.parser.monster.MonsterParseRecord.*;
+
+    import java.util.List;
+    import java.util.ArrayList;
+    import java.util.Map;
+    import java.util.HashMap;
+
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**

@@ -101,7 +101,7 @@ curseRecord
             String tohInit = "";
             String todInit = "";
             String toaInit = "";
-            String msgInit = "";
+            String msgInit = null;
             List<String> curseTypeInit = new ArrayList<>();
             List<EffectParseRecord> effects = new ArrayList<>();
             List<String> flagsListInit = new ArrayList<>();
@@ -132,7 +132,11 @@ curseRecord
                 $effectBlock.effectMessage, $effectBlock.start.getLine())); }
         |   flags { flagsListInit.addAll($flags.flagList); }
         |   values { valuesInit.putAll($values.valueMap); }
-        |   msg { msgInit = $msg.msgStr; }
+        |   msg { 
+                if (msgInit == null) 
+                    msgInit = $msg.msgStr;
+                else
+                    msgInit = msgInit + $msg.msgStr; }
         |   desc { descInit.add($desc.description); }
         |   conflict { conflictInit.add($conflict.conflictingCurses); }
         |   conflictFlags { cFlagsInit.addAll($conflictFlags.cFlags); }

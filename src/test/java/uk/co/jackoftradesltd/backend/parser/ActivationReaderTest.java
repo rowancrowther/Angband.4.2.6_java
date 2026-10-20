@@ -282,8 +282,8 @@ class ActivationReaderTest {
             levels += level(a);
             powers += a.getPower();
             effects += effectCount(a);
-            if (!message(a).isEmpty()) messages++;
-            if (!desc(a).isEmpty()) descriptions++;
+            if (message(a) != null) messages++;
+            if (desc(a) != null) descriptions++;
         }
 
         // Worked out from the upstream activation.txt: 57 aim:1, level and power sums, 312 effect:
@@ -306,7 +306,7 @@ class ActivationReaderTest {
         assertEquals(1, curePoison.getPower());
         assertEquals(1, effectCount(curePoison));
         assertEquals("neutralizes poison", desc(curePoison));
-        assertEquals("", message(curePoison));
+        assertNull(message(curePoison));
 
         Activation fireBolt = named(items, "FIRE_BOLT");
         assertTrue(aim(fireBolt));
@@ -314,7 +314,7 @@ class ActivationReaderTest {
         assertEquals(5, fireBolt.getPower());
         assertEquals(1, effectCount(fireBolt));
         assertEquals("Your {kind} {is} covered in fire...", message(fireBolt));
-        assertEquals("", desc(fireBolt));
+        assertNull(desc(fireBolt));
 
         Activation dragonPower = named(items, "DRAGON_POWER");
         assertTrue(aim(dragonPower));
@@ -498,29 +498,29 @@ class ActivationReaderTest {
     // ---- Where the grammar and assembler differ from C -------------------
 
     @Test
-    void aSecondDescLineReplacesTheFirstHereWhereCAppendsIt() throws Exception {
+    void aSecondDescLineIsAppendedToTheFirstAsCDoes() throws Exception {
         // parse_act_desc runs act->desc = string_append(act->desc, ...), so C gives "ab".
         Activation a = loadOne(record("desc:a\ndesc:b\n"));
 
-        assertEquals("b", desc(a));
+        assertEquals("ab", desc(a));
     }
 
     @Test
-    void theShippedTeleLongAndResistAllLoseTheirFirstDescLine() throws Exception {
+    void theShippedTeleLongAndResistAllKeepBothDescLinesAsCDoes() throws Exception {
         List<Activation> items = new ActivationReader().parseWithResult(REAL_FILE).items();
 
-        // C: "teleports you randomly about 60 per cent of the largest distance you could go"
-        assertEquals(" could go", desc(named(items, "TELE_LONG")));
-        // C: "grants temporary resistance to acid, electricity, fire, cold and poison for 1d20+20 turns"
-        assertEquals(" for 1d20+20 turns", desc(named(items, "RESIST_ALL")));
+        assertEquals("teleports you randomly about 60 per cent of the largest distance you could go",
+                desc(named(items, "TELE_LONG")));
+        assertEquals("grants temporary resistance to acid, electricity, fire, cold and poison for 1d20+20 turns",
+                desc(named(items, "RESIST_ALL")));
     }
 
     @Test
-    void aSecondMsgLineReplacesTheFirstHereWhereCAppendsIt() throws Exception {
+    void aSecondMsgLineIsAppendedToTheFirstAsCDoes() throws Exception {
         // parse_act_msg runs act->message = string_append(act->message, ...), so C gives "ab".
         Activation a = loadOne(record("msg:a\nmsg:b\n"));
 
-        assertEquals("b", message(a));
+        assertEquals("ab", message(a));
     }
 
     @Test
@@ -587,12 +587,12 @@ class ActivationReaderTest {
     }
 
     @Test
-    void anAbsentMsgOrDescIsAnEmptyStringHereWhereCHoldsNull() throws Exception {
+    void anAbsentMsgOrDescIsNullAsCHoldsNull() throws Exception {
         // cmd-obj.c tests !activation->message and obj-info.c tests activation->desc for NULL.
         Activation a = loadOne(record(""));
 
-        assertEquals("", message(a));
-        assertEquals("", desc(a));
+        assertNull(message(a));
+        assertNull(desc(a));
     }
 
     @Test

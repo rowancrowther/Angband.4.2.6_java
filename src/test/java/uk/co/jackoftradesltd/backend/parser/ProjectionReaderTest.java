@@ -501,13 +501,13 @@ class ProjectionReaderTest {
     // ---- Where the assembler differs from C (docs/Assembler_Issues.md) -------------------------
 
     @Test
-    void aLineLeftOutIsAnEmptyStringWhereCHoldsNull() throws Exception {
+    void aLineLeftOutIsNullAsCHoldsNull() throws Exception {
         // LIGHT_WEAK has no name: and no lash-desc:, so C's strings are NULL.
         Projection lightWeak = new ProjectionReader().parseWithResults(REAL_FILE).items()
                 .get(ProjectionEnum.PROJ_LIGHT_WEAK.ordinal() - 1);
 
-        assertEquals("", field(lightWeak, "name"));
-        assertEquals("", field(lightWeak, "lashDescription"));
+        assertNull(field(lightWeak, "name"));
+        assertNull(field(lightWeak, "lashDescription"));
     }
 
     @Test
@@ -598,40 +598,40 @@ class ProjectionReaderTest {
             row("TIME", "time", "element", "time", "time", "something strange", "ruination", 0, 0, 0, 0, 0, 3, 150, "MSG_BR_TIME", true, true, "Light Blue"),
             row("PLASMA", "plasma", "element", "plasma", "plasma", "something", "living fire", 0, 0, 0, 0, 0, 6, 150, "MSG_BR_PLASMA", true, true, "Red"),
             row("METEOR", "meteors", "element", "a meteor", "meteor", "something", "meteoric iron", 0, 0, 0, 0, 0, 6, 0, "MSG_GENERIC", true, true, "Red"),
-            row("MISSILE", "magic missiles", "element", "a missile", "magical energy", "something", "", 0, 0, 0, 0, 0, 6, 0, "MSG_GENERIC", true, true, "Violet"),
+            row("MISSILE", "magic missiles", "element", "a missile", "magical energy", "something", null, 0, 0, 0, 0, 0, 6, 0, "MSG_GENERIC", true, true, "Violet"),
             row("MANA", "mana", "element", "mana", "the elements", "something", "raw magic", 0, 0, 0, 0, 0, 3, 1600, "MSG_BR_ELEMENTS", true, true, "Light Dark"),
             row("HOLY_ORB", "holy power", "element", "a holy orb", "holy power", "something", "holy power", 0, 0, 0, 0, 0, 6, 0, "MSG_GENERIC", true, true, "Light Dark"),
-            row("ARROW", "arrows", "element", "an arrow", "arrows", "something sharp", "", 0, 0, 0, 0, 0, 6, 0, "MSG_GENERIC", true, true, "White"),
-            row("LIGHT_WEAK", "", "environs", "light", "weak light", "something", "", 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", true, false, "Orange"),
-            row("DARK_WEAK", "", "environs", "darkness", "darkness", "something", "", 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
-            row("KILL_WALL", "", "environs", "rock remover", "", "something", "", 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", true, false, "White"),
-            row("KILL_DOOR", "", "environs", "destroys doors", "", "something", "", 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
-            row("KILL_TRAP", "", "environs", "disables traps", "", "something", "", 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
-            row("MAKE_DOOR", "", "environs", "creates doors", "", "something", "", 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
-            row("MAKE_TRAP", "", "environs", "creates traps", "", "something", "", 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
-            row("AWAY_UNDEAD", "", "monster", "teleports undead away", "", "something", "", 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
-            row("AWAY_EVIL", "", "monster", "teleports evil monsters away", "", "something", "", 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
-            row("AWAY_SPIRIT", "", "monster", "teleports monsters with a spirit away", "", "something", "", 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
-            row("AWAY_ALL", "", "monster", "teleports monsters away", "", "something", "", 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", true, true, "White"),
-            row("TURN_UNDEAD", "", "monster", "turns undead", "", "something", "", 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
-            row("TURN_EVIL", "", "monster", "frightens evil monsters", "", "something", "", 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
-            row("TURN_LIVING", "", "monster", "scares living monsters", "", "something", "", 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
-            row("TURN_ALL", "", "monster", "causes monsters to flee", "", "something", "", 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, true, "White"),
-            row("DISP_UNDEAD", "", "monster", "damages undead", "", "something", "", 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
-            row("DISP_EVIL", "", "monster", "damages evil monsters", "", "something", "", 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
-            row("DISP_ALL", "", "monster", "damages all monsters", "", "something", "", 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", true, true, "White"),
-            row("SLEEP_UNDEAD", "", "monster", "attempts to put undead to sleep", "", "something", "", 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
-            row("SLEEP_EVIL", "", "monster", "attempts to put evil monsters to sleep", "", "something", "", 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
-            row("SLEEP_ALL", "", "monster", "attempts to put all monsters to sleep", "", "something", "", 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
-            row("MON_CLONE", "", "monster", "hastes, heals and magically duplicates monsters", "", "something", "", 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", true, false, "White"),
-            row("MON_POLY", "", "monster", "polymorphs monsters into other kinds of creatures", "", "something", "", 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
-            row("MON_HEAL", "", "monster", "heals monsters", "", "something", "", 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", true, true, "White"),
-            row("MON_SPEED", "", "monster", "hastes monsters", "", "something", "", 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", true, true, "White"),
-            row("MON_SLOW", "", "monster", "attempts to slow monsters", "", "something", "", 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", true, true, "White"),
-            row("MON_CONF", "", "monster", "attempts to confuse monsters", "", "something", "", 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
-            row("MON_HOLD", "", "monster", "attempts to hold monsters still", "", "something", "", 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
-            row("MON_STUN", "", "monster", "attempts to stun monsters", "", "something", "", 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
-            row("MON_DRAIN", "", "monster", "damages living monsters", "", "something", "", 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", true, true, "White"),
-            row("MON_CRUSH", "", "monster", "kills monsters below a hitpoint threshold", "", "something", "", 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", true, false, "White")
+            row("ARROW", "arrows", "element", "an arrow", "arrows", "something sharp", null, 0, 0, 0, 0, 0, 6, 0, "MSG_GENERIC", true, true, "White"),
+            row("LIGHT_WEAK", null, "environs", "light", "weak light", "something", null, 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", true, false, "Orange"),
+            row("DARK_WEAK", null, "environs", "darkness", "darkness", "something", null, 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
+            row("KILL_WALL", null, "environs", "rock remover", null, "something", null, 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", true, false, "White"),
+            row("KILL_DOOR", null, "environs", "destroys doors", null, "something", null, 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
+            row("KILL_TRAP", null, "environs", "disables traps", null, "something", null, 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
+            row("MAKE_DOOR", null, "environs", "creates doors", null, "something", null, 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
+            row("MAKE_TRAP", null, "environs", "creates traps", null, "something", null, 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
+            row("AWAY_UNDEAD", null, "monster", "teleports undead away", null, "something", null, 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
+            row("AWAY_EVIL", null, "monster", "teleports evil monsters away", null, "something", null, 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
+            row("AWAY_SPIRIT", null, "monster", "teleports monsters with a spirit away", null, "something", null, 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
+            row("AWAY_ALL", null, "monster", "teleports monsters away", null, "something", null, 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", true, true, "White"),
+            row("TURN_UNDEAD", null, "monster", "turns undead", null, "something", null, 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
+            row("TURN_EVIL", null, "monster", "frightens evil monsters", null, "something", null, 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
+            row("TURN_LIVING", null, "monster", "scares living monsters", null, "something", null, 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
+            row("TURN_ALL", null, "monster", "causes monsters to flee", null, "something", null, 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, true, "White"),
+            row("DISP_UNDEAD", null, "monster", "damages undead", null, "something", null, 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
+            row("DISP_EVIL", null, "monster", "damages evil monsters", null, "something", null, 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
+            row("DISP_ALL", null, "monster", "damages all monsters", null, "something", null, 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", true, true, "White"),
+            row("SLEEP_UNDEAD", null, "monster", "attempts to put undead to sleep", null, "something", null, 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
+            row("SLEEP_EVIL", null, "monster", "attempts to put evil monsters to sleep", null, "something", null, 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
+            row("SLEEP_ALL", null, "monster", "attempts to put all monsters to sleep", null, "something", null, 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
+            row("MON_CLONE", null, "monster", "hastes, heals and magically duplicates monsters", null, "something", null, 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", true, false, "White"),
+            row("MON_POLY", null, "monster", "polymorphs monsters into other kinds of creatures", null, "something", null, 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
+            row("MON_HEAL", null, "monster", "heals monsters", null, "something", null, 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", true, true, "White"),
+            row("MON_SPEED", null, "monster", "hastes monsters", null, "something", null, 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", true, true, "White"),
+            row("MON_SLOW", null, "monster", "attempts to slow monsters", null, "something", null, 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", true, true, "White"),
+            row("MON_CONF", null, "monster", "attempts to confuse monsters", null, "something", null, 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
+            row("MON_HOLD", null, "monster", "attempts to hold monsters still", null, "something", null, 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
+            row("MON_STUN", null, "monster", "attempts to stun monsters", null, "something", null, 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", false, false, "White"),
+            row("MON_DRAIN", null, "monster", "damages living monsters", null, "something", null, 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", true, true, "White"),
+            row("MON_CRUSH", null, "monster", "kills monsters below a hitpoint threshold", null, "something", null, 0, 0, 0, 0, 0, 0, 0, "MSG_GENERIC", true, false, "White")
     );
 }

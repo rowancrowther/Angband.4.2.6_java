@@ -147,12 +147,17 @@ These change what a loaded game holds today, even where nothing reads the value 
 4. **A: `itemobject/ItemObjectAssembler.java` null dice.** `ObjectUtils.objectPrep` already throws on `& Ration~ of Food` and on `Cure Light Wounds`. Start the five dice as `Random.Zero()`. [<span style="color:#006400">**CLOSED**</span> 26-10-20: `ItemObjectAssembler.java` starts `attBase`, `attToh`, `attTod`, `acToa`, `pVal`, `charges`, `pileAmount` and `time` as `Random.Zero()`, and `ObjectKind.copy` and `Effect.copy` are null-safe. `ItemObjectAssemblerObjectPrepTest` runs `objectPrep` and `copy` over all 375 shipped kinds and the full suite is green.]
 5. **A: `egoitem/EgoItemAssembler.java` null `combat:` and `time:` dice.** 71 of 107 egos; same fix as the item dice, so do the two together. [<span style="color:#006400">**CLOSED**</span> 26-10-20: `EgoItemAssembler.java` starts `toH`, `toD`, `toA` and `time` as `Random.Zero()`, and a present line is parsed over the top. `EgoItemReaderTest` has `omittedCombatAndTimeDiceAreAZeroRandomAsInC` and `realFileEgosHoldNoNullDiceAndAllCopy` (all 107 egos hold no null dice and copy), the upstream table now records `0+0d0M0` for `time` on all 107 rows, and the full suite is green.]
 6. **A: `trap/TrapAssembler.java`.** Five shipped kinds have a `null` power, and the trap-placing port will meet it at once. The bad-effect `null` list is in the same entry; see Stage 2. [<span style="color:#006400">**CLOSED**</span> 26-10-20: `TrapAssembler.java` starts `power` as `Random.Zero()`, starts the display character as `AngbandDisplayCharacter.blank`, and drops the record (before `index++`) when either `EffectAssembler.assemble` call returns `null`. `TrapReaderTest` has `noShippedKindHasANullPowerAsInC`, the bad-effect tests expect the record dropped, and the full suite is green.]
-7. **Absent text is `null`, as the Stage 0 convention decides.**
-   - A: `activation/ActivationAssembler.java` absent `msg:` and `desc:` (115 and 47 of 163 records).
-   - A: `projection/ProjectionAssembler.java` lines left out are `""`.
-   - A: `monster/MonsterAssembler.java` absent `plural:` (528 of 624 races).
-   - A: `curse/CurseAssembler.java` absent `msg:` (three shipped curses would print a blank line).
-8. **G: `ActivationsGrammar.g4` second `desc:` or `msg:`.** The only grammar fault that hits the shipped data: `TELE_LONG` and `RESIST_ALL` lose their first description line. Do it with item 7's activation entry.
+7. **Absent text is `null`, as the Stage 0 convention decides.** [<span style="color:#006400">**CLOSED**</span> 26-10-20: all four sub-items below; the full suite is green.]
+
+   a. A: `activation/ActivationAssembler.java` absent `msg:` and `desc:` (115 and 47 of 163 records). [<span style="color:#006400">**CLOSED**</span> 26-10-20: `ActivationsGrammar.g4` starts `messageInit` and `descInit` at `null`; `ActivationReaderTest` passes (44 tests) with the flipped tests.]
+
+   b. A: `projection/ProjectionAssembler.java` lines left out are `""`. [<span style="color:#006400">**CLOSED**</span> 26-10-20: `ProjectionGrammar.g4` fills every slot with `null` and `ProjectionAssembler.java` tests the optional fields and `msgt` with `!= null`; `ProjectionReaderTest`, `ProjectionAssemblerTest` and `ProjectionGrammarTest` pass with the flipped tests.]
+
+   c. A: `monster/MonsterAssembler.java` absent `plural:` (528 of 624 races). [<span style="color:#006400">**CLOSED**</span> 26-10-20: `MonsterGrammar.g4` starts `pluralInit` at `null`; `MonsterReaderTest` passes (87 tests).]
+
+   d. A: `curse/CurseAssembler.java` absent `msg:` (three shipped curses would print a blank line). [<span style="color:#006400">**CLOSED**</span> 26-10-20: `CurseGrammar.g4` starts `msgInit` at `null`; `CurseReaderTest` passes (75 tests).]
+
+8. **G: `ActivationsGrammar.g4` second `desc:` or `msg:`.** The only grammar fault that hits the shipped data: `TELE_LONG` and `RESIST_ALL` lose their first description line. Do it with item 7's activation entry. [<span style="color:#006400">**CLOSED**</span> 26-10-20: `msg` and `desc` are plain alternatives in the `activation` rule's outer `(...)+` and a repeat is appended with no separator, as `string_append` does in C. `ActivationReaderTest` has `theShippedTeleLongAndResistAllKeepBothDescLinesAsCDoes`, `aSecondDescLineIsAppendedToTheFirstAsCDoes` and `aSecondMsgLineIsAppendedToTheFirstAsCDoes`.]
 9. **G: `ArtifactLexer.g4` blank after the last token.** The untouched upstream `artifact.txt` does not load; this repository's copy was trimmed by hand. Do it here, or fold it into Stage 6's whitespace work.
 
 ## Stage 2: crashes and silent loss on the error paths
@@ -293,7 +298,7 @@ Each pattern is one recipe applied to many grammars. Do the recipe once on the s
 
 ### 7c. Free text that appends in one language and replaces in the other
 
-- Java replaces, C appends: G: `BlowEffectGrammar.g4` `desc:`, `CurseGrammar.g4` `msg:`, `ChestTrapGrammar.g4` `msg:` and `msg-death:`, `PlayerTimedGrammar.g4` text lines and repeated effects, `TerrainFeatureGrammar.g4` message lines.
+- Java replaces, C appends: G: `BlowEffectGrammar.g4` `desc:`, `CurseGrammar.g4` `msg:` ([<span style="color:#006400">**CLOSED**</span> 26-10-20: now appends, as `string_append` does]), `ChestTrapGrammar.g4` `msg:` and `msg-death:`, `PlayerTimedGrammar.g4` text lines and repeated effects, `TerrainFeatureGrammar.g4` message lines.
 - Java appends, C replaces: G: `ObjectPropertyGrammar.g4` `msg:` and `desc:`.
 - Last wins in Java, C joins or keeps all: G: `ObjectPropertyGrammar.g4` `bindui:`, `PlayerPropertyGrammar.g4` split `desc:`, `HistoryGrammar.g4` second `phrase:`.
 - Overwrites where C rejects: G: `SlayGrammar.g4` second `race-flag:` or `base:`.

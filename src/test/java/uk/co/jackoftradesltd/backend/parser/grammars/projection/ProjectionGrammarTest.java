@@ -21,6 +21,7 @@ import org.antlr.v4.runtime.*;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -61,7 +62,7 @@ class ProjectionGrammarTest {
     }
 
     @Test
-    void mandatoryOnlyRecordFillsOptionalsWithEmptyAndAppendsLineNumber() {
+    void mandatoryOnlyRecordFillsOptionalsWithNullAndAppendsLineNumber() {
         Errors errors = new Errors();
         ProjectionGrammar.FileContext ctx = parser(
                 "record-count:1\ncode:ACID\ntype:element\ndesc:acid\nblind-desc:acid\nobvious:1\ncolor:Slate\n",
@@ -73,7 +74,7 @@ class ProjectionGrammarTest {
         // [code,name,type,desc,player,blind,lash,num,den,div,cap,msgt,obvious,wake,colour, lineNo]
         // code: is on source line 2, so the trailing line-number element is "2".
         assertEquals(
-                List.of("ACID", "", "element", "acid", "", "acid", "", "", "", "", "", "", "1", "", "Slate", "2"),
+                Arrays.asList("ACID", null, "element", "acid", null, "acid", null, null, null, null, null, null, "1", null, "Slate", "2"),
                 ctx.projections.get(0));
     }
 

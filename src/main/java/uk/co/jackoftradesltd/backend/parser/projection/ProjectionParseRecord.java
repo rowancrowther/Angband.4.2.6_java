@@ -24,6 +24,13 @@ import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
  * resolved into a {@link uk.co.jackoftradesltd.middle.game.event.projection.Projection} by
  * {@link ProjectionAssembler}.
  *
+ * <p>An optional line that is left out is {@code null}, as C's zero-filled record holds NULL
+ * or 0 there. That covers {@code name}, {@code playerDesc}, {@code lashDesc}, {@code numerator},
+ * {@code denominator}, {@code divisor}, {@code damageCap}, {@code msgt} and {@code willWake}.
+ *
+ * <p>Class ProjectionParseRecord coded before 260815, commented in full on 261020, absent
+ * optional lines documented as {@code null}.
+ *
  * @param code        Computer code for this projection used by the game. Must
  *                    match an {@link ProjectionEnum}
  * @param name        Human readable name for this projection.

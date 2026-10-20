@@ -161,8 +161,8 @@ activation
             String aimInit = "";
             String levelInit = "";
             String powerInit = "";
-            String messageInit = "";
-            String descInit = "";
+            String messageInit = null;
+            String descInit = null;
             List<EffectParseRecord> effects = new ArrayList<>();
         }
         @after {
@@ -178,14 +178,20 @@ activation
         (   aim { aimInit = $aim.aimBool; }
         |   level { levelInit = $level.levelInt; }
         |   power { powerInit = $power.powerInt; }
-        |   msg { messageInit = $msg.message; }
+        |   msg { if (messageInit == null)
+                    messageInit = $msg.message; 
+                else
+                    messageInit = messageInit + $msg.message; }
         |   effectBlock { effects.add(new EffectParseRecord($effectBlock.typeInit,
                 $effectBlock.subtypeWrapperInit, $effectBlock.radius, $effectBlock.other,
                 $effectBlock.diceString, $effectBlock.yVal, $effectBlock.xVal,
                 $effectBlock.expressionChars, $effectBlock.expressionBase,
                 $effectBlock.expressionOperation,
                 $effectBlock.effectMessage, $effectBlock.start.getLine())); }
-    |   desc { descInit = $desc.descStr; })+
+        |   desc { if (descInit == null) 
+                    descInit = $desc.descStr;
+                else
+                    descInit = descInit + $desc.descStr; })+
         ;
 
 /*

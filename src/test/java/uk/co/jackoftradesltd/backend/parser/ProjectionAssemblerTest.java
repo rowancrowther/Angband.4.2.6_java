@@ -63,7 +63,7 @@ class ProjectionAssemblerTest {
      */
     private static ProjectionParseRecord record(String code, String type, int line) {
         return new ProjectionParseRecord(code, code.toLowerCase(), type, "d", "pd", "bd", "ld",
-                "1", "1", "1", "1600", "", "1", "0", "White", line);
+                "1", "1", "1", "1600", null, "1", "0", "White", line);
     }
 
     /**
@@ -219,12 +219,12 @@ class ProjectionAssemblerTest {
 
     /**
      * A record whose optional lines are all absent: C's zero-filled struct gives 0, false, colour 0
-     * and message 0, so it must load rather than fail on the empty strings.
+     * and message 0, so it must load rather than fail on the {@code null} strings the grammar gives an absent line.
      */
     @Test
     void absentOptionalFieldsLoadAsDefaults() {
         List<ProjectionParseRecord> records = validFile();
-        records.set(MAKE_DOOR, with(records.get(MAKE_DOOR), "", "", "", "", "", "", "", ""));
+        records.set(MAKE_DOOR, with(records.get(MAKE_DOOR), null, null, null, null, null, null, null, ""));
         List<String> errors = new ArrayList<>();
 
         List<Projection> result = assemble(records, errors);

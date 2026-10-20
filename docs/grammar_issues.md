@@ -855,7 +855,7 @@ Found 2026-10-17 during `/port backend/parser/ObjectBaseReader.java`. Not fixed.
 
 ## `CurseGrammar.g4`: a second `msg:` replaces the first, C appends it
 
-Found 2026-10-17 during `/port backend/parser/CurseReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/CurseReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-20: in `CurseGrammar.g4` the `msg` alternative starts from `msgInit = null` and appends a repeat with no separator, as `string_append` does. `CurseReaderTest` passes. The bullets below describe the state before the fix; the pinning test is now `aSecondMsgLineIsAppendedToTheFirstAsCDoes`.]
 
 - `parse_curse_msg` in `obj-init.c` runs `curse->obj->effect_msg = string_append(curse->obj->effect_msg, parser_getstr(p, "text"))`,
   so two `msg:` lines in one record run together with no separator, as `desc:` does.
@@ -928,7 +928,7 @@ Found 2026-10-17 during `/port backend/parser/CurseReader.java`. Not fixed.
 
 ## `ActivationsGrammar.g4`: a second `desc:` or `msg:` replaces the first, C appends it
 
-Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-20: in `ActivationsGrammar.g4` `msg` and `desc` are plain alternatives of the `activation` rule's outer `(...)+` (a `*` inside it made ANTLR reject the rule), and each action starts from `null` and appends a repeat with no separator, as `string_append` does. `ActivationReaderTest` passes (44 tests): `TELE_LONG` and `RESIST_ALL` now load the full C strings. The bullets below describe the state before the fix; the pinning tests are now `aSecondDescLineIsAppendedToTheFirstAsCDoes`, `theShippedTeleLongAndResistAllKeepBothDescLinesAsCDoes` and `aSecondMsgLineIsAppendedToTheFirstAsCDoes`.]
 
 - `parse_act_desc` and `parse_act_msg` in `obj-init.c` run `act->desc = string_append(act->desc, ...)` and
   `act->message = string_append(act->message, ...)`, so two lines in one record run together with no separator. A space

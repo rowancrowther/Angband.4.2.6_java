@@ -2422,7 +2422,7 @@ public class MonsterGrammar extends Parser {
 		enterRule(_localctx, 68, RULE_monster);
 
 		            String nameInit = "";
-		            String pluralInit = "";
+		            String pluralInit = null;
 		            String baseInit = "";
 		            String glyphInit = "";
 		            String colourInit = "";

@@ -230,7 +230,7 @@ projection
         returns[List<String> proj, int lineNo]
         @init {
             String[] projectionStrings = new String[15];
-            Arrays.fill(projectionStrings, "");
+            Arrays.fill(projectionStrings, null);
         }
         @after {
             $proj = new ArrayList<>(Arrays.asList(projectionStrings));

@@ -1115,10 +1115,10 @@ class MonsterReaderTest {
     }
 
     @Test
-    void aMonsterWithNoPluralLineHasAnEmptyPluralHereWhereCHasNull() throws Exception {
+    void aMonsterWithNoPluralLineHasANullPluralAsCDoes() throws Exception {
         ParseResult<MonsterRace> r = load("plural-absent.txt", withHeader(1, rec("Solo")));
         assertFalse(r.hasErrors(), r.errors()::toString);
-        assertEquals("", field(byName(r, "Solo"), "plural"));
+        assertNull(field(byName(r, "Solo"), "plural"));
     }
 
     @Test

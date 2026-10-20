@@ -27,6 +27,9 @@ import java.util.Map;
  * parsed by the grammar, later turned into the {@code Curse} domain type by
  * {@link CurseAssembler}.
  *
+ * <p>Class CurseParseRecord coded before 260815, commented in full on 261020, absent
+ * {@code msg:} documented as {@code null} and repeated {@code msg:} lines as appended.
+ *
  * @param name             the curse's name
  * @param type             the object base types this curse can appear on, by tvalue name
  * @param weightAdjustment the weight adjustment applied to a cursed item, unparsed; {@code ""}
@@ -41,7 +44,9 @@ import java.util.Map;
  * @param values           the {@code values:} directive as label/value text pairs; a
  *                         {@code RES_}-prefixed key is an element resistance level, everything
  *                         else an additive object modifier
- * @param message          the message shown when the curse triggers
+ * @param message          the message shown when the curse triggers; repeated {@code msg:} lines
+ *                         are appended with no separator, as C does, and it is {@code null}
+ *                         if the line is absent, as C leaves {@code effect_msg} NULL
  * @param desc             the curse's description lines, joined by the assembler
  * @param conflict         the names of curses this one conflicts with, resolved to instances
  *                         by the assembler's second pass

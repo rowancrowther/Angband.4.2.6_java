@@ -255,7 +255,7 @@ Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. [**CLOSED** 2
 
 ## `monster/MonsterAssembler.java`: no `plural:` line gives `""`, C leaves NULL
 
-Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-20: `MonsterGrammar.g4` starts `pluralInit` at `null`, and the assembler passes it through, so a race with no `plural:` line holds `null` as in C. `MonsterReaderTest` passes (87 tests) and the full suite is green. The bullets below describe the state before the fix; the pinning test is now `aMonsterWithNoPluralLineHasANullPluralAsCDoes`.]
 
 - `parse_monster_plural` sets `r->plural` only for a non-empty value, so a race with no `plural:` line has NULL.
   `MonsterRace.java` (field `plural`, and the constructor's `@param plural`) says `null` is meaningful.
@@ -563,7 +563,7 @@ Found 2026-10-17 during `/port backend/parser/ObjectBaseReader.java`. Not fixed.
 
 ## `curse/CurseAssembler.java`: a curse with no `msg:` line carries `""`, C leaves `effect_msg` NULL
 
-Found 2026-10-17 during `/port backend/parser/CurseReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/CurseReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-20: `CurseGrammar.g4` starts `msgInit` at `null`, and `CurseAssembler.java` passes it to `ItemObject.setEffectMessage` unchanged, so a curse with no `msg:` line holds `null` as in C. `CurseReaderTest` and `CurseAssemblerTest` pass and the full suite is green. The bullets below describe the state before the fix; the pinning test is now `absentMsgLeavesNullAsCDoes`.]
 
 - `parse_curse_name` in `obj-init.c` zero-fills the curse's object, so `effect_msg` is `NULL` until a `msg:` line appends to it.
 - `CurseGrammar.g4` starts `msgInit` at `""`, and `CurseAssembler.java:334` and `:361` pass it to
@@ -604,7 +604,7 @@ Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. Not fixed.
 
 ## `activation/ActivationAssembler.java`: an absent `msg:` or `desc:` is an empty string, C holds `NULL`
 
-Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-20: `ActivationsGrammar.g4` starts `messageInit` and `descInit` at `null`, and `ActivationAssembler.java` passes them through, so an absent `msg:` or `desc:` holds `null` as in C. `ActivationReaderTest` (44 tests) and `ActivationAssemblerTest` pass and the full suite is green; the shipped-file totals now count `!= null` (48 records with a `msg:`, 116 with a `desc:`). The bullets below describe the state before the fix; the pinning test is now `anAbsentMsgOrDescIsNullAsCHoldsNull`.]
 
 - `parse_act_msg` and `parse_act_desc` run `string_append` on a field that `mem_zalloc` left `NULL`, so a record with no
   such line keeps `NULL`. `cmd-obj.c` tests `!obj->activation->message` and returns, and `obj-info.c` tests
@@ -862,7 +862,7 @@ Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. Not fixed.
 
 ## `projection/ProjectionAssembler.java`: a line left out is `""`, C holds `NULL`
 
-Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. Not fixed.
+Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-20: `ProjectionGrammar.g4` fills all 15 slots with `null`, and `ProjectionAssembler.java` tests the optional numeric fields and `msgt` with `!= null` (an absent `msgt` gives `MSG_GENERIC`), so a line left out holds `null` as in C. `ProjectionReaderTest`, `ProjectionAssemblerTest` and `ProjectionGrammarTest` pass with the flipped tests and the full suite is green. The bullets below describe the state before the fix; the pinning test is now `aLineLeftOutIsNullAsCHoldsNull`.]
 
 - `parse_projection_code` zero-fills the record with `mem_zalloc`, so a projection with no `name:`, `player-desc:` or
   `lash-desc:` has `NULL` in that field (the shipped file has 25 `name:`, 27 `player-desc:` and 23 `lash-desc:` lines in 56 records).

@@ -18,12 +18,6 @@
 // Generated from ActivationsGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.activations;
 
-    import uk.co.jackoftradesltd.backend.parser.activation.ActivationParseRecord;
-    import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
-
-    import java.util.List;
-    import java.util.ArrayList;
-
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**

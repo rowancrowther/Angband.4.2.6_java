@@ -26,8 +26,12 @@ import java.util.List;
  * records hold the multi-part directives. This is the DTO layer between the ANTLR grammar and the
  * assembler; {@code line} carries the source line number for error messages.
  *
+ * <p>Class MonsterParseRecord coded before 260815, commented in full on 261020, {@code plural}
+ * documented as {@code null} when absent.
+ *
  * @param name             the monster's internal/display name ({@code name:})
- * @param plural           the plural form of the name ({@code plural:}), empty if not given
+ * @param plural           the plural form of the name ({@code plural:}), {@code null} if not given, as C
+ *                         leaves {@code plural} NULL
  * @param base             the {@code base:} monster-base name, resolved by the assembler
  * @param glyph            the display glyph as written ({@code glyph:}), empty if inherited from
  *                         the base

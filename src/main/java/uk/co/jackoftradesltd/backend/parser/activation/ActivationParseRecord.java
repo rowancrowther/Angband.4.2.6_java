@@ -26,20 +26,27 @@ import java.util.List;
  * as produced by the grammar and handed to {@link ActivationAssembler} for
  * resolution into a domain {@link uk.co.jackoftradesltd.middle.Activation}.
  * <p>
- * Every scalar field is kept as its original {@link String} (and left empty when
- * the corresponding line is absent) rather than being parsed here: interpretation
- * — integer conversion, effect resolution, error reporting — is deliberately
- * deferred to the assembler so that a malformed value produces a soft, per-record
+ * Every scalar field is kept as its original {@link String} rather than being
+ * parsed here. An absent {@code aim:}, {@code level:} or {@code power:} line is
+ * left empty, but an absent {@code msg:} or {@code desc:} line is {@code null}, as
+ * C leaves those two pointers NULL. Interpretation (integer conversion, effect
+ * resolution, error reporting) is deliberately deferred to the assembler so that a malformed value produces a soft, per-record
  * error instead of aborting the parse. This mirrors the split in the C loader
  * between {@code parse_act_*} (which only stashes strings on the {@code activation}
  * struct) and the later finalization pass.
+ *
+ * <p>Class ActivationParseRecord coded before 260815, commented in full on 261020, absent
+ * {@code msg:} and {@code desc:} documented as {@code null}.
  *
  * @param name    the activation's name (the {@code name:} line)
  * @param aim     the raw {@code aim:} flag; {@code "1"} means the power must be aimed
  * @param level   the raw {@code level:} integer, or empty if the line is absent
  * @param power   the raw {@code power:} integer, or empty if the line is absent
- * @param message the {@code msg:} text shown when the activation fires
- * @param desc    the {@code desc:} human-readable description
+ * @param message the {@code msg:} text shown when the activation fires; repeated lines are
+ *                joined with no separator, as C's {@code string_append} does, and it is
+ *                {@code null} if the line is absent
+ * @param desc    the {@code desc:} human-readable description; repeated lines are joined
+ *                with no separator, and it is {@code null} if the line is absent
  * @param effects the parsed-but-unresolved effect blocks this activation runs
  * @param line    the source line the block begins on, for error messages
  * @author Rowan Crowther

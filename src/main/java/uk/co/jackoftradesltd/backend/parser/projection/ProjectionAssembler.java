@@ -142,7 +142,7 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
             String projBlindDesc = record.blindDesc();
             String projLashDesc = record.lashDesc();
             int projNumerator = 0;
-            if (!record.numerator().isEmpty()) {
+            if (record.numerator() != null) {
                 try {
                     projNumerator = Integer.parseInt(record.numerator());
                     if (projNumerator < 0) {
@@ -162,7 +162,7 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
             }
             int projDenominator = 0;
             Random projDenominatorDice = null;
-            if (!record.denominator().isEmpty()) {
+            if (record.denominator() != null) {
                 try {
                     projDenominator = Integer.parseInt(record.denominator());
                 } catch (NumberFormatException e) {
@@ -177,7 +177,7 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
                 }
             }
             int projDivisor = 0;
-            if (!record.divisor().isEmpty()) {
+            if (record.divisor() != null) {
                 try {
                     projDivisor = Integer.parseInt(record.divisor());
                     if (projDivisor < 0) {
@@ -196,7 +196,7 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
                 }
             }
             int projDamageCap = 0;
-            if (!record.damageCap().isEmpty()) {
+            if (record.damageCap() != null) {
                 try {
                     projDamageCap = Integer.parseInt(record.damageCap());
                     if (projDamageCap < 0) {
@@ -215,10 +215,10 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
                 }
             }
             String msgt = record.msgt();
-            MessageType projMsgt = msgt.isEmpty() ? MessageType.MSG_GENERIC : resolveMsgt(line, msgt, codeString, errors);
+            MessageType projMsgt = msgt == null ? MessageType.MSG_GENERIC : resolveMsgt(line, msgt, codeString, errors);
             boolean projObvious;
             int boolValue;
-            if (!record.obvious().isEmpty()) {
+            if (record.obvious() != null) {
                 try {
                     boolValue = Integer.parseInt(record.obvious());
                     if (boolValue < 0) {
@@ -240,7 +240,7 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
                 projObvious = false;
             }
             boolean projWillWake;
-            if (!record.willWake().isEmpty()) {
+            if (record.willWake() != null) {
                 try {
                     boolValue = Integer.parseInt(record.willWake());
                     if (boolValue < 0) {

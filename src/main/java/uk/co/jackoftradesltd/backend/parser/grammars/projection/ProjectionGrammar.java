@@ -14,6 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
+
 // Generated from ProjectionGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.projection;
 
@@ -1027,7 +1028,7 @@ public class ProjectionGrammar extends Parser {
 		enterRule(_localctx, 32, RULE_projection);
 
 		            String[] projectionStrings = new String[15];
-		            Arrays.fill(projectionStrings, "");
+		            Arrays.fill(projectionStrings, null);
 		        
 		int _la;
 		try {

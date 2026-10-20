@@ -17,13 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.cave.World;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
@@ -39,11 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link ObjectUtils#copyCurses}, the port of C's {@code copy_curses} ({@code obj-curse.c}).
@@ -54,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * registry afterwards. A curse named by {@code source} but not in the registry is dropped, as C
  * could not hold it at all, and one test pins that.
  *
- * <p>Two things distinguish this merge from {@link ObjectUtils#copySlays} and
+ * <p>Two things distinguish this merge from {@link ObjectUtils#copySlays(ItemObject, ObjectKind)} and
  * {@link ObjectUtils#copyBrands}: a curse named by {@code source} always overwrites whatever
  * {@code dest} held for it, with no "keep the stronger one" comparison, and the timeout written is
  * always freshly rolled from the curse's own dice rather than carried over from {@code source}'s
@@ -97,7 +87,7 @@ class ObjectUtilsCopyCursesTest {
                 null, null, null, null, null, null, null, null, null, null, null, null);
         savedConstants = setStatic(GameConstants.class, "data", seed);
         savedWorlds = setStatic(WorldRegistry.class, "worlds",
-                List.of(new World(0, "Town", null, null)));
+                List.of(new World(0, "Town", "None", "None")));
         savedCurses = setStatic(ObjectRegistry.class, "curses", null);
     }
 

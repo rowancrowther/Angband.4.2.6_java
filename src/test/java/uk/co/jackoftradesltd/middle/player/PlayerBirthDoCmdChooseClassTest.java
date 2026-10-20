@@ -22,6 +22,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
 import uk.co.jackoftradesltd.channel.utils.Flag;
@@ -42,6 +43,7 @@ import uk.co.jackoftradesltd.middle.magic.ClassMagic;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerSkill;
+import uk.co.jackoftradesltd.middle.player.enums.TimedEffect;
 import uk.co.jackoftradesltd.testsupport.CalcBonusesFixture;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
@@ -155,6 +157,51 @@ class PlayerBirthDoCmdChooseClassTest {
     private int savedRegistryPointsLeft;
     private boolean savedRolledStats;
 
+    /**
+     * The registry fields {@code setPlayerTimedEffects} fills from the {@code FOOD} grades - C's
+     * {@code PY_FOOD_*} globals, listed lowest threshold first.
+     */
+    private static final String[] FOOD_THRESHOLDS = {"PY_FOOD_STARVE", "PY_FOOD_FAINT", "PY_FOOD_WEAK",
+            "PY_FOOD_HUNGRY", "PY_FOOD_FULL", "PY_FOOD_MAX"};
+
+    /**
+     * The six food thresholds before the test, in {@link #FOOD_THRESHOLDS} order, put back afterwards.
+     */
+    private final int[] savedThresholds = new int[FOOD_THRESHOLDS.length];
+
+    private Object savedTimedEffects;
+
+    private static Field thresholdField(String name) throws ReflectiveOperationException {
+        Field field = PlayerRegistry.class.getDeclaredField(name);
+        field.setAccessible(true);
+        return field;
+    }
+
+    /**
+     * Installs a {@code FOOD} definition with C's grade boundaries, through the setter so the
+     * {@code PY_FOOD_*} thresholds are filled as C fills them while parsing the grades. Without it
+     * {@code playerGenerate} sets the food counter to {@code PY_FOOD_FULL - 1} = -1 against thresholds
+     * of zero, which puts the character in the "Hungry" branch of {@code calc_bonuses} and divides by
+     * {@code PY_FOOD_HUNGRY}. The suite only passed because an earlier class had loaded the real file.
+     */
+    private void seedFoodThresholds() throws ReflectiveOperationException {
+        savedTimedEffects = registryField("playerTimedEffects").get(null);
+        for (int i = 0; i < FOOD_THRESHOLDS.length; i++) {
+            savedThresholds[i] = thresholdField(FOOD_THRESHOLDS[i]).getInt(null);
+        }
+        List<TimedGrade> grades = List.of(
+                new TimedGrade(1, ColourEnum.COLOUR_WHITE, 100, "Starving", "", ""),
+                new TimedGrade(2, ColourEnum.COLOUR_WHITE, 400, "Faint", "", ""),
+                new TimedGrade(3, ColourEnum.COLOUR_WHITE, 800, "Weak", "", ""),
+                new TimedGrade(4, ColourEnum.COLOUR_WHITE, 1500, "Hungry", "", ""),
+                new TimedGrade(5, ColourEnum.COLOUR_WHITE, 9000, "Fed", "", ""),
+                new TimedGrade(6, ColourEnum.COLOUR_WHITE, 10000, "Full", "", ""));
+        List<PlayerTimedEffect> effects = new ArrayList<>();
+        effects.add(new PlayerTimedEffect(TimedEffect.TMD_FOOD, "", "", "", "", null, List.of(), grades,
+                null, null, false, 0, ObjectFlag.OF_NONE, false, null, null, null));
+        PlayerRegistry.setPlayerTimedEffects(effects);
+    }
+
     private static Field constantsField() throws Exception {
         Field field = GameConstants.class.getDeclaredField("data");
         field.setAccessible(true);
@@ -223,6 +270,7 @@ class PlayerBirthDoCmdChooseClassTest {
     void seedFixture() throws Exception {
         savedConstants = constantsField().get(null);
         seedConstants();
+        seedFoodThresholds();
 
         savedClasses = (List<PlayerClass>) registryField("playerClasses").get(null);
         PlayerRegistry.setPlayerClasses(List.of(testClass(OTHER_CLASS_NAME), testClass(CHOSEN_CLASS_NAME)));
@@ -270,6 +318,10 @@ class PlayerBirthDoCmdChooseClassTest {
         GameState.setPlayer(realPlayer);
         GameEngine.setEventsBusHandler(realBus);
         constantsField().set(null, savedConstants);
+        registryField("playerTimedEffects").set(null, savedTimedEffects);
+        for (int i = 0; i < FOOD_THRESHOLDS.length; i++) {
+            thresholdField(FOOD_THRESHOLDS[i]).setInt(null, savedThresholds[i]);
+        }
         registryField("playerClasses").set(null, savedClasses);
         Field characterGenerated = GameState.class.getDeclaredField("characterGenerated");
         characterGenerated.setAccessible(true);

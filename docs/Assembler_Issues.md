@@ -472,7 +472,7 @@ Found 2026-10-17 during `/port backend/parser/BrandReader.java`. Not fixed.
 
 ## `itemobject/ItemObjectAssembler.java`: dice a record leaves out are `null`, C holds a zero `struct random`
 
-Found 2026-10-17 during `/port backend/parser/ItemObjectReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ItemObjectReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-20: `ItemObjectAssembler.java` starts `attBase`, `attToh`, `attTod`, `acToa`, `charges`, `pileAmount`, `pVal` and `time` as `Random.Zero()`, so `dd` and `ds` read `attBase` without a guard; `ObjectKind.copy` and `Effect.copy` are null-safe for `charge`, `stackSize` and an effect's `dice`. `ItemObjectAssemblerObjectPrepTest` runs `objectPrep` and `copy` over all 375 shipped kinds, and the full suite is green. The bullets below describe the state before the fix; the pinning test is now `absentDiceAreAZeroRandomAsInC`.]
 
 - C zeroes the record, so a kind with no `attack:`, `armor:`, `charges:`, `pile:` or `pval:` line holds a zero
   `struct random` for `to_h`, `to_d`, `to_a`, `charge`, `stack_size` and `pval`.
@@ -770,7 +770,7 @@ Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. [**CLOSED** 2
 
 ## `egoitem/EgoItemAssembler.java`: omitted `combat:` and `time:` dice are `null`, C holds zero
 
-Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-20: `EgoItemAssembler.java` starts `toH`, `toD`, `toA` and `time` as `Random.Zero()`, and a present line is parsed over the top. `EgoItemReaderTest` has `omittedCombatAndTimeDiceAreAZeroRandomAsInC` and `realFileEgosHoldNoNullDiceAndAllCopy` (all 107 egos hold no null dice and copy), the upstream table now records `0+0d0M0` for `time` on all 107 rows, and the full suite is green. The bullets below describe the state before the fix; the pinning test is now `omittedCombatAndTimeDiceAreAZeroRandomAsInC`.]
 
 - `parse_ego_name` zeroes the record, so an ego with no `combat:` line has three zero `struct random`s and no `time:` line a
   zero time. `ego_apply_magic` in `obj-make.c` rolls `randcalc(ego->to_h, ...)` for every ego without a test.

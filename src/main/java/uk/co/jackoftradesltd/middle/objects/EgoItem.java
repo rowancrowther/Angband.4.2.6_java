@@ -215,25 +215,31 @@ public class EgoItem {
 
     /**
      * The extra to-hit this ego rolls, the port of C's {@code ego->to_h}, from the first value of the
-     * {@code combat:} line. A range, not a number, because it is rolled per object. {@code null} when
-     * the data file gives no {@code combat:} line.
+     * {@code combat:} line. A range, not a number, because it is rolled per object. When the data
+     * file gives no {@code combat:} line it is a zero {@link Random}, as in C, where
+     * {@code parse_ego_name} zeroes the record; {@code EgoItemAssembler} starts it there, so an ego
+     * read from {@code ego_item.txt} never holds {@code null}.
      *
-     * <p>Field toHit coded before 260816, commented in full on 261014.
+     * <p>Field toHit coded before 260816, commented in full on 261014, absent-line wording
+     * corrected on 261020 once the assembler began zeroing it.
      */
     private Random toHit;
     /**
      * The extra to-damage this ego rolls, the port of C's {@code ego->to_d}, from the second value of
-     * the {@code combat:} line. {@code null} when the data file gives no {@code combat:} line.
+     * the {@code combat:} line. A zero {@link Random} when the data file gives no {@code combat:}
+     * line, as for {@link #toHit}.
      *
-     * <p>Field toDam coded before 260816, commented in full on 261014.
+     * <p>Field toDam coded before 260816, commented in full on 261014, absent-line wording
+     * corrected on 261020 once the assembler began zeroing it.
      */
     private Random toDam;
     /**
      * The extra to-armour-class this ego rolls, the port of C's {@code ego->to_a}, from the third
-     * value of the {@code combat:} line. {@code null} when the data file gives no {@code combat:}
-     * line.
+     * value of the {@code combat:} line. A zero {@link Random} when the data file gives no
+     * {@code combat:} line, as for {@link #toHit}.
      *
-     * <p>Field toAC coded before 260816, commented in full on 261014.
+     * <p>Field toAC coded before 260816, commented in full on 261014, absent-line wording
+     * corrected on 261020 once the assembler began zeroing it.
      */
     private Random toAC;
 
@@ -274,9 +280,11 @@ public class EgoItem {
     private Activation activation;
     /**
      * The recharge time of the granted activation, the port of C's {@code ego->time}, from the
-     * {@code time:} line. {@code null} when the line is absent.
+     * {@code time:} line. A zero {@link Random} when the line is absent, as in C; no ego in the
+     * shipped {@code ego_item.txt} has a {@code time:} line, so on the shipped data it is always zero.
      *
-     * <p>Field time coded before 260816, commented in full on 261014.
+     * <p>Field time coded before 260816, commented in full on 261014, absent-line wording
+     * corrected on 261020 once the assembler began zeroing it.
      */
     private Random time;
 
@@ -317,7 +325,14 @@ public class EgoItem {
      * fills with {@code false} for every {@link IgnoreType} (the zero-filled row C allocates for
      * each ego in its ignore table), so a new ego starts with nothing marked as ignorable.
      *
-     * <p>Constructor EgoItem coded before 260817, commented in full on 261014.
+     * <p>The constructor does not check the four dice. {@code EgoItemAssembler} passes a zero
+     * {@link Random} for any of {@code toHit}, {@code toDam}, {@code toAC} and {@code time} that the
+     * record leaves out, as C's zeroed record holds, so callers that roll them need no guard for an
+     * ego read from the data file. {@code activation} is the one optional argument that is
+     * {@code null} when absent.
+     *
+     * <p>Constructor EgoItem coded before 260817, commented in full on 261014, dice wording
+     * corrected on 261020.
      *
      * @param name         ego name, as in {@code ego->name}
      * @param desc         description, stored as this ego's {@code text}
@@ -337,14 +352,14 @@ public class EgoItem {
      * @param allocMin     shallowest normal depth
      * @param allocMax     deepest depth, never exceeded
      * @param possItems    the base kinds this ego may be applied to
-     * @param toHit        to-hit bonus range, or {@code null}
-     * @param toDam        to-damage bonus range, or {@code null}
-     * @param toAC         to-AC bonus range, or {@code null}
+     * @param toHit        to-hit bonus range; a zero {@link Random} when the record has none
+     * @param toDam        to-damage bonus range; a zero {@link Random} when the record has none
+     * @param toAC         to-AC bonus range; a zero {@link Random} when the record has none
      * @param minToHit     floor on the to-hit bonus; C's {@code 255} means none
      * @param minToDam     floor on the to-damage bonus; C's {@code 255} means none
      * @param minToAC      floor on the to-AC bonus; C's {@code 255} means none
      * @param activation   granted activation, or {@code null}
-     * @param time         activation recharge time, or {@code null}
+     * @param time         activation recharge time; a zero {@link Random} when the record has none
      * @param everSeen     whether the player has already seen this ego
      */
     public EgoItem(String name, String desc, int egoIndex,
@@ -644,7 +659,12 @@ public class EgoItem {
      * <p>The ignore-category map is assigned after construction because the constructor does not
      * take it.
      *
-     * <p>Function copy commented in full on 260827, null brand and slay sets noted on 261017.
+     * <p>The four dice and the activation are copied only when present. The assembler leaves no dice
+     * {@code null}, so for an ego from the data file the guards on the dice never fire; they remain
+     * for an ego built by hand with a {@code null} die.
+     *
+     * <p>Function copy commented in full on 260827, null brand and slay sets noted on 261017, dice
+     * guard noted on 261020.
      *
      * @return a new ego template that shares no mutable state with this one, bar the noted exception
      */

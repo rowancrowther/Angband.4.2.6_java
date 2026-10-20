@@ -316,7 +316,7 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
                 }
             }
             if (illegalTvalSvalPair) continue;
-            Random toH = null;
+            Random toH = Random.Zero();
             if (!record.toH().isEmpty()) {
                 toH = Random.parseStr(record.toH());
                 if (toH == null) {
@@ -325,7 +325,7 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
                     continue;
                 }
             }
-            Random toD = null;
+            Random toD = Random.Zero();
             if (!record.toD().isEmpty()) {
                 toD = Random.parseStr(record.toD());
                 if (toD == null) {
@@ -334,7 +334,7 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
                     continue;
                 }
             }
-            Random toA = null;
+            Random toA = Random.Zero();
             if (!record.toA().isEmpty()) {
                 toA = Random.parseStr(record.toA());
                 if (toA == null) {
@@ -382,7 +382,7 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
                     continue;
                 }
             }
-            Random time = null;
+            Random time = Random.Zero();
             if (!record.timeout().isEmpty()) {
                 time = Random.parseStr(record.timeout());
                 if (time == null) {

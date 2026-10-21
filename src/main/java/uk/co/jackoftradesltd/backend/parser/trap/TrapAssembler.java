@@ -104,7 +104,8 @@ public class TrapAssembler implements Assembler<TrapParseRecord, List<TrapKind>>
      * @return the successfully assembled trap kinds, in source order
      */
     @Override
-    public List<TrapKind> assemble(@NotNull List<TrapParseRecord> records, @NotNull List<String> errors) {
+    public List<TrapKind> assemble(@NotNull List<TrapParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<TrapKind> traps = new ArrayList<>();
         int index = -1;
 
@@ -199,9 +200,9 @@ public class TrapAssembler implements Assembler<TrapParseRecord, List<TrapKind>>
                 }
             }
             if (badSaveFlag) continue;
-            List<Effect> effects = EffectAssembler.assemble(record.effects(), errors);
+            List<Effect> effects = EffectAssembler.assemble(record.effects(), errors, filename);
             if (effects == null) continue;
-            List<Effect> xtraEffects = EffectAssembler.assemble(record.xtraEffects(), errors);
+            List<Effect> xtraEffects = EffectAssembler.assemble(record.xtraEffects(), errors, filename);
             if (xtraEffects == null) continue;
             index++;
 

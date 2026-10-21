@@ -27,11 +27,11 @@ import uk.co.jackoftradesltd.channel.messages.data.PlayerEventStatusUpdate;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.channel.utils.FlagView;
+import uk.co.jackoftradesltd.channel.utils.combiners.CombinerName;
 import uk.co.jackoftradesltd.frontend.entries.UIEntry;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryBase;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryCategory;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
-import uk.co.jackoftradesltd.channel.utils.combiners.CombinerName;
 import uk.co.jackoftradesltd.frontend.ui.entry.EmbryonicCategoryReferencies;
 import uk.co.jackoftradesltd.frontend.ui.entry.assembler.helperfunctions.UIEntryPriorityScheme;
 import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
@@ -81,7 +81,8 @@ public class UIEntryBaseAssembler implements Assembler<UIEntryBaseParseRecord, L
      */
     @Override
     public List<UIEntryBase> assemble(@NotNull List<UIEntryBaseParseRecord> records,
-                                      @NotNull List<String> errors) {
+                                      @NotNull List<String> errors,
+                                      @NotNull String filename) {
         List<UIEntryBase> results = new ArrayList<>();
         List<UIEntry> entries = new ArrayList<>();
 

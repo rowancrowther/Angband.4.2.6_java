@@ -47,7 +47,8 @@ public class StreamerAssembler implements Assembler<DungeonProfileParseRecord.St
      * @return the assembled streamer profile, or {@code null} if any field would not convert
      */
     @Override
-    public StreamerProfile assemble(@NotNull List<DungeonProfileParseRecord.Streamer> records, @NotNull List<String> errors) {
+    public StreamerProfile assemble(@NotNull List<DungeonProfileParseRecord.Streamer> records, @NotNull List<String> errors,
+                                    String filename) {
         if (records == null || records.size() != 1) {
             errors.add("Streamer must not be null and have exactly one Streamer");
             return null;

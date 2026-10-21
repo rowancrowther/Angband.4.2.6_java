@@ -53,7 +53,8 @@ public class FlavourAssembler implements Assembler<FlavourParseRecord, List<Flav
      * @return the assembled flavours (fixed ones still awaiting sval resolution)
      */
     @Override
-    public List<Flavour> assemble(@NotNull List<FlavourParseRecord> records, @NotNull List<String> errors) {
+    public List<Flavour> assemble(@NotNull List<FlavourParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<Flavour> flavours = new ArrayList<>();
 
         for (FlavourParseRecord record : records) {

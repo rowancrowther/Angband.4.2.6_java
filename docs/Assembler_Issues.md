@@ -490,7 +490,7 @@ Found 2026-10-17 during `/port backend/parser/ItemObjectReader.java`. [<span sty
 
 ## `itemobject/ItemObjectAssembler.java`: a record with no `type:` has a `null` tval and base, C has tval 0
 
-Found 2026-10-17 during `/port backend/parser/ItemObjectReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ItemObjectReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-21: `ItemObjectAssembler.java` gives a record with no `type:` `TV_NONE` and a `null` base, and `ObjectRegistry.addObjectKind` registers a base-less kind with sval 0 and moves no base's counter. `ItemObjectReaderTest.aRecordWithNoTypeHasTvNoneAndANullBaseAsInC` and `ObjectRegistryTest.aKindWithNoBaseRegistersWithSvalZeroAndTouchesNoCounter` pin it, and the full suite is green. Two base-less kinds share the (TV_NONE, 0) index slot, which C's scanning `lookup_kind` does not; `twoKindsWithNoBaseCollideInTheIndex` pins that as a known divergence. The bullets below describe the state before the fix; the reader test they name is now the one above.]
 
 - C leaves `k->tval` at 0 (`TV_NONE`) and `k->base` at `NULL` when `parse_object_type` never runs, and
   `finish_parse_object` still indexes `kb_info[0]`.

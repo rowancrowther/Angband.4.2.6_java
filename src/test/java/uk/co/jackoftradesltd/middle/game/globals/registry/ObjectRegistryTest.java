@@ -22,16 +22,13 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.Activation;
-import uk.co.jackoftradesltd.middle.objects.Brand;
-import uk.co.jackoftradesltd.middle.objects.Curse;
-import uk.co.jackoftradesltd.middle.objects.ObjectBase;
-import uk.co.jackoftradesltd.middle.objects.ObjectKind;
-import uk.co.jackoftradesltd.middle.objects.Slay;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
+import uk.co.jackoftradesltd.middle.objects.*;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectKindFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
+import uk.co.jackoftradesltd.testsupport.CurseFixture;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -40,8 +37,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
-
-import uk.co.jackoftradesltd.testsupport.CurseFixture;
 
 /**
  * Tests {@link ObjectRegistry} itself, rather than the readers that fill it: the sval allocation and
@@ -248,6 +243,57 @@ class ObjectRegistryTest {
         assertSame(impostor, ObjectRegistry.lookupObjectKind(TValue.TV_SWORD, 1),
                 "the later registration wins the (tval, sval) slot");
         assertEquals(2, ObjectRegistry.getObjectKindCount(), "though both are still in the table");
+    }
+
+    /**
+     * C's load accepts a record with no {@code type:}: only {@code parse_object_type} sets
+     * {@code base} and bumps {@code num_svals}, so the kind keeps a {@code NULL} base, tval 0
+     * ({@code TV_NONE}) and sval 0. {@link ObjectRegistry#addObjectKind} registers it the same way
+     * and touches no base's sval counter.
+     */
+    @Test
+    void aKindWithNoBaseRegistersWithSvalZeroAndTouchesNoCounter() throws Exception {
+        ObjectKind typeless = new ObjectKind();
+        Field tValue = ObjectKind.class.getDeclaredField("tValue");
+        tValue.setAccessible(true);
+        tValue.set(typeless, TValue.TV_NONE);
+
+        ObjectRegistry.addObjectKind(typeless);
+
+        assertEquals(0, typeless.getsVal());
+        assertEquals(0, typeless.getKindIndex());
+        assertEquals(1, ObjectRegistry.getObjectKindCount());
+        assertSame(typeless, ObjectRegistry.lookupObjectKind(TValue.TV_NONE, 0));
+        assertEquals(0, swordBase.getNumSvals(), "no base's counter moves");
+        assertEquals(0, bookBase.getNumSvals(), "no base's counter moves");
+    }
+
+    /**
+     * C's {@code lookup_kind} scans {@code k_info}, so two base-less kinds both stay in the table.
+     * Here every base-less kind takes the (TV_NONE, 0) slot in {@code kindsByTvalSval}, so the later
+     * registration displaces the earlier from the index. Both remain in the table, with their own
+     * kind indices. Pinned as a known divergence rather than as desired behaviour, in the same way
+     * as {@link #twoBasesSharingATvalCollideInTheIndex()}.
+     */
+    @Test
+    void twoKindsWithNoBaseCollideInTheIndex() throws Exception {
+        Field tValue = ObjectKind.class.getDeclaredField("tValue");
+        tValue.setAccessible(true);
+        ObjectKind first = new ObjectKind();
+        ObjectKind second = new ObjectKind();
+        tValue.set(first, TValue.TV_NONE);
+        tValue.set(second, TValue.TV_NONE);
+
+        ObjectRegistry.addObjectKind(first);
+        ObjectRegistry.addObjectKind(second);
+
+        assertEquals(0, first.getsVal());
+        assertEquals(0, second.getsVal());
+        assertSame(second, ObjectRegistry.lookupObjectKind(TValue.TV_NONE, 0),
+                "the later registration wins the (tval, sval) slot");
+        assertEquals(2, ObjectRegistry.getObjectKindCount(), "though both are still in the table");
+        assertEquals(0, first.getKindIndex());
+        assertEquals(1, second.getKindIndex());
     }
 
     // ---- reset -----------------------------------------------------------

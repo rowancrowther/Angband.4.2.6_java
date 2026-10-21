@@ -52,7 +52,8 @@ public class RoomAssembler implements Assembler<DungeonProfileParseRecord.Room, 
      * @return the assembled room profiles, in file order, minus any that failed
      */
     @Override
-    public List<RoomProfile> assemble(@NotNull List<DungeonProfileParseRecord.Room> records, @NotNull List<String> errors) {
+    public List<RoomProfile> assemble(@NotNull List<DungeonProfileParseRecord.Room> records, @NotNull List<String> errors,
+                                      String filename) {
         List<RoomProfile> roomProfiles = new ArrayList<>();
 
         for (DungeonProfileParseRecord.Room record : records) {

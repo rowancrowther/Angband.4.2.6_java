@@ -79,7 +79,7 @@ class ActivationAssemblerTest {
         List<String> errors = new ArrayList<>();
 
         List<Activation> out = new ActivationAssembler()
-                .assemble(List.of(rec("CURE_LIGHT", "0", "5", "10", 3)), errors);
+                .assemble(List.of(rec("CURE_LIGHT", "0", "5", "10", 3)), errors, "test.txt");
 
         assertTrue(errors.isEmpty(), errors::toString);
         assertEquals(1, out.size());
@@ -93,7 +93,7 @@ class ActivationAssemblerTest {
         // An absent level:/power: directive reaches the assembler as the empty string; the
         // empty-string guard must treat it as 0 rather than attempt to parse it.
         List<Activation> out = new ActivationAssembler()
-                .assemble(List.of(rec("NO_NUMBERS", "1", "", "", 2)), errors);
+                .assemble(List.of(rec("NO_NUMBERS", "1", "", "", 2)), errors, "test.txt");
 
         assertTrue(errors.isEmpty(), errors::toString);
         assertEquals(1, out.size());
@@ -105,7 +105,7 @@ class ActivationAssemblerTest {
         List<String> errors = new ArrayList<>();
 
         List<Activation> out = new ActivationAssembler()
-                .assemble(List.of(rec("BAD_LEVEL", "0", "high", "1", 7)), errors);
+                .assemble(List.of(rec("BAD_LEVEL", "0", "high", "1", 7)), errors, "test.txt");
 
         assertTrue(out.isEmpty());
         assertEquals(1, errors.size());
@@ -119,7 +119,7 @@ class ActivationAssemblerTest {
         List<String> errors = new ArrayList<>();
 
         List<Activation> out = new ActivationAssembler()
-                .assemble(List.of(rec("BAD_POWER", "0", "5", "lots", 9)), errors);
+                .assemble(List.of(rec("BAD_POWER", "0", "5", "lots", 9)), errors, "test.txt");
 
         assertTrue(out.isEmpty());
         assertEquals(1, errors.size());
@@ -137,7 +137,7 @@ class ActivationAssemblerTest {
         List<Activation> out = new ActivationAssembler().assemble(
                 List.of(rec("BROKEN", "0", "nope", "1", 4),
                         rec("FINE", "0", "5", "1", 8)),
-                errors);
+                errors, "test.txt");
 
         assertEquals(1, out.size());
         assertEquals("FINE", out.get(0).getName());

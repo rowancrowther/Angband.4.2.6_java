@@ -18,12 +18,12 @@
 package uk.co.jackoftradesltd.backend.parser.shape;
 
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.backend.parser.grammars.EffectAssembler;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
+import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.middle.objects.ElementInfo;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftradesltd.middle.player.PlayerBlow;
@@ -68,7 +68,8 @@ public class ShapeAssembler implements Assembler<ShapeParseRecord, List<PlayerSh
      * @return the successfully assembled shapes, in source order
      */
     @Override
-    public List<PlayerShape> assemble(@NotNull List<ShapeParseRecord> records, @NotNull List<String> errors) {
+    public List<PlayerShape> assemble(@NotNull List<ShapeParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<PlayerShape> shapes = new ArrayList<>();
 
         for (ShapeParseRecord record : records) {
@@ -275,7 +276,7 @@ public class ShapeAssembler implements Assembler<ShapeParseRecord, List<PlayerSh
             // EffectAssembler is all-or-nothing: if any single effect in the block fails
             // to resolve it returns null, so one bad effect drops the entire shape rather
             // than loading it with an effect silently missing.
-            List<Effect> effects = EffectAssembler.assemble(record.effects(), errors);
+            List<Effect> effects = EffectAssembler.assemble(record.effects(), errors, filename);
             if (effects == null) continue;
             List<PlayerBlow> blowList = new ArrayList<>();
             for (String blow : record.blowMethod()) {

@@ -71,7 +71,8 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
      * @return the assembled artifacts, excluding any record reported in {@code errors}
      */
     @Override
-    public List<Artifact> assemble(@NotNull List<ArtifactParseRecord> records, @NotNull List<String> errors) {
+    public List<Artifact> assemble(@NotNull List<ArtifactParseRecord> records, @NotNull List<String> errors,
+                                   String filename) {
         List<Artifact> artifacts = new ArrayList<>();
 
         for (ArtifactParseRecord record : records) {

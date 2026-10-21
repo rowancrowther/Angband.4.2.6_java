@@ -19,10 +19,10 @@ package uk.co.jackoftradesltd.backend.parser.objectbase;
 
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.objects.ObjectBase;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectKindFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 
@@ -54,7 +54,8 @@ public class ObjectBaseAssembler implements Assembler<ObjectBaseParseRecord, Lis
      * {@code TV_NONE} sentinel
      */
     @Override
-    public List<ObjectBase> assemble(@NotNull List<ObjectBaseParseRecord> records, @NotNull List<String> errors) {
+    public List<ObjectBase> assemble(@NotNull List<ObjectBaseParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<ObjectBase> results = new ArrayList<>();
 
         for (ObjectBaseParseRecord record : records) {

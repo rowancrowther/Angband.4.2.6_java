@@ -630,7 +630,7 @@ class VisualsReaderTest {
             List<VisualsCycler> out = new VisualsCycleAssembler().assemble(List.of(
                     record("g1", "a", List.of("r")),
                     record("g1", "b", List.of("g")),
-                    record("g2", "c", List.of("b"))), errors);
+                    record("g2", "c", List.of("b"))), errors, "test.txt");
 
             assertTrue(errors.isEmpty(), errors::toString);
             VisualsCycler cycler = out.getFirst();
@@ -646,7 +646,7 @@ class VisualsReaderTest {
             List<String> errors = new ArrayList<>();
             // The empty entry is the only reachable route into the soft-error channel.
             List<VisualsCycler> out = new VisualsCycleAssembler()
-                    .assemble(List.of(record("g", "bad", List.of("r", ""))), errors);
+                    .assemble(List.of(record("g", "bad", List.of("r", ""))), errors, "test.txt");
 
             assertEquals(1, errors.size(), errors::toString);
             assertNull(out.getFirst().getByGroup("g"),
@@ -658,7 +658,7 @@ class VisualsReaderTest {
             List<String> errors = new ArrayList<>();
             List<VisualsCycler> out = new VisualsCycleAssembler().assemble(List.of(
                     record("g", "good", List.of("r", "g")),
-                    record("g", "bad", List.of(""))), errors);
+                    record("g", "bad", List.of(""))), errors, "test.txt");
 
             assertEquals(1, errors.size(), errors::toString);
             Map<String, ?> g = out.getFirst().getByGroup("g");
@@ -673,7 +673,7 @@ class VisualsReaderTest {
             // mapping the step to Dark.
             List<String> errors = new ArrayList<>();
             List<VisualsCycler> out = new VisualsCycleAssembler()
-                    .assemble(List.of(record("g", "q", List.of("q"))), errors);
+                    .assemble(List.of(record("g", "q", List.of("q"))), errors, "test.txt");
 
             assertEquals(1, errors.size(), errors::toString);
             assertNull(out.getFirst().getByGroup("g"),
@@ -683,7 +683,7 @@ class VisualsReaderTest {
         @Test
         void emptyInputYieldsASingleEmptyCycler() {
             List<String> errors = new ArrayList<>();
-            List<VisualsCycler> out = new VisualsCycleAssembler().assemble(List.of(), errors);
+            List<VisualsCycler> out = new VisualsCycleAssembler().assemble(List.of(), errors, "test.txt");
 
             assertEquals(1, out.size());
             assertTrue(out.getFirst().getKeys().isEmpty());
@@ -714,7 +714,7 @@ class VisualsReaderTest {
         void producesExactlyOneTableWrappedInAList() {
             List<String> errors = new ArrayList<>();
             List<FlickerTable> out = new VisualsFlickerAssembler()
-                    .assemble(List.of(record("d", List.of("d", "D", "R"))), errors);
+                    .assemble(List.of(record("d", List.of("d", "D", "R"))), errors, "test.txt");
 
             assertEquals(1, out.size());
             assertNotNull(out.getFirst());
@@ -724,7 +724,7 @@ class VisualsReaderTest {
         @Test
         void emptyInputStillYieldsAPresentTable() {
             List<String> errors = new ArrayList<>();
-            List<FlickerTable> out = new VisualsFlickerAssembler().assemble(List.of(), errors);
+            List<FlickerTable> out = new VisualsFlickerAssembler().assemble(List.of(), errors, "test.txt");
 
             assertEquals(1, out.size());
             assertNotNull(out.getFirst());
@@ -737,7 +737,7 @@ class VisualsReaderTest {
             List<String> errors = new ArrayList<>();
             List<FlickerTable> out = new VisualsFlickerAssembler().assemble(List.of(
                     record("d", List.of("d", "R")),
-                    record("d", List.of("w", "W"))), errors);
+                    record("d", List.of("w", "W"))), errors, "test.txt");
 
             assertEquals(1, out.size());
             assertNotNull(out.getFirst());

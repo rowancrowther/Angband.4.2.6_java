@@ -67,7 +67,8 @@ public class RealmAssembler implements Assembler<RealmParseRecord, List<MagicRea
      * stat omitted)
      */
     @Override
-    public List<MagicRealm> assemble(@NotNull List<RealmParseRecord> records, @NotNull List<String> errors) {
+    public List<MagicRealm> assemble(@NotNull List<RealmParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<MagicRealm> realms = new ArrayList<>();
 
         for (RealmParseRecord record : records) {

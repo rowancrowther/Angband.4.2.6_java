@@ -17,7 +17,10 @@
 
 package uk.co.jackoftradesltd.backend.parser.itemobject;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 import uk.co.jackoftradesltd.backend.parser.grammars.EffectAssembler;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
@@ -41,7 +44,9 @@ import java.util.*;
  * <p>This is where interpretation happens:
  * <ul>
  *   <li>{@code type:} resolves to an {@link ObjectBase} by tval
- *       ({@code TValue.valueOf("TV_"+…)} then {@link ObjectRegistry#getBaseFromTVal});</li>
+ *       ({@link TValue#fromName} then {@link ObjectRegistry#getBaseFromTVal}); a record with no
+ *       {@code type:} keeps C's zero tval, {@code TV_NONE}, and a {@code null} base, as C leaves
+ *       {@code k->base} {@code NULL} when {@code parse_object_type} never runs;</li>
  *   <li>the rand fields (attack {@code hd}/to-h/to-d, armour to-a, {@code charges}, pile stack,
  *       {@code pval}) become {@link Random}s via {@code Random.parseStr}, while the scalar fields
  *       (level/weight/cost/power, armour base {@code ac}, alloc, pile chance) are parsed as ints;</li>
@@ -61,26 +66,38 @@ import java.util.*;
  * </ul>
  *
  * <p><b>Error policy:</b> soft errors follow the suite's skip-and-continue contract — an
- * unresolvable type, flag, modifier, element, brand, slay or curse logs a message to
+ * unresolvable flag, modifier, element, brand, slay or curse logs a message to
  * {@code errors} and drops that one kind ({@code continue}), leaving the rest of the file to load.
+ * An unknown {@code type:} is not one of them: C's {@code parse_object_type} returns
+ * {@code PARSE_ERROR_UNRECOGNISED_TVAL} and C stops the load, so here the assembler throws
+ * {@link InvalidTokenFoundDuringParse} naming the tval, the line and the file.
  * Hard grammar/lexer errors are handled upstream by {@code GrammarDriver}.
  *
  * @author Rowan Crowther
  */
 public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, List<ObjectKind>> {
+    private static final Logger logger = LogManager.getLogger(ItemObjectAssembler.class);
+    
     /**
      * Assembles every parsed object record into an {@link ObjectKind}, skipping (with a logged
-     * soft error) any record whose type, flags, values, brands, slays or curses fail to resolve.
+     * soft error) any record whose flags, values, brands, slays or curses fail to resolve. An
+     * unknown {@code type:} throws instead, and a missing one loads as {@code TV_NONE} with a
+     * {@code null} base.
      *
      * <p>Function assemble commented in full before 260915, provenance stamp added on 260915.
      *
-     * @param records the raw object records captured by the grammar
-     * @param errors  the soft-error channel; assembly failures are appended here and the
-     *                offending record is dropped rather than aborting the whole file
+     * @param records  the raw object records captured by the grammar
+     * @param errors   the soft-error channel; assembly failures other than an unknown type are
+     *                 appended here and the offending record is dropped rather than aborting the
+     *                 whole file
+     * @param filename the file the records came from, named in the message of the exception thrown
+     *                 for an unknown type
      * @return the successfully assembled object kinds, in source order
+     * @throws InvalidTokenFoundDuringParse if a record's {@code type:} names no known tval
      */
     @Override
-    public List<ObjectKind> assemble(@NotNull List<ItemObjectParseRecord> records, @NotNull List<String> errors) {
+    public List<ObjectKind> assemble(@NotNull List<ItemObjectParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<ObjectKind> itemObjects = new ArrayList<>();
 
         for (ItemObjectParseRecord record : records) {
@@ -93,9 +110,10 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
                 try {
                     tValue = TValue.fromName(tVal);
                     if (tValue == null) {
-                        errors.add("Object kind starting at line: " + line + " has " +
-                                "an unknown tVal: " + tVal);
-                        continue;
+                        String message = "TValue: " + tVal + " is not valid for object at line: " + line 
+                                + " of file: " + filename;
+                        logger.error(message);
+                        throw new InvalidTokenFoundDuringParse(message);
                     }
                     base = ObjectRegistry.getBaseFromTVal(tValue);
                 } catch (IllegalArgumentException e) {
@@ -103,6 +121,9 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
                             "an unknown type: " + record.tValue());
                     continue;
                 }
+            } else {
+                tValue = TValue.TV_NONE;
+                base = null;
             }
             String glyphChar = record.glyph();
             String glyphColour = record.colour();
@@ -406,7 +427,7 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
             // EffectAssembler is all-or-nothing: if any single effect in the block fails
             // to resolve it returns null, so one bad effect drops the entire object kind
             // rather than loading it with an effect silently missing.
-            List<Effect> effects = EffectAssembler.assemble(record.effects(), errors);
+            List<Effect> effects = EffectAssembler.assemble(record.effects(), errors, filename);
             if (effects == null) continue;
             int dd = attBase.getDice();
             int ds = attBase.getSides();

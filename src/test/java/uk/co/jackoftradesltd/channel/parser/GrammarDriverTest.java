@@ -129,7 +129,7 @@ class GrammarDriverTest {
             fail("extractor should not run when the file cannot be opened");
             return List.of();
         };
-        Assembler<Object, List<Object>> assembler = (records, errs) -> {
+        Assembler<Object, List<Object>> assembler = (records, errs, filename) -> {
             fail("assembler should not run when the file cannot be opened");
             return List.of();
         };

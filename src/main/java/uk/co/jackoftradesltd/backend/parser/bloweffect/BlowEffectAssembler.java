@@ -19,13 +19,13 @@ package uk.co.jackoftradesltd.backend.parser.bloweffect;
 
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
-import uk.co.jackoftradesltd.channel.parser.Assembler;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
+import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.middle.game.event.projection.Projection;
 import uk.co.jackoftradesltd.middle.game.globals.registry.WorldRegistry;
 import uk.co.jackoftradesltd.middle.monsters.BlowEffect;
 import uk.co.jackoftradesltd.middle.monsters.enums.BlowEffectType;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 
 import java.util.ArrayList;
@@ -71,7 +71,8 @@ public class BlowEffectAssembler implements Assembler<BlowEffectParseRecord, Lis
      * @return the assembled blow effects, excluding any record reported in {@code errors}
      */
     @Override
-    public List<BlowEffect> assemble(@NotNull List<BlowEffectParseRecord> records, @NotNull List<String> errors) {
+    public List<BlowEffect> assemble(@NotNull List<BlowEffectParseRecord> records, @NotNull List<String> errors,
+                                     String filename) {
         List<BlowEffect> effects = new ArrayList<>();
 
         for (BlowEffectParseRecord record : records) {

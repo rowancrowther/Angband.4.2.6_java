@@ -18,11 +18,11 @@
 package uk.co.jackoftradesltd.backend.parser;
 
 import org.junit.jupiter.api.Test;
-import uk.co.jackoftradesltd.frontend.ui.entryrenderer.assembler.UIEntryRendererAssembler;
-import uk.co.jackoftradesltd.frontend.ui.entryrenderer.assembler.UIEntryRendererParseRecord;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftradesltd.frontend.entries.enums.UIEntryEnum;
 import uk.co.jackoftradesltd.frontend.entries.enums.UIEntryRendererEnum;
+import uk.co.jackoftradesltd.frontend.ui.entryrenderer.assembler.UIEntryRendererAssembler;
+import uk.co.jackoftradesltd.frontend.ui.entryrenderer.assembler.UIEntryRendererParseRecord;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,7 +60,7 @@ class UIEntryRendererAssemblerTest {
         List<String> errors = new ArrayList<>();
         List<UIEntryRenderer> out = new UIEntryRendererAssembler().assemble(
                 List.of(rec("r", "NUMERIC_RENDERER_WITH_BOOL_AUX", "abc", "def", "ghi", "3", "ALWAYS_SIGN")),
-                errors);
+                errors, "test.txt");
 
         assertTrue(errors.isEmpty(), errors::toString);
         assertEquals(1, out.size());
@@ -81,7 +81,7 @@ class UIEntryRendererAssemblerTest {
         List<String> errors = new ArrayList<>();
         List<UIEntryRenderer> out = new UIEntryRendererAssembler().assemble(
                 List.of(rec("r", "COMPACT_FLAG_RENDERER_WITH_COMBINED_AUX", "", "", "", "", "")),
-                errors);
+                errors, "test.txt");
 
         assertTrue(errors.isEmpty(), errors::toString);
         assertEquals(1, out.size());
@@ -97,7 +97,7 @@ class UIEntryRendererAssemblerTest {
     void unknownCodeIsSkippedAndReported() {
         List<String> errors = new ArrayList<>();
         List<UIEntryRenderer> out = new UIEntryRendererAssembler().assemble(
-                List.of(rec("r", "NOTACODE", "", "", "", "", "")), errors);
+                List.of(rec("r", "NOTACODE", "", "", "", "", "")), errors, "test.txt");
 
         assertTrue(out.isEmpty());
         assertTrue(errors.stream().anyMatch(e -> e.contains("NOTACODE")), errors::toString);
@@ -107,7 +107,7 @@ class UIEntryRendererAssemblerTest {
     void presentButInvalidSignIsSkippedAndReported() {
         List<String> errors = new ArrayList<>();
         List<UIEntryRenderer> out = new UIEntryRendererAssembler().assemble(
-                List.of(rec("r", "COMPACT_FLAG_RENDERER_WITH_COMBINED_AUX", "", "", "", "", "BOGUS")), errors);
+                List.of(rec("r", "COMPACT_FLAG_RENDERER_WITH_COMBINED_AUX", "", "", "", "", "BOGUS")), errors, "test.txt");
 
         assertTrue(out.isEmpty());
         assertTrue(errors.stream().anyMatch(e -> e.contains("sign") && e.contains("BOGUS")), errors::toString);
@@ -119,7 +119,7 @@ class UIEntryRendererAssemblerTest {
         List<UIEntryRenderer> out = new UIEntryRendererAssembler().assemble(
                 List.of(rec("bad", "NOTACODE", "", "", "", "", ""),
                         rec("good", "COMPACT_FLAG_RENDERER_WITH_COMBINED_AUX", "", "", "", "", "")),
-                errors);
+                errors, "test.txt");
 
         assertEquals(1, out.size());
         assertEquals("good", out.get(0).getName());

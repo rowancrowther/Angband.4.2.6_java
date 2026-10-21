@@ -59,7 +59,8 @@ public class DungeonProfileAssembler implements Assembler<DungeonProfileParseRec
      * @return the assembled profiles, in file order, minus any that failed
      */
     @Override
-    public List<CaveProfile> assemble(@NotNull List<DungeonProfileParseRecord> records, @NotNull List<String> errors) {
+    public List<CaveProfile> assemble(@NotNull List<DungeonProfileParseRecord> records, @NotNull List<String> errors,
+                                      String filename) {
         List<CaveProfile> caveProfiles = new ArrayList<>();
 
         for (DungeonProfileParseRecord record : records) {
@@ -86,18 +87,18 @@ public class DungeonProfileAssembler implements Assembler<DungeonProfileParseRec
             if (record.tunnel() != null) {
                 List<DungeonProfileParseRecord.Tunnel> tunnelProfiles = new ArrayList<>();
                 tunnelProfiles.add(record.tunnel());
-                tunnelProfile = new TunnelAssembler().assemble(tunnelProfiles, errors);
+                tunnelProfile = new TunnelAssembler().assemble(tunnelProfiles, errors, filename);
             } else
                 tunnelProfile = null;
             StreamerProfile streamerProfile;
             if (record.streamer() != null) {
                 List<DungeonProfileParseRecord.Streamer> streamers = new ArrayList<>();
                 streamers.add(record.streamer());
-                streamerProfile = new StreamerAssembler().assemble(streamers, errors);
+                streamerProfile = new StreamerAssembler().assemble(streamers, errors, filename);
             } else
                 streamerProfile = null;
             List<RoomProfile> roomProfiles = new ArrayList<>();
-            roomProfiles = new RoomAssembler().assemble(record.rooms(), errors);
+            roomProfiles = new RoomAssembler().assemble(record.rooms(), errors, filename);
             int minLevel;
             if (record.minLevel() != null) {
                 try {

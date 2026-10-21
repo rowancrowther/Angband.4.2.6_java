@@ -49,7 +49,8 @@ public class ClassMagicAssembler implements Assembler<ClassMagicParseRecord, Lis
      * @return the resolved caster profile(s)
      */
     @Override
-    public List<ClassMagic> assemble(@NotNull List<ClassMagicParseRecord> records, @NotNull List<String> errors) {
+    public List<ClassMagic> assemble(@NotNull List<ClassMagicParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<ClassMagic> results = new ArrayList<>();
 
         for (ClassMagicParseRecord record : records) {
@@ -78,7 +79,7 @@ public class ClassMagicAssembler implements Assembler<ClassMagicParseRecord, Lis
                         "an invalid number of books: " + record.numBooks());
                 continue;
             }
-            List<MagicBook> magicBooks = new ClassSpellBookAssembler().assemble(record.books(), errors);
+            List<MagicBook> magicBooks = new ClassSpellBookAssembler().assemble(record.books(), errors, filename);
             
             if (magicBooks.size() > numBooks) {
                 errors.add("Line: " + line + " has a different number of books from " +

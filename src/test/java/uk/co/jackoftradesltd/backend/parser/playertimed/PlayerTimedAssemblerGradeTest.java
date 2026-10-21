@@ -17,11 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser.playertimed;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.data.GameConstantsData;
@@ -33,11 +29,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests the {@code grade:} handling in {@link PlayerTimedAssembler} — the port of C's
@@ -132,7 +124,7 @@ class PlayerTimedAssemblerGradeTest {
      * @return the effects that survived
      */
     private static List<PlayerTimedEffect> assemble(PlayerTimedParseRecord record, List<String> errors) {
-        return new PlayerTimedAssembler().assemble(List.of(record), errors);
+        return new PlayerTimedAssembler().assemble(List.of(record), errors, "test.txt");
     }
 
     /**
@@ -282,7 +274,7 @@ class PlayerTimedAssemblerGradeTest {
             List<PlayerTimedEffect> effects = new PlayerTimedAssembler().assemble(
                     List.of(record("BLIND", grade("10000", "Blind")),
                             record("STUN", grade("50", "Stun"), grade("150", "Heavy Stun"))),
-                    errors);
+                    errors, "test.txt");
 
             assertAll(
                     () -> assertTrue(errors.isEmpty(), errors.toString()),

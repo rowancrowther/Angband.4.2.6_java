@@ -21,6 +21,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
@@ -152,15 +153,19 @@ class ItemObjectReaderTest {
 
     // ---- Soft errors: dropped record (skip-and-continue) -----------------
 
+    /**
+     * {@code parse_object_type} returns {@code PARSE_ERROR_UNRECOGNISED_TVAL} for a tval
+     * {@code tval_find_idx} does not know, and C stops the load on a parse error. Here the assembler
+     * throws {@link InvalidTokenFoundDuringParse} naming the tval, the line and the file.
+     */
     @Test
-    void unknownTypeIsReportedAndSkipped() throws IOException {
-        ParseResult<ObjectKind> result = load("bad-type.txt", withHeader(1,
-                obj("weird", "type:no such tval\ngraphics:|:w\n")));
+    void unknownTypeStopsTheLoadAsCDoes() {
+        InvalidTokenFoundDuringParse thrown = assertThrows(InvalidTokenFoundDuringParse.class,
+                () -> load("bad-type.txt", withHeader(1,
+                        obj("weird", "type:no such tval\ngraphics:|:w\n"))));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(
-                        e -> e.contains("unknown tVal") && e.contains("no such tval")),
-                result.errors()::toString);
+        assertTrue(thrown.getMessage().contains("no such tval"), thrown.getMessage());
+        assertTrue(thrown.getMessage().contains("bad-type.txt"), thrown.getMessage());
     }
 
     @Test
@@ -1153,19 +1158,19 @@ class ItemObjectReaderTest {
     }
 
     /**
-     * A record with no {@code type:} keeps C's zero tval, {@code TV_NONE}, and a {@code NULL} base.
-     * The port leaves the tval {@code null} as well as the base, and
-     * {@code ObjectRegistry.addObjectKind} reads the base unguarded, so registering such a kind
-     * would fail. No record in the shipped file lacks a {@code type:}.
+     * A record with no {@code type:} keeps C's zero tval, {@code TV_NONE}, and a {@code NULL} base,
+     * and C's load accepts it: only {@code parse_object_type} sets the base and the sval. The port
+     * gives the kind {@code TV_NONE} and a {@code null} base. No record in the shipped file lacks a
+     * {@code type:}.
      */
     @Test
-    void aRecordWithNoTypeHasANullTvalAndBaseWhereCHasTvalZero() throws Exception {
+    void aRecordWithNoTypeHasTvNoneAndANullBaseAsInC() throws Exception {
         ParseResult<ObjectKind> result = load("no-type.txt", withHeader(1,
                 obj("typeless", "graphics:|:w\n")));
 
         assertFalse(result.hasErrors(), result.errors()::toString);
         ObjectKind kind = result.items().get(0);
-        assertNull(kind.gettValue());
+        assertEquals(TValue.TV_NONE, kind.gettValue());
         assertNull(kind.getBase());
     }
 

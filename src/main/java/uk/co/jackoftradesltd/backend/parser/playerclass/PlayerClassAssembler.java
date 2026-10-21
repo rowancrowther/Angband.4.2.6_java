@@ -61,7 +61,8 @@ public class PlayerClassAssembler implements Assembler<PlayerClassParseRecord, L
      * @return the resolved classes, minus any dropped for a resolution failure
      */
     @Override
-    public List<PlayerClass> assemble(@NotNull List<PlayerClassParseRecord> records, @NotNull List<String> errors) {
+    public List<PlayerClass> assemble(@NotNull List<PlayerClassParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<PlayerClass> playerClasses = new ArrayList<>();
         List<StartItem> startItems;
 
@@ -175,7 +176,7 @@ public class PlayerClassAssembler implements Assembler<PlayerClassParseRecord, L
                     continue;
                 }
             }
-            startItems = new ClassEquipAssembler().assemble(record.equipment(), errors);
+            startItems = new ClassEquipAssembler().assemble(record.equipment(), errors, filename);
             Flag<ObjectFlag> oFlags = new Flag<>(ObjectFlag.class);
             boolean illegalOFlag = false;
             for (String oFlag : record.oFlags()) {
@@ -214,7 +215,7 @@ public class PlayerClassAssembler implements Assembler<PlayerClassParseRecord, L
             if (record.magic() != null) {
                 List<ClassMagicParseRecord> cmpr = new ArrayList<>();
                 cmpr.add(record.magic());
-                magic = new ClassMagicAssembler().assemble(cmpr, errors);
+                magic = new ClassMagicAssembler().assemble(cmpr, errors, filename);
             }
 
             ClassMagic classMagic = magic.isEmpty() ? ClassMagic.NONE : magic.getFirst();

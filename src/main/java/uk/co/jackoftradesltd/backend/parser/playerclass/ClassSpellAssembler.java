@@ -18,8 +18,8 @@
 package uk.co.jackoftradesltd.backend.parser.playerclass;
 
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.backend.parser.grammars.EffectAssembler;
+import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.middle.magic.MagicSpell;
 
@@ -48,7 +48,8 @@ public class ClassSpellAssembler implements Assembler<ClassSpellParseRecord, Lis
      * @return the resolved spells, minus any dropped for a malformed scalar
      */
     @Override
-    public List<MagicSpell> assemble(@NotNull List<ClassSpellParseRecord> records, @NotNull List<String> errors) {
+    public List<MagicSpell> assemble(@NotNull List<ClassSpellParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<MagicSpell> spells = new ArrayList<>();
 
         for (ClassSpellParseRecord record : records) {
@@ -94,7 +95,7 @@ public class ClassSpellAssembler implements Assembler<ClassSpellParseRecord, Lis
                     continue;
                 }
             }
-            List<Effect> effects = EffectAssembler.assemble(record.effects(), errors);
+            List<Effect> effects = EffectAssembler.assemble(record.effects(), errors, filename);
             String spellDescription = record.desc();
 
             spells.add(new MagicSpell(spellName, level, fail, mana, exp, effects, spellDescription));

@@ -114,7 +114,8 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
      *                                    its position; the message carries the errors gathered so far
      */
     @Override
-    public List<Projection> assemble(@NotNull List<ProjectionParseRecord> records, @NotNull List<String> errors) {
+    public List<Projection> assemble(@NotNull List<ProjectionParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<Projection> result = new ArrayList<>();
         int currentRecord = 0;
         for (ProjectionParseRecord record : records) {

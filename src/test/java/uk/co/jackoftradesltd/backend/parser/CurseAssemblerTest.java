@@ -96,7 +96,7 @@ class CurseAssemblerTest {
     private static List<Curse> assemble(List<String> errors, Rec... recs) {
         List<CurseParseRecord> records = new ArrayList<>();
         for (Rec r : recs) records.add(r.build());
-        return new CurseAssembler().assemble(records, errors);
+        return new CurseAssembler().assemble(records, errors, "test.txt");
     }
 
     private static Curse only(List<Curse> curses) {

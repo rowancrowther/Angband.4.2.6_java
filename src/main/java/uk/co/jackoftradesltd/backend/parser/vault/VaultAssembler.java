@@ -69,7 +69,8 @@ public class VaultAssembler implements Assembler <VaultParseRecord, List<Vault>>
      * @return the successfully assembled vaults, in file order
      */
     @Override
-    public List<Vault> assemble(@NotNull List<VaultParseRecord> records, @NotNull List<String> errors) {
+    public List<Vault> assemble(@NotNull List<VaultParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<Vault> vaults = new ArrayList<>();
 
         for (VaultParseRecord record : records) {

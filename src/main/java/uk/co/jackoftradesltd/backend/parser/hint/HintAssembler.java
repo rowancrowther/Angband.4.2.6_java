@@ -45,7 +45,8 @@ public class HintAssembler implements Assembler<HintParseRecord, List<Hint>> {
      * @return the hints, one per record, in file order
      */
     @Override
-    public List<Hint> assemble(@NotNull List<HintParseRecord> records, @NotNull List<String> errors) {
+    public List<Hint> assemble(@NotNull List<HintParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<Hint> hints = new ArrayList<>();
 
         for (HintParseRecord record : records) {

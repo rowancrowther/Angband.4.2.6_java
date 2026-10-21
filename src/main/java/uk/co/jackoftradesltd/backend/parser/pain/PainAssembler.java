@@ -49,7 +49,8 @@ public class PainAssembler implements Assembler<PainParseRecord, List<MonsterPai
      * @return the successfully assembled {@link MonsterPain} sets
      */
     @Override
-    public List<MonsterPain> assemble(@NotNull List<PainParseRecord> records, @NotNull List<String> errors) {
+    public List<MonsterPain> assemble(@NotNull List<PainParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<MonsterPain> monsterPains = new ArrayList<>();
 
         for (PainParseRecord record : records) {

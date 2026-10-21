@@ -22,24 +22,23 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftradesltd.channel.enums.ChannelEntryFlag;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.enums.StatElemType;
 import uk.co.jackoftradesltd.channel.messages.data.PlayerEventStatusUpdate;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.channel.utils.FlagView;
+import uk.co.jackoftradesltd.channel.utils.combiners.CombinerName;
 import uk.co.jackoftradesltd.frontend.entries.UIEntry;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryBase;
-import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryCategory;
-import uk.co.jackoftradesltd.channel.utils.combiners.CombinerName;
+import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftradesltd.frontend.ui.entry.EmbryonicCategoryReferencies;
 import uk.co.jackoftradesltd.frontend.ui.entry.UIEntryEmbryo;
 import uk.co.jackoftradesltd.frontend.ui.entry.assembler.helperfunctions.UIEntryPriorityScheme;
 import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -207,7 +206,8 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
      */
     @Override
     public List<UIEntry> assemble(@NotNull List<UIEntryParseRecord> records,
-                                  @NotNull List<String> errors) {
+                                  @NotNull List<String> errors,
+                                  @NotNull String filename) {
         List<UIEntry> results = new ArrayList<>(UIRegistry.getUIEntries());
         embryo = null;
 

@@ -55,7 +55,8 @@ public class BodyAssembler implements Assembler<BodyParseRecord, List<PlayerBody
      * @return the assembled {@link PlayerBody}s, each with its slots in declared order
      */
     @Override
-    public List<PlayerBody> assemble(@NotNull List<BodyParseRecord> records, @NotNull List<String> errors) {
+    public List<PlayerBody> assemble(@NotNull List<BodyParseRecord> records, @NotNull List<String> errors,
+                                     String filename) {
         List<PlayerBody> bodies = new ArrayList<>();
 
         for (BodyParseRecord record : records) {

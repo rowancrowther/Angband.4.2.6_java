@@ -48,7 +48,8 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
     @Nullable
     @CheckReturnValue
     public GameConstantsData assemble(@NotNull List<GameConstantsParseRecord> records,
-                                      @NotNull List<String> errors) {
+                                      @NotNull List<String> errors,
+                                      @NotNull String filename) {
         GameConstantsData.GameConstantsBuilder b = new GameConstantsData.GameConstantsBuilder();
         for (GameConstantsParseRecord record : records) {
             dispatch(record, b, errors);

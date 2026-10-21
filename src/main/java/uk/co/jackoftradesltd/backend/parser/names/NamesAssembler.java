@@ -45,7 +45,8 @@ public class NamesAssembler implements Assembler<NamesParseRecord, List<Name>> {
      * @return the successfully assembled name sections, in file order
      */
     @Override
-    public List<Name> assemble(@NotNull List<NamesParseRecord> records, @NotNull List<String> errors) {
+    public List<Name> assemble(@NotNull List<NamesParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<Name> names = new ArrayList<>();
 
         for (NamesParseRecord record : records) {

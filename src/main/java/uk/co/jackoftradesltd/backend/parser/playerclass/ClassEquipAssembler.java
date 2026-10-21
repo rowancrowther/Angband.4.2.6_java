@@ -82,7 +82,8 @@ public class ClassEquipAssembler implements Assembler<ClassEquipParseRecord, Lis
      * @return the resolved starting items in reverse file order, minus any that failed to resolve
      */
     @Override
-    public List<StartItem> assemble(@NotNull List<ClassEquipParseRecord> records, @NotNull List<String> errors) {
+    public List<StartItem> assemble(@NotNull List<ClassEquipParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<StartItem> results = new ArrayList<>();
 
         for (ClassEquipParseRecord record : records) {

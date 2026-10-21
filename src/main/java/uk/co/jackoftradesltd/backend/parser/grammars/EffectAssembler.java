@@ -20,7 +20,6 @@ package uk.co.jackoftradesltd.backend.parser.grammars;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
 import uk.co.jackoftradesltd.middle.effect.*;
 import uk.co.jackoftradesltd.middle.enums.*;
@@ -76,7 +75,8 @@ public class EffectAssembler {
     @Nullable
     @CheckReturnValue
     public static List<Effect> assemble(@NotNull List<EffectParseRecord> records,
-                                        @NotNull List<String> errors) {
+                                        @NotNull List<String> errors,
+                                        @NotNull String filename) {
         List<Effect> effects = new ArrayList<>();
         boolean failed = false;
         for (EffectParseRecord record : records) {

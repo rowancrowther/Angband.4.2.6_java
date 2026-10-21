@@ -52,7 +52,8 @@ public class RoomProfileAssembler implements Assembler<RoomProfileParseRecord, L
      * @return the successfully assembled templates, in file order
      */
     @Override
-    public List<RoomTemplate> assemble(@NotNull List<RoomProfileParseRecord> records, @NotNull List<String> errors) {
+    public List<RoomTemplate> assemble(@NotNull List<RoomProfileParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<RoomTemplate> profiles = new ArrayList<>();
 
         for (RoomProfileParseRecord record : records) {

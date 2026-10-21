@@ -1306,13 +1306,20 @@ public class ObjectRegistry {
      * lookup index in step, so synthesized kinds (e.g. spellbooks) register exactly like file-loaded
      * ones.
      *
-     * <p>C does the same in two places: the object parser bumps {@code base->num_svals} and copies
-     * it to {@code k->sval} (the {@code obj-init.c} step that finishes a kind), and the special
-     * artifact path does likewise for the kinds it writes. The kind's index is its position in the
-     * table, from 0, the same as C's {@code kidx}.
+     * <p>C does the same in two places: {@code parse_object_type} bumps {@code base->num_svals} and
+     * copies it to {@code k->sval} ({@code obj-init.c}), and the special artifact path does likewise
+     * for the kinds it writes. The kind's index is its position in the table, from 0, the same as
+     * C's {@code kidx}.
      *
-     * <p>Mutates the kind and its base as well as the registry: the base's sval counter moves on, and
-     * the kind's sval and index are overwritten.
+     * <p>A kind with no base, from a record with no {@code type:}, is accepted as C accepts it:
+     * {@code parse_object_type} never runs, so C leaves {@code base} {@code NULL} and the sval 0.
+     * Here it registers with sval 0 and moves no base's counter. Every such kind takes the
+     * (TV_NONE, 0) slot in {@link #kindsByTvalSval}, so a later one displaces an earlier one from
+     * that index while both stay in the table; C's {@code lookup_kind} scans {@code k_info} and
+     * has no such collision.
+     *
+     * <p>Mutates the kind and, when it has a base, that base as well as the registry: the base's
+     * sval counter moves on, and the kind's sval and index are overwritten.
      *
      * <p>Function addObjectKind coded before 261008, commented in full on 261008.
      *
@@ -1320,8 +1327,14 @@ public class ObjectRegistry {
      */
     public static void addObjectKind(@NotNull ObjectKind toAdd) {
         ObjectBase base = toAdd.getBase();
-        int sVal = base.getNumSvals() + 1;      // svals are 1-based within each base
-        base.setNumSvals(sVal);
+        int sVal;
+        if (base == null)
+            sVal = 0;
+        else {
+            sVal = base.getNumSvals() + 1;      // svals are 1-based within each base
+            base.setNumSvals(sVal);
+        }
+        
         toAdd.setsVal(sVal);
         toAdd.setKindIndex(objectKinds.size());
         objectKinds.add(toAdd);
@@ -1410,9 +1423,9 @@ public class ObjectRegistry {
             logger.fatal(message, e);
             throw e;
         }
-
+        
         return objectBases.stream()
-                .filter(ob -> tVal.equals(ob.gettVal()))
+                .filter(ob -> ob.gettVal() == tVal)
                 .findFirst()
                 .orElse(null);
     }

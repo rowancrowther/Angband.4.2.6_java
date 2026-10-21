@@ -46,9 +46,11 @@ public interface Assembler<R, T> {
      * @param errors  error messages accumulated during parsing; implementations
      *                are not required to consume these, but should not discard
      *                any that describe a problem with the given {@code records}
+     * @param filename the file the records were read from, for implementations that name it in
+     *                 the message of a failure that stops the load
      * @return the assembled result of type {@code T}
      *
      * <p>coded on 2026-09-11 / commented in full on 2026-09-15
      */
-    T assemble(@NotNull List<R> records, @NotNull List<String> errors);
+    T assemble(@NotNull List<R> records, @NotNull List<String> errors, String filename) ;
 }

@@ -43,7 +43,8 @@ public class UIEntryRendererAssembler
      * @return result of assembling list of UIEntryRenderer objects
      */
     @Override
-    public List<UIEntryRenderer> assemble(@NotNull List<UIEntryRendererParseRecord> records, @NotNull List<String> errors) {
+    public List<UIEntryRenderer> assemble(@NotNull List<UIEntryRendererParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<UIEntryRenderer> results = new ArrayList<>();
         for (UIEntryRendererParseRecord record : records) {
             int line = Integer.parseInt(record.lineNumber());

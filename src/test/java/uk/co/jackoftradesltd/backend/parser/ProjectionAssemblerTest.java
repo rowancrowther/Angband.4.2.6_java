@@ -131,7 +131,7 @@ class ProjectionAssemblerTest {
     }
 
     private static List<Projection> assemble(List<ProjectionParseRecord> records, List<String> errors) {
-        return new ProjectionAssembler().assemble(records, errors);
+        return new ProjectionAssembler().assemble(records, errors, "test.txt");
     }
 
     private static long countOfType(List<Projection> projections, ProjectionType type) {

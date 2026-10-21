@@ -18,8 +18,8 @@
 package uk.co.jackoftradesltd.backend.parser.chesttrap;
 
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.backend.parser.grammars.EffectAssembler;
+import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.middle.objects.ChestTrap;
 import uk.co.jackoftradesltd.middle.objects.enums.ChestTrapCode;
@@ -61,7 +61,8 @@ public class ChestTrapAssembler implements Assembler<ChestTrapParseRecord, List<
      * {@link ChestTrapCode} exactly, otherwise an empty list
      */
     @Override
-    public List<ChestTrap> assemble(@NotNull List<ChestTrapParseRecord> records, @NotNull List<String> errors) {
+    public List<ChestTrap> assemble(@NotNull List<ChestTrapParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<ChestTrap> chestTraps = new ArrayList<>();
         ChestTrapCode[] expected = ChestTrapCode.values();
         boolean dropped = false;
@@ -126,7 +127,7 @@ public class ChestTrapAssembler implements Assembler<ChestTrapParseRecord, List<
             previousLevel = level;
             List<Effect> effects = new ArrayList<>();
             if (record.effect() != null && !record.effect().isEmpty()) {
-                effects = EffectAssembler.assemble(record.effect(), errors);
+                effects = EffectAssembler.assemble(record.effect(), errors, filename);
                 if (effects == null) {
                     errors.add("Chest trap at line " + line + " has " +
                             "no valid effects");

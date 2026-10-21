@@ -19,13 +19,13 @@ package uk.co.jackoftradesltd.backend.parser;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import uk.co.jackoftradesltd.frontend.ui.entrybase.assembler.UIEntryBaseAssembler;
-import uk.co.jackoftradesltd.frontend.ui.entrybase.assembler.UIEntryBaseParseRecord;
+import uk.co.jackoftradesltd.channel.enums.ChannelEntryFlag;
 import uk.co.jackoftradesltd.frontend.entries.UIEntry;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryBase;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryCategory;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
-import uk.co.jackoftradesltd.channel.enums.ChannelEntryFlag;
+import uk.co.jackoftradesltd.frontend.ui.entrybase.assembler.UIEntryBaseAssembler;
+import uk.co.jackoftradesltd.frontend.ui.entrybase.assembler.UIEntryBaseParseRecord;
 import uk.co.jackoftradesltd.frontend.ui.entryrenderer.reader.UIEntryRendererReader;
 import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
 
@@ -77,7 +77,7 @@ class UIEntryBaseAssemblerTest {
         List<UIEntryBase> out = new UIEntryBaseAssembler().assemble(
                 List.of(rec("t", KNOWN_RENDERER, "LOGICAL_OR", "TIMED_AS_AUX", "some desc",
                         List.of("CHAR_SCREEN1", "abilities"))),
-                errors);
+                errors, "test.txt");
 
         assertTrue(errors.isEmpty(), errors::toString);
         assertEquals(1, out.size());
@@ -96,7 +96,7 @@ class UIEntryBaseAssemblerTest {
     void unknownRendererIsSkippedAndReported() {
         List<String> errors = new ArrayList<>();
         List<UIEntryBase> out = new UIEntryBaseAssembler().assemble(
-                List.of(rec("t", "no_such_renderer", "LOGICAL_OR", "F", "d", List.of("C"))), errors);
+                List.of(rec("t", "no_such_renderer", "LOGICAL_OR", "F", "d", List.of("C"))), errors, "test.txt");
 
         assertTrue(out.isEmpty());
         assertTrue(errors.stream().anyMatch(e -> e.contains("no_such_renderer")), errors::toString);
@@ -106,7 +106,7 @@ class UIEntryBaseAssemblerTest {
     void invalidCombineIsSkippedAndReported() {
         List<String> errors = new ArrayList<>();
         List<UIEntryBase> out = new UIEntryBaseAssembler().assemble(
-                List.of(rec("t", KNOWN_RENDERER, "BOGUS", "F", "d", List.of("C"))), errors);
+                List.of(rec("t", KNOWN_RENDERER, "BOGUS", "F", "d", List.of("C"))), errors, "test.txt");
 
         assertTrue(out.isEmpty());
         assertTrue(errors.stream().anyMatch(e -> e.contains("Illegal combine name")), errors::toString);
@@ -118,7 +118,7 @@ class UIEntryBaseAssemblerTest {
         List<UIEntryBase> out = new UIEntryBaseAssembler().assemble(
                 List.of(rec("bad", "no_such_renderer", "LOGICAL_OR", "F", "d", List.of("C")),
                         rec("good", KNOWN_RENDERER, "LOGICAL_OR", "TIMED_AS_AUX", "d", List.of("C"))),
-                errors);
+                errors, "test.txt");
 
         assertEquals(1, out.size());
         assertEquals("good", out.get(0).getName());
@@ -135,7 +135,7 @@ class UIEntryBaseAssemblerTest {
         new UIEntryBaseAssembler().assemble(
                 List.of(rec("good_flag_ui_compact_0", KNOWN_RENDERER, "LOGICAL_OR", "TIMED_AS_AUX",
                         "desc", List.of("CHAR_SCREEN1", "abilities"))),
-                errors);
+                errors, "test.txt");
 
         UIEntry entry = UIRegistry.getUIEntry("good_flag_ui_compact_0");
         assertNotNull(entry, "the base record should have produced a shared UIEntry");
@@ -163,7 +163,7 @@ class UIEntryBaseAssemblerTest {
                                 List.of("CHAR_SCREEN1", "abilities")),
                         rec("shared_name", KNOWN_RENDERER, "ADD", "TIMED_AS_AUX", "d2",
                                 List.of("abilities", "EQUIPCMP_SCREEN"))),
-                errors);
+                errors, "test.txt");
 
         assertTrue(errors.isEmpty(), errors::toString);
         assertEquals(2, out.size(), "both raw UIEntryBase records still come back from assemble()");

@@ -61,7 +61,8 @@ public class FlavourKindAssembler implements Assembler<FlavourKindParseRecord, L
      * @return the assembled flavour kinds
      */
     @Override
-    public List<FlavourKind> assemble(@NotNull List<FlavourKindParseRecord> records, @NotNull List<String> errors) {
+    public List<FlavourKind> assemble(@NotNull List<FlavourKindParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<FlavourKind> flavourKinds = new ArrayList<>();
 
         for (FlavourKindParseRecord record : records) {
@@ -81,7 +82,7 @@ public class FlavourKindAssembler implements Assembler<FlavourKindParseRecord, L
                         "a null or multi-character glyph: " + record.glyph());
                 continue;
             }
-            List<Flavour> flavours = new FlavourAssembler().assemble(record.records(), errors);
+            List<Flavour> flavours = new FlavourAssembler().assemble(record.records(), errors, filename);
 
             // Resolve the fixed: flavours' sval symbols now that the tval is known
             // (a random flavour keeps sVal 0 = SV_UNKNOWN). A symbol that names no

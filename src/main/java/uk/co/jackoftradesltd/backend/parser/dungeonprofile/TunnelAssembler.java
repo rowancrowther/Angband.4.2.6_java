@@ -52,7 +52,8 @@ public class TunnelAssembler implements Assembler<DungeonProfileParseRecord.Tunn
      * @return the assembled tunnel profile, or {@code null} if any field would not convert
      */
     @Override
-    public TunnelProfile assemble(@NotNull List<DungeonProfileParseRecord.Tunnel> records, @NotNull List<String> errors) {
+    public TunnelProfile assemble(@NotNull List<DungeonProfileParseRecord.Tunnel> records, @NotNull List<String> errors,
+                                    String filename) {
         if (records == null || records.size() != 1) {
             errors.add("Expected exactly one tunnel profile");
             return null;

@@ -154,7 +154,7 @@ public class GameConstantsReader {
 
             List<GameConstantsParseRecord> records = output.results;
 
-            data = new GameConstantsAssembler().assemble(records, errors);
+            data = new GameConstantsAssembler().assemble(records, errors, filename);
 
             errorCatcher.throwIfAny();
         } catch (IOException e) {

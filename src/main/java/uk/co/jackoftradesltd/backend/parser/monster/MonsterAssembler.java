@@ -75,7 +75,8 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
      * @return the successfully assembled races, in file order
      */
     @Override
-    public List<MonsterRace> assemble(@NotNull List<MonsterParseRecord> records, @NotNull List<String> errors) {
+    public List<MonsterRace> assemble(@NotNull List<MonsterParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<MonsterRace> monsters = new ArrayList<>();
 
         for (MonsterParseRecord record : records) {

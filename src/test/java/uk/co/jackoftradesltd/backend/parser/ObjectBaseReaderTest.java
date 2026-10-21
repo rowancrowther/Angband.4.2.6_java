@@ -123,7 +123,7 @@ class ObjectBaseReaderTest {
      * C allocates {@code kb_info} across every tval, so a zeroed base exists for {@code TV_NONE}
      * even though no record declares one. object.txt's four "non-kind" records (&lt;pile&gt;,
      * &lt;unknown item&gt;, &lt;unknown treasure&gt;, &lt;curse object&gt;) are {@code type:none} and
-     * hang off it; without it they resolve to a null base and registration dies.
+     * hang off it; without it they would resolve to a null base instead of C's zeroed one.
      */
     @Test
     void syntheticNoneBaseIsAppendedToEveryLoad() throws IOException {

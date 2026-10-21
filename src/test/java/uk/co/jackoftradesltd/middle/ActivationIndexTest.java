@@ -107,7 +107,7 @@ class ActivationIndexTest {
         List<String> errors = new ArrayList<>();
 
         List<Activation> out = new ActivationAssembler().assemble(
-                List.of(rec("FIRST", "5", 3), rec("BROKEN", "high", 9), rec("LAST", "5", 15)), errors);
+                List.of(rec("FIRST", "5", 3), rec("BROKEN", "high", 9), rec("LAST", "5", 15)), errors, "test.txt");
 
         assertEquals(1, errors.size());
         assertEquals(2, out.size());
@@ -120,7 +120,7 @@ class ActivationIndexTest {
     @Test
     @DisplayName("an empty record list assembles to an empty list")
     void emptyInputGivesEmptyList() {
-        assertTrue(new ActivationAssembler().assemble(List.of(), new ArrayList<>()).isEmpty());
+        assertTrue(new ActivationAssembler().assemble(List.of(), new ArrayList<>(), "test.txt").isEmpty());
     }
 
     @Test

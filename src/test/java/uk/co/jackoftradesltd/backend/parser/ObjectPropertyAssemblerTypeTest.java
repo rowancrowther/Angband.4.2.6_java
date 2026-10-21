@@ -28,9 +28,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Pins how {@link ObjectPropertyAssembler} treats the {@code type:} token against
@@ -52,7 +50,7 @@ class ObjectPropertyAssemblerTypeTest {
     }
 
     private static List<ObjectProperty> assemble(List<String> errors, ObjectPropertyParseRecord... records) {
-        return new ObjectPropertyAssembler().assemble(List.of(records), errors);
+        return new ObjectPropertyAssembler().assemble(List.of(records), errors, "test.txt");
     }
 
     /** The code resolves against the table the type selects, so each pairing is a distinct path. */

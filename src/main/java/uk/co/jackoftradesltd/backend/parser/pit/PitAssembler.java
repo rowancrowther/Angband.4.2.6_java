@@ -61,7 +61,8 @@ public class PitAssembler implements Assembler<PitParseRecord, List<PitProfile>>
      * @return the successfully assembled pit profiles, in file order
      */
     @Override
-    public List<PitProfile> assemble(@NotNull List<PitParseRecord> records, @NotNull List<String> errors) {
+    public List<PitProfile> assemble(@NotNull List<PitParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<PitProfile> pits = new ArrayList<>();
 
         for (PitParseRecord record : records) {

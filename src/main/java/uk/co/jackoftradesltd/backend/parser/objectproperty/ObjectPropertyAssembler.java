@@ -62,7 +62,8 @@ public class ObjectPropertyAssembler implements Assembler<ObjectPropertyParseRec
      * are omitted and reported via {@code errors})
      */
     @Override
-    public List<ObjectProperty> assemble(@NotNull List<ObjectPropertyParseRecord> records, @NotNull List<String> errors) {
+    public List<ObjectProperty> assemble(@NotNull List<ObjectPropertyParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<ObjectProperty> objectProperties = new ArrayList<>();
 
         for (ObjectPropertyParseRecord record : records) {

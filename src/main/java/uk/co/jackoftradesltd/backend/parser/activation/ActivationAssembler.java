@@ -57,7 +57,8 @@ public class ActivationAssembler implements Assembler<ActivationParseRecord, Lis
      * @return the successfully assembled activations, in reverse file order (C's {@code activations[]} order)
      */
     @Override
-    public List<Activation> assemble(@NotNull List<ActivationParseRecord> records, @NotNull List<String> errors) {
+    public List<Activation> assemble(@NotNull List<ActivationParseRecord> records, @NotNull List<String> errors,
+                                     String filename) {
         List<Activation> activations = new ArrayList<>();
 
         for (ActivationParseRecord record : records) {
@@ -87,7 +88,7 @@ public class ActivationAssembler implements Assembler<ActivationParseRecord, Lis
             // EffectAssembler is all-or-nothing: if any single effect in the block
             // fails to resolve it returns null (not a partial list), so one bad effect
             // drops the entire activation rather than silently loading it minus a power.
-            List<Effect> effects = EffectAssembler.assemble(record.effects(), errors);
+            List<Effect> effects = EffectAssembler.assemble(record.effects(), errors, filename);
             if (effects == null) continue;
             String message = record.message();
             String desc = record.desc();

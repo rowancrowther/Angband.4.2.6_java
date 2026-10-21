@@ -67,7 +67,8 @@ public class SlayAssembler implements Assembler<SlayParseRecord, List<Slay>> {
      * @return the successfully assembled slays, in reverse file order (C's {@code slays[]} order)
      */
     @Override
-    public List<Slay> assemble(@NotNull List<SlayParseRecord> records, @NotNull List<String> errors) {
+    public List<Slay> assemble(@NotNull List<SlayParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<Slay> slays = new ArrayList<>();
 
         for (SlayParseRecord record : records) {

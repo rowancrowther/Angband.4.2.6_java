@@ -24,7 +24,7 @@ import uk.co.jackoftradesltd.backend.parser.hint.HintParseRecord;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests for {@link Hint}, the port of C {@code struct hint} ({@code hint.h}): one line of text, with
@@ -84,7 +84,7 @@ class HintTest {
         records.add(new HintParseRecord("two", 1));
         records.add(new HintParseRecord("one", 1));
 
-        List<Hint> hints = new HintAssembler().assemble(records, new ArrayList<>());
+        List<Hint> hints = new HintAssembler().assemble(records, new ArrayList<>(), "test.txt");
 
         assertEquals(3, hints.size());
         assertEquals("one", hints.get(0).getHint());

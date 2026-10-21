@@ -18,12 +18,12 @@
 package uk.co.jackoftradesltd.backend.parser.playerrace;
 
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftradesltd.middle.objects.ElementInfo;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.player.PlayerBody;
 import uk.co.jackoftradesltd.middle.player.PlayerHistoryChart;
@@ -58,7 +58,8 @@ public class PlayerRaceAssembler implements Assembler<PlayerRaceParseRecord, Lis
      * @return the resolved races, minus any dropped for a resolution failure
      */
     @Override
-    public List<PlayerRace> assemble(@NotNull List<PlayerRaceParseRecord> records, @NotNull List<String> errors) {
+    public List<PlayerRace> assemble(@NotNull List<PlayerRaceParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<PlayerRace> races = new ArrayList<>();
 
         for (PlayerRaceParseRecord record : records) {

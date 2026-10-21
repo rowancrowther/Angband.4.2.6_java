@@ -66,7 +66,8 @@ public class VisualsCycleAssembler implements Assembler<VisualsCycleParseRecord,
      * @return a one-element list holding the assembled {@link VisualsCycler}
      */
     @Override
-    public List<VisualsCycler> assemble(@NotNull List<VisualsCycleParseRecord> records, @NotNull List<String> errors) {
+    public List<VisualsCycler> assemble(@NotNull List<VisualsCycleParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         Map<String, Map<String, ColourCycle>> byGroup = new HashMap<>();
 
         for (VisualsCycleParseRecord record : records) {

@@ -86,6 +86,7 @@ public class ObjectKind {
     /**
      * The base this kind belongs to — C's {@code kind->base}, a pointer into {@code kb_info}. Shared
      * by every kind of the same tval, and the source of the flags and element info a kind inherits.
+     * {@code null} for a kind from a record with no {@code type:}, as in C.
      *
      * <p>Field base coded before 261008, commented in full on 261008.
      */
@@ -581,7 +582,7 @@ public class ObjectKind {
      *
      * @param name          kind name, with its {@code &} and {@code ~} markers
      * @param text          the description, from the {@code desc:} lines; {@code null} for none
-     * @param base          the base this kind belongs to
+     * @param base          the base this kind belongs to, or {@code null} for none
      * @param kindIndex     position in the kind table; the registry overwrites it on registration
      * @param pVal          pval dice, from {@code pval:}
      * @param toH           to-hit dice, from {@code attack:}

@@ -54,7 +54,8 @@ public class SummonAssembler implements Assembler<SummonParseRecord, List<Summon
      * @return the successfully assembled summons, with fallback references linked
      */
     @Override
-    public List<Summon> assemble(@NotNull List<SummonParseRecord> records, @NotNull List<String> errors) {
+    public List<Summon> assemble(@NotNull List<SummonParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         // First pass: build every summon that resolves cleanly, carrying its raw fallback name.
         // Second pass (below) links the fallback references, which can only be done once all
         // summons exist, since a fallback may name a summon defined later in the file.

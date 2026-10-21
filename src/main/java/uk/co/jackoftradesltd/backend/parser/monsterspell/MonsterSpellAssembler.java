@@ -18,8 +18,8 @@
 package uk.co.jackoftradesltd.backend.parser.monsterspell;
 
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.backend.parser.grammars.EffectAssembler;
+import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
 import uk.co.jackoftradesltd.middle.monsters.MonsterSpellLevel;
@@ -63,7 +63,8 @@ public class MonsterSpellAssembler implements Assembler<MonsterSpellParseRecord,
      * @return the assembled monster spells, excluding any record that was skipped
      */
     @Override
-    public List<MonsterSpellType> assemble(@NotNull List<MonsterSpellParseRecord> records, @NotNull List<String> errors) {
+    public List<MonsterSpellType> assemble(@NotNull List<MonsterSpellParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<MonsterSpellType> monsterSpellTypes = new ArrayList<>();
         MonsterSpellLevelAssembler assembler = new MonsterSpellLevelAssembler();
 
@@ -105,9 +106,9 @@ public class MonsterSpellAssembler implements Assembler<MonsterSpellParseRecord,
             // block failed to resolve, and a spell missing one of its effects would be a subtly
             // wrong game object, so the whole record goes. Per-effect messages are already in
             // errors by this point.
-            List<Effect> effects = EffectAssembler.assemble(record.effects(), errors);
+            List<Effect> effects = EffectAssembler.assemble(record.effects(), errors, filename);
             if (effects == null) continue;
-            List<MonsterSpellLevel> levels = assembler.assemble(record.levels(), errors);
+            List<MonsterSpellLevel> levels = assembler.assemble(record.levels(), errors, filename);
             if (levels == null) continue;
             monsterSpellTypes.add(new MonsterSpellType(nameType, messageType, hit, effects, levels));
         }

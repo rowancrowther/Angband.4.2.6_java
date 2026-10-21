@@ -52,7 +52,8 @@ public class MonsterBaseAssembler implements Assembler<MonsterBaseParseRecord, L
      * @return the successfully assembled monster bases, in file order
      */
     @Override
-    public List<MonsterBase> assemble(@NotNull List<MonsterBaseParseRecord> records, @NotNull List<String> errors) {
+    public List<MonsterBase> assemble(@NotNull List<MonsterBaseParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<MonsterBase> results = new ArrayList<>();
 
         for (MonsterBaseParseRecord record : records) {

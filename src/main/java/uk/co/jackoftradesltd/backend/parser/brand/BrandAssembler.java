@@ -69,7 +69,8 @@ public class BrandAssembler implements Assembler<BrandParseRecord, List<Brand>> 
      * @return the successfully assembled brands, in reverse file order (C's {@code brands[]} order)
      */
     @Override
-    public List<Brand> assemble(@NotNull List<BrandParseRecord> records, @NotNull List<String> errors) {
+    public List<Brand> assemble(@NotNull List<BrandParseRecord> records, @NotNull List<String> errors,
+                                String filename) {
         List<Brand> brands = new ArrayList<>();
 
         for (BrandParseRecord record : records) {

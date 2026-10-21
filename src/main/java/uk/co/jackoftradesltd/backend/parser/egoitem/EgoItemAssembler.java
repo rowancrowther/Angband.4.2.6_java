@@ -65,7 +65,8 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
      * @return the assembled ego items, excluding any record reported in {@code errors}
      */
     @Override
-    public List<EgoItem> assemble(@NotNull List<EgoItemParseRecord> records, @NotNull List<String> errors) {
+    public List<EgoItem> assemble(@NotNull List<EgoItemParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<EgoItem> items = new ArrayList<>();
         
         int index = 0;

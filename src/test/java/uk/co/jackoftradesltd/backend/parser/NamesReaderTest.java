@@ -226,7 +226,7 @@ class NamesReaderTest {
                 new NamesParseRecord("2", List.of("keepme")));
         List<String> errors = new ArrayList<>();
 
-        List<Name> names = new NamesAssembler().assemble(records, errors);
+        List<Name> names = new NamesAssembler().assemble(records, errors, "test.txt");
 
         assertEquals(1, names.size());
         assertEquals(2, names.get(0).getSection());

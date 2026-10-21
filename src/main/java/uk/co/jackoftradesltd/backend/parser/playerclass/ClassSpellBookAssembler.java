@@ -115,7 +115,8 @@ public class ClassSpellBookAssembler implements Assembler<ClassSpellBookParseRec
      * @throws IllegalStateException if no object kinds are loaded
      */
     @Override
-    public List<MagicBook> assemble(@NotNull List<ClassSpellBookParseRecord> records, @NotNull List<String> errors) {
+    public List<MagicBook> assemble(@NotNull List<ClassSpellBookParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<MagicBook> magicBooks = new ArrayList<>();
 
         for (ClassSpellBookParseRecord record : records) {
@@ -216,7 +217,7 @@ public class ClassSpellBookAssembler implements Assembler<ClassSpellBookParseRec
                     continue;
                 }
             }
-            List<MagicSpell> spells = new ClassSpellAssembler().assemble(record.spells(), errors);
+            List<MagicSpell> spells = new ClassSpellAssembler().assemble(record.spells(), errors, filename);
             
             for (MagicSpell spell : spells) {
                 spell.setRealm(realm);

@@ -136,7 +136,8 @@ public class TerrainFeatureAssembler implements Assembler<TerrainFeatureParseRec
      * @throws RuntimeException if two records carry the same {@code code:}
      */
     @Override
-    public List<Feature> assemble(@NotNull List<TerrainFeatureParseRecord> records, @NotNull List<String> errors) {
+    public List<Feature> assemble(@NotNull List<TerrainFeatureParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<Feature> result = new ArrayList<>();
         List<TerrainFlags> allFlagsSeen = new ArrayList<>();
         for (TerrainFeatureParseRecord record : records) {

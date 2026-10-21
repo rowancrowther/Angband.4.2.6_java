@@ -92,7 +92,7 @@ class QuestAssemblerTest {
     }
 
     private static List<Quest> assemble(List<String> errors, QuestParseRecord... records) {
-        return new QuestAssembler().assemble(List.of(records), errors);
+        return new QuestAssembler().assemble(List.of(records), errors, "test.txt");
     }
 
     private static Quest single(String level, String race, String number) {
@@ -125,7 +125,7 @@ class QuestAssemblerTest {
     void emptyRecordListGivesEmptyQuestList() {
         List<String> errors = new ArrayList<>();
 
-        assertTrue(new QuestAssembler().assemble(List.of(), errors).isEmpty());
+        assertTrue(new QuestAssembler().assemble(List.of(), errors, "test.txt").isEmpty());
         assertTrue(errors.isEmpty());
     }
 

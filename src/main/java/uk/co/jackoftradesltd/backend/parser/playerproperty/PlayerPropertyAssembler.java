@@ -112,7 +112,8 @@ public class PlayerPropertyAssembler implements Assembler<PlayerPropertyParseRec
      */
     @Override
     public List<PlayerProperty> assemble(@NotNull List<PlayerPropertyParseRecord> records,
-                                         @NotNull List<String> errors) {
+                                         @NotNull List<String> errors,
+                                         @NotNull String filename) {
         List<PlayerProperty> results = new ArrayList<>();
 
         for (PlayerPropertyParseRecord record : records) {

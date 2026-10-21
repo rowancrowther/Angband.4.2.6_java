@@ -72,7 +72,8 @@ public class BlowMethodAssembler implements Assembler<BlowMethodParseRecord, Lis
      * @return the assembled blow methods, excluding any record that was skipped
      */
     @Override
-    public List<BlowMethod> assemble(@NotNull List<BlowMethodParseRecord> records, @NotNull List<String> errors) {
+    public List<BlowMethod> assemble(@NotNull List<BlowMethodParseRecord> records, @NotNull List<String> errors,
+                                     String filename) {
         List<BlowMethod> methods = new ArrayList<>();
 
         for (BlowMethodParseRecord record : records) {

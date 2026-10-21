@@ -133,7 +133,7 @@ public final class GrammarDriver {
             errorCatcher = ParseErrors.install(lexer, parser, filename);
 
             List<R> records = extractor.extract(parser, errorCatcher, errors);
-            List<T> items = assembler.assemble(records, errors);
+            List<T> items = assembler.assemble(records, errors, filename);
             return new ParseResult<>(items, errors);
         } catch (IOException e) {
             logger.error("Error reading file {}", filename, e);

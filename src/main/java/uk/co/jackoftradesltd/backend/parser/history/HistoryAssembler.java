@@ -66,7 +66,8 @@ public class HistoryAssembler implements Assembler<HistoryParseRecord, List<Play
      * @return the assembled {@link PlayerHistoryChart}s, each linked to its successor
      */
     @Override
-    public List<PlayerHistoryChart> assemble(@NotNull List<HistoryParseRecord> records, @NotNull List<String> errors) {
+    public List<PlayerHistoryChart> assemble(@NotNull List<HistoryParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<PlayerHistoryChart> charts = new ArrayList<>();
         Map<Integer, PlayerHistoryChart> entryMap = new HashMap<>();
 

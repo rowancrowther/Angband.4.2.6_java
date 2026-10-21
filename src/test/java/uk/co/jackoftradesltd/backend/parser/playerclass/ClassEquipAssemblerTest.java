@@ -93,7 +93,7 @@ class ClassEquipAssemblerTest {
     }
 
     private static List<StartItem> run(List<String> errors, ClassEquipParseRecord... records) {
-        return new ClassEquipAssembler().assemble(List.of(records), errors);
+        return new ClassEquipAssembler().assemble(List.of(records), errors, "test.txt");
     }
 
     @Test

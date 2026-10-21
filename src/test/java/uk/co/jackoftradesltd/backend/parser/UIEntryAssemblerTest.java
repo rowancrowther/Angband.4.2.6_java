@@ -20,18 +20,18 @@ package uk.co.jackoftradesltd.backend.parser;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.enums.ChannelEntryFlag;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.enums.StatElemType;
 import uk.co.jackoftradesltd.channel.utils.combiners.CombinerName;
-import uk.co.jackoftradesltd.frontend.ui.entry.assembler.UIEntryAssembler;
-import uk.co.jackoftradesltd.frontend.ui.entry.assembler.UIEntryParseRecord;
 import uk.co.jackoftradesltd.frontend.entries.UIEntry;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryBase;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryCategory;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
+import uk.co.jackoftradesltd.frontend.ui.entry.assembler.UIEntryAssembler;
+import uk.co.jackoftradesltd.frontend.ui.entry.assembler.UIEntryParseRecord;
 import uk.co.jackoftradesltd.frontend.ui.entrybase.reader.UIEntryBaseReader;
 import uk.co.jackoftradesltd.frontend.ui.entryrenderer.reader.UIEntryRendererReader;
 import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -119,7 +119,7 @@ class UIEntryAssemblerTest {
     void nameTagResolvesToTheConcreteElementParameter() {
         List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
-                rec("resist_ui_compact_0<DARK>", "", "DARK", "", "ADD", "")), errors);
+                rec("resist_ui_compact_0<DARK>", "", "DARK", "", "ADD", "")), errors, "test.txt");
 
         assertTrue(errors.isEmpty(), errors::toString);
         assertEquals(1, out.size());
@@ -137,7 +137,7 @@ class UIEntryAssemblerTest {
     void resolvesAKnownRendererFromTheRegistry() {
         List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
-                rec("x", "", "", KNOWN_RENDERER, "ADD", "")), errors);
+                rec("x", "", "", KNOWN_RENDERER, "ADD", "")), errors, "test.txt");
 
         assertTrue(errors.isEmpty(), errors::toString);
         assertEquals(1, out.size());
@@ -148,7 +148,7 @@ class UIEntryAssemblerTest {
     void unknownRendererIsSkippedAndReported() {
         List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
-                rec("x", "", "", "no_such_renderer", "", "")), errors);
+                rec("x", "", "", "no_such_renderer", "", "")), errors, "test.txt");
 
         assertTrue(out.isEmpty());
         assertTrue(errors.stream().anyMatch(e -> e.contains("no_such_renderer")), errors::toString);
@@ -158,7 +158,7 @@ class UIEntryAssemblerTest {
     void invalidCombineIsSkippedAndReported() {
         List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
-                rec("x", "", "", "", "BOGUS", "")), errors);
+                rec("x", "", "", "", "BOGUS", "")), errors, "test.txt");
 
         assertTrue(out.isEmpty());
         assertTrue(errors.stream().anyMatch(e -> e.contains("illegal combiner enum value")),
@@ -169,7 +169,7 @@ class UIEntryAssemblerTest {
     void unknownTemplateIsSkippedAndReported() {
         List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
-                rec("x", "", "", "", "", "no_such_base")), errors);
+                rec("x", "", "", "", "", "no_such_base")), errors, "test.txt");
 
         assertTrue(out.isEmpty());
         assertTrue(errors.stream().anyMatch(e -> e.contains("illegal template name")), errors::toString);
@@ -179,7 +179,7 @@ class UIEntryAssemblerTest {
     void illegalParameterKindIsSkippedAndReported() {
         List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
-                rec("x", "bogus", "", "", "", "")), errors);
+                rec("x", "bogus", "", "", "", "")), errors, "test.txt");
 
         assertTrue(out.isEmpty());
         assertTrue(errors.stream().anyMatch(e -> e.contains("illegal parameter kind: bogus")),
@@ -193,7 +193,7 @@ class UIEntryAssemblerTest {
         List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                 rec("bad", "bogus", "", "", "", ""),
-                rec("good", "element", "", "", "ADD", "")), errors);
+                rec("good", "element", "", "", "ADD", "")), errors, "test.txt");
 
         // "good" is a parameter:element record, so it survives as its full 25-element expansion,
         // not a single entry - the bad record is what gets dropped.
@@ -218,7 +218,7 @@ class UIEntryAssemblerTest {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                 rec("e2", "element", "", "", "ADD", ""),
                 new UIEntryParseRecord("e2<ELEC>", "", "", "", "", List.of(), "", "", "",
-                        "index", List.of(), List.of(), "", "", 1)), errors);
+                        "index", List.of(), List.of(), "", "", 1)), errors, "test.txt");
 
         assertTrue(errors.isEmpty(), errors::toString);
         UIEntry elec = out.stream().filter(e -> e.getName().equals("e2<ELEC>"))
@@ -233,7 +233,7 @@ class UIEntryAssemblerTest {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                 rec("e3", "element", "", "", "ADD", ""),
                 new UIEntryParseRecord("e3<FIRE>", "", "", "", "", List.of(), "", "", "",
-                        "negative_index", List.of(), List.of(), "", "", 1)), errors);
+                        "negative_index", List.of(), List.of(), "", "", 1)), errors, "test.txt");
 
         assertTrue(errors.isEmpty(), errors::toString);
         UIEntry fire = out.stream().filter(e -> e.getName().equals("e3<FIRE>"))
@@ -251,7 +251,7 @@ class UIEntryAssemblerTest {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                 rec("s", "stat", "", "", "ADD", ""),
                 rec("e", "element", "", "", "ADD", ""),
-                rec("n", "", "", "", "ADD", "")), errors);
+                rec("n", "", "", "", "ADD", "")), errors, "test.txt");
 
         assertTrue(errors.isEmpty(), errors::toString);
         // The parameter:stat record expands into one tagged entry per stat (STR..CON) and the
@@ -284,7 +284,7 @@ class UIEntryAssemblerTest {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                 rec("s2", "stat", "", "", "ADD", ""),
                 new UIEntryParseRecord("s2<DEX>", "", "", "", "", List.of(), "", "", "",
-                        "index", List.of(), List.of(), "", "", 1)), errors);
+                        "index", List.of(), List.of(), "", "", 1)), errors, "test.txt");
 
         assertTrue(errors.isEmpty(), errors::toString);
         UIEntry dex = out.stream().filter(e -> e.getName().equals("s2<DEX>"))
@@ -307,7 +307,7 @@ class UIEntryAssemblerTest {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                 rec("e4", "element", "", "", "ADD", ""),
                 new UIEntryParseRecord("e4<FIRE>", "", "", "", "", List.of("mycat"), "", "", "",
-                        "index", List.of(), List.of(), "", "", 1)), errors);
+                        "index", List.of(), List.of(), "", "", 1)), errors, "test.txt");
 
         assertTrue(errors.isEmpty(), errors::toString);
         UIEntry fire = out.stream().filter(e -> e.getName().equals("e4<FIRE>"))
@@ -327,7 +327,7 @@ class UIEntryAssemblerTest {
         List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                 full("f1", "", "", "", List.of(), "element", "ADD", "", List.of(),
-                        List.of("TIMED_AS_AUX"))), errors);
+                        List.of("TIMED_AS_AUX"))), errors, "test.txt");
 
         assertTrue(errors.isEmpty(), errors::toString);
         assertEquals(25, out.size());
@@ -340,7 +340,7 @@ class UIEntryAssemblerTest {
     void createPathWithNoFlagsLeavesTheFlagSetEmpty() {
         List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
-                full("f2", "", "", "", List.of(), "", "ADD", "", List.of(), List.of())), errors);
+                full("f2", "", "", "", List.of(), "", "ADD", "", List.of(), List.of())), errors, "test.txt");
 
         assertEquals(1, out.size());
         assertTrue(out.get(0).getEntryFlag().isEmpty());
@@ -350,7 +350,7 @@ class UIEntryAssemblerTest {
     void newEntryWithNoCombinerIsRejectedAndNotAdded() {
         List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
-                full("nc", "", "", "", List.of(), "", "", "", List.of(), List.of())), errors);
+                full("nc", "", "", "", List.of(), "", "", "", List.of(), List.of())), errors, "test.txt");
 
         // hatch_embryo: combiner_index == 0 frees the entry and returns 1 - nothing is inserted.
         assertTrue(out.isEmpty());
@@ -361,9 +361,9 @@ class UIEntryAssemblerTest {
     void elementLabelDefaultsToTheElementNameUnlessTheRecordGivesOne() {
         List<String> errors = new ArrayList<>();
         List<UIEntry> unlabelled = new UIEntryAssembler().assemble(List.of(
-                full("l1", "", "", "", List.of(), "element", "ADD", "", List.of(), List.of())), errors);
+                full("l1", "", "", "", List.of(), "element", "ADD", "", List.of(), List.of())), errors, "test.txt");
         List<UIEntry> labelled = new UIEntryAssembler().assemble(List.of(
-                full("l2", "", "Res", "", List.of(), "element", "ADD", "", List.of(), List.of())), errors);
+                full("l2", "", "Res", "", List.of(), "element", "ADD", "", List.of(), List.of())), errors, "test.txt");
 
         assertEquals("ACID", unlabelled.get(0).getLabel());
         assertEquals("ARROW", unlabelled.get(24).getLabel());
@@ -375,7 +375,7 @@ class UIEntryAssemblerTest {
     void statLabelDefaultsToTheStatName() {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                         full("l3", "", "", "", List.of(), "stat", "ADD", "", List.of(), List.of())),
-                new ArrayList<>());
+                new ArrayList<>(), "test.txt");
 
         assertEquals("STR", out.get(0).getLabel());
         assertEquals("CON", out.get(4).getLabel());
@@ -385,7 +385,7 @@ class UIEntryAssemblerTest {
     void shortenedLabelIsCopiedToEveryParameterisedEntry() {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                         full("sh", "", "Poison", "Pois", List.of(), "element", "ADD", "", List.of(), List.of())),
-                new ArrayList<>());
+                new ArrayList<>(), "test.txt");
 
         // copy_shortened_labels in hatch_embryo copies label5 to each entry.
         assertTrue(out.stream().allMatch(e -> "Pois".equals(e.getLabel5())));
@@ -395,7 +395,7 @@ class UIEntryAssemblerTest {
     void indexSchemeGivesEachElementEntryItsIndexAsDefaultPriority() {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                         full("p1", "", "", "", List.of(), "element", "ADD", "index", List.of(), List.of())),
-                new ArrayList<>());
+                new ArrayList<>(), "test.txt");
 
         // get_priority_from_index(i) == i over element_names[]: ACID 0, CHAOS 11, ARROW 24.
         assertEquals(0, out.get(0).getDefaultPriority());
@@ -408,7 +408,7 @@ class UIEntryAssemblerTest {
     void negativeIndexSchemeGivesEachStatEntryTheNegatedIndex() {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                         full("p2", "", "", "", List.of(), "stat", "ADD", "negative_index", List.of(), List.of())),
-                new ArrayList<>());
+                new ArrayList<>(), "test.txt");
 
         assertEquals(0, out.get(0).getDefaultPriority());
         assertEquals(-4, out.get(4).getDefaultPriority());
@@ -418,7 +418,7 @@ class UIEntryAssemblerTest {
     void numericPriorityIsTheDefaultPriorityOfAnEntryWithNoCategories() {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                         full("p3", "", "", "", List.of(), "", "ADD", "7", List.of(), List.of())),
-                new ArrayList<>());
+                new ArrayList<>(), "test.txt");
 
         assertEquals(7, out.get(0).getDefaultPriority());
     }
@@ -427,7 +427,7 @@ class UIEntryAssemblerTest {
     void categoryBeforeAPriorityLineTakesTheParameterisedPriority() {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                 full("p4", "", "", "", List.of("c1"), "element", "ADD", "negative_index", List.of(),
-                        List.of())), new ArrayList<>());
+                        List.of())), new ArrayList<>(), "test.txt");
 
         UIEntry fire = out.stream().filter(e -> e.getName().equals("p4<FIRE>")).findFirst().orElseThrow();
         UIEntryCategory c1 = fire.getCategories().get(0);
@@ -442,7 +442,7 @@ class UIEntryAssemblerTest {
     void categoryAfterAPriorityLineIsLeftForTheFinishingPass() {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                         full("p5", "", "", "", List.of(), "", "ADD", "3", List.of("c2"), List.of())),
-                new ArrayList<>());
+                new ArrayList<>(), "test.txt");
 
         // priority: with no category yet sets the default; the later category is priority_set false.
         assertEquals(3, out.get(0).getDefaultPriority());
@@ -454,7 +454,7 @@ class UIEntryAssemblerTest {
         List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                         full("t1", "good_flag_ui_compact_0", "", "", List.of(), "", "", "", List.of(), List.of())),
-                errors);
+                errors, "test.txt");
 
         // parse_entry_template copies renderer, combiner, flags (minus TEMPLATE_ONLY) and categories,
         // so a record with no combine: of its own still survives hatch_embryo's combiner check.
@@ -476,7 +476,7 @@ class UIEntryAssemblerTest {
                         full("o1", "", "", "", List.of(), "element", "ADD", "", List.of(), List.of()),
                         full("o1<ACID>", "", "", "", List.of(), "", "", "", List.of(), List.of("TIMED_AS_AUX")),
                         full("o1<ELEC>", "", "", "", List.of(), "", "", "", List.of(), List.of())),
-                new ArrayList<>());
+                new ArrayList<>(), "test.txt");
 
         UIEntry acid = out.stream().filter(e -> e.getName().equals("o1<ACID>")).findFirst().orElseThrow();
         UIEntry elec = out.stream().filter(e -> e.getName().equals("o1<ELEC>")).findFirst().orElseThrow();
@@ -489,7 +489,7 @@ class UIEntryAssemblerTest {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                         full("o2", "", "", "", List.of(), "element", "ADD", "", List.of(), List.of()),
                         full("o2<FIRE>", "", "Fire", "", List.of(), "", "LOGICAL_OR", "", List.of(), List.of())),
-                new ArrayList<>());
+                new ArrayList<>(), "test.txt");
 
         UIEntry fire = out.stream().filter(e -> e.getName().equals("o2<FIRE>")).findFirst().orElseThrow();
         UIEntry cold = out.stream().filter(e -> e.getName().equals("o2<COLD>")).findFirst().orElseThrow();
@@ -505,7 +505,7 @@ class UIEntryAssemblerTest {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                         full("o3", "", "", "", List.of("a"), "element", "ADD", "", List.of(), List.of()),
                         full("o3<ACID>", "", "", "", List.of("a", "b"), "", "", "", List.of(), List.of())),
-                new ArrayList<>());
+                new ArrayList<>(), "test.txt");
 
         UIEntry acid = out.stream().filter(e -> e.getName().equals("o3<ACID>")).findFirst().orElseThrow();
         List<String> cats = acid.getCategories().stream().map(UIEntryCategory::getName).toList();
@@ -519,7 +519,7 @@ class UIEntryAssemblerTest {
         List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                 full("o4", "", "", "", List.of(), "", "ADD", "", List.of(), List.of()),
-                full("o4", "", "", "", List.of(), "element", "", "", List.of(), List.of())), errors);
+                full("o4", "", "", "", List.of(), "element", "", "", List.of(), List.of())), errors, "test.txt");
 
         // parse_entry_parameter returns PARSE_ERROR_INVALID_OPTION when embryo->exists.
         assertEquals(1, out.size());

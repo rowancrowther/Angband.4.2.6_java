@@ -184,7 +184,7 @@ class MagicSpellTest {
                 record("Magic Missile", "1", "1", "22", "4"),
                 record("Light Room", "1", "2", "26", "4"),
                 record("Find Traps, Doors & Stairs", "1", "1", "20", "2"),
-                record("Phase Door", "2", "2", "22", "4")), errors);
+                record("Phase Door", "2", "2", "22", "4")), errors, "test.txt");
 
         assertTrue(errors.isEmpty(), errors.toString());
         assertEquals(4, spells.size());
@@ -215,7 +215,7 @@ class MagicSpellTest {
     @DisplayName("ClassSpellAssembler leaves the realm null for the book assembler to set")
     void assemblerDoesNotSetTheRealm() throws ReflectiveOperationException {
         List<MagicSpell> spells = new ClassSpellAssembler().assemble(
-                List.of(record("Magic Missile", "1", "1", "22", "4")), new ArrayList<>());
+                List.of(record("Magic Missile", "1", "1", "22", "4")), new ArrayList<>(), "test.txt");
 
         assertNull(read(spells.getFirst(), "realm"));
     }
@@ -231,7 +231,7 @@ class MagicSpellTest {
         List<MagicSpell> spells = new ClassSpellAssembler().assemble(List.of(
                 record("Magic Missile", "1", "1", "22", "4"),
                 record("Broken", "1", "x", "22", "4"),
-                record("Phase Door", "2", "2", "22", "4")), errors);
+                record("Phase Door", "2", "2", "22", "4")), errors, "test.txt");
 
         assertEquals(1, errors.size());
         assertEquals(2, spells.size());

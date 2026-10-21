@@ -62,7 +62,8 @@ public class VisualsFlickerAssembler implements Assembler<VisualsFlickerParseRec
      * @return a one-element list holding the assembled {@link FlickerTable}
      */
     @Override
-    public List<FlickerTable> assemble(@NotNull List<VisualsFlickerParseRecord> records, @NotNull List<String> errors) {
+    public List<FlickerTable> assemble(@NotNull List<VisualsFlickerParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         Map<ColourEnum, ColourCycle> byAttr = new HashMap<>();
 
         for (VisualsFlickerParseRecord record : records) {

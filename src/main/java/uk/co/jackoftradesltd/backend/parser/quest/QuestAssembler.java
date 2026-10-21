@@ -132,7 +132,8 @@ public class QuestAssembler implements Assembler<QuestParseRecord, List<Quest>> 
      * @throws RuntimeException         if a record's {@code race} matches no monster
      */
     @Override
-    public List<Quest> assemble(@NotNull List<QuestParseRecord> records, @NotNull List<String> errors) {
+    public List<Quest> assemble(@NotNull List<QuestParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<Quest> quests = new ArrayList<>();
         int index = -1;
 

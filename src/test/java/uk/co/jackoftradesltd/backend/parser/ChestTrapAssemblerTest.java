@@ -74,7 +74,7 @@ class ChestTrapAssemblerTest {
     }
 
     private static List<ChestTrap> assemble(List<ChestTrapParseRecord> records, List<String> errors) {
-        return new ChestTrapAssembler().assemble(records, errors);
+        return new ChestTrapAssembler().assemble(records, errors, "test.txt");
     }
 
     // ---- Happy path -------------------------------------------------------

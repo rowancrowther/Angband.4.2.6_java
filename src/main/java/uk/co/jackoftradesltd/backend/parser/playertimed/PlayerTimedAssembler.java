@@ -18,16 +18,16 @@
 package uk.co.jackoftradesltd.backend.parser.playertimed;
 
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftradesltd.channel.colour.ColourEnum;
-import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.backend.parser.grammars.EffectAssembler;
+import uk.co.jackoftradesltd.channel.colour.ColourEnum;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
+import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.objects.Brand;
 import uk.co.jackoftradesltd.middle.objects.Slay;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.player.PlayerTimedEffect;
 import uk.co.jackoftradesltd.middle.player.TimedFailure;
@@ -69,7 +69,8 @@ public class PlayerTimedAssembler implements Assembler<PlayerTimedParseRecord, L
      * @return the successfully resolved effects, in order (records that failed are omitted)
      */
     @Override
-    public List<PlayerTimedEffect> assemble(@NotNull List<PlayerTimedParseRecord> records, @NotNull List<String> errors) {
+    public List<PlayerTimedEffect> assemble(@NotNull List<PlayerTimedParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<PlayerTimedEffect> effects = new ArrayList<>();
         TimedEffect previousEffect = TimedEffect.TMD_NONE;
 
@@ -195,14 +196,14 @@ public class PlayerTimedAssembler implements Assembler<PlayerTimedParseRecord, L
             List<Effect> begin;
             Effect onBeginEffect = null;
             if (record.onBeginEffect() != null && !record.onBeginEffect().typeInit().isEmpty()) {
-                begin = EffectAssembler.assemble(List.of(record.onBeginEffect()), errors);
+                begin = EffectAssembler.assemble(List.of(record.onBeginEffect()), errors, filename);
                 if (begin == null) continue;      // bad effect/subtype — error already logged
                 onBeginEffect = begin.getFirst();
             }
             List<Effect> end;
             Effect onEndEffect = null;
             if (record.onEndEffect() != null && !record.onEndEffect().typeInit().isEmpty()) {
-                end = EffectAssembler.assemble(List.of(record.onEndEffect()), errors);
+                end = EffectAssembler.assemble(List.of(record.onEndEffect()), errors, filename);
                 if (end == null) continue;
                 onEndEffect = end.getFirst();
             }

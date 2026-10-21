@@ -59,7 +59,8 @@ public class WorldAssembler
      * @return result of assembling list of {@link World} objects
      */
     @Override
-    public List<World> assemble(@NotNull List<WorldParseRecord> records, @NotNull List<String> errors) {
+    public List<World> assemble(@NotNull List<WorldParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<World> results = new ArrayList<>();
         for (WorldParseRecord record : records) {
             int levelNumber = Integer.parseInt(record.getLevelNumber());

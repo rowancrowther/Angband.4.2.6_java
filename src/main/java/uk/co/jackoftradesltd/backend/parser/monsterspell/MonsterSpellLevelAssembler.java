@@ -58,7 +58,8 @@ public class MonsterSpellLevelAssembler implements Assembler<MonsterSpellParseRe
      * @return the assembled levels in file order, or {@code null} if any block failed
      */
     @Override
-    public List<MonsterSpellLevel> assemble(@NotNull List<MonsterSpellParseRecord.MonsterSpellLevelParseRecord> records, @NotNull List<String> errors) {
+    public List<MonsterSpellLevel> assemble(@NotNull List<MonsterSpellParseRecord.MonsterSpellLevelParseRecord> records, @NotNull List<String> errors,
+                                    String filename) {
         List<MonsterSpellLevel> monsterSpellLevels = new ArrayList<>();
 
         for (MonsterSpellParseRecord.MonsterSpellLevelParseRecord record : records) {

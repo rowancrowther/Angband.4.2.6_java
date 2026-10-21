@@ -70,7 +70,7 @@ class TerrainFeatureAssemblerTest {
 
     private static List<Feature> assemble(List<TerrainFeatureParseRecord> records,
                                           List<String> errors) {
-        return new TerrainFeatureAssembler().assemble(records, errors);
+        return new TerrainFeatureAssembler().assemble(records, errors, "test.txt");
     }
 
     private static List<Feature> assemble(TerrainFeatureParseRecord record, List<String> errors) {

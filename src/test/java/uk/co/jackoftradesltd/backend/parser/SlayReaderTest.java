@@ -518,11 +518,17 @@ class SlayReaderTest {
     }
 
     @Test
-    void codeWithNoUnderscoreEscapesAsAnExceptionNotASoftError() {
-        // C never takes the code apart. The Slay constructor does, and the assembler does not guard
-        // the call, so a code such as BANE aborts the load rather than skipping the record.
-        assertThrows(RuntimeException.class, () -> load("no-underscore.txt",
-                withHeader(1, raceFlagSlay("BANE", "EVIL"))));
+    void codeThatIsNotAFlagUnderscoreNumberLoadsAsInC() throws IOException {
+        // C never takes the code apart, so BANE, EVIL_X and a bare EVIL are all records. The Slay
+        // constructor stores the text as given and the load neither throws nor skips the record.
+        for (String code : new String[]{"BANE", "EVIL", "EVIL_X", "NOSUCHFLAG_2"}) {
+            ParseResult<Slay> result = load("odd-code.txt", withHeader(1, raceFlagSlay(code, "EVIL")));
+
+            assertFalse(result.hasErrors(), () -> code + ": " + result.errors());
+            assertEquals(1, result.items().size(), code);
+            assertEquals(code, result.items().get(0).getCode());
+            assertTrue(result.items().get(0).toString().contains("raceFlag=RF_EVIL"), code);
+        }
     }
 
     @Test

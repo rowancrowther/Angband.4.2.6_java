@@ -38,39 +38,25 @@ import java.util.Objects;
  * in 4.2.6's {@code slay.txt} uses a base.
  *
  * <p>The {@code code} (for example {@code EVIL_2}) is the key that {@code ego_item.txt},
- * {@code object.txt}, {@code artifact.txt} and {@code player_timed.txt} use to name the slay. C stores
- * it as a plain string; the port also splits it into {@code monsterType} and {@code monsterLevel}
- * at construction, which C never does.
+ * {@code object.txt}, {@code artifact.txt} and {@code player_timed.txt} use to name the slay. Like C,
+ * the port stores it as a plain string and never takes it apart, so any text is a legal code.
  *
- * <p>Class Slay coded before 261005, commented in full on 261005.
+ * <p>Class Slay coded before 261005, commented in full on 261005, updated on 261021 once the
+ * constructor stopped splitting the code.
  *
  * @author Rowan Crowther
  */
 public class Slay {
     /**
-     * The slay's code as written in {@code slay.txt}, such as {@code EVIL_2}: the monster type, an
-     * underscore, then a number. Other data files name the slay by this string. Ports C's
+     * The slay's code as written in {@code slay.txt}, such as {@code EVIL_2}. Every code in 4.2.6's
+     * file is a flag name, an underscore and a number, but nothing reads that shape: the text is a
+     * key and is compared whole. Other data files name the slay by this string. Ports C's
      * {@code slay->code}.
      *
-     * <p>Field code coded before 261005, commented in full on 261005.
+     * <p>Field code coded before 261005, commented in full on 261005, updated on 261021 once the
+     * shape of the code stopped mattering.
      */
     private String code;
-    /**
-     * The monster type read from the part of {@link #code} before the underscore, as the
-     * {@code RF_} flag of that name (so {@code EVIL_2} gives {@code RF_EVIL}). The constructor
-     * derives it; C has no such field. It is read only by {@link #equals} and {@link #hashCode()}.
-     *
-     * <p>Field monsterType coded before 261005, commented in full on 261005.
-     */
-    private MonsterRaceFlag monsterType;
-    /**
-     * The number read from the part of {@link #code} after the underscore (so {@code EVIL_2} gives
-     * {@code 2}). The constructor derives it; C has no such field. It is read only by
-     * {@link #equals} and {@link #hashCode()}.
-     *
-     * <p>Field monsterLevel coded before 261005, commented in full on 261005.
-     */
-    private int monsterLevel;
     /**
      * The name of the slain creatures, used in object descriptions (for example
      * {@code evil creatures}). Ports C's {@code slay->name}.
@@ -133,17 +119,18 @@ public class Slay {
 
     /**
      * Builds a slay from the fields the slay parser read out of one {@code slay.txt} record,
-     * storing each as given and additionally splitting {@code code} at its underscore into
-     * {@code monsterType} and {@code monsterLevel}.
+     * storing each as given.
      *
-     * <p>The split is the port's own: C stores the code as a string and never takes it apart. For
-     * every entry in 4.2.6's {@code slay.txt} ({@code EVIL_2}, {@code ORC_3}, {@code DEMON_5} and so
-     * on) the split succeeds. A code with no underscore, a text before the underscore that is not an
-     * {@code RF_} flag name, or a non-numeric level throws, which C would never do.
+     * <p>Nothing is derived or checked, as in C's {@code parse_slay_*} handlers, so the constructor
+     * cannot throw. In particular {@code code} is kept as written and never taken apart: {@code BANE},
+     * {@code EVIL_X} and the empty string are all legal, as they are in C. An earlier version split
+     * the code into a monster type and a level and threw on a code it could not split, which let one
+     * odd line in a modded {@code slay.txt} stop the whole load.
      *
-     * <p>Constructor Slay coded before 261005, commented in full on 261005.
+     * <p>Constructor Slay coded before 261005, commented in full on 261005, updated on 261021 once it
+     * stopped splitting the code.
      *
-     * @param code        slay code (monster type, underscore, number, e.g. {@code EVIL_2})
+     * @param code        slay code, kept as written (for example {@code EVIL_2})
      * @param name        name of the slain creatures
      * @param base        targeted monster base, or {@code null} if the slay uses a race flag
      * @param meleeVerb   verb used on a melee hit
@@ -152,17 +139,10 @@ public class Slay {
      * @param multiplier  standard damage multiplier
      * @param oMultiplier O-combat damage multiplier
      * @param power       power rating
-     * @throws ArrayIndexOutOfBoundsException if {@code code} contains no underscore
-     * @throws IllegalArgumentException       if the text before the underscore is not an
-     *                                        {@code RF_} flag name
-     * @throws NumberFormatException          if the text after the underscore is not an integer
      */
     public Slay(String code, String name, MonsterBase base, String meleeVerb, String rangedVerb,
                 MonsterRaceFlag raceFlag, int multiplier, int oMultiplier, int power) {
         this.code = code;
-        String[] splits = this.code.split("_");
-        this.monsterType = MonsterRaceFlag.valueOf("RF_" + splits[0]);
-        this.monsterLevel = Integer.parseInt(splits[1]);
         this.name = name;
         this.base = base;
         this.meleeVerb = meleeVerb;
@@ -197,11 +177,11 @@ public class Slay {
     }
 
     /**
-     * Describes the slay for logs and test failure messages by listing the nine constructor fields.
-     * {@code monsterType} and {@code monsterLevel}, which the constructor derives from the code, are
-     * left out. C has no counterpart.
+     * Describes the slay for logs and test failure messages by listing all nine fields. C has no
+     * counterpart.
      *
-     * <p>Function toString coded before 261005, commented in full on 261005.
+     * <p>Function toString coded before 261005, commented in full on 261005, updated on 261021 once
+     * the two derived fields were removed.
      *
      * @return a string of the form {@code Slay{code='EVIL_2', name='evil creatures', ...}}
      */
@@ -279,25 +259,23 @@ public class Slay {
      *
      * <p>The copy is a distinct instance that {@link #equals} treats as equal to the original, so a
      * {@code Set<Slay>} holding one will find the other. The {@code base} reference is shared, not
-     * copied. The constructor re-parses {@code monsterType} and {@code monsterLevel} from the code;
-     * the copy then overwrites both with this slay's own values.
+     * copied.
      *
-     * <p>Function copy coded before 261003, commented in full on 261003.
+     * <p>Function copy coded before 261003, commented in full on 261003, updated on 261021 once the
+     * constructor stopped deriving fields from the code.
      *
      * @return a new slay equal to this one
      */
     public Slay copy() {
         Slay copySlay = new Slay(code, name, base, meleeVerb, rangedVerb, raceFlag,
                 multiplier, oMultiplier, power);
-        copySlay.monsterType = this.monsterType;
-        copySlay.monsterLevel = this.monsterLevel;
 
         return copySlay;
     }
 
     /**
-     * Value equality over every field of the slay: code, monster type and level, name, base, both
-     * verbs, race flag, both multipliers and power. This lets an {@code ItemObject}'s
+     * Value equality over every field of the slay: code, name, base, both verbs, race flag, both
+     * multipliers and power. This lets an {@code ItemObject}'s
      * {@code Set<Slay>} treat a {@link #copy()} as the same entry, so {@code appendSlay} and
      * {@code removeSlay} work on a copy as on the original.
      *
@@ -309,7 +287,8 @@ public class Slay {
      * override {@code equals}, so for a base the two come to the same test; in 4.2.6's data no slay
      * declares a base at all.
      *
-     * <p>Function equals coded before 261003, commented in full on 261005.
+     * <p>Function equals coded before 261003, commented in full on 261005, updated on 261021 once the
+     * monster type and level fields were removed.
      *
      * @param o the object to compare against
      * @return {@code true} if {@code o} is a slay with identical fields
@@ -317,24 +296,25 @@ public class Slay {
     @Override
     public boolean equals(Object o) {
         if (!(o instanceof Slay slay)) return false;
-        return monsterLevel == slay.monsterLevel && getMultiplier() == slay.getMultiplier()
+        return getMultiplier() == slay.getMultiplier()
                 && oMultiplier == slay.oMultiplier && getPower() == slay.getPower()
-                && Objects.equals(getCode(), slay.getCode()) && monsterType == slay.monsterType
+                && Objects.equals(getCode(), slay.getCode())
                 && Objects.equals(getName(), slay.getName()) && Objects.equals(base, slay.base)
                 && Objects.equals(meleeVerb, slay.meleeVerb) && Objects.equals(rangedVerb, slay.rangedVerb)
                 && raceFlag == slay.raceFlag;
     }
 
     /**
-     * A hash over the same eleven fields {@link #equals} compares, so equal slays hash alike.
+     * A hash over the same nine fields {@link #equals} compares, so equal slays hash alike.
      *
-     * <p>Function hashCode coded before 261003, commented in full on 261003.
+     * <p>Function hashCode coded before 261003, commented in full on 261003, updated on 261021 once
+     * the monster type and level fields were removed.
      *
      * @return a hash consistent with {@link #equals}
      */
     @Override
     public int hashCode() {
-        return Objects.hash(getCode(), monsterType, monsterLevel, getName(), base, meleeVerb, rangedVerb, raceFlag,
+        return Objects.hash(getCode(), getName(), base, meleeVerb, rangedVerb, raceFlag,
                 getMultiplier(), oMultiplier, getPower());
     }
 }

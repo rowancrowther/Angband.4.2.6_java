@@ -417,7 +417,7 @@ Found 2026-10-17 during `/port backend/parser/SlayReader.java`. Not fixed.
 
 ## `slay/SlayAssembler.java`: a code the `Slay` constructor cannot split aborts the whole load
 
-Found 2026-10-17 during `/port backend/parser/SlayReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/SlayReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-21: the `Slay` constructor in `Slay.java` no longer splits `code`. The `monsterType` and `monsterLevel` fields are gone, since only `equals` and `hashCode` read them and `code` already covers both, so the constructor stores its nine arguments and cannot throw. `SlayAssembler.java` needed no change. `BANE`, `EVIL`, `EVIL_X` and `NOSUCHFLAG_2` now load as records, as in C. `SlayTest` and `SlayReaderTest` pass and the full suite is green. The bullets below describe the state before the fix; the pinning tests are now `SlayTest.constructorStoresAnyCodeAsGivenAsInC` and `SlayReaderTest.codeThatIsNotAFlagUnderscoreNumberLoadsAsInC`.]
 
 - C stores the `code:` text as given and never takes it apart.
 - The `Slay` constructor splits `code` at the underscore and reads the front as an `RF_` flag and the back as the level.

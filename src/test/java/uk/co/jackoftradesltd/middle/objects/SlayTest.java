@@ -22,10 +22,7 @@ import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.middle.monsters.MonsterBase;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests the construction, accessors, {@link Slay#toString()} and {@link Slay#sameMonsterSlain} of
@@ -93,14 +90,27 @@ class SlayTest {
     }
 
     @Test
-    @DisplayName("a code with no underscore, an unknown type or a non-numeric level is rejected")
-    void constructorRejectsMalformedCodes() {
-        assertThrows(ArrayIndexOutOfBoundsException.class, () ->
-                new Slay("EVIL", "n", null, "v", "v", MonsterRaceFlag.RF_EVIL, 2, 2, 100));
-        assertThrows(IllegalArgumentException.class, () ->
-                new Slay("NOSUCHFLAG_2", "n", null, "v", "v", MonsterRaceFlag.RF_EVIL, 2, 2, 100));
-        assertThrows(NumberFormatException.class, () ->
-                new Slay("EVIL_X", "n", null, "v", "v", MonsterRaceFlag.RF_EVIL, 2, 2, 100));
+    @DisplayName("any code is stored as given and never taken apart, as in C")
+    void constructorStoresAnyCodeAsGivenAsInC() {
+        // C's parse_slay_code keeps the text and nothing reads its shape, so none of these may throw.
+        String[] codes = {"EVIL", "BANE", "NOSUCHFLAG_2", "EVIL_X", "EVIL_2_3", "EVIL_", "_2", "",
+                "RF_EVIL", "evil"};
+        for (String code : codes) {
+            Slay slay = assertDoesNotThrow(() ->
+                    new Slay(code, "n", null, "v", "v", MonsterRaceFlag.RF_EVIL, 2, 2, 100), code);
+            assertEquals(code, slay.getCode(), code);
+            assertEquals(slay, slay.copy(), code);
+            assertEquals(slay.hashCode(), slay.copy().hashCode(), code);
+        }
+    }
+
+    @Test
+    @DisplayName("two slays that differ only in code are not equal")
+    void slaysThatDifferOnlyInCodeAreNotEqual() {
+        Slay evil = new Slay("EVIL_2", "n", null, "v", "v", MonsterRaceFlag.RF_EVIL, 2, 2, 100);
+        Slay bane = new Slay("BANE", "n", null, "v", "v", MonsterRaceFlag.RF_EVIL, 2, 2, 100);
+
+        assertNotEquals(evil, bane);
     }
 
     @Test

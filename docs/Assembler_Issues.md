@@ -901,7 +901,7 @@ Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. Not fixed.
 
 ## `projection/ProjectionAssembler.java` and `GrammarDriver.java`: a misplaced element gives no projections and no error, and the loader carries on
 
-Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. Not fixed.
+Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-21: `ProjectionAssembler.java` throws `DataFileParseException` for an unknown, empty or misplaced code in the first 25 records, an empty code anywhere, and an element count other than 25. `GrammarDriver.java` catches only `IOException` and `ParseCancellationException`, so the exception leaves `ProjectionReader.parseWithResults` and `WorldDataLoader.loadProjections` with the position, the ordinal and the errors gathered so far in its message, and the registry is never touched. No other assembler throws `ParseCancellationException`; the only throw is `ParseErrors.throwIfAny`, which `GrammarDriver.java` catches and answers with the parser's messages. The bullets below describe the state before the fix; the pinning tests are now `ProjectionReaderTest.aSwappedElementBlockStopsTheLoadWithTheMismatchInTheMessage` and `ProjectionAssemblerTest.swappedElementsStopTheLoadAtTheFirstMismatch`.]
 
 - `parse_projection_code` returns `PARSE_ERROR_ELEMENT_NAME_MISMATCH` when one of the first 25 codes is not the element at that
   position, and the parse quits.
@@ -917,7 +917,7 @@ Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. Not fixed.
 
 ## `projection/ProjectionAssembler.java`: an unknown `code:` after the 25 elements skips the record, C never reads it
 
-Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. Not fixed.
+Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-21: `ProjectionAssembler.java` reads the code only for the first 25 records. From the 26th on, a code that resolves is kept, one that does not is stored as `PROJ_NONE` with no error (`resolveCode` takes an `insideCount` flag for this), and an empty code still stops the load, as C's `parser_parse` does for a `code:` with no value. The stored record's code is `PROJ_NONE` where C keeps no code at all. The bullets below describe the state before the fix; the pinning tests are now `ProjectionAssemblerTest.unknownCodeAfterTheElementBlockIsStoredAsProjNoneWithNoError` and `ProjectionReaderTest.unknownCodeAfterTheElementBlockIsStoredWithNoCodeAndNoError`.]
 
 - `parse_projection_code` compares the code with `element_names[index]` only while `index < ELEM_MAX`. After that it stores
   nothing from the code, so any text loads and the projection is whatever the other directives say.

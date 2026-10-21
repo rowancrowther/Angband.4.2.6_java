@@ -17,13 +17,13 @@
 
 package uk.co.jackoftradesltd.backend.parser.projection;
 
-import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
@@ -43,34 +43,48 @@ import java.util.List;
  * {@code resolveX} helper; the numeric fields are parsed inline, and {@code denominator} falls
  * back to a {@link Random} dice expression when it is not a plain integer.
  *
- * <p>C's parser aborts the whole file on the first bad line; this port instead follows the shared
- * soft-error contract for most faults. A record with an unknown code, a negative or non-numeric
- * numerator, divisor, damage cap, {@code obvious} or {@code wake}, an invalid denominator or an
- * unresolvable {@code msgt} is reported to {@code errors} and skipped, and the rest of the file
- * still loads. An unknown colour is not a fault: it falls back to white, as C does.
+ * <p>C's parser quits on the first bad line; this port follows the shared soft-error contract for
+ * most faults. A record with a negative or non-numeric numerator, divisor, damage cap,
+ * {@code obvious} or {@code wake}, an invalid denominator or an unresolvable {@code msgt} is
+ * reported to {@code errors} and skipped, and the rest of the file still loads. An unknown colour is
+ * not a fault: it falls back to white, as C does.
  *
- * <p>Two faults are fatal, because C subscripts its projection array by element value and a
- * damaged element block would silently misalign every lookup:
+ * <p>A record's {@code code} is only read where C reads it. {@code parse_projection_code()}
+ * compares the code with {@code element_names[index]} while {@code index < ELEM_MAX} and ignores it
+ * after that, so a code that is not a projection is stored as {@link ProjectionEnum#PROJ_NONE},
+ * with no error, from the 26th record on.
+ *
+ * <p>These faults stop the load, by throwing a {@link DataFileParseException} whose message carries
+ * the errors gathered so far. C subscripts its projection array by element value, and a damaged
+ * element block would silently misalign every lookup:
  * <ul>
- *   <li>the first 25 records are not the 25 elements in {@code list-elements.h} order, which
- *       throws a {@link ParseCancellationException} at the first mismatch - the check C makes in
- *       {@code parse_projection_code()};</li>
- *   <li>the number of records of type {@code element} that survive assembly is not 25, which
- *       discards every record and reports the count - the check C makes in
- *       {@code finish_parse_projection()}. A dropped element record therefore fails the file,
- *       where C would already have aborted on the bad line.</li>
+ *   <li>one of the first 25 records has an unknown or empty code, or a code that is not the
+ *       element at its position in {@code list-elements.h} order - the check C makes in
+ *       {@code parse_projection_code()}, where it returns
+ *       {@code PARSE_ERROR_ELEMENT_NAME_MISMATCH};</li>
+ *   <li>a record past the 25th has an empty code - C's {@code parser_parse} returns
+ *       {@code PARSE_ERROR_MISSING_FIELD} for a {@code code:} with nothing after it;</li>
+ *   <li>the number of records of type {@code element} that survive assembly is not 25 - the check C
+ *       makes in {@code finish_parse_projection()}. A dropped element record therefore stops the
+ *       load, where C would already have quit on the bad line.</li>
  * </ul>
  *
- * <p>Class ProjectionAssembler coded before 260915, commented in full on 261001.
+ * <p>The exception is not caught by {@code GrammarDriver}, so it reaches the caller of
+ * {@code ProjectionReader.parseWithResults}. The empty-code stop is reachable only from hand-built
+ * records: the grammar rejects a {@code code:} with no value before the assembler sees it.
+ *
+ * <p>Class ProjectionAssembler coded before 260915, commented in full on 261001; the fatal faults
+ * rewritten for the stop-the-load path, and the code rules for the 26th record on, on 261021.
  *
  * @author Rowan Crowther
  */
 public class ProjectionAssembler implements Assembler<ProjectionParseRecord, List<Projection>> {
     /**
-     * Logs the fatal element-order fault before it is thrown, since {@code GrammarDriver}
-     * turns the exception into an empty result and its message does not reach the builder.
+     * Logs a fatal code fault before it is thrown, so the cause of a stopped load is on record even
+     * if a caller catches the exception without printing its message.
      *
-     * <p>Field logger coded on 261001, commented in full on 261001.
+     * <p>Field logger coded on 261001, commented in full on 261001; reworded on 261021 because
+     * {@code GrammarDriver} no longer turns the exception into an empty result.
      */
     private static final Logger logger = LogManager.getLogger(ProjectionAssembler.class);
 
@@ -89,29 +103,44 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
      * Assembles the {@link Projection} list from the parsed {@code projection.txt} records.
      *
      * <p>Each record is handled in file order. Its position is counted from 1 for every record,
-     * including ones whose code later fails to resolve, because C's {@code index} counts every
-     * record. While the position is 25 or less, the code's ordinal must equal it
-     * ({@link ProjectionEnum#PROJ_ACID} is ordinal 1, as {@code PROJ_NONE} takes 0), otherwise the
-     * file is rejected by throwing. The remaining fields are then parsed and any fault skips the
-     * record with an entry in {@code errors}; a skipped record of type {@code element} also gets a
-     * "Dropped projection element" entry.
+     * because C's {@code index} counts every record. The code is read in two ways:
+     * <ul>
+     *   <li>while the position is 25 or less it must resolve to a {@link ProjectionEnum} constant
+     *       whose ordinal equals the position ({@link ProjectionEnum#PROJ_ACID} is ordinal 1, as
+     *       {@code PROJ_NONE} takes 0). An unknown or empty code, or a different ordinal, stops the
+     *       load. An unknown code also adds an "Unknown projection code" entry, which rides out in
+     *       the exception message;</li>
+     *   <li>from the 26th record on, C does not read the code. An empty one still stops the load. A
+     *       code that resolves is kept, and one that does not is stored as
+     *       {@link ProjectionEnum#PROJ_NONE} with no entry in {@code errors}. The order of these
+     *       records is not checked.</li>
+     * </ul>
+     * The remaining fields are then parsed and any fault skips the record with an entry in
+     * {@code errors}; a skipped record of type {@code element} also gets a "Dropped projection
+     * element" entry.
      *
      * <p>After the loop the surviving element records are counted from the result itself, not
      * from a running tally, so a dropped element row cannot slip through. If the count is not
-     * 25 the method adds an "Invalid number of elements" entry and returns an empty list.
+     * 25 the method adds an "Invalid number of elements" entry to {@code errors} and stops the
+     * load.
      *
      * <p>An absent {@code msgt} gives {@code MSG_GENERIC}, an absent {@code colour} gives
      * {@code COLOUR_DARK}, and absent numeric or boolean fields give 0 and {@code false}, matching
      * the zero-filled struct C allocates for each record.
      *
-     * <p>Function assemble coded before 260915, commented in full on 261001.
+     * <p>Function assemble coded before 260915, commented in full on 261001; the stop-the-load path
+     * and the rules for the code from the 26th record on documented on 261021.
      *
-     * @param records the parsed records, in file order
-     * @param errors  receives a message for every skipped record and every other soft fault; it is
-     *                returned to the builder alongside the result
-     * @return the assembled projections, or an empty list if the element count is not 25
-     * @throws ParseCancellationException if one of the first 25 records is not the element at
-     *                                    its position; the message carries the errors gathered so far
+     * @param records  the parsed records, in file order
+     * @param errors   receives a message for every skipped record and every other soft fault; it is
+     *                 returned to the builder alongside the result, except when the load stops, when
+     *                 its entries are copied into the exception message instead
+     * @param filename the data file being assembled, used in the stop-the-load messages
+     * @return the assembled projections, always with exactly 25 of type {@code element}
+     * @throws DataFileParseException if one of the first 25 records has an unknown or empty code or
+     *                                is not the element at its position, if a later record has an
+     *                                empty code, or if the number of surviving element records is
+     *                                not 25; the message carries the errors gathered so far
      */
     @Override
     public List<Projection> assemble(@NotNull List<ProjectionParseRecord> records, @NotNull List<String> errors,
@@ -121,21 +150,44 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
         for (ProjectionParseRecord record : records) {
             int line = record.lineNumber();
             String codeString = record.code();
-            ProjectionEnum projCode = resolveCode(line, codeString, errors);
-            currentRecord++;
-            if (projCode == null) continue;
-            int projOrdinal = projCode.ordinal();
             String type = record.type();
             ProjectionType projType = resolveType(line, type, codeString, errors);
-            if (currentRecord <= EXPECTED_ELEMENT_COUNT && currentRecord != projOrdinal) {
-                String message = "Projection at line: " + line + " is out of order.\n" +
-                        "Input ordinal: " + projOrdinal + " is not equal to expected " +
-                        "ordinal: " + currentRecord;
-                logger.fatal(message);
-                for (String error : errors) {
-                    message = String.format("%s\n%s", message, error);
+            currentRecord++;
+            ProjectionEnum projCode;
+            if (currentRecord <= EXPECTED_ELEMENT_COUNT) {
+                projCode = resolveCode(line, codeString, errors, true);
+                if (projCode == null) {
+                    String message = "Projection at line: " + line + " is out of order.\n" +
+                            "Input string: " + codeString + " is invalid in file : " + filename;
+                    logger.fatal(message);
+                    for (String error : errors) {
+                        message = String.format("%s\n%s", message, error);
+                    }
+                    throw new DataFileParseException(message);
                 }
-                throw new ParseCancellationException(message);
+                int projOrdinal = projCode.ordinal();
+                if (currentRecord != projOrdinal) {
+                    String message = "Projection at line: " + line + " is out of order.\n" +
+                            "Input ordinal: " + projOrdinal + " is not equal to expected " +
+                            "ordinal: " + currentRecord + " in file : " + filename;
+                    logger.fatal(message);
+                    for (String error : errors) {
+                        message = String.format("%s\n%s", message, error);
+                    }
+                    throw new DataFileParseException(message);
+                }
+            } else {
+                if (codeString.isEmpty()) {String message = "Projection at line: " + line + " has an empty " +
+                        "code string in file : " + filename;
+                    logger.fatal(message);
+                    for (String error : errors) {
+                        message = String.format("%s\n%s", message, error);
+                    }
+                    throw new DataFileParseException(message);                    
+                }
+                
+                projCode = resolveCode(line, codeString, errors, false);
+                if (projCode == null) projCode = ProjectionEnum.PROJ_NONE;
             }
             String projName = record.name();
             String projDesc = record.desc();
@@ -265,7 +317,7 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
             String colour = record.colour();
             ColourEnum projColour = resolveColour(line, colour, codeString, errors);
 
-            if (projColour == null || projMsgt == null) {
+            if (projMsgt == null) {
                 if (projType == ProjectionType.PT_ELEMENT)
                     errors.add("Dropped projection element: " + projName);
                 continue;
@@ -293,8 +345,12 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
 
         if (kept != EXPECTED_ELEMENT_COUNT) {
             errors.add("Invalid number of elements - expected " + EXPECTED_ELEMENT_COUNT + " got " + kept +
-                    " dropped " + dropped);
-            return new ArrayList<>();
+                    " dropped " + dropped + " in file " + filename);
+            String message = "";
+            for (String error : errors) {
+                message = String.format("%s\n%s", message, error);
+            }
+            throw new DataFileParseException(message);
         }
 
         return result;
@@ -307,24 +363,30 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
      * <p>C does not look the code up at all: for the first 25 records it only compares the tag with
      * {@code element_names[index]} ({@code parse_projection_code()} in {@code obj-init.c}), and
      * beyond that it stores nothing from the code. The lookup is needed here because the position
-     * check in {@link #assemble} compares ordinals.
+     * check in {@link #assemble} compares ordinals, and because the port keeps the constant for
+     * later lookups. An empty tag finds no constant, like any other unknown one.
      *
-     * <p>Function resolveCode coded before 260915, commented in full on 261001.
+     * <p>Function resolveCode coded before 260915, commented in full on 261001; the
+     * {@code insideCount} flag added on 261021 so that an unknown code past the element block adds
+     * no error.
      *
-     * @param line   the line of the projection block in the {@code lib/gamedata} file, used in the
-     *               error message
-     * @param code   the tag from the {@code code:} line, without its {@code PROJ_} prefix
-     * @param errors receives an "Unknown projection code" entry when no constant matches
+     * @param line        the line of the projection block in the {@code lib/gamedata} file, used in
+     *                    the error message
+     * @param code        the tag from the {@code code:} line, without its {@code PROJ_} prefix
+     * @param errors      receives an "Unknown projection code" entry when no constant matches and
+     *                    {@code insideCount} is true
+     * @param insideCount true for one of the first 25 records, where C reads the code and an unknown
+     *                    one is a fault; false from the 26th on, where C does not read it
      * @return the matching constant, or {@code null} if there is none
      */
     @CheckReturnValue
     @Nullable
     private ProjectionEnum resolveCode(int line, @NotNull String code,
-                                       @NotNull List<String> errors) {
+                                       @NotNull List<String> errors, boolean insideCount) {
         try {
             return ProjectionEnum.valueOf("PROJ_" + code);
         } catch (IllegalArgumentException e) {
-            errors.add("Line: " + line + ": Unknown projection code in this Projection block: " + code);
+            if (insideCount) errors.add("Line: " + line + ": Unknown projection code in this Projection block: " + code);
             return null;
         }
     }
@@ -353,13 +415,12 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
     @Contract(pure = true)
     private ProjectionType resolveType(int line, @NotNull String type, @NotNull String code,
                                        @NotNull List<String> errors) {
-        if ("element".equals(type))
-            return ProjectionType.PT_ELEMENT;
-        else if ("environs".equals(type))
-            return ProjectionType.PT_ENVIRONS;
-        else if ("monster".equals(type))
-            return ProjectionType.PT_MONSTER;
-        return ProjectionType.PT_NONE;
+        return switch (type) {
+            case "element" -> ProjectionType.PT_ELEMENT;
+            case "environs" -> ProjectionType.PT_ENVIRONS;
+            case "monster" -> ProjectionType.PT_MONSTER;
+            default -> ProjectionType.PT_NONE;
+        };
     }
 
     /**
@@ -445,7 +506,7 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
      *         {@code COLOUR_WHITE} if nothing matches
      */
     @CheckReturnValue
-    @Nullable
+    @NotNull
     private ColourEnum resolveColour(int line, @NotNull String colour, @NotNull String code,
                                      @NotNull List<String> errors) {
         ColourEnum result;

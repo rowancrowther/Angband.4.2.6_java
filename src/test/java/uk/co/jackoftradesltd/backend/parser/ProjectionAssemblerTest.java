@@ -17,8 +17,8 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
-import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.Test;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.backend.parser.projection.ProjectionAssembler;
 import uk.co.jackoftradesltd.backend.parser.projection.ProjectionParseRecord;
 import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
@@ -47,7 +47,14 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@code POIS} (position 5) and index 24 is {@code ARROW}; index 30 is {@code MAKE_DOOR}, an
  * environs row.
  *
- * <p>Test class ProjectionAssemblerTest coded on 261001, commented in full on 261001.
+ * <p>C quits on the first bad line, so the element-position and element-count tests expect the
+ * assembler to stop the load by throwing {@link DataFileParseException}, never to return an empty
+ * list. The code of a record is only looked at for the first 25 records, as in C's
+ * {@code parse_projection_code()}: an unknown or empty code stops the load there, and past them an
+ * unknown code is stored as {@code PROJ_NONE} with no error, while an empty one still stops it.
+ *
+ * <p>Test class ProjectionAssemblerTest coded on 261001, commented in full on 261001; the
+ * element-position, element-count and code tests rewritten for the stop-the-load path on 261021.
  *
  * @author Rowan Crowther
  */
@@ -132,6 +139,14 @@ class ProjectionAssemblerTest {
 
     private static List<Projection> assemble(List<ProjectionParseRecord> records, List<String> errors) {
         return new ProjectionAssembler().assemble(records, errors, "test.txt");
+    }
+
+    /**
+     * Assembles {@code records} and returns the exception that stops the load, failing the test if
+     * the assembler returns instead.
+     */
+    private static DataFileParseException assembleAndStop(List<ProjectionParseRecord> records) {
+        return assertThrows(DataFileParseException.class, () -> assemble(records, new ArrayList<>()));
     }
 
     private static long countOfType(List<Projection> projections, ProjectionType type) {
@@ -248,19 +263,20 @@ class ProjectionAssemblerTest {
     // ---- Element position (parse_projection_code) -------------------------
 
     /**
-     * C compares the first record's code with {@code element_names[0]} and fails the parse on a
-     * mismatch, so swapping ACID and ELEC is fatal at the first record.
+     * C compares the first record's code with {@code element_names[0]} and quits on a mismatch, so
+     * swapping ACID and ELEC stops the load at the first record.
      */
     @Test
-    void swappedElementsThrowAtTheFirstMismatch() {
+    void swappedElementsStopTheLoadAtTheFirstMismatch() {
         List<ProjectionParseRecord> records = validFile();
         ProjectionParseRecord first = records.get(0);
         records.set(0, records.get(1));
         records.set(1, first);
 
-        ParseCancellationException e = assertThrows(ParseCancellationException.class,
-                () -> assemble(records, new ArrayList<>()));
+        DataFileParseException e = assembleAndStop(records);
+
         assertTrue(e.getMessage().contains("line: 2"), e.getMessage());
+        assertTrue(e.getMessage().contains("Input ordinal: 2 is not equal to expected ordinal: 1"), e.getMessage());
     }
 
     /**
@@ -268,39 +284,91 @@ class ProjectionAssemblerTest {
      * rejects at index 0.
      */
     @Test
-    void nonElementBeforeTheElementsThrows() {
+    void nonElementBeforeTheElementsStopsTheLoad() {
         List<ProjectionParseRecord> records = validFile();
         records.add(0, record("LIGHT_WEAK", "environs", 99));
 
-        assertThrows(ParseCancellationException.class, () -> assemble(records, new ArrayList<>()));
+        DataFileParseException e = assembleAndStop(records);
+
+        assertTrue(e.getMessage().contains("line: 99"), e.getMessage());
     }
 
     /**
      * With ARROW missing, LIGHT_WEAK lands in position 25 where C expects {@code ARROW}.
      */
     @Test
-    void missingElementThrows() {
+    void missingElementStopsTheLoad() {
         List<ProjectionParseRecord> records = validFile();
         records.remove(ARROW);
 
-        assertThrows(ParseCancellationException.class, () -> assemble(records, new ArrayList<>()));
+        DataFileParseException e = assembleAndStop(records);
+
+        assertTrue(e.getMessage().contains("Input ordinal: 26 is not equal to expected ordinal: 25"), e.getMessage());
     }
 
     /**
-     * C's {@code index} counts every record, so an unknown code at position 1 shifts ACID to
-     * position 2 and the parse fails there.
+     * C compares the code of each of the first 25 records with {@code element_names[index]}. A code
+     * that is not a projection at all cannot match, so an unknown code at position 1 stops the load
+     * as C's mismatch does, and the "Unknown projection code" entry rides out in the message.
      */
     @Test
-    void unknownCodeInTheElementBlockStillCountsAsAPosition() {
+    void unknownCodeInTheElementBlockStopsTheLoad() {
         List<ProjectionParseRecord> records = validFile();
         records.add(0, record("BOGUS", "element", 99));
 
-        assertThrows(ParseCancellationException.class, () -> assemble(records, new ArrayList<>()));
+        DataFileParseException e = assembleAndStop(records);
+
+        assertTrue(e.getMessage().contains("Input string: BOGUS is invalid"), e.getMessage());
+        assertTrue(e.getMessage().contains("Unknown projection code"), e.getMessage());
     }
 
     /**
-     * Errors gathered before the fatal mismatch ride out in the exception message, since the
-     * reader discards the {@code errors} list when it catches the exception.
+     * Position 25 is the last one C checks, so an unknown code there stops the load too.
+     */
+    @Test
+    void unknownCodeAtTheLastElementPositionStopsTheLoad() {
+        List<ProjectionParseRecord> records = validFile();
+        records.set(ARROW, record("BOGUS", "element", 25));
+
+        DataFileParseException e = assembleAndStop(records);
+
+        assertTrue(e.getMessage().contains("line: 25"), e.getMessage());
+        assertTrue(e.getMessage().contains("Input string: BOGUS is invalid"), e.getMessage());
+    }
+
+    /**
+     * A {@code code:} with nothing after it is {@code PARSE_ERROR_MISSING_FIELD} in C's
+     * {@code parser_parse}, a hard error at any position. Inside the element block it cannot equal
+     * an element name either.
+     */
+    @Test
+    void emptyCodeInTheElementBlockStopsTheLoad() {
+        List<ProjectionParseRecord> records = validFile();
+        records.set(POIS, record("", "element", 5));
+
+        DataFileParseException e = assembleAndStop(records);
+
+        assertTrue(e.getMessage().contains("line: 5"), e.getMessage());
+    }
+
+    /**
+     * Past position 25 C never reads the code, but an empty {@code code:} never reaches
+     * {@code parse_projection_code}: {@code parser_parse} quits first, so the load stops here too.
+     */
+    @Test
+    void emptyCodeAfterTheElementBlockStopsTheLoad() {
+        List<ProjectionParseRecord> records = validFile();
+        records.add(record("", "monster", 99));
+
+        DataFileParseException e = assembleAndStop(records);
+
+        assertTrue(e.getMessage().contains("line: 99"), e.getMessage());
+        assertTrue(e.getMessage().contains("empty code string"), e.getMessage());
+    }
+
+    /**
+     * Errors gathered before the fatal mismatch ride out in the exception message, because the
+     * assembler throws before it can hand the {@code errors} list back.
      */
     @Test
     void positionExceptionCarriesEarlierErrors() {
@@ -310,8 +378,8 @@ class ProjectionAssemblerTest {
         records.set(10, records.get(11));
         records.set(11, eleven);
 
-        ParseCancellationException e = assertThrows(ParseCancellationException.class,
-                () -> assemble(records, new ArrayList<>()));
+        DataFileParseException e = assembleAndStop(records);
+
         assertTrue(e.getMessage().contains("negative numerator"), e.getMessage());
     }
 
@@ -322,50 +390,45 @@ class ProjectionAssemblerTest {
      * elements" past 25.
      */
     @Test
-    void extraElementTypedRecordIsRejected() {
+    void extraElementTypedRecordStopsTheLoad() {
         List<ProjectionParseRecord> records = validFile();
         records.add(record("LIGHT_WEAK", "element", 99));
-        List<String> errors = new ArrayList<>();
 
-        List<Projection> result = assemble(records, errors);
+        DataFileParseException e = assembleAndStop(records);
 
-        assertTrue(result.isEmpty());
-        assertTrue(errors.getLast().contains("expected 25 got 26"), errors.toString());
+        assertTrue(e.getMessage().contains("expected 25 got 26"), e.getMessage());
     }
 
     @Test
-    void environsRowRetypedElementIsRejected() {
+    void environsRowRetypedElementStopsTheLoad() {
         List<ProjectionParseRecord> records = validFile();
         records.set(MAKE_DOOR, record("MAKE_DOOR", "element", 31));
-        List<String> errors = new ArrayList<>();
 
-        List<Projection> result = assemble(records, errors);
+        DataFileParseException e = assembleAndStop(records);
 
-        assertTrue(result.isEmpty());
-        assertTrue(errors.getLast().contains("got 26"), errors.toString());
+        assertTrue(e.getMessage().contains("got 26"), e.getMessage());
     }
 
     /**
      * C quits with "Too few elements" when one element is not typed {@code element}.
      */
     @Test
-    void elementRetypedEnvironsIsRejected() {
+    void elementRetypedEnvironsStopsTheLoad() {
         List<ProjectionParseRecord> records = validFile();
         records.set(POIS, record("POIS", "environs", 5));
-        List<String> errors = new ArrayList<>();
 
-        List<Projection> result = assemble(records, errors);
+        DataFileParseException e = assembleAndStop(records);
 
-        assertTrue(result.isEmpty());
-        assertTrue(errors.getLast().contains("expected 25 got 24 dropped 1"), errors.toString());
+        assertTrue(e.getMessage().contains("expected 25 got 24 dropped 1"), e.getMessage());
     }
 
     /**
      * Dropped element rows do not count. Each case breaks one field of POIS; the row is skipped,
-     * the survivors number 24, and the file is rejected. In C each of these is a fatal parse error.
+     * the survivors number 24, and the load stops with the field's error and the count in the
+     * message. In C each of these is a fatal parse error at the bad line.
      */
     @Test
-    void droppedElementRecordFailsTheFile() {
+    void droppedElementRecordStopsTheLoad() {
         List<ProjectionParseRecord> base = validFile();
         List<ProjectionParseRecord> bad = new ArrayList<>();
         bad.add(withNumerator(base.get(POIS), "-3"));
@@ -380,17 +443,14 @@ class ProjectionAssemblerTest {
         bad.add(withObvious(base.get(POIS), "-1"));
         bad.add(withWake(base.get(POIS), "x"));
         bad.add(withWake(base.get(POIS), "-1"));
-        bad.add(record("BOGUS", "element", 5));
 
         for (ProjectionParseRecord broken : bad) {
             List<ProjectionParseRecord> records = validFile();
             records.set(POIS, broken);
-            List<String> errors = new ArrayList<>();
 
-            List<Projection> result = assemble(records, errors);
+            DataFileParseException e = assembleAndStop(records);
 
-            assertTrue(result.isEmpty(), broken.toString());
-            assertTrue(errors.getLast().contains("expected 25 got 24"), errors.toString());
+            assertTrue(e.getMessage().contains("expected 25 got 24"), broken + ": " + e.getMessage());
         }
     }
 
@@ -414,20 +474,43 @@ class ProjectionAssemblerTest {
     }
 
     /**
-     * An unknown code after the element block is reported and skipped; C would not look the code
-     * up at all beyond index 24, so nothing in C corresponds to the error.
+     * C does not read the code of a record past the element block ({@code parse_projection_code}
+     * checks it only while {@code index < ELEM_MAX}) and keeps the record, so a code that is not a
+     * projection is stored, as {@code PROJ_NONE} because the port has no constant for it, with no
+     * error.
      */
     @Test
-    void unknownCodeAfterTheElementBlockIsReportedAndSkipped() {
+    void unknownCodeAfterTheElementBlockIsStoredAsProjNoneWithNoError() {
         List<ProjectionParseRecord> records = validFile();
         records.add(record("BOGUS", "monster", 99));
         List<String> errors = new ArrayList<>();
 
         List<Projection> result = assemble(records, errors);
 
+        assertEquals(57, result.size());
+        assertTrue(errors.isEmpty(), errors.toString());
+        assertEquals(ProjectionEnum.PROJ_NONE, result.getLast().getProjection());
+        assertEquals(ProjectionType.PT_MONSTER, result.getLast().getType());
+    }
+
+    /**
+     * Only the element block is positional, so two environs rows swapped after it load in the order
+     * given, each keeping its own code.
+     */
+    @Test
+    void theOrderBeyondTheElementBlockIsNotChecked() {
+        List<ProjectionParseRecord> records = validFile();
+        ProjectionParseRecord first = records.get(25);
+        records.set(25, records.get(26));
+        records.set(26, first);
+        List<String> errors = new ArrayList<>();
+
+        List<Projection> result = assemble(records, errors);
+
         assertEquals(56, result.size());
-        assertEquals(1, errors.size());
-        assertTrue(errors.getFirst().contains("Unknown projection code"), errors.toString());
+        assertTrue(errors.isEmpty(), errors.toString());
+        assertEquals(ProjectionEnum.PROJ_DARK_WEAK, result.get(25).getProjection());
+        assertEquals(ProjectionEnum.PROJ_LIGHT_WEAK, result.get(26).getProjection());
     }
 
     // ---- Colour (parse_projection_color) ----------------------------------
@@ -609,12 +692,9 @@ class ProjectionAssemblerTest {
     }
 
     @Test
-    void emptyFileIsRejectedForHavingNoElements() {
-        List<String> errors = new ArrayList<>();
+    void emptyFileStopsTheLoadForHavingNoElements() {
+        DataFileParseException e = assembleAndStop(new ArrayList<>());
 
-        List<Projection> result = assemble(new ArrayList<>(), errors);
-
-        assertTrue(result.isEmpty());
-        assertTrue(errors.getLast().contains("expected 25 got 0"), errors.toString());
+        assertTrue(e.getMessage().contains("expected 25 got 0"), e.getMessage());
     }
 }

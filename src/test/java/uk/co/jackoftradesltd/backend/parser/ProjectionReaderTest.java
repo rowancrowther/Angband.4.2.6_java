@@ -19,6 +19,7 @@ package uk.co.jackoftradesltd.backend.parser;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
@@ -42,10 +43,12 @@ import static org.junit.jupiter.api.Assertions.*;
  * <p>The happy-path test runs against the real shipped {@code lib/gamedata/projection.txt}; a clean
  * load is itself the assertion that all 56 records resolved (every code/type/msgt/colour). The
  * error-path tests inject a single defect each, either into a minimal fixture or into a copy of
- * the shipped file. The assembler is fail-closed on the element block (a wrong element count
- * yields an empty item list plus the collected errors) but soft on other faults, where the bad
- * record is skipped and the rest still loads; see {@link ProjectionAssemblerTest} for the cases
- * driven from hand-built records.
+ * the shipped file. A lexer or grammar error gives an empty item list plus the parser's messages.
+ * The assembler stops the load, as C quits, by throwing {@link DataFileParseException} out of
+ * {@code parseWithResults}, for a misplaced, unknown or empty code in the first 25 records, an empty
+ * code anywhere, and a count of {@code type:element} records other than 25. Its other faults are
+ * soft: the bad record is skipped and the rest still loads, unless the skip leaves the element
+ * count short. See {@link ProjectionAssemblerTest} for the cases driven from hand-built records.
  *
  * <p>The second half, added on 261018, pins the reader's contract: a missing file, the list in
  * file order, the {@code record-count:} header, and every field of the 56 shipped projections
@@ -54,7 +57,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@code ...WhereC...} and written up in {@code docs/grammar_issues.md} or
  * {@code docs/Assembler_Issues.md}; a fix there will turn the matching test red on purpose.
  *
- * <p>Test class ProjectionReaderTest coded before 261001, expanded and commented in full on 261018.
+ * <p>Test class ProjectionReaderTest coded before 261001, expanded and commented in full on 261018;
+ * the tests that reach the assembler's stop-the-load path rewritten on 261021.
  *
  * @author Rowan Crowther
  */
@@ -89,19 +93,15 @@ class ProjectionReaderTest {
 
     @Test
     void recordCountMismatchIsReportedAlongsideTheElementCountFailure() throws IOException {
-        // Header over-declares: 5 vs the single record present. The mismatch is reported as a soft
-        // error, but a one-record file cannot satisfy the element rule either: C's
-        // finish_parse_projection() quits unless exactly 25 records are of type element, so the
-        // assembler discards the lone record and says why.
-        String path = tempFile("bad-count.txt", "record-count:5\n" + ONE_RECORD);
-        ParseResult<Projection> result = new ProjectionReader().parseWithResults(path);
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty(), result.items()::toString);
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("declares 5") &&
-                        e.contains("contains 1")),
-                result.errors()::toString);
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("expected 25 got 1")),
-                result.errors()::toString);
+        // Header over-declares: 5 vs the single record present. The mismatch is a soft error, but
+        // a one-record file cannot satisfy the element rule either: C's finish_parse_projection()
+        // quits unless exactly 25 records are of type element, so the assembler stops the load and
+        // its message carries the mismatch as well as the count.
+        DataFileParseException e = loadAndStop("bad-count.txt", "record-count:5\n" + ONE_RECORD);
+
+        assertTrue(e.getMessage().contains("declares 5") && e.getMessage().contains("contains 1"),
+                e.getMessage());
+        assertTrue(e.getMessage().contains("expected 25 got 1"), e.getMessage());
     }
 
     @Test
@@ -120,16 +120,13 @@ class ProjectionReaderTest {
     }
 
     @Test
-    void unknownCodeIsReportedWithNoItems() throws IOException {
-        // NOTACODE is not a ProjectionEnum value.
-        String path = tempFile("bad-code.txt",
+    void unknownCodeInTheFirstRecordStopsTheLoad() throws IOException {
+        // NOTACODE is not a ProjectionEnum value, so it cannot be element_names[0]: C quits on the
+        // mismatch in parse_projection_code.
+        DataFileParseException e = loadAndStop("bad-code.txt",
                 "record-count:1\ncode:NOTACODE\ntype:element\ndesc:x\nblind-desc:x\nobvious:1\ncolor:Slate\n");
 
-        ParseResult<Projection> result = new ProjectionReader().parseWithResults(path);
-
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("NOTACODE")), result.errors()::toString);
+        assertTrue(e.getMessage().contains("NOTACODE"), e.getMessage());
     }
 
     @Test
@@ -144,40 +141,34 @@ class ProjectionReaderTest {
     }
 
     @Test
-    void unknownCodeAfterTheElementBlockIsReportedAndTheRestLoads() throws IOException {
+    void unknownCodeAfterTheElementBlockIsStoredWithNoCodeAndNoError() throws IOException {
         // The shipped file plus one extra block whose code is not a ProjectionEnum value, with the
-        // header raised to match. The element block is intact, so the file passes the element rule;
-        // the unknown code is a soft error and that one block is skipped. It does NOT fail closed.
+        // header raised to match. C does not read the code past the element block and keeps the
+        // record, so the port stores it as PROJ_NONE and reports nothing.
         String extra = "\ncode:NOTACODE\ntype:monster\ndesc:x\nblind-desc:x\nobvious:1\ncolor:Slate\n";
-        String path = tempFile("real-plus-bad-code.txt",
-                Files.readString(Path.of(REAL_FILE)).replace("record-count:56", "record-count:57") + extra);
+        ParseResult<Projection> result = load("real-plus-bad-code.txt",
+                shipped().replace("record-count:56", "record-count:57") + extra);
 
-        ParseResult<Projection> result = new ProjectionReader().parseWithResults(path);
-
-        assertEquals(56, result.items().size(), result.items()::toString);
-        List<String> errors = result.errors();
-        assertEquals(1, errors.size(), errors::toString);
-        assertTrue(errors.getFirst().contains("NOTACODE"), errors::toString);
+        assertEquals(57, result.items().size(), result.items()::toString);
+        assertFalse(result.hasErrors(), result.errors()::toString);
+        assertEquals(ProjectionEnum.PROJ_NONE, result.items().getLast().getProjection());
+        assertEquals(ProjectionEnum.PROJ_ACID, result.items().getFirst().getProjection());
     }
 
     @Test
-    void unknownTypeIsNotAnError() throws IOException {
+    void unknownTypeIsNotAnErrorButTheElementCountStopsTheLoad() throws IOException {
         // C keeps type as a string and only ever tests it against "element", so an unrecognised
         // type is not a fault: the block loads with no type. Here ELEC (position 2) has an unknown
-        // type, so it no longer counts as an element, the file has 24, and the element rule rejects
-        // it - with the element count as the only complaint.
-        String path = tempFile("unknown-type.txt", String.join("\n",
+        // type, so it no longer counts as an element, the file has 1, and the element rule stops
+        // the load - with the element count as the only complaint.
+        DataFileParseException e = loadAndStop("unknown-type.txt", String.join("\n",
                 "record-count:2",
                 "code:ACID\ntype:element\ndesc:x\nblind-desc:x\nobvious:1\ncolor:Slate",
                 "code:ELEC\ntype:NOTATYPE\ndesc:x\nblind-desc:x\nobvious:1\ncolor:Blue",
                 ""));
 
-        ParseResult<Projection> result = new ProjectionReader().parseWithResults(path);
-
-        assertTrue(result.items().isEmpty(), result.items()::toString);
-        List<String> errors = result.errors();
-        assertEquals(1, errors.size(), errors::toString);
-        assertTrue(errors.getFirst().contains("expected 25 got 1"), errors::toString);
+        assertTrue(e.getMessage().contains("expected 25 got 1"), e.getMessage());
+        assertFalse(e.getMessage().contains("NOTATYPE"), e.getMessage());
     }
 
     // ---- The reader's own contract (init/run/finish_parse_projection) --------------------------
@@ -188,6 +179,15 @@ class ProjectionReaderTest {
 
     private ParseResult<Projection> load(String name, String text) throws IOException {
         return new ProjectionReader().parseWithResults(tempFile(name, text));
+    }
+
+    /**
+     * Loads {@code text} and returns the exception that stops the load, failing the test if the
+     * reader returns a result instead.
+     */
+    private DataFileParseException loadAndStop(String name, String text) throws IOException {
+        String path = tempFile(name, text);
+        return assertThrows(DataFileParseException.class, () -> new ProjectionReader().parseWithResults(path));
     }
 
     @SuppressWarnings("unchecked")
@@ -456,11 +456,10 @@ class ProjectionReaderTest {
 
     @Test
     void aBlankAfterATypeOrColourIsKeptAsCKeepsIt() throws Exception {
-        // "element " is not "element", so ACID stops counting as an element and the file fails the
+        // "element " is not "element", so ACID stops counting as an element and the load stops on the
         // 25-element rule, as in C's finish_parse_projection. "Slate " matches no colour name: White.
-        ParseResult<Projection> type = load("type-blank.txt", shipped().replaceFirst("type:element", "type:element "));
-        assertTrue(type.items().isEmpty());
-        assertTrue(type.errors().getFirst().contains("expected 25 got 24"), type.errors()::toString);
+        DataFileParseException type = loadAndStop("type-blank.txt", shipped().replaceFirst("type:element", "type:element "));
+        assertTrue(type.getMessage().contains("expected 25 got 24"), type.getMessage());
 
         ParseResult<Projection> colour = load("colour-blank.txt", shipped().replaceFirst("color:Slate", "color:Slate "));
         assertEquals(ColourEnum.COLOUR_WHITE, field(colour.items().getFirst(), "colour"));
@@ -511,12 +510,11 @@ class ProjectionReaderTest {
     }
 
     @Test
-    void aNumeratorAboveIntMaxDropsTheRecordAndFailsTheFileWhereCReadsAnUnsignedInt() throws IOException {
-        ParseResult<Projection> result = load("big.txt", shipped().replaceFirst("numerator:1", "numerator:2147483648"));
+    void aNumeratorAboveIntMaxDropsTheRecordAndStopsTheLoadWhereCReadsAnUnsignedInt() throws IOException {
+        DataFileParseException e = loadAndStop("big.txt", shipped().replaceFirst("numerator:1", "numerator:2147483648"));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("invalid numerator: 2147483648")), result.errors()::toString);
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("expected 25 got 24")), result.errors()::toString);
+        assertTrue(e.getMessage().contains("invalid numerator: 2147483648"), e.getMessage());
+        assertTrue(e.getMessage().contains("expected 25 got 24"), e.getMessage());
     }
 
     @Test
@@ -528,32 +526,41 @@ class ProjectionReaderTest {
 
         ParseResult<Projection> max = load("msgt-max.txt", shipped().replaceFirst("msgt:BR_ACID", "msgt:MAX"));
         assertEquals(MessageType.MSG_MAX, field(max.items().getFirst(), "msgt"));
-        assertTrue(load("msgt-unknown.txt", shipped().replaceFirst("msgt:BR_ACID", "msgt:NOT_A_MSG")).items().isEmpty());
+        // C quits on an unknown name; the port drops ACID, an element, and the count then stops the load.
+        DataFileParseException unknown = loadAndStop("msgt-unknown.txt",
+                shipped().replaceFirst("msgt:BR_ACID", "msgt:NOT_A_MSG"));
+        assertTrue(unknown.getMessage().contains("Unknown projection message type"), unknown.getMessage());
+        assertTrue(unknown.getMessage().contains("expected 25 got 24"), unknown.getMessage());
     }
 
     /**
-     * The assembler throws a {@code ParseCancellationException} for a misplaced element, and
-     * {@code GrammarDriver} turns it into an empty result with only the parser's errors. The
-     * assembler's message goes to the log, so the result is empty and says nothing.
+     * The assembler throws {@link DataFileParseException} for a misplaced element, and
+     * {@code GrammarDriver} lets it through, so it comes out of {@code parseWithResults} with the
+     * position, the ordinal it found and the errors gathered so far. C quits at that line.
      */
     @Test
-    void aSwappedElementBlockGivesNoProjectionsAndNoErrorMessage() throws IOException {
+    void aSwappedElementBlockStopsTheLoadWithTheMismatchInTheMessage() throws IOException {
         String swapped = shipped().replaceFirst("(?s)(code:ACID.*?color:Slate\n)(.*?)(code:ELEC.*?\n\n)", "$3$2$1");
-        ParseResult<Projection> result = load("swapped.txt", swapped);
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().isEmpty(), result.errors()::toString);
+        DataFileParseException e = loadAndStop("swapped.txt", swapped);
+
+        assertTrue(e.getMessage().contains("Input ordinal: 2 is not equal to expected ordinal: 1"), e.getMessage());
     }
 
     @Test
-    void anUnknownCodeBeyondTheElementBlockSkipsTheRecordWhereCNeverReadsTheCode() throws IOException {
-        // C compares the code with element_names for the first 25 records and ignores it after.
-        String extra = "\ncode:NOTACODE\ntype:monster\ndesc:x\nblind-desc:x\nobvious:1\ncolor:Slate\n";
-        ParseResult<Projection> result = load("extra.txt",
-                shipped().replace("record-count:56", "record-count:57") + extra);
+    void anEmptyCodeStopsTheLoadAtAnyPosition() throws IOException {
+        // An empty code: is PARSE_ERROR_MISSING_FIELD in C's parser_parse, a hard error wherever it
+        // is. The grammar rejects it first, so it comes back as a hard error with no items; the
+        // assembler's own empty-code stop is only reached with hand-built records.
+        String empty = "\ncode:\ntype:monster\ndesc:x\nblind-desc:x\nobvious:1\ncolor:Slate\n";
 
-        assertEquals(56, result.items().size());
-        assertEquals(1, result.errors().size(), result.errors()::toString);
+        ParseResult<Projection> first = load("empty-first.txt",
+                shipped().replaceFirst("code:ACID", "code:"));
+        ParseResult<Projection> after = load("empty-after.txt",
+                shipped().replace("record-count:56", "record-count:57") + empty);
+
+        assertHardError(first);
+        assertHardError(after);
     }
 
     // ---- Expected values, worked out from the upstream projection.txt ---------------------------

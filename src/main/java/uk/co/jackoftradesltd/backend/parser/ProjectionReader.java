@@ -55,13 +55,17 @@ import java.util.List;
  * {@code element_names} and nothing after that, so a list index is the enum ordinal minus one for
  * those 25 ({@code PROJ_NONE} takes ordinal 0) and nothing more.
  *
- * <p>C quits on the first bad line. This reader follows the shared two-channel contract instead: a
- * lexer or grammar error returns no projections and the messages, and a bad record or a
+ * <p>C quits on the first bad line. This reader follows the shared two-channel contract for most
+ * faults: a lexer or grammar error returns no projections and the messages, and a bad record or a
  * {@code record-count:} mismatch is a soft error that leaves the other records loaded. The
- * {@code record-count:} header is Java-only; the upstream file has none. A file that cannot be
- * opened is an {@link IOException}, where C quits.
+ * faults C quits on in {@code parse_projection_code} and {@code finish_parse_projection} stop the
+ * load instead: {@link ProjectionAssembler} throws a {@code DataFileParseException}, which
+ * {@link GrammarDriver} does not catch, so it comes out of {@link #parseWithResults} and
+ * {@link #parse} with no {@link ParseResult}. The {@code record-count:} header is Java-only; the
+ * upstream file has none. A file that cannot be opened is an {@link IOException}, where C quits.
  *
- * <p>Class ProjectionReader coded before 260915, commented in full on 261018.
+ * <p>Class ProjectionReader coded before 260915, commented in full on 261018; the stop-the-load
+ * paragraph rewritten on 261021.
  *
  * @author Rowan Crowther
  */
@@ -153,17 +157,24 @@ public class ProjectionReader implements Reader<Projection> {
      * {@link Projection}s in file order, and every error message collected on the way. This is
      * the Java form of C's {@code run_parse_projection} followed by {@code finish_parse_projection}.
      *
-     * <p>There are three outcomes. A clean file gives 56 projections and no errors for the shipped
-     * data. A lexer or grammar error gives no projections and the parser's messages. Anything
-     * the assembler objects to is a message beside the records that survived, except that a count
-     * of surviving {@code type:element} records other than 25 empties the list, as C's
-     * {@code quit_fmt} stops the game. A file that cannot be opened is an {@link IOException}.
+     * <p>There are four outcomes. A clean file gives 56 projections and no errors for the shipped
+     * data. A lexer or grammar error, which includes a {@code code:} with no value, gives no
+     * projections and the parser's messages. A soft fault in a record is a message beside the
+     * records that survived. A fault C quits on stops the load: one of the first 25 records has an
+     * unknown or misplaced code, or the number of surviving {@code type:element} records is not 25,
+     * and the assembler's {@code DataFileParseException} comes out of this method, its message
+     * carrying the position, the ordinal and the errors gathered so far. A file that cannot be
+     * opened is an {@link IOException}.
      *
-     * <p>Function parseWithResults coded before 260915, commented in full on 261018.
+     * <p>Function parseWithResults coded before 260915, commented in full on 261018; the
+     * stop-the-load outcome documented on 261021.
      *
      * @param filename the name of the file to parse
      * @return a {@link ParseResult} of type {@link Projection}
      * @throws IOException when the file cannot be found or read
+     * @throws uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException if the
+     *         assembler stops the load, as C quits in {@code parse_projection_code} or
+     *         {@code finish_parse_projection}
      */
     public ParseResult<Projection> parseWithResults(@NotNull String filename) throws IOException {
         return GrammarDriver.run(filename, ProjectionLexer::new,

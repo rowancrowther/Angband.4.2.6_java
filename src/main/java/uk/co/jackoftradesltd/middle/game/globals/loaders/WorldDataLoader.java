@@ -62,7 +62,8 @@ import java.util.List;
  *   quits; here {@code ErrorParsing.reportAndCheck} logs every error and the surviving records are
  *   installed, as the other data loaders do. The checks C makes in its {@code finish_parse_*}
  *   functions are not softened: a bad level reference stops {@code loadWorld}, and a projection file
- *   without exactly 25 elements assembles nothing, so {@code loadProjections} stops.</li>
+ *   without exactly 25 elements, or with one of its first 25 codes unknown or out of order, makes
+ *   the assembler throw, so {@code loadProjections} stops.</li>
  *   <li>The files are read from the gamedata directory only. C's {@code parse_file}
  *   ({@code datafile.c}) tries a customised copy in the user directory first.</li>
  *   <li>The {@code "None"} that {@code world.txt} writes for a missing neighbour stays as text on the
@@ -172,18 +173,23 @@ public class WorldDataLoader {
      * that leaves errors and no projections. Later loaders depend on this list, so failing here names
      * the real file rather than surfacing as an unresolvable projection much later.
      *
-     * <p>The element count check in C's {@code finish_parse_projection} ("Too few elements" and "Too
-     * many elements" in {@code projection.txt}) is not made here. {@code ProjectionAssembler} makes it
-     * and, on a count other than 25, returns an empty list with an error, which is what reaches the
-     * second case above. The projections are installed in file order, which is the order of C's
-     * {@code projections[]}. Calling this again replaces the registry list rather than appending.
+     * <p>The checks C makes in {@code parse_projection_code} (the first 25 codes are the elements in
+     * order) and in {@code finish_parse_projection} ("Too few elements" and "Too many elements" in
+     * {@code projection.txt}) are not made here. {@code ProjectionAssembler} makes them and throws a
+     * {@code DataFileParseException}, a {@link RuntimeException}, which this method does not catch.
+     * It leaves {@code loadProjections} unchanged, before the registry is touched, with the position
+     * or the count and the errors gathered so far in its message. The projections are installed in
+     * file order, which is the order of C's {@code projections[]}. Calling this again replaces the
+     * registry list rather than appending.
      *
-     * <p>Function loadProjections coded before 261014, commented in full on 261014.
+     * <p>Function loadProjections coded before 261014, commented in full on 261014; the element
+     * checks reworded on 261021 for the assembler's stop-the-load path.
      *
      * @throws IOException declared, but never thrown: an {@code IOException} from the reader is
      *                     wrapped in a {@link RuntimeException}
-     * @throws RuntimeException if {@code projection.txt} cannot be read, or the parse leaves errors
-     *                          and no projections
+     * @throws RuntimeException if {@code projection.txt} cannot be read, the parse leaves errors
+     *                          and no projections, or the assembler stops the load with a
+     *                          {@code DataFileParseException}
      */
     public static void loadProjections() throws IOException {
         String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "projection.txt";

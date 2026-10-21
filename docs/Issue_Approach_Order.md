@@ -57,7 +57,7 @@ the Java. Colours are settled above; every other group is only tiered here, not 
 | Text content | decided | Trimmed `name:`, glyphs outside the Basic Multilingual Plane, colons in descriptions, text after a value, upper-case-only identifiers. |
 | Empty file or missing `record-count:` | decided | A header with no records, an empty file, a header the upstream file does not carry. |
 | Reversed chains | decided | Always echo C's ordering. Supersedes the 2026-10-17 decision (file order, sorted by registry position only where C's order is needed). |
-| Bad record: drop it, drop the file, or stop the load | 1 | A lexer error empties the file, an assembler error drops one record, some paths abort the load. |
+| Bad record: drop it, drop the file, or stop the load | decided | Stop the load, see "Answer for the Tier 1 row" below. A lexer error empties the file, an assembler error drops one record, some paths abort the load. |
 | Sentinel names `NONE` and `MAX` | 1 | Accepted by the Slay, Brand, EgoItem, Shape, Body, PlayerRace, Projection and PlayerProperty assemblers; C rejects them. |
 | A field on the wrong kind of record | 1 | `graphics:` on a non-`INSTA_ART` artifact, `subtype:` on a non-flag property, `value:` and `code:` on the wrong property record. |
 | Numbers | 2 | Octal, hex and plus signs read by `strtol` base 0 in C, decimal only in Java. |
@@ -66,8 +66,20 @@ the Java. Colours are settled above; every other group is only tiered here, not 
 
 **Answers for the Tier 0 groups (2026-10-19).** The rule running through them is "match C exactly": where C accepts something the
 Java rejects, the Java accepts it, and where C rejects something the Java accepts, the Java rejects it. Where C raises a parse error,
-the port's usual soft error that skips the record applies; whether that should instead drop the file or stop the load is the Tier 1
-row "Bad record".
+the port's usual soft error that skips the record was assumed; the Tier 1 row "Bad record" has since been decided as stop the load,
+which supersedes that assumption (see the answer below).
+
+**Answer for the Tier 1 row "Bad record" (2026-10-21): stop the load.** Any parse error ends the load with the file and line, as
+`run_parser` and `print_error` in `datafile.c` do, and an error from a `finish_parse_*` function (the 254 limits included) does the
+same. This covers syntax errors, assembler errors and limit overflows alike, so the port no longer skips a bad record and carries on.
+
+- **What changes in the code.** Every `errors.add` followed by `continue` in the assemblers becomes a stop, and the mixed
+  `IllegalArgumentException`, `RuntimeException` and `ParseCancellationException` throws become one deliberate stop-the-load path
+  that carries the file, the line and the message. `ProjectionAssembler.java` no longer has its error swallowed by `GrammarDriver`.
+- **What changes in the tests.** Tests that pin skip-and-continue flip to expect the stop.
+- **What changes in these documents.** The roughly 45 grammar entries that say "the whole file loads as nothing" describe intended
+  behaviour, not a fault. Entries already marked CLOSED on the soft-error assumption (for example the unknown spell in
+  `message-*:`) stand as closed but are due this second change.
 
 - **Absent fields: C-lenient.** A record that leaves a directive out loads with C's zero, `null` or default, and `ParseRecord` fields
   become absent-capable. `MonsterSpellLevelAssembler` prepends the implicit level 0 (power 0, `null` text) when the first level's power
@@ -167,12 +179,78 @@ None of these show on the shipped data. Each turns a bad modded line into an exc
 1. A: `monster/MonsterAssembler.java` a die that overflows `int`, and G: `Random.g4` a number above `INT_MAX`. One fix in `Random.java` or the call sites; the Stage 0 answer decides which. [<span style="color:#006400">**CLOSED**</span> 26-10-20: `numberOrMissing` in `Random.g4` returns the missing-number marker for a number above `INT_MAX` or too long for a `long`, the `@after` block tests `baseInit` as well, `RandomReader.parse` logs and returns `null`, and the dead `NumberFormatException` catch in `Random.parseStr` is gone. `RandomReaderTest` pins it with `aNumberAboveIntMaxIsRefusedInEverySlotAsCRefusesIt`; the full suite is green.]
 2. A: `monster/MonsterAssembler.java` a `friends:` or `friends-base:` die that `Random.parseStr` rejects. C reads the `number` field with `parse_random` in `parser.c` before `parse_monster_friends` or `parse_monster_friends_base` runs, so a bad die is a parse error and no friend is stored. The Java records the soft error and sets `badFriend` (or `badFriendBase`), then still calls `numberDie.getDice()` with `numberDie` `null` in `friends.add(...)` (`MonsterAssembler.java:471`) and `friendsBase.add(...)` (`MonsterAssembler.java:529`). The load ends in a `NullPointerException` where the record should be skipped. Once the entry above makes an overflowing die return `null`, that is the input that reaches these lines. Fix by leaving out the `add` when `numberDie` is `null`, and do it with the entry above. [<span style="color:#006400">**CLOSED**</span> 26-10-20: both loops now skip the `add` when `numberDie` is `null`, and the `friends-base:` loop keeps a per-line `badDice` flag so one bad line does not hide the next. `MonsterReaderTest` pins it with `aFriendCountThatOverflowsIntIsASoftErrorAsInC`, `aFriendBaseCountThatOverflowsIntIsASoftErrorAsInC` and `everyBadFriendsBaseLineIsReportedNotJustTheFirst`.]
 3. A: `slay/SlayAssembler.java` a code the `Slay` constructor cannot split aborts the whole load. [<span style="color:#006400">**CLOSED**</span> 26-10-21: `Slay.java` no longer splits `code`, so the constructor stores its nine arguments and cannot throw; `monsterType` and `monsterLevel` are removed from the class, `equals` and `hashCode`. `SlayAssembler.java` is unchanged. `SlayTest` has `constructorStoresAnyCodeAsGivenAsInC` and `SlayReaderTest` has `codeThatIsNotAFlagUnderscoreNumberLoadsAsInC`; the full suite is green.]
-4. A: `curse/CurseAssembler.java` the 254-curse limit throws out of the reader and counts survivors.
+4. A: `curse/CurseAssembler.java` the 254-curse limit throws out of the reader and counts survivors. [<span style="color:#006400">**CLOSED**</span> 26-10-21: `CurseAssembler.java` counts every record before any other check and throws on the 255th with the count and line in the message, as C counts every entry and quits. The throw stays: the Tier 1 "Bad record" row is decided as stop the load. `CurseAssemblerTest.skippedRecordsStillCountTowardsTheCapAsInC` pins it and the full suite is green.]
 5. A: `itemobject/ItemObjectAssembler.java` a record with no `type:` leaves a `null` base that `ObjectRegistry.addObjectKind` dereferences.
 6. A: `trap/TrapAssembler.java` the bad-effect `null` list (the other half of the Stage 1 item). [<span style="color:#006400">**CLOSED**</span> 26-10-20 with Stage 1 item 6.]
 7. A: `projection/ProjectionAssembler.java` and `GrammarDriver.java` a misplaced element gives no projections and no error. Any assembler that throws `ParseCancellationException` is open to the same loss, so check them when this is fixed.
 8. A: `dungeonprofile/DungeonProfileAssembler.java` and `RoomAssembler.java` unknown names load with a `null` builder; a bad tunnel or streamer keeps the profile.
 9. A: `playerclass/ClassSpellBookAssembler.java` and `ClassMagicAssembler.java` a class whose books were all dropped loads as a non-caster, and a book keeps more spells than it declares.
+
+## Stop-the-load sites: every `errors.add` in the assemblers
+
+**Date:** 2026-10-21
+
+**What this is:** the work list for the Tier 1 "Bad record" answer (stop the load). It names every `errors.add(...)` call in the 51 assembler
+files that have one, 503 calls in all, so each can be turned into the one stop-the-load path. Line numbers are as the files stood on
+the date above and move as soon as a file is edited, so re-run the search before working on a file. `HintAssembler.java` and
+`WorldAssembler.java` have no `errors.add` call and are not listed. The throws that already stop the load (in `CurseAssembler.java`,
+`TerrainFeatureAssembler.java`, `QuestAssembler.java` and `ProjectionAssembler.java`) are not in this list.
+
+**Order (2026-10-21):** this is done after Stage 2 and before Stage 3, so the helpers in Stage 3 are written against the stop-the-load path.
+
+Paths are under `src/main/java/uk/co/jackoftradesltd/`. The figure in brackets is the number of calls in that file.
+
+- `backend/parser/activation/ActivationAssembler.java` (2): 72, 82
+- `backend/parser/artifact/ArtifactAssembler.java` (21): 86, 97, 107, 117, 127, 138, 148, 161, 183, 187, 205, 218, 229, 243, 255, 265, 275, 285, 294, 304, 317
+- `backend/parser/bloweffect/BlowEffectAssembler.java` (8): 86, 97, 110, 119, 128, 144, 160, 168
+- `backend/parser/blowmethod/BlowMethodAssembler.java` (1): 90
+- `backend/parser/body/BodyAssembler.java` (1): 74
+- `backend/parser/brand/BrandAssembler.java` (5): 86, 97, 108, 116, 124
+- `backend/parser/chesttrap/ChestTrapAssembler.java` (9): 78, 88, 95, 102, 113, 120, 131, 137, 155
+- `backend/parser/curse/CurseAssembler.java` (17): 190, 205, 220, 225, 250, 260, 281, 285, 295, 299, 311, 321, 331, 344, 357, 366, 408
+- `backend/parser/dungeonprofile/DungeonProfileAssembler.java` (3): 80, 106, 116
+- `backend/parser/dungeonprofile/RoomAssembler.java` (6): 66, 74, 82, 90, 99, 107
+- `backend/parser/dungeonprofile/StreamerAssembler.java` (7): 52, 66, 73, 80, 87, 94, 101
+- `backend/parser/dungeonprofile/TunnelAssembler.java` (6): 57, 73, 81, 89, 97, 105
+- `backend/parser/egoitem/EgoItemAssembler.java` (30): 83, 100, 113, 128, 146, 150, 157, 166, 183, 187, 198, 210, 223, 234, 246, 256, 266, 276, 286, 295, 303, 313, 323, 332, 341, 351, 361, 371, 380, 389
+- `backend/parser/flavour/FlavourAssembler.java` (4): 67, 73, 85, 91
+- `backend/parser/flavour/FlavourKindAssembler.java` (3): 74, 80, 94
+- `backend/parser/gameconstants/GameConstantsAssembler.java` (39): 58, 93, 115, 131, 138, 158, 192, 214, 231, 238, 258, 286, 308, 325, 348, 388, 411, 427, 453, 490, 509, 531, 550, 578, 597, 619, 638, 664, 684, 724, 743, 778, 798, 824, 844, 882, 902, 914, 935
+- `backend/parser/grammars/EffectAssembler.java` (22): 112, 120, 147, 157, 167, 177, 238, 245, 255, 296, 306, 316, 326, 341, 349, 358, 368, 378, 388, 398, 408, 416
+- `backend/parser/history/HistoryAssembler.java` (5): 83, 91, 99, 113, 133
+- `backend/parser/itemobject/ItemObjectAssembler.java` (32): 96, 102, 112, 119, 130, 140, 150, 162, 171, 180, 190, 199, 209, 217, 224, 231, 240, 251, 256, 262, 288, 293, 315, 319, 329, 335, 347, 359, 371, 382, 400, 418
+- `backend/parser/monsterbase/MonsterBaseAssembler.java` (4): 70, 77, 86, 92
+- `backend/parser/monster/MonsterAssembler.java` (41): 89, 103, 113, 123, 134, 144, 154, 164, 174, 185, 194, 205, 213, 223, 233, 244, 256, 269, 279, 286, 307, 317, 328, 338, 364, 386, 397, 410, 436, 442, 450, 463, 495, 501, 507, 516, 530, 538, 556, 562, 585
+- `backend/parser/monsterspell/MonsterSpellAssembler.java` (3): 77, 91, 100
+- `backend/parser/monsterspell/MonsterSpellLevelAssembler.java` (4): 72, 82, 91, 100
+- `backend/parser/names/NamesAssembler.java` (1): 56
+- `backend/parser/objectbase/ObjectBaseAssembler.java` (6): 66, 74, 88, 97, 108, 116
+- `backend/parser/objectproperty/ObjectPropertyAssembler.java` (12): 79, 84, 93, 99, 105, 133, 139, 148, 158, 173, 180, 206
+- `backend/parser/pain/PainAssembler.java` (2): 64, 69
+- `backend/parser/pit/PitAssembler.java` (12): 92, 102, 112, 127, 140, 152, 159, 173, 187, 200, 215, 231
+- `backend/parser/playerclass/ClassEquipAssembler.java` (11): 92, 99, 110, 115, 120, 129, 134, 139, 145, 191, 197
+- `backend/parser/playerclass/ClassMagicAssembler.java` (5): 61, 69, 77, 84, 89
+- `backend/parser/playerclass/ClassSpellAssembler.java` (4): 62, 72, 82, 92
+- `backend/parser/playerclass/ClassSpellBookAssembler.java` (9): 126, 152, 163, 172, 184, 194, 204, 214, 231
+- `backend/parser/playerclass/PlayerClassAssembler.java` (14): 82, 86, 100, 104, 118, 122, 132, 142, 152, 163, 173, 187, 201, 209
+- `backend/parser/playerproperty/PlayerPropertyAssembler.java` (7): 137, 144, 151, 158, 172, 177, 191
+- `backend/parser/playerrace/PlayerRaceAssembler.java` (19): 72, 82, 92, 102, 112, 122, 132, 142, 152, 167, 173, 187, 192, 204, 217, 228, 233, 247, 251
+- `backend/parser/playertimed/PlayerTimedAssembler.java` (13): 84, 107, 114, 119, 130, 145, 183, 189, 214, 224, 234, 245, 255
+- `backend/parser/projection/ProjectionAssembler.java` (27): 149, 152, 156, 159, 171, 174, 184, 187, 191, 194, 203, 206, 210, 213, 225, 228, 232, 235, 247, 250, 254, 257, 269, 294, 326, 407, 415
+- `backend/parser/quest/QuestAssembler.java` (2): 156, 177
+- `backend/parser/realm/RealmAssembler.java` (1): 80
+- `backend/parser/roomprofile/RoomProfileAssembler.java` (11): 69, 79, 89, 97, 107, 113, 123, 141, 157, 170, 179
+- `backend/parser/shape/ShapeAssembler.java` (17): 84, 95, 106, 119, 131, 143, 155, 167, 179, 191, 203, 216, 230, 249, 253, 264, 268
+- `backend/parser/slay/SlayAssembler.java` (7): 81, 92, 99, 103, 113, 121, 129
+- `backend/parser/summon/SummonAssembler.java` (4): 70, 80, 96, 122
+- `backend/parser/terrainfeature/TerrainFeatureAssembler.java` (9): 155, 183, 193, 198, 208, 213, 233, 248, 279
+- `backend/parser/trap/TrapAssembler.java` (7): 128, 141, 152, 163, 173, 184, 196
+- `backend/parser/vault/VaultAssembler.java` (10): 97, 105, 114, 123, 129, 148, 158, 166, 174, 193
+- `backend/parser/visuals/VisualsCycleAssembler.java` (2): 82, 90
+- `backend/parser/visuals/VisualsFlickerAssembler.java` (2): 74, 85
+- `frontend/ui/entry/assembler/UIEntryAssembler.java` (10): 223, 231, 250, 262, 278, 292, 313, 344, 372, 384
+- `frontend/ui/entrybase/assembler/UIEntryBaseAssembler.java` (3): 95, 105, 128
+- `frontend/ui/entryrenderer/assembler/UIEntryRendererAssembler.java` (3): 63, 91, 104
 
 ## Stage 3: shared assembler helpers, fixed once and applied everywhere
 

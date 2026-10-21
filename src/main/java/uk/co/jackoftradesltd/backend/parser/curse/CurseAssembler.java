@@ -17,9 +17,12 @@
 
 package uk.co.jackoftradesltd.backend.parser.curse;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.backend.parser.grammars.EffectAssembler;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
+import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
@@ -30,7 +33,6 @@ import uk.co.jackoftradesltd.middle.objects.Curse;
 import uk.co.jackoftradesltd.middle.objects.ElementInfo;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
 import uk.co.jackoftradesltd.middle.objects.ObjectBase;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
@@ -85,10 +87,11 @@ import java.util.Map;
  *       adjustment is preserved;</li>
  *   <li>a curse with {@code MULTIPLY_WEIGHT} in its {@code flags:} must not have a
  *       negative weight adjustment;</li>
- *   <li>no more than {@value #MAX_CURSES} curses may be loaded.</li>
+ *   <li>no more than {@value #MAX_CURSES} curses may be defined. Every record counts, including
+ *       one that is skipped for another fault, because C counts every entry in its list.</li>
  * </ul>
  * Where C fails the whole load, this assembler skips the offending record and
- * reports it, except for the curse-count cap, which throws.
+ * reports it, except for the curse-count cap, which throws as C stops the load.
  * <p>
  * <b>Ordering and index:</b> C builds its curse list by prepending, so
  * {@code curses[1]} is the <em>last</em> curse in the file. The assembled list is
@@ -117,12 +120,16 @@ import java.util.Map;
  * @author Rowan Crowther
  */
 public class CurseAssembler implements Assembler<CurseParseRecord, List<Curse>> {
+    private static final Logger logger = LogManager.getLogger(CurseAssembler.class);
+    
     /**
      * The most curses {@code curse.txt} may define: 254, as in C's
      * {@code finish_parse_curse}, which fails with {@code PARSE_ERROR_TOO_MANY_ENTRIES}
-     * on the 255th. Exceeding it makes {@link #assemble} throw rather than skip.
+     * on the 255th. Exceeding it makes {@link #assemble} throw rather than skip. The count is of
+     * records read, not curses that survive, so a record skipped for another fault still counts.
      *
-     * <p>Field MAX_CURSES coded before 260915, commented in full on 261005.
+     * <p>Field MAX_CURSES coded before 260915, commented in full on 261005, count changed from
+     * survivors to records on 261021.
      */
     private static final int MAX_CURSES = 254;
 
@@ -146,25 +153,38 @@ public class CurseAssembler implements Assembler<CurseParseRecord, List<Curse>> 
      * Once every record is processed, the surviving curses are reversed to match C's
      * prepend-built list and re-indexed from 0 (see the class comment), then each
      * curse's conflict names are linked to {@link Curse} instances in a second pass.
+     * <p>
+     * Each record is counted before any other check, so the 255th record stops the load whether or
+     * not the records before it were skipped, as {@code finish_parse_curse} counts every entry.
      *
      * <p>Function assemble coded before 260915, commented in full on 261005, {@code time:} added to
-     * the skip reasons on 261008 once the record carried it.
+     * the skip reasons on 261008 once the record carried it, record count and the thrown message
+     * (count and line) documented on 261021.
      *
      * @param records the raw parse records from the grammar
      * @param errors  accumulating list of soft (skip-and-continue) error messages
      * @return the assembled curses in C's order (last curse in the file first), with
      *         conflict links resolved
-     * @throws IllegalArgumentException if more than {@value #MAX_CURSES} curses survive
-     *                                  the first pass
+     * @throws IllegalArgumentException if {@code records} holds more than {@value #MAX_CURSES}
+     *                                  records, counting those that would be skipped; the message
+     *                                  gives the count and the line of the record that went over
      */
     @Override
     public List<Curse> assemble(@NotNull List<CurseParseRecord> records, @NotNull List<String> errors) {
         List<Curse> results = new ArrayList<>();
 
         int curseIndex = 0;
+        int numCurses = 0;
+        
         // First pass
         for (CurseParseRecord record : records) {
             int line = record.line();
+            numCurses++;
+            if (numCurses > MAX_CURSES) {
+                String message = "Too many curses (" + numCurses + ") found at line: " + line;
+                logger.fatal(message);
+                throw new IllegalArgumentException(message);
+            }
             String name = record.name();
             if (name == null || name.isEmpty()) {
                 errors.add("Curse starting at line: " + line + " " +
@@ -365,12 +385,6 @@ public class CurseAssembler implements Assembler<CurseParseRecord, List<Curse>> 
                     conflictingCurses, cFlags,
                     description, curseIndex));
             curseIndex++;
-        }
-
-        if (results.size() > MAX_CURSES) {
-            String message = "Too many curses in the curse.txt file, must be less than 255, " + results.size() +
-                    " found";
-            throw new IllegalArgumentException(message);
         }
 
         // Reverse the list to make it fit the same order as C

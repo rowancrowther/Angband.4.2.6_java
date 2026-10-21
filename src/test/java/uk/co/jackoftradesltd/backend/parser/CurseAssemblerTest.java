@@ -35,12 +35,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Drives {@link CurseAssembler#assemble} directly with hand-built {@link CurseParseRecord}s, so each
@@ -335,12 +330,15 @@ class CurseAssemblerTest {
     }
 
     @Test
-    @DisplayName("records skipped for errors do not count towards the cap")
-    void skippedRecordsDoNotCountTowardsTheCap() {
+    @DisplayName("records skipped for errors still count towards the cap, as C counts every entry")
+    void skippedRecordsStillCountTowardsTheCapAsInC() {
         Rec[] recs = numbered(255);
         recs[100] = new Rec("bad").weight("x");
 
-        assertEquals(254, assemble(new ArrayList<>(), recs).size());
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+                () -> assemble(new ArrayList<>(), recs));
+
+        assertTrue(e.getMessage().contains("255"), e::getMessage);
     }
 
     @Test

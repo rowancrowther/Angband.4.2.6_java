@@ -577,7 +577,7 @@ Found 2026-10-17 during `/port backend/parser/CurseReader.java`. [<span style="c
 
 ## `curse/CurseAssembler.java`: the 254-curse limit throws out of the reader and counts survivors, C counts records
 
-Found 2026-10-17 during `/port backend/parser/CurseReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/CurseReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-21: `CurseAssembler.java` counts every record before any other check and throws `IllegalArgumentException` on the 255th, with the count and line in the message. The throw is kept because C quits on this error, and the Tier 1 "Bad record" row in `docs/Issue_Approach_Order.md` is decided as stop the load. `CurseAssemblerTest` has `skippedRecordsStillCountTowardsTheCapAsInC`, `CurseReaderTest` passes, and the full suite is green. The bullets below describe the state before the fix.]
 
 - `finish_parse_curse` in `obj-init.c` counts every `name:` record and stops at 254 with `PARSE_ERROR_TOO_MANY_ENTRIES`.
 - `CurseAssembler.java:370` compares `results.size()` with `MAX_CURSES` after the first pass, so a record skipped for a bad

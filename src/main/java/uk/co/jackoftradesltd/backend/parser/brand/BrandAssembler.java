@@ -101,7 +101,7 @@ public class BrandAssembler implements Assembler<BrandParseRecord, List<Brand>> 
             }
             // multiplier / o-multiplier / power are INTEGER tokens, so parseInt can only fail on a
             // value too large for int.
-            int mult = 0;
+            int mult;
             try {
                 mult = Integer.parseInt(record.multiplier());
             } catch (NumberFormatException e) {
@@ -109,7 +109,7 @@ public class BrandAssembler implements Assembler<BrandParseRecord, List<Brand>> 
                         "an invalid multiplier: " + record.multiplier());
                 continue;
             }
-            int oMult = 0;
+            int oMult;
             try {
                 oMult = Integer.parseInt(record.oMultiplier());
             } catch (NumberFormatException e) {
@@ -117,7 +117,7 @@ public class BrandAssembler implements Assembler<BrandParseRecord, List<Brand>> 
                         "an invalid o-multiplier: " + record.oMultiplier());
                 continue;
             }
-            int power = 0;
+            int power;
             try {
                 power = Integer.parseInt(record.power());
             } catch (NumberFormatException e) {

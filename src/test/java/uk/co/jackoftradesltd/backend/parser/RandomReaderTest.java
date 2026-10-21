@@ -45,7 +45,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * accepts a lower-case {@code m}, a base straight into {@code M} and {@code $} variables (the last
  * two because {@code z-dice.c} reads them). It is stricter in that it refuses blanks, a repeated
  * {@code d} or {@code M}, and a signed zero such as {@code 2d-0}. A number above {@code INT_MAX} is
- * a rejection in C and an unchecked {@link NumberFormatException} here.
+ * a rejection in C and a {@code null} here, in every slot, including a number too long for a
+ * {@code long}; it is no longer a difference.
  *
  * <p>Logging is switched off for the class: the sweeps reject thousands of strings, and each one
  * would otherwise write an error with a stack trace.
@@ -284,10 +285,12 @@ class RandomReaderTest {
     }
 
     @Test
-    void aNumberAboveIntMaxThrowsHereWhereCRejectsIt() {
-        for (String text : List.of("2147483648", "99999999999", "4294967296", "1+2147483648d3")) {
-            assertThrows(NumberFormatException.class, () -> reader.parse(text), text);
-            assertThrows(NumberFormatException.class, () -> Random.parseStr(text), text);
+    void aNumberAboveIntMaxIsRefusedInEverySlotAsCRefusesIt() {
+        for (String text : List.of("2147483648", "99999999999", "4294967296", "1+2147483648d3",
+                "2147483648d3", "2d2147483648", "2d6M2147483648", "1+2d3M2147483648",
+                "99999999999999999999", "2d99999999999999999999", "2d6M99999999999999999999")) {
+            assertRefused(text);
+            assertNull(parseRandomInC(text), "C accepts '" + text + "'");
         }
     }
 

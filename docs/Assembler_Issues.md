@@ -328,7 +328,7 @@ Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. Not fixed.
 
 ## `monster/MonsterAssembler.java`: a die that overflows `int` escapes as `NumberFormatException`
 
-Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-20: `Random.g4` now gives a number above `INT_MAX` the same marker as a missing number, so `RandomReader.parse` and `Random.parseStr` return `null` for it. The three call sites in `MonsterAssembler.java` already turned a `null` into a soft error and skipped the record. The `friends:` and `friends-base:` loops had to stop dereferencing the `null` die, and the `friends-base:` loop now keeps a per-line `badDice` flag so one bad line does not hide the next. `MonsterReaderTest` passes. The bullets below describe the state before the fix; the pinning tests are now `aFriendCountThatOverflowsIntIsASoftErrorAsInC`, `aFriendBaseCountThatOverflowsIntIsASoftErrorAsInC`, `aBlowDamageThatOverflowsIntIsASoftErrorAsInC`, `everyBadFriendsBaseLineIsReportedNotJustTheFirst` and `aBadDieOnAFriendsBaseLineHidesThatLinesRoleErrorAsInC`.]
 
 - C reports a `friends:`, `friends-base:` or `blow:` value that `parse_random` cannot read as a parser error.
 - `MonsterAssembler.java` hands the dice to `Random.parseStr`, which throws `NumberFormatException` for
@@ -337,8 +337,8 @@ Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. Not fixed.
   skipped with a soft error. Overflow in the sides (`1d99999999999`) does the same.
 - The fix could sit in `Random.java` (return `null`) or in the three call sites in `MonsterAssembler.java`.
 - `MonsterReaderTest.aFriendCountThatOverflowsIntThrowsHereWhereCReportsAParserError` and
-  `aBlowDamageThatOverflowsIntThrowsHereWhereCReportsAParserError` pin it. The `friends-base:` call site is the same
-  shape and has no test of its own.
+  `aBlowDamageThatOverflowsIntThrowsHereWhereCReportsAParserError` pinned it. The `friends-base:` call site is the same
+  shape and had no test of its own.
 - None on the shipped data.
 
 ## `monster/MonsterAssembler.java`: an unknown spell name in `message-vis:`, `message-invis:` or `message-miss:` is ignored

@@ -1293,17 +1293,53 @@ class MonsterReaderTest {
     }
 
     @Test
-    void aFriendCountThatOverflowsIntThrowsHereWhereCReportsAParserError() {
-        // Random.parseStr lets the NumberFormatException out; nothing in the assembler or
-        // GrammarDriver.run catches it, so the whole load fails instead of the record being skipped.
-        assertThrows(NumberFormatException.class, () -> load("die-overflow.txt", withHeader(1,
-                rec("Solo", "friends:100:99999999999d2:Somebody"))));
+    void aFriendCountThatOverflowsIntIsASoftErrorAsInC() throws Exception {
+        // C: parse_random rejects a number above INT_MAX, so the friends line is a parser error.
+        // Random.parseStr now returns null for it, and the assembler skips the record with an error.
+        ParseResult<MonsterRace> r = load("die-overflow.txt", withHeader(1,
+                rec("Solo", "friends:100:99999999999d2:Somebody")));
+        assertTrue(hasError(r, "malformed die in its friends line: 99999999999d2"), r.errors()::toString);
+        assertNull(byName(r, "Solo"));
     }
 
     @Test
-    void aBlowDamageThatOverflowsIntThrowsHereWhereCReportsAParserError() {
-        assertThrows(NumberFormatException.class, () -> load("blow-overflow.txt", withHeader(1,
-                rec("Solo", "blow:CLAW:HURT:99999999999d2"))));
+    void aFriendBaseCountThatOverflowsIntIsASoftErrorAsInC() throws Exception {
+        ParseResult<MonsterRace> r = load("die-base-overflow.txt", withHeader(1,
+                rec("Solo", "friends-base:100:99999999999d2:spider")));
+        assertTrue(hasError(r, "malformed die in its friends base line: 99999999999d2"), r.errors()::toString);
+        assertNull(byName(r, "Solo"));
+    }
+
+    @Test
+    void everyBadFriendsBaseLineIsReportedNotJustTheFirst() throws Exception {
+        // C reports each friends-base line on its own, so a bad line must not hide the next one.
+        ParseResult<MonsterRace> r = load("friends-base-two-bad.txt", withHeader(1,
+                rec("Solo",
+                        "friends-base:100:99999999999d2:spider",
+                        "friends-base:100:1d2:spider:wizard",
+                        "friends-base:100:1d2:spider:wizard")));
+        assertEquals(1, r.errors().stream().filter(s -> s.contains("malformed die in its friends base line")).count(),
+                r.errors()::toString);
+        assertEquals(2, r.errors().stream().filter(s -> s.contains("unknown friends role: wizard")).count(),
+                r.errors()::toString);
+    }
+
+    @Test
+    void aBadDieOnAFriendsBaseLineHidesThatLinesRoleErrorAsInC() throws Exception {
+        // C: parser_parse rejects the rand field before parse_monster_friends_base runs, so the
+        // role is never looked at on a line whose die is bad.
+        ParseResult<MonsterRace> r = load("friends-base-two-faults.txt", withHeader(1,
+                rec("Solo", "friends-base:100:99999999999d2:spider:wizard")));
+        assertTrue(hasError(r, "malformed die in its friends base line"), r.errors()::toString);
+        assertFalse(hasError(r, "unknown friends role"), r.errors()::toString);
+    }
+
+    @Test
+    void aBlowDamageThatOverflowsIntIsASoftErrorAsInC() throws Exception {
+        ParseResult<MonsterRace> r = load("blow-overflow.txt", withHeader(1,
+                rec("Solo", "blow:CLAW:HURT:99999999999d2")));
+        assertTrue(hasError(r, "malformed damage dice expression: 99999999999d2"), r.errors()::toString);
+        assertNull(byName(r, "Solo"));
     }
 
     @Test

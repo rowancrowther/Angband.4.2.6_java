@@ -54,11 +54,26 @@ grammar Random;
 
 @parser::members {
     /** The value of a NUMBER token, or -1 if ANTLR conjured it during     
-      error recovery. */
+      error recovery, or if the digits are above INT_MAX (or too long to read as a
+      long), which parse_random in parser.c refuses. The dice rule's @after turns
+      any -1 into a null Random. */
     private static int numberOrMissing(Token t) {
         String text = t.getText();
-        return text.equals("<missing NUMBER>") ? -1 
-                                               : Integer.parseInt(text);
+        if (text.equals("<missing NUMBER>"))
+            return -1;
+        
+        long l;
+        
+        try {
+            l = Long.parseLong(text);
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+        
+        if (l > Integer.MAX_VALUE || l < 0) 
+            return -1;
+        
+        return Math.clamp(l, 0, Integer.MAX_VALUE);
     }
 }
 
@@ -81,7 +96,7 @@ dice
             boolean negated = false;
         }
         @after {
-            if (mBonusInit == -1 || diceInit == -1 || sidesInit == -1 || mBonusInit == -1)
+            if (mBonusInit == -1 || diceInit == -1 || sidesInit == -1 || baseInit == -1)
                 $random = null;            
             else if (baseStr.isEmpty() && sidesStr.isEmpty())
                 $random = new Random(baseInit, mBonusInit, diceInit, sidesInit, negated);

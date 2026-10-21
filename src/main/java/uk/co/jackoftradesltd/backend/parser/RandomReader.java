@@ -76,33 +76,31 @@ public class RandomReader {
      * <ul>
      *   <li><b>Success:</b> the {@link Random} the grammar's {@code dice} rule built.</li>
      *   <li><b>Malformed text:</b> a lexer or grammar error is collected by {@link ParseErrors}
-     *       and logged, and the method returns {@code null}. This is the only case that returns
-     *       {@code null}; {@link Random#parseStr} passes it on. It covers a number missing after
-     *       {@code M} or {@code d} ({@code "5M"}, {@code "-1d"}) as much as stray characters: ANTLR
-     *       conjures a placeholder token for the gap, the grammar's {@code numberOrMissing} turns it
-     *       into a marker instead of parsing it, and the collected error then ends the parse here. C
-     *       rejects the same strings.</li>
-     *   <li><b>A number too large for an {@code int}:</b> the {@link NumberFormatException} is
-     *       logged and rethrown unchecked, so it is not mistaken for malformed text. C's
-     *       {@code parse_random} rejects anything above {@code INT_MAX}, so this is a deliberate
-     *       difference; {@code 2147483647} itself is accepted by both. {@link Random#parseStr}
-     *       rethrows it to its own callers.</li>
-     *   <li><b>No value produced:</b> a defensive check for a parse that finished without a
-     *       {@link Random} throws a plain {@link Exception} ("Invalid random token"), which is why
-     *       the signature is {@code throws Exception}. A missing number already ends in the
-     *       {@code null} case above, so this is not reached by any string tried against C.</li>
+     *       and logged, and the method returns {@code null}. {@link Random#parseStr} passes it on.
+     *       It covers a number missing after {@code M} or {@code d} ({@code "5M"}, {@code "-1d"}) as
+     *       much as stray characters: ANTLR conjures a placeholder token for the gap, the grammar's
+     *       {@code numberOrMissing} turns it into a marker instead of parsing it, and the collected
+     *       error then ends the parse here. C rejects the same strings.</li>
+     *   <li><b>A number too large for an {@code int}:</b> the grammar's {@code numberOrMissing}
+     *       gives the same marker for a number above {@code INT_MAX}, including one too long to fit
+     *       a {@code long}, and the {@code dice} rule leaves its {@link Random} {@code null}. No
+     *       parse error is collected for it, so the check after {@code throwIfAny()} logs the string
+     *       and returns {@code null}. C's {@code parse_random} rejects anything above
+     *       {@code INT_MAX} too, and {@code 2147483647} itself is accepted by both.</li>
+     *   <li><b>Anything unexpected:</b> any other exception is logged and rethrown. None of them is
+     *       checked, so the signature declares none.</li>
      * </ul>
      *
      * <p>Function parse coded before 260915, commented in full on 260915; return type and error
      * handling changed and re-commented on 261019, and the missing-number case moved into the grammar
-     * the same day.
+     * the same day. Re-commented on 261020 once a number above {@code INT_MAX} began returning
+     * {@code null} instead of throwing, and {@code throws Exception} was dropped.
      *
      * @param filename the dice-notation text to parse, despite the name (e.g. {@code "2d6"})
-     * @return the parsed {@link Random}, or {@code null} if the text is malformed
-     * @throws NumberFormatException if a number in the text does not fit an {@code int}
-     * @throws Exception             if the parse finishes without producing a value
+     * @return the parsed {@link Random}, or {@code null} if the text is malformed or holds a number
+     *         above {@code INT_MAX}
      */
-    public @Nullable Random parse(@NotNull String filename) throws Exception {
+    public @Nullable Random parse(@NotNull String filename) {
         try {
             CharStream stream = CharStreams.fromString(filename);
             RandomLexer lexer = new RandomLexer(stream);
@@ -116,7 +114,8 @@ public class RandomReader {
             errorCatcher.throwIfAny();
 
             if (output.random == null) {
-                throw new Exception("Invalid random token");
+                logger.error("Invalid value found while parsing Random string: {}", filename);
+                return null;
             }
 
             return output.random;

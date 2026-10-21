@@ -1206,7 +1206,7 @@ Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. Not fixed.
 
 ## `ArtifactLexer.g4`: a blank after the last flag, value or alloc figure is a lexer error, C accepts it
 
-Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-20: the `EOL_POP_MODE` fragment in `ArtifactLexer.g4` is now `' '* '\r'* '\n'`, so `FLAG_EOL`, `VALUES_EOL` and `ALLOC_EOL` take spaces before the newline. The upstream `artifact.txt` (with `record-count:138` put back) loads 138 records with no errors, and `ArtifactReaderTest` passes (49 tests). The bullets below describe the state before the fix; the pinning test is now `aBlankAfterTheLastFlagValueOrAllocFigureLoadsAsInC`. A tab before the newline is still a lexer error and belongs to the `CommentsAndEol.g4` entry.]
 
 - C's `strtok` and `strtol` ignore trailing blanks. The upstream `artifact.txt` has such a line: the `flags:` line of
   "'Bladeturner'" ends `PROT_CONF ` with a space.
@@ -1214,7 +1214,7 @@ Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. Not fixed.
   fails with `token recognition error at: ' \n'` and then loses the next line as well. A trailing blank after a bar, or after an
   integer or dice string, is fine.
 - This repository's `lib/gamedata/artifact.txt` has had its trailing blanks trimmed, which is why the shipped file loads.
-- `ArtifactReaderTest.aBlankAfterTheLastFlagValueOrAllocFigureIsALexerErrorHereWhereCAcceptsIt` pins three.
+- `ArtifactReaderTest.aBlankAfterTheLastFlagValueOrAllocFigureLoadsAsInC` now pins the three (it was `...IsALexerErrorHereWhereCAcceptsIt`).
 
 ## `ArtifactLexer.g4`: `alloc:` wants exactly `N to N`, C accepts any spacing round the figures
 
@@ -2153,9 +2153,9 @@ Found 2026-10-19 during `/port PlayerTimedReader.java`. Not fixed.
 - Should `effect-yx`, `effect-expr` and `effect-msg` be supported on timed effects? `EffectParseRecord` already carries those fields for
   other grammars, and C lets the begin and end effects use them, so the only cost is grammar work. Today no shipped effect needs them.
 
-## `Random.g4`: a lower-case `m`, a base straight into `M` and `$` variables are accepted, blanks and a repeated `d` or `M` are refused, and a number above `INT_MAX` throws where C rejects
+## `Random.g4`: a lower-case `m`, a base straight into `M` and `$` variables are accepted, and blanks and a repeated `d` or `M` are refused
 
-Found 2026-10-19 during `/port RandomReader.java`. Not fixed.
+Found 2026-10-19 during `/port RandomReader.java`. Not fixed, except the number above `INT_MAX` ([<span style="color:#006400">**CLOSED**</span> 26-10-20: `numberOrMissing` in `Random.g4` returns the missing-number marker for a number above `INT_MAX` or too long for a `long`, the `@after` block tests `baseInit` as well as the other three terms, and `RandomReader.parse` logs and returns `null` for the resulting empty `Random`, as C refuses it. `RandomReaderTest` passes (26 tests). The bullets below that mention the overflow describe the state before the fix; the pinning test is now `aNumberAboveIntMaxIsRefusedInEverySlotAsCRefusesIt`.]).
 
 ### What C does
 
@@ -2172,7 +2172,7 @@ Found 2026-10-19 during `/port RandomReader.java`. Not fixed.
 - `Random.g4`: a number above `INT_MAX` reaches `Integer.parseInt` in `numberOrMissing` and throws `NumberFormatException`. `RandomReader.parse` logs it and rethrows it unchecked, by design.
 - `Random.g4` now applies a leading `-` itself, with the same shift as C, and `Random.parseStr` strips the `-` first, so `--1` loads as -1 where C refuses it.
 - A number missing after `M` or `d` (`5M`, `-1d`, `$S+dM`) used to throw `NumberFormatException` from the action; `numberOrMissing` now turns ANTLR's placeholder token into a marker, the collected error ends the parse and the reader returns `null`, as C refuses it.
-- `RandomReaderTest` pins each of these: `aLowerCaseMIsAcceptedHereWhereParseRandomRefusesIt`, `aBaseStraightIntoMIsAcceptedHereWhereParseRandomRefusesIt`, `dollarVariablesAreAcceptedHereWhereParseRandomHasNone`, `aDoubleMinusIsAcceptedByParseStrWhereCRefusesIt`, `blanksAreRefusedHereWhereCAllowsThemAtTheEnds`, `aRepeatedDOrMIsRefusedHereWhereCsLoopLetsItThrough`, `aSignedZeroInsideTheStringIsRefusedHereWhereStrtoulReadsIt`, `aVariableDiceCountIsRefusedHereWhereZDiceReadsIt` and `aNumberAboveIntMaxThrowsHereWhereCRejectsIt`. Two sweeps over every string of up to five characters from `0 1 2 d M + -` (19,607 strings) check that nothing else differs from a transliteration of `parse_random`.
+- `RandomReaderTest` pins each of these: `aLowerCaseMIsAcceptedHereWhereParseRandomRefusesIt`, `aBaseStraightIntoMIsAcceptedHereWhereParseRandomRefusesIt`, `dollarVariablesAreAcceptedHereWhereParseRandomHasNone`, `aDoubleMinusIsAcceptedByParseStrWhereCRefusesIt`, `blanksAreRefusedHereWhereCAllowsThemAtTheEnds`, `aRepeatedDOrMIsRefusedHereWhereCsLoopLetsItThrough`, `aSignedZeroInsideTheStringIsRefusedHereWhereStrtoulReadsIt`, `aVariableDiceCountIsRefusedHereWhereZDiceReadsIt` and `aNumberAboveIntMaxIsRefusedInEverySlotAsCRefusesIt` (named `aNumberAboveIntMaxThrowsHereWhereCRejectsIt` before the fix). Two sweeps over every string of up to five characters from `0 1 2 d M + -` (19,607 strings) check that nothing else differs from a transliteration of `parse_random`.
 
 ### Impact
 
@@ -2182,7 +2182,7 @@ Found 2026-10-19 during `/port RandomReader.java`. Not fixed.
 
 ### Question for Rowan
 
-- Should a number above `INT_MAX` return `null` like every other malformed string, so the assemblers record a line-numbered error as C does? The current Javadoc on `RandomReader.parse` calls the throw deliberate, so this is only a question of whether it should stay that way.
+- Should a number above `INT_MAX` return `null` like every other malformed string, so the assemblers record a line-numbered error as C does? [<span style="color:#006400">**CLOSED**</span> 26-10-20: yes. `RandomReader.parse` and `Random.parseStr` return `null`. The dead `catch (NumberFormatException)` and rethrow in `Random.parseStr` has been removed.]
 
 ## `VisualsGrammar.g4` and `VisualsLexer.g4`: a colour is one listed letter, `flicker-color:` and `cycle-color:` must follow their header at once, the name takes the rest of the line, and indented lines are refused
 

@@ -963,15 +963,18 @@ class ArtifactReaderTest {
     }
 
     /**
-     * The last flag, value or alloc figure followed by a blank is a lexer error. A bar then a blank
-     * is fine, which is why only one line of the upstream file shows it: the {@code flags:} line of
-     * "'Bladeturner'", which ends {@code PROT_CONF } and which this repository's copy has trimmed.
+     * A blank after the last flag, value or alloc figure loads, as {@code strtok} and {@code strtol}
+     * ignore it in C. The mode rules that end those lines share {@code EOL_POP_MODE}, which takes
+     * spaces before the newline. This is the line of the upstream file that used to fail: the
+     * {@code flags:} line of "'Bladeturner'", which ends {@code PROT_CONF }.
      */
     @Test
-    void aBlankAfterTheLastFlagValueOrAllocFigureIsALexerErrorHereWhereCAcceptsIt() throws IOException {
-        assertHardError("flags-blank.txt", withHeader(1, "name:X\n" + BASE + "flags:NO_FUEL \n"));
-        assertHardError("values-blank.txt", withHeader(1, "name:X\n" + BASE + "values:STR[1] \n"));
-        assertHardError("alloc-blank.txt", withHeader(1, "name:X\n" + BASE + "alloc:1:2 to 3 \n"));
+    void aBlankAfterTheLastFlagValueOrAllocFigureLoadsAsInC() throws IOException {
+        assertEquals("NO_FUEL", flagNames(loadClean("flags-blank.txt", "flags:NO_FUEL \n")));
+        assertEquals("STR=1", valueList(loadClean("values-blank.txt", "values:STR[1] \n")));
+
+        Artifact alloc = loadClean("alloc-blank.txt", "alloc:1:2 to 3 \n");
+        assertEquals("1/2/3", alloc.getAllocProb() + "/" + alloc.getAllocMin() + "/" + alloc.getAllocMax());
     }
 
     /**

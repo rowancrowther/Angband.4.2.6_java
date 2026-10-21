@@ -87,7 +87,7 @@ fragment INT_FRAGMENT
         ;
 
 fragment EOL_POP_MODE
-        :   '\r'* '\n'
+        :   ' '* '\r'* '\n'
         ;
 
 mode ALLOC_MODE;

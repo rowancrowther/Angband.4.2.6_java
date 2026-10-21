@@ -466,8 +466,15 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
                         badFriend = true;
                     }
                 }
-                if (!badRole)
-                    friends.add(new MonsterFriends(nameStr, role, chance, numberDie.getDice(), numberDie.getSides()));
+                if (!badRole) {
+                    if (numberDie == null) {
+                        badFriend = true;
+                    } else {
+                        int dice = numberDie.getDice();
+                        int sides = numberDie.getSides();
+                        friends.add(new MonsterFriends(nameStr, role, chance, dice, sides));
+                    }
+                }
             }
             if (badFriend) continue;
             boolean badFriendBase = false;
@@ -501,6 +508,7 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
                             "a unknown friends base: " + baseKind);
                     badFriendBase = true;
                 }
+                boolean badDice = false;
                 Random numberDie = null;
                 if (!numberStr.isEmpty()) {
                     numberDie = Random.parseStr(numberStr);
@@ -508,11 +516,12 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
                         errors.add("Monster at line: " + line + " has " +
                                 "a malformed die in its friends base line: " + numberStr);
                         badFriendBase = true;
+                        badDice = true;
                     }
                 }
                 MonsterGroupRole role = MonsterGroupRole.MON_GROUP_MEMBER;
                 boolean badRole = false;
-                if (!roleStr.isEmpty()) {
+                if (!roleStr.isEmpty() && !badDice) {
                     if (roleStr.equalsIgnoreCase("servant"))
                         role = MonsterGroupRole.MON_GROUP_SERVANT;
                     else if (roleStr.equalsIgnoreCase("bodyguard"))
@@ -524,8 +533,16 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
                         badFriendBase = true;
                     }
                 }
-                if (!badRole)
-                    friendsBase.add(new MonsterFriendsBase(monsterBase, role, chance, numberDie.getDice(), numberDie.getSides()));
+                if (!badRole && !badDice) {
+                    if (numberDie == null) {
+                        errors.add("Monster at line: " + line + " has " +
+                                        "a malformed die in its friends base line: " + numberStr);
+                        badFriendBase = true;
+                    } else {
+                        friendsBase.add(new MonsterFriendsBase(monsterBase, role, chance, numberDie.getDice(),
+                                numberDie.getSides()));
+                    }
+                }
             }
             if (badFriendBase) continue;
             List<ObjectKind> mimics = new ArrayList<>();

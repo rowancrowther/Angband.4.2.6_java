@@ -296,19 +296,11 @@ public class Random {
         RandomReader reader = new RandomReader();
         Random random = null;
         
-        NumberFormatException nfex = null;
-        
         try {
             random = reader.parse(randomString);
-        } catch (NumberFormatException nfe) {
-            nfex = nfe;
         } catch (Exception e) {
             logger.error("Error while parsing random string: {}", randomString, e);
             return null;
-        }
-        
-        if (nfex != null) {
-            throw nfex;
         }
         
         if (random == null) return null;

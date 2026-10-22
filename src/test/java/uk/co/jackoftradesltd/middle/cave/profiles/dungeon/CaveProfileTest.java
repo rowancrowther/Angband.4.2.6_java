@@ -20,13 +20,12 @@ package uk.co.jackoftradesltd.middle.cave.profiles.dungeon;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import uk.co.jackoftradesltd.middle.cave.chunkbuilders.BuilderType;
 import uk.co.jackoftradesltd.middle.cave.roombuilders.RoomType;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests for {@link CaveProfile}, the port of {@code struct cave_profile} in the C original's
@@ -53,9 +52,10 @@ class CaveProfileTest {
         List<RoomProfile> rooms = List.of(
                 new RoomProfile("Greater vault", RoomType.STAIRCASE, 0, 44, 66, 35, false, 0, 100));
 
-        CaveProfile p = new CaveProfile("classic", 11, 50, 200, 2, tun, str, rooms, 0, 90);
+        CaveProfile p = new CaveProfile(BuilderType.CLASSIC, 11, 50, 200, 2, tun, str, rooms, 0, 90);
 
         assertEquals("classic", p.getName());
+        assertSame(BuilderType.CLASSIC, p.getBuilderType());
         assertEquals(11, p.getBlockSize());
         assertEquals(50, p.getDunRooms());
         assertEquals(200, p.getDunUnusual());
@@ -75,7 +75,7 @@ class CaveProfileTest {
     void townRecordWithNoTunnelLineKeepsNullTun() {
         StreamerProfile str = new StreamerProfile(1, 1, 0, 0, 0, 0);
 
-        CaveProfile p = new CaveProfile("town", 1, 0, 200, 0, null, str, List.of(), 0, -1);
+        CaveProfile p = new CaveProfile(BuilderType.TOWN, 1, 0, 200, 0, null, str, List.of(), 0, -1);
 
         assertNull(p.getTun());
         assertSame(str, p.getStr());
@@ -91,7 +91,7 @@ class CaveProfileTest {
     void missingStreamerLineKeepsNullStr() {
         TunnelProfile tun = new TunnelProfile(1, 2, 3, 4, 5);
 
-        CaveProfile p = new CaveProfile("x", 1, 1, 1, 1, tun, null, List.of(), 1, 1);
+        CaveProfile p = new CaveProfile(BuilderType.MODIFIED, 1, 1, 1, 1, tun, null, List.of(), 1, 1);
 
         assertNull(p.getStr());
         assertSame(tun, p.getTun());
@@ -104,7 +104,7 @@ class CaveProfileTest {
     @ParameterizedTest
     @ValueSource(ints = {-2, -1, 0, 1, 90, Integer.MAX_VALUE})
     void allocIsReturnedRaw(int alloc) {
-        CaveProfile p = new CaveProfile("x", 1, 1, 1, 1, null, null, List.of(), 0, alloc);
+        CaveProfile p = new CaveProfile(BuilderType.MODIFIED, 1, 1, 1, 1, null, null, List.of(), 0, alloc);
 
         assertEquals(alloc, p.getAlloc());
     }
@@ -115,7 +115,7 @@ class CaveProfileTest {
     @ParameterizedTest
     @ValueSource(ints = {0, 1, 10, 127})
     void minLevelIsReturnedRaw(int minLevel) {
-        CaveProfile p = new CaveProfile("x", 1, 1, 1, 1, null, null, List.of(), minLevel, 1);
+        CaveProfile p = new CaveProfile(BuilderType.MODIFIED, 1, 1, 1, 1, null, null, List.of(), minLevel, 1);
 
         assertEquals(minLevel, p.getMinLevel());
     }
@@ -129,7 +129,7 @@ class CaveProfileTest {
         RoomProfile first = new RoomProfile("a", RoomType.STAIRCASE, 0, 1, 1, 0, false, 0, 10);
         RoomProfile second = new RoomProfile("b", RoomType.STAIRCASE, 0, 1, 1, 0, false, 0, 20);
 
-        CaveProfile p = new CaveProfile("x", 1, 1, 1, 1, null, null, List.of(first, second), 0, 1);
+        CaveProfile p = new CaveProfile(BuilderType.MODIFIED, 1, 1, 1, 1, null, null, List.of(first, second), 0, 1);
 
         assertSame(first, p.getRoomProfiles().get(0));
         assertSame(second, p.getRoomProfiles().get(1));

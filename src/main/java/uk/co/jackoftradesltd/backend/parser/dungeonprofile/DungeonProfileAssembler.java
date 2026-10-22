@@ -17,8 +17,12 @@
 
 package uk.co.jackoftradesltd.backend.parser.dungeonprofile;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
+import uk.co.jackoftradesltd.middle.cave.chunkbuilders.BuilderType;
 import uk.co.jackoftradesltd.middle.cave.profiles.dungeon.CaveProfile;
 import uk.co.jackoftradesltd.middle.cave.profiles.dungeon.RoomProfile;
 import uk.co.jackoftradesltd.middle.cave.profiles.dungeon.StreamerProfile;
@@ -45,6 +49,8 @@ import java.util.List;
  * @author Rowan Crowther
  */
 public class DungeonProfileAssembler implements Assembler<DungeonProfileParseRecord, List<CaveProfile>> {
+    private static final Logger logger = LogManager.getLogger(DungeonProfileAssembler.class);
+    
     /**
      * Assemble every parsed profile record, dropping any that will not convert.
      *
@@ -65,7 +71,13 @@ public class DungeonProfileAssembler implements Assembler<DungeonProfileParseRec
 
         for (DungeonProfileParseRecord record : records) {
             int line = record.lineNo();
-            String profileName = record.profileName();
+            BuilderType builderType = BuilderType.fromName(record.profileName());
+            if (builderType == null) {
+                String message = "Invalid Dungeon Profile Name: " + record.profileName() + " " +
+                        "found in " + filename + " near line " + line;
+                logger.fatal(message);
+                throw new DataFileParseException(message);
+            }
             int blockSize = -1;
             int rooms = -1;
             int unusual = -1;
@@ -97,8 +109,7 @@ public class DungeonProfileAssembler implements Assembler<DungeonProfileParseRec
                 streamerProfile = new StreamerAssembler().assemble(streamers, errors, filename);
             } else
                 streamerProfile = null;
-            List<RoomProfile> roomProfiles = new ArrayList<>();
-            roomProfiles = new RoomAssembler().assemble(record.rooms(), errors, filename);
+            List<RoomProfile> roomProfiles = new RoomAssembler().assemble(record.rooms(), errors, filename);
             int minLevel;
             if (record.minLevel() != null) {
                 try {
@@ -120,7 +131,7 @@ public class DungeonProfileAssembler implements Assembler<DungeonProfileParseRec
                 }
             } else alloc = -1;
 
-            caveProfiles.add(new CaveProfile(profileName, blockSize, rooms, unusual,
+            caveProfiles.add(new CaveProfile(builderType, blockSize, rooms, unusual,
                     rarity, tunnelProfile, streamerProfile, roomProfiles, minLevel,
                     alloc));
         }

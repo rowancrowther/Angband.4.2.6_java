@@ -17,7 +17,10 @@
 
 package uk.co.jackoftradesltd.backend.parser.dungeonprofile;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.middle.cave.profiles.dungeon.RoomProfile;
 import uk.co.jackoftradesltd.middle.cave.roombuilders.RoomType;
@@ -38,6 +41,8 @@ import java.util.List;
  * @author Rowan Crowther
  */
 public class RoomAssembler implements Assembler<DungeonProfileParseRecord.Room, List<RoomProfile>> {
+    private static final Logger logger = LogManager.getLogger(RoomAssembler.class);
+    
     /**
      * Assemble one profile's room lines, dropping any that will not convert.
      *
@@ -60,6 +65,12 @@ public class RoomAssembler implements Assembler<DungeonProfileParseRecord.Room, 
             int line = record.lineNo();
             String name = record.roomName();
             RoomType type = RoomType.getRoomTypeFromName(name);
+            if (type == null) {
+                String message = "Unknown room type: " + name + " found near line: " + line + " in" +
+                        " file: " + filename;
+                logger.fatal(message);
+                throw new DataFileParseException(message);
+            }            
             int rating = -1;
             try {
                 rating = Integer.parseInt(record.rating());

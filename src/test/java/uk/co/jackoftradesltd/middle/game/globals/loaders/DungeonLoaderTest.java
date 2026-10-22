@@ -21,6 +21,7 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.Channels;
 import uk.co.jackoftradesltd.channel.StartupOptions;
 import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
@@ -321,13 +322,13 @@ class DungeonLoaderTest {
         AngbandDirs.ANGBAND_DIRS.GAMEDATA.setPath(tempDir + File.separator);
         write("dungeon_profile.txt", String.join("\n",
                 "record-count:2",
-                "name:first", "params:1:0:200:0", "alloc:5",
-                "name:second", "params:3:0:200:0", "min-level:4", "alloc:6", ""));
+                "name:town", "params:1:0:200:0", "alloc:5",
+                "name:classic", "params:3:0:200:0", "min-level:4", "alloc:6", ""));
 
         DungeonLoader.loadDungeonProfiles();
 
         List<CaveProfile> profiles = registryList("caveProfiles");
-        assertEquals(List.of("first", "second"), profiles.stream().map(CaveProfile::getName).toList());
+        assertEquals(List.of("town", "classic"), profiles.stream().map(CaveProfile::getName).toList());
         assertEquals(2, GameConstants.getCaveProfileMax(), "z_info->profile_max follows the reload");
         assertEquals(4, profiles.get(1).getMinLevel());
     }
@@ -342,13 +343,13 @@ class DungeonLoaderTest {
     void profileSoftErrorWithSurvivors() throws Exception {
         write("dungeon_profile.txt", String.join("\n",
                 "record-count:2",
-                "name:bad", "params:99999999999:0:200:0", "alloc:5",
-                "name:good", "params:1:0:200:0", "alloc:6", ""));
+                "name:town", "params:99999999999:0:200:0", "alloc:5",
+                "name:classic", "params:1:0:200:0", "alloc:6", ""));
 
         DungeonLoader.loadDungeonProfiles();
 
         List<CaveProfile> profiles = registryList("caveProfiles");
-        assertEquals(List.of("good"), profiles.stream().map(CaveProfile::getName).toList());
+        assertEquals(List.of("classic"), profiles.stream().map(CaveProfile::getName).toList());
         assertEquals(1, GameConstants.getCaveProfileMax());
     }
 
@@ -362,11 +363,32 @@ class DungeonLoaderTest {
     void profileSoftErrorWithNoSurvivors() throws Exception {
         write("dungeon_profile.txt", String.join("\n",
                 "record-count:1",
-                "name:bad", "params:99999999999:0:200:0", "alloc:5", ""));
+                "name:town", "params:99999999999:0:200:0", "alloc:5", ""));
 
         RuntimeException thrown = assertThrows(RuntimeException.class, DungeonLoader::loadDungeonProfiles);
 
         assertEquals("Error parsing Dungeon profiles file", thrown.getMessage());
+        assertSame(savedProfiles, registryList("caveProfiles"), "profiles untouched");
+        assertEquals(savedProfileMax, GameConstants.getCaveProfileMax(), "profile count untouched");
+    }
+
+    /**
+     * An unknown profile name is not a soft error: C quits on {@code PARSE_ERROR_NO_BUILDER_FOUND},
+     * so the assembler throws {@code DataFileParseException}, which the loader does not catch. Nothing
+     * is written, even though the good profile before it assembled.
+     */
+    @Test
+    @DisplayName("an unknown profile name stops the load before anything is written")
+    void unknownProfileNameStopsTheLoad() throws Exception {
+        write("dungeon_profile.txt", String.join("\n",
+                "record-count:2",
+                "name:town", "params:1:0:200:0", "alloc:5",
+                "name:no such profile", "alloc:6", ""));
+
+        DataFileParseException thrown =
+                assertThrows(DataFileParseException.class, DungeonLoader::loadDungeonProfiles);
+
+        assertTrue(thrown.getMessage().contains("no such profile"), thrown.getMessage());
         assertSame(savedProfiles, registryList("caveProfiles"), "profiles untouched");
         assertEquals(savedProfileMax, GameConstants.getCaveProfileMax(), "profile count untouched");
     }

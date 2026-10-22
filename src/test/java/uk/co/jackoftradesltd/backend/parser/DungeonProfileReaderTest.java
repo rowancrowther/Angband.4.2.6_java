@@ -19,6 +19,9 @@ package uk.co.jackoftradesltd.backend.parser;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.ParseErrors;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.channel.parser.Reader;
@@ -49,9 +52,13 @@ import static org.junit.jupiter.api.Assertions.*;
  * a temp dir. Note which channel each defect lands on: the lexer's {@code INTEGER} token is
  * {@code '-'? digit+}, so a non-numeric field is a <em>grammar</em> error, not an assembly one — the
  * only way to reach the assembler's {@code NumberFormatException} handling is a value that overflows
- * {@code int}. Those are soft: the offending profile is dropped and the rest of the file still loads
- * (the partial-results contract), which is deliberately weaker than C, where {@code parser_getint}
- * makes a bad number fatal.
+ * {@code int}. Those are soft for {@code params:}, {@code min-level:}, {@code alloc:} and
+ * {@code room:}: the offending profile or room is dropped and the rest of the file still loads (the
+ * partial-results contract), which is deliberately weaker than C, where {@code parser_getint} makes
+ * a bad number fatal. The sites C quits on and the assemblers already stop at, as
+ * {@code print_error} in {@code datafile.c} does, are an unknown profile name, an unknown room name
+ * and an overflowing {@code tunnel:} or {@code streamer:} field. Each throws
+ * {@link DataFileParseException} out of {@code parseWithResults}.
  *
  * @author Rowan Crowther
  */
@@ -75,6 +82,14 @@ class DungeonProfileReaderTest {
                 .filter(p -> name.equals(p.getName()))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("no profile named " + name));
+    }
+
+    /**
+     * Loads {@code path} expecting the assembler to stop the load, and returns what it threw.
+     */
+    private static DataFileParseException loadAndStop(String path) {
+        return assertThrows(DataFileParseException.class,
+                () -> new DungeonProfileReader().parseWithResults(path));
     }
 
     /**
@@ -168,9 +183,9 @@ class DungeonProfileReaderTest {
     }
 
     /**
-     * Every {@code room:} line in the file resolves to a {@link RoomType}. The assembler does not
-     * check for a failed lookup (see {@link #unknownRoomNameLeavesANullRoomTypeAndNoError()}), so
-     * this is the assertion that the enum's names still agree with the data.
+     * Every {@code room:} line in the file resolves to a {@link RoomType}. The assembler refuses an
+     * unresolved name (see {@link #unknownRoomNameStopsTheLoadAsInC()}), so a clean load already
+     * implies this; it is kept as the direct assertion that the enum's names agree with the data.
      */
     @Test
     void everyRoomNameInTheRealFileResolvesToARoomType() throws IOException {
@@ -252,7 +267,7 @@ class DungeonProfileReaderTest {
     void absentDirectivesLeaveSentinelsRatherThanZeroes() throws IOException {
         String path = tempFile("bare.txt", String.join("\n",
                 "record-count:1",
-                "name:bare",
+                "name:town",
                 "alloc:5",
                 ""));
 
@@ -282,7 +297,7 @@ class DungeonProfileReaderTest {
     void aRepeatedDirectiveIsOverwrittenByItsLastOccurrence() throws IOException {
         String path = tempFile("repeat.txt", String.join("\n",
                 "record-count:1",
-                "name:repeat",
+                "name:classic",
                 "alloc:1",
                 "alloc:2",
                 "params:1:0:200:0",
@@ -306,7 +321,7 @@ class DungeonProfileReaderTest {
     void recordCountMismatchIsReportedButProfilesStillLoad() throws IOException {
         String path = tempFile("bad-count.txt", String.join("\n",
                 "record-count:5",
-                "name:only one",
+                "name:town",
                 "alloc:1",
                 ""));
 
@@ -327,18 +342,18 @@ class DungeonProfileReaderTest {
     void anOverflowingParamsValueDropsOnlyItsOwnProfile() throws IOException {
         String path = tempFile("overflow-params.txt", String.join("\n",
                 "record-count:3",
-                "name:before",
+                "name:town",
                 "alloc:1",
-                "name:broken",
+                "name:classic",
                 "params:99999999999:0:200:0",
                 "alloc:1",
-                "name:after",
+                "name:cavern",
                 "alloc:1",
                 ""));
 
         ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
 
-        assertEquals(List.of("before", "after"), result.items().stream().map(CaveProfile::getName).toList());
+        assertEquals(List.of("town", "cavern"), result.items().stream().map(CaveProfile::getName).toList());
         assertTrue(result.errors().stream()
                         .anyMatch(e -> e.contains("invalid param line") && e.contains("99999999999")),
                 result.errors()::toString);
@@ -355,9 +370,9 @@ class DungeonProfileReaderTest {
     void anOverflowingAllocOrMinLevelDropsItsProfile() throws IOException {
         String path = tempFile("overflow-alloc.txt", String.join("\n",
                 "record-count:2",
-                "name:bad alloc",
+                "name:classic",
                 "alloc:99999999999",
-                "name:bad min level",
+                "name:modified",
                 "min-level:99999999999",
                 "alloc:1",
                 ""));
@@ -398,13 +413,12 @@ class DungeonProfileReaderTest {
     }
 
     /**
-     * A gap in the port, pinned here so it is noticed if it is ever closed: an unknown room name
-     * silently yields a {@link RoomProfile} with a null {@link RoomType}, with nothing appended to
-     * the errors. C's {@code parse_profile_room} instead fails the parse outright
-     * when the name matches no entry in {@code room_builders[]}.
+     * C: {@code parse_profile_room} returns {@code PARSE_ERROR_NO_ROOM_FOUND} when the name matches
+     * no entry in {@code room_builders[]}, and {@code print_error} in {@code datafile.c} quits. The
+     * assembler throws, naming the room, the line and the file.
      */
     @Test
-    void unknownRoomNameLeavesANullRoomTypeAndNoError() throws IOException {
+    void unknownRoomNameStopsTheLoadAsInC() throws IOException {
         String path = tempFile("unknown-room.txt", String.join("\n",
                 "record-count:1",
                 "name:classic",
@@ -412,12 +426,31 @@ class DungeonProfileReaderTest {
                 "room:no such room:0:11:33:1:0:0:100",
                 ""));
 
-        ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
+        DataFileParseException e = loadAndStop(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
-        RoomProfile room = result.items().getFirst().getRoomProfiles().getFirst();
-        assertEquals("no such room", room.getName());
-        assertNull(room.getRoomType(), "an unresolved room name is currently not reported at all");
+        assertTrue(e.getMessage().contains("no such room"), e.getMessage());
+        assertTrue(e.getMessage().contains("line: 4"), e.getMessage());
+        assertTrue(e.getMessage().contains(path), e.getMessage());
+    }
+
+    /**
+     * {@code streq} is exact, so a room name with the wrong case or a trailing space misses too, and
+     * a good room before it does not save the file.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"Simple room", "simple room ", "simple_room", "Greater Vault"})
+    void aNearMissRoomNameStopsTheLoadAfterAGoodRoom(String bad) throws IOException {
+        String path = tempFile("near-miss-room.txt", String.join("\n",
+                "record-count:1",
+                "name:classic",
+                "alloc:1",
+                "room:simple room:0:11:33:1:0:0:100",
+                "room:" + bad + ":0:11:33:1:0:0:100",
+                ""));
+
+        DataFileParseException e = loadAndStop(path);
+
+        assertTrue(e.getMessage().contains("line: 5"), e.getMessage());
     }
 
     /**
@@ -625,43 +658,72 @@ class DungeonProfileReaderTest {
 
     /**
      * C: {@code parse_profile_name} fails with {@code PARSE_ERROR_NO_BUILDER_FOUND} when the name
-     * is not in {@code cave_builders[]}. Java loads the profile under whatever name it is given.
+     * is not in {@code cave_builders[]}, and the load quits. The assembler throws, naming the
+     * profile, the line and the file.
      */
     @Test
-    void anUnknownProfileNameLoadsHereWhereCRefusesIt() throws IOException {
+    void anUnknownProfileNameStopsTheLoadAsInC() throws IOException {
         String path = tempFile("unknown-profile.txt", String.join("\n",
                 "record-count:1",
                 "name:no such profile",
                 "alloc:1",
                 ""));
 
-        ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
+        DataFileParseException e = loadAndStop(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
-        assertEquals("no such profile", result.items().getFirst().getName());
+        assertTrue(e.getMessage().contains("no such profile"), e.getMessage());
+        assertTrue(e.getMessage().contains("line 2") || e.getMessage().contains("line: 2"), e.getMessage());
+        assertTrue(e.getMessage().contains(path), e.getMessage());
     }
 
     /**
-     * C refuses a malformed number in any line (a fatal parse error), so none of the file loads.
-     * Here a tunnel or streamer sub-record that will not convert is reported but its profile is
-     * kept, with a null {@code tun}/{@code str}, where an overflowing {@code params:} value drops
-     * the whole profile (see {@link #anOverflowingParamsValueDropsOnlyItsOwnProfile()}).
+     * C: {@code parser_getint} on any one of the five {@code tunnel:} fields refuses a value past
+     * {@code INT_MAX}, so the load quits. A good profile before the bad one does not save the file,
+     * and a profile is never kept without its tunnel.
      */
-    @Test
-    void anOverflowingTunnelKeepsTheProfileWithoutATunnel() throws IOException {
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1, 2, 3, 4})
+    void anOverflowingTunnelFieldStopsTheLoadAsInC(int field) throws IOException {
+        String[] values = {"10", "30", "15", "25", "50"};
+        values[field] = "99999999999";
         String path = tempFile("overflow-tunnel.txt", String.join("\n",
-                "record-count:1",
+                "record-count:2",
+                "name:town",
+                "alloc:1",
                 "name:classic",
                 "params:11:50:200:2",
-                "tunnel:99999999999:30:15:25:50",
+                "tunnel:" + String.join(":", values),
                 "alloc:90",
                 ""));
 
-        ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
+        DataFileParseException e = loadAndStop(path);
 
-        assertEquals(1, result.items().size());
-        assertNull(result.items().getFirst().getTun());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("99999999999")), result.errors()::toString);
+        assertTrue(e.getMessage().contains("99999999999"), e.getMessage());
+        assertTrue(e.getMessage().contains(path), e.getMessage());
+    }
+
+    /**
+     * The same for each of the six {@code streamer:} fields (C's {@code parse_profile_streamer}).
+     */
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1, 2, 3, 4, 5})
+    void anOverflowingStreamerFieldStopsTheLoadAsInC(int field) throws IOException {
+        String[] values = {"5", "2", "3", "90", "2", "40"};
+        values[field] = "99999999999";
+        String path = tempFile("overflow-streamer.txt", String.join("\n",
+                "record-count:2",
+                "name:town",
+                "alloc:1",
+                "name:classic",
+                "params:11:50:200:2",
+                "streamer:" + String.join(":", values),
+                "alloc:90",
+                ""));
+
+        DataFileParseException e = loadAndStop(path);
+
+        assertTrue(e.getMessage().contains("99999999999"), e.getMessage());
+        assertTrue(e.getMessage().contains(path), e.getMessage());
     }
 
     /**
@@ -740,24 +802,24 @@ class DungeonProfileReaderTest {
     }
 
     /**
-     * The profile order is the file's, whatever the names: C prepends then fills the array from
+     * The profile order is the file's, not the order of the builder table: C prepends then fills the array from
      * the far end, so {@code cave_profiles[0]} is the first {@code name:} in the file.
      */
     @Test
-    void profilesComeBackInFileOrderWhateverTheirNames() throws IOException {
+    void profilesComeBackInFileOrderNotBuilderTableOrder() throws IOException {
         String path = tempFile("order.txt", String.join("\n",
                 "record-count:3",
-                "name:zeta",
+                "name:cavern",
                 "alloc:1",
-                "name:alpha",
+                "name:town",
                 "alloc:1",
-                "name:mid",
+                "name:classic",
                 "alloc:1",
                 ""));
 
         ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
 
-        assertEquals(List.of("zeta", "alpha", "mid"),
+        assertEquals(List.of("cavern", "town", "classic"),
                 result.items().stream().map(CaveProfile::getName).toList());
     }
 }

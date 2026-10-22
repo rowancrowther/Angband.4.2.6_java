@@ -17,6 +17,8 @@
 
 package uk.co.jackoftradesltd.middle.cave.profiles.dungeon;
 
+import uk.co.jackoftradesltd.middle.cave.chunkbuilders.BuilderType;
+
 import java.util.List;
 
 /**
@@ -43,17 +45,7 @@ import java.util.List;
  * @author Rowan Crowther
  */
 public class CaveProfile {
-    /**
-     * The profile's name, which is also the level builder it selects.
-     *
-     * <p>In C the {@code name:} line looks the string up in {@code cave_builders[]} and the parse
-     * fails with {@code PARSE_ERROR_NO_BUILDER_FOUND} if nothing matches, so every loaded name
-     * corresponds to a real builder. Names are also how {@code generate.c} finds the town, moria
-     * and labyrinth profiles ({@code find_cave_profile()}).
-     *
-     * <p>Field name coded before 260930, commented in full on 260930.
-     */
-    private String name;
+    private BuilderType builderType;
 
     /**
      * The edge of the square block rooms are allocated in. Rooms take a whole number of blocks and
@@ -170,7 +162,6 @@ public class CaveProfile {
      *
      * <p>Function CaveProfile coded before 260930, commented in full on 260930.
      *
-     * @param name         the profile's name, matching a level builder
      * @param blockSize    the edge of the square block rooms are allocated in
      * @param dunRooms     how many rooms to aim for
      * @param dunUnusual   how strongly rare rooms are penalized
@@ -181,10 +172,10 @@ public class CaveProfile {
      * @param minLevel     the shallowest usable depth
      * @param alloc        the selection weight
      */
-    public CaveProfile(String name, int blockSize, int dunRooms, int dunUnusual, int maxRarity,
+    public CaveProfile(BuilderType builderType, int blockSize, int dunRooms, int dunUnusual, int maxRarity,
                        TunnelProfile tun, StreamerProfile str, List<RoomProfile> roomProfiles,
                        int minLevel, int alloc) {
-        this.name = name;
+        this.builderType = builderType;
         this.blockSize = blockSize;
         this.dunRooms = dunRooms;
         this.dunUnusual = dunUnusual;
@@ -204,7 +195,11 @@ public class CaveProfile {
      * @return the profile's name, which is also the level builder it selects
      */
     public String getName() {
-        return name;
+        return builderType.getName();
+    }
+    
+    public BuilderType getBuilderType() {
+        return builderType;
     }
 
     /**

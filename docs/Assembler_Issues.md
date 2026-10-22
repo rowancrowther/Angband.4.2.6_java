@@ -1336,9 +1336,9 @@ Found 2026-10-19 during `/port RoomProfileReader.java`. Not fixed.
   one and loads a ragged or zero-sized one. A `type:` over 255 is kept, so it never matches the builder's type 1 where C's wrapped value
   might.
 
-## `dungeonprofile/DungeonProfileAssembler.java` and `RoomAssembler.java`: absent lines default to -1, `pit:01` is not a pit, names are never checked, and a bad tunnel or streamer keeps the profile
+## `dungeonprofile/DungeonProfileAssembler.java` and `RoomAssembler.java`: absent lines default to -1, and `pit:01` is not a pit
 
-Found 2026-10-19 during `/port DungeonProfileReader.java`. Not fixed.
+Found 2026-10-19 during `/port DungeonProfileReader.java`. Partly fixed 26-10-21: the unknown-name and bad-tunnel-or-streamer cases are closed, the rest is not fixed.
 
 ### What C does
 
@@ -1355,23 +1355,27 @@ Found 2026-10-19 during `/port DungeonProfileReader.java`. Not fixed.
 - `DungeonProfileAssembler.java`: `blockSize`, `rooms`, `unusual` and `rarity` start at -1 and keep it when there is no `params:` line, and
   `alloc` is -1 when there is no `alloc:` line. A modded `moria` or `labyrinth` with no `alloc:` is therefore selectable here and not in C.
 - `RoomAssembler.java`: `pit` is `record.pit().equals("1")`, so `pit:01` is false.
-- `DungeonProfileAssembler.java` never checks `profileName`, and `RoomAssembler.java` calls `RoomType.getRoomTypeFromName` and uses the
-  result without a null check, so an unknown name loads with no error (a room keeps a null `RoomType`).
-- `DungeonProfileAssembler.java`: a `params:`, `min-level:` or `alloc:` value that will not convert drops the profile, but a bad `tunnel:`
-  or `streamer:` value is reported by its sub-assembler and the profile is kept with a null `tun` or `str`. A bad `room:` value drops only
-  that room.
-- `DungeonProfileAssembler.java`: `roomProfiles` is initialized to a new list and straight away overwritten, and the class Javadoc cites
-  C line numbers (`generate.c:111-204`) and says a failed conversion costs "its own profile and no more", which is not true of the
-  tunnel and streamer lines.
-- `DungeonProfileReaderTest.anAbsentAllocIsMinusOneHereWhereCLeavesZero`, `absentDirectivesLeaveSentinelsRatherThanZeroes`,
-  `aPitWrittenWithALeadingZeroIsNotAPitHereWhereCReadsOne`, `anUnknownProfileNameLoadsHereWhereCRefusesIt`,
-  `unknownRoomNameLeavesANullRoomTypeAndNoError` and `anOverflowingTunnelKeepsTheProfileWithoutATunnel` pin them.
+- <span style="color:#006400">**CLOSED**</span> 26-10-21: `DungeonProfileAssembler.java` and `RoomAssembler.java` throw `DataFileParseException` for an unknown profile or room name,
+  naming the name, the line and the file, as C quits on `PARSE_ERROR_NO_BUILDER_FOUND` and `PARSE_ERROR_NO_ROOM_FOUND`. `TunnelAssembler.java`
+  and `StreamerAssembler.java` throw for any bad field and for a record count other than one, so a profile is never kept with a null `tun`
+  or `str`. Before the fix an unknown name loaded with no error (a room kept a null `RoomType`) and a bad tunnel or streamer kept the profile.
+- `DungeonProfileAssembler.java`: a `params:`, `min-level:` or `alloc:` value that will not convert is still a soft error that drops the
+  profile, and a bad `room:` number still drops only that room. C quits on each. These are on the Stop-the-load list in
+  `Issue_Approach_Order.md`, not closed here.
+- `DungeonProfileAssembler.java`: the class Javadoc cites C line numbers (`generate.c:111-204`) and says a failed conversion costs "its own
+  profile and no more", which is no longer true: an unknown name, or a bad tunnel or streamer field, stops the load. The `errors` and
+  "fails closed" wording in `TunnelAssembler.java` and `StreamerAssembler.java` is stale for the same reason.
+- `DungeonProfileReaderTest.anAbsentAllocIsMinusOneHereWhereCLeavesZero`, `absentDirectivesLeaveSentinelsRatherThanZeroes` and
+  `aPitWrittenWithALeadingZeroIsNotAPitHereWhereCReadsOne` pin the open divergences. The closed ones are pinned as C does by
+  `unknownRoomNameStopsTheLoadAsInC`, `aNearMissRoomNameStopsTheLoadAfterAGoodRoom`, `anUnknownProfileNameStopsTheLoadAsInC`,
+  `anOverflowingTunnelFieldStopsTheLoadAsInC` and `anOverflowingStreamerFieldStopsTheLoadAsInC`, and `DungeonLoaderTest.unknownProfileNameStopsTheLoad`.
 
 ### Impact
 
 - None on the shipped data: all 9 profiles give `params:` and `alloc:`, every name is a real builder, and the only pit is written `1`.
-- A modded file that omits `alloc:` or `params:`, writes `pit:01`, or misspells a profile or room name loads without complaint in Java and
-  would build a level with the wrong weight, a missing pit flag or a null builder, where C refuses the file or leaves the weight at 0.
+- A modded file that omits `alloc:` or `params:` or writes `pit:01` loads without complaint in Java and would build a level with the wrong
+  weight or a missing pit flag, where C leaves the weight at 0 or reads the pit as 1. A misspelled profile or room name no longer reaches
+  that stage: the load stops, as in C.
 
 ## `chesttrap/ChestTrapAssembler.java`: `destroy:` and `magic:` accept only `1`, and the file is rejected whole where C cannot reject it
 

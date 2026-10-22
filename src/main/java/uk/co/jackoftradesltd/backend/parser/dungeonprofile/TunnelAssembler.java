@@ -17,7 +17,10 @@
 
 package uk.co.jackoftradesltd.backend.parser.dungeonprofile;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.middle.cave.profiles.dungeon.TunnelProfile;
 
@@ -38,6 +41,8 @@ import java.util.List;
  * @author Rowan Crowther
  */
 public class TunnelAssembler implements Assembler<DungeonProfileParseRecord.Tunnel, TunnelProfile> {
+    private static final Logger logger = LogManager.getLogger(TunnelAssembler.class);
+    
     /**
      * Assemble the one tunnel record, or report why it could not be assembled.
      *
@@ -49,63 +54,75 @@ public class TunnelAssembler implements Assembler<DungeonProfileParseRecord.Tunn
      *
      * @param records exactly one parsed tunnel record
      * @param errors  the soft-error sink, appended to if the record is unusable
-     * @return the assembled tunnel profile, or {@code null} if any field would not convert
+     * @return the assembled tunnel profile; never {@code null}, because a bad field or a record count other
+     * than one throws {@link DataFileParseException} and stops the load, as C quits on the line
      */
     @Override
     public TunnelProfile assemble(@NotNull List<DungeonProfileParseRecord.Tunnel> records, @NotNull List<String> errors,
                                     String filename) {
         if (records == null || records.size() != 1) {
-            errors.add("Expected exactly one tunnel profile");
-            return null;
+            String message = "Expected exactly one tunnel profile in file: " + filename;
+            logger.fatal(message);
+            throw new DataFileParseException(message);
         }
 
-        DungeonProfileParseRecord.Tunnel record = records.get(0);
+        DungeonProfileParseRecord.Tunnel record = records.getFirst();
         int line = record.lineNo();
 
-        int randomChance = -1;
-        int directionChangeChance = -1;
-        int concludeChance = -1;
-        int doorAtRoomEntranceChance = -1;
-        int junctionChance = -1;
+        int randomChance;
+        int directionChangeChance;
+        int concludeChance;
+        int doorAtRoomEntranceChance;
+        int junctionChance;
 
         try {
             randomChance = Integer.parseInt(record.randomChance());
         } catch (NumberFormatException e) {
-            errors.add("Tunnel record for profile starting at line: " + line + " has " +
-                    "a malformed randomChance, must be an integer: " + record.randomChance());
-            return null;
+            String message = "Tunnel record for profile starting at line: " + line +
+                    " of file: " + filename + " has " +
+                    "a malformed randomChance, must be an integer: " + record.randomChance();
+            logger.fatal(message);
+            throw new DataFileParseException(message);
         }
 
         try {
             directionChangeChance = Integer.parseInt(record.directionChangeChance());
         } catch (NumberFormatException e) {
-            errors.add("Tunnel record for profile starting at line: " + line + " has " +
-                    "a malformed direction change, must be an integer: " + record.directionChangeChance());
-            return null;
+            String message = "Tunnel record for profile starting at line: " + line +
+                    " of file: " + filename + " has " +
+                    "a malformed direction change, must be an integer: " + record.directionChangeChance();
+            logger.fatal(message);
+            throw new DataFileParseException(message);
         }
 
         try {
             concludeChance = Integer.parseInt(record.concludeChance());
         } catch (NumberFormatException e) {
-            errors.add("Tunnel record for profile starting at line: " + line + " has " +
-                    "a malformed conclude chance, must be an integer: " + record.concludeChance());
-            return null;
+            String message = "Tunnel record for profile starting at line: " + line +
+                    " of file: " + filename + " has " +
+                    "a malformed conclude chance, must be an integer: " + record.concludeChance();
+            logger.fatal(message);
+            throw new DataFileParseException(message);
         }
 
         try {
             doorAtRoomEntranceChance = Integer.parseInt(record.doorAtRoomEntranceChance());
         } catch (NumberFormatException e) {
-            errors.add("Tunnel record for profile starting at line: " + line + " has " +
-                    "a malformed door at a room entrance value, must be an integer: " + record.doorAtRoomEntranceChance());
-            return null;
+            String message = "Tunnel record for profile starting at line: " + line +
+                    " of file: " + filename + " has " +
+                    "a malformed door at a room entrance value, must be an integer: " + record.doorAtRoomEntranceChance();
+            logger.fatal(message);
+            throw new DataFileParseException(message);
         }
 
         try {
             junctionChance = Integer.parseInt(record.junctionChance());
         } catch (NumberFormatException e) {
-            errors.add("Tunnel record for profile starting at line: " + line + " has " +
-                    "a malformed junction change, must be an integer: " + record.junctionChance());
-            return null;
+            String message = "Tunnel record for profile starting at line: " + line +
+                    " of file: " + filename + " has " +
+                    "a malformed junction change, must be an integer: " + record.junctionChance();
+            logger.fatal(message);
+            throw new DataFileParseException(message);
         }
 
         return new TunnelProfile(randomChance, directionChangeChance,

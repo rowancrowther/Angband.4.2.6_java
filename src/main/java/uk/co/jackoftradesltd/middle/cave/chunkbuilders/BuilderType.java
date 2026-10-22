@@ -20,6 +20,8 @@ package uk.co.jackoftradesltd.middle.cave.chunkbuilders;
 import uk.co.jackoftradesltd.middle.cave.Chunk;
 import uk.co.jackoftradesltd.middle.player.Player;
 
+import java.util.stream.Stream;
+
 /**
  * The level builders the generator can choose between — the port of C's {@code cave_builders[]}
  * table, which is itself built from {@code list-dun-profiles.h}.
@@ -29,7 +31,8 @@ import uk.co.jackoftradesltd.middle.player.Player;
  * profile also supplies the depth range and allocation weight that make the choice.
  *
  * <p>Where C keeps the name and the function pointer in a static array and indexes into it, the
- * enum holds both on the constant, so the lookup C does by hand comes free.
+ * enum holds both on the constant. The by-name search C writes out as a loop in
+ * {@code parse_profile_name} is {@link #fromName(String)}.
  *
  * <p>Constants are declared in {@code list-dun-profiles.h} order, matching the C table entry for
  * entry. The order carries no behaviour: C only searches the table by name, in
@@ -40,7 +43,7 @@ import uk.co.jackoftradesltd.middle.player.Player;
  * <p>The C builders take a trailing {@code const char **err} out-parameter to report why they
  * gave up. That has no Java counterpart — see {@link CaveBuilder#build}.
  *
- * <p>coded on 2026-09-30 / commented in full on 2026-09-30
+ * <p>coded on 2026-09-30 / commented in full on 2026-10-21
  *
  * @author Rowan Crowther
  */
@@ -137,5 +140,30 @@ public enum BuilderType {
      */
     public Chunk build(Player player, int minHeight, int minWidth) {
         return caveBuilder.build(player, minHeight, minWidth);
+    }
+
+    /**
+     * Find the builder a profile name selects — the port of the search loop in
+     * {@code parse_profile_name} in {@code generate.c}, which walks {@code cave_builders[]}
+     * comparing each entry's name with {@code streq}.
+     *
+     * <p>Matching is exact and case-sensitive, so {@code "Town"}, {@code "hard_centre"} and
+     * {@code "hard centre "} all miss. Names are unique, so the first match is the only one, as in
+     * C where the loop stops at the first hit.
+     *
+     * <p>C reports a miss as {@code PARSE_ERROR_NO_BUILDER_FOUND} and the profile record is
+     * refused. Here a miss returns {@code null} and the caller must turn it into that error. A
+     * {@code null} or empty {@code name} is a miss too; C cannot be handed a {@code NULL} name,
+     * because {@code parser_getstr} always returns a string for a required field.
+     *
+     * <p>coded on 2026-10-21 / commented in full on 2026-10-21
+     *
+     * @param name the text of a {@code name:} line in {@code dungeon_profile.txt}
+     * @return the matching builder type, or {@code null} if no builder has that name
+     */
+    public static BuilderType fromName(String name) {
+        return Stream.of(BuilderType.values())
+                .filter(s -> s.getName().equals(name))
+                .findFirst().orElse(null);
     }
 }

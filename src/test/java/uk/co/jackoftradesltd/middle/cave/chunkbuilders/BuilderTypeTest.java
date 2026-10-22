@@ -23,8 +23,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Checks {@link BuilderType} against C's {@code cave_builders[]}, which {@code generate.c} builds
@@ -67,6 +66,37 @@ class BuilderTypeTest {
             boolean found = Arrays.stream(BuilderType.values()).anyMatch(b -> b.getName().equals(name));
             assertTrue(found, name);
         }
+    }
+
+    @Test
+    void fromNameFindsEveryCNameAtItsCIndex() {
+        for (int i = 0; i < C_NAMES.size(); i++) {
+            assertEquals(BuilderType.values()[i], BuilderType.fromName(C_NAMES.get(i)), C_NAMES.get(i));
+        }
+    }
+
+    @Test
+    void fromNameKeepsTheSpaceInHardCentre() {
+        assertEquals(BuilderType.HARD_CENTRE, BuilderType.fromName("hard centre"));
+    }
+
+    @Test
+    void fromNameIsAMissForAnythingStreqWouldRefuse() {
+        for (String bad : List.of("Town", "TOWN", "hard_centre", "hard  centre", "hard centre ", " town",
+                "", "vault", "cave", "classic\n", "moria\t")) {
+            assertNull(BuilderType.fromName(bad), "[" + bad + "]");
+        }
+    }
+
+    @Test
+    void fromNameOfNullIsAMiss() {
+        assertNull(BuilderType.fromName(null));
+    }
+
+    @Test
+    void fromNameNeverMatchesTheEnumConstantName() {
+        assertNull(BuilderType.fromName("HARD_CENTRE"));
+        assertNull(BuilderType.fromName("MODIFIED"));
     }
 
     @Test

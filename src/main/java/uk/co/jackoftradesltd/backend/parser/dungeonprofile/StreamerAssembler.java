@@ -17,7 +17,10 @@
 
 package uk.co.jackoftradesltd.backend.parser.dungeonprofile;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.middle.cave.profiles.dungeon.StreamerProfile;
 
@@ -33,6 +36,7 @@ import java.util.List;
  * @author Rowan Crowther
  */
 public class StreamerAssembler implements Assembler<DungeonProfileParseRecord.Streamer, StreamerProfile> {
+    private final static Logger logger = LogManager.getLogger(StreamerAssembler.class);
 
     /**
      * Assemble the one streamer record, or report why it could not be assembled.
@@ -44,14 +48,17 @@ public class StreamerAssembler implements Assembler<DungeonProfileParseRecord.St
      *
      * @param records exactly one parsed streamer record
      * @param errors  the soft-error sink, appended to if the record is unusable
-     * @return the assembled streamer profile, or {@code null} if any field would not convert
+     * @return the assembled streamer profile; never {@code null}, because a bad field or a record count other
+     * than one throws {@link DataFileParseException} and stops the load, as C quits on the line
      */
     @Override
     public StreamerProfile assemble(@NotNull List<DungeonProfileParseRecord.Streamer> records, @NotNull List<String> errors,
                                     String filename) {
         if (records == null || records.size() != 1) {
-            errors.add("Streamer must not be null and have exactly one Streamer");
-            return null;
+            String message = "Streamer must not be null and have exactly one Streamer. Found " +
+                    "in file: " + filename;
+            logger.fatal(message);
+            throw new DataFileParseException(message);
         }
         DungeonProfileParseRecord.Streamer streamer = records.get(0);
         int line = streamer.lineNo();
@@ -64,44 +71,56 @@ public class StreamerAssembler implements Assembler<DungeonProfileParseRecord.St
         try {
             density = Integer.parseInt(streamer.density());
         } catch (NumberFormatException e) {
-            errors.add("Streamer at line: " + line + " has " +
-                    "an invalid density integer value: " + streamer.density());
-            return null;
+            String message = "Streamer at line: " + line + " of file: " 
+                    + filename + " has " +
+                    "an invalid density integer value: " + streamer.density();
+            logger.fatal(message);
+            throw new DataFileParseException(message);
         }
         try {
             range = Integer.parseInt(streamer.range());
         } catch (NumberFormatException e) {
-            errors.add("Streamer at line: " + line + " has " +
-                    "an invalid range integer value: " + streamer.range());
-            return null;
+            String message = "Streamer at line: " + line + " of file: "
+                    + filename + " has " +
+                    "an invalid range integer value: " + streamer.range();
+            logger.fatal(message);
+            throw new DataFileParseException(message);
         }
         try {
             magmaStreamers = Integer.parseInt(streamer.magmaStreamersPerLevel());
         } catch (NumberFormatException e) {
-            errors.add("Streamer at line: " + line + " has " +
-                    "an invalid magma integer value: " + streamer.magmaStreamersPerLevel());
-            return null;
+            String message = "Streamer at line: " + line + " of file: "
+                    + filename + " has " +
+                    "an invalid magma integer value: " + streamer.magmaStreamersPerLevel();
+            logger.fatal(message);
+            throw new DataFileParseException(message);
         }
         try {
             magmaTreasure = Integer.parseInt(streamer.magmaTreasureChance());
         } catch (NumberFormatException e) {
-            errors.add("Streamer at line: " + line + " has " +
-                    "an invalid magma treasure integer value: " + streamer.magmaTreasureChance());
-            return null;
+            String message = "Streamer at line: " + line + " of file: "
+                    + filename + " has " +
+                    "an invalid magma treasure integer value: " + streamer.magmaTreasureChance();
+            logger.fatal(message);
+            throw new DataFileParseException(message);
         }
         try {
             quartzStreamers = Integer.parseInt(streamer.quartzStreamersPerLevel());
         } catch (NumberFormatException e) {
-            errors.add("Streamer at line: " + line + " has " +
-                    "an invalid quartz integer value: " + streamer.quartzStreamersPerLevel());
-            return null;
+            String message = "Streamer at line: " + line + " of file: "
+                    + filename + " has " +
+                    "an invalid quartz integer value: " + streamer.quartzStreamersPerLevel();
+            logger.fatal(message);
+            throw new DataFileParseException(message);
         }
         try {
             quartzTreasure = Integer.parseInt(streamer.quartzTreasureChance());
         } catch (NumberFormatException e) {
-            errors.add("Streamer at line: " + line + " has " +
-                    "an invalid quartz treasure integer value: " + streamer.quartzTreasureChance());
-            return null;
+            String message = "Streamer at line: " + line + " of file: "
+                    + filename + " has " +
+                    "an invalid quartz treasure integer value: " + streamer.quartzTreasureChance();
+            logger.fatal(message);
+            throw new DataFileParseException(message);
         }
 
         return new StreamerProfile(density, range, magmaStreamers, magmaTreasure,

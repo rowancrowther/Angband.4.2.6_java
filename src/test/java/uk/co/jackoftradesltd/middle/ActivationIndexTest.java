@@ -19,6 +19,7 @@ package uk.co.jackoftradesltd.middle;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.backend.parser.ActivationReader;
 import uk.co.jackoftradesltd.backend.parser.activation.ActivationAssembler;
 import uk.co.jackoftradesltd.backend.parser.activation.ActivationParseRecord;
@@ -40,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * the index runs up the stored list: the first activation in the array has the lowest index, and
  * the index equals the slot. C counts from 1, because slot 0 is a blank record; the port keeps no
  * blank slot (an accepted deviation), so its indexes are C's minus one, from 0. C's list holds every
- * record that parsed, so there are no gaps.
+ * record, so there are no gaps; a bad record quits the load before the list is built.
  *
  * <p>{@code Activation} has no getter for the index yet, so the tests read the field by reflection.
  *
@@ -102,19 +103,30 @@ class ActivationIndexTest {
     }
 
     @Test
-    @DisplayName("a dropped record leaves no gap: the survivors are numbered 0, 1, 2 in stored order")
-    void droppedRecordLeavesNoGap() throws Exception {
+    @DisplayName("every record is numbered, with no gap: three records are 0, 1, 2 in stored order")
+    void everyRecordIsNumberedWithNoGap() throws Exception {
         List<String> errors = new ArrayList<>();
 
         List<Activation> out = new ActivationAssembler().assemble(
-                List.of(rec("FIRST", "5", 3), rec("BROKEN", "high", 9), rec("LAST", "5", 15)), errors, "test.txt");
+                List.of(rec("FIRST", "5", 3), rec("MIDDLE", "5", 9), rec("LAST", "5", 15)), errors, "test.txt");
 
-        assertEquals(1, errors.size());
-        assertEquals(2, out.size());
+        assertTrue(errors.isEmpty(), errors::toString);
+        assertEquals(3, out.size());
         assertEquals("LAST", out.get(0).getName(), "last file record is stored first, as in C");
         assertEquals(0, indexOf(out.get(0)));
-        assertEquals("FIRST", out.get(1).getName());
+        assertEquals("MIDDLE", out.get(1).getName());
         assertEquals(1, indexOf(out.get(1)));
+        assertEquals("FIRST", out.get(2).getName());
+        assertEquals(2, indexOf(out.get(2)));
+    }
+
+    @Test
+    @DisplayName("a bad record stops the load, so no list is returned to number")
+    void aBadRecordStopsTheLoadBeforeAnythingIsNumbered() {
+        // C quits on the first record that fails, so the survivors are never counted or numbered.
+        assertThrows(DataFileParseException.class, () -> new ActivationAssembler().assemble(
+                List.of(rec("FIRST", "5", 3), rec("BROKEN", "high", 9), rec("LAST", "5", 15)),
+                new ArrayList<>(), "test.txt"));
     }
 
     @Test

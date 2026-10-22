@@ -305,6 +305,58 @@ recorded here as the summary states them; fill in the detail when you next touch
 - **Accepted:** 2026-10-16. To be marked in the `putFormattedLine` Javadoc when it is written, alongside the UTF-8 cut
   deviation above.
 
+## Activation
+
+### A record with two faults reports the one the assembler reaches first, not the one nearest the top of the block
+
+- **Java:** `ActivationAssembler.assemble` (`backend/parser/activation/`). **C:** `parse_act_*` in `obj-init.c`, with
+  `print_error` in `datafile.c`.
+- **Differs:** C parses `activation.txt` one line at a time and quits on the first line that fails, so within a record
+  the fault reported is the one nearest the top of the block, and a `level:` line after a bad `effect:` line is never
+  reached. Java collects the whole block first and then checks the records in file order, and within one record checks
+  `aim:`, then `level:`, then `power:`, then the effects, whatever order the lines came in. Across records the two agree: the first
+  bad record in the file stops the load.
+- **Reach:** only a record with two or more faults, which stops the load either way. The load stops at the same record,
+  and only the fault named in the message can differ. None on shipped data.
+- **Revisit:** if the parse records ever carry the line of each directive, so a message can name the line C names.
+- **Accepted:** 2026-10-22. The order is the order the records are read from the file.
+
+### A fault is reported against the line the record starts on, not the line of the bad directive
+
+- **Java:** `ActivationAssembler.assemble`, `ActivationParseRecord` and the `activation` rule in `ActivationsGrammar.g4`.
+  **C:** `parse_act_*` in `obj-init.c`, with `print_error` in `datafile.c`.
+- **Differs:** C parses one line at a time, so `print_error` names the line of the directive that failed: the
+  `level:` line for a bad level. Java keeps one line number per activation parse record, the line of its `name:`, and
+  every message says "beginning at line" with that number, whichever directive was at fault. Effect faults are the
+  exception: `EffectParseRecord` carries its own line, so `EffectAssembler` names the effect's line.
+- **Reach:** only the text of a message when the load stops. Which record stops the load is the same in both. A
+  record has about five lines, so the number is at most a few lines out.
+- **Revisit:** if a stop-the-load message is ever judged too hard to act on, give the record a line per directive.
+- **Accepted:** 2026-10-22. Decided to keep one line per record. Related to the ordering entry above, which also
+  names this as its revisit trigger.
+
+### An `aim:`, `level:` or `power:` too big for its C type is clamped, where C wraps it
+
+- **Java:** `ActivationAssembler.assemble`, through its `parseIntString` and `parseString` helpers. **C:**
+  `parse_act_aim`, `parse_act_level` and `parse_act_power` in `obj-init.c`, with the `int` and `uint` parsing in
+  `parser.c`.
+- **Scope:** every integer the activation assembler reads, which today is those three fields. An out of range integer
+  clamps unless a separate entry says a field is handled differently, and no field has one.
+- **Differs:** C reads the number with `strtol` (or `strtoul` for the `uint` fields `aim:` and `power:`), which saturates
+  at 64 bits, and stores it in a 32-bit field with no range check, so the low 32 bits are kept: `level:3000000000`
+  and `power:3000000000` both become -1294967296 with no error, and `aim:4294967296` becomes 0, so false. Java clamps to
+  `Integer.MIN_VALUE` and `Integer.MAX_VALUE`, so the first two become 2147483647 and `aim:4294967296` is true. A wrapped
+  C value can be negative or tiny, and nothing downstream checks it: `get_use_device_chance` (`obj-util.c`) overflows
+  its own arithmetic on a large `level`, `effects_power` (`obj-power.c`) adds a wrapped negative `power` to the item's
+  power rating, and the random-artifact picker (`obj-randart.c`) lets a wrapped negative `power` past its
+  `INHIBIT_POWER` filter.
+- **Reach:** none from shipped data, where `aim:` is 0 or 1, `level:` tops out at 60 and `power:` at 25. Hand-edited
+  files only.
+- **Revisit:** if a modded `activation.txt` ever needs C's exact wrapped value, which is unlikely, since the wrapped
+  value is the less useful one.
+- **Accepted:** 2026-10-22, as a deliberate deviation, extended the same day from `level:` and `power:` to every
+  out of range integer. To be marked in the `parseString` Javadoc when it is written.
+
 ## Pending your decision
 
 - The five `objDescNameFormat` divergences (Part G; `docs/ItemObject_round2/part_G.md`). All unreachable from shipped

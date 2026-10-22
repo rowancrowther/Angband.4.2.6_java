@@ -20,6 +20,7 @@ package uk.co.jackoftradesltd.backend.parser;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.Activation;
 
@@ -63,7 +64,14 @@ import static org.junit.jupiter.api.Assertions.*;
  * shows up here as a test to flip. The differences are written up in {@code docs/grammar_issues.md}
  * and {@code docs/Assembler_Issues.md}.
  *
- * <p>Class ActivationReaderTest coded before 261017, extended and commented in full on 261017.
+ * <p>Since 261022 a bad record stops the load: the tests that used to expect a soft error and a
+ * short list now expect {@code DataFileParseException}, and the reading of {@code aim:},
+ * {@code level:} and {@code power:} follows C's base 0 {@code strtol} (octal after a leading
+ * {@code 0}, any non-zero {@code aim:} true, a {@code -} refused on the {@code uint} fields). A
+ * number too big for an int is clamped, an accepted deviation from C's wrap.
+ *
+ * <p>Class ActivationReaderTest coded before 261017, extended and commented in full on 261017,
+ * updated on 261022 for the stop-the-load policy.
  *
  * @author Rowan Crowther
  */
@@ -107,24 +115,21 @@ class ActivationReaderTest {
     }
 
     @Test
-    void unresolvableEffectDropsTheWholeActivation() throws IOException {
-        // NOTAREALEFFECT is not a known effect type. Under the suite-wide effect-drop policy,
-        // a record whose effect fails to resolve is discarded in full: EffectAssembler returns
-        // null and ActivationAssembler skips the activation, so no items load and a single error
-        // is reported. The record-count header is line 1, so the effect: directive is line 6, and
-        // EffectAssembler tags the error against the effect's own line.
+    void unresolvableEffectStopsTheLoadAsInC() throws IOException {
+        // NOTAREALEFFECT is not a known effect type. In C, parse_act_effect returns the error from
+        // grab_effect_data and print_error quits. EffectAssembler returns null and
+        // ActivationAssembler turns that into a DataFileParseException, so nothing loads. The
+        // record-count header is line 1, so the record starts on line 2, and that is the line the
+        // message names (the accepted one-line-per-record deviation).
         String path = tempFile("bad-data.txt",
                 "record-count:1\nname:TEST_BAD\naim:0\nlevel:5\npower:1\neffect:NOTAREALEFFECT\ndesc:bad activation\n");
 
-        ParseResult<Activation> result = new ActivationReader().parseWithResult(path);
+        DataFileParseException thrown = assertThrows(DataFileParseException.class,
+                () -> new ActivationReader().parseWithResult(path));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty());
-        assertEquals(1, result.errors().size());
-        String error = result.errors().get(0);
-        assertTrue(error.contains("invalid effect type"), error);
-        assertTrue(error.contains("NOTAREALEFFECT"), error);
-        assertTrue(error.contains("line: 6"), error);
+        assertTrue(thrown.getMessage().contains("malformed effect"), thrown.getMessage());
+        assertTrue(thrown.getMessage().contains("line: 2"), thrown.getMessage());
+        assertTrue(thrown.getMessage().contains("bad-data.txt"), thrown.getMessage());
     }
 
     @Test
@@ -140,21 +145,16 @@ class ActivationReaderTest {
     }
 
     @Test
-    void oversizedLevelIsReportedAsMalformedThroughTheFullPipeline() throws IOException {
+    void anOversizedLevelIsClampedThroughTheFullPipelineHereWhereCWraps() throws Exception {
         // The lexer's INTEGER token accepts an arbitrarily long run of digits, so a value too
-        // large for a Java int lexes and parses cleanly and only fails when the assembler
-        // converts the raw string. This proves the assembler's malformed-number branch is
-        // reachable end to end, not just by hand-built records. The record-count matches (one
-        // record parsed), so the only error is the failed conversion, and the bad record is
-        // dropped, leaving no items.
-        String path = tempFile("big-level.txt",
-                "record-count:1\nname:TEST_BIG\naim:0\nlevel:99999999999999\npower:1\ndesc:huge\n");
+        // large for an int lexes and parses cleanly and reaches the assembler as text. C keeps the
+        // low 32 bits (99999999999999 becomes 276447231); the accepted deviation clamps to the
+        // range of an int. No error is reported either way.
+        Activation big = loadOne("name:T\nlevel:99999999999999\npower:1\neffect:CURE:POISONED\n");
+        Activation small = loadOne("name:T\nlevel:-99999999999999\npower:1\neffect:CURE:POISONED\n");
 
-        ParseResult<Activation> result = new ActivationReader().parseWithResult(path);
-
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().get(0).contains("malformed level"), result.errors().toString());
+        assertEquals(Integer.MAX_VALUE, level(big));
+        assertEquals(Integer.MIN_VALUE, level(small));
     }
 
     @Test
@@ -473,26 +473,29 @@ class ActivationReaderTest {
     }
 
     @Test
-    void aBadRecordIsDroppedAndTheRestStillLoad() throws IOException {
-        // The first record's level fits the lexer but not an int; the assembler drops that record
-        // alone, the count matches, and the second record loads.
-        ParseResult<Activation> result = load("partial.txt", withHeader(2,
-                "name:BAD\nlevel:99999999999\neffect:CURE:POISONED\n\nname:GOOD\nlevel:2\n"
+    void aBadRecordStopsTheLoadEvenWithAGoodOneAfterIt() throws IOException {
+        // C quits on the first line that fails, so the second record is never read. The first
+        // record's power is negative, which "power uint power" refuses. The header is line 1, so
+        // BAD starts on line 2.
+        String path = tempFile("partial.txt", withHeader(2,
+                "name:BAD\npower:-3\neffect:CURE:POISONED\n\nname:GOOD\nlevel:2\n"
                         + "effect:CURE:POISONED\n"));
 
-        assertEquals(1, result.errors().size(), result.errors().toString());
-        assertTrue(result.errors().get(0).contains("malformed level"), result.errors().get(0));
-        assertEquals(List.of("GOOD"), result.items().stream().map(Activation::getName).toList());
+        DataFileParseException thrown = assertThrows(DataFileParseException.class,
+                () -> new ActivationReader().parseWithResult(path));
+
+        assertTrue(thrown.getMessage().contains("negative power"), thrown.getMessage());
+        assertTrue(thrown.getMessage().contains("line: 2"), thrown.getMessage());
+        assertTrue(thrown.getMessage().contains("partial.txt"), thrown.getMessage());
     }
 
     @Test
-    void aPowerTooLargeForAnIntDropsTheRecordWithASoftError() throws IOException {
-        ParseResult<Activation> result = load("bigpower.txt",
-                withHeader(1, "name:BAD\npower:99999999999\neffect:CURE:POISONED\n"));
+    void aPowerTooLargeForAnIntIsClampedHereWhereCWraps() throws Exception {
+        // C: strtoul gives 99999999999, narrowed to 32 bits it is 1215752191. The accepted
+        // deviation clamps instead, and no error is reported.
+        Activation a = loadOne("name:BAD\npower:99999999999\neffect:CURE:POISONED\n");
 
-        assertEquals(1, result.errors().size(), result.errors().toString());
-        assertTrue(result.errors().get(0).contains("malformed power"), result.errors().get(0));
-        assertTrue(result.items().isEmpty());
+        assertEquals(Integer.MAX_VALUE, a.getPower());
     }
 
     // ---- Where the grammar and assembler differ from C -------------------
@@ -551,34 +554,49 @@ class ActivationReaderTest {
     }
 
     @Test
-    void aNegativePowerIsAcceptedHereWhereCRejectsAUint() throws Exception {
-        // "power uint power": parser_parse refuses a token starting with '-'.
-        Activation a = loadOne(record("power:-3\n"));
+    void aNegativePowerStopsTheLoadAsInC() throws IOException {
+        // "power uint power": parser_parse refuses a token starting with '-', even -0.
+        for (String power : List.of("-3", "-0")) {
+            String path = tempFile("negpower.txt", withHeader(1, record("power:" + power + "\n")));
 
-        assertEquals(-3, a.getPower());
+            DataFileParseException thrown = assertThrows(DataFileParseException.class,
+                    () -> new ActivationReader().parseWithResult(path));
+
+            assertTrue(thrown.getMessage().contains("negative power: " + power), thrown.getMessage());
+        }
     }
 
     @Test
-    void aNegativeAimIsAcceptedAndReadAsFalseHereWhereCRejectsAUint() throws Exception {
-        Activation a = loadOne(record("aim:-1\n"));
+    void aNegativeAimStopsTheLoadAsInC() throws IOException {
+        // "aim uint aim": the same refusal as power.
+        String path = tempFile("negaim.txt", withHeader(1, record("aim:-1\n")));
 
-        assertFalse(aim(a));
+        DataFileParseException thrown = assertThrows(DataFileParseException.class,
+                () -> new ActivationReader().parseWithResult(path));
+
+        assertTrue(thrown.getMessage().contains("aim"), thrown.getMessage());
     }
 
     @Test
-    void anAimOtherThanExactlyOneIsFalseHereWhereCReadsAnyNonZeroAsTrue() throws Exception {
+    void anyNonZeroAimIsTrueAsInC() throws Exception {
         // parse_act_aim: act->aim = val ? true : false.
-        assertFalse(aim(loadOne(record("aim:2\n"))));
-        assertFalse(aim(loadOne(record("aim:01\n"))));
+        assertTrue(aim(loadOne(record("aim:2\n"))));
+        assertTrue(aim(loadOne(record("aim:01\n"))));
         assertTrue(aim(loadOne(record("aim:1\n"))));
+        assertFalse(aim(loadOne(record("aim:0\n"))));
+        // strtoul base 0 reads "08" as octal 0 and stops at the 8.
+        assertFalse(aim(loadOne(record("aim:08\n"))));
     }
 
     @Test
-    void aLeadingZeroLevelIsReadAsDecimalHereWhereCReadsOctal() throws Exception {
+    void aLeadingZeroLevelIsReadAsOctalAsInC() throws Exception {
         // strtol(tok, &z, 0): 010 is 8 in C.
-        Activation a = loadOne(record("level:010\n"));
-
-        assertEquals(10, level(a));
+        assertEquals(8, level(loadOne(record("level:010\n"))));
+        assertEquals(15, level(loadOne(record("level:017\n"))));
+        // The read stops at the first 8 or 9, with no error.
+        assertEquals(0, level(loadOne(record("level:08\n"))));
+        assertEquals(1, level(loadOne(record("level:019\n"))));
+        assertEquals(-8, level(loadOne(record("level:-010\n"))));
     }
 
     @Test

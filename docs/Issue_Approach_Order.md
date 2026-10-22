@@ -211,7 +211,7 @@ unchecked `DataFileParseException` in `backend/io/bespokeexceptions/`, which `Gr
 
 Paths are under `src/main/java/uk/co/jackoftradesltd/`. The figure in brackets is the number of calls in that file.
 
-- `backend/parser/activation/ActivationAssembler.java` (2): 72, 82
+- `backend/parser/activation/ActivationAssembler.java` (2): ~~72~~, ~~82~~
 - `backend/parser/artifact/ArtifactAssembler.java` (21): 86, 97, 107, 117, 127, 138, 148, 161, 183, 187, 205, 218, 229, 243, 255, 265, 275, 285, 294, 304, 317
 - `backend/parser/bloweffect/BlowEffectAssembler.java` (8): 86, 97, 110, 119, 128, 144, 160, 168
 - `backend/parser/blowmethod/BlowMethodAssembler.java` (1): 90
@@ -297,7 +297,7 @@ Each group is one helper (or one policy) and then one pass over its users.
 ### Booleans read from text (`!= 0`, not `equals("1")`)
 
 - A: `summon/SummonAssembler.java` `uniques:`.
-- A: `activation/ActivationAssembler.java` `aim:`.
+- A: `activation/ActivationAssembler.java` `aim:`. [<span style="color:#006400">**CLOSED**</span> 26-10-22: any non-zero `aim:` is true, read with C's base 0 rules; `ActivationAssemblerTest.anyNonZeroAimIsTrueAsInC` pins it.]
 - A: `objectproperty/ObjectPropertyAssembler.java` `bindui:` aux, and A: `playerproperty/PlayerPropertyAssembler.java` aux.
 - A: `chesttrap/ChestTrapAssembler.java` `destroy:` and `magic:`.
 - A: `playertimed/PlayerTimedAssembler.java` `exact`, which sits in its larger entry.

@@ -594,7 +594,7 @@ Found 2026-10-17 during `/port backend/parser/CurseReader.java`. [<span style="c
 
 ## `activation/ActivationAssembler.java`: `aim:` is true only for exactly `1`, C takes any non-zero number
 
-Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-22: `ActivationAssembler.java` reads `aim:` as C's `strtoul` with base 0 does and sets it true for any non-zero value, so `aim:2` and `aim:01` are true and `aim:08` (octal 0) is false. A leading `-` stops the load, as `uint` refuses it. `ActivationAssemblerTest.anyNonZeroAimIsTrueAsInC` and `ActivationReaderTest.anyNonZeroAimIsTrueAsInC` pin it, and the full suite is green. The bullets below describe the state before the fix.]
 
 - `parse_act_aim` in `obj-init.c` reads `aim` as a `uint` and runs `act->aim = val ? true : false`, so `aim:2` and `aim:01`
   (read by `strtol` base 0 as 1) are both true.

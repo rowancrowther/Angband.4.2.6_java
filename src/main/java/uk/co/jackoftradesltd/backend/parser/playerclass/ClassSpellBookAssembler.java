@@ -17,7 +17,10 @@
 
 package uk.co.jackoftradesltd.backend.parser.playerclass;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
@@ -96,6 +99,8 @@ import java.util.*;
  * @author Rowan Crowther
  */
 public class ClassSpellBookAssembler implements Assembler<ClassSpellBookParseRecord, List<MagicBook>> {
+    private static final Logger logger = LogManager.getLogger(ClassSpellBookAssembler.class);
+    
     /**
      * Assembles each book record into a {@link MagicBook}: it reads the scalars, resolves the realm
      * and object base, assembles the spells, builds and registers the backing {@link ObjectKind} if
@@ -118,7 +123,6 @@ public class ClassSpellBookAssembler implements Assembler<ClassSpellBookParseRec
     public List<MagicBook> assemble(@NotNull List<ClassSpellBookParseRecord> records, @NotNull List<String> errors,
                                     String filename) {
         List<MagicBook> magicBooks = new ArrayList<>();
-
         for (ClassSpellBookParseRecord record : records) {
             int line = record.line();
             String tValueString = record.oBase();
@@ -130,19 +134,18 @@ public class ClassSpellBookAssembler implements Assembler<ClassSpellBookParseRec
             }
             boolean dungeon = record.locFrom().equals("dungeon");
             String bookName = record.name();
-//            number of spells is calculated from the size of the spell list
-//            and not the declared number of spells
-//            
-//            int noOfSpells = 0;
-//            if (!record.noOfSpells().isEmpty()) {
-//                try {
-//                    noOfSpells = Integer.parseInt(record.noOfSpells());
-//                } catch (NumberFormatException e) {
-//                    errors.add("Spell book at line: " + line + " has " +
-//                            "a malformed number of spells integer: " + record.noOfSpells());
-//                    continue;
-//                }
-//            }
+            // number of spells is calculated from the size of the spell list
+            // and not the declared number of spells
+            int noOfSpells = 0;
+            if (!record.noOfSpells().isEmpty()) {
+                try {
+                    noOfSpells = Integer.parseInt(record.noOfSpells());
+                } catch (NumberFormatException e) {
+                    errors.add("Spell book at line: " + line + " has " +
+                            "a malformed number of spells integer: " + record.noOfSpells());
+                    continue;
+                }
+            }
             MagicRealm realm;
             try {
                 realm = PlayerRegistry.lookupRealm(record.realm());
@@ -218,6 +221,13 @@ public class ClassSpellBookAssembler implements Assembler<ClassSpellBookParseRec
                 }
             }
             List<MagicSpell> spells = new ClassSpellAssembler().assemble(record.spells(), errors, filename);
+            if (spells.size() > noOfSpells) {
+                String message = "Too many spells. " + spells.size() + " spells found, " 
+                        + noOfSpells + " declared. Magic Book defined at " + line + " in " +
+                        "file " + filename;
+                logger.fatal(message);
+                throw new DataFileParseException(message);
+            }
             
             for (MagicSpell spell : spells) {
                 spell.setRealm(realm);

@@ -21,6 +21,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.enums.Stats;
@@ -165,6 +166,18 @@ class PlayerClassReaderTest {
         Path file = tempDir.resolve(fileName);
         Files.writeString(file, content);
         return new PlayerClassReader().parseWithResults(file.toString());
+    }
+
+    /**
+     * Writes {@code content} to a temp file and drives it through the reader, expecting the
+     * assembler to stop the load, and returns what it threw. The message names the file, so the
+     * path is returned through {@link DataFileParseException#getMessage()}.
+     */
+    private DataFileParseException loadAndStop(String fileName, String content) throws IOException {
+        Path file = tempDir.resolve(fileName);
+        Files.writeString(file, content);
+        return assertThrows(DataFileParseException.class,
+                () -> new PlayerClassReader().parseWithResults(file.toString()));
     }
 
     private static String withHeader(int count, String body) {
@@ -464,7 +477,8 @@ class PlayerClassReaderTest {
     /**
      * C's {@code parse_class_book} returns {@code PARSE_ERROR_TOO_MANY_ENTRIES} for a
      * {@code book:} line once {@code num_books} has reached the count declared on the
-     * {@code magic:} line. Two books against a declared one must be reported.
+     * {@code magic:} line. Two books against a declared one must be reported. Interim: until the
+     * soft error becomes a stop, the report is the "contained an error" message.
      */
     @Test
     void moreBooksThanDeclaredIsReported() throws IOException {
@@ -479,7 +493,7 @@ class PlayerClassReaderTest {
                         + "effect:BOLT:MISSILE\n"
                         + "dice:1\n"));
 
-        assertTrue(hasError(r, "different number of books"), r.errors()::toString);
+        assertTrue(hasError(r, "contained an error"), r.errors()::toString);
     }
 
     /**
@@ -538,12 +552,13 @@ class PlayerClassReaderTest {
     }
 
     /**
-     * Known gap against C. C refuses the second {@code book:} line of a class that declared one,
-     * whether or not the first was good. The port counts only the books that survive, so one
-     * dropped book plus one good book against a declared one passes silently.
+     * C refuses the second {@code book:} line of a class that declared one, whether or not the first
+     * was good. The port now counts every {@code book:} line, so one dropped book plus one good book
+     * against a declared one is caught, and the class loads without magic. The message is the
+     * "contained an error" one, not the count one, until the soft errors become stops.
      */
     @Test
-    void aDroppedBookHidesAnExtraBookFromTheCountCheck() throws Exception {
+    void aDroppedBookNoLongerHidesAnExtraBookFromTheCountCheck() throws Exception {
         ParseResult<PlayerClass> r = load("dropped-plus-extra.txt", withHeader(1,
                 "name:Caster\nmagic:1:100:1\n"
                         + "book:magic book:town:[B]:1:notarealm\n"
@@ -553,7 +568,8 @@ class PlayerClassReaderTest {
                         + "effect:BOLT:MISSILE\n"
                         + "dice:1\n"));
 
-        assertFalse(hasError(r, "different number of books"), r.errors()::toString);
+        assertTrue(hasError(r, "contained an error"), r.errors()::toString);
+        assertSame(ClassMagic.NONE, castMagic(r));
     }
 
     // ---- EffectAssembler (reached via a spell) ---------------------------
@@ -829,18 +845,73 @@ class PlayerClassReaderTest {
         assertTrue(r.hasErrors());
     }
 
-    /** C: {@code parse_class_spell} returns {@code PARSE_ERROR_TOO_MANY_ENTRIES} past the declared count. */
+    /**
+     * C: {@code parse_class_spell} returns {@code PARSE_ERROR_TOO_MANY_ENTRIES} for a {@code spell:}
+     * line once the book holds the number its {@code book:} line declared, and {@code print_error}
+     * stops the load. The port stops with the file and the book's line in the message.
+     */
     @Test
-    void moreSpellsThanDeclaredLoadHereWhereCRejectsThem() throws Exception {
-        ParseResult<PlayerClass> r = load("extra-spell.txt", withHeader(1,
+    void moreSpellsThanDeclaredStopTheLoadAsInC() throws Exception {
+        DataFileParseException e = loadAndStop("extra-spell.txt", withHeader(1,
                 "name:Caster\nmagic:1:100:1\n"
                         + "book:magic book:town:[B]:1:arcane\n"
                         + "spell:A:1:1:1:1\neffect:BOLT:MISSILE\ndice:1\n"
                         + "spell:B:2:1:1:1\neffect:BOLT:MISSILE\ndice:1\n"));
 
+        assertTrue(e.getMessage().contains("Too many spells"), e.getMessage());
+        assertTrue(e.getMessage().contains("2 spells found, 1 declared"), e.getMessage());
+        assertTrue(e.getMessage().contains("defined at 4"), e.getMessage());
+        assertTrue(e.getMessage().contains("extra-spell.txt"), e.getMessage());
+    }
+
+    /**
+     * C: a book that declares {@code spells} 0 and is followed by a {@code spell:} line is refused
+     * the same way, because {@code book_max_spells} is 0.
+     */
+    @Test
+    void aSpellAfterABookDeclaringNoneStopsTheLoadAsInC() throws Exception {
+        DataFileParseException e = loadAndStop("zero-declared.txt", withHeader(1,
+                "name:Caster\nmagic:1:100:1\n"
+                        + "book:magic book:town:[B]:0:arcane\n"
+                        + "spell:A:1:1:1:1\neffect:BOLT:MISSILE\ndice:1\n"));
+
+        assertTrue(e.getMessage().contains("1 spells found, 0 declared"), e.getMessage());
+    }
+
+    /**
+     * C: the declared count only sizes the spell array, so a book holding fewer spells than it
+     * declared loads. The cap is an upper bound only.
+     */
+    @Test
+    void fewerSpellsThanDeclaredLoadAsInC() throws Exception {
+        ParseResult<PlayerClass> r = load("few-spells.txt", withHeader(1,
+                "name:Caster\nmagic:1:100:1\n"
+                        + "book:magic book:town:[B]:3:arcane\n"
+                        + "spell:A:1:1:1:1\neffect:BOLT:MISSILE\ndice:1\n"));
+
         assertFalse(r.hasErrors(), r.errors()::toString);
         MagicBook book = this.<List<MagicBook>>field(castMagic(r), ClassMagic.class, "magicBooks").getFirst();
-        assertEquals(2, this.<List<?>>field(book, MagicBook.class, "spells").size());
+        assertEquals(1, this.<List<?>>field(book, MagicBook.class, "spells").size());
+    }
+
+    /**
+     * C counts each book's spells against that book's own declaration: the second book's
+     * {@code spells} figure is not shared with the first, so one over-full book among good ones
+     * still stops the load.
+     */
+    @Test
+    void theSpellCapIsPerBookAsInC() throws Exception {
+        DataFileParseException e = loadAndStop("cap-per-book.txt", withHeader(1,
+                "name:Caster\nmagic:1:100:2\n"
+                        + "book:magic book:town:[One]:2:arcane\n"
+                        + "spell:A:1:1:1:1\neffect:BOLT:MISSILE\ndice:1\n"
+                        + "spell:B:2:1:1:1\neffect:BOLT:MISSILE\ndice:1\n"
+                        + "book:magic book:town:[Two]:1:arcane\n"
+                        + "spell:C:1:1:1:1\neffect:BOLT:MISSILE\ndice:1\n"
+                        + "spell:D:2:1:1:1\neffect:BOLT:MISSILE\ndice:1\n"));
+
+        assertTrue(e.getMessage().contains("2 spells found, 1 declared"), e.getMessage());
+        assertTrue(e.getMessage().contains("defined at 11"), e.getMessage());
     }
 
     /** C: {@code lookup_realm} compares with {@code my_stricmp}, so the realm name is case-blind. */
@@ -941,9 +1012,13 @@ class PlayerClassReaderTest {
         assertEquals("First part: with a colon, then the second.", field(spell, spell.getClass(), "spellDescription"));
     }
 
-    /** C quits on a bad book; the port reports it and keeps the class, with no magic at all. */
+    /**
+     * C quits on a bad book. Interim, until the soft error becomes a stop: the port reports the book
+     * and keeps the class with a casting profile that holds no books. It is not the
+     * {@link ClassMagic#NONE} sentinel, because nothing now notices that a book was dropped.
+     */
     @Test
-    void aClassWhoseOnlyBookIsDroppedLoadsAsANonCasterAlongsideTheError() throws Exception {
+    void aClassWhoseOnlyBookIsDroppedKeepsAnEmptyCastingProfileAlongsideTheError() throws Exception {
         ParseResult<PlayerClass> r = load("dropped-book.txt", withHeader(1,
                 "name:Caster\nmagic:1:100:1\n"
                         + "book:magic book:town:[B]:1:notarealm\n"
@@ -951,6 +1026,7 @@ class PlayerClassReaderTest {
 
         assertTrue(hasError(r, "unknown realm: notarealm"), r.errors()::toString);
         assertEquals(1, r.items().size());
-        assertSame(ClassMagic.NONE, castMagic(r));
+        assertNotSame(ClassMagic.NONE, castMagic(r));
+        assertEquals(0, castMagic(r).getNumBooks());
     }
 }

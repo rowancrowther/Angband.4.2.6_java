@@ -17,6 +17,8 @@
 
 package uk.co.jackoftradesltd.backend.parser.playerclass;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.middle.magic.ClassMagic;
@@ -38,6 +40,8 @@ import java.util.List;
  * @author Rowan Crowther
  */
 public class ClassMagicAssembler implements Assembler<ClassMagicParseRecord, List<ClassMagic>> {
+    private static final Logger logger = LogManager.getLogger(ClassMagicAssembler.class);
+    
     /**
      * Assembles the (at most one) parsed {@code magic:} record into a {@link ClassMagic}, parsing
      * its scalars and building its books via {@link ClassSpellBookAssembler}.
@@ -52,7 +56,7 @@ public class ClassMagicAssembler implements Assembler<ClassMagicParseRecord, Lis
     public List<ClassMagic> assemble(@NotNull List<ClassMagicParseRecord> records, @NotNull List<String> errors,
                                     String filename) {
         List<ClassMagic> results = new ArrayList<>();
-
+        
         for (ClassMagicParseRecord record : records) {
             int line = record.line();
             int firstSpell = 0;
@@ -81,12 +85,7 @@ public class ClassMagicAssembler implements Assembler<ClassMagicParseRecord, Lis
             }
             List<MagicBook> magicBooks = new ClassSpellBookAssembler().assemble(record.books(), errors, filename);
             
-            if (magicBooks.size() > numBooks) {
-                errors.add("Line: " + line + " has a different number of books from " +
-                        "that declared");
-                continue;
-            }
-            if (record.books().size() > magicBooks.size()) {
+            if (record.books().size() > numBooks) {
                 errors.add("A book that was in the game datafile contained an error");
                 continue;
             }

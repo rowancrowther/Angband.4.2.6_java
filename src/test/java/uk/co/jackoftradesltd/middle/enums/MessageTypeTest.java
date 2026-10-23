@@ -246,4 +246,115 @@ class MessageTypeTest {
         assertEquals("pray_prayer", MessageType.MSG_PRAYER.getMessageString());
         assertEquals("mon_create_trap", MessageType.MSG_CREATE_TRAP.getMessageString());
     }
+
+    /**
+     * The constant C's {@code message_lookup_by_name()} would return index {@code i} for,
+     * taken from the transcribed C list rather than from Java ordinals.
+     */
+    private static MessageType cIndex(int i) {
+        return MessageType.valueOf(C_LIST[i][0]);
+    }
+
+    /**
+     * Every C id, with its {@code MSG_} prefix dropped, maps back to itself, in upper and lower
+     * case; C's {@code my_stricmp} ignores ASCII case. This includes {@code MAX}, which is in C's
+     * name table.
+     */
+    @Test
+    @DisplayName("lookupByName: every C name, either case")
+    void lookupEveryName() {
+        for (int i = 0; i < C_LIST.length; i++) {
+            String bare = C_LIST[i][0].substring(4);
+            assertSame(cIndex(i), MessageType.lookupByName(bare), bare);
+            assertSame(cIndex(i), MessageType.lookupByName(bare.toLowerCase()), bare);
+        }
+        assertSame(MessageType.MSG_HIT, MessageType.lookupByName("hIt"));
+    }
+
+    /**
+     * Every number below C's {@code MSG_MAX} (153) maps to that C index; 153 and above give
+     * C's {@code -1}.
+     */
+    @Test
+    @DisplayName("lookupByName: numbers 0..152 map to C indices, 153+ fail")
+    void lookupEveryNumber() {
+        int msgMax = C_LIST.length - 1;
+        assertEquals(153, msgMax);
+        for (int i = 0; i < msgMax; i++) {
+            assertSame(cIndex(i), MessageType.lookupByName(Integer.toString(i)), "number " + i);
+        }
+        assertNull(MessageType.lookupByName("153"));
+        assertNull(MessageType.lookupByName("154"));
+        assertNull(MessageType.lookupByName("99999999999999999999"));
+    }
+
+    /**
+     * strtoul's sign handling: '+' is accepted, '-' wraps to a huge unsigned value except
+     * for zero, and only one sign is allowed.
+     */
+    @Test
+    @DisplayName("lookupByName: signs as strtoul treats them")
+    void lookupSigns() {
+        assertSame(cIndex(5), MessageType.lookupByName("+5"));
+        assertSame(cIndex(0), MessageType.lookupByName("-0"));
+        assertSame(cIndex(0), MessageType.lookupByName("-00"));
+        assertNull(MessageType.lookupByName("-5"));
+        assertNull(MessageType.lookupByName("-1"));
+        assertNull(MessageType.lookupByName("+-5"));
+        assertNull(MessageType.lookupByName("--5"));
+        assertNull(MessageType.lookupByName("+"));
+        assertNull(MessageType.lookupByName("-"));
+    }
+
+    /**
+     * strtoul skips the whole C isspace set before the number (space, \t, \n, \v, \f, \r),
+     * but no whitespace between the sign and the digits.
+     */
+    @Test
+    @DisplayName("lookupByName: leading whitespace is the isspace set")
+    void lookupLeadingWhitespace() {
+        for (String ws : new String[]{" ", "\t", "\n", "\u000B", "\f", "\r", " \t\r\n"}) {
+            assertSame(cIndex(5), MessageType.lookupByName(ws + "5"), "leading " + ws.codePoints().boxed().toList());
+            assertSame(cIndex(5), MessageType.lookupByName(ws + "+5"), "leading-signed " + ws.codePoints().boxed().toList());
+        }
+        assertNull(MessageType.lookupByName("+ 5"));
+        assertNull(MessageType.lookupByName("-\n0"));
+        assertNull(MessageType.lookupByName(" "));
+        assertNull(MessageType.lookupByName("\n"));
+    }
+
+    /**
+     * After the digits, contains_only_spaces allows only ' ' and '\t'; any other trailing
+     * character, including other whitespace, gives -1.
+     */
+    @Test
+    @DisplayName("lookupByName: trailing characters after a number")
+    void lookupTrailing() {
+        assertSame(cIndex(5), MessageType.lookupByName("5 "));
+        assertSame(cIndex(5), MessageType.lookupByName("5\t \t"));
+        assertSame(cIndex(7), MessageType.lookupByName("007"));
+        assertNull(MessageType.lookupByName("5 6"));
+        assertNull(MessageType.lookupByName("5x"));
+        assertNull(MessageType.lookupByName("5-"));
+        assertNull(MessageType.lookupByName("5\n"));
+        assertNull(MessageType.lookupByName("5\r"));
+        assertNull(MessageType.lookupByName("5\f"));
+        assertNull(MessageType.lookupByName("0x10"));
+    }
+
+    /**
+     * The name path does no trimming and knows only the C names: no MSG_ prefix, no NONE.
+     */
+    @Test
+    @DisplayName("lookupByName: names C does not know")
+    void lookupUnknownNames() {
+        assertNull(MessageType.lookupByName(""));
+        assertNull(MessageType.lookupByName("none"));
+        assertNull(MessageType.lookupByName("NONE"));
+        assertNull(MessageType.lookupByName("MSG_HIT"));
+        assertNull(MessageType.lookupByName(" HIT"));
+        assertNull(MessageType.lookupByName("HIT "));
+        assertNull(MessageType.lookupByName("hit_good_x"));
+        assertNull(MessageType.lookupByName("bogus"));
+    }
 }

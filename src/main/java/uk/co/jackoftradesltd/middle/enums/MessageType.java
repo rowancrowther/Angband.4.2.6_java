@@ -17,6 +17,8 @@
 
 package uk.co.jackoftradesltd.middle.enums;
 
+import java.util.Locale;
+
 /**
  * Every kind of in-game message/sound event, each paired with the short string
  * key used to look up its configured sound. This is the Java port of the C
@@ -541,5 +543,97 @@ public enum MessageType {
      */
     public String getMessageString() {
         return messageString;
+    }
+
+    /**
+     * Find the message type named by a data-file token, which may be either a C
+     * {@code MSG_*} number or a name without its {@code MSG_} prefix. This is the port of
+     * {@code message_lookup_by_name()} in {@code message.c}, with {@code null} standing in
+     * for C's {@code -1}.
+     *
+     * <p>The numeric path follows C's {@code strtoul(name, &pe, 10)} followed by
+     * {@code contains_only_spaces(pe)}:
+     * <ul>
+     *   <li>Leading whitespace ({@code ' '}, {@code '\t'}, {@code '\n'}, {@code '\v'},
+     *       {@code '\f'}, {@code '\r'}, the C {@code isspace} set) is skipped, then one
+     *       optional sign, then base-10 digits. Whitespace between the sign and the digits
+     *       stops the conversion, as in C.</li>
+     *   <li>After the digits only {@code ' '} and {@code '\t'} may follow; anything else
+     *       gives no match.</li>
+     *   <li>A minus sign on a non-zero number gives no match, because {@code strtoul}
+     *       wraps it to a huge unsigned value that fails {@code number < MSG_MAX}.
+     *       {@code "-0"} is still 0, {@code MSG_GENERIC}.</li>
+     *   <li>The accepted range is 0 to 152, the C {@code MSG_GENERIC} to {@code MSG_SCRAMBLE};
+     *       {@code MSG_MAX} itself is not reachable by number. The bound is written as the
+     *       literal {@code 153}, the C value of {@code MSG_MAX}, so it must be updated by hand
+     *       if the list ever changes.</li>
+     *   <li>The C number is mapped to the constant at {@code ordinal + 1}, stepping over
+     *       the Java-only {@code MSG_NONE}.</li>
+     * </ul>
+     *
+     * <p>If no digits were converted, the token is matched case-insensitively against the
+     * C names ({@code "HIT"}, {@code "max"}). {@code MSG_MAX} is reachable by name, as in
+     * C, but {@code "none"} gives no match because {@code MSG_NONE} has no C counterpart.
+     * Leading or trailing spaces are not stripped on the name path.
+     *
+     * <p>Accepted deviation (decided 261023): C's {@code my_stricmp} folds ASCII letters
+     * only, while {@code toUpperCase(Locale.ROOT)} also folds some non-ASCII letters
+     * ({@code 'ı'} to {@code 'I'}, {@code 'ſ'} to {@code 'S'}), so a name such as
+     * {@code "hıt"} matches {@code MSG_HIT} here but nothing in C. The data files are ASCII.
+     *
+     * <p>Function lookupByName coded on 261001, leading-whitespace fix 261023, commented in
+     * full on 261023.
+     *
+     * @param name the token to look up; must not be {@code null}
+     * @return the matching message type, or {@code null} where C returns {@code -1}
+     */
+    public static MessageType lookupByName(String name) {
+        StringBuilder number = new StringBuilder();
+        boolean foundNumber = false;
+        boolean foundSpace = false;
+        boolean foundElse = false;
+        boolean signFound = false;
+        int sign = 0;
+        for (char c : name.toCharArray()) {
+            if ((c == '+' || c == '-') && !signFound && !foundNumber && !foundSpace) {
+                signFound = true;
+                if (c == '+')
+                    sign = 1;
+                if (c == '-')
+                    sign = -1;
+            } else if ((c == '\t' || c == '\f' || c == '\013' || c == ' ' || c == '\r' || c == '\n')
+                    && !foundNumber && !signFound) {
+                // Ignore leading spaces
+            } else if (c >= '0' && c <= '9' && !foundSpace) {
+                foundNumber = true;
+                number.append(c);
+            } else if (c == ' ' || c == '\t') {
+                foundSpace = true;
+            } else {
+                foundElse = true;
+                break;
+            }
+        }
+        
+        try {
+            if (foundNumber && !foundElse) {
+                int ordinal = Integer.parseInt(number.toString());
+                
+                if (signFound) {
+                    if (sign == -1 && ordinal != 0)
+                        return null;
+                }
+                
+                if (ordinal < 0 || ordinal >= 153)
+                    return null;
+                return MessageType.values()[ordinal + 1];
+            }
+            if (name.equalsIgnoreCase("none"))
+                return null;
+            String value = "MSG_" + name.toUpperCase(Locale.ROOT);
+            return MessageType.valueOf(value);
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

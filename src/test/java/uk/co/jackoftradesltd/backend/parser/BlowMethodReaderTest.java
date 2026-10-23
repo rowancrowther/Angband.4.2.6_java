@@ -19,6 +19,7 @@ package uk.co.jackoftradesltd.backend.parser;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.combat.BlowMethod;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
@@ -123,8 +124,8 @@ class BlowMethodReaderTest {
     void everyMessageTypeInTheRealFileResolves() throws IOException {
         ParseResult<BlowMethod> result = new BlowMethodReader().parseWithResults(REAL_FILE);
 
-        // A record whose msg: fails to resolve is dropped by the assembler, so a full count plus
-        // no MSG_GENERIC is proof that all 19 MSG_MON_* names matched the enum.
+        // A msg: that fails to resolve ends the load, so a full count plus no MSG_GENERIC is
+        // proof that all 19 MSG_MON_* names matched the enum.
         assertEquals(19, result.items().size());
         assertTrue(result.items().stream().noneMatch(m -> m.getMesgT() == MessageType.MSG_GENERIC));
     }
@@ -192,20 +193,23 @@ class BlowMethodReaderTest {
     }
 
     @Test
-    void aSkippedRecordLeavesTheOthersInReverseFileOrder() throws IOException {
+    void aBadRecordInTheMiddleEndsTheWholeLoad() {
+        // [C] parse_meth_message_type returns PARSE_ERROR_INVALID_MESSAGE, which stops the file
+        // load, so no record survives - not even the good ones either side of the bad one.
         String body = entry("A", 0, 0, 1, 1, "MON_HIT", "a")
                 + entry("BAD", 0, 0, 1, 1, "NO_SUCH_MESSAGE", "bad")
                 + entry("C", 0, 0, 1, 1, "MON_HIT", "c");
-        ParseResult<BlowMethod> result = load("skip-middle.txt", withHeader(3, body));
 
-        assertEquals(List.of("C", "A"), names(result.items()));
-        assertTrue(result.hasErrors());
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> load("skip-middle.txt", withHeader(3, body)));
+        assertTrue(e.getMessage().contains("line: 10"), e::getMessage);
     }
 
     @Test
     void actLinesWithinARecordStayInFileOrderWhileTheRecordsReverse() throws IOException {
-        // Only the records reverse. C also reverses each record's act: list, but that order is
-        // never observable (the message is picked by random index), so the port keeps file order.
+        // Only the records reverse. C also reverses each record's act: list (parse_meth_act_msg
+        // pushes on the head), and mon-blows.c walks randint0(num_messages) steps along it, so
+        // the same random number picks a different message here. Pinned as a known difference.
         String body = "name:ONE\ncut:0\nstun:0\nmiss:1\nphys:1\nmsg:MON_HIT\nact:a\nact:b\ndesc:one\n"
                 + "name:TWO\ncut:0\nstun:0\nmiss:1\nphys:1\nmsg:MON_HIT\nact:c\nact:d\ndesc:two\n";
         ParseResult<BlowMethod> result = load("acts.txt", withHeader(2, body));
@@ -269,13 +273,21 @@ class BlowMethodReaderTest {
     }
 
     @Test
-    void leadingZeroFlagReadsTrueHereWhereCReadsZero() throws IOException {
+    void leadingZeroFlagReadsFalseAsInC() throws IOException {
         // [C] parser_getuint uses strtoul base 0, so "00" is the number 0 and the flag is false.
-        // The assembler tests the text against "0", so "00" is true. Pinned as a known gap.
         String body = "name:POKE\ncut:00\nstun:0\nmiss:1\nphys:1\nmsg:MON_HIT\nact:p\ndesc:poke\n";
         ParseResult<BlowMethod> result = load("zero-zero.txt", withHeader(1, body));
 
-        assertTrue(result.items().get(0).isCut(), "C would give false");
+        assertFalse(result.items().get(0).isCut());
+    }
+
+    @Test
+    void negativeFlagEndsTheLoadAsParserGetuintRefusesIt() {
+        // [C] parser_getuint refuses a token starting with '-' as PARSE_ERROR_NOT_NUMBER. The
+        // lexer's INTEGER lets the '-' through, so the assembler has to refuse it.
+        String body = "name:POKE\ncut:0\nstun:-1\nmiss:1\nphys:1\nmsg:MON_HIT\nact:p\ndesc:poke\n";
+
+        assertThrows(DataFileParseException.class, () -> load("negative.txt", withHeader(1, body)));
     }
 
     // ---- The optional msg: directive -------------------------------------
@@ -306,33 +318,42 @@ class BlowMethodReaderTest {
     }
 
     @Test
-    void unresolvableMsgIsASoftErrorAndTheRecordIsSkipped() throws IOException {
-        ParseResult<BlowMethod> result =
-                load("bad-msg.txt", withHeader(1, entry("POKE", 0, 0, 1, 1, "NO_SUCH_MESSAGE", "poke")));
+    void unresolvableMsgEndsTheLoad() {
+        // [C] parse_meth_message_type returns PARSE_ERROR_INVALID_MESSAGE.
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> load("bad-msg.txt", withHeader(1, entry("POKE", 0, 0, 1, 1, "NO_SUCH_MESSAGE", "poke"))));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unrecognized MessageType")),
-                result.errors()::toString);
+        assertTrue(e.getMessage().contains("unrecognized MessageType NO_SUCH_MESSAGE"), e::getMessage);
     }
 
     @Test
-    void oneBadMsgDoesNotStopLaterRecordsLoading() throws IOException {
-        // Partial-results contract: the assembler continues past the skipped record.
+    void oneBadMsgStopsLaterRecordsLoadingToo() {
+        // [C] the first parser error ends the file load; later records are never read.
         String body = entry("BAD", 0, 0, 1, 1, "NO_SUCH_MESSAGE", "bad")
                 + entry("GOOD", 0, 0, 1, 1, "MON_HIT", "good");
-        ParseResult<BlowMethod> result = load("mixed.txt", withHeader(2, body));
 
-        assertEquals(1, result.items().size());
-        assertEquals("GOOD", result.items().get(0).getName());
-        assertTrue(result.hasErrors());
+        assertThrows(DataFileParseException.class, () -> load("mixed.txt", withHeader(2, body)));
+    }
+
+    @Test
+    void lowerCaseAndNumericMsgResolveAsMessageLookupByNameDoes() throws IOException {
+        // [C] message_lookup_by_name matches names with my_stricmp and also takes an index:
+        // 34 is MON_HIT's position in list-message.h.
+        String body = entry("LOWER", 0, 0, 1, 1, "mon_hit", "lower")
+                + entry("INDEX", 0, 0, 1, 1, "34", "index");
+        ParseResult<BlowMethod> result = load("msg-forms.txt", withHeader(2, body));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(MessageType.MSG_MON_HIT, byName(result.items(), "LOWER").getMesgT());
+        assertEquals(MessageType.MSG_MON_HIT, byName(result.items(), "INDEX").getMesgT());
     }
 
     // ---- C truthiness of the four boolean directives ---------------------
 
     @Test
     void anyNonZeroValueMakesABooleanDirectiveTrue() throws IOException {
-        // [C] does `val ? true : false`, so 2 is just as true as 1. The port compares against the
-        // string "0", which reproduces this for any positive value.
+        // [C] does `val ? true : false`, so 2 is just as true as 1. The port reads the number in
+        // base 0, as parser_getuint does, and tests it for non-zero.
         String body = "name:POKE\ncut:2\nstun:7\nmiss:1\nphys:1\n"
                 + "msg:MON_HIT\nact:pokes {target}\ndesc:poke\n";
         ParseResult<BlowMethod> result = load("truthy.txt", withHeader(1, body));

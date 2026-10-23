@@ -234,4 +234,11 @@ public class HelperFunctions {
     private static int parseString(String type, String string, int line, String filename, String token, boolean foundMinus) {
         return parseString(type, string, line, filename, token, foundMinus, 10);
     }
+
+    public static boolean minusFound(String string) {
+        if (string.isEmpty())
+            return false;
+
+        return string.charAt(0) == '-';
+    }
 }

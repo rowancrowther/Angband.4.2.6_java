@@ -51,14 +51,13 @@ import static org.junit.jupiter.api.Assertions.*;
  * <p>The happy path runs against the real shipped file. The error paths build one-defect fixtures in
  * a temp dir. Note which channel each defect lands on: the lexer's {@code INTEGER} token is
  * {@code '-'? digit+}, so a non-numeric field is a <em>grammar</em> error, not an assembly one.
- * {@code params:}, {@code min-level:} and {@code alloc:} are read by {@code ParseUtils} in base 0, as
- * {@code parser_getint} reads them, so a value too big for {@code int} is clamped (the accepted
- * deviation from C's wrap) and loads. An overflowing {@code room:} field is still soft: the room is
- * dropped and the rest of the file still loads, which is weaker than C, where a bad number is fatal.
- * The sites C quits on and the assemblers already stop at, as {@code print_error} in
- * {@code datafile.c} does, are an unknown profile name, an unknown room name and an overflowing
- * {@code tunnel:} or {@code streamer:} field. Each throws {@link DataFileParseException} out of
- * {@code parseWithResults}.
+ * {@code params:}, {@code streamer:}, {@code room:}, {@code min-level:} and {@code alloc:} are read
+ * by {@code ParseUtils} in base 0, as {@code parser_getint} reads them, so a value too big for
+ * {@code int} is clamped (the accepted deviation from C's wrap) and loads. The assemblers stop the load, as
+ * {@code print_error} in {@code datafile.c} does, on an unknown profile name and an unknown room
+ * name, which C quits on too, and on an overflowing {@code tunnel:} field, which C does not quit
+ * on: {@code TunnelAssembler} reads with {@code Integer.parseInt}, and C wraps. Each throws
+ * {@link DataFileParseException} out of {@code parseWithResults}.
  *
  * @author Rowan Crowther
  */
@@ -90,6 +89,21 @@ class DungeonProfileReaderTest {
     private static DataFileParseException loadAndStop(String path) {
         return assertThrows(DataFileParseException.class,
                 () -> new DungeonProfileReader().parseWithResults(path));
+    }
+
+    /**
+     * Asserts {@code s} is the all-zero streamer C's {@code mem_zalloc} leaves in a profile with no
+     * {@code streamer:} line.
+     */
+    private static void assertAllZero(StreamerProfile s, String profile) {
+        assertNotNull(s, profile + " has a streamer profile, as C's embedded str always exists");
+        assertAll(profile + " streamer is C's zero-fill",
+                () -> assertEquals(0, s.getDen()),
+                () -> assertEquals(0, s.getRng()),
+                () -> assertEquals(0, s.getMam()),
+                () -> assertEquals(0, s.getMc()),
+                () -> assertEquals(0, s.getQua()),
+                () -> assertEquals(0, s.getQc()));
     }
 
     /**
@@ -260,8 +274,8 @@ class DungeonProfileReaderTest {
     /**
      * A profile with nothing but its {@code name:} and {@code alloc:} lines. C's
      * {@code parse_profile_name} makes the record with {@code mem_zalloc}, so the four
-     * {@code params:} numbers and {@code min_level} are 0. The tunnel and streamer stay null here
-     * where C has zeroed structs, as {@code CaveProfile} documents.
+     * {@code params:} numbers and {@code min_level} are 0. The streamer is all zero, as C's
+     * embedded {@code str} is; the tunnel stays null here where C has a zeroed {@code tun}.
      */
     @Test
     void absentDirectivesReadAsZeroAsInC() throws IOException {
@@ -283,7 +297,7 @@ class DungeonProfileReaderTest {
         assertEquals(0, bare.getMaxRarity());
 
         assertNull(bare.getTun());
-        assertNull(bare.getStr());
+        assertAllZero(bare.getStr(), "town");
         assertTrue(bare.getRoomProfiles().isEmpty());
         assertEquals(0, bare.getMinLevel());
         assertEquals(5, bare.getAlloc());
@@ -643,7 +657,8 @@ class DungeonProfileReaderTest {
     /**
      * The tunnel and streamer lines of the three profiles that differ from {@code classic}: moria
      * has {@code jct} 30 where the others have 50, and the town has a streamer but no tunnel,
-     * while labyrinth, cavern, gauntlet and hard centre have neither.
+     * while labyrinth, cavern, gauntlet and hard centre have neither. Those four get C's all-zero
+     * streamer; their tunnel stays null here where C has a zeroed {@code tun}.
      */
     @Test
     void tunnelAndStreamerLinesAreAttachedToTheRightProfiles() throws IOException {
@@ -656,7 +671,7 @@ class DungeonProfileReaderTest {
 
         for (String bare : List.of("labyrinth", "cavern", "gauntlet", "hard centre")) {
             assertNull(byName(profiles, bare).getTun(), bare + " has no tunnel: line");
-            assertNull(byName(profiles, bare).getStr(), bare + " has no streamer: line");
+            assertAllZero(byName(profiles, bare).getStr(), bare);
         }
     }
 
@@ -753,11 +768,14 @@ class DungeonProfileReaderTest {
     }
 
     /**
-     * The same for each of the six {@code streamer:} fields (C's {@code parse_profile_streamer}).
+     * C's {@code parse_profile_streamer} does not quit on a {@code streamer:} field past
+     * {@code INT_MAX}: {@code parser.c} only refuses text with no digit, and the 64-bit
+     * {@code strtol} result is cut to 32 bits, so {@code 99999999999} becomes 1215752191. Here it
+     * is clamped to 2147483647 (accepted deviation, {@code ParseUtils}); either way the file loads.
      */
     @ParameterizedTest
     @ValueSource(ints = {0, 1, 2, 3, 4, 5})
-    void anOverflowingStreamerFieldStopsTheLoadAsInC(int field) throws IOException {
+    void anOverflowingStreamerFieldIsClampedWhereCWraps(int field) throws IOException {
         String[] values = {"5", "2", "3", "90", "2", "40"};
         values[field] = "99999999999";
         String path = tempFile("overflow-streamer.txt", String.join("\n",
@@ -770,10 +788,14 @@ class DungeonProfileReaderTest {
                 "alloc:90",
                 ""));
 
-        DataFileParseException e = loadAndStop(path);
+        ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
 
-        assertTrue(e.getMessage().contains("99999999999"), e.getMessage());
-        assertTrue(e.getMessage().contains(path), e.getMessage());
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        StreamerProfile s = byName(result.items(), "classic").getStr();
+        int[] got = {s.getDen(), s.getRng(), s.getMam(), s.getMc(), s.getQua(), s.getQc()};
+        int[] expected = {5, 2, 3, 90, 2, 40};
+        expected[field] = Integer.MAX_VALUE;
+        assertArrayEquals(expected, got);
     }
 
     /**

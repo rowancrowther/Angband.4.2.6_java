@@ -66,7 +66,7 @@ recordCount
  * @author Rowan Crowther
  *
  * "name:<profile name>" - opens a profile record.
- * Cf. parse_profile_name (generate.c:93), which also resolves the name against
+ * Cf. parse_profile_name (generate.c), which also resolves the name against
  * cave_builders[]; that resolution is deferred to the assembler here.
  *
  * The line number is carried out because it is the profile's own line, and so
@@ -84,7 +84,7 @@ name
  * @author Rowan Crowther
  *
  * "params:<block>:<rooms>:<unusual>:<rarity>".
- * Cf. parse_profile_params (generate.c:111).
+ * Cf. parse_profile_params (generate.c).
  *
  * @return paramsRecord the four values, unparsed
  */
@@ -111,7 +111,7 @@ params
  * @author Rowan Crowther
  *
  * "tunnel:<rnd>:<chg>:<con>:<pen>:<jct>" - the five corridor-digging chances.
- * Cf. parse_profile_tunnel (generate.c:123).
+ * Cf. parse_profile_tunnel (generate.c).
  *
  * The C field names are terse, so they are spelled out here: rnd is the chance
  * of digging in a random direction rather than towards the target, chg of
@@ -147,7 +147,7 @@ tunnel
  * @author Rowan Crowther
  *
  * "streamer:<den>:<rng>:<mag>:<mc>:<qua>:<qc>" - the mineral veins.
- * Cf. parse_profile_streamer (generate.c:136).
+ * Cf. parse_profile_streamer (generate.c).
  *
  * As with tunnel, the C names are expanded: den is how many grids near each
  * step of the streamer's random walk become vein, rng how far from the walk
@@ -187,7 +187,7 @@ streamer
  * @author Rowan Crowther
  *
  * "alloc:<n>" - the profile's selection weight; may be negative.
- * Cf. parse_profile_alloc (generate.c:197).
+ * Cf. parse_profile_alloc (generate.c).
  *
  * @return allocChance the weight, unparsed
  */
@@ -200,7 +200,7 @@ alloc
  * @author Rowan Crowther
  *
  * "min-level:<n>" - the shallowest depth this profile may be used at.
- * Cf. parse_profile_min_level (generate.c:188).
+ * Cf. parse_profile_min_level (generate.c).
  *
  * @return minLevelValue the depth, unparsed
  */
@@ -214,7 +214,7 @@ minLevel
  *
  * "room:<name>:<rating>:<height>:<width>:<level>:<pit>:<rarity>:<cutoff>" -
  * one room the enclosing profile may contain.
- * Cf. parse_profile_room (generate.c:150), which appends to a linked list and
+ * Cf. parse_profile_room (generate.c), which appends to a linked list and
  * resolves the name against room_builders[]; here the rooms accumulate into a
  * List on the enclosing 'profile' rule and the name is resolved later.
  *

@@ -147,8 +147,13 @@ public class DungeonProfileAssembler implements Assembler<DungeonProfileParseRec
                 List<DungeonProfileParseRecord.Streamer> streamers = new ArrayList<>();
                 streamers.add(record.streamer());
                 streamerProfile = new StreamerAssembler().assemble(streamers, errors, filename);
-            } else
-                streamerProfile = null;
+            } else {
+                DungeonProfileParseRecord.Streamer streamer = new DungeonProfileParseRecord.Streamer("0", "0",
+                        "0", "0", "0", "0", 0);
+                List<DungeonProfileParseRecord.Streamer> streamers = new ArrayList<>();
+                streamers.add(streamer);
+                streamerProfile = new StreamerAssembler().assemble(streamers, errors, filename);
+            }
             List<RoomProfile> roomProfiles = new RoomAssembler().assemble(record.rooms(), errors, filename);
             int minLevel = record.minLevel() == null ? 0 : ParseUtils.parseIntString("Dungeon profile", record.minLevel(), line, filename, "min level", 0);
             int alloc = record.alloc() == null ? 0 : ParseUtils.parseIntString("Dungeon profile", record.alloc(), line, filename, "allocation", 0);

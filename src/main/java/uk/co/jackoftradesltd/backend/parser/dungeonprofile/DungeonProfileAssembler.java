@@ -21,6 +21,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
+import uk.co.jackoftradesltd.backend.parser.ParseUtils;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.middle.cave.chunkbuilders.BuilderType;
 import uk.co.jackoftradesltd.middle.cave.profiles.dungeon.CaveProfile;
@@ -35,34 +36,75 @@ import java.util.List;
  * Turns parsed {@code dungeon_profile.txt} records into the {@link CaveProfile}s the level
  * generator selects between.
  *
- * <p>This is where the file stops being text: every field is narrowed from {@code String} to
- * {@code int}, and the three sub-records are handed to {@link TunnelAssembler},
- * {@link StreamerAssembler} and {@link RoomAssembler}. C does the same conversions inside its
- * parse callbacks (generate.c:111-204), where {@code parser_getint} makes a malformed number a
- * fatal parse error; here it is a recoverable one, so a bad line costs its own profile and no
- * more.
+ * <p>This is where the file stops being text: the profile name is resolved to a
+ * {@link BuilderType}, every number is narrowed from {@code String} to {@code int}, and the
+ * three sub-records are handed to {@link TunnelAssembler}, {@link StreamerAssembler} and
+ * {@link RoomAssembler}. C does the same work inside the seven {@code parse_profile_*} callbacks
+ * in {@code generate.c}, registered by {@code init_parse_profile}: {@code parse_profile_name}
+ * looks the name up in {@code cave_builders[]}, and the others read each field with
+ * {@code parser_getint}, which is {@code strtol} in base 0.
  *
- * <p><strong>Partial results:</strong> a profile that fails conversion is skipped with a message
- * appended to {@code errors}, and the rest of the file still loads. That is the port's contract,
- * not C's — C quits the game on the first bad line.
+ * <p><strong>Failure stops the load, as in C.</strong> An unknown profile name
+ * ({@code PARSE_ERROR_NO_BUILDER_FOUND} in C) or a number with no leading digits
+ * ({@code PARSE_ERROR_NOT_NUMBER}) throws a {@link DataFileParseException}, where C's
+ * {@code print_error} quits; nothing is skipped and no partial list is returned. The one
+ * difference is which message comes first when a profile has more than one fault: C stops at the
+ * first bad line in file order, and this stops at the first bad field in the order
+ * {@code assemble} checks them (name, {@code params:}, {@code tunnel:}, {@code streamer:},
+ * {@code room:}, {@code min-level:}, {@code alloc:}). The load fails either way.
+ *
+ * <p>{@code finish_parse_profile}'s list-building is here too: C prepends each record and then
+ * fills {@code cave_profiles} from the far end, so the array is in file order, which is the order
+ * of the returned list.
+ *
+ * <p>Class DungeonProfileAssembler coded before 260915, commented in full on 261023.
  *
  * @author Rowan Crowther
  */
 public class DungeonProfileAssembler implements Assembler<DungeonProfileParseRecord, List<CaveProfile>> {
-    private static final Logger logger = LogManager.getLogger(DungeonProfileAssembler.class);
-    
     /**
-     * Assemble every parsed profile record, dropping any that will not convert.
+     * Receives the fatal message for an unknown profile name before the
+     * {@link DataFileParseException} is thrown. The number errors are logged by
+     * {@link ParseUtils} under its own name. C has no counterpart: it reports through
+     * {@code print_error} in {@code datafile.c} and quits.
      *
-     * <p>The three optional sub-records are each wrapped in a one-element list because the shared
-     * {@link Assembler} interface takes a list; the sub-assemblers reject anything else. Absent
-     * ones stay {@code null} on the result, matching the file having no such line.
+     * <p>Field logger coded before 260915, commented in full on 261023.
+     */
+    private static final Logger logger = LogManager.getLogger(DungeonProfileAssembler.class);
+
+    /**
+     * Assemble every parsed profile record in file order, as C's {@code parse_profile_*}
+     * callbacks and {@code finish_parse_profile} in {@code generate.c} build
+     * {@code cave_profiles}.
      *
-     * <p>Function assemble commented in full before 260915, provenance stamp added on 260915.
+     * <p>The name must match a {@link BuilderType} exactly, case and spaces included
+     * ({@code "hard centre"}), as C's {@code streq} against {@code cave_builders[]} does. The
+     * {@code params:}, {@code min-level:} and {@code alloc:} numbers are read by
+     * {@link ParseUtils#parseIntString(String, String, int, String, String, int)} in base 0, as
+     * {@code parser_getint} reads them, so {@code 010} is 8 and {@code 08} is 0.
      *
-     * @param records the parsed profile records, in file order
-     * @param errors  the soft-error sink, appended to for each unusable line
-     * @return the assembled profiles, in file order, minus any that failed
+     * <p>A line the file leaves out reads as 0, which is what C's {@code mem_zalloc} in
+     * {@code parse_profile_name} leaves in the field: no {@code params:} line gives a block size,
+     * room count, unusualness and rarity of 0, and no {@code min-level:} or {@code alloc:} line
+     * gives 0 (and with {@code alloc} 0 the profile is never picked). The exception is
+     * {@code tunnel:} and {@code streamer:}: C embeds those as structs that stay zeroed, but here
+     * they are left {@code null}, as {@link CaveProfile} documents. No shipped profile without
+     * those lines reaches a builder that reads them.
+     *
+     * <p>The two optional sub-records are each wrapped in a one-element list because the shared
+     * {@link Assembler} interface takes a list; the sub-assemblers reject anything else. The rooms
+     * go to {@link RoomAssembler} as they are, in file order, and a profile with none gets an empty
+     * list where C has {@code n_room_profiles} 0 and a {@code NULL} array.
+     *
+     * <p>Function assemble coded before 260915, commented in full on 261023.
+     *
+     * @param records  the parsed profile records, in file order
+     * @param errors   the error list handed on to the sub-assemblers; this method adds nothing to
+     *                 it, because every failure here throws
+     * @param filename the file being read, for the error messages
+     * @return the assembled profiles, in file order, one for each record
+     * @throws DataFileParseException if a profile name matches no builder, or a number, here or in
+     *                                a sub-record, has no leading digits
      */
     @Override
     public List<CaveProfile> assemble(@NotNull List<DungeonProfileParseRecord> records, @NotNull List<String> errors,
@@ -73,27 +115,25 @@ public class DungeonProfileAssembler implements Assembler<DungeonProfileParseRec
             int line = record.lineNo();
             BuilderType builderType = BuilderType.fromName(record.profileName());
             if (builderType == null) {
-                String message = "Invalid Dungeon Profile Name: " + record.profileName() + " " +
-                        "found in " + filename + " near line " + line;
-                logger.fatal(message);
-                throw new DataFileParseException(message);
+                String msg = "Dungeon profile starting at line: " + line + " of file: " + filename + " has " +
+                        "an invalid builder type value: " + record.profileName();
+                logger.fatal(msg);
+                throw new DataFileParseException(msg);
             }
-            int blockSize = -1;
-            int rooms = -1;
-            int unusual = -1;
-            int rarity = -1;
-            if (record.params() != null) {
-                DungeonProfileParseRecord.Params params = record.params();
-                try {
-                    blockSize = Integer.parseInt(params.blockSize());
-                    rooms = Integer.parseInt(params.rooms());
-                    unusual = Integer.parseInt(params.unusual());
-                    rarity = Integer.parseInt(params.rarity());
-                } catch (NumberFormatException e) {
-                    errors.add("Cave profile at line: " + line + " has " +
-                            "an invalid param line. " + params.toString());
-                    continue;
-                }
+            int blockSize;
+            int rooms;
+            int unusual;
+            int rarity;
+            if (record.params() == null) {
+                blockSize = 0;
+                rooms = 0;
+                unusual = 0;
+                rarity = 0;
+            } else {
+                blockSize = ParseUtils.parseIntString("Dungeon profile", record.params().blockSize(), line, filename, "block size", 0);
+                rooms = ParseUtils.parseIntString("Dungeon profile", record.params().rooms(), line, filename, "rooms", 0);
+                unusual = ParseUtils.parseIntString("Dungeon profile", record.params().unusual(), line, filename, "unusual", 0);
+                rarity = ParseUtils.parseIntString("Dungeon profile", record.params().rarity(), line, filename, "rarity", 0);
             }
             TunnelProfile tunnelProfile;
             if (record.tunnel() != null) {
@@ -110,27 +150,9 @@ public class DungeonProfileAssembler implements Assembler<DungeonProfileParseRec
             } else
                 streamerProfile = null;
             List<RoomProfile> roomProfiles = new RoomAssembler().assemble(record.rooms(), errors, filename);
-            int minLevel;
-            if (record.minLevel() != null) {
-                try {
-                    minLevel = Integer.parseInt(record.minLevel());
-                } catch (NumberFormatException e) {
-                    errors.add("Cave profile at line: " + line + " has " +
-                            "an invalid min level line: " + record.minLevel());
-                    continue;
-                }
-            } else minLevel = 0;
-            int alloc;
-            if (record.alloc() != null) {
-                try {
-                    alloc = Integer.parseInt(record.alloc());
-                } catch (NumberFormatException e) {
-                    errors.add("Cave profile at line: " + line + " has " +
-                            "an invalid alloc line: " + record.alloc());
-                    continue;
-                }
-            } else alloc = -1;
-
+            int minLevel = record.minLevel() == null ? 0 : ParseUtils.parseIntString("Dungeon profile", record.minLevel(), line, filename, "min level", 0);
+            int alloc = record.alloc() == null ? 0 : ParseUtils.parseIntString("Dungeon profile", record.alloc(), line, filename, "allocation", 0);
+            
             caveProfiles.add(new CaveProfile(builderType, blockSize, rooms, unusual,
                     rarity, tunnelProfile, streamerProfile, roomProfiles, minLevel,
                     alloc));

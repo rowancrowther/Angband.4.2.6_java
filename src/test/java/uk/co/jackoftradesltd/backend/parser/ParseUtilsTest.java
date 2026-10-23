@@ -26,9 +26,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
- * Unit tests for both forms of {@link ParseUtils#parseIntString}: the base 0 reading and the
- * fixed-base reading, and for {@link ParseUtils#minusFound}, the leading-{@code -} test that
- * {@code parser_parse} in {@code parser.c} applies to a {@code uint} token.
+ * Unit tests for all three forms of {@link ParseUtils#parseIntString}: the base 0 reading, the
+ * fixed-base reading and the base 0 reading with a default for empty text, and for
+ * {@link ParseUtils#minusFound}, the leading-{@code -} test that {@code parser_parse} in
+ * {@code parser.c} applies to a {@code uint} token.
  *
  * <p>The expected values are worked out from C, not from the Java. {@code parse_act_aim},
  * {@code parse_act_level} and {@code parse_act_power} in {@code obj-init.c} take their numbers from
@@ -237,6 +238,66 @@ class ParseUtilsTest {
         assertEquals(true, e.getMessage().startsWith("Artifact beginning at line: 7 of file: artifact.txt"),
                 e.getMessage());
         assertEquals(true, e.getMessage().contains("Min"), e.getMessage());
+    }
+
+    // ---- the form with a default for empty text ----------------------------
+
+    private static int parseWithDefault(String text, int def) {
+        return ParseUtils.parseIntString("Dungeon profile", text, 7, "dungeon_profile.txt", "alloc", def);
+    }
+
+    @ParameterizedTest(name = "empty text with default {0}")
+    @CsvSource({"0", "7", "-1", "2147483647"})
+    void emptyTextGivesTheDefault(int def) {
+        assertEquals(def, parseWithDefault("", def));
+    }
+
+    // Non-empty text is parser_getint's strtol(tok, &z, 0), as the five-argument form reads it; a
+    // default of 99 shows it is never used for these.
+    @ParameterizedTest(name = "with default, base 0 {0} -> {1}")
+    @CsvSource({
+            "0, 0",
+            "15, 15",
+            "-1, -1",
+            "200, 200",
+            "010, 8",
+            "-010, -8",
+            "08, 0",
+            "019, 1",
+            "-0, 0",
+            "12abc, 12"
+    })
+    void nonEmptyTextIsReadInBase0AndIgnoresTheDefault(String text, int expected) {
+        assertEquals(expected, parseWithDefault(text, 99));
+    }
+
+    @Test
+    void aLoneMinusGivesZeroNotTheDefault() {
+        // C's strtol finds no digits in "-" and refuses it as PARSE_ERROR_NOT_NUMBER; the lexer never
+        // produces it. The text is not empty, so the default is not used and the five-argument form's
+        // 0 comes back.
+        assertEquals(0, parseWithDefault("-", 99));
+    }
+
+    @ParameterizedTest(name = "with default, clamp {0} -> {1}")
+    @CsvSource({
+            // C's strtol gives 99999999999 in a 64-bit long and the int field keeps the low 32 bits,
+            // 1215752191; the accepted deviation clamps instead.
+            "99999999999, 2147483647",
+            "-99999999999, -2147483648",
+            "3000000000, 2147483647"
+    })
+    void theDefaultFormClampsWhereCWraps(String text, int expected) {
+        assertEquals(expected, parseWithDefault(text, 99));
+    }
+
+    @ParameterizedTest(name = "with default, no digits {0}")
+    @CsvSource({"abc", "-abc", "x1"})
+    void theDefaultFormStillStopsTheLoadOnTextWithNoDigits(String text) {
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> parseWithDefault(text, 99));
+        assertEquals(true, e.getMessage().startsWith("Dungeon profile beginning at line: 7 of file: dungeon_profile.txt"),
+                e.getMessage());
+        assertEquals(true, e.getMessage().contains("alloc"), e.getMessage());
     }
 
     // minusFound mirrors the "*tok == '-'" half of the PARSE_T_UINT test in parser.c's

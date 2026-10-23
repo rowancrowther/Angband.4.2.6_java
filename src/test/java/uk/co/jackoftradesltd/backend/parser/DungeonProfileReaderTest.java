@@ -50,15 +50,15 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p>The happy path runs against the real shipped file. The error paths build one-defect fixtures in
  * a temp dir. Note which channel each defect lands on: the lexer's {@code INTEGER} token is
- * {@code '-'? digit+}, so a non-numeric field is a <em>grammar</em> error, not an assembly one — the
- * only way to reach the assembler's {@code NumberFormatException} handling is a value that overflows
- * {@code int}. Those are soft for {@code params:}, {@code min-level:}, {@code alloc:} and
- * {@code room:}: the offending profile or room is dropped and the rest of the file still loads (the
- * partial-results contract), which is deliberately weaker than C, where {@code parser_getint} makes
- * a bad number fatal. The sites C quits on and the assemblers already stop at, as
- * {@code print_error} in {@code datafile.c} does, are an unknown profile name, an unknown room name
- * and an overflowing {@code tunnel:} or {@code streamer:} field. Each throws
- * {@link DataFileParseException} out of {@code parseWithResults}.
+ * {@code '-'? digit+}, so a non-numeric field is a <em>grammar</em> error, not an assembly one.
+ * {@code params:}, {@code min-level:} and {@code alloc:} are read by {@code ParseUtils} in base 0, as
+ * {@code parser_getint} reads them, so a value too big for {@code int} is clamped (the accepted
+ * deviation from C's wrap) and loads. An overflowing {@code room:} field is still soft: the room is
+ * dropped and the rest of the file still loads, which is weaker than C, where a bad number is fatal.
+ * The sites C quits on and the assemblers already stop at, as {@code print_error} in
+ * {@code datafile.c} does, are an unknown profile name, an unknown room name and an overflowing
+ * {@code tunnel:} or {@code streamer:} field. Each throws {@link DataFileParseException} out of
+ * {@code parseWithResults}.
  *
  * @author Rowan Crowther
  */
@@ -258,13 +258,13 @@ class DungeonProfileReaderTest {
     // ---- Fixtures: defaults and error paths -------------------------------
 
     /**
-     * A profile with nothing but its {@code name:} line. The three optional sub-records stay null
-     * rather than becoming empty objects, and the numeric fields take the assembler's sentinels —
-     * the distinction C cannot make, since {@code mem_zalloc} leaves an absent field at 0 exactly as
-     * an explicit 0 would.
+     * A profile with nothing but its {@code name:} and {@code alloc:} lines. C's
+     * {@code parse_profile_name} makes the record with {@code mem_zalloc}, so the four
+     * {@code params:} numbers and {@code min_level} are 0. The tunnel and streamer stay null here
+     * where C has zeroed structs, as {@code CaveProfile} documents.
      */
     @Test
-    void absentDirectivesLeaveSentinelsRatherThanZeroes() throws IOException {
+    void absentDirectivesReadAsZeroAsInC() throws IOException {
         String path = tempFile("bare.txt", String.join("\n",
                 "record-count:1",
                 "name:town",
@@ -276,11 +276,11 @@ class DungeonProfileReaderTest {
         assertFalse(result.hasErrors(), () -> result.errors().toString());
         CaveProfile bare = result.items().getFirst();
 
-        // No params: line - the four numbers keep the assembler's -1, not 0.
-        assertEquals(-1, bare.getBlockSize());
-        assertEquals(-1, bare.getDunRooms());
-        assertEquals(-1, bare.getDunUnusual());
-        assertEquals(-1, bare.getMaxRarity());
+        // No params: line - mem_zalloc's 0 in all four.
+        assertEquals(0, bare.getBlockSize());
+        assertEquals(0, bare.getDunRooms());
+        assertEquals(0, bare.getDunUnusual());
+        assertEquals(0, bare.getMaxRarity());
 
         assertNull(bare.getTun());
         assertNull(bare.getStr());
@@ -334,18 +334,19 @@ class DungeonProfileReaderTest {
     }
 
     /**
-     * A number too large for {@code int} is the only way past the lexer's {@code INTEGER} token, so
-     * it is what reaches the assembler's {@code NumberFormatException} handling. The offending
-     * profile is dropped and reported; the profiles either side of it still load.
+     * C: {@code parser_getint} on {@code params:99999999999} gives 99999999999 in a 64-bit
+     * {@code long}, and the {@code int} field keeps the low 32 bits, 1215752191; the profile loads.
+     * Here it loads too, with the value clamped to {@link Integer#MAX_VALUE} (the accepted
+     * deviation), and no profile is dropped or reported.
      */
     @Test
-    void anOverflowingParamsValueDropsOnlyItsOwnProfile() throws IOException {
+    void anOverflowingParamsValueClampsWhereCWraps() throws IOException {
         String path = tempFile("overflow-params.txt", String.join("\n",
                 "record-count:3",
                 "name:town",
                 "alloc:1",
                 "name:classic",
-                "params:99999999999:0:200:0",
+                "params:99999999999:0:-99999999999:0",
                 "alloc:1",
                 "name:cavern",
                 "alloc:1",
@@ -353,37 +354,104 @@ class DungeonProfileReaderTest {
 
         ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
 
-        assertEquals(List.of("town", "cavern"), result.items().stream().map(CaveProfile::getName).toList());
-        assertTrue(result.errors().stream()
-                        .anyMatch(e -> e.contains("invalid param line") && e.contains("99999999999")),
-                result.errors()::toString);
-        // The count check still runs, and still counts the record that was parsed but not assembled.
-        assertFalse(result.errors().stream().anyMatch(e -> e.contains("record-count header")),
-                result.errors()::toString);
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(List.of("town", "classic", "cavern"),
+                result.items().stream().map(CaveProfile::getName).toList());
+        CaveProfile classic = result.items().get(1);
+        assertEquals(Integer.MAX_VALUE, classic.getBlockSize(), "C would hold 1215752191");
+        assertEquals(Integer.MIN_VALUE, classic.getDunUnusual(), "C would hold -1215752191");
     }
 
     /**
-     * The same fate for an overflowing {@code alloc:} or {@code min-level:} value, which the
-     * assembler converts on its own rather than through a sub-assembler.
+     * The same for an overflowing {@code alloc:} or {@code min-level:} value, which the assembler
+     * converts itself rather than through a sub-assembler.
      */
     @Test
-    void anOverflowingAllocOrMinLevelDropsItsProfile() throws IOException {
+    void anOverflowingAllocOrMinLevelClampsWhereCWraps() throws IOException {
         String path = tempFile("overflow-alloc.txt", String.join("\n",
                 "record-count:2",
                 "name:classic",
                 "alloc:99999999999",
                 "name:modified",
                 "min-level:99999999999",
-                "alloc:1",
+                "alloc:-99999999999",
                 ""));
 
         ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
 
-        assertTrue(result.items().isEmpty(), result.items()::toString);
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("invalid alloc line")),
-                result.errors()::toString);
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("invalid min level line")),
-                result.errors()::toString);
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(2, result.items().size());
+        assertEquals(Integer.MAX_VALUE, result.items().get(0).getAlloc(), "C would hold 1215752191");
+        assertEquals(Integer.MAX_VALUE, result.items().get(1).getMinLevel(), "C would hold 1215752191");
+        assertEquals(Integer.MIN_VALUE, result.items().get(1).getAlloc(), "C would hold -1215752191");
+    }
+
+    /**
+     * C: {@code parser_getint} is {@code strtol(tok, &z, 0)}, so a leading {@code 0} means octal and
+     * reading stops at the first digit that is not octal: {@code params:010:08:017:-010} is 8, 0, 15
+     * and -8, {@code min-level:019} is 1 and {@code alloc:-0} is 0. {@code 08} is accepted because
+     * the {@code 0} is a digit, so {@code z != tok}.
+     */
+    @Test
+    void paramsMinLevelAndAllocAreReadInBase0AsInC() throws IOException {
+        String path = tempFile("base0.txt", String.join("\n",
+                "record-count:1",
+                "name:classic",
+                "params:010:08:017:-010",
+                "min-level:019",
+                "alloc:-0",
+                ""));
+
+        ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        CaveProfile p = result.items().getFirst();
+        assertEquals(8, p.getBlockSize());
+        assertEquals(0, p.getDunRooms());
+        assertEquals(15, p.getDunUnusual());
+        assertEquals(-8, p.getMaxRarity());
+        assertEquals(1, p.getMinLevel());
+        assertEquals(0, p.getAlloc());
+    }
+
+    /**
+     * C: an absent {@code alloc:} leaves the field at {@code mem_zalloc}'s 0, which the weighted pick
+     * skips ({@code alloc <= 0}), so a modded {@code moria} with no {@code alloc:} line is never
+     * chosen. The same here.
+     */
+    @Test
+    void anAbsentAllocIsZeroAsInC() throws IOException {
+        String path = tempFile("no-alloc.txt", String.join("\n",
+                "record-count:1",
+                "name:moria",
+                "params:1:50:250:2",
+                ""));
+
+        ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(0, result.items().getFirst().getAlloc());
+    }
+
+    /**
+     * C: {@code parse_profile_name} compares with {@code streq}, which is exact, so a name with the
+     * wrong case, a trailing space or an underscore for the space matches no builder and the load
+     * quits on {@code PARSE_ERROR_NO_BUILDER_FOUND}, even after a good profile.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"Town", "CLASSIC", "classic ", "hard_centre", "hardcentre", "hard  centre"})
+    void aNearMissProfileNameStopsTheLoadAfterAGoodProfile(String bad) throws IOException {
+        String path = tempFile("near-miss-profile.txt", String.join("\n",
+                "record-count:2",
+                "name:town",
+                "alloc:1",
+                "name:" + bad,
+                "alloc:1",
+                ""));
+
+        DataFileParseException e = loadAndStop(path);
+
+        assertTrue(e.getMessage().contains("line: 4"), e.getMessage());
     }
 
     /**
@@ -615,26 +683,6 @@ class DungeonProfileReaderTest {
     }
 
     // ---- Where the Java and C differ, pinned so a change is noticed --------
-
-    /**
-     * C: an absent {@code alloc:} leaves the field at 0, which the weighted pick skips ({@code alloc
-     * <= 0}). Java: the assembler defaults it to -1, which means "reachable by the hard-coded
-     * checks", so a modded {@code moria} or {@code labyrinth} with no {@code alloc:} line would be
-     * selectable here and not in C. The shipped file always gives {@code alloc:}.
-     */
-    @Test
-    void anAbsentAllocIsMinusOneHereWhereCLeavesZero() throws IOException {
-        String path = tempFile("no-alloc.txt", String.join("\n",
-                "record-count:1",
-                "name:moria",
-                "params:1:50:250:2",
-                ""));
-
-        ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
-
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
-        assertEquals(-1, result.items().getFirst().getAlloc(), "C would hold 0");
-    }
 
     /**
      * C: {@code r->pit = (parser_getint(p, "pit") == 1)}, and {@code parser_getint} is

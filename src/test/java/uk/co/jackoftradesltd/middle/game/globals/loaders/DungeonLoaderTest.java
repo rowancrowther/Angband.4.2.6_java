@@ -334,13 +334,14 @@ class DungeonLoaderTest {
     }
 
     /**
-     * An overflowing {@code params:} block is a soft error that drops its profile. With a good
-     * profile beside it, the loader installs the survivor, which is the deliberate softening of C
-     * (where {@code parser_getint} would make it fatal), and counts only the survivor.
+     * An overflowing {@code params:} value is no longer an error: C's {@code parser_getint} keeps
+     * the low 32 bits (1215752191) and loads the profile, and the port clamps to
+     * {@link Integer#MAX_VALUE} (the accepted deviation) and loads it too. Both profiles are
+     * installed and counted.
      */
     @Test
-    @DisplayName("soft errors that leave profiles install them and count only the survivors")
-    void profileSoftErrorWithSurvivors() throws Exception {
+    @DisplayName("an overflowing params value loads its profile, clamped, and counts it")
+    void profileOverflowLoadsClamped() throws Exception {
         write("dungeon_profile.txt", String.join("\n",
                 "record-count:2",
                 "name:town", "params:99999999999:0:200:0", "alloc:5",
@@ -349,21 +350,22 @@ class DungeonLoaderTest {
         DungeonLoader.loadDungeonProfiles();
 
         List<CaveProfile> profiles = registryList("caveProfiles");
-        assertEquals(List.of("classic"), profiles.stream().map(CaveProfile::getName).toList());
-        assertEquals(1, GameConstants.getCaveProfileMax());
+        assertEquals(List.of("town", "classic"), profiles.stream().map(CaveProfile::getName).toList());
+        assertEquals(Integer.MAX_VALUE, profiles.get(0).getBlockSize(), "C would hold 1215752191");
+        assertEquals(2, GameConstants.getCaveProfileMax());
     }
 
     /**
-     * The same overflow with nothing else in the file leaves no profile, which
-     * {@code ErrorParsing.reportAndCheck} reports as {@code false}: the load stops, as C's
-     * {@code run_template_parser} does on any parser error, before registry or count are written.
+     * A file the grammar refuses (here, no {@code record-count:} header) leaves errors and no
+     * profile, which {@code ErrorParsing.reportAndCheck} reports as {@code false}: the load stops,
+     * as C's {@code run_template_parser} does on any parser error, before registry or count are
+     * written.
      */
     @Test
-    @DisplayName("soft errors that leave no profiles stop the load before anything is written")
-    void profileSoftErrorWithNoSurvivors() throws Exception {
+    @DisplayName("errors that leave no profiles stop the load before anything is written")
+    void profileErrorWithNoSurvivors() throws Exception {
         write("dungeon_profile.txt", String.join("\n",
-                "record-count:1",
-                "name:town", "params:99999999999:0:200:0", "alloc:5", ""));
+                "name:town", "params:1:0:200:0", "alloc:5", ""));
 
         RuntimeException thrown = assertThrows(RuntimeException.class, DungeonLoader::loadDungeonProfiles);
 

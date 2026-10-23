@@ -28,19 +28,24 @@ import java.math.BigInteger;
  * uk.co.jackoftradesltd.backend.parser.activation.ActivationAssembler}, {@link
  * uk.co.jackoftradesltd.backend.parser.artifact.ArtifactAssembler}, {@link
  * uk.co.jackoftradesltd.backend.parser.bloweffect.BlowEffectAssembler}, {@link
- * uk.co.jackoftradesltd.backend.parser.blowmethod.BlowMethodAssembler} and {@link
- * uk.co.jackoftradesltd.backend.parser.brand.BrandAssembler}. The grammar hands over an
+ * uk.co.jackoftradesltd.backend.parser.blowmethod.BlowMethodAssembler}, {@link
+ * uk.co.jackoftradesltd.backend.parser.brand.BrandAssembler}, {@link
+ * uk.co.jackoftradesltd.backend.parser.chesttrap.ChestTrapAssembler}, {@link
+ * uk.co.jackoftradesltd.backend.parser.curse.CurseAssembler} and {@link
+ * uk.co.jackoftradesltd.backend.parser.dungeonprofile.DungeonProfileAssembler}. The grammar hands over an
  * integer as text, and these functions turn it into an {@code int} the way {@code parser.c} does
  * for the {@code int} and {@code uint} fields of a data-file line: {@code parser_getint} reads
  * with {@code strtol} and {@code parser_getuint} with {@code strtoul}, both in base 0, so a
  * leading {@code 0} means octal and anything else decimal.
  *
- * <p>There are two ways in. The five-argument {@code parseIntString} is the base 0 reading above.
- * The six-argument one takes the base from its caller instead of from the text, for the figures C
- * reads in a fixed base: the two numbers of an {@code alloc:} range are read by
- * {@code grab_int_range} in {@code datafile.c} with {@code strtol} in base 10, so
- * {@code alloc:1:010 to 020} is ten to twenty there, where base 0 would make it eight to sixteen.
- * Both end in the same digit-by-digit reader.
+ * <p>There are three ways in. The five-argument {@code parseIntString} is the base 0 reading
+ * above. The six-argument one ending in {@code boolean octal} takes the base from its caller
+ * instead of from the text, for the figures C reads in a fixed base: the two numbers of an
+ * {@code alloc:} range are read by {@code grab_int_range} in {@code datafile.c} with
+ * {@code strtol} in base 10, so {@code alloc:1:010 to 020} is ten to twenty there, where base 0
+ * would make it eight to sixteen. The six-argument one ending in {@code int def} is the base 0
+ * reading with a caller-chosen value for empty text. All three end in the same digit-by-digit
+ * reader.
  *
  * <p>Two further differences from C, neither reachable from a data file: a lone {@code -} gives 0
  * here where C refuses it as {@code PARSE_ERROR_NOT_NUMBER}, and {@code grab_int_range} rejects a
@@ -62,7 +67,7 @@ import java.math.BigInteger;
  * <p>The number readers never refuse a sign. For the {@code uint} fields, where C does, the
  * caller asks {@link #minusFound(String)} about the raw text and ends the load itself.
  *
- * <p>Class ParseUtils coded on 261022, commented in full on 261023.
+ * <p>Class ParseUtils coded on 261022, commented in full on 261023 (third way in added 261023).
  */
 public class ParseUtils {
     /** Receives the fatal message before each {@link DataFileParseException} is thrown. */
@@ -263,5 +268,39 @@ public class ParseUtils {
             return false;
 
         return string.charAt(0) == '-';
+    }
+
+    /**
+     * Read the text of an {@code int} field as C's {@code parser_getint} does ({@code strtol} in
+     * base 0, from {@code parser_parse} in {@code parser.c}), but give {@code def} for empty text
+     * instead of the five-argument form's 0. Anything else goes to the five-argument form
+     * unchanged, so {@code 15} is 15, {@code -1} is -1, {@code 010} is 8 and {@code 08} is 0, a
+     * lone {@code -} is 0 (not {@code def}), and text with no leading digits ends the load.
+     *
+     * <p>C has no empty {@code int} field: a missing one fails the line before the callback runs.
+     * Empty text never comes from the grammars either, whose {@code INTEGER} tokens hold at least
+     * one digit, so {@code def} is only reached by a caller that passes an empty string on
+     * purpose. {@code DungeonProfileAssembler} passes 0, the value {@code mem_zalloc} leaves in
+     * C's field. An absent optional directive is {@code null}, not empty, and the caller has to
+     * deal with that before calling, as {@code DungeonProfileAssembler} does for {@code min-level:}
+     * and {@code alloc:}.
+     *
+     * <p>Function parseIntString (with default) coded on 261023, commented in full on 261023.
+     *
+     * @param type     the kind of record being read, for the message ({@code "Dungeon profile"})
+     * @param string   the raw text from the parse record, not {@code null}
+     * @param line     the line the record starts on, for the message
+     * @param filename the file being read, for the message
+     * @param token    the directive name, for the message
+     * @param def      the value to give for empty text
+     * @return {@code def} for empty text, otherwise the value, clamped to the range of an
+     *         {@code int}
+     * @throws DataFileParseException if the text is not empty and has no leading digits
+     */
+    public static int parseIntString(String type, String string, int line, String filename, String token, int def) {
+        if (string.isEmpty())
+            return def;
+
+        return parseIntString(type, string, line, filename, token); 
     }
 }

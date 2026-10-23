@@ -21,6 +21,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
+import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 
 import java.util.Comparator;
 import java.util.List;
@@ -41,8 +42,8 @@ import java.util.TreeMap;
  *   <li><b>{@link #itemObject}</b> — C's {@code curse->obj}. {@code CurseAssembler} sets its
  *       weight, flags, modifiers, element info, to-hit, to-damage and to-armour figures, effect
  *       and effect message from the data file, and the merge code reads them back from it.</li>
- *   <li><b>{@link #objectBases}</b> — C's {@code curse->poss}, the object bases the curse may
- *       attach to.</li>
+ *   <li><b>{@link #objectBases}</b> — C's {@code curse->poss}, the tvals the curse may
+ *       attach to, held as a list of {@link TValue}s rather than C's {@code bool} per tval.</li>
  *   <li><b>{@link #conflictFlags}</b>, <b>{@link #description}</b>, <b>{@link #name}</b> — C's
  *       {@code conflict_flags}, {@code desc} and {@code name}.</li>
  *   <li><b>{@link #conflictNames}</b> and <b>{@link #conflict}</b> — C's {@code conflict} string,
@@ -56,9 +57,12 @@ import java.util.TreeMap;
  * renumber the curses once it has put them in C's order.
  *
  * <p>Unlike {@code struct curse}, the constructor refuses a {@code null} or empty name: C's
- * {@code parse_curse_name} cannot produce one, so the port makes the impossible case loud.
+ * {@code parse_curse_name} cannot produce one ({@code parser_parse} in {@code parser.c} returns
+ * {@code PARSE_ERROR_MISSING_FIELD} for an empty {@code str} field), so the port makes the
+ * impossible case loud.
  *
- * <p>Class Curse coded before 261005, commented in full on 261008.
+ * <p>Class Curse coded before 261005, commented in full on 261023, {@link #objectBases} described
+ * as {@link TValue}s on 261023.
  *
  * @author Rowan Crowther
  */
@@ -113,15 +117,27 @@ public class Curse {
     private int index;
 
     /**
-     * The object bases this curse may attach to (C: {@code curse->poss}, the
-     * per-tval possibility array; port {@code types:} line). C holds a {@code bool} per tval, set
-     * once for each {@code type:} line; the port holds the {@link ObjectBase} for each of them, and
-     * {@link #canAfflict(ObjectBase)} is the lookup. A curse with no {@code type:} line can attach
-     * to nothing.
+     * The tvals this curse may attach to — the port's form of C's {@code curse->poss}, the
+     * per-tval possibility array that {@code parse_curse_type} in {@code obj-init.c} sets once for
+     * each {@code type:} line. C allocates a zero-filled {@code bool} for every tval in
+     * {@code parse_curse_name} and sets {@code poss[tval]} to true; the port holds the
+     * {@link TValue} of each {@code type:} line instead, and {@link #canAfflict(ObjectBase)} is the
+     * lookup. Membership answers exactly as C's array does.
      *
-     * <p>Field objectBases coded before 261005, commented in full on 261005.
+     * <p>Two things the list keeps that C's array cannot: the order of the {@code type:} lines, and
+     * a repeat ({@code type:cloak} twice gives two entries where C sets one flag twice). Neither
+     * changes {@link #canAfflict(ObjectBase)}. A tval with no object base ({@code none},
+     * {@code other book}) is held like any other and simply never matches an object, as in C. A
+     * curse with no {@code type:} line has an empty list and can attach to nothing.
+     *
+     * <p>Unlike C's array, which {@code parse_curse_name} always allocates, the list may be
+     * {@code null} if a caller passes one; {@code CurseAssembler} never does, and
+     * {@link #canAfflict(ObjectBase)} would throw on it.
+     *
+     * <p>Field objectBases coded before 261005, commented in full on 261023, changed from object
+     * bases to {@link TValue}s on 261023.
      */
-    private final List<ObjectBase> objectBases;
+    private final List<TValue> objectBases;
 
     /**
      * The curse's own object — the port's counterpart of C's {@code curse->obj}, the
@@ -170,23 +186,30 @@ public class Curse {
     private List<Curse> conflict;
 
     /**
-     * Build a curse from its assembled fields. This takes already-resolved domain objects (an
-     * {@link ItemObject} carrying the curse's mechanical properties, a flag set, a list of bases)
-     * rather than raw data-file text — the parsing and lookup work lives in {@code CurseAssembler}.
-     * The {@link #conflict} list is left null here and filled by the assembler's second pass from
+     * Build a curse from its assembled fields — the port's counterpart of the record
+     * {@code parse_curse_name} in {@code obj-init.c} allocates and the later {@code parse_curse_*}
+     * handlers fill. This takes already-resolved domain objects (an {@link ItemObject} carrying the
+     * curse's mechanical properties, a flag set, a list of {@link TValue}s) rather than raw
+     * data-file text — the parsing and lookup work lives in {@code CurseAssembler}. The
+     * {@link #conflict} list is left null here and filled by the assembler's second pass from
      * {@code conflictNames}.
      *
-     * <p>Only the name is checked. The list, the flag set and the object are stored by reference
-     * and never copied, so the caller must not hand in {@code null} for any of them if the curse is
-     * later asked for its weight effect or its bases.
+     * <p>Only the name is checked, and a {@code null} or empty one throws where C's parser stops
+     * with {@code PARSE_ERROR_MISSING_FIELD} before {@code parse_curse_name} runs. The lists, the
+     * flag set and the object are stored by reference and never copied, so the caller must not hand
+     * in {@code null} for any of them if the curse is later asked for its weight effect or whether
+     * it can afflict a base; C has no such case, as every record gets a zero-filled object and
+     * {@code poss} array.
      *
      * <p>The index is provisional when {@code CurseAssembler} is the caller: it builds the curses in
      * file order, then reverses them to C's order and renumbers them with {@link #setIndex(int)}.
      *
-     * <p>Constructor Curse coded before 261005, commented in full on 261008.
+     * <p>Constructor Curse coded before 261005, commented in full on 261023, {@code objectBases}
+     * changed to {@link TValue}s on 261023.
      *
      * @param name          curse name
-     * @param objectBases   affectable object bases ({@code types:} line)
+     * @param objectBases   the tvals of the {@code type:} lines, C's {@code curse->poss}; stored,
+     *                      not copied
      * @param itemObject    the curse's own object, C's {@code curse->obj}
      * @param conflictNames names of conflicting curses (resolved later)
      * @param conflictFlags conflicting object flags
@@ -195,7 +218,7 @@ public class Curse {
      * @throws IllegalArgumentException if {@code name} is {@code null} or empty
      */
     public Curse(String name,
-                 List<ObjectBase> objectBases,
+                 List<TValue> objectBases,
                  ItemObject itemObject,
                  List<String> conflictNames,
                  Flag<ObjectFlag> conflictFlags,
@@ -249,15 +272,18 @@ public class Curse {
     }
 
     /**
-     * The object bases this curse may attach to — the {@code types:} lines of the data file, and
-     * the port's form of C's {@code curse->poss} array. Use {@link #canAfflict(ObjectBase)} to ask
-     * about a single base.
+     * The tvals this curse may attach to — the {@code type:} lines of the data file, in file order
+     * and with any repeat kept, and the port's form of C's {@code curse->poss} array (see
+     * {@link #objectBases}). C has no getter; its callers index {@code poss} directly. Use
+     * {@link #canAfflict(ObjectBase)} to ask about a single base.
      *
-     * <p>Function getObjectBases coded before 261005, commented in full on 261005.
+     * <p>Function getTValues coded before 261005, commented in full on 261023, return type changed
+     * to {@link TValue}s on 261023.
      *
-     * @return the object bases this curse may attach to; the curse's own list, not a copy
+     * @return the tvals this curse may attach to; the curse's own list, not a copy, so a change to it
+     *         changes what {@link #canAfflict(ObjectBase)} answers
      */
-    public List<ObjectBase> getObjectBases() {
+    public List<TValue> getTValues() {
         return objectBases;
     }
 
@@ -342,20 +368,24 @@ public class Curse {
 
     /**
      * Whether this curse may attach to an object of the given base — the port's form of C's
-     * {@code curse->poss[obj->tval]} test, made in {@code obj-make.c}, {@code obj-randart.c} and
-     * {@code effect-handler-general.c}. The test is by {@link List#contains} on the list built from
-     * the {@code types:} lines, so it depends on {@link ObjectBase} equality. {@link ObjectBase} does
-     * not override {@code equals}, so the test is by identity and only the registry's own instances
-     * match; C's {@code poss[tval]} index, by contrast, matches any object of that tval. An empty
-     * list answers {@code false} for every base, as a C curse with no {@code type:} line does.
+     * {@code curse->poss[obj->tval]} test, made in {@code obj-make.c} (function
+     * {@code apply_curse}), {@code obj-randart.c} (on the artifact's tval) and
+     * {@code effect-handler-general.c} (the two curse-adding effects). The base's tval is looked up
+     * in {@link #objectBases}, so any base with a listed tval matches, whichever instance it is, as
+     * C's index by tval does. A repeated {@code type:} line makes no difference, and an empty list
+     * answers {@code false} for every base, as a C curse with no {@code type:} line does.
      *
-     * <p>Function canAfflict coded before 261005, commented in full on 261008.
+     * <p>C always has an object to index by; here a {@code null} base, or a curse built with a
+     * {@code null} list, throws {@link NullPointerException}.
      *
-     * @param objectBase the base to test
-     * @return true if this curse may attach to the given object base
+     * <p>Function canAfflict coded before 261005, commented in full on 261023, made to test by tval
+     * on 261023.
+     *
+     * @param objectBase the base of the object to test; its tval is what is checked
+     * @return true if this curse's {@code type:} lines include the base's tval
      */
     public boolean canAfflict(ObjectBase objectBase) {
-        return objectBases.contains(objectBase);
+        return objectBases.contains(objectBase.gettVal());
     }
 
     /**

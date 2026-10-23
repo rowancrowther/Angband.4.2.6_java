@@ -21,6 +21,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
@@ -308,73 +309,63 @@ class CurseReaderTest {
         assertEquals(0, time.getSides());
     }
 
-    // ---- Soft errors: dropped record (skip-and-continue) -----------------
+    // ---- A bad record ends the load (run_parser stops at the first error) ----
 
     @Test
-    void unknownTypeIsReportedAndSkipped() throws IOException {
-        ParseResult<Curse> result = load("bad-type.txt", withHeader(1,
-                curse("weird", "type:no such base\ndesc:test\n")));
+    void unknownTypeEndsTheLoad() {
+        // parse_curse_type returns PARSE_ERROR_UNRECOGNISED_TVAL, which stops run_parser.
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("bad-type.txt",
+                withHeader(1, curse("weird", "type:no such base\ndesc:test\n"))));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(
-                        e -> e.contains("unknown type") && e.contains("no such base")),
-                result.errors()::toString);
+        assertTrue(e.getMessage().contains("no such base"), e::getMessage);
     }
 
     @Test
-    void unknownModifierIsReportedAndSkipped() throws IOException {
-        ParseResult<Curse> result = load("bad-mod.txt", withHeader(1,
-                curse("weird", "type:cloak\nvalues:NOTAMOD[1]\ndesc:test\n")));
+    void unknownModifierEndsTheLoad() {
+        // parse_curse_values returns PARSE_ERROR_INVALID_VALUE.
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("bad-mod.txt",
+                withHeader(1, curse("weird", "type:cloak\nvalues:NOTAMOD[1]\ndesc:test\n"))));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown modifier")),
-                result.errors()::toString);
+        assertTrue(e.getMessage().contains("NOTAMOD"), e::getMessage);
     }
 
     @Test
-    void unknownResistanceElementIsReportedAndSkipped() throws IOException {
-        ParseResult<Curse> result = load("bad-res.txt", withHeader(1,
-                curse("weird", "type:cloak\nvalues:RES_NOTREAL[1]\ndesc:test\n")));
+    void unknownResistanceElementEndsTheLoad() {
+        // parse_curse_values returns PARSE_ERROR_INVALID_VALUE.
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("bad-res.txt",
+                withHeader(1, curse("weird", "type:cloak\nvalues:RES_NOTREAL[1]\ndesc:test\n"))));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown element")),
-                result.errors()::toString);
+        assertTrue(e.getMessage().contains("RES_NOTREAL"), e::getMessage);
     }
 
     @Test
-    void unknownObjectFlagIsReportedAndSkipped() throws IOException {
-        ParseResult<Curse> result = load("bad-oflag.txt", withHeader(1,
-                curse("weird", "type:cloak\nflags:NOTAFLAG\ndesc:test\n")));
+    void unknownObjectFlagEndsTheLoad() {
+        // parse_curse_flags returns PARSE_ERROR_INVALID_FLAG.
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("bad-oflag.txt",
+                withHeader(1, curse("weird", "type:cloak\nflags:NOTAFLAG\ndesc:test\n"))));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown object flag")),
-                result.errors()::toString);
+        assertTrue(e.getMessage().contains("NOTAFLAG"), e::getMessage);
     }
 
     @Test
-    void unknownElementFlagIsReportedAndSkipped() throws IOException {
-        ParseResult<Curse> result = load("bad-eflag.txt", withHeader(1,
-                curse("weird", "type:cloak\nflags:HATES_NOTREAL\ndesc:test\n")));
+    void unknownElementFlagEndsTheLoad() {
+        // parse_curse_flags returns PARSE_ERROR_INVALID_FLAG.
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("bad-eflag.txt",
+                withHeader(1, curse("weird", "type:cloak\nflags:HATES_NOTREAL\ndesc:test\n"))));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown element flag")),
-                result.errors()::toString);
+        assertTrue(e.getMessage().contains("HATES_NOTREAL"), e::getMessage);
     }
 
-    // ---- Soft error: kept record -----------------------------------------
+    // ---- Conflict names (accepted deviation) -------------------------------
 
     @Test
-    void unresolvableConflictIsReportedButTheRecordStillLoads() throws IOException {
-        // An unresolvable conflict name does NOT drop the record: it logs a soft error and the
-        // resolved conflict list simply omits it.
-        ParseResult<Curse> result = load("bad-conflict.txt", withHeader(1,
-                curse("lonely", "type:cloak\nconflict:no such curse\ndesc:test\n")));
+    void unresolvableConflictEndsTheLoadNamingTheCurseAndTheName() {
+        // Accepted deviation (docs/Accepted_Deviations.md): C never checks a conflict: name.
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("bad-conflict.txt",
+                withHeader(1, curse("lonely", "type:cloak\nconflict:no such curse\ndesc:test\n"))));
 
-        assertEquals(1, result.items().size());
-        assertTrue(result.items().get(0).getConflict().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(
-                        e -> e.contains("Invalid curse conflict name") && e.contains("no such curse")),
-                result.errors()::toString);
+        assertTrue(e.getMessage().contains("lonely"), e::getMessage);
+        assertTrue(e.getMessage().contains("no such curse"), e::getMessage);
     }
 
     // ---- record-count + hard (fail-closed) errors ------------------------
@@ -405,21 +396,20 @@ class CurseReaderTest {
         assertTrue(result.hasErrors());
     }
 
-    // ---- Two soft errors at once -----------------------------------------
+    // ---- Two bad records: only the first is reached ------------------------
 
     @Test
-    void twoDifferentSoftErrorsAreBothReportedAndTheValidRecordStillLoads() throws IOException {
+    void theFirstOfTwoBadRecordsEndsTheLoad() {
+        // run_parser stops at the first parse error, so the second bad record is never read.
         String body = curse("good", "type:cloak\ndesc:fine\n")
                 + curse("badmod", "type:cloak\nvalues:NOTAMOD[1]\ndesc:bad\n")
                 + curse("badflag", "type:cloak\nflags:NOTAFLAG\ndesc:bad\n");
-        ParseResult<Curse> result = load("two-errors.txt", withHeader(3, body));
 
-        assertEquals(1, result.items().size());
-        assertEquals("good", result.items().get(0).getName());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown modifier")),
-                result.errors()::toString);
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown object flag")),
-                result.errors()::toString);
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> load("two-errors.txt", withHeader(3, body)));
+
+        assertTrue(e.getMessage().contains("NOTAMOD"), e::getMessage);
+        assertFalse(e.getMessage().contains("NOTAFLAG"), e::getMessage);
     }
 
     // ---- Reader contract, worked out from the upstream curse.txt and obj-init.c ----
@@ -490,7 +480,7 @@ class CurseReaderTest {
     private static Expected actual(Curse c) throws Exception {
         Random t = c.getItemObject().getTime();
         String msg = effectMessage(c);
-        return new Expected(c.getName(), c.getObjectBases().size(), c.getItemObject().getToHit(),
+        return new Expected(c.getName(), c.getTValues().size(), c.getItemObject().getToHit(),
                 c.getItemObject().getToDam(), c.getItemObject().getToAC(),
                 c.getItemObject().getEffect().size(), t.getBase(), t.getDice(), t.getSides(),
                 msg == null ? "" : msg, c.getDescription());
@@ -582,15 +572,12 @@ class CurseReaderTest {
     }
 
     @Test
-    void parseDropsTheSoftErrorsAndSimplyLosesTheBadRecord() throws IOException {
+    void parseAlsoEndsTheLoadOnABadRecord() throws IOException {
         Path file = tempDir.resolve("parse-bad.txt");
         Files.writeString(file, withHeader(2, curse("good", "type:cloak\ndesc:fine\n")
                 + curse("bad", "type:no such base\ndesc:bad\n")));
 
-        List<Curse> curses = new CurseReader().parse(file.toString());
-
-        assertEquals(1, curses.size());
-        assertEquals("good", curses.get(0).getName());
+        assertThrows(DataFileParseException.class, () -> new CurseReader().parse(file.toString()));
     }
 
     @Test
@@ -615,13 +602,14 @@ class CurseReaderTest {
     }
 
     @Test
-    void skippedRecordLeavesTheOthersInReverseFileOrderWithClosedUpIndices() throws IOException {
-        ParseResult<Curse> result = load("order-skip.txt", withHeader(3,
-                curse("first", "type:cloak\ndesc:a\n") + curse("bad", "type:no such base\ndesc:b\n")
-                        + curse("third", "type:cloak\ndesc:c\n")));
+    void aTvalWithNoObjectBaseLoadsAsInC() throws IOException {
+        // tval_find_idx accepts "none" and "other book", neither of which has an object_base.txt
+        // entry; parse_curse_type only sets poss[tval].
+        ParseResult<Curse> result = load("baseless.txt", withHeader(1,
+                curse("odd", "type:none\ntype:other book\ndesc:x\n")));
 
-        assertEquals(List.of("third", "first"), result.items().stream().map(Curse::getName).toList());
-        assertEquals(List.of(0, 1), result.items().stream().map(Curse::getIndex).toList());
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(List.of(TValue.TV_NONE, TValue.TV_OTHER_BOOK), result.items().get(0).getTValues());
     }
 
     @Test
@@ -751,7 +739,7 @@ class CurseReaderTest {
         assertEquals("last first", c.getDescription());
         assertEquals(5, c.getItemObject().getWeight());
         assertEquals(3, c.getItemObject().getToAC());
-        assertEquals(1, c.getObjectBases().size());
+        assertEquals(1, c.getTValues().size());
     }
 
     // ---- Text fields -----------------------------------------------------
@@ -777,12 +765,12 @@ class CurseReaderTest {
     }
 
     @Test
-    void softErrorNamesTheLineOfTheRecordsNameDirective() throws IOException {
+    void theStopNamesTheLineOfTheRecordsNameDirective() {
         // Line 1 is the header, line 2 the first record's name:, line 5 the second's.
-        ParseResult<Curse> result = load("lines.txt", withHeader(2,
-                curse("good", "type:cloak\ndesc:x\n") + curse("bad", "type:no such base\ndesc:x\n")));
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("lines.txt",
+                withHeader(2, curse("good", "type:cloak\ndesc:x\n") + curse("bad", "type:no such base\ndesc:x\n"))));
 
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("line: 5")), result.errors()::toString);
+        assertTrue(e.getMessage().contains("line: 5"), e::getMessage);
     }
 
     // ---- msg: and time: --------------------------------------------------
@@ -850,18 +838,18 @@ class CurseReaderTest {
     }
 
     @Test
-    void anUnknownEffectDropsTheWholeCurse() throws IOException {
-        ParseResult<Curse> result = load("bad-effect.txt", withHeader(1,
-                curse("odd", "type:cloak\neffect:NOT_AN_EFFECT\ndesc:x\n")));
+    void anUnknownEffectEndsTheLoad() {
+        // parse_curse_effect returns grab_effect_data's error, which stops run_parser.
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("bad-effect.txt",
+                withHeader(1, curse("odd", "type:cloak\neffect:NOT_AN_EFFECT\ndesc:x\n"))));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
+        assertTrue(e.getMessage().contains("effect"), e::getMessage);
     }
 
     // ---- Weight and the finish_parse_curse checks -----------------------------
 
     @Test
-    void weightAtTheInt16BoundsLoadsAndOneBeyondIsRejected() throws IOException {
+    void weightAtTheInt16BoundsLoadsAndOneBeyondEndsTheLoad() throws IOException {
         // parse_curse_weight rejects anything outside -32768..32767 with PARSE_ERROR_INVALID_VALUE.
         for (int w : new int[]{-32768, 32767}) {
             ParseResult<Curse> ok = load("w" + w + ".txt", withHeader(1,
@@ -870,21 +858,19 @@ class CurseReaderTest {
             assertEquals(w, ok.items().get(0).getItemObject().getWeight());
         }
         for (int w : new int[]{-32769, 32768}) {
-            ParseResult<Curse> bad = load("w" + w + ".txt", withHeader(1,
-                    curse("w", "type:cloak\nweight:" + w + "\ndesc:x\n")));
-            assertTrue(bad.items().isEmpty(), "weight " + w);
-            assertTrue(bad.errors().stream().anyMatch(e -> e.contains("weight out of range")), "weight " + w);
+            DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("w" + w + ".txt",
+                    withHeader(1, curse("w", "type:cloak\nweight:" + w + "\ndesc:x\n"))), "weight " + w);
+            assertTrue(e.getMessage().contains("out of range"), e::getMessage);
         }
     }
 
     @Test
-    void negativeWeightWithMultiplyWeightIsRejectedAsFinishParseCurseDoes() throws IOException {
-        ParseResult<Curse> result = load("mw-neg.txt", withHeader(2,
-                curse("shrink", "type:cloak\nweight:-5\nflags:MULTIPLY_WEIGHT\ndesc:x\n")
-                        + curse("grow", "type:cloak\nweight:150\nflags:MULTIPLY_WEIGHT\ndesc:x\n")));
+    void negativeWeightWithMultiplyWeightEndsTheLoadAsFinishParseCurseDoes() {
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("mw-neg.txt",
+                withHeader(2, curse("shrink", "type:cloak\nweight:-5\nflags:MULTIPLY_WEIGHT\ndesc:x\n")
+                        + curse("grow", "type:cloak\nweight:150\nflags:MULTIPLY_WEIGHT\ndesc:x\n"))));
 
-        assertEquals(List.of("grow"), result.items().stream().map(Curse::getName).toList());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("negative weight")), result.errors()::toString);
+        assertTrue(e.getMessage().contains("negative weight"), e::getMessage);
     }
 
     @Test
@@ -910,16 +896,16 @@ class CurseReaderTest {
     }
 
     @Test
-    void aTwoHundredFiftyFifthCurseThrowsOutOfTheReaderRatherThanIntoTheResult() {
-        // C returns PARSE_ERROR_TOO_MANY_ENTRIES (fatal). CurseAssembler throws
-        // IllegalArgumentException, which GrammarDriver does not catch, so it escapes
-        // parseWithResults. Recorded in docs/Assembler_Issues.md.
+    void aTwoHundredFiftyFifthCurseEndsTheLoad() {
+        // C returns PARSE_ERROR_TOO_MANY_ENTRIES from finish_parse_curse, which ends the load.
         StringBuilder body = new StringBuilder();
         for (int i = 0; i < 255; i++) {
             body.append(curse("c" + i, "type:cloak\ndesc:x\n"));
         }
 
-        assertThrows(IllegalArgumentException.class, () -> load("over.txt", withHeader(255, body.toString())));
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> load("over.txt", withHeader(255, body.toString())));
+        assertTrue(e.getMessage().contains("Too many"), e::getMessage);
     }
 
     // ---- Where the grammar is stricter than C ---------------------------------
@@ -994,12 +980,12 @@ class CurseReaderTest {
     }
 
     @Test
-    void aLeadingZeroWeightIsDecimalHereWhereCReadsOctal() throws IOException {
+    void aLeadingZeroWeightIsOctalAsInC() throws IOException {
         // parser_parse reads an int with strtol(tok, &z, 0), so "010" is 8 in C.
         ParseResult<Curse> result = load("octal.txt", withHeader(1, curse("oct", "type:cloak\nweight:010\ndesc:x\n")));
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
-        assertEquals(10, result.items().get(0).getItemObject().getWeight());
+        assertEquals(8, result.items().get(0).getItemObject().getWeight());
     }
 
     @Test
@@ -1042,15 +1028,11 @@ class CurseReaderTest {
     // ---- Where the assembler differs from C ------------------------------------
 
     @Test
-    void aConflictNameNoCurseHasIsASoftErrorHereWhereCNeverChecksIt() throws IOException {
+    void aConflictNameNoCurseHasEndsTheLoadHereWhereCNeverChecksIt() {
         // C keeps "|name|" in curse->conflict and only ever searches it, so an unmatched name is
-        // harmless. Recorded in docs/Assembler_Issues.md.
-        ParseResult<Curse> result = load("conflict-unknown.txt", withHeader(1,
-                curse("lonely", "type:cloak\nconflict:nobody\ndesc:x\n")));
-
-        assertEquals(1, result.items().size());
-        assertEquals(List.of("nobody"), result.items().get(0).getConflictNames());
-        assertTrue(result.hasErrors());
+        // harmless. Accepted deviation, recorded in docs/Accepted_Deviations.md.
+        assertThrows(DataFileParseException.class, () -> load("conflict-unknown.txt",
+                withHeader(1, curse("lonely", "type:cloak\nconflict:nobody\ndesc:x\n"))));
     }
 
     @Test
@@ -1060,7 +1042,7 @@ class CurseReaderTest {
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
         Curse c = result.items().get(0);
-        assertTrue(c.getObjectBases().isEmpty());
+        assertTrue(c.getTValues().isEmpty());
         assertFalse(c.canAfflict(ObjectRegistry.getBaseFromTVal(TValue.TV_CLOAK)));
     }
 }

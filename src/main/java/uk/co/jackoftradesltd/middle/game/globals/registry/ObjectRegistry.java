@@ -784,7 +784,7 @@ public class ObjectRegistry {
     /**
      * Hands out the loaded object bases as a read-only view.
      *
-     * <p>Function getObjectBases coded before 261008, commented in full on 261008.
+     * <p>Function getTValues coded before 261008, commented in full on 261008.
      *
      * @return an unmodifiable view of the loaded object bases
      * @throws NullPointerException if {@link #setObjectBases} has not run

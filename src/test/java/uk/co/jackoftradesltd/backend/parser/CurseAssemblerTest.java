@@ -17,19 +17,19 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.backend.parser.curse.CurseAssembler;
 import uk.co.jackoftradesltd.backend.parser.curse.CurseParseRecord;
+import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
 import uk.co.jackoftradesltd.middle.objects.Curse;
-import uk.co.jackoftradesltd.middle.objects.ObjectBase;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
+import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
+import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -50,46 +50,25 @@ import static org.junit.jupiter.api.Assertions.*;
  *   <li>{@code finish_parse_curse} rejects a curse that has {@code OF_MULTIPLY_WEIGHT} and a
  *       negative weight, allows 254 curses and fails on the 255th, and numbers them from the head of
  *       a list built by prepending, so the last curse in the file comes first;</li>
+ *   <li>{@code parse_curse_type} accepts any name {@code tval_find_idx} resolves, a bare number
+ *       included, and records it in {@code curse->poss[tval]} without looking for an object base;</li>
+ *   <li>any parse error ends the load at that record ({@code run_parser} in {@code datafile.c}),
+ *       so every fault here expects a {@code DataFileParseException}, and nothing is skipped.</li>
  *   <li>{@code parse_curse_desc} concatenates {@code desc:} lines with no separator;</li>
  *   <li>{@code parse_curse_flags} and {@code parse_curse_values} both write the same
  *       {@code el_info[]} slot for an element, so {@code HATES_FIRE} and {@code RES_FIRE[-1]} land
  *       on one entry.</li>
  * </ul>
  *
- * <p>Only {@code object_base.txt} is seeded (by reflection, restored afterwards), because every
- * record here has an empty effect list and so needs no summon or monster registries.
+ * <p>No registry is needed: {@code type:} resolves through {@code TValue.fromName} alone, and the
+ * one effect test uses an unknown effect name, which fails before any registry is read.
  *
- * <p>Class CurseAssemblerTest coded on 261005, commented in full on 261005.
+ * <p>Class CurseAssemblerTest coded on 261005, commented in full on 261005, rewritten on 261023
+ * for stop-the-load and {@code type:} held as tvals.
  *
  * @author Rowan Crowther
  */
 class CurseAssemblerTest {
-
-    private static final String OBJECT_BASE_FILE = "lib/gamedata/object_base.txt";
-
-    private static Object savedObjectBases;
-
-    /**
-     * Loads the real object bases so {@code type:cloak} and friends resolve.
-     */
-    @BeforeAll
-    static void seed() throws Exception {
-        List<ObjectBase> objectBases = new ObjectBaseReader().parseWithResults(OBJECT_BASE_FILE).items();
-        Field f = RegistrySeeding.resolve("objectBases");
-        f.setAccessible(true);
-        savedObjectBases = f.get(null);
-        f.set(null, objectBases);
-    }
-
-    /**
-     * Puts the original object bases back so no state leaks to other suites.
-     */
-    @AfterAll
-    static void restore() throws Exception {
-        Field f = RegistrySeeding.resolve("objectBases");
-        f.setAccessible(true);
-        f.set(null, savedObjectBases);
-    }
 
     // ---- fixture helpers -------------------------------------------------
 
@@ -97,6 +76,17 @@ class CurseAssemblerTest {
         List<CurseParseRecord> records = new ArrayList<>();
         for (Rec r : recs) records.add(r.build());
         return new CurseAssembler().assemble(records, errors, "test.txt");
+    }
+
+    /**
+     * Assembles the records and expects the load to end, as C's {@code run_parser} does on the
+     * first parse error.
+     *
+     * @param recs the records
+     * @return the exception, for its message
+     */
+    private static DataFileParseException stops(Rec... recs) {
+        return assertThrows(DataFileParseException.class, () -> assemble(new ArrayList<>(), recs));
     }
 
     private static Curse only(List<Curse> curses) {
@@ -108,6 +98,68 @@ class CurseAssemblerTest {
         Rec[] recs = new Rec[count];
         for (int i = 0; i < count; i++) recs[i] = new Rec("curse" + i);
         return recs;
+    }
+
+    // ---- name: parse_curse_name ------------------------------------------
+
+    @Test
+    @DisplayName("an empty name ends the load")
+    void emptyNameStops() {
+        DataFileParseException e = stops(new Rec("").line(6));
+
+        assertAll(() -> assertTrue(e.getMessage().contains("line: 6"), e::getMessage),
+                () -> assertTrue(e.getMessage().contains("test.txt"), e::getMessage));
+    }
+
+    // ---- type: parse_curse_type ------------------------------------------
+
+    @Test
+    @DisplayName("type: lines are kept as tvals, in file order")
+    void typesAreTvals() {
+        Curse c = only(assemble(new ArrayList<>(), new Rec("a").type("cloak", "soft armor")));
+
+        assertEquals(List.of(TValue.TV_CLOAK, TValue.TV_SOFT_ARMOR), c.getTValues());
+    }
+
+    @Test
+    @DisplayName("a tval with no object base (none, other book) loads, as tval_find_idx accepts it")
+    void tvalWithNoObjectBaseLoads() {
+        List<String> errors = new ArrayList<>();
+        Curse c = only(assemble(errors, new Rec("a").type("none", "other book")));
+
+        assertAll(() -> assertEquals(List.of(TValue.TV_NONE, TValue.TV_OTHER_BOOK), c.getTValues()),
+                () -> assertTrue(errors.isEmpty(), errors::toString));
+    }
+
+    @Test
+    @DisplayName("a numeric type: is a tval index, as tval_find_idx reads it with strtoul (15 is cloak)")
+    void numericTypeIsTvalIndex() {
+        Curse c = only(assemble(new ArrayList<>(), new Rec("a").type("15")));
+
+        assertEquals(List.of(TValue.TV_CLOAK), c.getTValues());
+    }
+
+    @Test
+    @DisplayName("British spelling of an armour tval resolves, as de_armour rewrites it first")
+    void britishArmourSpellingResolves() {
+        Curse c = only(assemble(new ArrayList<>(), new Rec("a").type("dragon armour")));
+
+        assertEquals(List.of(TValue.TV_DRAG_ARMOR), c.getTValues());
+    }
+
+    @Test
+    @DisplayName("an unknown type: name ends the load (PARSE_ERROR_UNRECOGNISED_TVAL)")
+    void unknownTypeStops() {
+        DataFileParseException e = stops(new Rec("a").type("cloak", "spaceship").line(12));
+
+        assertAll(() -> assertTrue(e.getMessage().contains("line: 12"), e::getMessage),
+                () -> assertTrue(e.getMessage().contains("spaceship"), e::getMessage));
+    }
+
+    @Test
+    @DisplayName("a type: index of TV_MAX or more ends the load")
+    void outOfRangeTvalIndexStops() {
+        stops(new Rec("a").type(String.valueOf(TValue.values().length)));
     }
 
     // ---- weight: parse_curse_weight --------------------------------------
@@ -146,42 +198,54 @@ class CurseAssemblerTest {
     }
 
     @Test
-    @DisplayName("weight 32768 and -32769 are out of range: reported, curse skipped")
-    void weightOutsideRangeIsRejected() {
-        List<String> errors = new ArrayList<>();
-        List<Curse> curses = assemble(errors, new Rec("over").weight("32768").line(3),
-                new Rec("under").weight("-32769").line(9));
+    @DisplayName("weight 32768 ends the load (PARSE_ERROR_INVALID_VALUE)")
+    void weightAboveRangeStops() {
+        DataFileParseException e = stops(new Rec("over").weight("32768").line(3));
 
-        assertAll(() -> assertTrue(curses.isEmpty()),
-                () -> assertTrue(errors.stream().anyMatch(
-                        e -> e.contains("line: 3") && e.contains("out of range") && e.contains("32768")), errors::toString),
-                () -> assertTrue(errors.stream().anyMatch(
-                        e -> e.contains("line: 9") && e.contains("out of range") && e.contains("-32769")), errors::toString));
+        assertAll(() -> assertTrue(e.getMessage().contains("line: 3"), e::getMessage),
+                () -> assertTrue(e.getMessage().contains("out of range"), e::getMessage),
+                () -> assertTrue(e.getMessage().contains("32768"), e::getMessage));
     }
 
     @Test
-    @DisplayName("a non-integer weight, or one beyond int range, is reported and skipped")
-    void malformedWeightIsRejected() {
-        List<String> errors = new ArrayList<>();
-        List<Curse> curses = assemble(errors, new Rec("word").weight("heavy"),
-                new Rec("huge").weight("99999999999"));
+    @DisplayName("weight -32769 ends the load (PARSE_ERROR_INVALID_VALUE)")
+    void weightBelowRangeStops() {
+        DataFileParseException e = stops(new Rec("under").weight("-32769").line(9));
 
-        assertAll(() -> assertTrue(curses.isEmpty()),
-                () -> assertEquals(2, errors.stream().filter(e -> e.contains("invalid weight adjustment")).count(),
-                        errors::toString));
+        assertAll(() -> assertTrue(e.getMessage().contains("line: 9"), e::getMessage),
+                () -> assertTrue(e.getMessage().contains("-32769"), e::getMessage));
+    }
+
+    @Test
+    @DisplayName("a non-integer weight ends the load")
+    void nonIntegerWeightStops() {
+        stops(new Rec("word").weight("heavy"));
+    }
+
+    @Test
+    @DisplayName("a weight beyond int range ends the load")
+    void hugeWeightStops() {
+        stops(new Rec("huge").weight("99999999999"));
+    }
+
+    @Test
+    @DisplayName("the first bad record ends the load: later records are never reached")
+    void firstFaultEndsTheLoad() {
+        DataFileParseException e = stops(new Rec("ok"), new Rec("bad").weight("x").line(5),
+                new Rec("worse").weight("40000").line(20));
+
+        assertTrue(e.getMessage().contains("line: 5"), e::getMessage);
     }
 
     // ---- finish_parse_curse: MULTIPLY_WEIGHT -----------------------------
 
     @Test
-    @DisplayName("MULTIPLY_WEIGHT with a negative weight is reported and the curse skipped")
-    void multiplyWeightWithNegativeWeightIsRejected() {
-        List<String> errors = new ArrayList<>();
-        List<Curse> curses = assemble(errors, new Rec("a").weight("-1").flags("MULTIPLY_WEIGHT").line(4));
+    @DisplayName("MULTIPLY_WEIGHT with a negative weight ends the load")
+    void multiplyWeightWithNegativeWeightStops() {
+        DataFileParseException e = stops(new Rec("a").weight("-1").flags("MULTIPLY_WEIGHT").line(4));
 
-        assertAll(() -> assertTrue(curses.isEmpty()),
-                () -> assertTrue(errors.stream().anyMatch(
-                        e -> e.contains("line: 4") && e.contains("multiply weight")), errors::toString));
+        assertAll(() -> assertTrue(e.getMessage().contains("line: 4"), e::getMessage),
+                () -> assertTrue(e.getMessage().contains("multiply weight"), e::getMessage));
     }
 
     @Test
@@ -213,21 +277,37 @@ class CurseAssemblerTest {
     }
 
     @Test
-    @DisplayName("a bad to-hit, to-dam or to-AC value is reported against its own field and skipped")
-    void badCombatFieldIsRejected() {
-        List<String> errors = new ArrayList<>();
-        List<Curse> curses = assemble(errors,
-                new Rec("h").combat("x", "0", "0"),
-                new Rec("d").combat("0", "x", "0"),
-                new Rec("a").combat("0", "0", "x"));
+    @DisplayName("an absent combat line means 0 for all three, as C's zero-filled object")
+    void absentCombatIsZero() {
+        Curse c = only(assemble(new ArrayList<>(), new Rec("a")));
 
-        assertAll(() -> assertTrue(curses.isEmpty()),
-                () -> assertTrue(errors.stream().anyMatch(e -> e.contains("combat toh")), errors::toString),
-                () -> assertTrue(errors.stream().anyMatch(e -> e.contains("combat tod")), errors::toString),
-                () -> assertTrue(errors.stream().anyMatch(e -> e.contains("combat toa")), errors::toString));
+        assertAll(() -> assertEquals(0, c.getItemObject().getToHit()),
+                () -> assertEquals(0, c.getItemObject().getToDam()),
+                () -> assertEquals(0, c.getItemObject().getToAC()));
     }
 
-    // ---- flags / values sharing one element entry ------------------------
+    @Test
+    @DisplayName("a bad to-hit value ends the load, named against its own field")
+    void badToHitStops() {
+        DataFileParseException e = stops(new Rec("h").combat("x", "0", "0"));
+        assertTrue(e.getMessage().contains("combat to Hit"), e::getMessage);
+    }
+
+    @Test
+    @DisplayName("a bad to-dam value ends the load, named against its own field")
+    void badToDamStops() {
+        DataFileParseException e = stops(new Rec("d").combat("0", "x", "0"));
+        assertTrue(e.getMessage().contains("combat to Damage"), e::getMessage);
+    }
+
+    @Test
+    @DisplayName("a bad to-AC value ends the load, named against its own field")
+    void badToAcStops() {
+        DataFileParseException e = stops(new Rec("a").combat("0", "0", "x"));
+        assertTrue(e.getMessage().contains("combat to AC"), e::getMessage);
+    }
+
+    // ---- flags: parse_curse_flags ----------------------------------------
 
     @Test
     @DisplayName("HATES_FIRE on flags: and RES_FIRE on values: share one element entry")
@@ -244,16 +324,92 @@ class CurseAssemblerTest {
     }
 
     @Test
-    @DisplayName("a malformed integer in values: is reported for both the RES_ and modifier branches")
-    void badValueIntegerIsRejected() {
-        List<String> errors = new ArrayList<>();
-        List<Curse> curses = assemble(errors,
-                new Rec("res").value("RES_FIRE", "x"),
-                new Rec("mod").value("STR", "x"));
+    @DisplayName("IGNORE_ sets the ignore element flag and an ordinary token sets an object flag")
+    void ignoreAndObjectFlags() {
+        Curse c = only(assemble(new ArrayList<>(), new Rec("a").flags("IGNORE_ACID", "NO_TELEPORT")));
 
-        assertAll(() -> assertTrue(curses.isEmpty()),
-                () -> assertEquals(2, errors.stream().filter(e -> e.contains("badly formed integer")).count(),
-                        errors::toString));
+        assertAll(() -> assertTrue(c.getItemObject().getElInfo().get(ElementEnum.ELEM_ACID)
+                        .getFlags().has(ElementInfoEnum.EL_INFO_IGNORE)),
+                () -> assertTrue(c.getItemObject().getFlags().has(ObjectFlag.OF_NO_TELEPORT)));
+    }
+
+    @Test
+    @DisplayName("an unknown object flag ends the load (PARSE_ERROR_INVALID_FLAG)")
+    void unknownObjectFlagStops() {
+        DataFileParseException e = stops(new Rec("a").flags("NOT_A_FLAG"));
+        assertTrue(e.getMessage().contains("NOT_A_FLAG"), e::getMessage);
+    }
+
+    @Test
+    @DisplayName("an unknown element after HATES_ ends the load (PARSE_ERROR_INVALID_FLAG)")
+    void unknownElementFlagStops() {
+        DataFileParseException e = stops(new Rec("a").flags("HATES_CUSTARD"));
+        assertTrue(e.getMessage().contains("HATES_CUSTARD"), e::getMessage);
+    }
+
+    // ---- values: parse_curse_values --------------------------------------
+
+    @Test
+    @DisplayName("a modifier value lands on the object")
+    void modifierLands() {
+        Curse c = only(assemble(new ArrayList<>(), new Rec("a").value("STR", "-3")));
+
+        assertEquals(-3, c.getItemObject().getModifiers().get(ObjectModifier.OM_STR));
+    }
+
+    @Test
+    @DisplayName("a malformed integer on a RES_ entry ends the load")
+    void badResIntegerStops() {
+        stops(new Rec("res").value("RES_FIRE", "x"));
+    }
+
+    @Test
+    @DisplayName("a malformed integer on a modifier entry ends the load")
+    void badModifierIntegerStops() {
+        stops(new Rec("mod").value("STR", "x"));
+    }
+
+    @Test
+    @DisplayName("an unknown modifier ends the load (PARSE_ERROR_INVALID_VALUE)")
+    void unknownModifierStops() {
+        DataFileParseException e = stops(new Rec("a").value("LUCK", "1"));
+        assertTrue(e.getMessage().contains("LUCK"), e::getMessage);
+    }
+
+    @Test
+    @DisplayName("an unknown RES_ element ends the load (PARSE_ERROR_INVALID_VALUE)")
+    void unknownResElementStops() {
+        DataFileParseException e = stops(new Rec("a").value("RES_CUSTARD", "1"));
+        assertTrue(e.getMessage().contains("RES_CUSTARD"), e::getMessage);
+    }
+
+    // ---- effect: parse_curse_effect --------------------------------------
+
+    @Test
+    @DisplayName("an unknown effect ends the load, as grab_effect_data's error does")
+    void unknownEffectStops() {
+        DataFileParseException e = stops(new Rec("a").effect("NOT_AN_EFFECT", 7).line(5));
+
+        assertAll(() -> assertTrue(e.getMessage().contains("line: 5"), e::getMessage),
+                () -> assertTrue(e.getMessage().contains("line: 7"), e::getMessage));
+    }
+
+    @Test
+    @DisplayName("no effect lines give an empty effect list, not an error")
+    void noEffectsIsEmpty() {
+        List<String> errors = new ArrayList<>();
+        assemble(errors, new Rec("a"));
+
+        assertTrue(errors.isEmpty(), errors::toString);
+    }
+
+    // ---- time: parse_curse_time ------------------------------------------
+
+    @Test
+    @DisplayName("an unparseable time: ends the load")
+    void badTimeStops() {
+        DataFileParseException e = stops(new Rec("a").time("not dice"));
+        assertTrue(e.getMessage().contains("time"), e::getMessage);
     }
 
     // ---- desc: parse_curse_desc ------------------------------------------
@@ -281,13 +437,10 @@ class CurseAssemblerTest {
     }
 
     @Test
-    @DisplayName("an unknown conflict flag is reported and the curse skipped")
-    void unknownConflictFlagIsRejected() {
-        List<String> errors = new ArrayList<>();
-        List<Curse> curses = assemble(errors, new Rec("a").cFlag("NOT_A_FLAG"));
-
-        assertAll(() -> assertTrue(curses.isEmpty()),
-                () -> assertTrue(errors.stream().anyMatch(e -> e.contains("invalid conflict flag")), errors::toString));
+    @DisplayName("an unknown conflict flag ends the load (PARSE_ERROR_INVALID_FLAG)")
+    void unknownConflictFlagStops() {
+        DataFileParseException e = stops(new Rec("a").cFlag("NOT_A_FLAG"));
+        assertTrue(e.getMessage().contains("invalid conflict flag"), e::getMessage);
     }
 
     // ---- ordering and index: finish_parse_curse --------------------------
@@ -302,16 +455,6 @@ class CurseAssemblerTest {
                 () -> assertEquals(List.of(0, 1, 2), curses.stream().map(Curse::getIndex).toList()));
     }
 
-    @Test
-    @DisplayName("a skipped record leaves no gap in the indexes")
-    void skippedRecordLeavesNoIndexGap() {
-        List<String> errors = new ArrayList<>();
-        List<Curse> curses = assemble(errors, new Rec("a"), new Rec("bad").weight("x"), new Rec("c"));
-
-        assertAll(() -> assertEquals(List.of("c", "a"), curses.stream().map(Curse::getName).toList()),
-                () -> assertEquals(List.of(0, 1), curses.stream().map(Curse::getIndex).toList()));
-    }
-
     // ---- curse-count cap: finish_parse_curse -----------------------------
 
     @Test
@@ -321,25 +464,30 @@ class CurseAssemblerTest {
     }
 
     @Test
-    @DisplayName("255 curses throw, naming the count")
-    void oneOverTheCapThrows() {
-        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
-                () -> assemble(new ArrayList<>(), numbered(255)));
+    @DisplayName("255 curses end the load, naming the line of the 255th")
+    void oneOverTheCapStops() {
+        Rec[] recs = numbered(255);
+        recs[254].line(999);
 
-        assertTrue(e.getMessage().contains("255"), e::getMessage);
+        DataFileParseException e = stops(recs);
+
+        assertAll(() -> assertTrue(e.getMessage().contains("Too many"), e::getMessage),
+                () -> assertTrue(e.getMessage().contains("line: 999"), e::getMessage));
     }
 
     @Test
-    @DisplayName("records skipped for errors still count towards the cap, as C counts every entry")
-    void skippedRecordsStillCountTowardsTheCapAsInC() {
+    @DisplayName("a bad record before the 255th ends the load on its own fault, not the cap")
+    void badRecordBeforeTheCapReportsItself() {
         Rec[] recs = numbered(255);
-        recs[100] = new Rec("bad").weight("x");
+        recs[100] = new Rec("bad").weight("x").line(101);
 
-        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
-                () -> assemble(new ArrayList<>(), recs));
+        DataFileParseException e = stops(recs);
 
-        assertTrue(e.getMessage().contains("255"), e::getMessage);
+        assertAll(() -> assertFalse(e.getMessage().contains("Too many"), e::getMessage),
+                () -> assertTrue(e.getMessage().contains("line: 101"), e::getMessage));
     }
+
+    // ---- second pass: conflict linking -----------------------------------
 
     @Test
     @DisplayName("a conflict naming a later curse links to that same instance")
@@ -354,17 +502,24 @@ class CurseAssemblerTest {
                 () -> assertTrue(errors.isEmpty(), errors::toString));
     }
 
-    // ---- second pass: conflict linking -----------------------------------
-
     @Test
-    @DisplayName("an unknown conflict name is reported but the curse stays loaded")
-    void unknownConflictNameKeepsTheCurse() {
-        List<String> errors = new ArrayList<>();
-        Curse a = only(assemble(errors, new Rec("a").conflict("nobody")));
+    @DisplayName("a conflict name matches case-sensitively, as C's strstr does")
+    void conflictNameIsCaseSensitive() {
+        stops(new Rec("a").conflict("B"), new Rec("b"));
+    }
 
-        assertAll(() -> assertTrue(a.getConflict().isEmpty()),
-                () -> assertTrue(errors.stream().anyMatch(
-                        e -> e.contains("Invalid curse conflict name") && e.contains("nobody")), errors::toString));
+    /**
+     * C never checks a {@code conflict:} name; this ending the load is the accepted deviation
+     * "A {@code conflict:} name that matches no curse ends the load" in
+     * {@code docs/Accepted_Deviations.md}.
+     */
+    @Test
+    @DisplayName("an unknown conflict name ends the load (accepted deviation: C never checks it)")
+    void unknownConflictNameStopsHereWhereCNeverChecksIt() {
+        DataFileParseException e = stops(new Rec("a").conflict("nobody"));
+
+        assertAll(() -> assertTrue(e.getMessage().contains("nobody"), e::getMessage),
+                () -> assertTrue(e.getMessage().contains("Curse: a"), e::getMessage));
     }
 
     /**
@@ -385,10 +540,27 @@ class CurseAssemblerTest {
         List<String> conflict = List.of();
         List<String> cFlag = List.of();
         String time = "";
+        List<EffectParseRecord> effects = List.of();
         int line = 1;
 
         Rec(String name) {
             this.name = name;
+        }
+
+        Rec type(String... t) {
+            type = List.of(t);
+            return this;
+        }
+
+        Rec effect(String type, int effectLine) {
+            effects = List.of(new EffectParseRecord(type, "", "", "", "", "", "", "", "", "", "",
+                    effectLine));
+            return this;
+        }
+
+        Rec time(String t) {
+            time = t;
+            return this;
         }
 
         Rec weight(String w) {
@@ -434,7 +606,7 @@ class CurseAssemblerTest {
         }
 
         CurseParseRecord build() {
-            return new CurseParseRecord(name, type, weight, toh, tod, toa, List.of(), flags, values,
+            return new CurseParseRecord(name, type, weight, toh, tod, toa, effects, flags, values,
                     message, desc, conflict, cFlag, time, line);
         }
     }

@@ -23,11 +23,11 @@ import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.middle.objects.Curse;
 import uk.co.jackoftradesltd.middle.objects.ElementInfo;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
-import uk.co.jackoftradesltd.middle.objects.ObjectBase;
 import uk.co.jackoftradesltd.middle.objects.ObjectKind;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectNotice;
+import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 
 import java.util.List;
 import java.util.Map;
@@ -71,7 +71,7 @@ public final class CurseFixture {
      * new {@link ItemObject} that is then handed to the slimmed {@link Curse} constructor.
      *
      * @param name          the curse's name
-     * @param objectBases   the bases it may attach to
+     * @param objectBases   the tvals it may attach to, C's {@code curse->poss}
      * @param weight        the weight adjustment, written to the object
      * @param effect        the effect, or {@code null}; the object gets a one-element list, or an
      *                      empty one
@@ -89,7 +89,7 @@ public final class CurseFixture {
      * @return the curse, with {@link Curse#getItemObject()} populated
      */
     public static Curse curse(String name,
-                              List<ObjectBase> objectBases,
+                              List<TValue> objectBases,
                               int weight,
                               Effect effect,
                               Flag<ObjectFlag> objectFlags,

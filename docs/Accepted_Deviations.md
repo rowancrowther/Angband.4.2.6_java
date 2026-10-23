@@ -405,6 +405,24 @@ recorded here as the summary states them; fill in the detail when you next touch
   as C's struct does, and `code` becomes a label.
 - **Accepted:** 2026-10-23, during the `ChestTrapAssembler` port pass.
 
+## Curse
+
+### A `conflict:` name that matches no curse ends the load, where C loads it and never matches it
+
+- **Java:** `CurseAssembler.assemble` (the second pass). **C:** `parse_curse_conflict` (`obj-init.c`) and
+  `curses_conflict` (`obj-curse.c`).
+- **Differs:** C appends each `conflict:` name to the curse's `conflict` string as `|name|` and never checks it at load.
+  `curses_conflict` later looks for `|name|` in that string with `strstr`, so an unknown name loads cleanly and simply
+  never matches. Java links each name to a `Curse` instance after every curse is built, and ends the load with a
+  `DataFileParseException` naming the curse and the unknown name when none matches.
+- **Why:** the port stores conflicts as resolved `Curse` references rather than a name string, so an unknown name has
+  nothing to resolve to, and a typo in a modded file is caught at load instead of silently disabling the conflict.
+- **Reach:** none from shipped data. The four `conflict:` lines in `curse.txt` name `anti-teleportation`,
+  `teleportation`, `chilled to the bone` and `burning up`, and all four are curses in the file.
+- **Revisit:** if curses are to load modded files that name curses from elsewhere, or if conflicts go back to being
+  matched by name.
+- **Accepted:** 2026-10-23, during the `CurseAssembler` port pass. Marked in the `CurseAssembler` class Javadoc.
+
 ## Pending your decision
 
 - The five `objDescNameFormat` divergences (Part G; `docs/ItemObject_round2/part_G.md`). All unreachable from shipped

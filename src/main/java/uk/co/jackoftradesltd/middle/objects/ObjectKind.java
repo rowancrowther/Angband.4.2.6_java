@@ -293,10 +293,16 @@ public class ObjectKind {
      */
     private int alloc_max;
     /**
-     * The kind's level — C's {@code kind->level}, from the {@code level:} line. Also the difficulty
-     * of activating it, which is why a special artifact's kind takes its artifact's level.
+     * The kind's level — C's {@code kind->level}, from the {@code level:} line of {@code object.txt}.
+     * C's {@code use_aux} in {@code cmd-obj.c} reads it as the difficulty of using an item that is
+     * neither an artifact nor carries an activation.
      *
-     * <p>Field level coded before 261008, commented in full on 261008.
+     * <p>A special artifact's kind takes the artifact's level as it stood when the record's
+     * {@code base-object:} line was read, because C's {@code write_dummy_object_record} in
+     * {@code obj-init.c} copies {@code art->level} at that moment. Every shipped record puts
+     * {@code level:} after {@code base-object:}, so all 14 special kinds are level 0 in C and here.
+     *
+     * <p>Field level coded before 261008, commented in full on 261023.
      */
     private int level;
 
@@ -702,8 +708,8 @@ public class ObjectKind {
      * {@code write_dummy_object_record} ({@code obj-init.c}), which {@code parse_artifact_base_object}
      * calls when an artifact's {@code base-object:} sval names no kind in {@code object.txt}.
      *
-     * <p>As C does, it starts from a zeroed kind and sets: the name {@code "& <sval>~"}, the
-     * artifact's level, the base's tval, a copy of the base's object flags, kind flags and element
+     * <p>As C does, it starts from a zeroed kind and sets: the name {@code "& <sval>~"}, a level,
+     * the base's tval, a copy of the base's object flags, kind flags and element
      * info, {@link ObjectKindFlag#KF_INSTA_ART} on top of the kind flags, and a red {@code '*'}
      * glyph that {@link #setCharacter} replaces when the artifact's {@code graphics:} line is read.
      * The dice fields are zero {@link Random}s and the kind is marked as a special-artifact kind
@@ -713,8 +719,15 @@ public class ObjectKind {
      * artifact. Here that is {@link ObjectRegistry#addObjectKind}'s job, which the caller must run
      * on the result.
      *
+     * <p>The level copied here is the artifact's final one, which is not C's. C copies
+     * {@code art->level} while it reads the {@code base-object:} line, so a {@code level:} line
+     * after it never reaches the kind. The caller, {@link
+     * uk.co.jackoftradesltd.backend.parser.artifact.ArtifactAssembler#assemble}, overwrites it
+     * through {@link #setLevel} with the level in force at that line.
+     *
      * <p>Constructor ObjectKind(artifact, ...) coded before 261008, commented in full on 261008
-     * (the C original was misnamed {@code write_special_kinds}/{@code special_item}).
+     * (the C original was misnamed {@code write_special_kinds}/{@code special_item}), level note
+     * added on 261023.
      *
      * @param artifact the artifact this kind is being created for
      * @param sValName the sub-type name to give the kind
@@ -1943,5 +1956,22 @@ public class ObjectKind {
      */
     public AngbandDisplayCharacter getCharacter() {
         return character;
+    }
+
+    /**
+     * Sets the kind's level, the port of C's direct {@code kind->level} write. There is no C
+     * setter, and no check either side.
+     *
+     * <p>The one caller is {@link uk.co.jackoftradesltd.backend.parser.artifact.ArtifactAssembler#assemble},
+     * on a special artifact's kind it has just made. It passes the level that was in force when the
+     * record's {@code base-object:} line was read, or 0 if no {@code level:} line came before it,
+     * which is the value {@code write_dummy_object_record} in {@code obj-init.c} copies.
+     *
+     * <p>Function setLevel coded on 261023, commented in full on 261023.
+     *
+     * @param level the level to give the kind
+     */
+    public void setLevel(int level) {
+        this.level = level;
     }
 }

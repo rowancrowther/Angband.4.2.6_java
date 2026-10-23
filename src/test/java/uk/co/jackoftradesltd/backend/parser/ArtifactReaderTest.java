@@ -418,8 +418,9 @@ class ArtifactReaderTest {
     /**
      * The Phial is the fully-worked case: an unresolvable sval, so its kind is minted, named from
      * the <em>sval</em> not the artifact name (strnfmt("& %s~", name), obj-init.c — the artifact
-     * is only "of Galadriel"), given the artifact's level/weight/cost, and its graphics: line
-     * overrides the '*'/red default.
+     * is only "of Galadriel"), given the artifact's weight/cost, and its graphics: line
+     * overrides the '*'/red default. Its level is 0, not the artifact's 5: write_dummy_object_record
+     * copies art->level while base-object: is being read, and level: comes later in the record.
      */
     @Test
     void thePhialsSynthesisedKindTakesItsNameFromTheSvalAndItsFieldsFromTheArtifact() throws Exception {
@@ -431,7 +432,7 @@ class ArtifactReaderTest {
         assertTrue(phial.getKindIndex() >= ORDINARY_KIND_MAX, "synthesised kinds sit above ordinary_kind_max");
         assertTrue(phial.getKindFlags().has(ObjectKindFlag.KF_INSTA_ART));
         assertEquals(TValue.TV_LIGHT, phial.gettValue());
-        assertEquals(5, (int) kindField(phial, "level"));      // artifact.txt level:5
+        assertEquals(0, (int) kindField(phial, "level"));      // level:5 follows base-object:, so C's dummy kind keeps 0
         assertEquals(10, (int) kindField(phial, "weight"));    // weight:10 -- copied: kidx >= max
         assertEquals(10000, (int) kindField(phial, "cost"));   // cost:10000
 

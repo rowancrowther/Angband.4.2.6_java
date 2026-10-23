@@ -1469,6 +1469,10 @@ public class ArtifactGrammar extends Parser {
 		            int line = 0;
 		            StringBuilder msgSB = new StringBuilder();
 		            StringBuilder descSB = new StringBuilder();
+		            boolean levelFirst = true;
+		            boolean levelSeen = false;
+		            boolean baseSeen = false;
+		            String baseObjectLevel = "";
 		        
 		int _la;
 		try {
@@ -1490,6 +1494,10 @@ public class ArtifactGrammar extends Parser {
 					setState(162);
 					((ArtifactContext)_localctx).baseObject = baseObject();
 					 tValueInit = ((ArtifactContext)_localctx).baseObject.tVal; sValueInit = ((ArtifactContext)_localctx).baseObject.sVal; 
+					                if (levelSeen && !baseSeen) levelFirst = true;
+					                else if (!levelSeen) levelFirst = false; 
+					                baseSeen = true; 
+					                baseObjectLevel = levelInit; 
 					}
 					break;
 				case GRAPHICS:
@@ -1504,6 +1512,7 @@ public class ArtifactGrammar extends Parser {
 					setState(168);
 					((ArtifactContext)_localctx).level = level();
 					 levelInit = ((ArtifactContext)_localctx).level.levelVal; 
+					                levelSeen = true; 
 					}
 					break;
 				case WEIGHT:
@@ -1626,7 +1635,7 @@ public class ArtifactGrammar extends Parser {
 			                glyphInit, colourInit, levelInit, weightInit, costInit, commonnessInit,
 			                minInit, maxInit, baseDamageInit, tohInit, todInit, baseACInit, toaInit,
 			                flagListInit, activationInit, timeInit, msgInit, valuesMapInit,
-			                brandInit, slayInit, curseInit, descInit, line);
+			                brandInit, slayInit, curseInit, descInit, levelFirst, baseObjectLevel, line);
 			        
 		}
 		catch (RecognitionException re) {

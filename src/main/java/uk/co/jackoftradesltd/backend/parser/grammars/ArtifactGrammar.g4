@@ -168,6 +168,10 @@ artifact
             int line = 0;
             StringBuilder msgSB = new StringBuilder();
             StringBuilder descSB = new StringBuilder();
+            boolean levelFirst = true;
+            boolean levelSeen = false;
+            boolean baseSeen = false;
+            String baseObjectLevel = "";
         }
         @after {
             msgInit = msgSB.toString();
@@ -176,12 +180,17 @@ artifact
                 glyphInit, colourInit, levelInit, weightInit, costInit, commonnessInit,
                 minInit, maxInit, baseDamageInit, tohInit, todInit, baseACInit, toaInit,
                 flagListInit, activationInit, timeInit, msgInit, valuesMapInit,
-                brandInit, slayInit, curseInit, descInit, line);
+                brandInit, slayInit, curseInit, descInit, levelFirst, baseObjectLevel, line);
         }
         :   name { line = $name.line; nameInit = $name.nameStr; }
-        (   baseObject { tValueInit = $baseObject.tVal; sValueInit = $baseObject.sVal; }
+        (   baseObject { tValueInit = $baseObject.tVal; sValueInit = $baseObject.sVal; 
+                if (levelSeen && !baseSeen) levelFirst = true;
+                else if (!levelSeen) levelFirst = false; 
+                baseSeen = true; 
+                baseObjectLevel = levelInit; }
         |   graphics { glyphInit = $graphics.glyph; colourInit = $graphics.colour; }
-        |   level { levelInit = $level.levelVal; }
+        |   level { levelInit = $level.levelVal; 
+                levelSeen = true; }
         |   weight { weightInit = $weight.weightVal; }
         |   cost { costInit = $cost.costVal; }
         |   alloc { commonnessInit = $alloc.commonness;

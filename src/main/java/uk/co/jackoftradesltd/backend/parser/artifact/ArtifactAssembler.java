@@ -57,6 +57,13 @@ import java.util.*;
  * @author Rowan Crowther
  */
 public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Artifact>> {
+    /**
+     * The logger this assembler writes its messages to: a fatal one just before it throws
+     * {@link DataFileParseException}, carrying the same text, and a warning for an unknown
+     * {@code act:} name, which does not end the load.
+     *
+     * <p>Field logger coded before 260915, commented in full on 261023.
+     */
     private static final Logger logger = LogManager.getLogger(ArtifactAssembler.class);
     
     /**
@@ -70,8 +77,15 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
      *
      * <p>Also resolves the artifact's backing {@link ObjectKind}. An artifact reuses the kind for
      * its base type when one exists, or creates and registers a new one. A kind at or above the
-     * ordinary kind limit is special, as C tests {@code kidx >= z_info->ordinary_kind_max}. A
-     * special kind takes the artifact's weight and cost only when the record has a
+     * ordinary kind limit is special, as C tests {@code kidx >= z_info->ordinary_kind_max}. A new
+     * kind takes the level that was in force when the {@code base-object:} line was read, or 0 if
+     * no {@code level:} line came before it, because C's {@code write_dummy_object_record} copies
+     * {@code art->level} at that moment. The grammar records both facts as
+     * {@link ArtifactParseRecord#levelFirst()} and {@link ArtifactParseRecord#baseObjectLevel()}. Every
+     * shipped record puts {@code level:} after {@code base-object:}, so every special kind is
+     * level 0, and a second run at birth finds the kind and leaves its level alone. A record with
+     * two {@code base-object:} lines is an accepted deviation: C makes or finds a kind for each,
+     * and here only the last counts. A special kind takes the artifact's weight and cost only when the record has a
      * {@code weight:} or {@code cost:} line. A special light also takes the activation and time
      * that the record carries, and the artifact keeps none. Its activations are cleared and refilled
      * only when the record has an {@code act:} line, and its time is set only when the record has a
@@ -87,7 +101,7 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
      * thrown as a {@link DataFileParseException}.
      *
      * <p>Function assemble coded before 260915, commented in full on 260915, rewritten for the
-     * load-ending errors on 261023.
+     * load-ending errors on 261023, special-kind level note added on 261023.
      *
      * @param records  the raw artifact records from the grammar, in file order
      * @param errors   unused: every error ends the load by throwing instead
@@ -374,6 +388,12 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
 
             if (objectKind == null) {
                 objectKind = new ObjectKind(artifact, sVal, objectBase);
+                if (record.levelFirst()) {
+                    level = HelperFunctions.parseIntString("Artifact", record.baseObjectLevel(), line,
+                            filename, "Level");
+                    objectKind.setLevel(level);
+                }
+                else objectKind.setLevel(0);
                 ObjectRegistry.addObjectKind(objectKind);
             }
 

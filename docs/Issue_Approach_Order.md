@@ -212,7 +212,7 @@ unchecked `DataFileParseException` in `backend/io/bespokeexceptions/`, which `Gr
 Paths are under `src/main/java/uk/co/jackoftradesltd/`. The figure in brackets is the number of calls in that file.
 
 - `backend/parser/activation/ActivationAssembler.java` (2): ~~72~~, ~~82~~
-- `backend/parser/artifact/ArtifactAssembler.java` (21): 86, 97, 107, 117, 127, 138, 148, 161, 183, 187, 205, 218, 229, 243, 255, 265, 275, 285, 294, 304, 317
+- `backend/parser/artifact/ArtifactAssembler.java` (21): ~~86, 97, 107, 117, 127, 138, 148, 161, 183, 187, 205, 218, 229, 243, 255, 265, 275, 285, 294, 304, 317~~
 - `backend/parser/bloweffect/BlowEffectAssembler.java` (8): 86, 97, 110, 119, 128, 144, 160, 168
 - `backend/parser/blowmethod/BlowMethodAssembler.java` (1): 90
 - `backend/parser/body/BodyAssembler.java` (1): 74

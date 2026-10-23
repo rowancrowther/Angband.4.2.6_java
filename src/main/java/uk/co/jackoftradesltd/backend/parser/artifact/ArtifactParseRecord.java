@@ -25,7 +25,14 @@ import java.util.Map;
  * fields parsed by the grammar, later turned into the {@code Artifact} domain type by
  * {@link ArtifactAssembler}.
  *
- * @param name        the artifact's display name
+ * <p>The grammar takes the directives in any order, as C does, but keeps only the field values,
+ * not the order they came in. {@code levelFirst} and {@code baseObjectLevel} are the exception.
+ * C's {@code write_dummy_object_record} copies the artifact's level at the moment it reads
+ * {@code base-object:}, so the assembler needs to know what the level was at that point.
+ *
+ * <p>Record ArtifactParseRecord coded before 260915, commented in full on 261023.
+ *
+ * @param name       the artifact's display name
  * @param tValue      the base object type's tvalue name, resolved to a
  *                    {@link uk.co.jackoftradesltd.middle.objects.enums.TValue} by the assembler
  * @param sValue      the base object type's sub-value name
@@ -52,7 +59,13 @@ import java.util.Map;
  * @param brand       the brand codes this artifact carries, resolved by registry lookup
  * @param slay        the slay codes this artifact carries, resolved by registry lookup
  * @param curse       the curse names mapped to their raw power text
- * @param desc        the artifact's flavour/description text
+ * @param desc       the artifact's flavour/description text
+ * @param levelFirst  {@code true} if a {@code level:} line came before the first
+ *                    {@code base-object:} line, so a newly made special kind takes a level
+ *                    other than 0
+ * @param baseObjectLevel the {@code level:} text in force when the last {@code base-object:}
+ *                    line was read, or {@code ""} if none had been read; only used when
+ *                    {@code levelFirst} is {@code true}
  * @param line        the source line the record begins on, for error reporting
  * @author Rowan Crowther
  */
@@ -81,5 +94,7 @@ public record ArtifactParseRecord(String name,
                                   List<String> slay,
                                   Map<String, String> curse,
                                   String desc,
+                                  boolean levelFirst,
+                                  String baseObjectLevel,
                                   int line) {
 }

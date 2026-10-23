@@ -41,11 +41,13 @@ import java.util.*;
  * records while loading; the registry holds the artifacts now. C's {@code dd} and {@code ds}
  * are held together as the single {@link #getDiceString() dice string}.
  *
- * <p>C never copies a {@code struct artifact}: it reads the shared registry entry through
- * {@code copy_artifact_data} in {@code obj-make.c} when it builds the object. {@link #copy()}
- * is a Java addition for callers that need an independent definition.
+ * <p>When C builds an object it reads the shared registry entry through
+ * {@code copy_artifact_data} in {@code obj-make.c}, and does not copy the artifact.
+ * {@link #copy()} is the port of {@code copy_artifact} in {@code obj-randart.c}, which
+ * {@code design_artifact} uses to save a random-artifact design and roll it back.
  *
- * <p>Class Artifact coded before 260827, commented in full on 261008.
+ * <p>Class Artifact coded before 260827, commented in full on 261008, copy noted as the port of
+ * {@code copy_artifact} on 261023.
  *
  * @author Rowan Crowther
  */
@@ -172,9 +174,12 @@ public class Artifact {
      * Curses the artifact carries, each with its instance data — C's {@code artifact->curses}, an
      * array of curse powers indexed by curse. Held as a {@link TreeMap} so that iteration follows
      * curse index order; {@code ArtifactAssembler} and {@link #copy()} both build it with
-     * {@link Curse#CURSE_ORDER}.
+     * {@link Curse#CURSE_ORDER}. May be {@code null}, which stands for C's {@code NULL} array (no
+     * curses): the assembler always supplies a map, but {@link #getCurses()} and {@link #copy()}
+     * both accept {@code null}.
      *
-     * <p>Field curses coded before 260827, commented in full on 261008, ordering noted on 261017.
+     * <p>Field curses coded before 260827, commented in full on 261008, ordering noted on 261017,
+     * null allowed on 261023.
      */
     private TreeMap<Curse, CurseData> curses;
 
@@ -618,12 +623,19 @@ public class Artifact {
 
     /**
      * Returns an independent copy of this artifact, deep where it needs to be and shallow where it
-     * does not.
+     * does not. This is the port of C's {@code copy_artifact} in {@code obj-randart.c}, which
+     * copies the whole {@code struct artifact} and then gives the copy its own {@code brands},
+     * {@code slays} and {@code curses} arrays.
      *
      * <p>Deep-copied because their contents are mutable and a shared reference would let one copy's
      * state show up on the other: the flag set, the modifier map, the element info (each
      * {@code ElementInfo} copied in turn, not just the map), the curse map (each
-     * {@code CurseData} rebuilt), the activation, and the recharge dice.
+     * {@code CurseData} rebuilt), and the recharge dice.
+     *
+     * <p>A {@code null} curse map stays {@code null} in the copy, as C's {@code copy_artifact}
+     * leaves {@code curses} {@code NULL} when the source has none; an empty map is copied as an
+     * empty map. {@link #getCurses()} answers an empty map for either, so a reader cannot tell them
+     * apart.
      *
      * <p>Shallow-copied deliberately: the brand and slay sets are rebuilt as new sets, but their
      * members are shared, because a {@code Brand} and a {@code Slay} are immutable registry entries
@@ -631,21 +643,21 @@ public class Artifact {
      * {@code slays[]} rows. A {@code null} brand or slay set becomes an immutable empty set in the
      * copy. Primitives and {@link String}s are passed straight through.
      *
-     * <p>The activation is deep-copied even though C shares the registry's {@code activation}
-     * pointer between every object built from the artifact; the port treats the copy as wholly its
-     * own. The activation message is a {@link String} and is passed straight through. A
-     * {@code null} activation stays {@code null} and a {@code null} message stays {@code null}; a
-     * {@code null} recharge time becomes a zero {@link Random}, since C's {@code random_value}
-     * is a plain struct with no null state.
+     * <p>The activation and the activation message are <em>not</em> copied: the copy holds
+     * {@code null} for both, because {@code copy_artifact} sets {@code activation} and
+     * {@code alt_msg} to {@code NULL} on the copy. A {@code null} recharge time becomes a zero
+     * {@link Random}, since C's {@code random_value} is a plain struct with no null state.
      *
      * <p>The copy gets a fresh {@link ArtifactUpkeep} from the constructor: created, seen and
-     * ever-seen are <em>not</em> carried across. C has no artifact copy to say otherwise.
+     * ever-seen are <em>not</em> carried across. C's {@code struct artifact} holds no upkeep of its
+     * own, so {@code copy_artifact} has none to copy.
      *
      * <p>The locals exist to make that division legible at the call to the constructor rather than
      * for any technical reason.
      *
-     * <p>Function copy coded on 260827, activation and message carried across on 261008, commented
-     * in full on 261008, null brand and slay sets noted on 261017.
+     * <p>Function copy coded on 260827, commented in full on 261008, null brand and slay sets noted
+     * on 261017, activation and message left {@code null} as in C and null curse map kept
+     * {@code null} on 261023.
      *
      * @return a new artifact that shares no mutable state with this one
      */
@@ -673,32 +685,31 @@ public class Artifact {
         }
         Set<Brand> newBrands;
         if (brands != null) {
-            newBrands = new HashSet<>(brands);
+            newBrands = new LinkedHashSet<>(brands);
         } else {
             newBrands = Set.of();
         }
         Set<Slay> newSlays;
         if (slays != null) {
-            newSlays = new HashSet<>(slays);
+            newSlays = new LinkedHashSet<>(slays);
         } else {
             newSlays = Set.of();
         }
         TreeMap<Curse, CurseData> newCurses = new TreeMap<>(Curse.CURSE_ORDER);
-        for (Curse curse : curses.keySet()) {
-            newCurses.put(curse, new CurseData(curses.get(curse)));
+        if (curses != null) {
+            newCurses = new TreeMap<>(Curse.CURSE_ORDER);
+            for (Curse curse : curses.keySet()) {
+                newCurses.put(curse, new CurseData(curses.get(curse)));
+            }
+        } else {
+            newCurses = null;
         }
         int newLevel = level;
         int newAllocProb = allocProb;
         int newAllocMin = allocMin;
         int newAllocMax = allocMax;
         Activation newActivation = null;
-        if (activation != null) {
-            newActivation = activation.copy();
-        }
         String newActivationMessage = null;
-        if (activationMessage != null) {
-            newActivationMessage = activationMessage;
-        }
         Random newTime = Random.Zero();
         if (time != null)
             newTime = time.copy();

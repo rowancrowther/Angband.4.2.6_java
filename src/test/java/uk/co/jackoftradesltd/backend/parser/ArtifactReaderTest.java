@@ -21,10 +21,12 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.channel.utils.Flag;
+import uk.co.jackoftradesltd.middle.Activation;
 import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.numerics.Random;
@@ -60,10 +62,11 @@ import static org.junit.jupiter.api.Assertions.*;
  *       errors (itself proof that every brand/slay/curse/activation cross-reference resolved),
  *       plus field-level checks on the Phial of Galadriel and on the two records that exercise
  *       the trickier legs: element resistances and a curse.</li>
- *   <li><b>Every reachable error site in one file</b> — one artifact record per place the pipeline
- *       can append a soft error, plus a deliberately wrong record-count header.</li>
- *   <li><b>Two soft errors</b> — two bad flags on a single record, pinning the assembler's
- *       "collect every failure in the loop, then drop the record" contract rather than fail-fast.</li>
+ *   <li><b>Every reachable error site</b> — one artifact record per place the assembler can stop the
+ *       load. Each is a hard stop ({@link DataFileParseException}), as C's parser ends the load on a
+ *       parse error, so each site gets its own file.</li>
+ *   <li><b>Fail-fast</b> — two bad flags on a single record, pinning that the load stops at the first
+ *       rather than collecting both.</li>
  * </ol>
  *
  * <p><b>What is deliberately not tested:</b> the assembler guards every numeric field with a
@@ -242,8 +245,8 @@ class ArtifactReaderTest {
 
     @Test
     void theRealFileLoadsAll138ArtifactsWithNoErrorsAndTheirFieldsAreCorrect() throws Exception {
-        // A clean load is the end-to-end proof: any unresolved brand, slay, curse or activation
-        // would have appended a soft error and dropped the artifact rather than thrown.
+        // A clean load is the end-to-end proof: any unresolved brand, slay or curse would have
+        // stopped the load with a DataFileParseException.
         assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(138, result.items().size());
 
@@ -273,9 +276,10 @@ class ArtifactReaderTest {
 
         // act:/time: on a SPECIAL light are a property of the base object, not the artifact:
         // C's parse_artifact_act/_time write k-> instead of a-> when tval is TV_LIGHT and the kind
-        // was synthesised (obj-init.c, parse_artifact_act and parse_artifact_time). It is either/or, so the artifact keeps neither.
+        // was synthesised (obj-init.c, parse_artifact_act and parse_artifact_time). It is either/or, so the artifact keeps no
+        // activation and a zero time, which is what C's zeroed record holds.
         assertNull(field(phial, "activation"), "special light: activation belongs to the kind");
-        assertNull(field(phial, "time"), "special light: time belongs to the kind");
+        assertEquals("0+0d0", dice(field(phial, "time")), "special light: time belongs to the kind, the artifact keeps a zero");
 
         ObjectKind phialKind = ObjectRegistry.lookupObjectKind(TValue.TV_LIGHT, "Phial");
         assertNotNull(phialKind, "the Phial's kind is synthesised, so lookup by sval name finds it");
@@ -458,56 +462,49 @@ class ArtifactReaderTest {
     // (2) EVERY REACHABLE ERROR SITE, IN ONE FILE
     // =====================================================================
 
+    /**
+     * Loads {@code content} and insists it stops with a {@link DataFileParseException} whose message
+     * names {@code fragment}.
+     */
+    private void assertStops(String fileName, String content, String fragment) {
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load(fileName, content),
+                fileName + " should have stopped the load");
+        assertTrue(e.getMessage().contains(fragment), () -> "expected '" + fragment + "' in: " + e.getMessage());
+    }
+
     @Test
-    void everyReachableErrorSiteIsReportedAndTheBadArtifactDropped() throws Exception {
-        // One record per soft-error site in ArtifactAssembler, all in a single file, so the run also
-        // proves the assembler carries on to the next record after dropping a bad one. The header
-        // deliberately declares 99 against the 8 records present, which additionally exercises the
-        // GrammarDriver record-count check (a soft error raised outside the assembler).
-        ParseResult<Artifact> r = load("all-errors.txt", withHeader(99,
-                "name:BadTval\nbase-object:notatval:Thing\n"
-                        + "name:BadFlag\nflags:NOTAFLAG\n"
-                        + "name:BadModifier\nvalues:NOTAMOD[1]\n"
-                        + "name:BadElement\nvalues:RES_NOTANELEM[1]\n"
-                        + "name:BadBrand\nbrand:NOTABRAND\n"
-                        + "name:BadSlay\nslay:NOTASLAY\n"
-                        + "name:BadCurse\ncurse:notacurse:10\n"
-                        + "name:BadActivation\nact:NOTANACTIVATION\n"));
-
-        // Every record here is malformed, so every one is dropped.
-        assertTrue(r.items().isEmpty(), r.items()::toString);
-
-        assertTrue(hasError(r, "unknown base-obj tvalue: notatval"), r.errors()::toString);
-        assertTrue(hasError(r, "unknown flag: NOTAFLAG"), r.errors()::toString);
-        assertTrue(hasError(r, "unknown modifier/element name: NOTAMOD"), r.errors()::toString);
+    void everyReachableErrorSiteStopsTheLoadAndNamesTheOffendingValue() {
+        // One record per place the assembler can stop the load. Each stops at once, so each needs its
+        // own file; the header count is right in every one so the stop is the assembler's.
+        assertStops("bad-tval.txt", withHeader(1, "name:BadTval\nbase-object:notatval:Thing\n"),
+                "unknown base-obj tvalue: notatval");
+        assertStops("bad-flag.txt", withHeader(1, "name:BadFlag\nflags:NOTAFLAG\n"),
+                "unknown flag: NOTAFLAG");
+        assertStops("bad-modifier.txt", withHeader(1, "name:BadModifier\nvalues:NOTAMOD[1]\n"),
+                "unknown modifier/element name: NOTAMOD");
         // RES_ is stripped before the ELEM_ lookup, so the message echoes the bare element name.
-        assertTrue(hasError(r, "unknown modifier/element name: NOTANELEM"), r.errors()::toString);
-        assertTrue(hasError(r, "unknown brand: NOTABRAND"), r.errors()::toString);
-        assertTrue(hasError(r, "unknown slay: NOTASLAY"), r.errors()::toString);
-        assertTrue(hasError(r, "unknown curse: notacurse"), r.errors()::toString);
-        // The activation message does not echo the offending name (it interpolates the resolved
-        // Activation, which is null on this branch), so only the site itself can be asserted.
-        assertTrue(hasError(r, "unknown activation"), r.errors()::toString);
-
-        assertTrue(hasError(r, "record-count header declares 99"), r.errors()::toString);
+        assertStops("bad-element.txt", withHeader(1, "name:BadElement\nvalues:RES_NOTANELEM[1]\n"),
+                "unknown modifier/element name: NOTANELEM");
+        assertStops("bad-brand.txt", withHeader(1, "name:BadBrand\nbrand:NOTABRAND\n"),
+                "unknown brand: NOTABRAND");
+        assertStops("bad-slay.txt", withHeader(1, "name:BadSlay\nslay:NOTASLAY\n"),
+                "unknown slay: NOTASLAY");
+        assertStops("bad-curse.txt", withHeader(1, "name:BadCurse\ncurse:notacurse:10\n"),
+                "unknown curse: notacurse");
     }
 
     // =====================================================================
-    // (3) TWO SOFT ERRORS
+    // (3) FAIL-FAST
     // =====================================================================
 
     @Test
-    void twoBadFlagsOnOneArtifactAreBothReported() throws IOException {
-        // The flag loop must not fail-fast: given two bad flags on a single record it collects BOTH
-        // before dropping the artifact. This pins the "keep going, report every failure" contract —
-        // the same shape the values/brand/slay/curse loops use.
-        ParseResult<Artifact> r = load("two-bad-flags.txt", withHeader(1,
-                "name:DoublyBad\nflags:NOTAFLAG | ALSONOTAFLAG\n"));
+    void twoBadFlagsOnOneArtifactStopAtTheFirst() {
+        // The flag loop throws on the first bad flag, so the second is never reached.
+        DataFileParseException e = assertThrows(DataFileParseException.class, () ->
+                load("two-bad-flags.txt", withHeader(1, "name:DoublyBad\nflags:NOTAFLAG | ALSONOTAFLAG\n")));
 
-        assertTrue(r.items().isEmpty());
-        assertEquals(2, r.errors().size(), r.errors()::toString);
-        assertTrue(hasError(r, "unknown flag: NOTAFLAG"), r.errors()::toString);
-        assertTrue(hasError(r, "unknown flag: ALSONOTAFLAG"), r.errors()::toString);
+        assertTrue(e.getMessage().contains("unknown flag: NOTAFLAG"), e::getMessage);
+        assertFalse(e.getMessage().contains("ALSONOTAFLAG"), e::getMessage);
     }
 
     // =====================================================================
@@ -666,14 +663,16 @@ class ArtifactReaderTest {
             assertNotNull(kind, who + "kind");
             if (a.gettValue() == TValue.TV_LIGHT && !c[23].isEmpty()) {
                 assertNull(a.getActivation(), who + "a special light's activation is the kind's");
-                assertNull(a.getTime(), who + "a special light's time is the kind's");
+                assertEquals("0+0d0", dice(a.getTime()), who + "a special light's time is the kind's, the artifact keeps a zero");
                 assertEquals(c[19], kind.getActivations().get(0).getName(), who + "kind activation");
                 assertEquals(c[20], dice(kindField(kind, "time")), who + "kind time");
             } else {
                 assertEquals(c[19], a.getActivation() == null ? "" : a.getActivation().getName(), who + "activation");
-                assertEquals(c[20], dice(a.getTime()), who + "time");
+                // An artifact with no time: line keeps the zero random of C's zeroed record.
+                assertEquals(c[20].isEmpty() ? "0+0d0" : c[20], dice(a.getTime()), who + "time");
             }
-            assertEquals(c[21], a.getActivationMessage(), who + "message");
+            // An artifact with no msg: line keeps C's NULL alt_msg.
+            assertEquals(c[21].isEmpty() ? null : c[21], a.getActivationMessage(), who + "message");
             int length = Integer.parseInt(c[22]) - (SHIPPED_COPY_DROPS_A_COLON.contains(c[0]) ? 1 : 0);
             assertEquals(length, a.getText().length(), who + "description length");
             if (!c[23].isEmpty()) {
@@ -704,16 +703,14 @@ class ArtifactReaderTest {
     // ---- List order and numbering ----------------------------------------
 
     /**
-     * C numbers by place in the file, but a parse error there ends the load. Here a skipped record
-     * takes no place in the list, so every artifact after it moves up one.
+     * C numbers by place in the file, and a parse error there ends the load, so a bad record means no
+     * list at all and no later artifact is read.
      */
     @Test
-    void aSkippedRecordTakesNoPlaceInTheListSoLaterArtifactsMoveUp() throws IOException {
-        ParseResult<Artifact> r = load("skip.txt", withHeader(3,
-                "name:A\n" + BASE + "name:Bad\n" + BASE + "flags:NOTAFLAG\n" + "name:C\n" + BASE));
-
-        assertEquals(List.of("A", "C"), names(r));
-        assertEquals(1, r.errors().size(), r.errors()::toString);
+    void aBadRecordEndsTheLoadSoNoListComesBack() {
+        assertStops("skip.txt", withHeader(3,
+                "name:A\n" + BASE + "name:Bad\n" + BASE + "flags:NOTAFLAG\n" + "name:C\n" + BASE),
+                "unknown flag: NOTAFLAG");
     }
 
     @Test
@@ -818,11 +815,8 @@ class ArtifactReaderTest {
     }
 
     @Test
-    void anUnknownCurseNameIsReportedAndTheRecordSkipped() throws IOException {
-        ParseResult<Artifact> r = load("curse-unknown.txt", withHeader(1, "name:X\n" + BASE + "curse:zzz:5\n"));
-
-        assertTrue(r.items().isEmpty());
-        assertTrue(hasError(r, "unknown curse: zzz"), r.errors()::toString);
+    void anUnknownCurseNameStopsTheLoad() {
+        assertStops("curse-unknown.txt", withHeader(1, "name:X\n" + BASE + "curse:zzz:5\n"), "unknown curse: zzz");
     }
 
     @Test
@@ -929,6 +923,28 @@ class ArtifactReaderTest {
         assertHardError("value-lower.txt", withHeader(1, "name:X\n" + BASE + "values:str[2]\n"));
     }
 
+    /**
+     * {@code find_value_arg} in {@code datafile.c} reads the figure with {@code strtol} and refuses
+     * {@code lv <= INT_MIN || lv >= INT_MAX}, so the two boundary figures themselves stop the load, as
+     * does anything beyond them. The figures one inside each boundary load.
+     */
+    @Test
+    void aValueOfIntMaxOrIntMinOrBeyondStopsTheLoadAsInC() throws IOException {
+        assertStops("value-int-max.txt", withHeader(1, "name:X\n" + BASE + "values:STR[2147483647]\n"),
+                "value out of bounds: 2147483647");
+        assertStops("value-int-min.txt", withHeader(1, "name:X\n" + BASE + "values:STR[-2147483648]\n"),
+                "value out of bounds: -2147483648");
+        assertStops("value-res-int-max.txt", withHeader(1, "name:X\n" + BASE + "values:RES_FIRE[2147483647]\n"),
+                "value out of bounds: 2147483647");
+        assertStops("value-above-int.txt", withHeader(1, "name:X\n" + BASE + "values:STR[2147483648]\n"),
+                "malformed value integer: 2147483648");
+        assertStops("value-below-int.txt", withHeader(1, "name:X\n" + BASE + "values:STR[-2147483649]\n"),
+                "malformed value integer: -2147483649");
+
+        assertEquals("STR=2147483646", valueList(loadClean("value-max-less-one.txt", "values:STR[2147483646]\n")));
+        assertEquals("STR=-2147483647", valueList(loadClean("value-min-plus-one.txt", "values:STR[-2147483647]\n")));
+    }
+
     // ---- Where the grammar is stricter than C ----------------------------
 
     /**
@@ -990,16 +1006,23 @@ class ArtifactReaderTest {
     /**
      * {@code parser_parse} reads an {@code int} with {@code strtol(tok, &z, 0)}: blanks are skipped,
      * {@code +5} is 5, {@code 0x10} is 16 and {@code 010} is 8. The lexer's integers are decimal digits
-     * with an optional minus, so the first three are lexer errors and the last reads as ten.
+     * with an optional minus, so the first three are lexer errors.
      */
     @Test
-    void integersWithLeadingSpaceAPlusSignOrAHexPrefixAreErrorsAndALeadingZeroIsDecimalHereWhereCDiffers() throws IOException {
+    void integersWithLeadingSpaceAPlusSignOrAHexPrefixAreLexerErrorsHereWhereCAcceptsThem() throws IOException {
         assertHardError("level-space.txt", withHeader(1, "name:X\n" + BASE + "level: 5\n"));
         assertHardError("level-plus.txt", withHeader(1, "name:X\n" + BASE + "level:+5\n"));
         assertHardError("level-hex.txt", withHeader(1, "name:X\n" + BASE + "level:0x10\n"));
         assertHardError("value-plus.txt", withHeader(1, "name:X\n" + BASE + "values:STR[+2]\n"));
+    }
 
-        assertEquals(10, loadClean("level-octal.txt", "level:010\n").getLevel());
+    /**
+     * {@code strtol(tok, &z, 0)} reads a leading zero as octal, and the assembler's integer helper does
+     * the same, so {@code 010} is eight, as in C.
+     */
+    @Test
+    void aLeadingZeroIsOctalAsInC() throws IOException {
+        assertEquals(8, loadClean("level-octal.txt", "level:010\n").getLevel());
     }
 
     /**
@@ -1023,62 +1046,59 @@ class ArtifactReaderTest {
     // ---- Where the assembler differs from C ------------------------------
 
     @Test
-    void ignoreAndHatesFlagsAreUnknownHereWhereCSetsElementInfo() throws IOException {
-        // grab_element_flag turns IGNORE_FIRE and HATES_FIRE into EL_INFO bits on el_info.
-        ParseResult<Artifact> ignore = load("flag-ignore.txt", withHeader(1, "name:X\n" + BASE + "flags:IGNORE_FIRE\n"));
-        ParseResult<Artifact> hates = load("flag-hates.txt", withHeader(1, "name:X\n" + BASE + "flags:HATES_FIRE\n"));
+    void ignoreAndHatesFlagsSetElementInfoAsInC() throws IOException {
+        // grab_element_flag turns IGNORE_POIS and HATES_FIRE into EL_INFO bits on el_info. Poison is
+        // not a base element, so the ignore sweep cannot be what set its bit.
+        Artifact ignore = loadClean("flag-ignore.txt", "flags:IGNORE_POIS\n");
+        Artifact hates = loadClean("flag-hates.txt", "flags:HATES_FIRE\n");
 
-        assertTrue(ignore.items().isEmpty());
-        assertTrue(hasError(ignore, "unknown flag: IGNORE_FIRE"), ignore.errors()::toString);
-        assertTrue(hates.items().isEmpty());
-        assertTrue(hasError(hates, "unknown flag: HATES_FIRE"), hates.errors()::toString);
+        assertTrue(ignore.getElInfo().get(ElementEnum.ELEM_POIS).getFlags().has(ElementInfoEnum.EL_INFO_IGNORE));
+        assertTrue(hates.getElInfo().get(ElementEnum.ELEM_FIRE).getFlags().has(ElementInfoEnum.EL_INFO_HATES));
+        assertEquals("", flagNames(ignore), "an element flag is not an object flag");
     }
 
     @Test
-    void allocFiguresAreNotCheckedAgainstZeroTo255HereWhereCRefusesThem() throws IOException {
+    void allocFiguresAbove255OrBelowZeroStopTheLoadAsInC() throws IOException {
         // parse_artifact_alloc returns PARSE_ERROR_OUT_OF_BOUNDS for a figure above 255 or below 0.
-        Artifact high = loadClean("alloc-high.txt", "alloc:1:300 to 400\n");
-        Artifact negative = loadClean("alloc-negative.txt", "alloc:1:-5 to 10\n");
-        Artifact backwards = loadClean("alloc-backwards.txt", "alloc:1:50 to 10\n");
+        assertStops("alloc-high.txt", withHeader(1, "name:X\n" + BASE + "alloc:1:300 to 400\n"),
+                "min value: 300");
+        assertStops("alloc-negative.txt", withHeader(1, "name:X\n" + BASE + "alloc:1:-5 to 10\n"),
+                "min value: -5");
 
-        assertEquals("300/400", high.getAllocMin() + "/" + high.getAllocMax());
-        assertEquals("-5/10", negative.getAllocMin() + "/" + negative.getAllocMax());
-        // C has no check on the order, so this one agrees.
+        // C has no check on the order, so this one loads.
+        Artifact backwards = loadClean("alloc-backwards.txt", "alloc:1:50 to 10\n");
         assertEquals("50/10", backwards.getAllocMin() + "/" + backwards.getAllocMax());
     }
 
     @Test
-    void anUnknownActNameSkipsTheRecordHereWhereCKeepsItWithNoActivation() throws IOException {
+    void anUnknownActNameLeavesTheRecordWithNoActivationAsInC() throws IOException {
         // findact walks the list and returns NULL at the end; parse_artifact_act stores it without
-        // a complaint.
-        ParseResult<Artifact> r = load("act-unknown.txt", withHeader(1, "name:X\n" + BASE + "act:NOPE\n"));
+        // a complaint. The assembler only logs a warning.
+        Artifact a = loadClean("act-unknown.txt", "act:NOPE\n");
 
-        assertTrue(r.items().isEmpty());
-        assertTrue(hasError(r, "unknown activation: NOPE"), r.errors()::toString);
+        assertNull(a.getActivation());
     }
 
     @Test
-    void graphicsOnAnOrdinaryKindIsIgnoredHereWhereCRefusesIt() throws IOException {
+    void graphicsOnAnOrdinaryKindStopsTheLoadAsInC() {
         // parse_artifact_graphics returns PARSE_ERROR_NOT_SPECIAL_ARTIFACT unless the kind is
         // INSTA_ART, and otherwise writes d_char and d_attr.
         ObjectKind dagger = ObjectRegistry.lookupObjectKind(TValue.TV_SWORD, "Dagger");
         char glyph = dagger.getCharacter().getCharacter();
         Object colour = dagger.getCharacter().getAttributeColour();
 
-        loadClean("graphics-ordinary.txt", "graphics:#:r\n");
+        assertStops("graphics-ordinary.txt", withHeader(1, "name:X\n" + BASE + "graphics:#:r\n"),
+                "glyph value: #");
 
         assertEquals(glyph, dagger.getCharacter().getCharacter());
         assertEquals(colour, dagger.getCharacter().getAttributeColour());
     }
 
     @Test
-    void aRecordWithNoBaseObjectIsRejectedHereWhereCKeepsItWithTvalZero() throws IOException {
+    void aRecordWithNoBaseObjectStopsTheLoadHereWhereCKeepsItWithTvalZero() {
         // parse_artifact_name zeroes the record, so tval and sval stay 0. (weight:, cost:, graphics:,
         // act: and time: would then assert on a missing kind; level: and the rest do not.)
-        ParseResult<Artifact> r = load("no-base.txt", withHeader(1, "name:X\nlevel:3\n"));
-
-        assertTrue(r.items().isEmpty());
-        assertTrue(hasError(r, "unknown object type"), r.errors()::toString);
+        assertStops("no-base.txt", withHeader(1, "name:X\nlevel:3\n"), "unknown object type");
     }
 
     /**
@@ -1086,11 +1106,10 @@ class ArtifactReaderTest {
      * C's {@code parse_artifact_act} and {@code parse_artifact_time} decide where a light's
      * activation goes from the kind's index (special kinds sit above {@code ordinary_kind_max}), so
      * the second run gives the kind the same values again and the artifact still holds none. The
-     * assembler decides from whether the kind was minted by this record, which it was not the second
-     * time, so the artifact gets the activation and the time itself.
+     * assembler decides the same way, so the second load gives the same split as the first.
      */
     @Test
-    void aSecondParseGivesTheSpecialLightsTheirActivationAndTimeHereWhereCKeepsThemOnTheKind() throws Exception {
+    void aSecondParseKeepsTheSpecialLightsActivationAndTimeOnTheKindAsInC() throws Exception {
         int kindsBefore = ObjectRegistry.getObjectKindCount();
 
         ParseResult<Artifact> second = new ArtifactReader().parseWithResults(ARTIFACT_FILE);
@@ -1099,13 +1118,99 @@ class ArtifactReaderTest {
         assertEquals(138, second.items().size());
         assertEquals(kindsBefore, ObjectRegistry.getObjectKindCount(), "the special kinds are found again, not added again");
 
-        Artifact first = byNameOrFail("of Galadriel");
         Artifact again = second.items().get(0);
         assertEquals("of Galadriel", again.getName());
-        assertNull(first.getActivation());
-        assertNull(first.getTime());
-        assertEquals("ILLUMINATION", again.getActivation().getName());
-        assertNotNull(again.getTime());
+        assertNull(again.getActivation(), "the activation stays on the kind");
+        assertEquals("0+0d0", dice(again.getTime()), "the time stays on the kind");
+
+        ObjectKind phialKind = ObjectRegistry.lookupObjectKind(TValue.TV_LIGHT, "Phial");
+        assertEquals(1, phialKind.getActivations().size());
+        assertEquals("ILLUMINATION", phialKind.getActivations().get(0).getName());
+        assertEquals("10+1d10", dice(kindField(phialKind, "time")));
+    }
+
+    /**
+     * C's {@code parse_artifact_weight}, {@code parse_artifact_cost} and {@code parse_artifact_time}
+     * write to the kind only when their own line is read. A record that finds an existing special
+     * light's kind and leaves those lines out therefore leaves the kind's weight, cost and time as
+     * they were, and a line that is there overwrites them, a written {@code 0} included.
+     */
+    @Test
+    void aSpecialKindIsWrittenOnlyByTheLinesTheRecordHas() throws Exception {
+        ObjectKind phial = ObjectRegistry.lookupObjectKind(TValue.TV_LIGHT, "Phial");
+        int weight = kindField(phial, "weight");
+        int cost = kindField(phial, "cost");
+        String time = dice(kindField(phial, "time"));
+        assertEquals(10, weight, "the shipped file's weight:10");
+        assertEquals(10000, cost, "the shipped file's cost:10000");
+        assertEquals("10+1d10", time, "the shipped file's time:10+d10");
+
+        try {
+            ParseResult<Artifact> bare = load("phial-bare.txt", withHeader(1, "name:X\nbase-object:light:Phial\n"));
+            assertFalse(bare.hasErrors(), () -> bare.errors().toString());
+            assertEquals(weight, (int) kindField(phial, "weight"), "no weight: line, so the kind keeps its weight");
+            assertEquals(cost, (int) kindField(phial, "cost"), "no cost: line, so the kind keeps its cost");
+            assertEquals(time, dice(kindField(phial, "time")), "no time: line, so the kind keeps its time");
+
+            ParseResult<Artifact> onlyWeight = load("phial-weight.txt",
+                    withHeader(1, "name:X\nbase-object:light:Phial\nweight:77\n"));
+            assertFalse(onlyWeight.hasErrors(), () -> onlyWeight.errors().toString());
+            assertEquals(77, (int) kindField(phial, "weight"), "weight: is written");
+            assertEquals(cost, (int) kindField(phial, "cost"), "cost: is absent, so it is not");
+
+            ParseResult<Artifact> onlyCost = load("phial-cost.txt",
+                    withHeader(1, "name:X\nbase-object:light:Phial\ncost:55\n"));
+            assertFalse(onlyCost.hasErrors(), () -> onlyCost.errors().toString());
+            assertEquals(77, (int) kindField(phial, "weight"), "weight: is absent, so it is not");
+            assertEquals(55, (int) kindField(phial, "cost"), "cost: is written");
+
+            ParseResult<Artifact> zeros = load("phial-zeros.txt",
+                    withHeader(1, "name:X\nbase-object:light:Phial\nweight:0\ncost:0\ntime:0\n"));
+            assertFalse(zeros.hasErrors(), () -> zeros.errors().toString());
+            assertEquals(0, (int) kindField(phial, "weight"), "a written weight:0 is a line, not an absent one");
+            assertEquals(0, (int) kindField(phial, "cost"), "a written cost:0 is a line, not an absent one");
+            assertEquals("0+0d0", dice(kindField(phial, "time")), "a written time:0 is a line, not an absent one");
+        } finally {
+            phial.setWeight(weight);
+            phial.setCost(cost);
+            phial.setTime(Random.parseStr("10+d10"));
+        }
+    }
+
+    /**
+     * C's {@code parse_artifact_act} sets a special light's kind activation to {@code findact(name)}
+     * when the {@code act:} line is read, and {@code findact} gives {@code NULL} for a name it does
+     * not know, so the kind's old activation is cleared. With no {@code act:} line nothing is
+     * written. The artifact keeps none either way, as the activation belongs to the kind.
+     */
+    @Test
+    void aSpecialLightsActIsWrittenToTheKindOnlyWhenTheLineIsThereAndClearsOnAnUnknownName() throws Exception {
+        ObjectKind phial = ObjectRegistry.lookupObjectKind(TValue.TV_LIGHT, "Phial");
+        List<Activation> original = new ArrayList<>(phial.getActivations());
+        assertEquals(1, original.size());
+        assertEquals("ILLUMINATION", original.get(0).getName(), "the shipped file's act:ILLUMINATION");
+
+        try {
+            ParseResult<Artifact> bare = load("phial-no-act.txt", withHeader(1, "name:X\nbase-object:light:Phial\n"));
+            assertFalse(bare.hasErrors(), () -> bare.errors().toString());
+            assertEquals(original, phial.getActivations(), "no act: line, so the kind keeps its activation");
+
+            ParseResult<Artifact> changed = load("phial-act.txt",
+                    withHeader(1, "name:X\nbase-object:light:Phial\nact:MAPPING\n"));
+            assertFalse(changed.hasErrors(), () -> changed.errors().toString());
+            assertEquals(1, phial.getActivations().size());
+            assertEquals("MAPPING", phial.getActivations().get(0).getName(), "a known act: replaces the kind's");
+            assertNull(changed.items().get(0).getActivation(), "the artifact keeps none");
+
+            ParseResult<Artifact> unknown = load("phial-bad-act.txt",
+                    withHeader(1, "name:X\nbase-object:light:Phial\nact:NO_SUCH_ACTIVATION\n"));
+            assertFalse(unknown.hasErrors(), () -> unknown.errors().toString());
+            assertTrue(phial.getActivations().isEmpty(), "an unknown act: clears the kind's, as findact's NULL does");
+            assertNull(unknown.items().get(0).getActivation(), "the artifact keeps none");
+        } finally {
+            phial.getActivations().clear();
+            phial.getActivations().addAll(original);
+        }
     }
 
     // ---- The table -------------------------------------------------------

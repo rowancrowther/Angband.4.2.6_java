@@ -803,7 +803,7 @@ Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. Not fixed.
 
 ## `artifact/ArtifactAssembler.java`: `IGNORE_` and `HATES_` flags are unknown, C sets element info
 
-Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-23: when `ObjectFlag.valueOf` fails, `ArtifactAssembler.java` splits the flag at its first `_` and sets `EL_INFO_IGNORE` or `EL_INFO_HATES` on the named element, testing the prefix as C's `strncmp` in `grab_element_flag` does. `ArtifactReaderTest` (53 tests) passes. The bullets below describe the state before the fix; the pinning test is now `ignoreAndHatesFlagsSetElementInfoAsInC`.]
 
 - `parse_artifact_flags` tries `grab_flag` and then `grab_element_flag`, which turns `IGNORE_FIRE` and `HATES_FIRE` into
   `EL_INFO_IGNORE` and `EL_INFO_HATES` on `el_info`.
@@ -814,7 +814,7 @@ Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. Not fixed.
 
 ## `artifact/ArtifactAssembler.java`: `alloc:` figures are not checked against 0 to 255
 
-Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-23: `ArtifactAssembler.java` throws `DataFileParseException` for a minimum or maximum below 0 or above 255, so the load ends as C's `PARSE_ERROR_OUT_OF_BOUNDS` does. `ArtifactReaderTest` (53 tests) passes. The bullets below describe the state before the fix; the pinning test is now `allocFiguresAbove255OrBelowZeroStopTheLoadAsInC`.]
 
 - `parse_artifact_alloc` returns `PARSE_ERROR_OUT_OF_BOUNDS` for a bound above 255 or below 0.
 - `ArtifactAssembler.java:271` and `:281` keep any int, so `alloc:1:300 to 400` and `alloc:1:-5 to 10` load.
@@ -823,7 +823,7 @@ Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. Not fixed.
 
 ## `artifact/ArtifactAssembler.java`: an unknown `act:` name skips the record, C keeps it with no activation
 
-Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-23: `ArtifactAssembler.java` logs a warning for an unknown `act:` name and keeps the record with a `null` activation, as `parse_artifact_act` stores `findact`'s `NULL`. `ArtifactReaderTest` (53 tests) passes. The bullets below describe the state before the fix; the pinning test is now `anUnknownActNameLeavesTheRecordWithNoActivationAsInC`.]
 
 - `findact` answers `NULL` when nothing matches and `parse_artifact_act` stores it without an error.
 - `ArtifactAssembler.java:292` adds `"has an unknown activation"` and `continue`s past the record.
@@ -832,7 +832,7 @@ Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. Not fixed.
 
 ## `artifact/ArtifactAssembler.java`: `graphics:` on a kind that is not `INSTA_ART` is ignored, C refuses it
 
-Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-23: `ArtifactAssembler.java` throws `DataFileParseException` for a `graphics:` line on a kind without `KF_INSTA_ART`, so the load ends as C's `PARSE_ERROR_NOT_SPECIAL_ARTIFACT` does. `ArtifactReaderTest` (53 tests) passes. The bullets below describe the state before the fix; the pinning test is now `graphicsOnAnOrdinaryKindStopsTheLoadAsInC`.]
 
 - `parse_artifact_graphics` returns `PARSE_ERROR_NOT_SPECIAL_ARTIFACT` unless the kind has `KF_INSTA_ART`.
 - `ArtifactAssembler.java:363` skips the glyph silently when the flag is missing and keeps the record.
@@ -851,7 +851,7 @@ Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. Not fixed.
 
 ## `artifact/ArtifactAssembler.java`: on a second parse a special light's activation and time go to the artifact, C keeps them on the kind
 
-Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-23: `ArtifactAssembler.java` treats a light as special when it mints the kind or finds one at or above the ordinary kind limit, as C tests `kidx >= z_info->ordinary_kind_max`. On the birth re-run the activation and time stay on the kind and the artifact keeps none. `ArtifactReaderTest` (53 tests) passes. The bullets below describe the state before the fix; the pinning test is now `aSecondParseKeepsTheSpecialLightsActivationAndTimeOnTheKindAsInC`.]
 
 - `parse_artifact_act` and `parse_artifact_time` test `k->kidx >= z_info->ordinary_kind_max`, so the three special lights
   (Phial, Star, Arkenstone) give the kind its activation and time on every run.

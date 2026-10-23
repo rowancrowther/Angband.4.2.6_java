@@ -35,14 +35,14 @@ import static org.junit.jupiter.api.Assertions.*;
  * Tests the activation arm of {@link Artifact#copy()}: the activation, its message, and the
  * recharge time.
  *
- * <p>C has no artifact copy. The expected values come from {@code copy_artifact_data} in
- * {@code obj-make.c}, which hands an object the artifact's {@code activation} and {@code time}
- * whenever the artifact has an activation, and from {@code cmd-obj.c}, which reads the artifact's
- * {@code alt_msg} when it is set. A copy that loses either one would change what the artifact does
- * when used. The {@code ArtifactAccessorsTest} copy tests cover the other fields; this class exists
- * because none of them copies an artifact and then reads the activation message back.
+ * <p>The expected values come from {@code copy_artifact} in {@code obj-randart.c}, which
+ * {@code memcpy}s the whole {@code struct artifact} and then sets {@code activation} and
+ * {@code alt_msg} to {@code NULL} on the copy. The recharge time, a plain {@code random_value}
+ * struct, survives the {@code memcpy}; the activation and its message never do, whatever the
+ * source held.
  *
- * <p>Class ArtifactCopyActivationTest coded on 261008, commented in full on 261008.
+ * <p>Class ArtifactCopyActivationTest coded on 261008, commented in full on 261008, rewritten for
+ * the activation being dropped as in C on 261023.
  *
  * @author Rowan Crowther
  */
@@ -79,46 +79,32 @@ class ArtifactCopyActivationTest {
     }
 
     /**
-     * The message is what C's {@code alt_msg} carries, and the copy must hand it on unchanged.
+     * C sets {@code alt_msg} to {@code NULL} on the copy, so a message on the source does not
+     * reach it.
      */
     @Test
-    @DisplayName("the activation message survives the copy")
-    void messageSurvives() {
+    @DisplayName("the activation message is dropped")
+    void messageDropped() {
         Artifact copy = artifact(activation(), "The blade glows.", new Random(0, 1, 1, 20, false)).copy();
 
-        assertEquals("The blade glows.", copy.getActivationMessage());
-    }
-
-    /**
-     * An artifact with an activation but no {@code alt_msg} copies to one with no message, not to an
-     * empty string or a throw.
-     */
-    @Test
-    @DisplayName("a null message stays null")
-    void nullMessageStaysNull() {
-        Artifact copy = artifact(activation(), null, new Random(0, 1, 1, 20, false)).copy();
-
         assertNull(copy.getActivationMessage());
-        assertNotNull(copy.getActivation());
     }
 
     /**
-     * The activation is carried across as a separate instance with the same name and power.
+     * C sets {@code activation} to {@code NULL} on the copy, so an activation on the source does
+     * not reach it.
      */
     @Test
-    @DisplayName("the activation is copied, with its name and power")
-    void activationCopied() {
-        Artifact original = artifact(activation(), "The blade glows.", new Random(0, 1, 1, 20, false));
-        Artifact copy = original.copy();
+    @DisplayName("the activation is dropped")
+    void activationDropped() {
+        Artifact copy = artifact(activation(), "The blade glows.", new Random(0, 1, 1, 20, false)).copy();
 
-        assertNotSame(original.getActivation(), copy.getActivation());
-        assertEquals("test activation", copy.getActivation().getName());
-        assertEquals(30, copy.getActivation().getPower());
+        assertNull(copy.getActivation());
     }
 
     /**
-     * Most artifacts have no activation, and for special lights C keeps the activation on the kind
-     * instead. The copy must leave the field null rather than invent one.
+     * A source with no activation and no message gives the same nulls: the copy does not invent
+     * either.
      */
     @Test
     @DisplayName("no activation stays no activation")
@@ -130,7 +116,8 @@ class ArtifactCopyActivationTest {
     }
 
     /**
-     * The recharge time keeps its resolved terms: base 3, 2d10 here.
+     * The recharge time is untouched by the {@code NULL}ing and keeps its resolved terms: base 3,
+     * 2d10 here. It is a separate instance, as C's struct copy is.
      */
     @Test
     @DisplayName("the recharge time keeps its terms")
@@ -160,7 +147,8 @@ class ArtifactCopyActivationTest {
     }
 
     /**
-     * Copying must not disturb the original's activation or message.
+     * C writes the {@code NULL}s into the destination only, so copying must not disturb the
+     * original's activation or message.
      */
     @Test
     @DisplayName("copying leaves the original untouched")
@@ -171,7 +159,7 @@ class ArtifactCopyActivationTest {
         original.copy();
 
         assertEquals("The blade glows.", original.getActivationMessage());
-        assertEquals("test activation", original.getActivation().getName());
+        assertSame(activation, original.getActivation());
     }
 
     /**

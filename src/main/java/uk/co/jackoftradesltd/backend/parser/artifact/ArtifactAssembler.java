@@ -17,7 +17,11 @@
 
 package uk.co.jackoftradesltd.backend.parser.artifact;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
+import uk.co.jackoftradesltd.backend.parser.HelperFunctions;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
@@ -37,11 +41,24 @@ import java.util.*;
 /**
  * Assembles the raw {@link ArtifactParseRecord}s parsed from {@code artifact.txt} into the
  * finished {@link Artifact} domain objects, resolving names, base kinds, curses and element
- * info as it goes (reader &rarr; ParseRecord &rarr; assembler &rarr; domain).
+ * info as it goes (reader &rarr; ParseRecord &rarr; assembler &rarr; domain). It does the work of
+ * the {@code parse_artifact_*} handlers in C's {@code obj-init.c}.
+ *
+ * <p>Integers from the record are read through {@link HelperFunctions#parseIntString}, which
+ * reads them as C's {@code strtol} with base 0 does, so a leading zero is octal. The figures in
+ * {@code values:} are decimal, as {@code find_value_arg} in {@code datafile.c} reads them.
+ *
+ * <p>Brands and slays are stored in C's order, not file order. C keeps them as flag arrays
+ * indexed by registry position, so the assembler collects the named ones and then walks the
+ * registry to fill a {@link LinkedHashSet}.
+ *
+ * <p>Class ArtifactAssembler coded before 260915, commented in full on 261023.
  *
  * @author Rowan Crowther
  */
 public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Artifact>> {
+    private static final Logger logger = LogManager.getLogger(ArtifactAssembler.class);
+    
     /**
      * Resolves every raw {@link ArtifactParseRecord} field into its domain form and builds
      * the {@link Artifact}: the base object tvalue, numeric to-hit/to-damage/AC/weight/cost/
@@ -51,24 +68,32 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
      * fans out its {@code RES_}-prefixed keys), brands, slays, curses (by registry lookup),
      * and an optional activation/timeout pair.
      *
-     * <p>Also resolves the artifact's backing {@link ObjectKind}: an artifact reuses an
-     * existing kind for its base type when one exists, or creates and registers a new one
-     * (this is the "special light source" case — {@code tVal == TV_LIGHT} with no existing
-     * kind — where the activation/timeout the record carries belongs to the newly created
-     * kind rather than the artifact instance, mirroring the split C's {@code parse_a_*}
-     * handlers make between {@code a_ptr} and {@code k_ptr} fields for that same case).
+     * <p>Also resolves the artifact's backing {@link ObjectKind}. An artifact reuses the kind for
+     * its base type when one exists, or creates and registers a new one. A kind at or above the
+     * ordinary kind limit is special, as C tests {@code kidx >= z_info->ordinary_kind_max}. A
+     * special kind takes the artifact's weight and cost only when the record has a
+     * {@code weight:} or {@code cost:} line. A special light also takes the activation and time
+     * that the record carries, and the artifact keeps none. Its activations are cleared and refilled
+     * only when the record has an {@code act:} line, and its time is set only when the record has a
+     * {@code time:} line. An unknown {@code act:} name is a warning, not an error, and leaves no
+     * activation, as {@code findact} returns {@code NULL} in C. A record with no {@code msg:} line
+     * holds a {@code null} message, as C's {@code alt_msg} starts {@code NULL}.
      *
-     * <p>Any record with an unresolvable field (unknown tvalue, malformed integer, unknown
-     * flag/modifier/element/brand/slay/curse/activation, or an unknown base object type) is
-     * reported into {@code errors} and skipped entirely — the partial-results contract this
-     * suite's assemblers share.
+     * <p>As C's {@code artifact_parser} does, the load ends at the first bad field. That covers an
+     * unknown tvalue or base object, a malformed integer, an unknown flag, modifier, element,
+     * brand, slay or curse, a {@code values:} figure of {@code INT_MAX} or {@code INT_MIN} or
+     * beyond, an {@code alloc:} figure outside 0 to 255, a malformed {@code time:} dice string, and
+     * a {@code graphics:} line on a kind without {@code KF_INSTA_ART}. Each one is logged and
+     * thrown as a {@link DataFileParseException}.
      *
-     * <p>Function assemble coded before 260915, commented in full on 260915.
+     * <p>Function assemble coded before 260915, commented in full on 260915, rewritten for the
+     * load-ending errors on 261023.
      *
-     * @param records the raw artifact records from the grammar, in file order
-     * @param errors  the soft-error sink; a record named here is dropped rather than
-     *                aborting the rest of the file
-     * @return the assembled artifacts, excluding any record reported in {@code errors}
+     * @param records  the raw artifact records from the grammar, in file order
+     * @param errors   unused: every error ends the load by throwing instead
+     * @param filename the name of the data file, used in the error messages
+     * @return the assembled artifacts, in file order
+     * @throws DataFileParseException on the first record with a field C would refuse
      */
     @Override
     public List<Artifact> assemble(@NotNull List<ArtifactParseRecord> records, @NotNull List<String> errors,
@@ -84,110 +109,124 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
             if (!tValStr.isEmpty()) {
                 tVal = TValue.fromName(tValStr);
                 if (tVal == null) {
-                    errors.add("Artifact at line: " + line + " has " +
-                            "an unknown base-obj tvalue: " + tValStr);
-                    continue;
+                    String message = "Artifact at line: "+ line + " of file: " + filename + " has " +
+                            "an unknown base-obj tvalue: " + tValStr;
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
                 }
             }
             String sVal = record.sValue();
-            int toh = 0;
-            if (!record.toh().isEmpty()) {
-                try {
-                    toh = Integer.parseInt(record.toh());
-                } catch (NumberFormatException e) {
-                    errors.add("Artifact at line: " + line + " has " +
-                            "a malformed to hit number: " + record.toh());
-                    continue;
-                }
-            }
-            int tod = 0;
-            if (!record.tod().isEmpty()) {
-                try {
-                    tod = Integer.parseInt(record.tod());
-                } catch (NumberFormatException e) {
-                    errors.add("Artifact at line: " + line + " has " +
-                            "a malformed to damage number: " + record.tod());
-                    continue;
-                }
-            }
-            int baseAC = 0;
-            if (!record.baseAC().isEmpty()) {
-                try {
-                    baseAC = Integer.parseInt(record.baseAC());
-                } catch (NumberFormatException e) {
-                    errors.add("Artifact at line: " + line + " has " +
-                            "a malformed base AC: " + record.baseAC());
-                    continue;
-                }
-            }
-            int toa = 0;
-            if (!record.toa().isEmpty()) {
-                try {
-                    toa = Integer.parseInt(record.toa());
-                } catch (NumberFormatException e) {
-                    errors.add("Artifact at line: " + line + " has " +
-                            "a malformed attack toac number: " + record.toa());
-                    continue;
-                }
-            }
+            int toh = HelperFunctions.parseIntString("Artifact", record.toh(), line, filename, "To hit");
+            int tod = HelperFunctions.parseIntString("Artifact", record.tod(), line, filename, "To damage");
+            int baseAC = HelperFunctions.parseIntString("Artifact", record.baseAC(), line, filename, "Base AC");
+            int toa = HelperFunctions.parseIntString("Artifact", record.toa(), line, filename, "To AC");
             String baseDamageString = record.baseDamage();
-            int weight = 0;
-            if (!record.weight().isEmpty()) {
-                try {
-                    weight = Integer.parseInt(record.weight());
-                } catch (NumberFormatException e) {
-                    errors.add("Artifact at line: " + line + " has " +
-                            "a malformed weight: " + record.weight());
-                    continue;
-                }
-            }
-            int cost = 0;
-            if (!record.cost().isEmpty()) {
-                try {
-                    cost = Integer.parseInt(record.cost());
-                } catch (NumberFormatException e) {
-                    errors.add("Artifact at line: " + line + " has " +
-                            "a malformed cost: " + record.cost());
-                    continue;
-                }
-            }
-            boolean illegalFlag = false;
+            int weight = HelperFunctions.parseIntString("Artifact", record.weight(), line, filename, "Weight");
+            int cost = HelperFunctions.parseIntString("Artifact", record.cost(), line, filename, "Cost");
             Flag<ObjectFlag> flags = new Flag<>(ObjectFlag.class);
+            Map<ElementEnum, Set<ElementInfoEnum>> elements = new HashMap<>();
             for (String flag : record.flagList()) {
-                ObjectFlag oFlag = null;
                 try {
-                    oFlag = ObjectFlag.valueOf("OF_" + flag.toUpperCase());
-                    flags.on(oFlag);
+                    ObjectFlag oFlag = ObjectFlag.valueOf("OF_" + flag);
+                    if (oFlag != ObjectFlag.OF_NONE && oFlag != ObjectFlag.OF_MAX)
+                        flags.on(oFlag);
+                    else {
+                        String message = "Artifact at line: "+ line + " of file: " + filename + " has " +
+                                "an unknown flag: " + flag;
+                        logger.fatal(message);
+                        throw new DataFileParseException(message);
+                    }
                 } catch (IllegalArgumentException e) {
-                    errors.add("Artifact at line: " + line + " has " +
-                            "an unknown flag: " + flag);
-                    illegalFlag = true;
+                    try {
+                        if (!flag.contains("_")) {
+                            String message = "Artifact at line: "+ line + " of file: " + filename + " has " +
+                                    "an unknown flag: " + flag;
+                            logger.fatal(message, e);
+                            throw new DataFileParseException(message);
+                        }
+                        String[] flagParts = flag.split("_", 2);
+                        if (flagParts.length == 2) {
+                            if (flagParts[1].equals("NONE") || flagParts[1].equals("MAX")) {
+                                String message = "Artifact at line: " + line + " of file: " + filename + " has " +
+                                        "an illegal sentinel flag: " + flag;
+                                logger.fatal(message, e);
+                                throw new DataFileParseException(message);
+                            }
+                        }
+                        if ("IGNORE".startsWith(flagParts[0])) {
+                            ElementEnum element = ElementEnum.valueOf("ELEM_" + flagParts[1]);
+                            if (elements.containsKey(element)) {
+                                elements.get(element).add(ElementInfoEnum.EL_INFO_IGNORE);
+                            } else {
+                                Set<ElementInfoEnum> set = new HashSet<>();
+                                set.add(ElementInfoEnum.EL_INFO_IGNORE);
+                                elements.put(element, set);
+                            }
+                        } else if ("HATES".startsWith(flagParts[0])) {
+                            ElementEnum element = ElementEnum.valueOf("ELEM_" + flagParts[1]);
+                            if (elements.containsKey(element)) {
+                                elements.get(element).add(ElementInfoEnum.EL_INFO_HATES);
+                            } else {
+                                Set<ElementInfoEnum> set = new HashSet<>();
+                                set.add(ElementInfoEnum.EL_INFO_HATES);
+                                elements.put(element, set);
+                            }
+                        } else {
+                            String message = "Artifact at line: "+ line + " of file: " + filename + " has " +
+                                    "an unknown flag: " + flag;
+                            logger.fatal(message, e);
+                            throw new DataFileParseException(message);    
+                        }
+                    } catch (IllegalArgumentException e1) {
+                        String message = "Artifact at line: "+ line + " of file: " + filename + " has " +
+                                "an unknown flag: " + flag;
+                        logger.fatal(message, e1);
+                        throw new DataFileParseException(message);
+                    }
                 }
             }
-            if (illegalFlag) continue;
-            boolean illegalModifier = false;
-            Map<ObjectModifier, Integer> modifiers = new HashMap<ObjectModifier, Integer>();
+            Map<ObjectModifier, Integer> modifiers = new HashMap<>();
             Map<ElementEnum, ElementInfo> elInfo = new HashMap<>();
             for (String key : record.values().keySet()) {
                 try {
                     int value = Integer.parseInt(record.values().get(key));
+                    if (value == Integer.MIN_VALUE || value == Integer.MAX_VALUE) {
+                        String message = "Artifact at line: " + line + " of file: " + filename + " has " +
+                                "a value out of bounds: " + value;
+                        logger.fatal(message);
+                        throw new DataFileParseException(message);
+                    }
                     if (key.startsWith("RES_")) {
                         key = key.substring(4);
+                        if (key.equals("NONE") || key.equals("MAX")) {
+                            String message = "Artifact at line: "+ line + " of file: " + filename + " has " +
+                                "an unknown value: " + "RES_" + key;
+                            logger.fatal(message);
+                            throw new DataFileParseException(message);
+                        }
                         ElementEnum element = ElementEnum.valueOf("ELEM_" + key);
                         ElementInfo eInfo = elInfo.computeIfAbsent(element, k -> new ElementInfo());
                         eInfo.setResLevel(value);
                     } else {
-                        ObjectModifier mod = ObjectModifier.valueOf("OM_" + key.toUpperCase());
+                        if (key.equals("NONE") || key.equals("MAX")) {
+                            String message = "Artifact at line: "+ line + " of file: " + filename + " has " +
+                                    "an unknown value: " + key;
+                            logger.fatal(message);
+                            throw new DataFileParseException(message);
+                        }
+                        ObjectModifier mod = ObjectModifier.valueOf("OM_" + key);
                         modifiers.put(mod, value);
                     }
                 } catch (NumberFormatException e) {
-                    errors.add("Artifact at line: " + line + " has " +
-                            "a malformend value integer: " + record.values().get(key));
-                    illegalModifier = true;
+                    String message = "Artifact at line: "+ line + " of file: " + filename + " has " +
+                            "a malformed value integer: " + record.values().get(key);
+                    logger.fatal(message, e);
+                    throw new DataFileParseException(message);
                 } catch (IllegalArgumentException e) {
-                    errors.add("Artifact at line: " + line + " has " +
-                            "an unknown modifier/element name: " + key);
-                    illegalModifier = true;
+                    String message = "Artifact at line: "+ line + " of file: " + filename + " has " +
+                            "an unknown modifier/element name: " + key;
+                    logger.fatal(message, e);
+                    throw new DataFileParseException(message);
                 }
             }
             for (ElementEnum e : Arrays.stream(ElementEnum.values()).filter(ElementEnum::isBase)
@@ -195,116 +234,102 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                 ElementInfo ei = elInfo.computeIfAbsent(e, k -> new ElementInfo());
                 ei.on(ElementInfoEnum.EL_INFO_IGNORE);
             }
-            if (illegalModifier) continue;
-            Set<Brand> brands = new HashSet<>();
-            boolean illegalBrand = false;
+            for (ElementEnum ee : ElementEnum.values()) {
+                if (elements.containsKey(ee)) {
+                    ElementInfo ei = elInfo.computeIfAbsent(ee, k -> new ElementInfo());
+                    for (ElementInfoEnum eie : elements.get(ee)) {
+                        ei.on(eie);
+                    }
+                }
+            }
+            Set<Brand> fileBrands = new HashSet<>();
+            Set<Brand> brands = new LinkedHashSet<>();
             for (String b : record.brand()) {
                 Brand brand = ObjectRegistry.lookupBrandCode(b);
                 if (brand != null) {
-                    brands.add(brand);
+                    fileBrands.add(brand);
                 } else {
-                    errors.add("Artifact at line: " + line + " has " +
-                            "an unknown brand: " + b);
-                    illegalBrand = true;
+                    String message = "Artifact at line: "+ line + " of file: " + filename + " has " +
+                            "an unknown brand: " + b;
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
                 }
             }
-            if (illegalBrand) continue;
-            boolean illegalSlay = false;
-            Set<Slay> slays = new HashSet<>();
+            for (Brand brand : ObjectRegistry.getBrands()) {
+                if (fileBrands.contains(brand)) 
+                    brands.add(brand);
+            }
+            Set<Slay> fileSlays = new HashSet<>();
+            Set<Slay> slays = new LinkedHashSet<>();
             for (String s : record.slay()) {
                 Slay slay = ObjectRegistry.lookupSlay(s);
                 if (slay != null) {
-                    slays.add(slay);
+                    fileSlays.add(slay);
                 } else {
-                    errors.add("Artifact at line: " + line + " has " +
-                            "an unknown slay: " + s);
-                    illegalSlay = true;
+                    String message = "Artifact at line: "+ line + " of file: " + filename + " has " +
+                            "an unknown slay: " + s;
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
                 }
             }
-            if (illegalSlay) continue;
-            boolean illegalCurses = false;
+            for (Slay slay : ObjectRegistry.getSlays()) {
+                if (fileSlays.contains(slay))
+                    slays.add(slay);
+            }
             TreeMap<Curse, CurseData> curses = new TreeMap<>(Curse.CURSE_ORDER);
             for (String key : record.curse().keySet()) {
                 Curse curse = ObjectRegistry.lookupCurse(key);
                 if (curse == null) {
-                    errors.add("Artifact at line: " + line + " has " +
-                            "an unknown curse: " + key);
-                    illegalCurses = true;
+                    String message = "Artifact at line: "+ line + " of file: " + filename + " has " +
+                            "an unknown curse: " + key;
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
                 } else {
-                    int power = 0;
+                    int power;
                     CurseData curseData;
                     String value = record.curse().get(key);
-                    try {
-                        power = Integer.parseInt(value);
-                        if (power > 0) {
-                            curseData = new CurseData(power, 0);
-                            curses.put(curse, curseData);
-                        }
-                    } catch (NumberFormatException e) {
-                        errors.add("Artifact at line: " + line + " has " +
-                                "a malformed curse power: " + value);
-                        illegalCurses = true;
+                    power = HelperFunctions.parseIntString("Artifact", value, line, filename, "power");
+                    if (power > 0) {
+                        curseData = new CurseData(power, 0);
+                        curses.put(curse, curseData);
                     }
                 }
             }
-            if (illegalCurses) continue;
-            int level = 0;
-            if (!record.level().isEmpty()) {
-                try {
-                    level = Integer.parseInt(record.level());
-                } catch (NumberFormatException e) {
-                    errors.add("Artifact at line: " + line + " has " +
-                            "a malformed level: " + record.level());
-                    continue;
-                }
+            int level = HelperFunctions.parseIntString("Artifact", record.level(), line, filename, "Level");
+            int commonness = HelperFunctions.parseIntString("Artifact", record.commonness(), line, filename, "Commonness");
+            int min = HelperFunctions.parseIntString("Artifact", record.min(), line, filename, "Min", false);
+            if (0 > min || min > 255) {
+                String message = "Artifact beginning at line: " + line + " of file: " + filename
+                        + " has an unknown error with token min value: " + record.min();
+                logger.fatal(message);
+                throw new DataFileParseException(message);
             }
-            int commonness = 0;
-            if (!record.commonness().isEmpty()) {
-                try {
-                    commonness = Integer.parseInt(record.commonness());
-                } catch (NumberFormatException e) {
-                    errors.add("Artifact at line: " + line + " has " +
-                            "a malformed alloc chance: " + record.commonness());
-                    continue;
-                }
-            }
-            int min = 0;
-            if (!record.min().isEmpty()) {
-                try {
-                    min = Integer.parseInt(record.min());
-                } catch (NumberFormatException e) {
-                    errors.add("Artifact at line: " + line + " has " +
-                            "a malformed alloc min: " + record.min());
-                    continue;
-                }
-            }
-            int max = 0;
-            if (!record.max().isEmpty()) {
-                try {
-                    max = Integer.parseInt(record.max());
-                } catch (NumberFormatException e) {
-                    errors.add("Artifact at line: " + line + " has " +
-                            "a malformed alloc max: " + record.max());
-                    continue;
-                }
+            int max = HelperFunctions.parseIntString("Artifact", record.max(), line, filename, "Max", false);
+            if (0 > max || max > 255) {
+                String message = "Artifact beginning at line: " + line + " of file: " + filename
+                        + " has an unknown error with token max value: " + record.max();
+                logger.fatal(message);
+                throw new DataFileParseException(message);
             }
             Activation activation = null;
             if (!record.activation().isEmpty()) {
                 activation = ObjectRegistry.lookupActivation(record.activation());
                 if (activation == null) {
-                    errors.add("Artifact at line: " + line + " has " +
-                            "an unknown activation: " + record.activation());
-                    continue;
+                    String message = "Artifact at line: "+ line + " of file: " + filename + " has " +
+                            "an unknown activation: " + record.activation();
+                    logger.warn(message);
                 }
             }
-            String activationMsg = record.msg();
-            Random time = null;
+            String activationMsg = record.msg().isEmpty() ? null : record.msg();
+            
+            Random time = Random.Zero();
             if (!record.time().isEmpty()) {
                 time = Random.parseStr(record.time());
                 if (time == null) {
-                    errors.add("Artifact at line: " + line + " has " +
-                            "a malformed time dice string: " + record.time());
-                    continue;
+                    String message = "Artifact at line: "+ line + " of file: " + filename + " has " +
+                            "a malformed time dice string: " + record.time();
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
                 }
             }
 
@@ -315,15 +340,19 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                 objectBase = null;
 
             if (objectBase == null) {
-                errors.add("Artifact at line: " + line + " has " +
-                        "an unknown object type: " + tVal);
-                continue;
+                String message = "Artifact at line: "+ line + " of file: " + filename + " has " +
+                        "an unknown object type: " + tVal;
+                logger.fatal(message);
+                throw new DataFileParseException(message);
             }
-
-
+            
             ObjectKind objectKind = ObjectRegistry.lookupObjectKind(tVal, sVal);
+            
+            boolean special = (objectKind == null) 
+                    || (objectKind != null && objectKind.getKindIndex() >= ObjectRegistry.getObjectBaseKindMax());
 
-            boolean specialLight = (objectKind == null && tVal == TValue.TV_LIGHT);
+            boolean specialLight = (objectKind == null && tVal == TValue.TV_LIGHT) 
+                    || (special && tVal == TValue.TV_LIGHT);
 
             Activation artActivation = activation;
             Random artTime = time;
@@ -331,8 +360,9 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
             Random kindTime = null;
 
             if (specialLight) {
-                kindTime = artTime;
-                artTime = null;
+                if (!record.time().isEmpty())
+                    kindTime = artTime;
+                artTime = Random.Zero();
                 kindActivation = artActivation;
                 artActivation = null;
             }
@@ -345,24 +375,32 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
             if (objectKind == null) {
                 objectKind = new ObjectKind(artifact, sVal, objectBase);
                 ObjectRegistry.addObjectKind(objectKind);
-                if (objectKind.getKindIndex() >= ObjectRegistry.getObjectBaseKindMax()) {
-                    objectKind.setWeight(weight);
-                    objectKind.setCost(cost);
-                }
-
-                if (kindActivation != null) {
-                    List<Activation> kindActivations = objectKind.getActivations();
-                    kindActivations.add(kindActivation);
-                }
-
-                if (kindTime != null) {
-                    objectKind.setTime(kindTime);
-                }
             }
+
+            if (special && !record.weight().isEmpty())
+                objectKind.setWeight(weight);
+            if (special && !record.cost().isEmpty())
+                objectKind.setCost(cost);
+
+            if (specialLight && !record.activation().isEmpty()) {
+                List<Activation> kindActivations = objectKind.getActivations();
+                kindActivations.clear();
+                if (kindActivation != null)
+                    kindActivations.add(kindActivation);
+            }
+
+            if (kindTime != null) {
+                objectKind.setTime(kindTime);
+            }            
 
             if (!record.glyph().isEmpty()) {
                 if (objectKind.getKindFlags().has(ObjectKindFlag.KF_INSTA_ART)) {
                     objectKind.setCharacter(new AngbandDisplayCharacter(record.glyph().charAt(0), record.colour()));
+                } else {
+                    String message = "Artifact beginning at line: " + line + " of file: " + filename
+                            + " has an unknown error with token glyph value: " + record.glyph();
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
                 }
             }
 

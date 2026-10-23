@@ -26,7 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
- * Unit tests for {@link HelperFunctions#parseIntString}.
+ * Unit tests for both forms of {@link HelperFunctions#parseIntString}: the base 0 reading and the
+ * fixed-base reading.
  *
  * <p>The expected values are worked out from C, not from the Java. {@code parse_act_aim},
  * {@code parse_act_level} and {@code parse_act_power} in {@code obj-init.c} take their numbers from
@@ -39,6 +40,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * deviation recorded in {@code docs/Accepted_Deviations.md}, so the out-of-range rows expect
  * {@link Integer#MAX_VALUE} and {@link Integer#MIN_VALUE}, not C's wrapped value.
  *
+ * <p>The fixed-base form is the reading {@code grab_int_range} in {@code datafile.c} gives the two
+ * numbers of an {@code alloc:} range: {@code strtol} in base 10. Its rows were worked out with
+ * {@code strtol(text, &end, 10)}, and the base 8 rows with {@code strtol(text, &end, 8)}.
+ *
  * <p>The lexer's {@code INTEGER} token only produces an optional {@code -} and ASCII digits, so
  * the octal digit-limit rows ({@code 08}, {@code 019}) are reachable from a data file while the
  * {@code 12abc} and {@code abc} rows have to be injected by hand.
@@ -46,7 +51,15 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class HelperFunctionsTest {
 
     private static int parse(String text) {
-        return HelperFunctions.parseIntString(text, 7, "activation.txt", "level");
+        return HelperFunctions.parseIntString("", text, 7, "activation.txt", "level");
+    }
+
+    private static int parseDecimal(String text) {
+        return HelperFunctions.parseIntString("Artifact", text, 7, "artifact.txt", "Min", false);
+    }
+
+    private static int parseOctal(String text) {
+        return HelperFunctions.parseIntString("Artifact", text, 7, "artifact.txt", "Min", true);
     }
 
     @Test
@@ -152,5 +165,76 @@ class HelperFunctionsTest {
         assertEquals(true, message.contains("line: 7"), message);
         assertEquals(true, message.contains("activation.txt"), message);
         assertEquals(true, message.contains("level"), message);
+    }
+
+    // ---- the fixed-base form --------------------------------------------
+
+    @Test
+    void theFixedBaseFormGivesZeroForEmptyTextAndALoneMinus() {
+        assertEquals(0, parseDecimal(""));
+        // C's strtol finds no digits in "-" and refuses it as PARSE_ERROR_NOT_NUMBER; the lexer never
+        // produces it, so the Java answers 0 (see the class block of HelperFunctions).
+        assertEquals(0, parseDecimal("-"));
+    }
+
+    @ParameterizedTest(name = "base 10 {0} -> {1}")
+    @CsvSource({
+            "0, 0",
+            "00, 0",
+            "-0, 0",
+            "7, 7",
+            "08, 8",
+            "09, 9",
+            "010, 10",
+            "017, 17",
+            "019, 19",
+            "0178, 178",
+            "-08, -8",
+            "-010, -10",
+            "255, 255",
+            "12abc, 12",
+            "-4x, -4"
+    })
+    void aLeadingZeroIsStillDecimalInTheFixedBaseForm(String text, int expected) {
+        assertEquals(expected, parseDecimal(text));
+    }
+
+    @ParameterizedTest(name = "base 10 clamp {0} -> {1}")
+    @CsvSource({
+            "2147483647, 2147483647",
+            "2147483648, 2147483647",
+            "99999999999999999999999, 2147483647",
+            "-2147483648, -2147483648",
+            "-2147483649, -2147483648"
+    })
+    void theFixedBaseFormClampsAValueTooBigForAnInt(String text, int expected) {
+        assertEquals(expected, parseDecimal(text));
+    }
+
+    @ParameterizedTest(name = "base 8 {0} -> {1}")
+    @CsvSource({
+            "10, 8",
+            "17, 15",
+            "19, 1",
+            "-17, -15",
+            "0, 0"
+    })
+    void theOctalSwitchReadsInBase8WhateverTheTextStartsWith(String text, int expected) {
+        assertEquals(expected, parseOctal(text));
+    }
+
+    @Test
+    void aDigitOutsideTheBaseWithNothingBeforeItStopsTheLoad() {
+        // strtol("8", &end, 8) consumes nothing, which parser.c would refuse as NOT_NUMBER.
+        assertThrows(DataFileParseException.class, () -> parseOctal("8"));
+        assertThrows(DataFileParseException.class, () -> parseDecimal("abc"));
+    }
+
+    @Test
+    void theMessageOpensWithTheRecordKindItWasGiven() {
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> parseDecimal("abc"));
+        assertEquals(true, e.getMessage().startsWith("Artifact beginning at line: 7 of file: artifact.txt"),
+                e.getMessage());
+        assertEquals(true, e.getMessage().contains("Min"), e.getMessage());
     }
 }

@@ -210,18 +210,19 @@ class ArtifactAccessorsTest {
         }
 
         /**
-         * The activation and the recharge dice are copied too, so the two artifacts can be
-         * recharged independently.
+         * The recharge dice are copied, as C's {@code memcpy} copies the {@code random_value}
+         * struct, but the activation is not: {@code copy_artifact} in {@code obj-randart.c} sets
+         * {@code activation} to {@code NULL} on the copy.
          */
         @Test
-        @DisplayName("the activation and dice are duplicated")
-        void activationAndDiceDuplicated() {
+        @DisplayName("the dice are duplicated and the activation is dropped")
+        void diceDuplicatedActivationDropped() {
             Artifact original = artifact();
             Artifact duplicate = original.copy();
 
-            assertNotSame(original.getActivation(), duplicate.getActivation());
             assertNotSame(original.getTime(), duplicate.getTime());
-            assertEquals(original.getActivation().getPower(), duplicate.getActivation().getPower());
+            assertEquals(20, duplicate.getTime().getSides());
+            assertNull(duplicate.getActivation());
         }
 
         /**

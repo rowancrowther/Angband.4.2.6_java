@@ -141,12 +141,12 @@ public class ActivationAssembler implements Assembler<ActivationParseRecord, Lis
                     logger.fatal(message);
                     throw new DataFileParseException(message);
                 }
-                int aimValue = HelperFunctions.parseIntString(record.aim(), line, filename, "aim");
+                int aimValue = HelperFunctions.parseIntString("Activation", record.aim(), line, filename, "aim");
                 aim = aimValue != 0;
             }
             int level = 0;
             if (!record.level().isEmpty()) {
-                level = HelperFunctions.parseIntString(record.level(), line, filename, "level");
+                level = HelperFunctions.parseIntString("Activation", record.level(), line, filename, "level");
             }
             int power = 0;
             if (!record.power().isEmpty()) {
@@ -157,7 +157,7 @@ public class ActivationAssembler implements Assembler<ActivationParseRecord, Lis
                     logger.fatal(message);
                     throw new DataFileParseException(message);
                 }
-                power = HelperFunctions.parseIntString(record.power(), line, filename, "power");
+                power = HelperFunctions.parseIntString("Activation", record.power(), line, filename, "power");
             }
             if (power < 0) {
                 String message = "Activation beginning at line: " + line +

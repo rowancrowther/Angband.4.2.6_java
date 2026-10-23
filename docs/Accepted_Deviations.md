@@ -357,6 +357,29 @@ recorded here as the summary states them; fill in the detail when you next touch
 - **Accepted:** 2026-10-22, as a deliberate deviation, extended the same day from `level:` and `power:` to every
   out of range integer. To be marked in the `parseString` Javadoc when it is written.
 
+## Artifact
+
+### A special artifact's kind takes the artifact's finished level, where C's is 0
+
+- **Java:** `ObjectKind(Artifact, String, ObjectBase)`, called from `ArtifactAssembler.assemble`. **C:**
+  `write_dummy_object_record` (`obj-init.c`), called from `parse_artifact_base_object`.
+- **Differs:** C sets `dummy->level = art->level` while the `base-object:` line is being read. At that point the
+  artifact is a zeroed record holding only its name, because `level:` has not been read yet, so the kind's level is 0.
+  In every record of `artifact.txt`, `level:` comes after `base-object:`, so all 14 special kinds (three lights, six
+  rings and five amulets) get level 0 in C. Java assembles from a finished record, so it cannot see the line order, and
+  the constructor copies the artifact's final level: the Phial's kind is level 5 in Java and 0 in C. C would copy the
+  level only if a file put `level:` before `base-object:`.
+- **Reach:** only code that reads the kind's level of a special artifact directly. C's artifact paths for activation
+  level, device failure and the activation boost in the object description all test `obj->artifact` first, so they are
+  unaffected. The one reader found is `object_learn_on_use` (`obj-knowledge.c`), whose experience gain uses
+  `obj->kind->level`, so a special light, ring or amulet learned on use gives different experience. The two
+  `obj->kind->level` reads in `effect-handler-general.c` were not traced.
+- **Revisit:** if the experience from learning a special artifact on use needs to match C exactly, or when those
+  `effect-handler-general.c` reads are ported and reach an artifact. Then the kind is built with level 0 instead of the
+  artifact's.
+- **Accepted:** 2026-10-22. The constructor Javadoc still says the level is copied "as C does", which is true of C's
+  intent but not of its value; to be corrected to point here.
+
 ## Pending your decision
 
 - The five `objDescNameFormat` divergences (Part G; `docs/ItemObject_round2/part_G.md`). All unreachable from shipped

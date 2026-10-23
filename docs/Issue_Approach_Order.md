@@ -219,7 +219,7 @@ Paths are under `src/main/java/uk/co/jackoftradesltd/`. The figure in brackets i
 - `backend/parser/brand/BrandAssembler.java` (5): ~~86, 97, 108, 116, 124~~
 - `backend/parser/chesttrap/ChestTrapAssembler.java` (9): ~~78, 88, 95, 102, 113, 120, 131, 137, 155~~
 - `backend/parser/curse/CurseAssembler.java` (17): ~~190, 205, 220, 225, 250, 260, 281, 285, 295, 299, 311, 321, 331, 344, 357, 366, 408~~
-- `backend/parser/dungeonprofile/DungeonProfileAssembler.java` (3): 80, 106, 116
+- `backend/parser/dungeonprofile/DungeonProfileAssembler.java` (3): ~~80, 106, 116~~
 - `backend/parser/dungeonprofile/RoomAssembler.java` (6): 66, 74, 82, 90, 99, 107
 - `backend/parser/dungeonprofile/StreamerAssembler.java` (7): 52, 66, 73, 80, 87, 94, 101
 - `backend/parser/dungeonprofile/TunnelAssembler.java` (6): 57, 73, 81, 89, 97, 105

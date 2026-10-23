@@ -455,11 +455,13 @@ class DungeonProfileReaderTest {
     }
 
     /**
-     * An overflowing field on a {@code room:} line costs that room, not the whole profile: the room
-     * sub-assembler reports and skips, and the profile is still built from the rooms that converted.
+     * C: {@code parser_getint} reads {@code 99999999999} with {@code strtol} and no range check, so
+     * the room loads with the low 32 bits as its level (1215752191). Here the value is clamped to
+     * {@link Integer#MAX_VALUE} instead (the {@code ParseUtils} clamp, an accepted deviation), and
+     * the room still loads: nothing is dropped and nothing is reported.
      */
     @Test
-    void anOverflowingRoomFieldDropsOnlyThatRoom() throws IOException {
+    void anOverflowingRoomFieldIsClampedAndTheRoomKept() throws IOException {
         String path = tempFile("overflow-room.txt", String.join("\n",
                 "record-count:1",
                 "name:classic",
@@ -473,11 +475,10 @@ class DungeonProfileReaderTest {
         ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
 
         List<RoomProfile> rooms = result.items().getFirst().getRoomProfiles();
-        assertEquals(List.of("simple room", "staircase room"),
+        assertEquals(List.of("simple room", "large room", "staircase room"),
                 rooms.stream().map(RoomProfile::getName).toList());
-        assertTrue(result.errors().stream()
-                        .anyMatch(e -> e.contains("invalid level integer") && e.contains("99999999999")),
-                result.errors()::toString);
+        assertEquals(Integer.MAX_VALUE, rooms.get(1).getLevel());
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
     }
 
     /**
@@ -686,11 +687,12 @@ class DungeonProfileReaderTest {
 
     /**
      * C: {@code r->pit = (parser_getint(p, "pit") == 1)}, and {@code parser_getint} is
-     * {@code strtol} in base 0, so {@code pit:01} is 1 and the room is a pit. Java compares the
-     * text with {@code "1"}, so {@code 01} is not a pit.
+     * {@code strtol} in base 0, so {@code pit:01} is 1 and the room is a pit. Java now parses the
+     * value before comparing, so it agrees; this was a pinned difference until 261023, when the
+     * text compare with {@code "1"} was replaced.
      */
     @Test
-    void aPitWrittenWithALeadingZeroIsNotAPitHereWhereCReadsOne() throws IOException {
+    void aPitWrittenWithALeadingZeroIsAPitAsInC() throws IOException {
         String path = tempFile("pit-01.txt", String.join("\n",
                 "record-count:1",
                 "name:classic",
@@ -701,7 +703,7 @@ class DungeonProfileReaderTest {
         ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
-        assertFalse(result.items().getFirst().getRoomProfiles().getFirst().isPit(), "C would say true");
+        assertTrue(result.items().getFirst().getRoomProfiles().getFirst().isPit());
     }
 
     /**

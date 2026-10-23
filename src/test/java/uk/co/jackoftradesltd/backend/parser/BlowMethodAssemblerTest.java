@@ -127,7 +127,7 @@ class BlowMethodAssemblerTest {
 
     @Test
     void aFlagTooBigForAnIntIsClampedTrueWhereCWrapsToZero() {
-        // Accepted deviation recorded on HelperFunctions: C's unsigned int keeps the low 32 bits,
+        // Accepted deviation recorded on ParseUtils: C's unsigned int keeps the low 32 bits,
         // so 4294967296 is 0 and false there. Pinned so a change to the clamp is noticed.
         assertTrue(withFlags("4294967296", "0", "0", "0").isCut());
     }

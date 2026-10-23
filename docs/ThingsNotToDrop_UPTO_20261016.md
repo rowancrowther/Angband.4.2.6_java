@@ -143,7 +143,7 @@ Wording is the precis's own, so line numbers and "today" refer to the date in ea
 ## 2026-09-18 (precis 260918.md)
 
 - [ ] The create/override split in `assemble` is the piece everything else in the entry parse hangs off; the lookup has to come before the field interpretation, not after.
-- [ ] `UIEntryPriorityScheme`'s `"negative index"` string and `HelperFunctions`' element index/count disagreement are both latent — nothing reads them on the current path, but both are wrong.
+- [ ] `UIEntryPriorityScheme`'s `"negative index"` string and `ParseUtils`' element index/count disagreement are both latent — nothing reads them on the current path, but both are wrong.
 
 ## 2026-09-19 (precis 260919.md)
 

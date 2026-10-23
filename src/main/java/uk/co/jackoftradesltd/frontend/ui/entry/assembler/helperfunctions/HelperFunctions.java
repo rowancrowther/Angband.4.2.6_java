@@ -21,10 +21,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.messages.data.PlayerEventStatusUpdate;
-import uk.co.jackoftradesltd.frontend.entries.UIEntry;
-import uk.co.jackoftradesltd.frontend.ui.entrybase.assembler.UIEntryBaseParseRecord;
-
-import java.util.List;
 
 /**
  * Static holders for the small lookup functions {@link uk.co.jackoftradesltd.frontend.ui.entry.assembler.helperfunctions.UIEntryNameParameter}
@@ -45,7 +41,7 @@ import java.util.List;
  * {@link #getStatCount()} carry no such offset, since {@code PlayerEventStatusUpdate}'s
  * {@code statString} snapshot has no placeholder of its own.
  *
- * <p>Class HelperFunctions coded before 260920, commented in full on 260920.
+ * <p>Class ParseUtils coded before 260920, commented in full on 260920.
  *
  * @author Rowan Crowther
  */

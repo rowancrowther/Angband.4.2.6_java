@@ -21,7 +21,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
-import uk.co.jackoftradesltd.backend.parser.HelperFunctions;
+import uk.co.jackoftradesltd.backend.parser.ParseUtils;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
@@ -86,7 +86,7 @@ public class BlowEffectAssembler implements Assembler<BlowEffectParseRecord, Lis
      * <p>Field by field, against [C] {@code mon-init.c}:
      * <ul>
      *   <li>{@code power:} and {@code eval:} default to 0, as in C's zeroed record. They are
-     *       read by {@link HelperFunctions#parseIntString(String, String, int, String, String)},
+     *       read by {@link ParseUtils#parseIntString(String, String, int, String, String)},
      *       as C's {@code parser_getint} reads them with {@code strtol} in base 0: a leading
      *       {@code 0} means octal, so {@code power:010} is 8. A figure too big for an
      *       {@code int} is clamped where C keeps its low 32 bits, the accepted deviation
@@ -143,12 +143,12 @@ public class BlowEffectAssembler implements Assembler<BlowEffectParseRecord, Lis
             String powerStr = record.power();
             int power = 0;
             if (!powerStr.isEmpty()) {
-                power = HelperFunctions.parseIntString("Blow Effect", record.power(), line, filename, "power");
+                power = ParseUtils.parseIntString("Blow Effect", record.power(), line, filename, "power");
             }
             String evalStr = record.eval();
             int eval = 0;
             if (!evalStr.isEmpty()) {
-                eval = HelperFunctions.parseIntString("Blow Effect", record.eval(), line, filename, "eval");
+                eval = ParseUtils.parseIntString("Blow Effect", record.eval(), line, filename, "eval");
             }
             String desc = record.desc();
             // An absent lore colour is left null - the port models "no lore colour" as null. [C]

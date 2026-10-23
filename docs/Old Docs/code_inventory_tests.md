@@ -5255,7 +5255,7 @@
 
 **Responsible for:** Unit tests for HelperFunctions, checked against C's name_parameters[] and priority_schemes[] function-pointer tables ([C] ui-entry.c:129-161) and the nine lookup functions they name ([C] ui-entry.c:1564-1653).
 
-**class `HelperFunctionsTest`** — class Javadoc: ✔ · type stamp: —
+**class `ParseUtilsTest`** — class Javadoc: ✔ · type stamp: —
 
 | Function | Ported (coded) | Javadoc |
 |---|---|---|

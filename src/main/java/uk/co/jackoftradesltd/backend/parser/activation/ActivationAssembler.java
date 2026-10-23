@@ -21,7 +21,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
-import uk.co.jackoftradesltd.backend.parser.HelperFunctions;
+import uk.co.jackoftradesltd.backend.parser.ParseUtils;
 import uk.co.jackoftradesltd.backend.parser.grammars.EffectAssembler;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.middle.Activation;
@@ -141,12 +141,12 @@ public class ActivationAssembler implements Assembler<ActivationParseRecord, Lis
                     logger.fatal(message);
                     throw new DataFileParseException(message);
                 }
-                int aimValue = HelperFunctions.parseIntString("Activation", record.aim(), line, filename, "aim");
+                int aimValue = ParseUtils.parseIntString("Activation", record.aim(), line, filename, "aim");
                 aim = aimValue != 0;
             }
             int level = 0;
             if (!record.level().isEmpty()) {
-                level = HelperFunctions.parseIntString("Activation", record.level(), line, filename, "level");
+                level = ParseUtils.parseIntString("Activation", record.level(), line, filename, "level");
             }
             int power = 0;
             if (!record.power().isEmpty()) {
@@ -157,7 +157,7 @@ public class ActivationAssembler implements Assembler<ActivationParseRecord, Lis
                     logger.fatal(message);
                     throw new DataFileParseException(message);
                 }
-                power = HelperFunctions.parseIntString("Activation", record.power(), line, filename, "power");
+                power = ParseUtils.parseIntString("Activation", record.power(), line, filename, "power");
             }
             if (power < 0) {
                 String message = "Activation beginning at line: " + line +

@@ -26,8 +26,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
- * Unit tests for both forms of {@link HelperFunctions#parseIntString}: the base 0 reading and the
- * fixed-base reading.
+ * Unit tests for both forms of {@link ParseUtils#parseIntString}: the base 0 reading and the
+ * fixed-base reading, and for {@link ParseUtils#minusFound}, the leading-{@code -} test that
+ * {@code parser_parse} in {@code parser.c} applies to a {@code uint} token.
  *
  * <p>The expected values are worked out from C, not from the Java. {@code parse_act_aim},
  * {@code parse_act_level} and {@code parse_act_power} in {@code obj-init.c} take their numbers from
@@ -48,18 +49,18 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * the octal digit-limit rows ({@code 08}, {@code 019}) are reachable from a data file while the
  * {@code 12abc} and {@code abc} rows have to be injected by hand.
  */
-class HelperFunctionsTest {
+class ParseUtilsTest {
 
     private static int parse(String text) {
-        return HelperFunctions.parseIntString("", text, 7, "activation.txt", "level");
+        return ParseUtils.parseIntString("", text, 7, "activation.txt", "level");
     }
 
     private static int parseDecimal(String text) {
-        return HelperFunctions.parseIntString("Artifact", text, 7, "artifact.txt", "Min", false);
+        return ParseUtils.parseIntString("Artifact", text, 7, "artifact.txt", "Min", false);
     }
 
     private static int parseOctal(String text) {
-        return HelperFunctions.parseIntString("Artifact", text, 7, "artifact.txt", "Min", true);
+        return ParseUtils.parseIntString("Artifact", text, 7, "artifact.txt", "Min", true);
     }
 
     @Test
@@ -173,7 +174,7 @@ class HelperFunctionsTest {
     void theFixedBaseFormGivesZeroForEmptyTextAndALoneMinus() {
         assertEquals(0, parseDecimal(""));
         // C's strtol finds no digits in "-" and refuses it as PARSE_ERROR_NOT_NUMBER; the lexer never
-        // produces it, so the Java answers 0 (see the class block of HelperFunctions).
+        // produces it, so the Java answers 0 (see the class block of ParseUtils).
         assertEquals(0, parseDecimal("-"));
     }
 
@@ -236,5 +237,38 @@ class HelperFunctionsTest {
         assertEquals(true, e.getMessage().startsWith("Artifact beginning at line: 7 of file: artifact.txt"),
                 e.getMessage());
         assertEquals(true, e.getMessage().contains("Min"), e.getMessage());
+    }
+
+    // minusFound mirrors the "*tok == '-'" half of the PARSE_T_UINT test in parser.c's
+    // parser_parse(): only the first byte of the raw token is looked at, never the value.
+    @ParameterizedTest(name = "minusFound \"{0}\" -> {1}")
+    @CsvSource({
+            "-5, true",
+            "-0, true",
+            "-, true",
+            "--5, true",
+            "-abc, true",
+            "5, false",
+            "0, false",
+            "010, false",
+            "5-, false",
+            "+5, false",
+            "'−5', false"
+    })
+    void minusFoundLooksOnlyAtTheFirstCharacter(String text, boolean expected) {
+        assertEquals(expected, ParseUtils.minusFound(text));
+    }
+
+    @Test
+    void minusFoundIsFalseForEmptyText() {
+        // An absent optional field: C's *tok would be '\0', never '-'.
+        assertEquals(false, ParseUtils.minusFound(""));
+    }
+
+    @Test
+    void minusFoundDoesNotLookPastALeadingSpace() {
+        // strtoul skips the space, but parser.c's *tok == '-' sees ' ' and lets " -5" through.
+        assertEquals(false, ParseUtils.minusFound(" -5"));
+        assertEquals(false, ParseUtils.minusFound("\t-5"));
     }
 }

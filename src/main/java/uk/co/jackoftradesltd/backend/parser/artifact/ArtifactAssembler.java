@@ -21,7 +21,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
-import uk.co.jackoftradesltd.backend.parser.HelperFunctions;
+import uk.co.jackoftradesltd.backend.parser.ParseUtils;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
@@ -44,7 +44,7 @@ import java.util.*;
  * info as it goes (reader &rarr; ParseRecord &rarr; assembler &rarr; domain). It does the work of
  * the {@code parse_artifact_*} handlers in C's {@code obj-init.c}.
  *
- * <p>Integers from the record are read through {@link HelperFunctions#parseIntString}, which
+ * <p>Integers from the record are read through {@link ParseUtils#parseIntString}, which
  * reads them as C's {@code strtol} with base 0 does, so a leading zero is octal. The figures in
  * {@code values:} are decimal, as {@code find_value_arg} in {@code datafile.c} reads them.
  *
@@ -130,13 +130,13 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                 }
             }
             String sVal = record.sValue();
-            int toh = HelperFunctions.parseIntString("Artifact", record.toh(), line, filename, "To hit");
-            int tod = HelperFunctions.parseIntString("Artifact", record.tod(), line, filename, "To damage");
-            int baseAC = HelperFunctions.parseIntString("Artifact", record.baseAC(), line, filename, "Base AC");
-            int toa = HelperFunctions.parseIntString("Artifact", record.toa(), line, filename, "To AC");
+            int toh = ParseUtils.parseIntString("Artifact", record.toh(), line, filename, "To hit");
+            int tod = ParseUtils.parseIntString("Artifact", record.tod(), line, filename, "To damage");
+            int baseAC = ParseUtils.parseIntString("Artifact", record.baseAC(), line, filename, "Base AC");
+            int toa = ParseUtils.parseIntString("Artifact", record.toa(), line, filename, "To AC");
             String baseDamageString = record.baseDamage();
-            int weight = HelperFunctions.parseIntString("Artifact", record.weight(), line, filename, "Weight");
-            int cost = HelperFunctions.parseIntString("Artifact", record.cost(), line, filename, "Cost");
+            int weight = ParseUtils.parseIntString("Artifact", record.weight(), line, filename, "Weight");
+            int cost = ParseUtils.parseIntString("Artifact", record.cost(), line, filename, "Cost");
             Flag<ObjectFlag> flags = new Flag<>(ObjectFlag.class);
             Map<ElementEnum, Set<ElementInfoEnum>> elements = new HashMap<>();
             for (String flag : record.flagList()) {
@@ -302,23 +302,23 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                     int power;
                     CurseData curseData;
                     String value = record.curse().get(key);
-                    power = HelperFunctions.parseIntString("Artifact", value, line, filename, "power");
+                    power = ParseUtils.parseIntString("Artifact", value, line, filename, "power");
                     if (power > 0) {
                         curseData = new CurseData(power, 0);
                         curses.put(curse, curseData);
                     }
                 }
             }
-            int level = HelperFunctions.parseIntString("Artifact", record.level(), line, filename, "Level");
-            int commonness = HelperFunctions.parseIntString("Artifact", record.commonness(), line, filename, "Commonness");
-            int min = HelperFunctions.parseIntString("Artifact", record.min(), line, filename, "Min", false);
+            int level = ParseUtils.parseIntString("Artifact", record.level(), line, filename, "Level");
+            int commonness = ParseUtils.parseIntString("Artifact", record.commonness(), line, filename, "Commonness");
+            int min = ParseUtils.parseIntString("Artifact", record.min(), line, filename, "Min", false);
             if (0 > min || min > 255) {
                 String message = "Artifact beginning at line: " + line + " of file: " + filename
                         + " has an unknown error with token min value: " + record.min();
                 logger.fatal(message);
                 throw new DataFileParseException(message);
             }
-            int max = HelperFunctions.parseIntString("Artifact", record.max(), line, filename, "Max", false);
+            int max = ParseUtils.parseIntString("Artifact", record.max(), line, filename, "Max", false);
             if (0 > max || max > 255) {
                 String message = "Artifact beginning at line: " + line + " of file: " + filename
                         + " has an unknown error with token max value: " + record.max();
@@ -389,7 +389,7 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
             if (objectKind == null) {
                 objectKind = new ObjectKind(artifact, sVal, objectBase);
                 if (record.levelFirst()) {
-                    level = HelperFunctions.parseIntString("Artifact", record.baseObjectLevel(), line,
+                    level = ParseUtils.parseIntString("Artifact", record.baseObjectLevel(), line,
                             filename, "Level");
                     objectKind.setLevel(level);
                 }

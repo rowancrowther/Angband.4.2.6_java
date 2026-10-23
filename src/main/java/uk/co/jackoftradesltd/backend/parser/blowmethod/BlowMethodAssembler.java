@@ -21,7 +21,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
-import uk.co.jackoftradesltd.backend.parser.HelperFunctions;
+import uk.co.jackoftradesltd.backend.parser.ParseUtils;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.middle.combat.BlowMethod;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
@@ -75,7 +75,7 @@ public class BlowMethodAssembler implements Assembler<BlowMethodParseRecord, Lis
      * <ul>
      *   <li><strong>{@code cut:}, {@code stun:}, {@code miss:} and {@code phys:}</strong>
      *       are read by
-     *       {@link HelperFunctions#parseIntString(String, String, int, String, String)}, as
+     *       {@link ParseUtils#parseIntString(String, String, int, String, String)}, as
      *       C's {@code parser_getuint} reads them with {@code strtoul} in base 0, and then
      *       stored as {@code val ? true : false}. So any non-zero value is true, and
      *       {@code cut:00} is false, as octal 0. A leading {@code -} ends the load, as
@@ -83,7 +83,7 @@ public class BlowMethodAssembler implements Assembler<BlowMethodParseRecord, Lis
      *       grammar's {@code INTEGER} token lets one through, so the check is made here. A
      *       figure too big for an {@code int} is clamped where C wraps it into its
      *       {@code unsigned int} and then its {@code int}, the accepted deviation recorded
-     *       on {@link HelperFunctions}: {@code cut:4294967296} is 0, and so false, in C,
+     *       on {@link ParseUtils}: {@code cut:4294967296} is 0, and so false, in C,
      *       but true here.</li>
      *   <li><strong>{@code msg:} is optional and defaults to {@code MSG_GENERIC}.</strong>
      *       C registers it as {@code "msg ?str msg"} and assigns {@code msgt} only when
@@ -127,32 +127,32 @@ public class BlowMethodAssembler implements Assembler<BlowMethodParseRecord, Lis
         for (BlowMethodParseRecord record : records) {
             int line = record.line();
             String name = record.name();
-            int cutValue = HelperFunctions.parseIntString("Blow method", record.cut(), line, filename, "cut");
-            if (HelperFunctions.minusFound(record.cut())) {
+            int cutValue = ParseUtils.parseIntString("Blow method", record.cut(), line, filename, "cut");
+            if (ParseUtils.minusFound(record.cut())) {
                 String message = "Blow method beginning at line: " + line + " of file: " + filename
                         + " has an invalid cut value: " + record.cut();
                 logger.fatal(message);
                 throw new DataFileParseException(message);
             }
             boolean cut = cutValue != 0;
-            int stunValue = HelperFunctions.parseIntString("Blow method", record.stun(), line, filename, "stun");
-            if (HelperFunctions.minusFound(record.stun())) {
+            int stunValue = ParseUtils.parseIntString("Blow method", record.stun(), line, filename, "stun");
+            if (ParseUtils.minusFound(record.stun())) {
                 String message = "Blow method beginning at line: " + line + " of file: " + filename
                         + " has an invalid stun value: " + record.stun();
                 logger.fatal(message);
                 throw new DataFileParseException(message);
             }
             boolean stun = stunValue != 0;
-            int missValue = HelperFunctions.parseIntString("Blow method", record.miss(), line, filename, "miss");
-            if (HelperFunctions.minusFound(record.miss())) {
+            int missValue = ParseUtils.parseIntString("Blow method", record.miss(), line, filename, "miss");
+            if (ParseUtils.minusFound(record.miss())) {
                 String message = "Blow method beginning at line: " + line + " of file: " + filename
                         + " has an invalid miss value: " + record.miss();
                 logger.fatal(message);
                 throw new DataFileParseException(message);
             }
             boolean miss = missValue != 0;
-            int physValue = HelperFunctions.parseIntString("Blow method", record.phys(), line, filename, "phys");
-            if (HelperFunctions.minusFound(record.phys())) {
+            int physValue = ParseUtils.parseIntString("Blow method", record.phys(), line, filename, "phys");
+            if (ParseUtils.minusFound(record.phys())) {
                 String message = "Blow method beginning at line: " + line + " of file: " + filename
                         + " has an invalid physValue: " + record.phys();
                 logger.fatal(message);

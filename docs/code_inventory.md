@@ -4233,7 +4233,7 @@
 
 **Responsible for:** Static holders for the small lookup functions uk.co.jackoftradesltd.frontend.ui.entry.assembler.helperfunctions.UIEntryNameParameter and uk.co.jackoftradesltd.frontend.ui.entry.assembler.helperfunctions.UIEntryPriorityScheme wrap, the Java form of the count_func/ith_name_func pairs in C's name_pa...
 
-**class `HelperFunctions`** — class Javadoc: ✔ · type stamp: before 260920
+**class `ParseUtils`** — class Javadoc: ✔ · type stamp: before 260920
 
 - Fields (1/1 documented): ✔ `logger`
 

@@ -25,8 +25,11 @@ import java.math.BigInteger;
 
 /**
  * Shared number reading for the assemblers, so far used by {@link
- * uk.co.jackoftradesltd.backend.parser.activation.ActivationAssembler} and {@link
- * uk.co.jackoftradesltd.backend.parser.artifact.ArtifactAssembler}. The grammar hands over an
+ * uk.co.jackoftradesltd.backend.parser.activation.ActivationAssembler}, {@link
+ * uk.co.jackoftradesltd.backend.parser.artifact.ArtifactAssembler}, {@link
+ * uk.co.jackoftradesltd.backend.parser.bloweffect.BlowEffectAssembler}, {@link
+ * uk.co.jackoftradesltd.backend.parser.blowmethod.BlowMethodAssembler} and {@link
+ * uk.co.jackoftradesltd.backend.parser.brand.BrandAssembler}. The grammar hands over an
  * integer as text, and these functions turn it into an {@code int} the way {@code parser.c} does
  * for the {@code int} and {@code uint} fields of a data-file line: {@code parser_getint} reads
  * with {@code strtol} and {@code parser_getuint} with {@code strtoul}, both in base 0, so a
@@ -56,11 +59,14 @@ import java.math.BigInteger;
  * here and 16 in C). Text with trailing characters after the digits is read up to them, as
  * {@code strtol} does.
  *
- * <p>Class HelperFunctions coded on 261022, commented in full on 261022.
+ * <p>The number readers never refuse a sign. For the {@code uint} fields, where C does, the
+ * caller asks {@link #minusFound(String)} about the raw text and ends the load itself.
+ *
+ * <p>Class ParseUtils coded on 261022, commented in full on 261023.
  */
-public class HelperFunctions {
+public class ParseUtils {
     /** Receives the fatal message before each {@link DataFileParseException} is thrown. */
-    private static final Logger logger = LogManager.getLogger(HelperFunctions.class);
+    private static final Logger logger = LogManager.getLogger(ParseUtils.class);
 
     /**
      * Read the text of an {@code aim:}, {@code level:} or {@code power:} line as C's {@code strtol}
@@ -235,6 +241,23 @@ public class HelperFunctions {
         return parseString(type, string, line, filename, token, foundMinus, 10);
     }
 
+    /**
+     * Whether the raw text of a {@code uint} field starts with {@code -}: the second half of the
+     * test in {@code parser.c}, function {@code parser_parse()}, which ends the load with
+     * {@code PARSE_ERROR_NOT_NUMBER} when {@code strtoul} reads no digits <em>or</em> the token's
+     * first character is {@code -}. Only the first character is looked at, as C's
+     * {@code *tok == '-'} does, so {@code -0} counts although its value is 0, which is why the
+     * callers test the text and not the number {@link #parseIntString} gives back.
+     *
+     * <p>Empty text, an absent optional field, gives {@code false}: C never reaches the test then,
+     * and its {@code '\0'} would not match anyway. Text with a leading space is not looked past,
+     * also as in C, though the lexer never produces one.
+     *
+     * <p>Function minusFound coded on 261023, commented in full on 261023.
+     *
+     * @param string the raw text from the parse record, not {@code null}
+     * @return {@code true} if the first character is {@code -}
+     */
     public static boolean minusFound(String string) {
         if (string.isEmpty())
             return false;

@@ -460,7 +460,7 @@ class BlowEffectReaderTest {
     @Test
     void anOversizedPowerIsClampedTheAcceptedDeviation(@TempDir Path dir) throws IOException {
         // C keeps the low 32 bits of strtol's 64-bit result (3000000000 -> -1294967296); the
-        // port clamps, as recorded in HelperFunctions and docs/Accepted_Deviations.md.
+        // port clamps, as recorded in ParseUtils and docs/Accepted_Deviations.md.
         assertEquals(Integer.MAX_VALUE, one(dir, "power:3000000000\n").getPower());
     }
 

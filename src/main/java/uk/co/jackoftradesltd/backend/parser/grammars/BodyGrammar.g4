@@ -54,5 +54,5 @@ file
         returns[String declaredRecordCount, List<BodyParseRecord> bodies]
         :   recordCount { $declaredRecordCount = $recordCount.count;
                           $bodies = new ArrayList<>(); }
-            (bodyType { $bodies.add($bodyType.record); })+ EOF
+            (bodyType { $bodies.addFirst($bodyType.record); })+ EOF
         ;

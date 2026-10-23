@@ -19,6 +19,7 @@ package uk.co.jackoftradesltd.backend.parser;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftradesltd.middle.player.PlayerBody;
@@ -39,9 +40,13 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@link PlayerBody} holding an <em>ordered</em> list of {@link uk.co.jackoftradesltd.middle.player.EquipSlot}s,
  * each slot's {@code TYPE} resolved to an {@link EquipmentSlotsEnum}. Order is significant (slots are
  * index-addressed) and duplicate slot types are legal (the two {@code RING} fingers), so both are
- * asserted directly. The suite also covers the whole-body rejection on a bad slot type (a corrupt
- * slot would shift every later index, so the body is dropped rather than half-built) and both error
- * channels {@code GrammarDriver} threads through {@link ParseResult}.
+ * asserted directly. The suite also covers the load-ending {@code DataFileParseException} on a bad
+ * slot type (C's {@code parse_body_slot} returns {@code PARSE_ERROR_INVALID_FLAG}, which ends the
+ * whole file), C's newest-first body order, and both error channels {@code GrammarDriver} threads
+ * through {@link ParseResult}.
+ *
+ * <p>Class BodyReaderTest coded before 261023, updated on 261023 for the load-ending slot errors and
+ * C's body order.
  *
  * <p>No registry seeding is required — a body resolves entirely against a compile-time enum, with no
  * cross-file references, so nothing needs {@code GameConstants} loaded first.
@@ -127,29 +132,20 @@ class BodyReaderTest {
         assertEquals(2, byName(result.items(), "Second").getCount());
     }
 
-    // ---- Soft errors: skip-and-continue, partial results survive ---------
+    // ---- Load-ending slot errors: C's parse_body_slot returns PARSE_ERROR_INVALID_FLAG ----
 
     @Test
-    void invalidSlotTypeRejectsTheWholeBody() throws IOException {
-        // A bad slot type would shift every later slot's index, so the entire body is dropped.
-        ParseResult<PlayerBody> result = load("bad-slot.txt", withHeader(1,
-                "body:Weird\nslot:WEAPON:weapon\nslot:NOTASLOT:somewhere\n"));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("Invalid equipment slot type")),
-                result.errors()::toString);
+    void invalidSlotTypeEndsTheLoad() {
+        assertThrows(DataFileParseException.class, () -> load("bad-slot.txt", withHeader(1,
+                "body:Weird\nslot:WEAPON:weapon\nslot:NOTASLOT:somewhere\n")));
     }
 
     @Test
-    void oneBadBodyIsDroppedButOtherBodiesStillLoad() throws IOException {
-        ParseResult<PlayerBody> result = load("mixed.txt", withHeader(2,
+    void oneBadBodyEndsTheLoadForTheGoodOneToo() {
+        // C's first parser error ends the whole file, so there is no partial result.
+        assertThrows(DataFileParseException.class, () -> load("mixed.txt", withHeader(2,
                 "body:Good\nslot:WEAPON:weapon\n"
-                        + "body:Bad\nslot:NOTASLOT:somewhere\n"));
-
-        assertEquals(1, result.items().size());
-        assertNotNull(byName(result.items(), "Good"));
-        assertNull(byName(result.items(), "Bad"));
-        assertTrue(result.hasErrors());
+                        + "body:Bad\nslot:NOTASLOT:somewhere\n")));
     }
 
     @Test
@@ -233,13 +229,13 @@ class BodyReaderTest {
     }
 
     @Test
-    void bodiesComeBackInFileOrderWhereCListsThemNewestFirst() throws IOException {
-        // C's parse_body_body pushes each body on the front, so its list would read Third, Second, First.
+    void bodiesComeBackNewestFirstAsCListsThem() throws IOException {
+        // C's parse_body_body pushes each body on the front, so its list reads Third, Second, First.
         ParseResult<PlayerBody> result = load("order.txt", withHeader(3,
                 "body:First\nslot:WEAPON:a\nbody:Second\nslot:BOW:b\nbody:Third\nslot:LIGHT:c\n"));
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
-        assertEquals(List.of("First", "Second", "Third"),
+        assertEquals(List.of("Third", "Second", "First"),
                 result.items().stream().map(PlayerBody::getName).toList());
     }
 
@@ -262,25 +258,21 @@ class BodyReaderTest {
                 result.errors()::toString);
     }
 
-    // ---- Differences from C ------------------------------------------------
-
     @Test
-    void slotTypeNoneLoadsHereWhereCRejectsIt() throws IOException {
+    void slotTypeNoneEndsTheLoadAsInC() {
         // C: lookup_flag(slots, "NONE") returns 0, so parse_body_slot returns PARSE_ERROR_INVALID_FLAG.
-        ParseResult<PlayerBody> result = load("none.txt", withHeader(1, "body:Odd\nslot:NONE:nothing\n"));
-
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
-        assertEquals(EquipmentSlotsEnum.EQUIP_NONE, result.items().get(0).getSlot(0).getType());
+        assertThrows(DataFileParseException.class,
+                () -> load("none.txt", withHeader(1, "body:Odd\nslot:NONE:nothing\n")));
     }
 
     @Test
-    void slotTypeMaxLoadsHereWhereCRejectsIt() throws IOException {
+    void slotTypeMaxEndsTheLoadAsInC() {
         // C: "MAX" is not in the slots table, so lookup_flag returns 0 and the line is an invalid flag.
-        ParseResult<PlayerBody> result = load("max.txt", withHeader(1, "body:Odd\nslot:MAX:nothing\n"));
-
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
-        assertEquals(EquipmentSlotsEnum.EQUIP_MAX, result.items().get(0).getSlot(0).getType());
+        assertThrows(DataFileParseException.class,
+                () -> load("max.txt", withHeader(1, "body:Odd\nslot:MAX:nothing\n")));
     }
+
+    // ---- Differences from C ------------------------------------------------
 
     @Test
     void aLowerCaseSlotTypeIsAHardLexerErrorWhereCReportsAnInvalidFlag() throws IOException {

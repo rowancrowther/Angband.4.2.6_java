@@ -181,8 +181,10 @@ blowEffect
             String resistInit = "";
             String lashTypeInit = "";
             int line = 0;
+            StringBuilder descSb = new StringBuilder();
         }
         @after {
+            descInit = descSb.toString();
             $effect = new BlowEffectParseRecord(nameInit, powerInit,
                     evalInit, descInit, loreColourBaseInit,
                     loreColourResistInit, loreColourImmuneInit,
@@ -191,7 +193,7 @@ blowEffect
         :   name { nameInit = $name.nameStr; line = $name.line; }
         (   power { powerInit = $power.powerVal; }
         |   eval { evalInit = $eval.evalVal; }
-        |   desc { descInit = $desc.descStr; }
+        |   desc { descSb.append($desc.descStr); }
         |   loreColourBase { loreColourBaseInit = $loreColourBase.colourStr; }
         |   loreColourResist { loreColourResistInit = $loreColourResist.colourStr; }
         |   loreColourImmune { loreColourImmuneInit = $loreColourImmune.colourStr; }

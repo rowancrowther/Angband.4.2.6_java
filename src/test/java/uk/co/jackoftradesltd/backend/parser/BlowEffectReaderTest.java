@@ -21,6 +21,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
+import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
@@ -43,21 +45,31 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@code BlowEffectLexer}/{@code BlowEffectGrammar} -&gt; {@code BlowEffectParseRecord} -&gt;
  * {@code BlowEffectAssembler} -&gt; {@link BlowEffect}.
  * <p>
- * The assembler is where the C semantics have to be reproduced by hand, and all three
- * seams are exercised here:
+ * The assembler is where the C semantics have to be reproduced by hand, and every boundary
+ * is exercised here. Expected values come from the C source, not from the Java:
  * <ul>
  *   <li>{@code lash-type:} is resolved through [C] {@code proj_name_to_idx}
- *       ({@code project.c:60}), which searches the merged element-then-projection name
- *       list. An unresolvable name is <em>not</em> an error: [C] {@code mon-init.c:409}
- *       falls back to {@code PROJ_MISSILE}. The shipped file relies on this - SHATTER
- *       says {@code SHARDS} but the projection code is {@code SHARD}.</li>
- *   <li>{@code resist:} is polymorphic on {@code effect-type:} ([C]
- *       {@code mon-init.c:388-400}): {@code element} resolves against the element list,
- *       {@code flag} against the object flags, and anything else is
- *       {@code PARSE_ERROR_MISSING_BLOW_EFF_TYPE}.</li>
- *   <li>Records with no {@code effect-type:} at all are legal and keep the "none"
- *       sentinels on both resist fields.</li>
+ *       ({@code project.c}), which searches the merged element-then-projection name list
+ *       ignoring case. An unresolvable name is <em>not</em> an error: [C]
+ *       {@code parse_eff_lash_type} ({@code mon-init.c}) falls back to {@code PROJ_MISSILE}.
+ *       The shipped file relies on this - SHATTER says {@code SHARDS} but the projection
+ *       code is {@code SHARD}. With no line, C's zeroed {@code lash_type} is
+ *       {@code PROJ_ACID}.</li>
+ *   <li>{@code resist:} is polymorphic on {@code effect-type:} ([C] {@code parse_eff_resist}):
+ *       {@code element} resolves against the element list ignoring case, {@code flag}
+ *       against the object flags exactly, and anything else is
+ *       {@code PARSE_ERROR_MISSING_BLOW_EFF_TYPE}, which ends the load.</li>
+ *   <li>Records with no {@code effect-type:} at all are legal and keep C's zeroed resist,
+ *       which reads as {@code ELEM_ACID} and {@code OF_NONE}.</li>
+ *   <li>Lore colours follow [C] {@code color_text_to_attr} and {@code color_char_to_attr}
+ *       ({@code z-color.c}): an unknown name or character is {@code COLOUR_WHITE}, never an
+ *       error.</li>
+ *   <li>{@code power:} and {@code eval:} are read as [C] {@code parser_getint} reads them,
+ *       with {@code strtol} in base 0, so a leading {@code 0} is octal.</li>
  * </ul>
+ *
+ * <p>Class BlowEffectReaderTest coded before 261023, commented in full on 261023, updated on
+ * 261023 for the BlowEffectAssembler port.
  *
  * @author Rowan Crowther
  */
@@ -120,10 +132,9 @@ class BlowEffectReaderTest {
     void everyLashTypeInTheRealFileResolvesToAProjection() throws IOException {
         // A null lash would mean the projection lookup silently failed; the fallback in the
         // assembler guarantees a non-null Projection for every record that names a lash.
-        assertTrue(realFile().stream()
-                        .filter(e -> !e.getName().equals("NONE"))
-                        .allMatch(e -> e.getLashType() != null),
-                "every effect except NONE ships a lash-type");
+        // NONE names no lash-type:, and takes C's zeroed default, so it is not null either.
+        assertTrue(realFile().stream().allMatch(e -> e.getLashType() != null),
+                "every effect has a lash projection");
     }
 
     // ---- lash-type resolution --------------------------------------------
@@ -140,7 +151,7 @@ class BlowEffectReaderTest {
 
     @Test
     void unresolvableLashTypeFallsBackToMissileRatherThanErroring() throws IOException {
-        // [C] mon-init.c:409 - `type >= 0 ? type : PROJ_MISSILE`. SHATTER says lash-type:SHARDS
+        // [C] parse_eff_lash_type (mon-init.c) - `type >= 0 ? type : PROJ_MISSILE`. SHATTER says lash-type:SHARDS
         // but the projection code is SHARD (singular), upstream included, so this fallback is
         // load-bearing for the shipped data rather than defensive.
         Projection lash = byName(realFile(), "SHATTER").getLashType();
@@ -167,8 +178,8 @@ class BlowEffectReaderTest {
 
         assertEquals(BlowEffectType.BET_FLAG, paralyze.getEffectType());
         assertEquals(ObjectFlag.OF_FREE_ACT, paralyze.getObjectFlagResist());
-        assertEquals(ElementEnum.ELEM_NONE, paralyze.getElementEnumResist(),
-                "the element slot stays empty for a flag resist");
+        assertEquals(ElementEnum.ELEM_ACID, paralyze.getElementEnumResist(),
+                "the element slot keeps C's zeroed resist, element 0");
     }
 
     @Test
@@ -193,7 +204,7 @@ class BlowEffectReaderTest {
         BlowEffect loseAll = byName(realFile(), "LOSE_ALL");
 
         assertEquals(BlowEffectType.BET_ALL_SUSTAINS, loseAll.getEffectType());
-        assertEquals(ElementEnum.ELEM_NONE, loseAll.getElementEnumResist());
+        assertEquals(ElementEnum.ELEM_ACID, loseAll.getElementEnumResist());
         assertEquals(ObjectFlag.OF_NONE, loseAll.getObjectFlagResist());
     }
 
@@ -204,8 +215,10 @@ class BlowEffectReaderTest {
         BlowEffect none = byName(realFile(), "NONE");
 
         assertNull(none.getEffectType());
-        assertEquals(ElementEnum.ELEM_NONE, none.getElementEnumResist());
+        assertEquals(ElementEnum.ELEM_ACID, none.getElementEnumResist());
         assertEquals(ObjectFlag.OF_NONE, none.getObjectFlagResist());
+        assertEquals(ProjectionEnum.PROJ_ACID, none.getLashType().getProjection(),
+                "no lash-type: leaves C's zeroed lash_type, projection 0");
     }
 
     // ---- scalar and colour fields ----------------------------------------
@@ -317,17 +330,14 @@ class BlowEffectReaderTest {
     }
 
     @Test
-    void aBadRecordIsSkippedAndTheRestStillLoadInOrder(@TempDir Path dir) throws IOException {
-        // C stops at the first parse error; the port's partial-results contract keeps going. A
-        // resist: with no effect-type: is rejected by the assembler (not the grammar), so it is
-        // the soft channel that carries it.
+    void aBadRecordEndsTheLoadAsInC(@TempDir Path dir) throws IOException {
+        // C stops at the first parse error, and so does the port: a resist: with no effect-type:
+        // in the middle record ends the whole load rather than being skipped.
         String file = write(dir, "record-count:3\n\nname:NONE\npower:0\n\nname:HURT\nresist:POIS\n\nname:POISON\npower:20\n");
 
-        ParseResult<BlowEffect> result = new BlowEffectReader().parseWithResults(file);
-
-        assertEquals(List.of("NONE", "POISON"), result.items().stream().map(BlowEffect::getName).toList());
-        assertEquals(1, result.errors().size());
-        assertTrue(result.errors().get(0).contains("POIS"), result.errors().toString());
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> new BlowEffectReader().parseWithResults(file));
+        assertTrue(e.getMessage().contains("line: 6"), e.getMessage());
     }
 
     @Test
@@ -363,13 +373,148 @@ class BlowEffectReaderTest {
     }
 
     @Test
-    void resistWithNoEffectTypeIsASoftErrorAndTheRecordIsSkipped(@TempDir Path dir) throws IOException {
-        // C: PARSE_ERROR_MISSING_BLOW_EFF_TYPE.
+    void resistWithNoEffectTypeEndsTheLoad(@TempDir Path dir) throws IOException {
+        // C: streq on a NULL effect_type; the port treats it as the missing type it is.
         String file = write(dir, "record-count:1\n\nname:POISON\nresist:POIS\n");
 
-        ParseResult<BlowEffect> result = new BlowEffectReader().parseWithResults(file);
+        assertThrows(DataFileParseException.class, () -> new BlowEffectReader().parseWithResults(file));
+    }
 
-        assertTrue(result.items().isEmpty());
-        assertEquals(1, result.errors().size());
+    @Test
+    void resistOnANonResistEffectTypeEndsTheLoad(@TempDir Path dir) throws IOException {
+        // C: parse_eff_resist returns PARSE_ERROR_MISSING_BLOW_EFF_TYPE for "theft".
+        String file = write(dir, "record-count:1\n\nname:EAT_GOLD\neffect-type:theft\nresist:POIS\n");
+
+        assertThrows(DataFileParseException.class, () -> new BlowEffectReader().parseWithResults(file));
+    }
+
+    // ---- Single-record cases, expected values from the C source ------------
+
+    /** Loads a one-record file whose record is {@code name:X} followed by {@code body}. */
+    private static BlowEffect one(Path dir, String body) throws IOException {
+        String file = write(dir, "record-count:1\n\nname:X\n" + body);
+        ParseResult<BlowEffect> result = new BlowEffectReader().parseWithResults(file);
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(1, result.items().size());
+        return result.items().get(0);
+    }
+
+    @Test
+    void anUnknownColourCharacterIsWhiteNotAnError(@TempDir Path dir) throws IOException {
+        // color_char_to_attr: no index_char matches 'Q', so "we assume white".
+        assertEquals(ColourEnum.COLOUR_WHITE, one(dir, "lore-color-base:Q\n").getLoreAttr());
+    }
+
+    @Test
+    void colourCharactersMatchCaseSensitively(@TempDir Path dir) throws IOException {
+        // color_table: 'w' is White, 'W' is Light Slate.
+        BlowEffect e = one(dir, "lore-color-base:w\nlore-color-resist:W\n");
+
+        assertEquals(ColourEnum.COLOUR_WHITE, e.getLoreAttr());
+        assertEquals(ColourEnum.COLOUR_LIGHT_SLATE, e.getLoreAttrResist());
+    }
+
+    @Test
+    void colourNamesMatchIgnoringCase(@TempDir Path dir) throws IOException {
+        // color_text_to_attr compares with my_stricmp.
+        assertEquals(ColourEnum.COLOUR_LIGHT_GREEN, one(dir, "lore-color-immune:light GREEN\n").getLoreAttrImmune());
+    }
+
+    @Test
+    void anUnknownColourNameIsWhite(@TempDir Path dir) throws IOException {
+        // color_text_to_attr: "Default to white". (Purple is in C's table; Chartreuse is not.)
+        assertEquals(ColourEnum.COLOUR_WHITE, one(dir, "lore-color-base:Chartreuse\n").getLoreAttr());
+    }
+
+    @Test
+    void twoCharactersAreReadAsANameNotACharacter(@TempDir Path dir) throws IOException {
+        // strlen("ww") > 1 sends it to color_text_to_attr, where no name matches: white, not 'w'.
+        // 'b' would be Blue as a character; "bb" is still white.
+        assertEquals(ColourEnum.COLOUR_WHITE, one(dir, "lore-color-base:bb\n").getLoreAttr());
+    }
+
+    @Test
+    void shadeIsWhiteBecauseCHasNoRowNamedShade(@TempDir Path dir) throws IOException {
+        // C's color_table has no "Shade" row, so color_text_to_attr falls through to white.
+        assertEquals(ColourEnum.COLOUR_WHITE, one(dir, "lore-color-resist:Shade\n").getLoreAttrResist());
+    }
+
+    @Test
+    void powerAndEvalWithALeadingZeroAreOctal(@TempDir Path dir) throws IOException {
+        // parser_getint: strtol(tok, &z, 0), so 010 is eight and 017 is fifteen.
+        BlowEffect e = one(dir, "power:010\neval:017\n");
+
+        assertEquals(8, e.getPower());
+        assertEquals(15, e.getEval());
+    }
+
+    @Test
+    void negativePowerAndEvalAreKept(@TempDir Path dir) throws IOException {
+        // strtol takes a leading '-'; parse_eff_power stores it without a range check.
+        BlowEffect e = one(dir, "power:-5\neval:-12\n");
+
+        assertEquals(-5, e.getPower());
+        assertEquals(-12, e.getEval());
+    }
+
+    @Test
+    void anOversizedPowerIsClampedTheAcceptedDeviation(@TempDir Path dir) throws IOException {
+        // C keeps the low 32 bits of strtol's 64-bit result (3000000000 -> -1294967296); the
+        // port clamps, as recorded in HelperFunctions and docs/Accepted_Deviations.md.
+        assertEquals(Integer.MAX_VALUE, one(dir, "power:3000000000\n").getPower());
+    }
+
+    @Test
+    void anElementResistMatchesIgnoringCase(@TempDir Path dir) throws IOException {
+        // proj_name_to_idx compares with my_stricmp.
+        assertEquals(ElementEnum.ELEM_POIS, one(dir, "effect-type:element\nresist:pois\n").getElementEnumResist());
+    }
+
+    @Test
+    void anUnknownElementResistIsElemNone(@TempDir Path dir) throws IOException {
+        // C stores proj_name_to_idx's -1, which has no ElementEnum constant; ELEM_NONE stands in.
+        assertEquals(ElementEnum.ELEM_NONE, one(dir, "effect-type:element\nresist:BOGUS\n").getElementEnumResist());
+    }
+
+    @Test
+    void aFlagResistMatchesExactly(@TempDir Path dir) throws IOException {
+        // flag_index_by_name uses streq, so "free_act" is not FREE_ACT; C stores -1, here OF_NONE.
+        assertEquals(ObjectFlag.OF_FREE_ACT, one(dir, "effect-type:flag\nresist:FREE_ACT\n").getObjectFlagResist());
+        assertEquals(ObjectFlag.OF_NONE, one(dir, "effect-type:flag\nresist:free_act\n").getObjectFlagResist());
+    }
+
+    @Test
+    void anElementResistLeavesTheFlagSlotAtZeroAndViceVersa(@TempDir Path dir) throws IOException {
+        // C's one zeroed int: element 0 is ACID, flag 0 is NONE.
+        BlowEffect element = one(dir, "effect-type:element\nresist:CHAOS\n");
+        assertEquals(ObjectFlag.OF_NONE, element.getObjectFlagResist());
+
+        BlowEffect flag = one(dir, "effect-type:flag\nresist:HOLD_LIFE\n");
+        assertEquals(ElementEnum.ELEM_ACID, flag.getElementEnumResist());
+    }
+
+    @Test
+    void lashTypeMatchesIgnoringCase(@TempDir Path dir) throws IOException {
+        // proj_name_to_idx compares with my_stricmp.
+        assertEquals(ProjectionEnum.PROJ_FIRE, one(dir, "lash-type:fire\n").getLashType().getProjection());
+    }
+
+    @Test
+    void anUnknownLashTypeIsMissile(@TempDir Path dir) throws IOException {
+        // parse_eff_lash_type: type >= 0 ? type : PROJ_MISSILE.
+        assertEquals(ProjectionEnum.PROJ_MISSILE, one(dir, "lash-type:BOGUS\n").getLashType().getProjection());
+    }
+
+    @Test
+    void aNonElementProjectionIsAValidLashType(@TempDir Path dir) throws IOException {
+        // proj_name_list holds elements then projections, so a projection-only name resolves.
+        assertEquals(ProjectionEnum.PROJ_MISSILE, one(dir, "lash-type:MISSILE\n").getLashType().getProjection());
+        assertEquals(ProjectionEnum.PROJ_ICE, one(dir, "lash-type:ICE\n").getLashType().getProjection());
+    }
+
+    @Test
+    void repeatedDescLinesAreJoined(@TempDir Path dir) throws IOException {
+        // parse_eff_desc: string_append onto the existing desc, no separator.
+        assertEquals("ab", one(dir, "desc:a\ndesc:b\n").getDesc());
     }
 }

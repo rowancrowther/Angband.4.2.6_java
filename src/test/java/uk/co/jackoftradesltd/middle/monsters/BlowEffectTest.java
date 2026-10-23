@@ -200,7 +200,9 @@ class BlowEffectTest {
      * {@code parse_eff_lash_type} falls back to {@code PROJ_MISSILE}.
      */
     private static final List<Expected> EXPECTED = List.of(
-            new Expected("NONE", 0, 0, null, ColourEnum.COLOUR_DARK, null, null, null, null, null),
+            // NONE ships no lash-type:, so C's zeroed lash_type is 0, which is PROJ_ACID.
+            new Expected("NONE", 0, 0, null, ColourEnum.COLOUR_DARK, null, null, null, null,
+                    ProjectionEnum.PROJ_ACID),
             new Expected("HURT", 40, 0, "attack", LGREEN, null, null, null, null, MISSILE),
             new Expected("POISON", 20, 10, "poison", ORANGE, LGREEN, null,
                     BlowEffectType.BET_ELEMENT, "POIS", ProjectionEnum.PROJ_POIS),
@@ -297,8 +299,10 @@ class BlowEffectTest {
         for (int i = 0; i < EXPECTED.size(); i++) {
             Expected want = EXPECTED.get(i);
             BlowEffect got = effects.get(i);
+            // C's single resist int starts at 0, which reads as ELEM_ACID in the element slot
+            // and OF_NONE in the flag slot.
             ElementEnum wantElement = want.type() == BlowEffectType.BET_ELEMENT
-                    ? ElementEnum.valueOf("ELEM_" + want.resist()) : ElementEnum.ELEM_NONE;
+                    ? ElementEnum.valueOf("ELEM_" + want.resist()) : ElementEnum.ELEM_ACID;
             ObjectFlag wantFlag = want.type() == BlowEffectType.BET_FLAG
                     ? ObjectFlag.valueOf("OF_" + want.resist()) : ObjectFlag.OF_NONE;
             assertEquals(wantElement, got.getElementEnumResist(), want.name() + ": element resist");
@@ -314,13 +318,8 @@ class BlowEffectTest {
         for (int i = 0; i < EXPECTED.size(); i++) {
             Expected want = EXPECTED.get(i);
             Projection got = effects.get(i).getLashType();
-            if (want.lash() == null) {
-                // Only NONE ships no lash-type. C holds index 0 there; the port holds null.
-                assertNull(got, want.name() + ": no lash-type");
-            } else {
-                assertNotNull(got, want.name() + ": lash");
-                assertEquals(want.lash(), got.getProjection(), want.name() + ": lash");
-            }
+            assertNotNull(got, want.name() + ": lash");
+            assertEquals(want.lash(), got.getProjection(), want.name() + ": lash");
         }
     }
 

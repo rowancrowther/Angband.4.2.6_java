@@ -125,6 +125,31 @@ recorded here as the summary states them; fill in the detail when you next touch
 - **Revisit:** if a displayed or compared variance ever needs the fraction of a value just above `INT_MAX`.
 - **Accepted:** 2026-10-14. To be marked in the `variance` Javadoc by the stage 2 pass.
 
+## ParseUtils
+
+### An integer too big for its C type is clamped, where C wraps it
+
+- **Java:** `ParseUtils.parseIntString` and `ParseUtils.parseString`, and every assembler that reads an integer
+  through them. **C:** the `int` and `uint` parsing in `parser.c`, read into each `parse_*` handler's field.
+- **Scope:** every integer field in every data file, unless a field is listed under **Excluded** below. A field is
+  covered without being named here; only an exclusion needs an entry.
+- **Excluded:** none.
+- **Differs:** C reads the number with `strtol` (or `strtoul` for a `uint` field), which saturates at 64 bits, and
+  stores it in a 32-bit field with no range check, so the low 32 bits are kept: `level:3000000000` becomes
+  -1294967296 with no error, and `aim:4294967296` or `destroy:4294967296` becomes 0, so false. Java clamps to
+  `Integer.MIN_VALUE` and `Integer.MAX_VALUE`, so the first becomes 2147483647 and the other two are true. A wrapped
+  C value can be negative or tiny, and nothing downstream checks it. Examples from the activation fields:
+  `get_use_device_chance` (`obj-util.c`) overflows its own arithmetic on a large `level`, `effects_power`
+  (`obj-power.c`) adds a wrapped negative `power` to the item's power rating, and the random-artifact picker
+  (`obj-randart.c`) lets a wrapped negative `power` past its `INHIBIT_POWER` filter.
+- **Reach:** none from shipped data, where no integer comes near 32 bits. Hand-edited files only.
+- **Revisit:** if a modded file ever needs C's exact wrapped value for a field, which is unlikely, since the wrapped
+  value is the less useful one. Add that field under **Excluded** and handle it in its assembler.
+- **Accepted:** 2026-10-22 for `activation.txt` (`aim:`, `level:`, `power:`), extended that day to every integer the
+  activation assembler reads. Extended 2026-10-23 to every data file, by exclusion rather than inclusion, after the
+  `ChestTrapAssembler` port pass found the same clamping on `level:`, `destroy:` and `magic:`. Marked in the
+  `ParseUtils` class Javadoc.
+
 ## FileHandler
 
 ### `getLine` does not cut a line inside a multi-byte UTF-8 character
@@ -335,28 +360,6 @@ recorded here as the summary states them; fill in the detail when you next touch
 - **Accepted:** 2026-10-22. Decided to keep one line per record. Related to the ordering entry above, which also
   names this as its revisit trigger.
 
-### An `aim:`, `level:` or `power:` too big for its C type is clamped, where C wraps it
-
-- **Java:** `ActivationAssembler.assemble`, through its `parseIntString` and `parseString` helpers. **C:**
-  `parse_act_aim`, `parse_act_level` and `parse_act_power` in `obj-init.c`, with the `int` and `uint` parsing in
-  `parser.c`.
-- **Scope:** every integer the activation assembler reads, which today is those three fields. An out of range integer
-  clamps unless a separate entry says a field is handled differently, and no field has one.
-- **Differs:** C reads the number with `strtol` (or `strtoul` for the `uint` fields `aim:` and `power:`), which saturates
-  at 64 bits, and stores it in a 32-bit field with no range check, so the low 32 bits are kept: `level:3000000000`
-  and `power:3000000000` both become -1294967296 with no error, and `aim:4294967296` becomes 0, so false. Java clamps to
-  `Integer.MIN_VALUE` and `Integer.MAX_VALUE`, so the first two become 2147483647 and `aim:4294967296` is true. A wrapped
-  C value can be negative or tiny, and nothing downstream checks it: `get_use_device_chance` (`obj-util.c`) overflows
-  its own arithmetic on a large `level`, `effects_power` (`obj-power.c`) adds a wrapped negative `power` to the item's
-  power rating, and the random-artifact picker (`obj-randart.c`) lets a wrapped negative `power` past its
-  `INHIBIT_POWER` filter.
-- **Reach:** none from shipped data, where `aim:` is 0 or 1, `level:` tops out at 60 and `power:` at 25. Hand-edited
-  files only.
-- **Revisit:** if a modded `activation.txt` ever needs C's exact wrapped value, which is unlikely, since the wrapped
-  value is the less useful one.
-- **Accepted:** 2026-10-22, as a deliberate deviation, extended the same day from `level:` and `power:` to every
-  out of range integer. To be marked in the `parseString` Javadoc when it is written.
-
 ## Artifact
 
 ### A special artifact's kind takes the artifact's finished level, where C's is 0
@@ -379,6 +382,28 @@ recorded here as the summary states them; fill in the detail when you next touch
   artifact's.
 - **Accepted:** 2026-10-22. The constructor Javadoc still says the level is copied "as C does", which is true of C's
   intent but not of its value; to be corrected to point here.
+
+## Chest trap
+
+### `chest_trap.txt` must match `ChestTrapCode` record for record, with levels that never descend
+
+- **Java:** `ChestTrapAssembler.assemble`. **C:** the `parse_chest_trap_*` handlers in `obj-chest.c`.
+- **Differs:** C stores the `code:` string and never reads it again, gives each trap its pval bit from its position in
+  the file (the doubling in `parse_chest_trap_name`), and checks neither order, count nor level, so it loads any
+  number of traps in any order. Java takes the pval bit from `ChestTrapCode.ordinal()`, so it ends the load on a code
+  that is not a `ChestTrapCode` constant, a code out of declaration order, more or fewer records than there are
+  constants, or a level lower than the record before it (equal levels pass, and the first record's level is checked
+  against 0, so a negative one is refused).
+- **Why:** the rules at the top of `chest_trap.txt` (the first entry is the no-trap, levels ascend, at most 14 traps)
+  are ones C relies on without checking: `pick_one_chest_trap` always skips the first record, picks by position among
+  the traps it counted by level, so a descending level lets a too-deep trap be picked, and a 15th trap's bit is the
+  sign bit of the `int16_t` pval.
+- **Reach:** none from shipped data, whose seven records are in `ChestTrapCode` order with levels 1, 1, 2, 3, 15, 19,
+  25. A modded file that adds, removes or reorders a trap is refused whole, so a new trap needs a new `ChestTrapCode`
+  constant and a rebuild.
+- **Revisit:** if chest traps are to be moddable from data alone. Then `ChestTrap` stores its pval from its position,
+  as C's struct does, and `code` becomes a label.
+- **Accepted:** 2026-10-23, during the `ChestTrapAssembler` port pass.
 
 ## Pending your decision
 

@@ -18,13 +18,14 @@
 package uk.co.jackoftradesltd.backend.parser;
 
 import org.junit.jupiter.api.Test;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.backend.parser.chesttrap.ChestTrapAssembler;
 import uk.co.jackoftradesltd.backend.parser.chesttrap.ChestTrapParseRecord;
+import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
 import uk.co.jackoftradesltd.middle.objects.ChestTrap;
 import uk.co.jackoftradesltd.middle.objects.enums.ChestTrapCode;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -33,31 +34,40 @@ import static org.junit.jupiter.api.Assertions.*;
  * Unit tests for {@code ChestTrapAssembler}, driven from hand-built {@link ChestTrapParseRecord}s
  * rather than through the grammar.
  *
- * <p>{@code ChestTrapReaderTest} covers the assembler as the grammar can actually reach it; this
- * suite exists for the states the grammar cannot produce but the assembler still guards - a
- * {@code null} in any field, an empty code, a record list longer than {@link ChestTrapCode} has
- * constants. Those arise from ANTLR's error recovery, which leaves a sub-rule's return unset when
- * the directive was present but malformed, so they are reachable in a broken file even though no
- * well-formed file can produce them.
+ * <p>Expected values come from the {@code parse_chest_trap_*} handlers in {@code obj-chest.c}:
+ * {@code parser_getint} is {@code strtol} in base 0, {@code destroy:} and {@code magic:} test
+ * {@code if (val)}, and an absent directive leaves {@code mem_zalloc}'s 0 or {@code NULL}. Where
+ * Java refuses what C loads (codes, order, count, descending levels) the test names the accepted
+ * deviation in {@code docs/Accepted_Deviations.md}.
  *
- * <p>Effects are left empty throughout: resolving one needs the monster registries seeded, and
- * effect resolution is {@code EffectAssembler}'s contract to keep, not this assembler's.
+ * <p>Every error ends the load with a {@link DataFileParseException} at the first bad record, as C's
+ * parser errors end the {@code chest_trap.txt} load, so the failure tests assert the throw and its
+ * message rather than an error list.
+ *
+ * <p>{@code ChestTrapReaderTest} covers the same rules as the grammar can reach them; this suite also
+ * covers the {@code null} fields only a hand-built record can carry, because {@code ChestTrapReader}
+ * throws on any syntax error before the assembler runs. Effects that resolve need the monster
+ * registries seeded and are left to that suite; the one effect here has no type, which
+ * {@code EffectAssembler} refuses before it reaches any registry.
  *
  * @author Rowan Crowther
  */
 class ChestTrapAssemblerTest {
 
-    /**
-     * A record with every field valid for the given position, so a test can vary one thing.
-     */
+    /** A record valid at its position, with no effect, flags or messages. */
     private static ChestTrapParseRecord record(ChestTrapCode code, String level, int line) {
         return new ChestTrapParseRecord("trap " + code, code.name(), level,
                 new ArrayList<>(), "", "", "", "", line);
     }
 
-    /**
-     * The seven records a well-formed file yields, with ascending levels.
-     */
+    /** A record valid at its position with the given destroy: and magic: text. */
+    private static ChestTrapParseRecord flags(ChestTrapCode code, String level, String destroy,
+                                              String magic, int line) {
+        return new ChestTrapParseRecord("trap " + code, code.name(), level,
+                new ArrayList<>(), destroy, magic, "", "", line);
+    }
+
+    /** The seven records a well-formed file yields, with levels 1 to 7 and lines 2, 6, 10 and on. */
     private static List<ChestTrapParseRecord> validFile() {
         List<ChestTrapParseRecord> records = new ArrayList<>();
         int line = 2;
@@ -69,228 +79,377 @@ class ChestTrapAssemblerTest {
         return records;
     }
 
-    private static List<String> errors() {
-        return new ArrayList<>();
-    }
-
     private static List<ChestTrap> assemble(List<ChestTrapParseRecord> records, List<String> errors) {
         return new ChestTrapAssembler().assemble(records, errors, "test.txt");
     }
 
-    // ---- Happy path -------------------------------------------------------
-
-    private static List<ChestTrapParseRecord> brokenBy(
-            java.util.function.Consumer<List<ChestTrapParseRecord>> breakage) {
-        List<ChestTrapParseRecord> records = validFile();
-        breakage.accept(records);
-        return records;
+    private static List<ChestTrap> assemble(List<ChestTrapParseRecord> records) {
+        return assemble(records, new ArrayList<>());
     }
 
+    private static DataFileParseException refused(List<ChestTrapParseRecord> records) {
+        return assertThrows(DataFileParseException.class, () -> assemble(records));
+    }
+
+    // ---- Happy path -------------------------------------------------------
+
     @Test
-    void aWellFormedRecordListAssemblesInOrder() {
-        List<String> errors = errors();
+    void aWellFormedRecordListAssemblesInFileOrder() {
+        // parse_chest_trap_name appends to the tail, so C's list is file order.
+        List<String> errors = new ArrayList<>();
 
         List<ChestTrap> traps = assemble(validFile(), errors);
 
         assertTrue(errors.isEmpty(), errors::toString);
         assertEquals(List.of(ChestTrapCode.values()), traps.stream().map(ChestTrap::getCode).toList());
-        assertEquals(1, traps.getFirst().getPVal());
-        assertEquals(64, traps.getLast().getPVal());
+        assertEquals(List.of(1, 2, 3, 4, 5, 6, 7), traps.stream().map(ChestTrap::getLevel).toList());
     }
 
-    // ---- destroy: and magic: ---------------------------------------------
+    @Test
+    void pvalsDoubleFromOneInFileOrder() {
+        // parse_chest_trap_name: the first record gets 1, each later one twice its predecessor.
+        List<ChestTrap> traps = assemble(validFile());
+
+        assertEquals(List.of(1, 2, 4, 8, 16, 32, 64), traps.stream().map(ChestTrap::getPVal).toList());
+    }
 
     @Test
-    void anAbsentLevelBecomesZero() {
-        // "" is what the grammar's @init leaves when the directive was absent. Level 0 is below
-        // every real trap's level, so such a trap is drawable by every chest.
+    void nameAndMessagesAreCopiedVerbatim() {
+        List<ChestTrapParseRecord> records = validFile();
+        records.set(1, new ChestTrapParseRecord("gas trap", "POISON", "2", new ArrayList<>(),
+                "", "", "A puff of green gas: surrounds you!", "a  gas trap", 6));
+
+        ChestTrap trap = assemble(records).get(1);
+
+        assertEquals("gas trap", trap.getName());
+        assertEquals("A puff of green gas: surrounds you!", trap.getMessage());
+        assertEquals("a  gas trap", trap.getMessageDeath());
+    }
+
+    // ---- level: -----------------------------------------------------------
+
+    @Test
+    void anAbsentLevelIsZeroAsMemZallocLeavesIt() {
         List<ChestTrapParseRecord> records = validFile();
         records.set(0, record(ChestTrapCode.NO_TRAP, "", 2));
-        List<String> errors = errors();
 
-        List<ChestTrap> traps = assemble(records, errors);
-
-        assertTrue(errors.isEmpty(), errors::toString);
-        assertEquals(0, traps.getFirst().getLevel());
+        assertEquals(0, assemble(records).getFirst().getLevel());
     }
 
     @Test
-    void onlyTheLiteralOneSetsDestroyAndMagic() {
-        // The data file documents these as "1 if ...", so 1 is the whole of the true case. Note C
-        // is looser - parse_chest_trap_destroy takes any non-zero - so "2" diverges deliberately.
+    void aLeadingZeroLevelIsOctalAsStrtolBaseZeroReadsIt() {
+        // parser_getint is strtol(..., 0): level:010 is 8 and level:07 is 7.
         List<ChestTrapParseRecord> records = validFile();
-        records.set(1, new ChestTrapParseRecord("varied", "POISON", "2",
-                new ArrayList<>(), "2", "0", "", "", 6));
-        List<String> errors = errors();
+        records.set(6, record(ChestTrapCode.EXPLODE, "010", 26));
+        records.set(5, record(ChestTrapCode.PARALYZE, "07", 22));
 
-        List<ChestTrap> traps = assemble(records, errors);
+        List<ChestTrap> traps = assemble(records);
 
-        assertTrue(errors.isEmpty(), errors::toString);
-        assertFalse(traps.get(1).isDestroy());
-        assertFalse(traps.get(1).isMagic());
-    }
-
-    // ---- null fields from error recovery ---------------------------------
-
-    @Test
-    void nullDestroyAndMagicAreFalseRatherThanThrowing() {
-        List<ChestTrapParseRecord> records = validFile();
-        records.set(1, new ChestTrapParseRecord("varied", "POISON", "2",
-                new ArrayList<>(), null, null, "", "", 6));
-        List<String> errors = errors();
-
-        List<ChestTrap> traps = assemble(records, errors);
-
-        assertFalse(traps.get(1).isDestroy());
-        assertFalse(traps.get(1).isMagic());
+        assertEquals(7, traps.get(5).getLevel());
+        assertEquals(8, traps.get(6).getLevel());
     }
 
     @Test
-    void aNullCodeIsReportedAndRejectsTheFile() {
+    void aLevelWithTrailingTextIsReadUpToItAsStrtolDoes() {
         List<ChestTrapParseRecord> records = validFile();
-        records.set(1, new ChestTrapParseRecord("nameless", null, "2",
+        records.set(6, record(ChestTrapCode.EXPLODE, "25abc", 26));
+
+        assertEquals(25, assemble(records).get(6).getLevel());
+    }
+
+    @Test
+    void aLevelWithNoDigitsEndsTheLoadAsNotNumberDoesInC() {
+        // parser_getint fails to convert, so the handler never runs: PARSE_ERROR_NOT_NUMBER.
+        List<ChestTrapParseRecord> records = validFile();
+        records.set(3, record(ChestTrapCode.LOSE_CON, "abc", 14));
+
+        refused(records);
+    }
+
+    @Test
+    void aLevelTooBigForAnIntIsClampedWhereCWraps() {
+        // Accepted deviation (ParseUtils): C keeps the low 32 bits, -1294967296; Java clamps.
+        List<ChestTrapParseRecord> records = validFile();
+        records.set(6, record(ChestTrapCode.EXPLODE, "3000000000", 26));
+
+        assertEquals(Integer.MAX_VALUE, assemble(records).get(6).getLevel());
+    }
+
+    @Test
+    void equalLevelsPassAsTheShippedFileHasTwoAtLevelOne() {
+        List<ChestTrapParseRecord> records = validFile();
+        records.set(1, record(ChestTrapCode.POISON, "1", 6));
+
+        List<ChestTrap> traps = assemble(records);
+
+        assertEquals(1, traps.get(0).getLevel());
+        assertEquals(1, traps.get(1).getLevel());
+    }
+
+    @Test
+    void aDescendingLevelEndsTheLoadWhereCLoadsIt() {
+        // Accepted deviation: C checks no level order.
+        List<ChestTrapParseRecord> records = validFile();
+        records.set(4, record(ChestTrapCode.SUMMON, "1", 18));
+
+        DataFileParseException e = refused(records);
+
+        assertTrue(e.getMessage().contains("line: 18"), e::getMessage);
+        assertTrue(e.getMessage().contains("must not descend"), e::getMessage);
+    }
+
+    @Test
+    void aFirstLevelOfZeroPassesButANegativeOneEndsTheLoad() {
+        // The first level is compared against 0; C would store -1 and load it.
+        List<ChestTrapParseRecord> zero = validFile();
+        zero.set(0, record(ChestTrapCode.NO_TRAP, "0", 2));
+        assertEquals(0, assemble(zero).getFirst().getLevel());
+
+        List<ChestTrapParseRecord> negative = validFile();
+        negative.set(0, record(ChestTrapCode.NO_TRAP, "-1", 2));
+        refused(negative);
+    }
+
+    // ---- destroy: and magic: ----------------------------------------------
+
+    @Test
+    void anyNonZeroDestroyOrMagicIsTrueAsCTestsIfVal() {
+        List<ChestTrapParseRecord> records = validFile();
+        records.set(1, flags(ChestTrapCode.POISON, "2", "1", "1", 6));
+        records.set(2, flags(ChestTrapCode.LOSE_STR, "3", "2", "3", 10));
+        records.set(3, flags(ChestTrapCode.LOSE_CON, "4", "-1", "255", 14));
+
+        List<ChestTrap> traps = assemble(records);
+
+        for (int i = 1; i <= 3; i++) {
+            assertTrue(traps.get(i).isDestroy(), "record " + i);
+            assertTrue(traps.get(i).isMagic(), "record " + i);
+        }
+    }
+
+    @Test
+    void zeroAndAbsentDestroyAndMagicAreFalse() {
+        List<ChestTrapParseRecord> records = validFile();
+        records.set(1, flags(ChestTrapCode.POISON, "2", "0", "0", 6));
+        records.set(2, flags(ChestTrapCode.LOSE_STR, "3", "", "", 10));
+        records.set(3, flags(ChestTrapCode.LOSE_CON, "4", "-0", "00", 14));
+
+        List<ChestTrap> traps = assemble(records);
+
+        for (int i = 1; i <= 3; i++) {
+            assertFalse(traps.get(i).isDestroy(), "record " + i);
+            assertFalse(traps.get(i).isMagic(), "record " + i);
+        }
+    }
+
+    @Test
+    void anOctalDestroyIsReadInBaseZero() {
+        // 010 is 8 in base 0, non-zero, so true; 00 is 0, so false.
+        List<ChestTrapParseRecord> records = validFile();
+        records.set(6, flags(ChestTrapCode.EXPLODE, "7", "010", "00", 26));
+
+        ChestTrap trap = assemble(records).get(6);
+
+        assertTrue(trap.isDestroy());
+        assertFalse(trap.isMagic());
+    }
+
+    @Test
+    void aDestroyOrMagicWithNoDigitsEndsTheLoad() {
+        List<ChestTrapParseRecord> destroy = validFile();
+        destroy.set(6, flags(ChestTrapCode.EXPLODE, "7", "yes", "", 26));
+        refused(destroy);
+
+        List<ChestTrapParseRecord> magic = validFile();
+        magic.set(4, flags(ChestTrapCode.SUMMON, "5", "", "yes", 18));
+        refused(magic);
+    }
+
+    // ---- code: ------------------------------------------------------------
+
+    @Test
+    void anUnknownCodeEndsTheLoadWhereCStoresItAsAString() {
+        // Accepted deviation: C's parse_chest_trap_code keeps any string.
+        List<ChestTrapParseRecord> records = validFile();
+        records.set(1, new ChestTrapParseRecord("x", "NOT_A_TRAP", "2",
                 new ArrayList<>(), "", "", "", "", 6));
-        List<String> errors = errors();
 
-        List<ChestTrap> traps = assemble(records, errors);
+        DataFileParseException e = refused(records);
 
-        assertTrue(traps.isEmpty());
-        assertTrue(errors.stream().anyMatch(e -> e.contains("null code")), errors::toString);
+        assertTrue(e.getMessage().contains("invalid trap code value: NOT_A_TRAP"), e::getMessage);
+        assertTrue(e.getMessage().contains("line: 6"), e::getMessage);
     }
 
     @Test
-    void anEmptyCodeNeverBuildsATrapWithANullCode() {
-        // The guard that matters: ChestTrap.getPVal() dereferences the code, so a trap carrying a
-        // null one would throw the first time anything asked for its pval bit.
+    void theCodeIsMatchedCaseSensitively() {
+        List<ChestTrapParseRecord> records = validFile();
+        records.set(1, new ChestTrapParseRecord("x", "poison", "2",
+                new ArrayList<>(), "", "", "", "", 6));
+
+        refused(records);
+    }
+
+    @Test
+    void anEmptyCodeEndsTheLoadAsItMatchesNoPosition() {
         List<ChestTrapParseRecord> records = validFile();
         records.set(0, new ChestTrapParseRecord("locked", "", "1",
                 new ArrayList<>(), "", "", "", "", 2));
-        List<String> errors = errors();
 
-        List<ChestTrap> traps = assemble(records, errors);
+        DataFileParseException e = refused(records);
 
-        assertTrue(traps.isEmpty());
-        assertFalse(errors.isEmpty());
+        assertTrue(e.getMessage().contains("should be NO_TRAP"), e::getMessage);
     }
 
     @Test
-    void aNullEffectListIsReportedAndRejectsTheFile() {
+    void aCodeOutOfDeclarationOrderEndsTheLoad() {
+        // Swap two records: every code is present, but C would give LOSE_CON bit 4 and LOSE_STR 8.
         List<ChestTrapParseRecord> records = validFile();
-        records.set(1, new ChestTrapParseRecord("broken", "POISON", "2",
-                null, "", "", "", "", 6));
-        List<String> errors = errors();
+        records.set(2, record(ChestTrapCode.LOSE_CON, "3", 10));
+        records.set(3, record(ChestTrapCode.LOSE_STR, "4", 14));
 
-        List<ChestTrap> traps = assemble(records, errors);
+        DataFileParseException e = refused(records);
 
-        assertTrue(traps.isEmpty());
-        assertTrue(errors.stream().anyMatch(e -> e.contains("no effect")), errors::toString);
+        assertTrue(e.getMessage().contains("LOSE_CON should be LOSE_STR"), e::getMessage);
     }
 
-    // ---- Structural rules -------------------------------------------------
+    @Test
+    void aFirstRecordThatIsNotNoTrapEndsTheLoad() {
+        // pick_one_chest_trap starts from chest_traps->next, so record 0 must be the locked entry.
+        List<ChestTrapParseRecord> records = validFile();
+        records.removeFirst();
+
+        DataFileParseException e = refused(records);
+
+        assertTrue(e.getMessage().contains("should be NO_TRAP"), e::getMessage);
+    }
+
+    // ---- Record count -----------------------------------------------------
 
     @Test
-    void nullNameAndMessagesBecomeEmptyStrings() {
-        // These three are not worth rejecting a file over, so they are coerced rather than reported
-        // - but they must not reach the domain object as null.
+    void moreRecordsThanThereAreCodesEndsTheLoad() {
+        List<ChestTrapParseRecord> records = validFile();
+        records.add(record(ChestTrapCode.EXPLODE, "30", 30));
+
+        DataFileParseException e = refused(records);
+
+        assertTrue(e.getMessage().contains("out of bounds"), e::getMessage);
+        assertTrue(e.getMessage().contains("line: 30"), e::getMessage);
+    }
+
+    @Test
+    void aValidPrefixOfTheFileEndsTheLoadAsIncomplete() {
+        List<ChestTrapParseRecord> records = new ArrayList<>(validFile().subList(0, 3));
+
+        DataFileParseException e = refused(records);
+
+        assertTrue(e.getMessage().contains("Expected: 7 received: 3"), e::getMessage);
+    }
+
+    @Test
+    void anEmptyRecordListEndsTheLoadWhereCLoadsNoTraps() {
+        // C's run_parse_chest_trap leaves chest_traps NULL; the count check refuses it here.
+        DataFileParseException e = refused(new ArrayList<>());
+
+        assertTrue(e.getMessage().contains("Expected: 7 received: 0"), e::getMessage);
+    }
+
+    // ---- Effects ----------------------------------------------------------
+
+    @Test
+    void aRecordWithNoEffectBlockGetsAnEmptyEffectList() {
+        // C leaves t->effect NULL; the Java list is empty, never null.
+        ChestTrap locked = assemble(validFile()).getFirst();
+
+        assertNotNull(locked.getEffect());
+        assertTrue(locked.getEffect().isEmpty());
+    }
+
+    @Test
+    void anEffectBlockThatFailsToResolveEndsTheLoad() {
+        // As an error from grab_effect_data ends the C load. EffectAssembler adds its reason to
+        // the error list before returning null.
+        EffectParseRecord untyped = new EffectParseRecord("", "", "", "", "", "", "", "", "", "", "", 7);
+        List<ChestTrapParseRecord> records = validFile();
+        records.set(1, new ChestTrapParseRecord("gas trap", "POISON", "2",
+                new ArrayList<>(List.of(untyped)), "", "", "", "", 6));
+        List<String> errors = new ArrayList<>();
+
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> assemble(records, errors));
+
+        assertTrue(e.getMessage().contains("no valid effects"), e::getMessage);
+        assertTrue(errors.stream().anyMatch(s -> s.contains("no valid effect type")), errors::toString);
+    }
+
+    // ---- Error handling ---------------------------------------------------
+
+    @Test
+    void theFirstBadRecordEndsTheLoadAndAddsNoErrors() {
+        List<ChestTrapParseRecord> records = validFile();
+        records.set(1, new ChestTrapParseRecord("x", "FIRST_BAD", "2",
+                new ArrayList<>(), "", "", "", "", 6));
+        records.set(2, new ChestTrapParseRecord("x", "SECOND_BAD", "3",
+                new ArrayList<>(), "", "", "", "", 10));
+        List<String> errors = new ArrayList<>();
+
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> assemble(records, errors));
+
+        assertTrue(e.getMessage().contains("FIRST_BAD"), e::getMessage);
+        assertFalse(e.getMessage().contains("SECOND_BAD"), e::getMessage);
+        assertTrue(errors.isEmpty(), errors::toString);
+    }
+
+    // ---- null fields only a hand-built record can carry ----------------------
+
+    @Test
+    void aNullCodeEndsTheLoad() {
+        List<ChestTrapParseRecord> records = validFile();
+        records.set(1, new ChestTrapParseRecord("x", null, "2",
+                new ArrayList<>(), "", "", "", "", 6));
+
+        refused(records);
+    }
+
+    @Test
+    void aNullDestroyOrMagicEndsTheLoad() {
+        List<ChestTrapParseRecord> destroy = validFile();
+        destroy.set(1, flags(ChestTrapCode.POISON, "2", null, "", 6));
+        assertTrue(refused(destroy).getMessage().contains("invalid destroy value: null"));
+
+        List<ChestTrapParseRecord> magic = validFile();
+        magic.set(1, flags(ChestTrapCode.POISON, "2", "", null, 6));
+        assertTrue(refused(magic).getMessage().contains("invalid magic value: null"));
+    }
+
+    @Test
+    void aNullNameOrMessageBecomesAnEmptyString() {
         List<ChestTrapParseRecord> records = validFile();
         records.set(1, new ChestTrapParseRecord(null, "POISON", "2",
                 new ArrayList<>(), "", "", null, null, 6));
-        List<String> errors = errors();
 
-        List<ChestTrap> traps = assemble(records, errors);
+        ChestTrap trap = assemble(records).get(1);
 
-        assertTrue(errors.isEmpty(), errors::toString);
-        assertEquals("", traps.get(1).getName());
-        assertEquals("", traps.get(1).getMessage());
-        assertEquals("", traps.get(1).getMessageDeath());
+        assertEquals("", trap.getName());
+        assertEquals("", trap.getMessage());
+        assertEquals("", trap.getMessageDeath());
     }
 
     @Test
-    void moreRecordsThanThereAreCodesIsReported() {
+    void aNullEffectListIsTreatedAsNoEffects() {
         List<ChestTrapParseRecord> records = validFile();
-        records.add(record(ChestTrapCode.EXPLODE, "30", 40));
-        List<String> errors = errors();
+        records.set(1, new ChestTrapParseRecord("x", "POISON", "2",
+                null, "", "", "", "", 6));
 
-        List<ChestTrap> traps = assemble(records, errors);
-
-        assertTrue(traps.isEmpty());
-        assertTrue(errors.stream().anyMatch(e -> e.contains("trap codes exist")), errors::toString);
+        assertTrue(assemble(records).get(1).getEffect().isEmpty());
     }
 
     @Test
-    void equalLevelsAreAllowedButDescendingOnesAreNot() {
-        // The real file has two traps at level 1, so the rule is non-decreasing, not increasing.
-        List<ChestTrapParseRecord> equal = validFile();
-        equal.set(1, record(ChestTrapCode.POISON, "1", 6));
-        List<String> equalErrors = errors();
-
-        assertEquals(7, assemble(equal, equalErrors).size());
-        assertTrue(equalErrors.isEmpty(), equalErrors::toString);
-
-        List<ChestTrapParseRecord> descending = validFile();
-        descending.set(4, record(ChestTrapCode.SUMMON, "1", 18));
-        List<String> descendingErrors = errors();
-
-        assertTrue(assemble(descending, descendingErrors).isEmpty());
-        assertTrue(descendingErrors.stream().anyMatch(e -> e.contains("level")),
-                descendingErrors::toString);
-    }
-
-    @Test
-    void everyCodeMustSitAtItsOwnOrdinal() {
-        // Swap two records: all seven codes are still present, but two bits have moved.
+    void aNullLevelThrowsNullPointerExceptionAsItHasNoGuard() {
+        // Pins the asymmetry the assemble Javadoc records: unreachable through ChestTrapReader.
         List<ChestTrapParseRecord> records = validFile();
-        records.set(2, record(ChestTrapCode.LOSE_CON, "2", 14));
-        records.set(3, record(ChestTrapCode.LOSE_STR, "3", 18));
-        List<String> errors = errors();
+        records.set(1, record(ChestTrapCode.POISON, null, 6));
 
-        List<ChestTrap> traps = assemble(records, errors);
-
-        assertTrue(traps.isEmpty());
-        assertTrue(errors.stream().anyMatch(e -> e.contains("LOSE_STR")), errors::toString);
-    }
-
-    @Test
-    void anIncompleteFileIsRejectedEvenWhenEveryRecordIsValid() {
-        List<ChestTrapParseRecord> records = new ArrayList<>(validFile().subList(0, 3));
-        List<String> errors = errors();
-
-        List<ChestTrap> traps = assemble(records, errors);
-
-        assertTrue(traps.isEmpty());
-        assertTrue(errors.stream().anyMatch(e -> e.contains("expected")), errors::toString);
-    }
-
-    @Test
-    void anEmptyRecordListYieldsAnEmptyResult() {
-        // Pins current behaviour: nothing to assemble is not itself reported, so a caller must not
-        // read "empty and no errors" as proof the file was read.
-        List<String> errors = errors();
-
-        List<ChestTrap> traps = assemble(new ArrayList<>(), errors);
-
-        assertNotNull(traps);
-        assertTrue(traps.isEmpty());
-    }
-
-    @Test
-    void everyFailurePathReturnsAnEmptyListRatherThanNull() {
-        // The reader hands items() straight to ObjectRegistry.setChestTraps, which would throw on a
-        // null, so no rejection path may return one.
-        for (List<ChestTrapParseRecord> broken : Arrays.asList(
-                brokenBy(r -> r.set(0, record(ChestTrapCode.POISON, "1", 2))),
-                brokenBy(r -> r.set(1, new ChestTrapParseRecord("x", null, "2",
-                        new ArrayList<>(), "", "", "", "", 6))),
-                brokenBy(r -> r.set(1, new ChestTrapParseRecord("x", "NOPE", "2",
-                        new ArrayList<>(), "", "", "", "", 6))),
-                brokenBy(r -> r.remove(6)))) {
-            List<String> errors = errors();
-
-            List<ChestTrap> traps = assemble(broken, errors);
-
-            assertNotNull(traps, errors::toString);
-            assertTrue(traps.isEmpty(), errors::toString);
-            assertFalse(errors.isEmpty());
-        }
+        assertThrows(NullPointerException.class, () -> assemble(records));
     }
 }

@@ -21,6 +21,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.game.globals.registry.MonsterRegistry;
 import uk.co.jackoftradesltd.middle.monsters.MonsterBase;
@@ -51,11 +52,13 @@ import static org.junit.jupiter.api.Assertions.*;
  * prose - first record is the no-trap, codes match {@link ChestTrapCode} positionally, levels
  * ascend, and the file must be complete.
  *
- * <p>The whole-file contract is the thing most worth pinning: unlike the other readers here, a
- * structural failure rejects the <em>file</em>, so the result is an empty list plus errors rather
- * than the records that happened to survive. Several fixtures below are valid prefixes of the real
- * file and are still rejected; that is the intended behaviour, because a trap's pval bit is its
- * position and a partial load would silently renumber nothing but would leave gaps.
+ * <p>The whole-file contract is the thing most worth pinning: a structural failure ends the load
+ * with a {@link DataFileParseException} from the assembler, as C's parser errors end the
+ * {@code chest_trap.txt} load, rather than returning the records that happened to survive. The
+ * order, count and level rules are the accepted deviation "{@code chest_trap.txt} must match
+ * {@code ChestTrapCode} record for record" in {@code docs/Accepted_Deviations.md}: C checks none of
+ * them. A valid prefix of the real file still ends the load, because a trap's pval bit is its
+ * position and a partial load would leave {@link ChestTrapCode} constants with no trap.
  *
  * <p>The shipped {@code chest_trap.txt} uses an {@code EF_SUMMON} effect (the summoning runes),
  * which {@code EffectAssembler} resolves via {@link MonsterRegistry#lookupSummon}; loading summons
@@ -374,80 +377,67 @@ class ChestTrapReaderTest {
     // ---- Structural validation: the file is accepted or rejected whole ----
 
     @Test
-    void anUnknownCodeIsReportedAndRejectsTheFile() throws IOException {
-        ParseResult<ChestTrap> result = parse("bad-code.txt",
-                FULL_FILE.replace("code:POISON", "code:NOT_A_TRAP"));
+    void anUnknownCodeEndsTheLoad() throws IOException {
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> parse("bad-code.txt",
+                FULL_FILE.replace("code:POISON", "code:NOT_A_TRAP")));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream()
-                        .anyMatch(e -> e.contains("invalid trap code") && e.contains("NOT_A_TRAP")),
-                () -> result.errors().toString());
+        assertTrue(e.getMessage().contains("invalid trap code value: NOT_A_TRAP"), e::getMessage);
     }
 
     @Test
-    void aFirstRecordThatIsNotNoTrapIsRejected() throws IOException {
+    void aFirstRecordThatIsNotNoTrapEndsTheLoad() throws IOException {
         // pick_one_chest_trap draws from chest_traps->next, so record 0 must be the no-trap entry.
-        ParseResult<ChestTrap> result = parse("no-locked.txt",
-                FULL_FILE.replace("""
-                        name:locked
-                        code:NO_TRAP
-                        level:1
-                        
-                        """, "").replace("record-count:7", "record-count:6"));
+        String noLocked = FULL_FILE.replace("""
+                name:locked
+                code:NO_TRAP
+                level:1
+                
+                """, "").replace("record-count:7", "record-count:6");
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream()
-                        .anyMatch(e -> e.contains("NO_TRAP")),
-                () -> result.errors().toString());
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> parse("no-locked.txt", noLocked));
+
+        assertTrue(e.getMessage().contains("should be NO_TRAP"), e::getMessage);
     }
 
     @Test
-    void codesOutOfEnumOrderAreRejected() throws IOException {
+    void codesOutOfEnumOrderEndTheLoad() throws IOException {
         // Swapping two records keeps every code present but moves the bits: LOSE_CON would take
-        // bit 4 and LOSE_STR bit 8. Silent in C; an error here.
+        // bit 4 and LOSE_STR bit 8. Silent in C; the load ends here.
         String swapped = FULL_FILE
                 .replace("code:LOSE_STR", "code:PLACEHOLDER")
                 .replace("code:LOSE_CON", "code:LOSE_STR")
                 .replace("code:PLACEHOLDER", "code:LOSE_CON");
 
-        ParseResult<ChestTrap> result = parse("swapped.txt", swapped);
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> parse("swapped.txt", swapped));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream()
-                        .anyMatch(e -> e.contains("LOSE_STR") || e.contains("LOSE_CON")),
-                () -> result.errors().toString());
+        assertTrue(e.getMessage().contains("LOSE_CON should be LOSE_STR"), e::getMessage);
     }
 
     @Test
-    void aDuplicatedCodeIsRejected() throws IOException {
-        ParseResult<ChestTrap> result = parse("duplicate.txt",
-                FULL_FILE.replace("code:PARALYZE", "code:EXPLODE"));
+    void aDuplicatedCodeEndsTheLoad() throws IOException {
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> parse("duplicate.txt",
+                FULL_FILE.replace("code:PARALYZE", "code:EXPLODE")));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty());
+        assertTrue(e.getMessage().contains("EXPLODE should be PARALYZE"), e::getMessage);
     }
 
     @Test
-    void levelsThatDescendAreRejected() throws IOException {
+    void levelsThatDescendEndTheLoad() throws IOException {
         // The data file's rule 2: traps appear in ascending order of level. Equal levels are fine -
         // the real file has two at level 1 - so the fixture has to actually descend.
-        ParseResult<ChestTrap> result = parse("descending.txt",
-                FULL_FILE.replace("level:15", "level:2"));
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> parse("descending.txt",
+                FULL_FILE.replace("level:15", "level:2")));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("level")),
-                () -> result.errors().toString());
+        assertTrue(e.getMessage().contains("must not descend"), e::getMessage);
     }
 
     @Test
-    void aValidPrefixOfTheFileIsStillRejectedAsIncomplete() throws IOException {
-        // Three well-formed traps in the right order, but the file is short. Accepting it would
-        // leave ChestTrapCode constants with no trap behind them, so it is rejected whole.
-        ParseResult<ChestTrap> result = parse("short.txt", """
+    void aValidPrefixOfTheFileEndsTheLoadAsIncomplete() throws IOException {
+        // Two well-formed traps in the right order, but the file is short. Accepting it would
+        // leave ChestTrapCode constants with no trap behind them, so the load ends.
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> parse("short.txt", """
                 record-count:2
                 name:locked
                 code:NO_TRAP
@@ -459,25 +449,20 @@ class ChestTrapReaderTest {
                 effect:TIMED_INC:POISONED
                 dice:10+d20
                 msg:A puff of green gas surrounds you!
-                """);
+                """));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("expected 7")),
-                () -> result.errors().toString());
+        assertTrue(e.getMessage().contains("Expected: 7 received: 2"), e::getMessage);
     }
 
     @Test
-    void anUnresolvableEffectDropsTheRecordAndSoRejectsTheFile() throws IOException {
-        // EffectAssembler's all-or-nothing contract drops the owning record; that record's absence
-        // then fails the completeness check, so one bad effect costs the whole file.
-        ParseResult<ChestTrap> result = parse("bad-effect.txt",
-                FULL_FILE.replace("effect:TIMED_INC:POISONED", "effect:NOT_A_REAL_EFFECT"));
+    void anUnresolvableEffectEndsTheLoad() throws IOException {
+        // EffectAssembler returns null for the block, and the assembler ends the load, as an
+        // error from grab_effect_data ends it in C.
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> parse("bad-effect.txt",
+                FULL_FILE.replace("effect:TIMED_INC:POISONED", "effect:NOT_A_REAL_EFFECT")));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("NOT_A_REAL_EFFECT")),
-                () -> result.errors().toString());
+        assertTrue(e.getMessage().contains("line: 6") && e.getMessage().contains("no valid effects"),
+                e::getMessage);
     }
 
     // ---- Where this reader differs from C's chest_trap_parser --------------
@@ -538,23 +523,23 @@ class ChestTrapReaderTest {
     }
 
     @Test
-    void aNonZeroDestroyOtherThanOneIsFalseHereWhereCSetsIt() throws IOException {
-        // parse_chest_trap_destroy sets t->destroy = true for any non-zero val; the assembler
-        // tests for the text "1".
+    void aNonZeroDestroyOtherThanOneIsTrueAsInC() throws IOException {
+        // parse_chest_trap_destroy sets t->destroy = true for any non-zero val.
         ParseResult<ChestTrap> result = parse("destroy-2.txt",
                 FULL_FILE.replace("destroy:1", "destroy:2"));
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
-        assertFalse(byCode(result.items(), ChestTrapCode.EXPLODE).isDestroy());
+        assertTrue(byCode(result.items(), ChestTrapCode.EXPLODE).isDestroy());
     }
 
     @Test
-    void aNonZeroMagicOtherThanOneIsFalseHereWhereCSetsIt() throws IOException {
+    void aNonZeroMagicOtherThanOneIsTrueAsInC() throws IOException {
+        // parse_chest_trap_magic, likewise: if (val) t->magic = true.
         ParseResult<ChestTrap> result = parse("magic-3.txt",
                 FULL_FILE.replace("magic:1", "magic:3"));
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
-        assertFalse(byCode(result.items(), ChestTrapCode.SUMMON).isMagic());
+        assertTrue(byCode(result.items(), ChestTrapCode.SUMMON).isMagic());
     }
 
     @Test

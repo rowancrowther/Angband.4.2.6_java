@@ -51,13 +51,12 @@ import static org.junit.jupiter.api.Assertions.*;
  * <p>The happy path runs against the real shipped file. The error paths build one-defect fixtures in
  * a temp dir. Note which channel each defect lands on: the lexer's {@code INTEGER} token is
  * {@code '-'? digit+}, so a non-numeric field is a <em>grammar</em> error, not an assembly one.
- * {@code params:}, {@code streamer:}, {@code room:}, {@code min-level:} and {@code alloc:} are read
- * by {@code ParseUtils} in base 0, as {@code parser_getint} reads them, so a value too big for
- * {@code int} is clamped (the accepted deviation from C's wrap) and loads. The assemblers stop the load, as
- * {@code print_error} in {@code datafile.c} does, on an unknown profile name and an unknown room
- * name, which C quits on too, and on an overflowing {@code tunnel:} field, which C does not quit
- * on: {@code TunnelAssembler} reads with {@code Integer.parseInt}, and C wraps. Each throws
- * {@link DataFileParseException} out of {@code parseWithResults}.
+ * {@code params:}, {@code tunnel:}, {@code streamer:}, {@code room:}, {@code min-level:} and
+ * {@code alloc:} are read by {@code ParseUtils} in base 0, as {@code parser_getint} reads them, so a
+ * value too big for {@code int} is clamped (the accepted deviation from C's wrap) and loads. The
+ * assemblers stop the load, as {@code print_error} in {@code datafile.c} does, on an unknown profile
+ * name and an unknown room name, which C quits on too. Each throws {@link DataFileParseException}
+ * out of {@code parseWithResults}.
  *
  * @author Rowan Crowther
  */
@@ -742,13 +741,16 @@ class DungeonProfileReaderTest {
     }
 
     /**
-     * C: {@code parser_getint} on any one of the five {@code tunnel:} fields refuses a value past
-     * {@code INT_MAX}, so the load quits. A good profile before the bad one does not save the file,
-     * and a profile is never kept without its tunnel.
+     * C's {@code parse_profile_tunnel} does not quit on a {@code tunnel:} field past
+     * {@code INT_MAX}: {@code parser.c} only refuses text with no digit, and the 64-bit
+     * {@code strtol} result is cut to 32 bits, so {@code 99999999999} becomes 1215752191. Here it
+     * is clamped to 2147483647 (accepted deviation, {@code ParseUtils}); either way the file loads.
+     * This replaced a stop-the-load test on 261023, when {@code TunnelAssembler} moved off
+     * {@code Integer.parseInt}.
      */
     @ParameterizedTest
     @ValueSource(ints = {0, 1, 2, 3, 4})
-    void anOverflowingTunnelFieldStopsTheLoadAsInC(int field) throws IOException {
+    void anOverflowingTunnelFieldIsClampedWhereCWraps(int field) throws IOException {
         String[] values = {"10", "30", "15", "25", "50"};
         values[field] = "99999999999";
         String path = tempFile("overflow-tunnel.txt", String.join("\n",
@@ -761,10 +763,14 @@ class DungeonProfileReaderTest {
                 "alloc:90",
                 ""));
 
-        DataFileParseException e = loadAndStop(path);
+        ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
 
-        assertTrue(e.getMessage().contains("99999999999"), e.getMessage());
-        assertTrue(e.getMessage().contains(path), e.getMessage());
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        TunnelProfile t = byName(result.items(), "classic").getTun();
+        int[] got = {t.getRnd(), t.getChg(), t.getCon(), t.getPen(), t.getJct()};
+        int[] expected = {10, 30, 15, 25, 50};
+        expected[field] = Integer.MAX_VALUE;
+        assertArrayEquals(expected, got);
     }
 
     /**

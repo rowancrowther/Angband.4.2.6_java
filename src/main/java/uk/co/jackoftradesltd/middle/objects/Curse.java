@@ -461,4 +461,8 @@ public class Curse {
 
         return result;
     }
+    
+    public record FullCurseData(Curse curse,
+                                int power,
+                                int timeout) {}
 }

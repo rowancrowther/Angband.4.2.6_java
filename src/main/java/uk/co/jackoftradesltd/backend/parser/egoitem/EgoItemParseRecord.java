@@ -17,6 +17,8 @@
 
 package uk.co.jackoftradesltd.backend.parser.egoitem;
 
+import uk.co.jackoftradesltd.backend.parser.curse.FullCurseDataParseRecord;
+
 import java.util.List;
 import java.util.Map;
 
@@ -69,7 +71,7 @@ public record EgoItemParseRecord(String name,
                                  String timeout,
                                  List<String> brands,
                                  List<String> slays,
-                                 Map<String, String> curses,
+                                 List<FullCurseDataParseRecord> curses,
                                  String desc,
                                  int line) {
 

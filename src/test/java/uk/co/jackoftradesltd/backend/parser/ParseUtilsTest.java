@@ -29,7 +29,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * Unit tests for all three forms of {@link ParseUtils#parseIntString}: the base 0 reading, the
  * fixed-base reading and the base 0 reading with a default for empty text, and for
  * {@link ParseUtils#minusFound}, the leading-{@code -} test that {@code parser_parse} in
- * {@code parser.c} applies to a {@code uint} token.
+ * {@code parser.c} applies to a {@code uint} token, and for the leading-{@code +} reading and the
+ * {@code signFound}, {@code nonDigitFound}, {@code signOnly} and {@code onlyDigits} tests.
+ * {@code nonDigitFound} is checked against {@code find_value_arg()} in {@code datafile.c}, whose
+ * {@code *tc != ']'} test refuses trailing text after the figure of an ego-item
+ * {@code values:} or {@code min-values:} entry.
  *
  * <p>The expected values are worked out from C, not from the Java. {@code parse_act_aim},
  * {@code parse_act_level} and {@code parse_act_power} in {@code obj-init.c} take their numbers from
@@ -331,5 +335,172 @@ class ParseUtilsTest {
         // strtoul skips the space, but parser.c's *tok == '-' sees ' ' and lets " -5" through.
         assertEquals(false, ParseUtils.minusFound(" -5"));
         assertEquals(false, ParseUtils.minusFound("\t-5"));
+    }
+
+    // ---- a leading '+' ------------------------------------------------------------
+
+    // strtol and strtoul both take one optional '+' before the digits, and the PARSE_T_UINT test in
+    // parser_parse() only refuses '-', so "+5" is 5 for an int field and for a uint field alike.
+    @ParameterizedTest(name = "base 0, leading plus {0} -> {1}")
+    @CsvSource({
+            "+5, 5",
+            "+0, 0",
+            "+010, 8",
+            "+08, 0",
+            "+12abc, 12",
+            "+200, 200"
+    })
+    void aLeadingPlusIsReadAsStrtolReadsIt(String text, int expected) {
+        assertEquals(expected, parse(text));
+        assertEquals(expected, parseWithDefault(text, 99));
+    }
+
+    // strtol(text, &end, 10) for find_value_arg() and grab_int_range(), and base 8 for the switch.
+    @ParameterizedTest(name = "fixed base, leading plus {0} -> base 10 {1}, base 8 {2}")
+    @CsvSource({
+            "+5, 5, 5",
+            "+010, 10, 8",
+            "+017, 17, 15",
+            "+08, 8, 0"
+    })
+    void aLeadingPlusIsReadInTheFixedBaseForm(String text, int decimal, int octal) {
+        assertEquals(decimal, parseDecimal(text));
+        assertEquals(octal, parseOctal(text));
+    }
+
+    // strtol finds no digit after the first sign, so the second sign (or anything else) is refused.
+    @ParameterizedTest(name = "two signs or sign then letter {0}")
+    @CsvSource({"+-5", "-+5", "++5", "--5", "+abc", "+x1"})
+    void aSecondSignOrNoDigitsAfterAPlusStopsTheLoad(String text) {
+        assertThrows(DataFileParseException.class, () -> parse(text));
+        assertThrows(DataFileParseException.class, () -> parseDecimal(text));
+        assertThrows(DataFileParseException.class, () -> parseWithDefault(text, 99));
+    }
+
+    @Test
+    void aLonePlusGivesZeroAsALoneMinusDoes() {
+        // C's strtol finds no digits in "+" and refuses it as PARSE_ERROR_NOT_NUMBER; the lexer never
+        // produces it. Java gives 0 in every form, the documented difference for a lone sign.
+        assertEquals(0, parse("+"));
+        assertEquals(0, parseDecimal("+"));
+        assertEquals(0, parseOctal("+"));
+        assertEquals(0, parseWithDefault("+", 99));
+    }
+
+    // ---- signFound ------------------------------------------------------------------
+
+    // The first character only, as parser.c's *tok == '-' looks: -1 for '-', 1 for '+', else 0.
+    @ParameterizedTest(name = "signFound \"{0}\" -> {1}")
+    @CsvSource({
+            "-5, -1",
+            "-, -1",
+            "--5, -1",
+            "+5, 1",
+            "+, 1",
+            "+-5, 1",
+            "5, 0",
+            "0, 0",
+            "5-, 0",
+            "5+, 0",
+            "abc, 0"
+    })
+    void signFoundLooksOnlyAtTheFirstCharacter(String text, int expected) {
+        assertEquals(expected, ParseUtils.signFound(text));
+    }
+
+    @Test
+    void signFoundIsZeroForEmptyTextAndDoesNotLookPastASpace() {
+        assertEquals(0, ParseUtils.signFound(""));
+        assertEquals(0, ParseUtils.signFound(" -5"));
+    }
+
+    // ---- nonDigitFound --------------------------------------------------------------
+
+    // find_value_arg() in datafile.c: strtol(to + 1, &tc, 10), then "*tc != ']'" refuses the entry. So
+    // the text between the brackets is refused when the digits (after one optional sign) are not
+    // followed by the closing bracket, and when strtol read nothing but the next character is not ']'.
+    @ParameterizedTest(name = "nonDigitFound \"{0}\" -> {1}")
+    @CsvSource({
+            "5, false",
+            "0, false",
+            "010, false",
+            "-5, false",
+            "+5, false",
+            "-0, false",
+            "15x, true",
+            "'5 ', true",
+            "x5, true",
+            "abc, true",
+            "-, true",
+            "+, true",
+            "+-5, true",
+            "--5, true",
+            "5-, true",
+            "-5-, true",
+            "5.5, true"
+    })
+    void nonDigitFoundIsFindValueArgsTrailingTextTest(String text, boolean expected) {
+        assertEquals(expected, ParseUtils.nonDigitFound(text));
+    }
+
+    @Test
+    void nonDigitFoundAcceptsEmptyTextAsFindValueArgDoes() {
+        // "[]": strtol reads nothing and stops on the ']' itself, so *tc == ']' and the figure is 0.
+        assertEquals(false, ParseUtils.nonDigitFound(""));
+        assertEquals(0, ParseUtils.parseIntString("EgoItem", "", 7, "ego_item.txt", "minimum modifier value", false));
+    }
+
+    @Test
+    void nonDigitFoundRefusesLeadingWhitespaceThoughStrtolWouldSkipIt() {
+        // strtol skips leading whitespace, so C reads "[ 5]" as 5. The ego lexer never produces it,
+        // and the stricter Java answer is the one the assembler wants.
+        assertEquals(true, ParseUtils.nonDigitFound(" 5"));
+    }
+
+    // ---- signOnly -------------------------------------------------------------------
+
+    @ParameterizedTest(name = "signOnly \"{0}\" -> {1}")
+    @CsvSource({
+            "-, true",
+            "+, true",
+            "--, false",
+            "-5, false",
+            "+5, false",
+            "5, false",
+            "a, false"
+    })
+    void signOnlyIsTrueForOneSignAndNothingElse(String text, boolean expected) {
+        assertEquals(expected, ParseUtils.signOnly(text));
+    }
+
+    @Test
+    void signOnlyIsFalseForEmptyText() {
+        assertEquals(false, ParseUtils.signOnly(""));
+    }
+
+    // ---- onlyDigits -----------------------------------------------------------------
+
+    @ParameterizedTest(name = "onlyDigits \"{0}\" -> {1}")
+    @CsvSource({
+            "5, true",
+            "0, true",
+            "007, true",
+            "1234567890, true",
+            "-5, false",
+            "+5, false",
+            "5a, false",
+            "a5, false",
+            "5.5, false",
+            "-, false"
+    })
+    void onlyDigitsIsTrueForDigitsAndNothingElse(String text, boolean expected) {
+        assertEquals(expected, ParseUtils.onlyDigits(text));
+    }
+
+    @Test
+    void onlyDigitsIsFalseForEmptyTextAndForUnicodeDigits() {
+        assertEquals(false, ParseUtils.onlyDigits(""));
+        // strtol reads ASCII 0-9 only; Arabic-Indic five is not a digit to it.
+        assertEquals(false, ParseUtils.onlyDigits("٥"));
     }
 }

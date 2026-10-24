@@ -221,7 +221,7 @@ class PlayerEquipLearnElementTest {
      */
     private static Integer knownResLevel(ItemObject item, ElementEnum elem) {
         ElementInfo info = item.getKnown().getElInfo().get(elem);
-        return info == null ? null : info.getResLevel();
+        return info == null ? null : Integer.valueOf(info.getResLevel());
     }
 
     /**

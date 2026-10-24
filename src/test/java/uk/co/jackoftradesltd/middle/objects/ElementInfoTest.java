@@ -91,18 +91,46 @@ class ElementInfoTest {
         }
 
         /**
-         * C's field is an {@code int16_t}, so 40000 would wrap to -25536 there. The port stores an
-         * {@code int} and does not narrow; the data files never go near the range, so this pins the
-         * documented behaviour rather than a divergence anyone depends on.
+         * C's field is an {@code int16_t}, so storing 40000 there wraps to -25536 and reading it
+         * back gives that. The getter returns a {@code short}, so the port reads back what C would
+         * hold. The data files never go near the range; this pins the 16-bit wrap at the edges and
+         * for a value a whole multiple of 65536 away from a small one.
          */
         @Test
-        @DisplayName("does not narrow to sixteen bits")
-        void doesNotNarrow() {
+        @DisplayName("reads back as a signed sixteen-bit value, as C's int16_t holds it")
+        void narrowsToSixteenBits() {
             ElementInfo info = new ElementInfo();
 
             info.setResLevel(40000);
+            assertEquals(-25536, info.getResLevel());
 
-            assertEquals(40000, info.getResLevel());
+            info.setResLevel(32767);
+            assertEquals(32767, info.getResLevel());
+
+            info.setResLevel(32768);
+            assertEquals(-32768, info.getResLevel());
+
+            info.setResLevel(-32768);
+            assertEquals(-32768, info.getResLevel());
+
+            info.setResLevel(-32769);
+            assertEquals(32767, info.getResLevel());
+
+            info.setResLevel(65536 + 3);
+            assertEquals(3, info.getResLevel());
+        }
+
+        /**
+         * The copy carries the stored level, so a value that reads back wrapped on the source reads
+         * back the same wrapped value on the copy.
+         */
+        @Test
+        @DisplayName("a copy reads back the same sixteen-bit value as its source")
+        void copyKeepsTheNarrowedValue() {
+            ElementInfo info = new ElementInfo();
+            info.setResLevel(40000);
+
+            assertEquals(info.getResLevel(), info.copy().getResLevel());
         }
 
         @Test

@@ -222,7 +222,7 @@ Paths are under `src/main/java/uk/co/jackoftradesltd/`. The figure in brackets i
 - `backend/parser/dungeonprofile/DungeonProfileAssembler.java` (3): ~~80, 106, 116~~
 - `backend/parser/dungeonprofile/RoomAssembler.java` (6): ~~66, 74, 82, 90, 99, 107~~
 - `backend/parser/dungeonprofile/StreamerAssembler.java` (7): ~~52, 66, 73, 80, 87, 94, 101~~
-- `backend/parser/dungeonprofile/TunnelAssembler.java` (6): 57, 73, 81, 89, 97, 105
+- `backend/parser/dungeonprofile/TunnelAssembler.java` (6): ~~57, 73, 81, 89, 97, 105~~
 - `backend/parser/egoitem/EgoItemAssembler.java` (30): 83, 100, 113, 128, 146, 150, 157, 166, 183, 187, 198, 210, 223, 234, 246, 256, 266, 276, 286, 295, 303, 313, 323, 332, 341, 351, 361, 371, 380, 389
 - `backend/parser/flavour/FlavourAssembler.java` (4): 67, 73, 85, 91
 - `backend/parser/flavour/FlavourKindAssembler.java` (3): 74, 80, 94

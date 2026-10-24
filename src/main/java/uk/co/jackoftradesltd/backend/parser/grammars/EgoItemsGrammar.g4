@@ -5,6 +5,7 @@ options { tokenVocab = EgoItemsLexer; }
 @header {
     import uk.co.jackoftradesltd.backend.parser.egoitem.EgoItemParseRecord;
     import uk.co.jackoftradesltd.backend.parser.egoitem.EgoItemParseRecord.ItemRef;
+    import uk.co.jackoftradesltd.backend.parser.curse.FullCurseDataParseRecord;
 
     import java.util.Map;
     import java.util.List;
@@ -134,10 +135,11 @@ slay
         ;
 
 curse
-        returns[String curseName, String cursePower]
+        returns[FullCurseDataParseRecord curseData]
         :   CURSE n=CURSE_NAME CURSE_COLON p=CURSE_NAME {
-                $curseName = $n.getText();
-                $cursePower = $p.getText();
+                String curseName = $n.getText();
+                String cursePower = $p.getText();
+                $curseData = new FullCurseDataParseRecord(curseName, cursePower, "0");
             }
         ;
 
@@ -170,7 +172,7 @@ egoItem
             String timeoutInit = "";
             List<String> brandsInit = new ArrayList<>();
             List<String> slaysInit = new ArrayList<>();
-            Map<String, String> cursesInit = new HashMap<>();
+            List<FullCurseDataParseRecord> cursesInit = new ArrayList<>();
             String descInit = "";
             StringBuilder sb = new StringBuilder();
             int line = 0;
@@ -207,7 +209,7 @@ egoItem
         |   time { timeoutInit = $time.timeStr; }
         |   brand { brandsInit.add($brand.brandStr); }
         |   slay { slaysInit.add($slay.slayStr); }
-        |   curse { cursesInit.put($curse.curseName, $curse.cursePower); }
+        |   curse { cursesInit.add($curse.curseData); }
         |   desc { sb.append($desc.descStr); })+
         ;
 

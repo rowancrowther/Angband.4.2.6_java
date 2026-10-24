@@ -21,6 +21,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.channel.utils.Flag;
@@ -233,53 +234,36 @@ class EgoItemReaderTest {
         assertTrue(poss.stream().anyMatch(k -> "Lantern".equals(k.getsValueName())));
     }
 
-    // ---- Soft errors: dropped record (skip-and-continue) -----------------
+    // ---- Stop the load: an unresolvable field ends it, as a parse error does in C -----------
 
     @Test
-    void unknownTypeTvalIsReportedAndSkipped() throws IOException {
-        ParseResult<EgoItem> result = load("bad-type.txt",
-                withHeader(1, ego("weird", "type:no such tval\n")));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(
-                        s -> s.contains("unknown TValue") && s.contains("no such tval")),
-                result.errors()::toString);
+    void unknownTypeTvalStopsTheLoadAsInC() {
+        // parse_ego_type returns PARSE_ERROR_UNRECOGNISED_TVAL.
+        assertStopsTheLoad("bad-type.txt", "type:no such tval\n", "invalid tValue: no such tval");
     }
 
     @Test
-    void unknownItemTvalIsReportedAndSkipped() throws IOException {
-        ParseResult<EgoItem> result = load("bad-item-tval.txt",
-                withHeader(1, ego("weird", "item:no such tval:Whatever\n")));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(
-                        s -> s.contains("unknown TValue") && s.contains("no such tval")),
-                result.errors()::toString);
+    void unknownItemTvalStopsTheLoadAsInC() {
+        // parse_ego_item returns PARSE_ERROR_UNRECOGNISED_TVAL.
+        assertStopsTheLoad("bad-item-tval.txt", "item:no such tval:Whatever\n",
+                "invalid tValue: no such tval");
     }
 
     @Test
-    void unknownItemSvalIsReportedAndSkipped() throws IOException {
-        ParseResult<EgoItem> result = load("bad-item-sval.txt",
-                withHeader(1, ego("weird", "item:light:No Such Lantern\n")));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(s -> s.contains("illegal sValue in its item")),
-                result.errors()::toString);
+    void unknownItemSvalStopsTheLoadAsInC() {
+        // parse_ego_item returns PARSE_ERROR_UNRECOGNISED_SVAL.
+        assertStopsTheLoad("bad-item-sval.txt", "item:light:No Such Lantern\n",
+                "invalid sValue: No Such Lantern");
     }
 
     @Test
-    void numericItemSvalIsRejected() throws IOException {
+    void numericItemSvalIsRejected() {
         // C's lookup_sval takes a number as the sval itself. The kinds seeded here come straight from
         // ItemObjectReader, so none has been numbered and the registry's (tval, sval) index is empty:
-        // a numeric sval finds nothing and the record is rejected. (In a running game
+        // a numeric sval finds nothing and the load stops. (In a running game
         // ObjectDataLoader numbers the kinds first, and the registry reads an all-digit reference as
         // a number, as C does.)
-        ParseResult<EgoItem> result = load("numeric-sval.txt",
-                withHeader(1, ego("weird", "item:light:3\n")));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(s -> s.contains("illegal sValue in its item")),
-                result.errors()::toString);
+        assertStopsTheLoad("numeric-sval.txt", "item:light:3\n", "invalid sValue: 3");
     }
 
     // ---- flags: OF / KF / element split, digits, and the space regression -
@@ -311,13 +295,10 @@ class EgoItemReaderTest {
     }
 
     @Test
-    void unknownFlagIsReportedAndSkipped() throws IOException {
-        ParseResult<EgoItem> result = load("bad-flag.txt",
-                withHeader(1, ego("weird", "type:sword\nflags:NOTAFLAG\n")));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(s -> s.contains("unknown flag")),
-                result.errors()::toString);
+    void unknownFlagStopsTheLoadAsInC() {
+        // None of grab_flag (object), grab_flag (kind) and grab_element_flag knows it, so
+        // parse_ego_flags returns PARSE_ERROR_INVALID_FLAG.
+        assertStopsTheLoad("bad-flag.txt", "type:sword\nflags:NOTAFLAG\n", "has an illegal flag value: NOTAFLAG");
     }
 
     @Test
@@ -329,13 +310,10 @@ class EgoItemReaderTest {
     }
 
     @Test
-    void unknownFlagOffIsReportedAndSkipped() throws IOException {
-        ParseResult<EgoItem> result = load("bad-flag-off.txt",
-                withHeader(1, ego("weird", "type:sword\nflags-off:NOTAFLAG\n")));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(s -> s.contains("unknown flag-off")),
-                result.errors()::toString);
+    void unknownFlagOffStopsTheLoadAsInC() {
+        // parse_ego_flags_off returns PARSE_ERROR_INVALID_FLAG on the first token grab_flag refuses.
+        assertStopsTheLoad("bad-flag-off.txt", "type:sword\nflags-off:NOTAFLAG\n",
+                "invalid object flag (off) name: NOTAFLAG");
     }
 
     // ---- values: dice-vs-RES_-int split, and min-values ints -------------
@@ -365,13 +343,10 @@ class EgoItemReaderTest {
     }
 
     @Test
-    void unknownModifierIsReportedAndSkipped() throws IOException {
-        ParseResult<EgoItem> result = load("bad-mod.txt",
-                withHeader(1, ego("weird", "type:sword\nvalues:NOTAMOD[1]\n")));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(s -> s.contains("unknown modifier")),
-                result.errors()::toString);
+    void unknownModifierStopsTheLoadAsInC() {
+        // Neither grab_rand_value nor grab_index_and_int knows the name: PARSE_ERROR_INVALID_VALUE.
+        assertStopsTheLoad("bad-mod.txt", "type:sword\nvalues:NOTAMOD[1]\n",
+                "invalid object modifier name: OM_NOTAMOD");
     }
 
     // ---- combat / min-combat ---------------------------------------------
@@ -475,33 +450,29 @@ class EgoItemReaderTest {
     }
 
     @Test
-    void unknownBrandIsReportedAndSkipped() throws IOException {
-        ParseResult<EgoItem> result = load("bad-brand.txt",
-                withHeader(1, ego("weird", "type:sword\nbrand:NOTABRAND\n")));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(s -> s.contains("unknown brand")),
-                result.errors()::toString);
+    void unknownBrandStopsTheLoadAsInC() {
+        // parse_ego_brand returns PARSE_ERROR_UNRECOGNISED_BRAND.
+        assertStopsTheLoad("bad-brand.txt", "type:sword\nbrand:NOTABRAND\n", "invalid brand: NOTABRAND");
     }
 
     @Test
-    void unknownSlayIsReportedAndSkipped() throws IOException {
-        ParseResult<EgoItem> result = load("bad-slay.txt",
-                withHeader(1, ego("weird", "type:sword\nslay:NOTASLAY\n")));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(s -> s.contains("unknown slay")),
-                result.errors()::toString);
+    void unknownSlayStopsTheLoadAsInC() {
+        // parse_ego_slay returns PARSE_ERROR_UNRECOGNISED_SLAY.
+        assertStopsTheLoad("bad-slay.txt", "type:sword\nslay:NOTASLAY\n", "invalid slay: NOTASLAY");
     }
 
     @Test
-    void unknownCurseIsReportedAndSkipped() throws IOException {
-        ParseResult<EgoItem> result = load("bad-curse.txt",
-                withHeader(1, ego("weird", "type:sword\ncurse:no such curse:10\n")));
+    void unknownCurseStopsTheLoadAsInC() {
+        // parse_ego_curse returns PARSE_ERROR_UNRECOGNISED_CURSE.
+        assertStopsTheLoad("bad-curse.txt", "type:sword\ncurse:no such curse:10\n",
+                "invalid to curse name value: no such curse");
+    }
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(s -> s.contains("unknown curse")),
-                result.errors()::toString);
+    @Test
+    void anUnknownCurseWithNoPowerStillStopsTheLoadAsInC() {
+        // parse_ego_curse looks the name up before it tests the power, so power 0 does not excuse it.
+        assertStopsTheLoad("bad-curse-zero.txt", "type:sword\ncurse:no such curse:0\n",
+                "invalid to curse name value: no such curse");
     }
 
     // ---- desc + latent act: (unused in real data, kept for futureproofing) -
@@ -515,17 +486,46 @@ class EgoItemReaderTest {
 
     /**
      * C's {@code parse_ego_act} stores {@code findact(name)} and returns no error, so an unknown name
-     * leaves the ego loaded with a {@code NULL} activation. Here the record is skipped with a soft
-     * error; see {@code docs/Assembler_Issues.md}.
+     * leaves the ego loaded with a {@code NULL} activation.
      */
     @Test
-    void unknownActivationIsReportedAndSkippedHereWhereCKeepsTheRecordWithNone() throws IOException {
-        ParseResult<EgoItem> result = load("bad-act.txt",
-                withHeader(1, ego("weird", "type:sword\nact:NO_SUCH_ACT\n")));
+    void anUnknownActivationLeavesTheEgoWithNoneAsInC() throws Exception {
+        EgoItem e = loadOne("bad-act.txt", "type:sword\nact:NO_SUCH_ACT\n");
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(s -> s.contains("unknown activation type")),
-                result.errors()::toString);
+        assertNull(field(e, "activation"));
+    }
+
+    @Test
+    void anEgoWithNoActLineHasNoActivation() throws Exception {
+        EgoItem e = loadOne("no-act.txt", "type:sword\n");
+
+        assertNull(field(e, "activation"));
+    }
+
+    /**
+     * {@code parse_ego_name} zeroes the record, so an ego with no {@code desc:} line has a
+     * {@code NULL} {@code text}, and {@code docs/Issue_Approach_Order.md} settles absent text as
+     * {@code null}. The count of egos without one is taken from the file, not from the loader.
+     */
+    @Test
+    void anEgoWithNoDescHasNullText() throws Exception {
+        assertNull(field(loadOne("no-desc.txt", "type:sword\n"), "text"));
+    }
+
+    @Test
+    void everyShippedEgoWithoutADescLineHasNullText() throws Exception {
+        List<Boolean> hasDesc = new ArrayList<>();
+        for (String line : Files.readAllLines(Path.of(REAL_FILE))) {
+            if (line.startsWith("name:")) hasDesc.add(false);
+            else if (line.startsWith("desc:")) hasDesc.set(hasDesc.size() - 1, true);
+        }
+
+        List<EgoItem> items = new EgoItemReader().parseWithResults(REAL_FILE).items();
+        assertEquals(hasDesc.size(), items.size());
+        for (int i = 0; i < items.size(); i++) {
+            String text = field(items.get(i), "text");
+            assertEquals(hasDesc.get(i), text != null, "record " + i);
+        }
     }
 
     // ---- record-count + hard (fail-closed) errors ------------------------
@@ -624,6 +624,7 @@ class EgoItemReaderTest {
         Activation act = field(e, "activation");
         List<ObjectKind> poss = field(e, "possItems");
         String text = field(e, "text");
+        if (text == null) text = "";
         int sum = 0;
         for (char c : text.toCharArray()) sum += c;
 
@@ -653,11 +654,17 @@ class EgoItemReaderTest {
         assertTrue(result.hasErrors());
     }
 
-    private void assertSoftError(String fileName, String body, String message) throws IOException {
-        ParseResult<EgoItem> result = load(fileName, withHeader(1, ego("test", body)));
-        assertTrue(result.items().isEmpty(), "the record is skipped");
-        assertTrue(result.errors().stream().anyMatch(s -> s.contains(message)),
-                result.errors()::toString);
+    /**
+     * A bad field ends the load, as every parse error does in C ({@code print_error} in
+     * {@code datafile.c}): the assembler throws a {@link DataFileParseException} whose message names
+     * the record's {@code name:} line and the file, and nothing is returned.
+     */
+    private void assertStopsTheLoad(String fileName, String body, String message) {
+        DataFileParseException thrown = assertThrows(DataFileParseException.class,
+                () -> load(fileName, withHeader(1, ego("test", body))));
+        assertTrue(thrown.getMessage().contains(message), thrown::getMessage);
+        assertTrue(thrown.getMessage().contains("line: 2"), thrown::getMessage);
+        assertTrue(thrown.getMessage().contains(fileName), thrown::getMessage);
     }
 
     @Test
@@ -725,23 +732,22 @@ class EgoItemReaderTest {
     // ---- List order and numbering ----------------------------------------
 
     /**
-     * C numbers by place in the file, but a parse error there ends the load. Here a skipped record
-     * takes no number, so the ego after it is numbered one lower than its place in the file and the
-     * index still equals the position in the returned list.
+     * C numbers by place in the file, and a parse error there ends the whole load, so no gap can
+     * appear. Here a bad record in the middle does the same: the load stops at it, names its
+     * {@code name:} line, and the records before and after it come back from nowhere.
      */
     @Test
-    void aSkippedRecordTakesNoEgoIndexHereWhereCNumbersByFilePosition() throws Exception {
-        ParseResult<EgoItem> result = load("skip-index.txt", withHeader(3,
-                ego("first", "type:sword\n")
-                        + ego("second", "type:sword\nflags:NOTAFLAG\n")
-                        + ego("third", "type:sword\n")));
+    void aBadRecordInTheMiddleStopsTheWholeLoadAndNamesItsLine() {
+        DataFileParseException thrown = assertThrows(DataFileParseException.class,
+                () -> load("skip-index.txt", withHeader(3,
+                        ego("first", "type:sword\n")
+                                + ego("second", "type:sword\nflags:NOTAFLAG\n")
+                                + ego("third", "type:sword\n"))));
 
-        assertEquals(2, result.items().size());
-        assertEquals("first", field(result.items().get(0), "name"));
-        assertEquals(0, (int) field(result.items().get(0), "egoIndex"));
-        assertEquals("third", field(result.items().get(1), "name"));
-        assertEquals(1, (int) field(result.items().get(1), "egoIndex"));
-        assertEquals(1, result.errors().size(), result.errors()::toString);
+        // record-count is line 1, "first" is lines 2-3, so "second" opens on line 4.
+        assertTrue(thrown.getMessage().contains("line: 4"), thrown::getMessage);
+        assertTrue(thrown.getMessage().contains("skip-index.txt"), thrown::getMessage);
+        assertTrue(thrown.getMessage().contains("NOTAFLAG"), thrown::getMessage);
     }
 
     @Test
@@ -940,16 +946,16 @@ class EgoItemReaderTest {
     }
 
     @Test
-    void aTrailingSpaceAfterATvalIsNotIgnoredAsInC() throws IOException {
+    void aTrailingSpaceAfterATvalIsNotIgnoredAsInC() {
         // The sym token keeps the space, so my_stricmp("sword ", "sword") fails in C as well.
-        assertSoftError("tval-space.txt", "type:sword \n", "unknown TValue");
+        assertStopsTheLoad("tval-space.txt", "type:sword \n", "invalid tValue: sword ");
     }
 
     @Test
-    void aTvalWithNoKindsInObjectTxtIsRejected() throws IOException {
+    void aTvalWithNoKindsInObjectTxtIsRejected() {
         // The books are created by class.txt, so no kind of this tval exists when the egos load.
         // parse_ego_type returns PARSE_ERROR_NO_KIND_FOR_EGO_TYPE.
-        assertSoftError("no-kinds.txt", "type:magic book\n", "no known ObjectKinds");
+        assertStopsTheLoad("no-kinds.txt", "type:magic book\n", "invalid tvalue: magic book");
     }
 
     // ---- flags:, flags-off: and values: --------------------------------------
@@ -996,31 +1002,134 @@ class EgoItemReaderTest {
         assertEquals(-1, el.get(ElementEnum.ELEM_FIRE).getResLevel());
     }
 
+    /**
+     * {@code grab_index_and_int} and {@code grab_int_value} read the bracket with
+     * {@code strtol(..., 10)} through {@code find_value_arg} and want the {@code ]} straight after
+     * the number, so any other text in it ends the load.
+     */
     @Test
-    void aDiceFigureInAResistanceIsRejectedAsInC() throws IOException {
-        // grab_index_and_int reads the bracket with strtol and wants the ']' straight after it.
-        assertSoftError("res-dice.txt", "type:sword\nvalues:RES_FIRE[d2]\n", "malformed integer value");
+    void aDiceFigureInAResistanceIsRejectedAsInC() {
+        assertStopsTheLoad("res-dice.txt", "type:sword\nvalues:RES_FIRE[d2]\n", "non digit in the element value");
+        assertStopsTheLoad("res-dice-digit.txt", "type:sword\nvalues:RES_FIRE[1d2]\n",
+                "non digit in the element value");
     }
 
     @Test
-    void aDiceFigureInAMinValueIsRejectedAsInC() throws IOException {
-        // grab_int_value reads the bracket with strtol.
-        assertSoftError("minval-dice.txt", "type:sword\nmin-values:STEALTH[d2]\n", "malformed min value");
+    void aDiceFigureInAMinValueIsRejectedAsInC() {
+        assertStopsTheLoad("minval-dice.txt", "type:sword\nmin-values:STEALTH[d2]\n",
+                "non digit in the modifier value");
+        assertStopsTheLoad("minval-dice-digit.txt", "type:sword\nmin-values:STEALTH[1d2]\n",
+                "non digit in the modifier value");
     }
 
     @Test
-    void anUnknownMinValueNameIsRejected() throws IOException {
-        assertSoftError("minval-name.txt", "type:sword\nmin-values:NOTAMOD[1]\n", "unknown min value name");
+    void aNegatedDiceFigureInABracketIsRejectedAsInC() {
+        // strtol takes the minus and the 1, then finds 'd' where the ']' should be.
+        assertStopsTheLoad("res-neg-dice.txt", "type:sword\nvalues:RES_FIRE[-1d2]\n",
+                "non digit in the element value");
+        assertStopsTheLoad("minval-neg-dice.txt", "type:sword\nmin-values:STEALTH[-1d2]\n",
+                "non digit in the modifier value");
+    }
+
+    /**
+     * {@code find_value_arg} reads the figure in base 10, so a leading zero is not octal:
+     * {@code [010]} is ten and {@code [08]} is eight.
+     */
+    @Test
+    void bracketedIntegersAreReadInBase10AsInC() throws Exception {
+        EgoItem e = loadOne("bracket-base10.txt",
+                "type:sword\nvalues:RES_FIRE[010] | RES_COLD[08]\nmin-values:STEALTH[010] | LIGHT[08]\n");
+
+        Map<ElementEnum, ElementInfo> el = field(e, "elInfo");
+        assertEquals(10, el.get(ElementEnum.ELEM_FIRE).getResLevel());
+        assertEquals(8, el.get(ElementEnum.ELEM_COLD).getResLevel());
+        Map<ObjectModifier, Integer> min = field(e, "minModifiers");
+        assertEquals(10, min.get(ObjectModifier.OM_STEALTH));
+        assertEquals(8, min.get(ObjectModifier.OM_LIGHT));
+    }
+
+    /**
+     * {@code find_value_arg} refuses {@code INT_MIN} and {@code INT_MAX} themselves, and anything
+     * past them (the {@code long} is compared with {@code >= INT_MAX}), so the entry ends the load.
+     * One step inside the range it is accepted, and {@code parse_ego_values} then stores it in the
+     * {@code int16_t res_level} of {@code struct element_info}, which keeps the low 16 bits.
+     */
+    @Test
+    void aResistanceFigureAtOrPastTheIntLimitsStopsTheLoadAsInC() {
+        assertStopsTheLoad("res-int-max.txt", "type:sword\nvalues:RES_FIRE[2147483647]\n", "value out of bounds");
+        assertStopsTheLoad("res-int-min.txt", "type:sword\nvalues:RES_FIRE[-2147483648]\n", "value out of bounds");
+        assertStopsTheLoad("res-past-int.txt", "type:sword\nvalues:RES_FIRE[3000000000]\n", "value out of bounds");
+    }
+
+    @Test
+    void aResistanceFigureKeepsOnlyItsLow16BitsAsInC() throws Exception {
+        EgoItem e = loadOne("res-wrap.txt",
+                "type:sword\nvalues:RES_FIRE[40000] | RES_COLD[2147483646] | RES_ACID[-2147483647] | RES_POIS[32768]\n");
+
+        Map<ElementEnum, ElementInfo> el = field(e, "elInfo");
+        assertEquals((short) 40000, el.get(ElementEnum.ELEM_FIRE).getResLevel());
+        assertEquals(-25536, el.get(ElementEnum.ELEM_FIRE).getResLevel());
+        assertEquals(-2, el.get(ElementEnum.ELEM_COLD).getResLevel());
+        assertEquals(1, el.get(ElementEnum.ELEM_ACID).getResLevel());
+        assertEquals(-32768, el.get(ElementEnum.ELEM_POIS).getResLevel());
+    }
+
+    /**
+     * {@code grab_int_value} stores the figure in an {@code int} with no narrowing, so one step
+     * inside {@code INT_MAX} and {@code INT_MIN} is kept whole, and the limits themselves end the load.
+     */
+    @Test
+    void aMinValueFigureAtTheIntLimitsFollowsFindValueArg() throws Exception {
+        assertStopsTheLoad("minval-int-max.txt", "type:sword\nmin-values:STEALTH[2147483647]\n",
+                "out of range modifier value");
+        assertStopsTheLoad("minval-int-min.txt", "type:sword\nmin-values:STEALTH[-2147483648]\n",
+                "out of range modifier value");
+
+        EgoItem e = loadOne("minval-edge.txt",
+                "type:sword\nmin-values:STEALTH[2147483646] | LIGHT[-2147483647]\n");
+        Map<ObjectModifier, Integer> min = field(e, "minModifiers");
+        assertEquals(Integer.MAX_VALUE - 1, min.get(ObjectModifier.OM_STEALTH));
+        assertEquals(Integer.MIN_VALUE + 1, min.get(ObjectModifier.OM_LIGHT));
+    }
+
+    /**
+     * {@code grab_element_flag} splits at the first underscore, so the rest of the token is the
+     * element name and {@code HOLY_ORB}, which has an underscore of its own, still resolves.
+     */
+    @Test
+    void anElementNameWithAnUnderscoreResolvesAfterTheFirstUnderscore() throws Exception {
+        EgoItem e = loadOne("holy-orb.txt", "type:sword\nflags:IGNORE_HOLY_ORB | HATES_HOLY_ORB\nvalues:RES_HOLY_ORB[1]\n");
+
+        Map<ElementEnum, ElementInfo> el = field(e, "elInfo");
+        assertTrue(el.get(ElementEnum.ELEM_HOLY_ORB).has(ElementInfoEnum.EL_INFO_IGNORE));
+        assertTrue(el.get(ElementEnum.ELEM_HOLY_ORB).has(ElementInfoEnum.EL_INFO_HATES));
+        assertEquals(1, el.get(ElementEnum.ELEM_HOLY_ORB).getResLevel());
+    }
+
+    @Test
+    void aMinValueMayBeNegative() throws Exception {
+        // The shipped file has min-values:LIGHT[-4]; strtol takes the minus.
+        EgoItem e = loadOne("minval-neg.txt", "type:sword\nmin-values:LIGHT[-4]\n");
+
+        Map<ObjectModifier, Integer> min = field(e, "minModifiers");
+        assertEquals(-4, min.get(ObjectModifier.OM_LIGHT));
+    }
+
+    @Test
+    void anUnknownMinValueNameIsRejected() {
+        assertStopsTheLoad("minval-name.txt", "type:sword\nmin-values:NOTAMOD[1]\n",
+                "invalid modifier value: NOTAMOD");
     }
 
     // ---- slay:, brand: and curse: ----------------------------------------------
 
     @Test
-    void slayBrandAndCurseNamesAreMatchedExactly() throws IOException {
+    void slayBrandAndCurseNamesAreMatchedExactly() {
         // All three lookups in C are streq.
-        assertSoftError("slay-case.txt", "type:sword\nslay:evil_2\n", "unknown slay");
-        assertSoftError("brand-case.txt", "type:sword\nbrand:acid_3\n", "unknown brand");
-        assertSoftError("curse-case.txt", "type:sword\ncurse:Vulnerability:5\n", "unknown curse");
+        assertStopsTheLoad("slay-case.txt", "type:sword\nslay:evil_2\n", "invalid slay: evil_2");
+        assertStopsTheLoad("brand-case.txt", "type:sword\nbrand:acid_3\n", "invalid brand: acid_3");
+        assertStopsTheLoad("curse-case.txt", "type:sword\ncurse:Vulnerability:5\n",
+                "invalid to curse name value: Vulnerability");
     }
 
     @Test
@@ -1127,66 +1236,266 @@ class EgoItemReaderTest {
         assertHardError("unknown-directive.txt", "banana:1\n");
     }
 
-    // ---- Where the assembler differs from C ----------------------------------------
+    // ---- Assembler: alloc:, curse:, element flags and sentinel names ------------------
 
     /**
      * {@code parse_ego_alloc} returns {@code PARSE_ERROR_OUT_OF_BOUNDS} for either figure above 255
-     * or below 0. The assembler parses the two figures and checks neither.
+     * or below 0.
      */
     @Test
-    void allocFiguresOutsideZeroTo255AreAcceptedHereWhereCRejectsThem() throws Exception {
-        EgoItem above = loadOne("alloc-above.txt", "alloc:10:256 to 300\n");
-        EgoItem below = loadOne("alloc-below.txt", "alloc:10:-1 to 5\n");
+    void allocFiguresOutsideZeroTo255StopTheLoadAsInC() {
+        assertStopsTheLoad("alloc-above.txt", "alloc:10:256 to 300\n", "out of bounds alloc lower bound: 256");
+        assertStopsTheLoad("alloc-below.txt", "alloc:10:-1 to 5\n", "out of bounds alloc lower bound: -1");
+        assertStopsTheLoad("alloc-upper-above.txt", "alloc:10:5 to 256\n", "out of bounds alloc upper bound: 256");
+        assertStopsTheLoad("alloc-upper-below.txt", "alloc:10:5 to -1\n", "out of bounds alloc upper bound: -1");
+    }
 
-        assertEquals(300, (int) field(above, "allocMax"));
-        assertEquals(-1, (int) field(below, "allocMin"));
+    /**
+     * {@code grab_int_range} reads the two depths with {@code strtol(..., 10)}, so a leading zero is
+     * not octal: {@code 010 to 020} is 10 to 20 and {@code 08} is 8. The commonness is
+     * {@code parser_getint}, base 0, so a leading zero there is octal.
+     */
+    @Test
+    void allocDepthsAreReadInBase10AndCommonnessInBase0() throws Exception {
+        EgoItem e = loadOne("alloc-base.txt", "alloc:010:010 to 020\n");
+        EgoItem eight = loadOne("alloc-eight.txt", "alloc:10:08 to 09\n");
+
+        assertEquals(8, (int) field(e, "allocProb"));
+        assertEquals(10, (int) field(e, "allocMin"));
+        assertEquals(20, (int) field(e, "allocMax"));
+        assertEquals(8, (int) field(eight, "allocMin"));
+        assertEquals(9, (int) field(eight, "allocMax"));
     }
 
     /**
      * {@code parse_ego_curse} adds a curse "only if it has power", so a later {@code curse:} line for
-     * the same name with power 0 or less is a no-op and the earlier power stays. The grammar keeps
-     * the last power per name whatever it is, so the assembler then drops the curse altogether.
+     * the same curse with power 0 or less changes nothing and the earlier power stays. The record
+     * keeps every line, so the assembler sees both.
      */
     @Test
-    void aLaterCurseLineWithNoPowerErasesTheEarlierOneHereWhereCKeepsIt() throws Exception {
+    void aLaterCurseLineWithNoPowerLeavesTheEarlierOneAsInC() throws Exception {
         EgoItem zero = loadOne("curse-then-zero.txt",
                 "type:sword\ncurse:vulnerability:10\ncurse:vulnerability:0\n");
         EgoItem negative = loadOne("curse-then-negative.txt",
                 "type:sword\ncurse:vulnerability:5\ncurse:vulnerability:-5\n");
 
-        assertTrue(((Map<?, ?>) field(zero, "curses")).isEmpty());
-        assertTrue(((Map<?, ?>) field(negative, "curses")).isEmpty());
+        Map<?, CurseData> zeroCurses = field(zero, "curses");
+        Map<?, CurseData> negativeCurses = field(negative, "curses");
+        assertEquals(1, zeroCurses.size());
+        assertEquals(10, zeroCurses.values().iterator().next().getPower());
+        assertEquals(1, negativeCurses.size());
+        assertEquals(5, negativeCurses.values().iterator().next().getPower());
+    }
+
+    @Test
+    void aLaterPositiveCurseLineReplacesAnEarlierZeroOne() throws Exception {
+        EgoItem e = loadOne("curse-zero-then-power.txt",
+                "type:sword\ncurse:vulnerability:0\ncurse:vulnerability:7\n");
+
+        Map<?, CurseData> curses = field(e, "curses");
+        assertEquals(1, curses.size());
+        assertEquals(7, curses.values().iterator().next().getPower());
+        assertEquals(0, curses.values().iterator().next().getTimeout());
+    }
+
+    @Test
+    void differentCursesAccumulateWhateverTheirOrder() throws Exception {
+        EgoItem e = loadOne("curses-two.txt",
+                "type:sword\ncurse:vulnerability:10\ncurse:teleportation:20\ncurse:vulnerability:0\n");
+
+        Map<Curse, CurseData> curses = field(e, "curses");
+        assertEquals(2, curses.size());
+        assertEquals(10, curses.get(ObjectRegistry.lookupCurse("vulnerability")).getPower());
+        assertEquals(20, curses.get(ObjectRegistry.lookupCurse("teleportation")).getPower());
     }
 
     /**
-     * {@code grab_element_flag} accepts {@code HATES_<element>} as well as {@code IGNORE_<element>}.
-     * The assembler only knows the {@code IGNORE_} prefix. The shipped file uses neither
-     * {@code HATES_} nor anything else of the kind.
+     * {@code grab_element_flag} takes the text after the first underscore as an element name and
+     * accepts {@code IGNORE} or {@code HATES} for the text before it, tested with
+     * {@code strncmp(flag_name, "IGNORE", under - flag_name)}: any leading piece of the word counts.
+     * (An empty piece, as in {@code _FIRE}, would match {@code IGNORE} in C, but the lexer cannot
+     * read a flag that starts with an underscore, so it never reaches the assembler; see
+     * {@link #aFlagStartingWithAnUnderscoreIsASyntaxErrorHereWhereCAcceptsIt}.)
      */
     @Test
-    void aHatesFlagIsAnUnknownFlagHereWhereCAcceptsIt() throws IOException {
-        assertSoftError("hates.txt", "type:sword\nflags:HATES_FIRE\n", "unknown flag");
+    void aHatesFlagSetsTheHatesBitAsInC() throws Exception {
+        EgoItem e = loadOne("hates.txt", "type:sword\nflags:HATES_FIRE\n");
+
+        Map<ElementEnum, ElementInfo> el = field(e, "elInfo");
+        assertTrue(el.get(ElementEnum.ELEM_FIRE).has(ElementInfoEnum.EL_INFO_HATES));
+        assertFalse(el.get(ElementEnum.ELEM_FIRE).has(ElementInfoEnum.EL_INFO_IGNORE));
+    }
+
+    @Test
+    void anElementFlagPrefixIsAnyLeadingPieceOfTheWordAsInC() throws Exception {
+        EgoItem e = loadOne("prefixes.txt",
+                "type:sword\nflags:IGN_FIRE | H_COLD | HAT_ACID | IGNORE_POIS | HATES_LIGHT\n");
+
+        Map<ElementEnum, ElementInfo> el = field(e, "elInfo");
+        assertTrue(el.get(ElementEnum.ELEM_FIRE).has(ElementInfoEnum.EL_INFO_IGNORE));
+        assertTrue(el.get(ElementEnum.ELEM_COLD).has(ElementInfoEnum.EL_INFO_HATES));
+        assertTrue(el.get(ElementEnum.ELEM_ACID).has(ElementInfoEnum.EL_INFO_HATES));
+        assertTrue(el.get(ElementEnum.ELEM_POIS).has(ElementInfoEnum.EL_INFO_IGNORE));
+        assertTrue(el.get(ElementEnum.ELEM_LIGHT).has(ElementInfoEnum.EL_INFO_HATES));
+        assertFalse(el.get(ElementEnum.ELEM_FIRE).has(ElementInfoEnum.EL_INFO_HATES));
+        assertFalse(el.get(ElementEnum.ELEM_COLD).has(ElementInfoEnum.EL_INFO_IGNORE));
+    }
+
+    /**
+     * {@code grab_element_flag} accepts {@code _FIRE} as {@code IGNORE_FIRE}, because an empty piece
+     * matches the start of {@code IGNORE}, which is tried first. The lexer's flag token must open
+     * with a letter, so the line is a syntax error here.
+     */
+    @Test
+    void aFlagStartingWithAnUnderscoreIsASyntaxErrorHereWhereCAcceptsIt() throws IOException {
+        assertHardError("flag-underscore.txt", "type:sword\nflags:_FIRE\n");
+    }
+
+    @Test
+    void aPieceLongerThanTheWordIsNotAnElementFlagAsInC() {
+        // "HATESX" against "HATES" over six characters reaches the NUL, so strncmp differs and
+        // the token goes to the object and kind flag lookups, which refuse it.
+        assertStopsTheLoad("hates-long.txt", "type:sword\nflags:HATESX_FIRE\n",
+                "has an illegal flag value: HATESX_FIRE");
+    }
+
+    @Test
+    void anElementFlagNamingNoElementStopsTheLoadAsInC() {
+        assertStopsTheLoad("hates-bogus.txt", "type:sword\nflags:HATES_BOGUS\n",
+                "has an illegal flag value: HATES_BOGUS");
+        assertStopsTheLoad("ignore-bogus.txt", "type:sword\nflags:IGNORE_BOGUS\n",
+                "has an illegal flag value: IGNORE_BOGUS");
+    }
+
+    @Test
+    void aFlagWithNoUnderscoreNeverReachesTheElementLookup() throws Exception {
+        // grab_element_flag returns false at once without an underscore; BLESSED is an object flag.
+        EgoItem e = loadOne("no-underscore.txt", "type:sword\nflags:BLESSED\n");
+
+        Flag<ObjectFlag> of = field(e, "flags");
+        assertTrue(of.has(ObjectFlag.OF_BLESSED));
+        Map<ElementEnum, ElementInfo> el = field(e, "elInfo");
+        assertTrue(el.isEmpty());
     }
 
     /**
      * C's name tables stop short of the sentinels: {@code element_names} and {@code obj_mods} have
-     * no {@code NONE} or {@code MAX}. The assembler looks names up with {@code valueOf} on the Java
-     * enums, which do have them.
+     * no {@code NONE} or {@code MAX}, so every one of these ends the load.
      */
     @Test
-    void sentinelElementAndModifierNamesAreAcceptedHereWhereCRejectsThem() throws Exception {
-        EgoItem ignored = loadOne("sentinel-ignore.txt", "type:sword\nflags:IGNORE_NONE | IGNORE_MAX\n");
-        EgoItem resisted = loadOne("sentinel-res.txt", "type:sword\nvalues:RES_NONE[1] | RES_MAX[1]\n");
-        EgoItem modified = loadOne("sentinel-mod.txt", "type:sword\nvalues:NONE[1]\n");
+    void sentinelElementAndModifierNamesStopTheLoadAsInC() {
+        assertStopsTheLoad("sentinel-ignore-none.txt", "type:sword\nflags:IGNORE_NONE\n", "sentinel element name");
+        assertStopsTheLoad("sentinel-ignore-max.txt", "type:sword\nflags:IGNORE_MAX\n", "sentinel element name");
+        assertStopsTheLoad("sentinel-hates-none.txt", "type:sword\nflags:HATES_NONE\n", "sentinel element name");
+        assertStopsTheLoad("sentinel-hates-max.txt", "type:sword\nflags:HATES_MAX\n", "sentinel element name");
+        assertStopsTheLoad("sentinel-res-none.txt", "type:sword\nvalues:RES_NONE[1]\n", "sentinel element name");
+        assertStopsTheLoad("sentinel-res-max.txt", "type:sword\nvalues:RES_MAX[1]\n", "sentinel element name");
+        assertStopsTheLoad("sentinel-mod-none.txt", "type:sword\nvalues:NONE[1]\n", "sentinel object modifier name");
+        assertStopsTheLoad("sentinel-mod-max.txt", "type:sword\nvalues:MAX[1]\n", "sentinel object modifier name");
+        assertStopsTheLoad("sentinel-min-none.txt", "type:sword\nmin-values:NONE[1]\n", "sentinel object modifier name");
+        assertStopsTheLoad("sentinel-min-max.txt", "type:sword\nmin-values:MAX[1]\n", "sentinel object modifier name");
+    }
 
-        Map<ElementEnum, ElementInfo> ignoredEl = field(ignored, "elInfo");
-        assertTrue(ignoredEl.containsKey(ElementEnum.ELEM_NONE));
-        assertTrue(ignoredEl.containsKey(ElementEnum.ELEM_MAX));
-        Map<ElementEnum, ElementInfo> resistedEl = field(resisted, "elInfo");
-        assertEquals(1, resistedEl.get(ElementEnum.ELEM_NONE).getResLevel());
-        assertEquals(1, resistedEl.get(ElementEnum.ELEM_MAX).getResLevel());
-        Map<ObjectModifier, Random> mods = field(modified, "modifiers");
-        assertTrue(mods.containsKey(ObjectModifier.OM_NONE));
+    /**
+     * C's flag lookup starts at {@code FLAG_START}, past the {@code "NONE"} slot, so {@code NONE}
+     * is refused for {@code flags:} and {@code flags-off:}. {@code MAX} is in the tables
+     * ({@code OF(MAX, "")}, {@code KF(MAX, "")}) and is accepted.
+     */
+    @Test
+    void flagNoneStopsTheLoadAsInC() {
+        assertStopsTheLoad("flag-none.txt", "type:sword\nflags:NONE\n", "sentinel object flag name");
+        assertStopsTheLoad("flag-off-none.txt", "type:sword\nflags-off:NONE\n", "sentinel object flag name");
+    }
+
+    @Test
+    void flagMaxLoadsAsInC() throws Exception {
+        EgoItem e = loadOne("flag-max.txt", "type:sword\nflags:MAX\nflags-off:MAX\n");
+
+        Flag<ObjectFlag> of = field(e, "flags");
+        Flag<ObjectFlag> off = field(e, "flagsOff");
+        assertTrue(of.has(ObjectFlag.OF_MAX));
+        assertTrue(off.has(ObjectFlag.OF_MAX));
+    }
+
+    // ---- brand: and slay: order ------------------------------------------------------
+
+    /**
+     * C keeps brands and slays as a {@code bool} per registry index, and the registry runs from the
+     * last record of {@code slay.txt} (index 1) back to the first, so every walk meets them in the
+     * reverse of file order, whatever order the ego wrote them. The expected order below is that
+     * rule applied to {@code slay.txt}.
+     */
+    @Test
+    void slaysComeOutInRegistryOrderWhateverOrderTheyWereWritten() throws Exception {
+        List<String> fileOrder = Files.readAllLines(Path.of(SLAY_FILE)).stream()
+                .filter(l -> l.startsWith("code:")).map(l -> l.substring("code:".length()).trim()).toList();
+        List<String> registryOrder = new ArrayList<>(fileOrder.reversed());
+        List<String> picked = List.of("EVIL_2", "UNDEAD_3", "DEMON_3");
+        List<String> expected = registryOrder.stream().filter(picked::contains).toList();
+
+        EgoItem forward = loadOne("slay-fwd.txt", "type:sword\nslay:EVIL_2\nslay:UNDEAD_3\nslay:DEMON_3\n");
+        EgoItem backward = loadOne("slay-back.txt", "type:sword\nslay:DEMON_3\nslay:UNDEAD_3\nslay:EVIL_2\n");
+
+        assertEquals(List.of("UNDEAD_3", "DEMON_3", "EVIL_2"), expected);
+        assertEquals(expected, slayCodes(forward));
+        assertEquals(expected, slayCodes(backward));
+    }
+
+    @Test
+    void brandsComeOutInRegistryOrderWhateverOrderTheyWereWritten() throws Exception {
+        List<String> fileOrder = Files.readAllLines(Path.of(BRAND_FILE)).stream()
+                .filter(l -> l.startsWith("code:")).map(l -> l.substring("code:".length()).trim()).toList();
+        List<String> picked = List.of("ACID_3", "FIRE_3", "COLD_3");
+        List<String> expected = fileOrder.reversed().stream().filter(picked::contains).toList();
+
+        EgoItem forward = loadOne("brand-fwd.txt", "type:sword\nbrand:ACID_3\nbrand:FIRE_3\nbrand:COLD_3\n");
+        EgoItem backward = loadOne("brand-back.txt", "type:sword\nbrand:COLD_3\nbrand:FIRE_3\nbrand:ACID_3\n");
+
+        assertEquals(3, expected.size());
+        assertEquals(expected, brandCodes(forward));
+        assertEquals(expected, brandCodes(backward));
+    }
+
+    @Test
+    void aRepeatedSlayOrBrandCodeChangesNothing() throws Exception {
+        EgoItem e = loadOne("repeat-slay.txt", "type:sword\nslay:EVIL_2\nslay:EVIL_2\nbrand:ACID_3\nbrand:ACID_3\n");
+
+        assertEquals(List.of("EVIL_2"), slayCodes(e));
+        assertEquals(List.of("ACID_3"), brandCodes(e));
+    }
+
+    /**
+     * The four shipped egos with more than one slay, against the registry-order rule applied to
+     * {@code slay.txt}. No shipped ego has more than one brand.
+     */
+    @Test
+    void theShippedMultiSlayEgosRunInRegistryOrder() throws Exception {
+        Map<String, List<String>> expected = Map.of(
+                "(Holy Avenger)", List.of("UNDEAD_3", "DEMON_3", "EVIL_2"),
+                "of Holy Might", List.of("UNDEAD_3", "DEMON_3", "EVIL_2"),
+                "of Gondolin", List.of("DRAGON_3", "DEMON_3", "TROLL_3", "ORC_3"),
+                "of Westernesse", List.of("GIANT_3", "TROLL_3", "ORC_3"));
+
+        int seen = 0;
+        for (EgoItem e : new EgoItemReader().parseWithResults(REAL_FILE).items()) {
+            List<String> codes = expected.get((String) field(e, "name"));
+            if (codes != null) {
+                assertEquals(codes, slayCodes(e), (String) field(e, "name"));
+                seen++;
+            }
+            assertTrue(((Set<?>) field(e, "brands")).size() <= 1);
+        }
+        assertEquals(4, seen);
+    }
+
+    private static List<String> slayCodes(EgoItem e) throws Exception {
+        Set<Slay> slays = field(e, "slays");
+        return slays.stream().map(Slay::getCode).toList();
+    }
+
+    private static List<String> brandCodes(EgoItem e) throws Exception {
+        Set<Brand> brands = field(e, "brands");
+        return brands.stream().map(Brand::getCode).toList();
     }
 
     /**

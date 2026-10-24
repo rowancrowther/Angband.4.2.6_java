@@ -142,6 +142,10 @@ VALUE_DICE
         :   SIMPLE_DICE_STRING_BODY
         ;
 
+VALUE_INTEGER
+        :   '-'? ('0'..'9')+
+        ;   
+
 VALUE_RBRACKET
         :   ']'
         ;

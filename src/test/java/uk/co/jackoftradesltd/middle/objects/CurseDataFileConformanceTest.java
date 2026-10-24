@@ -21,15 +21,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
-import uk.co.jackoftradesltd.backend.parser.BrandReader;
-import uk.co.jackoftradesltd.backend.parser.CurseReader;
-import uk.co.jackoftradesltd.backend.parser.ItemObjectReader;
-import uk.co.jackoftradesltd.backend.parser.MonsterBaseReader;
-import uk.co.jackoftradesltd.backend.parser.ObjectBaseReader;
-import uk.co.jackoftradesltd.backend.parser.PainReader;
-import uk.co.jackoftradesltd.backend.parser.ShapeReader;
-import uk.co.jackoftradesltd.backend.parser.SlayReader;
-import uk.co.jackoftradesltd.backend.parser.SummonReader;
+import uk.co.jackoftradesltd.backend.parser.*;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
@@ -44,12 +36,7 @@ import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -279,7 +266,7 @@ class CurseDataFileConformanceTest {
             }
             for (Map.Entry<ElementEnum, Integer> r : wantRes.entrySet()) {
                 ElementInfo info = el == null ? null : el.get(r.getKey());
-                check(bad, "res_level " + r.getKey(), r.getValue(), info == null ? null : info.getResLevel());
+                check(bad, "res_level " + r.getKey(), r.getValue(), info == null ? null : (Integer) (int) info.getResLevel());
             }
             if (el != null) {
                 el.forEach((k, v) -> {

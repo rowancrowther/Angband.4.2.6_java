@@ -264,7 +264,7 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
                             logger.fatal(msg);
                             throw new DataFileParseException(msg);
                         }
-                        if (ParseUtils.nonDigitFound(value)) {
+                        if (ParseUtils.nonDigitFound(value, ParseUtils.Radix.DECIMAL)) {
                             String msg = "EgoItem starting at line: " + line + " of file: " + filename + " has " +
                                     "an non digit in the element value: " + key;
                             logger.fatal(msg);
@@ -324,7 +324,7 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
                         logger.fatal(msg);
                         throw new DataFileParseException(msg);
                     }
-                    if (ParseUtils.nonDigitFound(value)) {
+                    if (ParseUtils.nonDigitFound(value, ParseUtils.Radix.DECIMAL)) {
                         String msg = "EgoItem starting at line: " + line + " of file: " + filename + " has " +
                                 "an non digit in the modifier value: " + key;
                         logger.fatal(msg);

@@ -440,13 +440,13 @@ class ParseUtilsTest {
             "5.5, true"
     })
     void nonDigitFoundIsFindValueArgsTrailingTextTest(String text, boolean expected) {
-        assertEquals(expected, ParseUtils.nonDigitFound(text));
+        assertEquals(expected, ParseUtils.nonDigitFound(text, ParseUtils.Radix.DECIMAL));
     }
 
     @Test
     void nonDigitFoundAcceptsEmptyTextAsFindValueArgDoes() {
         // "[]": strtol reads nothing and stops on the ']' itself, so *tc == ']' and the figure is 0.
-        assertEquals(false, ParseUtils.nonDigitFound(""));
+        assertEquals(false, ParseUtils.nonDigitFound("", ParseUtils.Radix.DECIMAL));
         assertEquals(0, ParseUtils.parseIntString("EgoItem", "", 7, "ego_item.txt", "minimum modifier value", false));
     }
 
@@ -454,7 +454,7 @@ class ParseUtilsTest {
     void nonDigitFoundRefusesLeadingWhitespaceThoughStrtolWouldSkipIt() {
         // strtol skips leading whitespace, so C reads "[ 5]" as 5. The ego lexer never produces it,
         // and the stricter Java answer is the one the assembler wants.
-        assertEquals(true, ParseUtils.nonDigitFound(" 5"));
+        assertEquals(true, ParseUtils.nonDigitFound(" 5", ParseUtils.Radix.DECIMAL));
     }
 
     // ---- signOnly -------------------------------------------------------------------

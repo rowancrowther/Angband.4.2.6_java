@@ -21,6 +21,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
@@ -309,25 +310,26 @@ class FlavourReaderTest {
     }
 
     /**
-     * An unknown colour on a flavour is a soft error; that flavour is dropped by
-     * {@code FlavourAssembler} before the block is assembled.
+     * An unknown colour on a flavour is not an error: {@code color_text_to_attr} answers
+     * {@code COLOUR_WHITE} for a name it does not know, so the flavour is kept and painted white.
      */
     @Test
-    void unknownColourIsReported() throws IOException {
+    void anUnknownColourIsKeptAsWhite() throws IOException {
         ParseResult<FlavourKind> r = load("badcolour.txt", withHeader(1,
                 "kind:ring:=\nflavor:2:Notacolour:Foo\n"));
-        assertTrue(hasError(r, "unknown colour"));
+        assertFalse(r.hasErrors(), () -> r.errors().toString());
+        assertEquals(ColourEnum.COLOUR_WHITE, r.items().getFirst().getFlavours().getFirst().getColour());
     }
 
     /**
-     * A non-numeric flavour index fails {@code Integer.parseInt} and is reported. (The index lexes
-     * as a plain string, so a non-digit value reaches the parseInt rather than being a syntax error.)
+     * A non-numeric flavour index ends the load, as {@code PARSE_ERROR_NOT_NUMBER} does in C when
+     * {@code strtoul} reads no digits. (The index lexes as a plain string, so a non-digit value
+     * reaches {@code ParseUtils} rather than being a syntax error.)
      */
     @Test
-    void malformedIndexIsReported() throws IOException {
-        ParseResult<FlavourKind> r = load("badindex.txt", withHeader(1,
-                "kind:ring:=\nflavor:abc:Green:Foo\n"));
-        assertTrue(hasError(r, "malformed integer"));
+    void aMalformedIndexStopsTheLoad() {
+        assertThrows(DataFileParseException.class, () -> load("badindex.txt", withHeader(1,
+                "kind:ring:=\nflavor:abc:Green:Foo\n")));
     }
 
     /**
@@ -421,8 +423,9 @@ class FlavourReaderTest {
     }
 
     /**
-     * {@code parse} is {@code parseWithResults(...).items()}: the soft errors are dropped, and the
-     * flavours that did assemble still come back.
+     * {@code parse} is {@code parseWithResults(...).items()}: the soft errors are dropped and the
+     * items come back. The header here declares 7 records against 2 present, which is a soft
+     * error, so the discarded error is real; both flavours are kept, the unknown colour as white.
      */
     @Test
     void parseReturnsTheItemsAndDiscardsTheSoftErrors() throws IOException {
@@ -430,8 +433,7 @@ class FlavourReaderTest {
         Files.writeString(file, withHeader(7, "kind:ring:=\nflavor:2:Green:Foo\nflavor:3:Notacolour:Bar\n"));
         java.util.List<FlavourKind> items = new FlavourReader().parse(file.toString());
         assertEquals(1, items.size());
-        assertEquals(1, items.getFirst().getFlavours().size());
-        assertEquals("Foo", items.getFirst().getFlavours().getFirst().getText());
+        assertEquals(2, items.getFirst().getFlavours().size());
     }
 
     /**
@@ -573,32 +575,33 @@ class FlavourReaderTest {
 
     /**
      * {@code color_text_to_attr} falls back to {@code COLOUR_WHITE} for a name it does not know, so
-     * C paints {@code flavor:2:Notacolour:Foo} white; {@code ColourEnum.fromCode} returns null and
-     * the flavour is dropped with an error. Only a one-character code that matches nothing is an
-     * error in C ({@code PARSE_ERROR_INVALID_COLOR}).
+     * C paints {@code flavor:2:Notacolour:Foo} white, and so does the port: both flavours are kept
+     * and no error is raised.
      */
     @Test
-    void anUnknownColourNameDropsTheFlavourHereWhereCPaintsItWhite() throws IOException {
+    void anUnknownColourNameIsPaintedWhiteAsCDoes() throws IOException {
         ParseResult<FlavourKind> r = load("whitefallback.txt", withHeader(1,
                 "kind:ring:=\nflavor:2:Notacolour:Foo\nflavor:3:Green:Bar\n"));
-        assertTrue(hasError(r, "unknown colour"));
-        assertEquals(1, r.items().getFirst().getFlavours().size());
+        assertFalse(r.hasErrors(), () -> r.errors().toString());
+        assertEquals(2, r.items().getFirst().getFlavours().size());
+        Flavour foo = r.items().getFirst().getFlavours().stream()
+                .filter(f -> f.getIndex() == 2).findFirst().orElseThrow();
+        assertEquals(ColourEnum.COLOUR_WHITE, foo.getColour());
     }
 
     /**
      * {@code index} is a {@code uint}: {@code parser_parse} rejects a leading {@code -} with
-     * {@code PARSE_ERROR_NOT_NUMBER}, and reads the digits with {@code strtoul} base 0, so
-     * {@code 0x10} is 16. {@code Integer.parseInt} takes {@code -5} and refuses {@code 0x10}.
+     * {@code PARSE_ERROR_NOT_NUMBER}, which ends the load, and reads the digits with
+     * {@code strtoul} base 0, so {@code 0x10} is 16.
      */
     @Test
-    void aNegativeIndexLoadsHereWhereCRejectsItAndAHexIndexFailsWhereCReadsIt() throws IOException {
-        ParseResult<FlavourKind> negative = load("negindex.txt", withHeader(1,
-                "kind:ring:=\nflavor:-5:Green:Foo\n"));
-        assertFalse(negative.hasErrors(), () -> negative.errors().toString());
-        assertEquals(-5, negative.items().getFirst().getFlavours().getFirst().getIndex());
+    void aNegativeIndexStopsTheLoadAndAHexIndexIsRead() throws IOException {
+        assertThrows(DataFileParseException.class, () -> load("negindex.txt", withHeader(1,
+                "kind:ring:=\nflavor:-5:Green:Foo\n")));
 
         ParseResult<FlavourKind> hex = load("hexindex.txt", withHeader(1,
                 "kind:ring:=\nflavor:0x10:Green:Foo\n"));
-        assertTrue(hasError(hex, "malformed integer"));
+        assertFalse(hex.hasErrors(), () -> hex.errors().toString());
+        assertEquals(16, hex.items().getFirst().getFlavours().getFirst().getIndex());
     }
 }

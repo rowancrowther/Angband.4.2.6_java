@@ -752,7 +752,7 @@ class ItemObjectReaderTest {
         assertEquals(1, torch.getDamageSides());
         assertEquals("0+0d0m0", dice(torch.getToH()));
         assertEquals("0+0d0m0", dice(torch.getToD()));
-        assertEquals('~', torch.getCharacter().getCharacter());
+        assertEquals('~', torch.getCharacter().getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_UMBER, torch.getCharacter().getAttributeColour());
         assertTrue(torch.getFlags().has(ObjectFlag.OF_BURNS_OUT));
         assertTrue(torch.getFlags().has(ObjectFlag.OF_LIGHT_2));

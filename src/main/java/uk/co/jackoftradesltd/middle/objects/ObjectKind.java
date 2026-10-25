@@ -101,9 +101,16 @@ public class ObjectKind {
     private int kindIndex;
 
     /**
-     * The item type — C's {@code kind->tval}.
+     * The item type — C's {@code kind->tval}, the {@code uint8_t} that {@code parse_object_type} in
+     * {@code obj-init.c} fills from the {@code type:} line of {@code object.txt} and that
+     * {@code write_book_kind} in {@code init.c} copies from the book. It names the {@link ObjectBase}
+     * the kind belongs to, and together with {@link #sVal} it identifies the kind
+     * ({@link ObjectRegistry#lookupObjectKind(TValue, int)}).
      *
-     * <p>Field tValue coded before 261008, commented in full on 261008.
+     * <p>C's value is a bare number and is never {@code null}; this field is {@code null} only on the
+     * empty shell the no-argument constructor makes, until {@link #copy} or {@link #setTval} fills it.
+     *
+     * <p>Field tValue coded before 261008, commented in full on 261025.
      */
     private TValue tValue;
     /**
@@ -1363,7 +1370,12 @@ public class ObjectKind {
             CurseData cd = new CurseData(this.curses.get(c));
             copy.curses.put(c, cd);
         }
-        copy.character = new AngbandDisplayCharacter(character.getCharacter(), character.getAttributeColour());
+        char tempChar = character.getNarrowCharacter();
+        if (tempChar == '\0') {
+            copy.character = new AngbandDisplayCharacter(character.getWideCharacter(), character.getAttributeColour());
+        } else {
+            copy.character = new AngbandDisplayCharacter(character.getNarrowCharacter(), character.getAttributeColour());
+        }
         copy.alloc_prob = this.alloc_prob;
         copy.alloc_min = this.alloc_min;
         copy.alloc_max = this.alloc_max;
@@ -1950,7 +1962,7 @@ public class ObjectKind {
      * {@link ItemObject#objectKindAttr()} are the callers, falling back to this whenever an item
      * of this kind is not drawn with its flavour's glyph instead.
      *
-     * <p>Function getCharacter coded before 260904, commented in full on 260928.
+     * <p>Function getNarrowCharacter coded before 260904, commented in full on 260928.
      *
      * @return this kind's display glyph and colour
      */
@@ -1973,5 +1985,28 @@ public class ObjectKind {
      */
     public void setLevel(int level) {
         this.level = level;
+    }
+
+    /**
+     * Sets the kind's item type, the port of C's direct {@code kind->tval} write. There is no C
+     * setter, and no check either side: the value is stored as given, {@code null} included.
+     *
+     * <p>It is only the write. In {@code parse_object_type} ({@code obj-init.c}) the same assignment
+     * comes after {@code tval_find_idx} has rejected an unknown name, and is followed by pointing
+     * {@code kind->base} at {@code kb_info[tval]} and taking the next sval from that base; this
+     * method does none of that, so {@link #base} and {@link #sVal} are left as they were.
+     *
+     * <p>The one caller is {@link uk.co.jackoftradesltd.backend.parser.flavour.FlavourKindAssembler#assemble},
+     * which builds a throwaway kind when a {@code fixed:} flavour's sval symbol names no object kind.
+     * C's {@code lookup_sval} returns -1 for that miss, and {@code parse_flavor_flavor} in
+     * {@code init.c} stores it in the {@code uint8_t} sval of the flavour, where it reads as 255; the
+     * throwaway kind, given this tval and an sval of 255, is how the port reaches the same figure.
+     *
+     * <p>Function setTval coded on 261025, commented in full on 261025.
+     *
+     * @param tVal the item type to give the kind
+     */
+    public void setTval(TValue tVal) {
+        this.tValue = tVal;
     }
 }

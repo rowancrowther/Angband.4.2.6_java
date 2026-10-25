@@ -85,7 +85,7 @@ class DepthRowTest {
     private String field() {
         StringBuilder sb = new StringBuilder();
         for (int col = 0; col < FIELD; col++) {
-            sb.append(grid.get(ROW, col).getCharacter());
+            sb.append(grid.get(ROW, col).getNarrowCharacter());
         }
         return sb.toString();
     }

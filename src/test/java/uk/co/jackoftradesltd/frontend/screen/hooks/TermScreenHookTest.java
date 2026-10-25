@@ -70,9 +70,9 @@ class TermScreenHookTest {
     void negativeNDrawsTheWholeStringWithNoTruncation() {
         hook.putStr(2, 1, -1, ColourEnum.COLOUR_RED, "Hi");
 
-        assertEquals('H', grid.get(1, 2).getCharacter());
+        assertEquals('H', grid.get(1, 2).getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_RED, grid.get(1, 2).getAttributeColour());
-        assertEquals('i', grid.get(1, 3).getCharacter());
+        assertEquals('i', grid.get(1, 3).getNarrowCharacter());
     }
 
     /**
@@ -85,8 +85,8 @@ class TermScreenHookTest {
     void negativeNReliesOnTheRegionsOwnRightEdgeClipping() {
         hook.putStr(8, 0, -1, ColourEnum.COLOUR_RED, "Hello");
 
-        assertEquals('H', grid.get(0, 8).getCharacter());
-        assertEquals('e', grid.get(0, 9).getCharacter());
+        assertEquals('H', grid.get(0, 8).getNarrowCharacter());
+        assertEquals('e', grid.get(0, 9).getNarrowCharacter());
     }
 
     /**
@@ -108,7 +108,7 @@ class TermScreenHookTest {
     void explicitNTruncatesToExactlyNCharacters() {
         hook.putStr(0, 0, 1, ColourEnum.COLOUR_RED, "Hi");
 
-        assertEquals('H', grid.get(0, 0).getCharacter());
+        assertEquals('H', grid.get(0, 0).getNarrowCharacter());
         assertNull(grid.get(0, 1));
     }
 
@@ -128,9 +128,9 @@ class TermScreenHookTest {
 
         hook.erase(3, 1, 2);
 
-        assertEquals(' ', grid.get(1, 3).getCharacter());
-        assertEquals(' ', grid.get(1, 4).getCharacter());
-        assertEquals('S', grid.get(3, 1).getCharacter(), "a swapped erase would have hit this cell instead");
+        assertEquals(' ', grid.get(1, 3).getNarrowCharacter());
+        assertEquals(' ', grid.get(1, 4).getNarrowCharacter());
+        assertEquals('S', grid.get(3, 1).getNarrowCharacter(), "a swapped erase would have hit this cell instead");
     }
 
     /**
@@ -144,8 +144,8 @@ class TermScreenHookTest {
 
         hook.erase(8, 0, 255);
 
-        assertEquals('7', grid.get(0, 7).getCharacter());
-        assertEquals(' ', grid.get(0, 8).getCharacter());
-        assertEquals(' ', grid.get(0, 9).getCharacter());
+        assertEquals('7', grid.get(0, 7).getNarrowCharacter());
+        assertEquals(' ', grid.get(0, 8).getNarrowCharacter());
+        assertEquals(' ', grid.get(0, 9).getNarrowCharacter());
     }
 }

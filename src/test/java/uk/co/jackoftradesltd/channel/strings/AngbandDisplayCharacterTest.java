@@ -24,18 +24,13 @@ import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Unit tests for {@link AngbandDisplayCharacter}, the glyph-plus-colour pair the terminal
  * draws - the port of the C source's {@code attr}/{@code char} couple.
  *
- * <p>The type is immutable and carries no logic beyond its three constructors, but those
+ * <p>The type is immutable and carries no logic beyond its five constructors, but those
  * constructors are where the game's data files meet the code: a monster or terrain entry
  * gives its colour as a single letter, or occasionally as a full name, and the string
  * overload has to route to the right one. The colour lookup it delegates to returns null
@@ -59,7 +54,7 @@ class AngbandDisplayCharacterTest {
             AngbandDisplayCharacter glyph =
                     new AngbandDisplayCharacter('@', ColourEnum.COLOUR_WHITE);
 
-            assertEquals('@', glyph.getCharacter());
+            assertEquals('@', glyph.getNarrowCharacter());
             assertSame(ColourEnum.COLOUR_WHITE, glyph.getAttributeColour());
         }
 
@@ -67,7 +62,7 @@ class AngbandDisplayCharacterTest {
         void theCharConstructorResolvesTheColourCode() {
             AngbandDisplayCharacter glyph = new AngbandDisplayCharacter('k', 'r');
 
-            assertEquals('k', glyph.getCharacter());
+            assertEquals('k', glyph.getNarrowCharacter());
             assertSame(ColourEnum.COLOUR_RED, glyph.getAttributeColour());
         }
 
@@ -96,9 +91,9 @@ class AngbandDisplayCharacterTest {
         @Test
         void theGlyphItselfIsStoredVerbatimIncludingUnusualCharacters() {
             assertEquals(' ', new AngbandDisplayCharacter(' ', ColourEnum.COLOUR_SHADE)
-                    .getCharacter());
+                    .getNarrowCharacter());
             assertEquals('\0', new AngbandDisplayCharacter('\0', ColourEnum.COLOUR_DARK)
-                    .getCharacter());
+                    .getNarrowCharacter());
         }
     }
 
@@ -182,6 +177,128 @@ class AngbandDisplayCharacterTest {
             }
 
             assertEquals(ColourEnum.values().length, glyphs.size());
+        }
+    }
+
+    /**
+     * Glyphs given as an {@code int} code point. C holds a glyph in one {@code wchar_t}
+     * ({@code d_char} in {@code object.h}), so the expected values here are what a single number
+     * would give: the same number is the same glyph however it was written, and different numbers
+     * are different glyphs. Java has to split the number across a {@code char} and an {@code int},
+     * which is where the two could part company.
+     */
+    @Nested
+    class CodePoints {
+
+        private static final ColourEnum RED = ColourEnum.COLOUR_RED;
+
+        @Test
+        void aCodePointThatFitsInACharIsStoredNarrowWithNoWidePart() {
+            for (int cp : new int[]{0, 'a', 0x2591, 0xD800, 0xFFFF}) {
+                AngbandDisplayCharacter glyph = new AngbandDisplayCharacter(cp, RED);
+
+                assertEquals((char) cp, glyph.getNarrowCharacter(), "narrow for " + cp);
+                assertEquals(0, glyph.getWideCharacter(), "wide for " + cp);
+                assertEquals(cp, glyph.getCharacter().codePointAt(0), "whole glyph for " + cp);
+            }
+        }
+
+        @Test
+        void aSupplementaryCodePointIsStoredWideAndTheNarrowPartIsNul() {
+            for (int cp : new int[]{0x10000, 0x1F600, 0x10FFFF}) {
+                AngbandDisplayCharacter glyph = new AngbandDisplayCharacter(cp, RED);
+
+                assertEquals('\0', glyph.getNarrowCharacter(), "narrow for " + cp);
+                assertEquals(cp, glyph.getWideCharacter(), "wide for " + cp);
+                assertEquals(cp, glyph.getCharacter().codePointAt(0), "whole glyph for " + cp);
+                assertEquals(1, glyph.getCharacter().codePointCount(0, glyph.getCharacter().length()),
+                        "one code point for " + cp);
+            }
+        }
+
+        @Test
+        void theLastCharSizedValueAndTheFirstSupplementaryOneSitOnOppositeSides() {
+            assertEquals(0, new AngbandDisplayCharacter(0xFFFF, RED).getWideCharacter());
+            assertEquals(0x10000, new AngbandDisplayCharacter(0x10000, RED).getWideCharacter());
+        }
+
+        @Test
+        void aValueOutsideTheCodePointRangeIsRefused() {
+            for (int cp : new int[]{-1, Integer.MIN_VALUE, 0x110000, Integer.MAX_VALUE}) {
+                assertThrows(IllegalArgumentException.class,
+                        () -> new AngbandDisplayCharacter(cp, RED), "enum colour, " + cp);
+                assertThrows(IllegalArgumentException.class,
+                        () -> new AngbandDisplayCharacter(cp, "Red"), "string colour, " + cp);
+            }
+        }
+
+        @Test
+        void theSameNumberIsTheSameGlyphWhicheverConstructorBuiltIt() {
+            // C: 'a' and 97 are one wchar_t value, so the cells must be one value too.
+            AngbandDisplayCharacter fromChar = new AngbandDisplayCharacter('a', RED);
+            AngbandDisplayCharacter fromInt = new AngbandDisplayCharacter(97, RED);
+
+            assertEquals(fromChar, fromInt);
+            assertEquals(fromChar.hashCode(), fromInt.hashCode());
+            assertEquals(new AngbandDisplayCharacter('a', "r"), new AngbandDisplayCharacter(97, "r"));
+        }
+
+        @Test
+        void aNulGlyphIsTheSameWhicheverWayItIsWritten() {
+            AngbandDisplayCharacter fromChar = new AngbandDisplayCharacter('\0', RED);
+            AngbandDisplayCharacter fromInt = new AngbandDisplayCharacter(0, RED);
+
+            assertEquals(fromChar, fromInt);
+            assertEquals("\0", fromInt.getCharacter());
+        }
+
+        @Test
+        void twoDifferentWideGlyphsAreDifferentValues() {
+            AngbandDisplayCharacter a = new AngbandDisplayCharacter(0x1F600, RED);
+            AngbandDisplayCharacter b = new AngbandDisplayCharacter(0x1F601, RED);
+
+            assertNotEquals(a, b);
+            assertNotEquals(a.hashCode(), b.hashCode());
+        }
+
+        @Test
+        void aWideGlyphIsNotEqualToAnyNarrowOneInTheSameColour() {
+            assertNotEquals(new AngbandDisplayCharacter(0x1F600, RED),
+                    new AngbandDisplayCharacter('\0', RED));
+        }
+
+        @Test
+        void twoDifferentWideGlyphsStillHashApartWhenTheColourIsUnrecognised() {
+            AngbandDisplayCharacter a = new AngbandDisplayCharacter(0x1F600, "Chartreuse");
+            AngbandDisplayCharacter b = new AngbandDisplayCharacter(0x1F601, "Chartreuse");
+
+            assertNull(a.getAttributeColour());
+            assertNotEquals(a, b);
+            assertNotEquals(a.hashCode(), b.hashCode());
+        }
+
+        @Test
+        void aWideGlyphBuiltFromAColourNameEqualsOneBuiltFromTheEnum() {
+            AngbandDisplayCharacter fromEnum = new AngbandDisplayCharacter(0x1F600, RED);
+            AngbandDisplayCharacter fromName = new AngbandDisplayCharacter(0x1F600, "Red");
+
+            assertEquals(fromEnum, fromName);
+            assertEquals(fromEnum.hashCode(), fromName.hashCode());
+        }
+
+        @Test
+        void wideGlyphsWorkAsSetMembers() {
+            Set<AngbandDisplayCharacter> seen = new HashSet<>();
+            seen.add(new AngbandDisplayCharacter(0x1F600, RED));
+
+            assertTrue(seen.contains(new AngbandDisplayCharacter(0x1F600, "r")));
+            assertFalse(seen.contains(new AngbandDisplayCharacter(0x1F601, RED)));
+        }
+
+        @Test
+        void theCharConstructorsReadBackWholeAsText() {
+            assertEquals("@", new AngbandDisplayCharacter('@', RED).getCharacter());
+            assertEquals(" ", AngbandDisplayCharacter.blank.getCharacter());
         }
     }
 }

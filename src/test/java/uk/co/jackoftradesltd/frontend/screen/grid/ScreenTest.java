@@ -25,9 +25,7 @@ import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link Screen} against the ownership and publication contract set out in
@@ -55,7 +53,7 @@ class ScreenTest {
 
         screen.root().put(1, 2, 'X', ColourEnum.COLOUR_WHITE);
 
-        assertEquals('X', live.get(1, 2).getCharacter());
+        assertEquals('X', live.get(1, 2).getNarrowCharacter());
     }
 
     @Test
@@ -129,7 +127,7 @@ class ScreenTest {
         StringBuilder text = new StringBuilder();
         for (int col = 0; col < grid.cols(); col++) {
             AngbandDisplayCharacter cell = grid.get(row, col);
-            text.append(cell == null ? ' ' : cell.getCharacter());
+            text.append(cell == null ? ' ' : cell.getNarrowCharacter());
         }
         return text.toString();
     }
@@ -189,7 +187,7 @@ class ScreenTest {
 
         // Column 5 falls outside "[Initializing]"'s centred span (columns 33-46), so surviving
         // there would mean the erase - Term_erase(0, y, 255) in C - never happened.
-        assertEquals(' ', live.get(23, 5).getCharacter());
+        assertEquals(' ', live.get(23, 5).getNarrowCharacter());
     }
 
     @Test
@@ -201,7 +199,7 @@ class ScreenTest {
 
         screen.splashScreenNote("Initializing");
 
-        assertEquals('Y', live.get(2, 0).getCharacter());
+        assertEquals('Y', live.get(2, 0).getNarrowCharacter());
         assertNull(live.get(22, 33));
     }
 

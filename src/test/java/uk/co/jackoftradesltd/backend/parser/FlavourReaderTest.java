@@ -287,26 +287,25 @@ class FlavourReaderTest {
     // =====================================================================
 
     /**
-     * An unrecognised tval on a {@code kind:} line drops that whole block (with its flavours) and
-     * records an error.
+     * An unrecognised tval on a {@code kind:} line ends the load, as {@code parse_flavor_kind} in
+     * {@code init.c} returns {@code PARSE_ERROR_UNRECOGNISED_TVAL} when {@code tval_find_idx} gives
+     * nothing above 0.
      */
     @Test
-    void unknownTvalDropsTheKindBlock() throws IOException {
-        ParseResult<FlavourKind> r = load("badtval.txt", withHeader(1,
-                "kind:notatval:=\nflavor:1:Green:Foo\n"));
-        assertTrue(hasError(r, "unknown tValue"));
-        assertTrue(r.items().isEmpty());
+    void unknownTvalStopsTheLoad() {
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("badtval.txt",
+                withHeader(1, "kind:notatval:=\nflavor:1:Green:Foo\n")));
+        assertTrue(e.getMessage().contains("illegal TValue value: notatval"), e.getMessage());
     }
 
     /**
-     * A {@code kind:} glyph must be a single character; a multi-character glyph drops the block.
+     * A {@code kind:} glyph must be a single character; a multi-character glyph ends the load.
      */
     @Test
-    void multiCharacterGlyphDropsTheKindBlock() throws IOException {
-        ParseResult<FlavourKind> r = load("badglyph.txt", withHeader(1,
-                "kind:ring:==\nflavor:1:Green:Foo\n"));
-        assertTrue(hasError(r, "multi-character glyph"));
-        assertTrue(r.items().isEmpty());
+    void multiCharacterGlyphStopsTheLoad() {
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("badglyph.txt",
+                withHeader(1, "kind:ring:==\nflavor:1:Green:Foo\n")));
+        assertTrue(e.getMessage().contains("illegal glyph value: =="), e.getMessage());
     }
 
     /**
@@ -333,16 +332,21 @@ class FlavourReaderTest {
     }
 
     /**
-     * A {@code fixed:} sval that resolves to no object kind is reported, and — because the
-     * assembler treats a broken fixed mapping as fatal to the block — the entire kind block is
-     * dropped, taking the otherwise-valid sibling flavour with it.
+     * A {@code fixed:} sval that resolves to no object kind is not an error, as in C:
+     * {@code lookup_sval} answers -1, {@code parse_flavor_flavor} stores it in the
+     * {@code uint8_t} sval of the flavour, and it reads as 255. The block and its sibling flavour
+     * are kept, the sibling keeping {@code SV_UNKNOWN}, 0.
      */
     @Test
-    void unresolvableFixedSvalDropsTheWholeBlock() throws IOException {
+    void unresolvableFixedSvalIsKeptAs255() throws IOException {
         ParseResult<FlavourKind> r = load("badsval.txt", withHeader(1,
                 "kind:ring:=\nfixed:1:Nonexistent Ring:Yellow:Foo\nflavor:2:Green:Bar\n"));
-        assertTrue(hasError(r, "Invalid object sValue"));
-        assertTrue(r.items().isEmpty(), "a bad fixed sval drops the whole block");
+        assertFalse(r.hasErrors(), () -> r.errors().toString());
+        assertEquals(1, r.items().size(), "the block is kept");
+        FlavourKind block = r.items().getFirst();
+        assertEquals(2, block.getFlavours().size(), "so is the sibling flavour");
+        assertEquals(255, byText(block, "Foo").getsVal());
+        assertEquals(0, byText(block, "Bar").getsVal());
     }
 
     // =====================================================================

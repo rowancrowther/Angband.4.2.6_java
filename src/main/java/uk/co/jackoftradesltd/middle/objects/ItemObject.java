@@ -6877,7 +6877,7 @@ public class ItemObject {
      * @return this item's display glyph and colour
      */
     public AngbandDisplayCharacter getItemObjectADC() {
-        char ch = objectKindChar();
+        int ch = objectKindChar();
         ColourEnum attr = objectKindAttr();
         return new AngbandDisplayCharacter(ch, attr);
     }
@@ -6896,9 +6896,16 @@ public class ItemObject {
      *
      * @return the glyph this item is drawn as
      */
-    public char objectKindChar() {
-        return useFlavourGlyph() ? kind.getFlavour().getFlavourKind().getGlyph()
-                : kind.getCharacter().getCharacter();
+    public int objectKindChar() {
+        char ch = kind.getCharacter().getNarrowCharacter();
+        
+        if (ch == '\0') {
+            return useFlavourGlyph() ? kind.getFlavour().getFlavourKind().getGlyph() 
+                    : kind.getCharacter().getWideCharacter(); 
+        } else {
+            return useFlavourGlyph() ? kind.getFlavour().getFlavourKind().getGlyph()
+                    : (int) kind.getCharacter().getNarrowCharacter();
+        }
     }
 
     /**

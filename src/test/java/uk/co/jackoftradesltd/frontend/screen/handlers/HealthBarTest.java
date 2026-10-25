@@ -103,7 +103,7 @@ class HealthBarTest {
     private int stars() {
         int count = 0;
         for (int index = 1; index <= 10; index++) {
-            if (grid.get(ROW, COL + index).getCharacter() == '*') count++;
+            if (grid.get(ROW, COL + index).getNarrowCharacter() == '*') count++;
         }
         return count;
     }
@@ -182,9 +182,9 @@ class HealthBarTest {
 
         assertEquals(0, width);
         for (int index = 0; index < 12; index++) {
-            assertEquals(' ', grid.get(ROW, COL + index).getCharacter(), "cell " + index);
+            assertEquals(' ', grid.get(ROW, COL + index).getNarrowCharacter(), "cell " + index);
         }
-        assertEquals('X', grid.get(ROW, COL + 12).getCharacter());
+        assertEquals('X', grid.get(ROW, COL + 12).getNarrowCharacter());
     }
 
     /**
@@ -217,7 +217,7 @@ class HealthBarTest {
             assertEquals(12, width);
             String bar = "[----------]";
             for (int index = 0; index < 12; index++) {
-                assertEquals(bar.charAt(index), grid.get(ROW, COL + index).getCharacter());
+                assertEquals(bar.charAt(index), grid.get(ROW, COL + index).getNarrowCharacter());
                 assertEquals(ColourEnum.COLOUR_WHITE, grid.get(ROW, COL + index).getAttributeColour());
             }
             assertEquals(ColourEnum.COLOUR_WHITE, attr());
@@ -270,17 +270,17 @@ class HealthBarTest {
 
         invoke("prtHealth", ROW, COL);
 
-        assertEquals('[', grid.get(ROW, COL).getCharacter());
+        assertEquals('[', grid.get(ROW, COL).getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_WHITE, grid.get(ROW, COL).getAttributeColour());
         for (int index = 1; index <= 6; index++) {
-            assertEquals('*', grid.get(ROW, COL + index).getCharacter());
+            assertEquals('*', grid.get(ROW, COL + index).getNarrowCharacter());
             assertEquals(ColourEnum.COLOUR_ORANGE, grid.get(ROW, COL + index).getAttributeColour());
         }
         for (int index = 7; index <= 10; index++) {
-            assertEquals('-', grid.get(ROW, COL + index).getCharacter());
+            assertEquals('-', grid.get(ROW, COL + index).getNarrowCharacter());
             assertEquals(ColourEnum.COLOUR_WHITE, grid.get(ROW, COL + index).getAttributeColour());
         }
-        assertEquals(']', grid.get(ROW, COL + 11).getCharacter());
+        assertEquals(']', grid.get(ROW, COL + 11).getNarrowCharacter());
     }
 
     /**

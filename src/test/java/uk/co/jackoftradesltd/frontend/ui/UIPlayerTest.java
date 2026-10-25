@@ -968,7 +968,7 @@ class UIPlayerTest {
         private String text(int row, int col, int length) {
             StringBuilder builder = new StringBuilder();
             for (int i = 0; i < length; i++) {
-                builder.append(cell(row, col + i).getCharacter());
+                builder.append(cell(row, col + i).getNarrowCharacter());
             }
             return builder.toString();
         }
@@ -1015,7 +1015,7 @@ class UIPlayerTest {
             invoke();
 
             assertEquals(UIRegistry.statNames[0], text(ROW, COL, 5));
-            assertEquals(':', cell(ROW, COL + 3).getCharacter());
+            assertEquals(':', cell(ROW, COL + 3).getNarrowCharacter());
         }
 
         /**
@@ -1045,7 +1045,7 @@ class UIPlayerTest {
             invoke();
 
             assertEquals(UIRegistry.statReducedNames[2], text(ROW + 2, COL, 5));
-            assertEquals(':', cell(ROW + 2, COL + 3).getCharacter());
+            assertEquals(':', cell(ROW + 2, COL + 3).getNarrowCharacter());
         }
 
         /**

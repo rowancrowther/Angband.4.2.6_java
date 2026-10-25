@@ -26,8 +26,8 @@ import uk.co.jackoftradesltd.frontend.SwingUI;
 import uk.co.jackoftradesltd.frontend.screen.grid.CellGrid;
 import uk.co.jackoftradesltd.frontend.screen.grid.Frame;
 
-import javax.swing.SwingUtilities;
-import java.awt.GraphicsEnvironment;
+import javax.swing.*;
+import java.awt.*;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -103,7 +103,7 @@ class WindowShowTest {
         flushEventQueue();
 
         AngbandDisplayCharacter cell = display(window.getArea())[5][10];
-        assertEquals('k', cell.getCharacter());
+        assertEquals('k', cell.getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_RED, cell.getAttributeColour());
     }
 

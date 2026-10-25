@@ -110,7 +110,7 @@ class ItemObjectEquippyGlyphTest {
 
         AngbandDisplayCharacter adc = wand.getItemObjectADC();
 
-        assertEquals(FLAVOUR_GLYPH, adc.getCharacter());
+        assertEquals(FLAVOUR_GLYPH, adc.getNarrowCharacter());
         assertEquals(FLAVOUR_COLOUR, adc.getAttributeColour());
     }
 
@@ -121,7 +121,7 @@ class ItemObjectEquippyGlyphTest {
 
         AngbandDisplayCharacter adc = potion.getItemObjectADC();
 
-        assertEquals(FLAVOUR_GLYPH, adc.getCharacter());
+        assertEquals(FLAVOUR_GLYPH, adc.getNarrowCharacter());
         assertEquals(FLAVOUR_COLOUR, adc.getAttributeColour());
     }
 
@@ -132,7 +132,7 @@ class ItemObjectEquippyGlyphTest {
 
         AngbandDisplayCharacter adc = scroll.getItemObjectADC();
 
-        assertEquals(FLAVOUR_GLYPH, adc.getCharacter());
+        assertEquals(FLAVOUR_GLYPH, adc.getNarrowCharacter());
         assertEquals(FLAVOUR_COLOUR, adc.getAttributeColour());
     }
 
@@ -148,7 +148,7 @@ class ItemObjectEquippyGlyphTest {
 
         AngbandDisplayCharacter adc = scroll.getItemObjectADC();
 
-        assertEquals(KIND_GLYPH.getCharacter(), adc.getCharacter());
+        assertEquals(KIND_GLYPH.getNarrowCharacter(), adc.getNarrowCharacter());
         assertEquals(KIND_GLYPH.getAttributeColour(), adc.getAttributeColour());
     }
 
@@ -163,7 +163,7 @@ class ItemObjectEquippyGlyphTest {
 
         AngbandDisplayCharacter adc = item(kind).getItemObjectADC();
 
-        assertEquals(KIND_GLYPH.getCharacter(), adc.getCharacter());
+        assertEquals(KIND_GLYPH.getNarrowCharacter(), adc.getNarrowCharacter());
         assertEquals(KIND_GLYPH.getAttributeColour(), adc.getAttributeColour());
     }
 }

@@ -87,7 +87,7 @@ class SpeedRowTest {
     private String field() {
         StringBuilder sb = new StringBuilder();
         for (int col = 0; col < 11; col++) {
-            sb.append(grid.get(ROW, col).getCharacter());
+            sb.append(grid.get(ROW, col).getNarrowCharacter());
         }
         return sb.toString();
     }

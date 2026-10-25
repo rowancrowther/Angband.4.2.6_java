@@ -74,9 +74,9 @@ class TermClearFromTest {
         term.clearFrom(10);
 
         for (int row = 10; row < HEIGHT; row++) {
-            assertEquals(' ', cell(row, 0).getCharacter());
+            assertEquals(' ', cell(row, 0).getNarrowCharacter());
             assertEquals(ColourEnum.COLOUR_WHITE, cell(row, 0).getAttributeColour());
-            assertEquals(' ', cell(row, WIDTH - 1).getCharacter());
+            assertEquals(' ', cell(row, WIDTH - 1).getNarrowCharacter());
             assertEquals(ColourEnum.COLOUR_WHITE, cell(row, WIDTH - 1).getAttributeColour());
         }
     }
@@ -88,9 +88,9 @@ class TermClearFromTest {
     void rowsAboveTheRequestedRowAreUntouched() {
         term.clearFrom(10);
 
-        assertEquals('X', cell(9, 0).getCharacter());
+        assertEquals('X', cell(9, 0).getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_RED, cell(9, 0).getAttributeColour());
-        assertEquals('X', cell(0, WIDTH - 1).getCharacter());
+        assertEquals('X', cell(0, WIDTH - 1).getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_RED, cell(0, WIDTH - 1).getAttributeColour());
     }
 
@@ -102,8 +102,8 @@ class TermClearFromTest {
         term.clearFrom(0);
 
         for (int row = 0; row < HEIGHT; row++) {
-            assertEquals(' ', cell(row, 0).getCharacter());
-            assertEquals(' ', cell(row, WIDTH - 1).getCharacter());
+            assertEquals(' ', cell(row, 0).getNarrowCharacter());
+            assertEquals(' ', cell(row, WIDTH - 1).getNarrowCharacter());
         }
     }
 
@@ -116,7 +116,7 @@ class TermClearFromTest {
         term.clearFrom(HEIGHT);
 
         for (int row = 0; row < HEIGHT; row++) {
-            assertEquals('X', cell(row, 0).getCharacter());
+            assertEquals('X', cell(row, 0).getNarrowCharacter());
             assertEquals(ColourEnum.COLOUR_RED, cell(row, 0).getAttributeColour());
         }
     }
@@ -128,8 +128,8 @@ class TermClearFromTest {
     void clearingFromTheLastRowClearsOnlyThatRow() {
         term.clearFrom(HEIGHT - 1);
 
-        assertEquals(' ', cell(HEIGHT - 1, 0).getCharacter());
-        assertEquals('X', cell(HEIGHT - 2, 0).getCharacter());
+        assertEquals(' ', cell(HEIGHT - 1, 0).getNarrowCharacter());
+        assertEquals('X', cell(HEIGHT - 2, 0).getNarrowCharacter());
     }
 
     /**
@@ -142,7 +142,7 @@ class TermClearFromTest {
         term.clearFrom(-5);
 
         for (int row = 0; row < HEIGHT; row++) {
-            assertEquals(' ', cell(row, 0).getCharacter());
+            assertEquals(' ', cell(row, 0).getNarrowCharacter());
             assertEquals(ColourEnum.COLOUR_WHITE, cell(row, 0).getAttributeColour());
         }
     }

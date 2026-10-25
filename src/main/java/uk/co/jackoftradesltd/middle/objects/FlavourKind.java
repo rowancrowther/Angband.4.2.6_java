@@ -85,7 +85,7 @@ public class FlavourKind {
      *
      * <p>Field glyph coded before 261010, commented in full on 261010.
      */
-    private char glyph;
+    private int glyph;
 
     /**
      * The flavours available to this type, stored last file entry first. C threads every
@@ -120,7 +120,7 @@ public class FlavourKind {
      * @param glyph    the shared display glyph
      * @param flavours the flavours for this type, in file order
      */
-    public FlavourKind(TValue value, char glyph, List<Flavour> flavours) {
+    public FlavourKind(TValue value, int glyph, List<Flavour> flavours) {
         this.value = value;
         this.glyph = glyph;
         for (Flavour flavour : flavours) {
@@ -151,7 +151,7 @@ public class FlavourKind {
      *
      * @return the shared display glyph
      */
-    public char getGlyph() {
+    public int getGlyph() {
         return glyph;
     }
 

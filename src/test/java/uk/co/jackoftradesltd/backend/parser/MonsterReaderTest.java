@@ -322,7 +322,7 @@ class MonsterReaderTest {
 
         AngbandDisplayCharacter adc = field(cat, "adc");
         assertNotNull(adc, "glyph must be seeded from the base, not left null");
-        assertEquals('f', adc.getCharacter(), "inherited from feline base glyph:f");
+        assertEquals('f', adc.getNarrowCharacter(), "inherited from feline base glyph:f");
     }
 
     @Test
@@ -333,7 +333,7 @@ class MonsterReaderTest {
 
         AngbandDisplayCharacter adc = field(mimic, "adc");
         assertNotNull(adc);
-        assertEquals('!', adc.getCharacter(), "explicit glyph:! overrides the base glyph");
+        assertEquals('!', adc.getNarrowCharacter(), "explicit glyph:! overrides the base glyph");
     }
 
     @Test
@@ -1359,6 +1359,6 @@ class MonsterReaderTest {
                 "name:Solo\nglyph:x\nbase:townsfolk\ncolor:w\n"));
         assertFalse(r.hasErrors(), r.errors()::toString);
         AngbandDisplayCharacter adc = field(byName(r, "Solo"), "adc");
-        assertEquals('x', adc.getCharacter());
+        assertEquals('x', adc.getNarrowCharacter());
     }
 }

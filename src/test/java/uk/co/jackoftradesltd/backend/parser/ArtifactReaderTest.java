@@ -438,7 +438,7 @@ class ArtifactReaderTest {
 
         // graphics:~:y -- gates on kf_has(KF_INSTA_ART) (obj-init.c, parse_artifact_graphics), overriding '*'/red.
         AngbandDisplayCharacter glyph = kindField(phial, "character");
-        assertEquals('~', glyph.getCharacter());
+        assertEquals('~', glyph.getNarrowCharacter());
     }
 
     /**
@@ -677,7 +677,7 @@ class ArtifactReaderTest {
             int length = Integer.parseInt(c[22]) - (SHIPPED_COPY_DROPS_A_COLON.contains(c[0]) ? 1 : 0);
             assertEquals(length, a.getText().length(), who + "description length");
             if (!c[23].isEmpty()) {
-                assertEquals(c[23].charAt(0), kind.getCharacter().getCharacter(), who + "glyph");
+                assertEquals(c[23].charAt(0), kind.getCharacter().getNarrowCharacter(), who + "glyph");
                 assertEquals(colours.get(c[24]), kind.getCharacter().getAttributeColour().name(), who + "colour");
             }
         }
@@ -1085,13 +1085,13 @@ class ArtifactReaderTest {
         // parse_artifact_graphics returns PARSE_ERROR_NOT_SPECIAL_ARTIFACT unless the kind is
         // INSTA_ART, and otherwise writes d_char and d_attr.
         ObjectKind dagger = ObjectRegistry.lookupObjectKind(TValue.TV_SWORD, "Dagger");
-        char glyph = dagger.getCharacter().getCharacter();
+        char glyph = dagger.getCharacter().getNarrowCharacter();
         Object colour = dagger.getCharacter().getAttributeColour();
 
         assertStops("graphics-ordinary.txt", withHeader(1, "name:X\n" + BASE + "graphics:#:r\n"),
                 "glyph value: #");
 
-        assertEquals(glyph, dagger.getCharacter().getCharacter());
+        assertEquals(glyph, dagger.getCharacter().getNarrowCharacter());
         assertEquals(colour, dagger.getCharacter().getAttributeColour());
     }
 

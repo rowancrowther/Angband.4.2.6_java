@@ -327,7 +327,7 @@ class TrapReaderTest {
         }
         return String.join("|",
                 String.valueOf(t.getTrapKindIndex()), t.getTrapKindName(), t.getDescription(),
-                String.valueOf(adc.getCharacter()), ColourEnum.attributeToString(adc.getAttributeColour()),
+                String.valueOf(adc.getNarrowCharacter()), ColourEnum.attributeToString(adc.getAttributeColour()),
                 String.valueOf((int) field(t, "rarity")), String.valueOf((int) field(t, "minDepth")),
                 String.valueOf((int) field(t, "maxNum")),
                 power.getBase() + "," + power.getDice() + ","
@@ -511,7 +511,7 @@ class TrapReaderTest {
 
         TrapKind t = r.items().getFirst();
         AngbandDisplayCharacter adc = field(t, "angbandDisplayCharacter");
-        assertEquals('%', adc.getCharacter());
+        assertEquals('%', adc.getNarrowCharacter());
         assertEquals("Red", ColourEnum.attributeToString(adc.getAttributeColour()));
         assertEquals(4, (int) field(t, "rarity"));
         assertEquals(5, (int) field(t, "minDepth"));

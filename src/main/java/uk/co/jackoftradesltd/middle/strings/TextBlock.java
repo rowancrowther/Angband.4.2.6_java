@@ -271,7 +271,7 @@ public class TextBlock {
         lineInfo.add(firstLine);
         
         while (textOffset < length()) {
-            if (textAndAttributes.get(textOffset).getCharacter() == '\n') {
+            if (textAndAttributes.get(textOffset).getNarrowCharacter() == '\n') {
                 StartAndLength lastLine = lineInfo.getLast();
                 StartAndLength newLastLine = new StartAndLength(lastLine.start(), currentLineLength);
                 lineInfo.removeLast();
@@ -279,7 +279,7 @@ public class TextBlock {
                 StartAndLength nextLine = new StartAndLength(textOffset + 1, 0);
                 lineInfo.add(nextLine);
                 currentLineLength = 0;
-            } else if (textAndAttributes.get(textOffset).getCharacter() == ' ') {
+            } else if (textAndAttributes.get(textOffset).getNarrowCharacter() == ' ') {
                 breakingCharOffset = textOffset;
                 currentLineLength++;
             } else {
@@ -437,7 +437,7 @@ public class TextBlock {
         StringBuilder output = new StringBuilder();
 
         for (AngbandDisplayCharacter ch : textAndAttributes)
-            output.append(ch.getCharacter());
+            output.append(ch.getNarrowCharacter());
 
         return output.toString();
     }

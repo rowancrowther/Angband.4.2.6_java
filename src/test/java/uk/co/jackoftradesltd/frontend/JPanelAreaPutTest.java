@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Timeout;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 
-import java.awt.GraphicsEnvironment;
+import java.awt.*;
 import java.lang.reflect.Field;
 import java.util.concurrent.TimeUnit;
 
@@ -58,7 +58,7 @@ class JPanelAreaPutTest {
 
     private static void assertBlank(AngbandDisplayCharacter[][] display, int row, int col) {
         AngbandDisplayCharacter cell = display[row][col];
-        assertEquals(' ', cell.getCharacter());
+        assertEquals(' ', cell.getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_WHITE, cell.getAttributeColour());
     }
 
@@ -80,7 +80,7 @@ class JPanelAreaPutTest {
         area.put(5, 10, 'k', ColourEnum.COLOUR_RED);
 
         AngbandDisplayCharacter cell = display(area)[5][10];
-        assertEquals('k', cell.getCharacter());
+        assertEquals('k', cell.getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_RED, cell.getAttributeColour());
     }
 
@@ -136,8 +136,8 @@ class JPanelAreaPutTest {
         area.put(3, 2, "hi", ColourEnum.COLOUR_BLUE);
 
         AngbandDisplayCharacter[][] display = display(area);
-        assertEquals('h', display[3][2].getCharacter());
-        assertEquals('i', display[3][3].getCharacter());
+        assertEquals('h', display[3][2].getNarrowCharacter());
+        assertEquals('i', display[3][3].getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_BLUE, display[3][2].getAttributeColour());
         assertEquals(ColourEnum.COLOUR_BLUE, display[3][3].getAttributeColour());
     }
@@ -152,11 +152,11 @@ class JPanelAreaPutTest {
         area.put(1, 75, "abcdefgh", ColourEnum.COLOUR_GREEN);
 
         AngbandDisplayCharacter[][] display = display(area);
-        assertEquals('a', display[1][75].getCharacter());
-        assertEquals('b', display[1][76].getCharacter());
-        assertEquals('c', display[1][77].getCharacter());
-        assertEquals('d', display[1][78].getCharacter());
-        assertEquals('e', display[1][79].getCharacter());
+        assertEquals('a', display[1][75].getNarrowCharacter());
+        assertEquals('b', display[1][76].getNarrowCharacter());
+        assertEquals('c', display[1][77].getNarrowCharacter());
+        assertEquals('d', display[1][78].getNarrowCharacter());
+        assertEquals('e', display[1][79].getNarrowCharacter());
     }
 
     /**

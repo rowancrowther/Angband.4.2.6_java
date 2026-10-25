@@ -71,14 +71,14 @@ class TermPrtTest {
     void anOrdinaryWriteErasesToEndOfLineThenPlacesTheString() {
         term.cPrt(ColourEnum.COLOUR_RED, "Hi", 5, 10);
 
-        assertEquals('H', cell(5, 10).getCharacter());
+        assertEquals('H', cell(5, 10).getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_RED, cell(5, 10).getAttributeColour());
-        assertEquals('i', cell(5, 11).getCharacter());
+        assertEquals('i', cell(5, 11).getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_RED, cell(5, 11).getAttributeColour());
 
-        assertEquals(' ', cell(5, 12).getCharacter());
+        assertEquals(' ', cell(5, 12).getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_WHITE, cell(5, 12).getAttributeColour());
-        assertEquals(' ', cell(5, WIDTH - 1).getCharacter());
+        assertEquals(' ', cell(5, WIDTH - 1).getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_WHITE, cell(5, WIDTH - 1).getAttributeColour());
     }
 
@@ -99,7 +99,7 @@ class TermPrtTest {
     void prtWritesInWhite() {
         term.prt("Hi", 5, 10);
 
-        assertEquals('H', cell(5, 10).getCharacter());
+        assertEquals('H', cell(5, 10).getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_WHITE, cell(5, 10).getAttributeColour());
     }
 
@@ -110,7 +110,7 @@ class TermPrtTest {
     void theFirstCellIsInRange() {
         term.cPrt(ColourEnum.COLOUR_WHITE, "A", 0, 0);
 
-        assertEquals('A', cell(0, 0).getCharacter());
+        assertEquals('A', cell(0, 0).getNarrowCharacter());
     }
 
     /**
@@ -120,7 +120,7 @@ class TermPrtTest {
     void theLastCellIsInRange() {
         term.cPrt(ColourEnum.COLOUR_WHITE, "A", HEIGHT - 1, WIDTH - 1);
 
-        assertEquals('A', cell(HEIGHT - 1, WIDTH - 1).getCharacter());
+        assertEquals('A', cell(HEIGHT - 1, WIDTH - 1).getNarrowCharacter());
     }
 
     /**
@@ -173,9 +173,9 @@ class TermPrtTest {
     void aNegativeColumnWritesAtTheStaleCursorPositionInstead() {
         term.cPrt(ColourEnum.COLOUR_RED, "Hi", 5, -1);
 
-        assertEquals('H', cell(0, 0).getCharacter());
+        assertEquals('H', cell(0, 0).getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_RED, cell(0, 0).getAttributeColour());
-        assertEquals('i', cell(0, 1).getCharacter());
+        assertEquals('i', cell(0, 1).getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_RED, cell(0, 1).getAttributeColour());
 
         assertNull(cell(5, 0));

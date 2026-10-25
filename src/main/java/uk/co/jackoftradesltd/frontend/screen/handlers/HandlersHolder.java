@@ -23,7 +23,6 @@ import uk.co.jackoftradesltd.channel.globals.ChannelRegistry;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.frontend.screen.Term;
 import uk.co.jackoftradesltd.frontend.screen.TermData;
-import uk.co.jackoftradesltd.frontend.screen.enums.Sidebar;
 import uk.co.jackoftradesltd.frontend.ui.SidebarModel;
 import uk.co.jackoftradesltd.frontend.ui.UIPlayer;
 import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
@@ -705,7 +704,7 @@ public class HandlersHolder {
         AngbandDisplayCharacter[] equipString = SidebarModel.getEquippyString();
 
         for (int index = 0; index < equipString.length; index++) {
-            term.cPutStr(equipString[index].getAttributeColour(), Character.toString(equipString[index].getCharacter()),
+            term.cPutStr(equipString[index].getAttributeColour(), Character.toString(equipString[index].getNarrowCharacter()),
                     row, col + index);
         }
     }

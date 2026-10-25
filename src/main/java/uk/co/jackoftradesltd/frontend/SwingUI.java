@@ -19,8 +19,8 @@ package uk.co.jackoftradesltd.frontend;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import uk.co.jackoftradesltd.channel.StartupOptions;
 import uk.co.jackoftradesltd.channel.EDTChannel;
+import uk.co.jackoftradesltd.channel.StartupOptions;
 import uk.co.jackoftradesltd.channel.UIChannel;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.enums.UILifecycleEvent;
@@ -664,7 +664,7 @@ public class SwingUI {
                         int drawTop = (row * charHeight) + charAscent;
                         int drawLeft = col * charWidth;
                         g.setColor(Colour.getColour(character.getAttributeColour()));
-                        BasicGraphicsUtils.drawString(g, String.valueOf(character.getCharacter()), -1,
+                        BasicGraphicsUtils.drawString(g, String.valueOf(character.getNarrowCharacter()), -1,
                                 drawLeft, drawTop);
                     }
                 }

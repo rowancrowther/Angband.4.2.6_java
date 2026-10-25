@@ -76,9 +76,9 @@ class TermAddstrTest {
     void addstrWritesAtTheCurrentCursorPositionWithNoPriorGotoXY() {
         assertEquals(0, term.addstr(-1, ColourEnum.COLOUR_RED, "Hi"));
 
-        assertEquals('H', cell(0, 0).getCharacter());
+        assertEquals('H', cell(0, 0).getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_RED, cell(0, 0).getAttributeColour());
-        assertEquals('i', cell(0, 1).getCharacter());
+        assertEquals('i', cell(0, 1).getNarrowCharacter());
     }
 
     /**
@@ -89,9 +89,9 @@ class TermAddstrTest {
     void putstrMovesThenWrites() {
         assertEquals(0, term.putstr(3, 2, -1, ColourEnum.COLOUR_BLUE, "Yo"));
 
-        assertEquals('Y', cell(2, 3).getCharacter());
+        assertEquals('Y', cell(2, 3).getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_BLUE, cell(2, 3).getAttributeColour());
-        assertEquals('o', cell(2, 4).getCharacter());
+        assertEquals('o', cell(2, 4).getNarrowCharacter());
     }
 
     /**
@@ -103,7 +103,7 @@ class TermAddstrTest {
     void explicitLengthTruncatesTheString() {
         assertEquals(0, term.putstr(0, 0, 1, ColourEnum.COLOUR_RED, "Hi"));
 
-        assertEquals('H', cell(0, 0).getCharacter());
+        assertEquals('H', cell(0, 0).getNarrowCharacter());
         assertNull(cell(0, 1));
     }
 
@@ -128,8 +128,8 @@ class TermAddstrTest {
     void aWriteThatExactlyFillsToTheEdgeStillReturnsPositiveAndMarksTheCursorUnusable() {
         assertEquals(2, term.putstr(8, 0, -1, ColourEnum.COLOUR_RED, "Hi"));
 
-        assertEquals('H', cell(0, 8).getCharacter());
-        assertEquals('i', cell(0, 9).getCharacter());
+        assertEquals('H', cell(0, 8).getNarrowCharacter());
+        assertEquals('i', cell(0, 9).getNarrowCharacter());
     }
 
     /**
@@ -140,8 +140,8 @@ class TermAddstrTest {
     void overflowClipsToTheRemainingWidthAndReturnsTheClippedCount() {
         assertEquals(2, term.putstr(8, 0, -1, ColourEnum.COLOUR_RED, "Hello"));
 
-        assertEquals('H', cell(0, 8).getCharacter());
-        assertEquals('e', cell(0, 9).getCharacter());
+        assertEquals('H', cell(0, 8).getNarrowCharacter());
+        assertEquals('e', cell(0, 9).getNarrowCharacter());
     }
 
     /**
@@ -154,7 +154,7 @@ class TermAddstrTest {
         term.putstr(8, 0, -1, ColourEnum.COLOUR_RED, "Hello");
 
         assertEquals(-1, term.addstr(-1, ColourEnum.COLOUR_RED, "X"));
-        assertEquals('e', cell(0, 9).getCharacter(), "the earlier clipped write must stand");
+        assertEquals('e', cell(0, 9).getNarrowCharacter(), "the earlier clipped write must stand");
     }
 
     /**
@@ -167,8 +167,8 @@ class TermAddstrTest {
         term.putstr(8, 0, -1, ColourEnum.COLOUR_RED, "Hello");
 
         assertEquals(0, term.putstr(0, 1, -1, ColourEnum.COLOUR_RED, "Hi"));
-        assertEquals('H', cell(1, 0).getCharacter());
-        assertEquals('i', cell(1, 1).getCharacter());
+        assertEquals('H', cell(1, 0).getNarrowCharacter());
+        assertEquals('i', cell(1, 1).getNarrowCharacter());
     }
 
     /**

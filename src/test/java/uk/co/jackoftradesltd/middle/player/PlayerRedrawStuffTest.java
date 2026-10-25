@@ -476,9 +476,9 @@ class PlayerRedrawStuffTest {
 
             int equip = bus.events.indexOf(GameEventType.EVENT_EQUIPMENT);
             EventDataColourString payload = (EventDataColourString) bus.data.get(equip);
-            assertEquals('|', payload.string()[0].getCharacter(),
+            assertEquals('|', payload.string()[0].getNarrowCharacter(),
                     "the occupied slot carries the item's glyph");
-            assertEquals(' ', payload.string()[1].getCharacter(), "an empty slot is blank");
+            assertEquals(' ', payload.string()[1].getNarrowCharacter(), "an empty slot is blank");
             assertEquals(ColourEnum.COLOUR_WHITE, payload.string()[1].getAttributeColour());
         }
 

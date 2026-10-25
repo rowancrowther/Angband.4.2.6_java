@@ -303,7 +303,7 @@ class ObjectKindConstructorsTest {
         void defaultGlyph() {
             ObjectKind kind = artifactKind(base());
 
-            assertEquals('*', kind.getCharacter().getCharacter());
+            assertEquals('*', kind.getCharacter().getNarrowCharacter());
             assertEquals(ColourEnum.COLOUR_RED, kind.getCharacter().getAttributeColour());
         }
 
@@ -469,7 +469,7 @@ class ObjectKindConstructorsTest {
                     () -> assertTrue(copy.isSpecialArtifactKind()),
                     () -> assertTrue(copy.getKindFlags().has(ObjectKindFlag.KF_INSTA_ART)),
                     () -> assertEquals("& Test~", copy.getName()),
-                    () -> assertEquals('*', copy.getCharacter().getCharacter()));
+                    () -> assertEquals('*', copy.getCharacter().getNarrowCharacter()));
         }
 
         /**

@@ -337,14 +337,14 @@ class HandlersHolderTest {
     void prtFieldClearsThirteenCellsThenWritesTheText() throws Exception {
         prtFieldMethod().invoke(null, "Elf", 3, 5);
 
-        assertEquals('E', cell(3, 5).getCharacter());
+        assertEquals('E', cell(3, 5).getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_LIGHT_BLUE, cell(3, 5).getAttributeColour());
-        assertEquals('l', cell(3, 6).getCharacter());
-        assertEquals('f', cell(3, 7).getCharacter());
+        assertEquals('l', cell(3, 6).getNarrowCharacter());
+        assertEquals('f', cell(3, 7).getNarrowCharacter());
 
         // The remaining ten cells of the thirteen-cell field are still the white-space clear.
         for (int col = 8; col < 5 + 13; col++) {
-            assertEquals(' ', cell(3, col).getCharacter(), "cell at col " + col + " should be the clear");
+            assertEquals(' ', cell(3, col).getNarrowCharacter(), "cell at col " + col + " should be the clear");
             assertEquals(ColourEnum.COLOUR_WHITE, cell(3, col).getAttributeColour());
         }
     }
@@ -358,7 +358,7 @@ class HandlersHolderTest {
         prtFieldMethod().invoke(null, "", 3, 5);
 
         for (int col = 5; col < 5 + 13; col++) {
-            assertEquals(' ', cell(3, col).getCharacter());
+            assertEquals(' ', cell(3, col).getNarrowCharacter());
             assertEquals(ColourEnum.COLOUR_WHITE, cell(3, col).getAttributeColour());
         }
     }
@@ -375,9 +375,9 @@ class HandlersHolderTest {
 
         prtRaceMethod().invoke(null, 4, 0);
 
-        assertEquals('H', cell(4, 0).getCharacter());
+        assertEquals('H', cell(4, 0).getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_LIGHT_BLUE, cell(4, 0).getAttributeColour());
-        assertEquals('a', cell(4, 1).getCharacter());
+        assertEquals('a', cell(4, 1).getNarrowCharacter());
     }
 
     /**
@@ -395,7 +395,7 @@ class HandlersHolderTest {
         prtRaceMethod().invoke(null, 4, 0);
 
         for (int col = 0; col < 13; col++) {
-            assertEquals(' ', cell(4, col).getCharacter(), "race name must not appear when shapechanged");
+            assertEquals(' ', cell(4, col).getNarrowCharacter(), "race name must not appear when shapechanged");
             assertEquals(ColourEnum.COLOUR_WHITE, cell(4, col).getAttributeColour());
         }
     }
@@ -504,27 +504,27 @@ class HandlersHolderTest {
         setShapechangedMethod().invoke(null, false);
         setRaceNameMethod().invoke(null, "Dwarf");
         handlers.get(0).getResult(6, 0);
-        assertEquals('D', cell(6, 0).getCharacter());
+        assertEquals('D', cell(6, 0).getNarrowCharacter());
 
         setGoldMethod().invoke(null, 42L);
         handlers.get(5).getResult(9, 0);
-        assertEquals('A', cell(9, 0).getCharacter());
+        assertEquals('A', cell(9, 0).getNarrowCharacter());
 
         setEquippyStringMethod().invoke(null, (Object) new AngbandDisplayCharacter[]{
                 new AngbandDisplayCharacter('/', ColourEnum.COLOUR_WHITE)
         });
         handlers.get(6).getResult(10, 0);
-        assertEquals('/', cell(10, 0).getCharacter());
+        assertEquals('/', cell(10, 0).getNarrowCharacter());
 
         setCurrentStatMethod().invoke(null, 0, 18);
         setMaxStatMethod().invoke(null, 0, 18);
         setUseStatMethod().invoke(null, 0, 18);
         handlers.get(7).getResult(12, 0);
-        assertEquals('S', cell(12, 0).getCharacter());
+        assertEquals('S', cell(12, 0).getNarrowCharacter());
 
         setAcMethod().invoke(null, 15);
         handlers.get(13).getResult(13, 0);
-        assertEquals('C', cell(13, 0).getCharacter());
+        assertEquals('C', cell(13, 0).getNarrowCharacter());
     }
 
     /**
@@ -543,11 +543,11 @@ class HandlersHolderTest {
 
         prtEquippyMethod().invoke(null, 11, 0);
 
-        assertEquals('/', cell(11, 0).getCharacter());
+        assertEquals('/', cell(11, 0).getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_WHITE, cell(11, 0).getAttributeColour());
-        assertEquals(')', cell(11, 1).getCharacter());
+        assertEquals(')', cell(11, 1).getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_UMBER, cell(11, 1).getAttributeColour());
-        assertEquals(' ', cell(11, 2).getCharacter());
+        assertEquals(' ', cell(11, 2).getNarrowCharacter());
     }
 
     /**
@@ -561,9 +561,9 @@ class HandlersHolderTest {
 
         prtClassMethod().invoke(null, 5, 0);
 
-        assertEquals('R', cell(5, 0).getCharacter());
+        assertEquals('R', cell(5, 0).getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_LIGHT_BLUE, cell(5, 0).getAttributeColour());
-        assertEquals('a', cell(5, 1).getCharacter());
+        assertEquals('a', cell(5, 1).getNarrowCharacter());
     }
 
     /**
@@ -579,7 +579,7 @@ class HandlersHolderTest {
         prtClassMethod().invoke(null, 5, 0);
 
         for (int col = 0; col < 13; col++) {
-            assertEquals(' ', cell(5, col).getCharacter(), "class name must not appear when shapechanged");
+            assertEquals(' ', cell(5, col).getNarrowCharacter(), "class name must not appear when shapechanged");
         }
     }
 
@@ -595,13 +595,13 @@ class HandlersHolderTest {
 
         prtLevelMethod().invoke(null, 7, 0);
 
-        assertEquals('L', cell(7, 0).getCharacter());
-        assertEquals('E', cell(7, 1).getCharacter());
+        assertEquals('L', cell(7, 0).getNarrowCharacter());
+        assertEquals('E', cell(7, 1).getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_LIGHT_GREEN, cell(7, 6).getAttributeColour());
         // "%6d" of 12 is four spaces then "12"
-        assertEquals(' ', cell(7, 6).getCharacter());
-        assertEquals('1', cell(7, 10).getCharacter());
-        assertEquals('2', cell(7, 11).getCharacter());
+        assertEquals(' ', cell(7, 6).getNarrowCharacter());
+        assertEquals('1', cell(7, 10).getNarrowCharacter());
+        assertEquals('2', cell(7, 11).getNarrowCharacter());
     }
 
     /**
@@ -616,9 +616,9 @@ class HandlersHolderTest {
         prtLevelMethod().invoke(null, 7, 0);
 
         // "Level " and "LEVEL " both start with 'L'; the second character is what distinguishes them.
-        assertEquals('e', cell(7, 1).getCharacter());
+        assertEquals('e', cell(7, 1).getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_YELLOW, cell(7, 6).getAttributeColour());
-        assertEquals('9', cell(7, 11).getCharacter());
+        assertEquals('9', cell(7, 11).getNarrowCharacter());
     }
 
     /**
@@ -632,7 +632,7 @@ class HandlersHolderTest {
 
         prtTitleMethod().invoke(null, 8, 0);
 
-        assertEquals('[', cell(8, 0).getCharacter());
+        assertEquals('[', cell(8, 0).getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_LIGHT_BLUE, cell(8, 0).getAttributeColour());
     }
 
@@ -768,17 +768,17 @@ class HandlersHolderTest {
 
         prtGoldMethod().invoke(null, 9, 0);
 
-        assertEquals('A', cell(9, 0).getCharacter());
-        assertEquals('U', cell(9, 1).getCharacter());
-        assertEquals(' ', cell(9, 2).getCharacter());
+        assertEquals('A', cell(9, 0).getNarrowCharacter());
+        assertEquals('U', cell(9, 1).getNarrowCharacter());
+        assertEquals(' ', cell(9, 2).getNarrowCharacter());
 
         // "%9d" of 1234 is five leading spaces then "1234".
-        assertEquals(' ', cell(9, 3).getCharacter());
-        assertEquals(' ', cell(9, 7).getCharacter());
-        assertEquals('1', cell(9, 8).getCharacter());
-        assertEquals('2', cell(9, 9).getCharacter());
-        assertEquals('3', cell(9, 10).getCharacter());
-        assertEquals('4', cell(9, 11).getCharacter());
+        assertEquals(' ', cell(9, 3).getNarrowCharacter());
+        assertEquals(' ', cell(9, 7).getNarrowCharacter());
+        assertEquals('1', cell(9, 8).getNarrowCharacter());
+        assertEquals('2', cell(9, 9).getNarrowCharacter());
+        assertEquals('3', cell(9, 10).getNarrowCharacter());
+        assertEquals('4', cell(9, 11).getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_LIGHT_GREEN, cell(9, 8).getAttributeColour());
     }
 
@@ -793,9 +793,9 @@ class HandlersHolderTest {
         prtGoldMethod().invoke(null, 9, 0);
 
         for (int col = 3; col < 11; col++) {
-            assertEquals(' ', cell(9, col).getCharacter(), "cell at col " + col + " should be a leading space");
+            assertEquals(' ', cell(9, col).getNarrowCharacter(), "cell at col " + col + " should be a leading space");
         }
-        assertEquals('0', cell(9, 11).getCharacter());
+        assertEquals('0', cell(9, 11).getNarrowCharacter());
     }
 
     /**
@@ -809,20 +809,20 @@ class HandlersHolderTest {
 
         prtAcMethod().invoke(null, 9, 0);
 
-        assertEquals('C', cell(9, 0).getCharacter());
-        assertEquals('u', cell(9, 1).getCharacter());
-        assertEquals('r', cell(9, 2).getCharacter());
-        assertEquals(' ', cell(9, 3).getCharacter());
-        assertEquals('A', cell(9, 4).getCharacter());
-        assertEquals('C', cell(9, 5).getCharacter());
-        assertEquals(' ', cell(9, 6).getCharacter());
+        assertEquals('C', cell(9, 0).getNarrowCharacter());
+        assertEquals('u', cell(9, 1).getNarrowCharacter());
+        assertEquals('r', cell(9, 2).getNarrowCharacter());
+        assertEquals(' ', cell(9, 3).getNarrowCharacter());
+        assertEquals('A', cell(9, 4).getNarrowCharacter());
+        assertEquals('C', cell(9, 5).getNarrowCharacter());
+        assertEquals(' ', cell(9, 6).getNarrowCharacter());
 
         // "%5d" of 15 is three leading spaces then "15", at col + 7.
-        assertEquals(' ', cell(9, 7).getCharacter());
-        assertEquals(' ', cell(9, 8).getCharacter());
-        assertEquals(' ', cell(9, 9).getCharacter());
-        assertEquals('1', cell(9, 10).getCharacter());
-        assertEquals('5', cell(9, 11).getCharacter());
+        assertEquals(' ', cell(9, 7).getNarrowCharacter());
+        assertEquals(' ', cell(9, 8).getNarrowCharacter());
+        assertEquals(' ', cell(9, 9).getNarrowCharacter());
+        assertEquals('1', cell(9, 10).getNarrowCharacter());
+        assertEquals('5', cell(9, 11).getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_LIGHT_GREEN, cell(9, 10).getAttributeColour());
     }
 
@@ -837,9 +837,9 @@ class HandlersHolderTest {
         prtAcMethod().invoke(null, 9, 0);
 
         for (int col = 7; col < 11; col++) {
-            assertEquals(' ', cell(9, col).getCharacter(), "cell at col " + col + " should be a leading space");
+            assertEquals(' ', cell(9, col).getNarrowCharacter(), "cell at col " + col + " should be a leading space");
         }
-        assertEquals('0', cell(9, 11).getCharacter());
+        assertEquals('0', cell(9, 11).getNarrowCharacter());
     }
 
     /**
@@ -856,12 +856,12 @@ class HandlersHolderTest {
 
         prtStatMethod().invoke(null, 0, 6, 0);
 
-        assertEquals('S', cell(6, 0).getCharacter());
-        assertEquals('t', cell(6, 1).getCharacter());
+        assertEquals('S', cell(6, 0).getNarrowCharacter());
+        assertEquals('t', cell(6, 1).getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_YELLOW, cell(6, 6).getAttributeColour());
         // cnvStat(14, 32) is "    14" - four spaces then the two digits, at col + 6.
-        assertEquals('1', cell(6, 10).getCharacter());
-        assertEquals('4', cell(6, 11).getCharacter());
+        assertEquals('1', cell(6, 10).getNarrowCharacter());
+        assertEquals('4', cell(6, 11).getNarrowCharacter());
     }
 
     /**
@@ -876,8 +876,8 @@ class HandlersHolderTest {
 
         prtStatMethod().invoke(null, 0, 6, 0);
 
-        assertEquals('S', cell(6, 0).getCharacter());
-        assertEquals('T', cell(6, 1).getCharacter());
+        assertEquals('S', cell(6, 0).getNarrowCharacter());
+        assertEquals('T', cell(6, 1).getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_LIGHT_GREEN, cell(6, 6).getAttributeColour());
     }
 
@@ -894,7 +894,7 @@ class HandlersHolderTest {
 
         prtStatMethod().invoke(null, 4, 6, 0);
 
-        assertEquals('!', cell(6, 3).getCharacter());
+        assertEquals('!', cell(6, 3).getNarrowCharacter());
     }
 
     /**
@@ -910,7 +910,7 @@ class HandlersHolderTest {
 
         prtStatMethod().invoke(null, 4, 6, 0);
 
-        assertEquals(':', cell(6, 3).getCharacter(), "no '!' marker should overwrite the label's own colon");
+        assertEquals(':', cell(6, 3).getNarrowCharacter(), "no '!' marker should overwrite the label's own colon");
     }
 
     /**
@@ -933,7 +933,7 @@ class HandlersHolderTest {
             // cnvStat(10 + index, 32) is "    1" followed by a digit, at col + 6; the last digit
             // identifies which index the wrapper actually read.
             char expectedDigit = Character.forDigit((10 + index) % 10, 10);
-            assertEquals(expectedDigit, cell(6 + index, 11).getCharacter(),
+            assertEquals(expectedDigit, cell(6 + index, 11).getNarrowCharacter(),
                     "wrapper at index " + index + " must read SidebarModel's stat " + index);
         }
     }

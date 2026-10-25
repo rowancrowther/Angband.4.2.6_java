@@ -72,9 +72,9 @@ class TermPutStrTest {
     void anOrdinaryWriteSucceedsAndPlacesEveryCharacter() {
         assertEquals(0, term.cPutStr(ColourEnum.COLOUR_RED, "Hi", 5, 10));
 
-        assertEquals('H', cell(5, 10).getCharacter());
+        assertEquals('H', cell(5, 10).getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_RED, cell(5, 10).getAttributeColour());
-        assertEquals('i', cell(5, 11).getCharacter());
+        assertEquals('i', cell(5, 11).getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_RED, cell(5, 11).getAttributeColour());
     }
 
@@ -86,7 +86,7 @@ class TermPutStrTest {
     void putStrWritesInWhite() {
         assertEquals(0, term.putStr("Hi", 5, 10));
 
-        assertEquals('H', cell(5, 10).getCharacter());
+        assertEquals('H', cell(5, 10).getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_WHITE, cell(5, 10).getAttributeColour());
     }
 
@@ -97,7 +97,7 @@ class TermPutStrTest {
     @Test
     void theFirstCellIsInRange() {
         assertEquals(0, term.cPutStr(ColourEnum.COLOUR_WHITE, "A", 0, 0));
-        assertEquals('A', cell(0, 0).getCharacter());
+        assertEquals('A', cell(0, 0).getNarrowCharacter());
     }
 
     /**
@@ -106,7 +106,7 @@ class TermPutStrTest {
     @Test
     void theLastCellIsInRange() {
         assertEquals(0, term.cPutStr(ColourEnum.COLOUR_WHITE, "A", HEIGHT - 1, WIDTH - 1));
-        assertEquals('A', cell(HEIGHT - 1, WIDTH - 1).getCharacter());
+        assertEquals('A', cell(HEIGHT - 1, WIDTH - 1).getNarrowCharacter());
     }
 
     /**

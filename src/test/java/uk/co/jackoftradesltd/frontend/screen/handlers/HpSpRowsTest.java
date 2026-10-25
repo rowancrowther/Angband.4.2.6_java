@@ -164,19 +164,19 @@ class HpSpRowsTest {
 
         invoke("prtHp", 2, 10);
 
-        assertEquals('H', cell(2, 10).getCharacter());
-        assertEquals('P', cell(2, 11).getCharacter());
-        assertEquals(' ', cell(2, 12).getCharacter());
-        assertEquals(' ', cell(2, 13).getCharacter());
-        assertEquals(' ', cell(2, 14).getCharacter());
-        assertEquals('2', cell(2, 15).getCharacter());
-        assertEquals('5', cell(2, 16).getCharacter());
-        assertEquals('/', cell(2, 17).getCharacter());
+        assertEquals('H', cell(2, 10).getNarrowCharacter());
+        assertEquals('P', cell(2, 11).getNarrowCharacter());
+        assertEquals(' ', cell(2, 12).getNarrowCharacter());
+        assertEquals(' ', cell(2, 13).getNarrowCharacter());
+        assertEquals(' ', cell(2, 14).getNarrowCharacter());
+        assertEquals('2', cell(2, 15).getNarrowCharacter());
+        assertEquals('5', cell(2, 16).getNarrowCharacter());
+        assertEquals('/', cell(2, 17).getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_WHITE, cell(2, 17).getAttributeColour());
-        assertEquals(' ', cell(2, 18).getCharacter());
-        assertEquals('1', cell(2, 19).getCharacter());
-        assertEquals('0', cell(2, 20).getCharacter());
-        assertEquals('0', cell(2, 21).getCharacter());
+        assertEquals(' ', cell(2, 18).getNarrowCharacter());
+        assertEquals('1', cell(2, 19).getNarrowCharacter());
+        assertEquals('0', cell(2, 20).getNarrowCharacter());
+        assertEquals('0', cell(2, 21).getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_LIGHT_GREEN, cell(2, 19).getAttributeColour());
     }
 
@@ -235,13 +235,13 @@ class HpSpRowsTest {
 
         invoke("prtSp", 6, 0);
 
-        assertEquals('S', cell(6, 0).getCharacter());
-        assertEquals('P', cell(6, 1).getCharacter());
-        assertEquals(' ', cell(6, 2).getCharacter());
-        assertEquals('7', cell(6, 6).getCharacter());
-        assertEquals('/', cell(6, 7).getCharacter());
-        assertEquals('4', cell(6, 10).getCharacter());
-        assertEquals('2', cell(6, 11).getCharacter());
+        assertEquals('S', cell(6, 0).getNarrowCharacter());
+        assertEquals('P', cell(6, 1).getNarrowCharacter());
+        assertEquals(' ', cell(6, 2).getNarrowCharacter());
+        assertEquals('7', cell(6, 6).getNarrowCharacter());
+        assertEquals('/', cell(6, 7).getNarrowCharacter());
+        assertEquals('4', cell(6, 10).getNarrowCharacter());
+        assertEquals('2', cell(6, 11).getNarrowCharacter());
         assertEquals(ColourEnum.COLOUR_LIGHT_GREEN, cell(6, 10).getAttributeColour());
     }
 
@@ -257,7 +257,7 @@ class HpSpRowsTest {
         invoke("prtSp", 6, 0);
 
         for (int col = 0; col < 12; col++) {
-            assertEquals('X', cell(6, col).getCharacter(), "col " + col + " must be untouched");
+            assertEquals('X', cell(6, col).getNarrowCharacter(), "col " + col + " must be untouched");
         }
     }
 
@@ -273,7 +273,7 @@ class HpSpRowsTest {
         invoke("prtSp", 6, 0);
 
         for (int col = 0; col < 12; col++) {
-            assertEquals('X', cell(6, col).getCharacter(), "col " + col + " must be untouched");
+            assertEquals('X', cell(6, col).getNarrowCharacter(), "col " + col + " must be untouched");
         }
     }
 
@@ -289,9 +289,9 @@ class HpSpRowsTest {
         invoke("prtSp", 6, 0);
 
         for (int col = 0; col < 12; col++) {
-            assertEquals(' ', cell(6, col).getCharacter(), "col " + col + " must be blanked");
+            assertEquals(' ', cell(6, col).getNarrowCharacter(), "col " + col + " must be blanked");
         }
-        assertEquals('X', cell(6, 12).getCharacter(), "the blanking is exactly twelve columns");
+        assertEquals('X', cell(6, 12).getNarrowCharacter(), "the blanking is exactly twelve columns");
     }
 
     /**
@@ -305,6 +305,6 @@ class HpSpRowsTest {
 
         invoke("prtSp", 6, 0);
 
-        assertEquals('X', cell(6, 0).getCharacter());
+        assertEquals('X', cell(6, 0).getNarrowCharacter());
     }
 }

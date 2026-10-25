@@ -251,12 +251,12 @@ class TerrainDataLoaderFeaturesTest {
             AngbandDisplayCharacter closed = (AngbandDisplayCharacter) field(feature(TerrainFlags.FEAT_CLOSED), "displayCharacter");
             AngbandDisplayCharacter rubble = (AngbandDisplayCharacter) field(feature(TerrainFlags.FEAT_RUBBLE), "displayCharacter");
 
-            assertEquals(' ', none.getCharacter());
+            assertEquals(' ', none.getNarrowCharacter());
             assertEquals(ColourEnum.fromCode('w'), none.getAttributeColour());
-            assertEquals('+', closed.getCharacter());
+            assertEquals('+', closed.getNarrowCharacter());
             assertEquals(ColourEnum.fromCode('U'), closed.getAttributeColour());
             // a ':' glyph still reads as the glyph, not the separator
-            assertEquals(':', rubble.getCharacter());
+            assertEquals(':', rubble.getNarrowCharacter());
             assertEquals(ColourEnum.fromCode('W'), rubble.getAttributeColour());
         }
 

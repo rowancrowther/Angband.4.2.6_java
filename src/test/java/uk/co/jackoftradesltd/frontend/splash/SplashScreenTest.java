@@ -29,7 +29,7 @@ import uk.co.jackoftradesltd.frontend.screen.grid.CellGrid;
 import uk.co.jackoftradesltd.frontend.screen.grid.Screen;
 import uk.co.jackoftradesltd.frontend.screen.splash.SplashScreen;
 
-import java.awt.GraphicsEnvironment;
+import java.awt.*;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
@@ -81,7 +81,7 @@ class SplashScreenTest {
         StringBuilder text = new StringBuilder();
         for (int col = 0; col < grid.cols(); col++) {
             AngbandDisplayCharacter cell = grid.get(row, col);
-            text.append(cell == null ? ' ' : cell.getCharacter());
+            text.append(cell == null ? ' ' : cell.getNarrowCharacter());
         }
         return text.toString();
     }
@@ -101,7 +101,7 @@ class SplashScreenTest {
     private static String stringFrom(AngbandDisplayCharacter[][] display, int row, int length) {
         StringBuilder text = new StringBuilder();
         for (int col = 0; col < length; col++) {
-            text.append(display[row][col].getCharacter());
+            text.append(display[row][col].getNarrowCharacter());
         }
         return text.toString();
     }
@@ -252,7 +252,7 @@ class SplashScreenTest {
 
         // Column 5 falls outside "[Initializing]"'s centred span (columns 33-46), so surviving
         // there would mean the erase - Term_erase(0, y, 255) in C - never happened.
-        assertEquals(' ', live.get(23, 5).getCharacter());
+        assertEquals(' ', live.get(23, 5).getNarrowCharacter());
     }
 
     @Test
@@ -264,7 +264,7 @@ class SplashScreenTest {
 
         newSplashScreen().splashScreenNote("Initializing", screen);
 
-        assertEquals('Y', live.get(2, 0).getCharacter());
+        assertEquals('Y', live.get(2, 0).getNarrowCharacter());
         assertNull(live.get(22, 33));
     }
 

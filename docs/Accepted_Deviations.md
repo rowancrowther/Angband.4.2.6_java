@@ -423,6 +423,20 @@ recorded here as the summary states them; fill in the detail when you next touch
   matched by name.
 - **Accepted:** 2026-10-23, during the `CurseAssembler` port pass. Marked in the `CurseAssembler` class Javadoc.
 
+## Flavour
+
+### A `fixed:` sval with trailing spaces or tabs is looked up as a name, where C reads it as a number
+
+- **Java:** `FlavourKindAssembler.assemble` (the `fixed:` sval resolution). **C:** `lookup_sval` (`obj-util.c`), as
+  called from `parse_flavor_flavor` (`init.c`).
+- **Differs:** C reads the symbol with `strtoul` in base 10 and, if any digits were read, accepts a tail of spaces and
+  tabs (`contains_only_spaces`), so `5 ` is 5. Java reads it with `Integer.parseInt`, which throws on the tail, so the
+  symbol is matched against kind names instead, finds none, and the flavour stores 255 (C's -1 in a `uint8_t`).
+- **Reach:** none from shipped data. All 8 `fixed:` lines in `flavor.txt` name their kind in words.
+- **Revisit:** if a modded `flavor.txt` ever pins a flavour by number with a space or tab after it.
+- **Accepted:** 2026-10-25, during the `FlavourKindAssembler` port pass. Pinned by
+  `FlavourKindAssemblerNumericSvalTest.aTailOfSpacesOrTabsMakesTheSymbolANameNotANumber`.
+
 ## Pending your decision
 
 - The five `objDescNameFormat` divergences (Part G; `docs/ItemObject_round2/part_G.md`). All unreachable from shipped

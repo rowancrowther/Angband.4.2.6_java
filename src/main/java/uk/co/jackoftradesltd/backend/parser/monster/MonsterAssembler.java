@@ -17,7 +17,11 @@
 
 package uk.co.jackoftradesltd.backend.parser.monster;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
+import uk.co.jackoftradesltd.backend.parser.ParseUtils;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
@@ -48,9 +52,10 @@ import java.util.Map;
  * visuals cycler table — and layers them into a race the way the C original's {@code parse_monster_*}
  * functions do ({@code src/mon-init.c}).
  *
- * <p>Two conventions run through {@link #assemble}. Every field is resolved defensively: a bad
- * cross-reference or number appends a human-readable message to the shared {@code errors} list and
- * drops just that record (via {@code continue}), rather than failing the whole file. And the
+ * <p>Two conventions run through {@link #assemble}. Every failure stops the load: a bad
+ * cross-reference, number, flag or glyph logs a message naming the record's line and the file and
+ * throws a {@link DataFileParseException}, as C ends the load on the parser error its
+ * {@code parse_monster_*} function returns. There is no soft error and no dropped record. And the
  * {@link MonsterBase} template is applied first, so a monster's own flags and glyph layer on top of
  * the ones it inherits from its base.
  *
@@ -59,20 +64,76 @@ import java.util.Map;
  * second pass ({@link MonsterRace#resolveFriends()} / {@link MonsterRace#resolveShapes()}) once every
  * race exists. References to <em>bases</em>, which are all loaded before monsters, are resolved inline.
  *
+ * <p>The assembler sees a finished {@link MonsterParseRecord} with no line order, so it differs from
+ * C, which acts on one line at a time, in four recorded ways (all in {@code docs/Accepted_Deviations.md},
+ * "Monster"): the base's flags and glyph are applied first whatever the line order, a second
+ * {@code base:} line replaces the first, a {@code spell-power:} line a later {@code depth:} line
+ * overwrites is not checked for a minus, and a {@code friends:} name of {@code same} is resolved by
+ * name. It also gives each race its own {@code color-cycle:} where C stores every cycle in slot 0.
+ *
+ * <p>Class MonsterAssembler coded before 260915, commented in full on 261026.
+ *
  * @author Rowan Crowther
  */
 public class MonsterAssembler implements Assembler<MonsterParseRecord, List<MonsterRace>> {
     /**
-     * Assemble each parsed record into a {@link MonsterRace}, resolving its cross-references and
-     * layering its base template. A record whose base, a cross-reference, or a numeric field fails to
-     * resolve is reported to {@code errors} and skipped, so the returned list holds only the races
-     * that assembled cleanly.
+     * The logger every failure message is sent to, at {@code fatal}, just before the
+     * {@link DataFileParseException} carrying the same text is thrown.
      *
-     * <p>Function assemble coded before 260915, commented in full on 260915.
+     * <p>Field logger coded before 260915, commented in full on 261026.
+     */
+    private static final Logger logger = LogManager.getLogger(MonsterAssembler.class);
+
+    /**
+     * Assemble each parsed record into a {@link MonsterRace}, standing in for the {@code parse_monster_*}
+     * functions of {@code mon-init.c} (and the friend and shape conversion in {@code finish_parse_monster},
+     * which {@link MonsterRace} finishes in its second pass). Per record, in this order:
+     * <ul>
+     *   <li>the {@code base:} name is looked up exactly (case-sensitively); an unknown base throws, and
+     *       an absent one leaves the base {@code null}, as C does. The base's flags seed the flag set.</li>
+     *   <li>{@code hit-points:}, {@code armor-class:}, {@code sleepiness:}, {@code hearing:},
+     *       {@code smell:}, {@code speed:}, {@code light:}, {@code experience:}, {@code depth:} and
+     *       {@code rarity:} are read as C's {@code int} fields, so an absent line is 0. Hearing and smell
+     *       are scaled by {@code max_sight / 20} in integer arithmetic.</li>
+     *   <li>{@code innate-freq:} and {@code spell-freq:} must be 1 to 100 and are stored as
+     *       {@code 100 / value}. An absent line stays 0 unless the race has an innate spell (or a
+     *       spell that is neither innate nor a breath), which makes it 4, as {@code parse_monster_spells}
+     *       does.</li>
+     *   <li>spell power is the {@code depth:} text unless a later {@code spell-power:} line replaced it.
+     *       Only {@code spell-power:} is a {@code uint}, so only it refuses a leading minus; a negative
+     *       {@code depth:} loads with the same negative spell power.</li>
+     *   <li>{@code flags:} adds and {@code flags-off:} removes race flags, then {@code spells:} adds spell
+     *       flags. {@code NONE} is refused for all three, as C's flag lookup starts after it. A race
+     *       flag called {@code MAX} does not exist; a spell called {@code MAX} does and is accepted.</li>
+     *   <li>each {@code blow:} needs a known method. An omitted effect is the {@code NONE} effect and an
+     *       omitted damage is a {@code 0d0} die.</li>
+     *   <li>the colour is dark when there is no {@code color:} line and white when its letter is unknown.
+     *       The glyph is the {@code glyph:} line, else the base's, and must be exactly one code point.</li>
+     *   <li>{@code message-vis:}, {@code message-invis:} and {@code message-miss:} name a spell by its
+     *       {@code RSF_} name; {@code NONE} and {@code MAX} are both accepted, as C's {@code grab_name}
+     *       scans every row. A message of only spaces and tabs becomes {@code ""}.</li>
+     *   <li>{@code drop:} needs a known tval and kind, {@code drop-base:} a known tval only. The chance,
+     *       minimum and maximum refuse a leading minus and the minimum and maximum must be 0 to 99.</li>
+     *   <li>{@code friends:} and {@code friends-base:} refuse a leading minus on the chance, need a die,
+     *       and take a role of exactly {@code servant} or {@code bodyguard}; a {@code friends-base:}
+     *       name must be a known base. {@code mimic:} needs a known tval and kind.</li>
+     *   <li>{@code shape:} names are carried unresolved, and a {@code color-cycle:} that names no known
+     *       group or cycle is silently left {@code null}, as {@code visuals_cycler_set_cycle_for_race}
+     *       leaves it.</li>
+     * </ul>
+     * The drop, friend, friend-base, mimic, shape and message lists keep the order the grammar built,
+     * which is C's head-pushed (reverse file) order. Every failure logs and throws a
+     * {@link DataFileParseException}.
      *
-     * @param records the parsed monster records, in file order
-     * @param errors  collects one message per soft failure; the caller decides whether any is fatal
-     * @return the successfully assembled races, in file order
+     * <p>Outstanding: {@code errors} is not used.
+     *
+     * <p>Function assemble coded before 260915, commented in full on 261026.
+     *
+     * @param records  the parsed monster records, in file order
+     * @param errors   not used: no failure is collected, each one throws
+     * @param filename the file the records were read from, named in every failure message
+     * @return one {@link MonsterRace} per record, in file order
+     * @throws DataFileParseException on the first record with a value C's parser would refuse
      */
     @Override
     public List<MonsterRace> assemble(@NotNull List<MonsterParseRecord> records, @NotNull List<String> errors,
@@ -82,194 +143,141 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
         for (MonsterParseRecord record : records) {
             int line = record.line();
             String name = record.name();
-            String text = record.desc();
+            String text = record.desc().isEmpty() ? null : record.desc();
             String plural = record.plural();
             String baseType = record.base();
-            MonsterBase base = MonsterRegistry.lookupMonsterBase(baseType);
-            if (base == null) {
-                errors.add("Monster at line: " + line + " has " +
-                        "an invalid monster-base: " + baseType);
-                continue;
+            MonsterBase base;
+            if (!baseType.isEmpty()) {
+                base = MonsterRegistry.lookupMonsterBase(baseType);
+                if (base == null) {
+                    String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal base value: " + baseType;
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
+                }
+            } else {
+                base = null;
             }
             // Seed the flag set from the base template; the monster's own flags: and flags-off: lines
             // below then add to and subtract from this inherited set (mirroring C's rf_union followed
             // by grab_flag/remove_flag in parse_monster_base / _flags / _flags_off).
+            // ACCEPTED DEVIATION (2026-10-26, docs/Accepted_Deviations.md, "Monster"): C does this
+            // union when it reads the base: line, so a flags-off: line that comes BEFORE base: removes
+            // nothing and the base then adds the flag back. This assembler sees the finished record
+            // with no line order, so the base is always applied first and flags-off: always wins.
+            // Shipped monster.txt puts base: before every flags: and flags-off: line.
             Flag<MonsterRaceFlag> flags = new Flag<>(MonsterRaceFlag.class);
-            flags.union(base.getFlags());
-            int hitPoints = 0;
-            if (!record.hitPoints().isEmpty()) {
-                try {
-                    hitPoints = Integer.parseInt(record.hitPoints());
-                } catch (NumberFormatException e) {
-                    errors.add("Monster at line: " + line + " has " +
-                            "a malformed integer for hit-points: " + record.hitPoints());
-                    continue;
-                }
-            }
-            int ac = 0;
-            if (!record.armourClass().isEmpty()) {
-                try {
-                    ac = Integer.parseInt(record.armourClass());
-                } catch (NumberFormatException e) {
-                    errors.add("Monster at line: " + line + " has " +
-                            "a malformed integer for armour class: " + record.armourClass());
-                    continue;
-                }
-            }
-            int sleep = 0;
-            if (!record.sleepiness().isEmpty()) {
-                try {
-                    sleep = Integer.parseInt(record.sleepiness());
-                } catch (NumberFormatException e) {
-                    errors.add("Monster at line: " + line + " has " +
-                            "a malformed integer for sleepiness: " + record.sleepiness());
-                    continue;
-                }
-            }
-            int hearing = 0;
-            if (!record.hearing().isEmpty()) {
-                try {
-                    hearing = Integer.parseInt(record.hearing());
-                    hearing = hearing * GameConstants.getPlayerMaxSight() / 20;
-                } catch (NumberFormatException e) {
-                    errors.add("Monster at line: " + line + " has " +
-                            "a malformed integer for hearing: " + record.hearing());
-                    continue;
-                }
-            }
-            int smell = 0;
-            if (!record.smell().isEmpty()) {
-                try {
-                    smell = Integer.parseInt(record.smell());
-                } catch (NumberFormatException e) {
-                    errors.add("Monster at line: " + line + " has " +
-                            "a malformed integer for smell: " + record.smell());
-                    continue;
-                }
-            }
-            int speed = 0;
-            if (!record.speed().isEmpty()) {
-                try {
-                    speed = Integer.parseInt(record.speed());
-                } catch (NumberFormatException e) {
-                    errors.add("Monster at line: " + line + " has " +
-                            "a malformed integer for speed: " + record.speed());
-                    continue;
-                }
-            }
-            int light = 0;
-            if (!record.light().isEmpty()) {
-                try {
-                    light = Integer.parseInt(record.light());
-                } catch (NumberFormatException e) {
-                    errors.add("Monster at line: " + line + " has " +
-                            "a malformed integer for light: " + record.light());
-                    continue;
-                }
-            }
-            int mexp = 0;
-            if (!record.experience().isEmpty()) {
-                try {
-                    mexp = Integer.parseInt(record.experience());
-                } catch (NumberFormatException e) {
-                    errors.add("Monster at line: " + line + " has " +
-                            "a malformed integer for experience: " + record.experience());
-                    continue;
-                }
-            }
-            int freqInnate;
+            if (base != null)
+                flags.union(base.getFlags());
+            int hitPoints = ParseUtils.parseIntString("Monster", record.hitPoints(), line, filename, "hit point");
+            int ac = ParseUtils.parseIntString("Monster", record.armourClass(), line, filename, "armour");
+            int sleep = ParseUtils.parseIntString("Monster", record.sleepiness(), line, filename, "sleep");
+            int hearing = ParseUtils.parseIntString("Monster", record.hearing(), line, filename, "hearing");
+            hearing = hearing * GameConstants.getPlayerMaxSight() / 20;
+            int smell = ParseUtils.parseIntString("Monster", record.smell(), line, filename, "smell");
+            smell = smell * GameConstants.getPlayerMaxSight() / 20;
+            int speed = ParseUtils.parseIntString("Monster", record.speed(), line, filename, "speed");
+            int light = ParseUtils.parseIntString("Monster", record.light(), line, filename, "light");
+            int mexp = ParseUtils.parseIntString("Monster", record.experience(), line, filename, "experience");
             int innatePct = 0;
             if (!record.innateFreq().isEmpty()) {
-                try {
-                    freqInnate = Integer.parseInt(record.innateFreq());
-                    if (freqInnate < 1 || freqInnate > 100) {
-                        errors.add("Monster at line: " + line + " has " +
-                                "a frequency number that is out of range. " +
-                                "Should be between 1 and 100 inclusive. was: " +
-                                record.innateFreq());
-                        continue;
-                    }
-                    
-                    innatePct = 100 / freqInnate;
-                } catch (NumberFormatException e) {
-                    errors.add("Monster at line: " + line + " has " +
-                            "a malformed integer for innate-freq: " + record.innateFreq());
-                    continue;
+                int freqInnate = ParseUtils.parseIntString("Monster", record.innateFreq(), line, filename, "innate frequency");
+                if (freqInnate < 1 || freqInnate > 100) {
+                    String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal out of range innate frequency value: " + record.innateFreq();
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
                 }
+                innatePct = 100 / freqInnate;
             }
-            int freqSpell;
             int spellPct = 0;
             if (!record.spellFreq().isEmpty()) {
-                try {
-                    freqSpell = Integer.parseInt(record.spellFreq());
-                    if (freqSpell < 1 || freqSpell > 100) {
-                        errors.add("Monster at line: " + line + " has " +
-                                "a frequency number that is out of range. " +
-                                "Should be between 1 and 100 inclusive. was: " +
-                                record.spellFreq());
-                        continue;
-                    }
-                    spellPct = 100 / freqSpell;
-                } catch (NumberFormatException e) {
-                    errors.add("Monster at line: " + line + " has " +
-                            "a malformed integer for spell-freq: " + record.spellFreq());
-                    continue;
+                int freqSpell = ParseUtils.parseIntString("Monster", record.spellFreq(), line, filename, "spell frequency");
+                if (freqSpell < 1 || freqSpell > 100) {
+                    String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal out of range spell frequency value: " + record.spellFreq();
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
                 }
+                spellPct = 100 / freqSpell;
             }
-            int spellPower = 0;
-            if (!record.spellPower().isEmpty()) {
-                try {
-                    spellPower = Integer.parseInt(record.spellPower());
-                } catch (NumberFormatException e) {
-                    errors.add("Monster at line: " + line + " has " +
-                            "a malformed integer for spell-power: " + record.spellPower());
-                    continue;
-                }
+            // C seeds spell_power from depth: and lets a later spell-power: line override it, and only
+            // spell-power: is a uint that refuses a leading '-' (a depth: of -5 loads, with spell power
+            // -5). The grammar keeps the last of the two lines' text and tags which one it was.
+            // ACCEPTED DEVIATION (2026-10-26, docs/Accepted_Deviations.md, "Monster"): the sign test
+            // looks only at the winning line, so "spell-power:-1" followed by "depth:20" loads here,
+            // where C refused the spell-power: line as it read it.
+            int spellPower;
+            if (record.spellPowerOrDepth().equals("spell") && ParseUtils.minusFound(record.spellPower())) {
+                String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                        "an illegal spell power value: " + record.spellPower();
+                logger.fatal(msg);
+                throw new DataFileParseException(msg);
+            } else {
+                spellPower = ParseUtils.parseIntString("Monster", record.spellPower(), line, filename, "depth");
             }
-            boolean illegalFlagOn = false;
             for (String flagString : record.flagsOn()) {
                 try {
+                    MonsterRaceFlag flag = MonsterRaceFlag.valueOf("RF_" + flagString);
+                    if (flag == MonsterRaceFlag.RF_NONE) {
+                        String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                                "a sentinel monster race flag value: " + flagString;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
+                    }
                     flags.on(MonsterRaceFlag.valueOf("RF_" + flagString));
                 } catch (IllegalArgumentException e) {
-                    errors.add("Monster at line: " + line + " has " +
-                            "an unknown flag name: " + flagString);
-                    illegalFlagOn = true;
+                    String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal flag on value: " + flagString;
+                    logger.fatal(msg, e);
+                    throw new DataFileParseException(msg);
                 }
             }
-            if (illegalFlagOn) continue;
-            boolean illegalFlagOff = false;
             for (String flagString : record.flagsOff()) {
                 try {
-                    flags.off(MonsterRaceFlag.valueOf("RF_" + flagString));
+                    MonsterRaceFlag flag = MonsterRaceFlag.valueOf("RF_" + flagString);
+                    if (flag == MonsterRaceFlag.RF_NONE) {
+                        String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                                "a sentinel monster race flag value: " + flagString;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
+                    }
+                    flags.off(flag);
                 } catch (IllegalArgumentException e) {
-                    errors.add("Monster at line: " + line + " has " +
-                            "an unknown flag name: " + flagString);
-                    illegalFlagOff = true;
+                    String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal flag off value: " + flagString;
+                    logger.fatal(msg, e);
+                    throw new DataFileParseException(msg);
                 }
             }
-            if (illegalFlagOff) continue;
             Flag<MonsterSpell> spells = new Flag<>(MonsterSpell.class);
-            boolean illegalSpell = false;
             for (String spellString : record.spells()) {
                 try {
-                    spells.on(MonsterSpell.valueOf("RSF_" + spellString));
+                    MonsterSpell spellFlag = MonsterSpell.valueOf("RSF_" + spellString);
+                    if (spellFlag == MonsterSpell.RSF_NONE) {
+                        String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                                "a sentinel monster spell value: " + spellString;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);                        
+                    }
+                    spells.on(spellFlag);
                 } catch (IllegalArgumentException e) {
-                    errors.add("Monster at line: " + line + " has " +
-                            "an unknown spell: " + spellString);
-                    illegalSpell = true;
+                    String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal spell value: " + spellString;
+                    logger.fatal(msg, e);
+                    throw new DataFileParseException(msg);
                 }
             }
-            if (illegalSpell) continue;
-            boolean illegalBlows = false;
             List<MonsterBlow> blows = new ArrayList<>();
             for (MonsterParseRecord.MonsterBlowParseRecord blow : record.blows()) {
                 BlowEffect effect;
                 Random blowDamage;
                 BlowMethod method = MonsterRegistry.lookupBlowMethod(blow.method());
                 if (method == null) {
-                    errors.add("Monster at line: " + line + " has " +
-                            "an unknown blow method: " + blow.method());
-                    illegalBlows = true;
+                    String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal blow method value: " + blow.method();
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
                 }
                 // Effect and damage are both optional. An omitted effect resolves to the "NONE"
                 // effect and an omitted damage to a 0d0 Random, so every assembled blow ends up with a
@@ -277,16 +285,18 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
                 if (!blow.effect().isEmpty()) {
                     effect = MonsterRegistry.lookupBlowEffect(blow.effect());
                     if (effect == null) {
-                        errors.add("Monster at line: " + line + " has " +
-                                "an unknown blow effect: " + blow.effect());
-                        illegalBlows = true;
+                        String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                                "an illegal blow effect value: " + blow.effect();
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
                     }
                     if (!blow.damage().isEmpty()) {
                         blowDamage = Random.parseStr(blow.damage());
                         if (blowDamage == null) {
-                            errors.add("Monster at line: " + line + " has " +
-                                    "a malformed damage dice expression: " + blow.damage());
-                            illegalBlows = true;
+                            String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                                    "an illegal blow damage value: " + blow.damage();
+                            logger.fatal(msg);
+                            throw new DataFileParseException(msg);
                         }
                     } else {
                         blowDamage = new Random(0, 0, 0, 0, false);
@@ -295,65 +305,57 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
                     effect = MonsterRegistry.lookupBlowEffect("NONE");
                     blowDamage = new Random(0, 0, 0, 0, false);
                 }
-                if (!illegalBlows) {
-                    blows.add(new MonsterBlow(method, effect, blowDamage));
-                }
+                blows.add(new MonsterBlow(method, effect, blowDamage));
             }
-            if (illegalBlows) continue;
-            int level = 0;
-            if (!record.depth().isEmpty()) {
-                try {
-                    level = Integer.parseInt(record.depth());
-                } catch (NumberFormatException e) {
-                    errors.add("Monster at line: " + line + " has " +
-                            "a malformed depth integer: " + record.depth());
-                    continue;
-                }
-            }
-            int rarity = 0;
-            if (!record.rarity().isEmpty()) {
-                try {
-                    rarity = Integer.parseInt(record.rarity());
-                } catch (NumberFormatException e) {
-                    errors.add("Monster at line: " + line + " has " +
-                            "a malformed rarity integer: " + record.rarity());
-                    continue;
-                }
-            }
+            int level = ParseUtils.parseIntString("Monster", record.depth(), line, filename, "depth");
+            int rarity = ParseUtils.parseIntString("Monster", record.rarity(), line, filename, "rarity");
             // Glyph is optional: an explicit glyph: line overrides, otherwise it is inherited from the
             // base (most monsters carry no glyph: line). A leftover '\0' means neither supplied one.
+            // ACCEPTED DEVIATION (2026-10-26, docs/Accepted_Deviations.md, "Monster"): C copies the
+            // base's glyph when it reads base:, so a glyph: line BEFORE base: is overwritten by the
+            // base's. Here an explicit glyph: always wins, whatever the line order.
             String glyphStr = record.glyph();
-            char glyph;
-            if (!glyphStr.isEmpty()) {
-                if (glyphStr.length() != 1) {
-                    errors.add("Monster at line: " + line + " has " +
-                            "an illegal glyph character: " + glyphStr);
-                    continue;
-                }
-                glyph = glyphStr.charAt(0);
+            char glyph = '\0';
+            int wideGlyph = 0;
+            AngbandDisplayCharacter adc = null;
+            ColourEnum colour;
+            if (record.colour().isEmpty()) {
+                colour = ColourEnum.COLOUR_DARK;
             } else {
+                colour = ColourEnum.fromCode(record.colour());
+                if (colour == null) {
+                    colour = ColourEnum.COLOUR_WHITE;
+                }
+            }
+            if (!glyphStr.isEmpty()) {
+                if (glyphStr.codePointCount(0, glyphStr.length()) != 1) {
+                    String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal glyph value: " + glyphStr;
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
+                }
+                if (Character.isSupplementaryCodePoint(glyphStr.codePointAt(0))) {
+                    wideGlyph = glyphStr.codePointAt(0);
+                } else {
+                    glyph = glyphStr.charAt(0);
+                }
+            } else if (base != null) {
                 glyph = base.getDefaultMonsterChar();
             }
-            ColourEnum colour = ColourEnum.fromCode(record.colour());
-            if (colour == null) {
-                errors.add("Monster at line: " + line + " has " +
-                        "an unknown colour type: " + record.colour());
-                continue;
-            }
-            AngbandDisplayCharacter adc = null;
             if (glyph != '\0') {
                 adc = new AngbandDisplayCharacter(glyph, colour);
+            } else {
+                adc = new AngbandDisplayCharacter(wideGlyph, colour);
             }
             // Per-record message map keyed by spell name -- one MonsterSpellMessage per spell the
             // monster casts, holding its optional vis/invis/miss lines. Built fresh each record so
             // messages never leak between monsters.
             List<MonsterSpellText> spellMessages = new ArrayList<>();
-            boolean badSpellMessage = false;
             for (MonsterParseRecord.MessageTypeParseRecord messageType : record.spellMessages()) {
                 try {
-                    String visInvisMiss = messageType.messageType();
-                    String spellName = messageType.spellName();
-                    String messageString = messageType.messageString();
+                    String visInvisMiss = (messageType.messageType() == null || ParseUtils.onlySpaceAndTab(messageType.messageType())) ? "" : messageType.messageType();
+                    String spellName = (messageType.spellName() == null || ParseUtils.onlySpaceAndTab(messageType.spellName())) ? "" : messageType.spellName();
+                    String messageString = (messageType.messageString() == null || ParseUtils.onlySpaceAndTab(messageType.messageString())) ? "" : messageType.messageString();
                     
                     MonsterSpell damageType = MonsterSpell.valueOf("RSF_" + spellName);
                     MonsterSpellText.MonsterSpellMessageType visType = 
@@ -362,18 +364,17 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
                     MonsterSpellText monMessage = new MonsterSpellText(visType, damageType, messageString);
                     spellMessages.add(monMessage);
                 } catch (IllegalArgumentException e) {
-                    errors.add("Monster at line: " + line + " has " +
+                    String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
                             "an illegal spell message: message-" + messageType.messageType() + ":"
-                            + messageType.spellName() + ":" + messageType.messageString());
-                    badSpellMessage = true;
+                            + messageType.spellName() + ":" + messageType.messageString();
+                    logger.fatal(msg, e);
+                    throw new DataFileParseException(msg);
                 }
             }
-            if (badSpellMessage) continue;
             // drop: and drop-base: both feed this single list. A drop: resolves to a specific
             // ObjectKind; a drop-base: (the loop further down) leaves the kind null, meaning "any
             // object of this tval" -- the two are told apart later by whether the kind is null.
             List<MonsterDrop> drops = new ArrayList<>();
-            boolean badDrop = false;
             for (MonsterParseRecord.MonsterDropParseRecord drop : record.drops()) {
                 String dropTvalStr = drop.type();
                 String dropName = drop.name();
@@ -381,41 +382,75 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
                 String minStr = drop.min();
                 String maxStr = drop.max();
                 if (!chance.isEmpty() && !minStr.isEmpty() && !maxStr.isEmpty()) {
-                    try {
-                        TValue tValue = TValue.fromName(dropTvalStr);
-                        if (tValue == null) {
-                            errors.add("Monster at line: " + line + " has " +
-                                    "an unknown TV type: " + dropTvalStr);
-                            badDrop = true;
-                            continue;
-                        }
-                        ObjectKind kind;
-                        if (dropName.isEmpty())
-                            kind = null;
-                        else
-                            kind = ObjectRegistry.lookupObjectKind(tValue, dropName);
-                        if (kind == null && !dropName.isEmpty()) {
-                            errors.add("Monster at line: " + line + " has " +
-                                    "an unknown drop base: " + dropName);
-                            badDrop = true;
-                            continue;
-                        }
-                        int percentage = Integer.parseInt(chance);
-                        int min = Integer.parseInt(minStr);
-                        int max = Integer.parseInt(maxStr);
-                        if (kind != null)
-                            drops.add(new MonsterDrop(tValue, kind, percentage, min, max));
-                        else
-                            drops.add(new MonsterDrop(tValue, percentage, min, max));
-                    } catch (NumberFormatException e) {
-                        errors.add("Monster at line: " + line + " has " +
-                                "a malformed integer in it's drop line: " + dropTvalStr);
-                        badDrop = true;
+                    TValue tValue = TValue.fromName(dropTvalStr);
+                    if (tValue == null) {
+                        String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                                "an illegal drop type value: " + dropTvalStr;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
                     }
+                    ObjectKind kind;
+                    if (dropName.isEmpty())
+                        kind = null;
+                    else
+                        kind = ObjectRegistry.lookupObjectKind(tValue, dropName);
+                    if (kind == null && !dropName.isEmpty()) {
+                        String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                                "an illegal drop base value: " + dropName;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
+                    }
+                    if (ParseUtils.minusFound(chance)) {
+                        String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                                "an illegal percentage value: " + chance;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
+                    }
+                    int percentage = ParseUtils.parseIntString("Monster", chance, line, filename, "percentage");
+                    if (ParseUtils.minusFound(minStr)) {
+                        String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                                "an illegal minimum value: " + minStr;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
+                    }
+                    int min = ParseUtils.parseIntString("Monster", minStr, line, filename, "minimum");
+                    if (ParseUtils.minusFound(maxStr)) {
+                        String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                                "an illegal maximum value: " + maxStr;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
+                    }
+                    int max = ParseUtils.parseIntString("Monster", maxStr, line, filename, "maximum");
+                    if (percentage < 0) {
+                        String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                                "a negative percentage value: " + chance;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
+                    }
+                    if (min < 0 || min > 99) {
+                        String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                                "an out of bounds minimum value: " + minStr;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
+                    }
+                    if (max < 0 || max > 99) {
+                        String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                                "an out of bounds maximum value: " + maxStr;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
+                    }
+                    if (kind != null)
+                        drops.add(new MonsterDrop(tValue, kind, percentage, min, max));
+                    else
+                        drops.add(new MonsterDrop(tValue, percentage, min, max));
+                } else {
+                    String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal drops value: " + drop.type() + ":" + drop.name() + ":" + drop.chance() 
+                            + ":" + drop.min() + ":" + drop.max();
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
                 }
             }
-            if (badDrop) continue;
-            boolean badFriend = false;
             List<MonsterFriends> friends = new ArrayList<>();
             for (MonsterParseRecord.MonsterFriendsParseRecord friend : record.friends()) {
                 String chanceStr = friend.chance();
@@ -426,155 +461,144 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
                 if (nameStr.equalsIgnoreCase("same"))
                     nameStr = name;
                 String roleStr = friend.role();
-                int chance = 0;
-                try {
-                    chance = Integer.parseInt(chanceStr);
-                } catch (NumberFormatException e) {
-                    String role = "";
-                    if (roleStr != null) {
-                        role = ":" + roleStr;
-                    }
-                    errors.add("Monster at line: " + line + " has " +
-                            "a malformed integer in it's friend line: " + chanceStr +
-                            ":" + numberStr + ":" + nameStr + role);
-                    badFriend = true;
+                if (ParseUtils.minusFound(chanceStr)) {
+                    String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal chance value: " + chanceStr;
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
                 }
+                int chance = ParseUtils.parseIntString("Monster", chanceStr, line, filename, "friends chance");
                 if (chance < 0) {
-                    errors.add("Monster at line: " + line + " has " +
-                            "a friends chance value out of bounds.");
-                    badFriend = true;
+                    String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal chance value: " + chanceStr;
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
                 }
                 Random numberDie = null;
                 if (!numberStr.isEmpty()) {
                     numberDie = Random.parseStr(numberStr);
                     if (numberDie == null) {
-                        errors.add("Monster at line: " + line + " has " +
-                                "a malformed die in its friends line: " + numberStr);
-                        badFriend = true;
+                        String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                                "an illegal friend die value: " + numberStr;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
                     }
                 }
                 MonsterGroupRole role = MonsterGroupRole.MON_GROUP_MEMBER;
-                boolean badRole = false;
                 if (!roleStr.isEmpty()) {
-                    if (roleStr.equalsIgnoreCase("servant"))
+                    if (roleStr.equals("servant"))
                         role = MonsterGroupRole.MON_GROUP_SERVANT;
-                    else if (roleStr.equalsIgnoreCase("bodyguard"))
+                    else if (roleStr.equals("bodyguard"))
                         role = MonsterGroupRole.MON_GROUP_BODYGUARD;
                     else {
-                        errors.add("Monster at line: " + line + " has " +
-                                "an unknown friends role: " + roleStr);
-                        badRole = true;
-                        badFriend = true;
+                        String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                                "an illegal friends role value: " + roleStr;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
                     }
                 }
-                if (!badRole) {
-                    if (numberDie == null) {
-                        badFriend = true;
-                    } else {
-                        int dice = numberDie.getDice();
-                        int sides = numberDie.getSides();
-                        friends.add(new MonsterFriends(nameStr, role, chance, dice, sides));
-                    }
+                if (numberDie != null) {
+                    int dice = numberDie.getDice();
+                    int sides = numberDie.getSides();
+                    friends.add(new MonsterFriends(nameStr, role, chance, dice, sides));
+                } else {
+                    String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal friends die value: " + numberStr;
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
                 }
             }
-            if (badFriend) continue;
-            boolean badFriendBase = false;
             List<MonsterFriendsBase> friendsBase = new ArrayList<>();
             for (MonsterParseRecord.MonsterFriendsParseRecord friend : record.friendsBase()) {
                 String chanceStr = friend.chance();
                 String numberStr = friend.number();
                 String baseKind = friend.name();
                 String roleStr = friend.role();
-                int chance = 0;
-                try {
-                    chance = Integer.parseInt(chanceStr);
-                } catch (NumberFormatException e) {
-                    String role = "";
-                    if (roleStr != null) {
-                        role = ":" + roleStr;
-                    }
-                    errors.add("Monster at line: " + line + " has " +
-                            "a malformed integer in it's friend base line: " + chanceStr +
-                            ":" + numberStr + ":" + baseKind + role);
-                    badFriendBase = true;
+                if (ParseUtils.minusFound(friend.chance())) {
+                    String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal chance value: " + friend.chance();
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
                 }
-                if (chance < 0 || chance > 100) {
-                    errors.add("Monster at line: " + line + " has " +
-                            "a friends base chance value out of bounds.");
-                    badFriendBase = true;
+                int chance = ParseUtils.parseIntString("Monster", friend.chance(), line, filename, "chance");
+                if (chance < 0) {
+                    String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal chance value: " + chanceStr;
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
                 }
                 MonsterBase monsterBase = MonsterRegistry.lookupMonsterBase(baseKind);
                 if (monsterBase == null) {
-                    errors.add("Monster at line: " + line + " has " +
-                            "a unknown friends base: " + baseKind);
-                    badFriendBase = true;
+                    String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal friends base value: " + baseKind;
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
                 }
-                boolean badDice = false;
                 Random numberDie = null;
                 if (!numberStr.isEmpty()) {
                     numberDie = Random.parseStr(numberStr);
                     if (numberDie == null) {
-                        errors.add("Monster at line: " + line + " has " +
-                                "a malformed die in its friends base line: " + numberStr);
-                        badFriendBase = true;
-                        badDice = true;
+                        String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                                "an illegal friends base die value: " + numberStr;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
                     }
                 }
                 MonsterGroupRole role = MonsterGroupRole.MON_GROUP_MEMBER;
-                boolean badRole = false;
-                if (!roleStr.isEmpty() && !badDice) {
-                    if (roleStr.equalsIgnoreCase("servant"))
+                if (!roleStr.isEmpty()) {
+                    if (roleStr.equals("servant"))
                         role = MonsterGroupRole.MON_GROUP_SERVANT;
-                    else if (roleStr.equalsIgnoreCase("bodyguard"))
+                    else if (roleStr.equals("bodyguard"))
                         role = MonsterGroupRole.MON_GROUP_BODYGUARD;
                     else {
-                        errors.add("Monster at line: " + line + " has " +
-                                "an unknown friends role: " + roleStr);
-                        badRole = true;
-                        badFriendBase = true;
+                        String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                                "an illegal friends role value: " + roleStr;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
                     }
                 }
-                if (!badRole && !badDice) {
-                    if (numberDie == null) {
-                        errors.add("Monster at line: " + line + " has " +
-                                        "a malformed die in its friends base line: " + numberStr);
-                        badFriendBase = true;
-                    } else {
-                        friendsBase.add(new MonsterFriendsBase(monsterBase, role, chance, numberDie.getDice(),
-                                numberDie.getSides()));
-                    }
+                if (numberDie == null) {
+                    String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal number die value: " + numberStr;
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
+                } else {
+                    friendsBase.add(new MonsterFriendsBase(monsterBase, role, chance, numberDie.getDice(),
+                            numberDie.getSides()));
                 }
             }
-            if (badFriendBase) continue;
             List<ObjectKind> mimics = new ArrayList<>();
-            boolean badMimic = false;
             for (MonsterParseRecord.MonsterMimicParseRecord mimic : record.mimics()) {
-                ObjectKind mimicKind = null;
+                ObjectKind mimicKind;
                 String tVal = mimic.tVal();
                 String sVal = mimic.sVal();
                 TValue tValue = TValue.fromName(tVal);
                 if (tValue == null) {
-                    errors.add("Monster at line: " + line + " has " +
-                            "an unknown mimic type value: " + tVal);
-                    badMimic = true;
+                    String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal mimic value: " + tVal;
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
                 } else {
                     mimicKind = ObjectRegistry.lookupObjectKind(tValue, sVal);
                     if (mimicKind == null) {
-                        errors.add("Monster at line: " + line + " has " +
-                                "an unknown mimic name: " + sVal);
-                        badMimic = true;
+                        String msg = "Monster starting at line: " + line + " of file: " + filename + " has " +
+                                "an illegal mimic value: " + sVal;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
                     }
                 }
-                if (!badMimic)
-                    mimics.add(mimicKind);
+                mimics.add(mimicKind);
             }
-            if (badMimic) continue;
             // Shape names are kept as bare strings and resolved (to a base or a race) in the second
             // pass, since a shape may name a race defined later in the file.
             List<MonsterShape> shapes = new ArrayList<>();
             for (String shapeBase : record.shape()) {
                 shapes.add(new MonsterShape(shapeBase));
             }
+            // ACCEPTED DEVIATION (2026-10-26, docs/Accepted_Deviations.md, "Monster"): C stores the
+            // cycle at race->ridx while the race is still being parsed, when ridx is 0 for every race
+            // (finish_parse_monster sets it later), so all nine color-cycle: lines land in slot 0 and
+            // no real monster gets one. Here each race keeps the cycle its own line names.
             ColourCycle visualsCycler = null;
             String cyclerGroup = record.colourCycleGroup();
             String colourCycleName = record.colourCycleName();
@@ -582,10 +606,6 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
                 Map<String, ColourCycle> group = MonsterRegistry.getVisualsCyclerTable().getByGroup(cyclerGroup);
                 if (group != null) {
                     visualsCycler = group.get(colourCycleName);
-                } else {
-                    errors.add("Monster at line: " + line + " has " +
-                            "an unknown colour cycle name: " + cyclerGroup + ":" + colourCycleName);
-                    visualsCycler = null;
                 }
             }
             

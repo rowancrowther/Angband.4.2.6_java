@@ -749,6 +749,35 @@ public class ParseUtils {
     }
     
     /**
+     * Whether the text holds nothing but spaces and tabs, the port of C's {@code contains_only_spaces}
+     * ({@code z-util.c}), which {@code strspn}s over {@code " \t"} and tests that the next character is
+     * the terminator. The empty text counts, as it does in C, and no other whitespace does: a newline,
+     * carriage return, vertical tab or form feed makes the answer {@code false}.
+     *
+     * <p>{@code MonsterAssembler.assemble} uses it to turn a {@code message-vis:}, {@code message-invis:}
+     * or {@code message-miss:} text of only spaces and tabs into {@code ""}, as C's
+     * {@code add_alternate_spell_message} does. A {@code null} argument throws a
+     * {@link NullPointerException}; C does not accept {@code NULL} here either, and the caller tests for
+     * it first.
+     *
+     * <p>Function onlySpaceAndTab coded before 261026, commented in full on 261026.
+     *
+     * @param string the text to test, not {@code null}
+     * @return {@code true} if every character is a space or a tab, or the text is empty
+     */
+    public static boolean onlySpaceAndTab(String string) {
+        if (string.isEmpty())
+            return true;
+        
+        for (char c : string.toCharArray()) {
+            if (c != ' ' && c != '\t')
+                return false;
+        }
+        
+        return true;
+    }
+    
+    /**
      * The bases the readers work in. {@code strtol} base 0 chooses between {@link #HEX},
      * {@link #OCTAL} and {@link #DECIMAL}; {@link #BINARY} is not a base C reads and is here for
      * {@link #nonDigitFound(String, Radix)} and the private {@code stripStart} only.

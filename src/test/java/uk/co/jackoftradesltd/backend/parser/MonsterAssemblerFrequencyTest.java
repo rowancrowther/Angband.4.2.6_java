@@ -22,6 +22,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.Channels;
 import uk.co.jackoftradesltd.channel.StartupOptions;
 import uk.co.jackoftradesltd.channel.messages.UIMessage;
@@ -259,9 +260,39 @@ class MonsterAssemblerFrequencyTest {
     }
 
     @Test
-    @DisplayName("a percentage outside 1 to 100 is a soft error")
-    void outOfRangeIsAnError() throws Exception {
-        assertFalse(load("innate-freq:0\nspells:BR_FIRE\n").errors().isEmpty());
-        assertFalse(load("spell-freq:101\nspells:BLINK\n").errors().isEmpty());
+    @DisplayName("a percentage outside 1 to 100 ends the load, as PARSE_ERROR_INVALID_SPELL_FREQ does")
+    void outOfRangeIsAnError() {
+        DataFileParseException innate = assertThrows(DataFileParseException.class,
+                () -> load("innate-freq:0\nspells:BR_FIRE\n"));
+        assertTrue(innate.getMessage().contains("illegal out of range innate frequency value: 0"),
+                innate::getMessage);
+        DataFileParseException spell = assertThrows(DataFileParseException.class,
+                () -> load("spell-freq:101\nspells:BLINK\n"));
+        assertTrue(spell.getMessage().contains("illegal out of range spell frequency value: 101"),
+                spell::getMessage);
+    }
+
+    @Test
+    @DisplayName("the edges 1 and 100 are the last values C accepts, giving 100 and 1")
+    void theEdgesOfTheRangeAreAccepted() throws Exception {
+        ParseResult<MonsterRace> r = load("innate-freq:1\nspell-freq:100\nspells:BR_FIRE | BLINK\n");
+        assertEquals(100, intField(r.items().get(0), "freqInnate"));
+        assertEquals(1, intField(r.items().get(0), "freqSpell"));
+    }
+
+    @Test
+    @DisplayName("a negative percentage is outside 1 to 100 and ends the load")
+    void aNegativePercentageIsAnError() {
+        assertThrows(DataFileParseException.class, () -> load("innate-freq:-5\nspells:BR_FIRE\n"));
+    }
+
+    @Test
+    @DisplayName("spells:MAX is accepted, as C's lookup_flag finds the MAX row, and counts as a plain spell")
+    void theMaxRowCountsAsAPlainSpell() throws Exception {
+        // RSF_MAX has no type, so it is neither innate nor a breath: parse_monster_spells defaults
+        // freq_spell to 4 and leaves freq_innate at 0.
+        ParseResult<MonsterRace> r = load("spells:MAX\n");
+        assertEquals(0, intField(r.items().get(0), "freqInnate"));
+        assertEquals(4, intField(r.items().get(0), "freqSpell"));
     }
 }

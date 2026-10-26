@@ -272,13 +272,14 @@ monster
             List<MonsterMimicParseRecord> mimics = new ArrayList();
             List<MonsterFriendsParseRecord> friendsList = new ArrayList<>();
             List<MonsterFriendsParseRecord> friendsBaseList = new ArrayList<>();
+            String spellPowerOrDepthInit = "";
             int line = 0;
         }
         @after {
             $monsterRecord = new MonsterParseRecord(nameInit, pluralInit, baseInit,
                 glyphInit, colourInit, speedInit, hitPointsInit, lightInit, hearingInit,
                 smellInit, shapeInit, colourCycleGroupInit, colourCycleNameInit,
-                armourClassInit, sleepinessInit, depthInit, rarityInit, experienceInit,
+                armourClassInit, sleepinessInit, depthInit, spellPowerOrDepthInit, rarityInit, experienceInit,
                 blowsList, flagsList, flagsOffList, innateFreqInit, spellFreqInit,
                 spellPowerInit, spellsList, messagesInit,
                 descSB.toString(), dropsList, mimics, friendsList,
@@ -300,7 +301,8 @@ monster
         |   armourClass { armourClassInit = $armourClass.armourClassVal; }
         |   sleepiness { sleepinessInit = $sleepiness.sleepinessVal; }
         |   depthLevel { depthInit = $depthLevel.depthVal; 
-                         spellPowerInit = $depthLevel.depthVal; }
+                         spellPowerInit = $depthLevel.depthVal;
+                         spellPowerOrDepthInit = "depth"; }
         |   rarity { rarityInit = $rarity.rarityVal; }
         |   experience { experienceInit = $experience.experienceVal; }
         |   blow { blowsList.add(new MonsterParseRecord.MonsterBlowParseRecord($blow.blowType,
@@ -309,7 +311,8 @@ monster
         |   flagsOff { flagsOffList.addAll($flagsOff.flagsList); }
         |   innateFreq { innateFreqInit = $innateFreq.innateFreqVal; }
         |   spellFreq { spellFreqInit = $spellFreq.spellFreqVal; }
-        |   spellPower { spellPowerInit = $spellPower.spellPowerVal; }
+        |   spellPower { spellPowerInit = $spellPower.spellPowerVal; 
+                         spellPowerOrDepthInit = "spell"; }
         |   spells { spellsList.addAll($spells.spellList); }
         |   messageVis { messagesInit.addFirst(new MessageTypeParseRecord("vis", $messageVis.spell, $messageVis.line)); }
         |   messageInvis { messagesInit.addFirst(new MessageTypeParseRecord("invis", $messageInvis.spell, $messageInvis.line)); }

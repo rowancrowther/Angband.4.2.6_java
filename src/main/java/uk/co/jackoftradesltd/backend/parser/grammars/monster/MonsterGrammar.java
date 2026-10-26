@@ -2452,6 +2452,7 @@ public class MonsterGrammar extends Parser {
 		            List<MonsterMimicParseRecord> mimics = new ArrayList();
 		            List<MonsterFriendsParseRecord> friendsList = new ArrayList<>();
 		            List<MonsterFriendsParseRecord> friendsBaseList = new ArrayList<>();
+		            String spellPowerOrDepthInit = "";
 		            int line = 0;
 		        
 		int _la;
@@ -2566,7 +2567,8 @@ public class MonsterGrammar extends Parser {
 					setState(322);
 					((MonsterContext)_localctx).depthLevel = depthLevel();
 					 depthInit = ((MonsterContext)_localctx).depthLevel.depthVal; 
-					                         spellPowerInit = ((MonsterContext)_localctx).depthLevel.depthVal; 
+					                         spellPowerInit = ((MonsterContext)_localctx).depthLevel.depthVal;
+					                         spellPowerOrDepthInit = "depth"; 
 					}
 					break;
 				case RARITY:
@@ -2624,6 +2626,7 @@ public class MonsterGrammar extends Parser {
 					setState(346);
 					((MonsterContext)_localctx).spellPower = spellPower();
 					 spellPowerInit = ((MonsterContext)_localctx).spellPower.spellPowerVal; 
+					                         spellPowerOrDepthInit = "spell"; 
 					}
 					break;
 				case SPELLS:
@@ -2714,7 +2717,7 @@ public class MonsterGrammar extends Parser {
 			            ((MonsterContext)_localctx).monsterRecord =  new MonsterParseRecord(nameInit, pluralInit, baseInit,
 			                glyphInit, colourInit, speedInit, hitPointsInit, lightInit, hearingInit,
 			                smellInit, shapeInit, colourCycleGroupInit, colourCycleNameInit,
-			                armourClassInit, sleepinessInit, depthInit, rarityInit, experienceInit,
+			                armourClassInit, sleepinessInit, depthInit, spellPowerOrDepthInit, rarityInit, experienceInit,
 			                blowsList, flagsList, flagsOffList, innateFreqInit, spellFreqInit,
 			                spellPowerInit, spellsList, messagesInit,
 			                descSB.toString(), dropsList, mimics, friendsList,

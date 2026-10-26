@@ -21,12 +21,15 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.Channels;
 import uk.co.jackoftradesltd.channel.StartupOptions;
+import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.messages.UIMessage;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.channel.uichannel.UIEntrySpec;
+import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.frontend.entries.UIEntry;
 import uk.co.jackoftradesltd.frontend.ui.globals.UIDataLoader;
 import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
@@ -64,16 +67,17 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p>The suite is three layers:
  * <ol>
- *   <li><b>The happy path</b> — the real {@code monster.txt} loads all 624 races with no soft errors
+ *   <li><b>The happy path</b> — the real {@code monster.txt} loads all 624 races with no errors
  *       (itself proof that every base/blow/drop/mimic cross-reference resolved), plus field-level
  *       checks on two early races: {@code scrawny cat} (a plain full-blow monster) and
  *       {@code filthy street urchin} (two {@code flags:} lines, three {@code friends:} lines, and
  *       method-only blows — {@code blow:BEG} and {@code blow:TOUCH:EAT_GOLD}).</li>
- *   <li><b>Many errors in one run</b> — a single file mixing four differently-broken records with two
- *       good ones, pinning the assembler's "collect every failure, drop the bad record, carry on"
- *       contract, and proving a good record's drop and mimic still resolve alongside the failures.</li>
- *   <li><b>A selection of individual error sites</b> — one minimal file per reachable soft-error site,
- *       each otherwise valid so the injected fault is the only error reported.</li>
+ *   <li><b>A bad record ends the load</b> — every failure in the assembler throws a
+ *       {@code DataFileParseException} naming the record's line, as C ends the load on the parser error,
+ *       so one bad record loses the good ones around it.</li>
+ *   <li><b>A selection of individual error sites</b> — one minimal file per reachable failure site,
+ *       each otherwise valid so the injected fault is the only one, and the sentinel rows C does and
+ *       does not accept.</li>
  * </ol>
  *
  * <p>Three more sections pin the reader's own contract against {@code mon-init.c} (file order with
@@ -87,11 +91,10 @@ import static org.junit.jupiter.api.Assertions.*;
  * record past the assembler's per-monster glyph check, and the colour past its colour check, so those
  * two mandatory legs never masquerade as the fault under test.
  *
- * <p><b>Not tested:</b> the twelve {@code NumberFormatException} guards on the scalar stat fields are
- * each fronted by a {@code MON_INTEGER} lexer token, so a non-numeric value is a hard grammar error
- * that never reaches {@code parseInt}. The one way to reach such a guard through a data file is an
- * integer too large for {@code int}, which {@link #anOverflowingIntegerIsReportedAsAMalformedInteger()}
- * exercises against {@code speed:}; the other eleven are the same shape and are taken as covered.
+ * <p><b>Not tested:</b> a non-numeric value in a scalar stat field is fronted by a {@code MON_INTEGER}
+ * lexer token, so it is a hard grammar error that never reaches {@code ParseUtils.parseIntString}. An
+ * integer too large for {@code int} does reach it and is clamped, which
+ * {@link #anOverflowingIntegerIsClampedHereWhereCWraps()} exercises against {@code speed:}.
  *
  * <p>{@link MonsterRace} exposes only {@code getName()} and {@code hasMonsterRaceFlag(...)}, so other
  * field-level assertions read its private fields reflectively through {@link #field}.
@@ -182,6 +185,23 @@ class MonsterReaderTest {
         Path file = tempDir.resolve(fileName);
         Files.writeString(file, content);
         return new MonsterReader().parseWithResults(file.toString());
+    }
+
+    /**
+     * Loads {@code content} and returns the {@link DataFileParseException} it must throw: every failure in
+     * {@code MonsterAssembler} ends the load, as C ends it on the parser error.
+     */
+    private DataFileParseException refused(String fileName, String content) {
+        return assertThrows(DataFileParseException.class, () -> load(fileName, content));
+    }
+
+    /**
+     * Loads the one record {@code body} (header count 1) and checks the load ends with a message holding
+     * {@code fragment}.
+     */
+    private void assertRefusedWith(String fileName, String body, String fragment) {
+        DataFileParseException e = refused(fileName, withHeader(1, body));
+        assertTrue(e.getMessage().contains(fragment), e::getMessage);
     }
 
     private static boolean hasError(ParseResult<MonsterRace> r, String fragment) {
@@ -583,41 +603,32 @@ class MonsterReaderTest {
     }
 
     // =====================================================================
-    // (2) MANY ERRORS IN ONE RUN
+    // (2) A BAD RECORD ENDS THE LOAD
     // =====================================================================
 
     @Test
-    void multipleBadRecordsInOneRunAreEachReportedAndDroppedWhileGoodOnesSurvive() throws Exception {
-        // Six records: two clean, four each broken a different way. The run must report exactly the
-        // four faults, drop exactly the four bad records, and keep both good ones -- proof the
-        // assembler collects failures and carries on rather than failing the whole file.
+    void aBadRecordAfterGoodOnesEndsTheWholeLoadAndNamesItsLine() {
+        // Every failure throws, as C ends the load on the parser error. The good records before the bad
+        // one are lost with it, and the message names the bad record's name: line (line 8 here).
         String body = rec("Good One", "drop:scroll:Phase Door:100:1:1", "mimic:gold:copper")
                 + "name:BadBase\nbase:notabase\ncolor:w\nglyph:t\n"
-                + rec("BadFlagRec", "flags:NOTAFLAG")
-                + rec("BadEffectRec", "blow:CLAW:BADEFFECT:1d1")
-                + rec("BadDropRec", "drop:notatv:Thing:100:1:1")
                 + rec("Good Two");
 
-        ParseResult<MonsterRace> r = load("many-errors.txt", withHeader(6, body));
+        DataFileParseException e = refused("many-errors.txt", withHeader(3, body));
 
-        // Only the two good records survive.
-        assertEquals(2, r.items().size(), r.errors()::toString);
-        assertNotNull(byName(r, "Good One"));
-        assertNotNull(byName(r, "Good Two"));
-        assertNull(byName(r, "BadBase"));
-        assertNull(byName(r, "BadFlagRec"));
+        assertTrue(e.getMessage().contains("Monster starting at line: 8 of file: "), e::getMessage);
+        assertTrue(e.getMessage().contains("many-errors.txt"), e::getMessage);
+        assertTrue(e.getMessage().contains("has an illegal base value: notabase"), e::getMessage);
+    }
 
-        // Exactly one error per broken record, and each names its fault.
-        assertEquals(4, r.errors().size(), r.errors()::toString);
-        assertTrue(hasError(r, "invalid monster-base: notabase"), r.errors()::toString);
-        assertTrue(hasError(r, "unknown flag name: NOTAFLAG"), r.errors()::toString);
-        assertTrue(hasError(r, "unknown blow effect: BADEFFECT"), r.errors()::toString);
-        assertTrue(hasError(r, "unknown TV type: notatv"), r.errors()::toString);
+    @Test
+    void theFirstBadRecordIsTheOneReportedWhenSeveralAreBad() {
+        String body = rec("BadFlagRec", "flags:NOTAFLAG") + rec("BadEffectRec", "blow:CLAW:BADEFFECT:1d1");
 
-        // The surviving good record's drop and mimic resolved against the real object kinds.
-        MonsterRace good = byName(r, "Good One");
-        assertEquals(1, ((List<?>) field(good, "drops")).size());       // drop:scroll:Phase Door
-        assertEquals(1, ((List<?>) field(good, "mimicKinds")).size());  // mimic:gold:copper
+        DataFileParseException e = refused("two-bad.txt", withHeader(2, body));
+
+        assertTrue(e.getMessage().contains("illegal flag on value: NOTAFLAG"), e::getMessage);
+        assertFalse(e.getMessage().contains("BADEFFECT"), e::getMessage);
     }
 
     // =====================================================================
@@ -625,76 +636,110 @@ class MonsterReaderTest {
     // =====================================================================
 
     @Test
-    void anUnknownBaseIsReportedAndTheRecordDropped() throws Exception {
-        ParseResult<MonsterRace> r = load("bad-base.txt", withHeader(1,
+    void anUnknownBaseEndsTheLoad() {
+        DataFileParseException e = refused("bad-base.txt", withHeader(1,
                 "name:Nope\nbase:notabase\ncolor:w\nglyph:t\n"));
-        assertTrue(r.items().isEmpty());
-        assertTrue(hasError(r, "invalid monster-base: notabase"), r.errors()::toString);
+        assertTrue(e.getMessage().contains("Monster starting at line: 2 of file: "), e::getMessage);
+        assertTrue(e.getMessage().contains("has an illegal base value: notabase"), e::getMessage);
     }
 
     @Test
-    void anUnknownFlagIsReportedAndTheRecordDropped() throws Exception {
-        ParseResult<MonsterRace> r = load("bad-flag.txt", withHeader(1, rec("Nope", "flags:BADFLAGON")));
-        assertTrue(r.items().isEmpty());
-        assertTrue(hasError(r, "unknown flag name: BADFLAGON"), r.errors()::toString);
+    void aBaseNameIsMatchedExactlyAsInCsStreq() {
+        // lookup_monster_base uses streq, so "Townsfolk" is not "townsfolk".
+        DataFileParseException e = refused("base-case.txt", withHeader(1,
+                "name:Nope\nbase:Townsfolk\ncolor:w\nglyph:t\n"));
+        assertTrue(e.getMessage().contains("illegal base value: Townsfolk"), e::getMessage);
     }
 
     @Test
-    void anUnknownFlagsOffFlagIsReportedAndTheRecordDropped() throws Exception {
-        ParseResult<MonsterRace> r = load("bad-flagoff.txt", withHeader(1, rec("Nope", "flags-off:BADFLAGOFF")));
-        assertTrue(r.items().isEmpty());
-        assertTrue(hasError(r, "unknown flag name: BADFLAGOFF"), r.errors()::toString);
+    void anUnknownFlagEndsTheLoad() {
+        assertRefusedWith("bad-flag.txt", rec("Nope", "flags:BADFLAGON"), "illegal flag on value: BADFLAGON");
     }
 
     @Test
-    void anUnknownSpellIsReportedAndTheRecordDropped() throws Exception {
-        ParseResult<MonsterRace> r = load("bad-spell.txt", withHeader(1, rec("Nope", "spells:NOTASPELL")));
-        assertTrue(r.items().isEmpty());
-        assertTrue(hasError(r, "unknown spell: NOTASPELL"), r.errors()::toString);
+    void anUnknownFlagsOffFlagEndsTheLoad() {
+        assertRefusedWith("bad-flagoff.txt", rec("Nope", "flags-off:BADFLAGOFF"),
+                "illegal flag off value: BADFLAGOFF");
     }
 
     @Test
-    void anUnknownBlowMethodIsReportedAndTheRecordDropped() throws Exception {
+    void aRaceFlagNamedNoneIsRefusedAsInCsFlagLookupStartsAfterIt() {
+        // lookup_flag starts at FLAG_START (1), past the NONE row, so grab_flag and remove_flag both fail.
+        assertRefusedWith("flag-none.txt", rec("Nope", "flags:NONE"), "sentinel monster race flag value: NONE");
+        assertRefusedWith("flagoff-none.txt", rec("Nope", "flags-off:NONE"),
+                "sentinel monster race flag value: NONE");
+    }
+
+    @Test
+    void aRaceFlagNamedMaxIsRefusedAsInCsTableHasNoMaxRow() {
+        // list-mon-race-flags.h has no RF(MAX) row, so the name matches nothing in C either.
+        assertRefusedWith("flag-max.txt", rec("Nope", "flags:MAX"), "illegal flag on value: MAX");
+    }
+
+    @Test
+    void anUnknownSpellEndsTheLoad() {
+        assertRefusedWith("bad-spell.txt", rec("Nope", "spells:NOTASPELL"), "illegal spell value: NOTASPELL");
+    }
+
+    @Test
+    void aSpellNamedNoneIsRefusedAsInCsFlagLookupStartsAfterIt() {
+        assertRefusedWith("spell-none.txt", rec("Nope", "spells:NONE"), "sentinel monster spell value: NONE");
+    }
+
+    @Test
+    void aSpellNamedMaxIsAcceptedAsInCsFlagTableHasAMaxRow() throws Exception {
+        // list-mon-spells.h ends with RSF(MAX), so lookup_flag finds it and grab_flag sets that bit.
+        ParseResult<MonsterRace> r = load("spell-max.txt", withHeader(1, rec("Solo", "spells:MAX")));
+        Flag<MonsterSpell> spells = field(byName(r, "Solo"), "spells");
+        assertTrue(spells.has(MonsterSpell.RSF_MAX));
+    }
+
+    @Test
+    void anUnknownBlowMethodEndsTheLoad() {
         // A full blow with a valid effect and dice, so the method is the only thing wrong.
-        ParseResult<MonsterRace> r = load("bad-method.txt", withHeader(1, rec("Nope", "blow:BADMETHOD:HURT:1d1")));
-        assertTrue(r.items().isEmpty());
-        assertTrue(hasError(r, "unknown blow method: BADMETHOD"), r.errors()::toString);
+        assertRefusedWith("bad-method.txt", rec("Nope", "blow:BADMETHOD:HURT:1d1"),
+                "illegal blow method value: BADMETHOD");
     }
 
     @Test
-    void anUnknownBlowEffectIsReportedAndTheRecordDropped() throws Exception {
-        ParseResult<MonsterRace> r = load("bad-effect.txt", withHeader(1, rec("Nope", "blow:CLAW:BADEFFECT:1d1")));
-        assertTrue(r.items().isEmpty());
-        assertTrue(hasError(r, "unknown blow effect: BADEFFECT"), r.errors()::toString);
+    void aBlowMethodIsMatchedExactlyAsInCsStreq() {
+        assertRefusedWith("method-case.txt", rec("Nope", "blow:claw:HURT:1d1"), "illegal blow method value: claw");
     }
 
     @Test
-    void anUnknownDropTvalIsReportedAndTheRecordDropped() throws Exception {
-        ParseResult<MonsterRace> r = load("bad-drop-tval.txt", withHeader(1, rec("Nope", "drop:notatv:Thing:100:1:1")));
-        assertTrue(r.items().isEmpty());
-        assertTrue(hasError(r, "unknown TV type: notatv"), r.errors()::toString);
+    void anUnknownBlowEffectEndsTheLoad() {
+        assertRefusedWith("bad-effect.txt", rec("Nope", "blow:CLAW:BADEFFECT:1d1"),
+                "illegal blow effect value: BADEFFECT");
     }
 
     @Test
-    void anUnknownDropObjectNameIsReportedAndTheRecordDropped() throws Exception {
+    void anUnknownDropTvalEndsTheLoad() {
+        assertRefusedWith("bad-drop-tval.txt", rec("Nope", "drop:notatv:Thing:100:1:1"),
+                "illegal drop type value: notatv");
+    }
+
+    @Test
+    void anUnknownDropBaseTvalEndsTheLoad() {
+        assertRefusedWith("bad-dropbase-tval.txt", rec("Nope", "drop-base:notatv:100:1:1"),
+                "illegal drop type value: notatv");
+    }
+
+    @Test
+    void anUnknownDropObjectNameEndsTheLoad() {
         // A valid tval (scroll) with an sval that resolves to no kind -- so the base-name leg is reached.
-        ParseResult<MonsterRace> r = load("bad-drop-sval.txt", withHeader(1, rec("Nope", "drop:scroll:NotARealScroll:100:1:1")));
-        assertTrue(r.items().isEmpty());
-        assertTrue(hasError(r, "unknown drop base: NotARealScroll"), r.errors()::toString);
+        assertRefusedWith("bad-drop-sval.txt", rec("Nope", "drop:scroll:NotARealScroll:100:1:1"),
+                "illegal drop base value: NotARealScroll");
     }
 
     @Test
-    void anUnknownMimicTvalIsReportedAndTheRecordDropped() throws Exception {
-        ParseResult<MonsterRace> r = load("bad-mimic-tval.txt", withHeader(1, rec("Nope", "mimic:notatv:Thing")));
-        assertTrue(r.items().isEmpty());
-        assertTrue(hasError(r, "unknown mimic type value: notatv"), r.errors()::toString);
+    void anUnknownMimicTvalEndsTheLoad() {
+        assertRefusedWith("bad-mimic-tval.txt", rec("Nope", "mimic:notatv:Thing"), "illegal mimic value: notatv");
     }
 
     @Test
-    void anUnknownMimicObjectNameIsReportedAndTheRecordDropped() throws Exception {
-        ParseResult<MonsterRace> r = load("bad-mimic-sval.txt", withHeader(1, rec("Nope", "mimic:potion:NotARealPotion")));
-        assertTrue(r.items().isEmpty());
-        assertTrue(hasError(r, "unknown mimic name: NotARealPotion"), r.errors()::toString);
+    void anUnknownMimicObjectNameEndsTheLoad() {
+        assertRefusedWith("bad-mimic-sval.txt", rec("Nope", "mimic:potion:NotARealPotion"),
+                "illegal mimic value: NotARealPotion");
     }
 
     @Test
@@ -713,29 +758,27 @@ class MonsterReaderTest {
     }
 
     @Test
-    void anUnknownFriendRoleIsReported() throws Exception {
-        // NOTE: a bad friend role sets only the local badRole, which skips the friend but does NOT set
-        // badFriend -- so the record is NOT dropped, unlike every other error site here. Asserting the
-        // error alone; the surviving-record asymmetry is flagged separately for MonsterAssembler.
-        ParseResult<MonsterRace> r = load("bad-friend-role.txt", withHeader(1, rec("Nope", "friends:50:1d1:Some Monster:badrole")));
-        assertTrue(hasError(r, "unknown friends role: badrole"), r.errors()::toString);
+    void anUnknownFriendRoleEndsTheLoad() {
+        assertRefusedWith("bad-friend-role.txt", rec("Nope", "friends:50:1d1:Some Monster:badrole"),
+                "illegal friends role value: badrole");
     }
 
     @Test
-    void anOverflowingIntegerIsReportedAsAMalformedInteger() throws Exception {
-        // speed: lexes as MON_INTEGER (all digits) but overflows int, so it is the one data-file route
-        // to the otherwise-unreachable NumberFormatException guards on the scalar stat fields.
-        ParseResult<MonsterRace> r = load("overflow-speed.txt", withHeader(1, rec("Nope", "speed:99999999999")));
-        assertTrue(r.items().isEmpty());
-        assertTrue(hasError(r, "malformed integer for speed"), r.errors()::toString);
+    void anOverflowingIntegerIsClampedHereWhereCWraps() throws Exception {
+        // speed: lexes as MON_INTEGER (all digits) but is above INT_MAX. C's strtol saturates at LONG_MAX
+        // and the int field wraps; Java clamps to Integer.MAX_VALUE (docs/Accepted_Deviations.md, "An
+        // integer too big for its C type is clamped, where C wraps it").
+        ParseResult<MonsterRace> r = load("overflow-speed.txt", withHeader(1, rec("Solo", "speed:99999999999")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        assertEquals(Integer.MAX_VALUE, (int) field(byName(r, "Solo"), "speed"));
     }
 
     @Test
-    void aGlyphThatIsNotExactlyOneCharacterIsReportedAndTheRecordDropped() throws Exception {
-        ParseResult<MonsterRace> r = load("bad-glyph.txt", withHeader(1,
+    void aGlyphThatIsNotExactlyOneCharacterEndsTheLoad() {
+        // parse_monster_glyph reads one character, and parser_parse refuses a longer field.
+        DataFileParseException e = refused("bad-glyph.txt", withHeader(1,
                 "name:Nope\nbase:townsfolk\ncolor:w\nglyph:xy\n"));
-        assertTrue(r.items().isEmpty());
-        assertTrue(hasError(r, "illegal glyph character: xy"), r.errors()::toString);
+        assertTrue(e.getMessage().contains("illegal glyph value: xy"), e::getMessage);
     }
 
     @Test
@@ -1027,11 +1070,11 @@ class MonsterReaderTest {
     }
 
     @Test
-    void aLeadingZeroSpeedIsReadAsDecimalHereWhereCReadsOctal() throws Exception {
+    void aLeadingZeroSpeedIsReadAsOctalAsInC() throws Exception {
         // strtol(tok, &z, 0): 010 is 8 in C.
         ParseResult<MonsterRace> r = load("speed-octal.txt", withHeader(1, rec("Solo", "speed:010")));
         assertFalse(r.hasErrors(), r.errors()::toString);
-        assertEquals(10, (int) field(byName(r, "Solo"), "speed"));
+        assertEquals(8, (int) field(byName(r, "Solo"), "speed"));
     }
 
     @Test
@@ -1042,20 +1085,15 @@ class MonsterReaderTest {
     }
 
     @Test
-    void aNegativeSpellPowerIsAcceptedHereWhereCRejectsAUint() throws Exception {
+    void aNegativeSpellPowerIsRefusedAsInCsUint() {
         // spell-power is "uint" in C and parser_parse refuses a leading minus.
-        ParseResult<MonsterRace> r = load("power-negative.txt", withHeader(1, rec("Solo", "spell-power:-1")));
-        assertFalse(r.hasErrors(), r.errors()::toString);
-        assertEquals(-1, (int) field(byName(r, "Solo"), "spellPower"));
+        assertRefusedWith("power-negative.txt", rec("Solo", "spell-power:-1"), "illegal spell power value: -1");
     }
 
     @Test
-    void aNegativeDropChanceIsAcceptedHereWhereCRejectsAUint() throws Exception {
-        ParseResult<MonsterRace> r = load("drop-negative.txt", withHeader(1,
-                rec("Solo", "drop:scroll:Phase Door:-5:1:1")));
-        assertFalse(r.hasErrors(), r.errors()::toString);
-        List<?> drops = field(byName(r, "Solo"), "drops");
-        assertEquals(Integer.valueOf(-5), declaredField(drops.get(0), "percentChance"));
+    void aNegativeDropChanceIsRefusedAsInCsUint() {
+        assertRefusedWith("drop-negative.txt", rec("Solo", "drop:scroll:Phase Door:-5:1:1"),
+                "illegal percentage value: -5");
     }
 
     // =====================================================================
@@ -1122,20 +1160,51 @@ class MonsterReaderTest {
     }
 
     @Test
-    void aMonsterWithNoColourLineIsSkippedHereWhereCLeavesTheAttrAtZero() throws IOException {
+    void aMonsterWithNoColourLineGetsDarkAsCLeavesTheAttrAtZero() throws Exception {
         ParseResult<MonsterRace> r = load("no-colour.txt", withHeader(1, "name:Grey\nbase:townsfolk\nglyph:t\n"));
-        assertTrue(r.items().isEmpty());
-        assertTrue(hasError(r, "unknown colour type"), r.errors()::toString);
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        AngbandDisplayCharacter adc = field(byName(r, "Grey"), "adc");
+        assertEquals(ColourEnum.COLOUR_DARK, adc.getAttributeColour());
+        assertEquals('t', adc.getNarrowCharacter());
     }
 
     @Test
-    void aMessageForAnUnknownSpellIsRejectedAsInC() throws Exception {
-        // C: grab_name fails -> PARSE_ERROR_INVALID_SPELL_NAME. Here the record is skipped with an error.
-        ParseResult<MonsterRace> r = load("msg-unknown-spell.txt", withHeader(1,
-                rec("Solo", "spells:SHRIEK", "message-vis:NOTASPELL:Hello")));
-        assertTrue(r.hasErrors());
-        assertTrue(hasError(r, "illegal spell message"), r.errors()::toString);
-        assertTrue(r.items().isEmpty());
+    void aMessageForAnUnknownSpellEndsTheLoadAsInC() {
+        // C: grab_name fails -> PARSE_ERROR_INVALID_SPELL_NAME.
+        assertRefusedWith("msg-unknown-spell.txt", rec("Solo", "spells:SHRIEK", "message-vis:NOTASPELL:Hello"),
+                "illegal spell message: message-vis:NOTASPELL:Hello");
+    }
+
+    @Test
+    void aMessageForTheNoneAndMaxRowsIsAcceptedAsInCsGrabName() throws Exception {
+        // grab_name scans N_ELEMENTS(r_info_spell_flags) - 1 rows, which is every row from NONE to MAX.
+        ParseResult<MonsterRace> r = load("msg-sentinels.txt", withHeader(1, rec("Solo",
+                "message-vis:NONE:Nothing.", "message-miss:MAX:Everything.")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        List<MonsterSpellText> messages = field(byName(r, "Solo"), "spellMessages");
+        assertEquals(2, messages.size());
+        assertEquals(MonsterSpell.RSF_MAX, messages.get(0).getDamageType());
+        assertEquals(MonsterSpell.RSF_NONE, messages.get(1).getDamageType());
+    }
+
+    @Test
+    void aMessageOfOnlySpacesAndTabsIsStoredEmptyAsInC() throws Exception {
+        // add_alternate_spell_message: a NULL message or one that contains_only_spaces becomes "".
+        ParseResult<MonsterRace> r = load("msg-blank.txt", withHeader(1, rec("Solo",
+                "message-vis:SHRIEK: \t ")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        List<MonsterSpellText> messages = field(byName(r, "Solo"), "spellMessages");
+        assertEquals(1, messages.size());
+        assertEquals("", messages.get(0).getSpellMessage());
+    }
+
+    @Test
+    void aMessageWithTextAfterLeadingSpacesIsKeptWhole() throws Exception {
+        ParseResult<MonsterRace> r = load("msg-spaced.txt", withHeader(1, rec("Solo",
+                "message-vis:SHRIEK: a shriek ")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        List<MonsterSpellText> messages = field(byName(r, "Solo"), "spellMessages");
+        assertEquals(" a shriek ", messages.get(0).getSpellMessage());
     }
 
     @Test
@@ -1150,12 +1219,12 @@ class MonsterReaderTest {
     }
 
     @Test
-    void anUnknownColourCycleGroupIsASoftErrorButTheRaceIsKeptWhereCIsSilent() throws Exception {
+    void anUnknownColourCycleGroupIsSilentAsInC() throws Exception {
         // visuals_cycler_set_cycle_for_race returns quietly when the cycle is not found.
         ParseResult<MonsterRace> r = load("cycle-group.txt", withHeader(1,
                 rec("Solo", "color-cycle:nogroup:nocycle")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
         assertEquals(1, r.items().size());
-        assertTrue(hasError(r, "unknown colour cycle name"), r.errors()::toString);
         assertNull(field(byName(r, "Solo"), "cycler"));
     }
 
@@ -1168,12 +1237,30 @@ class MonsterReaderTest {
     }
 
     @Test
-    void aDropWithMinOrMaxAbove99IsAcceptedHereWhereCReportsAnInvalidItemNumber() throws Exception {
-        ParseResult<MonsterRace> r = load("drop-big.txt", withHeader(1,
-                rec("Solo", "drop:scroll:Phase Door:100:100:100")));
+    void aDropWithMinOrMaxAbove99IsRefusedAsInCInvalidItemNumber() {
+        assertRefusedWith("drop-big-min.txt", rec("Solo", "drop:scroll:Phase Door:100:100:5"),
+                "out of bounds minimum value: 100");
+        assertRefusedWith("drop-big-max.txt", rec("Solo", "drop:scroll:Phase Door:100:5:100"),
+                "out of bounds maximum value: 100");
+    }
+
+    @Test
+    void aDropWithMinAndMaxFrom0To99IsAcceptedAtBothEdges() throws Exception {
+        ParseResult<MonsterRace> r = load("drop-edges.txt", withHeader(1, rec("Solo",
+                "drop:scroll:Phase Door:0:0:99")));
         assertFalse(r.hasErrors(), r.errors()::toString);
         List<?> drops = field(byName(r, "Solo"), "drops");
-        assertEquals(Integer.valueOf(100), declaredField(drops.get(0), "min"));
+        assertEquals(Integer.valueOf(0), declaredField(drops.get(0), "min"));
+        assertEquals(Integer.valueOf(99), declaredField(drops.get(0), "max"));
+        assertEquals(Integer.valueOf(0), declaredField(drops.get(0), "percentChance"));
+    }
+
+    @Test
+    void aDropWithANegativeMinOrMaxIsRefusedAsInCsUint() {
+        assertRefusedWith("drop-neg-min.txt", rec("Solo", "drop:scroll:Phase Door:100:-1:5"),
+                "illegal minimum value: -1");
+        assertRefusedWith("drop-neg-max.txt", rec("Solo", "drop:scroll:Phase Door:100:5:-1"),
+                "illegal maximum value: -1");
     }
 
     @Test
@@ -1272,74 +1359,75 @@ class MonsterReaderTest {
     }
 
     @Test
-    void aFriendsBaseChanceAbove100IsASoftErrorHereWhereCKeepsIt() throws IOException {
+    void aFriendsBaseChanceAbove100IsKeptAsInC() throws Exception {
         // parse_monster_friends_base stores parser_getuint(chance) with no upper bound.
         ParseResult<MonsterRace> r = load("fb-chance.txt", withHeader(1, rec("Solo", "friends-base:150:1d2:spider")));
-        assertTrue(r.items().isEmpty());
-        assertTrue(hasError(r, "friends base chance value out of bounds"), r.errors()::toString);
-    }
-
-    @Test
-    void aFriendRoleInCapitalsIsAcceptedHereWhereCComparesCaseSensitively() throws Exception {
-        // streq(role_name, "servant") in C, so "Servant" is PARSE_ERROR_INVALID_MONSTER_ROLE.
-        ParseResult<MonsterRace> r = load("role-case.txt", withHeader(1, rec("Solo",
-                "friends:100:1d2:Somebody:Servant", "friends-base:100:1d2:spider:Bodyguard")));
         assertFalse(r.hasErrors(), r.errors()::toString);
-        MonsterRace solo = byName(r, "Solo");
-        List<?> friends = field(solo, "friends");
-        List<?> friendsBase = field(solo, "friendsBase");
-        assertEquals(MonsterGroupRole.MON_GROUP_SERVANT, declaredField(friends.get(0), "role"));
-        assertEquals(MonsterGroupRole.MON_GROUP_BODYGUARD, declaredField(friendsBase.get(0), "role"));
+        List<?> friendsBase = field(byName(r, "Solo"), "friendsBase");
+        assertEquals(Integer.valueOf(150), declaredField(friendsBase.get(0), "percentChance"));
     }
 
     @Test
-    void aFriendCountThatOverflowsIntIsASoftErrorAsInC() throws Exception {
+    void aFriendRoleInCapitalsIsRefusedAsInCsCaseSensitiveStreq() {
+        // streq(role_name, "servant") in C, so "Servant" is PARSE_ERROR_INVALID_MONSTER_ROLE.
+        assertRefusedWith("role-case.txt", rec("Solo", "friends:100:1d2:Somebody:Servant"),
+                "illegal friends role value: Servant");
+        assertRefusedWith("role-case-base.txt", rec("Solo", "friends-base:100:1d2:spider:Bodyguard"),
+                "illegal friends role value: Bodyguard");
+    }
+
+    @Test
+    void aNegativeFriendChanceIsRefusedAsInCsUint() {
+        assertRefusedWith("friend-neg.txt", rec("Solo", "friends:-5:1d2:Somebody"), "illegal chance value: -5");
+        assertRefusedWith("friend-base-neg.txt", rec("Solo", "friends-base:-5:1d2:spider"),
+                "illegal chance value: -5");
+    }
+
+    @Test
+    void aFriendsBaseNamingNoBaseEndsTheLoad() {
+        assertRefusedWith("friend-base-unknown.txt", rec("Solo", "friends-base:100:1d2:notabase"),
+                "illegal friends base value: notabase");
+    }
+
+    @Test
+    void aFriendCountThatOverflowsIntEndsTheLoadAsInC() {
         // C: parse_random rejects a number above INT_MAX, so the friends line is a parser error.
-        // Random.parseStr now returns null for it, and the assembler skips the record with an error.
-        ParseResult<MonsterRace> r = load("die-overflow.txt", withHeader(1,
-                rec("Solo", "friends:100:99999999999d2:Somebody")));
-        assertTrue(hasError(r, "malformed die in its friends line: 99999999999d2"), r.errors()::toString);
-        assertNull(byName(r, "Solo"));
+        assertRefusedWith("die-overflow.txt", rec("Solo", "friends:100:99999999999d2:Somebody"),
+                "illegal friend die value: 99999999999d2");
     }
 
     @Test
-    void aFriendBaseCountThatOverflowsIntIsASoftErrorAsInC() throws Exception {
-        ParseResult<MonsterRace> r = load("die-base-overflow.txt", withHeader(1,
-                rec("Solo", "friends-base:100:99999999999d2:spider")));
-        assertTrue(hasError(r, "malformed die in its friends base line: 99999999999d2"), r.errors()::toString);
-        assertNull(byName(r, "Solo"));
+    void aFriendBaseCountThatOverflowsIntEndsTheLoadAsInC() {
+        assertRefusedWith("die-base-overflow.txt", rec("Solo", "friends-base:100:99999999999d2:spider"),
+                "illegal friends base die value: 99999999999d2");
     }
 
     @Test
-    void everyBadFriendsBaseLineIsReportedNotJustTheFirst() throws Exception {
-        // C reports each friends-base line on its own, so a bad line must not hide the next one.
-        ParseResult<MonsterRace> r = load("friends-base-two-bad.txt", withHeader(1,
+    void twoBadFriendsBaseLinesStillEndTheLoadButTheLaterLineIsReportedFirst() {
+        // C stops at the first bad line in file order (the die, at parse time). The grammar keeps
+        // friends-base: entries in C's head-pushed (reverse file) order and the assembler walks that list,
+        // so the later line's fault is the one named. Either way the load ends.
+        DataFileParseException e = refused("friends-base-two-bad.txt", withHeader(1,
                 rec("Solo",
                         "friends-base:100:99999999999d2:spider",
-                        "friends-base:100:1d2:spider:wizard",
                         "friends-base:100:1d2:spider:wizard")));
-        assertEquals(1, r.errors().stream().filter(s -> s.contains("malformed die in its friends base line")).count(),
-                r.errors()::toString);
-        assertEquals(2, r.errors().stream().filter(s -> s.contains("unknown friends role: wizard")).count(),
-                r.errors()::toString);
+        assertTrue(e.getMessage().contains("illegal friends role value: wizard"), e::getMessage);
     }
 
     @Test
-    void aBadDieOnAFriendsBaseLineHidesThatLinesRoleErrorAsInC() throws Exception {
+    void aBadDieOnAFriendsBaseLineHidesThatLinesRoleErrorAsInC() {
         // C: parser_parse rejects the rand field before parse_monster_friends_base runs, so the
         // role is never looked at on a line whose die is bad.
-        ParseResult<MonsterRace> r = load("friends-base-two-faults.txt", withHeader(1,
+        DataFileParseException e = refused("friends-base-two-faults.txt", withHeader(1,
                 rec("Solo", "friends-base:100:99999999999d2:spider:wizard")));
-        assertTrue(hasError(r, "malformed die in its friends base line"), r.errors()::toString);
-        assertFalse(hasError(r, "unknown friends role"), r.errors()::toString);
+        assertTrue(e.getMessage().contains("illegal friends base die value"), e::getMessage);
+        assertFalse(e.getMessage().contains("friends role"), e::getMessage);
     }
 
     @Test
-    void aBlowDamageThatOverflowsIntIsASoftErrorAsInC() throws Exception {
-        ParseResult<MonsterRace> r = load("blow-overflow.txt", withHeader(1,
-                rec("Solo", "blow:CLAW:HURT:99999999999d2")));
-        assertTrue(hasError(r, "malformed damage dice expression: 99999999999d2"), r.errors()::toString);
-        assertNull(byName(r, "Solo"));
+    void aBlowDamageThatOverflowsIntEndsTheLoadAsInC() {
+        assertRefusedWith("blow-overflow.txt", rec("Solo", "blow:CLAW:HURT:99999999999d2"),
+                "illegal blow damage value: 99999999999d2");
     }
 
     @Test
@@ -1360,5 +1448,93 @@ class MonsterReaderTest {
         assertFalse(r.hasErrors(), r.errors()::toString);
         AngbandDisplayCharacter adc = field(byName(r, "Solo"), "adc");
         assertEquals('x', adc.getNarrowCharacter());
+    }
+
+    // =====================================================================
+    // (7) SPELL POWER: parse_monster_depth AND parse_monster_spell_power
+    // =====================================================================
+
+    @Test
+    void aNegativeDepthLoadsWithTheSameNegativeSpellPowerAsInC() throws Exception {
+        // parse_monster_depth reads level as a signed int and copies it to spell_power with no sign check.
+        ParseResult<MonsterRace> r = load("depth-negative.txt", withHeader(1, rec("Solo", "depth:-5")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        assertEquals(-5, (int) field(byName(r, "Solo"), "level"));
+        assertEquals(-5, (int) field(byName(r, "Solo"), "spellPower"));
+    }
+
+    @Test
+    void aNegativeDepthFollowedBySpellPowerKeepsTheSpellPower() throws Exception {
+        ParseResult<MonsterRace> r = load("depth-neg-power.txt", withHeader(1,
+                rec("Solo", "depth:-5", "spell-power:3")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        assertEquals(-5, (int) field(byName(r, "Solo"), "level"));
+        assertEquals(3, (int) field(byName(r, "Solo"), "spellPower"));
+    }
+
+    @Test
+    void aSpellPowerOfMinusZeroIsRefusedAsInCsLeadingMinusTest() {
+        // parser_parse tests *tok == '-', not the value, so -0 is refused too.
+        assertRefusedWith("power-minus-zero.txt", rec("Solo", "spell-power:-0"), "illegal spell power value: -0");
+    }
+
+    @Test
+    void aNegativeSpellPowerAfterDepthIsRefusedAsInC() {
+        assertRefusedWith("depth-then-neg-power.txt", rec("Solo", "depth:20", "spell-power:-1"),
+                "illegal spell power value: -1");
+    }
+
+    @Test
+    void aNegativeSpellPowerOverwrittenByALaterDepthLoadsHereWhereCRefusesIt() throws Exception {
+        // ACCEPTED DEVIATION (docs/Accepted_Deviations.md, "Monster"): C refuses "spell-power:-1" as it
+        // reads the line. The parse record keeps only the last of the two lines, so the depth wins.
+        ParseResult<MonsterRace> r = load("neg-power-then-depth.txt", withHeader(1,
+                rec("Solo", "spell-power:-1", "depth:20")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        assertEquals(20, (int) field(byName(r, "Solo"), "spellPower"));
+    }
+
+    // =====================================================================
+    // (8) SENTINEL ROWS, ABSENT BASE, BLANK AND NEGATIVE FIELDS
+    // =====================================================================
+
+    @Test
+    void aSpellNamedNoneAmongOthersOnASpellsLineIsStillRefused() throws Exception {
+        // spells: goes through grab_flag, which refuses NONE wherever it falls in the list; message-*:
+        // goes through grab_name, which accepts it (pinned above).
+        assertRefusedWith("spells-none-again.txt", rec("Solo", "spells:SHRIEK | NONE"),
+                "sentinel monster spell value: NONE");
+    }
+
+    @Test
+    void aRecordWithNoBaseLineLoadsWithANullBaseAsInC() throws Exception {
+        // parse_monster_base never runs, so r->base stays NULL and the flags and glyph come from the record.
+        ParseResult<MonsterRace> r = load("no-base.txt", withHeader(1, "name:Solo\nglyph:t\ncolor:w\n"));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        MonsterRace solo = byName(r, "Solo");
+        assertNull(field(solo, "base"));
+        AngbandDisplayCharacter adc = field(solo, "adc");
+        assertEquals('t', adc.getNarrowCharacter());
+        assertEquals(ColourEnum.COLOUR_WHITE, adc.getAttributeColour());
+    }
+
+    @Test
+    void aDropBaseWithNoKindKeepsItsTvalAndFigures() throws Exception {
+        ParseResult<MonsterRace> r = load("dropbase-fields.txt", withHeader(1, rec("Solo",
+                "drop-base:mushroom:25:2:7")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        List<?> drops = field(byName(r, "Solo"), "drops");
+        assertEquals(1, drops.size());
+        assertNull(declaredField(drops.get(0), "kind"));
+        assertEquals(Integer.valueOf(25), declaredField(drops.get(0), "percentChance"));
+        assertEquals(Integer.valueOf(2), declaredField(drops.get(0), "min"));
+        assertEquals(Integer.valueOf(7), declaredField(drops.get(0), "max"));
+    }
+
+    @Test
+    void aMonsterWithNoDescLineHasNullTextAsInC() throws Exception {
+        ParseResult<MonsterRace> r = load("no-desc.txt", withHeader(1, rec("Solo")));
+        assertFalse(r.hasErrors(), r.errors()::toString);
+        assertNull(field(byName(r, "Solo"), "text"));
     }
 }

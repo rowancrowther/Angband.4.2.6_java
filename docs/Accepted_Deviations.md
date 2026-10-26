@@ -437,6 +437,98 @@ recorded here as the summary states them; fill in the detail when you next touch
 - **Accepted:** 2026-10-25, during the `FlavourKindAssembler` port pass. Pinned by
   `FlavourKindAssemblerNumericSvalTest.aTailOfSpacesOrTabsMakesTheSymbolANameNotANumber`.
 
+## Monster
+
+### A `friends:` name of `same` is resolved by name, so it finds the first race of that name, where C points at the race itself
+
+- **Java:** `MonsterAssembler.assemble` (the `friends:` loop), with `MonsterRace.resolveFriends` and
+  `MonsterFriends.setRace` doing the second pass. **C:** `finish_parse_monster` (`mon-init.c`).
+- **Differs:** C tests each friend name with `my_stricmp(f->name, "same")` and, on a match, sets `f->race` to the race
+  being converted. Any other name goes through `lookup_monster`. Java swaps `same` (any case) for the owning race's name
+  in the assembler, and the second pass then looks that name up like any other, which returns the first race whose name
+  matches. Where two races share a name, the later one's `same` friend resolves to the earlier race.
+- **Why:** `MonsterFriends` carries only a name until every race exists, so a self-reference has nothing else to hold,
+  and substituting the name keeps the second pass a single lookup.
+- **Reach:** none from shipped data. `monster.txt` has no two races with the same name; `giant white ant` and
+  `old forest tree` are the only races with a `same` friend, and each is the only race of its name.
+- **Revisit:** if a modded `monster.txt` ever repeats a race name, or the friend is made to keep a reference to its
+  owner.
+- **Accepted:** 2026-10-26, during the `MonsterAssembler` port pass.
+
+### A `flags-off:` or `glyph:` line before `base:` is not overridden by the base, where C overrides it
+
+- **Java:** `MonsterAssembler.assemble` (the flag seeding and the glyph choice). **C:** `parse_monster_base`,
+  `parse_monster_glyph` and `parse_monster_flags_off` (`mon-init.c`).
+- **Differs:** C reads the file a line at a time. `parse_monster_base` copies the base's glyph into `d_char` and unions
+  the base's flags into the race when it reads `base:`, so a `glyph:` line before `base:` is overwritten by the base's
+  glyph, and a `flags-off:` line before `base:` removes nothing and has the base add the flag back. (A `flags:` line
+  before `base:` ends the same either way, because both only add.) Java assembles from the finished record, which keeps
+  no line order, so the base is applied first: an explicit `glyph:` always wins, and `flags-off:` always removes.
+- **Differs, second part:** the same lost order shows between `flags:` and `flags-off:` lines. `parse_monster_flags`
+  and `parse_monster_flags_off` act on the race one line at a time, so `flags-off:X` followed later by `flags:X` leaves X
+  on, and `flags:X` followed by `flags-off:X` leaves it off. The grammar collects the two directives into two lists, and
+  `MonsterAssembler.assemble` applies every `flags:` entry and then every `flags-off:` entry, so X always ends off.
+- **Why:** the parse record holds each directive once, in no order. Java's reading is the one the file's author meant,
+  and keeping line order would mean carrying every directive's position through the grammar for no gain on real data.
+- **Reach:** none from shipped data. `base:` follows `name:` (or `plural:`) in all 624 records, ahead of every `glyph:`,
+  `flags:` and `flags-off:` line. Only 9 records have a `flags-off:` line, none has more than one, none has one before a
+  `flags:` line, and none names a flag in both (checked 2026-10-26). Modded files only.
+- **Revisit:** if a modded `monster.txt` ever puts `base:` after a `glyph:` or `flags-off:` line, writes `flags-off:`
+  before a `flags:` line that names the same flag, or the record is made to keep line order (one ordered list of flag
+  actions in `MonsterParseRecord` and `MonsterGrammar.g4`). The `spell-power:` before `depth:` case is not part of this:
+  `MonsterGrammar.g4` reproduces C's order for it.
+- **Accepted:** 2026-10-26, during the `MonsterAssembler` port pass; the `flags:`/`flags-off:` order part folded in the
+  same day. Marked in the `MonsterAssembler` comments at the flag seeding and the glyph choice. Pinned by
+  `MonsterReaderTest.aFlagsOffLineBeforeBaseRemovesTheBaseFlagHereWhereCAddsItBack` and
+  `MonsterReaderTest.aGlyphLineBeforeBaseKeepsItsGlyphHereWhereCOverwritesItWithTheBases`. The new part has no test yet.
+
+### A second `base:` line replaces the first, where C keeps the flags of both
+
+- **Java:** `MonsterAssembler.assemble` (the flag seeding) and the `monster` rule in `MonsterGrammar.g4`, which keeps one
+  `base:` string per record. **C:** `parse_monster_base` (`mon-init.c`).
+- **Differs:** C runs `parse_monster_base` for every `base:` line, so a record with two of them unions both bases' flags
+  into the race and takes the glyph of the last one. Java keeps only the last `base:` string, so only that base's flags
+  and glyph are applied and the first base's flags are lost.
+- **Why:** the parse record holds each directive once. A race with two bases is not something the data format means.
+- **Reach:** none from shipped data. All 624 records in `monster.txt` have at most one `base:` line (checked 2026-10-26).
+- **Revisit:** if a modded `monster.txt` ever gives one race two `base:` lines, or the record is made to keep line order.
+- **Accepted:** 2026-10-26, during the `MonsterAssembler` port pass.
+
+### A `color-cycle:` line gives its race the cycle, where C stores every cycle in slot 0
+
+- **Java:** `MonsterAssembler.assemble` (the `color-cycle:` block), passing the cycle to the `MonsterRace` constructor.
+  **C:** `parse_monster_color_cycle` (`mon-init.c`) and `visuals_cycler_set_cycle_for_race` (`ui-visuals.c`).
+- **Differs:** C calls `visuals_cycler_set_cycle_for_race` while the race is still being parsed, and that function stores
+  the cycle at `race->ridx`. `ridx` is 0 for every race until `finish_parse_monster` sets it, so all nine `color-cycle:`
+  lines in `monster.txt` write slot 0 and the last one wins. `visuals_cycler_get_attr_for_race` (called from
+  `ui-display.c`) then finds nothing for any real race, so no monster flickers through its cycle. Java gives each race
+  the cycle its own line names.
+- **Why:** the cycle table is keyed by race index, which does not exist at assembly time, and C's result is a bug in the
+  lookup order, not a behaviour the data means. Each race carrying its own cycle is what the data files intend.
+- **Reach:** the nine races in `monster.txt` with a `color-cycle:` line (`fancy:crystal`, `storm`, `ice`, `swamp`,
+  `hell`, `bile`, `thunder`, `law`, `balance`) cycle colours in Java and stay fixed in C.
+- **Revisit:** if upstream fixes the ordering, or the visuals port is made to key cycles by race index as C does.
+- **Accepted:** 2026-10-26, during the `MonsterAssembler` port pass. Marked in the `MonsterAssembler` comment above the
+  cycle lookup. Pinned by `MonsterReaderTest` (the `fancy:crystal` case, which expects a non-null cycler).
+
+### A `spell-power:` line with a minus is accepted when a later `depth:` line overwrites it, where C refuses it
+
+- **Java:** `MonsterAssembler.assemble` (the spell power block) and the `monster` rule in `MonsterGrammar.g4`, which keeps
+  the text of the last `depth:` or `spell-power:` line in `spellPower` and tags which one it was in
+  `spellPowerOrDepth`. **C:** `parse_monster_depth` and `parse_monster_spell_power` (`mon-init.c`), and the `uint` branch
+  of `parser_parse` (`parser.c`).
+- **Differs:** C refuses a `uint` token that starts with `-` (`-0` included) as the line is read, whatever follows, so
+  `spell-power:-1` ends the load even if a `depth:` line comes later. Java tests the sign only on the winning line, so
+  `spell-power:-1` then `depth:20` loads with spell power 20. A negative `depth:` on its own loads in both (C stores the
+  signed level and copies it to `spell_power`), and a negative winning `spell-power:` is refused in both.
+- **Why:** the parse record holds one spell-power text per race, so a line that was overwritten is gone before the
+  assembler runs. Refusing it would mean the grammar tracking every `spell-power:` line.
+- **Reach:** none from shipped data, which has no negative `depth:` and no negative `spell-power:`. Modded files only.
+- **Revisit:** if a modded `monster.txt` ever writes a negative `spell-power:` before a `depth:` line, or the record is
+  made to keep line order.
+- **Accepted:** 2026-10-26, during the `MonsterAssembler` port pass. Marked in the `MonsterAssembler` comment above the
+  spell power block. Not pinned by a test yet.
+
 ## Pending your decision
 
 - The five `objDescNameFormat` divergences (Part G; `docs/ItemObject_round2/part_G.md`). All unreachable from shipped

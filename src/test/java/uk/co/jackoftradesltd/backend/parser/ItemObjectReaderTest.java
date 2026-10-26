@@ -21,10 +21,13 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import uk.co.jackoftradesltd.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
+import uk.co.jackoftradesltd.backend.parser.itemobject.ItemObjectAssembler;
+import uk.co.jackoftradesltd.backend.parser.itemobject.ItemObjectParseRecord;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
 import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.*;
@@ -151,81 +154,90 @@ class ItemObjectReaderTest {
         assertEquals(375, result.items().size());
     }
 
-    // ---- Soft errors: dropped record (skip-and-continue) -----------------
+    // ---- Fatal errors: the first bad record ends the load -----------------
+
+    /**
+     * Loads {@code content} and asserts that the load ends in a {@link DataFileParseException}
+     * whose message contains every one of {@code fragments}. C stops the load on any
+     * {@code PARSE_ERROR_*} result, and so does the assembler: nothing is skipped.
+     *
+     * @param fileName  the name of the temporary file the content is written to
+     * @param content   the whole text of the data file
+     * @param fragments the text the exception message must name
+     * @return the exception, for any further check
+     */
+    private DataFileParseException assertLoadIsFatal(String fileName, String content, String... fragments) {
+        DataFileParseException thrown = assertThrows(DataFileParseException.class,
+                () -> load(fileName, content));
+        for (String fragment : fragments) {
+            assertTrue(thrown.getMessage().contains(fragment),
+                    () -> "message should name '" + fragment + "' but was: " + thrown.getMessage());
+        }
+        return thrown;
+    }
 
     /**
      * {@code parse_object_type} returns {@code PARSE_ERROR_UNRECOGNISED_TVAL} for a tval
      * {@code tval_find_idx} does not know, and C stops the load on a parse error. Here the assembler
-     * throws {@link InvalidTokenFoundDuringParse} naming the tval, the line and the file.
+     * throws {@link DataFileParseException} naming the tval, the line and the file.
      */
     @Test
     void unknownTypeStopsTheLoadAsCDoes() {
-        InvalidTokenFoundDuringParse thrown = assertThrows(InvalidTokenFoundDuringParse.class,
-                () -> load("bad-type.txt", withHeader(1,
-                        obj("weird", "type:no such tval\ngraphics:|:w\n"))));
-
-        assertTrue(thrown.getMessage().contains("no such tval"), thrown.getMessage());
-        assertTrue(thrown.getMessage().contains("bad-type.txt"), thrown.getMessage());
+        assertLoadIsFatal("bad-type.txt",
+                withHeader(1, obj("weird", "type:no such tval\ngraphics:|:w\n")),
+                "no such tval", "bad-type.txt", "line: 2");
     }
 
     @Test
-    void unknownFlagIsReportedAndSkipped() throws IOException {
-        ParseResult<ObjectKind> result = load("bad-flag.txt", withHeader(1,
-                obj("weird", HEAD + "flags:NOTAFLAG\n")));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown flag")),
-                result.errors()::toString);
+    void unknownFlagStopsTheLoad() {
+        assertLoadIsFatal("bad-flag.txt",
+                withHeader(1, obj("weird", HEAD + "flags:NOTAFLAG\n")),
+                "unknown flag: NOTAFLAG", "bad-flag.txt", "line: 2");
     }
 
     @Test
-    void unknownModifierIsReportedAndSkipped() throws IOException {
-        ParseResult<ObjectKind> result = load("bad-mod.txt", withHeader(1,
-                obj("weird", HEAD + "values:NOTAMOD[1]\n")));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown value key")),
-                result.errors()::toString);
+    void unknownModifierStopsTheLoad() {
+        assertLoadIsFatal("bad-mod.txt",
+                withHeader(1, obj("weird", HEAD + "values:NOTAMOD[1]\n")),
+                "object modifier", "NOTAMOD", "bad-mod.txt");
     }
 
     @Test
-    void unknownResistanceElementIsReportedAndSkipped() throws IOException {
-        ParseResult<ObjectKind> result = load("bad-res.txt", withHeader(1,
-                obj("weird", HEAD + "values:RES_NOTREAL[1]\n")));
+    void unknownResistanceElementStopsTheLoad() {
+        assertLoadIsFatal("bad-res.txt",
+                withHeader(1, obj("weird", HEAD + "values:RES_NOTREAL[1]\n")),
+                "resistance element", "RES_NOTREAL", "bad-res.txt");
+    }
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown value name")),
-                result.errors()::toString);
+    /**
+     * The message names the brand code that failed, not the whole list of brands on the record.
+     */
+    @Test
+    void unknownBrandStopsTheLoadAndTheMessageNamesThatBrand() {
+        DataFileParseException thrown = assertLoadIsFatal("bad-brand.txt",
+                withHeader(1, obj("weird", HEAD + "brand:FIRE_3\nbrand:NOTABRAND\n")),
+                "brand value: NOTABRAND");
+
+        assertFalse(thrown.getMessage().contains("["), "no list brackets: " + thrown.getMessage());
+    }
+
+    /**
+     * The message names the slay code that failed, not the whole list of slays on the record.
+     */
+    @Test
+    void unknownSlayStopsTheLoadAndTheMessageNamesThatSlay() {
+        DataFileParseException thrown = assertLoadIsFatal("bad-slay.txt",
+                withHeader(1, obj("weird", HEAD + "slay:EVIL_2\nslay:NOTASLAY\n")),
+                "slay value: NOTASLAY");
+
+        assertFalse(thrown.getMessage().contains("["), "no list brackets: " + thrown.getMessage());
     }
 
     @Test
-    void unknownBrandIsReportedAndSkipped() throws IOException {
-        ParseResult<ObjectKind> result = load("bad-brand.txt", withHeader(1,
-                obj("weird", HEAD + "brand:NOTABRAND\n")));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown brand")),
-                result.errors()::toString);
-    }
-
-    @Test
-    void unknownSlayIsReportedAndSkipped() throws IOException {
-        ParseResult<ObjectKind> result = load("bad-slay.txt", withHeader(1,
-                obj("weird", HEAD + "slay:NOTASLAY\n")));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown slay")),
-                result.errors()::toString);
-    }
-
-    @Test
-    void unknownCurseIsReportedAndSkipped() throws IOException {
-        ParseResult<ObjectKind> result = load("bad-curse.txt", withHeader(1,
-                obj("weird", HEAD + "curse:no such curse:10\n")));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown curse")),
-                result.errors()::toString);
+    void unknownCurseStopsTheLoad() {
+        assertLoadIsFatal("bad-curse.txt",
+                withHeader(1, obj("weird", HEAD + "curse:no such curse:10\n")),
+                "no such curse", "bad-curse.txt");
     }
 
     /**
@@ -364,19 +376,21 @@ class ItemObjectReaderTest {
         assertEquals(43, timed, "object.txt carries 43 time: lines");
     }
 
+    /**
+     * The first bad record ends the load, as a {@code PARSE_ERROR_*} does in C: the record after it
+     * is never read, so its own error is never reported, and the valid record before it is not
+     * returned either.
+     */
     @Test
-    void twoDifferentSoftErrorsAreBothReportedAndTheValidKindStillLoads() throws IOException {
+    void theFirstBadRecordEndsTheLoadAndALaterOneIsNeverReached() {
         String body = obj("good", HEAD)
                 + obj("badflag", HEAD + "flags:NOTAFLAG\n")
                 + obj("badmod", HEAD + "values:NOTAMOD[1]\n");
-        ParseResult<ObjectKind> result = load("two-errors.txt", withHeader(3, body));
 
-        assertEquals(1, result.items().size());
-        assertEquals("good", result.items().get(0).getName());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown flag")),
-                result.errors()::toString);
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown value key")),
-                result.errors()::toString);
+        DataFileParseException thrown = assertLoadIsFatal("two-errors.txt", withHeader(3, body),
+                "unknown flag: NOTAFLAG", "line: 5");
+
+        assertFalse(thrown.getMessage().contains("NOTAMOD"), thrown.getMessage());
     }
 
     // ---- record-count + hard (fail-closed) errors ------------------------
@@ -480,44 +494,44 @@ class ItemObjectReaderTest {
 
     /**
      * C requires the {@code IGNORE_} (or {@code HATES_}) prefix: a bare element name is not a flag
-     * and is {@code PARSE_ERROR_INVALID_FLAG}. The kind is dropped with an "unknown flag" error.
+     * and is {@code PARSE_ERROR_INVALID_FLAG}. The load ends with an "unknown flag" error.
      */
     @Test
-    void bareElementNameIsNotAFlag() throws IOException {
-        ParseResult<ObjectKind> result = load("bare.txt", withHeader(1,
-                obj("bare", HEAD + "flags:FIRE\n")));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown flag")),
-                result.errors()::toString);
+    void bareElementNameIsNotAFlag() {
+        assertLoadIsFatal("bare.txt", withHeader(1, obj("bare", HEAD + "flags:FIRE\n")),
+                "unknown flag: FIRE");
     }
 
     /**
-     * A token shorter than {@code IGNORE_} is an unknown flag, reported softly like any other. It
-     * must not escape as a runtime exception that aborts the whole load.
+     * A token shorter than {@code IGNORE_} is an unknown flag like any other. It must not escape
+     * as a runtime exception other than the load's own.
      */
     @Test
-    void shortUnknownTokenIsASoftError() throws IOException {
-        ParseResult<ObjectKind> result = load("short.txt", withHeader(1,
-                obj("short", HEAD + "flags:FOO\n")));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown flag")),
-                result.errors()::toString);
+    void shortUnknownTokenIsAnUnknownFlag() {
+        assertLoadIsFatal("short.txt", withHeader(1, obj("short", HEAD + "flags:FOO\n")),
+                "unknown flag: FOO");
     }
 
     /**
      * A seven-or-more-character token that merely ends in an element name is not an ignore flag.
-     * C compares the whole prefix, so {@code NOTIGNORE_FIRE} fails.
+     * C compares the whole prefix, so a token such as {@code XXXXXXXFIRE} fails.
      */
     @Test
-    void tokenWithWrongPrefixButAnElementSuffixIsNotAnIgnoreFlag() throws IOException {
-        ParseResult<ObjectKind> result = load("prefix.txt", withHeader(1,
-                obj("prefix", HEAD + "flags:XXXXXXXFIRE\n")));
+    void tokenWithWrongPrefixButAnElementSuffixIsNotAnIgnoreFlag() {
+        assertLoadIsFatal("prefix.txt", withHeader(1, obj("prefix", HEAD + "flags:XXXXXXXFIRE\n")),
+                "unknown flag: XXXXXXXFIRE");
+    }
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown flag")),
-                result.errors()::toString);
+    /**
+     * An {@code IGNORE_} or {@code HATES_} prefix followed by something that is not an element is an
+     * unknown flag; {@code grab_element_flag} finds no element and returns false.
+     */
+    @Test
+    void anElementPrefixWithNoElementAfterItIsAnUnknownFlag() {
+        assertLoadIsFatal("ign-none.txt", withHeader(1, obj("none", HEAD + "flags:IGNORE_NOTANELEMENT\n")),
+                "unknown flag: IGNORE_NOTANELEMENT");
+        assertLoadIsFatal("hates-none.txt", withHeader(1, obj("none", HEAD + "flags:HATES_NOTANELEMENT\n")),
+                "unknown flag: HATES_NOTANELEMENT");
     }
 
     /**
@@ -1130,18 +1144,56 @@ class ItemObjectReaderTest {
     }
 
     /**
-     * {@code grab_element_flag} also accepts {@code HATES_} followed by an element name and sets
-     * {@code EL_INFO_HATES}. The assembler knows only {@code IGNORE_}, so a {@code HATES_FIRE} token
-     * is an unknown flag here and drops the kind. No record in the shipped file uses it.
+     * {@code grab_element_flag} accepts {@code HATES_} followed by an element name and sets
+     * {@code EL_INFO_HATES} on that element's {@code info[i].flags}, and on no other bit or element.
+     * No record in the shipped file uses it.
      */
     @Test
-    void aHatesFlagIsAnUnknownFlagHereWhereCSetsTheHatesBit() throws IOException {
+    void aHatesTokenSetsTheHatesBitOnThatElementOnly() throws IOException {
         ParseResult<ObjectKind> result = load("hates.txt", withHeader(1,
                 obj("hates", HEAD + "flags:HATES_FIRE\n")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown flag: HATES_FIRE")),
-                result.errors()::toString);
+        assertFalse(result.hasErrors(), result.errors()::toString);
+        ObjectKind kind = result.items().get(0);
+        assertTrue(kind.getElInfo(ElementEnum.ELEM_FIRE).has(ElementInfoEnum.EL_INFO_HATES));
+        assertFalse(kind.getElInfo(ElementEnum.ELEM_FIRE).has(ElementInfoEnum.EL_INFO_IGNORE));
+        assertFalse(kind.getElInfo(ElementEnum.ELEM_ACID).has(ElementInfoEnum.EL_INFO_HATES));
+    }
+
+    /**
+     * {@code IGNORE_} and {@code HATES_} are different bits of the same per-element field: one
+     * element can carry both, and each token reaches only its own bit. The two prefixes are
+     * different lengths, so this also guards the element name being cut at the right place for
+     * each.
+     */
+    @Test
+    void ignoreAndHatesTokensReachTheirOwnBitsOfTheSameElementInfo() throws IOException {
+        ParseResult<ObjectKind> result = load("ign-hates.txt", withHeader(1,
+                obj("both", HEAD + "flags:IGNORE_FIRE | HATES_FIRE | IGNORE_ACID | HATES_COLD\n")));
+
+        assertFalse(result.hasErrors(), result.errors()::toString);
+        ObjectKind kind = result.items().get(0);
+        assertTrue(kind.getElInfo(ElementEnum.ELEM_FIRE).has(ElementInfoEnum.EL_INFO_IGNORE));
+        assertTrue(kind.getElInfo(ElementEnum.ELEM_FIRE).has(ElementInfoEnum.EL_INFO_HATES));
+        assertTrue(kind.getElInfo(ElementEnum.ELEM_ACID).has(ElementInfoEnum.EL_INFO_IGNORE));
+        assertFalse(kind.getElInfo(ElementEnum.ELEM_ACID).has(ElementInfoEnum.EL_INFO_HATES));
+        assertTrue(kind.getElInfo(ElementEnum.ELEM_COLD).has(ElementInfoEnum.EL_INFO_HATES));
+        assertFalse(kind.getElInfo(ElementEnum.ELEM_COLD).has(ElementInfoEnum.EL_INFO_IGNORE));
+    }
+
+    /**
+     * An element flag and a {@code RES_} level on the same element share one {@code ElementInfo}:
+     * C sets {@code res_level} and the flag bit on the same {@code el_info[i]}.
+     */
+    @Test
+    void anElementFlagAndAResistanceLevelShareTheElementInfo() throws IOException {
+        ParseResult<ObjectKind> result = load("hates-res.txt", withHeader(1,
+                obj("shared", HEAD + "flags:HATES_FIRE\nvalues:RES_FIRE[1]\n")));
+
+        assertFalse(result.hasErrors(), result.errors()::toString);
+        ElementInfo fire = result.items().get(0).getElInfo(ElementEnum.ELEM_FIRE);
+        assertTrue(fire.has(ElementInfoEnum.EL_INFO_HATES));
+        assertEquals(1, fire.getResLevel());
     }
 
     /**
@@ -1178,7 +1230,8 @@ class ItemObjectReaderTest {
      * {@code parse_object_graphics} turns a one-character colour with {@code color_char_to_attr} and a
      * longer one with {@code color_text_to_attr}; both answer white for a name they do not know. The
      * colour is a fixed set of lexer tokens here, so {@code 9} and {@code q} (neither is a colour
-     * code) are lexer errors, and the whole file loads as nothing.
+     * code) are lexer errors, and the whole file loads as nothing. The assembler's own fall back to
+     * white, which a file cannot reach, is covered by {@link #anUnresolvedColourFallsBackToWhite}.
      */
     @Test
     void anUnknownColourIsAHardErrorHereWhereCFallsBackToWhite() throws IOException {
@@ -1189,5 +1242,160 @@ class ItemObjectReaderTest {
             assertTrue(result.items().isEmpty(), "colour " + colour);
             assertTrue(result.hasErrors(), "colour " + colour);
         }
+    }
+
+    // ---- the assembler alone: records the lexer would not let through ------
+
+    /**
+     * Builds the parse record of one kind with every directive absent, as the grammar seeds them,
+     * except the few the caller names. It goes straight to {@link ItemObjectAssembler}, so a value
+     * the lexer would refuse (a supplementary glyph, an unknown colour, a zero-padded number) can
+     * still be put to the assembler.
+     */
+    private static ItemObjectParseRecord rec(String glyph, String colour, String pVal,
+                                             String attackBase, String attackToh,
+                                             String allocCommon, String allocLower, String allocUpper) {
+        return new ItemObjectParseRecord("probe", glyph, colour, "sword", "", "", "",
+                attackBase, attackToh, "", "", "", allocCommon, allocLower, allocUpper, "", "", "", "",
+                "", "", List.of(), List.of(), Map.of(), List.of(), List.of(), Map.of(), pVal, "", "", 7);
+    }
+
+    private static ObjectKind assembleOne(ItemObjectParseRecord record) {
+        return new ItemObjectAssembler().assemble(List.of(record), new ArrayList<>(), "probe.txt").get(0);
+    }
+
+    /**
+     * {@code parser_getchar} keeps one wide character. A glyph that fits in a UTF-16 unit is stored
+     * narrow, so the cell equals the one the {@code char} constructor builds for it, as C's single
+     * {@code wchar_t} makes {@code '|'} and 124 the same glyph.
+     */
+    @Test
+    void aBasicGlyphIsStoredNarrowAndEqualsTheCharBuiltCell() {
+        ObjectKind kind = assembleOne(rec("|", "w", "", "", "", "", "", ""));
+
+        AngbandDisplayCharacter cell = kind.getCharacter();
+        assertEquals(new AngbandDisplayCharacter('|', ColourEnum.COLOUR_WHITE), cell);
+        assertEquals('|', cell.getNarrowCharacter());
+        assertEquals(0, cell.getWideCharacter());
+    }
+
+    /**
+     * U+1F600 does not fit in a {@code char}. It must arrive whole, in the wide half, with the
+     * narrow half left at NUL, and not as the first surrogate of its pair.
+     */
+    @Test
+    void aSupplementaryGlyphIsStoredWholeInTheWideHalf() {
+        String smile = new String(Character.toChars(0x1F600));
+        ObjectKind kind = assembleOne(rec(smile, "w", "", "", "", "", "", ""));
+
+        AngbandDisplayCharacter cell = kind.getCharacter();
+        assertEquals(0x1F600, cell.getWideCharacter());
+        assertEquals('\0', cell.getNarrowCharacter());
+        assertEquals(smile, cell.getCharacter());
+        assertEquals(new AngbandDisplayCharacter(0x1F600, ColourEnum.COLOUR_WHITE), cell);
+    }
+
+    /**
+     * {@code text_mbstowcs(&cval, tok, 1)} converts one character and ignores the rest of the
+     * token, whether that first character is a basic one or a supplementary one.
+     */
+    @Test
+    void onlyTheFirstCodePointOfTheGlyphTokenIsKept() {
+        assertEquals('a', assembleOne(rec("abc", "w", "", "", "", "", "", "")).getCharacter().getNarrowCharacter());
+
+        String smile = new String(Character.toChars(0x1F600));
+        assertEquals(0x1F600,
+                assembleOne(rec(smile + "x", "w", "", "", "", "", "", "")).getCharacter().getWideCharacter());
+    }
+
+    /**
+     * {@code color_char_to_attr} and {@code color_text_to_attr} both answer white for a colour they
+     * do not know. A file cannot reach this, because the lexer refuses such a colour, but the
+     * assembler applies it all the same, for a one-character code and for a longer name.
+     */
+    @Test
+    void anUnresolvedColourFallsBackToWhite() {
+        for (String colour : List.of("9", "no such colour")) {
+            ObjectKind kind = assembleOne(rec("|", colour, "", "", "", "", "", ""));
+
+            assertEquals(ColourEnum.COLOUR_WHITE, kind.getCharacter().getAttributeColour(), colour);
+        }
+    }
+
+    /**
+     * With no glyph at all the kind has no cell: C's zeroed {@code d_char} and {@code d_attr}.
+     */
+    @Test
+    void aRecordWithNoGlyphHasNoCell() {
+        assertNull(assembleOne(rec("", "", "", "", "", "", "", "")).getCharacter());
+    }
+
+    /**
+     * An absent {@code pval:} is the zero {@code random_value} of a zeroed C kind, not an error and
+     * not {@code null}.
+     */
+    @Test
+    void anAbsentPvalIsAZeroRandom() {
+        assertSameDice(Random.Zero(), assembleOne(rec("|", "w", "", "", "", "", "", "")).getPVal());
+    }
+
+    /**
+     * {@code parser_getrand} refuses a {@code pval} that is not dice, with
+     * {@code PARSE_ERROR_NOT_RANDOM}, and C stops the load. It does not become zero.
+     */
+    @Test
+    void aPvalThatIsNotDiceStopsTheLoad() {
+        DataFileParseException thrown = assertThrows(DataFileParseException.class,
+                () -> assembleOne(rec("|", "w", "not dice", "", "", "", "", "")));
+
+        assertTrue(thrown.getMessage().contains("not dice"), thrown.getMessage());
+        assertTrue(thrown.getMessage().contains("line: 7"), thrown.getMessage());
+        assertTrue(thrown.getMessage().contains("probe.txt"), thrown.getMessage());
+    }
+
+    /**
+     * Each rand message names its own value. The base attack and to-hit messages once printed the
+     * kind's {@code time:} string instead.
+     */
+    @Test
+    void anUnparseableAttackFigureIsNamedInItsOwnMessage() {
+        DataFileParseException base = assertThrows(DataFileParseException.class,
+                () -> assembleOne(rec("|", "w", "", "bad base", "", "", "", "")));
+        assertTrue(base.getMessage().contains("base attack value: bad base"), base.getMessage());
+
+        DataFileParseException toh = assertThrows(DataFileParseException.class,
+                () -> assembleOne(rec("|", "w", "", "", "bad hit", "", "", "")));
+        assertTrue(toh.getMessage().contains("attack-to-hit value: bad hit"), toh.getMessage());
+    }
+
+    /**
+     * {@code parse_object_alloc} reads the commonness with {@code parser_getint}, which is
+     * {@code strtol} in base 0, so {@code 010} is eight; it reads the two ends of the range with
+     * {@code grab_int_range}, which is {@code strtol} in base 10, so {@code 010} is ten there and
+     * {@code 08} is eight.
+     */
+    @Test
+    void allocCommonnessIsReadInBaseZeroAndTheRangeInBaseTen() throws Exception {
+        ObjectKind padded = assembleOne(rec("|", "w", "", "", "", "010", "010", "020"));
+        assertEquals(8, (int) kindField(padded, "alloc_prob"));
+        assertEquals(10, (int) kindField(padded, "alloc_min"));
+        assertEquals(20, (int) kindField(padded, "alloc_max"));
+
+        ObjectKind eightNine = assembleOne(rec("|", "w", "", "", "", "0x10", "08", "09"));
+        assertEquals(16, (int) kindField(eightNine, "alloc_prob"));
+        assertEquals(8, (int) kindField(eightNine, "alloc_min"));
+        assertEquals(9, (int) kindField(eightNine, "alloc_max"));
+    }
+
+    /**
+     * {@code alloc} is one line of commonness and range together in C. A commonness with either end
+     * of the range missing is refused here.
+     */
+    @Test
+    void anAllocCommonnessWithoutBothRangeEndsStopsTheLoad() {
+        assertThrows(DataFileParseException.class,
+                () -> assembleOne(rec("|", "w", "", "", "", "5", "", "20")));
+        assertThrows(DataFileParseException.class,
+                () -> assembleOne(rec("|", "w", "", "", "", "5", "1", "")));
     }
 }

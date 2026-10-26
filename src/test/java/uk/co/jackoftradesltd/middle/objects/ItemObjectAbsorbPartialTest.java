@@ -23,6 +23,7 @@ import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.data.CarryCapData;
 import uk.co.jackoftradesltd.middle.game.globals.data.GameConstantsData;
+import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftradesltd.middle.monsters.MonsterRace;
 import uk.co.jackoftradesltd.middle.objects.enums.*;
@@ -102,6 +103,7 @@ class ItemObjectAbsorbPartialTest {
     private static Object savedConstants;
     private static Object savedBodies;
     private static Object savedRaces;
+    private static Object savedCurses;
 
     /**
      * The kind both fixture items share, carrying the base whose max stack the pack branch reads.
@@ -127,6 +129,10 @@ class ItemObjectAbsorbPartialTest {
         registryField("playerBodies").set(null, new ArrayList<>(List.of(humanoid)));
         registryField("playerRaces").set(null, new ArrayList<>(List.of(testRace(humanoid))));
 
+        // new Player() builds a KnownObject, whose initCurses walks the registered curses; an empty
+        // list is enough, as none of these tests touches a curse.
+        savedCurses = setStatic(ObjectRegistry.class, "curses", new ArrayList<>());
+
         savedPlayer = GameState.getPlayer();
         GameState.setPlayer(new Player());
 
@@ -137,6 +143,7 @@ class ItemObjectAbsorbPartialTest {
     @AfterAll
     static void restoreGlobals() throws Exception {
         GameState.setPlayer(savedPlayer);
+        setStatic(ObjectRegistry.class, "curses", savedCurses);
         setStatic(GameConstants.class, "data", savedConstants);
         registryField("playerBodies").set(null, savedBodies);
         registryField("playerRaces").set(null, savedRaces);

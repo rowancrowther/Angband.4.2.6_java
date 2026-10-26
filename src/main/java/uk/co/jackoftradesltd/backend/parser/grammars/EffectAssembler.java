@@ -21,7 +21,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.backend.parser.ParseUtils;
 import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
@@ -118,7 +117,7 @@ public class EffectAssembler {
      * @throws DataFileParseException if any effect fails to resolve
      * @author Rowan Crowther
      */
-    @Nullable
+    @NotNull
     @CheckReturnValue
     public static List<Effect> assemble(@NotNull List<EffectParseRecord> records,
                                         @NotNull List<String> errors,

@@ -513,6 +513,80 @@ class MonsterRegistryTest {
 
             assertThrows(IllegalStateException.class, () -> MonsterRegistry.lookupSummon("KIN"));
         }
+
+        /**
+         * {@code summons[index]} in {@code mon-summon.c}: {@code finish_parse_summon} leaves the records in file
+         * order, so index n is the nth record of {@code summon.txt}.
+         */
+        @Test
+        @DisplayName("an index returns the list's own record at that position, first and last included")
+        void indexReturnsRecordAtPosition() {
+            List<Summon> list = new ArrayList<>(List.of(summon("ANY"), summon("KIN"), summon("MONSTER")));
+            MonsterRegistry.setSummons(list);
+
+            assertSame(list.get(0), MonsterRegistry.lookupSummon(0));
+            assertSame(list.get(1), MonsterRegistry.lookupSummon(1));
+            assertSame(list.get(2), MonsterRegistry.lookupSummon(2));
+        }
+
+        @Test
+        @DisplayName("the index and the name reach the same record")
+        void indexAgreesWithName() {
+            List<Summon> list = new ArrayList<>(List.of(summon("ANY"), summon("KIN"), summon("MONSTER")));
+            MonsterRegistry.setSummons(list);
+
+            for (int i = 0; i < list.size(); i++) {
+                assertSame(MonsterRegistry.lookupSummon(list.get(i).getName()), MonsterRegistry.lookupSummon(i));
+            }
+        }
+
+        /**
+         * C's {@code summon_max} is the record count plus one, so {@code summon_desc} accepts the blank last slot
+         * and C's {@code summons[count]} is a readable, zeroed record. The registry holds no blank slot (accepted
+         * deviation), so the record count throws instead.
+         */
+        @Test
+        @DisplayName("the record count, where C has a blank slot, throws")
+        void recordCountThrows() {
+            MonsterRegistry.setSummons(new ArrayList<>(List.of(summon("ANY"), summon("KIN"))));
+
+            assertThrows(IllegalStateException.class, () -> MonsterRegistry.lookupSummon(2));
+        }
+
+        @Test
+        @DisplayName("a negative index, including C's -1 for no fallback, throws")
+        void negativeIndexThrows() {
+            MonsterRegistry.setSummons(new ArrayList<>(List.of(summon("ANY"), summon("KIN"))));
+
+            assertThrows(IllegalStateException.class, () -> MonsterRegistry.lookupSummon(-1));
+            assertThrows(IllegalStateException.class, () -> MonsterRegistry.lookupSummon(Integer.MIN_VALUE));
+        }
+
+        @Test
+        @DisplayName("a far out-of-range index throws")
+        void hugeIndexThrows() {
+            MonsterRegistry.setSummons(new ArrayList<>(List.of(summon("ANY"))));
+
+            assertThrows(IllegalStateException.class, () -> MonsterRegistry.lookupSummon(Integer.MAX_VALUE));
+        }
+
+        @Test
+        @DisplayName("an empty list has no valid index")
+        void emptyListThrows() {
+            MonsterRegistry.setSummons(new ArrayList<>());
+
+            assertThrows(IllegalStateException.class, () -> MonsterRegistry.lookupSummon(0));
+        }
+
+        @Test
+        @DisplayName("an unloaded or null list throws, for an index as for a name")
+        void unloadedByIndex() {
+            assertThrows(IllegalStateException.class, () -> MonsterRegistry.lookupSummon(0));
+
+            MonsterRegistry.setSummons(null);
+
+            assertThrows(IllegalStateException.class, () -> MonsterRegistry.lookupSummon(0));
+        }
     }
 
     /**

@@ -211,7 +211,7 @@ effectBlock
             $diceString = "";
             $yVal = "";
             $xVal = "";
-            $effectMessage = "";
+            $effectMessage = null;
         }
         @after {
             $expressionChars = expressionString;

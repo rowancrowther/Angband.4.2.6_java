@@ -575,40 +575,65 @@ class PlayerClassReaderTest {
     // ---- EffectAssembler (reached via a spell) ---------------------------
 
     @Test
-    void unknownEffectTypeInASpellIsReported() throws IOException {
-        ParseResult<PlayerClass> r = load("bad-effect.txt", withHeader(1,
+    void unknownEffectTypeInASpellStopsTheLoad() {
+        // grab_name finds no such effect, so grab_effect_data fails and C quits
+        String file = withHeader(1,
                 "name:Caster\nmagic:1:100:1\n"
                         + "book:magic book:town:[B]:1:arcane\n"
                         + "spell:S:1:1:1:1\n"
-                        + "effect:NOTANEFFECT\n"));
+                        + "effect:NOTANEFFECT\n");
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("bad-effect.txt", file));
 
-        assertTrue(hasError(r, "invalid effect type: NOTANEFFECT"), r.errors()::toString);
+        assertTrue(e.getMessage().contains("Effect starting at line: " + lineOf(file, "effect:NOTANEFFECT")),
+                e::getMessage);
+        assertTrue(e.getMessage().contains("illegal element value: NOTANEFFECT"), e::getMessage);
     }
 
     @Test
-    void unknownShapechangeTargetInASpellIsReported() throws IOException {
-        // Exercises the EST_SHAPECHANGE registry lookup (C: shape_name_to_idx).
-        ParseResult<PlayerClass> r = load("bad-shape.txt", withHeader(1,
+    void unknownShapechangeTargetInASpellStopsTheLoad() {
+        // Exercises the EST_SHAPECHANGE registry lookup (C: shape_name_to_idx, which returns -1 for
+        // a name lookup_player_shape cannot find, so effect_subtype fails and C quits).
+        String file = withHeader(1,
                 "name:Caster\nmagic:1:100:1\n"
                         + "book:magic book:town:[B]:1:arcane\n"
                         + "spell:S:1:1:1:1\n"
-                        + "effect:SHAPECHANGE:notashape\n"));
+                        + "effect:SHAPECHANGE:notashape\n");
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("bad-shape.txt", file));
 
         // As in C, the sub-type token reaches the case-exact shape lookup as written in the file,
         // so the message carries the name in its original case.
-        assertTrue(hasError(r, "unknown player shape: notashape"), r.errors()::toString);
+        assertTrue(e.getMessage().contains("Effect starting at line: "
+                + lineOf(file, "effect:SHAPECHANGE:notashape")), e::getMessage);
+        assertTrue(e.getMessage().contains("illegal shape name value: notashape"), e::getMessage);
     }
 
     @Test
-    void invalidProjectionSubtypeInASpellIsReported() throws IOException {
-        // BOLT's sub-type is a projection; NOTAPROJ is not one.
-        ParseResult<PlayerClass> r = load("bad-proj.txt", withHeader(1,
+    void invalidProjectionSubtypeInASpellStopsTheLoad() {
+        // BOLT's sub-type is a projection; NOTAPROJ is not one (proj_name_to_idx gives -1).
+        String file = withHeader(1,
                 "name:Caster\nmagic:1:100:1\n"
                         + "book:magic book:town:[B]:1:arcane\n"
                         + "spell:S:1:1:1:1\n"
-                        + "effect:BOLT:NOTAPROJ\n"));
+                        + "effect:BOLT:NOTAPROJ\n");
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("bad-proj.txt", file));
 
-        assertTrue(hasError(r, "invalid projection type: NOTAPROJ"), r.errors()::toString);
+        assertTrue(e.getMessage().contains("Effect starting at line: " + lineOf(file, "effect:BOLT:NOTAPROJ")),
+                e::getMessage);
+        assertTrue(e.getMessage().contains("illegal projection value: NOTAPROJ"), e::getMessage);
+    }
+
+
+    /**
+     * @param text   a whole data file
+     * @param needle a line (or the start of one) that occurs in it
+     * @return the 1-based number of the first line of {@code text} that starts with {@code needle}
+     */
+    private static int lineOf(String text, String needle) {
+        String[] lines = text.split("\n", -1);
+        for (int i = 0; i < lines.length; i++) {
+            if (lines[i].startsWith(needle)) return i + 1;
+        }
+        throw new AssertionError("no line starting with " + needle);
     }
 
     // ---- GrammarDriver: record-count + hard structural errors ------------
@@ -644,19 +669,22 @@ class PlayerClassReaderTest {
     // =====================================================================
 
     @Test
-    void twoBadEffectsInOneBlockAreBothReported() throws IOException {
-        // EffectAssembler.assemble must not fail-fast: given two distinct bad effects in a single
-        // spell's block it reports BOTH (an unknown effect type and a bad projection sub-type),
-        // then fails the block as a whole. This pins the "keep going, collect every failure" contract.
-        ParseResult<PlayerClass> r = load("two-effect-errors.txt", withHeader(1,
+    void theFirstBadEffectInABlockStopsTheLoadAndTheSecondIsNeverReached() {
+        // C quits at the first line grab_effect_data rejects, so of two bad effects in one spell's
+        // block only the first is reported; the bad projection sub-type is never looked at.
+        String file = withHeader(1,
                 "name:Caster\nmagic:1:100:1\n"
                         + "book:magic book:town:[B]:1:arcane\n"
                         + "spell:S:1:1:1:1\n"
                         + "effect:NOTANEFFECT\n"
-                        + "effect:BOLT:NOTAPROJ\n"));
+                        + "effect:BOLT:NOTAPROJ\n");
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> load("two-effect-errors.txt", file));
 
-        assertTrue(hasError(r, "invalid effect type: NOTANEFFECT"), r.errors()::toString);
-        assertTrue(hasError(r, "invalid projection type: NOTAPROJ"), r.errors()::toString);
+        assertTrue(e.getMessage().contains("Effect starting at line: " + lineOf(file, "effect:NOTANEFFECT")),
+                e::getMessage);
+        assertTrue(e.getMessage().contains("illegal element value: NOTANEFFECT"), e::getMessage);
+        assertFalse(e.getMessage().contains("NOTAPROJ"), e::getMessage);
     }
 
     @Test

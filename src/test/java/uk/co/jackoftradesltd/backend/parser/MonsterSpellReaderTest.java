@@ -21,6 +21,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.game.globals.registry.MonsterRegistry;
 import uk.co.jackoftradesltd.middle.monsters.MonsterBase;
@@ -355,21 +356,23 @@ class MonsterSpellReaderTest {
         // [C] effect_subtype tests one string per effect and falls through to its -1 error return
         // for anything else, so SELF on TELEPORT and AWAY on TELEPORT_TO are both invalid. An
         // enum-based lookup accepted either on either, which is why this is worth pinning.
-        ParseResult<MonsterSpellType> selfOnTeleport =
-                load("tele-cross-1.txt", withHeader(1, entry("TELE_AWAY", "TELEPORT",
-                        "effect:TELEPORT:SELF\n")));
-        assertTrue(selfOnTeleport.items().isEmpty());
-        assertTrue(selfOnTeleport.errors().stream()
-                        .anyMatch(e -> e.contains("invalid teleport type: SELF")),
-                () -> "SELF is not valid on TELEPORT: " + selfOnTeleport.errors());
+        // Each -1 from effect_subtype is an error from grab_effect_data, and C quits on it, so the
+        // load stops with an exception naming the effect's own line.
+        String selfFile = withHeader(1, entry("TELE_AWAY", "TELEPORT", "effect:TELEPORT:SELF\n"));
+        DataFileParseException selfOnTeleport = assertThrows(DataFileParseException.class,
+                () -> load("tele-cross-1.txt", selfFile), "SELF is not valid on TELEPORT");
+        assertTrue(selfOnTeleport.getMessage().contains("Effect starting at line: "
+                + lineOf(selfFile, "effect:TELEPORT:SELF")), selfOnTeleport::getMessage);
+        assertTrue(selfOnTeleport.getMessage().contains("illegal teleport value: SELF"),
+                selfOnTeleport::getMessage);
 
-        ParseResult<MonsterSpellType> awayOnTeleportTo =
-                load("tele-cross-2.txt", withHeader(1, entry("TELE_SELF_TO", "TELEPORT",
-                        "effect:TELEPORT_TO:AWAY\n")));
-        assertTrue(awayOnTeleportTo.items().isEmpty());
-        assertTrue(awayOnTeleportTo.errors().stream()
-                        .anyMatch(e -> e.contains("invalid teleport to type: AWAY")),
-                () -> "AWAY is not valid on TELEPORT_TO: " + awayOnTeleportTo.errors());
+        String awayFile = withHeader(1, entry("TELE_SELF_TO", "TELEPORT", "effect:TELEPORT_TO:AWAY\n"));
+        DataFileParseException awayOnTeleportTo = assertThrows(DataFileParseException.class,
+                () -> load("tele-cross-2.txt", awayFile), "AWAY is not valid on TELEPORT_TO");
+        assertTrue(awayOnTeleportTo.getMessage().contains("Effect starting at line: "
+                + lineOf(awayFile, "effect:TELEPORT_TO:AWAY")), awayOnTeleportTo::getMessage);
+        assertTrue(awayOnTeleportTo.getMessage().contains("illegal teleport to value: AWAY"),
+                awayOnTeleportTo::getMessage);
     }
 
     @Test
@@ -386,15 +389,28 @@ class MonsterSpellReaderTest {
     }
 
     @Test
-    void unknownTeleportSubtypeIsReportedAndDropsTheSpell() throws IOException {
-        ParseResult<MonsterSpellType> result =
-                load("tele-bad.txt", withHeader(1, entry("TELE_AWAY", "TELEPORT",
-                        "effect:TELEPORT:SIDEWAYS\n")));
+    void unknownTeleportSubtypeStopsTheLoad() {
+        // effect_subtype returns -1 for SIDEWAYS, grab_effect_data reports it, and C quits
+        String file = withHeader(1, entry("TELE_AWAY", "TELEPORT", "effect:TELEPORT:SIDEWAYS\n"));
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("tele-bad.txt", file));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty(), "a bad effect fails the whole owning record");
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("teleport")),
-                () -> result.errors().toString());
+        assertTrue(e.getMessage().contains("Effect starting at line: "
+                + lineOf(file, "effect:TELEPORT:SIDEWAYS")), e::getMessage);
+        assertTrue(e.getMessage().contains("illegal teleport value: SIDEWAYS"), e::getMessage);
+    }
+
+
+    /**
+     * @param text   a whole data file
+     * @param needle a line (or the start of one) that occurs in it
+     * @return the 1-based number of the first line of {@code text} that starts with {@code needle}
+     */
+    private static int lineOf(String text, String needle) {
+        String[] lines = text.split("\n", -1);
+        for (int i = 0; i < lines.length; i++) {
+            if (lines[i].startsWith(needle)) return i + 1;
+        }
+        throw new AssertionError("no line starting with " + needle);
     }
 
     // ---- Structure: levels and repeated free text ------------------------

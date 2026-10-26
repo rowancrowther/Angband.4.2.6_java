@@ -17,9 +17,13 @@
 
 package uk.co.jackoftradesltd.backend.parser.grammars;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
+import uk.co.jackoftradesltd.backend.parser.ParseUtils;
 import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
 import uk.co.jackoftradesltd.middle.effect.*;
 import uk.co.jackoftradesltd.middle.enums.*;
@@ -32,6 +36,7 @@ import uk.co.jackoftradesltd.middle.player.enums.TimedEffect;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import static uk.co.jackoftradesltd.middle.effect.EffectSubTypeWrapper.teleport;
 import static uk.co.jackoftradesltd.middle.effect.EffectSubTypeWrapper.teleportTo;
@@ -40,36 +45,77 @@ import static uk.co.jackoftradesltd.middle.effect.EffectSubTypeWrapper.teleportT
  * Resolves the raw {@link EffectParseRecord}s captured from an {@code effect:} block into
  * domain {@link Effect}s. Effects are shared across many data files (objects, curses, shapes,
  * activations, …), so this assembler is a static helper the owning assemblers delegate to
- * rather than a stand-alone {@code Assembler} keyed to one grammar. It ports the interpretation
- * done by {@code effect_subtype} and the {@code parse_*_effect} handlers in {@code obj-init.c}:
- * the effect name maps to an {@link EffectEnum}, and the effect's second token is resolved
- * through {@link #getWrapperSubType} into whichever payload that effect expects (a projection,
- * timed effect, summon, shape, stat, …), wrapped in a type-safe {@link EffectSubTypeWrapper}.
+ * rather than a stand-alone {@code Assembler} keyed to one grammar.
  *
- * <p>Dice and expressions are captured but <em>not</em> evaluated here — see the note in
- * {@link #assembleOne} — because a die roll must be computed against live game state when the
- * effect fires, not at load time.
+ * <p>It ports the reading done by {@code grab_effect_data} in {@code init.c}, which every C
+ * {@code parse_*_effect} handler calls. C matches the effect name against its effect list
+ * with {@code grab_name} ({@code datafile.c}), case-exactly, with {@code NONE} and {@code MAX}
+ * in the list; reads the optional second token through {@code effect_subtype}
+ * ({@code effects.c}); and reads the optional radius and other parameter as plain integers. The
+ * port maps the name to an {@link EffectEnum}, resolves the second token through
+ * {@link #getWrapperSubType} into whichever payload that effect expects (a projection, timed
+ * effect, summon, shape, stat, …) wrapped in an {@link EffectSubTypeWrapper}, and parses the
+ * numbers with {@code ParseUtils}. The {@code effect-yx:} pair and the {@code dice:} and
+ * {@code expr:} lines are read by the sibling C handlers and are carried across here too.
+ *
+ * <p>Every failure stops the load with a {@link DataFileParseException}, as a C parse error does.
+ * The old soft-error channel survives only as an unused {@code errors} parameter.
+ *
+ * <p>Two things C does at load are deliberately not done here. Dice and expressions are kept
+ * as raw text and not evaluated - see the note in {@link #assembleOne} - and the load-time
+ * refusal of a bad {@code dice:} or {@code expr:} string (C's {@code dice_parse_string},
+ * {@code expression_add_operations_string} and {@code dice_bind_expression}) waits for the roll
+ * engine, which will be called from this class when it exists (accepted 261025). A sub-type
+ * written as a number, which C's {@code effect_subtype} reads with {@code strtol} first, is also
+ * not accepted (accepted deviation 261025, "for the time being"): the lexer's sub-type token has
+ * no digits, so the {@code onlyDigits} branches in {@link #getWrapperSubType} cannot be reached
+ * from a data file.
+ *
+ * <p>Shapes and summons are resolved against {@link PlayerRegistry} and {@link MonsterRegistry}
+ * as the effect is assembled, so both must already be loaded.
+ *
+ * <p>Class EffectAssembler commented in full on 261026.
  *
  * @author Rowan Crowther
  */
 public class EffectAssembler {
+    /**
+     * Logger for this assembler. Every failure is logged at {@code fatal} just before the
+     * {@link DataFileParseException} that stops the load is thrown.
+     *
+     * <p>Field logger commented in full on 261026.
+     */
+    private static final Logger logger = LogManager.getLogger(EffectAssembler.class);
 
     /**
-     * Assemble every effect in one block into resolved {@link Effect}s.
+     * The name of the data file being assembled, for the error messages. {@link #assemble} sets it
+     * on every call, and the private helpers read it, so it is shared static state: two threads
+     * assembling different files at once would overwrite each other's name. Loading is
+     * single-threaded.
      *
-     * <p><b>All-or-nothing contract:</b> a block is only meaningful as a whole, so if any single
-     * effect fails to resolve this returns {@code null} rather than a partial list. Every calling
-     * assembler treats that {@code null} as a reason to drop the <em>entire owning record</em>
-     * (the activation, curse, object kind or shape) — the alternative, silently loading a record
-     * with one of its effects quietly missing, would produce a subtly wrong game object that is
-     * far harder to diagnose than a reported, dropped record. Per-effect error messages are still
-     * appended to {@code errors} so every failure in the block is surfaced, not just the first.
+     * <p>Field filename commented in full on 261026.
+     */
+    private static String filename;
+
+    /**
+     * Assemble every effect in one block into resolved {@link Effect}s, in the order given.
      *
-     * <p>Function assemble commented in full before 260915, provenance stamp added on 260915.
+     * <p>A block is only meaningful as a whole, so the first effect that fails to resolve stops
+     * the load: {@link #assembleOne} throws a {@link DataFileParseException} naming the file and
+     * the line the effect starts on, and this method lets it through. It never returns a partial
+     * list and never returns {@code null}, so a caller does not need to test the result.
      *
-     * @param records the parsed effect blocks for one owning record
-     * @param errors  the soft-error channel; per-effect failures are appended here
-     * @return the resolved effects in order, or {@code null} if any effect failed to resolve
+     * <p>{@code filename} is stored in a static field for the helpers to put in their error
+     * messages. {@code errors} is passed down but nothing appends to it any more; it is kept so
+     * the callers' signatures did not have to change.
+     *
+     * <p>Function assemble coded before 260915, commented in full on 261026.
+     *
+     * @param records  the parsed effect blocks for one owning record
+     * @param errors   unused; formerly the soft-error channel
+     * @param filename the data file the records came from, for error messages
+     * @return the resolved effects in order; empty if {@code records} is empty
+     * @throws DataFileParseException if any effect fails to resolve
      * @author Rowan Crowther
      */
     @Nullable
@@ -77,115 +123,78 @@ public class EffectAssembler {
     public static List<Effect> assemble(@NotNull List<EffectParseRecord> records,
                                         @NotNull List<String> errors,
                                         @NotNull String filename) {
+        EffectAssembler.filename = filename;
         List<Effect> effects = new ArrayList<>();
-        boolean failed = false;
         for (EffectParseRecord record : records) {
             Effect e = assembleOne(record, errors, record.line());
-            // Keep going after a failure so every bad effect in the block is reported,
-            // but remember that the block as a whole must now fail (return null below).
-            if (e == null) failed = true;
-            else effects.add(e);
+            effects.add(e);
         }
-        return failed ? null : effects;
+        return effects;
     }
 
     /**
      * Resolves one {@link EffectParseRecord} into an {@link Effect}: the type name to an
      * {@link EffectEnum}, the sub-type token to a payload-specific {@link EffectSubTypeWrapper}
-     * via {@link #getWrapperSubType}, the numeric fields from text, and the dice expression's
-     * bound variables to {@link Expression}s — while deliberately leaving 
-     * the effect's duration unrolled (see the note above {@link #assemble}). The
-     * {@code EST_TELEPORT}/{@code EST_TELEPORT_TO} carve-out mirrors C's {@code effect_subtype}
-     * treating an absent line as the flag's off state rather than an error.
+     * via {@link #getWrapperSubType}, the radius, other parameter and {@code effect-yx:} pair
+     * from text to {@code int}, and the dice expression's bound variables to
+     * {@link Expression}s. The dice themselves are left as raw text (see the note before the
+     * {@code return}).
      *
-     * <p>Function assembleOne coded before 260915, commented in full on 260915.
+     * <p>The effect name is matched case-exactly against {@link EffectEnum} with an {@code EF_}
+     * prefix, as {@code grab_name} ({@code datafile.c}) matches with {@code streq}. The sentinels
+     * {@code NONE} and {@code MAX} are accepted because C's effect list holds them, and C only
+     * refuses them later, when an effect is used ({@code effect_valid}). An absent radius, other
+     * parameter, {@code y} or {@code x} is 0, which is what C's zero-filled {@code struct effect}
+     * holds when the field is not given. The effect's message is passed through unchanged, and is
+     * {@code null} when the block has none, as in C.
+     *
+     * <p>Function assembleOne coded before 260915, commented in full on 261026.
      *
      * @param record the raw effect record to resolve
-     * @param errors the soft-error sink, appended to on the first field that fails to resolve
+     * @param errors unused; formerly the soft-error sink
      * @param line   the record's source line, for error messages
-     * @return the resolved effect, or {@code null} if any field failed to resolve
+     * @return the resolved effect; never {@code null}
+     * @throws DataFileParseException if the effect name is not one of {@link EffectEnum}, the
+     *                                sub-type does not resolve, or a number or expression is bad
      */
     private static Effect assembleOne(@NotNull EffectParseRecord record,
                                       @NotNull List<String> errors,
                                       int line) {
         if (record.typeInit().isEmpty()) {
-            errors.add("Effect starting at line: " + line + " has " +
-                    "no valid effect type line");
-            return null;
+            String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
+                    "an empty element value";
+            logger.fatal(msg);
+            throw new DataFileParseException(msg);
         }
-        EffectEnum effectEnum = EffectEnum.EF_NONE;
+        EffectEnum effectEnum;
         try {
             effectEnum = EffectEnum.valueOf("EF_" + record.typeInit());
         } catch (IllegalArgumentException e) {
-            errors.add("Effect starting at line: " + line + " has " +
-                    "invalid effect type: " + record.typeInit());
-            return null;
+            String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
+                    "an illegal element value: " + record.typeInit();
+            logger.fatal(msg);
+            throw new DataFileParseException(msg);
         }
-        // An effect with no subtype token normally resolves to EST_NONE, and the EST_NONE seed
-        // below is what it keeps - it also avoids a may-not-be-initialized error on the branch.
-        //
-        // TELEPORT and TELEPORT_TO are the exception, and the || below exists solely for them.
-        // Their subtype is a flag rather than a kind, and its absent value carries meaning: [C]
-        // effect_subtype (effects.c) never runs for a missing line, leaving effect->subtype at
-        // zero, which the handlers read as "a monster may not cast this at the player". Letting
-        // those two kinds through the gate with an empty value lets the switch return a
-        // false-valued teleport wrapper instead of a bare EST_NONE, so every TELEPORT effect
-        // comes out the same shape whether or not the data file gave it a subtype.
-        EffectSubTypeWrapper wrapper = new EffectSubTypeWrapper(EffectSubTypeEnum.EST_NONE);
+        // The sub-type token is resolved for every effect, an empty one included, because [C]
+        // effect_subtype (effects.c) is skipped for a missing token and leaves effect->subtype at
+        // zero. Each kind in getWrapperSubType turns the empty value into its own index 0: the
+        // first projection, the first timed effect, a teleport flag that is off (which the
+        // handlers read as "a monster may not cast this at the player"), and so on. So every
+        // effect of a kind comes out the same shape whether or not the data file gave it a
+        // sub-type.
+        EffectSubTypeWrapper wrapper;
         EffectSubTypeEnum kind = effectEnum.getSubType();
-        if (!record.subTypeWrapper().isEmpty() || kind == EffectSubTypeEnum.EST_TELEPORT
-                || kind == EffectSubTypeEnum.EST_TELEPORT_TO) {
-            wrapper = getWrapperSubType(kind,
-                    record.subTypeWrapper(), errors, line);
-            if (wrapper == null) return null;
-        }
-        int radius = 0;
-        if (!record.radius().isEmpty()) {
-            try {
-                radius = Integer.parseInt(record.radius());
-            } catch (NumberFormatException e) {
-                errors.add("Effect starting at line : " + line + " has " +
-                        "invalid radius format: " + record.radius());
-                return null;
-            }
-        }
-        int otherParameter = 0;
-        if (!record.other().isEmpty()) {
-            try {
-                otherParameter = Integer.parseInt(record.other());
-            } catch (NumberFormatException e) {
-                errors.add("Effect starting at line: " + line + " has " +
-                        "invalid other parameter format: " + record.other());
-                return null;
-            }
-        }
-        int yVal = 0;
-        if (!record.yVal().isEmpty()) {
-            try {
-                yVal = Integer.parseInt(record.yVal());
-            } catch (NumberFormatException e) {
-                errors.add("Effect starting at line: " + line + " has " +
-                        "invalid y-val format: " + record.yVal());
-                return null;
-            }
-        }
-        int xVal = 0;
-        if (!record.xVal().isEmpty()) {
-            try {
-                xVal = Integer.parseInt(record.xVal());
-            } catch (NumberFormatException e) {
-                errors.add("Effect starting at line: " + line + " has " +
-                        "invalid x-val format: " + record.xVal());
-                return null;
-            }
-        }
+        wrapper = getWrapperSubType(kind, record.subTypeWrapper(), errors, line);
+        int radius = ParseUtils.parseIntString("Effect", record.radius(), line, filename, "radius");
+        int otherParameter = ParseUtils.parseIntString("Effect", record.other(), line, filename, "other parameter");
+        int yVal = ParseUtils.parseIntString("Effect", record.yVal(), line, filename, "y-val");
+        int xVal = ParseUtils.parseIntString("Effect", record.xVal(), line, filename, "x-val");
         String diceString = record.diceString();
         String expressionChars = record.expressionChars();
         String expressionBases = record.expressionBases();
         String expressionOperations = record.expressionOperations();
         List<Expression> expressions = getExpressions(expressionChars,
                 expressionBases, expressionOperations, line, errors);
-        if (expressions == null) return null;
         String msg = record.effectMessage();
 
         // The evaluated dice value (the Random field) is intentionally left null here.
@@ -207,7 +216,20 @@ public class EffectAssembler {
      * An empty {@code chars} string is not an error — it means the dice string bound no
      * expressions — and returns an empty list.
      *
-     * <p>Function getExpressions coded before 260915, commented in full on 260915.
+     * <p>The base name stands in for C's {@code effect_value_base_by_name} ({@code effects.c}),
+     * which matches the name against its seven bases (case-insensitively) and returns a
+     * {@code NULL} function for any other name, which C accepts without an error. The port
+     * does the same: a name that is not an {@link EffectBaseType}, and the name {@code MAX}
+     * itself, give {@code EFB_NONE}. The operation string is kept raw; C's refusal of a bad one
+     * waits for the roll engine, as does the check that the character is bound by a {@code $}
+     * in the dice string.
+     *
+     * <p>The character is one letter {@code A} to {@code Z}, because the lexer's
+     * {@code EXPR_CHAR} is, so the "not one character" refusal cannot be reached from a data
+     * file. An operation string containing a {@code ^} would be split in two, since {@code ^} is
+     * the delimiter, but no shipped operation holds one.
+     *
+     * <p>Function getExpressions coded before 260915, commented in full on 261026.
      *
      * @param chars      the {@code ^}-delimited single-character expression codes
      * @param bases      the {@code ^}-delimited base-type names, paired positionally with
@@ -215,9 +237,10 @@ public class EffectAssembler {
      * @param operations the {@code ^}-delimited raw operation strings, paired positionally with
      *                   {@code chars}
      * @param line       the owning record's source line, for error messages
-     * @param errors     the soft-error sink, appended to on a length mismatch, a non-single-
-     *                   character code, or an unknown base type
-     * @return the resolved expressions in order, or {@code null} if any field failed to resolve
+     * @param errors     unused; formerly the soft-error sink
+     * @return the resolved expressions in order; empty if {@code chars} is empty
+     * @throws DataFileParseException if the three strings split into different numbers of parts,
+     *                                or a code is not exactly one character
      */
     private static List<Expression> getExpressions(
             @NotNull String chars,
@@ -235,26 +258,28 @@ public class EffectAssembler {
         String[] operationsArray = operations.split(java.util.regex.Pattern.quote(delimiter));
 
         if (charArray.length != basesArray.length || charArray.length != operationsArray.length) {
-            errors.add("Expressions in effect starting at line: " + line + " have " +
-                    "differing numbers of chars/bases & Operations.");
-            return null;
+            String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
+                    "differing numbers of chars/bases & operation values.";
+            logger.fatal(msg);
+            throw new DataFileParseException(msg);
         }
 
         for (int i = 0; i < charArray.length; i++) {
             if (charArray[i].length() != 1) {
-                errors.add("Expression in effect starting at line: " + line + " has " +
-                        "an invalid expression code: '" + charArray[i] + "'");
-                return null;
+                String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
+                        "an illegal expression value: '" + charArray[i] + "'";
+                logger.fatal(msg);
+                throw new DataFileParseException(msg);
             }
             char ch = charArray[i].charAt(0);
             String baseType = basesArray[i];
-            EffectBaseType efb = EffectBaseType.EFB_NONE;
+            EffectBaseType efb;
             try {
                 efb = EffectBaseType.valueOf("EFB_" + baseType);
+                if (efb == EffectBaseType.EFB_MAX)
+                    efb = EffectBaseType.EFB_NONE;
             } catch (IllegalArgumentException e) {
-                errors.add("Expression in effect starting at line: " + line + " has " +
-                        "an invalid expression base type: " + baseType);
-                return null;
+                efb = EffectBaseType.EFB_NONE;
             }
             String operation = operationsArray[i];
 
@@ -266,65 +291,197 @@ public class EffectAssembler {
 
     /**
      * Resolves an effect's raw sub-type token into the payload-specific {@link EffectSubTypeWrapper}
-     * its {@link EffectSubTypeEnum} kind expects — an enum constant for most kinds (projection,
-     * timed effect, nourish, monster-timed, stat, enchant, earthquake, glyph, each resolved with
-     * its kind's constant prefix), a registry lookup for {@code EST_SHAPECHANGE} (case-insensitive,
-     * against {@link PlayerRegistry#lookupPlayerShape}) and {@code EST_SUMMON} (against
-     * {@link MonsterRegistry#lookupSummon}), and a flag for {@code EST_TELEPORT}/
-     * {@code EST_TELEPORT_TO} where only one specific non-empty token ({@code "AWAY"} /
-     * {@code "SELF"}) is valid besides an empty one. Ports {@code effect_subtype}
-     * ({@code effects.c}).
+     * its {@link EffectSubTypeEnum} kind expects. The port of {@code effect_subtype}
+     * ({@code effects.c}), with {@code grab_effect_data} ({@code init.c}) supplying the absent
+     * case. The kinds, and the C lookup each one stands in for, are:
+     * <ul>
+     *   <li>{@code EST_PROJ} - {@code proj_name_to_idx}, case-insensitive; accepts {@code MAX},
+     *       refuses {@code NONE}.</li>
+     *   <li>{@code EST_TMD} - {@code timed_name_to_idx}, case-insensitive; refuses
+     *       {@code NONE}.</li>
+     *   <li>{@code EST_STAT} - {@code stat_name_to_idx}, case-insensitive; accepts {@code MAX},
+     *       refuses {@code NONE}.</li>
+     *   <li>{@code EST_MON_TMD} - {@code mon_timed_name_to_idx}, case-exact; refuses both
+     *       sentinels.</li>
+     *   <li>{@code EST_NOURISH}, {@code EST_ENCHANT}, {@code EST_EARTHQUAKE},
+     *       {@code EST_GLYPH} - the fixed names C compares with {@code streq}:
+     *       {@code INC_BY DEC_BY SET_TO INC_TO}; {@code TOBOTH TOHIT TODAM TOAC};
+     *       {@code NONE TARGETED}; {@code WARDING DECOY}. Case-exact.</li>
+     *   <li>{@code EST_SUMMON} - {@code summon_name_to_idx}, case-exact, against
+     *       {@link MonsterRegistry#lookupSummon}.</li>
+     *   <li>{@code EST_SHAPECHANGE} - {@code shape_name_to_idx}, case-exact, against
+     *       {@link PlayerRegistry#lookupPlayerShape(String)}. A miss shows the player
+     *       {@code "Could not find %s shape!"}, as C does, and then stops the load.</li>
+     *   <li>{@code EST_TELEPORT} and {@code EST_TELEPORT_TO} - a flag, set by the one token
+     *       {@code AWAY} or {@code SELF} respectively and off when the token is absent.</li>
+     *   <li>{@code EST_NONE} - every other effect, which accepts only {@code NONE}.</li>
+     * </ul>
      *
-     * <p>Function getWrapperSubType coded before 260915, commented in full on 260915.
+     * <p>A token that is not in a kind's list stops the load, as C's {@code -1} return becomes
+     * {@code PARSE_ERROR_INVALID_VALUE}. An <em>absent</em> token does not: C skips
+     * {@code effect_subtype} and leaves the sub-type at 0, so an empty {@code value} gives the
+     * kind's index 0 - {@code ACID}, {@code FAST}, {@code STR}, {@code SLEEP}, {@code INC_BY},
+     * the first summon in {@code summon.txt}, {@code NONE} for enchant, earthquake and glyph, and
+     * the first shape in {@code shape.txt}. The shape is the one place the port differs in
+     * what it holds: C stores the index and looks the shape up when the effect fires, and the port
+     * stores the {@link PlayerShape} itself, so an empty shape list stops the load here where C
+     * would fail later. The shipped {@code shape.txt} is never empty.
+     *
+     * <p>C also reads a sub-type written as a number; the port does not (accepted deviation
+     * 261025). The {@code onlyDigits} branches below are left over from that and cannot be
+     * reached, because the lexer's sub-type token has no digits.
+     *
+     * <p>Function getWrapperSubType coded before 260915, commented in full on 261026.
      *
      * @param type   the effect's sub-type kind, which selects how {@code value} is resolved
      * @param value  the raw sub-type token from the data file, or empty if the line gave none
-     * @param errors the soft-error sink, appended to if {@code value} does not resolve
+     * @param errors unused; formerly the soft-error sink
      * @param line   the owning record's source line, for error messages
-     * @return the resolved wrapper, or {@code null} if {@code value} did not resolve against
-     * {@code type}
+     * @return the resolved wrapper; never {@code null}
+     * @throws DataFileParseException if {@code value} is not in the list for {@code type}
      */
     static EffectSubTypeWrapper getWrapperSubType(EffectSubTypeEnum type, String value,
                                                           List<String> errors, int line) {
         switch (type) {
             case EST_PROJ -> {
                 ProjectionEnum pe;
+                if (value.isEmpty()) {
+                    pe = ProjectionEnum.PROJ_ACID;
+                    return new EffectSubTypeWrapper(pe);
+                }
+                if (ParseUtils.onlyDigits(value)) {
+                    int val = ParseUtils.parseIntString("Effect", value, line, filename, "projection subtype");
+                    // NONE sentinel exists - don't allow it to be accessed
+                    val++;
+                    if (val < 1 || val > ProjectionEnum.values().length) {
+                        String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
+                                "an invalid projection sub-type value: " + value;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
+                    }
+                    pe = ProjectionEnum.values()[val];
+                    return new EffectSubTypeWrapper(pe);
+                }
                 try {
-                    pe = ProjectionEnum.valueOf("PROJ_" + value);
+                    pe = ProjectionEnum.valueOf("PROJ_" + value.toUpperCase(Locale.ROOT));
+                    if (pe == ProjectionEnum.PROJ_NONE) {
+                        String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
+                                "a sentinel projection sub-type value: " + value;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
+                    }
                     return new EffectSubTypeWrapper(pe);
                 } catch (IllegalArgumentException e) {
-                    errors.add("Effect starting at line: " + line + " has " +
-                            "an invalid projection type: " + value);
+                    String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal projection value: " + value;
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
+
                 }
             }
             case EST_TMD -> {
                 TimedEffect te;
+                if (value.isEmpty()) {
+                    te = TimedEffect.TMD_FAST;
+                    return new EffectSubTypeWrapper(te);
+                }
+                if (ParseUtils.onlyDigits(value)) {
+                    int val = ParseUtils.parseIntString("Effect", value, line, filename, "timed subtype");
+                    // NONE sentinel exists - don't allow it to be accessed
+                    val++;
+                    if (val < 1 || val > TimedEffect.values().length) {
+                        String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
+                                "an invalid timed sub-type value: " + value;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
+                    }
+                    te = TimedEffect.values()[val];
+                    return new EffectSubTypeWrapper(te);
+                }
                 try {
-                    te = TimedEffect.valueOf("TMD_" + value);
+                    te = TimedEffect.valueOf("TMD_" + value.toUpperCase(Locale.ROOT));
+                    if (te == TimedEffect.TMD_NONE) {
+                        String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
+                                "a sentinel timed sub-type value: " + value;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
+                    }
                     return new EffectSubTypeWrapper(te);
                 } catch (IllegalArgumentException e) {
-                    errors.add("Effect starting at line: " + line + " has " +
-                            "an invalid timed effect: " + value);
+                    String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal timed value: " + value;
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
                 }
             }
             case EST_NOURISH -> {
                 EffectNourish ne;
+                if (value.isEmpty()) {
+                    ne = EffectNourish.EN_INC_BY;
+                    return new EffectSubTypeWrapper(ne);
+                }
+                if (ParseUtils.onlyDigits(value)) {
+                    int val = ParseUtils.parseIntString("Effect", value, line, filename, "nourish subtype");
+                    // NONE sentinel exists - don't allow it to be accessed
+                    val++;
+                    if (val < 1 || val > EffectNourish.values().length) {
+                        String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
+                                "an invalid nourish sub-type value: " + value;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
+                    }
+                    ne = EffectNourish.values()[val];
+                    return new EffectSubTypeWrapper(ne);
+                }
                 try {
                     ne = EffectNourish.valueOf("EN_" + value);
+                    if (ne == EffectNourish.EN_NONE) {
+                        String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
+                                "a sentinel nourish sub-type value: " + value;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
+                    }
                     return new EffectSubTypeWrapper(ne);
                 } catch (IllegalArgumentException e) {
-                    errors.add("Effect starting at line: " + line + " has " +
-                            "an invalid nourish effect: " + value);
+                    String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal nourish value: " + value;
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
                 }
             }
             case EST_MON_TMD -> {
                 MonTimed mt;
+                if (value.isEmpty()) {
+                    mt = MonTimed.MON_TMD_SLEEP;
+                    return new EffectSubTypeWrapper(mt);
+                }
+                if (ParseUtils.onlyDigits(value)) {
+                    int val = ParseUtils.parseIntString("Effect", value, line, filename, "mon timed subtype");
+                    // NONE & MAX sentinels exists - don't allow either to be accessed
+                    val++;
+                    if (val < 1 || val > MonTimed.values().length - 1) {
+                        String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
+                                "an invalid mon timed sub-type value: " + value;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
+                    }
+                    mt = MonTimed.values()[val];
+                    return new EffectSubTypeWrapper(mt);
+                }
                 try {
                     mt = MonTimed.valueOf("MON_TMD_" + value);
+                    if (mt == MonTimed.MON_TMD_NONE || mt == MonTimed.MON_TMD_MAX) {
+                        String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
+                                "a sentinel mon timed sub-type value: " + value;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
+                    }
                     return new EffectSubTypeWrapper(mt);
                 } catch (IllegalArgumentException e) {
-                    errors.add("Effect starting at line: " + line + " has " +
-                            "an invalid mon timed effect: " + value);
+                    String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal mon timed value: " + value;
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
                 }
             }
             case EST_SHAPECHANGE -> {
@@ -334,59 +491,171 @@ public class EffectAssembler {
                 // written, and the lookup matches it case-exactly as C's streq does, so
                 // the data must spell the shape as shape.txt does (e.g. "Pukel-man").
                 // This requires the shapes to already be loaded when effects are assembled.
-                PlayerShape sp = PlayerRegistry.lookupPlayerShape(value);
+                PlayerShape sp;
+                if (value.isEmpty()) {
+                    sp = PlayerRegistry.lookupPlayerShape(0);
+                    if (sp == null) {
+                        String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
+                                "an empty shape name value and the global player shapes array is empty";
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
+                    } else 
+                        return new EffectSubTypeWrapper(sp);
+                }
+                sp = PlayerRegistry.lookupPlayerShape(value);
                 if (sp != null)
                     return new EffectSubTypeWrapper(sp);
-                else
-                    errors.add("Effect starting at line: " + line + " has " +
-                            "an unknown player shape: " + value);
+                else {
+                    String msg = "Effect starting at line: " + line + " of file: " + filename + " either has " +
+                            "an illegal shape name value: " + value + " or the global player shapes array is empty";
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
+                }
             }
             case EST_SUMMON -> {
                 Summon sum = MonsterRegistry.lookupSummon(value);
                 if (sum != null)
                     return new EffectSubTypeWrapper(sum);
-                else
-                    errors.add("Effect starting at line: " + line + " has " +
-                            "an invalid summon type: " + value);
+                else if (value.isEmpty()) {
+                    sum = MonsterRegistry.lookupSummon(0);
+                    return new EffectSubTypeWrapper(sum);
+                } else {
+                    String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal summon value: " + value;
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
+                }
             }
             case EST_STAT -> {
-                Stats stat = Stats.STAT_NONE;
+                Stats stat;
+                if (value.isEmpty()) {
+                    stat = Stats.STAT_STR;
+                    return new EffectSubTypeWrapper(stat);
+                }
+                if (ParseUtils.onlyDigits(value)) {
+                    int val = ParseUtils.parseIntString("Effect", value, line, filename, "mon timed subtype");
+                    // NONE & MAX sentinels exists - don't allow either to be accessed
+                    val++;
+                    if (val < 1 || val > Stats.values().length - 1) {
+                        String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
+                                "an invalid mon timed sub-type value: " + value;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
+                    }
+                    stat = Stats.values()[val];
+                    return new EffectSubTypeWrapper(stat);
+                }
                 try {
-                    stat = Stats.valueOf("STAT_" + value);
+                    stat = Stats.valueOf("STAT_" + value.toUpperCase(Locale.ROOT));
+                    if (stat == Stats.STAT_NONE) {
+                        String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
+                                "a sentinel stat sub-type value: " + value;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
+                    }
                     return new EffectSubTypeWrapper(stat);
                 } catch (IllegalArgumentException e) {
-                    errors.add("Effect starting at line: " + line + " has " +
-                            "an invalid stat type: " + value);
+                    String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal stat value: " + value;
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
                 }
             }
             case EST_ENCHANT -> {
-                EffectEnchant ee = EffectEnchant.EE_NONE;
+                EffectEnchant ee;
+                if (value.isEmpty()) {
+                    ee = EffectEnchant.EE_NONE;
+                    return new EffectSubTypeWrapper(ee);
+                }
+                if (ParseUtils.onlyDigits(value)) {
+                    int val = ParseUtils.parseIntString("Effect", value, line, filename, "enchant subtype");
+                    // NONE sentinels exists - don't allow it to be accessed
+                    val++;
+                    if (val < 1 || val > EffectEnchant.values().length) {
+                        String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
+                                "an invalid enchant sub-type value: " + value;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
+                    }
+                    ee = EffectEnchant.values()[val];
+                    return new EffectSubTypeWrapper(ee);
+                }
                 try {
                     ee = EffectEnchant.valueOf("EE_" + value);
+                    if (ee == EffectEnchant.EE_NONE) {
+                        String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
+                                "a sentinel enchant sub-type value: " + value;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
+                    }
                     return new EffectSubTypeWrapper(ee);
                 } catch (IllegalArgumentException e) {
-                    errors.add("Effect starting at line: " + line + " has " +
-                            "an invalid enchant type: " + value);
+                    String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal enchant value: " + value;
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
                 }
             }
             case EST_EARTHQUAKE -> {
-                Earthquake eq = Earthquake.QUAKE_NONE;
+                Earthquake eq;
+                if (value.isEmpty()) {
+                    eq = Earthquake.QUAKE_NONE;
+                    return new EffectSubTypeWrapper(eq);
+                }
+                if (ParseUtils.onlyDigits(value)) {
+                    int val = ParseUtils.parseIntString("Effect", value, line, filename, "earthquake subtype");
+                    // No sentinels exists
+                    if (val < 0 || val > Earthquake.values().length) {
+                        String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
+                                "an invalid earthquake sub-type value: " + value;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
+                    }
+                    eq = Earthquake.values()[val];
+                    return new EffectSubTypeWrapper(eq);
+                }
                 try {
                     eq = Earthquake.valueOf("QUAKE_" + value);
                     return new EffectSubTypeWrapper(eq);
                 } catch (IllegalArgumentException e) {
-                    errors.add("Effect starting at line: " + line + " has " +
-                            "an invalid earthquake type: " + value);
+                    String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal earthquake value: " + value;
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
                 }
             }
             case EST_GLYPH -> {
-                GlyphType glyph = GlyphType.GLYPH_NONE;
+                GlyphType glyph;
+                if (value.isEmpty()) {
+                    return new EffectSubTypeWrapper(GlyphType.GLYPH_NONE);
+                }
+                if (ParseUtils.onlyDigits(value)) {
+                    int val = ParseUtils.parseIntString("Effect", value, line, filename, "glyph subtype");
+                    // NONE sentinel exists
+                    val++;
+                    if (val < 1 || val > Earthquake.values().length) {
+                        String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
+                                "an invalid glyph sub-type value: " + value;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
+                    }
+                    glyph = GlyphType.values()[val];
+                    return new EffectSubTypeWrapper(glyph);
+                }
                 try {
                     glyph = GlyphType.valueOf("GLYPH_" + value);
+                    if (glyph == GlyphType.GLYPH_NONE) {
+                        String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
+                                "a sentinel glyph sub-type value: " + value;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
+                    }
                     return new EffectSubTypeWrapper(glyph);
                 } catch (IllegalArgumentException e) {
-                    errors.add("Effect starting at line: " + line + " has " +
-                            "an invalid glyph type: " + value);
+                    String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal glyph value: " + value;
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
                 }
             }
             // [C] effect_subtype accepts exactly one string here - "AWAY" - and falls through to
@@ -395,9 +664,10 @@ public class EffectAssembler {
             case EST_TELEPORT -> {
                 if (value.isEmpty()) return teleport(false);
                 if ("AWAY".equals(value)) return teleport(true);
-                errors.add("Effect starting at line: " + line + " has " +
-                        "an invalid teleport type: " + value);
-                return null;
+                String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
+                        "an illegal teleport value: " + value;
+                logger.fatal(msg);
+                throw new DataFileParseException(msg);
             }
             // The mirror of the case above, and deliberately not interchangeable with it: [C]
             // accepts only "SELF" for EF_TELEPORT_TO. monster_spell.txt is the sole data file in
@@ -405,18 +675,26 @@ public class EffectAssembler {
             case EST_TELEPORT_TO -> {
                 if (value.isEmpty()) return teleportTo(false);
                 if ("SELF".equals(value)) return teleportTo(true);
-                errors.add("Effect starting at line: " + line + " has " +
-                        "an invalid teleport to type: " + value);
-                return null;
+                String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
+                        "an illegal teleport to value: " + value;
+                logger.fatal(msg);
+                throw new DataFileParseException(msg);
             }
             case EST_NONE -> {
+                if (!value.equals("NONE") && !value.isEmpty()) {
+                    String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal EST_NONE sub-type value: " + value;
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
+                }
                 return new EffectSubTypeWrapper(EffectSubTypeEnum.EST_NONE);
             }
             default -> {
-                errors.add("Unsupported effect sub-type: " + type.name());
+                String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
+                        "an illegal type value: " + type.name();
+                logger.fatal(msg);
+                throw new DataFileParseException(msg);
             }
         }
-
-        return null;
     }
 }

@@ -19,6 +19,7 @@ package uk.co.jackoftradesltd.backend.parser;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.channel.utils.Flag;
@@ -476,12 +477,14 @@ class ShapeReaderTest {
     }
 
     @Test
-    void anUnknownEffectDropsTheWholeShape() throws IOException {
-        ParseResult<PlayerShape> result = load("bad-effect.txt", withHeader(1,
-                shape("e", "effect:NOTANEFFECT\n")));
+    void anUnknownEffectStopsTheLoad() {
+        // grab_effect_data's error from parse_shape_effect ends the C load. Record-count is
+        // line 1, name 2 and the effect line 3, which is the line the message names.
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("bad-effect.txt",
+                withHeader(1, shape("e", "effect:NOTANEFFECT\n"))));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
+        assertTrue(e.getMessage().contains("Effect starting at line: 3"), e::getMessage);
+        assertTrue(e.getMessage().contains("illegal element value: NOTANEFFECT"), e::getMessage);
     }
 
     @Test

@@ -146,6 +146,25 @@ class MonsterDataLoaderRegistryTest {
         assertNull(MonsterRegistry.lookupSummon("NOSUCHSUMMON"));
     }
 
+    /**
+     * The expected order is the {@code name:} order of the upstream {@code summon.txt}, which C's
+     * {@code finish_parse_summon} turns into array indices 0 to 16 ({@code summon_max} is 18 there, with a blank
+     * last slot that is not held here).
+     */
+    @Test
+    @DisplayName("summons are readable by index in summon.txt order, 0 to 16, and nothing at 17")
+    void summonsResolveByIndexInFileOrder() {
+        List<String> expected = List.of("ANY", "KIN", "MONSTER", "MONSTERS", "ANIMAL", "SPIDER", "HOUND", "HYDRA",
+                "AINU", "DEMON", "UNDEAD", "DRAGON", "HI_DEMON", "HI_UNDEAD", "HI_DRAGON", "WRAITH", "UNIQUE");
+
+        for (int index = 0; index < expected.size(); index++) {
+            assertEquals(expected.get(index), MonsterRegistry.lookupSummon(index).getName(), "summon " + index);
+            assertSame(MonsterRegistry.lookupSummon(expected.get(index)), MonsterRegistry.lookupSummon(index));
+        }
+        assertThrows(IllegalStateException.class, () -> MonsterRegistry.lookupSummon(expected.size()));
+        assertThrows(IllegalStateException.class, () -> MonsterRegistry.lookupSummon(-1));
+    }
+
     @Test
     @DisplayName("visuals.txt registers both the cycler table and the flicker table")
     void visualTablesLoaded() {

@@ -366,8 +366,9 @@ class ChestTrapAssemblerTest {
 
     @Test
     void anEffectBlockThatFailsToResolveEndsTheLoad() {
-        // As an error from grab_effect_data ends the C load. EffectAssembler adds its reason to
-        // the error list before returning null.
+        // As an error from grab_effect_data ends the C load. EffectAssembler throws the
+        // DataFileParseException itself, naming the effect's own line (7), and adds nothing to the
+        // error list.
         EffectParseRecord untyped = new EffectParseRecord("", "", "", "", "", "", "", "", "", "", "", 7);
         List<ChestTrapParseRecord> records = validFile();
         records.set(1, new ChestTrapParseRecord("gas trap", "POISON", "2",
@@ -377,8 +378,9 @@ class ChestTrapAssemblerTest {
         DataFileParseException e = assertThrows(DataFileParseException.class,
                 () -> assemble(records, errors));
 
-        assertTrue(e.getMessage().contains("no valid effects"), e::getMessage);
-        assertTrue(errors.stream().anyMatch(s -> s.contains("no valid effect type")), errors::toString);
+        assertTrue(e.getMessage().contains("Effect starting at line: 7"), e::getMessage);
+        assertTrue(e.getMessage().contains("has an empty element value"), e::getMessage);
+        assertTrue(errors.isEmpty(), errors::toString);
     }
 
     // ---- Error handling ---------------------------------------------------

@@ -1264,7 +1264,7 @@ public class ActivationsGrammar extends Parser {
 		            ((EffectBlockContext)_localctx).diceString =  "";
 		            ((EffectBlockContext)_localctx).yVal =  "";
 		            ((EffectBlockContext)_localctx).xVal =  "";
-		            ((EffectBlockContext)_localctx).effectMessage =  "";
+		            ((EffectBlockContext)_localctx).effectMessage =  null;
 		        
 		int _la;
 		try {

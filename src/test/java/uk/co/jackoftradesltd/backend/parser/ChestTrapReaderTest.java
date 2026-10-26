@@ -456,12 +456,14 @@ class ChestTrapReaderTest {
 
     @Test
     void anUnresolvableEffectEndsTheLoad() throws IOException {
-        // EffectAssembler returns null for the block, and the assembler ends the load, as an
-        // error from grab_effect_data ends it in C.
+        // EffectAssembler throws for the block, naming the effect's own line, which ends the load
+        // as an error from grab_effect_data ends it in C. effect:TIMED_INC:POISONED is line 9 of
+        // FULL_FILE: record-count is 1, then name, code, level, a blank line, name, code, level.
         DataFileParseException e = assertThrows(DataFileParseException.class, () -> parse("bad-effect.txt",
                 FULL_FILE.replace("effect:TIMED_INC:POISONED", "effect:NOT_A_REAL_EFFECT")));
 
-        assertTrue(e.getMessage().contains("line: 6") && e.getMessage().contains("no valid effects"),
+        assertTrue(e.getMessage().contains("line: 9")
+                        && e.getMessage().contains("illegal element value: NOT_A_REAL_EFFECT"),
                 e::getMessage);
     }
 

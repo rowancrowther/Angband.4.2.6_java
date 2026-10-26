@@ -75,13 +75,15 @@ class ProjectionAssemblerTest {
 
     /**
      * Every projection of the shipped file in order, with types taken from the constants'
-     * positions: the first 25 are elements, the next 7 environs, the remaining 24 monster.
+     * positions: the first 25 are elements, the next 7 environs, the remaining 24 monster. The
+     * enum's two sentinels, {@code PROJ_NONE} at the front and {@code PROJ_MAX} at the end, are not
+     * projections in the file, so neither gets a record.
      */
     private static List<ProjectionParseRecord> validFile() {
         List<ProjectionParseRecord> records = new ArrayList<>();
         int line = 0;
         for (ProjectionEnum e : ProjectionEnum.values()) {
-            if (e == ProjectionEnum.PROJ_NONE) continue;
+            if (e == ProjectionEnum.PROJ_NONE || e == ProjectionEnum.PROJ_MAX) continue;
             String type = e.ordinal() <= ProjectionEnum.PROJ_ARROW.ordinal() ? "element"
                     : e.ordinal() <= ProjectionEnum.PROJ_MAKE_TRAP.ordinal() ? "environs" : "monster";
             records.add(record(e.name().substring(5), type, ++line));

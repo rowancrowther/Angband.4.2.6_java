@@ -24,11 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Unit tests for the vocabularies the channel messages are written in — the enums that say what a
@@ -119,9 +115,11 @@ class ChannelEnumsTest {
     class Projections {
 
         /**
-         * C has 25 elements followed by 31 projections and no zero placeholder, giving 56. This
-         * port adds {@code PROJ_NONE} at the front, so it has 57 — and therefore every ordinal is
-         * one higher than C's.
+         * C has 25 elements followed by 31 projections and no zero placeholder, giving 56, and
+         * {@code proj_name_list} ends with the name {@code "MAX"}, which {@code effect_subtype}
+         * accepts as a projection sub-type. This port adds {@code PROJ_NONE} at the front and
+         * {@code PROJ_MAX} at the end, so it has 58 — and therefore every ordinal is one higher
+         * than C's, {@code PROJ_MAX} included (57 here, C's 56).
          *
          * <p>That difference is deliberate and harmless only while nothing indexes by ordinal. C
          * does exactly that, in the place this enum is heading: {@code projections[typ]},
@@ -131,10 +129,12 @@ class ChannelEnumsTest {
          */
         @Test
         void theProjectionListIsCsPlusAZeroPlaceholder() {
-            assertEquals(57, ProjectionEnum.values().length,
-                    "25 elements + 31 projections from C, plus this port's PROJ_NONE");
+            assertEquals(58, ProjectionEnum.values().length,
+                    "25 elements + 31 projections from C, plus this port's PROJ_NONE and C's MAX");
             assertSame(ProjectionEnum.PROJ_NONE, ProjectionEnum.values()[0],
                     "PROJ_NONE is the port's own addition and sits at ordinal 0");
+            assertSame(ProjectionEnum.PROJ_MAX, ProjectionEnum.values()[57],
+                    "PROJ_MAX is C's count sentinel, one ordinal up like every other entry");
         }
 
         /**

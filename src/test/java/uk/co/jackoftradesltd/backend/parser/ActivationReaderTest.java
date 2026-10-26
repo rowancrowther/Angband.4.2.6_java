@@ -117,18 +117,18 @@ class ActivationReaderTest {
     @Test
     void unresolvableEffectStopsTheLoadAsInC() throws IOException {
         // NOTAREALEFFECT is not a known effect type. In C, parse_act_effect returns the error from
-        // grab_effect_data and print_error quits. EffectAssembler returns null and
-        // ActivationAssembler turns that into a DataFileParseException, so nothing loads. The
-        // record-count header is line 1, so the record starts on line 2, and that is the line the
-        // message names (the accepted one-line-per-record deviation).
+        // grab_effect_data (grab_name finds no such effect) and print_error quits. EffectAssembler
+        // throws the DataFileParseException itself, so nothing loads. The message names the line
+        // of the effect: line, as C's parser reports the line it was reading: record-count is
+        // line 1, name 2, aim 3, level 4, power 5, effect 6.
         String path = tempFile("bad-data.txt",
                 "record-count:1\nname:TEST_BAD\naim:0\nlevel:5\npower:1\neffect:NOTAREALEFFECT\ndesc:bad activation\n");
 
         DataFileParseException thrown = assertThrows(DataFileParseException.class,
                 () -> new ActivationReader().parseWithResult(path));
 
-        assertTrue(thrown.getMessage().contains("malformed effect"), thrown.getMessage());
-        assertTrue(thrown.getMessage().contains("line: 2"), thrown.getMessage());
+        assertTrue(thrown.getMessage().contains("illegal element value: NOTAREALEFFECT"), thrown.getMessage());
+        assertTrue(thrown.getMessage().contains("line: 6"), thrown.getMessage());
         assertTrue(thrown.getMessage().contains("bad-data.txt"), thrown.getMessage());
     }
 

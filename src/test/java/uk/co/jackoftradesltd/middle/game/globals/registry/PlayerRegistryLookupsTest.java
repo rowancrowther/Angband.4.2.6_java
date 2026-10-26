@@ -57,6 +57,10 @@ import static org.junit.jupiter.api.Assertions.*;
  *   <li>{@code lookup_player_shape} ({@code player-util.c}) takes the first exact {@code streq}
  *       match, and on a miss sends {@code "Could not find %s shape!"} through {@code msg} and
  *       returns {@code NULL}. The shape returned is the list's own record.</li>
+ *   <li>{@code player_shape_by_idx} ({@code player-util.c}) returns the shape whose {@code sidx}
+ *       equals the index, which {@code parse_shape_name} hands out from 0 in file order, and on a
+ *       miss sends {@code "Could not find shape %d!"} through {@code msg} and returns
+ *       {@code NULL}.</li>
  *   <li>The race loop in {@code rd_player} ({@code load.c}) takes the first exact {@code streq}
  *       match and leaves {@code NULL} on a miss.</li>
  *   <li>{@code findchart} ({@code init.c}) takes the first chart whose {@code idx} equals the
@@ -296,6 +300,73 @@ class PlayerRegistryLookupsTest {
         field("playerShapes").set(null, null);
 
         assertThrows(IllegalStateException.class, () -> PlayerRegistry.lookupPlayerShape("normal"));
+    }
+
+    /**
+     * {@code shape.txt} names, in file order; {@code parse_shape_name} gives each the next
+     * {@code sidx} from 0.
+     */
+    private static final String[] SHAPE_NAMES = {"normal", "fox", "Pukel-man", "bear", "eagle",
+            "bat", "warg", "vampire", "werewolf"};
+
+    @Test
+    void lookupPlayerShapeByIndexIsTheShapeWithThatSidx() throws Exception {
+        List<PlayerShape> shapes = theGameShapes();
+        PlayerRegistry.setPlayerShape(shapes);
+
+        for (int sidx = 0; sidx < SHAPE_NAMES.length; sidx++) {
+            PlayerShape found = PlayerRegistry.lookupPlayerShape(sidx);
+            assertSame(shapes.get(sidx), found, "sidx " + sidx);
+            assertEquals(SHAPE_NAMES[sidx], found.getName(), "sidx " + sidx);
+        }
+        assertTrue(bus.types.isEmpty());
+    }
+
+    @Test
+    void lookupPlayerShapeByIndexAndByNameFindTheSameRecord() {
+        PlayerRegistry.setPlayerShape(theGameShapes());
+
+        assertSame(PlayerRegistry.lookupPlayerShape("bear"), PlayerRegistry.lookupPlayerShape(3));
+        assertSame(PlayerRegistry.lookupPlayerShape("werewolf"), PlayerRegistry.lookupPlayerShape(8));
+    }
+
+    @Test
+    void lookupPlayerShapeByIndexBelowZeroSendsCsMessage() {
+        PlayerRegistry.setPlayerShape(theGameShapes());
+
+        assertNull(PlayerRegistry.lookupPlayerShape(-1));
+
+        assertEquals(List.of(GameEventType.EVENT_MESSAGE), bus.types);
+        EventDataMessage sent = assertInstanceOf(EventDataMessage.class, bus.payloads.get(0));
+        assertEquals("Could not find shape -1!", sent.message());
+    }
+
+    @Test
+    void lookupPlayerShapeByIndexAtTheShapeCountSendsCsMessage() {
+        PlayerRegistry.setPlayerShape(theGameShapes());
+
+        assertNull(PlayerRegistry.lookupPlayerShape(9));
+
+        assertEquals(List.of(GameEventType.EVENT_MESSAGE), bus.types);
+        EventDataMessage sent = assertInstanceOf(EventDataMessage.class, bus.payloads.get(0));
+        assertEquals("Could not find shape 9!", sent.message());
+    }
+
+    @Test
+    void lookupPlayerShapeByIndexInAnEmptyListFindsNothing() {
+        PlayerRegistry.setPlayerShape(List.of());
+
+        assertNull(PlayerRegistry.lookupPlayerShape(0));
+
+        EventDataMessage sent = assertInstanceOf(EventDataMessage.class, bus.payloads.get(0));
+        assertEquals("Could not find shape 0!", sent.message());
+    }
+
+    @Test
+    void lookupPlayerShapeByIndexRefusesToReadBeforeTheShapesAreLoaded() throws Exception {
+        field("playerShapes").set(null, null);
+
+        assertThrows(IllegalStateException.class, () -> PlayerRegistry.lookupPlayerShape(0));
     }
 
     @Test

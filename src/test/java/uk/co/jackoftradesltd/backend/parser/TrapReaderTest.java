@@ -21,6 +21,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
@@ -780,35 +781,37 @@ class TrapReaderTest {
     }
 
     /**
-     * C: a bad effect stops the load. {@code EffectAssembler.assemble} answers {@code null} for a
-     * block with a bad effect, and {@code TrapAssembler} drops the record, as every other caller
-     * does. The port's usual soft error skips the record instead of stopping the load.
+     * C: a bad effect stops the load. {@code grab_effect_data} returns the error from
+     * {@code parse_trap_effect}, and the parser quits. {@code EffectAssembler} throws the
+     * {@code DataFileParseException} itself, naming the effect's own line: record-count is line 1,
+     * name 2, graphics 3 and the effect 4.
      */
     @Test
-    void aBadEffectDropsTheTrap() throws Exception {
-        ParseResult<TrapKind> r = load("bad-effect.txt", withHeader(1,
-                "name:a:b\ngraphics:^:w\neffect:NOTANEFFECT\ndice:1\n"));
+    void aBadEffectStopsTheLoad() {
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("bad-effect.txt",
+                withHeader(1, "name:a:b\ngraphics:^:w\neffect:NOTANEFFECT\ndice:1\n")));
 
-        assertTrue(hasError(r, "NOTANEFFECT"), r.errors()::toString);
-        assertEquals(0, r.items().size());
+        assertTrue(e.getMessage().contains("Effect starting at line: 4"), e::getMessage);
+        assertTrue(e.getMessage().contains("illegal element value: NOTANEFFECT"), e::getMessage);
     }
 
     @Test
-    void aBadExtraEffectDropsTheTrap() throws Exception {
-        ParseResult<TrapKind> r = load("bad-xtra.txt", withHeader(1,
-                "name:a:b\ngraphics:^:w\neffect-xtra:NOTANEFFECT\ndice-xtra:1\n"));
+    void aBadExtraEffectStopsTheLoad() {
+        // parse_trap_effect_xtra returns the same grab_effect_data error as parse_trap_effect
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("bad-xtra.txt",
+                withHeader(1, "name:a:b\ngraphics:^:w\neffect-xtra:NOTANEFFECT\ndice-xtra:1\n")));
 
-        assertTrue(hasError(r, "NOTANEFFECT"), r.errors()::toString);
-        assertEquals(0, r.items().size());
+        assertTrue(e.getMessage().contains("Effect starting at line: 4"), e::getMessage);
+        assertTrue(e.getMessage().contains("illegal element value: NOTANEFFECT"), e::getMessage);
     }
 
     @Test
-    void aTrapAfterABadEffectTakesTheIndexTheBadOneWouldHaveHad() throws Exception {
-        ParseResult<TrapKind> r = load("bad-then-good.txt", withHeader(2,
-                "name:a:b\ngraphics:^:w\neffect:NOTANEFFECT\ndice:1\nname:c:d\ngraphics:^:w\n"));
+    void aBadEffectStopsTheLoadBeforeTheNextTrapIsReached() {
+        // C quits at the bad effect line, so the second trap is never parsed and no index is
+        // handed on; the exception names the first trap's effect, line 4.
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("bad-then-good.txt",
+                withHeader(2, "name:a:b\ngraphics:^:w\neffect:NOTANEFFECT\ndice:1\nname:c:d\ngraphics:^:w\n")));
 
-        assertEquals(1, r.items().size());
-        assertEquals(0, r.items().getFirst().getTrapKindIndex());
-        assertEquals("d", r.items().getFirst().getDescription());
+        assertTrue(e.getMessage().contains("Effect starting at line: 4"), e::getMessage);
     }
 }

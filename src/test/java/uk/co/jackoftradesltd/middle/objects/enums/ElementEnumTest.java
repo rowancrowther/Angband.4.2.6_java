@@ -27,11 +27,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Unit tests for {@link ElementEnum} — the damage elements, the port of C's {@code ELEM_*} list
@@ -123,16 +119,18 @@ class ElementEnumTest {
      * harmless — a placeholder mapping to a placeholder — but it is worth pinning, because it
      * means a null return is <em>not</em> a reliable "this is not a real element" test.
      *
-     * <p>{@code ELEM_MAX} has no counterpart, so the lookup returns null rather than throwing.
-     * Null is the signal that the two lists have drifted apart, which is exactly what a missing
-     * {@code PROJ_MAX} looks like from here.
+     * <p>{@code ELEM_MAX} resolves to {@code PROJ_MAX}: both enums end with a count sentinel of
+     * that name, and the lookup is by name. C has no such link (its {@code ELEM_MAX} is 25, a real
+     * projection's index), so this too is a placeholder mapping to a placeholder. Null is the
+     * signal that the two lists have drifted apart, which is what a missing {@code PROJ_MAX}
+     * looked like from here before the sentinel was added for {@code effect_subtype}.
      */
     @Test
     void theSentinelsResolveOnlyAsFarAsTheirNamesExist() {
         assertSame(ProjectionEnum.PROJ_NONE, ElementEnum.ELEM_NONE.getProjectionEnum(),
                 "both enums carry a NONE placeholder, so the names correspond");
-        assertNull(ElementEnum.ELEM_MAX.getProjectionEnum(),
-                "there is no PROJ_MAX, so the count sentinel resolves to nothing");
+        assertSame(ProjectionEnum.PROJ_MAX, ElementEnum.ELEM_MAX.getProjectionEnum(),
+                "both enums carry a MAX sentinel, so the names correspond");
     }
 
     /**

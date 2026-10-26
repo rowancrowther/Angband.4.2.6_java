@@ -41,7 +41,7 @@ import java.util.Map;
  * {@code bodies}, {@code realms}, {@code shapes} and {@code timed_effects}, the counters
  * {@code z_info->equip_slots_max} and {@code z_info->shape_max}, the {@code PY_FOOD_*} ints, and
  * the lookups that walk them ({@code lookup_realm} in {@code player.c},
- * {@code lookup_player_shape} in {@code player-util.c}, the static {@code findchart} in
+ * {@code lookup_player_shape} and {@code player_shape_by_idx} in {@code player-util.c}, the static {@code findchart} in
  * {@code init.c}, and the race-by-name loop in {@code load.c}). The port gathers them into one
  * class but keeps them static, so a caller still reaches them as globals rather than through an
  * instance.
@@ -60,7 +60,7 @@ import java.util.Map;
  * Thereafter it is only read. It was split out of {@code GameConstants} as one domain slice of the
  * loader/registry refactor.
  *
- * <p>Class PlayerRegistry commented in full on 261008.
+ * <p>Class PlayerRegistry commented in full on 261026.
  *
  * @author Rowan Crowther
  */
@@ -277,10 +277,11 @@ public class PlayerRegistry {
     private static int playerShapeMax;
     /**
      * The loaded player shapes in file order - the port of C's {@code shapes} list (which C holds
-     * in reverse file order). Resolved by name via {@link #lookupPlayerShape}; {@code null} until
-     * loaded.
+     * in reverse file order). Resolved by name via {@link #lookupPlayerShape(String)}, or by
+     * position via {@link #lookupPlayerShape(int)}, which stands in for C's {@code sidx} because
+     * the port's file order is C's {@code sidx} order; {@code null} until loaded.
      *
-     * <p>Field playerShapes commented in full on 261008.
+     * <p>Field playerShapes commented in full on 261026.
      */
     private static List<PlayerShape> playerShapes;
     /**
@@ -778,7 +779,10 @@ public class PlayerRegistry {
      * {@code null}. The miss is not fatal in either version, so callers must guard. The shape
      * returned is the shared original, not a copy, as in C.
      *
-     * <p>Function lookupPlayerShape commented in full on 261008.
+     * <p>The by-position counterpart, C's {@code player_shape_by_idx}, is
+     * {@link #lookupPlayerShape(int)}.
+     *
+     * <p>Function lookupPlayerShape commented in full on 261026.
      *
      * @param name the shape name, e.g. {@code "normal"} or {@code "bear"}
      * @return the matching {@link PlayerShape}, or {@code null} if none matches
@@ -792,7 +796,7 @@ public class PlayerRegistry {
             logger.fatal(message, e);
             throw e;
         }
-
+        
         PlayerShape shape = playerShapes.stream().filter(s -> name.equals(s.getName()))
                 .findFirst().orElse(null);
 
@@ -800,6 +804,51 @@ public class PlayerRegistry {
             Message.message("Could not find %s shape!", name);
 
         return shape;
+    }
+    
+    /**
+     * Look up a player shape by its position in load order.
+     *
+     * <p>The port of C's {@code player_shape_by_idx} in {@code player-util.c}, which walks the
+     * {@code shapes} list for the shape whose {@code sidx} equals the index asked for and returns
+     * it. C hands out {@code sidx} as it parses ({@code z_info->shape_max++} in
+     * {@code parse_shape_name}, {@code init.c}), so the first {@code name:} line in
+     * {@code shape.txt} is 0, the next 1, and so on. The port keeps its list in file order, so the
+     * position in the list is the {@code sidx} and a subscript finds the same shape. The shape
+     * returned is the shared original, not a copy, as in C.
+     *
+     * <p>On a miss, which means a negative number or one at or beyond {@link #getPlayerShapeMax},
+     * C shows the player {@code "Could not find shape %d!"} through {@code msg} and returns
+     * {@code NULL}; the port sends the same text through {@link Message#message} and returns
+     * {@code null}. The miss is not fatal in either version, so callers must guard.
+     *
+     * <p>C's only run-time caller is {@code effect_handler_SHAPECHANGE}
+     * ({@code effect-handler-general.c}), which looks the shape up from the sub-type index
+     * {@code effect_subtype} stored at load. The port has no such index to look up, because
+     * {@code EffectAssembler} resolves the shape by name when the effect is assembled and keeps the
+     * {@link PlayerShape} itself. The one use is an {@code effect:SHAPECHANGE} line with no
+     * sub-type, which C leaves at sub-type 0 and the port resolves to {@code lookupPlayerShape(0)}.
+     *
+     * <p>Function lookupPlayerShape(int) coded on 261026, commented in full on 261026.
+     *
+     * @param number the shape's position in the loaded shape list, the same as C's {@code sidx}
+     * @return the matching {@link PlayerShape}, or {@code null} if the number is out of range
+     * @throws IllegalStateException if player shapes have not been loaded
+     */
+    public static PlayerShape lookupPlayerShape(int number) {
+        if (playerShapes == null) {
+            String message = "Invalid attempt to access playerShapes when it hasn't been initialized";
+            IllegalStateException e = new IllegalStateException(message);
+            logger.fatal(message, e);
+            throw e;
+        }
+        
+        if (number < 0 || number >= playerShapes.size())
+            Message.message("Could not find shape %d!", number);
+        else
+            return playerShapes.get(number);
+        
+        return null;
     }
 
     /**

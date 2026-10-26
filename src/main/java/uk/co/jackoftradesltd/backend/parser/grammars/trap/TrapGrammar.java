@@ -14,6 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
+
 // Generated from TrapGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.trap;
 
@@ -2054,7 +2055,7 @@ public class TrapGrammar extends Parser {
 		            ((EffectBlockContext)_localctx).diceString =  "";
 		            ((EffectBlockContext)_localctx).yVal =  "";
 		            ((EffectBlockContext)_localctx).xVal =  "";
-		            ((EffectBlockContext)_localctx).effectMessage =  "";
+		            ((EffectBlockContext)_localctx).effectMessage =  null;
 		        
 		int _la;
 		try {

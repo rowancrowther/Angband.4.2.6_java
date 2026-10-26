@@ -390,8 +390,10 @@ class CurseAssemblerTest {
     void unknownEffectStops() {
         DataFileParseException e = stops(new Rec("a").effect("NOT_AN_EFFECT", 7).line(5));
 
-        assertAll(() -> assertTrue(e.getMessage().contains("line: 5"), e::getMessage),
-                () -> assertTrue(e.getMessage().contains("line: 7"), e::getMessage));
+        // EffectAssembler throws for the effect, naming the effect's own line (7), not the curse's (5)
+        assertAll(() -> assertTrue(e.getMessage().contains("Effect starting at line: 7"), e::getMessage),
+                () -> assertTrue(e.getMessage().contains("illegal element value: NOT_AN_EFFECT"),
+                        e::getMessage));
     }
 
     @Test

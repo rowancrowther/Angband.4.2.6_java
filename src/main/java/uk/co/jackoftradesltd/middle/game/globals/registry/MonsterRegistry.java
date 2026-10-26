@@ -137,11 +137,12 @@ public class MonsterRegistry {
      */
     private static List<MonsterBase> monsterBases;
     /**
-     * The loaded summon specifications. C holds them in the {@code summons} array of {@code mon-summon.c}, found
-     * by index through {@code summon_name_to_idx}; {@link #lookupSummon} returns the record itself instead. Null
-     * until {@link #setSummons} runs.
+     * The loaded summon specifications, in file order. C holds them in the {@code summons} array of
+     * {@code mon-summon.c}, found by index through {@code summon_name_to_idx}; {@link #lookupSummon(String)} returns
+     * the record itself instead, and {@link #lookupSummon(int)} reads a record by its position, which is the same
+     * index C uses. C's blank last slot is not held (see the class block). Null until {@link #setSummons} runs.
      *
-     * <p>Field summons coded before 261009, commented in full on 261009.
+     * <p>Field summons coded before 261009, commented in full on 261025.
      */
     private static List<Summon> summons;
     /**
@@ -409,6 +410,48 @@ public class MonsterRegistry {
                 .filter(s -> s.getName().equals(summonName))
                 .findFirst()
                 .orElse(null);
+    }
+    
+    /**
+     * Fetches the summon at a given position in the list, the Java form of reading {@code summons[index]} in
+     * {@code mon-summon.c}, which {@code summon_message_type}, {@code summon_fallback_type} and
+     * {@code summon_specific_okay} all do. The position is the same one C uses: {@code finish_parse_summon} fills the
+     * array from its highest index down while walking a chain built head-first, so the records sit in file order and
+     * the first record in {@code summon.txt} is index 0. The list here is also in file order, so index {@code n} is
+     * the same summon in both. The shipped file holds 17 records, so the valid indices are 0 to 16, with index 0 being
+     * {@code ANY}.
+     *
+     * <p>C makes no range check when it reads {@code summons[index]}, so an index outside the array is undefined
+     * behaviour there; {@code -1}, the value C's {@code fallback} field holds for "none", must never be passed on. The
+     * one C function that does check is {@code summon_desc}, which returns {@code NULL} for an index below 0 or at or
+     * above {@code summon_max}. This method does not copy that: it throws for any index outside 0 to size - 1, so a
+     * stray index fails loudly instead of returning nothing. Because the list holds no blank slot (see the class
+     * block), the index C counts as valid for the blank last slot, the record count itself, also throws here. A caller
+     * that needs {@code summon_desc}'s behaviour has to test the range itself before calling.
+     *
+     * <p>Function lookupSummon(int) coded before 261025, commented in full on 261025.
+     *
+     * @param val the position of the summon in the list, counting from 0
+     * @return the summon at that position, the list's own record
+     * @throws IllegalStateException if the summons have not been loaded yet, or {@code val} is negative or not less
+     *                               than the number of loaded summons
+     */
+    public static Summon lookupSummon(int val) {
+        if (summons == null) {
+            String message = "Invalid attempt to access summons when it hasn't been initialized";
+            IllegalStateException e = new IllegalStateException(message);
+            logger.fatal(message, e);
+            throw e;
+        }
+        
+        if (val < 0 || val >= summons.size()) {
+            String message = "Invalid integer access to summons array";
+            IllegalStateException e = new IllegalStateException(message);
+            logger.fatal(message, e);
+            throw e;
+        }
+        
+        return summons.get(val);
     }
 
     /**

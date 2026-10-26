@@ -85,7 +85,8 @@ public enum ProjectionEnum {
     PROJ_MON_HOLD,
     PROJ_MON_STUN,
     PROJ_MON_DRAIN,
-    PROJ_MON_CRUSH;
+    PROJ_MON_CRUSH,
+    PROJ_MAX;
 
     /**
      * Finds the projection corresponding to a damage element — {@link ElementEnum#ELEM_FIRE} to

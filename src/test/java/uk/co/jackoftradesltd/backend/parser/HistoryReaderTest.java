@@ -19,6 +19,7 @@ package uk.co.jackoftradesltd.backend.parser;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.player.PlayerHistoryChart;
 import uk.co.jackoftradesltd.middle.player.PlayerHistoryEntry;
@@ -41,20 +42,20 @@ import static org.junit.jupiter.api.Assertions.*;
  * sharing a chart number fold into one {@link PlayerHistoryChart} carrying many
  * {@link PlayerHistoryEntry} rows, and each chart's {@code next} number is resolved in a second pass
  * into a direct successor reference (or {@code null} for the terminal {@code 0}). The suite also
- * covers the two invariants the assembler enforces beyond C — a chart's successor must be
- * <em>uniform</em> across its records, and a non-zero successor must <em>resolve</em> — plus both
- * error channels {@code GrammarDriver} threads through {@link ParseResult}: the soft
- * skip-and-continue {@code errors} list and the hard fail-closed channel.
+ * covers the failures that stop the load — a negative chart number, a chart repeated with a
+ * different successor (the one invariant the assembler enforces beyond C) and a non-zero successor
+ * that names no chart — each thrown as a {@link DataFileParseException}, plus the hard fail-closed
+ * channel {@code GrammarDriver} threads through {@link ParseResult} for grammar errors and the soft
+ * {@code record-count:} mismatch.
  *
  * <p>Two notes on the fixtures:
  * <ul>
  *   <li>No registry seeding is required — History resolves entirely against its own file, with no
  *       cross-file references, so nothing needs {@code GameConstants} loaded first.</li>
- *   <li>The {@code HistoryLexer} guarantees {@code INTEGER} is a run of digits, so a
- *       <em>non-numeric</em> chart/next/percent value is a hard lexer error, not a soft
- *       {@code NumberFormatException}. The only route into the assembler's numeric {@code catch}
- *       blocks is integer <em>overflow</em>, which is how {@link #integerOverflowInPercentIsReportedAndRecordSkipped()}
- *       exercises that path (mirroring {@code WorldReader}).</li>
+ *   <li>The {@code HistoryLexer} guarantees {@code INTEGER} is an optional {@code -} and a run of
+ *       digits, so a <em>non-numeric</em> chart/next/percent value is a hard lexer error. The only
+ *       way to make the number reader work hard is integer <em>overflow</em>, which it clamps
+ *       ({@link #integerOverflowInPercentIsClampedWhereCWrapsIt()}).</li>
  * </ul>
  *
  * <p>{@link PlayerHistoryChart} exposes no accessor for its entry list, so {@link #entriesOf} reads
@@ -179,47 +180,87 @@ class HistoryReaderTest {
         assertNull(terminal.getSuccessor());
     }
 
-    // ---- Soft errors: skip-and-continue, partial results survive ---------
+    // ---- Failures that stop the load -------------------------------------
 
-    @Test
-    void mismatchedSuccessorWithinChartIsReportedAndEntrySkipped() throws IOException {
-        // Same chart number, two different successors: the model can hold only one successor per
-        // chart, so the contradicting record is rejected (its phrase is dropped) but the chart loads.
-        ParseResult<PlayerHistoryChart> result = load("mismatch.txt", withHeader(2,
-                record(5, 0, 50, "alpha")
-                        + record(5, 7, 60, "beta")));
-
-        assertEquals(1, result.items().size());
-        PlayerHistoryChart chart = byNumber(result.items(), 5);
-        assertEquals(1, entriesOf(chart).size());          // only 'alpha' survived
-        assertEquals("alpha", entriesOf(chart).get(0).getText());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("successor")),
-                result.errors()::toString);
+    /**
+     * A bad record ends the load, as every parse error does in C ({@code print_error} in
+     * {@code datafile.c}): the assembler throws a {@link DataFileParseException} naming the file and
+     * nothing is returned.
+     */
+    private DataFileParseException assertStopsTheLoad(String fileName, String content, String message) {
+        DataFileParseException thrown = assertThrows(DataFileParseException.class,
+                () -> load(fileName, content));
+        assertTrue(thrown.getMessage().contains(message), thrown::getMessage);
+        assertTrue(thrown.getMessage().contains(fileName), thrown::getMessage);
+        return thrown;
     }
 
     @Test
-    void danglingSuccessorIsReportedButChartStillLoads() throws IOException {
-        // A non-zero successor naming a chart that does not exist is a soft error; the chart itself
-        // still loads (partial-results contract) with no successor linked.
-        ParseResult<PlayerHistoryChart> result = load("dangling.txt", withHeader(1,
-                record(1, 999, 50, "lonely")));
+    void aChartRepeatedWithADifferentSuccessorStopsTheLoadHereWhereCAcceptsIt() {
+        // C keeps isucc on every entry, so entries of chart 5 may name 0 and 7. The port holds one
+        // successor per chart (PlayerHistoryChart), so the second record is refused. The message
+        // names the line of the offending chart line and the successor the chart began with.
+        DataFileParseException thrown = assertStopsTheLoad("mismatch.txt", withHeader(2,
+                        record(5, 0, 50, "alpha") + record(5, 7, 60, "beta")),
+                "a successor chart value: 7 that disagrees with 0");
 
-        assertEquals(1, result.items().size());
-        assertNull(byNumber(result.items(), 1).getSuccessor());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown successor")),
-                result.errors()::toString);
+        assertTrue(thrown.getMessage().contains("line: 4"), thrown::getMessage);
     }
 
     @Test
-    void integerOverflowInPercentIsReportedAndRecordSkipped() throws IOException {
-        // INTEGER is lexed as digits, so the only non-numeric route into the assembler's numeric
-        // catch is overflow. An overflowing percent drops the whole record before the chart is built.
+    void aChartRepeatedWithTheSameSuccessorKeepsEveryEntryInFileOrder() throws IOException {
+        // findchart reuses chart 5, and finish_parse_history puts the entries back in file order.
+        ParseResult<PlayerHistoryChart> result = load("repeat.txt", withHeader(3,
+                record(5, 0, 10, "a") + record(6, 0, 100, "z") + record(5, 0, 100, "b")));
+
+        assertFalse(result.hasErrors(), result.errors()::toString);
+        assertEquals(2, result.items().size());
+        List<PlayerHistoryEntry> entries = entriesOf(byNumber(result.items(), 5));
+        assertEquals(List.of("a", "b"), entries.stream().map(PlayerHistoryEntry::getText).toList());
+        assertEquals(List.of(10, 100), entries.stream().map(PlayerHistoryEntry::getRoll).toList());
+    }
+
+    @Test
+    void danglingSuccessorStopsTheLoadAsInC() {
+        // finish_parse_history returns -1 when findchart misses a non-zero isucc.
+        assertStopsTheLoad("dangling.txt", withHeader(1, record(1, 999, 50, "lonely")),
+                "has an unknown successor chart: 999");
+    }
+
+    @Test
+    void aNegativeSuccessorIsNonZeroSoItIsLookedUpAndStopsTheLoadAsInC() {
+        // isucc is an int, -1 is non-zero, and findchart(-1) matches no chart.
+        assertStopsTheLoad("negative-next.txt", withHeader(1, record(1, -1, 50, "x")),
+                "has an unknown successor chart: -1");
+    }
+
+    @Test
+    void aSuccessorOfTheChartItselfLinksToItself() throws IOException {
+        // findchart finds chart 4 for isucc 4, so the loop is allowed; the port links the same object.
+        ParseResult<PlayerHistoryChart> result = load("self.txt", withHeader(1, record(4, 4, 100, "x")));
+
+        PlayerHistoryChart chart = byNumber(result.items(), 4);
+        assertSame(chart, chart.getSuccessor());
+    }
+
+    @Test
+    void aSuccessorMayNameAChartThatAppearsLaterInTheFile() throws IOException {
+        // The reason C resolves in finish_parse_history and not at load.
+        ParseResult<PlayerHistoryChart> result = load("forward.txt", withHeader(2,
+                record(1, 2, 100, "a") + record(2, 0, 100, "b")));
+
+        assertSame(byNumber(result.items(), 2), byNumber(result.items(), 1).getSuccessor());
+    }
+
+    @Test
+    void integerOverflowInPercentIsClampedWhereCWrapsIt() throws IOException {
+        // strtol returns a long and C keeps the low 32 bits in the int field; ParseUtils clamps
+        // instead (accepted deviation 2026-10-22). The record loads either way.
         ParseResult<PlayerHistoryChart> result = load("overflow.txt", withHeader(1,
                 "chart:1:0:99999999999999999\nphrase:too big\n"));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("malformed percent")),
-                result.errors()::toString);
+        assertFalse(result.hasErrors(), result.errors()::toString);
+        assertEquals(Integer.MAX_VALUE, entriesOf(byNumber(result.items(), 1)).get(0).getRoll());
     }
 
     @Test
@@ -388,13 +429,40 @@ class HistoryReaderTest {
     }
 
     @Test
-    void aNegativeChartNumberLoadsHereWhereCRejectsIt() throws IOException {
+    void aNegativeChartNumberStopsTheLoadAsInC() {
         // 'chart' is a uint in init_parse_history and parser_parse refuses a leading '-'.
-        ParseResult<PlayerHistoryChart> result = load("negative-chart.txt", withHeader(1,
-                record(-1, 0, 100, "x")));
+        DataFileParseException thrown = assertStopsTheLoad("negative-chart.txt", withHeader(1,
+                record(-1, 0, 100, "x")), "an illegal negative current chart value: -1");
+
+        assertTrue(thrown.getMessage().contains("line: 2"), thrown::getMessage);
+    }
+
+    @Test
+    void minusZeroIsRefusedAsInCBecauseTheTextIsTestedNotTheValue() {
+        // parser_parse tests *tok == '-', so -0 is NOT_NUMBER even though its value is 0.
+        assertStopsTheLoad("minus-zero.txt", withHeader(1, "chart:-0:0:100\nphrase:x\n"),
+                "an illegal negative current chart value: -0");
+    }
+
+    @Test
+    void chartZeroLoadsAsInC() throws IOException {
+        // strtoul accepts 0 and findchart(0) misses, so C builds a chart whose idx is 0.
+        ParseResult<PlayerHistoryChart> result = load("chart-zero.txt", withHeader(1,
+                record(0, 0, 100, "x")));
 
         assertFalse(result.hasErrors(), result.errors()::toString);
-        assertEquals(-1, result.items().get(0).getChartNumber());
+        assertEquals(1, result.items().size());
+        assertEquals(0, result.items().get(0).getChartNumber());
+    }
+
+    @Test
+    void aChartZeroCanNotBeNamedAsASuccessorBecauseZeroEndsTheChain() throws IOException {
+        // isucc 0 is skipped in finish_parse_history, so chart 1 ends the chain even though a
+        // chart 0 exists.
+        ParseResult<PlayerHistoryChart> result = load("zero-target.txt", withHeader(2,
+                record(0, 0, 100, "zero") + record(1, 0, 100, "one")));
+
+        assertNull(byNumber(result.items(), 1).getSuccessor());
     }
 
     @Test
@@ -421,13 +489,16 @@ class HistoryReaderTest {
     }
 
     @Test
-    void aZeroPaddedChartIsReadInDecimalWhereCReadsItInOctal() throws IOException {
-        // strtoul base 0 reads 010 as 8.
-        ParseResult<PlayerHistoryChart> result = load("octal.txt", withHeader(1,
-                "chart:010:0:100\nphrase:x\n"));
+    void zeroPaddedNumbersAreReadInOctalAsInC() throws IOException {
+        // strtoul and strtol base 0 read 010 as 8 for the chart, the next and the roll alike.
+        ParseResult<PlayerHistoryChart> result = load("octal.txt", withHeader(2,
+                "chart:010:010:010\nphrase:x\n" + record(8, 8, 100, "y")));
 
         assertFalse(result.hasErrors(), result.errors()::toString);
-        assertEquals(10, result.items().get(0).getChartNumber());
+        PlayerHistoryChart chart = byNumber(result.items(), 8);
+        assertEquals(2, entriesOf(chart).size());
+        assertEquals(8, chart.getSuccessorNumber());
+        assertEquals(8, entriesOf(chart).get(0).getRoll());
     }
 
     @Test

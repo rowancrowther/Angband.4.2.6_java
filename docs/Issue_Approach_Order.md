@@ -232,8 +232,8 @@ Paths are under `src/main/java/uk/co/jackoftradesltd/`. The figure in brackets i
 - `backend/parser/itemobject/ItemObjectAssembler.java` (32): ~~96, 102, 112, 119, 130, 140, 150, 162, 171, 180, 190, 199, 209, 217, 224, 231, 240, 251, 256, 262, 288, 293, 315, 319, 329, 335, 347, 359, 371, 382, 400, 418~~
 - `backend/parser/monsterbase/MonsterBaseAssembler.java` (4): ~~70, 77, 86, 92~~
 - `backend/parser/monster/MonsterAssembler.java` (41): ~~89, 103, 113, 123, 134, 144, 154, 164, 174, 185, 194, 205, 213, 223, 233, 244, 256, 269, 279, 286, 307, 317, 328, 338, 364, 386, 397, 410, 436, 442, 450, 463, 495, 501, 507, 516, 530, 538, 556, 562, 585~~
-- `backend/parser/monsterspell/MonsterSpellAssembler.java` (3): 77, 91, 100
-- `backend/parser/monsterspell/MonsterSpellLevelAssembler.java` (4): 72, 82, 91, 100
+- `backend/parser/monsterspell/MonsterSpellAssembler.java` (3): ~~77, 91, 100~~
+- `backend/parser/monsterspell/MonsterSpellLevelAssembler.java` (4): ~~72, 82, 91, 100~~
 - `backend/parser/names/NamesAssembler.java` (1): 56
 - `backend/parser/objectbase/ObjectBaseAssembler.java` (6): 66, 74, 88, 97, 108, 116
 - `backend/parser/objectproperty/ObjectPropertyAssembler.java` (12): 79, 84, 93, 99, 105, 133, 139, 148, 158, 173, 180, 206
@@ -319,7 +319,7 @@ Each group is one helper (or one policy) and then one pass over its users.
 
 ### Colours that C reads as white
 
-- A: `monsterspell/MonsterSpellLevelAssembler.java` lore colours (drops the level).
+- A: `monsterspell/MonsterSpellLevelAssembler.java` lore colours (drops the level). [<span style="color:#006400">**CLOSED**</span> 26-10-27: an unknown base, resist or immune colour reads as `COLOUR_WHITE`; `MonsterSpellLevelAssemblerTest` and `MonsterSpellReaderTest` pass.]
 - A: `objectbase/ObjectBaseAssembler.java` (drops the record).
 - A: `flavour/FlavourAssembler.java` colour names, in the flavour entry.
 - The Stage 0 strict-or-lenient answer decides all three, and the grammar side in Stage 7f.
@@ -327,7 +327,7 @@ Each group is one helper (or one policy) and then one pass over its users.
 ### Absent directives that C zeroes
 
 - A: `monsterspell/MonsterSpellAssembler.java` absent `hit:`.
-- A: `monsterspell/MonsterSpellLevelAssembler.java` no implicit level 0. Settle this before the spell-walking code is ported.
+- A: `monsterspell/MonsterSpellLevelAssembler.java` no implicit level 0. Settle this before the spell-walking code is ported. [<span style="color:#006400">**CLOSED**</span> 26-10-27: the blank level 0 is added for a leading `power-cutoff:` and for a spell with no level text, and a power-less record merges into the last level; `MonsterSpellLevelAssemblerTest` and `MonsterSpellReaderTest` pass.]
 - A: `slay/SlayAssembler.java` missing numbers.
 - A: `monster/MonsterAssembler.java` no `color:`.
 - A: `artifact/ArtifactAssembler.java` no `base-object:`.

@@ -18,13 +18,6 @@
 // Generated from MonsterSpellGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.monsterspell;
 
-    import uk.co.jackoftradesltd.backend.parser.monsterspell.MonsterSpellParseRecord;
-    import uk.co.jackoftradesltd.backend.parser.monsterspell.MonsterSpellParseRecord.MonsterSpellLevelParseRecord;
-    import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
-
-    import java.util.ArrayList;
-    import java.util.List;
-
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
 /**
@@ -162,6 +155,16 @@ public interface MonsterSpellGrammarListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitMessageMiss(MonsterSpellGrammar.MessageMissContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link MonsterSpellGrammar#levelDirectives}.
+	 * @param ctx the parse tree
+	 */
+	void enterLevelDirectives(MonsterSpellGrammar.LevelDirectivesContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MonsterSpellGrammar#levelDirectives}.
+	 * @param ctx the parse tree
+	 */
+	void exitLevelDirectives(MonsterSpellGrammar.LevelDirectivesContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link MonsterSpellGrammar#powerCutoffBlock}.
 	 * @param ctx the parse tree

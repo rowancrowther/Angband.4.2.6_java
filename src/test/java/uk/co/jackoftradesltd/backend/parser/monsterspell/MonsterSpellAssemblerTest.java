@@ -169,15 +169,16 @@ class MonsterSpellAssemblerTest {
     // ---- Levels, order and the error list ----------------------------------
 
     @Test
-    void aLevelListThatComesBackNullStopsTheLoad() {
-        // MonsterSpellLevelAssembler returns null for a power-cutoff that is not a number.
+    void aPowerCutoffThatIsNotANumberStopsTheLoad() {
+        // parser_parse() answers PARSE_ERROR_NOT_NUMBER for a power-cutoff strtol cannot read. The
+        // level assembler throws it itself now, naming the line the level began on.
         MonsterSpellParseRecord bad = new MonsterSpellParseRecord("BLINK", "", "100", List.of(),
                 List.of(new MonsterSpellLevelParseRecord("abc", "lore", "", "", "", "", "", "", "", 4)), 3);
 
         DataFileParseException e = assertThrows(DataFileParseException.class, () -> assemble(bad));
 
-        assertTrue(e.getMessage().startsWith("Monster spell starting at line: 3 of file: " + FILE),
-                e::getMessage);
+        assertEquals("Monster spell level beginning at line: 4 of file: " + FILE
+                + " has an invalid power cutoff value: abc", e.getMessage());
     }
 
     @Test

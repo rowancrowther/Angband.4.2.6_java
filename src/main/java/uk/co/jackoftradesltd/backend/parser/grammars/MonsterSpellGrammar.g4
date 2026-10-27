@@ -78,61 +78,93 @@ messageMiss
         :   MESSAGE_MISS STRING { $missMsg = $STRING.getText(); }
         ;
 
+levelDirectives                                                            
+          returns[String loreStr, String loreColourBaseStr, String loreColourResistStr,
+                  String loreColourImmuneStr, String messageVisStr, String messageInvisStr,
+                  String messageMissStr, String messageSaveStr, Integer line]
+          : {     $line = $start.getLine();
+                  $loreStr = "";
+                  $loreColourBaseStr = null;
+                  $loreColourResistStr = null;
+                  $loreColourImmuneStr = null;
+                  $messageVisStr = "";
+                  $messageInvisStr = "";
+                  $messageMissStr = "";
+                  $messageSaveStr = ""; }
+              (   lore { $loreStr = $loreStr + $lore.loreStr; }
+              |   loreColourBase { $loreColourBaseStr = $loreColourBase.colourBase; }
+              |   loreColourResist { $loreColourResistStr = $loreColourResist.colourResist; }
+              |   loreColourImmune { $loreColourImmuneStr =  $loreColourImmune.colourImmune; }
+              |   messageVis { $messageVisStr = $messageVisStr + $messageVis.visMsg; }
+              |   messageInvis { $messageInvisStr = $messageInvisStr + $messageInvis.invisMsg; }
+              |   messageMiss { $messageMissStr = $messageMissStr + $messageMiss.missMsg; }
+              |   messageSave { $messageSaveStr = $messageSaveStr + $messageSave.saveMsg; }
+              )+
+          ;
+
 powerCutoffBlock
-        returns[String powerCutOffVal, String loreStr, String loreColourBaseStr, String loreColourResistStr,
-                String loreColourImmuneStr, String messageVisStr, String messageInvisStr, String messageMissStr,
-                String messageSaveStr, Integer line]
-        :   { $line = $start.getLine();
-              $loreStr = "";
-              $messageVisStr = "";
-              $messageInvisStr = "";
-              $messageMissStr = "";
-              $messageSaveStr = "";
-              $loreColourBaseStr = "";
-              $loreColourResistStr = "";
-              $loreColourImmuneStr = ""; }
-        (powerCutoff { $powerCutOffVal = $powerCutoff.cutoffVal;})?
-        (   lore { $loreStr = $loreStr + $lore.loreStr; }
-        |   loreColourBase { $loreColourBaseStr = $loreColourBase.colourBase; }
-        |   loreColourResist { $loreColourResistStr = $loreColourResist.colourResist; }
-        |   loreColourImmune { $loreColourImmuneStr = $loreColourImmune.colourImmune; }
-        |   messageVis { $messageVisStr = $messageVisStr + $messageVis.visMsg; }
-        |   messageInvis { $messageInvisStr = $messageInvisStr + $messageInvis.invisMsg; }
-        |   messageMiss { $messageMissStr = $messageMissStr + $messageMiss.missMsg; }
-        |   messageSave { $messageSaveStr = $messageSaveStr + $messageSave.saveMsg; })+
-        ;
+          returns[String powerCutOffVal, Integer line,
+                  String loreStr, String loreColourBaseStr, String loreColourResistStr,
+                  String loreColourImmuneStr, String messageVisStr, String messageInvisStr,
+                  String messageMissStr, String messageSaveStr]
+          :     { $loreStr = "";
+                  $loreColourBaseStr = null;
+                  $loreColourResistStr = null;
+                  $loreColourImmuneStr = null;
+                  $messageVisStr = "";
+                  $messageInvisStr = "";
+                  $messageMissStr = "";
+                  $messageSaveStr = ""; }
+                  powerCutoff { $powerCutOffVal = $powerCutoff.cutoffVal;
+                            $line = $powerCutoff.start.getLine(); }
+              (   levelDirectives { $loreStr = $levelDirectives.loreStr;
+                                    $loreColourBaseStr = $levelDirectives.loreColourBaseStr;
+                                    $loreColourResistStr = $levelDirectives.loreColourResistStr;
+                                    $loreColourImmuneStr = $levelDirectives.loreColourImmuneStr;
+                                    $messageVisStr = $levelDirectives.messageVisStr;
+                                    $messageInvisStr = $levelDirectives.messageInvisStr;
+                                    $messageMissStr = $levelDirectives.messageMissStr;
+                                    $messageSaveStr = $levelDirectives.messageSaveStr; }
+              )?                                                             
+          ;
 
-monsterSpell
-        returns[MonsterSpellParseRecord spell]
-        @init {
-            String nameStrInit = "";
-            String msgtStrInit = "";
-            String hitInit = "";
-            int lineInit = 0;
-            List<EffectParseRecord> effects = new ArrayList<>();
-            List<MonsterSpellParseRecord.MonsterSpellLevelParseRecord> levels = new ArrayList<>();
-        }
-        @after {
-            $spell = new MonsterSpellParseRecord(nameStrInit, msgtStrInit, hitInit,
-                    effects, levels, lineInit);
-        }
-        :   name { nameStrInit = $name.nameStr; lineInit = $name.line; }
-        (   msgt { msgtStrInit = $msgt.msgTStr; }
-        |   hit { hitInit = $hit.hitVal; }
-        |   effectBlock { effects.add(new EffectParseRecord($effectBlock.typeInit,
-                    $effectBlock.subtypeWrapperInit, $effectBlock.radius, $effectBlock.other,
-                    $effectBlock.diceString, $effectBlock.yVal, $effectBlock.xVal,
-                    $effectBlock.expressionChars, $effectBlock.expressionBase,
-                    $effectBlock.expressionOperation,
-                    $effectBlock.effectMessage, $effectBlock.start.getLine())); }
-        |   powerCutoffBlock { levels.add(new MonsterSpellParseRecord.MonsterSpellLevelParseRecord(
-                    $powerCutoffBlock.powerCutOffVal, $powerCutoffBlock.loreStr,
-                    $powerCutoffBlock.loreColourBaseStr, $powerCutoffBlock.loreColourResistStr,
-                    $powerCutoffBlock.loreColourImmuneStr, $powerCutoffBlock.messageVisStr,
-                    $powerCutoffBlock.messageInvisStr, $powerCutoffBlock.messageMissStr,
-                    $powerCutoffBlock.messageSaveStr, $powerCutoffBlock.line)); })+
-        ;
-
+ monsterSpell                                                               
+          returns[MonsterSpellParseRecord spell]
+          @init {
+              String nameStrInit = "";
+              String msgtStrInit = "";
+              String hitInit = "";
+              int lineInit = 0;
+              List<EffectParseRecord> effects = new ArrayList<>();
+              List<MonsterSpellParseRecord.MonsterSpellLevelParseRecord> levels = new ArrayList<>();
+          }
+          @after {
+              $spell = new MonsterSpellParseRecord(nameStrInit, msgtStrInit, hitInit,                                                                   
+                      effects, levels, lineInit);
+          }
+          :   name { nameStrInit = $name.nameStr; lineInit = $name.line; }
+          (   msgt { msgtStrInit = $msgt.msgTStr; }
+          |   hit { hitInit = $hit.hitVal; }
+          |   effectBlock { effects.add(new EffectParseRecord($effectBlock.typeInit,
+                      $effectBlock.subtypeWrapperInit, $effectBlock.radius, $effectBlock.other,
+                      $effectBlock.diceString, $effectBlock.yVal, $effectBlock.xVal,
+                      $effectBlock.expressionChars, $effectBlock.expressionBase,
+                      $effectBlock.expressionOperation, $effectBlock.effectMessage,
+                      $effectBlock.start.getLine())); }
+          |   powerCutoffBlock { levels.add(new MonsterSpellParseRecord.MonsterSpellLevelParseRecord(
+                      $powerCutoffBlock.powerCutOffVal, $powerCutoffBlock.loreStr,
+                      $powerCutoffBlock.loreColourBaseStr, $powerCutoffBlock.loreColourResistStr,
+                      $powerCutoffBlock.loreColourImmuneStr, $powerCutoffBlock.messageVisStr,
+                      $powerCutoffBlock.messageInvisStr, $powerCutoffBlock.messageMissStr,
+                      $powerCutoffBlock.messageSaveStr, $powerCutoffBlock.line)); }
+          |   levelDirectives { levels.add(new MonsterSpellParseRecord.MonsterSpellLevelParseRecord(
+                      null, $levelDirectives.loreStr,
+                      $levelDirectives.loreColourBaseStr, $levelDirectives.loreColourResistStr,
+                      $levelDirectives.loreColourImmuneStr, $levelDirectives.messageVisStr,
+                      $levelDirectives.messageInvisStr, $levelDirectives.messageMissStr,
+                      $levelDirectives.messageSaveStr, $levelDirectives.line)); } )+                                                                 
+          ;
+        
 file
         returns[String declaredRecordCount, List<MonsterSpellParseRecord> monsterSpells]
         :   recordCount { $declaredRecordCount = $recordCount.count;

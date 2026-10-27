@@ -22,6 +22,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
+import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.game.globals.registry.MonsterRegistry;
 import uk.co.jackoftradesltd.middle.monsters.MonsterBase;
@@ -679,40 +680,59 @@ class MonsterSpellReaderTest {
     }
 
     @Test
-    void loreAfterAnEffectOpensASecondLevelHereWhereCAppendsToTheFirst() throws Exception {
+    void loreAfterAnEffectIsAppendedToTheFirstLevelAsInC() throws Exception {
         // C: every lore:/message-*: line goes onto the last level in the chain, whatever came
-        // between. The grammar closes the level block at the effect, so the later lore starts a new
-        // block, which the level assembler gives power 0 (a second level at the same power).
+        // between. The grammar closes its level block at the effect, so the later lore arrives as a
+        // second, power-less record, which the level assembler merges into the level before it.
         String body = "name:BLINK\nmsgt:TELEPORT\nhit:100\nlore:one\n"
                 + "effect:TELEPORT:AWAY\ndice:100\nlore: two\n";
         ParseResult<MonsterSpellType> result = load("lore-split.txt", withHeader(1, body));
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
         List<Object> levels = levelsOf(result.items().get(0));
-        assertEquals(2, levels.size(), "C would hold one level with lore \"one two\"");
-        assertEquals("one", field(levels.get(0), "loreDesc"));
-        assertEquals(" two", field(levels.get(1), "loreDesc"));
+        assertEquals(1, levels.size());
+        assertEquals("one two", field(levels.get(0), "loreDesc"));
     }
 
     @Test
-    void aHitOrMsgtLineBetweenTwoLoreLinesAlsoSplitsTheLevel() throws Exception {
+    void aHitOrMsgtLineBetweenTwoLoreLinesAlsoLeavesOneLevelAsInC() throws Exception {
         // The same split as above, caused by a plain directive instead of an effect: any
         // non-text directive closes the grammar's level block.
         String body = "name:BLINK\nlore:one\nhit:100\nlore: two\n";
         ParseResult<MonsterSpellType> result = load("lore-split-hit.txt", withHeader(1, body));
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
-        assertEquals(2, levelsOf(result.items().get(0)).size(), "C would hold one level");
+        List<Object> levels = levelsOf(result.items().get(0));
+        assertEquals(1, levels.size());
+        assertEquals("one two", field(levels.get(0), "loreDesc"));
     }
 
     @Test
-    void twoPowerCutoffsInARowAreASyntaxErrorHereWhereCAcceptsAnEmptyLevel() throws IOException {
+    void loreAfterAnEffectInsideAPowerCutoffLevelJoinsThatLevelAsInC() throws Exception {
+        // C: the lore: after the effect still goes onto the last level, which is the 40 one.
+        String body = "name:BLINK\nmsgt:TELEPORT\nhit:100\nlore:zero\npower-cutoff:40\nlore:forty\n"
+                + "effect:TELEPORT:AWAY\ndice:100\nlore: more\n";
+        ParseResult<MonsterSpellType> result = load("lore-split-40.txt", withHeader(1, body));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        List<Object> levels = levelsOf(result.items().get(0));
+        assertEquals(List.of(0, 40), powersOf(result.items().get(0)));
+        assertEquals("zero", field(levels.get(0), "loreDesc"));
+        assertEquals("forty more", field(levels.get(1), "loreDesc"));
+    }
+
+    @Test
+    void twoPowerCutoffsInARowGiveAnEmptyLevelAsInC() throws Exception {
+        // C: parse_mon_spell_power_cutoff() appends a level whatever follows, so the 10 level is
+        // there with no text, and the chain is [0, 10, 20].
         String body = entry("BLINK", "TELEPORT", null)
                 + "power-cutoff:10\npower-cutoff:20\nlore:x\n";
         ParseResult<MonsterSpellType> result = load("empty-level.txt", withHeader(1, body));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(List.of(0, 10, 20), powersOf(result.items().get(0)));
+        assertNull(field(levelsOf(result.items().get(0)).get(1), "loreDesc"));
+        assertEquals("x", field(levelsOf(result.items().get(0)).get(2), "loreDesc"));
     }
 
     @Test
@@ -772,18 +792,18 @@ class MonsterSpellReaderTest {
     }
 
     @Test
-    void anUnknownLoreColourDropsTheLevelHereWhereCReadsWhite() throws Exception {
+    void anUnknownLoreColourReadsWhiteAsInC() throws Exception {
         // C: color_text_to_attr() and color_char_to_attr() fall back to white, so no colour is ever
-        // invalid. Here the level assembler reports it and skips the level, but still returns a
-        // list, so the spell loads with a level missing - the opposite of that class's own
-        // all-or-nothing Javadoc.
+        // invalid and the spell loads with its level.
         String body = "name:BLINK\nmsgt:TELEPORT\nhit:100\nlore:x\nlore-color-base:Nonsense\n";
         ParseResult<MonsterSpellType> result = load("bad-colour.txt", withHeader(1, body));
 
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("invalid base colour")),
-                () -> result.errors().toString());
-        assertEquals(0, levelsOf(result.items().get(0)).size());
+        List<Object> levels = levelsOf(result.items().get(0));
+        assertEquals(1, levels.size());
+        assertEquals(ColourEnum.COLOUR_WHITE, field(levels.get(0), "loreAttr"));
+        assertEquals(ColourEnum.COLOUR_DARK, field(levels.get(0), "loreAttrResist"));
     }
 
     @Test
@@ -810,34 +830,37 @@ class MonsterSpellReaderTest {
     }
 
     @Test
-    void aLeadingPowerCutoffLeavesNoImplicitLevelZeroHereWhereCKeepsIt() throws Exception {
+    void aLeadingPowerCutoffKeepsTheImplicitLevelZeroAsInC() throws Exception {
         // C: the level made at name: time (power 0, no text) is always first, so a record that
-        // opens with power-cutoff:20 has levels [0, 20]. Here the block that carries the cutoff is
-        // the first level. No shipped record starts this way.
+        // opens with power-cutoff:20 has levels [0, 20]. No shipped record starts this way.
         String body = "name:BLINK\nmsgt:TELEPORT\nhit:100\npower-cutoff:20\nlore:x\n";
         ParseResult<MonsterSpellType> result = load("lead-cutoff.txt", withHeader(1, body));
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
-        assertEquals(List.of(20), powersOf(result.items().get(0)),
-                "C would hold [0, 20]");
+        assertEquals(List.of(0, 20), powersOf(result.items().get(0)));
+        assertNull(field(levelsOf(result.items().get(0)).get(0), "loreDesc"));
     }
 
     @Test
-    void aRecordWithNoTextHasNoLevelHereWhereCAlwaysHasOne() throws Exception {
+    void aRecordWithNoTextHasTheOneEmptyLevelAsInC() throws Exception {
         // C: spell->level is allocated at name: time, and mon-spell.c dereferences it without a
         // check. Every shipped record has lore, so this cannot happen with the real file.
         String body = "name:BLINK\nmsgt:TELEPORT\nhit:100\neffect:TELEPORT:AWAY\ndice:100\n";
         ParseResult<MonsterSpellType> result = load("no-text.txt", withHeader(1, body));
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
-        assertEquals(0, levelsOf(result.items().get(0)).size(), "C would hold one empty level");
+        List<Object> levels = levelsOf(result.items().get(0));
+        assertEquals(1, levels.size());
+        assertEquals(0, field(levels.get(0), "power"));
+        assertNull(field(levels.get(0), "loreDesc"));
     }
 
     /*
      * Still blocked on domain accessors - or on the colour model:
      *
-     *   1. Colour resolution - assert loreAttr is the Orange colour, and what a level with no
-     *      lore-color-* line holds. C's zeroed lore_attr is COLOUR_DARK; the port leaves null.
+     *   1. Colour resolution through the real file - assert loreAttr is the Orange colour for a
+     *      shipped record. MonsterSpellLevelAssemblerTest covers the colour rules directly, and a
+     *      level with no lore-color-* line holds COLOUR_DARK as C's zeroed lore_attr does.
      *   2. teleportAwayAndTeleportToSelfBothResolve - reach the effect's EffectSubTypeWrapper and
      *      assert getTeleportMonsterMayCast() / getTeleportToMonsterMayCast() are true, and that
      *      the discriminator is EST_TELEPORT / EST_TELEPORT_TO respectively. This is the one that

@@ -142,7 +142,7 @@ Found 2026-10-17 during `/port backend/parser/MonsterSpellReader.java`. Not fixe
 
 ## `monsterspell/MonsterSpellLevelAssembler.java`: an unknown lore colour drops the level, C reads it as white
 
-Found 2026-10-17 during `/port backend/parser/MonsterSpellReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/MonsterSpellReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-27: `MonsterSpellLevelAssembler.java` reads an unknown base, resist or immune colour as `COLOUR_WHITE`, as `color_text_to_attr` and `color_char_to_attr` do, and no longer adds a soft error or drops the level; a level with no colour directive holds `COLOUR_DARK`. `MonsterSpellLevelAssemblerTest` and `MonsterSpellReaderTest` pass and the full suite is green. The bullets below describe the state before the fix; the pinning tests are now `MonsterSpellReaderTest.anUnknownLoreColourReadsWhiteAsInC` and `MonsterSpellLevelAssemblerTest.aColourNothingMatchesReadsWhiteNotAFailure`.]
 
 - `parse_mon_spell_lore_color` and its resist and immune twins in `mon-init.c` call `color_text_to_attr` for text longer
   than one character and `color_char_to_attr` for one character. Both fall back to `COLOUR_WHITE` when nothing matches
@@ -173,7 +173,7 @@ Found 2026-10-17 during `/port backend/parser/MonsterSpellReader.java`. Not fixe
 
 ## `monsterspell/MonsterSpellLevelAssembler.java`: C always has a level 0, Java has none unless the text gives one
 
-Found 2026-10-17 during `/port backend/parser/MonsterSpellReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/MonsterSpellReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-27: `MonsterSpellLevelAssembler.java` adds a blank level 0 (power 0, `null` text, every colour `COLOUR_DARK`) when a spell opens with a `power-cutoff:` or has no level text at all, and merges a power-less record into the level before it, as C's handlers do. A spell now always holds one more level than it has `power-cutoff:` lines. `MonsterSpellLevelAssemblerTest` and `MonsterSpellReaderTest` pass and the full suite is green. The bullets below describe the state before the fix; the pinning tests are now `MonsterSpellReaderTest.aRecordWithNoTextHasTheOneEmptyLevelAsInC` and `aLeadingPowerCutoffKeepsTheImplicitLevelZeroAsInC`. The `@param levels` wording "always at least one" in `MonsterSpellParseRecord.java` still describes the record's list, which can be empty.]
 
 - `parse_mon_spell_name` allocates a level with power 0 for every spell, and `mon-spell.c` (`spell_message`,
   `do_mon_spell` and `mon_spell_lore_description`) walks from `spell->level` without a `NULL` check.
@@ -203,7 +203,7 @@ Found 2026-10-17 during `/port backend/parser/MonsterSpellReader.java`. Not fixe
 Found 2026-10-17 during `/port backend/parser/MonsterSpellReader.java`. Not fixed.
 
 - `MonsterSpellParseRecord.java:58` and `MonsterSpellLevelAssembler.java:34` cite `mon-init.c:596`. Both should name
-  the function (`parse_mon_spell_name`) without a line number.
+  the function (`parse_mon_spell_name`) without a line number. [<span style="color:#006400">**CLOSED**</span> 26-10-27 for `MonsterSpellLevelAssembler.java`: the class Javadoc names `parse_mon_spell_name()` with no line number. Still open for `MonsterSpellParseRecord.java:58`.]
 - Not a behaviour difference; recorded here because the fix is in comments.
 
 ## `monsterbase/MonsterBaseAssembler.java`: the list is in file order, C's chain is reversed

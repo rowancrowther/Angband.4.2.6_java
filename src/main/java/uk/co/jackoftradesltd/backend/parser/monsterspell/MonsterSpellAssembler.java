@@ -152,7 +152,7 @@ public class MonsterSpellAssembler implements Assembler<MonsterSpellParseRecord,
             // zero is MSG_GENERIC. 49 of the 91 shipped records omit the directive, so treating
             // an empty value as an invalid message type silently discards most of the table.
             MessageType messageType = MessageType.MSG_GENERIC;
-            if (!record.messageType().isEmpty()) {
+            if (record.messageType() != null && !record.messageType().isEmpty()) {
                     messageType = MessageType.lookupByName(record.messageType());
                     if (messageType == null) {
                         String msg = "Monster spell starting at line: " + line + " of file: " + filename + " has " +
@@ -173,12 +173,6 @@ public class MonsterSpellAssembler implements Assembler<MonsterSpellParseRecord,
             // its effects missing. It never returns null.
             List<Effect> effects = EffectAssembler.assemble(record.effects(), errors, filename);
             List<MonsterSpellLevel> levels = assembler.assemble(record.levels(), errors, filename);
-            if (levels == null) {
-                String msg = "Monster spell starting at line: " + line +" of file: " + filename + " has " +
-                        "an illegal empty spell level list.";
-                logger.fatal(msg);
-                throw new DataFileParseException(msg);
-            }
             monsterSpellTypes.addFirst(new MonsterSpellType(nameType, messageType, hit, effects, levels));
         }
 

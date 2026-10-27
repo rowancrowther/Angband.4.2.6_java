@@ -274,8 +274,8 @@ class MonsterSpellReaderTest {
 
     @Test
     void everySpellNameInTheRealFileResolvesToTheRsfEnum() throws IOException {
-        // The assembler drops a record whose name fails MonsterSpell.valueOf("RSF_" + name), so a
-        // full count with no errors is proof that all 91 names matched list-mon-spells.h.
+        // The assembler stops the load on a name that fails MonsterSpell.valueOf("RSF_" + name), so
+        // a full count with no errors is proof that all 91 names matched list-mon-spells.h.
         ParseResult<MonsterSpellType> result = new MonsterSpellReader().parseWithResults(REAL_FILE);
 
         assertEquals(REAL_FILE_RECORDS, result.items().size());
@@ -303,24 +303,25 @@ class MonsterSpellReaderTest {
         assertFalse(good.hasErrors(), () -> good.errors().toString());
         assertEquals(1, good.items().size());
 
-        ParseResult<MonsterSpellType> bad =
-                load("bad-msgt.txt", withHeader(1, entry("BLINK", "NOT_A_MESSAGE", null)));
-        assertTrue(bad.items().isEmpty(), "an unrecognised msgt: still drops the record");
-        assertTrue(bad.errors().stream().anyMatch(e -> e.contains("invalid message type")),
-                () -> bad.errors().toString());
+        // [C] message_lookup_by_name() returns -1 and the handler returns PARSE_ERROR_INVALID_MESSAGE,
+        // which stops the load.
+        String badFile = withHeader(1, entry("BLINK", "NOT_A_MESSAGE", null));
+        DataFileParseException bad = assertThrows(DataFileParseException.class,
+                () -> load("bad-msgt.txt", badFile), "an unrecognised msgt: stops the load");
+        assertTrue(bad.getMessage().contains("illegal message type value: NOT_A_MESSAGE"), bad::getMessage);
     }
 
     // ---- Record-level validation -----------------------------------------
 
     @Test
-    void unknownSpellNameIsReportedAndDropped() throws IOException {
-        ParseResult<MonsterSpellType> result =
-                load("bad-name.txt", withHeader(1, entry("NOT_A_SPELL", "TELEPORT", null)));
+    void unknownSpellNameStopsTheLoad() {
+        // [C] grab_name() fails, parse_mon_spell_name returns PARSE_ERROR_INVALID_SPELL_NAME.
+        String file = withHeader(1, entry("NOT_A_SPELL", "TELEPORT", null));
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("bad-name.txt", file));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("invalid name")),
-                () -> result.errors().toString());
+        assertTrue(e.getMessage().contains("Monster spell starting at line: " + lineOf(file, "name:NOT_A_SPELL")),
+                e::getMessage);
+        assertTrue(e.getMessage().contains("illegal monster spell value: NOT_A_SPELL"), e::getMessage);
     }
 
     @Test
@@ -499,11 +500,11 @@ class MonsterSpellReaderTest {
     // ---- The reader's contract: values, order and the two error channels --
 
     @Test
-    void realFileComesBackInFileOrder() throws IOException {
-        // C's mon_spell_parser pushes each record on the head of a chain, so monster_spells runs
-        // last record first. Nothing observable depends on it for the shipped data, because
-        // monster_spell_by_index() looks a spell up by index and every name appears once. The Java
-        // list is in file order, which is what this pins.
+    void realFileComesBackInCsOrderLastRecordFirst() throws IOException {
+        // C's parse_mon_spell_name pushes each record on the head of a chain (s->next = h), so
+        // monster_spells runs last record first. Nothing observable depends on it for the shipped
+        // data, because monster_spell_by_index() looks a spell up by index and every name appears
+        // once. The Java list is built with addFirst to match, which is what this pins.
         ParseResult<MonsterSpellType> result = new MonsterSpellReader().parseWithResults(REAL_FILE);
 
         assertEquals(UPSTREAM.length, result.items().size());
@@ -514,7 +515,7 @@ class MonsterSpellReaderTest {
             } catch (Exception e) {
                 fail(e);
             }
-            assertEquals("RSF_" + UPSTREAM[i][0], index.toString(), "record " + i);
+            assertEquals("RSF_" + UPSTREAM[UPSTREAM.length - 1 - i][0], index.toString(), "position " + i);
         }
     }
 
@@ -525,7 +526,8 @@ class MonsterSpellReaderTest {
 
         for (int i = 0; i < UPSTREAM.length; i++) {
             String[] row = UPSTREAM[i];
-            MonsterSpellType spell = result.items().get(i);
+            // The list runs last record first, as C's chain does.
+            MonsterSpellType spell = result.items().get(UPSTREAM.length - 1 - i);
 
             // A record with no msgt: keeps C's zeroed msgt, which is MSG_GENERIC (index 0 of
             // list-message.h).
@@ -544,15 +546,16 @@ class MonsterSpellReaderTest {
 
     @Test
     void parseReturnsTheItemsAndDropsTheErrors() throws IOException {
-        // The Reader contract: parse() is parseWithResults().items(). A record skipped for a bad
-        // name goes missing without a trace, which is why callers that care use parseWithResults.
-        String body = entry("BLINK", "TELEPORT", null) + entry("NOT_A_SPELL", null, null);
+        // The Reader contract: parse() is parseWithResults().items(). The one soft error left is
+        // the Java-only record-count header, which parse() drops without a trace, which is why
+        // callers that care use parseWithResults.
+        String body = entry("BLINK", "TELEPORT", null) + entry("TPORT", null, null);
         Path file = tempDir.resolve("parse-only.txt");
-        Files.writeString(file, withHeader(2, body));
+        Files.writeString(file, withHeader(7, body));
 
         List<MonsterSpellType> items = new MonsterSpellReader().parse(file.toString());
 
-        assertEquals(1, items.size());
+        assertEquals(2, items.size());
     }
 
     @Test
@@ -596,16 +599,16 @@ class MonsterSpellReaderTest {
     }
 
     @Test
-    void anUnknownSpellNameCostsOnlyItsOwnRecord() throws IOException {
-        // C stops the whole load at the first bad record (PARSE_ERROR_INVALID_SPELL_NAME). Here
-        // the assembler reports it and the neighbours still load.
-        String body = entry("BLINK", "TELEPORT", null)
+    void anUnknownSpellNameInTheMiddleStopsTheWholeLoad() {
+        // C stops the whole load at the first bad record (PARSE_ERROR_INVALID_SPELL_NAME), and
+        // so does the assembler: the neighbours do not load.
+        String file = withHeader(3, entry("BLINK", "TELEPORT", null)
                 + entry("NOT_A_SPELL", null, null)
-                + entry("TPORT", "TELEPORT", null);
-        ParseResult<MonsterSpellType> result = load("one-bad.txt", withHeader(3, body));
+                + entry("TPORT", "TELEPORT", null));
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("one-bad.txt", file));
 
-        assertEquals(2, result.items().size());
-        assertEquals(1, result.errors().size(), () -> result.errors().toString());
+        assertTrue(e.getMessage().contains("starting at line: " + lineOf(file, "name:NOT_A_SPELL")),
+                e::getMessage);
     }
 
     @Test
@@ -619,18 +622,17 @@ class MonsterSpellReaderTest {
     }
 
     @Test
-    void duplicateSpellNamesAreBothKeptInFileOrder() throws Exception {
-        // C holds both too, but its chain runs last-first, so monster_spell_by_index() finds the
-        // later of the two. The Java list is in file order, so a lookup written over it has to take
-        // the last match to agree; see docs/Assembler_Issues.md.
+    void duplicateSpellNamesAreBothKeptLastRecordFirst() throws Exception {
+        // C holds both, and its chain runs last-first, so monster_spell_by_index() finds the later
+        // of the two. The Java list runs last-first too, so a first-match search agrees.
         String first = "name:BLINK\nmsgt:TELEPORT\nhit:10\nlore:first\n";
         String second = "name:BLINK\nmsgt:TELEPORT\nhit:20\nlore:second\n";
         ParseResult<MonsterSpellType> result = load("dupes.txt", withHeader(2, first + second));
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(2, result.items().size());
-        assertEquals(10, field(result.items().get(0), "hit"));
-        assertEquals(20, field(result.items().get(1), "hit"));
+        assertEquals(20, field(result.items().get(0), "hit"));
+        assertEquals(10, field(result.items().get(1), "hit"));
     }
 
     @Test
@@ -745,26 +747,28 @@ class MonsterSpellReaderTest {
     }
 
     @Test
-    void aNegativeHitIsAcceptedHereWhereCRejectsIt() throws Exception {
-        // C: hit is "uint", and parser.c rejects a token starting with '-' (PARSE_ERROR_NOT_NUMBER).
-        String body = "name:BLINK\nmsgt:TELEPORT\nhit:-5\nlore:x\n";
-        ParseResult<MonsterSpellType> result = load("neg-hit.txt", withHeader(1, body));
-
-        assertEquals(1, result.items().size(), () -> result.errors().toString());
-        assertEquals(-5, field(result.items().get(0), "hit"));
+    void aNegativeHitStopsTheLoadAsCDoes() {
+        // C: hit is "uint", and parser.c rejects a token starting with '-' (PARSE_ERROR_NOT_NUMBER),
+        // whatever the value, so -0 goes too.
+        for (String hit : new String[]{"-5", "-0"}) {
+            String file = withHeader(1, "name:BLINK\nmsgt:TELEPORT\nhit:" + hit + "\nlore:x\n");
+            DataFileParseException e = assertThrows(DataFileParseException.class,
+                    () -> load("neg-hit.txt", file), "hit:" + hit);
+            assertTrue(e.getMessage().contains("illegal monster hit value: " + hit), e::getMessage);
+        }
     }
 
     // ---- Where the assembler differs from C (docs/Assembler_Issues.md) ----
 
     @Test
-    void anAbsentHitDropsTheRecordHereWhereCLeavesItZero() throws IOException {
+    void anAbsentHitLoadsWithZeroAsCDoes() throws Exception {
         // C: mem_zalloc leaves hit at 0 when there is no hit: line.
         String body = "name:BLINK\nmsgt:TELEPORT\nlore:x\n";
         ParseResult<MonsterSpellType> result = load("no-hit.txt", withHeader(1, body));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("hit")),
-                () -> result.errors().toString());
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(1, result.items().size());
+        assertEquals(0, field(result.items().get(0), "hit"));
     }
 
     @Test
@@ -783,25 +787,26 @@ class MonsterSpellReaderTest {
     }
 
     @Test
-    void msgtIsExactCaseAndNameOnlyHereWhereCIsCaseBlindWithANumericForm() throws IOException {
-        // C: message_lookup_by_name() uses my_stricmp and accepts a number below MSG_MAX.
-        for (String msgt : new String[]{"teleport", "6"}) {
-            ParseResult<MonsterSpellType> result = load("msgt-" + msgt + ".txt",
-                    withHeader(1, "name:BLINK\nmsgt:" + msgt + "\nhit:100\nlore:x\n"));
-            assertTrue(result.items().isEmpty(), "msgt:" + msgt);
-            assertTrue(result.errors().stream().anyMatch(e -> e.contains("invalid message type")),
-                    () -> result.errors().toString());
+    void msgtIsCaseBlindAndMayBeANumberAsInC() throws Exception {
+        // C: message_lookup_by_name() uses my_stricmp and accepts a number below MSG_MAX. In
+        // list-message.h GENERIC is 0, BIRTH 1, HIT 2, MISS 3, FLEE 4, DROP 5 and KILL 6.
+        String[][] cases = {{"teleport", "MSG_TELEPORT"}, {"6", "MSG_KILL"}, {"0", "MSG_GENERIC"}};
+        for (String[] c : cases) {
+            ParseResult<MonsterSpellType> result = load("msgt-" + c[0] + ".txt",
+                    withHeader(1, "name:BLINK\nmsgt:" + c[0] + "\nhit:100\nlore:x\n"));
+            assertFalse(result.hasErrors(), () -> result.errors().toString());
+            assertEquals(c[1], field(result.items().get(0), "msgT").toString(), "msgt:" + c[0]);
         }
     }
 
     @Test
-    void msgtNoneIsAcceptedHereWhereCHasNoSuchMessage() throws Exception {
-        // MSG_NONE is a Java-only constant (an accepted divergence), but it makes msgt:NONE load.
-        ParseResult<MonsterSpellType> result = load("msgt-none.txt",
-                withHeader(1, "name:BLINK\nmsgt:NONE\nhit:100\nlore:x\n"));
+    void msgtNoneStopsTheLoadAsCHasNoSuchMessage() {
+        // MSG_NONE is a Java-only constant (an accepted divergence); list-message.h has no NONE,
+        // so message_lookup_by_name() returns -1 and C stops the load.
+        String file = withHeader(1, "name:BLINK\nmsgt:NONE\nhit:100\nlore:x\n");
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("msgt-none.txt", file));
 
-        assertEquals(1, result.items().size(), () -> result.errors().toString());
-        assertEquals("MSG_NONE", field(result.items().get(0), "msgT").toString());
+        assertTrue(e.getMessage().contains("illegal message type value: NONE"), e::getMessage);
     }
 
     @Test

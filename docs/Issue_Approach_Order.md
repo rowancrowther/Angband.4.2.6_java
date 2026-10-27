@@ -230,7 +230,7 @@ Paths are under `src/main/java/uk/co/jackoftradesltd/`. The figure in brackets i
 - `backend/parser/grammars/EffectAssembler.java` (22): ~~112, 120, 147, 157, 167, 177, 238, 245, 255, 296, 306, 316, 326, 341, 349, 358, 368, 378, 388, 398, 408, 416~~
 - `backend/parser/history/HistoryAssembler.java` (5): ~~83, 91, 99, 113, 133~~
 - `backend/parser/itemobject/ItemObjectAssembler.java` (32): ~~96, 102, 112, 119, 130, 140, 150, 162, 171, 180, 190, 199, 209, 217, 224, 231, 240, 251, 256, 262, 288, 293, 315, 319, 329, 335, 347, 359, 371, 382, 400, 418~~
-- `backend/parser/monsterbase/MonsterBaseAssembler.java` (4): 70, 77, 86, 92
+- `backend/parser/monsterbase/MonsterBaseAssembler.java` (4): ~~70, 77, 86, 92~~
 - `backend/parser/monster/MonsterAssembler.java` (41): ~~89, 103, 113, 123, 134, 144, 154, 164, 174, 185, 194, 205, 213, 223, 233, 244, 256, 269, 279, 286, 307, 317, 328, 338, 364, 386, 397, 410, 436, 442, 450, 463, 495, 501, 507, 516, 530, 538, 556, 562, 585~~
 - `backend/parser/monsterspell/MonsterSpellAssembler.java` (3): 77, 91, 100
 - `backend/parser/monsterspell/MonsterSpellLevelAssembler.java` (4): 72, 82, 91, 100

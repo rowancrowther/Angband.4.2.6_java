@@ -171,24 +171,125 @@ class MonsterBaseTest {
     @Test
     void fullConstructorStoresEveryFieldAndKeepsTheFlagSetByReference() throws Exception {
         Flag<MonsterRaceFlag> flags = new Flag<>(MonsterRaceFlag.class, MonsterRaceFlag.RF_EVIL);
-        MonsterBase base = new MonsterBase("orc", "Orc", flags, 'o', null, "Orc text");
+        MonsterBase base = new MonsterBase("orc", "Orc", flags, 'o', 0, null, "Orc text");
 
         assertEquals("orc", base.getCodeName());
         assertSame(flags, base.getFlags());
         assertEquals('o', base.getDefaultMonsterChar());
+        assertEquals(0, base.getWideMonsterChar());
         assertNull(readField(base, "pain"));
         assertEquals("Orc", readField(base, "inGameName"));
         assertEquals("Orc text", readField(base, "description"));
     }
 
+    // ---- The glyph split: C's one wchar_t d_char held as a char and an int -----
+
+    /**
+     * Builds a base around one glyph, passing the halves the way the split's convention asks.
+     */
+    private static MonsterBase baseWithGlyph(int codePoint) {
+        char narrow = codePoint <= 0xFFFF ? (char) codePoint : '\0';
+        int wide = codePoint <= 0xFFFF ? 0 : codePoint;
+        return new MonsterBase("glyph", "Glyph", new Flag<>(MonsterRaceFlag.class), narrow, wide, null, "Glyph");
+    }
+
+    @Test
+    void codeNameOnlyConstructorHasNoWideGlyph() {
+        // mem_zalloc zeroes d_char, so there is nothing wide to report.
+        MonsterBase base = new MonsterBase("dragon");
+
+        assertEquals(0, base.getWideMonsterChar());
+        assertFalse(base.isWideChar());
+    }
+
+    @Test
+    void anAsciiGlyphIsNarrowAndNotWide() {
+        // 'D' is d_char 0x44 in C; it fits a char, so the wide half stays 0.
+        MonsterBase base = baseWithGlyph('D');
+
+        assertEquals('D', base.getDefaultMonsterChar());
+        assertEquals(0, base.getWideMonsterChar());
+        assertFalse(base.isWideChar());
+    }
+
+    @Test
+    void aGlyphAtTheTopOfTheBasicPlaneIsStillNarrow() {
+        // 0xFFFF is the last code point a char holds; C stores it in d_char like any other.
+        MonsterBase base = baseWithGlyph(0xFFFF);
+
+        assertEquals('￿', base.getDefaultMonsterChar());
+        assertEquals(0, base.getWideMonsterChar());
+        assertFalse(base.isWideChar());
+    }
+
+    @Test
+    void aGlyphOneAboveTheBasicPlaneIsWide() {
+        // 0x10000 is the first code point a char cannot hold, so it goes to the wide half.
+        MonsterBase base = baseWithGlyph(0x10000);
+
+        assertEquals('\0', base.getDefaultMonsterChar());
+        assertEquals(0x10000, base.getWideMonsterChar());
+        assertTrue(base.isWideChar());
+    }
+
+    @Test
+    void aSupplementaryGlyphIsWideAndKeepsItsWholeCodePoint() {
+        // U+1F409 (a dragon emoji) is 0x1F409 in a wchar_t; the int half keeps all of it.
+        MonsterBase base = baseWithGlyph(0x1F409);
+
+        assertEquals('\0', base.getDefaultMonsterChar());
+        assertEquals(0x1F409, base.getWideMonsterChar());
+        assertTrue(base.isWideChar());
+    }
+
+    @Test
+    void theTopCodePointIsWide() {
+        MonsterBase base = baseWithGlyph(0x10FFFF);
+
+        assertEquals(0x10FFFF, base.getWideMonsterChar());
+        assertTrue(base.isWideChar());
+    }
+
+    @Test
+    void aNulGlyphIsNotWide() {
+        // d_char 0 in C: both halves zero, and isWideChar is what tells it from a wide glyph.
+        MonsterBase base = baseWithGlyph(0);
+
+        assertEquals('\0', base.getDefaultMonsterChar());
+        assertEquals(0, base.getWideMonsterChar());
+        assertFalse(base.isWideChar());
+    }
+
+    @Test
+    void isWideCharTestsOnlyTheWideHalf() {
+        // The constructor does not police the pairing; isWideChar follows the wide half alone.
+        MonsterBase base = new MonsterBase("odd", "Odd", new Flag<>(MonsterRaceFlag.class), 'a', 0x1F409,
+                null, "Odd");
+
+        assertEquals('a', base.getDefaultMonsterChar());
+        assertEquals(0x1F409, base.getWideMonsterChar());
+        assertTrue(base.isWideChar());
+    }
+
+    @Test
+    void noGlyphInTheRealFileIsWide() {
+        // Every glyph: line in 4.2.6's monster_base.txt is a single ASCII character.
+        for (MonsterBase base : bases) {
+            assertFalse(base.isWideChar(), base.getCodeName());
+            assertEquals(0, base.getWideMonsterChar(), base.getCodeName());
+        }
+    }
+
     // ---- Every record of the real file --------------------------------------
 
     @Test
-    void theRealFileLoadsOneBasePerRecordInFileOrder() {
+    void theRealFileLoadsOneBasePerRecordInCsChainOrder() {
+        // parse_mon_base_name pushes each record on the head of rb_info, so C's chain runs from
+        // Morgoth (last in the file) back to "ancient dragon" (first in the file).
         assertEquals(C_RECORDS.size(), bases.size());
         List<String> names = new ArrayList<>();
         bases.forEach(b -> names.add(b.getCodeName()));
-        assertEquals(C_RECORDS.stream().map(Row::name).toList(), names);
+        assertEquals(C_RECORDS.reversed().stream().map(Row::name).toList(), names);
     }
 
     @Test
@@ -197,7 +298,8 @@ class MonsterBaseTest {
         List<Executable> checks = new ArrayList<>();
         for (int i = 0; i < C_RECORDS.size(); i++) {
             Row row = C_RECORDS.get(i);
-            MonsterBase base = bases.get(i);
+            // The list is in C's chain order, the reverse of the file order the rows are in.
+            MonsterBase base = bases.get(C_RECORDS.size() - 1 - i);
             String label = row.name();
 
             checks.add(() -> assertEquals(row.glyph(), base.getDefaultMonsterChar(), label + " glyph"));

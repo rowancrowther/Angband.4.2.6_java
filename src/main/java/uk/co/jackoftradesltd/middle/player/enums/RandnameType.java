@@ -75,9 +75,10 @@ public enum RandnameType {
      * @return the matching constant, or {@code null} if {@code index} names no usable type
      */
     public static RandnameType fromIndex(int index) {
-        if (index < 1 || index >= values().length) {
+        if (index <= 0 || index >= values().length) {
             return null;
         }
+        
         return values()[index - 1];
     }
 }

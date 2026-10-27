@@ -19,6 +19,7 @@ package uk.co.jackoftradesltd.backend.parser;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.backend.parser.names.NamesAssembler;
 import uk.co.jackoftradesltd.backend.parser.names.NamesParseRecord;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
@@ -158,17 +159,6 @@ class NamesReaderTest {
         assertEquals(odd, result.items().get(0).getWord().get(0));
     }
 
-    /**
-     * A negative section label is a valid {@code INTEGER} and round-trips as a negative {@code int}.
-     */
-    @Test
-    void negativeSectionLabelRoundTrips() throws IOException {
-        ParseResult<Name> result = load("neg.txt", withHeader(1, "section:-3\nword:x\n"));
-
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
-        assertEquals(-3, result.items().get(0).getSection());
-    }
-
     // ---- Soft error ------------------------------------------------------
 
     @Test
@@ -209,30 +199,6 @@ class NamesReaderTest {
 
         assertTrue(result.items().isEmpty(), "a hard grammar error must fail closed");
         assertTrue(result.hasErrors());
-    }
-
-    // ---- Assembler unit: the defensive parseInt branch -------------------
-
-    /**
-     * Exercised directly because the grammar can't feed a non-numeric section through
-     * (see {@link #nonNumericSectionLabelIsAHardErrorYieldingEmptyResult}): a {@link NamesParseRecord}
-     * with a bad section string is dropped with a soft error rather than aborting the batch, so a
-     * following well-formed record still assembles.
-     */
-    @Test
-    void assemblerDropsRecordWithUnparseableSectionButKeepsTheRest() {
-        List<NamesParseRecord> records = List.of(
-                new NamesParseRecord("NaN", List.of("skipme")),
-                new NamesParseRecord("2", List.of("keepme")));
-        List<String> errors = new ArrayList<>();
-
-        List<Name> names = new NamesAssembler().assemble(records, errors, "test.txt");
-
-        assertEquals(1, names.size());
-        assertEquals(2, names.get(0).getSection());
-        assertEquals(List.of("keepme"), names.get(0).getWord());
-        assertTrue(errors.stream().anyMatch(e -> e.contains("invalid integer")),
-                () -> errors.toString());
     }
 
     // ---- The shipped file against the upstream one -----------------------
@@ -308,29 +274,48 @@ class NamesReaderTest {
     }
 
     /**
-     * C accepts any {@code section:} below {@code RANDNAME_NUM_TYPES} (3), so 0, 1 and 2, and rejects
-     * the rest with {@code PARSE_ERROR_OUT_OF_BOUNDS}. The range check is not the reader's job here:
-     * {@code MiscRegistry.setNames} makes it, so 0 and 3 both come back from the reader untouched.
+     * {@code parse_names_section} in {@code init.c} refuses a section at or above
+     * {@code RANDNAME_NUM_TYPES} (3) with {@code PARSE_ERROR_OUT_OF_BOUNDS}, which stops the load.
+     * The assembler throws with the {@code section:} line, which is line 3 after the header and
+     * blank line.
      */
     @Test
-    void theReaderDoesNotRangeCheckTheSectionNumber() throws IOException {
-        ParseResult<Name> result = load("range.txt", withHeader(3,
-                "section:0\nword:a\nsection:2\nword:b\nsection:3\nword:c\n"));
-
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
-        assertEquals(List.of(0, 2, 3),
-                result.items().stream().map(Name::getSection).toList());
+    void aSectionOfThreeStopsTheLoad() {
+        assertStopsTheLoad("range.txt", "section:3\nword:c\n", "illegal section value: 3");
     }
 
-    /** A zero-padded section is read in decimal; C reads it with base 0, which agrees below 010. */
+    /**
+     * Accepted deviation: C accepts section 0 and files its words in a slot nothing reads. The
+     * port refuses it at the assembler, so the error carries the line.
+     */
     @Test
-    void aZeroPaddedSectionIsReadInDecimal() throws IOException {
-        ParseResult<Name> result = load("padded.txt", withHeader(2,
-                "section:02\nword:a\nsection:010\nword:b\n"));
+    void aSectionOfZeroStopsTheLoadWhereCAcceptsIt() {
+        assertStopsTheLoad("zero-section.txt", "section:0\nword:a\n", "illegal section value of zero: 0");
+    }
+
+    /**
+     * C's {@code strtoul} reads base 0, so {@code 02} is 2 and {@code 010} is octal 8, out of
+     * bounds.
+     */
+    @Test
+    void aZeroPaddedSectionIsReadInBaseZero() throws IOException {
+        ParseResult<Name> result = load("padded.txt", withHeader(1, "section:02\nword:a\n"));
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(2, result.items().get(0).getSection());
-        assertEquals(10, result.items().get(1).getSection(), "C's strtoul base 0 reads 010 as octal 8");
+        assertStopsTheLoad("octal.txt", "section:010\nword:b\n", "illegal section value: 010");
+    }
+
+    /**
+     * The assembler's refusal is a {@link DataFileParseException} that comes straight out of the
+     * reader, naming the {@code section:} line (3, after the header and blank line) and the file.
+     */
+    private void assertStopsTheLoad(String fileName, String body, String message) {
+        DataFileParseException thrown = assertThrows(DataFileParseException.class,
+                () -> load(fileName, withHeader(1, body)));
+        assertTrue(thrown.getMessage().contains(message), thrown::getMessage);
+        assertTrue(thrown.getMessage().contains("line: 3"), thrown::getMessage);
+        assertTrue(thrown.getMessage().contains(fileName), thrown::getMessage);
     }
 
     // ---- The text of a word ----------------------------------------------
@@ -437,13 +422,14 @@ class NamesReaderTest {
         assertTrue(result.hasErrors());
     }
 
-    /** C's {@code section} is a {@code uint}, so {@code parser_parse} rejects a minus sign. */
+    /**
+     * C's {@code section} is a {@code uint}, so {@code parser_parse} rejects a minus sign with
+     * {@code PARSE_ERROR_NOT_NUMBER}. The lexer lets {@code -1} through and the assembler refuses it.
+     */
     @Test
-    void aNegativeSectionLoadsHereWhereCRejectsIt() throws IOException {
-        ParseResult<Name> result = load("neg.txt", withHeader(1, "section:-1\nword:a\n"));
-
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
-        assertEquals(-1, result.items().get(0).getSection());
+    void aNegativeSectionStopsTheLoadAsInC() {
+        assertStopsTheLoad("neg.txt", "section:-1\nword:a\n", "illegal negative section value: -1");
+        assertStopsTheLoad("negzero.txt", "section:-0\nword:a\n", "illegal negative section value: -0");
     }
 
     /** C needs text after {@code word:} (MISSING_FIELD otherwise); the lexer cannot produce a STRING for it. */

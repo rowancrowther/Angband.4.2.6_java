@@ -165,6 +165,7 @@ public class NamesGrammar extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class SectionContext extends ParserRuleContext {
 		public String sectionNum;
+		public int line;
 		public Token INTEGER;
 		public TerminalNode SECTION() { return getToken(NamesGrammar.SECTION, 0); }
 		public TerminalNode INTEGER() { return getToken(NamesGrammar.INTEGER, 0); }
@@ -198,6 +199,7 @@ public class NamesGrammar extends Parser {
 			setState(15);
 			((SectionContext)_localctx).INTEGER = match(INTEGER);
 			 ((SectionContext)_localctx).sectionNum =  ((SectionContext)_localctx).INTEGER.getText(); 
+			            ((SectionContext)_localctx).line =  _localctx.start.getLine(); 
 			}
 		}
 		catch (RecognitionException re) {
@@ -296,14 +298,14 @@ public class NamesGrammar extends Parser {
 	public final RecordContext record() throws RecognitionException {
 		RecordContext _localctx = new RecordContext(_ctx, getState());
 		enterRule(_localctx, 6, RULE_record);
-		 List<String> wordList = new ArrayList<>(); String sec = ""; 
+		 List<String> wordList = new ArrayList<>(); String sec = ""; int lineNo = 0; 
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
 			setState(22);
 			((RecordContext)_localctx).section = section();
-			 sec = ((RecordContext)_localctx).section.sectionNum; 
+			 sec = ((RecordContext)_localctx).section.sectionNum; lineNo = ((RecordContext)_localctx).section.line; 
 			setState(29);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
@@ -322,7 +324,7 @@ public class NamesGrammar extends Parser {
 			}
 			_ctx.stop = _input.LT(-1);
 
-			            ((RecordContext)_localctx).rec =  new NamesParseRecord(sec, wordList);
+			            ((RecordContext)_localctx).rec =  new NamesParseRecord(sec, wordList, lineNo);
 			        
 		}
 		catch (RecognitionException re) {

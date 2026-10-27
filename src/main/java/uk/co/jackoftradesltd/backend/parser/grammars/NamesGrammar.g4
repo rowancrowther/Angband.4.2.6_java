@@ -15,8 +15,9 @@ recordCount
         ;
 
 section
-        returns[String sectionNum]
-        :   SECTION INTEGER { $sectionNum = $INTEGER.getText(); }
+        returns[String sectionNum, int line]
+        :   SECTION INTEGER { $sectionNum = $INTEGER.getText(); 
+            $line = $start.getLine(); }
         ;
 
 word
@@ -26,11 +27,11 @@ word
 
 record
         returns[NamesParseRecord rec]
-        @init { List<String> wordList = new ArrayList<>(); String sec = ""; }
+        @init { List<String> wordList = new ArrayList<>(); String sec = ""; int lineNo = 0; }
         @after {
-            $rec = new NamesParseRecord(sec, wordList);
+            $rec = new NamesParseRecord(sec, wordList, lineNo);
         }
-        :   section { sec = $section.sectionNum; }
+        :   section { sec = $section.sectionNum; lineNo = $section.line; }
             (word { wordList.add($word.wordVal); })*
         ;
 

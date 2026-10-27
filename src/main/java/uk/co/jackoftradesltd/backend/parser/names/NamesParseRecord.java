@@ -21,12 +21,20 @@ import java.util.List;
 
 /**
  * Immutable extraction record for one {@code names.txt} section: a random-name fragment list,
- * later turned into the {@code Name} domain type by {@link NamesAssembler}.
+ * later turned into the {@code Name} domain type by {@link NamesAssembler}. The grammar builds
+ * one per {@code section:} line, holding the {@code word:} lines that follow it.
+ *
+ * <p>Record NamesParseRecord coded before 260915, commented in full on 261027 ({@code line} added
+ * 261027).
  *
  * @param section the section number as text, resolved to an {@code int} by the assembler
- * @param word    the name fragments belonging to this section, in file order
+ * @param word    the name fragments belonging to this section, in file order; each is the whole
+ *                text after {@code word:}, as C's {@code parser_getstr} gives it
+ * @param line    the file line of the {@code section:} directive, for the assembler's error
+ *                messages
  * @author Rowan Crowther
  */
 public record NamesParseRecord(String section,
-                               List<String> word) {
+                               List<String> word,
+                               int line) {
 }

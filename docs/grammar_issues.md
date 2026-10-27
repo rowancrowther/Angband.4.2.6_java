@@ -1488,6 +1488,7 @@ Found 2026-10-18 during `/port backend/parser/NamesReader.java`. Not fixed.
 - **A negative section.** `section` is a `uint` in `init_parse_names`, and `parser_parse` in `parser.c` rejects a leading
   `-`. `INTEGER` in `NamesLexer.g4` takes an optional `-`, so `section:-1` reaches the assembler as `-1`.
   `NamesReaderTest.aNegativeSectionLoadsHereWhereCRejectsIt` pins it; the consequence is in `docs/Assembler_Issues.md`.
+  [<span style="color:#006400">**CLOSED**</span> 26-10-27: the lexer still takes the `-`, but `NamesAssembler.java` now refuses it and stops the load, as C does. `NamesReaderTest.aNegativeSectionStopsTheLoadAsInC` pins it.]
 - **Indented lines and a last-line comment.** The same gap as the shared `CommentsAndEol.g4` entry above: an indented
   `word:` or `#` line is a hard error, and so is a comment on the last line with no newline.
   `NamesReaderTest.leadingWhitespaceBeforeADirectiveIsAHardErrorWhereCSkipsIt` pins it for `NamesLexer`.

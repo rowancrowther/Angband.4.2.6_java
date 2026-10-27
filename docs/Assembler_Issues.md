@@ -1031,6 +1031,7 @@ Found 2026-10-18 during `/port backend/parser/NamesReader.java`. Not fixed.
   `MiscRegistry.setNames`, and the Javadoc there and on `Name` records that section 0 is rejected where C accepts it.
 - `NamesReaderTest.aZeroPaddedSectionIsReadInDecimal` and `aNegativeSectionLoadsHereWhereCRejectsIt` pin the two.
 - None on the shipped data, whose sections are the plain `1` and `2`.
+- [<span style="color:#006400">**CLOSED**</span> 26-10-27: `NamesAssembler.java` reads the section through `ParseUtils.parseIntString` (base 0, so `010` is 8), refuses a leading `-` with `ParseUtils.minusFound`, and refuses 0 and anything above 2 with a `DataFileParseException` naming the line. Section 0 refused is an accepted deviation. Both named tests were replaced: `NamesReaderTest.aZeroPaddedSectionIsReadInBaseZero` and `aNegativeSectionStopsTheLoadAsInC`, with the boundaries in `NamesAssemblerTest`.]
 
 ## `history/HistoryAssembler.java`: a dangling successor and a mixed successor are soft errors, and the numbers are read in decimal
 

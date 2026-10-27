@@ -22,6 +22,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.Channels;
 import uk.co.jackoftradesltd.channel.StartupOptions;
 import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
@@ -47,9 +48,12 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Tests that a {@code names.txt} with a section C rejects stops {@code GameConstants.init}, as C's
  * {@code PARSE_ERROR_OUT_OF_BOUNDS} from {@code parse_names_section} ({@code init.c}) stops the
- * game from starting. {@code MiscDataLoader.loadNames} lets the exception from
- * {@code MiscRegistry.setNames} escape, and {@code init} wraps it in a {@link RuntimeException}
- * that names the file.
+ * game from starting. {@code NamesAssembler} refuses the section with a
+ * {@link DataFileParseException}, {@code MiscDataLoader.loadNames} lets it escape, and {@code init}
+ * wraps it in a {@link RuntimeException} that names the file.
+ *
+ * <p>Class GameConstantsBadNamesTest coded before 261027, commented in full on 261027 (the refusal
+ * moved from {@code MiscRegistry.setNames} to the assembler).
  *
  * <p>The game data is copied to a temporary directory with only {@code names.txt} replaced, so the
  * load runs through the real files up to the bad one. The registries a partial {@code init} fills
@@ -108,7 +112,9 @@ class GameConstantsBadNamesTest {
         RuntimeException thrown = assertThrows(RuntimeException.class, () -> GameConstants.init(core));
 
         assertTrue(thrown.getMessage().contains("names.txt"), thrown.getMessage());
-        assertInstanceOf(IllegalArgumentException.class, thrown.getCause());
+        assertInstanceOf(DataFileParseException.class, thrown.getCause());
+        assertTrue(thrown.getCause().getMessage().contains("illegal section value: 3"),
+                thrown.getCause().getMessage());
     }
 
     @Test

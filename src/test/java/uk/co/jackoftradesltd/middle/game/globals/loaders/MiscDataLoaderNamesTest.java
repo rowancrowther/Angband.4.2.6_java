@@ -22,6 +22,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
 import uk.co.jackoftradesltd.middle.game.Name;
 import uk.co.jackoftradesltd.middle.game.globals.registry.MiscRegistry;
@@ -39,14 +40,18 @@ import static org.junit.jupiter.api.Assertions.*;
  * Tests {@code MiscDataLoader.loadNames}: a good {@code names.txt} fills the registry, and a bad
  * one stops start-up as C does, in three ways. A missing file throws, as C's
  * {@code parse_file_quit_not_found} quits. A hard grammar error, which leaves no records and
- * reports errors, throws. An out-of-range {@code section:} that {@code MiscRegistry.setNames}
- * rejects is thrown on, so that {@code GameConstants.init} stops start-up. Soft errors that leave a
- * record are logged and the record still registers.
+ * reports errors, throws. An out-of-range {@code section:} is refused by {@code NamesAssembler}
+ * with a {@code DataFileParseException}, which escapes so that {@code GameConstants.init} stops
+ * start-up; it is thrown before {@code MiscRegistry.setNames} runs, so the registry keeps the
+ * previous load. Soft errors that leave a record are logged and the record still registers.
  *
  * <p>The range is C's {@code parse_names_section} ({@code init.c}): a section at or above
  * {@code RANDNAME_NUM_TYPES} (3) is {@code PARSE_ERROR_OUT_OF_BOUNDS}. The port also rejects
- * section zero, which C accepts (see {@code MiscRegistry.setNames}). C stops the load on that
- * error, so the port matches C for sections 3 and above; section 0 is stricter than C.
+ * section zero, which C accepts (an accepted deviation, see {@code NamesAssembler}). C stops the
+ * load on that error, so the port matches C for sections 3 and above; section 0 is stricter than C.
+ *
+ * <p>Class MiscDataLoaderNamesTest coded before 261027, commented in full on 261027 (the range
+ * cases moved from {@code setNames} to the assembler).
  *
  * <p>Each test points {@code ANGBAND_DIRS.GAMEDATA} at a temporary directory and puts it, and the
  * registry's names, back afterwards.
@@ -161,7 +166,10 @@ class MiscDataLoaderNamesTest {
     void sectionAtMarkerEscapes() throws IOException {
         writeNames("record-count:2\nsection:1\nword:beleg\nsection:3\nword:bad\n");
 
-        assertThrows(IllegalArgumentException.class, MiscDataLoader::loadNames);
+        DataFileParseException thrown = assertThrows(DataFileParseException.class, MiscDataLoader::loadNames);
+
+        assertTrue(thrown.getMessage().contains("line: 4"), thrown.getMessage());
+        assertTrue(thrown.getMessage().contains("names.txt"), thrown.getMessage());
     }
 
     @Test
@@ -169,18 +177,22 @@ class MiscDataLoaderNamesTest {
     void sectionZeroEscapes() throws IOException {
         writeNames("record-count:1\nsection:0\nword:bad\n");
 
-        assertThrows(IllegalArgumentException.class, MiscDataLoader::loadNames);
+        DataFileParseException thrown = assertThrows(DataFileParseException.class, MiscDataLoader::loadNames);
+
+        assertTrue(thrown.getMessage().contains("zero"), thrown.getMessage());
     }
 
     @Test
-    @DisplayName("a bad section throws and leaves the words filed before it in place")
-    void badSectionLeavesEarlierRecordsFiled() throws IOException {
+    @DisplayName("a bad section throws before the registry is touched, so the previous load stays in place")
+    void badSectionLeavesThePreviousLoadInPlace() throws IOException {
+        writeNames("record-count:2\nsection:1\nword:turin\nsection:2\nword:zed\n");
+        MiscDataLoader.loadNames();
         writeNames("record-count:3\nsection:1\nword:beleg\nsection:3\nword:bad\nsection:2\nword:aar\n");
 
-        assertThrows(IllegalArgumentException.class, MiscDataLoader::loadNames);
+        assertThrows(DataFileParseException.class, MiscDataLoader::loadNames);
 
-        assertEquals(List.of("beleg"), MiscRegistry.getNameSection(RandnameType.RANDNAME_TOLKIEN));
-        assertEquals(List.of(), MiscRegistry.getNameSection(RandnameType.RANDNAME_SCROLL));
+        assertEquals(List.of("turin"), MiscRegistry.getNameSection(RandnameType.RANDNAME_TOLKIEN));
+        assertEquals(List.of("zed"), MiscRegistry.getNameSection(RandnameType.RANDNAME_SCROLL));
     }
 
     @Test

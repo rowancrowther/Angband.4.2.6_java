@@ -21,6 +21,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.Channels;
 import uk.co.jackoftradesltd.channel.StartupOptions;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
@@ -78,8 +79,8 @@ class PitReaderTest {
 
     /**
      * A minimal record touching every directive the error fixtures perturb, used as the clean
-     * neighbour so each of those can assert that one bad record costs only itself. Every name in it
-     * resolves against the registries {@link #bootstrap()} loads.
+     * neighbour of a bad record so the fixture shows that the bad one alone ends the load. Every
+     * name in it resolves against the registries {@link #bootstrap()} loads.
      */
     private static final String GOOD_RECORD = String.join("\n",
             "name:Good pit",
@@ -271,109 +272,117 @@ class PitReaderTest {
     /**
      * An unknown {@code flags-req:} code. The codes are the bare tails of {@link MonsterRaceFlag}
      * constants, so the assembler re-attaches {@code RF_} before resolving; anything that does not
-     * name a constant drops the record, and every bad code in the record is reported before it goes.
+     * name a constant ends the load, as {@code PARSE_ERROR_INVALID_FLAG} does in C, and the first bad
+     * code is the one named.
      */
     @Test
-    void anUnknownRequiredFlagDropsTheRecordAndReportsEveryBadCode() throws Exception {
+    void anUnknownRequiredFlagEndsTheLoadAtTheFirstBadCode() throws Exception {
         String badFlags = GOOD_RECORD.replace("name:Good pit", "name:Bad flags")
                 .replace("flags-req:ANIMAL", "flags-req:NOT_A_FLAG | ALSO_NOT_A_FLAG");
         String path = tempFile("bad-flags.txt",
                 "record-count:2\n" + badFlags + "\n" + GOOD_RECORD + "\n");
 
-        ParseResult<PitProfile> result = new PitReader().parseWithResults(path);
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> new PitReader().parseWithResults(path));
 
-        assertEquals(List.of("Good pit"), names(result));
-        assertEquals(2, result.errors().stream()
-                        .filter(e -> e.contains("an unknown flag")).count(),
-                result.errors()::toString);
+        assertTrue(e.getMessage().endsWith("an illegal monster race flag value: NOT_A_FLAG"), e.getMessage());
     }
 
     /**
      * {@code flags-ban:} resolves out of the same {@link MonsterRaceFlag} family and fails the same
-     * way — worth pinning separately, since the two are separate loops in the assembler and only a
+     * way - worth pinning separately, since the two are separate loops in the assembler and only a
      * test tells you the second one reads {@code bannedFlags()} rather than {@code flags()}.
      */
     @Test
-    void anUnknownBannedFlagDropsTheRecord() throws Exception {
+    void anUnknownBannedFlagEndsTheLoad() throws Exception {
         String badBan = GOOD_RECORD.replace("name:Good pit", "name:Bad flag ban")
                 .replace("flags-ban:UNIQUE", "flags-ban:NOT_A_FLAG");
         String path = tempFile("bad-flag-ban.txt",
                 "record-count:2\n" + badBan + "\n" + GOOD_RECORD + "\n");
 
-        ParseResult<PitProfile> result = new PitReader().parseWithResults(path);
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> new PitReader().parseWithResults(path));
 
-        assertEquals(List.of("Good pit"), names(result));
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("an unknown flag: NOT_A_FLAG")),
-                result.errors()::toString);
+        assertTrue(e.getMessage().endsWith("an illegal banned monster race flag value: NOT_A_FLAG"),
+                e.getMessage());
     }
 
     /**
      * The spell codes take the {@code RSF_} prefix rather than {@code RF_}, and {@code spell-req:}
-     * and {@code spell-ban:} are again separate loops over separate record fields.
+     * and {@code spell-ban:} are again separate loops over separate record fields. Each ends the
+     * load on its own.
      */
     @Test
-    void anUnknownSpellDropsTheRecordOnEitherSpellLine() throws Exception {
+    void anUnknownSpellEndsTheLoadOnEitherSpellLine() throws Exception {
         String badReq = GOOD_RECORD.replace("name:Good pit", "name:Bad spell req")
                 .replace("spell-req:BR_ACID", "spell-req:BR_NOTHING");
         String badBan = GOOD_RECORD.replace("name:Good pit", "name:Bad spell ban")
                 .replace("spell-ban:BR_ELEC", "spell-ban:BR_NOTHING_ELSE");
-        String path = tempFile("bad-spells.txt",
-                "record-count:3\n" + badReq + "\n" + badBan + "\n" + GOOD_RECORD + "\n");
+        String reqPath = tempFile("bad-spell-req.txt", "record-count:2\n" + badReq + "\n" + GOOD_RECORD + "\n");
+        String banPath = tempFile("bad-spell-ban.txt", "record-count:2\n" + badBan + "\n" + GOOD_RECORD + "\n");
 
-        ParseResult<PitProfile> result = new PitReader().parseWithResults(path);
+        DataFileParseException req = assertThrows(DataFileParseException.class,
+                () -> new PitReader().parseWithResults(reqPath));
+        DataFileParseException ban = assertThrows(DataFileParseException.class,
+                () -> new PitReader().parseWithResults(banPath));
 
-        assertEquals(List.of("Good pit"), names(result));
-        assertTrue(result.errors().stream()
-                        .anyMatch(e -> e.contains("an unknown spell: BR_NOTHING")),
-                result.errors()::toString);
-        assertTrue(result.errors().stream()
-                        .anyMatch(e -> e.contains("an unknown spell: BR_NOTHING_ELSE")),
-                result.errors()::toString);
+        assertTrue(req.getMessage().endsWith("an illegal spell value: BR_NOTHING"), req.getMessage());
+        assertTrue(ban.getMessage().endsWith("an illegal banned spell value: BR_NOTHING_ELSE"), ban.getMessage());
     }
 
     /**
      * {@code mon-base:} names are resolved against the loaded monster bases and {@code mon-ban:}
-     * against the loaded monster races — different registries, different messages, and the reason
-     * pit loading has to run after both {@code monster_base.txt} and {@code monster.txt}.
+     * against the loaded monster races - different registries, and the reason pit loading has to run
+     * after both {@code monster_base.txt} and {@code monster.txt}. They also part ways on a name that
+     * resolves to nothing: {@code parse_pit_mon_base} returns {@code PARSE_ERROR_UNRECOGNISED_TVAL},
+     * which ends the load, but {@code parse_pit_mon_ban} stores the {@code NULL} race that
+     * {@code lookup_monster} gave it and the load goes on.
      */
     @Test
-    void unresolvableMonsterNamesDropTheRecord() throws Exception {
+    void anUnresolvableMonBaseEndsTheLoadButAnUnresolvableMonBanLoadsAsNull() throws Exception {
         String badBase = GOOD_RECORD.replace("name:Good pit", "name:Bad base")
                 .replace("mon-base:orc", "mon-base:hippogriff");
         String badBan = GOOD_RECORD.replace("name:Good pit", "name:Bad ban")
                 .replace("mon-ban:Horned Reaper", "mon-ban:Norman the Unlikely");
-        String path = tempFile("bad-monsters.txt",
-                "record-count:3\n" + badBase + "\n" + badBan + "\n" + GOOD_RECORD + "\n");
+        String basePath = tempFile("bad-base.txt", "record-count:2\n" + badBase + "\n" + GOOD_RECORD + "\n");
+        String banPath = tempFile("bad-ban.txt", "record-count:2\n" + badBan + "\n" + GOOD_RECORD + "\n");
 
-        ParseResult<PitProfile> result = new PitReader().parseWithResults(path);
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> new PitReader().parseWithResults(basePath));
+        ParseResult<PitProfile> result = new PitReader().parseWithResults(banPath);
 
-        assertEquals(List.of("Good pit"), names(result));
-        assertTrue(result.errors().stream()
-                        .anyMatch(e -> e.contains("an unknown monster base: hippogriff")),
-                result.errors()::toString);
-        assertTrue(result.errors().stream()
-                        .anyMatch(e -> e.contains("an unknown banned monster base: Norman the Unlikely")),
-                result.errors()::toString);
+        assertTrue(e.getMessage().endsWith("an illegal monster base value: hippogriff"), e.getMessage());
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(List.of("Bad ban", "Good pit"), names(result));
+        List<MonsterRace> banned = field(byName(result.items(), "Bad ban"), "forbiddenMonsters");
+        assertEquals(1, banned.size());
+        assertNull(banned.getFirst());
     }
 
     /**
      * parse_pit_innate_freq rejects a percentage outside 1 to 100 and stores {@code 100 / pct}.
-     * 0 and 101 drop the record; 1, 4 and 100 are accepted and stored as 100, 25 and 1.
+     * 0 and 101 end the load; 1, 4 and 100 are accepted and stored as 100, 25 and 1.
      */
     @Test
     void innateFreqIsRangeCheckedAndStoredAsHundredOverPercent() throws Exception {
-        String zero = GOOD_RECORD.replace("name:Good pit", "name:Zero").replace("innate-freq:5", "innate-freq:0");
-        String over = GOOD_RECORD.replace("name:Good pit", "name:Over").replace("innate-freq:5", "innate-freq:101");
+        for (String bad : List.of("0", "101")) {
+            String record = GOOD_RECORD.replace("innate-freq:5", "innate-freq:" + bad);
+            String badPath = tempFile("freq-" + bad + ".txt", "record-count:1\n" + record + "\n");
+
+            DataFileParseException e = assertThrows(DataFileParseException.class,
+                    () -> new PitReader().parseWithResults(badPath));
+
+            assertTrue(e.getMessage().endsWith("an out of range innate frequency value: " + bad), e.getMessage());
+        }
         String one = GOOD_RECORD.replace("name:Good pit", "name:One").replace("innate-freq:5", "innate-freq:1");
         String four = GOOD_RECORD.replace("name:Good pit", "name:Four").replace("innate-freq:5", "innate-freq:4");
         String hundred = GOOD_RECORD.replace("name:Good pit", "name:Hundred").replace("innate-freq:5", "innate-freq:100");
-        String path = tempFile("freq-range.txt", "record-count:5\n" + zero + "\n" + over + "\n" + one + "\n"
-                + four + "\n" + hundred + "\n");
+        String path = tempFile("freq-range.txt", "record-count:3\n" + one + "\n" + four + "\n" + hundred + "\n");
 
         ParseResult<PitProfile> result = new PitReader().parseWithResults(path);
 
         assertEquals(List.of("One", "Four", "Hundred"), names(result));
-        assertEquals(2, result.errors().size(), result.errors()::toString);
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
         int storedOne = field(result.items().get(0), "freqInnate");
         int storedFour = field(result.items().get(1), "freqInnate");
         int storedHundred = field(result.items().get(2), "freqInnate");
@@ -383,34 +392,33 @@ class PitReaderTest {
     }
 
     /**
-     * The numeric directives are lexed as integers, so the only way to reach the assembler's
-     * {@code NumberFormatException} arms is a value too large for an {@code int}. All four are
-     * checked together because each is a separate {@code try} block with its own message, and a
-     * copy-paste slip between them would otherwise go unseen.
+     * A number too large for an {@code int} is clamped to {@link Integer#MAX_VALUE} in the three
+     * {@code uint} fields (accepted deviation, decided 261027: C keeps the low 32 bits), and the
+     * clamped {@code innate-freq:} is far above 100, so it ends the load as out of range.
      */
     @Test
-    void anOverflowingNumberDropsTheRecord() throws Exception {
-        String badRarity = GOOD_RECORD.replace("name:Good pit", "name:Huge rarity")
-                .replace("alloc:1:25", "alloc:99999999999:25");
-        String badDepth = GOOD_RECORD.replace("name:Good pit", "name:Huge depth")
-                .replace("alloc:1:25", "alloc:1:99999999999");
-        String badObjRarity = GOOD_RECORD.replace("name:Good pit", "name:Huge obj-rarity")
+    void anOverflowingNumberIsClampedAndAnOverflowingInnateFreqIsOutOfRange() throws Exception {
+        String hugeUints = GOOD_RECORD.replace("name:Good pit", "name:Huge")
+                .replace("alloc:1:25", "alloc:99999999999:99999999999")
                 .replace("obj-rarity:0", "obj-rarity:99999999999");
         String badFreq = GOOD_RECORD.replace("name:Good pit", "name:Huge freq")
                 .replace("innate-freq:5", "innate-freq:99999999999");
-        String path = tempFile("overflow.txt", "record-count:5\n" + badRarity + "\n" + badDepth
-                + "\n" + badObjRarity + "\n" + badFreq + "\n" + GOOD_RECORD + "\n");
+        String path = tempFile("overflow.txt", "record-count:1\n" + hugeUints + "\n");
+        String freqPath = tempFile("overflow-freq.txt", "record-count:1\n" + badFreq + "\n");
 
         ParseResult<PitProfile> result = new PitReader().parseWithResults(path);
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> new PitReader().parseWithResults(freqPath));
 
-        assertEquals(List.of("Good pit"), names(result));
-        for (String fragment : List.of("a malformed alloc first integer",
-                "a malformed alloc second integer",
-                "a malformed obj-rarity integer",
-                "a malformed innate frequency integer")) {
-            assertTrue(result.errors().stream().anyMatch(e -> e.contains(fragment)),
-                    () -> fragment + " not reported: " + result.errors());
-        }
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        PitProfile pit = result.items().getFirst();
+        int rarity = field(pit, "rarity");
+        int ave = field(pit, "ave");
+        int objectRarity = field(pit, "objectRarity");
+        assertEquals(Integer.MAX_VALUE, rarity);
+        assertEquals(Integer.MAX_VALUE, ave);
+        assertEquals(Integer.MAX_VALUE, objectRarity);
+        assertTrue(e.getMessage().endsWith("an out of range innate frequency value: 99999999999"), e.getMessage());
     }
 
     /**
@@ -787,15 +795,14 @@ class PitReaderTest {
 
     /**
      * {@code lookup_monster_base} compares with {@code streq}, so {@code mon-base:Orc} names no base.
-     * C stops the load with {@code PARSE_ERROR_UNRECOGNISED_TVAL}; here the record is skipped.
+     * C stops the load with {@code PARSE_ERROR_UNRECOGNISED_TVAL}, and so does the port.
      */
     @Test
     void aMonBaseNameIsCaseSensitive() throws Exception {
-        ParseResult<PitProfile> result = load("base-case.txt", "name:Case\nmon-base:Orc", GOOD_RECORD);
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> load("base-case.txt", "name:Case\nmon-base:Orc", GOOD_RECORD));
 
-        assertEquals(List.of("Good pit"), names(result));
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("an unknown monster base: Orc")),
-                result.errors()::toString);
+        assertTrue(e.getMessage().endsWith("an illegal monster base value: Orc"), e.getMessage());
     }
 
     // ---- Where the grammar is stricter than C ----------------------------
@@ -845,22 +852,16 @@ class PitReaderTest {
     /**
      * {@code room}, {@code alloc} and {@code obj-rarity} are {@code uint} in {@code init_parse_pit}, and
      * {@code parser_parse} refuses a token that starts with '-'. The lexer takes a leading minus, and
-     * the assembler stores the number, or {@code PIT_TYPE_NONE} for a room.
+     * the assembler stops the load on it, in each of the four fields.
      */
     @Test
-    void aNegativeUnsignedValueIsAcceptedHereWhereCRejectsIt() throws Exception {
-        ParseResult<PitProfile> result = load("negatives.txt",
-                "name:Negative\nroom:-1\nalloc:-2:-3\nobj-rarity:-4");
+    void aNegativeUnsignedValueStopsTheLoad() {
+        for (String line : List.of("room:-1", "alloc:-2:3", "alloc:2:-3", "obj-rarity:-4")) {
+            DataFileParseException e = assertThrows(DataFileParseException.class,
+                    () -> load("negative.txt", "name:Negative\n" + line), line);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
-        PitProfile pit = result.items().getFirst();
-        assertEquals(PitRoomType.PIT_TYPE_NONE, field(pit, "roomType"));
-        int rarity = field(pit, "rarity");
-        int ave = field(pit, "ave");
-        int objectRarity = field(pit, "objectRarity");
-        assertEquals(-2, rarity);
-        assertEquals(-3, ave);
-        assertEquals(-4, objectRarity);
+            assertTrue(e.getMessage().startsWith("Pit record starting at line: 2 of file: "), e.getMessage());
+        }
     }
 
     /**

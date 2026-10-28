@@ -135,16 +135,15 @@ class MonsterDataLoaderFailurePathsTest {
     }
 
     /**
-     * A type number too large for an {@code int} passes the lexer but fails
-     * {@code Integer.parseInt} in the assembler, so the only record is dropped with a soft error.
-     * With nothing left to register {@code ErrorParsing.reportAndCheck} returns {@code false}: the
-     * load stops, as C's {@code run_parser} does on any parser error, and the registry is not
-     * touched, so the real pain sets are still there.
+     * A negative type number passes the lexer, but C reads it as a {@code uint} and refuses a
+     * leading {@code -}, so {@code PainAssembler} throws a {@code DataFileParseException} naming
+     * the file. The load stops, as C's {@code run_parser} does on any parser error, before anything
+     * is registered, so the real pain sets are still there.
      */
     @Test
     @DisplayName("errors that leave no records stop the load and leave the registry alone")
     void errorsWithNoRecordsStopTheLoad() throws IOException {
-        Files.writeString(tempDir.resolve("pain.txt"), "record-count:1\n" + painSet("99999999999"));
+        Files.writeString(tempDir.resolve("pain.txt"), "record-count:1\n" + painSet("-1"));
 
         RuntimeException thrown = assertThrows(RuntimeException.class, MonsterDataLoader::loadPain);
 

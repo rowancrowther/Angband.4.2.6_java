@@ -185,28 +185,89 @@ class MonsterPainTest {
     }
 
     /**
-     * Where this port is stricter than C: {@code parse_pain_message} accepts fewer than seven and
-     * leaves the rest {@code NULL}, but the data file says every entry must have seven, so the
-     * Java constructor refuses six, one and none.
+     * Decided 261028 (option A): the port copies C here. {@code parse_pain_message} only refuses an
+     * eighth message, so a record with six, one or none is built and the constructor does not
+     * refuse it. The messages it was given are readable as given.
      */
     @Test
-    void fewerThanSevenMessagesAreRefused() {
+    void fewerThanSevenMessagesAreAccepted() {
+        MonsterPain six = new MonsterPain(1, seven().subList(0, 6));
+        MonsterPain one = new MonsterPain(2, List.of("a"));
+        MonsterPain none = new MonsterPain(3, List.of());
+
         assertAll(
-                () -> assertThrows(IllegalStateException.class,
-                        () -> new MonsterPain(1, seven().subList(0, 6))),
-                () -> assertThrows(IllegalStateException.class,
-                        () -> new MonsterPain(1, List.of("a"))),
-                () -> assertThrows(IllegalStateException.class,
-                        () -> new MonsterPain(1, List.of())));
+                () -> assertEquals(1, six.getPainIndex()),
+                () -> assertEquals("f", six.getMessage(5)),
+                () -> assertEquals(2, one.getPainIndex()),
+                () -> assertEquals("a", one.getMessage(0)),
+                () -> assertEquals(3, none.getPainIndex()));
     }
 
     /**
-     * The failure message names the pain index, so a bad {@code type:} block can be found.
+     * C leaves the slots a short entry does not fill {@code NULL}. The constructor pads a short
+     * list with {@code null} up to seven itself, so a slot past the end of the list reads back as
+     * {@code null} whether or not the caller (as {@code PainAssembler} does) padded it first, and
+     * {@code getMessage} never throws for a level inside 0 to 6.
      */
     @Test
-    void refusalNamesThePainIndex() {
+    void emptySlotsReadBackAsNullWhetherOrNotTheCallerPadsThem() {
+        List<String> padded = new ArrayList<>(seven().subList(0, 3));
+        while (padded.size() < 7) {
+            padded.add(null);
+        }
+        MonsterPain pain = new MonsterPain(1, padded);
+        MonsterPain unpadded = new MonsterPain(2, seven().subList(0, 3));
+
+        assertAll(
+                () -> assertEquals("c", pain.getMessage(2)),
+                () -> assertNull(pain.getMessage(3)),
+                () -> assertNull(pain.getMessage(6)),
+                () -> assertEquals("c", unpadded.getMessage(2)),
+                () -> assertNull(unpadded.getMessage(3)),
+                () -> assertNull(unpadded.getMessage(6)));
+    }
+
+    /**
+     * An empty list is the shortest C accepts (a {@code type:} line with no {@code message:}
+     * lines): all seven slots are {@code NULL}, and the level bounds still apply.
+     */
+    @Test
+    void anEmptyListLeavesAllSevenSlotsNull() {
+        MonsterPain pain = new MonsterPain(5, List.of());
+
+        List<Executable> checks = new ArrayList<>();
+        for (int level = 0; level < 7; level++) {
+            final int lvl = level;
+            checks.add(() -> assertNull(pain.getMessage(lvl), "level " + lvl));
+        }
+        checks.add(() -> assertThrows(IllegalArgumentException.class, () -> pain.getMessage(7)));
+        assertAll(checks);
+    }
+
+    /**
+     * Exactly seven is the boundary between a full record and one the constructor pads; the
+     * seventh message sits at level 6 and nothing is added after it.
+     */
+    @Test
+    void exactlySevenMessagesAreNotPadded() {
+        MonsterPain pain = new MonsterPain(1, seven());
+
+        assertAll(
+                () -> assertEquals("g", pain.getMessage(6)),
+                () -> assertFalse(pain.toString().contains("null"), pain.toString()));
+    }
+
+    /**
+     * The failure for an eighth message names the pain index, so a bad {@code type:} block can be
+     * found.
+     */
+    @Test
+    void refusalOfAnEighthNamesThePainIndex() {
+        List<String> eight = seven();
+        eight.add("h");
+
         IllegalStateException e = assertThrows(IllegalStateException.class,
-                () -> new MonsterPain(42, List.of("a")));
+                () -> new MonsterPain(42, eight));
 
         assertTrue(e.getMessage().contains("42"), e.getMessage());
     }
@@ -229,14 +290,20 @@ class MonsterPainTest {
     }
 
     /**
-     * A {@code null} message has no meaning in C once the record is complete, and is refused.
+     * A {@code null} in the middle of a full list is kept, as C keeps a {@code NULL} slot; nothing
+     * in the constructor looks at the contents of the list.
      */
     @Test
-    void nullMessageIsRefused() {
+    void aNullMessageIsKept() {
         List<String> withNull = seven();
         withNull.set(3, null);
 
-        assertThrows(NullPointerException.class, () -> new MonsterPain(1, withNull));
+        MonsterPain pain = new MonsterPain(1, withNull);
+
+        assertAll(
+                () -> assertEquals("c", pain.getMessage(2)),
+                () -> assertNull(pain.getMessage(3)),
+                () -> assertEquals("e", pain.getMessage(4)));
     }
 
     /**
@@ -264,5 +331,17 @@ class MonsterPainTest {
             checks.add(() -> assertTrue(text.contains("'" + message + "'"), text));
         }
         assertAll(checks);
+    }
+
+    /**
+     * A short record prints seven entries: the filled ones quoted, the unfilled slots as
+     * {@code 'null'}.
+     */
+    @Test
+    void toStringShowsUnfilledSlotsAsNull() {
+        String text = new MonsterPain(3, List.of("a", "b")).toString();
+
+        assertEquals("MonsterPain{painIndex=3, messages='a', 'b', 'null', 'null', 'null', 'null', "
+                + "'null', }", text);
     }
 }

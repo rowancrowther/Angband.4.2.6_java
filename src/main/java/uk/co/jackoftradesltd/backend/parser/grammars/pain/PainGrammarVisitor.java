@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/PainGrammar.g4 by ANTLR 4.13.2
+// Generated from PainGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.pain;
 
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
@@ -25,46 +25,37 @@ import org.antlr.v4.runtime.tree.ParseTreeVisitor;
  * by {@link PainGrammar}.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
- *            operations with no return type.
+ * operations with no return type.
  */
 public interface PainGrammarVisitor<T> extends ParseTreeVisitor<T> {
-    /**
-     * Visit a parse tree produced by {@link PainGrammar#recordCount}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitRecordCount(PainGrammar.RecordCountContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link PainGrammar#type}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitType(PainGrammar.TypeContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link PainGrammar#message}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitMessage(PainGrammar.MessageContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link PainGrammar#painEntry}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitPainEntry(PainGrammar.PainEntryContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link PainGrammar#file}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitFile(PainGrammar.FileContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PainGrammar#recordCount}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitRecordCount(PainGrammar.RecordCountContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PainGrammar#type}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitType(PainGrammar.TypeContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PainGrammar#message}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitMessage(PainGrammar.MessageContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PainGrammar#painEntry}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPainEntry(PainGrammar.PainEntryContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PainGrammar#file}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFile(PainGrammar.FileContext ctx);
 }

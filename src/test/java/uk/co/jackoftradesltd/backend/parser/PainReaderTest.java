@@ -19,6 +19,7 @@ package uk.co.jackoftradesltd.backend.parser;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.monsters.MonsterPain;
 
@@ -34,8 +35,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * PainGrammar} -> {@code PainParseRecord} -> {@code PainAssembler} -> {@link MonsterPain}. Where
  * {@code PainGrammarTest} stops at the raw parse record, these pin the assembler half - the
  * {@code type:} serial being peeled back off the front of the message list and parsed, the
- * seven-message contract, and the skip-and-continue soft-error channel that {@code GrammarDriver}
- * threads through {@link ParseResult}.
+ * seven-message contract, and the record-count soft error that {@code GrammarDriver} threads
+ * through {@link ParseResult}. A bad serial or an eighth message is no longer a soft error: the
+ * assembler stops the load with a {@code DataFileParseException}, as C quits on the first bad line.
  *
  * @author Rowan Crowther
  */
@@ -97,17 +99,16 @@ class PainReaderTest {
     // ---- Assembler soft-error branches -----------------------------------
 
     @Test
-    void overflowingTypeSerialIsReportedAndRecordSkipped() throws IOException {
-        // type: is an INTEGER token, so the only route into the NumberFormatException branch is a
-        // value too large for int. Build the block by hand so the oversized serial is raw text.
+    void aSerialBeyondIntRangeIsClampedAndLoads() throws IOException {
+        // Accepted deviation (261027): C keeps the low 32 bits of the strtoul result, the port
+        // clamps to an int. The record loads; nothing is reported and nothing is skipped.
         String oversized = "type:99999999999999999999\n"
                 + "message:m1\nmessage:m2\nmessage:m3\nmessage:m4\n"
                 + "message:m5\nmessage:m6\nmessage:m7\n";
         ParseResult<MonsterPain> result = load("bad-type.txt", withHeader(1, oversized));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("invalid type value")),
-                result.errors()::toString);
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(Integer.MAX_VALUE, result.items().get(0).getPainIndex());
     }
 
     @Test
@@ -145,38 +146,44 @@ class PainReaderTest {
     }
 
     @Test
-    void negativeTypeSerialIsAcceptedWithoutValidation() throws IOException {
-        // INTEGER allows a leading '-', and neither the grammar nor the assembler range-checks the
-        // serial, so a negative index flows straight through. Pins current (unvalidated) behaviour.
-        ParseResult<MonsterPain> result = load("neg.txt", withHeader(1, entry(-1, SEVEN)));
+    void negativeTypeSerialStopsTheLoad() {
+        // INTEGER allows a leading '-', but C reads the serial as a uint and parser_parse returns
+        // PARSE_ERROR_NOT_NUMBER when the token starts with '-'. The assembler throws, naming the
+        // type: line (2, after the header) and the file.
+        DataFileParseException thrown = assertThrows(DataFileParseException.class,
+                () -> load("neg.txt", withHeader(1, entry(-1, SEVEN))));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
-        assertEquals(-1, result.items().get(0).getPainIndex());
+        assertTrue(thrown.getMessage().contains("illegal negative found on the type value: -1"), thrown::getMessage);
+        assertTrue(thrown.getMessage().contains("line: 2"), thrown::getMessage);
+        assertTrue(thrown.getMessage().contains("neg.txt"), thrown::getMessage);
     }
 
     // ---- Hard (fail-closed) parse errors: empty result + errors ----------
 
     @Test
-    void tooFewMessagesIsAHardErrorAndLoadsNothing() throws IOException {
-        // painEntry demands exactly seven message: lines. Six then EOF is a syntax error; the hard
-        // channel throws in extract(), so the assembler never runs and the result is empty-with-errors.
+    void tooFewMessagesLoadWithNullSlotsAsInC() throws IOException {
+        // parse_pain_message only refuses an eighth line; with six it leaves messages[6] NULL.
+        // The grammar accepts any number of message: lines and the assembler pads with null.
         String sixMsgs = "type:1\n"
                 + "message:m1\nmessage:m2\nmessage:m3\nmessage:m4\nmessage:m5\nmessage:m6\n";
         ParseResult<MonsterPain> result = load("too-few.txt", withHeader(1, sixMsgs));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals("m6", result.items().get(0).getMessage(5));
+        assertNull(result.items().get(0).getMessage(6));
     }
 
     @Test
-    void tooManyMessagesIsAHardError() throws IOException {
-        // An eighth message: line has nowhere to go - painEntry has closed and the next entry must
-        // start with type: - so it is a syntax error.
+    void tooManyMessagesStopsTheLoad() {
+        // C: parse_pain_message returns PARSE_ERROR_TOO_MANY_ENTRIES on the eighth message: line.
+        // The grammar lets it through, so the assembler throws, naming the type: line and the file.
         String eightMsgs = entry(1, SEVEN) + "message:extra\n";
-        ParseResult<MonsterPain> result = load("too-many.txt", withHeader(1, eightMsgs));
+        DataFileParseException thrown = assertThrows(DataFileParseException.class,
+                () -> load("too-many.txt", withHeader(1, eightMsgs)));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
+        assertTrue(thrown.getMessage().contains("Should be 7, is: 8"), thrown::getMessage);
+        assertTrue(thrown.getMessage().contains("line: 2"), thrown::getMessage);
+        assertTrue(thrown.getMessage().contains("too-many.txt"), thrown::getMessage);
     }
 
     @Test
@@ -258,7 +265,7 @@ class PainReaderTest {
     @Test
     void parseDropsErrorsSoASyntaxErrorLooksLikeAnEmptyList() throws IOException {
         Path file = tempDir.resolve("broken.txt");
-        Files.writeString(file, withHeader(1, "type:1\nmessage:only one\n"));
+        Files.writeString(file, withHeader(1, "message:orphan\n"));
 
         assertTrue(new PainReader().parse(file.toString()).isEmpty());
     }

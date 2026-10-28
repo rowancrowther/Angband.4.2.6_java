@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/PainGrammar.g4 by ANTLR 4.13.2
+// Generated from PainGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.pain;
 
 import org.antlr.v4.runtime.tree.ParseTreeListener;
@@ -25,73 +25,54 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
  * {@link PainGrammar}.
  */
 public interface PainGrammarListener extends ParseTreeListener {
-    /**
-     * Enter a parse tree produced by {@link PainGrammar#recordCount}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterRecordCount(PainGrammar.RecordCountContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link PainGrammar#recordCount}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitRecordCount(PainGrammar.RecordCountContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link PainGrammar#type}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterType(PainGrammar.TypeContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link PainGrammar#type}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitType(PainGrammar.TypeContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link PainGrammar#message}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterMessage(PainGrammar.MessageContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link PainGrammar#message}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitMessage(PainGrammar.MessageContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link PainGrammar#painEntry}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterPainEntry(PainGrammar.PainEntryContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link PainGrammar#painEntry}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitPainEntry(PainGrammar.PainEntryContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link PainGrammar#file}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterFile(PainGrammar.FileContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link PainGrammar#file}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitFile(PainGrammar.FileContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link PainGrammar#recordCount}.
+	 * @param ctx the parse tree
+	 */
+	void enterRecordCount(PainGrammar.RecordCountContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PainGrammar#recordCount}.
+	 * @param ctx the parse tree
+	 */
+	void exitRecordCount(PainGrammar.RecordCountContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link PainGrammar#type}.
+	 * @param ctx the parse tree
+	 */
+	void enterType(PainGrammar.TypeContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PainGrammar#type}.
+	 * @param ctx the parse tree
+	 */
+	void exitType(PainGrammar.TypeContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link PainGrammar#message}.
+	 * @param ctx the parse tree
+	 */
+	void enterMessage(PainGrammar.MessageContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PainGrammar#message}.
+	 * @param ctx the parse tree
+	 */
+	void exitMessage(PainGrammar.MessageContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link PainGrammar#painEntry}.
+	 * @param ctx the parse tree
+	 */
+	void enterPainEntry(PainGrammar.PainEntryContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PainGrammar#painEntry}.
+	 * @param ctx the parse tree
+	 */
+	void exitPainEntry(PainGrammar.PainEntryContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link PainGrammar#file}.
+	 * @param ctx the parse tree
+	 */
+	void enterFile(PainGrammar.FileContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PainGrammar#file}.
+	 * @param ctx the parse tree
+	 */
+	void exitFile(PainGrammar.FileContext ctx);
 }

@@ -15,9 +15,8 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/PainGrammar.g4 by ANTLR 4.13.2
+// Generated from PainGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.pain;
-
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
@@ -35,81 +34,61 @@ public class PainGrammarBaseListener implements PainGrammarListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void enterRecordCount(PainGrammar.RecordCountContext ctx) {
-	}
+	@Override public void enterRecordCount(PainGrammar.RecordCountContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void exitRecordCount(PainGrammar.RecordCountContext ctx) {
-	}
+	@Override public void exitRecordCount(PainGrammar.RecordCountContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void enterType(PainGrammar.TypeContext ctx) {
-	}
+	@Override public void enterType(PainGrammar.TypeContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void exitType(PainGrammar.TypeContext ctx) {
-	}
+	@Override public void exitType(PainGrammar.TypeContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void enterMessage(PainGrammar.MessageContext ctx) {
-	}
+	@Override public void enterMessage(PainGrammar.MessageContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void exitMessage(PainGrammar.MessageContext ctx) {
-	}
+	@Override public void exitMessage(PainGrammar.MessageContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void enterPainEntry(PainGrammar.PainEntryContext ctx) {
-	}
+	@Override public void enterPainEntry(PainGrammar.PainEntryContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void exitPainEntry(PainGrammar.PainEntryContext ctx) {
-	}
+	@Override public void exitPainEntry(PainGrammar.PainEntryContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void enterFile(PainGrammar.FileContext ctx) {
-	}
+	@Override public void enterFile(PainGrammar.FileContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void exitFile(PainGrammar.FileContext ctx) {
-	}
+	@Override public void exitFile(PainGrammar.FileContext ctx) { }
 
 	/**
 	 * {@inheritDoc}

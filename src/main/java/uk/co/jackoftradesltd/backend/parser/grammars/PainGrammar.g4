@@ -72,14 +72,8 @@ painEntry
             $record = new PainParseRecord(monPain, lineNo);
         }
         :   type { monPain.add($type.typeNum);
-                   lineNo = $type.line; }
-            msg=message { monPain.add($msg.msgStr); }
-            msg=message { monPain.add($msg.msgStr); }
-            msg=message { monPain.add($msg.msgStr); }
-            msg=message { monPain.add($msg.msgStr); }
-            msg=message { monPain.add($msg.msgStr); }
-            msg=message { monPain.add($msg.msgStr); }
-            msg=message { monPain.add($msg.msgStr); }
+                   lineNo = $type.line; } 
+            (msg=message { monPain.add($msg.msgStr); })*
         ;
 
 // Top-level rule: the whole file is one or more pain-message sets.

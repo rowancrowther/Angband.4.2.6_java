@@ -354,21 +354,25 @@ class PlayerClassReaderTest {
     // ---- PlayerClassAssembler: flag resolution ---------------------------
 
     @Test
-    void unknownObjectFlagIsReportedAndTheClassDropped() throws IOException {
-        ParseResult<PlayerClass> r = load("bad-oflag.txt",
-                withHeader(1, "name:Weird\nobj-flags:NOTAFLAG\n"));
+    void unknownObjectFlagStopsTheLoad() throws IOException {
+        // C: grab_flag() gives PARSE_ERROR_INVALID_FLAG and the load quits.
+        String file = withHeader(1, "name:Weird\nobj-flags:NOTAFLAG\n");
+        DataFileParseException e = loadAndStop("bad-oflag.txt", file);
 
-        assertTrue(r.items().isEmpty());
-        assertTrue(hasError(r, "unknown obj-flag: NOTAFLAG"), r.errors()::toString);
+        assertTrue(e.getMessage().contains("Player class starting at line: " + lineOf(file, "name:Weird")),
+                e::getMessage);
+        assertTrue(e.getMessage().contains("has an illegal object flag value: OF_NOTAFLAG"), e::getMessage);
     }
 
     @Test
-    void unknownPlayerFlagIsReportedAndTheClassDropped() throws IOException {
-        ParseResult<PlayerClass> r = load("bad-pflag.txt",
-                withHeader(1, "name:Weird\nplayer-flags:NOTAFLAG\n"));
+    void unknownPlayerFlagStopsTheLoad() throws IOException {
+        // C: grab_flag() gives PARSE_ERROR_INVALID_FLAG and the load quits.
+        String file = withHeader(1, "name:Weird\nplayer-flags:NOTAFLAG\n");
+        DataFileParseException e = loadAndStop("bad-pflag.txt", file);
 
-        assertTrue(r.items().isEmpty());
-        assertTrue(hasError(r, "unknown player-flag: NOTAFLAG"), r.errors()::toString);
+        assertTrue(e.getMessage().contains("Player class starting at line: " + lineOf(file, "name:Weird")),
+                e::getMessage);
+        assertTrue(e.getMessage().contains("has an unknown player flag value: NOTAFLAG"), e::getMessage);
     }
 
     // ---- ClassEquipAssembler: item + option resolution -------------------
@@ -771,18 +775,21 @@ class PlayerClassReaderTest {
     }
 
     /**
-     * C stops the load on a bad class. The port drops it and loads the rest, so every class after
-     * it moves up one place and takes a different {@code cidx} than the file order suggests.
+     * C stops the load on a bad class, so no class after it is read and none of them gets a
+     * {@code cidx}. The port does the same: the exception names the bad class's {@code name:} line
+     * and nothing is returned.
      */
     @Test
-    void aDroppedClassMovesTheLaterClassesUpOnePlace() throws Exception {
-        ParseResult<PlayerClass> r = load("dropped-middle.txt", withHeader(3,
+    void aBadClassInTheMiddleStopsTheWholeLoad() throws Exception {
+        String file = withHeader(3,
                 "name:A\ntitle:X\n"
                         + "name:B\nobj-flags:NOTAFLAG\n"
-                        + "name:C\ntitle:X\n"));
+                        + "name:C\ntitle:X\n");
+        DataFileParseException e = loadAndStop("dropped-middle.txt", file);
 
-        assertTrue(hasError(r, "unknown obj-flag: NOTAFLAG"), r.errors()::toString);
-        assertEquals(List.of("A", "C"), namesOf(r.items()));
+        assertTrue(e.getMessage().contains("Player class starting at line: " + lineOf(file, "name:B")),
+                e::getMessage);
+        assertTrue(e.getMessage().contains("OF_NOTAFLAG"), e::getMessage);
     }
 
     // =====================================================================
@@ -985,7 +992,7 @@ class PlayerClassReaderTest {
 
     /** C: {@code N_ELEMENTS(c->title)} is 10; the eleventh title is {@code TOO_MANY_ENTRIES}. */
     @Test
-    void tenTitlesLoadAndAnEleventhIsReported() throws Exception {
+    void tenTitlesLoadAndAnEleventhStopsTheLoad() throws Exception {
         StringBuilder ten = new StringBuilder("name:X\n");
         for (int i = 1; i <= 10; i++) ten.append("title:T").append(i).append('\n');
 
@@ -993,10 +1000,11 @@ class PlayerClassReaderTest {
         assertFalse(ok.hasErrors(), ok.errors()::toString);
         assertEquals(1, ok.items().size());
 
-        ParseResult<PlayerClass> bad = load("eleven-titles.txt",
-                withHeader(1, ten + "title:T11\n"));
-        assertTrue(hasError(bad, "too many titles: 11"), bad.errors()::toString);
-        assertTrue(bad.items().isEmpty());
+        String file = withHeader(1, ten + "title:T11\n");
+        DataFileParseException e = loadAndStop("eleven-titles.txt", file);
+        assertTrue(e.getMessage().contains("Player class starting at line: " + lineOf(file, "name:X")),
+                e::getMessage);
+        assertTrue(e.getMessage().contains("has an illegal number of titles: 11"), e::getMessage);
     }
 
     /** C: {@code si->min > 99 || si->max > 99} is {@code PARSE_ERROR_INVALID_ITEM_NUMBER}. */

@@ -373,51 +373,53 @@ class PlayerClassReaderTest {
 
     // ---- ClassEquipAssembler: item + option resolution -------------------
 
-    @Test
-    void invalidEquipTvalIsReportedButTheClassStillLoads() throws IOException {
-        // Equipment failures are collected but do not drop the class (no continue in the assembler).
-        ParseResult<PlayerClass> r = load("bad-tval.txt",
-                withHeader(1, "name:Adventurer\nequip:notatval:Thing:1:1:none\ntitle:X\n"));
+    /**
+     * Throws if loading {@code file} does not stop with a {@link DataFileParseException}, and checks
+     * that the message names the {@code equip:} line it came from and carries each {@code part}.
+     */
+    private void assertEquipStops(String fileName, String file, String equipLine, String... parts) {
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load(fileName, file));
 
-        assertEquals(1, r.items().size());
-        assertTrue(hasError(r, "invalid TValue: notatval"), r.errors()::toString);
+        assertTrue(e.getMessage().contains("Class equipment starting at line: " + lineOf(file, equipLine)),
+                e::getMessage);
+        for (String part : parts)
+            assertTrue(e.getMessage().contains(part), () -> "expected \"" + part + "\" in: " + e.getMessage());
     }
 
     @Test
-    void nonBirthEquipOptionIsRejected() throws IOException {
+    void invalidEquipTvalStopsTheLoad() {
+        // C returns PARSE_ERROR_UNRECOGNISED_TVAL and the load quits, so the class never loads.
+        assertEquipStops("bad-tval.txt",
+                withHeader(1, "name:Adventurer\nequip:notatval:Thing:1:1:none\ntitle:X\n"),
+                "equip:notatval", "illegal tValue value: notatval");
+    }
+
+    @Test
+    void nonBirthEquipOptionStopsTheLoad() {
         // use_sound is an INTERFACE option, not a birth option; only birth options are valid here.
-        ParseResult<PlayerClass> r = load("nonbirth-opt.txt",
-                withHeader(1, "name:Adventurer\nequip:food:Ration of Food:1:1:use_sound\n"));
-
-        assertTrue(hasError(r, "Non-birth options are not supported: OP_use_sound"),
-                r.errors()::toString);
+        assertEquipStops("nonbirth-opt.txt",
+                withHeader(1, "name:Adventurer\nequip:food:Ration of Food:1:1:use_sound\n"),
+                "equip:food", "illegal non-birth option value: OP_use_sound");
     }
 
     @Test
-    void unknownEquipOptionIsRejected() throws IOException {
-        ParseResult<PlayerClass> r = load("bad-opt.txt",
-                withHeader(1, "name:Adventurer\nequip:food:Ration of Food:1:1:notanoption\n"));
-
-        assertTrue(hasError(r, "Invalid birth option found: notanoption"), r.errors()::toString);
+    void unknownEquipOptionStopsTheLoad() {
+        assertEquipStops("bad-opt.txt",
+                withHeader(1, "name:Adventurer\nequip:food:Ration of Food:1:1:notanoption\n"),
+                "equip:food", "illegal birth option value: notanoption");
     }
 
     @Test
-    void badEquipOptionDropsTheWholeEntryAsCDoes() throws IOException {
-        // parse_class_equip() returns PARSE_ERROR_INVALID_OPTION and frees the entry, so a line with
-        // one bad option contributes nothing, even when its other option is valid.
-        ParseResult<PlayerClass> r = load("bad-opt-drops.txt", withHeader(1,
+    void badEquipOptionStopsTheLoadAtItsOwnLineAsCDoes() {
+        // parse_class_equip() returns PARSE_ERROR_INVALID_OPTION and the load quits, so the good
+        // food line before it is not kept and the valid birth_no_recall beside the bad token does not
+        // save the line.
+        assertEquipStops("bad-opt-drops.txt", withHeader(1,
                 "name:Adventurer\n"
                         + "equip:food:Ration of Food:1:3:none\n"
                         + "equip:scroll:Word of Recall:1:1:birth_no_recall | notanoption\n"
-                        + "title:X\n"));
-
-        assertEquals(1, r.items().size());
-        assertTrue(hasError(r, "Invalid birth option found: notanoption"), r.errors()::toString);
-        assertTrue(hasError(r, "bad eopts line"), r.errors()::toString);
-
-        List<StartItem> items = r.items().get(0).getStartItems();
-        assertEquals(1, items.size());
-        assertEquals(TValue.TV_FOOD, items.get(0).gettValue());
+                        + "title:X\n"),
+                "equip:scroll", "illegal birth option value: notanoption");
     }
 
     @Test
@@ -688,17 +690,20 @@ class PlayerClassReaderTest {
     }
 
     @Test
-    void twoBadEquipLinesInOneClassAreBothReported() throws IOException {
-        // A second same-path demonstration on the equipment leg: an unresolvable tval and a
-        // non-birth option on two equip lines of the same class are both collected.
-        ParseResult<PlayerClass> r = load("two-equip-errors.txt", withHeader(1,
+    void theFirstBadEquipLineStopsTheLoadAndTheSecondIsNeverReached() {
+        // C quits at the first equip: line parse_class_equip() rejects, so only the unresolvable
+        // tval is reported; the non-birth option on the line after it is never looked at.
+        String file = withHeader(1,
                 "name:Adventurer\n"
                         + "equip:notatval:Thing:1:1:none\n"
-                        + "equip:food:Ration of Food:1:1:use_sound\n"));
+                        + "equip:food:Ration of Food:1:1:use_sound\n");
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> load("two-equip-errors.txt", file));
 
-        assertTrue(hasError(r, "invalid TValue: notatval"), r.errors()::toString);
-        assertTrue(hasError(r, "Non-birth options are not supported: OP_use_sound"),
-                r.errors()::toString);
+        assertTrue(e.getMessage().contains("Class equipment starting at line: " + lineOf(file, "equip:notatval")),
+                e::getMessage);
+        assertTrue(e.getMessage().contains("illegal tValue value: notatval"), e::getMessage);
+        assertFalse(e.getMessage().contains("use_sound"), e::getMessage);
     }
 
     // =====================================================================
@@ -998,19 +1003,19 @@ class PlayerClassReaderTest {
 
     /** C: {@code si->min > 99 || si->max > 99} is {@code PARSE_ERROR_INVALID_ITEM_NUMBER}. */
     @Test
-    void equipCountsOfNinetyNineLoadAndOneHundredIsReported() throws Exception {
+    void equipCountsOfNinetyNineLoadAndOneHundredStopsTheLoad() throws Exception {
         ParseResult<PlayerClass> ok = load("equip-99.txt", withHeader(1,
                 "name:X\nequip:food:Ration of Food:99:99:none\n"));
         assertFalse(ok.hasErrors(), ok.errors()::toString);
         assertEquals(1, ok.items().getFirst().getStartItems().size());
 
-        ParseResult<PlayerClass> badMin = load("equip-min-100.txt", withHeader(1,
-                "name:X\nequip:food:Ration of Food:100:1:none\n"));
-        assertTrue(hasError(badMin, "Invalid minimum number"), badMin.errors()::toString);
+        assertEquipStops("equip-min-100.txt",
+                withHeader(1, "name:X\nequip:food:Ration of Food:100:1:none\n"),
+                "equip:food", "out of range minimum value: 100");
 
-        ParseResult<PlayerClass> badMax = load("equip-max-100.txt", withHeader(1,
-                "name:X\nequip:food:Ration of Food:1:100:none\n"));
-        assertTrue(hasError(badMax, "Invalid maximum number"), badMax.errors()::toString);
+        assertEquipStops("equip-max-100.txt",
+                withHeader(1, "name:X\nequip:food:Ration of Food:1:100:none\n"),
+                "equip:food", "out of range maximum value: 100");
     }
 
     /** C: each handler overwrites, so the last {@code hitdie:} wins. */

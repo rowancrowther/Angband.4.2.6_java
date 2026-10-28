@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -71,12 +72,20 @@ class ParseUtilsRadixTest {
         assertEquals(expected, read(text, Radix.DECIMAL));
     }
 
+    @Test
+    void emptyTextGivesZeroInEveryBase() {
+        assertEquals(0, read("", Radix.HEX));
+        assertEquals(0, read("", Radix.OCTAL));
+        assertEquals(0, read("", Radix.DECIMAL));
+    }
+
+    /** strtol finds no digit after a lone sign, so PARSE_ERROR_NOT_NUMBER stops the load. */
     @ParameterizedTest
-    @ValueSource(strings = {"", "+", "-"})
-    void emptyTextAndALoneSignGiveZeroInEveryBase(String text) {
-        assertEquals(0, read(text, Radix.HEX));
-        assertEquals(0, read(text, Radix.OCTAL));
-        assertEquals(0, read(text, Radix.DECIMAL));
+    @ValueSource(strings = {"+", "-"})
+    void aLoneSignStopsTheLoadInEveryBase(String text) {
+        assertThrows(DataFileParseException.class, () -> read(text, Radix.HEX));
+        assertThrows(DataFileParseException.class, () -> read(text, Radix.OCTAL));
+        assertThrows(DataFileParseException.class, () -> read(text, Radix.DECIMAL));
     }
 
     /** strtol finds no digit in any of these, so PARSE_ERROR_NOT_NUMBER stops the load. */

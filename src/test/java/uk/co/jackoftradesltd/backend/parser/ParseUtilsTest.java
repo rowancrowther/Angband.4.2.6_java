@@ -176,11 +176,10 @@ class ParseUtilsTest {
     // ---- the fixed-base form --------------------------------------------
 
     @Test
-    void theFixedBaseFormGivesZeroForEmptyTextAndALoneMinus() {
+    void theFixedBaseFormGivesZeroForEmptyTextAndRefusesALoneMinus() {
         assertEquals(0, parseDecimal(""));
-        // C's strtol finds no digits in "-" and refuses it as PARSE_ERROR_NOT_NUMBER; the lexer never
-        // produces it, so the Java answers 0 (see the class block of ParseUtils).
-        assertEquals(0, parseDecimal("-"));
+        // C's strtol finds no digits in "-" and refuses it as PARSE_ERROR_NOT_NUMBER.
+        assertThrows(DataFileParseException.class, () -> parseDecimal("-"));
     }
 
     @ParameterizedTest(name = "base 10 {0} -> {1}")
@@ -276,11 +275,10 @@ class ParseUtilsTest {
     }
 
     @Test
-    void aLoneMinusGivesZeroNotTheDefault() {
-        // C's strtol finds no digits in "-" and refuses it as PARSE_ERROR_NOT_NUMBER; the lexer never
-        // produces it. The text is not empty, so the default is not used and the five-argument form's
-        // 0 comes back.
-        assertEquals(0, parseWithDefault("-", 99));
+    void aLoneMinusStopsTheLoadAndIsNotTheDefault() {
+        // C's strtol finds no digits in "-" and refuses it as PARSE_ERROR_NOT_NUMBER. The text is not
+        // empty, so the default is not used and the five-argument form's refusal comes back.
+        assertThrows(DataFileParseException.class, () -> parseWithDefault("-", 99));
     }
 
     @ParameterizedTest(name = "with default, clamp {0} -> {1}")
@@ -378,13 +376,13 @@ class ParseUtilsTest {
     }
 
     @Test
-    void aLonePlusGivesZeroAsALoneMinusDoes() {
-        // C's strtol finds no digits in "+" and refuses it as PARSE_ERROR_NOT_NUMBER; the lexer never
-        // produces it. Java gives 0 in every form, the documented difference for a lone sign.
-        assertEquals(0, parse("+"));
-        assertEquals(0, parseDecimal("+"));
-        assertEquals(0, parseOctal("+"));
-        assertEquals(0, parseWithDefault("+", 99));
+    void aLonePlusStopsTheLoadAsALoneMinusDoes() {
+        // C's strtol finds no digits in "+" and refuses it as PARSE_ERROR_NOT_NUMBER; every form here
+        // refuses it too.
+        assertThrows(DataFileParseException.class, () -> parse("+"));
+        assertThrows(DataFileParseException.class, () -> parseDecimal("+"));
+        assertThrows(DataFileParseException.class, () -> parseOctal("+"));
+        assertThrows(DataFileParseException.class, () -> parseWithDefault("+", 99));
     }
 
     // ---- signFound ------------------------------------------------------------------

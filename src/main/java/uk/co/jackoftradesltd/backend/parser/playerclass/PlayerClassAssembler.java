@@ -176,6 +176,15 @@ public class PlayerClassAssembler implements Assembler<PlayerClassParseRecord, L
                     continue;
                 }
             }
+            List<ClassMagic> magic = new ArrayList<>();
+            if (record.magic() != null) {
+                List<ClassMagicParseRecord> cmpr = new ArrayList<>();
+                cmpr.add(record.magic());
+                magic = new ClassMagicAssembler().assemble(cmpr, errors, filename);
+            }
+
+            ClassMagic classMagic = magic.isEmpty() ? ClassMagic.NONE : magic.getFirst();
+            
             startItems = new ClassEquipAssembler().assemble(record.equipment(), errors, filename);
             Flag<ObjectFlag> oFlags = new Flag<>(ObjectFlag.class);
             boolean illegalOFlag = false;
@@ -211,14 +220,6 @@ public class PlayerClassAssembler implements Assembler<PlayerClassParseRecord, L
                         "too many titles: " + titles.size());
                 continue;
             }
-            List<ClassMagic> magic = new ArrayList<>();
-            if (record.magic() != null) {
-                List<ClassMagicParseRecord> cmpr = new ArrayList<>();
-                cmpr.add(record.magic());
-                magic = new ClassMagicAssembler().assemble(cmpr, errors, filename);
-            }
-
-            ClassMagic classMagic = magic.isEmpty() ? ClassMagic.NONE : magic.getFirst();
 
             playerClasses.add(new PlayerClass(name, titles, stats, baseSkills,
                     extraSkills, hpAdj, expAdj, oFlags, pFlags, maxAttacks,

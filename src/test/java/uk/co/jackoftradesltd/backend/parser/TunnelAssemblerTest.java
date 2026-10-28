@@ -171,10 +171,9 @@ class TunnelAssemblerTest {
     }
 
     @Test
-    void aLoneMinusReadsAsZero() {
-        // C refuses a lone "-" (no digit read); ParseUtils gives 0 - unreachable, since the
-        // lexer's INTEGER token needs a digit (ParseUtils' class block)
-        assertEquals(0, one(withField(0, "-")).getRnd());
+    void aLoneMinusStopsTheLoad() {
+        // C refuses a lone "-" (no digit read, PARSE_ERROR_NOT_NUMBER), and so does ParseUtils
+        assertThrows(DataFileParseException.class, () -> one(withField(0, "-")));
     }
 
     @Test

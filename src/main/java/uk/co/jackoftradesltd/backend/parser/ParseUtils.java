@@ -24,47 +24,38 @@ import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException
 import java.math.BigInteger;
 
 /**
- * Shared number reading for the assemblers, so far used by {@link
- * uk.co.jackoftradesltd.backend.parser.activation.ActivationAssembler}, {@link
- * uk.co.jackoftradesltd.backend.parser.artifact.ArtifactAssembler}, {@link
- * uk.co.jackoftradesltd.backend.parser.bloweffect.BlowEffectAssembler}, {@link
- * uk.co.jackoftradesltd.backend.parser.blowmethod.BlowMethodAssembler}, {@link
- * uk.co.jackoftradesltd.backend.parser.brand.BrandAssembler}, {@link
- * uk.co.jackoftradesltd.backend.parser.chesttrap.ChestTrapAssembler}, {@link
- * uk.co.jackoftradesltd.backend.parser.curse.CurseAssembler}, {@link
- * uk.co.jackoftradesltd.backend.parser.dungeonprofile.DungeonProfileAssembler}, {@link
- * uk.co.jackoftradesltd.backend.parser.dungeonprofile.RoomAssembler}, {@link
- * uk.co.jackoftradesltd.backend.parser.dungeonprofile.StreamerAssembler}, {@link
- * uk.co.jackoftradesltd.backend.parser.dungeonprofile.TunnelAssembler}, {@link
- * uk.co.jackoftradesltd.backend.parser.egoitem.EgoItemAssembler} and {@link
- * uk.co.jackoftradesltd.backend.parser.flavour.FlavourAssembler}. The grammar hands over an
- * integer as text, and these functions turn it into an {@code int} the way {@code parser.c} does
- * for the {@code int} and {@code uint} fields of a data-file line: {@code parser_getint} reads
- * with {@code strtol} and {@code parser_getuint} with {@code strtoul}, both in base 0, so a
- * leading {@code 0} means octal and anything else decimal.
+ * Shared number and text reading for the assemblers: every assembler whose data file holds a
+ * number goes through it, from {@link uk.co.jackoftradesltd.backend.parser.activation.ActivationAssembler}
+ * to {@link uk.co.jackoftradesltd.backend.parser.dungeonprofile.TunnelAssembler}. The grammar
+ * hands over an integer as text, and these functions turn it into an {@code int} the way
+ * {@code parser.c} does for the {@code int} and {@code uint} fields of a data-file line:
+ * {@code parser_getint} reads with {@code strtol} and {@code parser_getuint} with
+ * {@code strtoul}, both in base 0, so a leading {@code 0} means octal and anything else decimal.
  *
  * <p>There are four ways in. The five-argument {@code parseIntString} is the base 0 reading
  * above. The six-argument one ending in {@code boolean octal} takes the base from its caller
  * instead of from the text, for the figures C reads in a fixed base: the two numbers of an
  * {@code alloc:} range are read by {@code grab_int_range} in {@code datafile.c} with
  * {@code strtol} in base 10, so {@code alloc:1:010 to 020} is ten to twenty there, where base 0
- * would make it eight to sixteen. The six-argument one ending in {@code int def} is the base 0
- * reading with a caller-chosen value for empty text. The six-argument one ending in
- * {@link Radix} is the base 0 reading split in two: the caller looks at the prefix and says
- * which of {@code 0x}, {@code 0} or neither it saw, and this reads the digits after it. All four
- * end in the same digit-by-digit reader.
+ * would make it eight to sixteen. It skips leading whitespace as {@code strtol} does, and text of
+ * nothing but whitespace ends the load. The six-argument one ending in {@code int def} is the
+ * base 0 reading with a caller-chosen value for empty text. The six-argument one ending in
+ * {@link Radix} reads the digits after a prefix the caller has already looked at, which suits
+ * the base 10 reading of {@link Radix#DECIMAL} and the two prefixed bases alike. All four end in
+ * the same digit-by-digit reader.
  *
- * <p>Two further differences from C, neither reachable from a data file: a lone {@code -} or
- * {@code +} gives 0 here where C refuses it as {@code PARSE_ERROR_NOT_NUMBER}, and
- * {@code grab_int_range} rejects a
- * number at {@code INT_MIN} or {@code INT_MAX} outright where this clamps it, which the caller's
- * 0 to 255 range check then refuses all the same.
+ * <p>A lone {@code -} or {@code +} has no digit, so every form refuses it as C does
+ * ({@code PARSE_ERROR_NOT_NUMBER}); only empty text gives 0. One further difference from C, not
+ * reachable from a data file: {@code grab_int_range} rejects a number at {@code INT_MIN} or
+ * {@code INT_MAX} outright where this clamps it, which the caller's 0 to 255 range check then
+ * refuses all the same.
  *
- * <p>Accepted deviation (2026-10-22, "An {@code aim:}, {@code level:} or {@code power:} too big
- * for its C type is clamped, where C wraps it" in {@code docs/Accepted_Deviations.md}): C stores
- * the 64-bit result in a 32-bit field with no range check and keeps the low 32 bits, so
- * {@code level:3000000000} becomes -1294967296. Here the value is clamped to
- * {@link Integer#MIN_VALUE} and {@link Integer#MAX_VALUE}, so it becomes 2147483647.
+ * <p>Accepted deviation (2026-10-22 for the activation fields, extended 2026-10-23 to every data
+ * file; "An integer too big for its C type is clamped, where C wraps it" in
+ * {@code docs/Accepted_Deviations.md}): C stores the 64-bit result in a 32-bit field with no
+ * range check and keeps the low 32 bits, so {@code level:3000000000} becomes -1294967296 and
+ * {@code aim:4294967296} becomes 0. Here the value is clamped to {@link Integer#MIN_VALUE} and
+ * {@link Integer#MAX_VALUE}, so both become 2147483647.
  *
  * <p>Base 0 reads what {@code strtol} reads: the whitespace {@code isspace} skips (space, tab,
  * newline, vertical tab, form feed and carriage return) before the sign, one leading {@code -} or
@@ -89,8 +80,21 @@ import java.math.BigInteger;
  * lines go through, so trailing text in a bracketed figure ends the load where
  * {@link #parseIntString} on its own would read up to it.
  *
- * <p>Class ParseUtils coded on 261022, commented in full on 261025 (third way in added 261023,
- * sign and digit tests added 261024, fourth way in and the {@code 0x} reading added 261025).
+ * <p>The text helpers at the foot of the class work on strings and not on numbers.
+ * {@link #onlySpaceAndTab(String)} is the port of {@code contains_only_spaces} in {@code
+ * z-util.c}, which counts only space and tab. {@link #onlyCSpace(String)} and the {@code cTrim}
+ * family ({@link #cTrim(String)}, {@link #cTrimFront(String)}, {@link #cTrimRear(String)}) use
+ * the wider set that C's {@code isspace} accepts in the C locale (space, tab, newline, vertical
+ * tab, form feed, carriage return), which is what {@code parser_parse()} in {@code parser.c}
+ * skips in front of a line and {@code strtol} skips in front of a number. The {@code
+ * trimOnlySpaceAndTab} family does the same job for the narrower space and tab set. None of the
+ * trimmers has a single C function behind it: C trims by moving a pointer, and these return the
+ * shorter string.
+ *
+ * <p>Class ParseUtils coded on 261022, commented in full on 261028 (third way in added 261023,
+ * sign and digit tests added 261024, fourth way in and the {@code 0x} reading added 261025,
+ * {@code onlySpaceAndTab} added by 261026; the whitespace skipping in the fixed-base reading and
+ * the trimmers were in place before 261028).
  */
 public class ParseUtils {
     /** Receives the fatal message before each {@link DataFileParseException} is thrown. */
@@ -102,8 +106,8 @@ public class ParseUtils {
      * ({@link #signFound(String)}), choose hexadecimal if the digits start with {@code 0x} or
      * {@code 0X}, octal if they start with {@code 0} and decimal otherwise, and hand over to
      * {@code parseString}, which applies the sign before it clamps. Empty text, which is an absent
-     * directive, gives 0, and so does a lone sign, which the lexer never produces. Text that is
-     * only whitespace has no digits and ends the load.
+     * directive, gives 0. Text that is only whitespace, or only a sign, has no digits and ends the
+     * load, as C's {@code z == tok} does.
      *
      * <p>A consumed prefix is itself a digit to {@code strtol}: {@code 0}, {@code 08}, {@code 0x}
      * and {@code 0xg} all read the {@code 0} and give 0, so the empty digit string after the
@@ -116,8 +120,9 @@ public class ParseUtils {
      * leading {@code -} on {@code aim:} and {@code power:} first (C's {@code strtoul} path refuses
      * it as {@code PARSE_ERROR_NOT_NUMBER}), so only {@code level:} arrives here negative.
      *
-     * <p>Function parseIntString coded on 261022, commented in full on 261025 (leading
-     * {@code +} read 261024, prefix and whitespace rewritten 261025).
+     * <p>Function parseIntString coded on 261022, commented in full on 261028 (leading
+     * {@code +} read 261024, prefix and whitespace rewritten 261025, lone sign made fatal
+     * 261028).
      *
      * @param type     the kind of record being read, for the message ({@code "Activation"},
      *                 {@code "Artifact"})
@@ -126,7 +131,7 @@ public class ParseUtils {
      * @param filename the file being read, for the message
      * @param token    the directive name, for the message
      * @return the value, clamped to the range of an {@code int}
-     * @throws DataFileParseException if the text has no leading digits
+     * @throws DataFileParseException if the text has no leading digits, or is only a sign
      */
     public static int parseIntString(String type, String string, int line, String filename, String token) {
         String holder = string;
@@ -150,11 +155,15 @@ public class ParseUtils {
 
         int sign = signFound(string);
         
-        if (sign != 0)
+        if (sign != 0) {
             string = string.substring(1);
-
-        if (string.isEmpty())
-            return 0;
+            if (string.isEmpty()) {
+                String message = type + " beginning at line: " + line + " of file: " + filename
+                        + " the " + token + " value consists solely of a sign: " + holder;
+                logger.fatal(message);
+                throw new DataFileParseException(message);
+            }
+        }
 
         Radix radix = Radix.DECIMAL;
         
@@ -190,7 +199,10 @@ public class ParseUtils {
      * and nothing calls for yet.
      *
      * <p>The sign (a leading {@code -} or {@code +}), the empty text, the lone sign, the digit limit
-     * and the clamp are as in the five-argument form. The caller still has to check the range: C
+     * and the clamp are as in the five-argument form, and so is the leading whitespace, skipped with
+     * {@link #cTrimFront(String)}. Text of nothing but whitespace stops the load with an "empty"
+     * message, where {@code strtol} reads no digits ({@code pe == range} in
+     * {@code grab_int_range}). The caller still has to check the range: C
      * refuses a figure outside 0 to 255 for {@code alloc:} ({@code PARSE_ERROR_OUT_OF_BOUNDS}), and
      * this does not. {@code EgoItemAssembler} also reads through this form with {@code octal} false
      * for the figures C reads in {@code find_value_arg()} ({@code strtol} in base 10), after
@@ -200,7 +212,8 @@ public class ParseUtils {
      * stops it), as {@code strtol(..., 10)} does, and a fixed base 8 reading of {@code 08} gives 0.
      * Text with no digit of the base ({@code abc}, {@code 8} in octal) throws.
      *
-     * <p>Function parseIntString (fixed base) coded on 261022, commented in full on 261025.
+     * <p>Function parseIntString (fixed base) coded on 261022, commented in full on 261028
+     * (whitespace skipping noted 261028).
      *
      * @param type     the kind of record being read, for the message ({@code "Activation"},
      *                 {@code "Artifact"})
@@ -216,21 +229,26 @@ public class ParseUtils {
         String holder = string;
         if (string.isEmpty())
             return 0;
+        
+        string = cTrimFront(string);
+        if (onlyCSpace(string)) {
+            String message = type + " beginning at line: " + line + " of file: " + filename
+                    + " has an empty " + token + " value";
+            logger.fatal(message);
+            throw new DataFileParseException(message);
+        }
 
         int sign = signFound(string);
         if (sign != 0) {
             string = string.substring(1);
         }
 
-        if (string.isEmpty())
-            return 0;
-        
-//        if (string.charAt(0) != '0' && octal) {
-//            String message = type + " beginning at line: " + line + " of file: " + filename
-//                    + " has an invalid " + token + " value: " + holder;
-//            logger.fatal(message);
-//            throw new DataFileParseException(message);
-//        }
+        if (string.isEmpty()) {
+            String message = type + " beginning at line: " + line + " of file: " + filename
+                    + " the " + token + " value consists solely of a sign: " + holder;
+            logger.fatal(message);
+            throw new DataFileParseException(message);
+        }
        
         String stripped;
         if (octal)
@@ -255,13 +273,16 @@ public class ParseUtils {
      * Read the digits of an {@code int} figure after a prefix the caller has already looked at,
      * which is the base 0 reading of {@code strtol} split in two: the caller chooses the
      * {@link Radix} from the prefix it sees and this strips the prefix and reads the digits. It
-     * exists for {@code FlavourAssembler}, whose {@code index} is a {@code uint} that
-     * {@code parser_parse()} in {@code parser.c} reads with {@code strtoul} in base 0.
+     * was written for {@code FlavourAssembler}, whose {@code index} is a {@code uint} that
+     * {@code parser_parse()} in {@code parser.c} reads with {@code strtoul} in base 0, but that
+     * assembler now uses the five-argument form. Its one caller in {@code src/main} is
+     * {@code ItemObjectAssembler}, which passes {@link Radix#DECIMAL} for the two figures of an
+     * {@code alloc:} range, the base 10 reading of {@code grab_int_range} in {@code datafile.c}.
      *
      * <p>One leading {@code -} or {@code +} is stripped here ({@link #signFound(String)}) before
      * the prefix is looked for, so the prefix test is on the unsigned text; a caller that chooses
-     * the radix from the raw text has to look past the sign as well. Empty text and a lone sign give
-     * 0, as in the five-argument form.
+     * the radix from the raw text has to look past the sign as well. Empty text gives 0 and a lone
+     * sign ends the load, as in the five-argument form.
      *
      * <p>By {@code radix}:
      * <ul>
@@ -282,7 +303,7 @@ public class ParseUtils {
      * caller chooses HEX or OCTAL only after seeing the prefix, so the text without one is a
      * programming error and not data.
      *
-     * <p>Function parseIntString (with radix) coded before 261025, commented in full on 261025.
+     * <p>Function parseIntString (with radix) coded before 261025, commented in full on 261028.
      *
      * @param type     the kind of record being read, for the message ({@code "Flavour"})
      * @param string   the raw text from the parse record, with any leading whitespace already
@@ -296,16 +317,21 @@ public class ParseUtils {
      *                                digit in decimal
      */
     public static int parseIntString(String type, String string, int line, String filename, String token, Radix radix) {
+        String holder = string;
+        
         if (string.isEmpty())
             return 0;
 
         int sign = signFound(string);
         if (sign != 0) {
             string = string.substring(1);
+            if (string.isEmpty()) {
+                String message = type + " beginning at line: " + line + " of file: " + filename
+                        + " the " + token + " value consists solely of a sign: " + holder;
+                logger.fatal(message);
+                throw new DataFileParseException(message);
+            }
         }
-
-        if (string.isEmpty())
-            return 0;
         
         String stripped;
         
@@ -460,7 +486,7 @@ public class ParseUtils {
      * base 0, from {@code parser_parse} in {@code parser.c}), but give {@code def} for empty text
      * instead of the five-argument form's 0. Anything else goes to the five-argument form
      * unchanged, so {@code 15} is 15, {@code -1} is -1, {@code 010} is 8 and {@code 08} is 0, a
-     * lone {@code -} is 0 (not {@code def}), and text with no leading digits ends the load.
+     * lone {@code -} ends the load (it is not {@code def}), and so does text with no leading digits.
      *
      * <p>C has no empty {@code int} field: a missing one fails the line before the callback runs.
      * Empty text never comes from the grammars either, whose {@code INTEGER} tokens hold at least
@@ -586,9 +612,10 @@ public class ParseUtils {
      * trailing text, where {@link #nonDigitFound(String, Radix)} allows one sign. Empty text gives
      * {@code false}.
      *
-     * <p>Outstanding: nothing under {@code src/main} calls it yet.
+     * <p>{@code EffectAssembler} uses it to tell a number from a name in an effect sub-type, and
+     * {@code ClassEquipAssembler} to tell a numeric {@code sval} from a name.
      *
-     * <p>Function onlyDigits coded on 261024, commented in full on 261024.
+     * <p>Function onlyDigits coded on 261024, commented in full on 261028.
      *
      * @param string the raw text from the parse record, not {@code null}
      * @return {@code true} if every character is {@code 0} to {@code 9} and there is at least one
@@ -608,9 +635,9 @@ public class ParseUtils {
     /**
      * Whether the text is a single {@code -} or {@code +} and nothing else. C's {@code strtol} reads
      * no digits from it, so the figure is refused ({@code PARSE_ERROR_NOT_NUMBER} in
-     * {@code parser.c}, or the {@code *tc != ']'} test in {@code find_value_arg()}); here
-     * {@link #parseIntString} gives 0 for it instead, so a caller that wants C's refusal asks this
-     * first. Empty text gives {@code false}.
+     * {@code parser.c}, or the {@code *tc != ']'} test in {@code find_value_arg()}); every form of
+     * {@link #parseIntString} refuses it now too, so this is a test a caller makes before reading
+     * and not a guard that reading needs. Empty text gives {@code false}.
      *
      * <p>Function signOnly coded on 261024, commented in full on 261024.
      *
@@ -730,10 +757,9 @@ public class ParseUtils {
      * {@link Radix#DECIMAL}. The text must have no sign or leading whitespace.
      *
      * <p>Outstanding: nothing calls it; the five-argument {@code parseIntString} makes the same
-     * choice in line, and {@code FlavourAssembler} makes it before calling the {@link Radix}
-     * overload.
+     * choice in line, and no caller of the {@link Radix} overload chooses a prefixed base any more.
      *
-     * <p>Function checkRadix coded before 261025, commented in full on 261025.
+     * <p>Function checkRadix coded before 261025, commented in full on 261028.
      *
      * @param string the unsigned text
      * @return the base that base 0 reading would pick
@@ -775,6 +801,169 @@ public class ParseUtils {
         }
         
         return true;
+    }
+
+    /**
+     * The text with the spaces and tabs removed from both ends, the narrow set that
+     * {@link #onlySpaceAndTab(String)} tests. Newlines, carriage returns, vertical tabs and form
+     * feeds are not removed, so {@code " \n x"} loses only its leading space. Text of nothing but
+     * spaces and tabs, and empty text, gives {@code ""}. There is no C function behind it.
+     *
+     * <p>Outstanding: nothing under {@code src/main} calls it, and only {@code ParseUtilsWhitespaceTest}
+     * does under {@code src/test}; the wider {@link #cTrim(String)} is the one in use.
+     *
+     * <p>Function trimOnlySpaceAndTab coded before 261028, commented in full on 261028.
+     *
+     * @param string the text to trim, or {@code null}
+     * @return the trimmed text, or {@code null} if {@code string} is {@code null}
+     */
+    public static String trimOnlySpaceAndTab(String string) {
+        if (string == null) return null;
+        if (onlySpaceAndTab(string)) return "";
+
+        return trimFrontOnlySpaceAndTab(trimRearOnlySpaceAndTab(string));
+    }
+
+    /**
+     * The text with the trailing spaces and tabs removed and the front left alone. Text of
+     * nothing but spaces and tabs, and empty text, gives {@code ""}.
+     *
+     * <p>Outstanding: only {@link #trimOnlySpaceAndTab(String)} calls it in {@code src/main}.
+     *
+     * <p>Function trimRearOnlySpaceAndTab coded before 261028, commented in full on 261028.
+     *
+     * @param string the text to trim, or {@code null}
+     * @return the trimmed text, or {@code null} if {@code string} is {@code null}
+     */
+    public static String trimRearOnlySpaceAndTab(String string) {
+        if (string == null) return null;
+        if (onlySpaceAndTab(string)) return "";
+
+        int trimTo = string.length() - 1;
+
+        for (int i = string.length() - 1; i >= 0; i--) {
+            if (string.charAt(i) != ' ' && string.charAt(i) != '\t') {
+                trimTo = i;
+                break;
+            }
+        }
+
+        return string.substring(0, trimTo + 1);
+    }
+
+    /**
+     * The text with the leading spaces and tabs removed and the rear left alone. Text of nothing
+     * but spaces and tabs, and empty text, gives {@code ""}.
+     *
+     * <p>Outstanding: only {@link #trimOnlySpaceAndTab(String)} calls it in {@code src/main}.
+     *
+     * <p>Function trimFrontOnlySpaceAndTab coded before 261028, commented in full on 261028.
+     *
+     * @param string the text to trim, or {@code null}
+     * @return the trimmed text, or {@code null} if {@code string} is {@code null}
+     */
+    public static String trimFrontOnlySpaceAndTab(String string) {
+        if (string == null) return null;
+        if (onlySpaceAndTab(string)) return "";
+
+        while (!string.isEmpty()) {
+            if (string.charAt(0) == ' ' || string.charAt(0) == '\t')
+                string = string.substring(1);
+            else
+                break;
+        }
+
+        return string;
+    }
+    
+    /**
+     * Whether the text holds nothing but the characters C's {@code isspace} accepts in the C
+     * locale: space, tab, newline, vertical tab, form feed and carriage return. Unlike
+     * {@link #onlySpaceAndTab(String)}, which stands for {@code contains_only_spaces} in
+     * {@code z-util.c}, this is the set {@code strtol} skips and {@code parser_parse()} in
+     * {@code parser.c} skips in front of a line. The empty text counts. A {@code null} argument
+     * throws a {@link NullPointerException}.
+     *
+     * <p>Function onlyCSpace coded before 261028, commented in full on 261028.
+     *
+     * @param string the text to test, not {@code null}
+     * @return {@code true} if every character is C whitespace, or the text is empty
+     */
+    public static boolean onlyCSpace(String string) {
+        for (char c : string.toCharArray()) {
+            if (c != ' '  && c != '\t' &&
+                c != '\f' && c != '\n' &&
+                c != '\r' && c != '\013')
+                return false;
+        }
+        return true;
+    }
+
+    /**
+     * The text with the C whitespace of {@link #onlyCSpace(String)} removed from both ends. Text
+     * of nothing but C whitespace, and empty text, gives {@code ""}. {@code ClassEquipAssembler}
+     * uses it to clear the padding off an {@code sval} before looking at its sign and digits.
+     *
+     * <p>Function cTrim coded before 261028, commented in full on 261028.
+     *
+     * @param string the text to trim, or {@code null}
+     * @return the trimmed text, or {@code null} if {@code string} is {@code null}
+     */
+    public static String cTrim(String string) {
+        return cTrimFront(cTrimRear(string));
+    }
+
+    /**
+     * The text with the trailing C whitespace of {@link #onlyCSpace(String)} removed and the
+     * front left alone. Text of nothing but C whitespace, and empty text, gives {@code ""}.
+     *
+     * <p>Function cTrimRear coded before 261028, commented in full on 261028.
+     *
+     * @param string the text to trim, or {@code null}
+     * @return the trimmed text, or {@code null} if {@code string} is {@code null}
+     */
+    public static String cTrimRear(String string) {
+        if (string == null) return null;
+        if (onlyCSpace(string)) return "";
+
+        int trimTo = string.length() - 1;
+
+        for (int i = string.length() - 1; i >= 0; i--) {
+            if (string.charAt(i) != ' ' && string.charAt(i) != '\t' &&
+                string.charAt(i) != '\f' && string.charAt(i) != '\n' &&
+                string.charAt(i) != '\r' && string.charAt(i) != '\013') {
+                trimTo = i;
+                break;
+            }
+        }
+
+        return string.substring(0, trimTo + 1);
+    }
+
+    /**
+     * The text with the leading C whitespace of {@link #onlyCSpace(String)} removed and the rear
+     * left alone, which is the skip {@code strtol} makes before the sign. Text of nothing but C
+     * whitespace, and empty text, gives {@code ""}. The fixed-base {@code parseIntString} uses it.
+     *
+     * <p>Function cTrimFront coded before 261028, commented in full on 261028.
+     *
+     * @param string the text to trim, or {@code null}
+     * @return the trimmed text, or {@code null} if {@code string} is {@code null}
+     */
+    public static String cTrimFront(String string) {
+        if (string == null) return null;
+        if (onlyCSpace(string)) return "";
+
+        while (!string.isEmpty()) {
+            if (string.charAt(0) == ' ' || string.charAt(0) == '\t' ||
+                string.charAt(0) == '\f' || string.charAt(0) == '\n' || 
+                string.charAt(0) == '\r' || string.charAt(0) == '\013')
+                string = string.substring(1);
+            else
+                break;
+        }
+
+        return string;
     }
     
     /**

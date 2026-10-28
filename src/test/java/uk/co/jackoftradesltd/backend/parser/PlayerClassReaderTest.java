@@ -479,12 +479,12 @@ class PlayerClassReaderTest {
     /**
      * C's {@code parse_class_book} returns {@code PARSE_ERROR_TOO_MANY_ENTRIES} for a
      * {@code book:} line once {@code num_books} has reached the count declared on the
-     * {@code magic:} line. Two books against a declared one must be reported. Interim: until the
-     * soft error becomes a stop, the report is the "contained an error" message.
+     * {@code magic:} line. Two books against a declared one stop the load, naming the
+     * {@code magic:} line.
      */
     @Test
-    void moreBooksThanDeclaredIsReported() throws IOException {
-        ParseResult<PlayerClass> r = load("too-many-books.txt", withHeader(1,
+    void moreBooksThanDeclaredStopsTheLoad() {
+        String file = withHeader(1,
                 "name:Caster\nmagic:1:100:1\n"
                         + "book:magic book:town:[Book One]:1:arcane\n"
                         + "spell:S1:1:1:20:4\n"
@@ -493,9 +493,12 @@ class PlayerClassReaderTest {
                         + "book:magic book:town:[Book Two]:1:arcane\n"
                         + "spell:S2:1:1:20:4\n"
                         + "effect:BOLT:MISSILE\n"
-                        + "dice:1\n"));
+                        + "dice:1\n");
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("too-many-books.txt", file));
 
-        assertTrue(hasError(r, "contained an error"), r.errors()::toString);
+        assertTrue(e.getMessage().contains("Class magic starting at line: " + lineOf(file, "magic:1:100:1")),
+                e::getMessage);
+        assertTrue(e.getMessage().contains("one or more illegal book entries"), e::getMessage);
     }
 
     /**
@@ -555,23 +558,22 @@ class PlayerClassReaderTest {
 
     /**
      * C refuses the second {@code book:} line of a class that declared one, whether or not the first
-     * was good. The port now counts every {@code book:} line, so one dropped book plus one good book
-     * against a declared one is caught, and the class loads without magic. The message is the
-     * "contained an error" one, not the count one, until the soft errors become stops.
+     * was good. The port counts every {@code book:} line, so one dropped book plus one good book
+     * against a declared one stops the load with the count message.
      */
     @Test
-    void aDroppedBookNoLongerHidesAnExtraBookFromTheCountCheck() throws Exception {
-        ParseResult<PlayerClass> r = load("dropped-plus-extra.txt", withHeader(1,
+    void aDroppedBookNoLongerHidesAnExtraBookFromTheCountCheck() {
+        String file = withHeader(1,
                 "name:Caster\nmagic:1:100:1\n"
                         + "book:magic book:town:[B]:1:notarealm\n"
                         + "spell:S:1:1:1:1\n"
                         + "book:magic book:town:[Book Two]:1:arcane\n"
                         + "spell:S2:1:1:20:4\n"
                         + "effect:BOLT:MISSILE\n"
-                        + "dice:1\n"));
+                        + "dice:1\n");
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("dropped-plus-extra.txt", file));
 
-        assertTrue(hasError(r, "contained an error"), r.errors()::toString);
-        assertSame(ClassMagic.NONE, castMagic(r));
+        assertTrue(e.getMessage().contains("one or more illegal book entries"), e::getMessage);
     }
 
     // ---- EffectAssembler (reached via a spell) ---------------------------

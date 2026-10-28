@@ -19,6 +19,7 @@ package uk.co.jackoftradesltd.middle.magic;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.backend.parser.playerclass.ClassSpellAssembler;
 import uk.co.jackoftradesltd.backend.parser.playerclass.ClassSpellParseRecord;
 import uk.co.jackoftradesltd.middle.effect.Effect;
@@ -221,21 +222,18 @@ class MagicSpellTest {
     }
 
     /**
-     * Class MagicSpellTest, ClassSpellAssembler. A malformed scalar drops the spell and reports it,
-     * and the spells either side of it survive in file order.
+     * Class MagicSpellTest, ClassSpellAssembler. A malformed scalar stops the load, as a C parse
+     * error does, and nothing is added to the errors list.
      */
     @Test
-    @DisplayName("ClassSpellAssembler drops a spell with a malformed scalar and keeps its neighbours")
-    void malformedScalarDropsOnlyThatSpell() {
+    @DisplayName("ClassSpellAssembler stops the load on a spell with a malformed scalar")
+    void malformedScalarStopsTheLoad() {
         List<String> errors = new ArrayList<>();
-        List<MagicSpell> spells = new ClassSpellAssembler().assemble(List.of(
+
+        assertThrows(DataFileParseException.class, () -> new ClassSpellAssembler().assemble(List.of(
                 record("Magic Missile", "1", "1", "22", "4"),
                 record("Broken", "1", "x", "22", "4"),
-                record("Phase Door", "2", "2", "22", "4")), errors, "test.txt");
-
-        assertEquals(1, errors.size());
-        assertEquals(2, spells.size());
-        assertEquals("Magic Missile", spells.get(0).getSpellName());
-        assertEquals("Phase Door", spells.get(1).getSpellName());
+                record("Phase Door", "2", "2", "22", "4")), errors, "test.txt"));
+        assertTrue(errors.isEmpty(), errors.toString());
     }
 }

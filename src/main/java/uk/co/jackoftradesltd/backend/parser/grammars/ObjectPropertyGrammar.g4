@@ -28,7 +28,7 @@ options { tokenVocab = ObjectPropertyLexer; }
     import java.util.List;
     import java.util.ArrayList;
     import java.util.Map;
-    import java.util.HashMap;
+    import java.util.LinkedHashMap;
 }
 
 recordCount
@@ -131,7 +131,7 @@ objectProperty
             String codeInit = "";
             String powerInit = "";
             String multInit = "";
-            Map<String, String> typeMultInit = new HashMap<>();
+            Map<String, String> typeMultInit = new LinkedHashMap<>();
             String adjectiveInit = "";
             String negAdjectiveInit = "";
             String msgInit = "";

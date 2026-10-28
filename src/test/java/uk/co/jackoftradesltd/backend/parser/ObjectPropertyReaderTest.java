@@ -19,6 +19,7 @@ package uk.co.jackoftradesltd.backend.parser;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.objects.ObjectProperty;
@@ -381,18 +382,15 @@ class ObjectPropertyReaderTest {
                 result.errors()::toString);
     }
 
+    /**
+     * NOT_A_REAL_FLAG is not in {@code obj_flags}, so {@code code_index_in_array} gives -1 and C
+     * returns {@code PARSE_ERROR_INVALID_OBJ_PROP_CODE}: the load ends.
+     */
     @Test
-    void unresolvableCodeIsLoggedAndRecordSkipped() throws IOException {
-        // NOT_A_REAL_FLAG is not an ObjectFlag constant -> the code is the property's identity, so
-        // the assembler drops the whole record and logs the error.
-        String path = tempFile("bad-code.txt",
-                "record-count:1\nname:bogus\ntype:flag\nsubtype:bad\nid-type:on wield\ncode:NOT_A_REAL_FLAG\npower:0\n");
-
-        ParseResult<ObjectProperty> result = new ObjectPropertyReader().parseWithResults(path);
-
-        assertEquals(0, result.items().size());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("invalid code")),
-                result.errors()::toString);
+    void anUnresolvableCodeEndsTheLoad() throws IOException {
+        assertStopsTheLoad(
+                "record-count:1\nname:bogus\ntype:flag\nsubtype:bad\nid-type:on wield\ncode:NOT_A_REAL_FLAG\npower:0\n",
+                2, "an illegal code value: NOT_A_REAL_FLAG");
     }
 
     // ---- the reader's own contract, against values worked out from the upstream file --------------
@@ -533,6 +531,20 @@ class ObjectPropertyReaderTest {
     }
 
     /**
+     * A bad field ends the load, as every parse error does in C ({@code print_error} in
+     * {@code datafile.c}): the assembler throws a {@link DataFileParseException} whose message names
+     * the record's {@code name:} line and the file, and nothing is returned.
+     */
+    private void assertStopsTheLoad(String content, int line, String tail) throws IOException {
+        String path = tempFile("case.txt", content);
+        DataFileParseException thrown = assertThrows(DataFileParseException.class,
+                () -> new ObjectPropertyReader().parseWithResults(path));
+        assertTrue(thrown.getMessage().contains(tail), thrown::getMessage);
+        assertTrue(thrown.getMessage().contains("line: " + line), thrown::getMessage);
+        assertTrue(thrown.getMessage().contains("case.txt"), thrown::getMessage);
+    }
+
+    /**
      * Every one of the 79 records comes back in file order with the type, subtype, id-type, code,
      * power, multiplier, type-mult count and bindui count the upstream file gives. The file order is
      * {@code obj_properties} order, slot 1 first, so {@code strength} is first and
@@ -629,12 +641,12 @@ class ObjectPropertyReaderTest {
     }
 
     /**
-     * An assembler error skips the one record and the rest still load, where C stops at the first
-     * parse error. The middle record's {@code subtype:} is not one of C's nine.
+     * An assembler error ends the load, as C stops at the first parse error: no record before or
+     * after the bad one comes back. The middle record's {@code subtype:} is not one of C's nine.
      */
     @Test
-    void anAssemblerErrorSkipsOnlyThatRecord() throws IOException {
-        ParseResult<ObjectProperty> result = load("""
+    void anAssemblerErrorEndsTheLoad() throws IOException {
+        assertStopsTheLoad("""
                 record-count:3
                 name:first
                 type:flag
@@ -646,10 +658,7 @@ class ObjectPropertyReaderTest {
                 name:third
                 type:flag
                 code:PROT_FEAR
-                """);
-
-        assertEquals(List.of("first", "third"), result.items().stream().map(ObjectProperty::getName).toList());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown subtype")), result.errors()::toString);
+                """, 5, "an illegal subtype value: no such subtype");
     }
 
     /**
@@ -790,23 +799,18 @@ class ObjectPropertyReaderTest {
 
     /**
      * A {@code type-mult:} naming no tval is {@code PARSE_ERROR_UNRECOGNISED_TVAL} in C, which is
-     * fatal. Here it is a soft error that drops that one line and keeps the record.
+     * fatal, and so it is here: the load ends.
      */
     @Test
-    void anUnknownTypeMultTvalIsASoftErrorThatKeepsTheRecord() throws IOException {
-        ParseResult<ObjectProperty> result = load("""
+    void anUnknownTypeMultTvalEndsTheLoad() throws IOException {
+        assertStopsTheLoad("""
                 record-count:1
                 name:dexterity
                 type:stat
                 code:DEX
                 type-mult:not a tval:2
                 type-mult:gloves:3
-                """);
-
-        assertEquals(1, result.items().size());
-        assertEquals(3, result.items().get(0).getTypeMult(TValue.TV_GLOVES));
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("invalid type-mult type")),
-                result.errors()::toString);
+                """, 2, "an illegal tValue value: not a tval");
     }
 
     /**
@@ -823,14 +827,11 @@ class ObjectPropertyReaderTest {
 
     /**
      * A {@code type:} that is not one of C's seven words is {@code PARSE_ERROR_INVALID_PROPERTY},
-     * fatal in C. Here the one record is skipped with a soft error.
+     * fatal in C, and so it is here: the load ends.
      */
     @Test
-    void anUnknownTypeSkipsTheRecordWithASoftError() throws IOException {
-        ParseResult<ObjectProperty> result = load("record-count:1\nname:x\ntype:resist\ncode:ACID\n");
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("illegal type")), result.errors()::toString);
+    void anUnknownTypeEndsTheLoad() throws IOException {
+        assertStopsTheLoad("record-count:1\nname:x\ntype:resist\ncode:ACID\n", 2, "an illegal type value: resist");
     }
 
     /**
@@ -841,15 +842,12 @@ class ObjectPropertyReaderTest {
     @Test
     void theTypeDecidesWhichTableACodeIsLookedUpIn() throws IOException {
         ParseResult<ObjectProperty> result = load("""
-                record-count:3
+                record-count:2
                 name:light modifier
                 type:mod
                 code:LIGHT
                 name:light resistance
                 type:resistance
-                code:LIGHT
-                name:light flag
-                type:flag
                 code:LIGHT
                 """);
 
@@ -857,7 +855,8 @@ class ObjectPropertyReaderTest {
                 result.items().stream().map(ObjectProperty::getName).toList());
         assertEquals(ObjectModifier.OM_LIGHT, result.items().get(0).getPayload().getModifier(ObjPropertyType.OBJ_PROPERTY_MOD));
         assertEquals(ElementEnum.ELEM_LIGHT, result.items().get(1).getPayload().getElement(ObjPropertyType.OBJ_PROPERTY_RESIST));
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("invalid code: LIGHT")), result.errors()::toString);
+        assertStopsTheLoad("record-count:1\nname:light flag\ntype:flag\ncode:LIGHT\n", 2,
+                "an illegal code value: LIGHT");
     }
 
     // ---- places the grammar or assembler differs from C (see docs/grammar_issues.md and Assembler_Issues.md) ----
@@ -946,38 +945,36 @@ class ObjectPropertyReaderTest {
 
     /**
      * C stores {@code subtype:} on any record; the comment says it is "currently only used by flags"
-     * but nothing checks. The assembler refuses it on any other type and skips the record.
+     * but nothing checks. The assembler does the same and keeps it.
      */
     @Test
-    void aSubtypeOnANonFlagIsASoftErrorHereWhereCAcceptsIt() throws IOException {
+    void aSubtypeOnANonFlagIsKeptAsInC() throws IOException {
         ParseResult<ObjectProperty> result = load("record-count:1\nname:x\ntype:stat\nsubtype:sustain\ncode:STR\n");
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("subtype on a non flag type")),
-                result.errors()::toString);
+        assertEquals(List.of(), result.errors());
+        assertEquals(ObjectFlagType.OFT_SUST, result.items().get(0).getSubtype());
     }
 
     /**
-     * {@code obj_mods} lists the five stats and the eleven modifiers and nothing else; {@code obj_flags}
-     * has {@code NONE} but no maximum; {@code element_names} has neither. The assembler resolves a
-     * code with {@code valueOf("OM_" + code)} and so on, which also finds the sentinel constants
-     * {@code OM_NONE}, {@code OM_MAX}, {@code OF_MAX}, {@code ELEM_NONE} and {@code ELEM_MAX}. Only
-     * {@code NONE} on a flag is valid in C.
+     * {@code obj_mods} lists the five stats and the eleven modifiers and nothing else, and
+     * {@code element_names} holds only the elements, so {@code NONE} and {@code MAX} on a stat, a
+     * modifier or an element are {@code PARSE_ERROR_INVALID_OBJ_PROP_CODE}. {@code obj_flags} is
+     * different: it starts with {@code "NONE"} and {@code list-object-flags.h} ends with
+     * {@code OF(MAX, "")}, so both are valid names for a flag.
      */
     @Test
-    void sentinelCodesAreAcceptedHereWhereCRejectsAllButFlagNone() throws IOException {
+    void sentinelCodesEndTheLoadOnEveryTableButFlags() throws IOException {
         String[][] cases = {
-                {"mod", "NONE"}, {"mod", "MAX"}, {"stat", "NONE"},
-                {"flag", "MAX"},
+                {"mod", "NONE"}, {"mod", "MAX"}, {"stat", "NONE"}, {"stat", "MAX"},
                 {"resistance", "NONE"}, {"resistance", "MAX"}};
         for (String[] c : cases) {
-            ParseResult<ObjectProperty> result = load(
-                    "record-count:1\nname:x\ntype:" + c[0] + "\ncode:" + c[1] + "\n");
-
-            assertEquals(1, result.items().size(), c[0] + " " + c[1] + " loads here; C: PARSE_ERROR_INVALID_OBJ_PROP_CODE");
+            assertStopsTheLoad("record-count:1\nname:x\ntype:" + c[0] + "\ncode:" + c[1] + "\n", 2,
+                    "an illegal sentinel");
         }
-        // The one sentinel C does accept: obj_flags starts with "NONE", index 0.
-        assertEquals(1, load("record-count:1\nname:x\ntype:flag\ncode:NONE\n").items().size());
+        assertEquals(ObjectFlag.OF_NONE, load("record-count:1\nname:x\ntype:flag\ncode:NONE\n").items().get(0)
+                .getPayload().getFlag(ObjPropertyType.OBJ_PROPERTY_FLAG));
+        assertEquals(ObjectFlag.OF_MAX, load("record-count:1\nname:x\ntype:flag\ncode:MAX\n").items().get(0)
+                .getPayload().getFlag(ObjPropertyType.OBJ_PROPERTY_FLAG));
     }
 
     /**
@@ -996,16 +993,16 @@ class ObjectPropertyReaderTest {
 
     /**
      * C tests {@code parser_getint(p, "aux") != 0}, and {@code strtol} reads {@code 00} and {@code -0}
-     * as zero. The assembler tests {@code !aux.equals("0")}, so both come out true.
+     * as zero, so all three are false.
      */
     @Test
-    void anAuxWrittenAsZeroOtherThanPlainZeroIsTrueHereWhereCReadsFalse() throws IOException {
+    void anAuxWrittenAsZeroInAnySpellingIsFalse() throws IOException {
         ObjectProperty padded = load("record-count:1\nname:x\ntype:stat\ncode:STR\nbindui:entry:00\n").items().get(0);
         ObjectProperty negative = load("record-count:1\nname:x\ntype:stat\ncode:STR\nbindui:entry:-0\n").items().get(0);
         ObjectProperty plain = load("record-count:1\nname:x\ntype:stat\ncode:STR\nbindui:entry:0\n").items().get(0);
 
-        assertTrue(padded.getBoundEntries().get(0).aux(), "C: false");
-        assertTrue(negative.getBoundEntries().get(0).aux(), "C: false");
+        assertFalse(padded.getBoundEntries().get(0).aux());
+        assertFalse(negative.getBoundEntries().get(0).aux());
         assertFalse(plain.getBoundEntries().get(0).aux());
     }
 
@@ -1024,16 +1021,16 @@ class ObjectPropertyReaderTest {
 
     /**
      * C reads {@code power:} and {@code mult:} with {@code strtol} in base 0: {@code 010} is 8, and
-     * {@code +5} and {@code 0x10} are numbers. The lexer's {@code INTEGER} is decimal only, so
-     * {@code 010} is 10 and the other two are lexer errors.
+     * {@code +5} and {@code 0x10} are numbers. The assembler reads {@code 010} as 8 as C does, but the
+     * lexer's {@code INTEGER} is decimal only, so {@code +5} and {@code 0x10} are lexer errors.
      */
     @Test
-    void integersAreDecimalOnlyHereWhereCReadsBaseZero() throws IOException {
+    void anOctalPowerIsReadAsInCButASignOrHexIsALexerError() throws IOException {
         ObjectProperty octal = load("record-count:1\nname:x\ntype:stat\ncode:STR\npower:010\n").items().get(0);
         ParseResult<ObjectProperty> plus = load("record-count:1\nname:x\ntype:stat\ncode:STR\npower:+5\n");
         ParseResult<ObjectProperty> hex = load("record-count:1\nname:x\ntype:stat\ncode:STR\npower:0x10\n");
 
-        assertEquals(10, octal.getPower(), "C gives 8");
+        assertEquals(8, octal.getPower());
         assertTrue(plus.items().isEmpty() && plus.hasErrors());
         assertTrue(hex.items().isEmpty() && hex.hasErrors());
     }
@@ -1052,15 +1049,14 @@ class ObjectPropertyReaderTest {
 
     /**
      * A record with no {@code code:} line is valid in C: {@code parse_object_property_name} zero-fills
-     * the record, so {@code index} is 0, which for a stat is {@code STR}. The assembler resolves the
-     * empty code with {@code valueOf("OM_" + "")}, which throws, so the record is skipped with an
-     * "invalid code" message that shows an empty code.
+     * the record, so {@code index} is 0, which for a stat is {@code STR}. The assembler gives the
+     * same.
      */
     @Test
-    void aRecordWithNoCodeIsSkippedHereWhereCHoldsIndexZero() throws IOException {
+    void aRecordWithNoCodeHoldsIndexZeroAsInC() throws IOException {
         ParseResult<ObjectProperty> result = load("record-count:1\nname:x\ntype:stat\npower:1\n");
 
-        assertTrue(result.items().isEmpty());
-        assertEquals(List.of("Object Property at line: 2 has an invalid code: "), result.errors());
+        assertEquals(List.of(), result.errors());
+        assertEquals(ObjectModifier.OM_STR, result.items().get(0).getPayload().getModifier(ObjPropertyType.OBJ_PROPERTY_STAT));
     }
 }

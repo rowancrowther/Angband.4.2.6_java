@@ -529,6 +529,28 @@ recorded here as the summary states them; fill in the detail when you next touch
 - **Accepted:** 2026-10-26, during the `MonsterAssembler` port pass. Marked in the `MonsterAssembler` comment above the
   spell power block. Not pinned by a test yet.
 
+## Object property
+
+### A `type-mult:` tval written twice under two spellings can keep the earlier line, where C keeps the later one
+
+- **Java:** `ObjectPropertyAssembler.assemble` (the `type-mult:` loop) and the `objectProperty` rule in
+  `ObjectPropertyGrammar.g4`, which keeps the lines in a `LinkedHashMap` keyed by the raw tval text. **C:**
+  `parse_object_property_type_mult` (`obj-init.c`).
+- **Differs:** C resolves each line to a tval with `tval_find_idx` as it reads it and writes `type_mult[tval]` at once,
+  so the last line for a tval wins whatever its spelling. Java merges repeats by spelling first and resolves to a tval
+  afterwards, in the order each spelling first appeared. `soft armor:2`, then `soft armour:3`, then `soft armor:4`
+  ends at 4 in C and at 3 in Java, because the repeated `soft armor` keeps its first slot and `soft armour` is
+  resolved after it. The same spelling repeated with no alias between them is last-wins in both, and so are two
+  spellings each written once.
+- **Why:** the parse record holds one multiplier per spelling, so the file order across spellings is gone before the
+  assembler runs. Keeping it would mean the grammar resolving tvals, or the record carrying the lines as a list.
+- **Reach:** none from shipped data, where no record names a tval twice. Modded files only.
+- **Revisit:** if a modded `object_property.txt` ever repeats a tval under two spellings, or the record is made to keep
+  line order.
+- **Accepted:** 2026-10-28, during the `ObjectPropertyAssembler` port pass. Marked in the `ObjectPropertyAssembler`
+  comment above the `type-mult:` loop. Pinned by
+  `ObjectPropertyAssemblerTest.aRepeatedSpellingAfterAnAliasKeepsTheAliasHereWhereCKeepsTheLastLine`.
+
 ## Pending your decision
 
 - The five `objDescNameFormat` divergences (Part G; `docs/ItemObject_round2/part_G.md`). All unreachable from shipped

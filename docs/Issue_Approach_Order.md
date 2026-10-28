@@ -234,8 +234,8 @@ Paths are under `src/main/java/uk/co/jackoftradesltd/`. The figure in brackets i
 - `backend/parser/monster/MonsterAssembler.java` (41): ~~89, 103, 113, 123, 134, 144, 154, 164, 174, 185, 194, 205, 213, 223, 233, 244, 256, 269, 279, 286, 307, 317, 328, 338, 364, 386, 397, 410, 436, 442, 450, 463, 495, 501, 507, 516, 530, 538, 556, 562, 585~~
 - `backend/parser/monsterspell/MonsterSpellAssembler.java` (3): ~~77, 91, 100~~
 - `backend/parser/monsterspell/MonsterSpellLevelAssembler.java` (4): ~~72, 82, 91, 100~~
-- `backend/parser/names/NamesAssembler.java` (1): 56
-- `backend/parser/objectbase/ObjectBaseAssembler.java` (6): 66, 74, 88, 97, 108, 116
+- `backend/parser/names/NamesAssembler.java` (1): ~~56~~
+- `backend/parser/objectbase/ObjectBaseAssembler.java` (6): ~~66, 74, 88, 97, 108, 116~~
 - `backend/parser/objectproperty/ObjectPropertyAssembler.java` (12): 79, 84, 93, 99, 105, 133, 139, 148, 158, 173, 180, 206
 - `backend/parser/pain/PainAssembler.java` (2): 64, 69
 - `backend/parser/pit/PitAssembler.java` (12): 92, 102, 112, 127, 140, 152, 159, 173, 187, 200, 215, 231
@@ -290,7 +290,7 @@ Each group is one helper (or one policy) and then one pass over its users.
 ### `grab_element_flag` (`IGNORE_` and `HATES_`)
 
 - A: `itemobject/ItemObjectAssembler.java` (knows `IGNORE_`, not `HATES_`).
-- A: `objectbase/ObjectBaseAssembler.java` (knows `HATES_`, not `IGNORE_`).
+- A: `objectbase/ObjectBaseAssembler.java` (knows `HATES_`, not `IGNORE_`). [<span style="color:#006400">**CLOSED**</span> 26-10-28: `IGNORE_` is read with C's prefix rule and sets `EL_INFO_IGNORE`; `ObjectBaseAssemblerTest` and `ObjectBaseReaderTest` pass.]
 - A: `egoitem/EgoItemAssembler.java` and `artifact/ArtifactAssembler.java`.
 - Write one equivalent of C's function and call it from all four.
 
@@ -320,7 +320,7 @@ Each group is one helper (or one policy) and then one pass over its users.
 ### Colours that C reads as white
 
 - A: `monsterspell/MonsterSpellLevelAssembler.java` lore colours (drops the level). [<span style="color:#006400">**CLOSED**</span> 26-10-27: an unknown base, resist or immune colour reads as `COLOUR_WHITE`; `MonsterSpellLevelAssemblerTest` and `MonsterSpellReaderTest` pass.]
-- A: `objectbase/ObjectBaseAssembler.java` (drops the record).
+- A: `objectbase/ObjectBaseAssembler.java` (drops the record). [<span style="color:#006400">**CLOSED**</span> 26-10-28: an unknown colour reads as `COLOUR_WHITE`; `ObjectBaseAssemblerTest` and `ObjectBaseReaderTest` pass.]
 - A: `flavour/FlavourAssembler.java` colour names, in the flavour entry.
 - The Stage 0 strict-or-lenient answer decides all three, and the grammar side in Stage 7f.
 
@@ -331,7 +331,7 @@ Each group is one helper (or one policy) and then one pass over its users.
 - A: `slay/SlayAssembler.java` missing numbers.
 - A: `monster/MonsterAssembler.java` no `color:`.
 - A: `artifact/ArtifactAssembler.java` no `base-object:`.
-- A: `objectbase/ObjectBaseAssembler.java` and G: `ObjectBaseGrammar.g4` one missing default. Take this as a pair.
+- A: `objectbase/ObjectBaseAssembler.java` and G: `ObjectBaseGrammar.g4` one missing default. Take this as a pair. [<span style="color:#006400">**CLOSED**</span> 26-10-28 for the assembler half: `""` reads as 0 through `ParseUtils.parseIntString`, so the record loads. Still open for `ObjectBaseGrammar.g4`, which needs at least one `default:` line.]
 
 ## Stage 4: list order (C's chains are reversed)
 
@@ -351,7 +351,7 @@ Local edits with no effect on the shipped data. Group by file when the file is o
 - Stricter or looser than C by a small margin: A: `monster` `friends-base:` chance above 100, `monster` group role case, `monster` directive-order effects, `artifact` `graphics:` on a non-`INSTA_ART` kind, `objectproperty` unknown `type-mult:` tval keeps the record.
 - Glyphs outside the Basic Multilingual Plane: A: `monsterbase`, `monster`.
 - Limits: A: `brand` no 254-brand limit, `visuals` caps (per the Stage 0 answer).
-- Numbering and names: A: `egoitem` skipped record takes no `egoIndex`, `objectbase` synthetic `TV_NONE` named "none", `egoitem` two misspelled error messages.
+- Numbering and names: A: `egoitem` skipped record takes no `egoIndex`, `objectbase` synthetic `TV_NONE` named "none" [<span style="color:#006400">**CLOSED**</span> 26-10-28: the sentinel has a `null` name], `egoitem` two misspelled error messages.
 - Larger files that differ in several small ways, one entry each: A: `vault`, `roomprofile`, `playertimed`, `chesttrap`, `flavour` (tval, glyph, `fixed:` sval parts), `history` (successors), `visuals` (cycles and flicker).
 - On a second parse: A: `artifact` special-light activation and time go to the artifact. Low risk, but the birth re-run is the only place it shows.
 

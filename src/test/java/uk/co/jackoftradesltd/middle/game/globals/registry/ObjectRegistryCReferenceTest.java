@@ -23,20 +23,8 @@ import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
-import uk.co.jackoftradesltd.middle.objects.ObjectBase;
-import uk.co.jackoftradesltd.middle.objects.ObjectKind;
-import uk.co.jackoftradesltd.middle.objects.ObjectProperty;
-import uk.co.jackoftradesltd.middle.objects.ObjectPropertyTypeWrapper;
-import uk.co.jackoftradesltd.middle.objects.Rune;
-import uk.co.jackoftradesltd.middle.objects.enums.CombatRunes;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjPropertyType;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlagID;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlagType;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectKindFlag;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
-import uk.co.jackoftradesltd.middle.objects.enums.RuneVariety;
-import uk.co.jackoftradesltd.middle.objects.enums.TValue;
+import uk.co.jackoftradesltd.middle.objects.*;
+import uk.co.jackoftradesltd.middle.objects.enums.*;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -86,7 +74,7 @@ class ObjectRegistryCReferenceTest {
 
     private static ObjectBase base(TValue tval, String name) {
         return new ObjectBase(tval, name, ColourEnum.COLOUR_WHITE,
-                new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), -1, -1);
+                new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), new Flag<>(ElementEnum.class), -1, -1, new Flag<>(ObjectFlag.class));
     }
 
     /**

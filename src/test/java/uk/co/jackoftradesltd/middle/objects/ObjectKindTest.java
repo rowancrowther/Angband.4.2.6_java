@@ -106,7 +106,7 @@ class ObjectKindTest {
      */
     private static ObjectBase base() {
         return new ObjectBase(TValue.TV_SWORD, "sword", ColourEnum.COLOUR_WHITE,
-                new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), 0, 40);
+                new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), new Flag<>(ElementEnum.class), 0, 40, new Flag<>(ObjectFlag.class));
     }
 
     /**

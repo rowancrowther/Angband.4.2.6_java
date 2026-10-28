@@ -56,7 +56,7 @@ class CurseDefinitionTest {
      */
     private static ObjectBase base(TValue tval, String name) {
         return new ObjectBase(tval, name, ColourEnum.COLOUR_WHITE,
-                new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), 0, 40);
+                new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), new Flag<>(ElementEnum.class), 0, 40, new Flag<>(ObjectFlag.class));
     }
 
     /**

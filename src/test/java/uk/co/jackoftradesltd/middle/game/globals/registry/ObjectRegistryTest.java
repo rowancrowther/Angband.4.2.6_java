@@ -26,6 +26,7 @@ import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.Activation;
 import uk.co.jackoftradesltd.middle.objects.*;
+import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectKindFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 import uk.co.jackoftradesltd.testsupport.CurseFixture;
@@ -102,7 +103,7 @@ class ObjectRegistryTest {
 
     private static ObjectBase base(TValue tval, String name) {
         return new ObjectBase(tval, name, ColourEnum.COLOUR_WHITE,
-                new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), -1, -1);
+                new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), new Flag<>(ElementEnum.class), -1, -1, new Flag<>(ObjectFlag.class));
     }
 
     /**

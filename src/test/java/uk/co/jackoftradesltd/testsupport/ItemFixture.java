@@ -17,38 +17,17 @@
 
 package uk.co.jackoftradesltd.testsupport;
 
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.cave.Loc;
 import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.middle.monsters.MonsterRace;
 import uk.co.jackoftradesltd.middle.numerics.Random;
-import uk.co.jackoftradesltd.middle.objects.Artifact;
-import uk.co.jackoftradesltd.middle.objects.Brand;
-import uk.co.jackoftradesltd.middle.objects.Curse;
-import uk.co.jackoftradesltd.middle.objects.CurseData;
-import uk.co.jackoftradesltd.middle.objects.EgoItem;
-import uk.co.jackoftradesltd.middle.objects.ElementInfo;
-import uk.co.jackoftradesltd.middle.objects.ItemObject;
-import uk.co.jackoftradesltd.middle.objects.ObjectBase;
-import uk.co.jackoftradesltd.middle.objects.ObjectKind;
-import uk.co.jackoftradesltd.middle.objects.Slay;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
-import uk.co.jackoftradesltd.middle.objects.enums.IgnoreFlag;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectKindFlag;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectNotice;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum;
-import uk.co.jackoftradesltd.middle.objects.enums.TValue;
+import uk.co.jackoftradesltd.middle.objects.*;
+import uk.co.jackoftradesltd.middle.objects.enums.*;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * A builder for a loaded {@link ItemObject} — one that has been all the way through the parser and
@@ -229,7 +208,7 @@ public final class ItemFixture {
     public static ObjectKind kindWithBase(TValue tValue, String name, int maxStack) {
         ObjectKind kind = new ObjectKind();
         set(kind, "base", new ObjectBase(tValue, name, null,
-                new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), 0, maxStack));
+                new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), new Flag<>(ElementEnum.class), 0, maxStack, new Flag<>(ObjectFlag.class)));
         for (String field : new String[]{"toH", "toD", "toA", "pVal"}) {
             set(kind, field, new Random(0, 1, 1, 1, false));
         }
@@ -247,7 +226,7 @@ public final class ItemFixture {
     public static ObjectKind loadedKind(TValue tValue, String name, int maxStack) {
         ObjectKind kind = kindWithDice(tValue);
         set(kind, "base", new ObjectBase(tValue, name, null,
-                new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), 0, maxStack));
+                new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), new Flag<>(ElementEnum.class), 0, maxStack, new Flag<>(ObjectFlag.class)));
         set(kind, "ignore", new Flag<>(IgnoreFlag.class));
         return kind;
     }

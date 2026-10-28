@@ -74,23 +74,29 @@ import java.util.List;
  * <ul>
  *   <li>The {@code record-count:} header is a Java-only addition, checked as a soft error; the
  *       upstream {@code object_base.txt} has no such line, and this repository's copy adds it.</li>
- *   <li>C stops at the first parse error. Here a syntax error is fatal and returns no items, but an
- *       assembler error (an unknown tval, colour or flag, a number too large for an int) skips only
- *       the offending record and the rest still load.</li>
+ *   <li>C stops at the first parse error, and so does this reader, by two routes. A syntax error is
+ *       collected, and returns no items and the messages in the {@link ParseResult}. An error found
+ *       by {@link ObjectBaseAssembler} (an unknown tval, an unknown flag, a break chance or maximum
+ *       stack with no digits) is thrown as a {@code DataFileParseException} out of
+ *       {@link #parseWithResults} and {@link #parse}, so no record is skipped and no partial list
+ *       comes back. Only the {@code record-count:} mismatch is left as a soft error that keeps
+ *       the records.</li>
  *   <li>C takes the directives in any order, leaves any of them out and lets a repeated one
  *       overwrite, and accepts any number of {@code default:} lines anywhere, each affecting only
  *       the records that follow it. The grammar insists on at least one {@code default:} line before
  *       the first record, then {@code name:}, {@code graphics:}, an optional {@code break:}, an
  *       optional {@code max-stack:} and any number of {@code flags:} lines in that order, so any
  *       other shape is a syntax error and costs the whole file; see {@code docs/grammar_issues.md}.</li>
- *   <li>The assembler is stricter than C in places: an unknown colour is an error here where C
- *       quietly uses white, and an {@code IGNORE_} element flag is an error here where C accepts it;
- *       see {@code docs/Assembler_Issues.md}.</li>
+ *   <li>The assembler agrees with C where it once did not: an unknown colour is white, an
+ *       {@code IGNORE_} element flag sets the ignore bit, a default the file left out is 0 and the
+ *       synthetic {@code TV_NONE} base, like a record with no plural part, has a {@code null} name.
+ *       A number outside the range of an {@code int} is clamped where C wraps it; see
+ *       {@link ObjectBaseAssembler} and {@code docs/Accepted_Deviations.md}.</li>
  *   <li>The file is opened at exactly the path given. C's {@code parse_file} would look for a
  *       customised copy in the user directory first.</li>
  * </ul>
  *
- * <p>Class ObjectBaseReader coded before 260915, commented in full on 261017.
+ * <p>Class ObjectBaseReader coded before 260915, commented in full on 261028.
  *
  * @author Rowan Crowther
  */
@@ -111,13 +117,14 @@ public class ObjectBaseReader implements Reader<ObjectBase> {
      * Parse the given file and return just the assembled bases, discarding the soft-error channel
      * (use {@link #parseWithResults} to inspect the errors). Satisfies the {@link Reader} contract.
      * <p>
-     * Because the errors are dropped, a syntax error and a file with no usable records are
-     * distinguishable only by size: a syntax error gives an empty list, a file whose every record was
-     * skipped gives the lone synthetic {@code TV_NONE} base, and a record skipped for an unknown tval,
-     * colour or flag just goes missing. Callers that must tell a partial or failed load from a clean
-     * one have to use {@link #parseWithResults}.
+     * Because the errors are dropped, a syntax error is visible only as an empty list, where a clean
+     * load always ends in the synthetic {@code TV_NONE} base. A {@code record-count:} mismatch is
+     * invisible here, since it keeps every record. An error found by {@link ObjectBaseAssembler} is
+     * not dropped but thrown as a {@code DataFileParseException}, by this method as by
+     * {@link #parseWithResults}. Callers that must see a syntax message or a count mismatch have to use
+     * {@link #parseWithResults}.
      *
-     * <p>Function parse coded before 260915, commented in full on 261017.
+     * <p>Function parse coded before 260915, commented in full on 261028.
      *
      * @param filename the object-base data file to read
      * @return the assembled {@link ObjectBase} list, ending in the synthetic {@code TV_NONE} base
@@ -179,17 +186,18 @@ public class ObjectBaseReader implements Reader<ObjectBase> {
      * This is the Java counterpart of {@code run_parse_object_base} and the
      * {@code parse_object_base_*} handlers in {@code obj-init.c}: it wires {@code ObjectBaseLexer},
      * {@code ObjectBaseGrammar}, {@link #extract} and {@link ObjectBaseAssembler} into
-     * {@link GrammarDriver#run}. A syntax error returns no items and the collected messages; an
-     * unresolved tval, colour or flag, a number too large for an int or a {@code record-count:}
-     * mismatch leaves the good records in the result alongside the messages, so the list can be
-     * short without anything having been thrown. C would have stopped at the first of any of these.
-     * An unreadable file is not a result at all but an {@link IOException}, the analogue of
-     * {@code parse_file_quit_not_found}'s {@code quit()}.
+     * {@link GrammarDriver#run}. A syntax error returns no items and the collected messages; a
+     * {@code record-count:} mismatch leaves every record in the result alongside a message. An
+     * unresolved tval or flag, or a break chance or maximum stack with no digits, is not a result at
+     * all but a {@code DataFileParseException} from {@link ObjectBaseAssembler}, as C stops at the
+     * first of these. So is an unreadable file, which is an {@link IOException}, the analogue of
+     * {@code parse_file_quit_not_found}'s {@code quit()}. An unknown colour is neither: it is white,
+     * as in C.
      * <p>
      * This is the variant callers should prefer: {@code ObjectDataLoader.loadObjectBases} gates on
      * the errors for exactly that reason.
      *
-     * <p>Function parseWithResults coded before 260915, commented in full on 261017.
+     * <p>Function parseWithResults coded before 260915, commented in full on 261028.
      *
      * @param filename the object-base data file to read
      * @return a {@link ParseResult} of the assembled bases plus any soft errors

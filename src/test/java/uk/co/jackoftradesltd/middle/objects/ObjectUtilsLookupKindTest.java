@@ -17,12 +17,9 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataMessage;
 import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
@@ -32,7 +29,7 @@ import uk.co.jackoftradesltd.middle.game.event.EventHandlerInterface;
 import uk.co.jackoftradesltd.middle.game.event.EventsHandler;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
+import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectKindFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 
@@ -117,7 +114,7 @@ class ObjectUtilsLookupKindTest {
         set("objectKinds", new ArrayList<ObjectKind>());
         set("kindsByTvalSval", new HashMap<TValue, Map<Integer, ObjectKind>>());
         swordBase = new ObjectBase(TValue.TV_SWORD, "sword", ColourEnum.COLOUR_WHITE,
-                new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), -1, -1);
+                new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), new Flag<>(ElementEnum.class), -1, -1, new Flag<>(ObjectFlag.class));
         ObjectRegistry.setObjectBases(new ArrayList<>(List.of(swordBase)));
 
         realBus = GameEngine.getEventsBusHandler();

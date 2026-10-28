@@ -114,7 +114,7 @@ class PlayerBirthPlayerOutfitTest {
      */
     private static ObjectKind kind(TValue tValue, String sValueName, int cost) {
         ObjectBase base = new ObjectBase(tValue, "test-base", null,
-                new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), 0, 99);
+                new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), new Flag<>(ElementEnum.class), 0, 99, new Flag<>(ObjectFlag.class));
         ObjectKind kind = new ObjectKind(null, cost, 0, 0, 0, "test", tValue, sValueName, base, false);
         for (String name : new String[]{"toH", "toD", "toA", "pVal"}) {
             ItemFixture.set(kind, name, new Random(0, 1, 1, 1, false));

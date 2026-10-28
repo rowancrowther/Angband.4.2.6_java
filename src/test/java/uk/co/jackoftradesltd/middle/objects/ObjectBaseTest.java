@@ -24,18 +24,14 @@ import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
+import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectKindFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -68,7 +64,7 @@ class ObjectBaseTest {
     }
 
     private static ObjectBase base(Flag<ElementEnum> hates, Flag<ObjectKindFlag> kindFlags) {
-        return new ObjectBase(TValue.TV_ARROW, "Arrow~", ColourEnum.COLOUR_LIGHT_UMBER, kindFlags, hates, 35, 40);
+        return new ObjectBase(TValue.TV_ARROW, "Arrow~", ColourEnum.COLOUR_LIGHT_UMBER, kindFlags, hates, new Flag<>(ElementEnum.class), 35, 40, new Flag<>(ObjectFlag.class));
     }
 
     // ---- Constructor: plain fields ----------------------------------------
@@ -274,7 +270,7 @@ class ObjectBaseTest {
             ObjectBase a = actual.get(i);
             String where = "record " + i + " (" + e.tval() + ")";
 
-            assertEquals(e.name(), a.getName(), where + " name");
+            assertEquals(e.name().isEmpty() ? null : e.name(), a.getName(), where + " name (C leaves an absent one NULL)");
             assertEquals(ColourEnum.fromCode(e.colour()), a.getAttr(), where + " colour");
             assertEquals(e.breakPerc(), a.getBreakPerc(), where + " break_perc");
             assertEquals(e.maxStack(), a.getMaxStack(), where + " max_stack");

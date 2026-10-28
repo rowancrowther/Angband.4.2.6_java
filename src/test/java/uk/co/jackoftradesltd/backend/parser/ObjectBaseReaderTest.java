@@ -21,6 +21,7 @@ import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.backend.parser.grammars.objectbase.ObjectBaseGrammar;
 import uk.co.jackoftradesltd.backend.parser.grammars.objectbase.ObjectBaseLexer;
 import uk.co.jackoftradesltd.backend.parser.objectbase.ObjectBaseParseRecord;
@@ -49,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * <p>These pin the behaviours we fought through while porting the assembler and domain class: the
  * flag {@code Flag}-set initialisation (an NPE regression), {@code dragon armor} tval resolution,
  * the file-wide break/max-stack default folding, colour resolution (not silently DARK), and the
- * skip-and-continue soft-error contract. Because {@link ObjectBase} exposes no accessor for its two
+ * stop-the-load contract of the assembler's fatal paths. Because {@link ObjectBase} exposes no accessor for its two
  * flag sets, the repeated-{@code flags:} <em>merge</em> is asserted one level down - directly on the
  * {@link ObjectBaseParseRecord} the grammar produces.
  *
@@ -135,7 +136,7 @@ class ObjectBaseReaderTest {
 
         assertEquals(1, none.size(), "exactly one synthetic TV_NONE base");
         ObjectBase base = none.get(0);
-        assertEquals("none", base.getName());
+        assertNull(base.getName(), "C's zeroed slot has no name");
         assertEquals(ColourEnum.COLOUR_DARK, base.getAttr(), "C's zeroed attr");
         assertTrue(base.getElementMap().isEmpty(), "no HATES_ elements");
         assertEquals(0, base.getBreakPerc());
@@ -224,54 +225,52 @@ class ObjectBaseReaderTest {
                 () -> "expected all three flags, got: " + records.get(0).flags());
     }
 
-    // ---- One test per assembler soft-error branch ------------------------
+    // ---- One test per assembler fatal branch -----------------------------
 
-    @Test
-    void unknownTValIsReportedAndRecordSkipped() throws IOException {
-        ParseResult<ObjectBase> result = load("bad-tval.txt",
-                withHeader(1, "name:notatval:Thing~\ngraphics:white\n"));
-
-        assertTrue(declared(result).isEmpty());
-        // The error echoes the tval exactly as the file spelled it. It used to be upper-cased,
-        // because the assembler upper-cased before calling TValue.valueOf; TValue.fromName matches
-        // case-insensitively, so no case folding happens and none should be asserted.
-        assertTrue(result.errors().stream().anyMatch(
-                        e -> e.contains("invalid TValue") && e.contains("notatval")),
-                result.errors()::toString);
+    /**
+     * The load ends with a {@link DataFileParseException} naming the record's line (the
+     * {@code name:} line, 4 in every fixture here, after the header) and the file, and quoting the
+     * offending text. C's handler returns a parser error and {@code init_angband} quits.
+     */
+    private void assertFatal(String name, String content, String... expectedInMessage) {
+        DataFileParseException thrown = assertThrows(DataFileParseException.class, () -> load(name, content));
+        assertTrue(thrown.getMessage().contains("line: 4"), thrown::getMessage);
+        assertTrue(thrown.getMessage().contains(name), thrown::getMessage);
+        for (String text : expectedInMessage) {
+            assertTrue(thrown.getMessage().contains(text), thrown::getMessage);
+        }
     }
 
     @Test
-    void unknownKindFlagIsReportedAndRecordSkipped() throws IOException {
-        ParseResult<ObjectBase> result = load("bad-flag.txt",
-                withHeader(1, "name:sword:Bladed weapon~\ngraphics:white\nflags:NOTAFLAG\n"));
-
-        assertTrue(declared(result).isEmpty());
-        assertTrue(result.errors().stream().anyMatch(
-                        e -> e.contains("invalid non-HATES_ flag") && e.contains("NOTAFLAG")),
-                result.errors()::toString);
+    void unknownTValEndsTheLoad() {
+        // The message echoes the tval exactly as the file spelled it.
+        assertFatal("bad-tval.txt", withHeader(1, "name:notatval:Thing~\ngraphics:white\n"),
+                "illegal tValue value", "notatval");
     }
 
     @Test
-    void unknownHatesFlagIsReportedAndRecordSkipped() throws IOException {
-        ParseResult<ObjectBase> result = load("bad-hates.txt",
-                withHeader(1, "name:sword:Bladed weapon~\ngraphics:white\nflags:HATES_NOTANELEMENT\n"));
-
-        assertTrue(declared(result).isEmpty());
-        assertTrue(result.errors().stream().anyMatch(
-                        e -> e.contains("invalid HATES_ flag") && e.contains("HATES_NOTANELEMENT")),
-                result.errors()::toString);
+    void unknownKindFlagEndsTheLoad() {
+        assertFatal("bad-flag.txt",
+                withHeader(1, "name:sword:Bladed weapon~\ngraphics:white\nflags:NOTAFLAG\n"),
+                "illegal flag value", "NOTAFLAG");
     }
 
     @Test
-    void overflowingBreakChanceIsReportedAndRecordSkipped() throws IOException {
-        // The INTEGER token guarantees digits, so the only route to the NumberFormatException
-        // branch is a value too large for int.
-        ParseResult<ObjectBase> result = load("bad-break.txt",
+    void unknownHatesFlagEndsTheLoad() {
+        assertFatal("bad-hates.txt",
+                withHeader(1, "name:sword:Bladed weapon~\ngraphics:white\nflags:HATES_NOTANELEMENT\n"),
+                "illegal hates element flag value", "HATES_NOTANELEMENT");
+    }
+
+    @Test
+    void breakChanceTooBigForAnIntIsClampedWhereCWraps() throws IOException {
+        // Accepted deviation (docs/Accepted_Deviations.md): C keeps the low 32 bits of the strtol
+        // result, ParseUtils.parseIntString clamps, so the record loads with Integer.MAX_VALUE.
+        ParseResult<ObjectBase> result = load("big-break.txt",
                 withHeader(1, "name:sword:Bladed weapon~\ngraphics:white\nbreak:99999999999999999999\n"));
 
-        assertTrue(declared(result).isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("invalid break chance")),
-                result.errors()::toString);
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(Integer.MAX_VALUE, declared(result).get(0).getBreakPerc());
     }
 
     // ---- Soft record-count mismatch --------------------------------------
@@ -290,17 +289,13 @@ class ObjectBaseReaderTest {
     // ---- FLAG token: digit-bearing tail ----------------------------------
 
     @Test
-    void digitBearingFlagLexesAsASingleFlagAndReachesTheAssembler() throws IOException {
-        // FLAG_BODY allows a digit tail; SHOW_2 is not a real KF_ flag, so it must surface as the
-        // assembler's soft "invalid non-HATES_ flag: SHOW_2" - proof it lexed as one FLAG rather
-        // than a hard parse error splitting on the digit.
-        ParseResult<ObjectBase> result = load("digit-flag.txt",
-                withHeader(1, "name:sword:Bladed weapon~\ngraphics:white\nflags:SHOW_2\n"));
-
-        assertTrue(declared(result).isEmpty());
-        assertTrue(result.errors().stream().anyMatch(
-                        e -> e.contains("invalid non-HATES_ flag") && e.contains("SHOW_2")),
-                result.errors()::toString);
+    void digitBearingFlagLexesAsASingleFlagAndReachesTheAssembler() {
+        // FLAG_BODY allows a digit tail; SHOW_2 is not a real KF_ or OF_ flag, so it must surface as
+        // the assembler's "illegal flag value: SHOW_2" - proof it lexed as one FLAG rather than a
+        // syntax error splitting on the digit.
+        assertFatal("digit-flag.txt",
+                withHeader(1, "name:sword:Bladed weapon~\ngraphics:white\nflags:SHOW_2\n"),
+                "illegal flag value", "SHOW_2");
     }
 
     // ======================================================================
@@ -312,7 +307,7 @@ class ObjectBaseReaderTest {
      * running the reader: {@code tval | name | colour | break | max-stack | kind flags | hated
      * elements}. The two defaults are {@code break-chance:10} and {@code max-stack:40}; no record
      * sets {@code max-stack:} (the commented-out lines in the file are not directives), so every
-     * stack size is 40. {@code gold} has no name part, which the assembler turns into "".
+     * stack size is 40. {@code gold} has no name part, which the assembler turns into {@code null}.
      */
     private static final String[][] UPSTREAM = {
             {"TV_CHEST", "Chest~", "slate", "10", "", "ACID,FIRE"},
@@ -389,7 +384,7 @@ class ObjectBaseReaderTest {
             String where = "record " + i + " (" + row[0] + ")";
 
             assertEquals(TValue.valueOf(row[0]), base.gettVal(), where + " tval");
-            assertEquals(row[1], base.getName(), where + " name");
+            assertEquals(row[1].isEmpty() ? null : row[1], base.getName(), where + " name");
             assertEquals(ColourEnum.fromCode(row[2]), base.getAttr(), where + " colour");
             assertEquals(Integer.parseInt(row[3]), base.getBreakPerc(), where + " break");
             assertEquals(40, base.getMaxStack(), where + " max-stack");
@@ -468,14 +463,14 @@ class ObjectBaseReaderTest {
         assertTrue(new ObjectBaseReader().parse(file).isEmpty());
     }
 
+    /**
+     * C's first parser error ends the whole file, so a good record after a bad one does not rescue
+     * the load, and no partial list is returned.
+     */
     @Test
-    void whenEveryRecordIsSkippedOnlyTheSyntheticNoneBaseRemains() throws IOException {
-        ParseResult<ObjectBase> result = load("all-skipped.txt",
-                withHeader(1, "name:notatval:T~\ngraphics:white\n"));
-
-        assertTrue(result.hasErrors());
-        assertEquals(1, result.items().size());
-        assertEquals(TValue.TV_NONE, result.items().get(0).gettVal());
+    void aBadRecordEndsTheLoadEvenWhenALaterRecordIsGood() {
+        assertThrows(DataFileParseException.class, () -> load("bad-then-good.txt", withHeader(2,
+                "name:notatval:T~\ngraphics:white\nname:sword:S~\ngraphics:white\n")));
     }
 
     // ---- Duplicate tval: C keeps the first in the file -------------------
@@ -595,11 +590,11 @@ class ObjectBaseReaderTest {
     }
 
     @Test
-    void aNameWithNoPluralPartLoadsWithAnEmptyName() throws IOException {
+    void aNameWithNoPluralPartLoadsWithANullName() throws IOException {
         ParseResult<ObjectBase> result = load("no-plural.txt",
                 withHeader(1, "name:gold\ngraphics:light yellow\n"));
 
-        assertEquals("", declared(result).get(0).getName(), "C leaves the name NULL");
+        assertNull(declared(result).get(0).getName(), "C leaves the name NULL");
     }
 
     @Test
@@ -693,47 +688,49 @@ class ObjectBaseReaderTest {
         assertHardError("no-header.txt", DEFAULTS + "name:sword:S~\ngraphics:white\n");
     }
 
-    // ---- Where the assembler is stricter than C (docs/Assembler_Issues.md) ----
+    // ---- Where the assembler once differed from C (docs/Assembler_Issues.md) ----
 
     /**
-     * {@code color_text_to_attr} falls back to white for a name it does not know, with no error.
-     * The assembler reports it and drops the record.
+     * {@code color_text_to_attr} falls back to white for a name it does not know, with no error,
+     * and so does the assembler.
      */
     @Test
-    void anUnknownColourSkipsTheRecordWhereCQuietlyUsesWhite() throws IOException {
+    void anUnknownColourIsWhiteAsInC() throws IOException {
         ParseResult<ObjectBase> result = load("bad-colour.txt",
                 withHeader(1, "name:sword:S~\ngraphics:nosuchcolour\n"));
 
-        assertTrue(declared(result).isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("invalid colour")),
-                result.errors()::toString);
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(ColourEnum.COLOUR_WHITE, declared(result).get(0).getAttr());
     }
 
     /**
-     * {@code grab_element_flag} accepts {@code IGNORE_<element>} as well as {@code HATES_<element>}.
-     * The assembler knows only {@code HATES_}, so the flag falls through to the kind flags and fails.
+     * {@code grab_element_flag} accepts {@code IGNORE_<element>} as well as {@code HATES_<element>},
+     * setting {@code EL_INFO_IGNORE} on the element and nothing else.
      */
     @Test
-    void anIgnoreElementFlagSkipsTheRecordWhereCAcceptsIt() throws IOException {
+    void anIgnoreElementFlagSetsTheIgnoreBitAsInC() throws IOException {
         ParseResult<ObjectBase> result = load("ignore.txt",
                 withHeader(1, "name:sword:S~\ngraphics:white\nflags:IGNORE_ACID\n"));
 
-        assertTrue(declared(result).isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("IGNORE_ACID")),
-                result.errors()::toString);
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        ObjectBase base = declared(result).get(0);
+        assertEquals(Set.of(ElementEnum.ELEM_ACID), base.getElementMap().keySet());
+        assertEquals(List.of(ElementInfoEnum.EL_INFO_IGNORE),
+                base.getElementMap().get(ElementEnum.ELEM_ACID).getFlags().toList());
     }
 
     /**
      * With only one of the two defaults given, a record that leaves out the other gets "" from the
-     * grammar, which the assembler cannot read as a number. C's zeroed defaults give it 0.
+     * grammar, which {@code ParseUtils.parseIntString} reads as 0, the value C's zeroed defaults
+     * give it.
      */
     @Test
-    void aMissingDefaultSkipsTheRecordWhereCStoresZero() throws IOException {
+    void aMissingDefaultStoresZeroAsInC() throws IOException {
         ParseResult<ObjectBase> result = load("one-default.txt",
                 "record-count:1\ndefault:break-chance:7\nname:sword:S~\ngraphics:white\n");
 
-        assertTrue(declared(result).isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("invalid max stack")),
-                result.errors()::toString);
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(7, declared(result).get(0).getBreakPerc());
+        assertEquals(0, declared(result).get(0).getMaxStack());
     }
 }

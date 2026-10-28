@@ -18,10 +18,10 @@
 package uk.co.jackoftradesltd.middle.objects;
 
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectKindFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
@@ -162,16 +162,21 @@ public class ObjectBase {
      * @param maxStack    the maximum stack size
      */
     public ObjectBase(TValue tVal, String name, ColourEnum colour, Flag<ObjectKindFlag> kFlag,
-                      Flag<ElementEnum> hatesFlag, int breakChance, int maxStack) {
+                      Flag<ElementEnum> hatesFlag, Flag<ElementEnum> ignoreFlag, int breakChance, int maxStack, 
+                      Flag<ObjectFlag> oFlags) {
         this.tVal = tVal;
         this.name = name;
         this.attr = colour;
         this.kindFlags = kFlag;
-        this.flags = new Flag<>(ObjectFlag.class);
+        this.flags = oFlags;
         this.elementInfo = new HashMap<>();
         for (ElementEnum element : hatesFlag) {
             ElementInfo info = elementInfo.computeIfAbsent(element, k -> new ElementInfo());
             info.getFlags().on(ElementInfoEnum.EL_INFO_HATES);
+        }
+        for (ElementEnum element : ignoreFlag) {
+            ElementInfo info = elementInfo.computeIfAbsent(element, k -> new ElementInfo());
+            info.getFlags().on(ElementInfoEnum.EL_INFO_IGNORE);
         }
         this.breakPerc = breakChance;
         this.maxStack = maxStack;

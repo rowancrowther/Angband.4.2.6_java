@@ -67,7 +67,7 @@ class ObjectKindConstructorsTest {
     private static ObjectBase base() {
         Flag<ObjectKindFlag> kindFlags = new Flag<>(ObjectKindFlag.class, ObjectKindFlag.KF_EASY_KNOW);
         return new ObjectBase(TValue.TV_SWORD, "sword", ColourEnum.COLOUR_WHITE, kindFlags,
-                new Flag<>(ElementEnum.class, ElementEnum.ELEM_FIRE), 0, 40);
+                new Flag<>(ElementEnum.class, ElementEnum.ELEM_FIRE), new Flag<>(ElementEnum.class), 0, 40, new Flag<>(ObjectFlag.class));
     }
 
     /**

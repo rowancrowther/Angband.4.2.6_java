@@ -17,11 +17,8 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.effect.Effect;
@@ -35,7 +32,6 @@ import uk.co.jackoftradesltd.middle.game.globals.data.GameConstantsData;
 import uk.co.jackoftradesltd.middle.game.globals.data.ObjMakeData;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.numerics.Random;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectKindFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
@@ -43,16 +39,9 @@ import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 import uk.co.jackoftradesltd.testsupport.ItemFixture;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static uk.co.jackoftradesltd.testsupport.ItemFixture.set;
 
 /**
@@ -239,7 +228,7 @@ class ObjectUtilsObjectPrepTest {
         @DisplayName("only the kind's own flags reach the object; the base's are never applied")
         void baseFlagsAreNotApplied() {
             ObjectBase base = new ObjectBase(TValue.TV_SWORD, "edged", null,
-                    new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), 0, 40);
+                    new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), new Flag<>(ElementEnum.class), 0, 40, new Flag<>(ObjectFlag.class));
             set(base, "flags", new Flag<>(ObjectFlag.class, ObjectFlag.OF_IMPAIR_HP));
 
             ObjectKind kind = kind(TValue.TV_SWORD);
@@ -459,7 +448,7 @@ class ObjectUtilsObjectPrepTest {
         @DisplayName("an element on both kind and base gets the kind's level and the union of both flag sets")
         void elementInfoUnionsKindAndBaseFlags() {
             ObjectBase base = new ObjectBase(TValue.TV_SWORD, "edged", null,
-                    new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), 0, 40);
+                    new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), new Flag<>(ElementEnum.class), 0, 40, new Flag<>(ObjectFlag.class));
             base.getElementMap().put(ElementEnum.ELEM_ACID, new uk.co.jackoftradesltd.middle.objects.ElementInfo());
             base.getElementMap().get(ElementEnum.ELEM_ACID).getFlags().on(ElementInfoEnum.EL_INFO_HATES);
 

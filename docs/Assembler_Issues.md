@@ -515,7 +515,7 @@ Found 2026-10-17 during `/port backend/parser/ItemObjectReader.java`. Not fixed.
 
 ## `objectbase/ObjectBaseAssembler.java`: an unknown colour is an error here, white in C
 
-Found 2026-10-17 during `/port backend/parser/ObjectBaseReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ObjectBaseReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-28: `ObjectBaseAssembler.java` turns the `null` that `ColourEnum.fromCode` answers for an unknown name or character into `COLOUR_WHITE`, as `color_text_to_attr` and `color_char_to_attr` do, so the record loads with no error. `ObjectBaseAssemblerTest` and `ObjectBaseReaderTest` pass and the full suite is green; the pinning tests are now `ObjectBaseAssemblerTest.anUnknownColourIsWhiteAsInC` and `ObjectBaseReaderTest.anUnknownColourIsWhiteAsInC`. The bullets below describe the state before the fix.]
 
 - `parse_object_base_graphics` in `obj-init.c` calls `color_text_to_attr` for a colour longer than one character and
   `color_char_to_attr` for one character. Both answer `COLOUR_WHITE` when nothing matches, with no error.
@@ -528,7 +528,7 @@ Found 2026-10-17 during `/port backend/parser/ObjectBaseReader.java`. Not fixed.
 
 ## `objectbase/ObjectBaseAssembler.java`: `IGNORE_` flags are unknown, C sets `EL_INFO_IGNORE`
 
-Found 2026-10-17 during `/port backend/parser/ObjectBaseReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ObjectBaseReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-28: `ObjectBaseAssembler.java` reads `IGNORE_<element>` as well as `HATES_<element>`, with C's prefix rule, and sets only `EL_INFO_IGNORE` on that element. `ObjectBaseAssemblerTest` and `ObjectBaseReaderTest` pass and the full suite is green; the pinning tests are now `ObjectBaseAssemblerTest.anIgnoreFlagSetsOnlyTheIgnoreBit` and `ObjectBaseReaderTest.anIgnoreElementFlagSetsTheIgnoreBitAsInC`. The bullets below describe the state before the fix.]
 
 - `grab_element_flag` in `obj-init.c` accepts `IGNORE_<element>` and `HATES_<element>`, setting `EL_INFO_IGNORE` or
   `EL_INFO_HATES` on that element of the base's `el_info`.
@@ -540,7 +540,7 @@ Found 2026-10-17 during `/port backend/parser/ObjectBaseReader.java`. Not fixed.
 
 ## `objectbase/ObjectBaseAssembler.java` and `ObjectBaseGrammar.g4`: one missing default drops the record, C stores 0
 
-Found 2026-10-17 during `/port backend/parser/ObjectBaseReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ObjectBaseReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-28: the assembler half is fixed: the grammar still hands over `""` for the default a file left out, and `ParseUtils.parseIntString` reads that as 0, so the record loads with a break chance or maximum stack of 0, as in C. A file with no `default:` line at all is still a grammar error; that is the `ObjectBaseGrammar.g4` entry in `docs/grammar_issues.md`. `ObjectBaseAssemblerTest` and `ObjectBaseReaderTest` pass and the full suite is green; the pinning tests are now `ObjectBaseAssemblerTest.anAbsentNumberIsZero` and `ObjectBaseReaderTest.aMissingDefaultStoresZeroAsInC`. The bullets below describe the state before the fix.]
 
 - C's parser starts with zeroed defaults, so a file that sets only `default:break-chance:` gives a record that omits
   `max-stack:` a max stack of 0.
@@ -552,7 +552,7 @@ Found 2026-10-17 during `/port backend/parser/ObjectBaseReader.java`. Not fixed.
 
 ## `objectbase/ObjectBaseAssembler.java`: the synthetic `TV_NONE` base is named "none", C's slot has no name
 
-Found 2026-10-17 during `/port backend/parser/ObjectBaseReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ObjectBaseReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-28: the appended `TV_NONE` base has a `null` name, as C's zero-filled `kb_info[0]` does, so `ObjectRegistry.lookupObjectBase("none")` no longer finds it. A record with no plural part now also holds a `null` name. `ObjectBaseAssemblerTest` and `ObjectBaseReaderTest` pass and the full suite is green; the pinning tests are now `ObjectBaseAssemblerTest.theSentinelIsCsZeroedSlot` and `ObjectBaseReaderTest.syntheticNoneBaseIsAppendedToEveryLoad`. The bullets below describe the state before the fix.]
 
 - `ObjectBaseAssembler.java:124` appends `new ObjectBase(TValue.TV_NONE, "none", ...)` to every load. C's `kb_info[0]`
   is zero-filled, so its `name` is `NULL`.

@@ -25,6 +25,7 @@ import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.objects.ObjectBase;
 import uk.co.jackoftradesltd.middle.objects.ObjectKind;
+import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectKindFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 
@@ -94,7 +95,7 @@ class MagicBookTest {
 
     private static ObjectBase base(TValue tval, String name) {
         return new ObjectBase(tval, name, ColourEnum.COLOUR_RED,
-                new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), -1, -1);
+                new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), new Flag<>(ElementEnum.class), -1, -1, new Flag<>(ObjectFlag.class));
     }
 
     /**

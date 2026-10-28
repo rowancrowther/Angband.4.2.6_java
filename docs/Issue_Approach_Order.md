@@ -241,7 +241,7 @@ Paths are under `src/main/java/uk/co/jackoftradesltd/`. The figure in brackets i
 - `backend/parser/pit/PitAssembler.java` (12): ~~92, 102, 112, 127, 140, 152, 159, 173, 187, 200, 215, 231~~
 - `backend/parser/playerclass/ClassEquipAssembler.java` (11): ~~92, 99, 110, 115, 120, 129, 134, 139, 145, 191, 197~~
 - `backend/parser/playerclass/ClassMagicAssembler.java` (5): ~~61, 69, 77, 84, 89~~
-- `backend/parser/playerclass/ClassSpellAssembler.java` (4): 62, 72, 82, 92
+- `backend/parser/playerclass/ClassSpellAssembler.java` (4): ~~62, 72, 82, 92~~
 - `backend/parser/playerclass/ClassSpellBookAssembler.java` (9): 126, 152, 163, 172, 184, 194, 204, 214, 231
 - `backend/parser/playerclass/PlayerClassAssembler.java` (14): 82, 86, 100, 104, 118, 122, 132, 142, 152, 163, 173, 187, 201, 209
 - `backend/parser/playerproperty/PlayerPropertyAssembler.java` (7): 137, 144, 151, 158, 172, 177, 191

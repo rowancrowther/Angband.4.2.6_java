@@ -17,8 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser.playerclass;
 
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
@@ -46,11 +45,11 @@ import static org.junit.jupiter.api.Assertions.*;
  * <p>Every one of those errors stops the load in C, so the assembler throws a
  * {@link DataFileParseException} naming the line and the value, and the tests below expect that.
  *
- * <p>The books are built by {@link ClassSpellBookAssembler}, which needs the object and realm
- * registries for a good book. These tests use a book whose object base is not a tval, which that
- * assembler skips with a message in the {@code errors} list, so the count check is exercised with
- * no registry set-up. The count is taken from the parse records, so a skipped book counts. A good
- * book against a declared count is covered in {@code PlayerClassReaderTest}.
+ * <p>The books are built by {@link ClassSpellBookAssembler}, which stops the load on any book it
+ * cannot build, so the count check needs good books and the object and realm registries behind
+ * them. {@link BookRegistryFixture} seeds those before each test and puts them back afterwards. The
+ * books are assembled before the count is checked, so a bad book is reported for its own fault and
+ * never reaches the count check, as C quits on the first bad {@code book:} line.
  *
  * <p>One test is marked ACCEPTED DEVIATION: it pins the clamping of a figure past
  * {@code Integer.MAX_VALUE}, where C wraps it, so a change to it fails loudly.
@@ -67,15 +66,37 @@ class ClassMagicAssemblerTest {
     /** The file name every message is expected to carry. */
     private static final String FILE = "class.txt";
 
-    private static ClassSpellBookParseRecord skippedBook(int line) {
-        return new ClassSpellBookParseRecord("notabase", "town", "[B]", "1", "arcane",
+    private static Object[] saved;
+
+    @BeforeAll
+    static void saveRegistries() throws Exception {
+        saved = BookRegistryFixture.save();
+    }
+
+    @AfterAll
+    static void restoreRegistries() throws Exception {
+        BookRegistryFixture.restore(saved);
+    }
+
+    @BeforeEach
+    void seed() throws Exception {
+        BookRegistryFixture.seed();
+    }
+
+    private static ClassSpellBookParseRecord goodBook(int index, int line) {
+        return new ClassSpellBookParseRecord("magic book", "town", "[B" + index + "]", "1", "arcane",
+                "", "", "", "", "", "", List.of(), line);
+    }
+
+    private static ClassSpellBookParseRecord badBook(int line) {
+        return new ClassSpellBookParseRecord("notabase", "town", "[Bad]", "1", "arcane",
                 "", "", "", "", "", "", List.of(), line);
     }
 
     private static List<ClassSpellBookParseRecord> books(int count) {
         List<ClassSpellBookParseRecord> books = new ArrayList<>();
         for (int i = 0; i < count; i++)
-            books.add(skippedBook(LINE + 1 + i));
+            books.add(goodBook(i, LINE + 1 + i));
         return books;
     }
 
@@ -232,23 +253,22 @@ class ClassMagicAssemblerTest {
     // ---- the declared book count: class_max_books ---------------------------------------------
 
     @Test
-    @DisplayName("as many books as declared is the ordinary case, and the skipped book is reported by the book assembler")
+    @DisplayName("as many books as declared is the ordinary case, and the book is kept")
     void declaredCountMatching() {
         List<String> errors = new ArrayList<>();
 
         List<ClassMagic> result = run(errors, magic("1", "100", "1", 1));
 
         assertEquals(1, result.size());
-        assertEquals(0, result.getFirst().getNumBooks());
-        assertEquals(1, errors.size(), errors::toString);
-        assertTrue(errors.getFirst().contains("unknown first parameter: notabase"), errors::toString);
+        assertEquals(1, result.getFirst().getNumBooks());
+        assertTrue(errors.isEmpty(), errors::toString);
     }
 
     @Test
     @DisplayName("fewer books than declared is accepted, as in C where the count only sizes the array")
     void fewerBooksThanDeclared() {
-        assertEquals(1, run(new ArrayList<>(), magic("1", "100", "5", 1)).size());
-        assertEquals(1, run(new ArrayList<>(), magic("1", "100", "5", 0)).size());
+        assertEquals(1, run(new ArrayList<>(), magic("1", "100", "5", 1)).getFirst().getNumBooks());
+        assertEquals(0, run(new ArrayList<>(), magic("1", "100", "5", 0)).getFirst().getNumBooks());
     }
 
     @Test
@@ -265,10 +285,22 @@ class ClassMagicAssemblerTest {
     }
 
     @Test
-    @DisplayName("a book the book assembler skips still counts toward the limit, as every book: line does in C")
-    void aSkippedBookStillCounts() {
+    @DisplayName("three books against a declared two stop the load, and against a declared three do not")
+    void everyBookCountsTowardTheLimit() {
         assertNames(stops(magic("1", "100", "2", 3)), "one or more illegal book entries");
         assertDoesNotThrow(() -> run(new ArrayList<>(), magic("1", "100", "3", 3)));
+    }
+
+    @Test
+    @DisplayName("a bad book is reported for its own fault and wins over the count, as C quits on its book: line first")
+    void aBadBookIsReportedBeforeTheCount() {
+        List<ClassSpellBookParseRecord> books = new ArrayList<>(books(2));
+        books.add(badBook(LINE + 3));
+
+        DataFileParseException e = stops(new ClassMagicParseRecord("1", "100", "2", books, LINE));
+
+        assertNames(e, "line: " + (LINE + 3), "file: " + FILE, "illegal tValue value: notabase");
+        assertFalse(e.getMessage().contains("one or more illegal book entries"), e::getMessage);
     }
 
     @Test

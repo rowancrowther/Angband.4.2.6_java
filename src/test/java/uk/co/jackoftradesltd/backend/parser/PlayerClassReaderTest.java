@@ -440,38 +440,34 @@ class PlayerClassReaderTest {
     // ---- ClassSpellBookAssembler: base + realm resolution ----------------
 
     @Test
-    void unknownBookObjectBaseIsReportedAndTheBookDropped() throws IOException {
-        // "notabase" resolves to no tval, so the book is dropped ("unknown first parameter").
-        ParseResult<PlayerClass> r = load("bad-base.txt", withHeader(1,
+    void unknownBookTvalStopsTheLoad() throws IOException {
+        // "notabase" resolves to no tval; C returns PARSE_ERROR_UNRECOGNISED_TVAL and the load stops.
+        DataFileParseException e = loadAndStop("bad-base.txt", withHeader(1,
                 "name:Caster\nmagic:1:100:1\n"
                         + "book:notabase:town:[B]:1:arcane\n"
                         + "spell:S:1:1:1:1\n"));
 
-        // The error echoes the tval exactly as the file spelled it. It used to be prefixed "TV_"
-        // because the assembler built the enum-constant name by hand; TValue.fromName matches on
-        // the display name instead, so there is no prefix to expect.
-        assertTrue(hasError(r, "unknown first parameter: notabase"), r.errors()::toString);
+        // The message echoes the tval exactly as the file spelled it, and names the book: line.
+        assertTrue(e.getMessage().contains("line: 4"), e::getMessage);
+        assertTrue(e.getMessage().contains("illegal tValue value: notabase"), e::getMessage);
     }
 
     /**
-     * An unknown realm is caught at the assembler and demoted to a collected error, so the book is
-     * dropped and the rest of the file still parses.
-     *
-     * <p>The two halves are worth keeping apart. {@link PlayerRegistry#lookupRealm} matches C's
+     * An unknown realm stops the load. {@link PlayerRegistry#lookupRealm} matches C's
      * {@code lookup_realm} ({@code player.c:130-143}), which ends its walk in
-     * {@code quit_fmt("Failed to find %s magic realm", name)} and never returns — so the lookup
-     * throws rather than answering {@code null}. The reader is the port's own addition: it turns
-     * that into a per-book error the way it does for an unknown tval or a malformed spell count,
-     * because a data-file typo should not take the parse down with it.
+     * {@code quit_fmt("Failed to find %s magic realm", name)} and never returns, so the lookup
+     * throws rather than answering {@code null}; the book assembler turns that into a
+     * {@link DataFileParseException} naming the book's line and the file.
      */
     @Test
-    void unknownBookRealmIsReportedAndTheBookDropped() throws IOException {
-        ParseResult<PlayerClass> r = load("bad-realm.txt", withHeader(1,
+    void unknownBookRealmStopsTheLoad() throws IOException {
+        DataFileParseException e = loadAndStop("bad-realm.txt", withHeader(1,
                 "name:Caster\nmagic:1:100:1\n"
                         + "book:magic book:town:[B]:1:notarealm\n"
                         + "spell:S:1:1:1:1\n"));
 
-        assertTrue(hasError(r, "unknown realm: notarealm"), r.errors()::toString);
+        assertTrue(e.getMessage().contains("line: 4"), e::getMessage);
+        assertTrue(e.getMessage().contains("illegal realm value: notarealm"), e::getMessage);
     }
 
     // ---- ClassMagicAssembler: declared book count -------------------------
@@ -540,29 +536,28 @@ class PlayerClassReaderTest {
     }
 
     /**
-     * A book dropped for its own fault (here an unknown realm) is reported once, for that fault.
-     * The books that remain are within the declared count, so no count error follows, and the
-     * class keeps its casting profile, with zero books.
+     * A book rejected for its own fault (here an unknown realm) is reported for that fault, and no
+     * count error follows: the load has already stopped.
      */
     @Test
-    void aDroppedBookDoesNotAlsoRaiseACountError() throws Exception {
-        ParseResult<PlayerClass> r = load("dropped-book.txt", withHeader(1,
+    void aBadBookIsReportedForItsOwnFaultNotAsACountError() throws Exception {
+        DataFileParseException e = loadAndStop("bad-book.txt", withHeader(1,
                 "name:Caster\nmagic:1:100:1\n"
                         + "book:magic book:town:[B]:1:notarealm\n"
                         + "spell:S:1:1:1:1\n"));
 
-        assertTrue(hasError(r, "unknown realm: notarealm"), r.errors()::toString);
-        assertFalse(hasError(r, "different number of books"), r.errors()::toString);
-        assertEquals(0, castMagic(r).getNumBooks());
+        assertTrue(e.getMessage().contains("illegal realm value: notarealm"), e::getMessage);
+        assertFalse(e.getMessage().contains("one or more illegal book entries"), e::getMessage);
     }
 
     /**
-     * C refuses the second {@code book:} line of a class that declared one, whether or not the first
-     * was good. The port counts every {@code book:} line, so one dropped book plus one good book
-     * against a declared one stops the load with the count message.
+     * C reads the {@code book:} lines in order and quits on the first fault, so a bad first book is
+     * reported before the second book is reached, even though the second would overflow the
+     * declared count. The port assembles the books before it checks the count, and reports the same
+     * fault.
      */
     @Test
-    void aDroppedBookNoLongerHidesAnExtraBookFromTheCountCheck() {
+    void aBadBookIsReportedBeforeTheCountOfBooksIsChecked() {
         String file = withHeader(1,
                 "name:Caster\nmagic:1:100:1\n"
                         + "book:magic book:town:[B]:1:notarealm\n"
@@ -573,7 +568,8 @@ class PlayerClassReaderTest {
                         + "dice:1\n");
         DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("dropped-plus-extra.txt", file));
 
-        assertTrue(e.getMessage().contains("one or more illegal book entries"), e::getMessage);
+        assertTrue(e.getMessage().contains("illegal realm value: notarealm"), e::getMessage);
+        assertFalse(e.getMessage().contains("one or more illegal book entries"), e::getMessage);
     }
 
     // ---- EffectAssembler (reached via a spell) ---------------------------
@@ -893,9 +889,9 @@ class PlayerClassReaderTest {
                         + "spell:A:1:1:1:1\neffect:BOLT:MISSILE\ndice:1\n"
                         + "spell:B:2:1:1:1\neffect:BOLT:MISSILE\ndice:1\n"));
 
-        assertTrue(e.getMessage().contains("Too many spells"), e.getMessage());
-        assertTrue(e.getMessage().contains("2 spells found, 1 declared"), e.getMessage());
-        assertTrue(e.getMessage().contains("defined at 4"), e.getMessage());
+        assertTrue(e.getMessage().contains("too many spells declared"), e.getMessage());
+        assertTrue(e.getMessage().contains("2 spells found. 1 declared"), e.getMessage());
+        assertTrue(e.getMessage().contains("line: 4"), e.getMessage());
         assertTrue(e.getMessage().contains("extra-spell.txt"), e.getMessage());
     }
 
@@ -910,7 +906,7 @@ class PlayerClassReaderTest {
                         + "book:magic book:town:[B]:0:arcane\n"
                         + "spell:A:1:1:1:1\neffect:BOLT:MISSILE\ndice:1\n"));
 
-        assertTrue(e.getMessage().contains("1 spells found, 0 declared"), e.getMessage());
+        assertTrue(e.getMessage().contains("1 spells found. 0 declared"), e.getMessage());
     }
 
     /**
@@ -945,8 +941,8 @@ class PlayerClassReaderTest {
                         + "spell:C:1:1:1:1\neffect:BOLT:MISSILE\ndice:1\n"
                         + "spell:D:2:1:1:1\neffect:BOLT:MISSILE\ndice:1\n"));
 
-        assertTrue(e.getMessage().contains("2 spells found, 1 declared"), e.getMessage());
-        assertTrue(e.getMessage().contains("defined at 11"), e.getMessage());
+        assertTrue(e.getMessage().contains("2 spells found. 1 declared"), e.getMessage());
+        assertTrue(e.getMessage().contains("line: 11"), e.getMessage());
     }
 
     /** C: {@code lookup_realm} compares with {@code my_stricmp}, so the realm name is case-blind. */
@@ -1048,20 +1044,16 @@ class PlayerClassReaderTest {
     }
 
     /**
-     * C quits on a bad book. Interim, until the soft error becomes a stop: the port reports the book
-     * and keeps the class with a casting profile that holds no books. It is not the
-     * {@link ClassMagic#NONE} sentinel, because nothing now notices that a book was dropped.
+     * C quits on a bad book, so a class whose only book is bad is never left behind as a caster
+     * with no books: the load stops and no class is returned.
      */
     @Test
-    void aClassWhoseOnlyBookIsDroppedKeepsAnEmptyCastingProfileAlongsideTheError() throws Exception {
-        ParseResult<PlayerClass> r = load("dropped-book.txt", withHeader(1,
+    void aClassWhoseOnlyBookIsBadStopsTheLoad() throws Exception {
+        DataFileParseException e = loadAndStop("bad-only-book.txt", withHeader(1,
                 "name:Caster\nmagic:1:100:1\n"
                         + "book:magic book:town:[B]:1:notarealm\n"
                         + "spell:S:1:1:1:1\neffect:BOLT:MISSILE\ndice:1\n"));
 
-        assertTrue(hasError(r, "unknown realm: notarealm"), r.errors()::toString);
-        assertEquals(1, r.items().size());
-        assertNotSame(ClassMagic.NONE, castMagic(r));
-        assertEquals(0, castMagic(r).getNumBooks());
+        assertTrue(e.getMessage().contains("illegal realm value: notarealm"), e::getMessage);
     }
 }

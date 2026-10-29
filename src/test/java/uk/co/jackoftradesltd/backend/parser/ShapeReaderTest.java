@@ -43,9 +43,11 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@code ShapeGrammar} -> {@code ShapeParseRecord} -> {@code ShapeAssembler} -> {@link PlayerShape}.
  * These pin the assembler half — the two-family split of the {@code values:} line (additive
  * {@code obj_mods} modifiers vs per-element {@code RES_} resistances), accumulation of repeatable
- * lines ({@code obj-flags}, {@code values}, {@code blow}), the name-only record, and both error
- * channels {@code GrammarDriver} threads through {@link ParseResult}: the soft skip-and-continue
- * {@code errors} list and the hard fail-closed channel.
+ * lines ({@code obj-flags}, {@code values}, {@code blow}), the name-only record, the order C builds
+ * the blow chain in, and the two ways a bad file ends the load: a {@link DataFileParseException}
+ * thrown by the assembler for the first number, name or effect that does not resolve (C quits on the
+ * first parse error), and the hard grammar errors {@code GrammarDriver} returns through
+ * {@link ParseResult}.
  *
  * <p>Unlike {@code CurseReaderTest}, no registry seeding is required: every effect subtype used by
  * {@code shape.txt} ({@code DAMAGE}, {@code CURE}, {@code TIMED_INC}, {@code PROJECT_LOS}) resolves
@@ -84,6 +86,22 @@ class ShapeReaderTest {
         return shapes.stream().filter(s -> s.getName().equals(name)).findFirst().orElse(null);
     }
 
+    /** The assembler fills the eight skills a shape can set; C's zero-filled array holds 0 for an unset one. */
+    private static final List<PlayerSkill> SHAPE_SKILLS = List.of(
+            PlayerSkill.SKILL_DISARM_PHYS, PlayerSkill.SKILL_DISARM_MAGIC, PlayerSkill.SKILL_SAVE,
+            PlayerSkill.SKILL_SEARCH, PlayerSkill.SKILL_STEALTH, PlayerSkill.SKILL_TO_HIT_MELEE,
+            PlayerSkill.SKILL_TO_HIT_THROW, PlayerSkill.SKILL_DIGGING);
+
+    private static Map<PlayerSkill, Integer> allEightSkills(Map<PlayerSkill, Integer> set) {
+        Map<PlayerSkill, Integer> all = new java.util.HashMap<>();
+        SHAPE_SKILLS.forEach(skill -> all.put(skill, set.getOrDefault(skill, 0)));
+        return all;
+    }
+
+    private DataFileParseException loadFails(String name, String content) {
+        return assertThrows(DataFileParseException.class, () -> load(name, content));
+    }
+
     // ---- Happy path: the real file ---------------------------------------
 
     @Test
@@ -104,7 +122,7 @@ class ShapeReaderTest {
         assertEquals(0, normal.getToHit());
         assertEquals(0, normal.getToDam());
         assertEquals(0, normal.getToAc());
-        assertTrue(normal.getSkills().isEmpty());
+        assertEquals(allEightSkills(Map.of()), normal.getSkills());
         assertTrue(normal.getObjectValueModifiers().isEmpty());
         assertTrue(normal.getElementValueModifiers().isEmpty());
         assertTrue(normal.getEffect().isEmpty());
@@ -177,46 +195,63 @@ class ShapeReaderTest {
         assertFalse(bat.getEffect().isEmpty());
     }
 
-    // ---- Soft errors: dropped record (skip-and-continue) -----------------
+    // ---- A name that does not resolve ends the load ----------------------
+    //
+    // parse_shape_obj_flags, parse_shape_play_flags and parse_shape_values return
+    // PARSE_ERROR_INVALID_FLAG / PARSE_ERROR_INVALID_VALUE and C quits. The record-count line is
+    // line 1 and the name line 2, which is the line the message names.
 
     @Test
-    void unknownObjectFlagIsReportedAndSkipped() throws IOException {
-        ParseResult<PlayerShape> result = load("bad-oflag.txt", withHeader(1,
+    void anUnknownObjectFlagStopsTheLoad() {
+        DataFileParseException e = loadFails("bad-oflag.txt", withHeader(1,
                 shape("weird", "obj-flags:NOTAFLAG\n")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("invalid object flag")),
-                result.errors()::toString);
+        assertTrue(e.getMessage().contains("Shape starting at line: 2"), e::getMessage);
+        assertTrue(e.getMessage().contains("illegal object flag value: NOTAFLAG"), e::getMessage);
     }
 
     @Test
-    void unknownPlayerFlagIsReportedAndSkipped() throws IOException {
-        ParseResult<PlayerShape> result = load("bad-pflag.txt", withHeader(1,
+    void anUnknownPlayerFlagStopsTheLoad() {
+        DataFileParseException e = loadFails("bad-pflag.txt", withHeader(1,
                 shape("weird", "player-flags:NOTREAL\n")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("invalid player flag")),
-                result.errors()::toString);
+        assertTrue(e.getMessage().contains("Shape starting at line: 2"), e::getMessage);
+        assertTrue(e.getMessage().contains("illegal player flag value: NOTREAL"), e::getMessage);
     }
 
     @Test
-    void unknownModifierIsReportedAndSkipped() throws IOException {
-        ParseResult<PlayerShape> result = load("bad-mod.txt", withHeader(1,
+    void anUnknownModifierStopsTheLoad() {
+        DataFileParseException e = loadFails("bad-mod.txt", withHeader(1,
                 shape("weird", "values:NOTAMOD[1]\n")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("invalid modifier name")),
-                result.errors()::toString);
+        assertTrue(e.getMessage().contains("Shape starting at line: 2"), e::getMessage);
+        assertTrue(e.getMessage().contains("illegal object modifier name value: NOTAMOD"), e::getMessage);
     }
 
     @Test
-    void unknownResistanceElementIsReportedAndSkipped() throws IOException {
-        ParseResult<PlayerShape> result = load("bad-res.txt", withHeader(1,
+    void anUnknownResistanceElementStopsTheLoad() {
+        DataFileParseException e = loadFails("bad-res.txt", withHeader(1,
                 shape("weird", "values:RES_NOTREAL[1]\n")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("invalid element name")),
-                result.errors()::toString);
+        assertTrue(e.getMessage().contains("Shape starting at line: 2"), e::getMessage);
+        assertTrue(e.getMessage().contains("illegal element name value: RES_NOTREAL"), e::getMessage);
+    }
+
+    @Test
+    void theNoneNameIsRefusedForObjectAndPlayerFlags() {
+        // lookup_flag starts at FLAG_START (1), past the "NONE" slot 0 of list_obj_flag_names and
+        // player_info_flags, so NONE never matches.
+        assertTrue(loadFails("of-none.txt", withHeader(1, shape("a", "obj-flags:NONE\n")))
+                .getMessage().contains("illegal sentinel object flag value: NONE"));
+        assertTrue(loadFails("pf-none.txt", withHeader(1, shape("a", "player-flags:NONE\n")))
+                .getMessage().contains("illegal sentinel player flag value: NONE"));
+    }
+
+    @Test
+    void theMaxNameIsRefusedForObjectFlagsAsCsTableHasNone() {
+        // list_obj_flag_names is "NONE", the OF() entries, then NULL: there is no "MAX".
+        assertTrue(loadFails("of-max.txt", withHeader(1, shape("a", "obj-flags:MAX\n")))
+                .getMessage().contains("illegal sentinel object flag value: MAX"));
     }
 
     // ---- record-count + hard (fail-closed) errors ------------------------
@@ -385,14 +420,15 @@ class ShapeReaderTest {
             assertEquals(row.toh(), got.getToHit(), at + " to-h");
             assertEquals(row.tod(), got.getToDam(), at + " to-d");
             assertEquals(row.toa(), got.getToAc(), at + " to-a");
-            assertEquals(row.skills(), got.getSkills(), at + " skills");
+            assertEquals(allEightSkills(row.skills()), got.getSkills(), at + " skills");
             assertTrue(got.getFlags().isEqual(flagsOf(ObjectFlag.class, row.objectFlags())), at + " obj-flags");
             assertTrue(got.getPflags().isEqual(flagsOf(PlayerFlag.class, row.playerFlags())), at + " player-flags");
             assertEquals(row.mods(), got.getObjectValueModifiers(), at + " modifiers");
             assertEquals(row.resists().keySet(), got.getElementValueModifiers().keySet(), at + " elements");
             row.resists().forEach((element, level) -> assertEquals(level,
                     got.getElementValueModifiers().get(element).getResLevel(), at + " " + element));
-            assertEquals(row.blows(), got.getPlayerBlow().stream().map(PlayerBlow::getBlowName).toList(),
+            // parse_shape_blow pushes on the head of the chain, so C holds the blow: lines reversed.
+            assertEquals(row.blows().reversed(), got.getPlayerBlow().stream().map(PlayerBlow::getBlowName).toList(),
                     at + " blows");
             assertEquals(row.blows().size(), got.getNumBlows(), at + " num_blows");
             assertEquals(row.effects(), got.getEffect().size(), at + " effects");
@@ -454,26 +490,24 @@ class ShapeReaderTest {
         assertEquals(0, s.getSkills().get(PlayerSkill.SKILL_DIGGING));
     }
 
-    // ---- Soft errors: one bad shape does not cost the others -------------
+    // ---- The first bad shape ends the load, so a later good one is never returned ----
 
     @Test
-    void aBadShapeIsDroppedAndTheNextOneStillLoads() throws IOException {
-        ParseResult<PlayerShape> result = load("one-bad.txt", withHeader(2,
+    void aBadShapeEndsTheLoadBeforeTheNextOneIsBuilt() {
+        // The bad shape starts on line 2; the good one after it on line 4 is never reached.
+        DataFileParseException e = loadFails("one-bad.txt", withHeader(2,
                 shape("bad", "obj-flags:NOTAFLAG\n") + shape("good", "combat:1:2:3\n")));
 
-        assertEquals(1, result.items().size());
-        assertEquals("good", result.items().get(0).getName());
-        assertEquals(1, result.errors().size(), result.errors()::toString);
+        assertTrue(e.getMessage().contains("Shape starting at line: 2"), e::getMessage);
     }
 
     @Test
-    void anOversizedFigureIsASoftErrorThatDropsTheShape() throws IOException {
-        ParseResult<PlayerShape> result = load("huge.txt", withHeader(1,
-                shape("h", "skill-dig:99999999999\n")));
+    void anOversizedFigureClampsToIntMaxWhereCWraps() throws IOException {
+        // parser_getint stores strtol's long in an int, so C wraps: 99999999999 is 1215752191 on a
+        // 64-bit long. ParseUtils clamps to Integer.MAX_VALUE instead and raises no error.
+        PlayerShape s = load("huge.txt", withHeader(1, shape("h", "skill-dig:99999999999\n"))).items().get(0);
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("invalid skill dig value")),
-                result.errors()::toString);
+        assertEquals(Integer.MAX_VALUE, s.getSkills().get(PlayerSkill.SKILL_DIGGING));
     }
 
     @Test
@@ -579,17 +613,87 @@ class ShapeReaderTest {
     }
 
     @Test
-    void theNoneAndMaxNamesAreAcceptedForModifiersAndElementsWhereCHasNeither() throws IOException {
+    void theNoneAndMaxNamesAreRefusedForModifiersAndElementsAsInC() {
         // C's obj_mods table (list-stats.h then list-object-modifiers.h) and list_element_names
-        // contain neither NONE nor MAX, so grab_int_value and grab_index_and_int fail with
-        // PARSE_ERROR_INVALID_VALUE.
-        PlayerShape s = load("none-max.txt", withHeader(1, shape("n",
-                "values:NONE[1] | MAX[2] | RES_NONE[1] | RES_MAX[2]\n"))).items().get(0);
+        // contain neither NONE nor MAX, so grab_int_value and grab_index_and_int fail and the
+        // handler returns PARSE_ERROR_INVALID_VALUE.
+        assertTrue(loadFails("mod-none.txt", withHeader(1, shape("n", "values:NONE[1]\n")))
+                .getMessage().contains("illegal sentinel object modifier value: NONE"));
+        assertTrue(loadFails("mod-max.txt", withHeader(1, shape("n", "values:MAX[2]\n")))
+                .getMessage().contains("illegal sentinel object modifier value: MAX"));
+        assertTrue(loadFails("res-none.txt", withHeader(1, shape("n", "values:RES_NONE[1]\n")))
+                .getMessage().contains("illegal sentinel element value: RES_NONE"));
+        assertTrue(loadFails("res-max.txt", withHeader(1, shape("n", "values:RES_MAX[2]\n")))
+                .getMessage().contains("illegal sentinel element value: RES_MAX"));
+    }
 
-        assertEquals(1, s.getObjectValueModifiers().get(ObjectModifier.OM_NONE));
-        assertEquals(2, s.getObjectValueModifiers().get(ObjectModifier.OM_MAX));
-        assertTrue(s.getElementValueModifiers().containsKey(ElementEnum.ELEM_NONE));
-        assertTrue(s.getElementValueModifiers().containsKey(ElementEnum.ELEM_MAX));
+    // ---- Order and shape of what is built --------------------------------
+
+    @Test
+    void blowsAreHeldInReverseFileOrderAsCPushesThemOnTheHead() throws IOException {
+        // parse_shape_blow sets blow->next = shape->blows; shape->blows = blow. player-attack.c walks
+        // `choice` steps from the head, so index 0 is the LAST blow: line and index 2 the first.
+        PlayerShape s = load("blow-order.txt", withHeader(1, shape("b", "blow:hit\nblow:bite\nblow:claw\n")))
+                .items().get(0);
+
+        assertEquals(List.of("claw", "bite", "hit"),
+                s.getPlayerBlow().stream().map(PlayerBlow::getBlowName).toList());
+        assertEquals(3, s.getNumBlows());
+    }
+
+    @Test
+    void aRepeatedBlowKeepsEachOccurrenceInReverseOrder() throws IOException {
+        // num_blows++ per line, so a repeated verb counts twice and is picked twice as often.
+        PlayerShape s = load("blow-dup.txt", withHeader(1, shape("b", "blow:hit\nblow:bite\nblow:hit\n")))
+                .items().get(0);
+
+        assertEquals(List.of("hit", "bite", "hit"),
+                s.getPlayerBlow().stream().map(PlayerBlow::getBlowName).toList());
+        assertEquals(3, s.getNumBlows());
+    }
+
+    @Test
+    void aShapeWithNoSkillLinesHoldsAllEightSkillsAtZero() throws IOException {
+        // C's zero-filled struct holds 0 for every skill a shape does not name.
+        PlayerShape s = load("no-skills.txt", withHeader(1, shape("n", "combat:1:2:3\n"))).items().get(0);
+
+        assertEquals(allEightSkills(Map.of()), s.getSkills());
+    }
+
+    @Test
+    void eachSkillLineLandsOnItsOwnSkill() throws IOException {
+        // The eight handlers write skills[SKILL_DISARM_PHYS], _DISARM_MAGIC, _SAVE, _STEALTH, _SEARCH,
+        // _TO_HIT_MELEE, _TO_HIT_THROW and _DIGGING; distinct figures show none is crossed.
+        PlayerShape s = load("skills.txt", withHeader(1, shape("n",
+                "skill-disarm-phys:1\nskill-disarm-magic:2\nskill-save:3\nskill-stealth:4\n"
+                        + "skill-search:5\nskill-melee:6\nskill-throw:7\nskill-dig:8\n"))).items().get(0);
+
+        assertEquals(Map.of(PlayerSkill.SKILL_DISARM_PHYS, 1, PlayerSkill.SKILL_DISARM_MAGIC, 2,
+                PlayerSkill.SKILL_SAVE, 3, PlayerSkill.SKILL_STEALTH, 4, PlayerSkill.SKILL_SEARCH, 5,
+                PlayerSkill.SKILL_TO_HIT_MELEE, 6, PlayerSkill.SKILL_TO_HIT_THROW, 7,
+                PlayerSkill.SKILL_DIGGING, 8), s.getSkills());
+    }
+
+    @Test
+    void combatFiguresLandOnToHitToDamageAndToAcInTheOrderCReadsThem() throws IOException {
+        // "combat int to-h int to-d int to-a": distinct figures show none is crossed.
+        PlayerShape s = load("combat.txt", withHeader(1, shape("n", "combat:1:2:3\n"))).items().get(0);
+
+        assertEquals(1, s.getToHit());
+        assertEquals(2, s.getToDam());
+        assertEquals(3, s.getToAc());
+    }
+
+    @Test
+    void anUnsetResistanceIsAbsentWhereCHoldsLevelZero() throws IOException {
+        // el_info[] is zero-filled in C, so an element the line does not name reads level 0; here
+        // it is absent from the map and a named one carries its level, -1 (vulnerable) included.
+        PlayerShape s = load("res.txt", withHeader(1, shape("n", "values:RES_FIRE[-1] | RES_COLD[0]\n")))
+                .items().get(0);
+
+        assertEquals(-1, s.getElementValueModifiers().get(ElementEnum.ELEM_FIRE).getResLevel());
+        assertEquals(0, s.getElementValueModifiers().get(ElementEnum.ELEM_COLD).getResLevel());
+        assertFalse(s.getElementValueModifiers().containsKey(ElementEnum.ELEM_ACID));
     }
 
     @Test

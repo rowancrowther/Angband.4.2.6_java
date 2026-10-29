@@ -17,7 +17,11 @@
 
 package uk.co.jackoftradesltd.backend.parser.shape;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
+import uk.co.jackoftradesltd.backend.parser.ParseUtils;
 import uk.co.jackoftradesltd.backend.parser.grammars.EffectAssembler;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
@@ -47,25 +51,67 @@ import java.util.Map;
  * {@link ElementInfo}{@code >} carrying the per-element resistance level. Effects are delegated to
  * {@link EffectAssembler}.
  *
- * <p><b>Error policy:</b> soft errors follow the suite's skip-and-continue contract — an
- * unresolvable flag, modifier or element name logs a message to {@code errors} and drops that one
- * shape ({@code continue}), leaving the rest of the file to load. The plain {@code errors} list is
- * mutated in place; hard grammar/lexer errors are handled upstream by {@code GrammarDriver}.
+ * <p><b>Error policy:</b> the first thing that does not resolve ends the load. A number that does
+ * not parse, an unknown or sentinel flag name, an unknown or sentinel {@code values:} name, or an
+ * effect that does not resolve throws a {@link DataFileParseException} naming the file and the
+ * line the shape starts on, and no shape is returned. This is C's behaviour: each
+ * {@code parse_shape_*} handler returns a parse error and {@code init.c} quits on the first one.
+ * Hard grammar and lexer errors are handled upstream by {@code GrammarDriver}.
+ *
+ * <p><b>Order:</b> the shapes come back in file order, so a shape's position in the list is the
+ * {@code sidx} C gives it ({@code z_info->shape_max++} in {@code parse_shape_name}). C also keeps
+ * its {@code shapes} list in reverse file order; {@code PlayerRegistry} records that difference as
+ * deliberate and finds a shape by position where C searches for the {@code sidx}. Each shape's
+ * blows are the other way round: {@code parse_shape_blow} pushes every {@code blow:} line on the
+ * head of the chain, and the player-attack code walks that chain from the head, so the blows are
+ * held in reverse file order and index 0 is the last {@code blow:} line.
+ *
+ * <p>Class ShapeAssembler coded before 260915, commented in full on 261029.
  *
  * @author Rowan Crowther
  */
 public class ShapeAssembler implements Assembler<ShapeParseRecord, List<PlayerShape>> {
+    /**
+     * Logger the assembler writes to before it throws: every failure is logged at fatal level with
+     * the same message the {@link DataFileParseException} carries.
+     *
+     * <p>Field logger coded before 260915, commented in full on 261029.
+     */
+    private static final Logger logger = LogManager.getLogger(ShapeAssembler.class);
 
     /**
-     * Assembles every parsed shape record into a {@link PlayerShape}, skipping (with a logged
-     * soft error) any record whose flags, modifiers or elements fail to resolve.
+     * Assembles every parsed shape record into a {@link PlayerShape}, in file order. The port of
+     * the {@code parse_shape_*} handlers in {@code init.c}, run record by record.
      *
-     * <p>Function assemble coded before 260915, commented in full on 260915.
+     * <p>Per record: the three {@code combat:} figures and the eight {@code skill-*} figures are
+     * parsed as integers. An absent line reaches here as an empty string and is 0, which is what
+     * C's zero-filled {@code struct player_shape} holds. The skills map always holds all eight
+     * skills (disarm physical, disarm magic, save, search, stealth, melee, throw, digging), zeros
+     * included. Any other skill is absent here and 0 in C's array.
      *
-     * @param records the raw shape records captured by the grammar
-     * @param errors  the soft-error channel; assembly failures are appended here and the
-     *                offending record is dropped rather than aborting the whole file
-     * @return the successfully assembled shapes, in source order
+     * <p>Each {@code obj-flags:} and {@code player-flags:} name is resolved against
+     * {@link ObjectFlag} and {@link PlayerFlag} with the prefix put back, case-exactly as C's
+     * {@code streq} compares. {@code NONE} is refused for both and {@code MAX} for the object
+     * flags, since C's lookup starts past the {@code NONE} slot and the tables have no {@code MAX}.
+     * Each {@code values:} entry whose name starts {@code RES_} sets the resistance level of that
+     * element; any other name is an {@link ObjectModifier} (the stats first, then the modifiers),
+     * and its figure is read as a decimal. The {@code NONE} and {@code MAX} names are refused for
+     * both. The effects go to {@link EffectAssembler}, and the blows are described in the class
+     * comment. The blow count is the number of {@code blow:} lines, duplicates included.
+     *
+     * <p>The shape's {@code sidx} is not stored, as {@link PlayerShape} describes, and the count
+     * C keeps in {@code z_info->shape_max} is taken from the size of this list by
+     * {@code PlayerRegistry.setPlayerShape}.
+     *
+     * <p>Function assemble coded before 260915, commented in full on 261029.
+     *
+     * @param records  the raw shape records captured by the grammar
+     * @param errors   passed to {@link EffectAssembler#assemble}, which no longer appends to it;
+     *                 this method adds nothing to it either
+     * @param filename the data file the records came from, for the error messages
+     * @return the assembled shapes in file order, one per record
+     * @throws DataFileParseException if a number, flag name, {@code values:} name or effect does
+     *                                not resolve
      */
     @Override
     public List<PlayerShape> assemble(@NotNull List<ShapeParseRecord> records, @NotNull List<String> errors,
@@ -76,211 +122,113 @@ public class ShapeAssembler implements Assembler<ShapeParseRecord, List<PlayerSh
             int line = record.line();
 
             String name = record.name();
-            String tohStr = record.combatToh();
-            int toh = 0;
-            if (!tohStr.isEmpty()) {
-                try {
-                    toh = Integer.parseInt(tohStr);
-                } catch (NumberFormatException e) {
-                    errors.add("Shape beginning line: " + line + " has " +
-                            "an invalid combat to hit value: " + tohStr);
-                    continue;
-                }
-            }
-            String todStr = record.combatTod();
-            int tod = 0;
-            if (!todStr.isEmpty()) {
-                try {
-                    tod = Integer.parseInt(todStr);
-                } catch (NumberFormatException e) {
-                    errors.add("Shape beginning line: " + line + " has " +
-                            "an invalid combat to dam value: " + todStr);
-                    continue;
-                }
-            }
-            String toaStr = record.combatToa();
-            int toa = 0;
-            if (!toaStr.isEmpty()) {
-                try {
-                    toa = Integer.parseInt(toaStr);
-                } catch (NumberFormatException e) {
-                    errors.add("Shape beginning line: " + line + " has " +
-                            "an invalid combat to AC value: " + toaStr);
-                    continue;
-                }
-            }
+            int toh = ParseUtils.parseIntString("Shape", record.combatToh(), line, filename, "combat to hit");
+            int tod = ParseUtils.parseIntString("Shape", record.combatTod(), line, filename, "combat to damage");
+            int toa = ParseUtils.parseIntString("Shape", record.combatToa(), line, filename, "combat to AC");
             Map<PlayerSkill, Integer> skills = new HashMap<>();
-            String sdp = record.skillDisarmPhys();
-            int skillDisarmPhys = 0;
-            if (!sdp.isEmpty()) {
-                try {
-                    skillDisarmPhys = Integer.parseInt(sdp);
-                    skills.put(PlayerSkill.SKILL_DISARM_PHYS, skillDisarmPhys);
-                } catch (NumberFormatException e) {
-                    errors.add("Shape beginning line: " + line + " has " +
-                            "an invalid skill disarm phys value: " + sdp);
-                    continue;
-                }
-            }
-            String sdm = record.skillDisarmMagic();
-            int skillDisarmMagic = 0;
-            if (!sdm.isEmpty()) {
-                try {
-                    skillDisarmMagic = Integer.parseInt(sdm);
-                    skills.put(PlayerSkill.SKILL_DISARM_MAGIC, skillDisarmMagic);
-                } catch (NumberFormatException e) {
-                    errors.add("Shape beginning line: " + line + " has " +
-                            "an invalid skill disarm magic value: " + sdm);
-                    continue;
-                }
-            }
-            String ssa = record.skillSave();
-            int skillSave = 0;
-            if (!ssa.isEmpty()) {
-                try {
-                    skillSave = Integer.parseInt(ssa);
-                    skills.put(PlayerSkill.SKILL_SAVE, skillSave);
-                } catch (NumberFormatException e) {
-                    errors.add("Shape beginning line: " + line + " has " +
-                            "an invalid skill save value: " + ssa);
-                    continue;
-                }
-            }
-            String sse = record.skillSearch();
-            int skillSearch = 0;
-            if (!sse.isEmpty()) {
-                try {
-                    skillSearch = Integer.parseInt(sse);
-                    skills.put(PlayerSkill.SKILL_SEARCH, skillSearch);
-                } catch (NumberFormatException e) {
-                    errors.add("Shape beginning line: " + line + " has " +
-                            "an invalid skill search value: " + sse);
-                    continue;
-                }
-            }
-            String sst = record.skillStealth();
-            int skillStealth = 0;
-            if (!sst.isEmpty()) {
-                try {
-                    skillStealth = Integer.parseInt(sst);
-                    skills.put(PlayerSkill.SKILL_STEALTH, skillStealth);
-                } catch (NumberFormatException e) {
-                    errors.add("Shape beginning line: " + line + " has " +
-                            "an invalid skill stealth value: " + sst);
-                    continue;
-                }
-            }
-            String sme = record.skillMelee();
-            int skillMelee = 0;
-            if (!sme.isEmpty()) {
-                try {
-                    skillMelee = Integer.parseInt(sme);
-                    skills.put(PlayerSkill.SKILL_TO_HIT_MELEE, skillMelee);
-                } catch (NumberFormatException e) {
-                    errors.add("Shape beginning line: " + line + " has " +
-                            "an invalid skill melee value: " + sme);
-                    continue;
-                }
-            }
-            String sth = record.skillThrow();
-            int skillThrow = 0;
-            if (!sth.isEmpty()) {
-                try {
-                    skillThrow = Integer.parseInt(sth);
-                    skills.put(PlayerSkill.SKILL_TO_HIT_THROW, skillThrow);
-                } catch (NumberFormatException e) {
-                    errors.add("Shape beginning line: " + line + " has " +
-                            "an invalid skill throw value: " + sth);
-                    continue;
-                }
-            }
-            String sdg = record.skillDig();
-            int skillDig = 0;
-            if (!sdg.isEmpty()) {
-                try {
-                    skillDig = Integer.parseInt(sdg);
-                    skills.put(PlayerSkill.SKILL_DIGGING, skillDig);
-                } catch (NumberFormatException e) {
-                    errors.add("Shape beginning line: " + line + " has " +
-                            "an invalid skill dig value: " + sdg);
-                    continue;
-                }
-            }
+            int skillDisarmPhys = ParseUtils.parseIntString("Shape", record.skillDisarmPhys(), line, filename, "disarm physical skill");
+            skills.put(PlayerSkill.SKILL_DISARM_PHYS, skillDisarmPhys);
+            int skillDisarmMagic = ParseUtils.parseIntString("Shape", record.skillDisarmMagic(), line, filename, "disarm magic skill");
+            skills.put(PlayerSkill.SKILL_DISARM_MAGIC, skillDisarmMagic);
+            int skillSave = ParseUtils.parseIntString("Shape", record.skillSave(), line, filename, "save skill");
+            skills.put(PlayerSkill.SKILL_SAVE, skillSave);
+            int skillSearch = ParseUtils.parseIntString("Shape", record.skillSearch(), line, filename, "search skill");
+            skills.put(PlayerSkill.SKILL_SEARCH, skillSearch);
+            int skillStealth = ParseUtils.parseIntString("Shape", record.skillStealth(), line, filename, "stealth skill");
+            skills.put(PlayerSkill.SKILL_STEALTH, skillStealth);
+            int skillMelee = ParseUtils.parseIntString("Shape", record.skillMelee(), line, filename, "melee skill");
+            skills.put(PlayerSkill.SKILL_TO_HIT_MELEE, skillMelee);
+            int skillThrow = ParseUtils.parseIntString("Shape", record.skillThrow(), line, filename, "throw skill");
+            skills.put(PlayerSkill.SKILL_TO_HIT_THROW, skillThrow);
+            int skillDig = ParseUtils.parseIntString("Shape", record.skillDig(), line, filename, "digging skill");
+            skills.put(PlayerSkill.SKILL_DIGGING, skillDig);
             Flag<ObjectFlag> oFlags = new Flag<>(ObjectFlag.class);
-            boolean illegalOFlag = false;
             for (String oFlag : record.oFlags()) {
-                ObjectFlag objectFlag = null;
+                ObjectFlag objectFlag;
                 try {
                     objectFlag = ObjectFlag.valueOf("OF_" + oFlag);
+                    if (objectFlag == ObjectFlag.OF_NONE || objectFlag == ObjectFlag.OF_MAX) {
+                        String message = "Shape starting at line: " + line + " of file: " + filename + " has " +
+                                "an illegal sentinel object flag value: " + oFlag;
+                        logger.fatal(message);
+                        throw new DataFileParseException(message);
+                    }
                     oFlags.on(objectFlag);
                 } catch (IllegalArgumentException e) {
-                    errors.add("Shape beginning at line: " + line + " has " +
-                            "an invalid object flag: " + oFlag);
-                    illegalOFlag = true;
+                    String message = "Shape starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal object flag value: " + oFlag;
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
                 }
             }
-            if (illegalOFlag) continue;
             Flag<PlayerFlag> pFlags = new Flag<>(PlayerFlag.class);
-            boolean illegalPFlag = false;
             for (String pFlag : record.pFlags()) {
-                PlayerFlag playerFlag = null;
+                PlayerFlag playerFlag;
                 try {
                     playerFlag = PlayerFlag.valueOf("PF_" + pFlag);
+                    if (playerFlag == PlayerFlag.PF_NONE) {
+                        String message = "Shape starting at line: " + line + " of file: " + filename + " has " +
+                                "an illegal sentinel player flag value: " + pFlag;
+                        logger.fatal(message);
+                        throw new DataFileParseException(message);
+                    }
                     pFlags.on(playerFlag);
                 } catch (IllegalArgumentException e) {
-                    errors.add("Shape beginning at line: " + line + " has " +
-                            "an invalid player flag: " + pFlag);
-                    illegalPFlag = true;
+                    String message = "Shape starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal player flag value: " + pFlag;
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
                 }
             }
-            if (illegalPFlag) continue;
             Map<ObjectModifier, Integer> values = new HashMap<>();
             Map<ElementEnum, ElementInfo> elementValues = new HashMap<>();
-            boolean illegalValue = false;
             for (String key : record.values().keySet()) {
                 String value = record.values().get(key);
-                String pair = key + "[" + value + "]";
                 if (key.startsWith("RES_")) {
                     String keyStr = "ELEM_" + key.substring(4);
                     try {
                         ElementEnum keyVal = ElementEnum.valueOf(keyStr);
+                        if (keyVal == ElementEnum.ELEM_NONE || keyVal == ElementEnum.ELEM_MAX) {
+                            String message = "Shape starting at line: " + line + " of file: " + filename + " has " +
+                                    "an illegal sentinel element value: " + key;
+                            logger.fatal(message);
+                            throw new DataFileParseException(message);
+                        }
+                        int resLevel = ParseUtils.parseIntString("Shape", value, line, filename, "resist element", ParseUtils.Radix.DECIMAL);
                         ElementInfo info = elementValues.computeIfAbsent(keyVal, k -> new ElementInfo());
-                        info.setResLevel(Integer.parseInt(value));
-                    } catch (NumberFormatException e) {
-                        errors.add("Shape beginning at line: " + line + " has " +
-                                "an invalid element value: " + pair);
-                        illegalValue = true;
+                        info.setResLevel(resLevel);
                     } catch (IllegalArgumentException e) {
-                        errors.add("Shape beginning at line: " + line + " has " +
-                                "an invalid element name: " + pair);
-                        illegalValue = true;
+                        String message = "Shape starting at line: " + line + " of file: " + filename + " has " +
+                                "an illegal element name value: " + key;
+                        logger.fatal(message);
+                        throw new DataFileParseException(message);
                     }
                 } else {
                     String omStr = "OM_" + key;
                     try {
                         ObjectModifier omMod = ObjectModifier.valueOf(omStr);
-                        int intVal = Integer.parseInt(value);
+                        if (omMod == ObjectModifier.OM_NONE || omMod == ObjectModifier.OM_MAX) {
+                            String message = "Shape starting at line: " + line + " of file: " + filename + " has " +
+                                    "an illegal sentinel object modifier value: " + key;
+                            logger.fatal(message);
+                            throw new DataFileParseException(message);
+                        }
+                        int intVal = ParseUtils.parseIntString("Shape", value, line, filename, "object modifier", ParseUtils.Radix.DECIMAL);
                         values.put(omMod, intVal);
-                    } catch (NumberFormatException e) {
-                        errors.add("Shape beginning at line: " + line + " has " +
-                                "an invalid modifier value: " + pair);
-                        illegalValue = true;
                     } catch (IllegalArgumentException e) {
-                        errors.add("Shape beginning at line: " + line + " has " +
-                                "an invalid modifier name: " + pair);
-                        illegalValue = true;
+                        String message = "Shape starting at line: " + line + " of file: " + filename + " has " +
+                                "an illegal object modifier name value: " + key;
+                        logger.fatal(message);
+                        throw new DataFileParseException(message);
                     }
                 }
             }
-            if (illegalValue) continue;
-            // EffectAssembler is all-or-nothing: if any single effect in the block fails
-            // to resolve it returns null, so one bad effect drops the entire shape rather
-            // than loading it with an effect silently missing.
+            // EffectAssembler is all-or-nothing: the first effect that fails to resolve throws,
+            // so a shape is never built with an effect silently missing.
             List<Effect> effects = EffectAssembler.assemble(record.effects(), errors, filename);
-            if (effects == null) continue;
             List<PlayerBlow> blowList = new ArrayList<>();
             for (String blow : record.blowMethod()) {
-                blowList.add(new PlayerBlow(blow));
+                blowList.addFirst(new PlayerBlow(blow));
             }
 
             shapes.add(new PlayerShape(name, toa, toh, tod, skills, oFlags, pFlags,

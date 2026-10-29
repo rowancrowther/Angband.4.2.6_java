@@ -51,9 +51,9 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p><b>What is tested.</b> A missing file for each of the eight loaders (an empty temporary
  * directory stands in for the gamedata directory), then, using {@code shape.txt} as the example,
- * the outcomes of the error check: soft errors that leave no records stop the load, soft errors that
- * leave some records register them, and a hard syntax error, which the reader turns into an empty
- * result, stops the load too. The clean path through all eight is covered by the tests that run
+ * the outcomes of the error check: a shape that does not resolve stops the load, a soft error that
+ * leaves some records (a {@code record-count:} mismatch) registers them, and a hard syntax error,
+ * which the reader turns into an empty result, stops the load too. The clean path through all eight is covered by the tests that run
  * {@code GameConstants.init} on the real gamedata.
  *
  * <p>Each test points {@code ANGBAND_DIRS.GAMEDATA} at the temporary directory and puts it, and the
@@ -142,31 +142,33 @@ class PlayerDataLoaderFailurePathsTest {
     }
 
     /**
-     * Soft errors that drop the only record leave nothing to register, which
-     * {@code ErrorParsing.reportAndCheck} reports as {@code false}: the load stops, as C's
-     * {@code init_arrays()} does on any parser error, and the registry is not touched.
+     * A flag name that does not resolve ends the shape load with a {@code DataFileParseException}
+     * out of {@code ShapeAssembler}, as C's {@code init_arrays()} stops on any parser error, and
+     * the registry is not touched.
      */
     @Test
-    @DisplayName("soft errors that leave no records stop the load and leave the registry alone")
-    void softErrorsWithNoRecordsStopTheLoad() throws IOException {
+    @DisplayName("a shape that does not resolve stops the load and leaves the registry alone")
+    void anUnresolvedShapeStopsTheLoad() throws IOException {
         Files.writeString(tempDir.resolve("shape.txt"),
                 "record-count:1\nname:weird\nobj-flags:NOTAFLAG\n");
 
         RuntimeException thrown = assertThrows(RuntimeException.class, PlayerDataLoader::loadPlayerShapes);
 
         assertTrue(thrown.getMessage().contains("shape.txt"), thrown.getMessage());
+        assertTrue(thrown.getMessage().contains("illegal object flag value: NOTAFLAG"), thrown.getMessage());
         assertEquals(savedShapes, currentShapes(), "registered shapes");
     }
 
     /**
-     * Soft errors that drop one record but keep another are the deliberate softening of C: the
-     * surviving record is registered and the load carries on.
+     * A soft error that leaves records is the deliberate softening of C: a {@code record-count:}
+     * header that disagrees with the number of shapes read is reported, but the shapes it did read
+     * are registered and the load carries on.
      */
     @Test
-    @DisplayName("soft errors that still leave records register them and carry on")
-    void softErrorsWithSomeRecordsRegisterThem() throws IOException {
+    @DisplayName("a record-count mismatch still registers the shapes that were read")
+    void aRecordCountMismatchRegistersTheShapesRead() throws IOException {
         Files.writeString(tempDir.resolve("shape.txt"),
-                "record-count:2\nname:plain\ncombat:0:0:0\nname:weird\nobj-flags:NOTAFLAG\n");
+                "record-count:2\nname:plain\ncombat:0:0:0\n");
 
         PlayerDataLoader.loadPlayerShapes();
 

@@ -21,6 +21,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.Channels;
 import uk.co.jackoftradesltd.channel.StartupOptions;
 import uk.co.jackoftradesltd.channel.messages.UIMessage;
@@ -210,10 +211,11 @@ class QuestReaderTest {
      */
     @Test
     void unknownRaceAbortsTheLoad() {
-        RuntimeException e = assertThrows(RuntimeException.class, () -> load("badrace.txt",
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("badrace.txt",
                 withHeader(1, quest("Impossible", "5", "Xyzzy the Nonexistent", "1"))));
 
-        assertTrue(e.getMessage().contains("unknown monster race"), e.getMessage());
+        assertTrue(e.getMessage().contains("has an illegal monster race value: Xyzzy the Nonexistent"),
+                e.getMessage());
     }
 
     /**
@@ -223,16 +225,18 @@ class QuestReaderTest {
      */
     @Test
     void negativeLevelAbortsTheLoad() {
-        assertThrows(IllegalArgumentException.class, () -> load("neglevel.txt",
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("neglevel.txt",
                 withHeader(1, quest("Below", "-3", "Sauron, the Sorcerer", "1"))));
+
+        assertTrue(e.getMessage().contains("has an illegal negative level value: -3"), e.getMessage());
     }
 
-    // ---- Soft errors (record dropped, parse continues) -------------------
+    // ---- No record is dropped; the record count is the only soft error ---
 
     /**
      * 99999999999 is above {@code int} but within {@code unsigned long}, so C accepts it and stores
-     * the low byte: it is 0x174876E7FF, giving level 255. The port keeps the record. (Only a level
-     * above {@code Long.MAX_VALUE} is dropped, which {@code QuestAssemblerTest} covers.)
+     * the low byte: it is 0x174876E7FF, giving level 255. The port clamps the figure, which gives 255
+     * by coincidence, and keeps the record.
      */
     @Test
     void levelBeyondIntWrapsToAByteAndIsKept() throws IOException {
@@ -244,14 +248,19 @@ class QuestReaderTest {
         assertEquals(255, result.items().get(0).getLevel());
     }
 
+    /**
+     * Accepted deviation (261027): C wraps 99999999999 into the {@code int} {@code max_num} (low 32
+     * bits, 0x4876E7FF = 1215752191); the port clamps to {@code Integer.MAX_VALUE}, keeps the record
+     * and reports nothing.
+     */
     @Test
-    void overflowingNumberIsASoftErrorAndDropsTheRecord() throws IOException {
+    void numberBeyondIntIsClampedAndTheRecordKept() throws IOException {
         ParseResult<Quest> result = load("bignumber.txt",
                 withHeader(1, quest("Many", "5", "Sauron, the Sorcerer", "99999999999")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("invalid number integer")),
-                () -> result.errors().toString());
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(1, result.items().size());
+        assertEquals(Integer.MAX_VALUE, result.items().get(0).getMaxNumber());
     }
 
     @Test
@@ -267,21 +276,20 @@ class QuestReaderTest {
     }
 
     /**
-     * Indices are assigned only to records that survive assembly, so a dropped first record must not
-     * leave a gap: the surviving quest takes index 0. Guards the {@code index++}-before-add placement.
+     * An oversized figure no longer drops its record, so the indices are the positions in the file
+     * with no gap: 0 for the first, 1 for the second.
      */
     @Test
-    void indicesAreContiguousAfterADroppedRecord() throws IOException {
-        // An unknown race now aborts the load, so the first record is dropped by an oversized number.
-        String body = quest("Dropped", "5", "Sauron, the Sorcerer", "99999999999")
+    void indicesAreContiguousWhenAFigureIsOversized() throws IOException {
+        String body = quest("Big", "5", "Sauron, the Sorcerer", "99999999999")
                 + "\n"
-                + quest("Kept", "10", "Morgoth, Lord of Darkness", "1");
+                + quest("Next", "10", "Morgoth, Lord of Darkness", "1");
         ParseResult<Quest> result = load("gap.txt", withHeader(2, body));
 
-        assertEquals(1, result.items().size());
-        Quest kept = result.items().get(0);
-        assertEquals("Kept", kept.getName());
-        assertEquals(0, kept.getIndex(), "surviving quest must take index 0, not inherit the drop's slot");
+        assertEquals(2, result.items().size());
+        assertEquals(0, result.items().get(0).getIndex());
+        assertEquals("Next", result.items().get(1).getName());
+        assertEquals(1, result.items().get(1).getIndex());
     }
 
     // ---- Hard error (fail-closed) ----------------------------------------
@@ -408,30 +416,30 @@ class QuestReaderTest {
     }
 
     /**
-     * A soft error names the line of the {@code name:} directive that opened the record. Header on
+     * A fault names the line of the {@code name:} directive that opened the record. Header on
      * line 1, first record on lines 3-6, second record's {@code name:} on line 8.
      */
     @Test
-    void softErrorNamesTheLineOfTheRecordsNameDirective() throws IOException {
+    void aFaultNamesTheLineOfTheRecordsNameDirective() {
         String body = quest("Good", "5", "Sauron, the Sorcerer", "1") + "\n"
-                + quest("Bad", "5", "Sauron, the Sorcerer", "99999999999");
-        ParseResult<Quest> result = load("lines.txt", withHeader(2, body));
+                + quest("Bad", "5", "Sauron, the Sorcerer", "-1");
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> load("lines.txt", withHeader(2, body)));
 
-        assertEquals(1, result.items().size());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("line: 8")),
-                () -> result.errors().toString());
+        assertTrue(e.getMessage().contains("line: 8"), e.getMessage());
+        assertTrue(e.getMessage().contains("illegal negative number value: -1"), e.getMessage());
     }
 
     /**
-     * C's {@code strtoul} in base 0 reads {@code 010} as octal 8. The lexer's {@code INTEGER} is
-     * decimal, so the assembler stores 10. Recorded in {@code docs/grammar_issues.md}.
+     * C's {@code strtoul} in base 0 reads {@code 010} as octal 8, and the port reads base 0 too.
      */
     @Test
-    void aLeadingZeroLevelIsReadAsDecimalWhereCReadsItAsOctal() throws IOException {
+    void aLeadingZeroLevelIsReadAsOctalAsInC() throws IOException {
         List<Quest> quests = load("octal.txt",
-                withHeader(1, quest("Octal", "010", "Sauron, the Sorcerer", "1"))).items();
+                withHeader(1, quest("Octal", "010", "Sauron, the Sorcerer", "010"))).items();
 
-        assertEquals(10, quests.get(0).getLevel(), "C would store 8");
+        assertEquals(8, quests.get(0).getLevel());
+        assertEquals(8, quests.get(0).getMaxNumber());
     }
 
     /**

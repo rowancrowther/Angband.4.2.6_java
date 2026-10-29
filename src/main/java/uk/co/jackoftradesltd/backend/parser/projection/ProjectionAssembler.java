@@ -185,7 +185,7 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
             int line = record.lineNumber();
             String codeString = record.code();
             String type = record.type();
-            ProjectionType projType = resolveType(line, type, errors);
+            ProjectionType projType = resolveType(type);
             currentRecord++;
             ProjectionEnum projCode;
             if (currentRecord <= EXPECTED_ELEMENT_COUNT) {
@@ -287,7 +287,7 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
                 }
             }
             String msgt = record.msgt();
-            MessageType projMsgt = msgt == null ? MessageType.MSG_GENERIC : resolveMsgt(line, msgt, codeString, errors, filename);
+            MessageType projMsgt = msgt == null ? MessageType.MSG_GENERIC : resolveMsgt(msgt);
             boolean projObvious;
             int boolValue;
             if (record.obvious() != null) {
@@ -329,7 +329,7 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
                 projWillWake = false;
             }
             String colour = record.colour();
-            ColourEnum projColour = resolveColour(line, colour, codeString, errors);
+            ColourEnum projColour = resolveColour(colour);
 
             if (projMsgt == null) {
                 String message = "Projection starting at line: " + line + " of file: " + filename + " has " +
@@ -430,16 +430,13 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
      *
      * <p>Function resolveType coded before 260915, commented in full on 261029.
      *
-     * @param line   the line of the projection block in the {@code lib/gamedata} file; unused
      * @param type   the tag from the {@code type:} line
-     * @param errors unused
      * @return the matching constant, or {@code PT_NONE} if the tag is not one of the three
      */
     @CheckReturnValue
     @NotNull
     @Contract(pure = true)
-    private ProjectionType resolveType(int line, @NotNull String type, 
-                                       @NotNull List<String> errors) {
+    private ProjectionType resolveType(String type) {
         return switch (type) {
             case "element" -> ProjectionType.PT_ELEMENT;
             case "environs" -> ProjectionType.PT_ENVIRONS;
@@ -462,18 +459,13 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
      *
      * <p>Function resolveMsgt coded before 260915, commented in full on 261029.
      *
-     * @param line     the line of the projection block; unused
      * @param msgt     the value from the {@code msgt:} line, as a name without {@code MSG_} or a
      *                 number
-     * @param code     the {@code code:} tag of the block; unused
-     * @param errors   unused
-     * @param filename the data file being assembled; unused
      * @return the matching constant, or {@code null} if there is none
      */
     @CheckReturnValue
     @Nullable
-    private MessageType resolveMsgt(int line, @NotNull String msgt, @NotNull String code,
-                                    @NotNull List<String> errors, String filename) {
+    private MessageType resolveMsgt(String msgt) {
         return MessageType.lookupByName(msgt);
     }
 
@@ -496,17 +488,13 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
      *
      * <p>Function resolveColour coded before 260915, commented in full on 261029.
      *
-     * @param line   the line of the projection block in the {@code lib/gamedata} file; unused
      * @param colour the value from the {@code color:} line
-     * @param code   the {@code code:} tag of the block; unused
-     * @param errors unused
      * @return the matching colour, {@code COLOUR_DARK} for an empty or blank value, or
      *         {@code COLOUR_WHITE} if nothing matches
      */
     @CheckReturnValue
     @NotNull
-    private ColourEnum resolveColour(int line, String colour, @NotNull String code,
-                                     @NotNull List<String> errors) {
+    private ColourEnum resolveColour(String colour) {
         if (colour == null || colour.isEmpty())
             return ColourEnum.COLOUR_DARK;
 

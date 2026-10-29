@@ -20,6 +20,8 @@ package uk.co.jackoftradesltd.backend.parser.quest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
+import uk.co.jackoftradesltd.backend.parser.ParseUtils;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.registry.MonsterRegistry;
@@ -47,34 +49,40 @@ import java.util.List;
  * <p><b>Dependency:</b> race resolution needs {@code monster.txt} already loaded, which is why
  * {@code loadQuests()} runs late in {@link GameConstants}' init order (after {@code loadMonsters()}).
  *
- * <p><b>Deliberate divergences from C</b> (decided 261013), all in how the two integer fields are read
- * and none reachable from the shipped {@code quest.txt}:
- * <ul>
- *   <li>C reads integers with {@code strtoul} in base 0, so a leading {@code 0} means octal and
- *       {@code 0x} means hexadecimal ({@code 010} is 8, {@code 08} is 0). The port always reads
- *       decimal. Base 0 parsing is skipped on purpose.</li>
- *   <li>A {@code level} above {@code Long.MAX_VALUE} is dropped as a soft error. C reads it into an
- *       {@code unsigned long}, so it wraps silently up to {@code ULONG_MAX} and saturates at
- *       {@code ULONG_MAX} beyond that, giving a stored level of 255. Quest levels that large are not
- *       realistic. Because the drop happens before the race is looked up, a record with such a level
- *       and an unknown {@code race} is dropped here, where C wraps the level and then aborts the load
- *       on the race.</li>
- *   <li>A {@code number} above {@code Integer.MAX_VALUE} is dropped as a soft error. C wraps it into a
- *       negative {@code int}. Anything above 1,000,000,000 is not realistic, so losing the record is
- *       acceptable.</li>
- * </ul>
+ * <p><b>Every fault stops the load.</b> The assembler has no soft errors: a negative {@code level} or
+ * {@code number}, a figure with no digits, and a {@code race} that matches no monster each log at
+ * {@code fatal} and throw {@link DataFileParseException}, as C's {@code PARSE_ERROR_NOT_NUMBER} and
+ * {@code PARSE_ERROR_INVALID_MONSTER} end the whole {@code quest.txt} load. No record is ever dropped
+ * and the {@code errors} list passed to {@link #assemble} is never written to.
  *
- * <p>Class QuestAssembler coded before 261013, commented in full on 261014.
+ * <p><b>Integers.</b> {@code level} and {@code number} are {@code uint} fields in C, read by
+ * {@code parser_parse} ({@code parser.c}) with {@code strtoul} in base 0 into an {@code unsigned int}.
+ * They go through {@link ParseUtils#parseIntString(String, String, int, String, String)}, which reads base 0
+ * as well, so {@code 010} is 8 and {@code 08} is 0 here as there; {@link ParseUtils#minusFound(String)}
+ * is asked first about the raw text because C refuses any token starting with {@code -}, {@code -0}
+ * included. The lexer's {@code INTEGER} token is an optional {@code -} and digits, so a {@code 0x}
+ * prefix or a {@code +} cannot arrive.
+ *
+ * <p><b>Accepted deviation</b> (decided 261027; "An integer too big for its C type is clamped, where C
+ * wraps it" under ParseUtils in {@code docs/Accepted_Deviations.md}): C keeps the low 32 bits of a figure
+ * above {@code UINT_MAX} and wraps one above {@code INT_MAX} into a negative {@code int}. The port clamps
+ * to {@link Integer#MAX_VALUE}, so {@code level:2147483649} stores 255 where C stores 1,
+ * {@code level:4294967296} stores 255 where C stores 0, and {@code number:2147483648} stores
+ * 2147483647 where C stores {@code INT_MIN}. The shipped {@code quest.txt} holds levels 99 and 100 and
+ * a number of 1.
+ *
+ * <p>Class QuestAssembler coded before 261013, commented in full on 261029.
  *
  * @author Rowan Crowther
  */
 public class QuestAssembler implements Assembler<QuestParseRecord, List<Quest>> {
     /**
-     * Log4j logger for this class. {@link #assemble} writes to it at {@code fatal} level just before it
-     * throws, so the reason for an aborted {@code quest.txt} load reaches the log as well as the stack
-     * trace.
+     * Log4j logger for this class. {@link #assemble} writes to it at {@code fatal} level just before each
+     * of its three throws (negative {@code level}, unknown {@code race}, negative {@code number}), so the
+     * reason for an aborted {@code quest.txt} load reaches the log as well as the stack trace. The
+     * figure-reading faults inside {@link ParseUtils} are logged by {@code ParseUtils}' own logger.
      *
-     * <p>Field logger coded before 261013, commented in full on 261014.
+     * <p>Field logger coded before 261013, commented in full on 261029.
      */
     private static final Logger logger = LogManager.getLogger(QuestAssembler.class);
 
@@ -83,53 +91,55 @@ public class QuestAssembler implements Assembler<QuestParseRecord, List<Quest>> 
      * text the way C's {@code parse_quest_level} and {@code parse_quest_number} do, and resolving the
      * {@code race} name the way {@code parse_quest_race} does.
      *
-     * <p>The lexer's {@code INTEGER} token is an optional {@code -} followed by digits, so the only text
-     * that reaches here is a signed run of digits. Each record is checked in the order C meets the
-     * directives (level, then race, then number), and a failure ends in one of two ways:
+     * <p>Each record is checked in the order C meets the directives (level, then race, then number),
+     * records in file order, and the first fault stops the whole load. Every fault logs at {@code fatal}
+     * and throws {@link DataFileParseException}, which nothing between here and the caller of
+     * {@code GameConstants} init catches, as C's parse errors abort the {@code quest.txt} load:
      * <ul>
-     *   <li><b>Dropped.</b> A {@code level} too large for a {@code long}, or a {@code number} too large
-     *       for an {@code int}, raises {@link NumberFormatException}. The message is appended to
-     *       {@code errors} and the record is skipped, honouring the suite's partial-results contract.</li>
-     *   <li><b>Aborts the load.</b> A negative {@code level} or {@code number} throws
-     *       {@link IllegalArgumentException}, and a {@code race} that matches no monster throws
-     *       {@link RuntimeException}. C does the same: its unsigned parse rejects a leading {@code -}
-     *       with {@code PARSE_ERROR_NOT_NUMBER}, and {@code parse_quest_race} returns
-     *       {@code PARSE_ERROR_INVALID_MONSTER}, and either error stops the whole {@code quest.txt}
-     *       load. Neither error is caught by {@code GrammarDriver.run} or {@code loadQuests}, so the
-     *       exception reaches the caller of {@code GameConstants} init. Any text starting with
-     *       {@code -} counts as negative, including {@code -0}, as in C's {@code *tok == '-'} test.</li>
+     *   <li><b>Negative {@code level} or {@code number}.</b> C's {@code uint} test is
+     *       {@code z == tok || *tok == '-'}, so any text starting with {@code -} is refused, {@code -0}
+     *       included. {@link ParseUtils#minusFound(String)} makes the same first-character test on the
+     *       raw text, before the figure is read.</li>
+     *   <li><b>A figure with no digits.</b> {@link ParseUtils#parseIntString(String, String, int, String,
+     *       String)} throws for it, as {@code z == tok} gives {@code PARSE_ERROR_NOT_NUMBER}. The lexer
+     *       only ever passes digits, so this cannot be reached from a data file.</li>
+     *   <li><b>Unknown {@code race}.</b> {@link MonsterRegistry#lookupMonsterRace} returns {@code null}
+     *       where C's {@code lookup_monster} does, and {@code parse_quest_race} returns
+     *       {@code PARSE_ERROR_INVALID_MONSTER}. The lookup is an exact case-insensitive match first and
+     *       then the first race whose name contains the text.</li>
      * </ul>
-     * A dropped record ends its checks there: an overflowing {@code level} is dropped before the
-     * {@code race} is looked up, and a record that fails on {@code race} never reaches {@code number}.
-     * The race name is looked up with {@link MonsterRegistry#lookupMonsterRace}, exact match first and then
-     * the first substring match, faithful to C {@code lookup_monster}.
+     * A record that fails on {@code level} never has its {@code race} looked up, and one that fails on
+     * {@code race} never reaches {@code number}. Because the load stops, no record is dropped and
+     * {@code errors} is never written to.
      *
-     * <p><b>Level.</b> C's {@code quest.level} is a {@code uint8_t}, and C's value passes through
-     * {@code strtoul} and an {@code unsigned int} first, so the stored level is the parsed value modulo
-     * 256. Casting to {@code int} can leave a negative value when bit 31 is set, and Java's {@code %}
-     * keeps the sign of the dividend, so 256 is added back when the remainder is negative:
-     * {@code 2147483649} gives 1 and {@code 4294967295} gives 255, as in C.
+     * <p><b>Level.</b> C's {@code quest.level} is a {@code uint8_t}, so the stored level is the
+     * base 0 value modulo 256: {@code 255} stays 255, {@code 256} gives 0, {@code 257} gives 1,
+     * {@code 356} gives 100, {@code 010} gives 8 and {@code 08} gives 0. The figure is already clamped to
+     * {@code 0..Integer.MAX_VALUE} by then (a negative one was refused above), so the
+     * {@code if (level < 0) level += 256} line is unreachable. Above {@code Integer.MAX_VALUE} the
+     * clamp makes the stored level 255, where C stores the low byte of the wrapped value (see the
+     * accepted deviation in the class block).
      *
      * <p><b>Number.</b> C's {@code quest.max_num} is a plain {@code int}, so the value is stored as
-     * parsed, with no truncation: {@code 300} stays 300.
+     * read, with no truncation: {@code 300} stays 300 and {@code 2147483647} stays 2147483647. Above
+     * that the clamp stores 2147483647, where C wraps into a negative {@code int}.
      *
-     * <p>The {@code index} is advanced only just before a surviving quest is built, so it stays
-     * contiguous over the assembled list even when earlier records were dropped (C stamps
-     * {@code quest.index} = final array position). Each quest's kill tally starts empty, so
-     * {@code currentNumber} is seeded to 0 (C {@code cur_num}); only {@code maxNumber} comes from the
-     * file.
-     *
-     * <p>The remaining differences from C (decimal-only parsing, and the upper limits on the two
-     * integers) are listed in the class block.
+     * <p>The {@code index} is the record's position in the returned list, 0 for the first, as
+     * {@code finish_parse_quest} stamps {@code quest.index} from the final array position (C builds
+     * the list newest-first and fills the array from the back, so the order is the file's). Each quest's
+     * kill tally starts empty, so {@code currentNumber} is seeded to 0 (C {@code cur_num}, from
+     * {@code mem_zalloc}); only {@code maxNumber} comes from the file. {@code QuestGrammar} makes all four
+     * directives mandatory and in one order, so no field is ever absent here as it can be in C.
      *
      * <p>Function assemble coded before 260915, level and number handling reworked on 261013,
-     * commented in full on 261014.
+     * soft errors made fatal before 261029, commented in full on 261029.
      *
-     * @param records the raw quest records in file order
-     * @param errors  the soft-error sink, appended to in place for every dropped record
-     * @return the assembled quests, in file order, minus any that were dropped
-     * @throws IllegalArgumentException if a record's {@code level} or {@code number} is negative
-     * @throws RuntimeException         if a record's {@code race} matches no monster
+     * @param records  the raw quest records in file order
+     * @param errors   the soft-error sink required by {@link Assembler}; never written to here
+     * @param filename the file being read, for the messages
+     * @return the assembled quests, in file order, each with the index of its position
+     * @throws DataFileParseException if a record's {@code level} or {@code number} is negative or has
+     *                                no digits, or its {@code race} matches no monster
      */
     @Override
     public List<Quest> assemble(@NotNull List<QuestParseRecord> records, @NotNull List<String> errors,
@@ -141,44 +151,32 @@ public class QuestAssembler implements Assembler<QuestParseRecord, List<Quest>> 
             int line = record.line();
             String name = record.name();
             int level;
-            try {
-                if (record.level().startsWith("-")) {
-                    String message = "Invalid negative level number: " + record.level();
-                    logger.fatal(message);
-                    throw new IllegalArgumentException(message);
-                }
-                long input = Long.parseLong(record.level());
-                
-                int levelInt = (int) input;
-                
-                level = levelInt % 256;
-                if (level < 0) level += 256;
-            } catch (NumberFormatException e) {
-                errors.add("Quest at line " + line + " has " +
-                        "an invalid level integer: " + record.level());
-                continue;
+            if (ParseUtils.minusFound(record.level())) {
+                String message = "Quest starting at line: " + line + " of file: " + filename + " has " +
+                        "an illegal negative level value: " + record.level();
+                logger.fatal(message);
+                throw new DataFileParseException(message);
             }
+            level = ParseUtils.parseIntString("Quest", record.level(), line, filename, "level");
+            level = level % 256;
+            if (level < 0) level += 256;
             MonsterRace race = MonsterRegistry.lookupMonsterRace(record.race());
             if (race == null) {
-                String message = "Quest at line: " + line + " has " +
-                        "an unknown monster race: " + record.race();
+                String message = "Quest starting at line: " + line + " of file: " + filename + " has " +
+                        "an illegal monster race value: " + record.race();
                 logger.fatal(message);
-                throw new RuntimeException(message);
+                throw new DataFileParseException(message);
             }
             int currentNumber = 0;
             int maxNumber;
-            try {
-                if (record.number().startsWith("-")) {
-                    String message = "Invalid negative number: " + record.number();
-                    logger.fatal(message);
-                    throw new IllegalArgumentException(message);
-                }
-                maxNumber = Integer.parseInt(record.number());
-            } catch (NumberFormatException e) {
-                errors.add("Quest at line: " + line + " has " +
-                        "an invalid number integer: " + record.number());
-                continue;
+            if (ParseUtils.minusFound(record.number())) {
+                String message = "Quest starting at line: " + line + " of file: " + filename + " has " +
+                        "an illegal negative number value: " + record.number();
+                logger.fatal(message);
+                throw new DataFileParseException(message);
             }
+            maxNumber = ParseUtils.parseIntString("Quest", record.number(), line, filename, "number");
+
 
             index++;
             quests.add(new Quest(index, name, level, race,

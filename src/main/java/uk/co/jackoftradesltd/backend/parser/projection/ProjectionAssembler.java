@@ -24,6 +24,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
+import uk.co.jackoftradesltd.backend.parser.ParseUtils;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
@@ -43,20 +44,34 @@ import java.util.List;
  * {@code resolveX} helper; the numeric fields are parsed inline, and {@code denominator} falls
  * back to a {@link Random} dice expression when it is not a plain integer.
  *
- * <p>C's parser quits on the first bad line; this port follows the shared soft-error contract for
- * most faults. A record with a negative or non-numeric numerator, divisor, damage cap,
- * {@code obvious} or {@code wake}, an invalid denominator or an unresolvable {@code msgt} is
- * reported to {@code errors} and skipped, and the rest of the file still loads. An unknown colour is
- * not a fault: it falls back to white, as C does.
+ * <p>C's parser quits on the first bad line, and so does this port: every fault stops the load by
+ * throwing a {@link DataFileParseException}, and no record is skipped. A fault is a negative or
+ * non-numeric numerator, divisor, damage cap, {@code obvious} or {@code wake}, a denominator that
+ * is neither a number nor a dice string, an unresolvable {@code msgt}, or a bad code or element
+ * count (below). The {@code errors} list is never written to; it stays in the signature because
+ * {@link Assembler} requires it. An unknown colour is not a fault: it falls back to white, as C
+ * does.
+ *
+ * <p>C reads the file a line at a time and quits on the first bad line; this port has the whole
+ * record, so it checks the code first, then the numerator, denominator, divisor, damage cap,
+ * {@code obvious} and {@code wake}, and the {@code msgt} last. A record with two faults can
+ * therefore name a different one than C does, but the same record stops the load. The four
+ * {@code uint} fields refuse a leading {@code -} (so {@code -0} too), as {@code parser_parse()}
+ * does, and are read with base detection like {@code strtoul} in base 0. {@code obvious} and
+ * {@code wake} are true only for exactly 1.
+ *
+ * <p>Accepted deviation (decided 261029, recorded in {@code docs/Accepted_Deviations.md}): a
+ * {@code denominator:} made only of digits, with an optional sign, is read in base 10 and clamped
+ * to the {@code int} range. C's {@code parse_random()} refuses any figure above {@code INT_MAX},
+ * so {@code 2147483648} loads here as {@code 2147483647} where C quits. In-range figures agree.
  *
  * <p>A record's {@code code} is only read where C reads it. {@code parse_projection_code()}
  * compares the code with {@code element_names[index]} while {@code index < ELEM_MAX} and ignores it
  * after that, so a code that is not a projection is stored as {@link ProjectionEnum#PROJ_NONE},
  * with no error, from the 26th record on.
  *
- * <p>These faults stop the load, by throwing a {@link DataFileParseException} whose message carries
- * the errors gathered so far. C subscripts its projection array by element value, and a damaged
- * element block would silently misalign every lookup:
+ * <p>Three faults concern the element block. C subscripts its projection array by element value,
+ * and a damaged element block would silently misalign every lookup:
  * <ul>
  *   <li>one of the first 25 records has an unknown or empty code, or a code that is not the
  *       element at its position in {@code list-elements.h} order - the check C makes in
@@ -64,17 +79,22 @@ import java.util.List;
  *       {@code PARSE_ERROR_ELEMENT_NAME_MISMATCH};</li>
  *   <li>a record past the 25th has an empty code - C's {@code parser_parse} returns
  *       {@code PARSE_ERROR_MISSING_FIELD} for a {@code code:} with nothing after it;</li>
- *   <li>the number of records of type {@code element} that survive assembly is not 25 - the check C
- *       makes in {@code finish_parse_projection()}. A dropped element record therefore stops the
- *       load, where C would already have quit on the bad line.</li>
+ *   <li>the number of records of type {@code element} is not 25 - the check C makes in
+ *       {@code finish_parse_projection()}. Because no record is skipped, this fires only when the
+ *       file holds too few or too many records whose {@code type:} is {@code element}.</li>
  * </ul>
  *
  * <p>The exception is not caught by {@code GrammarDriver}, so it reaches the caller of
  * {@code ProjectionReader.parseWithResults}. The empty-code stop is reachable only from hand-built
- * records: the grammar rejects a {@code code:} with no value before the assembler sees it.
+ * records: the grammar rejects a {@code code:} with no value before the assembler sees it. The
+ * grammar also makes {@code code}, {@code type}, {@code desc}, {@code blind-desc}, {@code obvious}
+ * and {@code color} mandatory, so only the other fields of a record can be {@code null}.
  *
- * <p>Class ProjectionAssembler coded before 260915, commented in full on 261001; the fatal faults
- * rewritten for the stop-the-load path, and the code rules for the 26th record on, on 261021.
+ * <p>The assembled list is in file order, base 0, with no blank slot: C's {@code projections}
+ * array holds the same records, and {@code z_info->projection_max} is their count.
+ *
+ * <p>Class ProjectionAssembler coded before 260915, commented in full on 261029; every fault now
+ * stops the load, the denominator range deviation recorded, on 261029.
  *
  * @author Rowan Crowther
  */
@@ -108,39 +128,53 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
      *   <li>while the position is 25 or less it must resolve to a {@link ProjectionEnum} constant
      *       whose ordinal equals the position ({@link ProjectionEnum#PROJ_ACID} is ordinal 1, as
      *       {@code PROJ_NONE} takes 0). An unknown or empty code, or a different ordinal, stops the
-     *       load. An unknown code also adds an "Unknown projection code" entry, which rides out in
-     *       the exception message;</li>
+     *       load, as C's {@code PARSE_ERROR_ELEMENT_NAME_MISMATCH} does;</li>
      *   <li>from the 26th record on, C does not read the code. An empty one still stops the load. A
      *       code that resolves is kept, and one that does not is stored as
-     *       {@link ProjectionEnum#PROJ_NONE} with no entry in {@code errors}. The order of these
-     *       records is not checked.</li>
+     *       {@link ProjectionEnum#PROJ_NONE} with no message. The order of these records is not
+     *       checked.</li>
      * </ul>
-     * The remaining fields are then parsed and any fault skips the record with an entry in
-     * {@code errors}; a skipped record of type {@code element} also gets a "Dropped projection
-     * element" entry.
+     * The remaining fields are then parsed in this order: {@code numerator}, {@code denominator},
+     * {@code divisor}, {@code damage-cap}, {@code obvious}, {@code wake}, then {@code color}, and
+     * {@code msgt} is resolved after the numerators but checked last. Any fault stops the load.
+     * <ul>
+     *   <li>{@code numerator}, {@code divisor}, {@code damage-cap}, {@code obvious} and
+     *       {@code wake} are C's {@code uint} fields: a leading {@code -} is refused (so is
+     *       {@code -0}), and the digits are read with base detection like {@code strtoul} in base
+     *       0, so {@code 010} is 8. A figure outside the {@code int} range is clamped, the
+     *       deviation recorded under ParseUtils in {@code docs/Accepted_Deviations.md};</li>
+     *   <li>{@code obvious} and {@code wake} are true only for exactly 1, as in C;</li>
+     *   <li>{@code denominator} made only of digits, after an optional sign, is read in base 10
+     *       ({@code 010} is 10, as in {@code parse_random()}) into the integer denominator.
+     *       Anything else goes to {@link Random#parseStr(String)} and is stored as dice; a
+     *       {@code null} result stops the load. Accepted deviation (decided 261029, recorded under
+     *       Projection in {@code docs/Accepted_Deviations.md}): a digit-only figure above
+     *       {@code INT_MAX} is clamped here, where C's {@code parse_random()} refuses it and the
+     *       load quits. The dice path was not examined in this pass.</li>
+     * </ul>
      *
-     * <p>After the loop the surviving element records are counted from the result itself, not
-     * from a running tally, so a dropped element row cannot slip through. If the count is not
-     * 25 the method adds an "Invalid number of elements" entry to {@code errors} and stops the
-     * load.
+     * <p>After the loop the records of type {@code element} are counted from the result itself. If
+     * the count is not 25 the method stops the load with the expected, found and short counts in
+     * the message.
      *
-     * <p>An absent {@code msgt} gives {@code MSG_GENERIC}, an absent {@code colour} gives
+     * <p>An absent {@code msgt} gives {@code MSG_GENERIC}, an absent {@code color} gives
      * {@code COLOUR_DARK}, and absent numeric or boolean fields give 0 and {@code false}, matching
      * the zero-filled struct C allocates for each record.
      *
-     * <p>Function assemble coded before 260915, commented in full on 261001; the stop-the-load path
-     * and the rules for the code from the 26th record on documented on 261021.
+     * <p>Function assemble coded before 260915, commented in full on 261029.
      *
      * @param records  the parsed records, in file order
-     * @param errors   receives a message for every skipped record and every other soft fault; it is
-     *                 returned to the builder alongside the result, except when the load stops, when
-     *                 its entries are copied into the exception message instead
+     * @param errors   never written to; it is required by the {@link Assembler} signature, and a
+     *                 fault stops the load by exception instead
      * @param filename the data file being assembled, used in the stop-the-load messages
-     * @return the assembled projections, always with exactly 25 of type {@code element}
+     * @return the assembled projections, in file order, always with exactly 25 of type
+     *         {@code element}
      * @throws DataFileParseException if one of the first 25 records has an unknown or empty code or
      *                                is not the element at its position, if a later record has an
-     *                                empty code, or if the number of surviving element records is
-     *                                not 25; the message carries the errors gathered so far
+     *                                empty code, if a numeric field is negative or malformed, if
+     *                                the denominator is not a number or a dice string, if the
+     *                                {@code msgt} names no message type, or if the number of
+     *                                element records is not 25
      */
     @Override
     public List<Projection> assemble(@NotNull List<ProjectionParseRecord> records, @NotNull List<String> errors,
@@ -151,42 +185,34 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
             int line = record.lineNumber();
             String codeString = record.code();
             String type = record.type();
-            ProjectionType projType = resolveType(line, type, codeString, errors);
+            ProjectionType projType = resolveType(line, type, errors);
             currentRecord++;
             ProjectionEnum projCode;
             if (currentRecord <= EXPECTED_ELEMENT_COUNT) {
-                projCode = resolveCode(line, codeString, errors, true);
+                projCode = resolveCode(line, codeString, errors, true, filename);
                 if (projCode == null) {
-                    String message = "Projection at line: " + line + " is out of order.\n" +
-                            "Input string: " + codeString + " is invalid in file : " + filename;
+                    String message = "Projection starting at line: " + line + " of file: " + filename + 
+                            " is out of order\nInput string: " + record.code() + " is invalid";
                     logger.fatal(message);
-                    for (String error : errors) {
-                        message = String.format("%s\n%s", message, error);
-                    }
                     throw new DataFileParseException(message);
                 }
                 int projOrdinal = projCode.ordinal();
                 if (currentRecord != projOrdinal) {
-                    String message = "Projection at line: " + line + " is out of order.\n" +
-                            "Input ordinal: " + projOrdinal + " is not equal to expected " +
-                            "ordinal: " + currentRecord + " in file : " + filename;
+                    String message = "Projection starting at line: " + line + " of file: " + filename + 
+                            " is out of order\nInput ordinal: " + projOrdinal + " is not equal to " +
+                            "expected ordinal: " + currentRecord;
                     logger.fatal(message);
-                    for (String error : errors) {
-                        message = String.format("%s\n%s", message, error);
-                    }
                     throw new DataFileParseException(message);
                 }
             } else {
-                if (codeString.isEmpty()) {String message = "Projection at line: " + line + " has an empty " +
-                        "code string in file : " + filename;
+                if (codeString.isEmpty()) {
+                    String message = "Projection starting at line: " + line + " of file: " + filename + " has " +
+                            "an empty code";
                     logger.fatal(message);
-                    for (String error : errors) {
-                        message = String.format("%s\n%s", message, error);
-                    }
                     throw new DataFileParseException(message);                    
                 }
                 
-                projCode = resolveCode(line, codeString, errors, false);
+                projCode = resolveCode(line, codeString, errors, false, filename);
                 if (projCode == null) projCode = ProjectionEnum.PROJ_NONE;
             }
             String projName = record.name();
@@ -196,97 +222,87 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
             String projLashDesc = record.lashDesc();
             int projNumerator = 0;
             if (record.numerator() != null) {
-                try {
-                    projNumerator = Integer.parseInt(record.numerator());
-                    if (projNumerator < 0) {
-                        errors.add("Projection at line: " + line + " has " +
-                                "a negative numerator: " + record.numerator());
-                        if (projType == ProjectionType.PT_ELEMENT)
-                            errors.add("Dropped projection element: " + projName);
-                        continue;
-                    }
-                } catch (NumberFormatException e) {
-                    errors.add("Projection at line: " + line + " has " +
-                            "an invalid numerator: " + record.numerator());
-                    if (projType == ProjectionType.PT_ELEMENT)
-                        errors.add("Dropped projection element: " + projName);
-                    continue;
+                if (ParseUtils.minusFound(record.numerator())) {
+                    String message = "Projection starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal negative numerator value: " + record.numerator();
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
+                }
+                projNumerator = ParseUtils.parseIntString("Projection", record.numerator(), line, filename, "numerator");
+                if (projNumerator < 0) {
+                    String message = "Projection starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal numerator value: " + record.numerator();
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
                 }
             }
             int projDenominator = 0;
             Random projDenominatorDice = null;
             if (record.denominator() != null) {
-                try {
-                    projDenominator = Integer.parseInt(record.denominator());
-                } catch (NumberFormatException e) {
+                String den = record.denominator();
+                int sign = ParseUtils.signFound(den);
+                if (sign != 0) den = den.substring(1);
+                if (ParseUtils.onlyDigits(den)) {
+                    projDenominator = ParseUtils.parseIntString("Projection", record.denominator(), line, filename, "denominator", ParseUtils.Radix.DECIMAL);
+                } else {
                     projDenominatorDice = Random.parseStr(record.denominator());
                     if (projDenominatorDice == null) {
-                        errors.add("Projection at line: " + line + " has " +
-                                "an invalid denominator: " + record.denominator());
-                        if (projType == ProjectionType.PT_ELEMENT)
-                            errors.add("Dropped projection element: " + projName);
-                        continue;
+                        String message = "Projection starting at line: " + line + " of file: " + filename + " has " +
+                                "an illegal denominator die value: " + record.denominator();
+                        logger.fatal(message);
+                        throw new DataFileParseException(message);
                     }
                 }
             }
             int projDivisor = 0;
             if (record.divisor() != null) {
-                try {
-                    projDivisor = Integer.parseInt(record.divisor());
-                    if (projDivisor < 0) {
-                        errors.add("Projection at line: " + line + " has " +
-                                "a negative divisor: " + record.divisor());
-                        if (projType == ProjectionType.PT_ELEMENT)
-                            errors.add("Dropped projection element: " + projName);
-                        continue;
-                    }
-                } catch (NumberFormatException e) {
-                    errors.add("Projection at line: " + line + " has " +
-                            "an invalid divisor: " + record.divisor());
-                    if (projType == ProjectionType.PT_ELEMENT)
-                        errors.add("Dropped projection element: " + projName);
-                    continue;
+                if (ParseUtils.minusFound(record.divisor())) {
+                    String message = "Projection starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal negative divisor value: " + record.divisor();
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
+                }
+                projDivisor = ParseUtils.parseIntString("Projection", record.divisor(), line, filename, "divisor");
+                if (projDivisor < 0) {
+                    String message = "Projection starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal divisor value: " + record.divisor();
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
                 }
             }
             int projDamageCap = 0;
             if (record.damageCap() != null) {
-                try {
-                    projDamageCap = Integer.parseInt(record.damageCap());
-                    if (projDamageCap < 0) {
-                        errors.add("Projection at line: " + line + " has " +
-                                "a negative damageCap: " + record.damageCap());
-                        if (projType == ProjectionType.PT_ELEMENT)
-                            errors.add("Dropped projection element: " + projName);
-                        continue;
-                    }
-                } catch (NumberFormatException e) {
-                    errors.add("Projection at line: " + line + " has " +
-                            "an invalid damageCap: " + record.damageCap());
-                    if (projType == ProjectionType.PT_ELEMENT)
-                        errors.add("Dropped projection element: " + projName);
-                    continue;
+                if (ParseUtils.minusFound(record.damageCap())) {
+                    String message = "Projection starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal negative damage cap value: " + record.damageCap();
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
+                }
+                projDamageCap = ParseUtils.parseIntString("Projection", record.damageCap(), line, filename, "damage cap"); 
+                if (projDamageCap < 0) {
+                    String message = "Projection starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal damage cap value: " + record.damageCap();
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
                 }
             }
             String msgt = record.msgt();
-            MessageType projMsgt = msgt == null ? MessageType.MSG_GENERIC : resolveMsgt(line, msgt, codeString, errors);
+            MessageType projMsgt = msgt == null ? MessageType.MSG_GENERIC : resolveMsgt(line, msgt, codeString, errors, filename);
             boolean projObvious;
             int boolValue;
             if (record.obvious() != null) {
-                try {
-                    boolValue = Integer.parseInt(record.obvious());
-                    if (boolValue < 0) {
-                        errors.add("Projection at line: " + line + " has " +
-                                "a negative obvious value: " + record.obvious());
-                        if (projType == ProjectionType.PT_ELEMENT)
-                            errors.add("Dropped projection element: " + projName);
-                        continue;
-                    }
-                } catch (NumberFormatException e) {
-                    errors.add("Projection at line: " + line + " has " +
-                            "a non-numeric obvious value: " + record.obvious());
-                    if (projType == ProjectionType.PT_ELEMENT)
-                        errors.add("Dropped projection element: " + projName);
-                    continue;
+                if (ParseUtils.minusFound(record.obvious())) {
+                    String message = "Projection starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal negative obvious value: " + record.obvious();
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
+                }
+                boolValue = ParseUtils.parseIntString("Projection", record.obvious(), line, filename, "obvious");
+                if (boolValue < 0) {
+                    String message = "Projection starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal negative obvious value: " + record.obvious();
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
                 }
                 projObvious = boolValue == 1;
             } else {
@@ -294,22 +310,20 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
             }
             boolean projWillWake;
             if (record.willWake() != null) {
-                try {
-                    boolValue = Integer.parseInt(record.willWake());
-                    if (boolValue < 0) {
-                        errors.add("Projection at line: " + line + " has " +
-                                "a negative will wake value: " + record.willWake());
-                        if (projType == ProjectionType.PT_ELEMENT)
-                            errors.add("Dropped projection element: " + projName);
-                        continue;
-                    }
-                } catch (NumberFormatException e) {
-                    errors.add("Projection at line: " + line + " has " +
-                            "a non-numeric will wake value: " + record.willWake());
-                    if (projType == ProjectionType.PT_ELEMENT)
-                        errors.add("Dropped projection element: " + projName);
-                    continue;
+                if (ParseUtils.minusFound(record.willWake())) {
+                    String message = "Projection starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal negative will wake value: " + record.willWake();
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
                 }
+                boolValue = ParseUtils.parseIntString("Projection", record.willWake(), line, filename, "will wake");
+                    if (boolValue < 0) {
+                        String message = "Projection starting at line: " + line + " of file: " + filename + " has " +
+                                "an illegal negative will wake value: " + record.willWake();
+                        logger.fatal(message);
+                        throw new DataFileParseException(message);
+                        
+                    }
                 projWillWake = boolValue == 1;
             } else {
                 projWillWake = false;
@@ -318,9 +332,10 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
             ColourEnum projColour = resolveColour(line, colour, codeString, errors);
 
             if (projMsgt == null) {
-                if (projType == ProjectionType.PT_ELEMENT)
-                    errors.add("Dropped projection element: " + projName);
-                continue;
+                String message = "Projection starting at line: " + line + " of file: " + filename + " has " +
+                        "an illegal message value: " + record.msgt();
+                logger.fatal(message);
+                throw new DataFileParseException(message);
             }
 
             Projection proj;
@@ -344,12 +359,9 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
         if (dropped < 0) dropped = 0;
 
         if (kept != EXPECTED_ELEMENT_COUNT) {
-            errors.add("Invalid number of elements - expected " + EXPECTED_ELEMENT_COUNT + " got " + kept +
-                    " dropped " + dropped + " in file " + filename);
-            String message = "";
-            for (String error : errors) {
-                message = String.format("%s\n%s", message, error);
-            }
+            String message = "Invalid number of Projection elements - expected: " + EXPECTED_ELEMENT_COUNT + " got: "
+                    + kept + " dropped: " + dropped + " in file: " + filename;
+            logger.fatal(message);
             throw new DataFileParseException(message);
         }
 
@@ -366,27 +378,39 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
      * check in {@link #assemble} compares ordinals, and because the port keeps the constant for
      * later lookups. An empty tag finds no constant, like any other unknown one.
      *
-     * <p>Function resolveCode coded before 260915, commented in full on 261001; the
-     * {@code insideCount} flag added on 261021 so that an unknown code past the element block adds
-     * no error.
+     * <p>For one of the first 25 records an unknown tag is a fault, as C's mismatch with
+     * {@code element_names[index]} is: the method logs it and throws, so it never returns
+     * {@code null} there. From the 26th record on it returns {@code null} quietly and the caller
+     * stores {@link ProjectionEnum#PROJ_NONE}. The tags {@code NONE} and {@code MAX} resolve to
+     * their constants; the ordinal check in {@link #assemble} rejects them in the element block.
+     *
+     * <p>Function resolveCode coded before 260915, commented in full on 261029.
      *
      * @param line        the line of the projection block in the {@code lib/gamedata} file, used in
      *                    the error message
      * @param code        the tag from the {@code code:} line, without its {@code PROJ_} prefix
-     * @param errors      receives an "Unknown projection code" entry when no constant matches and
-     *                    {@code insideCount} is true
+     * @param errors      unused
      * @param insideCount true for one of the first 25 records, where C reads the code and an unknown
      *                    one is a fault; false from the 26th on, where C does not read it
-     * @return the matching constant, or {@code null} if there is none
+     * @param filename    the data file being assembled, used in the error message
+     * @return the matching constant, or {@code null} if there is none and {@code insideCount} is
+     *         false
+     * @throws DataFileParseException if no constant matches and {@code insideCount} is true
      */
     @CheckReturnValue
     @Nullable
     private ProjectionEnum resolveCode(int line, @NotNull String code,
-                                       @NotNull List<String> errors, boolean insideCount) {
+                                       @NotNull List<String> errors, boolean insideCount, String filename) {
         try {
             return ProjectionEnum.valueOf("PROJ_" + code);
         } catch (IllegalArgumentException e) {
-            if (insideCount) errors.add("Line: " + line + ": Unknown projection code in this Projection block: " + code);
+            if (insideCount) {
+                String message = "Projection starting at line: " + line + " of file: " + filename + " has " +
+                        "an illegal code value: " + code;
+                logger.fatal(message, e);
+                throw new DataFileParseException(message);
+            }
+            
             return null;
         }
     }
@@ -399,21 +423,22 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
      *
      * <p>C keeps the tag as a string and only ever tests it against {@code "element"}, in
      * {@code finish_parse_projection()} in {@code obj-init.c}; the enum is a Java addition so the
-     * type survives as data. It never reports a fault, so {@code line}, {@code code} and
-     * {@code errors} are unused.
+     * type survives as data. It never reports a fault, so {@code line} and {@code errors} are
+     * unused. The grammar makes {@code type:} mandatory, so the tag is never {@code null}; a
+     * hand-built record with a {@code null} type would throw a {@link NullPointerException} from
+     * the {@code switch}, where C's zeroed record would hold NULL and count as no element.
      *
-     * <p>Function resolveType coded before 260915, commented in full on 261001.
+     * <p>Function resolveType coded before 260915, commented in full on 261029.
      *
      * @param line   the line of the projection block in the {@code lib/gamedata} file; unused
      * @param type   the tag from the {@code type:} line
-     * @param code   the {@code code:} tag of the block; unused
      * @param errors unused
      * @return the matching constant, or {@code PT_NONE} if the tag is not one of the three
      */
     @CheckReturnValue
     @NotNull
     @Contract(pure = true)
-    private ProjectionType resolveType(int line, @NotNull String type, @NotNull String code,
+    private ProjectionType resolveType(int line, @NotNull String type, 
                                        @NotNull List<String> errors) {
         return switch (type) {
             case "element" -> ProjectionType.PT_ELEMENT;
@@ -425,59 +450,31 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
 
     /**
      * Resolves the {@code msgt:} value of a projection block to a {@link MessageType}, following
-     * {@code message_lookup_by_name()} in the C original's {@code message.c}. The value is trimmed,
-     * then read as either a name or a number:
-     * <ul>
-     *   <li>a number is accepted only if it is at least 0 and below {@code MSG_MAX}, and selects
-     *       the constant at that ordinal, so {@code MSG_MAX} itself and anything beyond are
-     *       rejected;</li>
-     *   <li>anything else is a name, matched case-insensitively against the constants after a
-     *       {@code MSG_} prefix is added.</li>
-     * </ul>
+     * {@code message_lookup_by_name()} in the C original's {@code message.c}. The whole job is
+     * handed to {@link MessageType#lookupByName(String)}, which holds the rules: a number selects
+     * a message type by position and a name is matched case-insensitively, and the accepted
+     * non-ASCII case-folding deviation is recorded there.
      *
-     * <p>The caller supplies {@code MSG_GENERIC} for an empty value, so an absent {@code msgt:}
-     * line never reaches this method.
+     * <p>The caller supplies {@code MSG_GENERIC} for an absent {@code msgt:} line, so it never
+     * reaches this method. The method reports nothing itself: a {@code null} return is turned
+     * into a stop-the-load exception by {@link #assemble}, after the colour is resolved, where C
+     * returns {@code PARSE_ERROR_INVALID_MESSAGE} at the {@code msgt:} line.
      *
-     * <p>Function resolveMsgt coded before 260915, commented in full on 261001.
+     * <p>Function resolveMsgt coded before 260915, commented in full on 261029.
      *
-     * @param line   the line of the projection block in the {@code lib/gamedata} file, used in the
-     *               error messages
-     * @param msgt   the value from the {@code msgt:} line, as a name without {@code MSG_} or a
-     *               number
-     * @param code   the {@code code:} tag of the block, used in the error messages
-     * @param errors receives an entry when the number is out of range or the name is unknown
+     * @param line     the line of the projection block; unused
+     * @param msgt     the value from the {@code msgt:} line, as a name without {@code MSG_} or a
+     *                 number
+     * @param code     the {@code code:} tag of the block; unused
+     * @param errors   unused
+     * @param filename the data file being assembled; unused
      * @return the matching constant, or {@code null} if there is none
      */
     @CheckReturnValue
     @Nullable
     private MessageType resolveMsgt(int line, @NotNull String msgt, @NotNull String code,
-                                    @NotNull List<String> errors) {
-        MessageType result;
-        msgt = msgt.trim();
-        int msgOrdinal = 0;
-        boolean isString = false;
-        try {
-            try {
-                msgOrdinal = Integer.parseInt(msgt);
-            } catch (NumberFormatException e) {
-                isString = true;
-            }
-            if (isString)
-                result = MessageType.valueOf("MSG_" + msgt.toUpperCase());
-            else {
-                if (msgOrdinal < 0 || msgOrdinal >= MessageType.MSG_MAX.ordinal()) {
-                    errors.add("Projection message type in Projection block: " + code +
-                            " Starting at line: " + line + " is out of range of acceptable values.");
-                    return null;
-                }
-                result = MessageType.values()[msgOrdinal];
-            }
-            return result;
-        } catch (IllegalArgumentException e) {
-            errors.add("Unknown projection message type in Projection block: " + code +
-                    " Starting at line: " + line);
-            return null;
-        }
+                                    @NotNull List<String> errors, String filename) {
+        return MessageType.lookupByName(msgt);
     }
 
     /**
@@ -492,11 +489,12 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
      *   <li>a value that matches nothing falls back to {@code COLOUR_WHITE}, never to an error.</li>
      * </ul>
      *
-     * <p>The method never returns {@code null} and never writes to {@code errors}, despite the
-     * {@link Nullable} annotation. The test against {@link ColourEnum#basicColours} is a guard for
-     * a table longer than the named colours; every {@link ColourEnum} constant currently passes it.
+     * <p>{@link ColourEnum#COLOUR_SHADE} is never returned. {@link ColourEnum#fromCode(String)}
+     * matches the name {@code Shade}, a Java addition, but C's colour table has no usable row for
+     * it, so the name falls back to white here like any unknown one. The method never returns
+     * {@code null} and never writes to {@code errors}.
      *
-     * <p>Function resolveColour coded before 260915, commented in full on 261001.
+     * <p>Function resolveColour coded before 260915, commented in full on 261029.
      *
      * @param line   the line of the projection block in the {@code lib/gamedata} file; unused
      * @param colour the value from the {@code color:} line
@@ -507,21 +505,16 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
      */
     @CheckReturnValue
     @NotNull
-    private ColourEnum resolveColour(int line, @NotNull String colour, @NotNull String code,
+    private ColourEnum resolveColour(int line, String colour, @NotNull String code,
                                      @NotNull List<String> errors) {
-        ColourEnum result;
+        if (colour == null || colour.isEmpty())
+            return ColourEnum.COLOUR_DARK;
 
-        if (colour.isEmpty()) {
-            return ColourEnum.COLOUR_DARK;
-        } else if (" ".equals(colour)) {
-            return ColourEnum.COLOUR_DARK;
-        } else {
-            result = ColourEnum.fromCode(colour);
-            if (result == null)
-                return ColourEnum.COLOUR_WHITE;
-            if (result.ordinal() >= ColourEnum.basicColours)
-                return ColourEnum.COLOUR_WHITE;
-        }
+        ColourEnum result = ColourEnum.fromCode(colour);
+        
+        if (result == null || result == ColourEnum.COLOUR_SHADE)
+            return ColourEnum.COLOUR_WHITE;
+        
         return result;
     }
 }

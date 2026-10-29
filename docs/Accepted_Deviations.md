@@ -551,6 +551,28 @@ recorded here as the summary states them; fill in the detail when you next touch
   comment above the `type-mult:` loop. Pinned by
   `ObjectPropertyAssemblerTest.aRepeatedSpellingAfterAnAliasKeepsTheAliasHereWhereCKeepsTheLastLine`.
 
+## Projection
+
+### A plain-integer `denominator:` above `INT_MAX` is clamped, where C refuses it
+
+- **Java:** `ProjectionAssembler.assemble` (the `denominator:` block, all-digit branch), through `ParseUtils.parseIntString`
+  with `Radix.DECIMAL`. **C:** `parse_projection_denominator` (`obj-init.c`) and `parse_random` (`parser.c`).
+- **Differs:** `denominator:` is a `rand` field, not a `uint`. `parse_random` reads each number with `strtoul` in base 10
+  and returns false when the result is above `INT_MAX`, so `parser_parse` returns `PARSE_ERROR_NOT_RANDOM` and the load
+  quits. C does not wrap here. Java sends a denominator that is only digits (after an optional sign) straight to
+  `parseIntString`, which clamps to the `int` range, so `2147483648` and `99999999999` load as `2147483647`, and
+  `-2147483648` loads as `Integer.MIN_VALUE` where C refuses all three. In-range values agree: `2147483647` and
+  `-2147483647` load in both, and `010` is 10 in both. A denominator in dice form goes to `Random.parseStr` and
+  `RandomReader`, which were not examined in this pass.
+- **Why:** this is the `ParseUtils` clamp applied to a field where C refuses rather than wraps. The result is a clamped
+  value for a file C would reject; the file is already malformed, and no shipped value comes near 32 bits.
+- **Reach:** none from shipped data, where every `denominator:` in `projection.txt` is a small number or a short dice
+  string. The lexer accepts a digit string of any length (`DICE_INTEGER` in `DiceStrings.g4`), so a hand-edited file
+  reaches it.
+- **Revisit:** if a modded `projection.txt` ever needs C's refusal, or if the `ParseUtils` clamp is itself replaced by a
+  refusal. Then the all-digit branch checks the value against `Integer.MAX_VALUE` before it is stored.
+- **Accepted:** 2026-10-29, during the `ProjectionAssembler` port pass. Choice made over refusing the value, as C does.
+
 ## Pending your decision
 
 - The five `objDescNameFormat` divergences (Part G; `docs/ItemObject_round2/part_G.md`). All unreachable from shipped

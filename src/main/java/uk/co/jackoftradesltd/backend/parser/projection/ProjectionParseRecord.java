@@ -36,7 +36,7 @@ import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
  * @param name        Human readable name for this projection.
  *                    {@link uk.co.jackoftradesltd.middle.objects.Brand} is linked
  *                    by this
- * @param type        Either 'element', 'environs', or 'monstor'. Stored as a
+ * @param type        Either 'element', 'environs', or 'monster'. Stored as a
  *                    {@link uk.co.jackoftradesltd.middle.combat.enums.ProjectionType}
  * @param desc        Descriptive name of this projection, used in object descriptions
  * @param playerDesc  Similar to 'desc', used primarily when describing: ball, orb...

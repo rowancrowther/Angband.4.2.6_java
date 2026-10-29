@@ -92,16 +92,15 @@ class ProjectionReaderTest {
     }
 
     @Test
-    void recordCountMismatchIsReportedAlongsideTheElementCountFailure() throws IOException {
-        // Header over-declares: 5 vs the single record present. The mismatch is a soft error, but
-        // a one-record file cannot satisfy the element rule either: C's finish_parse_projection()
-        // quits unless exactly 25 records are of type element, so the assembler stops the load and
-        // its message carries the mismatch as well as the count.
+    void aRecordCountMismatchDoesNotHideTheElementCountFailure() throws IOException {
+        // Header over-declares: 5 vs the single record present. The header count is a Java-only
+        // soft error (C's file has no such line), and a one-record file cannot satisfy the element
+        // rule either: C's finish_parse_projection() quits unless exactly 25 records are of type
+        // element, so the assembler stops the load. The exception message names the element count
+        // only; the soft header error is not carried by it.
         DataFileParseException e = loadAndStop("bad-count.txt", "record-count:5\n" + ONE_RECORD);
 
-        assertTrue(e.getMessage().contains("declares 5") && e.getMessage().contains("contains 1"),
-                e.getMessage());
-        assertTrue(e.getMessage().contains("expected 25 got 1"), e.getMessage());
+        assertTrue(e.getMessage().contains("expected: 25 got: 1"), e.getMessage());
     }
 
     @Test
@@ -167,7 +166,7 @@ class ProjectionReaderTest {
                 "code:ELEC\ntype:NOTATYPE\ndesc:x\nblind-desc:x\nobvious:1\ncolor:Blue",
                 ""));
 
-        assertTrue(e.getMessage().contains("expected 25 got 1"), e.getMessage());
+        assertTrue(e.getMessage().contains("expected: 25 got: 1"), e.getMessage());
         assertFalse(e.getMessage().contains("NOTATYPE"), e.getMessage());
     }
 
@@ -459,7 +458,7 @@ class ProjectionReaderTest {
         // "element " is not "element", so ACID stops counting as an element and the load stops on the
         // 25-element rule, as in C's finish_parse_projection. "Slate " matches no colour name: White.
         DataFileParseException type = loadAndStop("type-blank.txt", shipped().replaceFirst("type:element", "type:element "));
-        assertTrue(type.getMessage().contains("expected 25 got 24"), type.getMessage());
+        assertTrue(type.getMessage().contains("expected: 25 got: 24"), type.getMessage());
 
         ParseResult<Projection> colour = load("colour-blank.txt", shipped().replaceFirst("color:Slate", "color:Slate "));
         assertEquals(ColourEnum.COLOUR_WHITE, field(colour.items().getFirst(), "colour"));
@@ -474,12 +473,12 @@ class ProjectionReaderTest {
     }
 
     @Test
-    void aLeadingZeroIntegerReadsAsDecimalWhereCReadsOctal() throws Exception {
-        // strtoul base 0 reads 010 as 8.
+    void aLeadingZeroUintReadsAsOctalAsCDoes() throws Exception {
+        // strtoul base 0 reads 010 as 8, and the assembler reads a uint field the same way.
         ParseResult<Projection> result = load("octal.txt", shipped().replaceFirst("numerator:1", "numerator:010"));
 
         assertFalse(result.hasErrors(), result.errors()::toString);
-        assertEquals(10, (int) field(result.items().getFirst(), "numerator"));
+        assertEquals(8, (int) field(result.items().getFirst(), "numerator"));
     }
 
     @Test
@@ -510,27 +509,30 @@ class ProjectionReaderTest {
     }
 
     @Test
-    void aNumeratorAboveIntMaxDropsTheRecordAndStopsTheLoadWhereCReadsAnUnsignedInt() throws IOException {
-        DataFileParseException e = loadAndStop("big.txt", shipped().replaceFirst("numerator:1", "numerator:2147483648"));
+    void aNumeratorAboveIntMaxIsClampedWhereCWrapsIt() throws Exception {
+        // C reads a uint with strtoul and stores it in an int with no range check, so 2147483648
+        // wraps to a negative number. The port clamps to the int range (the ParseUtils entry in
+        // docs/Accepted_Deviations.md), so the record loads with Integer.MAX_VALUE.
+        ParseResult<Projection> result = load("big.txt", shipped().replaceFirst("numerator:1", "numerator:2147483648"));
 
-        assertTrue(e.getMessage().contains("invalid numerator: 2147483648"), e.getMessage());
-        assertTrue(e.getMessage().contains("expected 25 got 24"), e.getMessage());
+        assertFalse(result.hasErrors(), result.errors()::toString);
+        assertEquals(Integer.MAX_VALUE, (int) field(result.items().getFirst(), "numerator"));
     }
 
     @Test
-    void msgtNoneIsAcceptedWhereCHasNoSuchName() throws Exception {
-        // message_names is built from list-message.h, which has no NONE (it does have MAX).
-        ParseResult<Projection> none = load("msgt-none.txt", shipped().replaceFirst("msgt:BR_ACID", "msgt:NONE"));
-        assertFalse(none.hasErrors(), none.errors()::toString);
-        assertEquals(MessageType.MSG_NONE, field(none.items().getFirst(), "msgt"));
+    void msgtNoneIsRefusedAsCHasNoSuchName() throws Exception {
+        // message_names is built from list-message.h, which has no NONE (it does have MAX), so
+        // message_lookup_by_name returns -1 for NONE and the parser quits, as it does for any
+        // unknown name.
+        DataFileParseException none = loadAndStop("msgt-none.txt", shipped().replaceFirst("msgt:BR_ACID", "msgt:NONE"));
+        assertTrue(none.getMessage().contains("an illegal message value: NONE"), none.getMessage());
 
         ParseResult<Projection> max = load("msgt-max.txt", shipped().replaceFirst("msgt:BR_ACID", "msgt:MAX"));
         assertEquals(MessageType.MSG_MAX, field(max.items().getFirst(), "msgt"));
-        // C quits on an unknown name; the port drops ACID, an element, and the count then stops the load.
+
         DataFileParseException unknown = loadAndStop("msgt-unknown.txt",
                 shipped().replaceFirst("msgt:BR_ACID", "msgt:NOT_A_MSG"));
-        assertTrue(unknown.getMessage().contains("Unknown projection message type"), unknown.getMessage());
-        assertTrue(unknown.getMessage().contains("expected 25 got 24"), unknown.getMessage());
+        assertTrue(unknown.getMessage().contains("an illegal message value: NOT_A_MSG"), unknown.getMessage());
     }
 
     /**

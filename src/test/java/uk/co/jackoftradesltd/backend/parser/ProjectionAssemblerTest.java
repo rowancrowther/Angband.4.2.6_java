@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.backend.parser.projection.ProjectionAssembler;
 import uk.co.jackoftradesltd.backend.parser.projection.ProjectionParseRecord;
+import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.combat.enums.ProjectionType;
@@ -36,25 +37,34 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Unit tests for {@link ProjectionAssembler}. The expected values come from the C original's
  * {@code parse_projection_*} functions and {@code finish_parse_projection()} in {@code obj-init.c},
- * {@code message_lookup_by_name()} in {@code message.c}, and the shipped
+ * {@code parse_random()} and the {@code uint} branch of {@code parser_parse()} in {@code parser.c},
+ * {@code message_lookup_by_name()} in {@code message.c}, {@code color_text_to_attr()} and
+ * {@code color_char_to_attr()} in {@code z-color.c}, and the shipped
  * {@code lib/gamedata/projection.txt}.
  *
  * <p>Most tests are driven from hand-built {@link ProjectionParseRecord}s so that one field can be
  * varied at a time; {@link #realFileLoadsAllFiftySixProjections()} runs the shipped file through
- * the full reader.
+ * the full reader. {@link Projection} has getters for only some of its fields, so the rest are read
+ * by reflection through {@link #field(Projection, String)}.
  *
  * <p>The row positions used below follow the file: records 1-25 are the elements, so index 4 is
  * {@code POIS} (position 5) and index 24 is {@code ARROW}; index 30 is {@code MAKE_DOOR}, an
  * environs row.
  *
- * <p>C quits on the first bad line, so the element-position and element-count tests expect the
- * assembler to stop the load by throwing {@link DataFileParseException}, never to return an empty
- * list. The code of a record is only looked at for the first 25 records, as in C's
- * {@code parse_projection_code()}: an unknown or empty code stops the load there, and past them an
- * unknown code is stored as {@code PROJ_NONE} with no error, while an empty one still stops it.
+ * <p>C quits on the first bad line, so every fault is expected to stop the load by throwing
+ * {@link DataFileParseException}, never to skip a record or return an empty list, and the
+ * {@code errors} list is never written to. The code of a record is only looked at for the first 25
+ * records, as in C's {@code parse_projection_code()}: an unknown or empty code stops the load
+ * there, and past them an unknown code is stored as {@code PROJ_NONE} with no error, while an empty
+ * one still stops it.
  *
- * <p>Test class ProjectionAssemblerTest coded on 261001, commented in full on 261001; the
- * element-position, element-count and code tests rewritten for the stop-the-load path on 261021.
+ * <p>Accepted deviation (decided 261029): an all-digit {@code denominator:} above {@code INT_MAX}
+ * is clamped, where C's {@code parse_random()} refuses it. {@link
+ * #aDigitOnlyDenominatorAboveIntMaxIsClampedWhereCRefusesIt()} pins the Java side.
+ *
+ * <p>Test class ProjectionAssemblerTest coded on 261001, commented in full on 261029; the
+ * stop-the-load tests rewritten, and the field, denominator, base and colour tests added, on
+ * 261029.
  *
  * @author Rowan Crowther
  */
@@ -155,6 +165,35 @@ class ProjectionAssemblerTest {
         return projections.stream().filter(p -> p.getType() == type).count();
     }
 
+    /**
+     * Reads a private field of a {@link Projection}, which has getters for only five of them.
+     */
+    private static Object field(Projection projection, String name) {
+        try {
+            java.lang.reflect.Field f = Projection.class.getDeclaredField(name);
+            f.setAccessible(true);
+            return f.get(projection);
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    /**
+     * Assembles the valid file with {@code broken} in place of the record at {@code index} and
+     * returns the record that came out at that index.
+     */
+    private static Projection assembleWith(int index, ProjectionParseRecord broken) {
+        List<ProjectionParseRecord> records = validFile();
+        records.set(index, broken);
+        List<String> errors = new ArrayList<>();
+
+        List<Projection> result = assemble(records, errors);
+
+        assertEquals(56, result.size());
+        assertTrue(errors.isEmpty(), errors.toString());
+        return result.get(index);
+    }
+
     // ---- Happy path -------------------------------------------------------
 
     /**
@@ -236,30 +275,23 @@ class ProjectionAssemblerTest {
 
     /**
      * A record whose optional lines are all absent: C's zero-filled struct gives 0, false, colour 0
-     * and message 0, so it must load rather than fail on the {@code null} strings the grammar gives an absent line.
+     * (dark) and message 0 ({@code GENERIC}), so it must load rather than fail on the {@code null}
+     * strings the grammar gives an absent line.
      */
     @Test
-    void absentOptionalFieldsLoadAsDefaults() {
-        List<ProjectionParseRecord> records = validFile();
-        records.set(MAKE_DOOR, with(records.get(MAKE_DOOR), null, null, null, null, null, null, null, ""));
-        List<String> errors = new ArrayList<>();
+    void absentOptionalFieldsLoadAsTheZeroFilledStruct() {
+        Projection proj = assembleWith(MAKE_DOOR,
+                with(validFile().get(MAKE_DOOR), null, null, null, null, null, null, null, ""));
 
-        List<Projection> result = assemble(records, errors);
-
-        assertEquals(56, result.size());
-        assertTrue(errors.isEmpty(), errors.toString());
-    }
-
-    @Test
-    void diceDenominatorIsAccepted() {
-        List<ProjectionParseRecord> records = validFile();
-        records.set(POIS, withDenominator(records.get(POIS), "2d4"));
-        List<String> errors = new ArrayList<>();
-
-        List<Projection> result = assemble(records, errors);
-
-        assertEquals(56, result.size());
-        assertTrue(errors.isEmpty(), errors.toString());
+        assertEquals(0, field(proj, "numerator"));
+        assertEquals(0, field(proj, "denominator"));
+        assertNull(field(proj, "diceDenominator"));
+        assertEquals(0, field(proj, "divisor"));
+        assertEquals(0, field(proj, "damageCap"));
+        assertEquals(MessageType.MSG_GENERIC, field(proj, "msgt"));
+        assertEquals(false, field(proj, "isObvious"));
+        assertEquals(false, field(proj, "willWake"));
+        assertEquals(ColourEnum.COLOUR_DARK, field(proj, "colour"));
     }
 
     // ---- Element position (parse_projection_code) -------------------------
@@ -311,7 +343,7 @@ class ProjectionAssemblerTest {
     /**
      * C compares the code of each of the first 25 records with {@code element_names[index]}. A code
      * that is not a projection at all cannot match, so an unknown code at position 1 stops the load
-     * as C's mismatch does, and the "Unknown projection code" entry rides out in the message.
+     * as C's mismatch does, and the message names the code.
      */
     @Test
     void unknownCodeInTheElementBlockStopsTheLoad() {
@@ -320,12 +352,13 @@ class ProjectionAssemblerTest {
 
         DataFileParseException e = assembleAndStop(records);
 
-        assertTrue(e.getMessage().contains("Input string: BOGUS is invalid"), e.getMessage());
-        assertTrue(e.getMessage().contains("Unknown projection code"), e.getMessage());
+        assertTrue(e.getMessage().contains("line: 99"), e.getMessage());
+        assertTrue(e.getMessage().contains("an illegal code value: BOGUS"), e.getMessage());
     }
 
     /**
-     * Position 25 is the last one C checks, so an unknown code there stops the load too.
+     * Position 25 is the last one C checks ({@code index < ELEM_MAX} with {@code ELEM_MAX} 25 and
+     * {@code index} from 0), so an unknown code there stops the load too.
      */
     @Test
     void unknownCodeAtTheLastElementPositionStopsTheLoad() {
@@ -335,7 +368,38 @@ class ProjectionAssemblerTest {
         DataFileParseException e = assembleAndStop(records);
 
         assertTrue(e.getMessage().contains("line: 25"), e.getMessage());
-        assertTrue(e.getMessage().contains("Input string: BOGUS is invalid"), e.getMessage());
+        assertTrue(e.getMessage().contains("an illegal code value: BOGUS"), e.getMessage());
+    }
+
+    /**
+     * The code is compared with {@code streq}, so a lower-case tag does not match
+     * {@code element_names[0]} ({@code ACID}) and stops the load.
+     */
+    @Test
+    void aLowerCaseCodeInTheElementBlockStopsTheLoad() {
+        List<ProjectionParseRecord> records = validFile();
+        records.set(0, record("acid", "element", 1));
+
+        DataFileParseException e = assembleAndStop(records);
+
+        assertTrue(e.getMessage().contains("an illegal code value: acid"), e.getMessage());
+    }
+
+    /**
+     * {@code NONE} and {@code MAX} are Java sentinels with no entry in {@code list-elements.h}, so
+     * neither can equal an element name; both stop the load when they stand in an element position.
+     */
+    @Test
+    void theSentinelCodesNoneAndMaxStopTheLoadInTheElementBlock() {
+        for (String code : new String[]{"NONE", "MAX"}) {
+            List<ProjectionParseRecord> records = validFile();
+            records.set(POIS, record(code, "element", 5));
+
+            DataFileParseException e = assembleAndStop(records);
+
+            assertTrue(e.getMessage().contains("line: 5"), code + ": " + e.getMessage());
+            assertTrue(e.getMessage().contains("expected ordinal: 5"), code + ": " + e.getMessage());
+        }
     }
 
     /**
@@ -365,15 +429,16 @@ class ProjectionAssemblerTest {
         DataFileParseException e = assembleAndStop(records);
 
         assertTrue(e.getMessage().contains("line: 99"), e.getMessage());
-        assertTrue(e.getMessage().contains("empty code string"), e.getMessage());
+        assertTrue(e.getMessage().contains("has an empty code"), e.getMessage());
     }
 
     /**
-     * Errors gathered before the fatal mismatch ride out in the exception message, because the
-     * assembler throws before it can hand the {@code errors} list back.
+     * C quits on the first bad line, so when the load holds a bad numerator at record 5 and a
+     * swapped pair at records 11 and 12, the numerator, which comes first in the file, is the fault
+     * the message names.
      */
     @Test
-    void positionExceptionCarriesEarlierErrors() {
+    void theFirstFaultInFileOrderIsTheOneNamed() {
         List<ProjectionParseRecord> records = validFile();
         records.set(POIS, withNumerator(records.get(POIS), "-3"));
         ProjectionParseRecord eleven = records.get(10);
@@ -382,98 +447,11 @@ class ProjectionAssemblerTest {
 
         DataFileParseException e = assembleAndStop(records);
 
+        assertTrue(e.getMessage().contains("line: 5"), e.getMessage());
         assertTrue(e.getMessage().contains("negative numerator"), e.getMessage());
     }
 
-    // ---- Element count (finish_parse_projection) --------------------------
-
-    /**
-     * C counts every record whose {@code type} string is {@code element} and quits with "Too many
-     * elements" past 25.
-     */
-    @Test
-    void extraElementTypedRecordStopsTheLoad() {
-        List<ProjectionParseRecord> records = validFile();
-        records.add(record("LIGHT_WEAK", "element", 99));
-
-        DataFileParseException e = assembleAndStop(records);
-
-        assertTrue(e.getMessage().contains("expected 25 got 26"), e.getMessage());
-    }
-
-    @Test
-    void environsRowRetypedElementStopsTheLoad() {
-        List<ProjectionParseRecord> records = validFile();
-        records.set(MAKE_DOOR, record("MAKE_DOOR", "element", 31));
-
-        DataFileParseException e = assembleAndStop(records);
-
-        assertTrue(e.getMessage().contains("got 26"), e.getMessage());
-    }
-
-    /**
-     * C quits with "Too few elements" when one element is not typed {@code element}.
-     */
-    @Test
-    void elementRetypedEnvironsStopsTheLoad() {
-        List<ProjectionParseRecord> records = validFile();
-        records.set(POIS, record("POIS", "environs", 5));
-
-        DataFileParseException e = assembleAndStop(records);
-
-        assertTrue(e.getMessage().contains("expected 25 got 24 dropped 1"), e.getMessage());
-    }
-
-    /**
-     * Dropped element rows do not count. Each case breaks one field of POIS; the row is skipped,
-     * the survivors number 24, and the load stops with the field's error and the count in the
-     * message. In C each of these is a fatal parse error at the bad line.
-     */
-    @Test
-    void droppedElementRecordStopsTheLoad() {
-        List<ProjectionParseRecord> base = validFile();
-        List<ProjectionParseRecord> bad = new ArrayList<>();
-        bad.add(withNumerator(base.get(POIS), "-3"));
-        bad.add(withNumerator(base.get(POIS), "x"));
-        bad.add(withDenominator(base.get(POIS), "garbage"));
-        bad.add(withDivisor(base.get(POIS), "-1"));
-        bad.add(withDivisor(base.get(POIS), "x"));
-        bad.add(withDamageCap(base.get(POIS), "-1"));
-        bad.add(withDamageCap(base.get(POIS), "x"));
-        bad.add(withMsgt(base.get(POIS), "NOSUCHMSG"));
-        bad.add(withObvious(base.get(POIS), "x"));
-        bad.add(withObvious(base.get(POIS), "-1"));
-        bad.add(withWake(base.get(POIS), "x"));
-        bad.add(withWake(base.get(POIS), "-1"));
-
-        for (ProjectionParseRecord broken : bad) {
-            List<ProjectionParseRecord> records = validFile();
-            records.set(POIS, broken);
-
-            DataFileParseException e = assembleAndStop(records);
-
-            assertTrue(e.getMessage().contains("expected 25 got 24"), broken + ": " + e.getMessage());
-        }
-    }
-
-    // ---- Soft errors on non-element rows ----------------------------------
-
-    /**
-     * A bad field on a non-element row is reported and the row skipped; the rest of the file still
-     * loads. (C would abort; this is the port's soft-error contract.)
-     */
-    @Test
-    void badFieldOnNonElementRowSkipsOnlyThatRow() {
-        List<ProjectionParseRecord> records = validFile();
-        records.set(MAKE_DOOR, withNumerator(records.get(MAKE_DOOR), "-3"));
-        List<String> errors = new ArrayList<>();
-
-        List<Projection> result = assemble(records, errors);
-
-        assertEquals(55, result.size());
-        assertEquals(1, errors.size());
-        assertTrue(errors.getFirst().contains("negative numerator"), errors.toString());
-    }
+    // ---- Past the element block -------------------------------------------
 
     /**
      * C does not read the code of a record past the element block ({@code parse_projection_code}
@@ -496,6 +474,21 @@ class ProjectionAssemblerTest {
     }
 
     /**
+     * Past the element block a code that resolves is kept even when it repeats an element, because
+     * C does not look at it.
+     */
+    @Test
+    void aResolvableCodeAfterTheElementBlockIsKeptWhateverItIs() {
+        List<ProjectionParseRecord> records = validFile();
+        records.add(record("ACID", "monster", 99));
+
+        List<Projection> result = assemble(records, new ArrayList<>());
+
+        assertEquals(57, result.size());
+        assertEquals(ProjectionEnum.PROJ_ACID, result.getLast().getProjection());
+    }
+
+    /**
      * Only the element block is positional, so two environs rows swapped after it load in the order
      * given, each keeping its own code.
      */
@@ -515,169 +508,65 @@ class ProjectionAssemblerTest {
         assertEquals(ProjectionEnum.PROJ_LIGHT_WEAK, result.get(26).getProjection());
     }
 
-    // ---- Colour (parse_projection_color) ----------------------------------
+    // ---- Element count (finish_parse_projection) --------------------------
 
     /**
-     * {@code color_text_to_attr} and {@code color_char_to_attr} both default to white, so an
-     * unrecognised colour is not an error.
+     * C counts every record whose {@code type} string is {@code element} and quits with "Too many
+     * elements" past 25.
      */
     @Test
-    void unknownColourFallsBackToWhiteWithoutAnError() {
+    void extraElementTypedRecordStopsTheLoad() {
         List<ProjectionParseRecord> records = validFile();
-        records.set(POIS, withColour(records.get(POIS), "Nonsense"));
-        List<String> errors = new ArrayList<>();
+        records.add(record("LIGHT_WEAK", "element", 99));
 
-        List<Projection> result = assemble(records, errors);
+        DataFileParseException e = assembleAndStop(records);
 
-        assertEquals(56, result.size());
-        assertTrue(errors.isEmpty(), errors.toString());
+        assertTrue(e.getMessage().contains("expected: 25 got: 26"), e.getMessage());
     }
 
     @Test
-    void colourNamesAreCaseInsensitiveAndEmptyOrBlankIsAccepted() {
-        for (String colour : new String[]{"light dark", "LIGHT DARK", "Light Dark", "", " ", "w", "o"}) {
-            List<ProjectionParseRecord> records = validFile();
-            records.set(POIS, withColour(records.get(POIS), colour));
-            List<String> errors = new ArrayList<>();
-
-            assertEquals(56, assemble(records, errors).size(), "colour '" + colour + "'");
-            assertTrue(errors.isEmpty(), errors.toString());
-        }
-    }
-
-    // ---- Message type (message_lookup_by_name) ----------------------------
-
-    /**
-     * {@code message_lookup_by_name} accepts a number only when it is below {@code MSG_MAX}, so the
-     * last valid index is {@code MSG_MAX - 1}.
-     */
-    @Test
-    void numericMsgtBoundsFollowMsgMax() {
-        int max = MessageType.MSG_MAX.ordinal();
-        String[] accepted = {"0", String.valueOf(max - 1), "5 ", " 5"};
-        String[] rejected = {String.valueOf(max), String.valueOf(max + 1),
-                String.valueOf(MessageType.values().length), "-1"};
-
-        for (String value : accepted) {
-            List<ProjectionParseRecord> records = validFile();
-            records.set(MAKE_DOOR, withMsgt(records.get(MAKE_DOOR), value));
-            List<String> errors = new ArrayList<>();
-
-            assertEquals(56, assemble(records, errors).size(), "msgt '" + value + "'");
-            assertTrue(errors.isEmpty(), "msgt '" + value + "': " + errors);
-        }
-        for (String value : rejected) {
-            List<ProjectionParseRecord> records = validFile();
-            records.set(MAKE_DOOR, withMsgt(records.get(MAKE_DOOR), value));
-            List<String> errors = new ArrayList<>();
-
-            assertEquals(55, assemble(records, errors).size(), "msgt '" + value + "'");
-            assertEquals(1, errors.size(), "msgt '" + value + "': " + errors);
-        }
-    }
-
-    /**
-     * {@code message_lookup_by_name} takes a number as the index into {@code list-message.h}, where
-     * {@code GENERIC} is 0, {@code BIRTH} is 1 and {@code MSG_MAX} is 153, so 152 ({@code SCRAMBLE}) is
-     * the last valid number. {@link MessageType} has {@code MSG_NONE} at ordinal 0, which
-     * {@code resolveMsgt} indexes directly, so every number lands one constant late in C's terms and
-     * 153, which C rejects, is accepted. A data
-     * file cannot reach this path ({@code ProjectionLexer} only lexes upper-case names), so the
-     * record is built by hand. Written up in {@code docs/Assembler_Issues.md}.
-     */
-    @Test
-    void numericMsgtIsOneConstantLateAndOneNumberTooWideWhereCCountsFromGeneric() throws Exception {
-        java.lang.reflect.Field msgt = Projection.class.getDeclaredField("msgt");
-        msgt.setAccessible(true);
-        Object[][] cases = {{"0", MessageType.MSG_NONE}, {"1", MessageType.MSG_GENERIC},
-                {"2", MessageType.MSG_BIRTH}, {"153", MessageType.MSG_SCRAMBLE}};
-
-        for (Object[] c : cases) {
-            List<ProjectionParseRecord> records = validFile();
-            records.set(MAKE_DOOR, withMsgt(records.get(MAKE_DOOR), (String) c[0]));
-            List<String> errors = new ArrayList<>();
-
-            List<Projection> result = assemble(records, errors);
-
-            assertEquals(56, result.size(), "msgt '" + c[0] + "': " + errors);
-            assertEquals(c[1], msgt.get(result.get(MAKE_DOOR)), "msgt '" + c[0] + "'");
-        }
-    }
-
-    /**
-     * Names are matched case-insensitively after a {@code MSG_} prefix, as {@code my_stricmp} does.
-     */
-    @Test
-    void msgtNamesAreCaseInsensitive() {
-        for (String value : new String[]{"BR_ACID", "br_acid", "Br_Acid", "GENERIC"}) {
-            List<ProjectionParseRecord> records = validFile();
-            records.set(MAKE_DOOR, withMsgt(records.get(MAKE_DOOR), value));
-            List<String> errors = new ArrayList<>();
-
-            assertEquals(56, assemble(records, errors).size(), "msgt '" + value + "'");
-            assertTrue(errors.isEmpty(), "msgt '" + value + "': " + errors);
-        }
-    }
-
-    @Test
-    void unknownMsgtNameIsReportedAndSkipped() {
+    void environsRowRetypedElementStopsTheLoad() {
         List<ProjectionParseRecord> records = validFile();
-        records.set(MAKE_DOOR, withMsgt(records.get(MAKE_DOOR), "NOSUCHMSG"));
-        List<String> errors = new ArrayList<>();
+        records.set(MAKE_DOOR, record("MAKE_DOOR", "element", 31));
 
-        List<Projection> result = assemble(records, errors);
+        DataFileParseException e = assembleAndStop(records);
 
-        assertEquals(55, result.size());
-        assertTrue(errors.getFirst().contains("Unknown projection message type"), errors.toString());
-    }
-
-    // ---- uint fields (parser_getuint) -------------------------------------
-
-    /**
-     * {@code parser_getuint} rejects negatives and non-numbers for the numeric fields.
-     */
-    @Test
-    void negativeOrNonNumericUintFieldsSkipTheRow() {
-        List<ProjectionParseRecord> base = validFile();
-        List<ProjectionParseRecord> bad = new ArrayList<>();
-        bad.add(withNumerator(base.get(MAKE_DOOR), "-1"));
-        bad.add(withNumerator(base.get(MAKE_DOOR), "x"));
-        bad.add(withDivisor(base.get(MAKE_DOOR), "-1"));
-        bad.add(withDivisor(base.get(MAKE_DOOR), "x"));
-        bad.add(withDamageCap(base.get(MAKE_DOOR), "-1"));
-        bad.add(withDamageCap(base.get(MAKE_DOOR), "x"));
-        bad.add(withObvious(base.get(MAKE_DOOR), "-1"));
-        bad.add(withWake(base.get(MAKE_DOOR), "-1"));
-        bad.add(withObvious(base.get(MAKE_DOOR), "x"));
-        bad.add(withWake(base.get(MAKE_DOOR), "x"));
-
-        for (ProjectionParseRecord broken : bad) {
-            List<ProjectionParseRecord> records = validFile();
-            records.set(MAKE_DOOR, broken);
-            List<String> errors = new ArrayList<>();
-
-            assertEquals(55, assemble(records, errors).size(), broken.toString());
-            assertEquals(1, errors.size(), errors.toString());
-        }
+        assertTrue(e.getMessage().contains("got: 26"), e.getMessage());
     }
 
     /**
-     * {@code obvious} and {@code wake} are true only for exactly 1; 0 and 2 are both false and
-     * both accepted, as in {@code parse_projection_obvious} and {@code parse_projection_wake}.
+     * C quits with "Too few elements" when one element is not typed {@code element}.
      */
     @Test
-    void booleanFieldsAcceptAnyNonNegativeNumber() {
-        for (String value : new String[]{"0", "1", "2"}) {
-            List<ProjectionParseRecord> records = validFile();
-            records.set(MAKE_DOOR, withWake(withObvious(records.get(MAKE_DOOR), value), value));
-            List<String> errors = new ArrayList<>();
+    void elementRetypedEnvironsStopsTheLoad() {
+        List<ProjectionParseRecord> records = validFile();
+        records.set(POIS, record("POIS", "environs", 5));
 
-            assertEquals(56, assemble(records, errors).size(), "value " + value);
-            assertTrue(errors.isEmpty(), errors.toString());
-        }
+        DataFileParseException e = assembleAndStop(records);
+
+        assertTrue(e.getMessage().contains("expected: 25 got: 24 dropped: 1"), e.getMessage());
     }
 
-    // ---- Types through the assembler --------------------------------------
+    /**
+     * The type is a case-sensitive {@code streq(type, "element")} in C, so {@code Element} is not
+     * an element, and the count comes up one short.
+     */
+    @Test
+    void aTypeInTheWrongCaseIsNotAnElement() {
+        List<ProjectionParseRecord> records = validFile();
+        records.set(ARROW, record("ARROW", "Element", 25));
+
+        DataFileParseException e = assembleAndStop(records);
+
+        assertTrue(e.getMessage().contains("expected: 25 got: 24"), e.getMessage());
+    }
+
+    @Test
+    void emptyFileStopsTheLoadForHavingNoElements() {
+        DataFileParseException e = assembleAndStop(new ArrayList<>());
+
+        assertTrue(e.getMessage().contains("expected: 25 got: 0"), e.getMessage());
+    }
 
     @Test
     void typeStringsMapToTheirEnumConstants() {
@@ -693,10 +582,303 @@ class ProjectionAssemblerTest {
         assertEquals(ProjectionType.PT_MONSTER, result.get(55).getType());
     }
 
-    @Test
-    void emptyFileStopsTheLoadForHavingNoElements() {
-        DataFileParseException e = assembleAndStop(new ArrayList<>());
+    // ---- A bad field stops the load, wherever the record is ---------------
 
-        assertTrue(e.getMessage().contains("expected 25 got 0"), e.getMessage());
+    /**
+     * Each case breaks one field of POIS (an element) or MAKE_DOOR (an environs row). C returns a
+     * parse error at the bad line and the game quits, so the load stops either way and the message
+     * names the line and the field. Nothing is skipped.
+     */
+    @Test
+    void aBadFieldStopsTheLoadOnAnElementOrANonElementRecord() {
+        String[][] cases = {
+                // field, bad value
+                {"numerator", "-3"}, {"numerator", "x"}, {"numerator", "-0"},
+                {"divisor", "-1"}, {"divisor", "x"}, {"divisor", "-0"},
+                {"damage cap", "-1"}, {"damage cap", "x"}, {"damage cap", "-0"},
+                {"obvious", "-1"}, {"obvious", "x"}, {"obvious", "-0"},
+                {"will wake", "-1"}, {"will wake", "x"}, {"will wake", "-0"},
+        };
+        for (int index : new int[]{POIS, MAKE_DOOR}) {
+            for (String[] c : cases) {
+                List<ProjectionParseRecord> records = validFile();
+                ProjectionParseRecord base = records.get(index);
+                records.set(index, switch (c[0]) {
+                    case "numerator" -> withNumerator(base, c[1]);
+                    case "divisor" -> withDivisor(base, c[1]);
+                    case "damage cap" -> withDamageCap(base, c[1]);
+                    case "obvious" -> withObvious(base, c[1]);
+                    default -> withWake(base, c[1]);
+                });
+                List<String> errors = new ArrayList<>();
+
+                DataFileParseException e = assertThrows(DataFileParseException.class,
+                        () -> assemble(records, errors), c[0] + " " + c[1]);
+
+                assertTrue(e.getMessage().contains("line: " + (index + 1)), c[0] + " " + c[1] + ": " + e.getMessage());
+                assertTrue(e.getMessage().contains(c[0].equals("numerator") ? "numerator"
+                        : c[0].equals("divisor") ? "divisor" : c[0].equals("damage cap") ? "damage cap"
+                        : c[0].equals("obvious") ? "obvious" : "will wake"), c[0] + " " + c[1] + ": " + e.getMessage());
+                assertTrue(errors.isEmpty(), "errors is never written to: " + errors);
+            }
+        }
+    }
+
+    /**
+     * The four {@code uint} fields refuse a leading {@code -} before any digit is read, so the
+     * message calls it negative: {@code parser_parse} tests {@code *tok == '-'}. {@code -0} is
+     * refused too.
+     */
+    @Test
+    void aMinusOnAUintFieldIsCalledNegative() {
+        for (String value : new String[]{"-1", "-0"}) {
+            ProjectionParseRecord base = validFile().get(MAKE_DOOR);
+            List<ProjectionParseRecord> records = validFile();
+            records.set(MAKE_DOOR, withNumerator(base, value));
+
+            assertTrue(assembleAndStop(records).getMessage().contains("illegal negative numerator value: " + value));
+
+            records.set(MAKE_DOOR, withDivisor(base, value));
+            assertTrue(assembleAndStop(records).getMessage().contains("illegal negative divisor value: " + value));
+
+            records.set(MAKE_DOOR, withDamageCap(base, value));
+            assertTrue(assembleAndStop(records).getMessage().contains("illegal negative damage cap value: " + value));
+
+            records.set(MAKE_DOOR, withObvious(base, value));
+            assertTrue(assembleAndStop(records).getMessage().contains("illegal negative obvious value: " + value));
+
+            records.set(MAKE_DOOR, withWake(base, value));
+            assertTrue(assembleAndStop(records).getMessage().contains("illegal negative will wake value: " + value));
+        }
+    }
+
+    /**
+     * A {@code uint} is read by {@code strtoul} in base 0, so a leading {@code 0} is octal:
+     * {@code 010} is 8, {@code 0x10} is 16 and {@code 08} stops at the 8 and gives 0.
+     */
+    @Test
+    void uintFieldsAreReadInBaseZero() {
+        String[][] cases = {{"10", "10"}, {"010", "8"}, {"0x10", "16"}, {"08", "0"}, {"0", "0"}};
+        for (String[] c : cases) {
+            ProjectionParseRecord base = validFile().get(MAKE_DOOR);
+            Projection proj = assembleWith(MAKE_DOOR,
+                    withDamageCap(withDivisor(withNumerator(base, c[0]), c[0]), c[0]));
+
+            int expected = Integer.parseInt(c[1]);
+            assertEquals(expected, field(proj, "numerator"), "numerator " + c[0]);
+            assertEquals(expected, field(proj, "divisor"), "divisor " + c[0]);
+            assertEquals(expected, field(proj, "damageCap"), "damageCap " + c[0]);
+        }
+    }
+
+    /**
+     * {@code obvious} and {@code wake} store {@code (answer == 1)}: 1 is true, and 0 and 2 are
+     * false but accepted. {@code 01} is octal 1, so it is true. Neither flag changes the other.
+     */
+    @Test
+    void obviousAndWakeAreTrueOnlyForExactlyOne() {
+        Object[][] cases = {{"0", false}, {"1", true}, {"2", false}, {"01", true}, {"10", false}};
+        for (Object[] c : cases) {
+            ProjectionParseRecord base = validFile().get(MAKE_DOOR);
+
+            Projection both = assembleWith(MAKE_DOOR, withWake(withObvious(base, (String) c[0]), (String) c[0]));
+            assertEquals(c[1], field(both, "isObvious"), "obvious " + c[0]);
+            assertEquals(c[1], field(both, "willWake"), "wake " + c[0]);
+
+            Projection onlyObvious = assembleWith(MAKE_DOOR, withWake(withObvious(base, (String) c[0]), "0"));
+            assertEquals(c[1], field(onlyObvious, "isObvious"), "obvious " + c[0]);
+            assertEquals(false, field(onlyObvious, "willWake"), "wake stays 0 with obvious " + c[0]);
+        }
+    }
+
+    // ---- Denominator (parse_projection_denominator, parse_random) ----------
+
+    /**
+     * {@code parse_random} reads a plain figure with {@code strtoul} in base 10, so {@code 010} is
+     * 10 where the {@code uint} fields would read octal 8, and a leading {@code -} negates it: the
+     * base is {@code -5}.
+     */
+    @Test
+    void aPlainDenominatorIsReadInBaseTenAndMayBeNegative() {
+        String[][] cases = {{"5", "5"}, {"010", "10"}, {"0", "0"}, {"-5", "-5"}, {"-0", "0"},
+                {"2147483647", "2147483647"}, {"-2147483647", "-2147483647"}};
+        for (String[] c : cases) {
+            Projection proj = assembleWith(MAKE_DOOR, withDenominator(validFile().get(MAKE_DOOR), c[0]));
+
+            assertEquals(Integer.parseInt(c[1]), field(proj, "denominator"), "denominator " + c[0]);
+            assertNull(field(proj, "diceDenominator"), "denominator " + c[0]);
+        }
+    }
+
+    /**
+     * A denominator that is not a plain figure is a dice value, kept as dice with the integer left
+     * at 0. The dice grammar is {@code RandomReader}'s; one valid form from {@code projection.txt}
+     * is enough here.
+     */
+    @Test
+    void aDiceDenominatorIsKeptAsDice() {
+        Projection proj = assembleWith(POIS, withDenominator(validFile().get(POIS), "2d4"));
+
+        assertNotNull(field(proj, "diceDenominator"));
+        assertEquals(0, field(proj, "denominator"));
+    }
+
+    /**
+     * {@code parse_random} returns false for text that is neither a figure nor a dice value, which
+     * is {@code PARSE_ERROR_NOT_RANDOM}, so the load stops.
+     */
+    @Test
+    void aDenominatorThatIsNotARandomValueStopsTheLoad() {
+        for (String value : new String[]{"garbage", "-", "d", "1d", "2d4x"}) {
+            List<ProjectionParseRecord> records = validFile();
+            records.set(POIS, withDenominator(records.get(POIS), value));
+
+            DataFileParseException e = assembleAndStop(records);
+
+            assertTrue(e.getMessage().contains("line: 5"), value + ": " + e.getMessage());
+            assertTrue(e.getMessage().contains("denominator"), value + ": " + e.getMessage());
+        }
+    }
+
+    /**
+     * Accepted deviation (decided 261029, recorded under Projection in
+     * {@code docs/Accepted_Deviations.md}): C's {@code parse_random} refuses a figure whose
+     * {@code strtoul} value is above {@code INT_MAX}, so {@code 2147483648} stops the load in C.
+     * Java clamps to the {@code int} range and loads it. This pins the Java side, so a change that
+     * makes the assembler refuse it will fail here and prompt the entry to be revisited.
+     */
+    @Test
+    void aDigitOnlyDenominatorAboveIntMaxIsClampedWhereCRefusesIt() {
+        String[][] cases = {{"2147483648", "2147483647"}, {"99999999999", "2147483647"},
+                {"-2147483648", "-2147483648"}, {"-99999999999", "-2147483648"}};
+        for (String[] c : cases) {
+            Projection proj = assembleWith(MAKE_DOOR, withDenominator(validFile().get(MAKE_DOOR), c[0]));
+
+            assertEquals(Integer.parseInt(c[1]), field(proj, "denominator"), "denominator " + c[0]);
+        }
+    }
+
+    // ---- Colour (parse_projection_color) ----------------------------------
+
+    /**
+     * {@code color_text_to_attr} and {@code color_char_to_attr} both default to white, so an
+     * unrecognised colour, name or character, is not an error.
+     */
+    @Test
+    void unknownColourFallsBackToWhiteWithoutAnError() {
+        for (String colour : new String[]{"Nonsense", "q", "Shade"}) {
+            Projection proj = assembleWith(POIS, withColour(validFile().get(POIS), colour));
+
+            assertEquals(ColourEnum.COLOUR_WHITE, field(proj, "colour"), "colour '" + colour + "'");
+        }
+    }
+
+    /**
+     * Names are matched with {@code my_stricmp}, so case does not matter: {@code Light Dark} is
+     * {@code color_table} slot 8. A single character is matched with {@code ==}, so case does
+     * matter: {@code D} is Light Dark and {@code d} is Dark. A space or an empty value is slot 0,
+     * dark, as is a record with no colour.
+     */
+    @Test
+    void colourNamesAreCaseInsensitiveAndCharactersAreNot() {
+        Object[][] cases = {
+                {"light dark", ColourEnum.COLOUR_LIGHT_DARK}, {"LIGHT DARK", ColourEnum.COLOUR_LIGHT_DARK},
+                {"Light Dark", ColourEnum.COLOUR_LIGHT_DARK}, {"D", ColourEnum.COLOUR_LIGHT_DARK},
+                {"d", ColourEnum.COLOUR_DARK}, {"w", ColourEnum.COLOUR_WHITE},
+                {"W", ColourEnum.COLOUR_LIGHT_SLATE}, {"o", ColourEnum.COLOUR_ORANGE},
+                {"", ColourEnum.COLOUR_DARK}, {" ", ColourEnum.COLOUR_DARK},
+        };
+        for (Object[] c : cases) {
+            Projection proj = assembleWith(POIS, withColour(validFile().get(POIS), (String) c[0]));
+
+            assertEquals(c[1], field(proj, "colour"), "colour '" + c[0] + "'");
+        }
+    }
+
+    // ---- Message type (message_lookup_by_name) ----------------------------
+
+    /**
+     * {@code message_lookup_by_name} accepts a number below {@code MSG_MAX} (153), counting from
+     * {@code GENERIC} at 0 and {@code BIRTH} at 1, so 152 ({@code SCRAMBLE}) is the last number.
+     * {@code MessageType} carries {@code MSG_NONE} at ordinal 0, which the lookup steps over.
+     * Trailing spaces are allowed ({@code contains_only_spaces}) and {@code strtoul} skips leading
+     * ones.
+     */
+    @Test
+    void numericMsgtCountsFromGenericAndStopsBelowMsgMax() {
+        Object[][] cases = {{"0", MessageType.MSG_GENERIC}, {"1", MessageType.MSG_BIRTH},
+                {"152", MessageType.MSG_SCRAMBLE}, {"1 ", MessageType.MSG_BIRTH},
+                {" 1", MessageType.MSG_BIRTH}, {"-0", MessageType.MSG_GENERIC}};
+        for (Object[] c : cases) {
+            Projection proj = assembleWith(MAKE_DOOR, withMsgt(validFile().get(MAKE_DOOR), (String) c[0]));
+
+            assertEquals(c[1], field(proj, "msgt"), "msgt '" + c[0] + "'");
+        }
+    }
+
+    /**
+     * 153 is {@code MSG_MAX}, which {@code number < MSG_MAX} refuses, and {@code -1} wraps in
+     * {@code strtoul} to a huge value that is refused too. Both are {@code
+     * PARSE_ERROR_INVALID_MESSAGE}, so the load stops.
+     */
+    @Test
+    void numericMsgtAtOrAboveMsgMaxStopsTheLoad() {
+        for (String value : new String[]{"153", "154", "-1"}) {
+            List<ProjectionParseRecord> records = validFile();
+            records.set(MAKE_DOOR, withMsgt(records.get(MAKE_DOOR), value));
+
+            DataFileParseException e = assembleAndStop(records);
+
+            assertTrue(e.getMessage().contains("line: 31"), value + ": " + e.getMessage());
+            assertTrue(e.getMessage().contains("an illegal message value: " + value), value + ": " + e.getMessage());
+        }
+    }
+
+    /**
+     * Names are matched case-insensitively after a {@code MSG_} prefix, as {@code my_stricmp} does.
+     */
+    @Test
+    void msgtNamesAreCaseInsensitive() {
+        Object[][] cases = {{"BR_ACID", MessageType.MSG_BR_ACID}, {"br_acid", MessageType.MSG_BR_ACID},
+                {"Br_Acid", MessageType.MSG_BR_ACID}, {"GENERIC", MessageType.MSG_GENERIC}};
+        for (Object[] c : cases) {
+            Projection proj = assembleWith(MAKE_DOOR, withMsgt(validFile().get(MAKE_DOOR), (String) c[0]));
+
+            assertEquals(c[1], field(proj, "msgt"), "msgt '" + c[0] + "'");
+        }
+    }
+
+    /**
+     * A name with no match is {@code -1} from {@code message_lookup_by_name} and
+     * {@code PARSE_ERROR_INVALID_MESSAGE} in the parser, so the load stops. {@code NONE} is the
+     * Java-only sentinel with no C name, so it is unknown too.
+     */
+    @Test
+    void anUnknownMsgtNameStopsTheLoad() {
+        for (String value : new String[]{"NOSUCHMSG", "NONE"}) {
+            List<ProjectionParseRecord> records = validFile();
+            records.set(MAKE_DOOR, withMsgt(records.get(MAKE_DOOR), value));
+
+            DataFileParseException e = assembleAndStop(records);
+
+            assertTrue(e.getMessage().contains("an illegal message value: " + value), value + ": " + e.getMessage());
+        }
+    }
+
+    // ---- Fault order inside a record ---------------------------------------
+
+    /**
+     * Accepted ordering difference: C reads lines top to bottom and the assembler checks the
+     * numerator before the {@code msgt}, whatever order the lines came in. A record with both
+     * faults stops the load in both, and only the fault named can differ.
+     */
+    @Test
+    void aRecordWithTwoFaultsNamesTheNumeratorBeforeTheMsgt() {
+        List<ProjectionParseRecord> records = validFile();
+        records.set(MAKE_DOOR, withMsgt(withNumerator(records.get(MAKE_DOOR), "-1"), "NOSUCHMSG"));
+
+        DataFileParseException e = assembleAndStop(records);
+
+        assertTrue(e.getMessage().contains("negative numerator"), e.getMessage());
     }
 }

@@ -448,14 +448,15 @@ class DungeonLoaderTest {
     }
 
     /**
-     * The room-template loader's no-survivor case.
+     * The room-template loader's no-survivor case. The assembler throws on every fault of its own,
+     * so the soft error here comes from the grammar: a record with no {@code doors:} line.
      */
     @Test
-    @DisplayName("a room-template soft error that leaves no templates stops the load")
+    @DisplayName("a room-template syntax error that leaves no templates stops the load")
     void roomSoftErrorWithNoSurvivors() throws Exception {
         write("room_template.txt", String.join("\n",
                 "record-count:1",
-                "name:Bad", "type:1", "rating:99999999999", "rows:3", "columns:3", "doors:1",
+                "name:Bad", "type:1", "rating:1", "rows:3", "columns:3",
                 "tval:0", "D:###", "D:#.#", "D:###", ""));
 
         RuntimeException thrown = assertThrows(RuntimeException.class, DungeonLoader::loadRoomTemplates);

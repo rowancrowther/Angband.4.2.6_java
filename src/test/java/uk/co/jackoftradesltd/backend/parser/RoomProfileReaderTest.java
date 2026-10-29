@@ -19,6 +19,7 @@ package uk.co.jackoftradesltd.backend.parser;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.channel.parser.Reader;
 import uk.co.jackoftradesltd.middle.cave.enums.RoomFlags;
@@ -42,12 +43,13 @@ import static org.junit.jupiter.api.Assertions.*;
  * validation C spreads across {@code parse_room_height}/{@code parse_room_width}/
  * {@code parse_room_tval}/{@code parse_room_flags}/{@code parse_room_d} lands: the size bounds are
  * checked against {@link RoomType#TEMPLATE}, {@code tval:} is resolved either numerically or by
- * name, and the {@code D:} lines are both checked against {@code rows:}/{@code columns:} and
- * concatenated into the single {@code mapText} buffer C builds with {@code string_appends}.
+ * name, and the {@code D:} lines are concatenated, unchecked, into the single {@code mapText}
+ * buffer C builds with {@code string_appends}.
  *
  * <p>The happy path runs the real shipped file — 500 records, every one of them clean. The error
- * paths build one-defect fixtures: each is a <em>soft</em> error, so the bad record is dropped and
- * the rest of the file still loads (the partial-results contract), where C would fail the parse.
+ * paths build one-defect fixtures: each is fatal, as it is in C, so the assembler throws a
+ * {@code DataFileParseException} out of the reader and no template is returned. The field-by-field
+ * branches of the assembler itself are pinned in {@code RoomProfileAssemblerTest}.
  *
  * @author Rowan Crowther
  */
@@ -164,9 +166,9 @@ class RoomProfileReaderTest {
     }
 
     /**
-     * Every record in the file satisfies the invariants the assembler enforces, so this is the
-     * assertion that {@link RoomType#TEMPLATE}'s bounds still agree with the shipped data: no map is
-     * ragged, none is the wrong height, and none exceeds 11x33.
+     * Every record in the file is well formed, although the assembler checks none of this itself, so
+     * this is the assertion that {@link RoomType#TEMPLATE}'s bounds still agree with the shipped
+     * data: no map is ragged, none is the wrong height, and none exceeds 11x33.
      */
     @Test
     void everyTemplateInTheRealFileIsWithinBoundsAndRectangular() throws IOException {
@@ -205,50 +207,59 @@ class RoomProfileReaderTest {
     }
 
     /**
-     * {@code rows:} beyond {@link RoomType#TEMPLATE}'s max height — C's
-     * {@code PARSE_ERROR_VAULT_TOO_BIG} in {@code parse_room_height}. Soft here: the oversized
-     * record is dropped, its neighbour still loads.
+     * The assembler's refusal is a {@link DataFileParseException} that comes straight out of the
+     * reader, naming the {@code name:} line of the bad record and the file. Every fixture puts the
+     * bad record first, after the {@code record-count:} header, so that line is 2.
      */
-    @Test
-    void rowsBeyondTheTemplateMaximumDropsOnlyThatRecord() throws IOException {
-        String tooTall = GOOD_RECORD.replace("name:Good room", "name:Too tall")
-                .replace("rows:3", "rows:12");
-        String path = tempFile("too-tall.txt", "record-count:2\n" + tooTall + "\n" + GOOD_RECORD + "\n");
-
-        ParseResult<RoomTemplate> result = new RoomProfileReader().parseWithResults(path);
-
-        assertEquals(List.of("Good room"), result.items().stream().map(RoomTemplate::getName).toList());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("row count outside room template size")),
-                result.errors()::toString);
+    private void assertStopsTheLoad(String fileName, String content, String message) {
+        DataFileParseException thrown = assertThrows(DataFileParseException.class,
+                () -> new RoomProfileReader().parseWithResults(tempFile(fileName, content)));
+        assertTrue(thrown.getMessage().contains(message), thrown::getMessage);
+        assertTrue(thrown.getMessage().contains("line: 2"), thrown::getMessage);
+        assertTrue(thrown.getMessage().contains(fileName), thrown::getMessage);
     }
 
     /**
-     * The same bound on the other axis ({@code parse_room_width}), and the same for a zero: the
-     * check is {@code < 1 || > max}, so an empty room is rejected too.
+     * {@code rows:} beyond {@link RoomType#TEMPLATE}'s max height — C's
+     * {@code PARSE_ERROR_VAULT_TOO_BIG} in {@code parse_room_height}, which is fatal at start-up.
+     * The load stops, and the good neighbour behind it is never reached.
      */
     @Test
-    void columnsOutsideTheTemplateBoundsAreRejectedAtBothEnds() throws IOException {
+    void rowsBeyondTheTemplateMaximumStopTheLoad() {
+        String tooTall = GOOD_RECORD.replace("name:Good room", "name:Too tall")
+                .replace("rows:3", "rows:12");
+
+        assertStopsTheLoad("too-tall.txt", "record-count:2\n" + tooTall + "\n" + GOOD_RECORD + "\n",
+                "illegal row count value (outside room template size) 12");
+    }
+
+    /**
+     * The same bound on the other axis ({@code parse_room_width}). C refuses only a value above the
+     * cap, so {@code columns:0} loads with a width of 0.
+     */
+    @Test
+    void columnsAboveTheTemplateMaximumStopTheLoadAndZeroLoads() throws IOException {
         String tooWide = GOOD_RECORD.replace("name:Good room", "name:Too wide")
                 .replace("columns:3", "columns:34");
         String zeroWide = GOOD_RECORD.replace("name:Good room", "name:No width")
                 .replace("columns:3", "columns:0");
-        String path = tempFile("bad-columns.txt",
-                "record-count:3\n" + tooWide + "\n" + zeroWide + "\n" + GOOD_RECORD + "\n");
 
-        ParseResult<RoomTemplate> result = new RoomProfileReader().parseWithResults(path);
+        assertStopsTheLoad("too-wide.txt", "record-count:1\n" + tooWide + "\n",
+                "illegal column count value (outside room template size) 34");
 
-        assertEquals(List.of("Good room"), result.items().stream().map(RoomTemplate::getName).toList());
-        assertEquals(2, result.errors().stream()
-                        .filter(e -> e.contains("column count outside room template size")).count(),
-                result.errors()::toString);
+        ParseResult<RoomTemplate> result = new RoomProfileReader()
+                .parseWithResults(tempFile("zero-wide.txt", "record-count:1\n" + zeroWide + "\n"));
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(0, result.items().getFirst().getWidth());
     }
 
     /**
-     * A {@code D:} line whose length disagrees with {@code columns:}. Every bad row is reported
-     * before the record is skipped, rather than bailing on the first one.
+     * A {@code D:} line whose length disagrees with {@code columns:}. C's {@code parse_room_d}
+     * makes no length check, so the layout loads, and {@code mapText} is the lines joined as
+     * written.
      */
     @Test
-    void aRaggedMapRowDropsTheRecordAndReportsEveryBadRow() throws IOException {
+    void aRaggedMapRowLoadsAsInC() throws IOException {
         String ragged = String.join("\n",
                 "name:Ragged",
                 "type:1",
@@ -260,22 +271,22 @@ class RoomProfileReaderTest {
                 "D:%%%%",
                 "D:%.%",
                 "D:%%");
-        String path = tempFile("ragged.txt", "record-count:2\n" + ragged + "\n" + GOOD_RECORD + "\n");
+        String path = tempFile("ragged.txt", "record-count:1\n" + ragged + "\n");
 
         ParseResult<RoomTemplate> result = new RoomProfileReader().parseWithResults(path);
 
-        assertEquals(List.of("Good room"), result.items().stream().map(RoomTemplate::getName).toList());
-        assertEquals(2, result.errors().stream()
-                        .filter(e -> e.contains("map line of the wrong length")).count(),
-                result.errors()::toString);
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        RoomTemplate template = result.items().getFirst();
+        assertEquals(List.of("%%%%", "%.%", "%%"), template.getMap());
+        assertEquals("%%%%%.%%%", template.getMapText());
     }
 
     /**
-     * The row-count check: the map is rectangular, but there are fewer {@code D:} lines than
-     * {@code rows:} promises.
+     * Fewer {@code D:} lines than {@code rows:} promises. C does not count them, so the record loads
+     * with the height it declared and the lines it has.
      */
     @Test
-    void tooFewMapRowsDropsTheRecord() throws IOException {
+    void tooFewMapRowsLoadAsInC() throws IOException {
         String shortMap = String.join("\n",
                 "name:Short",
                 "type:1",
@@ -286,54 +297,42 @@ class RoomProfileReaderTest {
                 "tval:0",
                 "D:%%%",
                 "D:%%%");
-        String path = tempFile("short-map.txt", "record-count:2\n" + shortMap + "\n" + GOOD_RECORD + "\n");
+        String path = tempFile("short-map.txt", "record-count:1\n" + shortMap + "\n");
 
         ParseResult<RoomTemplate> result = new RoomProfileReader().parseWithResults(path);
 
-        assertEquals(List.of("Good room"), result.items().stream().map(RoomTemplate::getName).toList());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("wrong number of rows in the map")),
-                result.errors()::toString);
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        RoomTemplate template = result.items().getFirst();
+        assertEquals(3, template.getHeight());
+        assertEquals(2, template.getMap().size());
     }
 
     /**
-     * A {@code tval:} that is neither a number in range nor a known name. Note the numeric leg is
-     * tried first, so an out-of-range number falls out of {@code TValue.fromName(int)} as null
-     * rather than being retried as a name.
+     * A {@code tval:} that is neither a number in range nor a known name stops the load, as C's
+     * {@code PARSE_ERROR_UNRECOGNISED_TVAL} does. The numeric leg is tried first, so an
+     * out-of-range number is not retried as a name.
      */
     @Test
-    void anUnknownTvalDropsTheRecord() throws IOException {
-        String badName = GOOD_RECORD.replace("name:Good room", "name:Bad tval name")
-                .replace("tval:0", "tval:no such tval");
-        String badNumber = GOOD_RECORD.replace("name:Good room", "name:Bad tval number")
-                .replace("tval:0", "tval:9999");
-        String path = tempFile("bad-tval.txt",
-                "record-count:3\n" + badName + "\n" + badNumber + "\n" + GOOD_RECORD + "\n");
+    void anUnknownTvalStopsTheLoad() {
+        String badName = GOOD_RECORD.replace("tval:0", "tval:no such tval");
+        String badNumber = GOOD_RECORD.replace("tval:0", "tval:9999");
 
-        ParseResult<RoomTemplate> result = new RoomProfileReader().parseWithResults(path);
-
-        assertEquals(List.of("Good room"), result.items().stream().map(RoomTemplate::getName).toList());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("invalid tValue: no such tval")),
-                result.errors()::toString);
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("invalid tValue: 9999")),
-                result.errors()::toString);
+        assertStopsTheLoad("bad-tval-name.txt", "record-count:1\n" + badName + "\n",
+                "illegal tValue value: no such tval");
+        assertStopsTheLoad("bad-tval-number.txt", "record-count:1\n" + badNumber + "\n",
+                "illegal tValue value: 9999");
     }
 
     /**
-     * An unknown flag name. As with the ragged map, every bad flag in the record is collected before
-     * the record is skipped, so one report covers all of its problems.
+     * An unknown flag name stops the load at the first bad name, as {@code parse_room_flags} stops
+     * at the first name {@code grab_flag} rejects.
      */
     @Test
-    void anUnknownFlagDropsTheRecordAndReportsEveryBadFlag() throws IOException {
-        String badFlags = GOOD_RECORD.replace("tval:0", "tval:0\nflags:NOT_A_FLAG|ALSO_NOT_A_FLAG")
-                .replace("name:Good room", "name:Bad flags");
-        String path = tempFile("bad-flags.txt", "record-count:2\n" + badFlags + "\n" + GOOD_RECORD + "\n");
+    void anUnknownFlagStopsTheLoadAtTheFirstBadName() {
+        String badFlags = GOOD_RECORD.replace("tval:0", "tval:0\nflags:NOT_A_FLAG|ALSO_NOT_A_FLAG");
 
-        ParseResult<RoomTemplate> result = new RoomProfileReader().parseWithResults(path);
-
-        assertEquals(List.of("Good room"), result.items().stream().map(RoomTemplate::getName).toList());
-        assertEquals(2, result.errors().stream()
-                        .filter(e -> e.contains("unknown room flag")).count(),
-                result.errors()::toString);
+        assertStopsTheLoad("bad-flags.txt", "record-count:1\n" + badFlags + "\n",
+                "illegal room flag value: NOT_A_FLAG");
     }
 
     /**
@@ -541,18 +540,14 @@ class RoomProfileReaderTest {
     /**
      * C: {@code tval} is a {@code sym}, tokenized on {@code :}, so {@code tval:rod:junk} reads
      * {@code rod}. The lexer hands the whole rest of the line to the assembler, which cannot resolve
-     * {@code rod:junk}, so the record is dropped as a soft error.
+     * {@code rod:junk}, so the load stops.
      */
     @Test
-    void textAfterATvalNameIsTreatedAsPartOfTheNameHereWhereCDropsIt() throws IOException {
+    void textAfterATvalNameIsTreatedAsPartOfTheNameHereWhereCDropsIt() {
         String extra = GOOD_RECORD.replace("tval:0", "tval:rod:junk");
-        String path = tempFile("tval-extra.txt", "record-count:1\n" + extra + "\n");
 
-        ParseResult<RoomTemplate> result = new RoomProfileReader().parseWithResults(path);
-
-        assertTrue(result.items().isEmpty(), result.items()::toString);
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("invalid tValue: rod:junk")),
-                result.errors()::toString);
+        assertStopsTheLoad("tval-extra.txt", "record-count:1\n" + extra + "\n",
+                "illegal tValue value: rod:junk");
     }
 
     /**
@@ -573,33 +568,32 @@ class RoomProfileReaderTest {
     /**
      * C: {@code type} and {@code doors} are {@code uint}, and {@code parser_parse} refuses a token
      * that starts with {@code -} ({@code PARSE_ERROR_NOT_NUMBER}). {@code INTEGER} takes a minus
-     * sign and the assembler does not range-check these two, so both load as -1.
+     * sign, so the assembler is the one that refuses it, and the load stops.
      */
     @Test
-    void aNegativeTypeAndDoorCountLoadHereWhereCRefusesThem() throws IOException {
-        String negative = GOOD_RECORD.replace("type:1", "type:-1").replace("doors:1", "doors:-1");
-        String path = tempFile("negative.txt", "record-count:1\n" + negative + "\n");
+    void aNegativeTypeOrDoorCountStopsTheLoadAsInC() {
+        String negativeType = GOOD_RECORD.replace("type:1", "type:-1");
+        String negativeDoors = GOOD_RECORD.replace("doors:1", "doors:-1");
 
-        ParseResult<RoomTemplate> result = new RoomProfileReader().parseWithResults(path);
-
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
-        assertEquals(-1, result.items().getFirst().getType());
-        assertEquals(-1, result.items().getFirst().getDoors());
+        assertStopsTheLoad("negative-type.txt", "record-count:1\n" + negativeType + "\n",
+                "illegal negative type value: -1");
+        assertStopsTheLoad("negative-doors.txt", "record-count:1\n" + negativeDoors + "\n",
+                "illegal negative doors value: -1");
     }
 
     /**
      * C: {@code typ}, {@code rat}, {@code hgt}, {@code wid} and {@code dor} are {@code uint8_t}, so
-     * {@code type:257} is stored as 1. The Java fields keep 257.
+     * {@code type:257} is stored as 1. The assembler reduces the value modulo 256 the same way.
      */
     @Test
-    void aTypeThatDoesNotFitAByteIsKeptHereWhereCTruncatesIt() throws IOException {
+    void aTypeThatDoesNotFitAByteIsTruncatedAsInC() throws IOException {
         String big = GOOD_RECORD.replace("type:1", "type:257");
         String path = tempFile("big-type.txt", "record-count:1\n" + big + "\n");
 
         ParseResult<RoomTemplate> result = new RoomProfileReader().parseWithResults(path);
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
-        assertEquals(257, result.items().getFirst().getType());
+        assertEquals(1, result.items().getFirst().getType());
     }
 
     // ---- Where the grammar matches C ----------------------------------------

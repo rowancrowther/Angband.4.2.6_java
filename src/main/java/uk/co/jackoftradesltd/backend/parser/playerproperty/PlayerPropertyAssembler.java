@@ -17,7 +17,11 @@
 
 package uk.co.jackoftradesltd.backend.parser.playerproperty;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
+import uk.co.jackoftradesltd.backend.parser.ParseUtils;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
@@ -45,25 +49,29 @@ import java.util.List;
  *       {@code PF_}-prefixed {@link PlayerFlag}, for an {@code object} property the
  *       {@code OF_}-prefixed {@link ObjectFlag} ({@code element} properties carry no
  *       code, so both default to their {@code _NONE} member);</li>
- *   <li>each {@code bindui} into a {@link PlayerProperty.BindUI}, resolving its UI
- *       entry against the {@link GameConstants} registry by the combined
- *       {@code name + tag} string (e.g. {@code stat_mod_ui_compact_0<STR>}) and
- *       carrying the binding's value, {@code special} and {@code aux} flags;</li>
+ *   <li>each {@code bindui} into a {@link PlayerProperty.BindUI} that carries the combined
+ *       {@code name + tag} string (e.g. {@code stat_mod_ui_compact_0<STR>}) and the binding's
+ *       value, {@code special} and {@code aux} flags. The entry name is kept raw: nothing here
+ *       looks it up in the UI-entry registry (see {@link GameConstants}), so a name that matches
+ *       no entry survives, where C's {@code bind_player_ability_to_ui_entry_by_name} discards
+ *       the binding without a message;</li>
  *   <li>{@code value} - {@code 1} (resistance), {@code 3} (immunity) or {@code -1}
  *       (vulnerability) - into the {@code int} that {@link PlayerProperty#getValue()} returns,
  *       as {@code parse_player_prop_value} stores it with {@code parser_getint}. A record with no
- *       {@code value:} line keeps {@code 0}; a non-integer one is a soft error.</li>
+ *       {@code value:} line keeps {@code 0}. C parses the line for every type but only an
+ *       {@code element} record's value reaches the stored ability, so this keeps the value for
+ *       {@code element} records and gives {@code 0} to the other two.</li>
  * </ul>
  * <p>
  * An {@code element}-typed record is a template, not a finished property: C's
- * {@code finish_parse_player_prop} ({@code init.c:1326-1393}) expands one such record into
+ * {@code finish_parse_player_prop} in {@code init.c} expands one such record into
  * one {@code player_ability} per real element, and {@link #spreadPlayerPropertyOut} is that
  * expansion. For each {@link ElementEnum} it looks up the {@link Projection} the element
  * resolves to (by {@link ElementEnum#getProjectionEnum()}, since the port has no positional
  * array to index the way C indexes {@code projections[i]}) and builds the display name and
  * description from {@link Projection#getName()} exactly as C builds them from
  * {@code projections[i].name} - capitalizing only the string's first character, the way
- * {@code my_strcap} ({@code z-util.c:529}) does, not every word. The record's own
+ * {@code my_strcap} ({@code z-util.c}) does, not every word. The record's own
  * {@code name:}/{@code desc:} text (e.g. {@code "Resistance"}/{@code "You resist"}) supplies
  * the fixed half of each of the two built strings, so the same template correctly yields
  * {@code "Cold Resistance"}, {@code "Fire Immunity"} and {@code "Poison Vulnerability"}
@@ -73,42 +81,88 @@ import java.util.List;
  * entry name - note this is the element's own code, not the {@link Projection} name, so
  * {@code ELEM_ELEC} tags as {@code <ELEC>} even though it displays as "Lightning".
  * <p>
- * Assembly is best-effort and error-collecting rather than fail-fast, with two
- * tiers of skip depending on how load-bearing the unresolvable field is:
+ * Assembly is fail-fast, as the C parser is: the first bad field ends the load with a
+ * {@link DataFileParseException} that names the record's source line and the file. These are
+ * refused, each as C refuses it:
  * <ul>
- *   <li><b>whole-record skip</b> - an unresolvable {@code type}, or an unresolvable
- *       {@code code} for a {@code player}/{@code object} property, drops the entire
- *       record: the code <em>is</em> the property's flag identity, so without it the
- *       record is meaningless;</li>
- *   <li><b>single-binding skip</b> - a {@code bindui} with a non-integer value or an
- *       unresolvable UI-entry target drops only that one binding and the record still
- *       loads with its remaining bindings, mirroring the C side's silent discard of a
- *       failed bind ({@code bind_player_ability_to_ui_entry_by_name}'s return is
- *       {@code (void)}-ignored).</li>
+ *   <li>a {@code code} that is not in the flag list for the record's type (object flags with
+ *       {@code OF_MAX} refused as well, since C's list ends before it; {@code NONE} is in both
+ *       of C's lists and loads);</li>
+ *   <li>any {@code code} on an {@code element} record;</li>
+ *   <li>a {@code value:} or a {@code bindui} aux that is not a number;</li>
+ *   <li>a {@code bindui} value that is neither {@code special} nor a decimal number, or that
+ *       is {@code INT_MAX} or beyond.</li>
  * </ul>
- * Every skip appends a message (quoting the record's source line) to {@code errors}
- * and processing continues, so one bad record or binding does not hide the rest.
+ * <p>
+ * Accepted deviations, none of which the shipped data can reach:
+ * <ul>
+ *   <li>(decided 261027) a number outside the {@code int} range is refused or clamped, where C
+ *       wraps it to 32 bits;</li>
+ *   <li>(decided 261029) a {@code bindui} value of {@code -2147483648} or below loads as
+ *       {@code -2147483647}, where C refuses it; only the positive limit is refused;</li>
+ *   <li>(decided 261029) a record's bindings stay in file order. C prepends each
+ *       {@code bindui:} line to a list and binds from the head, so it binds the last line first.
+ *       The order is only observable when one property binds the same UI entry twice, and no
+ *       shipped record does;</li>
+ *   <li>a record with no {@code desc:} line has the empty string for its description, where C
+ *       has {@code NULL}.</li>
+ * </ul>
+ * <p>
+ * The {@code default} arm of the {@code type} switch, which builds a
+ * {@link PlayerProperty.PlayerPropertyType#PROP_TYPE_OBJECT_MODIFIER} property and resolves an
+ * {@code OM_} code, has no counterpart in C and cannot be reached through the grammar, whose
+ * {@code TYPE_VALUE} token admits only {@code player}, {@code object} and {@code element}.
+ * Only a hand-built {@link PlayerPropertyParseRecord} gets there.
+ *
+ * <p>Class PlayerPropertyAssembler coded before 260915, commented in full on 261029.
  *
  * @author Rowan Crowther
  */
 public class PlayerPropertyAssembler implements Assembler<PlayerPropertyParseRecord, List<PlayerProperty>> {
     /**
-     * Resolve each {@link PlayerPropertyParseRecord} into a {@link PlayerProperty},
-     * skipping (never throwing on) a record whose {@code type}/{@code code} cannot be
-     * resolved and dropping individual bindings whose value or target cannot be
-     * resolved. See the class comment for the two-tier skip contract. An
-     * {@code element}-typed record is additionally expanded into one {@link PlayerProperty}
-     * per real element via {@link #spreadPlayerPropertyOut}; a record whose element cannot be
-     * matched to a {@link Projection} contributes nothing (see that method).
+     * Sink for the {@code fatal} line logged just before each {@link DataFileParseException} is
+     * thrown, so the message reaches the log as well as the caller.
      *
-     * <p>Function assemble coded before 260915, commented in full on 260924.
+     * <p>Field logger coded before 260915, commented in full on 261029.
+     */
+    private static final Logger logger = LogManager.getLogger(PlayerPropertyAssembler.class);
+
+    /**
+     * Resolve each {@link PlayerPropertyParseRecord} into a {@link PlayerProperty}, in file order,
+     * following the {@code parse_player_prop_*} handlers and {@code finish_parse_player_prop} in
+     * {@code init.c}. Per record:
+     * <ol>
+     *   <li>the {@code type} picks the property type;</li>
+     *   <li>a non-empty {@code code} is looked up as {@code PF_<code>} for a {@code player}
+     *       record or {@code OF_<code>} for an {@code object} record. {@code OF_MAX} is refused
+     *       and {@code NONE} is accepted for both, as C's two lists do. A code on an
+     *       {@code element} record is refused;</li>
+     *   <li>each {@code bindui} gives a {@link PlayerProperty.BindUI}: the aux is a flag when
+     *       non-zero ({@code 00} and {@code -0} are not), {@code special} gives value 0 with the
+     *       special flag, and any other value is read in base 10 and refused at {@code INT_MAX}
+     *       or {@code INT_MIN} (the negative limit is the accepted deviation in the class
+     *       block);</li>
+     *   <li>the {@code value:} text is read as {@code parser_getint} does, with no text giving 0.
+     *       An {@code element} record keeps it; the other two types store 0, as C leaves the
+     *       field zeroed;</li>
+     *   <li>an {@code element} record is expanded into one property per element,
+     *       {@code ELEM_ACID} to {@code ELEM_ARROW} (C's {@code list_element_names} less its
+     *       {@code NULL} end), through {@link #spreadPlayerPropertyOut}. A property whose element
+     *       finds no {@link Projection} is left out, which C cannot meet.</li>
+     * </ol>
+     * Bindings keep file order, not C's reverse order (accepted deviation, class block).
      *
-     * @param records the raw parse records, in file order, from the grammar.
-     * @param errors  the soft-error sink; one message is appended, quoting the
-     *                record's source line, for each dropped record or binding.
-     *                Mutated in place.
-     * @return the successfully assembled {@link PlayerProperty} objects, in file
-     * order, omitting any record that was skipped.
+     * <p>Every refusal logs at {@code fatal} and throws, so the {@code errors} list is not
+     * written to; it is part of the {@link Assembler} signature only.
+     *
+     * <p>Function assemble coded before 260915, commented in full on 261029.
+     *
+     * @param records  the raw parse records, in file order, from the grammar.
+     * @param errors   unused here; no refusal is collected any more.
+     * @param filename the file being read, quoted in each message.
+     * @return the {@link PlayerProperty} objects, in file order, with each {@code element}
+     * record expanded in place.
+     * @throws DataFileParseException on the first field C refuses.
      */
     @Override
     public List<PlayerProperty> assemble(@NotNull List<PlayerPropertyParseRecord> records,
@@ -134,66 +188,88 @@ public class PlayerPropertyAssembler implements Assembler<PlayerPropertyParseRec
                 if (ppt == PlayerProperty.PlayerPropertyType.PROP_TYPE_OBJECT) {
                     try {
                         oFlag = ObjectFlag.valueOf("OF_" + record.code());
+                        if (oFlag == ObjectFlag.OF_MAX) {
+                            String msg = "Player property starting at line: " + line + " of file: " + filename + " has " +
+                                    "an illegal sentinel object flag value: " + record.code();
+                            logger.fatal(msg);
+                            throw new DataFileParseException(msg);
+                        }
                     } catch (IllegalArgumentException e) {
-                        errors.add("Record starting at line: " + line + " has illegal code: " + record.code());
-                        continue;
+                        String msg = "Player property starting at line: " + line + " of file: " + filename + " has " +
+                                "an illegal object flag value: " + record.code();
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
                     }
                 } else if (ppt == PlayerProperty.PlayerPropertyType.PROP_TYPE_PLAYER) {
                     try {
                         pFlag = PlayerFlag.valueOf("PF_" + record.code());
                     } catch (IllegalArgumentException e) {
-                        errors.add("Record starting at line: " + line + " has illegal code: " + record.code());
-                        continue;
+                        String msg = "Player property starting at line: " + line + " of file: " + filename + " has " +
+                                "an illegal player flag value: " + record.code();
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
                     }
                 } else if (ppt == PlayerProperty.PlayerPropertyType.PROP_TYPE_ELEMENT) {
-                    try {
-                        eCode = ElementEnum.valueOf("ELEM_" + record.code());
-                    } catch (IllegalArgumentException e) {
-                        errors.add("Record starting at line: " + line + " has illegal code: " + record.code());
-                        continue;
-                    }
+                    String msg = "Player property starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal code for an element value: " + record.code();
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
                 } else {
                     try {
                         omCode = ObjectModifier.valueOf("OM_" + record.code());
+                        if (omCode == ObjectModifier.OM_NONE || omCode == ObjectModifier.OM_MAX) {
+                            String msg = "Player property starting at line: " + line + " of file: " + filename + " has " +
+                                    "an illegal sentinel object modifier value: " + record.code();
+                            logger.fatal(msg);
+                            throw new DataFileParseException(msg);
+                        }
                     } catch (IllegalArgumentException e) {
-                        errors.add("Record starting at line: " + line + " has illegal code: " + record.code());
-                        continue;
+                        String msg = "Player property starting at line: " + line + " of file: " + filename + " has " +
+                                "an illegal object modifier value: " + record.code();
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
                     }
                 }
             }
             
             List<PlayerProperty.BindUI> bindings = new ArrayList<>();
             for (List<String> b : record.bindui()) {
-                boolean aux = !b.get(2).equals("0");
-                boolean special = b.get(3).equals("special");
+                int auxVal = ParseUtils.parseIntString("Player property", b.get(2), line, filename, "aux part of bindui");
+                boolean aux = auxVal != 0;
                 int value;
-                try {
-                    value = special ? 0 : Integer.parseInt(b.get(3));
-                    if (value <= Integer.MIN_VALUE || value >= Integer.MAX_VALUE) {
-                        errors.add("Record starting at line: " + line + " has illegal integer value " +
-                                "as part of bindui: " + record.bindui());
-                        continue;
+                String b3 = b.get(3);
+                boolean special = b3.equals("special");
+                if (special) {
+                    value = 0;
+                } else {
+                    int sign = ParseUtils.signFound(b3);
+                    if (sign != 0) {
+                        b3 = b3.substring(1);
                     }
-                } catch (NumberFormatException e) {
-                    errors.add("Record starting at line: " + line + " has illegal integer value " +
-                            "as part of bindui: " + record.bindui());
-                    continue;
+                    
+                    if (ParseUtils.onlyDigits(b3)) {
+                        value = ParseUtils.parseIntString("Player property", b3, line, filename, "bindui", ParseUtils.Radix.DECIMAL);
+                        if (sign != 0)
+                            value = value * sign;
+                    } else {
+                        String msg = "Player property starting at line: " + line + " of file: " + filename + " has " +
+                                "an invalid bindui value: " + b.get(3);
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
+                    }
+                }
+                if (value == Integer.MIN_VALUE || value == Integer.MAX_VALUE) {
+                    String msg = "Player property starting at line: " + line + " of file: " + filename + " has " +
+                            "an out of range bindui value: " + value;
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
                 }
 
                 bindings.add(new PlayerProperty.BindUI(b.get(0) + b.get(1), value, special, aux));
             }
             String name = record.name();
             String desc = record.desc();
-            int value = 0;
-            if (!record.value().isEmpty()) {
-                try {
-                    value = Integer.parseInt(record.value());
-                } catch (NumberFormatException e) {
-                    errors.add("Record starting at line: " + line + " has " +
-                            "an invalid value: " + record.value());
-                    continue;
-                }
-            }
+            int value = ParseUtils.parseIntString("Player property", record.value(), line, filename, "");
 
             if (extendToAllElements) {
                 for (ElementEnum e : ElementEnum.values()) {
@@ -209,7 +285,7 @@ public class PlayerPropertyAssembler implements Assembler<PlayerPropertyParseRec
                 }
             } else {
                 results.add(new PlayerProperty(
-                        ppt, pFlag, oFlag, eCode, omCode, bindings, name, desc, value)
+                        ppt, pFlag, oFlag, eCode, omCode, bindings, name, desc, 0)
                 );
             }
         }
@@ -220,10 +296,10 @@ public class PlayerPropertyAssembler implements Assembler<PlayerPropertyParseRec
     /**
      * Expands one {@code element}-typed template property into the concrete property for a
      * single element - the per-element body of C's expansion loop in
-     * {@code finish_parse_player_prop} ({@code init.c:1332-1352}).
+     * {@code finish_parse_player_prop} in {@code init.c}.
      *
      * <p>Re-suffixes every bound {@code bindui} entry's UI-entry name with {@code <ELEMENT>}
-     * (C: {@code list_element_names[i]}, {@code init.c:1348}) and looks up the {@link Projection}
+     * (C: {@code list_element_names[i]}) and looks up the {@link Projection}
      * {@code e} resolves to via {@link ElementEnum#getProjectionEnum()} - the port's substitute
      * for C's positional {@code projections[i]}, since the two enums carry no shared array
      * index. If no such projection exists (the two enums have drifted apart; see
@@ -231,15 +307,18 @@ public class PlayerPropertyAssembler implements Assembler<PlayerPropertyParseRec
      * name from a missing lookup, which C cannot do because its indexing is guaranteed valid by
      * {@code parse_projection_code}'s element/order check.
      *
-     * <p>Builds the finished display name and description the way C does at
-     * {@code init.c:1338-1343}: the name is the projection's {@link Projection#getName()} with
-     * only its first character capitalized (C: {@code my_strcap}, {@code z-util.c:529}) followed
+     * <p>Builds the finished display name and description the way C does in
+     * {@code finish_parse_player_prop}: the name is the projection's {@link Projection#getName()} with
+     * only its first character capitalized (C: {@code my_strcap}, {@code z-util.c}) followed
      * by {@code pp}'s own name (e.g. {@code "Cold" + " " + "Resistance"}); the description is
      * {@code pp}'s own description followed by the projection name and a trailing period (C:
      * {@code format("%s %s.", ...)}), matching C's asymmetry of putting the period only on the
      * description, never the name.
      *
-     * <p>Function spreadPlayerPropertyOut coded on 260924, commented in full on 260924.
+     * <p>The bindings are re-suffixed in the order {@code pp} holds them, which is file order (the
+     * accepted deviation in the class block; C walks its reversed list).
+     *
+     * <p>Function spreadPlayerPropertyOut coded on 260924, commented in full on 261029.
      *
      * @param pp the template property for one {@code type:element} record, carrying that
      *           record's own name/description/bindings/value ahead of expansion

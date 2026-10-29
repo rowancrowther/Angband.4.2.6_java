@@ -573,6 +573,26 @@ recorded here as the summary states them; fill in the detail when you next touch
   refusal. Then the all-digit branch checks the value against `Integer.MAX_VALUE` before it is stored.
 - **Accepted:** 2026-10-29, during the `ProjectionAssembler` port pass. Choice made over refusing the value, as C does.
 
+## Slay
+
+### A `base:` line in `slay.txt` is resolved, where C refuses every one
+
+- **Java:** `SlayAssembler.assemble` (the `base:` branch), through `MonsterRegistry.lookupMonsterBase`. **C:**
+  `parse_slay_base` (`obj-init.c`) and `lookup_monster_base` (`mon-util.c`).
+- **Differs:** `parse_slay_base` refuses a base that `lookup_monster_base` cannot find. In `init.c` the parser table runs
+  `slays` before `monster bases`, and `rb_info` is only filled by `finish_parse_mon_base` (`mon-init.c`), so at the time
+  `slay.txt` is read every lookup returns `NULL` and every `base:` line ends the load with
+  `PARSE_ERROR_INVALID_MONSTER_BASE`. Java loads the monster bases first (`GameConstants`, "Dependent on MonsterBases"),
+  so a name that matches a base resolves and the slay loads with that base. An unknown name is refused in both.
+- **Why:** the Java load order is deliberate, and a slay that targets a base is what the data format describes. Copying
+  C's accident would make the `base:` directive unusable.
+- **Reach:** none from shipped data, where no slay in `slay.txt` uses `base:`. A modded `slay.txt` that does would load
+  in Java and stop C.
+- **Revisit:** if the monster bases are ever loaded after the slays, or if a modded file needs C's refusal. Then the
+  branch refuses every name.
+- **Accepted:** 2026-10-29, during the `SlayAssembler` port pass. Marked in the `SlayAssembler` Javadoc. Pinned by
+  `SlayAssemblerTest.aBaseThatMatchesALoadedMonsterBaseResolvesHereWhereCRefusesEveryBase`.
+
 ## Pending your decision
 
 - The five `objDescNameFormat` divergences (Part G; `docs/ItemObject_round2/part_G.md`). All unreachable from shipped

@@ -17,7 +17,11 @@
 
 package uk.co.jackoftradesltd.backend.parser.slay;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
+import uk.co.jackoftradesltd.backend.parser.ParseUtils;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.middle.game.globals.registry.MonsterRegistry;
 import uk.co.jackoftradesltd.middle.monsters.MonsterBase;
@@ -33,38 +37,93 @@ import java.util.List;
  * target monster race flag or monster base, and the numeric multipliers and
  * power. This is the Java analogue of the {@code parse_slay_*} handlers in
  * {@code src/obj-init.c}, gathered into one place per the suite's
- * "grammars extract, assemblers resolve" split.
- * <p>
- * <strong>Race flag and base are mutually exclusive.</strong> A slay targets
- * exactly one of a race flag or a monster base (mirroring C's
- * {@code PARSE_ERROR_INVALID_SLAY} guard in {@code parse_slay_race_flag}/
- * {@code parse_slay_base}). A record naming both - or neither - is rejected;
- * otherwise only the populated one is resolved and the other is left
- * {@code null} on the {@link Slay}.
- * <p>
- * <strong>Errors are soft and per-record.</strong> Any unresolved field appends
- * a message to {@code errors} and skips just that record ({@code continue}), so
- * one malformed slay never aborts the rest of the file - the partial-results
- * contract the {@code GrammarDriver} pipeline relies on.
+ * "grammars extract, assemblers resolve" split. The counting, the 254-entry
+ * limit and the copy into {@code slays[]} in {@code finish_parse_slay} are not
+ * done here: the list order is, and the rest is recorded on
+ * {@code ObjectDataLoader.loadSlays}.
+ *
+ * <p><strong>A slay targets a race flag, a base, or neither.</strong> C refuses
+ * a second target on one slay: {@code parse_slay_race_flag} and
+ * {@code parse_slay_base} return {@code PARSE_ERROR_INVALID_SLAY} when
+ * {@code race_flag} or {@code base} is already set. A record naming both is
+ * therefore refused. A record naming neither is not: no handler and no check in
+ * {@code finish_parse_slay} requires one, so it loads with both left
+ * {@code null} on the {@link Slay}. Only the populated one is resolved.
+ *
+ * <p><strong>Every fault stops the load.</strong> C's first parser error ends
+ * the whole file, and so does this: a fault is logged as fatal and thrown as a
+ * {@link DataFileParseException}, no later record is read, and nothing is added
+ * to the {@code errors} list. The faults are an unknown race flag (a miss, or
+ * {@code NONE}, which {@code lookup_flag} in {@code datafile.c} never matches
+ * because it starts at {@code FLAG_START}), an unknown monster base, both a
+ * race flag and a base, a leading {@code -} on a number, and a number with no
+ * digits.
+ *
+ * <p><strong>Absent directives.</strong> C allocates each slay zeroed, so a
+ * directive left out keeps its zero: the three numbers load as 0, and
+ * {@code name}, {@code melee-verb} and {@code range-verb} stay {@code NULL}.
+ * The grammar hands over empty text for a directive it did not see, and the
+ * assembler turns empty text into 0 for a number and into {@code null} for the
+ * three strings.
+ *
+ * <p><strong>Accepted deviation (2026-10-29): {@code base:} is resolved.</strong>
+ * In {@code init.c} the {@code slays} parser runs before {@code monster bases},
+ * so in C the monster base list is still empty when {@code slay.txt} is read
+ * and every {@code base:} line is refused with
+ * {@code PARSE_ERROR_INVALID_MONSTER_BASE}. Java loads the monster bases first,
+ * so a name that matches one resolves and the slay loads. No shipped slay uses
+ * {@code base:}. See "Slay" in {@code docs/Accepted_Deviations.md}.
+ *
+ * <p>Class SlayAssembler coded before 260915, commented in full on 261029.
  *
  * @author Rowan Crowther
  */
 public class SlayAssembler implements Assembler<SlayParseRecord, List<Slay>> {
     /**
-     * Resolve each parse record into a {@link Slay}, skipping (with a soft error)
-     * any record whose race-flag/base choice is invalid or whose numeric fields
-     * do not parse.
+     * Receives the fatal message before each {@link DataFileParseException} is thrown.
+     *
+     * <p>Field logger coded before 260915, commented in full on 261029.
+     */
+    private static final Logger logger = LogManager.getLogger(SlayAssembler.class);
+
+    /**
+     * Resolve each parse record into a {@link Slay}, in the order C's {@code parse_slay_*} handlers
+     * (and {@code finish_parse_slay}, {@code obj-init.c}) would leave them in {@code slays[]}. The
+     * first fault ends the load: it is logged as fatal and thrown, and no later record is read.
+     *
+     * <p>Per record:
+     * <ul>
+     *   <li>{@code code} is stored as written and never taken apart, as {@code parse_slay_code} does.</li>
+     *   <li>{@code name}, {@code melee-verb} and {@code range-verb} are stored as written, and empty
+     *       text (the directive was absent) becomes {@code null}, as the zeroed record leaves
+     *       {@code NULL}.</li>
+     *   <li>The race flag is matched in exact case against the {@code RF_} constants, as
+     *       {@code lookup_flag} matches with {@code streq}. An unknown name and {@code NONE} are
+     *       refused. {@code MAX} has no constant, so it is refused as an unknown name.</li>
+     *   <li>The base is matched in exact case against the loaded monster bases, and an unknown name
+     *       is refused. C refuses every base (see the class block); here a matching one resolves.</li>
+     *   <li>A race flag and a base together are refused. Neither is accepted, and both stay
+     *       {@code null}.</li>
+     *   <li>{@code multiplier}, {@code o-multiplier} and {@code power} are refused if the text starts
+     *       with {@code -}, whatever the value, so {@code -0} goes too, as {@code parser_getuint}
+     *       refuses it. Otherwise {@link ParseUtils#parseIntString} reads them in base 0 as
+     *       {@code strtoul} does, so {@code 010} is 8, and empty text is 0. A value above
+     *       {@code Integer.MAX_VALUE} is clamped where C wraps it (accepted deviation, see
+     *       {@code ParseUtils}).</li>
+     * </ul>
      *
      * <p>The result is in reverse file order, because C's parser prepends each slay to a list and
-     * {@code finish_parse_slay} ({@code obj-init.c}) copies that list into {@code slays[]} from the
-     * head: the last record in {@code slay.txt} comes first, as {@code slays[1]}. Consumers that
-     * keep the first of several equivalent slays, such as {@code Rune.initRunes}, depend on this.
+     * {@code finish_parse_slay} copies that list into {@code slays[]} from the head: the last
+     * record in {@code slay.txt} comes first, as {@code slays[1]}. Consumers that keep the first of
+     * several equivalent slays, such as {@code Rune.initRunes}, depend on this.
      *
-     * <p>Function assemble coded before 260915, commented in full on 261013.
+     * <p>Function assemble coded before 260915, commented in full on 261029.
      *
-     * @param records the raw slay records from the parser
-     * @param errors  the soft-error sink, appended to in place; never thrown
-     * @return the successfully assembled slays, in reverse file order (C's {@code slays[]} order)
+     * @param records  the raw slay records from the parser
+     * @param errors   not used: a fault is thrown, never added to this list
+     * @param filename the file being read, for the fault messages
+     * @return the assembled slays, in reverse file order (C's {@code slays[]} order)
+     * @throws DataFileParseException on the first fault in any record
      */
     @Override
     public List<Slay> assemble(@NotNull List<SlayParseRecord> records, @NotNull List<String> errors,
@@ -74,65 +133,68 @@ public class SlayAssembler implements Assembler<SlayParseRecord, List<Slay>> {
         for (SlayParseRecord record : records) {
             int line = record.line();
             String code = record.code();
-            String name = record.name();
+            String name = record.name().isEmpty() ? null : record.name();
             String rawRaceFlag = record.raceFlag();
             String rawBase = record.base();
-            // A slay targets exactly one of a race flag or a base; naming both is invalid.
+            // A second target on one slay is invalid; a race flag and a base together is the second.
             if (!rawRaceFlag.isEmpty() && !rawBase.isEmpty()) {
-                errors.add("Block beginning line: " + line + " has both " +
-                        "race flag and base");
-                continue;
+                String message = "Slay starting at line: " + line + " of file: " + filename + " has " +
+                        "an illegal state. Both monster race flag and monster base are not empty";
+                logger.fatal(message);
+                throw new DataFileParseException(message);
             }
-            // Resolve whichever one is present, leaving the other null; neither is meaningless.
+            // Resolve whichever one is present, leaving the other null; with neither, both stay null as in C.
             MonsterRaceFlag monsterRaceFlag = null;
             MonsterBase monsterBase = null;
             if (!rawRaceFlag.isEmpty()) {
                 try {
                     monsterRaceFlag = MonsterRaceFlag.valueOf("RF_" + rawRaceFlag);
+                    if (monsterRaceFlag == MonsterRaceFlag.RF_NONE) {
+                        String message = "Slay starting at line: " + line + " of file: " + filename + " has " +
+                                "an illegal sentinel monster race flag value: " + rawRaceFlag;
+                        logger.fatal(message);
+                        throw new DataFileParseException(message);
+                    }
                 } catch (IllegalArgumentException e) {
-                    errors.add("Block beginning line: " + line + " has " +
-                            "unknown monster race flag: " + rawRaceFlag);
-                    continue;
+                    String message = "Slay starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal monster race flag value: " + rawRaceFlag;
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
                 }
             } else if (!rawBase.isEmpty()) {
                 monsterBase = MonsterRegistry.lookupMonsterBase(rawBase);
                 if (monsterBase == null) {
-                    errors.add("Block beginning line: " + line + " has unknown monster base");
-                    continue;
+                    String message = "Slay starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal monster base value: " + rawBase;
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
                 }
-            } else {
-                errors.add("Block beginning line: " + line + " has neither " +
-                        "monster base nor monster race flag. Ignoring.");
-                continue;
             }
-            // multiplier / o-multiplier / power are INTEGER tokens, so parseInt can only fail on a
-            // value too large for int.
-            int multiplier = 0;
-            try {
-                multiplier = Integer.parseInt(record.mult());
-            } catch (NumberFormatException e) {
-                errors.add("Block beginning line: " + line + " has" +
-                        " invalid integer format for multiplier: " + record.mult());
-                continue;
+            // multiplier / o-multiplier / power are uint in C: a leading '-' is refused first, then
+            // parseIntString reads base 0, gives 0 for an absent directive and clamps above INT_MAX.
+            if (ParseUtils.minusFound(record.mult())) {
+                String message = "Slay starting at line: " + line + " of file: " + filename + " has " +
+                        "an illegal negative multiplier value: " + record.mult();
+                logger.fatal(message);
+                throw new DataFileParseException(message);
             }
-            int oMult = 0;
-            try {
-                oMult = Integer.parseInt(record.oMult());
-            } catch (NumberFormatException e) {
-                errors.add("Block beginning line: " + line + " has " +
-                        "invalid integer format for oMult: " + record.oMult());
-                continue;
+            int multiplier = ParseUtils.parseIntString("Slay", record.mult(), line, filename, "multiplier");
+            if (ParseUtils.minusFound(record.oMult())) {
+                String message = "Slay starting at line: " + line + " of file: " + filename + " has " +
+                        "an illegal negative o-multiplier value: " + record.oMult();
+                logger.fatal(message);
+                throw new DataFileParseException(message);
             }
-            int power = 0;
-            try {
-                power = Integer.parseInt(record.power());
-            } catch (NumberFormatException e) {
-                errors.add("Block beginning line: " + line + " has " +
-                        "invalid integer format for power: " + record.power());
-                continue;
+            int oMult = ParseUtils.parseIntString("Slay", record.oMult(), line, filename, "o-multiplier");
+            if (ParseUtils.minusFound(record.power())) {
+                String message = "Slay starting at line: " + line + " of file: " + filename + " has " +
+                        "an illegal negative power value: " + record.power();
+                logger.fatal(message);
+                throw new DataFileParseException(message);
             }
-            String meleeVerb = record.meleeVerb();
-            String rangeVerb = record.rangeVerb();
+            int power = ParseUtils.parseIntString("Slay", record.power(), line, filename, "power");
+            String meleeVerb = record.meleeVerb().isEmpty() ? null : record.meleeVerb();
+            String rangeVerb = record.rangeVerb().isEmpty() ? null : record.rangeVerb();
 
             slays.addFirst(new Slay(code, name, monsterBase, meleeVerb, rangeVerb,
                     monsterRaceFlag, multiplier, oMult, power));

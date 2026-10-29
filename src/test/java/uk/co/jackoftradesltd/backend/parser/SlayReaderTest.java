@@ -21,6 +21,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.game.globals.registry.MonsterRegistry;
 import uk.co.jackoftradesltd.middle.monsters.MonsterBase;
@@ -39,9 +40,11 @@ import static org.junit.jupiter.api.Assertions.*;
  * End-to-end throughput tests for {@link SlayReader}: file text -> {@code SlayLexer}/
  * {@code SlayGrammar} -> {@code SlayParseRecord} -> {@code SlayAssembler} -> {@link Slay}. Where
  * {@code SlayGrammarTest} stops at the raw parse record, these pin the assembler half - the
- * race-flag XOR base branch (resolve exactly the one that is present), the numeric-field parsing,
- * and the skip-and-continue soft-error channel that {@code GrammarDriver} threads through
- * {@link ParseResult}, plus the fail-closed hard-error channel.
+ * race-flag-or-base branch (resolve the one that is present, accept neither, refuse both), the
+ * numeric-field parsing, and the faults that stop the load: the assembler throws a
+ * {@code DataFileParseException} out of the reader, as C's first parser error ends the file. The
+ * record-count mismatch is the one soft error left, and it travels in {@link ParseResult}; the
+ * fail-closed hard-error channel covers the syntax errors.
  *
  * <p>The assembler resolves {@code base:} via {@link MonsterRegistry#getBaseFromName}, which reads the
  * static {@code monsterBases} list (and throws if it is {@code null}); loading those in turn needs
@@ -170,79 +173,52 @@ class SlayReaderTest {
                 () -> "expected a resolved base, got: " + result.items().get(0));
     }
 
-    // ---- Assembler soft-error branches (skip-and-continue) ---------------
+    // ---- Assembler faults (the load stops) --------------------------------
 
     @Test
-    void bothRaceFlagAndBaseIsReportedAndSkipped() throws IOException {
-        ParseResult<Slay> result = load("both.txt",
-                withHeader(1, slay("EVIL_2", "race-flag:EVIL\nbase:" + KNOWN_BASE, "2", "18", "100")));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("both")),
-                result.errors()::toString);
+    void bothRaceFlagAndBaseStopTheLoad() {
+        // PARSE_ERROR_INVALID_SLAY: "Flag or base, not both".
+        assertThrows(DataFileParseException.class, () -> load("both.txt",
+                withHeader(1, slay("EVIL_2", "race-flag:EVIL\nbase:" + KNOWN_BASE, "2", "18", "100"))));
     }
 
     @Test
-    void unknownRaceFlagIsReportedAndSkipped() throws IOException {
-        ParseResult<Slay> result =
-                load("bad-flag.txt", withHeader(1, raceFlagSlay("EVIL_2", "NOTAFLAG")));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(
-                        e -> e.contains("unknown monster race flag") && e.contains("NOTAFLAG")),
-                result.errors()::toString);
+    void unknownRaceFlagStopsTheLoad() {
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> load("bad-flag.txt", withHeader(1, raceFlagSlay("EVIL_2", "NOTAFLAG"))));
+        assertTrue(e.getMessage().contains("NOTAFLAG"), e::getMessage);
     }
 
     @Test
-    void unknownBaseIsReportedAndSkipped() throws IOException {
-        ParseResult<Slay> result = load("bad-base.txt",
-                withHeader(1, slay("EVIL_2", "base:no such base", "2", "18", "100")));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown monster base")),
-                result.errors()::toString);
+    void unknownBaseStopsTheLoad() {
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("bad-base.txt",
+                withHeader(1, slay("EVIL_2", "base:no such base", "2", "18", "100"))));
+        assertTrue(e.getMessage().contains("no such base"), e::getMessage);
     }
 
     @Test
-    void neitherRaceFlagNorBaseIsReportedAndSkipped() throws IOException {
+    void neitherRaceFlagNorBaseLoadsAsInC() throws IOException {
+        // No handler and no check in finish_parse_slay requires a target.
         ParseResult<Slay> result =
                 load("neither.txt", withHeader(1, slay("EVIL_2", "", "2", "18", "100")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("neither")),
-                result.errors()::toString);
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(1, result.items().size());
+        assertTrue(result.items().get(0).toString().contains("base=null"));
+        assertTrue(result.items().get(0).toString().contains("raceFlag=null"));
     }
 
     @Test
-    void overflowingMultiplierIsReportedAndSkipped() throws IOException {
-        // multiplier: is an INTEGER token, so the only route into the NumberFormatException branch is
-        // a value too large for int.
-        ParseResult<Slay> result = load("bad-mult.txt",
-                withHeader(1, raceFlagSlayWith("EVIL_2", "EVIL", "99999999999999", "18", "100")));
+    void figuresAboveIntMaxAreClampedWhereCWrapsThem() throws IOException {
+        // Accepted deviation (ParseUtils): strtoul wraps into the 32-bit field, here it clamps.
+        ParseResult<Slay> result = load("big.txt",
+                withHeader(1, raceFlagSlayWith("EVIL_2", "EVIL", "99999999999999", "99999999999999",
+                        "99999999999999")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("multiplier")),
-                result.errors()::toString);
-    }
-
-    @Test
-    void overflowingOMultiplierIsReportedAndSkipped() throws IOException {
-        ParseResult<Slay> result = load("bad-omult.txt",
-                withHeader(1, raceFlagSlayWith("EVIL_2", "EVIL", "2", "99999999999999", "100")));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("oMult")),
-                result.errors()::toString);
-    }
-
-    @Test
-    void overflowingPowerIsReportedAndSkipped() throws IOException {
-        ParseResult<Slay> result = load("bad-power.txt",
-                withHeader(1, raceFlagSlayWith("EVIL_2", "EVIL", "2", "18", "99999999999999")));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("power")),
-                result.errors()::toString);
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(Integer.MAX_VALUE, result.items().get(0).getMultiplier());
+        assertEquals(Integer.MAX_VALUE, result.items().get(0).getPower());
+        assertTrue(result.items().get(0).toString().contains("oMultiplier=" + Integer.MAX_VALUE));
     }
 
     @Test
@@ -282,24 +258,16 @@ class SlayReaderTest {
     // ---- Two soft errors at once -----------------------------------------
 
     @Test
-    void twoDifferentSoftErrorsAreBothReportedAndTheValidRecordStillLoads() throws IOException {
-        // Three records, declared count 3 (so no count error): one clean, one with an unknown flag,
-        // one naming both a flag and a base. The two bad ones are skipped independently, both errors
-        // are recorded, and the clean record still loads - proving the errors accumulate rather than
-        // the first one aborting the file.
+    void aBadRecordAmongGoodOnesStopsTheWholeLoad() {
+        // C's first parser error ends the file, so the clean records either side are not handed
+        // back and the first fault, the unknown flag, is the one reported.
         String body = raceFlagSlay("EVIL_2", "EVIL")
                 + raceFlagSlay("BAD_2", "NOTAFLAG")
                 + slay("BOTH_2", "race-flag:EVIL\nbase:" + KNOWN_BASE, "2", "18", "100");
-        ParseResult<Slay> result = load("two-errors.txt", withHeader(3, body));
 
-        assertEquals(1, result.items().size());
-        assertEquals("EVIL_2", result.items().get(0).getCode());
-
-        assertTrue(result.errors().stream().anyMatch(
-                        e -> e.contains("unknown monster race flag") && e.contains("NOTAFLAG")),
-                result.errors()::toString);
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("both")),
-                result.errors()::toString);
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> load("two-errors.txt", withHeader(3, body)));
+        assertTrue(e.getMessage().contains("NOTAFLAG"), e::getMessage);
     }
 
     // ---- Contract of the reader itself (expected values from C's slay.txt and obj-init.c) ----
@@ -461,60 +429,63 @@ class SlayReaderTest {
     }
 
     @Test
-    void secondBaseInOneRecordKeepsTheLastHereWhereCRejects() throws IOException {
+    void secondBaseInOneRecordKeepsTheLastHereWhereCRejects() {
         String body = "code:DRAGON_5\nname:dragons\nbase:" + KNOWN_BASE + "\nbase:no such base\n"
                 + "multiplier:5\no-multiplier:35\npower:110\nmelee-verb:smite\nrange-verb:pierces\n";
-        ParseResult<Slay> result = load("two-bases.txt", withHeader(1, body));
 
-        // The last base: wins, and it is the unknown one, so the record is skipped for that reason
-        // and not because there were two of them.
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown monster base")),
-                result.errors()::toString);
+        // The last base: wins, and it is the unknown one, so the load stops for that reason and
+        // not because there were two of them.
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> load("two-bases.txt", withHeader(1, body)));
+        assertTrue(e.getMessage().contains("no such base"), e::getMessage);
     }
 
     @Test
-    void missingPowerSkipsTheRecordHereWhereCLeavesItZero() throws IOException {
+    void missingPowerLoadsAsZeroAsInC() throws IOException {
         // C allocates the slay zeroed, so a record with no power: loads with power 0.
         String body = "code:EVIL_2\nname:evil creatures\nrace-flag:EVIL\nmultiplier:2\n"
                 + "o-multiplier:18\nmelee-verb:smite\nrange-verb:pierces\n";
         ParseResult<Slay> result = load("no-power.txt", withHeader(1, body));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("power")),
-                result.errors()::toString);
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(0, result.items().get(0).getPower());
+        assertEquals(2, result.items().get(0).getMultiplier());
     }
 
     @Test
-    void missingMultiplierSkipsTheRecordHereWhereCLeavesItZero() throws IOException {
+    void missingMultiplierLoadsAsZeroAsInC() throws IOException {
         String body = "code:EVIL_2\nname:evil creatures\nrace-flag:EVIL\n"
                 + "o-multiplier:18\npower:200\nmelee-verb:smite\nrange-verb:pierces\n";
         ParseResult<Slay> result = load("no-mult.txt", withHeader(1, body));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("multiplier")),
-                result.errors()::toString);
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(0, result.items().get(0).getMultiplier());
+        assertEquals(200, result.items().get(0).getPower());
     }
 
     @Test
-    void negativeMultiplierLoadsHereWhereCParserGetUintRejectsIt() throws IOException {
+    void missingNameAndVerbsLoadAsNullAsInC() throws IOException {
+        String body = "code:EVIL_2\nrace-flag:EVIL\nmultiplier:2\no-multiplier:18\npower:200\n";
+        ParseResult<Slay> result = load("no-text.txt", withHeader(1, body));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertNull(result.items().get(0).getName());
+        assertTrue(result.items().get(0).toString().contains("meleeVerb='null'"));
+    }
+
+    @Test
+    void negativeMultiplierStopsTheLoadAsParserGetUintRefusesIt() {
         // C reads the three numbers with parser_getuint, which refuses a leading minus sign.
-        ParseResult<Slay> result = load("negative.txt",
-                withHeader(1, raceFlagSlayWith("EVIL_2", "EVIL", "-2", "18", "200")));
-
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
-        assertEquals(-2, result.items().get(0).getMultiplier());
+        assertThrows(DataFileParseException.class, () -> load("negative.txt",
+                withHeader(1, raceFlagSlayWith("EVIL_2", "EVIL", "-2", "18", "200"))));
     }
 
     @Test
-    void raceFlagNoneLoadsHereWhereCLookupFlagSkipsIt() throws IOException {
+    void raceFlagNoneStopsTheLoadAsLookupFlagSkipsIndexZero() {
         // lookup_flag starts at FLAG_START (1), so "NONE" at index 0 is never found and C returns
-        // PARSE_ERROR_INVALID_FLAG. RF_NONE is a real constant here, so the record is accepted.
-        ParseResult<Slay> result = load("none-flag.txt",
-                withHeader(1, slay("EVIL_2", "race-flag:NONE", "2", "18", "200")));
-
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
-        assertTrue(result.items().get(0).toString().contains("raceFlag=RF_NONE"));
+        // PARSE_ERROR_INVALID_FLAG.
+        assertThrows(DataFileParseException.class, () -> load("none-flag.txt",
+                withHeader(1, slay("EVIL_2", "race-flag:NONE", "2", "18", "200"))));
     }
 
     @Test

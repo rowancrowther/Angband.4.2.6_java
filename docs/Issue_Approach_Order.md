@@ -252,7 +252,7 @@ Paths are under `src/main/java/uk/co/jackoftradesltd/`. The figure in brackets i
 - `backend/parser/realm/RealmAssembler.java` (1): ~~80~~
 - `backend/parser/roomprofile/RoomProfileAssembler.java` (11): ~~69, 79, 89, 97, 107, 113, 123, 141, 157, 170, 179~~
 - `backend/parser/shape/ShapeAssembler.java` (17): ~~84, 95, 106, 119, 131, 143, 155, 167, 179, 191, 203, 216, 230, 249, 253, 264, 268~~
-- `backend/parser/slay/SlayAssembler.java` (7): 81, 92, 99, 103, 113, 121, 129
+- `backend/parser/slay/SlayAssembler.java` (7): ~~81, 92, 99, 103, 113, 121, 129~~
 - `backend/parser/summon/SummonAssembler.java` (4): 70, 80, 96, 122
 - `backend/parser/terrainfeature/TerrainFeatureAssembler.java` (9): 155, 183, 193, 198, 208, 213, 233, 248, 279
 - `backend/parser/trap/TrapAssembler.java` (7): 128, 141, 152, 163, 173, 184, 196

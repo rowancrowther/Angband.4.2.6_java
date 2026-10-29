@@ -21,6 +21,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
 import uk.co.jackoftradesltd.middle.game.globals.registry.MonsterRegistry;
@@ -43,8 +44,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * Where {@code SummonGrammarTest} stops at the raw parse record, these pin the assembler half - the
  * optional-field resolution (an absent {@code race-flag} becomes {@link MonsterRaceFlag#RF_NONE}
  * rather than a dropped record), the message-type/base/flag lookups, the two-pass fallback linking,
- * and both error channels {@code GrammarDriver} threads through {@link ParseResult}: the soft
- * skip-and-continue {@code errors} list and the hard fail-closed channel.
+ * and the two ways a load can fail: the assembler's faults, which stop the load with a
+ * {@link DataFileParseException} as C's first parser error does, and the hard fail-closed channel
+ * {@code GrammarDriver} threads through {@link ParseResult}.
  *
  * <p>The assembler resolves {@code base:} via {@link MonsterRegistry#getBaseFromName}, which reads the
  * static {@code monsterBases} list (and throws if it is {@code null}); loading those in turn needs
@@ -193,57 +195,44 @@ class SummonReaderTest {
         assertEquals(MessageType.MSG_SUM_DRAGON, result.items().get(0).getMessageType());
     }
 
-    // ---- Soft errors: dropped record (skip-and-continue) -----------------
+    // ---- Assembler faults: the load stops, as C's first parser error ends the file ----
 
     @Test
-    void invalidMessageTypeIsReportedAndSkipped() throws IOException {
-        ParseResult<Summon> result =
-                load("bad-msgt.txt", withHeader(1, summon("MONSTER", "NOTREAL", "0", "", "test")));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(
-                        e -> e.contains("invalid message type") && e.contains("NOTREAL")),
-                result.errors()::toString);
+    void invalidMessageTypeStopsTheLoad() {
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> load("bad-msgt.txt", withHeader(1, summon("MONSTER", "NOTREAL", "0", "", "test"))));
+        assertTrue(e.getMessage().contains("message type") && e.getMessage().contains("NOTREAL"), e::getMessage);
     }
 
     @Test
-    void presentButInvalidRaceFlagIsReportedAndSkipped() throws IOException {
-        ParseResult<Summon> result =
-                load("bad-flag.txt", withHeader(1, summon("MONSTER", "SUM_MONSTER", "0",
-                        "race-flag:NOTAFLAG", "test")));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(
-                        e -> e.contains("invalid race flag") && e.contains("NOTAFLAG")),
-                result.errors()::toString);
+    void presentButInvalidRaceFlagStopsTheLoad() {
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> load("bad-flag.txt", withHeader(1, summon("MONSTER", "SUM_MONSTER", "0",
+                        "race-flag:NOTAFLAG", "test"))));
+        assertTrue(e.getMessage().contains("race flag") && e.getMessage().contains("NOTAFLAG"), e::getMessage);
     }
 
     @Test
-    void unknownBaseIsReportedAndSkipped() throws IOException {
-        ParseResult<Summon> result =
-                load("bad-base.txt", withHeader(1, summon("MONSTER", "SUM_MONSTER", "0",
-                        "base:no such base", "test")));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("invalid monster base")),
-                result.errors()::toString);
+    void unknownBaseStopsTheLoad() {
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> load("bad-base.txt", withHeader(1, summon("MONSTER", "SUM_MONSTER", "0",
+                        "base:no such base", "test"))));
+        assertTrue(e.getMessage().contains("monster base") && e.getMessage().contains("no such base"),
+                e::getMessage);
     }
 
-    // ---- Soft error: kept record -----------------------------------------
+    // ---- An unresolved fallback is no fault ------------------------------
 
     @Test
-    void unresolvableFallbackIsReportedButTheRecordStillLoads() throws IOException {
-        // Unlike the msgt/base/flag branches, an unresolvable fallback does NOT drop the record: it
-        // logs a soft error and leaves the fallback null.
+    void unresolvableFallbackIsSilentAndTheRecordStillLoads() throws IOException {
+        // finish_parse_summon stores summon_name_to_idx() = -1 for an unknown name, with no error.
         ParseResult<Summon> result =
                 load("bad-fallback.txt", withHeader(1, summon("MONSTER", "SUM_MONSTER", "0",
                         "fallback:NOSUCH", "test")));
 
         assertEquals(1, result.items().size());
         assertNull(result.items().get(0).getFallback());
-        assertTrue(result.errors().stream().anyMatch(
-                        e -> e.contains("Invalid fallback name") && e.contains("NOSUCH")),
-                result.errors()::toString);
+        assertFalse(result.hasErrors(), result.errors()::toString);
     }
 
     // ---- Fallback resolution ---------------------------------------------
@@ -293,26 +282,19 @@ class SummonReaderTest {
         assertTrue(result.hasErrors());
     }
 
-    // ---- Two soft errors at once -----------------------------------------
+    // ---- Two faults at once ----------------------------------------------
 
     @Test
-    void twoDifferentSoftErrorsAreBothReportedAndTheValidRecordStillLoads() throws IOException {
-        // Three records, declared count 3 (so no count error): one clean, one with an unknown
-        // message type, one with an unknown race flag. The two bad ones are skipped independently,
-        // both errors are recorded, and the clean record still loads - proving the errors accumulate
-        // rather than the first one aborting the file.
+    void theFirstOfTwoFaultsIsTheOneReportedAndNothingIsHandedBack() {
+        // C's first parser error ends the file: the clean record before the fault is not handed
+        // back, and the second fault is never reached.
         String body = plainSummon("GOOD")
                 + summon("BADMSG", "NOTREAL", "0", "", "bad msgt")
                 + summon("BADFLAG", "SUM_MONSTER", "0", "race-flag:NOTAFLAG", "bad flag");
-        ParseResult<Summon> result = load("two-errors.txt", withHeader(3, body));
 
-        assertEquals(1, result.items().size());
-        assertEquals("GOOD", result.items().get(0).getName());
-
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("invalid message type")),
-                result.errors()::toString);
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("invalid race flag")),
-                result.errors()::toString);
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> load("two-errors.txt", withHeader(3, body)));
+        assertTrue(e.getMessage().contains("NOTREAL"), e::getMessage);
     }
 
     // ---- Order, shape and reader contract, against mon-summon.c ------------
@@ -375,14 +357,12 @@ class SummonReaderTest {
     }
 
     @Test
-    void parseDropsTheSoftErrorsButKeepsTheRecordsThatAssembled() throws IOException {
+    void parseThrowsOnAnAssemblerFaultToo() throws IOException {
         String body = plainSummon("GOOD") + summon("BAD", "NOTREAL", "0", "", "bad msgt");
-        Path file = tempDir.resolve("parse-soft.txt");
+        Path file = tempDir.resolve("parse-fault.txt");
         Files.writeString(file, withHeader(2, body));
 
-        List<Summon> items = new SummonReader().parse(file.toString());
-
-        assertEquals(List.of("GOOD"), items.stream().map(Summon::getName).toList());
+        assertThrows(DataFileParseException.class, () -> new SummonReader().parse(file.toString()));
     }
 
     @Test
@@ -428,26 +408,25 @@ class SummonReaderTest {
     }
 
     @Test
-    void aBadRecordDoesNotStopTheLaterRecordsLoading() throws IOException {
-        // C would stop at the bad msgt:; here only the offending record is skipped.
+    void aBadRecordStopsTheLoadBeforeTheLaterRecords() {
+        // C stops at the bad msgt:, so the later record is never read.
         String body = summon("BAD", "NOTREAL", "0", "", "bad")
                 + plainSummon("LATER");
-        ParseResult<Summon> result = load("skip.txt", withHeader(2, body));
 
-        assertEquals(List.of("LATER"), result.items().stream().map(Summon::getName).toList());
+        assertThrows(DataFileParseException.class, () -> load("stop.txt", withHeader(2, body)));
     }
 
     @Test
     void anUnresolvedFallbackKeepsTheRecordWhereCStoresMinusOneSilently() throws IOException {
         // finish_parse_summon back-patches fallback = summon_name_to_idx(name), -1 for no match,
-        // with no error. Here the record is kept but a soft error is raised.
+        // with no error. Here the record is kept and nothing is reported.
         ParseResult<Summon> result = load("fb.txt",
                 withHeader(1, summon("A", "SUM_MONSTER", "0", "fallback:NOSUCH", "a")));
 
         assertEquals(1, result.items().size());
         assertNull(result.items().get(0).getFallback());
         assertEquals("NOSUCH", result.items().get(0).getFallbackName());
-        assertTrue(result.hasErrors());
+        assertFalse(result.hasErrors());
     }
 
     @Test
@@ -466,15 +445,14 @@ class SummonReaderTest {
     // ---- Where the Java grammar/assembler differ from C (pinned, see docs/) ---
 
     @Test
-    void uniquesOtherThanOneIsFalseHereWhereCTreatsAnyNonZeroAsTrue() throws IOException {
+    void uniquesOtherThanOneIsTrueAsInCWhichTreatsAnyNonZeroAsTrue() throws IOException {
         // parse_summon_unique: unique = parser_getint(); if (unique) s->unique_allowed = true.
-        // So C reads 2 and -1 as true. The assembler tests the text for "1". Pinned; see
-        // docs/Assembler_Issues.md.
+        // So C reads 2 and -1 as true.
         ParseResult<Summon> two = load("u2.txt", withHeader(1, summon("A", "SUM_MONSTER", "2", "", "a")));
         ParseResult<Summon> minusOne = load("um1.txt", withHeader(1, summon("A", "SUM_MONSTER", "-1", "", "a")));
 
-        assertFalse(two.items().get(0).isUniquesAllowed());
-        assertFalse(minusOne.items().get(0).isUniquesAllowed());
+        assertTrue(two.items().get(0).isUniquesAllowed());
+        assertTrue(minusOne.items().get(0).isUniquesAllowed());
     }
 
     @Test

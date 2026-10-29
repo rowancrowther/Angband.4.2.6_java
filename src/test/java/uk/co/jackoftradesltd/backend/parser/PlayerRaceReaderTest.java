@@ -21,6 +21,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.channel.utils.Flag;
@@ -62,6 +63,14 @@ import static org.junit.jupiter.api.Assertions.*;
  * the {@code PF_}/{@code ELEM_} family prefixes, and {@code lookupPlayerBody(0)} returning the real
  * humanoid body rather than {@code null}.
  *
+ * <p>Every error the assembler raises is a {@link DataFileParseException}, which ends the load as a
+ * parser error does in C; the grammar's own errors still come back in the {@link ParseResult}. The
+ * expected values for the assembler tests are worked from {@code init.c}, the {@code parse_p_race_*}
+ * handlers and {@code finish_parse_p_race}, and {@code datafile.c}, not from the Java.
+ *
+ * <p>Class PlayerRaceReaderTest coded before 260915, updated on 261029 for the fatal assembler, commented in
+ * full on 261029.
+ *
  * @author Rowan Crowther
  */
 class PlayerRaceReaderTest {
@@ -101,6 +110,14 @@ class PlayerRaceReaderTest {
         Path file = tempDir.resolve(fileName);
         Files.writeString(file, content);
         return new PlayerRaceReader().parseWithResults(file.toString());
+    }
+
+    /**
+     * Loads {@code content} and expects the assembler to end the load, returning the exception so that
+     * a test can check the message names the offending value.
+     */
+    private DataFileParseException rejects(String fileName, String content) {
+        return assertThrows(DataFileParseException.class, () -> load(fileName, content));
     }
 
     private static String withHeader(int count, String body) {
@@ -256,73 +273,75 @@ class PlayerRaceReaderTest {
         assertEquals(21, history.getChartNumber());   // history:21
     }
 
-    // ---- Soft errors: drop the record, keep the rest ---------------------
+    // ---- Fatal errors: a C parser error ends the load --------------------
 
     @Test
-    void unknownObjectFlagIsReportedAndTheRaceDropped() throws IOException {
-        ParseResult<PlayerRace> result = load("bad-oflag.txt",
-                withHeader(1, race("Weird", "obj-flags:NOTAFLAG\n")));
+    void unknownObjectFlagEndsTheLoad() {
+        DataFileParseException e = rejects("bad-oflag.txt", withHeader(1, race("Weird", "obj-flags:NOTAFLAG\n")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(s -> s.contains("invalid object flag value")),
-                result.errors()::toString);
+        assertTrue(e.getMessage().contains("illegal object flag value: NOTAFLAG"), e::getMessage);
     }
 
     @Test
-    void unknownPlayerFlagIsReportedAndTheRaceDropped() throws IOException {
-        ParseResult<PlayerRace> result = load("bad-pflag.txt",
-                withHeader(1, race("Weird", "player-flags:NOTAFLAG\n")));
+    void unknownPlayerFlagEndsTheLoad() {
+        DataFileParseException e = rejects("bad-pflag.txt", withHeader(1, race("Weird", "player-flags:NOTAFLAG\n")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(s -> s.contains("invalid player flag value")),
-                result.errors()::toString);
+        assertTrue(e.getMessage().contains("illegal player flag value: NOTAFLAG"), e::getMessage);
     }
 
     @Test
-    void unknownResistNameIsReportedAndTheRaceDropped() throws IOException {
-        // Exercises the IllegalArgumentException catch added this round (was an uncaught crash).
-        ParseResult<PlayerRace> result = load("bad-resist.txt",
+    void unknownResistNameEndsTheLoad() {
+        DataFileParseException e = rejects("bad-resist.txt",
                 withHeader(1, race("Weird", "history:1\nvalues:RES_NOSUCH[1]\n")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(s -> s.contains("invalid resist name")),
-                result.errors()::toString);
+        assertTrue(e.getMessage().contains("illegal resist name value: RES_NOSUCH"), e::getMessage);
     }
 
     @Test
-    void badHistoryChartIsReportedAndTheRaceDropped() throws IOException {
-        ParseResult<PlayerRace> result = load("bad-history.txt",
-                withHeader(1, race("Weird", "history:99999\n")));
+    void aResistNameWithoutThePrefixResIsRejectedAsCRejectsIt() {
+        // grab_index_and_int builds "RES_" + each element name and compares the whole token, so
+        // ELEM_FIRE and a bare FIRE match nothing. The assembler must not just drop four characters.
+        DataFileParseException prefixed = rejects("elem-prefix.txt",
+                withHeader(1, race("P", "history:1\nvalues:ELEM_FIRE[1]\n")));
+        DataFileParseException bare = rejects("bare-name.txt",
+                withHeader(1, race("B", "history:1\nvalues:FIRE[1]\n")));
+        DataFileParseException short3 = rejects("short-name.txt",
+                withHeader(1, race("S", "history:1\nvalues:AB[1]\n")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(s -> s.contains("invalid history chart value")),
-                result.errors()::toString);
+        assertTrue(prefixed.getMessage().contains("illegal resist value: ELEM_FIRE"), prefixed::getMessage);
+        assertTrue(bare.getMessage().contains("illegal resist value: FIRE"), bare::getMessage);
+        assertTrue(short3.getMessage().contains("illegal resist value: AB"), short3::getMessage);
     }
 
     @Test
-    void oneBadRaceIsDroppedButTheOthersStillLoad() throws IOException {
-        ParseResult<PlayerRace> result = load("mixed.txt", withHeader(2,
+    void anUnknownHistoryChartLoadsTheRaceWithANullHistory() throws Exception {
+        // parse_p_race_history stores whatever findchart returns, and findchart returns NULL for a
+        // chart that does not exist, with no error.
+        ParseResult<PlayerRace> result = load("bad-history.txt", withHeader(1, race("Weird", "history:99999\n")));
+
+        assertEquals(1, result.items().size(), result.errors()::toString);
+        assertNull(field(result.items().get(0), "history"));
+    }
+
+    @Test
+    void oneBadRaceEndsTheWholeLoadAsCQuitsOnTheFirstParserError() {
+        DataFileParseException e = rejects("mixed.txt", withHeader(2,
                 race("Good", "history:1\n")
                         + race("Bad", "obj-flags:NOTAFLAG\n")));
 
-        assertEquals(1, result.items().size());
-        assertNotNull(byName(result.items(), "Good"));
-        assertNull(byName(result.items(), "Bad"));
-        assertTrue(result.hasErrors());
+        assertTrue(e.getMessage().contains("line: 4"), e::getMessage);
     }
 
     // ---- FLAG lexing: digit-bearing flags tokenise as one FLAG -----------
 
     @Test
-    void digitBearingFlagLexesAsASingleTokenThenFailsEnumLookup() throws IOException {
+    void digitBearingFlagLexesAsASingleTokenThenFailsEnumLookup() {
         // FLAG_MODE allows digits in a flag body, so "NOPE_42" must reach the assembler intact
         // (one token) and be rejected by name — not split or cause a lexer error.
-        ParseResult<PlayerRace> result = load("digit-flag.txt",
+        DataFileParseException e = rejects("digit-flag.txt",
                 withHeader(1, race("Weird", "obj-flags:NOPE_42\n")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(s -> s.contains("NOPE_42")),
-                result.errors()::toString);
+        assertTrue(e.getMessage().contains("NOPE_42"), e::getMessage);
     }
 
     // ---- Record count + hard errors --------------------------------------
@@ -477,6 +496,8 @@ class PlayerRaceReaderTest {
 
     @Test
     void aDirectiveNeverGivenLeavesItsFieldAtZeroAsCsZeroedRecordDoes() throws Exception {
+        // mem_zalloc in parse_p_race_name zeroes r_adj, r_skills and el_info, so a race with no
+        // stats: or skill-*: line reads 0 for every stat and skill, not "no entry".
         PlayerRace r = load("bare.txt", withHeader(1, race("Bare", "history:1\n"))).items().get(0);
 
         for (String f : new String[]{"raceMhp", "raceExp", "infravision", "baseAge", "modAge", "baseHeight",
@@ -484,9 +505,38 @@ class PlayerRaceReaderTest {
             assertEquals(0, (int) field(r, f), f);
         }
         Map<Stats, Integer> stats = field(r, "statsAdj");
-        assertTrue(stats.isEmpty());
+        assertEquals(5, stats.size());
+        for (Stats stat : stats.keySet()) assertEquals(0, (int) stats.get(stat), stat.name());
+        Map<PlayerSkill, Integer> skills = field(r, "skillsAdj");
+        assertEquals(10, skills.size());
+        for (PlayerSkill skill : skills.keySet()) assertEquals(0, (int) skills.get(skill), skill.name());
+        assertEquals(0, r.getStatAdjust(Stats.STAT_CON));
+        assertEquals(0, r.getSkill(PlayerSkill.SKILL_DIGGING));
         Flag<ObjectFlag> of = field(r, "oFlags");
         assertTrue(of.isEmpty());
+    }
+
+    @Test
+    void aSkillLineLeavesTheNineOthersAtZero() throws Exception {
+        // Each skill-* directive sets one r_skills slot and touches no other.
+        PlayerRace r = load("one-skill.txt", withHeader(1, race("One", "history:1\nskill-dig:7\n"))).items().get(0);
+
+        assertEquals(7, r.getSkill(PlayerSkill.SKILL_DIGGING));
+        for (PlayerSkill skill : PlayerSkill.values()) {
+            if (skill == PlayerSkill.SKILL_NONE || skill == PlayerSkill.SKILL_MAX
+                    || skill == PlayerSkill.SKILL_DIGGING) continue;
+            assertEquals(0, r.getSkill(skill), skill.name());
+        }
+    }
+
+    @Test
+    void anElementTheRaceNeverNamesReadsAsNoResistance() throws Exception {
+        // el_info is zeroed, so an element with no values: entry has res_level 0.
+        PlayerRace r = load("one-res.txt", withHeader(1, race("One", "history:1\nvalues:RES_FIRE[1]\n"))).items().get(0);
+
+        assertEquals(1, r.getResistanceLevel(ElementEnum.ELEM_FIRE));
+        assertEquals(0, r.getResistanceLevel(ElementEnum.ELEM_COLD));
+        assertFalse(r.getResistKnowledge(ElementEnum.ELEM_COLD));
     }
 
     @Test
@@ -566,23 +616,27 @@ class PlayerRaceReaderTest {
     }
 
     @Test
-    void aNegativeHistoryChartIsRejectedAsCRejectsAUint() throws IOException {
-        ParseResult<PlayerRace> result = load("neg-history.txt",
-                withHeader(1, race("Neg", "history:-1\n")));
+    void aNegativeHistoryChartIsRejectedAsCRejectsAUint() {
+        // "history uint hist": parser_parse ends the load when the token's first character is '-'.
+        DataFileParseException e = rejects("neg-history.txt", withHeader(1, race("Neg", "history:-1\n")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(s -> s.contains("invalid history chart value")),
-                result.errors()::toString);
+        assertTrue(e.getMessage().contains("negative player history value: -1"), e::getMessage);
     }
 
     @Test
-    void aPlayerFlagMaxIsRejectedAsCRejectsIt() throws IOException {
-        ParseResult<PlayerRace> result = load("pf-max.txt",
-                withHeader(1, race("Max", "history:1\nplayer-flags:MAX\n")));
+    void aNegativeZeroHistoryChartIsRejectedToo() {
+        // The test is on the first character, not the value, so -0 is refused although it is 0.
+        DataFileParseException e = rejects("neg-zero-history.txt", withHeader(1, race("Neg", "history:-0\n")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(s -> s.contains("invalid player flag value")),
-                result.errors()::toString);
+        assertTrue(e.getMessage().contains("negative player history value: -0"), e::getMessage);
+    }
+
+    @Test
+    void aPlayerFlagMaxIsRejectedAsCRejectsIt() {
+        // PlayerFlag has no PF_MAX, so MAX fails as an unknown name.
+        DataFileParseException e = rejects("pf-max.txt", withHeader(1, race("Max", "history:1\nplayer-flags:MAX\n")));
+
+        assertTrue(e.getMessage().contains("illegal player flag value: MAX"), e::getMessage);
     }
 
     // ---- Differences from C, pinned so that a change to either side shows up ----
@@ -658,64 +712,89 @@ class PlayerRaceReaderTest {
         assertTrue(result.hasErrors());
     }
 
+    // ---- Behaviour now matching C ------------------------------------------
+
     @Test
-    void aRaceWithNoHistoryLineIsDroppedHereWhereCLoadsItWithANullHistory() throws IOException {
+    void aRaceWithNoHistoryLineLoadsWithANullHistoryAsCDoes() throws Exception {
         // parse_p_race_history is the only thing that sets history, so C leaves it NULL.
         ParseResult<PlayerRace> result = load("no-history.txt", withHeader(1, race("NoHist", "hitdie:10\n")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(s -> s.contains("invalid history chart integer format")),
-                result.errors()::toString);
+        assertEquals(1, result.items().size(), result.errors()::toString);
+        assertNull(field(result.items().get(0), "history"));
+        assertEquals(10, (int) field(result.items().get(0), "raceMhp"));
     }
 
     @Test
-    void aHistoryChartNoneDefinesDropsTheRaceHereWhereCStoresNull() throws IOException {
-        // findchart returns NULL for an unknown chart and C stores it without complaint.
-        ParseResult<PlayerRace> result = load("unknown-chart.txt", withHeader(1, race("Lost", "history:999\n")));
+    void historyChartZeroLoadsWithANullHistoryBecauseNoChartIsNumberedZero() throws Exception {
+        // "history:0" is a valid uint and findchart finds nothing numbered 0 in the shipped charts.
+        ParseResult<PlayerRace> result = load("history-zero.txt", withHeader(1, race("Zero", "history:0\n")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(s -> s.contains("invalid history chart value")),
-                result.errors()::toString);
+        assertEquals(1, result.items().size(), result.errors()::toString);
+        assertNull(field(result.items().get(0), "history"));
     }
 
     @Test
-    void objectFlagNoneLoadsHereWhereCRejectsIt() throws Exception {
+    void objectFlagNoneIsRejectedAsCRejectsIt() {
         // lookup_flag starts at FLAG_START, so the "NONE" entry at index 0 can never be found.
-        ParseResult<PlayerRace> result = load("of-none.txt", withHeader(1, race("N", "history:1\nobj-flags:NONE\n")));
+        DataFileParseException e = rejects("of-none.txt", withHeader(1, race("N", "history:1\nobj-flags:NONE\n")));
 
-        assertEquals(1, result.items().size(), result.errors()::toString);
+        assertTrue(e.getMessage().contains("illegal sentinel object flag value: NONE"), e::getMessage);
     }
 
     @Test
-    void objectFlagMaxLoadsHereWhereCRejectsIt() throws Exception {
-        ParseResult<PlayerRace> result = load("of-max.txt", withHeader(1, race("M", "history:1\nobj-flags:MAX\n")));
+    void objectFlagMaxIsRejectedAsCRejectsIt() {
+        // The object-flag table has no MAX entry, so the name matches nothing.
+        DataFileParseException e = rejects("of-max.txt", withHeader(1, race("M", "history:1\nobj-flags:MAX\n")));
 
-        assertEquals(1, result.items().size(), result.errors()::toString);
+        assertTrue(e.getMessage().contains("illegal sentinel object flag value: MAX"), e::getMessage);
     }
 
     @Test
-    void playerFlagNoneLoadsHereWhereCRejectsIt() throws Exception {
-        ParseResult<PlayerRace> result = load("pf-none.txt", withHeader(1, race("N", "history:1\nplayer-flags:NONE\n")));
+    void playerFlagNoneIsRejectedAsCRejectsIt() {
+        DataFileParseException e = rejects("pf-none.txt", withHeader(1, race("N", "history:1\nplayer-flags:NONE\n")));
 
-        assertEquals(1, result.items().size(), result.errors()::toString);
+        assertTrue(e.getMessage().contains("illegal sentinel player flag value: NONE"), e::getMessage);
     }
 
     @Test
-    void resistNoneAndMaxLoadHereWhereCRejectsThem() throws Exception {
+    void aSentinelAfterARealFlagIsStillRejected() {
+        // strtok walks every token and stops at the first grab_flag failure, wherever it falls.
+        DataFileParseException e = rejects("of-late-none.txt",
+                withHeader(1, race("L", "history:1\nobj-flags:SUST_STR | NONE\n")));
+
+        assertTrue(e.getMessage().contains("NONE"), e::getMessage);
+    }
+
+    @Test
+    void resistNoneAndMaxAreRejectedAsCRejectsThem() {
         // list_element_names has no NONE or MAX, so grab_index_and_int fails for both.
-        ParseResult<PlayerRace> none = load("res-none.txt", withHeader(1, race("N", "history:1\nvalues:RES_NONE[1]\n")));
-        ParseResult<PlayerRace> max = load("res-max.txt", withHeader(1, race("M", "history:1\nvalues:RES_MAX[1]\n")));
+        DataFileParseException none = rejects("res-none.txt",
+                withHeader(1, race("N", "history:1\nvalues:RES_NONE[1]\n")));
+        DataFileParseException max = rejects("res-max.txt",
+                withHeader(1, race("M", "history:1\nvalues:RES_MAX[1]\n")));
 
-        assertEquals(1, none.items().size(), none.errors()::toString);
-        assertEquals(1, max.items().size(), max.errors()::toString);
+        assertTrue(none.getMessage().contains("illegal sentinel element value: NONE"), none::getMessage);
+        assertTrue(max.getMessage().contains("illegal sentinel element value: MAX"), max::getMessage);
     }
 
     @Test
-    void everyRaceKeepsAnIndexOfZeroHereWhereCNumbersThemFromZero() throws Exception {
-        // finish_parse_p_race sets ridx 0..10 down C's list; the assembler passes 0 for all of them.
-        for (PlayerRace r : new PlayerRaceReader().parse(REAL_FILE)) {
-            assertEquals(0, (int) field(r, "rIndex"), r.getName());
+    void everyRaceIsNumberedFromZeroInFileOrderAsFinishParsePRaceDoes() throws Exception {
+        // finish_parse_p_race gives the first race in the file ridx 0 and the last count - 1.
+        List<PlayerRace> races = new PlayerRaceReader().parse(REAL_FILE);
+
+        for (int i = 0; i < races.size(); i++) {
+            assertEquals(i, (int) field(races.get(i), "rIndex"), races.get(i).getName());
         }
+    }
+
+    @Test
+    void theIndexFollowsFilePositionNotTheNameOrAnythingElse() throws Exception {
+        ParseResult<PlayerRace> result = load("index.txt", withHeader(3,
+                race("Zed", "history:1\n") + race("Alpha", "history:1\n") + race("Mid", "history:1\n")));
+
+        assertEquals(0, (int) field(byName(result.items(), "Zed"), "rIndex"));
+        assertEquals(1, (int) field(byName(result.items(), "Alpha"), "rIndex"));
+        assertEquals(2, (int) field(byName(result.items(), "Mid"), "rIndex"));
     }
 
     /**

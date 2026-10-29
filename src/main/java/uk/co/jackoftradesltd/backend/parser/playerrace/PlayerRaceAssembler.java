@@ -17,7 +17,11 @@
 
 package uk.co.jackoftradesltd.backend.parser.playerrace;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
+import uk.co.jackoftradesltd.backend.parser.ParseUtils;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.channel.utils.Flag;
@@ -41,225 +45,203 @@ import java.util.Map;
  * finished {@link PlayerRace} domain objects (reader &rarr; ParseRecord &rarr; assembler
  * &rarr; domain).
  *
+ * <p>This is the Java form of the {@code parse_p_race_*} handlers in {@code init.c}, plus the
+ * numbering half of {@code finish_parse_p_race}. The grammar has already split the file into
+ * records, so what is left to do here is what C's handlers do with each value: read the numbers,
+ * turn the flag, skill, stat and resist names into their enums, and look up the history chart.
+ *
+ * <p>Where C reports a parser error, which ends the load, this class throws a
+ * {@link DataFileParseException}. That covers an unreadable number, an unknown or sentinel flag,
+ * skill, stat or element name, a {@code values:} name without the {@code RES_} prefix, and a
+ * negative {@code history:} (C reads it as a {@code uint}).
+ *
+ * <p>Where C does not report an error, this class does not either, and takes C's zeroed record as
+ * the default. A race with no {@code stats:} line has all five stat adjustments 0, a race with
+ * no {@code skill-*} line has that skill 0, a missing scalar line leaves its field 0, and a
+ * {@code history:} that names no chart, or no {@code history:} line at all, gives a null history.
+ *
+ * <p>Class PlayerRaceAssembler coded before 260915, commented in full on 261029.
+ *
  * @author Rowan Crowther
  */
 public class PlayerRaceAssembler implements Assembler<PlayerRaceParseRecord, List<PlayerRace>> {
     /**
-     * Assembles every parsed race record into a {@link PlayerRace}, parsing its scalar fields,
-     * resolving its stat/skill/flag names to their enums against a hard-coded {@code "OF_"}/{@code "PF_"}
-     * prefix, and looking up its {@link PlayerHistoryChart} and (currently always index-0)
-     * {@link PlayerBody} via {@link PlayerRegistry}. A malformed integer, unknown enum name, or
-     * failed registry lookup reports a soft error and skips that race.
+     * Logger for this type; every fatal data-file error is logged here before the exception is thrown.
      *
-     * <p>Function assemble coded before 260915, commented in full on 260915.
+     * <p>Field logger coded before 260915, commented in full on 261029.
+     */
+    private static final Logger logger = LogManager.getLogger(PlayerRaceAssembler.class);
+
+    /**
+     * Assembles every parsed race record into a {@link PlayerRace}, in file order.
      *
-     * @param records the raw race records, in file order
-     * @param errors  the soft-error channel; every malformed value or failed lookup is appended here
-     * @return the resolved races, minus any dropped for a resolution failure
+     * <p>Each record's scalar fields are read with {@link ParseUtils#parseIntString}, which gives 0
+     * for the empty text a missing line leaves. The stat and skill maps start with every real stat
+     * and skill at 0, as C's zeroed record does, and the parsed values overwrite them; a repeated
+     * line takes the later value. Object and player flags are resolved against the {@code "OF_"} and
+     * {@code "PF_"} prefixes and switched on, so repeated lines accumulate. A resist name must start
+     * with {@code RES_} and its remainder is resolved against {@code ELEM_}; only elements the race
+     * names get an entry, so the resist map is sparse, and an element left out reads as 0.
+     *
+     * <p>C's flag and element tables start past their {@code NONE} entry and have no {@code MAX}, so
+     * {@code OF_NONE}, {@code OF_MAX}, {@code PF_NONE}, {@code ELEM_NONE} and {@code ELEM_MAX} are
+     * refused here although the Java enums carry them. {@code PF_MAX} is not in {@code PlayerFlag}
+     * and fails as an unknown name.
+     *
+     * <p>The history chart is looked up by number through {@link PlayerRegistry}. A number that
+     * names no chart gives a null history, which is what C's {@code findchart} stores. The body is
+     * always the one at index 0, a copy of the first body in {@code body.txt}, as C sets
+     * {@code r->body = 0}. The race index is its position in the file, 0 for the first race, which
+     * is how {@code finish_parse_p_race} numbers {@code ridx}.
+     *
+     * <p>Function assemble coded before 260915, updated on 261029 to match C on the race index,
+     * history, sentinels, resist prefix and absent stat and skill lines, commented in full on 261029.
+     *
+     * @param records  the raw race records, in file order
+     * @param errors   not used: the {@link Assembler} contract carries a soft-error list, but every
+     *                 failure here ends the load by exception, as C's parser errors do
+     * @param filename the file being read, named in every error message
+     * @return one race per record, in file order
+     * @throws DataFileParseException    for any value C's parser would reject
+     * @throws IllegalStateException     if the body or history registries have not been loaded
+     * @throws IndexOutOfBoundsException if no body has been loaded at index 0
      */
     @Override
     public List<PlayerRace> assemble(@NotNull List<PlayerRaceParseRecord> records, @NotNull List<String> errors,
                                     String filename) {
         List<PlayerRace> races = new ArrayList<>();
+        
+        int index = 0;
 
         for (PlayerRaceParseRecord record : records) {
             int line = record.line();
             String name = record.name();
-            int hitdie = 0;
-            if (!record.hitdie().isEmpty()) {
-                try {
-                    hitdie = Integer.parseInt(record.hitdie());
-                } catch (NumberFormatException e) {
-                    errors.add("Race beginning at line: " + line + " has " +
-                            "an invalid hitdie value: " + record.hitdie());
-                    continue;
-                }
-            }
-            int exp = 0;
-            if (!record.exp().isEmpty()) {
-                try {
-                    exp = Integer.parseInt(record.exp());
-                } catch (NumberFormatException e) {
-                    errors.add("Race beginning at line: " + line + " has " +
-                            "an invalid exp value: " + record.exp());
-                    continue;
-                }
-            }
-            int baseAge = 0;
-            if (!record.ageBase().isEmpty()) {
-                try {
-                    baseAge = Integer.parseInt(record.ageBase());
-                } catch (NumberFormatException e) {
-                    errors.add("Race beginning at line: " + line + " has " +
-                            "an invalid base age value: " + record.ageBase());
-                    continue;
-                }
-            }
-            int ageModifier = 0;
-            if (!record.ageModifier().isEmpty()) {
-                try {
-                    ageModifier = Integer.parseInt(record.ageModifier());
-                } catch (NumberFormatException e) {
-                    errors.add("Race beginning at line: " + line + " has " +
-                            "an invalid age modifier value: " + record.ageModifier());
-                    continue;
-                }
-            }
-            int baseHeight = 0;
-            if (!record.baseHeight().isEmpty()) {
-                try {
-                    baseHeight = Integer.parseInt(record.baseHeight());
-                } catch (NumberFormatException e) {
-                    errors.add("Race beginning at line: " + line + " has " +
-                            "an invalid base height value: " + record.baseHeight());
-                    continue;
-                }
-            }
-            int heightModifier = 0;
-            if (!record.heightModifier().isEmpty()) {
-                try {
-                    heightModifier = Integer.parseInt(record.heightModifier());
-                } catch (NumberFormatException e) {
-                    errors.add("Race beginning at line: " + line + " has " +
-                            "an invalid height modifier value: " + record.heightModifier());
-                    continue;
-                }
-            }
-            int baseWeight = 0;
-            if (!record.baseWeight().isEmpty()) {
-                try {
-                    baseWeight = Integer.parseInt(record.baseWeight());
-                } catch (NumberFormatException e) {
-                    errors.add("Race beginning at line: " + line + " has " +
-                            "an invalid base weight value: " + record.baseWeight());
-                    continue;
-                }
-            }
-            int weightModifier = 0;
-            if (!record.weightModifier().isEmpty()) {
-                try {
-                    weightModifier = Integer.parseInt(record.weightModifier());
-                } catch (NumberFormatException e) {
-                    errors.add("Race beginning at line: " + line + " has " +
-                            "an invalid weight modifier value: " + record.weightModifier());
-                    continue;
-                }
-            }
-            int infravision = 0;
-            if (!record.infraVision().isEmpty()) {
-                try {
-                    infravision = Integer.parseInt(record.infraVision());
-                } catch (NumberFormatException e) {
-                    errors.add("Race beginning at line: " + line + " has " +
-                            "an invalid infravision value: " + record.infraVision());
-                    continue;
-                }
-            }
+            int hitdie = ParseUtils.parseIntString("Player race", record.hitdie(), line, filename, "hit die");
+            int exp = ParseUtils.parseIntString("Player race", record.exp(), line, filename, "experience");
+            int baseAge = ParseUtils.parseIntString("Player race", record.ageBase(), line, filename, "base age");
+            int ageModifier = ParseUtils.parseIntString("Player race", record.ageModifier(), line, filename, "age modifier");
+            int baseHeight = ParseUtils.parseIntString("Player race", record.baseHeight(), line, filename, "base height");
+            int heightModifier = ParseUtils.parseIntString("Player race", record.heightModifier(), line, filename, "height modifier");
+            int baseWeight = ParseUtils.parseIntString("Player race", record.baseWeight(), line, filename, "base weight");
+            int weightModifier = ParseUtils.parseIntString("Player race", record.weightModifier(), line, filename, "weight modifier");
+            int infravision = ParseUtils.parseIntString("Player race", record.infraVision(), line, filename, "infravision");
             PlayerBody body = PlayerRegistry.lookupPlayerBody(0);
-            Map<Stats, Integer> statsAdj = new HashMap<Stats, Integer>();
-            boolean statError = false;
+            Map<Stats, Integer> statsAdj = new HashMap<>();
+            for (Stats stat : Stats.values()) {
+                if (stat == Stats.STAT_MAX || stat == Stats.STAT_NONE)
+                    continue;
+                statsAdj.put(stat, 0);
+            }
             for (String stat : record.stats().keySet()) {
                 String statValue = record.stats().get(stat);
                 try {
                     Stats key = Stats.valueOf(stat);
-                    int value = Integer.parseInt(statValue);
+                    int value = ParseUtils.parseIntString("Player race", statValue, line, filename, "stat integer");
                     statsAdj.put(key, value);
-                } catch (NumberFormatException e) {
-                    errors.add("Race beginning at line: " + line + " has " +
-                            "an invalid stat value for " +
-                            stat.substring(5).toLowerCase() +
-                            ": " + statValue);
-                    statError = true;
                 } catch (IllegalArgumentException e) {
-                    errors.add("ILLEGAL STAT NAME IN CODE: " + stat);
-                    statError = true;
+                    String msg = "Player race starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal stat value: " + stat;
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
                 }
             }
-            if (statError) continue;
             Map<PlayerSkill, Integer> skillsAdj = new HashMap<>();
-            boolean skillError = false;
+            for (PlayerSkill skill : PlayerSkill.values()) {
+                if (skill == PlayerSkill.SKILL_NONE || skill == PlayerSkill.SKILL_MAX)
+                    continue;
+                skillsAdj.put(skill, 0);
+            }
             for (String skillName : record.playerSkills().keySet()) {
                 String skillValueStr = record.playerSkills().get(skillName);
                 try {
-                    int skillValue = Integer.parseInt(skillValueStr);
+                    int skillValue = ParseUtils.parseIntString("Player race", skillValueStr, line, filename, "skill"); 
                     PlayerSkill skill = PlayerSkill.valueOf(skillName);
                     skillsAdj.put(skill, skillValue);
-                } catch (NumberFormatException e) {
-                    errors.add("Race beginning at line: " + line + " has " +
-                            "an invalid skill value for " +
-                            skillName + ": " + skillValueStr);
-                    skillError = true;
                 } catch (IllegalArgumentException e) {
-                    errors.add("ILLEGAL SKILL NAME IN CODE: " + skillName);
-                    skillError = true;
+                    String msg = "Player race starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal skill name value: " + skillName;
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
                 }
             }
-            if (skillError) continue;
             Flag<ObjectFlag> oFlags = new Flag<>(ObjectFlag.class);
-            boolean oFlagError = false;
             for (String oFlag : record.objectFlags()) {
                 try {
                     ObjectFlag flag = ObjectFlag.valueOf("OF_" + oFlag);
+                    if (flag == ObjectFlag.OF_NONE || flag == ObjectFlag.OF_MAX) {
+                        String msg = "Player race starting at line: " + line + " of file: " + filename + " has " +
+                                "an illegal sentinel object flag value: " + oFlag;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
+                    }
                     oFlags.on(flag);
                 } catch (IllegalArgumentException e) {
-                    errors.add("Race beginning at line: " + line + " has " +
-                            "an invalid object flag value: " + oFlag);
-                    oFlagError = true;
+                    String msg = "Player race starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal object flag value: " + oFlag;
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
                 }
             }
-            if (oFlagError) continue;
             Flag<PlayerFlag> pFlags = new Flag<>(PlayerFlag.class);
-            boolean pFlagError = false;
             for (String pFlag : record.playerFlags()) {
                 try {
                     PlayerFlag flag = PlayerFlag.valueOf("PF_" + pFlag);
+                    if (flag == PlayerFlag.PF_NONE) {
+                        String msg = "Player race starting at line: " + line + " of file: " + filename + " has " +
+                                "an illegal sentinel player flag value: " + pFlag;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);    
+                    }
                     pFlags.on(flag);
                 } catch (IllegalArgumentException e) {
-                    errors.add("Race beginning at line: " + line + " has " +
-                            "an invalid player flag value: " + pFlag);
-                    pFlagError = true;
+                    String msg = "Player race starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal player flag value: " + pFlag;
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
                 }
             }
-            if (pFlagError) continue;
-            PlayerHistoryChart history;
-            try {
-                int historyChart = Integer.parseInt(record.history());
-                history = PlayerRegistry.lookupPlayerHistoryChart(historyChart);
-                if (history == null) {
-                    errors.add("Race beginning at line: " + line + " has " +
-                            "an invalid history chart value: " + historyChart);
-                    continue;
-                }
-            } catch (NumberFormatException e) {
-                errors.add("Race beginning at line: " + line + " has " +
-                        "an invalid history chart integer format: " + record.history());
-                continue;
+            if (ParseUtils.minusFound(record.history())) {
+                String msg = "Player race starting at line: " + line + " of file: " + filename + " has " +
+                        "an illegal negative player history value: " + record.history();
+                logger.fatal(msg);
+                throw new DataFileParseException(msg);
             }
+            int historyChart = ParseUtils.parseIntString("Player race", record.history(), line, filename, "history chart");
+            PlayerHistoryChart history = PlayerRegistry.lookupPlayerHistoryChart(historyChart);
             Map<ElementEnum, ElementInfo> resists = new HashMap<>();
-            boolean resistError = false;
             for (String resistTag : record.values().keySet()) {
                 String resistValue = record.values().get(resistTag);
+                if (!resistTag.startsWith("RES_")) {
+                    String msg = "Player race starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal resist value: " + resistTag;
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
+                }
                 try {
-                    int resistVal = Integer.parseInt(resistValue);
+                    int resistVal = ParseUtils.parseIntString("Player race", resistValue, line, filename, "resist integer");
                     ElementEnum element = ElementEnum.valueOf("ELEM_" + resistTag.substring(4));
+                    if (element == ElementEnum.ELEM_MAX || element == ElementEnum.ELEM_NONE) {
+                        String msg = "Player race starting at line: " + line + " of file: " + filename + " has " +
+                                "an illegal sentinel element value: " + resistTag.substring(4);
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
+                    }
                     ElementInfo info = resists.computeIfAbsent(element, k -> new ElementInfo());
                     info.setResLevel(resistVal);
-                } catch (NumberFormatException e) {
-                    errors.add("Race beginning at line: " + line + " has " +
-                            "an invalid resist value: " + resistValue);
-                    resistError = true;
                 } catch (IllegalArgumentException e) {
-                    errors.add("Race beginning at line: " + line + " has " +
-                            "an invalid resist name: " + resistTag);
-                    resistError = true;
+                    String msg = "Player race starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal resist name value: " + resistTag;
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
                 }
             }
-            if (resistError) continue;
 
-            races.add(new PlayerRace(name, 0, hitdie, exp, baseAge,
+            races.add(new PlayerRace(name, index, hitdie, exp, baseAge,
                     ageModifier, baseHeight, heightModifier, baseWeight,
                     weightModifier, infravision, body, statsAdj,
                     skillsAdj, oFlags, pFlags, history, resists));
+            
+            index++;
         }
 
         return races;

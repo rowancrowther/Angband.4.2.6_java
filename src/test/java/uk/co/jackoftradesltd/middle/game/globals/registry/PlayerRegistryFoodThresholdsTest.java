@@ -17,14 +17,8 @@
 
 package uk.co.jackoftradesltd.middle.game.globals.registry;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
-import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.player.PlayerTimedEffect;
@@ -145,7 +139,7 @@ class PlayerRegistryFoodThresholdsTest {
      */
     private static PlayerTimedEffect effect(TimedEffect name, List<TimedGrade> grades) {
         return new PlayerTimedEffect(name, "test", null, null, null, null, List.of(), grades,
-                (Effect) null, (Effect) null, false, 0, ObjectFlag.OF_NONE, false,
+                List.of(), List.of(), false, 0, ObjectFlag.OF_NONE, false,
                 ElementEnum.ELEM_NONE, null, null);
     }
 

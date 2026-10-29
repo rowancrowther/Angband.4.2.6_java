@@ -31,7 +31,6 @@ import uk.co.jackoftradesltd.middle.cave.Feature;
 import uk.co.jackoftradesltd.middle.cave.Loc;
 import uk.co.jackoftradesltd.middle.cave.enums.TerrainFeatureFlags;
 import uk.co.jackoftradesltd.middle.cave.enums.TerrainFlags;
-import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
 import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.game.enums.CommandCode;
@@ -275,7 +274,7 @@ class GameWorldTest {
      */
     private static PlayerTimedEffect effect(TimedEffect name, int lowerBound, TimedGrade... grades) {
         return new PlayerTimedEffect(name, "test", null, null, null, null, List.of(), List.of(grades),
-                (Effect) null, (Effect) null, false, lowerBound, ObjectFlag.OF_NONE, false,
+                List.of(), List.of(), false, lowerBound, ObjectFlag.OF_NONE, false,
                 ElementEnum.ELEM_NONE, null, null);
     }
 

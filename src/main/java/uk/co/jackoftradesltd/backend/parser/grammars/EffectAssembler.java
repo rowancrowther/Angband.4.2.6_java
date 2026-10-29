@@ -70,10 +70,20 @@ import static uk.co.jackoftradesltd.middle.effect.EffectSubTypeWrapper.teleportT
  * no digits, so the {@code onlyDigits} branches in {@link #getWrapperSubType} cannot be reached
  * from a data file.
  *
- * <p>Shapes and summons are resolved against {@link PlayerRegistry} and {@link MonsterRegistry}
- * as the effect is assembled, so both must already be loaded.
+ * <p>The radius, other parameter, {@code y} and {@code x} are read by {@code ParseUtils} as
+ * {@code strtol} base 0 reads them, so {@code 010} is 8 and {@code 0x10} is 16. A number outside
+ * the {@code int} range is clamped by {@code ParseUtils} where C wraps it into its 32-bit field
+ * (accepted deviation 261027, "An integer too big for its C type is clamped, where C wraps it" in
+ * {@code docs/Accepted_Deviations.md}).
  *
- * <p>Class EffectAssembler commented in full on 261026.
+ * <p>Shapes and summons are resolved against {@link PlayerRegistry} and {@link MonsterRegistry}
+ * as the effect is assembled, so both must already be loaded; an unloaded registry, or an empty
+ * summon list when a summon effect gives no sub-type, throws {@link IllegalStateException} and
+ * not a {@link DataFileParseException}. The timed-effect, projection, stat and monster
+ * timed-effect names come from Java enums, not from a loaded file, so C's need to load
+ * {@code player_timed.txt} first does not arise.
+ *
+ * <p>Class EffectAssembler coded before 260915, commented in full on 261029 (first on 261026).
  *
  * @author Rowan Crowther
  */
@@ -82,7 +92,7 @@ public class EffectAssembler {
      * Logger for this assembler. Every failure is logged at {@code fatal} just before the
      * {@link DataFileParseException} that stops the load is thrown.
      *
-     * <p>Field logger commented in full on 261026.
+     * <p>Field logger commented in full on 261029.
      */
     private static final Logger logger = LogManager.getLogger(EffectAssembler.class);
 
@@ -92,7 +102,7 @@ public class EffectAssembler {
      * assembling different files at once would overwrite each other's name. Loading is
      * single-threaded.
      *
-     * <p>Field filename commented in full on 261026.
+     * <p>Field filename commented in full on 261029.
      */
     private static String filename;
 
@@ -108,7 +118,7 @@ public class EffectAssembler {
      * messages. {@code errors} is passed down but nothing appends to it any more; it is kept so
      * the callers' signatures did not have to change.
      *
-     * <p>Function assemble coded before 260915, commented in full on 261026.
+     * <p>Function assemble coded before 260915, commented in full on 261029.
      *
      * @param records  the parsed effect blocks for one owning record
      * @param errors   unused; formerly the soft-error channel
@@ -147,14 +157,19 @@ public class EffectAssembler {
      * holds when the field is not given. The effect's message is passed through unchanged, and is
      * {@code null} when the block has none, as in C.
      *
-     * <p>Function assembleOne coded before 260915, commented in full on 261026.
+     * <p>The checks run in C's order: the name, then the sub-type, then the numbers. C's
+     * {@code grab_effect_data} reads the radius and the other parameter, and the sibling
+     * {@code effect-yx} handler the {@code y} and {@code x}; a number that is not a number ends the
+     * load in both ({@code PARSE_ERROR_NOT_NUMBER}).
+     *
+     * <p>Function assembleOne coded before 260915, commented in full on 261029.
      *
      * @param record the raw effect record to resolve
      * @param errors unused; formerly the soft-error sink
      * @param line   the record's source line, for error messages
      * @return the resolved effect; never {@code null}
-     * @throws DataFileParseException if the effect name is not one of {@link EffectEnum}, the
-     *                                sub-type does not resolve, or a number or expression is bad
+     * @throws DataFileParseException if the effect name is empty or not one of {@link EffectEnum},
+     *                                the sub-type does not resolve, or a number or expression is bad
      */
     private static Effect assembleOne(@NotNull EffectParseRecord record,
                                       @NotNull List<String> errors,
@@ -223,12 +238,16 @@ public class EffectAssembler {
      * waits for the roll engine, as does the check that the character is bound by a {@code $}
      * in the dice string.
      *
+     * <p>C matches the base name without regard to case ({@code my_stricmp}), where this method
+     * matches it exactly. The two cannot differ from a data file, because the lexer's
+     * {@code EXPR_UCASE} passes only upper-case letters and {@code _}.
+     *
      * <p>The character is one letter {@code A} to {@code Z}, because the lexer's
      * {@code EXPR_CHAR} is, so the "not one character" refusal cannot be reached from a data
      * file. An operation string containing a {@code ^} would be split in two, since {@code ^} is
      * the delimiter, but no shipped operation holds one.
      *
-     * <p>Function getExpressions coded before 260915, commented in full on 261026.
+     * <p>Function getExpressions coded before 260915, commented in full on 261029.
      *
      * @param chars      the {@code ^}-delimited single-character expression codes
      * @param bases      the {@code ^}-delimited base-type names, paired positionally with
@@ -296,8 +315,8 @@ public class EffectAssembler {
      * <ul>
      *   <li>{@code EST_PROJ} - {@code proj_name_to_idx}, case-insensitive; accepts {@code MAX},
      *       refuses {@code NONE}.</li>
-     *   <li>{@code EST_TMD} - {@code timed_name_to_idx}, case-insensitive; refuses
-     *       {@code NONE}.</li>
+     *   <li>{@code EST_TMD} - {@code timed_name_to_idx}, case-insensitive; refuses both
+     *       sentinels, {@code NONE} and {@code MAX}.</li>
      *   <li>{@code EST_STAT} - {@code stat_name_to_idx}, case-insensitive; accepts {@code MAX},
      *       refuses {@code NONE}.</li>
      *   <li>{@code EST_MON_TMD} - {@code mon_timed_name_to_idx}, case-exact; refuses both
@@ -330,14 +349,21 @@ public class EffectAssembler {
      * 261025). The {@code onlyDigits} branches below are left over from that and cannot be
      * reached, because the lexer's sub-type token has no digits.
      *
-     * <p>Function getWrapperSubType coded before 260915, commented in full on 261026.
+     * <p>The case-insensitive kinds fold with {@code toUpperCase(Locale.ROOT)}, which also folds a
+     * few non-ASCII letters that C's ASCII-only {@code my_stricmp} does not (accepted deviation
+     * 261023); the lexer's sub-type token holds ASCII letters only, so a data file cannot reach it.
+     *
+     * <p>Function getWrapperSubType coded before 260915, commented in full on 261029.
      *
      * @param type   the effect's sub-type kind, which selects how {@code value} is resolved
      * @param value  the raw sub-type token from the data file, or empty if the line gave none
      * @param errors unused; formerly the soft-error sink
      * @param line   the owning record's source line, for error messages
      * @return the resolved wrapper; never {@code null}
-     * @throws DataFileParseException if {@code value} is not in the list for {@code type}
+     * @throws DataFileParseException if {@code value} is not in the list for {@code type}, or it
+     *                                is empty and the shape list is empty
+     * @throws IllegalStateException  if a summon or shape is resolved before its registry is
+     *                                loaded, or {@code value} is empty and the summon list is empty
      */
     static EffectSubTypeWrapper getWrapperSubType(EffectSubTypeEnum type, String value,
                                                           List<String> errors, int line) {
@@ -399,7 +425,7 @@ public class EffectAssembler {
                 }
                 try {
                     te = TimedEffect.valueOf("TMD_" + value.toUpperCase(Locale.ROOT));
-                    if (te == TimedEffect.TMD_NONE) {
+                    if (te == TimedEffect.TMD_NONE || te == TimedEffect.TMD_MAX) {
                         String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
                                 "a sentinel timed sub-type value: " + value;
                         logger.fatal(msg);

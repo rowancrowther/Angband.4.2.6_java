@@ -18,6 +18,7 @@
 package uk.co.jackoftradesltd.backend.parser.playertimed;
 
 import org.junit.jupiter.api.*;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.data.GameConstantsData;
@@ -33,11 +34,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests the {@code grade:} handling in {@link PlayerTimedAssembler} — the port of C's
- * {@code parse_player_timed_grade} ({@code player-timed.c:243-336}).
+ * {@code parse_player_timed_grade} ({@code player-timed.c}).
  *
  * <p><b>The FOOD scaling is the part that has already gone wrong twice.</b> C multiplies a grade
  * maximum by {@code z_info->food_value} for the {@code FOOD} effect and by one for every other
- * ({@code player-timed.c:263, 321-322}), so the {@code FOOD} bands live on a scale a hundred times
+ * ({@code parse_player_timed_grade}), so the {@code FOOD} bands live on a scale a hundred times
  * larger than the numbers in {@code player_timed.txt} while every other effect's bands do not.
  * Applying the scale everywhere inflates the stun bands by the same factor, and then
  * {@code timedGradeEq(TMD_STUN, "Heavy Stun")} can never be true for any realistic stun counter —
@@ -51,7 +52,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * grade that does not sit strictly above the one before it. Getting the ceiling's direction wrong
  * is easy and invisible: it only shows on a data file nobody has written yet.
  *
- * <p>Class PlayerTimedAssemblerGradeTest coded on 260820, commented in full on 260820.
+ * <p>Class PlayerTimedAssemblerGradeTest coded on 260820, commented in full on 261029.
  *
  * @author Rowan Crowther
  */
@@ -192,8 +193,7 @@ class PlayerTimedAssemblerGradeTest {
      *
      * <p>C never writes this band in {@code player_timed.txt}: {@code parse_player_timed_grade}
      * allocates a zeroed node the first time an effect declares a {@code grade:} line
-     * ({@code player-timed.c:270-273}) and numbers the declared bands from one
-     * ({@code player-timed.c:287}). It carries grade 0, maximum 0, and a null name and pair of
+     * and numbers the declared bands from one. It carries grade 0, maximum 0, and a null name and pair of
      * messages.
      *
      * <p><b>Three separate pieces of behaviour rest on it,</b> which is why it is pinned rather
@@ -318,20 +318,32 @@ class PlayerTimedAssemblerGradeTest {
     class Validation {
 
         /**
+         * Runs one record through the assembler and checks that it stops the load: the message names
+         * the record's line and the file, and ends with the given tail.
+         *
+         * @param record the record to assemble
+         * @param tail   the part of the message that says what was wrong
+         */
+        private void assertStopsTheLoad(PlayerTimedParseRecord record, String tail) {
+            DataFileParseException thrown = assertThrows(DataFileParseException.class,
+                    () -> assemble(record, new ArrayList<>()));
+
+            assertTrue(thrown.getMessage().contains(tail), thrown::getMessage);
+            assertTrue(thrown.getMessage().contains("line: 1 "), thrown::getMessage);
+            assertTrue(thrown.getMessage().contains("test.txt"), thrown::getMessage);
+        }
+
+        /**
          * Zero would collide with the implicit "off" band, whose maximum is zero, and a negative
          * maximum is meaningless. C rejects both with the same test.
          */
         @Test
         @DisplayName("a non-positive maximum is rejected")
         void rejectsNonPositive() {
-            List<String> zero = new ArrayList<>();
-            List<String> negative = new ArrayList<>();
-            assemble(record("STUN", grade("0", "Stun")), zero);
-            assemble(record("STUN", grade("-5", "Stun")), negative);
-
-            assertAll(
-                    () -> assertFalse(zero.isEmpty(), "a zero maximum should be reported"),
-                    () -> assertFalse(negative.isEmpty(), "a negative maximum should be reported"));
+            assertStopsTheLoad(record("STUN", grade("0", "Stun")),
+                    "has an illegal out of range maximum value: 0 must be between 1 and 32767");
+            assertStopsTheLoad(record("STUN", grade("-5", "Stun")),
+                    "has an illegal out of range maximum value: -5 must be between 1 and 32767");
         }
 
         /**
@@ -342,20 +354,30 @@ class PlayerTimedAssemblerGradeTest {
         @Test
         @DisplayName("the ceiling applies to the scaled value, so FOOD is capped far lower")
         void ceilingAppliesAfterScaling() {
-            List<String> foodTooBig = new ArrayList<>();
             List<String> foodJustFits = new ArrayList<>();
             List<String> stunSameNumber = new ArrayList<>();
 
-            assemble(record("FOOD", grade("400", "Fed")), foodTooBig);
+            assertStopsTheLoad(record("FOOD", grade("328", "Fed")),
+                    "has an illegal out of range maximum value: 328 must be between 1 and 327");
             assemble(record("FOOD", grade("327", "Fed")), foodJustFits);
             assemble(record("STUN", grade("400", "Stun")), stunSameNumber);
 
             assertAll(
-                    () -> assertFalse(foodTooBig.isEmpty(),
-                            "400 scales to 40000, which does not fit an int16_t"),
                     () -> assertTrue(foodJustFits.isEmpty(), foodJustFits.toString()),
                     () -> assertTrue(stunSameNumber.isEmpty(),
                             "the same number is fine unscaled"));
+        }
+
+        /**
+         * The unscaled ceiling is 32767 itself: C refuses 32768 and takes 32767.
+         */
+        @Test
+        @DisplayName("an unscaled grade may reach 32767 but not 32768")
+        void unscaledCeilingIs32767() {
+            assertEquals(32767, assemble(record("STUN", grade("32767", "Stun")), new ArrayList<>())
+                    .get(0).getGrade().get(1).max());
+            assertStopsTheLoad(record("STUN", grade("32768", "Stun")),
+                    "has an illegal out of range maximum value: 32768 must be between 1 and 32767");
         }
 
         /**
@@ -366,51 +388,35 @@ class PlayerTimedAssemblerGradeTest {
         @Test
         @DisplayName("grades must strictly ascend")
         void gradesMustAscend() {
-            List<String> descending = new ArrayList<>();
-            List<String> equal = new ArrayList<>();
             List<String> ascending = new ArrayList<>();
 
-            assemble(record("STUN", grade("150", "Stun"), grade("50", "Heavy Stun")), descending);
-            assemble(record("STUN", grade("50", "Stun"), grade("50", "Heavy Stun")), equal);
+            assertStopsTheLoad(record("STUN", grade("150", "Stun"), grade("50", "Heavy Stun")),
+                    "has an illegal value: 50 for STUN. Values must be strictly increasing");
+            assertStopsTheLoad(record("STUN", grade("50", "Stun"), grade("50", "Heavy Stun")),
+                    "has an illegal value: 50 for STUN. Values must be strictly increasing");
             assemble(record("STUN", grade("50", "Stun"), grade("150", "Heavy Stun")), ascending);
 
-            assertAll(
-                    () -> assertFalse(descending.isEmpty(), "a descending maximum should be reported"),
-                    () -> assertFalse(equal.isEmpty(), "an equal maximum should be reported"),
-                    () -> assertTrue(ascending.isEmpty(), ascending.toString()));
+            assertTrue(ascending.isEmpty(), ascending.toString());
         }
 
         /**
-         * A bad grade takes its whole effect with it rather than leaving a gap in the band ladder.
-         * C returns a parse error, which drops the record; dropping only the offending line would
-         * load an effect whose bands no longer cover the counter.
+         * A bad grade ends the whole load rather than leaving a gap in the band ladder. C returns a
+         * parse error and its parser stops there; nothing is kept from the failing record.
          */
         @Test
-        @DisplayName("a bad grade drops the whole effect, not just the line")
-        void badGradeDropsTheRecord() {
-            List<String> errors = new ArrayList<>();
-            List<PlayerTimedEffect> effects = assemble(
-                    record("STUN", grade("50", "Stun"), grade("0", "Heavy Stun")), errors);
-
-            assertAll(
-                    () -> assertFalse(errors.isEmpty()),
-                    () -> assertTrue(effects.isEmpty(),
-                            "the effect should not load with one band missing"));
+        @DisplayName("a bad grade stops the load, not just the line")
+        void badGradeStopsTheLoad() {
+            assertStopsTheLoad(record("STUN", grade("50", "Stun"), grade("0", "Heavy Stun")),
+                    "has an illegal out of range maximum value: 0");
         }
 
         /**
-         * A malformed maximum is a parse failure rather than a validation one, and is reported the
-         * same way — the assembler's contract is that one bad record never aborts the load.
+         * A malformed maximum cannot be read as a number, which also ends the load.
          */
         @Test
-        @DisplayName("a non-numeric maximum is reported rather than thrown")
-        void malformedMaximumIsReported() {
-            List<String> errors = new ArrayList<>();
-            List<PlayerTimedEffect> effects = assemble(record("STUN", grade("lots", "Stun")), errors);
-
-            assertAll(
-                    () -> assertFalse(errors.isEmpty()),
-                    () -> assertTrue(effects.isEmpty()));
+        @DisplayName("a non-numeric maximum stops the load")
+        void malformedMaximumStopsTheLoad() {
+            assertStopsTheLoad(record("STUN", grade("lots", "Stun")), "has an invalid maximum value: lots");
         }
     }
 }

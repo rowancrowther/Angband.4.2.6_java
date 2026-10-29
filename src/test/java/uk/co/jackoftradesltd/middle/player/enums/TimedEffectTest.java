@@ -23,11 +23,9 @@ import uk.co.jackoftradesltd.channel.utils.FlagView;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link TimedEffect}, the port of C's {@code TMD_*} table ({@code list-player-timed.h}).
@@ -49,11 +47,29 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * the return type withholds mutation. The tests pin that as a decision rather than an accident,
  * since a defensive copy is the reflex it replaced.
  *
- * <p>Class TimedEffectTest coded on 260818, commented in full on 260818.
+ * <p>The names are restated separately from the flags ({@link #C_NAMES}), straight from the
+ * {@code TMD()} rows of {@code list-player-timed.h}, so a constant renamed or respelt away from
+ * the C symbol is caught even when its flags are right.
+ *
+ * <p>Class TimedEffectTest coded on 260818, commented in full on 261029 once the names, the count
+ * and the exceptions to the common flag pair were pinned.
  *
  * @author Rowan Crowther
  */
 class TimedEffectTest {
+
+    /**
+     * The first column of the {@code TMD()} rows of {@code list-player-timed.h}, in file order,
+     * without the {@code TMD_} prefix C's macro adds. There are 53.
+     */
+    private static final List<String> C_NAMES = List.of(
+            "FAST", "SLOW", "BLIND", "PARALYZED", "CONFUSED", "AFRAID", "IMAGE", "POISONED", "CUT", "STUN",
+            "FOOD", "PROTEVIL", "INVULN", "HERO", "SHERO", "SHIELD", "BLESSED", "SINVIS", "SINFRA",
+            "OPP_ACID", "OPP_ELEC", "OPP_FIRE", "OPP_COLD", "OPP_POIS", "OPP_CONF", "AMNESIA", "TELEPATHY",
+            "STONESKIN", "TERROR", "SPRINT", "BOLD", "SCRAMBLE", "TRAPSAFE", "FASTCAST", "ATT_ACID",
+            "ATT_ELEC", "ATT_FIRE", "ATT_COLD", "ATT_POIS", "ATT_CONF", "ATT_EVIL", "ATT_DEMON", "ATT_VAMP",
+            "HEAL", "COMMAND", "ATT_RUN", "COVERTRACKS", "POWERSHOT", "TAUNT", "BLOODLUST", "BLACKBREATH",
+            "STEALTH", "FREE_ACT");
 
     /**
      * Shorthand for a row whose flags are the overwhelmingly common {@code PR_STATUS} /
@@ -183,19 +199,43 @@ class TimedEffectTest {
         }
 
         @Test
-        void theEnumHoldsCsEffectsInCsOrderAfterThePortsOwnSentinel() {
+        void theEnumHoldsCsEffectsInCsOrderBetweenThePortsOwnSentinels() {
             List<TimedEffect> declared = List.of(TimedEffect.values());
 
             assertEquals(TimedEffect.TMD_NONE, declared.get(0),
-                    "the sentinel is the port's own addition and comes first");
+                    "the first sentinel is the port's own addition and comes first");
+            assertEquals(TimedEffect.TMD_MAX, declared.get(declared.size() - 1),
+                    "the second sentinel is C's count and comes last");
             assertEquals(expected().stream().map(Row::effect).toList(),
-                    declared.subList(1, declared.size()));
+                    declared.subList(1, declared.size() - 1));
         }
 
         @Test
-        void theSentinelCarriesNoFlagsAtAll() {
+        void everySymbolInCsHeaderResolvesToTheConstantInTheSamePlace() {
+            List<TimedEffect> declared = List.of(TimedEffect.values());
+
+            for (int i = 0; i < C_NAMES.size(); i++) {
+                assertSame(declared.get(i + 1), TimedEffect.valueOf("TMD_" + C_NAMES.get(i)),
+                        "C's row " + i + " is " + C_NAMES.get(i));
+            }
+        }
+
+        @Test
+        void thereAreExactlyAsManyRealEffectsAsCsHeaderHasRows() {
+            assertEquals(53, C_NAMES.size());
+            assertEquals(53, expected().size());
+            assertEquals(53 + 2, TimedEffect.values().length,
+                    "C's rows plus the port's TMD_NONE in front and C's TMD_MAX behind");
+            assertEquals(53 + 1, TimedEffect.TMD_MAX.ordinal(),
+                    "TMD_NONE shifts every ordinal up by one, so TMD_MAX is one past C's count");
+        }
+
+        @Test
+        void theSentinelsCarryNoFlagsAtAll() {
             assertTrue(TimedEffect.TMD_NONE.getRedrawFlags().isEmpty());
             assertTrue(TimedEffect.TMD_NONE.getUpdateFlags().isEmpty());
+            assertTrue(TimedEffect.TMD_MAX.getRedrawFlags().isEmpty());
+            assertTrue(TimedEffect.TMD_MAX.getUpdateFlags().isEmpty());
         }
 
         @Test
@@ -208,6 +248,29 @@ class TimedEffectTest {
             }
 
             assertEquals(List.of(TimedEffect.TMD_BLIND, TimedEffect.TMD_IMAGE), unusual);
+        }
+
+        /**
+         * C's rows for these two list no {@code PR_STATUS}; the status line is repainted anyway
+         * because {@code player_set_timed} ORs it in, which {@code PlayerSetTimedTransitionTest}
+         * covers. The enum must therefore not add it itself.
+         */
+        @Test
+        void blindAndHallucinationOwnSetsHoldNoStatusRedraw() {
+            assertFalse(TimedEffect.TMD_BLIND.getRedrawFlags().has(PlayerRedraw.PR_STATUS));
+            assertFalse(TimedEffect.TMD_IMAGE.getRedrawFlags().has(PlayerRedraw.PR_STATUS));
+        }
+
+        @Test
+        void onlyBlindAndTheTwoSightEffectsRecalculateBeyondTheBonuses() {
+            Set<TimedEffect> unusual = new java.util.LinkedHashSet<>();
+            for (Row row : expected()) {
+                if (!row.updates().equals(List.of(PlayerUpdateEnum.PU_BONUS))) {
+                    unusual.add(row.effect());
+                }
+            }
+
+            assertEquals(Set.of(TimedEffect.TMD_BLIND, TimedEffect.TMD_SINVIS, TimedEffect.TMD_SINFRA), unusual);
         }
     }
 

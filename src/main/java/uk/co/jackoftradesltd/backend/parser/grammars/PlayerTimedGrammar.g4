@@ -43,7 +43,7 @@ grade
                 String status, String messageUp,
                 String messageDown]
         @init {
-            $messageDown = "";
+            $messageDown = null;
             $messageUp = "";
         }
         :   GRADE c=DELIM_COLOUR_CODE DELIM_COLON
@@ -184,7 +184,7 @@ playerTimed
         |   msgt { msgtInit = $msgt.msgType; }
         |   fail { String failTypeInit = $fail.type;
                    String failValueInit = $fail.value;
-                   fails.add(new FailureParseRecord(failTypeInit, failValueInit)); }
+                   fails.addFirst(new FailureParseRecord(failTypeInit, failValueInit)); }
         |   onBeginEffect { onBeginEffectInit = new EffectParseRecord($onBeginEffect.type,
                             $onBeginEffect.subType, "", "", "",
                             "", "", "", "",

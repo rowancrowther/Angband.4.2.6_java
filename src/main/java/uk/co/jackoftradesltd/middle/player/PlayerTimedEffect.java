@@ -17,12 +17,12 @@
 
 package uk.co.jackoftradesltd.middle.player;
 
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.FlagView;
 import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
 import uk.co.jackoftradesltd.middle.objects.Brand;
 import uk.co.jackoftradesltd.middle.objects.Slay;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerRedraw;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerUpdateEnum;
@@ -51,17 +51,19 @@ import java.util.List;
  * other field left at a default, and the parser for {@code player_timed.txt} then overwrites the
  * defaults. Here the {@link TimedEffect} constant supplies the identity and both flag sets, and
  * the constructor receives everything the data file supplies. The defaults the parser leaves
- * behind for a line the file omits are: no messages, no failures, no grades, no effects, not
- * non-stacking, a lower bound of 0, no duplicated object flag and no exact synonym. C marks "no
- * temporary resist, brand or slay" with an index of {@code -1}; the Java assembler passes
- * {@link ElementEnum#ELEM_NONE} for the resist and {@code null} for the brand and slay, so a
- * consumer tests those rather than comparing with {@code -1}.
+ * behind for a line the file omits are: no messages, a message type of 0 ({@code MSG_GENERIC}),
+ * no failures, no grades, no effects, not non-stacking, a lower bound of 0, no duplicated object
+ * flag and no exact synonym. C marks "no temporary resist, brand or slay" with an index of
+ * {@code -1}; the Java assembler passes {@link ElementEnum#ELEM_NONE} for the resist and
+ * {@code null} for the brand and slay, so a consumer tests those rather than comparing with
+ * {@code -1}. C's two effect chains are {@code NULL} when the file gives none; the Java assembler
+ * passes an empty list instead, so a consumer iterates without needing a null test.
  *
  * <p>C's {@code flags} bitfield has the single bit {@code TMD_FLAG_NONSTACKING}; it is held here
  * as the boolean {@link #nonStacking}, and any further bit added to that field in C would need a
  * field of its own.
  *
- * <p>Class PlayerTimedEffect coded before 260815, commented in full on 261008.
+ * <p>Class PlayerTimedEffect coded before 260815, commented in full on 261029.
  *
  * @author Rowan Crowther
  */
@@ -155,19 +157,27 @@ public class PlayerTimedEffect {
      */
     private List<TimedGrade> grade;
     /**
-     * Effect fired when the status begins (C: {@code on_begin_effect}); null when the data file
-     * gives none.
+     * Effect chain fired when the status begins (C: {@code on_begin_effect}, a linked chain that
+     * is {@code NULL} when the data file gives none).
      *
-     * <p>Field onBeginEffect coded before 260815, commented in full on 261008.
+     * <p>Held as a list, one {@link Effect} per link of the chain. {@code PlayerTimedAssembler}
+     * passes an empty list, not null, when the file gives none, so an empty list is the "no effect"
+     * value; a caller that tests for null still behaves correctly, because the loop over an empty
+     * list does nothing.
+     *
+     * <p>Field onBeginEffect coded before 260815, commented in full on 261029.
      */
-    private Effect onBeginEffect;
+    private List<Effect> onBeginEffect;
     /**
-     * Effect fired when the status lapses (C: {@code on_end_effect}); null when the data file
-     * gives none.
+     * Effect chain fired when the status lapses (C: {@code on_end_effect}, a linked chain that is
+     * {@code NULL} when the data file gives none).
      *
-     * <p>Field onEndEffect coded before 260815, commented in full on 261008.
+     * <p>Held as a list, as for {@link #onBeginEffect}: an empty list, not null, is the "no effect"
+     * value when the file gives none.
+     *
+     * <p>Field onEndEffect coded before 260815, commented in full on 261029.
      */
-    private Effect onEndEffect;
+    private List<Effect> onEndEffect;
     /**
      * Whether an increase is blocked while the status is already active — the C
      * {@code TMD_FLAG_NONSTACKING} bit of {@code flags}, from the {@code flags:} line.
@@ -200,34 +210,41 @@ public class PlayerTimedEffect {
      * Whether the status is an <em>exact</em> synonym of {@link #oFlagDup} (C: {@code oflag_syn},
      * the second argument of the {@code flag-synonym:} line, non-zero meaning exact).
      *
-     * <p>When true, and the player already knows the flag and has it from something other than a
-     * timed effect, a change to the status is not announced — the player has nothing new to learn
-     * from it ({@code player_set_timed()}).
+     * <p>When true, {@link #oFlagDup} is not {@code OF_NONE}, the player already knows the flag and
+     * has it from something other than a timed effect, {@code player_set_timed()} clears its
+     * {@code notify} request — the player has nothing new to learn from the change. That only
+     * silences the ordinary begin, end, increase and decrease messages: a change that crosses into
+     * another grade is still announced, as C sets {@code notify} again on a grade change.
      *
-     * <p>Field oFlagExactlySyn coded before 260815, commented in full on 261008.
+     * <p>Field oFlagExactlySyn coded before 260815, commented in full on 261029.
      */
     private boolean oFlagExactlySyn;
     /**
      * Element temporarily resisted while the status is active (C: {@code temp_resist}, from the
      * {@code resist:} line); {@link ElementEnum#ELEM_NONE} where C holds {@code -1}.
      *
-     * <p>Field tempResist coded before 260815, commented in full on 261008.
+     * <p>Besides conferring the resistance, it feeds the same "nothing new to learn" test as
+     * {@link #oFlagExactlySyn}: when the player already knows the element's resistance level and is
+     * immune to it, {@code player_set_timed()} clears its {@code notify} request, with the same
+     * grade-change exception.
+     *
+     * <p>Field tempResist coded before 260815, commented in full on 261029.
      */
     private ElementEnum tempResist;
     /**
      * Brand temporarily added to the player's attacks while the status is active (C:
      * {@code temp_brand}, from the {@code brand:} line, consulted by
-     * {@code player_has_temporary_brand()}); null where C holds {@code -1}.
+     * {@code player_has_temporary_brand()} in {@code obj-slays.c}); null where C holds {@code -1}.
      *
-     * <p>Field tempBrand coded before 260815, commented in full on 261008.
+     * <p>Field tempBrand coded before 260815, commented in full on 261029.
      */
     private Brand tempBrand;
     /**
      * Slay temporarily added to the player's attacks while the status is active (C:
      * {@code temp_slay}, from the {@code slay:} line, consulted by
-     * {@code player_has_temporary_slay()}); null where C holds {@code -1}.
+     * {@code player_has_temporary_slay()} in {@code obj-slays.c}); null where C holds {@code -1}.
      *
-     * <p>Field tempSlay coded before 260815, commented in full on 261008.
+     * <p>Field tempSlay coded before 260815, commented in full on 261029.
      */
     private Slay tempSlay;
 
@@ -236,9 +253,11 @@ public class PlayerTimedEffect {
      *
      * <p>Each parameter populates the like-named field; see those fields for the detailed meaning
      * of each. Note the redraw/update flags are derived from the {@link TimedEffect} identity and
-     * so are not passed here. The list and effect parameters are stored as given, not copied.
+     * so are not passed here. The list parameters are stored as given, not copied, and no argument
+     * is validated: the bounds C's parser enforces (a lower bound of 0 to 32767) are the
+     * assembler's job.
      *
-     * <p>Constructor PlayerTimedEffect coded before 260815, commented in full on 261008.
+     * <p>Constructor PlayerTimedEffect coded before 260815, commented in full on 261029.
      *
      * @param name          the {@link TimedEffect} this defines
      * @param description   human-readable description
@@ -248,23 +267,23 @@ public class PlayerTimedEffect {
      * @param msgT          message channel for the above
      * @param fail          conditions under which the status fails to apply
      * @param grade         ordered severity bands
-     * @param onBeginEffect effect fired on begin
-     * @param onEndEffect   effect fired on end
+     * @param onBeginEffect effect chain fired on begin
+     * @param onEndEffect   effect chain fired on end
      * @param nonStacking     whether re-application refuses to stack
      * @param lowerBound      minimum value while active
-     * @param oFlagDup        the object flag this status duplicates (C {@code oflag_dup}); despite the
-     *                        parameter name it populates {@link #oFlagDup}
+     * @param oFlagDup        the object flag this status duplicates (C {@code oflag_dup}), or
+     *                        {@code OF_NONE}
      * @param oFlagExactlySyn whether the status is an <em>exact</em> synonym of that flag (C
-     *                        {@code oflag_syn}); populates {@link #oFlagExactlySyn}
-     * @param tempResist      element temporarily resisted
-     * @param tempBrand       brand temporarily granted
-     * @param tempSlay        slay temporarily granted
+     *                        {@code oflag_syn})
+     * @param tempResist      element temporarily resisted, or {@code ELEM_NONE}
+     * @param tempBrand       brand temporarily granted, or null
+     * @param tempSlay        slay temporarily granted, or null
      */
     public PlayerTimedEffect(TimedEffect name, String description,
                              String onEnd, String onIncrease,
                              String onDecrease, MessageType msgT,
                              List<TimedFailure> fail, List<TimedGrade> grade,
-                             Effect onBeginEffect, Effect onEndEffect,
+                             List<Effect> onBeginEffect, List<Effect> onEndEffect,
                              boolean nonStacking, int lowerBound,
                              ObjectFlag oFlagDup,
                              boolean oFlagExactlySyn,
@@ -415,24 +434,30 @@ public class PlayerTimedEffect {
     }
 
     /**
-     * Returns the effect fired when the status begins.
+     * Returns the effect chain fired when the status begins.
      *
-     * <p>Function getOnBeginEffect coded before 260815, commented in full on 261008.
+     * <p>Empty, not null, when the data file gives none — see {@link #onBeginEffect}. The list is
+     * the stored one, not a copy.
      *
-     * @return the effect fired when the status begins, or null if none
+     * <p>Function getOnBeginEffect coded before 260815, commented in full on 261029.
+     *
+     * @return the effect chain fired when the status begins; empty if none
      */
-    public Effect getOnBeginEffect() {
+    public List<Effect> getOnBeginEffect() {
         return onBeginEffect;
     }
 
     /**
-     * Returns the effect fired when the status ends.
+     * Returns the effect chain fired when the status ends.
      *
-     * <p>Function getOnEndEffect coded before 260815, commented in full on 261008.
+     * <p>Empty, not null, when the data file gives none — see {@link #onEndEffect}. The list is the
+     * stored one, not a copy.
      *
-     * @return the effect fired when the status ends, or null if none
+     * <p>Function getOnEndEffect coded before 260815, commented in full on 261029.
+     *
+     * @return the effect chain fired when the status ends; empty if none
      */
-    public Effect getOnEndEffect() {
+    public List<Effect> getOnEndEffect() {
         return onEndEffect;
     }
 

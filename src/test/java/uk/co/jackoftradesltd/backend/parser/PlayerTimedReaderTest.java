@@ -19,9 +19,9 @@ package uk.co.jackoftradesltd.backend.parser;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
@@ -50,8 +50,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@link PlayerTimedEffect}. These pin both the grammar (every directive shape, the optional
  * fifth grade field, the repeatable {@code fail:}) and the assembler (enum/brand/slay resolution,
  * the {@code flag-synonym} dup/exact split, {@code NONSTACKING}) as well as the two error channels
- * {@code GrammarDriver} threads through {@link ParseResult}: the soft skip-and-continue
- * {@code errors} list and the hard fail-closed channel.
+ * {@code GrammarDriver} threads through {@link ParseResult}: the soft {@code errors} list (now
+ * only the record-count check) and the hard fail-closed channel. A value the assembler cannot resolve
+ * ends the load with a {@link DataFileParseException}, as C's parser stops on its first error.
  *
  * <p>The {@code ATT_*} statuses resolve a brand/slay code through the object registry, so
  * {@link #seed()} loads {@code brand.txt}/{@code slay.txt} directly through their readers and injects
@@ -89,7 +90,7 @@ class PlayerTimedReaderTest {
         savedSlays = setStatic("slays", slays);
 
         // PlayerTimedAssembler converts a grade's food figures through
-        // GameConstants.getPlayerFoodValue (PlayerTimedAssembler.java:107), so the constants table
+        // GameConstants.getPlayerFoodValue (in PlayerTimedAssembler.assemble), so the constants table
         // has to be loaded before any player_timed record can be assembled. Seeding it only when it
         // is empty leaves the real table in place when a reader test has already loaded it, and
         // stops this class depending on one having run first.
@@ -143,6 +144,25 @@ class PlayerTimedReaderTest {
         Path file = tempDir.resolve(name);
         Files.writeString(file, content);
         return new PlayerTimedReader().parseWithResults(file.toString());
+    }
+
+    /**
+     * Loads a one-record file and checks that the assembler stopped the load: it throws a
+     * {@link DataFileParseException} whose message names the record's line and the file and ends
+     * with the given tail, as C's parser stops on its first error.
+     *
+     * @param fileName the name to give the temporary file
+     * @param body     the record text, after the {@code record-count:} header
+     * @param line     the line the failing {@code name:} opens on
+     * @param tail     the part of the message that says what was wrong
+     */
+    private void assertStopsTheLoad(String fileName, String body, int line, String tail) {
+        DataFileParseException thrown = assertThrows(DataFileParseException.class,
+                () -> load(fileName, withHeader(1, body)));
+
+        assertTrue(thrown.getMessage().contains(tail), thrown::getMessage);
+        assertTrue(thrown.getMessage().contains("line: " + line + " "), thrown::getMessage);
+        assertTrue(thrown.getMessage().contains(fileName), thrown::getMessage);
     }
 
     private static PlayerTimedEffect byName(List<PlayerTimedEffect> effects, TimedEffect name) {
@@ -218,8 +238,6 @@ class PlayerTimedReaderTest {
      * calls {@code equip_learn_element} before it tests, so a poison-resistant item is identified when
      * the resist is reached, and C never reaches it while OPP_POIS is running.
      */
-    @Disabled("PlayerTimedAssembler appends fail: lines in file order; C's parser prepends them, so "
-            + "player_inc_check walks the list in reverse file order")
     @Test
     void failLinesAreWalkedInTheOrderCBuildsThem() throws IOException {
         List<PlayerTimedEffect> effects = new PlayerTimedReader().parseWithResults(REAL_FILE).items();
@@ -295,10 +313,10 @@ class PlayerTimedReaderTest {
         assertNotNull(scramble.getOnBeginEffect());
         assertNotNull(scramble.getOnEndEffect());
 
-        // Most statuses have neither; they must stay null (not crash, not a dropped record).
+        // Most statuses have neither; C's list is NULL, here an empty list (not a crash, not a dropped record).
         PlayerTimedEffect fast = byName(effects, TimedEffect.TMD_FAST);
-        assertNull(fast.getOnBeginEffect());
-        assertNull(fast.getOnEndEffect());
+        assertTrue(fast.getOnBeginEffect().isEmpty());
+        assertTrue(fast.getOnEndEffect().isEmpty());
     }
 
     @Test
@@ -330,58 +348,40 @@ class PlayerTimedReaderTest {
         assertEquals("You are getting faint from hunger!", faint.downMsg());
     }
 
-    // ---- Soft errors: dropped record (skip-and-continue) -----------------
+    // ---- A value that does not resolve stops the load ---------------------
 
     @Test
-    void unknownTimedEffectNameIsReportedAndSkipped() throws IOException {
-        ParseResult<PlayerTimedEffect> result = load("bad-name.txt", withHeader(1,
-                "name:NOTATIMEDEFFECT\ngrade:G:100:Test:Message\n"));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("invalid timed effect name")),
-                result.errors()::toString);
+    void anUnknownTimedEffectNameStopsTheLoad() {
+        assertStopsTheLoad("bad-name.txt", "name:NOTATIMEDEFFECT\ngrade:G:100:Test:Message\n", 2,
+                "has an illegal name value: NOTATIMEDEFFECT");
     }
 
     @Test
-    void unknownBrandIsReportedAndSkipped() throws IOException {
-        ParseResult<PlayerTimedEffect> result = load("bad-brand.txt", withHeader(1,
-                "name:ATT_ACID\ngrade:G:100:Test:Message\nbrand:NOTAREALBRAND\n"));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown brand")),
-                result.errors()::toString);
+    void anUnknownBrandStopsTheLoad() {
+        assertStopsTheLoad("bad-brand.txt", "name:ATT_ACID\ngrade:G:100:Test:Message\nbrand:NOTAREALBRAND\n", 2,
+                "has an illegal brand value: NOTAREALBRAND");
     }
 
     @Test
-    void unknownResistElementIsReportedAndSkipped() throws IOException {
-        ParseResult<PlayerTimedEffect> result = load("bad-resist.txt", withHeader(1,
-                "name:OPP_ACID\ngrade:G:100:Test:Message\nresist:NOTREAL\n"));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown resist element")),
-                result.errors()::toString);
+    void anUnknownResistElementStopsTheLoad() {
+        assertStopsTheLoad("bad-resist.txt", "name:OPP_ACID\ngrade:G:100:Test:Message\nresist:NOTREAL\n", 2,
+                "has an illegal resist value: NOTREAL");
     }
 
     @Test
-    void unknownMessageTypeIsReportedAndSkipped() throws IOException {
-        ParseResult<PlayerTimedEffect> result = load("bad-msgt.txt", withHeader(1,
-                "name:FAST\ngrade:G:100:Test:Message\nmsgt:NOTAMESSAGE\n"));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown message type")),
-                result.errors()::toString);
+    void anUnknownMessageTypeStopsTheLoad() {
+        assertStopsTheLoad("bad-msgt.txt", "name:FAST\ngrade:G:100:Test:Message\nmsgt:NOTAMESSAGE\n", 2,
+                "has an illegal message type value: NOTAMESSAGE");
     }
 
     @Test
-    void validAndInvalidRecordsInOneFileReportTheBadAndKeepTheGood() throws IOException {
-        String body = "name:FAST\ngrade:G:100:Test:Message\n"
-                + "name:NOTATIMEDEFFECT\ngrade:G:100:Test:Message\n";
-        ParseResult<PlayerTimedEffect> result = load("mixed.txt", withHeader(2, body));
+    void aBadRecordAfterAGoodOneStopsTheWholeLoad() {
+        DataFileParseException thrown = assertThrows(DataFileParseException.class,
+                () -> load("mixed.txt", withHeader(2, "name:FAST\ngrade:G:100:Test:Message\n"
+                        + "name:NOTATIMEDEFFECT\ngrade:G:100:Test:Message\n")));
 
-        assertEquals(1, result.items().size());
-        assertEquals(TimedEffect.TMD_FAST, result.items().get(0).getName());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("invalid timed effect name")),
-                result.errors()::toString);
+        assertTrue(thrown.getMessage().contains("line: 4 "), thrown::getMessage);
+        assertTrue(thrown.getMessage().contains("has an illegal name value: NOTATIMEDEFFECT"), thrown::getMessage);
     }
 
     // ---- Grade arity: optional fifth field -------------------------------
@@ -526,14 +526,15 @@ class PlayerTimedReaderTest {
     }
 
     @Test
-    void aRepeatedNameLineMakesASecondRecordHereWhereCContinuesTheFirst() throws IOException {
-        // parse_player_timed_name points at timed_effects[index] again, so C merges the two blocks.
+    void aRepeatedNameLineContinuesTheFirstEffectAsInC() throws IOException {
+        // parse_player_timed_name points at timed_effects[index] again, so the two blocks are one effect.
         ParseResult<PlayerTimedEffect> result = load("two-names.txt", withHeader(2,
                 "name:FAST\ngrade:G:100:Test:Message\nname:FAST\ndesc:Again\n"));
 
-        assertEquals(2, result.items().size());
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(1, result.items().size());
         assertEquals(TimedEffect.TMD_FAST, result.items().get(0).getName());
-        assertEquals(TimedEffect.TMD_FAST, result.items().get(1).getName());
+        assertEquals("Again", result.items().get(0).getDescription());
     }
 
     @Test
@@ -626,13 +627,13 @@ class PlayerTimedReaderTest {
     // ---- Values: what C checks and the assembler does not -----------------
 
     @Test
-    void aOneCharacterDownMessageIsKeptByCAndDroppedHere() throws IOException {
+    void aOneCharacterDownMessageIsKeptAsInC() throws IOException {
         // C nulls only a one-character name and up_msg; down_msg is copied as it stands.
         ParseResult<PlayerTimedEffect> result = load("short-down.txt", withHeader(1,
                 "name:FAST\ngrade:G:100:Test:Message:X\n"));
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
-        assertNull(result.items().get(0).getGrade().get(1).downMsg());
+        assertEquals("X", result.items().get(0).getGrade().get(1).downMsg());
     }
 
     @Test
@@ -647,22 +648,16 @@ class PlayerTimedReaderTest {
     }
 
     @Test
-    void aLowerBoundAbove32767LoadsHereWhereCRefusesIt() throws IOException {
+    void aLowerBoundAbove32767StopsTheLoadAsInC() {
         // parse_player_timed_effect_lower_bound: bound < 0 || bound > 32767 is PARSE_ERROR_INVALID_VALUE.
-        ParseResult<PlayerTimedEffect> result = load("big-bound.txt", withHeader(1,
-                "name:FAST\ngrade:G:100:Test:Message\nlower-bound:40000\n"));
-
-        assertEquals(1, result.items().size());
-        assertEquals(40000, result.items().get(0).getLowerBound());
+        assertStopsTheLoad("big-bound.txt", "name:FAST\ngrade:G:100:Test:Message\nlower-bound:40000\n", 2,
+                "has an out of bounds lower bound value: 40000");
     }
 
     @Test
-    void aNegativeLowerBoundLoadsHereWhereCRefusesIt() throws IOException {
-        ParseResult<PlayerTimedEffect> result = load("negative-bound.txt", withHeader(1,
-                "name:FAST\ngrade:G:100:Test:Message\nlower-bound:-1\n"));
-
-        assertEquals(1, result.items().size());
-        assertEquals(-1, result.items().get(0).getLowerBound());
+    void aNegativeLowerBoundStopsTheLoadAsInC() {
+        assertStopsTheLoad("negative-bound.txt", "name:FAST\ngrade:G:100:Test:Message\nlower-bound:-1\n", 2,
+                "has an out of bounds lower bound value: -1");
     }
 
     @Test
@@ -677,14 +672,10 @@ class PlayerTimedReaderTest {
     }
 
     @Test
-    void anUnknownFlagsTokenIsIgnoredHereWhereCRefusesIt() throws IOException {
+    void anUnknownFlagsTokenStopsTheLoadAsInC() {
         // Only NONSTACKING is a timed-effect flag; anything else is PARSE_ERROR_INVALID_FLAG in C.
-        ParseResult<PlayerTimedEffect> result = load("bad-flag.txt", withHeader(1,
-                "name:FAST\ngrade:G:100:Test:Message\nflags:WIBBLE\n"));
-
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
-        assertEquals(1, result.items().size());
-        assertFalse(result.items().get(0).isNonStacking());
+        assertStopsTheLoad("bad-flag.txt", "name:FAST\ngrade:G:100:Test:Message\nflags:WIBBLE\n", 2,
+                "has an illegal flag value: WIBBLE");
     }
 
     @Test
@@ -697,13 +688,13 @@ class PlayerTimedReaderTest {
     }
 
     @Test
-    void aFlagSynonymExactWrittenAsDoubleZeroIsExactHereWhereCReadsZero() throws IOException {
+    void aFlagSynonymExactWrittenAsDoubleZeroIsNotExactAsInC() throws IOException {
         // "exact" is an int in C: parser_getint(p, "exact") != 0, and "00" is 0.
         ParseResult<PlayerTimedEffect> result = load("synonym-00.txt", withHeader(1,
                 "name:FAST\ngrade:G:100:Test:Message\nflag-synonym:AFRAID:00\n"));
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
-        assertTrue(result.items().get(0).isoFlagExactlySyn());
+        assertFalse(result.items().get(0).isoFlagExactlySyn());
     }
 
     @Test
@@ -716,18 +707,15 @@ class PlayerTimedReaderTest {
     }
 
     @Test
-    void anUnknownFlagSynonymIsReportedAndSkipped() throws IOException {
-        ParseResult<PlayerTimedEffect> result = load("bad-synonym.txt", withHeader(1,
-                "name:FAST\ngrade:G:100:Test:Message\nflag-synonym:NOTAFLAG:1\n"));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown flag-synonym")),
-                result.errors()::toString);
+    void anUnknownFlagSynonymStopsTheLoad() {
+        assertStopsTheLoad("bad-synonym.txt", "name:FAST\ngrade:G:100:Test:Message\nflag-synonym:NOTAFLAG:1\n", 2,
+                "has an illegal object flag synonym value: NOTAFLAG");
     }
 
     @Test
     void eachFailCodeOneToFiveResolvesItsOwnKindOfName() throws IOException {
         // TMD_FAIL_FLAG_OBJECT, _RESIST, _VULN, _PLAYER, _TIMED_EFFECT = 1..5 in player-timed.h.
+        // The lines are written 1 to 5, and C links each in at the head, so the list runs 5 to 1.
         ParseResult<PlayerTimedEffect> result = load("fail-codes.txt", withHeader(1,
                 "name:FAST\ngrade:G:100:Test:Message\n"
                         + "fail:1:FREE_ACT\nfail:2:POIS\nfail:3:FIRE\nfail:4:ROCK\nfail:5:OPP_POIS\n"));
@@ -735,44 +723,32 @@ class PlayerTimedReaderTest {
         assertFalse(result.hasErrors(), () -> result.errors().toString());
         List<TimedFailure> fails = result.items().get(0).getFail();
         assertEquals(5, fails.size());
-        assertEquals(TimedEffectReasonType.TYPE_OBJECT_FLAG, fails.get(0).getCode());
-        assertEquals(TimedEffectReasonType.TYPE_RESIST, fails.get(1).getCode());
+        assertEquals(TimedEffectReasonType.TYPE_TIMED_EFFECT, fails.get(0).getCode());
+        assertEquals(TimedEffectReasonType.TYPE_PLAYER_FLAG, fails.get(1).getCode());
         assertEquals(TimedEffectReasonType.TYPE_VULN, fails.get(2).getCode());
-        assertEquals(TimedEffectReasonType.TYPE_PLAYER_FLAG, fails.get(3).getCode());
-        assertEquals(TimedEffectReasonType.TYPE_TIMED_EFFECT, fails.get(4).getCode());
+        assertEquals(TimedEffectReasonType.TYPE_RESIST, fails.get(3).getCode());
+        assertEquals(TimedEffectReasonType.TYPE_OBJECT_FLAG, fails.get(4).getCode());
     }
 
     @Test
-    void aFailCodeOutsideOneToFiveIsReportedAndSkipped() throws IOException {
+    void aFailCodeOutsideOneToFiveStopsTheLoad() {
         for (String code : List.of("0", "6")) {
-            ParseResult<PlayerTimedEffect> result = load("fail-code.txt", withHeader(1,
-                    "name:FAST\ngrade:G:100:Test:Message\nfail:" + code + ":POIS\n"));
-
-            assertTrue(result.items().isEmpty(), code);
-            assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown fail type")),
-                    result.errors()::toString);
+            assertStopsTheLoad("fail-code.txt", "name:FAST\ngrade:G:100:Test:Message\nfail:" + code + ":POIS\n", 2,
+                    "has an illegal fail type value: " + code);
         }
     }
 
     @Test
-    void aFailNameFromTheWrongListIsReportedAndSkipped() throws IOException {
+    void aFailNameFromTheWrongListStopsTheLoad() {
         // POIS is an element, so it is not an object flag.
-        ParseResult<PlayerTimedEffect> result = load("fail-wrong-list.txt", withHeader(1,
-                "name:FAST\ngrade:G:100:Test:Message\nfail:1:POIS\n"));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("invalid fail line")),
-                result.errors()::toString);
+        assertStopsTheLoad("fail-wrong-list.txt", "name:FAST\ngrade:G:100:Test:Message\nfail:1:POIS\n", 2,
+                "has an illegal fail value: POIS");
     }
 
     @Test
-    void aSlayThatIsNotLoadedIsReportedAndSkipped() throws IOException {
-        ParseResult<PlayerTimedEffect> result = load("bad-slay.txt", withHeader(1,
-                "name:ATT_EVIL\ngrade:G:100:Test:Message\nslay:NOTASLAY\n"));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown slay")),
-                result.errors()::toString);
+    void aSlayThatIsNotLoadedStopsTheLoad() {
+        assertStopsTheLoad("bad-slay.txt", "name:ATT_EVIL\ngrade:G:100:Test:Message\nslay:NOTASLAY\n", 2,
+                "has an illegal slay value: NOTASLAY");
     }
 
     @Test

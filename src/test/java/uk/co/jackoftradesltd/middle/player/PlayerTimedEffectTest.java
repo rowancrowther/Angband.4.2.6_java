@@ -32,11 +32,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link PlayerTimedEffect}, the port of C's {@code struct timed_effect_data}
@@ -160,7 +156,7 @@ class PlayerTimedEffectTest {
 
         @Test
         void everyEffectOutsideTheFourExceptionsRaisesStatusAndBonus() {
-            Set<TimedEffect> exceptions = EnumSet.of(TimedEffect.TMD_NONE, TimedEffect.TMD_BLIND,
+            Set<TimedEffect> exceptions = EnumSet.of(TimedEffect.TMD_NONE, TimedEffect.TMD_MAX, TimedEffect.TMD_BLIND,
                     TimedEffect.TMD_IMAGE, TimedEffect.TMD_SINVIS, TimedEffect.TMD_SINFRA);
             int checked = 0;
             for (TimedEffect effect : TimedEffect.values()) {

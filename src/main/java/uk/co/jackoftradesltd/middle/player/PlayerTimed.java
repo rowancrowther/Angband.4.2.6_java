@@ -23,6 +23,7 @@ import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.Message;
 import uk.co.jackoftradesltd.middle.cave.enums.DirectionEnum;
+import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
 import uk.co.jackoftradesltd.middle.game.event.projection.Source;
 import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
@@ -34,6 +35,7 @@ import uk.co.jackoftradesltd.middle.player.enums.PlayerRedraw;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerUpdateEnum;
 import uk.co.jackoftradesltd.middle.player.enums.TimedEffect;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -77,7 +79,11 @@ import java.util.List;
  * {@link uk.co.jackoftradesltd.middle.game.GameWorld}; they report no change and do nothing. The
  * implemented routes are the {@code player}-prefixed ones.
  *
- * <p>Class PlayerTimed commented in full on 261014.
+ * <p><b>The begin and end chains are walked here, not in {@code Effect}.</b> C hands a whole chain to
+ * one {@code effect_do} call; the port's {@code Effect.effectDo} takes a single effect, so
+ * {@link #setTimed} loops over the list itself.
+ *
+ * <p>Class PlayerTimed commented in full on 261029.
  *
  * @author Rowan Crowther
  */
@@ -177,13 +183,16 @@ public class PlayerTimed {
      * there. Only an effect that survives every condition answers {@code true}, so an effect with no
      * declared conditions always passes.
      *
-     * <p><b>The walk runs last-declared first.</b> C's parser pushes each {@code fail:} line onto the
-     * head of a linked list, so {@code player_inc_check} meets the conditions in the reverse of
-     * their order in {@code player_timed.txt}. {@code PlayerTimedAssembler} appends them in file
-     * order instead, and the walk here reverses the list to compensate. The order is observable:
-     * the live path learns equipment as it goes and stops at the first veto, so for poison, which
-     * declares the resist and then the {@code OPP_POIS} timed effect, the timed effect is tested
-     * first and the resist rune is never offered for learning while it is running.
+     * <p><b>The walk runs last-declared first, and the list is stored that way.</b> C's parser pushes
+     * each {@code fail:} line onto the head of a linked list, so {@code player_inc_check} meets the
+     * conditions in the reverse of their order in {@code player_timed.txt}. The grammar hands each
+     * record's lines to {@code PlayerTimedAssembler} already reversed, and the assembler keeps them in
+     * that order (a repeated {@code name:} puts the later record's lines in front), so
+     * {@link PlayerTimedEffect#getFail} is already in C's order and the loop here walks it as stored,
+     * with no reversal of its own. The order is observable: the live path learns equipment as it goes
+     * and stops at the first veto, so for poison, which declares the resist and then the
+     * {@code OPP_POIS} timed effect, the timed effect is tested first and the resist rune is never
+     * offered for learning while it is running.
      *
      * <p><b>What {@code lore} selects.</b> A lore check asks what the player <em>believes</em> would
      * stop the effect, and so reads {@code Player#knownState} and nothing else; it is a query, and leaves
@@ -220,7 +229,7 @@ public class PlayerTimed {
      * rather than indexing past an array. The unreachable {@code TYPE_NONE} answers C's
      * {@code assert(0)} with a logged throw.
      *
-     * <p>Function incCheck coded on 260831, commented in full on 261014.
+     * <p>Function incCheck coded on 260831, commented in full on 261029.
      *
      * @param player the character the conditions are tested against - their state, equipment,
      *               knowledge and running effects; C's {@code struct player *p}
@@ -231,7 +240,7 @@ public class PlayerTimed {
      */
     public static boolean incCheck(Player player, TimedEffect index, boolean lore) {
         PlayerTimedEffect effect = PlayerRegistry.lookupPlayerTimedEffect(index);
-        List<TimedFailure> failures = effect.getFail().reversed();
+        List<TimedFailure> failures = effect == null ? new ArrayList<>() : effect.getFail();
 
         for (TimedFailure failure : failures) {
             switch (failure.getCode()) {
@@ -357,9 +366,16 @@ public class PlayerTimed {
      * one and a placeholder object prints it with the bare-hands switch set when there is not.
      *
      * <p>Begin and end effect chains fire on the transitions into and out of zero, before the new
-     * value is stored. C's choice of origin looks inverted and is not: passing {@code sourceNone} when
-     * the change may disturb lets any nested timed-effect handler make its own disturbance decision,
-     * while {@code sourcePlayer} marks the change as self-inflicted and suppresses it.
+     * value is stored, and whether or not the change is announced. The begin chain runs when the new
+     * value is positive and the old one is zero; the end chain runs when the new value is zero, so an
+     * effect with a lower bound above zero never runs it. C's choice of origin looks inverted and is
+     * not: passing {@code sourceNone} when the change may disturb lets any nested timed-effect handler
+     * make its own disturbance decision, while {@code sourcePlayer} marks the change as self-inflicted
+     * and suppresses it.
+     *
+     * <p>C passes the whole chain to one {@code effect_do} call, which walks it. {@link Effect#effectDo}
+     * takes a single effect, so the loops over {@code getOnBeginEffect} and {@code getOnEndEffect}
+     * here stand in for that walk, calling each effect in list order with the same origin.
      *
      * <p>Only a notifying change disturbs the player, raises the effect's update and redraw flags
      * (always including {@code PR_STATUS}) and calls {@link PlayerCalcs#handleStuff(Player)}; a silent change stores
@@ -367,9 +383,10 @@ public class PlayerTimed {
      *
      * <p><b>Outstanding:</b> {@code Effect.effectDo} and {@link PlayerUtils#disturb()} are still
      * stubs, so the transition chains and the disturbance are stored-up work rather than observable
-     * behaviour.
+     * behaviour. {@code PlayerSetTimedTransitionTest} observes the chains through an {@link Effect}
+     * subclass that records its calls.
      *
-     * <p>Function setTimed coded on 260829, commented in full on 261014.
+     * <p>Function setTimed coded on 260829, commented in full on 261029.
      *
      * @param player      the character whose effect is written, and who receives any message,
      *                    disturb, redraw and update the change calls for; C's {@code struct player *p}
@@ -482,15 +499,19 @@ public class PlayerTimed {
                 boolean identity = false;
 
                 Source source = canDisturb ? Source.sourceNone() : Source.sourcePlayer();
-                effect.getOnBeginEffect().effectDo(source, null, identity, true,
-                        DirectionEnum.DIR_UNKNOWN, 0, 0, null);
+                List<Effect> effects = effect.getOnBeginEffect();
+                for (Effect e : effects) {
+                    e.effectDo(source, null, identity, true, DirectionEnum.DIR_UNKNOWN, 0, 0, null);
+                }
             }
         } else if (amount == 0) {
             if (effect.getOnEndEffect() != null) {
                 boolean identity = false;
                 Source source = canDisturb ? Source.sourceNone() : Source.sourcePlayer();
-                effect.getOnEndEffect().effectDo(source, null, identity, true,
-                        DirectionEnum.DIR_UNKNOWN, 0, 0, null);
+                List<Effect> effects = effect.getOnEndEffect();
+                for (Effect e : effects) {
+                    e.effectDo(source, null, identity, true, DirectionEnum.DIR_UNKNOWN, 0, 0, null);
+                }
             }
         }
 
@@ -672,7 +693,8 @@ public class PlayerTimed {
      * message and the accompanying redraw cannot be suppressed. The turn-by-turn decay in
      * {@code decrease_timeouts} in {@code game-world.c} relies on exactly this: it decrements every
      * running effect with {@code notify} false - by one for most, by a constitution-based amount for
-     * cuts, poison and stun, and by nothing for food, which is handled elsewhere - so the decay is
+     * cuts, poison and stun (cuts drop to nothing for a mortal wound, or for a player with the
+     * {@code ROCK} flag), and by nothing for food, which is handled elsewhere - so the decay is
      * silent, and it is told only about the tick on which an effect actually lapses.
      *
      * <p>Nothing is clamped at this level. A subtraction that overshoots produces a negative value
@@ -691,10 +713,10 @@ public class PlayerTimed {
      *
      * <p>C asserts the index is in range, since it is about to subscript {@code p->timed}; a
      * {@link TimedEffect} makes an out-of-range index unrepresentable, so the assertions have no
-     * analogue here. The {@code getOrDefault} default costs nothing and is never used: the
-     * constructor seeds the map with every {@link TimedEffect} at zero.
+     * analogue here. The default in the {@link Player#getTimedEffectOrDefault} call costs nothing and
+     * is never used: the constructor seeds the map with every {@link TimedEffect} at zero.
      *
-     * <p>Function playerDecTimed coded on 260831, commented in full on 261014.
+     * <p>Function playerDecTimed coded on 260831, commented in full on 261029.
      *
      * @param player     the character whose effect is shortened, passed on to {@link #setTimed}; C's
      *                   {@code struct player *p}

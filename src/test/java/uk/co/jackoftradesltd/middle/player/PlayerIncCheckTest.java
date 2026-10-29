@@ -26,7 +26,6 @@ import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.Message;
 import uk.co.jackoftradesltd.middle.cave.Chunk;
-import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.middle.game.event.EventHandlerInterface;
 import uk.co.jackoftradesltd.middle.game.event.EventsHandler;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
@@ -47,10 +46,7 @@ import uk.co.jackoftradesltd.middle.player.enums.TimedEffectReasonType;
 import uk.co.jackoftradesltd.testsupport.Bodies;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -136,7 +132,7 @@ class PlayerIncCheckTest {
      */
     private static PlayerTimedEffect effect(TimedEffect name, List<TimedFailure> failures) {
         return new PlayerTimedEffect(name, "test", null, null, null, null, failures,
-                List.of(), (Effect) null, (Effect) null, false, 0, ObjectFlag.OF_NONE, false,
+                List.of(), List.of(), List.of(), false, 0, ObjectFlag.OF_NONE, false,
                 ElementEnum.ELEM_NONE, null, null);
     }
 
@@ -234,11 +230,14 @@ class PlayerIncCheckTest {
      * so that both lookups in a test answer.
      *
      * @param failures the conditions in declaration order, as {@code player_timed.txt} lists them;
-     *                 the walk meets them last-declared first, as C's prepended list does
+     *                 the assembler stores them last-declared first, as C's prepended list does,
+     *                 and the walk meets them in that stored order, so they are reversed here
      */
     private void conditions(TimedFailure... failures) {
+        List<TimedFailure> stored = new ArrayList<>(List.of(failures));
+        Collections.reverse(stored);
         PlayerRegistry.setPlayerTimedEffects(List.of(
-                effect(SUBJECT, List.of(failures)),
+                effect(SUBJECT, stored),
                 effect(REFERENT, List.of())));
     }
 

@@ -19,6 +19,7 @@ package uk.co.jackoftradesltd.backend.parser;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.magic.MagicRealm;
@@ -124,16 +125,15 @@ class RealmReaderTest {
         assertEquals("shadow book", field(byName(realms, "shadow"), "bookNoun"));
     }
 
-    // ---- Soft errors: drop the record, keep the rest ---------------------
+    // ---- A stat that names no stat stops the load ------------------------
 
     @Test
-    void unknownStatIsReportedAndTheRealmDropped() throws IOException {
-        ParseResult<MagicRealm> result = load("bad-stat.txt",
-                withHeader(1, realm("weird", "ZZZ", "magic book")));
+    void unknownStatStopsTheLoadAsCsParseErrorDoes() {
+        // C: parse_realm_stat returns PARSE_ERROR_INVALID_SPELL_STAT, which ends the realm.txt load.
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("bad-stat.txt",
+                withHeader(1, realm("weird", "ZZZ", "magic book"))));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(s -> s.contains("unknown stat")),
-                result.errors()::toString);
+        assertTrue(e.getMessage().endsWith("has an illegal stat value: ZZZ"), e::getMessage);
     }
 
     @Test
@@ -150,14 +150,10 @@ class RealmReaderTest {
     }
 
     @Test
-    void oneBadRealmIsDroppedButTheOthersStillLoad() throws IOException {
-        ParseResult<MagicRealm> result = load("mixed.txt", withHeader(2,
-                realm("good", "INT", "magic book") + realm("bad", "ZZZ", "magic book")));
-
-        assertEquals(1, result.items().size());
-        assertNotNull(byName(result.items(), "good"));
-        assertNull(byName(result.items(), "bad"));
-        assertTrue(result.hasErrors());
+    void oneBadRealmStopsTheWholeLoadSoNoRealmIsKept() {
+        // C quits on the bad stat, so the realm before it is lost with the rest.
+        assertThrows(DataFileParseException.class, () -> load("mixed.txt", withHeader(2,
+                realm("good", "INT", "magic book") + realm("bad", "ZZZ", "magic book"))));
     }
 
     // ---- Record count + hard errors --------------------------------------
@@ -311,7 +307,8 @@ class RealmReaderTest {
 
     @Test
     void parseDiscardsTheErrorsThatParseWithResultsKeeps() throws IOException {
-        String text = withHeader(2, realm("good", "INT", "magic book") + realm("bad", "ZZZ", "magic book"));
+        // A record-count mismatch is the one soft error left: the realm loads and the message is kept.
+        String text = withHeader(2, realm("good", "INT", "magic book"));
         Path file = tempDir.resolve("both-forms.txt");
         Files.writeString(file, text);
 
@@ -320,12 +317,13 @@ class RealmReaderTest {
     }
 
     @Test
-    void theUnknownStatMessageNamesTheRecordsLineAndTheStat() throws IOException {
+    void theUnknownStatMessageNamesTheRecordsLineTheFileAndTheStat() {
         // Line 1 is the header, line 2 the blank line below it, line 3 the name: of the bad record.
-        ParseResult<MagicRealm> result = load("bad-stat-line.txt",
-                "record-count:1\n\n" + realm("weird", "ZZZ", "magic book"));
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("bad-stat-line.txt",
+                "record-count:1\n\n" + realm("weird", "ZZZ", "magic book")));
 
-        assertEquals(List.of("Record at line: 3 has an unknown stat: ZZZ"), result.errors());
+        assertEquals("Realm starting at line: 3 of file: " + tempDir.resolve("bad-stat-line.txt")
+                + " has an illegal stat value: ZZZ", e.getMessage());
     }
 
     @Test
@@ -378,36 +376,39 @@ class RealmReaderTest {
         }
     }
 
-    // ---- Known differences from C: pinned so a fix is noticed (docs/Assembler_Issues.md, docs/grammar_issues.md) ----
+    // ---- Stat resolution as C does it (fixed since docs/Assembler_Issues.md) ----
+
 
     @Test
-    void aLowerCaseStatIsRejectedHereWhereCAcceptsItIgnoringCase() throws IOException {
+    void aLowerCaseStatLoadsAsCDoesIgnoringCase() throws Exception {
         // C: stat_name_to_idx compares with my_stricmp, so "stat:int" is STAT_INT.
         ParseResult<MagicRealm> result = load("lower-stat.txt",
                 withHeader(1, realm("weird", "int", "magic book")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(Stats.STAT_INT, field(result.items().get(0), "stat"));
     }
 
     @Test
-    void statNoneIsAcceptedHereWhereCRejectsIt() throws IOException {
+    void statNoneStopsTheLoadAsCDoes() {
         // C: "NONE" is not in stat_name_list, so stat_name_to_idx returns -1 and the parse fails.
-        ParseResult<MagicRealm> result = load("none-stat.txt",
-                withHeader(1, realm("weird", "NONE", "magic book")));
-
-        assertEquals(1, result.items().size());
+        assertThrows(DataFileParseException.class, () -> load("none-stat.txt",
+                withHeader(1, realm("weird", "NONE", "magic book"))));
     }
 
     @Test
-    void aRealmWithNoStatIsDroppedHereWhereCKeepsItAsStrength() throws IOException {
+    void aRealmWithNoStatIsKeptAsStrengthAsCDoes() throws Exception {
         // C: the realm is zero-filled and parse_realm_stat is never called, so stat stays 0 (STAT_STR).
         ParseResult<MagicRealm> result = load("no-stat.txt", withHeader(1,
                 "name:weird\nverb:cast\nspell-noun:spell\nbook-noun:magic book\n"));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(1, result.items().size());
+        assertEquals(Stats.STAT_STR, field(result.items().get(0), "stat"));
     }
+
+    // ---- Known differences from C: pinned so a fix is noticed (docs/grammar_issues.md) ----
+
 
     @Test
     void anIndentedDirectiveIsAHardErrorHereWhereCSkipsLeadingWhitespace() throws IOException {
@@ -422,10 +423,9 @@ class RealmReaderTest {
     @Test
     void textAfterASecondColonOnTheStatLineIsPartOfTheStatHereWhereCIgnoresIt() throws IOException {
         // C: stat is a sym, tokenized on ':', so "stat:INT:extra" reads INT and drops the rest.
-        ParseResult<MagicRealm> result = load("stat-colon.txt",
-                withHeader(1, realm("weird", "INT:extra", "magic book")));
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("stat-colon.txt",
+                withHeader(1, realm("weird", "INT:extra", "magic book"))));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
+        assertTrue(e.getMessage().endsWith("has an illegal stat value: INT:extra"), e::getMessage);
     }
 }

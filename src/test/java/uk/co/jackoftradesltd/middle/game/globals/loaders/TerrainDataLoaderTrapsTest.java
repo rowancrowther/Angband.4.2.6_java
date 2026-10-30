@@ -116,18 +116,15 @@ class TerrainDataLoaderTrapsTest {
     }
 
     @Test
-    @DisplayName("a later record dropped on a soft error does not stop the load")
-    void laterDroppedRecordIsTolerated() throws IOException {
+    @DisplayName("a bad later record stops the load, as in C, and the registry is left as it was")
+    void laterBadRecordStopsTheLoad() throws IOException {
+        TerrainRegistry.setTrapInfo(new ArrayList<>());
         writeTrapFile(3, NO_TRAP, badFlagRecord("broken"), GLYPH);
 
-        TerrainDataLoader.loadTraps();
+        assertThrows(RuntimeException.class, TerrainDataLoader::loadTraps);
 
-        List<TrapKind> loaded = TerrainRegistry.getTrapInfo();
-        assertAll(
-                () -> assertEquals(2, loaded.size()),
-                () -> assertEquals("no trap", loaded.get(0).getTrapKindName()),
-                // the dropped record takes no index, so the glyph closes up to index 1
-                () -> assertEquals(1, loaded.get(1).getTrapKindIndex()));
+        assertTrue(TerrainRegistry.getTrapInfo().isEmpty());
+        assertEquals(0, TerrainRegistry.getTrapMax());
     }
 
     @Test

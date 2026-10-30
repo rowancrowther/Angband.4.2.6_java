@@ -229,40 +229,34 @@ class TrapReaderTest {
         assertEquals(5, byDescription(traps, "trap door").getTrapKindIndex());
     }
 
-    // ---- Soft-error drops (synthetic fixtures) ---------------------------
+    // ---- Fatal assembler errors (synthetic fixtures) ---------------------
 
+    /** C: {@code grab_flag} fails, {@code PARSE_ERROR_INVALID_FLAG} stops the load. */
     @Test
-    void unknownTrapFlagIsSoftErrorAndDropsTheRecord() throws IOException {
+    void unknownTrapFlagStopsTheLoadAsInC() throws IOException {
         String path = tempFile("bad-flag.txt",
                 "record-count:1\n" +
                         "name:test:test trap\n" +
                         "graphics:^:w\n" +
                         "flags:TRAP | NOTAFLAG\n");
 
-        ParseResult<TrapKind> result = new TrapReader().parseWithResults(path);
-
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream()
-                        .anyMatch(e -> e.contains("unknown flag") && e.contains("NOTAFLAG")),
-                () -> result.errors().toString());
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> new TrapReader().parseWithResults(path));
+        assertTrue(e.getMessage().contains("NOTAFLAG"), e::getMessage);
     }
 
+    /** C: {@code grab_flag} fails, {@code PARSE_ERROR_INVALID_FLAG} stops the load. */
     @Test
-    void unknownSaveFlagIsSoftErrorAndDropsTheRecord() throws IOException {
+    void unknownSaveFlagStopsTheLoadAsInC() throws IOException {
         String path = tempFile("bad-save.txt",
                 "record-count:1\n" +
                         "name:test:test trap\n" +
                         "graphics:^:w\n" +
                         "save:NOTAFLAG\n");
 
-        ParseResult<TrapKind> result = new TrapReader().parseWithResults(path);
-
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream()
-                        .anyMatch(e -> e.contains("unknown save flag") && e.contains("NOTAFLAG")),
-                () -> result.errors().toString());
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> new TrapReader().parseWithResults(path));
+        assertTrue(e.getMessage().contains("NOTAFLAG"), e::getMessage);
     }
 
     // =====================================================================
@@ -468,20 +462,15 @@ class TrapReaderTest {
         assertEquals(2, r.items().get(2).getTrapKindIndex());
     }
 
-    /**
-     * C stops the load on a bad kind. The port drops it and loads the rest, so every kind after it
-     * takes a lower {@code tidx} than the file order suggests.
-     */
+    /** C stops the load on a bad kind, so no kind is dropped and no {@code tidx} is skipped. */
     @Test
-    void aDroppedTrapMovesTheLaterTrapsDownOneIndex() throws IOException {
-        ParseResult<TrapKind> r = load("dropped.txt", withHeader(3,
-                "name:a:first\ngraphics:^:w\n"
-                        + "name:b:second\ngraphics:^:w\nflags:NOTAFLAG\n"
-                        + "name:c:third\ngraphics:^:w\n"));
-
-        assertTrue(hasError(r, "NOTAFLAG"), r.errors()::toString);
-        assertEquals("first,third", namesOf(r.items()));
-        assertEquals(1, r.items().get(1).getTrapKindIndex());
+    void aBadMiddleTrapStopsTheWholeLoadAsInC() {
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> load("dropped.txt", withHeader(3,
+                        "name:a:first\ngraphics:^:w\n"
+                                + "name:b:second\ngraphics:^:w\nflags:NOTAFLAG\n"
+                                + "name:c:third\ngraphics:^:w\n")));
+        assertTrue(e.getMessage().contains("NOTAFLAG"), e::getMessage);
     }
 
     // =====================================================================
@@ -557,13 +546,14 @@ class TrapReaderTest {
         assertTrue(r.items().getFirst().getFlags().has(TrapEnum.TRF_FLOOR));
     }
 
-    /** C: {@code NONE} is the first name in {@code trap_flags}, so {@code flags:NONE} is accepted. */
+    /**
+     * C: {@code NONE} is the first name in {@code trap_flags}, but {@code lookup_flag} starts at
+     * {@code FLAG_START} (1), so {@code flags:NONE} is an unknown flag and stops the load.
+     */
     @Test
-    void flagNoneLoadsAsInC() throws IOException {
-        ParseResult<TrapKind> r = load("flag-none.txt", withHeader(1, "name:a:b\nflags:NONE\n"));
-
-        assertFalse(r.hasErrors(), r.errors()::toString);
-        assertEquals(1, r.items().size());
+    void flagNoneStopsTheLoadAsInC() {
+        assertThrows(DataFileParseException.class,
+                () -> load("flag-none.txt", withHeader(1, "name:a:b\nflags:NONE\n")));
     }
 
     /** C: a record with no {@code appear:} line is zeroed. */
@@ -692,12 +682,9 @@ class TrapReaderTest {
 
     /** C: {@code appear} is three {@code uint}s, and {@code parser_parse} rejects a leading minus. */
     @Test
-    void aNegativeAppearValueLoadsHereWhereCRejectsIt() throws Exception {
-        TrapKind t = load("neg-appear.txt", withHeader(1, "name:a:b\nappear:-1:-2:-3\n")).items().getFirst();
-
-        assertEquals(-1, (int) field(t, "rarity"));
-        assertEquals(-2, (int) field(t, "minDepth"));
-        assertEquals(-3, (int) field(t, "maxNum"));
+    void aNegativeAppearValueStopsTheLoadAsInC() {
+        assertThrows(DataFileParseException.class,
+                () -> load("neg-appear.txt", withHeader(1, "name:a:b\nappear:-1:-2:-3\n")));
     }
 
     /** C: {@code dice_parse_string} skips whitespace, so {@code 2d10 M50} is {@code 2d10M50}. */
@@ -720,19 +707,15 @@ class TrapReaderTest {
 
     /** C: {@code list_obj_flag_names} and {@code trap_flags} hold no {@code MAX}. */
     @Test
-    void flagMaxLoadsHereWhereCRejectsIt() throws IOException {
-        ParseResult<TrapKind> r = load("flag-max.txt", withHeader(1, "name:a:b\nflags:MAX\n"));
-
-        assertFalse(r.hasErrors(), r.errors()::toString);
-        assertEquals(1, r.items().size());
+    void flagMaxStopsTheLoadAsInC() {
+        assertThrows(DataFileParseException.class,
+                () -> load("flag-max.txt", withHeader(1, "name:a:b\nflags:MAX\n")));
     }
 
     @Test
-    void saveMaxLoadsHereWhereCRejectsIt() throws IOException {
-        ParseResult<TrapKind> r = load("save-max.txt", withHeader(1, "name:a:b\nsave:MAX\n"));
-
-        assertFalse(r.hasErrors(), r.errors()::toString);
-        assertEquals(1, r.items().size());
+    void saveMaxStopsTheLoadAsInC() {
+        assertThrows(DataFileParseException.class,
+                () -> load("save-max.txt", withHeader(1, "name:a:b\nsave:MAX\n")));
     }
 
     /**

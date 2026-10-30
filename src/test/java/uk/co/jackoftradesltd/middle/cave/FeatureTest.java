@@ -19,6 +19,8 @@ package uk.co.jackoftradesltd.middle.cave;
 
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.function.Executable;
+import uk.co.jackoftradesltd.channel.colour.ColourEnum;
+import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.cave.enums.TerrainFeatureFlags;
 import uk.co.jackoftradesltd.middle.cave.enums.TerrainFlags;
@@ -305,6 +307,87 @@ class FeatureTest {
                 () -> assertEquals("lava", f.getName()),
                 () -> assertEquals(TerrainFlags.FEAT_LAVA, f.getTerrainFlag()),
                 () -> assertEquals(TerrainFlags.FEAT_LAVA, f.getCodeFlags()));
+    }
+
+    @Test
+    @DisplayName("shopNum is 0 until set: C's finish_parse_feat numbers shops only after parsing")
+    void shopNumDefaultsToZero() {
+        Feature shop = new Feature(TerrainFlags.FEAT_STORE_GENERAL, "General Store", "", null, 0, 0,
+                flags(TerrainFeatureFlags.TF_SHOP), null, "", "", "", "", "", "", "", MonsterRaceFlag.RF_NONE);
+        int before = shop.getShopNum();
+        shop.setShopNum(1);
+
+        assertAll(
+                () -> assertEquals(0, before),
+                () -> assertEquals(1, shop.getShopNum()));
+    }
+
+    @Test
+    @DisplayName("every accessor returns the matching constructor argument, struct feature field by field")
+    void constructorArgumentsReachAccessors() {
+        Flag<TerrainFeatureFlags> flags = flags(TerrainFeatureFlags.TF_FIERY, TerrainFeatureFlags.TF_PASSABLE);
+        AngbandDisplayCharacter glyph = new AngbandDisplayCharacter('#', ColourEnum.COLOUR_RED);
+        Feature lava = new Feature(TerrainFlags.FEAT_LAVA, "lava", "hot rock", TerrainFlags.FEAT_PASS_RUBBLE,
+                7, 3, flags, glyph, "walk", "run", "hurt", "die", "confused", "a stream of ", "in ",
+                MonsterRaceFlag.RF_IM_FIRE);
+
+        assertAll(
+                () -> assertEquals(TerrainFlags.FEAT_LAVA, lava.getCode()),
+                () -> assertEquals("lava", lava.getName()),
+                () -> assertEquals("hot rock", lava.getDescription()),
+                () -> assertEquals(TerrainFlags.FEAT_PASS_RUBBLE, lava.getMimicTerrainFlags()),
+                () -> assertEquals(7, lava.getPriority()),
+                () -> assertEquals(3, lava.getDig()),
+                () -> assertSame(flags, lava.getFlags(), "getFlags hands back the live set, as C reads f_info directly"),
+                () -> assertSame(glyph, lava.getDisplayCharacter()),
+                () -> assertEquals("walk", lava.getWalkMsg()),
+                () -> assertEquals("run", lava.getRunMsg()),
+                () -> assertEquals("hurt", lava.getHurtMsg()),
+                () -> assertEquals("die", lava.getDieMsg()),
+                () -> assertEquals("confused", lava.getConfusedMsg()),
+                () -> assertEquals("a stream of ", lava.getLookPrefix()),
+                () -> assertEquals("in ", lava.getLookInPreposition()),
+                () -> assertEquals(MonsterRaceFlag.RF_IM_FIRE, lava.getResistFlag()),
+                () -> assertNull(feature(TerrainFlags.FEAT_FLOOR, null).getMimicTerrainFlags(),
+                        "no mimic is null, C's NULL pointer"));
+    }
+
+    @Test
+    @DisplayName("a change to the Flag from getFlags shows in the predicates")
+    void getFlagsIsLive() {
+        Feature f = withFlags();
+        f.getFlags().on(TerrainFeatureFlags.TF_WALL);
+
+        assertTrue(f.isWall());
+    }
+
+    @Test
+    @DisplayName("setLookPrefix and setLookInPreposition replace the values, as finish_parse_feat does")
+    void lookSettersReplace() {
+        Feature f = feature(TerrainFlags.FEAT_PASS_RUBBLE, null);
+        f.setLookPrefix("a pile of ");
+        f.setLookInPreposition("on ");
+
+        assertAll(
+                () -> assertEquals("a pile of ", f.getLookPrefix()),
+                () -> assertEquals("on ", f.getLookInPreposition()));
+    }
+
+    @Test
+    @DisplayName("a broken door is a door but neither open nor closed")
+    void brokenDoorIsNeitherOpenNorClosed() {
+        // terrain.txt: broken door is LOS | PROJECT | PASSABLE | DOOR_ANY | INTERESTING | EASY
+        Feature broken = withFlags(TerrainFeatureFlags.TF_LOS, TerrainFeatureFlags.TF_PROJECT,
+                TerrainFeatureFlags.TF_PASSABLE, TerrainFeatureFlags.TF_DOOR_ANY,
+                TerrainFeatureFlags.TF_INTERESTING, TerrainFeatureFlags.TF_EASY);
+
+        assertAll(
+                () -> assertTrue(broken.hasAnyDoor()),
+                () -> assertFalse(broken.isOpenDoor()),
+                () -> assertFalse(broken.isCloseable()),
+                () -> assertFalse(broken.isClosedDoor()),
+                () -> assertFalse(broken.isRock(), "no GRANITE"),
+                () -> assertFalse(broken.fullRock(), "no ROCK"));
     }
 
     @Test

@@ -20,6 +20,8 @@ package uk.co.jackoftradesltd.backend.parser.terrainfeature;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
+import uk.co.jackoftradesltd.backend.parser.ParseUtils;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
@@ -56,12 +58,40 @@ import java.util.List;
  * not codes or flags. C's {@code lookup_feat_code()} ({@code cave.c}) and the {@code terrain_flags}
  * table ({@code init.c}) are built from {@code list-terrain.h} and {@code list-terrain-flags.h} and
  * have no {@code MAX} entry, so {@code code:MAX}, {@code mimic:MAX} and {@code flags:MAX} are refused
- * here by name before the enum lookup. {@code NONE} is a real entry in all three C tables, and
- * stays valid for the code, the mimic and the flags.
+ * here by name before the enum lookup. {@code NONE} differs by table. It is valid for the code and
+ * the mimic, because {@code lookup_feat_code()} searches {@code feat_code_list} from index 0. It is
+ * refused for the terrain flags and the resist flag, because those go through {@code lookup_flag()}
+ * ({@code datafile.c}), which starts at {@code FLAG_START} (1) and so never matches the
+ * {@code NONE} row at index 0. {@code MonsterRaceFlag} has no {@code RF_MAX}, so no {@code MAX}
+ * check is needed for the resist flag.
  *
- * <p><strong>Finishing</strong> (the part of {@code finish_parse_feat()} that lives here):
- * {@code look-prefix} and {@code look-in-preposition} get a trailing space when they are present and
- * lack one; an absent value stays empty, so the callers' "a"/"an" and "on" fallbacks still apply.
+ * <p><strong>Repeated codes:</strong> C's {@code parse_feat_code()} points the parser at the fixed
+ * {@code f_info} slot for the code, so a second record with the same {@code code:} carries on
+ * filling the same {@code struct feature} rather than starting a new one. This class does the same
+ * by building a replacement {@link Feature} from the earlier one and putting it in the earlier one's
+ * place, so the list keeps the order in which each code first appeared. Field by field, as in C:
+ * <ul>
+ *   <li>{@code name:} - kept from the earlier record; a second name when the earlier record already
+ *       had one is fatal, as {@code parse_feat_name()} returns
+ *       {@code PARSE_ERROR_REPEATED_DIRECTIVE}; a name on a later record is taken when the earlier
+ *       one had none.</li>
+ *   <li>{@code desc:}, the five messages, {@code look-prefix} and {@code look-in-preposition} -
+ *       appended to the earlier text with no separator, as {@code string_append()} ({@code z-virt.c})
+ *       does.</li>
+ *   <li>{@code flags:} - added to the earlier flag set.</li>
+ *   <li>{@code graphics:} - replaced; the grammar requires it on every record.</li>
+ *   <li>{@code mimic:}, {@code priority:}, {@code digging:}, {@code resist-flag:} - replaced when the
+ *       later record has the line, otherwise kept from the earlier record.</li>
+ * </ul>
+ * The flag set is shared with the earlier {@link Feature}, not copied; that is safe because the
+ * earlier one is dropped from the list.
+ *
+ * <p><strong>Finishing</strong> (the part of {@code finish_parse_feat()} that lives here): after
+ * every record is in, a second pass gives {@code look-prefix} and {@code look-in-preposition} a
+ * trailing space when they are present and lack one. It has to wait for that pass, as in C, so that
+ * text from a repeated code is joined raw ({@code "a"} then {@code "b"} gives {@code "ab "}, not
+ * {@code "a b "}). An absent value stays empty, the Java form of C's NULL check, so the callers'
+ * "a"/"an" and "on" fallbacks still apply.
  * Shop numbering is not done here: {@code TerrainDataLoader.loadTerrainFeatures()} hands the numbers
  * out from 1, in record order, to each feature carrying the {@code SHOP} flag, and sets the store
  * count. C walks the {@code f_info} table in feature order rather than file order, which is the same
@@ -70,76 +100,77 @@ import java.util.List;
  * anywhere; {@code code.ordinal()} gives the same value and {@code Feature.featureIndex} is
  * deprecated.
  *
- * <p><strong>Error model:</strong> this is the soft channel, with one exception. Any record that
- * fails to resolve - an unknown or sentinel code, mimic or flag, an unknown resist flag or colour, or
- * an overflowing number - is <em>skipped</em> ({@code continue}) with a message appended to
- * {@code errors}; the remaining good records still load. Hard grammar/lexer errors never reach here
- * (they abort in the reader), so these messages are recoverable, per the suite-wide partial-results
- * contract. A skipped record is simply missing from the result, so a skipped shop entrance means one
- * fewer shop for the loader to number; C has no such path because a bad record aborts the load. The
- * exception is a {@code code:} that appears twice, which is logged at fatal and thrown as a
- * {@link RuntimeException}, as C quits on it: its {@code parse_feat_name} returns
- * {@code PARSE_ERROR_REPEATED_DIRECTIVE} for a second record on the same {@code f_info} slot.
- * The colour is also checked more strictly than C: {@code color_text_to_attr()} falls back to white
- * for an unknown name, where this drops the record.
+ * <p><strong>Error model:</strong> every error is fatal, as it is in C, where any
+ * {@code parse_feat_*} error ends the load through {@code parse_file_quit_not_found()}. Each one is
+ * logged at fatal and thrown as a {@link DataFileParseException}: an unknown or sentinel code, mimic,
+ * terrain flag or resist flag; a negative or unparseable {@code priority}; a {@code digging} outside
+ * 1 to 5 or unparseable; an empty glyph; and a second {@code name:} for a repeated code. The first
+ * bad terrain flag on a line throws, as C's {@code parse_feat_flags()} stops at the first. Nothing
+ * is added to the {@code errors} list, and no record is skipped. An unknown colour is not an error:
+ * like C's {@code color_text_to_attr()} and {@code color_char_to_attr()} ({@code z-color.c}), it
+ * falls back to white.
  *
  * <p><strong>Absence convention:</strong> optional directives arrive as the empty string, so each
  * optional resolution is guarded by an {@code isEmpty()} check and left at its default rather than
- * attempting to resolve {@code ""}. The empty string is the Java form of C's NULL pointer for the
- * message and look strings.
+ * attempting to resolve {@code ""}. The defaults are C's zeroed {@code f_info}: no mimic
+ * ({@code null}), priority 0, digging 0, no flags and {@code RF_NONE}. The empty string is the Java
+ * form of C's NULL pointer for the name, description, message and look strings.
  *
- * <p>Class TerrainFeatureAssembler coded before 260915, commented in full on 261013.
+ * <p>Class TerrainFeatureAssembler coded before 260915, reworked to fatal errors and repeated codes
+ * on 261030, commented in full on 261030.
  *
  * @author Rowan Crowther
  */
 public class TerrainFeatureAssembler implements Assembler<TerrainFeatureParseRecord, List<Feature>> {
     /**
-     * Logger for the fatal lines this class writes: one before it throws on a repeated terrain code,
-     * and one each time a {@code MAX} sentinel is refused as a code, mimic or flag. The sentinel
-     * lines are logged at fatal but do not stop the load; the record is skipped and the message goes
-     * to the {@code errors} list that {@code assemble} is given, like every other problem. C has no
+     * Logger for the fatal line this class writes before each {@link DataFileParseException} it
+     * throws, one per error (see the class comment for the list). The line carries the same text as
+     * the exception, so the cause is in the log even if a caller swallows the exception. C has no
      * counterpart: it reports through the parser's own error text.
      *
-     * <p>Field logger coded before 261013, commented in full on 261013.
+     * <p>Field logger coded before 261013, commented in full on 261030.
      */
     private static final Logger logger = LogManager.getLogger(TerrainFeatureAssembler.class);
 
     /**
-     * Resolve each parse record into a {@link Feature}, skipping (and reporting) any that carry an
-     * unresolvable value. This does the work of the C {@code parse_feat_*} handlers and the
-     * look-string part of {@code finish_parse_feat()}, both in {@code init.c}; the shop numbers are
-     * left to {@code TerrainDataLoader}.
+     * Resolve each parse record into a {@link Feature}, throwing on the first value that cannot be
+     * resolved. This does the work of the C {@code parse_feat_*} handlers and the look-string part
+     * of {@code finish_parse_feat()}, both in {@code init.c}; the shop numbers are left to
+     * {@code TerrainDataLoader}.
      *
-     * <p>Each record is resolved in this order: the code, the mimic (left {@code null} when the
-     * record has none), {@code priority}, {@code digging}, the terrain flags, the colour and display
-     * character, the messages, the look prefix and preposition (given a trailing space only when
-     * present and lacking one), and the resist flag. A failure in the code, mimic, {@code priority},
-     * {@code digging} or colour skips the record at once with one message. The code and mimic are
-     * looked up case-sensitively, as C's {@code streq()} does, and {@code MAX} is refused for the
-     * code, the mimic and each flag (see the class comment); {@code NONE} is accepted. A bad terrain
-     * flag is reported and the loop carries on, so every bad flag on the line is reported, and the
-     * record is then skipped; C stops at the first. A bad resist flag skips the record with one
-     * message. Either way a half-populated {@link Feature} is never produced.
+     * <p>Each record is resolved in this order: the code, then whether an earlier record had the
+     * same code (see "Repeated codes" in the class comment), the name, the description, the mimic,
+     * {@code priority}, {@code digging}, the terrain flags, the colour and display character, the
+     * messages, the look prefix and preposition, and the resist flag. The code and mimic are looked
+     * up case-sensitively, as C's {@code streq()} does. {@code MAX} is refused for the code, the
+     * mimic and each terrain flag, and {@code NONE} for each terrain flag and the resist flag (see
+     * the class comment). After the loop, a second pass adds the trailing space to the look prefix
+     * and preposition, as {@code finish_parse_feat()} does.
      *
      * <p>Digging must be 1 to 5 when given, which is C's {@code DIGGING_RUBBLE + 1} up to
      * {@code DIGGING_MAX}; absent digging is 0. Priority must not be negative, as
-     * {@code parser_getuint()} refuses; absent priority is 0. An absent resist flag is
+     * {@code parser_getuint()} refuses, including {@code -0}; absent priority is 0. A priority above
+     * the {@code int} range is clamped to {@link Integer#MAX_VALUE} by
+     * {@code ParseUtils.parseIntString}, where C's {@code strtoul} result wraps into the 32-bit
+     * field; this is the accepted deviation of 261027, and no data file reaches it. A digging value
+     * that large is clamped too, and then refused as out of range. An absent resist flag is
      * {@code RF_NONE}, C's zeroed default.
      *
-     * <p>Function assemble coded before 260915, commented in full on 261013.
+     * <p>Function assemble coded before 260915, reworked to fatal errors and repeated codes on
+     * 261030, commented in full on 261030.
      *
-     * @param records the raw terrain parse records, in file order
-     * @param errors  the soft-error channel; at least one message is appended per skipped record,
-     *                and one per bad flag when several flags on a record are bad
-     * @return the features that resolved cleanly, in record order (could be shorter than
-     *         {@code records})
-     * @throws RuntimeException if two records carry the same {@code code:}
+     * @param records  the raw terrain parse records, in file order
+     * @param errors   the soft-error channel the {@link Assembler} contract supplies; not written to,
+     *                 since every error here is fatal
+     * @param filename the data file the records came from, quoted in every error message
+     * @return one feature per distinct code, in the order each code first appeared
+     * @throws DataFileParseException on any unresolvable value, as listed in the class comment
      */
     @Override
     public List<Feature> assemble(@NotNull List<TerrainFeatureParseRecord> records, @NotNull List<String> errors,
                                     String filename) {
         List<Feature> result = new ArrayList<>();
-        List<TerrainFlags> allFlagsSeen = new ArrayList<>();
+        List<String> allFlagsSeen = new ArrayList<>();
         for (TerrainFeatureParseRecord record : records) {
             int line = record.line();
 
@@ -147,147 +178,217 @@ public class TerrainFeatureAssembler implements Assembler<TerrainFeatureParseRec
             TerrainFlags flagCode;
             try {
                 if (rawCode.equals("MAX")) {
-                    String message = "Max terrain code is undefined";
+                    String message = "Terrain feature starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal sentinel terrain feature value: " + rawCode;
                     logger.fatal(message);
-                    throw new IllegalArgumentException(message);
+                    throw new DataFileParseException(message);
                 }
                 flagCode = TerrainFlags.valueOf("FEAT_" + rawCode);
             } catch (IllegalArgumentException e) {
-                errors.add("Block beginning at line: " + line + " has illegal terrain" +
-                        " feature code: " + rawCode);
-                continue;
+                String message = "Terrain feature starting at line: " + line + " of file: " + filename + " has " +
+                        "an illegal terrain feature value: " + rawCode;
+                logger.fatal(message, e);
+                throw new DataFileParseException(message);
             }
-
-            if (allFlagsSeen.contains(flagCode)) {
-                String message = "Duplicate value found in block beginning on line: " + line +
-                        " code: " + flagCode;
-                logger.fatal(message);
-                throw new RuntimeException(message);
-            }
-            
-            allFlagsSeen.add(flagCode);
 
             String name = record.name();
-            String description = record.desc();
-            String rawMimic = record.mimic();
-            TerrainFlags flagMimic = null;
-            if (!rawMimic.isEmpty()) {
-                try {
-                    if (rawMimic.equals("MAX"))  {
-                        String message = "Max mimic terrain code is undefined";
-                        logger.fatal(message);
-                        throw new IllegalArgumentException(message);
-                    }
-                    flagMimic = TerrainFlags.valueOf("FEAT_" + rawMimic);
-                } catch (IllegalArgumentException e) {
+            
+            boolean noName = name.isEmpty();
+            boolean duplicateCode = result.stream().anyMatch(f -> f.getTerrainFlag().equals(flagCode));
+            Feature previous = result.stream().filter(f -> f.getTerrainFlag().equals(flagCode)).findFirst().orElse(null);
+            
+            if (previous != null && duplicateCode) {
+                if (!name.isEmpty() && previous.getName().isEmpty())
+                    name = record.name();
+                else
+                    name = previous.getName();
+            }
 
-                    errors.add("Block beginning at line: " + line + " has illegal mimic" +
-                            " feature code: " + rawMimic);
-                    continue;
+            if (duplicateCode && previous != null && !previous.getName().isEmpty() && !noName) {
+                String message = "Terrain feature starting at line: " + line + " of file: " + filename + " has " +
+                        "a second name value: " + record.name() + " for a duplicate terrain feature value: " + rawCode;
+                logger.fatal(message);
+                throw new DataFileParseException(message);
+            }
+            
+            String description = "";
+            if (previous != null)
+                description = previous.getDescription();
+            description = description + record.desc();
+            TerrainFlags flagMimic = null;
+            if (duplicateCode && previous != null && record.mimic().isEmpty()) {
+                flagMimic = previous.getMimicTerrainFlags();
+            } else {
+                if (!record.mimic().isEmpty()) {
+                    try {
+                        if (record.mimic().equals("MAX")) {
+                            String message = "Terrain feature starting at line: " + line + " of file: " + filename + " has " +
+                                    "an illegal sentinel mimic value: " + record.mimic();
+                            logger.fatal(message);
+                            throw new DataFileParseException(message);
+                        }
+                        flagMimic = TerrainFlags.valueOf("FEAT_" + record.mimic());
+                    } catch (IllegalArgumentException e) {
+                        String message = "Terrain feature starting at line: " + line + " of file: " + filename + " has " +
+                                "an illegal mimic value: " + record.mimic();
+                        logger.fatal(message, e);
+                        throw new DataFileParseException(message);
+                    }
                 }
             }
-            int priority = 0;
-            if (!record.priority().isEmpty()) {
-                try {
-                    priority = Integer.parseInt(record.priority());
-                    if (priority < 0) {
-                        errors.add("Block beginning at line: " + line + " " +
-                                "has negative priority: " + record.priority());
-                        continue;
-                    }
-                } catch (NumberFormatException e) {
-                    errors.add("Block beginning at line: " + line + " has illegal number" +
-                            " format on priority: " + record.priority());
-                    continue;
+            int priority;
+            if (record.priority().isEmpty() && previous != null) {
+                priority = previous.getPriority();
+            } else {
+                if (ParseUtils.minusFound(record.priority())) {
+                    String message = "Terrain feature starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal negative priority value: " + record.priority();
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
                 }
+                priority = ParseUtils.parseIntString("Terrain feature", record.priority(), line, filename, "priority");
             }
             int digging = 0;
-            if (!record.dig().isEmpty()) {
-                try {
-                    digging = Integer.parseInt(record.dig());
-                } catch (NumberFormatException e) {
-                    errors.add("Block beginning at line: " + line + " has illegal number" +
-                            " format on digging: " + record.dig());
-                    continue;
-                }
+            if (record.dig().isEmpty() && previous != null) {
+                digging = previous.getDig();
+            } else if (!record.dig().isEmpty()) {
+                digging = ParseUtils.parseIntString("Terrain feature", record.dig(), line, filename, "digging");
                 if (digging < 1 || digging > 5) {
-                    errors.add("Block beginning at line: " + line + " has " +
-                            "an out of range digging value: " + digging);
-                    continue;
+                    String message = "Terrain feature starting at line: " + line + " of file: " + filename + " has " +
+                            "an out of range digging value: " + record.dig();
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
                 }
             }
-            // Two-level skip: a bad flag is logged and the inner loop continues (so every bad flag
-            // in the line is reported), but illegalFlag then drops the whole record after the loop -
-            // a Feature is never built from a partially-resolved flag set.
-            Flag<TerrainFeatureFlags> flags = new Flag<>(TerrainFeatureFlags.class);
-            boolean illegalFlag = false;
+            // A repeated code adds to the earlier flag set, as C ORs into the same f_info slot; the
+            // first bad flag throws, as parse_feat_flags() stops at the first.
+            Flag<TerrainFeatureFlags> flags;
+            if (duplicateCode && previous != null) {
+                flags = previous.getFlags();
+            } else {
+                flags = new Flag<>(TerrainFeatureFlags.class);
+            }
             for (String rawFlag : record.flags()) {
                 TerrainFeatureFlags flag;
                 try {
-                    if (rawFlag.equals("MAX")) {
-                        String message = "Max terrain feature code is undefined";
+                    if (rawFlag.equals("MAX") || rawFlag.equals("NONE")) {
+                        String message = "Terrain feature starting at line: " + line + " of file: " + filename + " has " +
+                                "an illegal sentinel terrain flag value: " + rawFlag;
                         logger.fatal(message);
-                        throw new IllegalArgumentException(message);
+                        throw new DataFileParseException(message);
                     }
                     flag = TerrainFeatureFlags.valueOf("TF_" + rawFlag);
                 } catch (IllegalArgumentException e) {
-                    errors.add("Illegal terrain found in block " +
-                            "beginning on line: " + line + " flag: " + rawFlag);
-                    illegalFlag = true;
-                    continue;
+                    String message = "Terrain feature starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal terrain flag value: " + rawFlag;
+                    logger.fatal(message, e);
+                    throw new DataFileParseException(message);
                 }
                 flags.on(flag);
             }
-            if (illegalFlag) continue;
             // The grammar requires graphics:, so glyph and colour always arrive together and adc is
             // always built; the isEmpty() guard below is defensive and keeps a lone half from
             // becoming a partial display character.
             String glyphStr = record.glyph();
             String colourStr = record.colour();
+            int wideGlyph = 0;
+            char glyph = '\0';
             ColourEnum colourEnum = ColourEnum.fromCode(colourStr);
             if (colourEnum == null) {
-                errors.add("Unknown colour found in block beginning " +
-                        "on line: " + line + " colour: " + colourStr);
-                continue;
+                colourEnum = ColourEnum.COLOUR_WHITE;
             }
-            char glyph;
-            AngbandDisplayCharacter adc = null;
-            if (!glyphStr.isEmpty()) {
+            AngbandDisplayCharacter adc;
+            if (glyphStr == null || glyphStr.isEmpty()) {
+                String message = "Terrain feature starting at line: " + line + " of file: " + filename + " has " +
+                        "an illegal empty glyph value: " + record.glyph();
+                logger.fatal(message);
+                throw new DataFileParseException(message);
+            }
+            wideGlyph = Character.codePointAt(glyphStr, 0);
+            if (!Character.isSupplementaryCodePoint(wideGlyph)) {
                 glyph = glyphStr.charAt(0);
                 adc = new AngbandDisplayCharacter(glyph, colourEnum);
+            } else {
+                adc = new AngbandDisplayCharacter(wideGlyph, colourEnum);
             }
-            String walkMsg = record.walkMsg();
-            String runMsg = record.runMsg();
-            String hurtMsg = record.hurtMsg();
-            String dieMsg = record.dieMsg();
-            String confMsg = record.confusedMsg();
-            String lookPre = record.lookPrefix();
-            if (!lookPre.isEmpty()) {
-                if (!lookPre.endsWith(" "))
-                    lookPre = lookPre + " ";
+            String walkMsg = "";
+            if (duplicateCode && previous != null)
+                walkMsg = previous.getWalkMsg();
+            walkMsg = walkMsg + record.walkMsg();
+            String runMsg = "";
+            if (duplicateCode && previous != null) 
+                runMsg = previous.getRunMsg();
+            runMsg = runMsg + record.runMsg();
+            String hurtMsg = "";
+            if (duplicateCode && previous != null)
+                hurtMsg = previous.getHurtMsg();
+            hurtMsg = hurtMsg + record.hurtMsg();
+            String dieMsg = "";
+            if (duplicateCode && previous != null)
+                dieMsg = previous.getDieMsg();
+            dieMsg = dieMsg + record.dieMsg();
+            String confMsg = "";
+            if (duplicateCode && previous != null)
+                confMsg = previous.getConfusedMsg();
+            confMsg = confMsg + record.confusedMsg();
+            String lookPre = "";
+            if (duplicateCode && previous != null) {
+                lookPre = previous.getLookPrefix();
             }
-            String lookInP = record.lookInPreposition();
-            if (!lookInP.isEmpty()) {
-                if (!lookInP.endsWith(" "))
-                    lookInP = lookInP + " ";
+            lookPre = lookPre + record.lookPrefix();
+            String lookInP = "";
+            if (duplicateCode && previous != null) {
+                lookInP = previous.getLookInPreposition();
             }
-
+            lookInP = lookInP + record.lookInPreposition();
+            
+            
             MonsterRaceFlag resistFlag = MonsterRaceFlag.RF_NONE;
+            if (duplicateCode && previous != null)
+                resistFlag = previous.getResistFlag();
             if (!record.resistFlags().isEmpty()) {
                 try {
                     resistFlag = MonsterRaceFlag.valueOf("RF_" + record.resistFlags());
+                    if (resistFlag == MonsterRaceFlag.RF_NONE) {
+                        String message = "Terrain feature starting at line: " + line + " of file: " + filename + " has " +
+                                "an illegal sentinel monster race flag value: " + record.resistFlags();
+                        logger.fatal(message);
+                        throw new DataFileParseException(message);
+                    }
                 } catch (IllegalArgumentException e) {
-                    errors.add("Illegal resist flag found in block " +
-                            "beginning on line: " + line + " flag: " + record.resistFlags());
-                    continue;
+                    String message = "Terrain feature starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal monster race flag value: " + record.resistFlags();
+                    logger.fatal(message, e);
+                    throw new DataFileParseException(message);
                 }
             }
             
             Feature feature = new Feature(flagCode, name, description, flagMimic, priority,
                     digging, flags, adc, walkMsg, runMsg, hurtMsg, dieMsg, confMsg,
                     lookPre, lookInP, resistFlag);
-            result.add(feature);
+            
+            if (duplicateCode) {
+                int index = result.indexOf(previous);
+                result.remove(previous);
+                result.add(index, feature);
+            } else
+                result.add(feature);
         }
+        
+        // Second pass to add the space to the end of the preposition/prefix
+        for (Feature feature : result) {
+            String lookPre = feature.getLookPrefix();
+            if (!lookPre.isEmpty() && lookPre.charAt(lookPre.length() - 1) != ' ') 
+                lookPre = lookPre + ' ';
+            
+            String lookInP = feature.getLookInPreposition();
+            if (!lookInP.isEmpty() && lookInP.charAt(lookInP.length() - 1) != ' ')
+                lookInP = lookInP + ' ';
+            
+            feature.setLookPrefix(lookPre);
+            feature.setLookInPreposition(lookInP);
+        }
+        
         return result;
     }
 }

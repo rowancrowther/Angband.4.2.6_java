@@ -55,20 +55,24 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p><b>The C failure behaviour.</b> {@code parse_file_quit_not_found} quits on a missing file, and
  * C quits on any bad line, including a second record for the same code ({@code parse_feat_name}
- * returns {@code PARSE_ERROR_REPEATED_DIRECTIVE}). The port stops the same way for a missing file, for
- * a parse that leaves errors and no features, and for a repeated code, but lets other soft errors
- * through while records assembled. There is no count guard: C's {@code f_info} is a fixed array of
- * {@code FEAT_MAX} slots and a short file loads there with a zeroed slot, and it loads here with no
- * entry for the missing code. The tests say so.
+ * returns {@code PARSE_ERROR_REPEATED_DIRECTIVE}). The port stops the same way: a missing file, a
+ * parse that leaves errors and no features, and every assembler error (a bad code, mimic, flag,
+ * resist flag or number, or a second name for a repeated code) throw before anything is installed.
+ * There is no count guard: C's {@code f_info} is a fixed array of {@code FEAT_MAX} slots and a short
+ * file loads there with a zeroed slot, and it loads here with no entry for the missing code. The
+ * tests say so.
  *
  * <p><b>{@code store_max}.</b> {@code finish_parse_feat} sets {@code z_info->store_max} to the number
- * of shops numbered. The port sets it when the assembler returns, so a dropped shop entrance lowers it
- * and a repeated code, which throws first, leaves it alone.
+ * of shops numbered. The port sets it when the assembler returns, so any error, which throws first,
+ * leaves it alone.
  *
  * <p><b>The accepted colour deviation.</b> C's {@code color_text_to_attr} and
  * {@code color_char_to_attr} turn an unknown colour into white, so a {@code graphics:} line never
- * fails there. The port rejects it, in the lexer first and in the assembler as a backstop. One test
- * pins that, and a name-spelled colour that does resolve.
+ * fails there. The port's lexer rejects it, as a hard grammar error; the assembler itself falls back
+ * to white as C does, but the grammar never lets an unknown colour reach it. One test pins the lexer
+ * rejection, and a name-spelled colour that does resolve.
+ *
+ * <p>Failure-path tests rewritten on 261030 for the assembler's fatal-error model.
  *
  * <p>Each test points {@code ANGBAND_DIRS.GAMEDATA} at a temporary directory (the real-data tests
  * leave it alone) and puts the feature list and the store count back afterwards.
@@ -305,17 +309,17 @@ class TerrainDataLoaderFeaturesTest {
         }
 
         @Test
-        @DisplayName("one record dropped for a bad flag still loads the other 24; C would have quit")
-        void oneRecordDroppedLoadsTheRest() throws IOException {
+        @DisplayName("one bad flag in an otherwise good file throws, as C quits, and leaves the registry and store_max alone")
+        void oneBadFlagIsFatal() throws IOException {
+            GameConstants.setStoreMax(99);
             writeTerrain(shippedTerrain().replace("flags:LOS | PROJECT | PASSABLE | FLOOR",
                     "flags:NOTAFLAG | PASSABLE | FLOOR"));
 
-            TerrainDataLoader.loadTerrainFeatures();
+            RuntimeException thrown = assertThrows(RuntimeException.class, TerrainDataLoader::loadTerrainFeatures);
 
-            assertEquals(24, TerrainRegistry.getFeatures().size());
-            assertNull(feature(TerrainFlags.FEAT_FLOOR));
-            assertEquals("unknown grid", feature(TerrainFlags.FEAT_NONE).getName());
-            assertEquals("pile of passable rubble", feature(TerrainFlags.FEAT_PASS_RUBBLE).getName());
+            assertTrue(thrown.getMessage().contains("NOTAFLAG"), thrown.getMessage());
+            assertSame(sentinel, installedList());
+            assertEquals(99, GameConstants.getStoreMax());
         }
 
         @Test
@@ -346,28 +350,26 @@ class TerrainDataLoaderFeaturesTest {
 
             RuntimeException thrown = assertThrows(RuntimeException.class, TerrainDataLoader::loadTerrainFeatures);
 
-            assertTrue(thrown.getMessage().contains("Duplicate value"), thrown.getMessage());
-            assertTrue(thrown.getMessage().contains("FEAT_FLOOR"), thrown.getMessage());
+            assertTrue(thrown.getMessage().contains("second name value: second floor"), thrown.getMessage());
+            assertTrue(thrown.getMessage().contains("FLOOR"), thrown.getMessage());
             assertSame(sentinel, installedList());
             assertEquals(99, GameConstants.getStoreMax());
         }
 
         @Test
-        @DisplayName("a dropped shop entrance lowers store_max to 7 and renumbers the shops after it; C would have quit")
-        void droppedShopEntranceLowersStoreMax() throws Exception {
+        @DisplayName("a bad flag on a shop entrance throws before the shops are numbered, so store_max is left alone")
+        void badShopEntranceLeavesStoreMaxAlone() throws Exception {
+            GameConstants.setStoreMax(99);
             String shipped = shippedTerrain();
             int armour = shipped.indexOf("code:STORE_ARMOR");
             int flagsLine = shipped.indexOf("flags:SHOP", armour);
             writeTerrain(shipped.substring(0, flagsLine) + "flags:NOTAFLAG | SHOP"
                     + shipped.substring(flagsLine + "flags:SHOP".length()));
 
-            TerrainDataLoader.loadTerrainFeatures();
+            assertThrows(RuntimeException.class, TerrainDataLoader::loadTerrainFeatures);
 
-            assertEquals(7, GameConstants.getStoreMax());
-            assertNull(feature(TerrainFlags.FEAT_STORE_ARMOR));
-            // the weapon smith was number 3 and is now 2, and the home was 8 and is now 7
-            assertEquals(2, field(feature(TerrainFlags.FEAT_STORE_WEAPON), "shopNum"));
-            assertEquals(7, field(feature(TerrainFlags.FEAT_HOME), "shopNum"));
+            assertSame(sentinel, installedList());
+            assertEquals(99, GameConstants.getStoreMax());
         }
 
         @Test
@@ -396,7 +398,7 @@ class TerrainDataLoaderFeaturesTest {
         }
     }
 
-    /** The accepted deviation: C turns an unknown colour into white, the port rejects it. */
+    /** The accepted deviation: C turns an unknown colour into white, the port's lexer rejects it. */
     @Nested
     @DisplayName("the colour check, stricter than C")
     class ColourCheck {

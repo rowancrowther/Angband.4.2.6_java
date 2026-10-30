@@ -20,10 +20,14 @@ package uk.co.jackoftradesltd.backend.parser;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.backend.parser.terrainfeature.TerrainFeatureAssembler;
 import uk.co.jackoftradesltd.backend.parser.terrainfeature.TerrainFeatureParseRecord;
+import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.middle.cave.Feature;
+import uk.co.jackoftradesltd.middle.cave.enums.TerrainFeatureFlags;
 import uk.co.jackoftradesltd.middle.cave.enums.TerrainFlags;
+import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,183 +39,347 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@link TerrainFeatureParseRecord}s rather than through the grammar.
  *
  * <p>The expected values come from the C original, {@code init.c}: the {@code parse_feat_*}
- * handlers and {@code finish_parse_feat()}, and {@code lookup_feat_code()} in {@code cave.c}. The
- * main point of the suite is the boundary the lexer cannot guard: {@code FEAT_MAX} and
- * {@code TF_MAX} exist as Java constants, but C's lookup tables are built from
- * {@code list-terrain.h} and {@code list-terrain-flags.h} and have no {@code MAX} entry, so
- * {@code code:MAX}, {@code mimic:MAX} and {@code flags:MAX} must be refused while {@code NONE},
- * which is a real entry in every table, stays valid.
+ * handlers and {@code finish_parse_feat()}, with {@code lookup_feat_code()} in {@code cave.c},
+ * {@code lookup_flag()} in {@code datafile.c}, {@code string_append()} in {@code z-virt.c} and the
+ * colour lookups in {@code z-color.c}. Three things drive most of the cases:
+ * <ul>
+ *   <li>every {@code parse_feat_*} error ends the load in C, so every error here must throw
+ *       {@link DataFileParseException} and leave the {@code errors} list alone;</li>
+ *   <li>{@code lookup_flag()} starts at {@code FLAG_START} (1), so {@code NONE} is refused for
+ *       terrain and resist flags, while {@code lookup_feat_code()} starts at 0 and accepts
+ *       {@code NONE} as a code or mimic; no table has a {@code MAX} entry;</li>
+ *   <li>a repeated {@code code:} carries on filling the same {@code f_info} slot, so text lines
+ *       append, flags add up, {@code graphics:} replaces, and the single-value lines replace only
+ *       when present.</li>
+ * </ul>
  *
- * <p>{@code TerrainReaderTest} covers the assembler as the grammar reaches it; here the records are
- * built directly so each branch is hit once and the resolved {@link Feature} can be inspected
- * through its debug string, since {@code Feature} exposes no getters for priority, digging or the
- * look strings.
+ * <p>Test class rewritten on 261030 for the fatal-error model and repeated codes.
  *
  * @author Rowan Crowther
  */
 class TerrainFeatureAssemblerTest {
 
     /**
-     * A record with only the three mandatory header directives set, as the grammar leaves every
-     * optional directive: the empty string, or an empty list.
+     * A mutable stand-in for one {@code terrain.txt} block. Every optional directive starts as the
+     * grammar leaves it when absent: the empty string, or an empty list.
      */
-    private static TerrainFeatureParseRecord record(String code) {
-        return full(code, "", "", "", List.of(), "w", "", "", "", 1);
+    private static final class Rec {
+        String code;
+        String name;
+        String desc = "";
+        String mimic = "";
+        String priority = "";
+        String dig = "";
+        List<String> flags = List.of();
+        String glyph = ".";
+        String colour = "w";
+        String walk = "";
+        String run = "";
+        String hurt = "";
+        String die = "";
+        String confused = "";
+        String lookPrefix = "";
+        String lookIn = "";
+        String resist = "";
+        int line = 1;
+
+        Rec(String code) {
+            this.code = code;
+            this.name = "name of " + code;
+        }
+
+        TerrainFeatureParseRecord build() {
+            return new TerrainFeatureParseRecord(code, name, desc, mimic, priority, dig, flags, glyph,
+                    colour, walk, run, hurt, die, confused, lookPrefix, lookIn, resist, line);
+        }
     }
 
-    private static TerrainFeatureParseRecord full(String code, String mimic, String priority,
-                                                  String dig, List<String> flags, String colour,
-                                                  String lookPrefix, String lookInPreposition,
-                                                  String resistFlag, int line) {
-        return new TerrainFeatureParseRecord(code, "name of " + code, "", mimic, priority, dig,
-                flags, ".", colour, "", "", "", "", "", lookPrefix, lookInPreposition,
-                resistFlag, line);
+    private static Rec rec(String code) {
+        return new Rec(code);
     }
 
-    private static List<Feature> assemble(List<TerrainFeatureParseRecord> records,
-                                          List<String> errors) {
+    private static List<Feature> assemble(List<String> errors, Rec... recs) {
+        List<TerrainFeatureParseRecord> records = new ArrayList<>();
+        for (Rec r : recs) {
+            records.add(r.build());
+        }
         return new TerrainFeatureAssembler().assemble(records, errors, "test.txt");
     }
 
-    private static List<Feature> assemble(TerrainFeatureParseRecord record, List<String> errors) {
-        return assemble(List.of(record), errors);
+    private static List<Feature> assemble(Rec... recs) {
+        List<String> errors = new ArrayList<>();
+        List<Feature> result = assemble(errors, recs);
+        assertTrue(errors.isEmpty(), errors::toString);
+        return result;
+    }
+
+    private static Feature one(Rec r) {
+        List<Feature> result = assemble(r);
+        assertEquals(1, result.size());
+        return result.get(0);
+    }
+
+    /** Assert the load throws, the errors list stays empty, and the message names each fragment. */
+    private static void assertFatal(Rec[] recs, String... fragments) {
+        List<String> errors = new ArrayList<>();
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> assemble(errors, recs));
+        assertTrue(errors.isEmpty(), "a fatal error must not also go to the errors list: " + errors);
+        for (String fragment : fragments) {
+            assertTrue(e.getMessage().contains(fragment), e::getMessage);
+        }
+    }
+
+    private static void assertFatal(Rec r, String... fragments) {
+        assertFatal(new Rec[]{r}, fragments);
     }
 
     // ---- Ordinary path ----------------------------------------------------
 
-    /**
-     * C's SECRET record: {@code mimic:GRANITE}, {@code priority:10}, {@code digging:5}. The mimic
-     * resolves to the named feature and not to {@code FEAT_NONE}.
-     */
+    /** C's SECRET record: {@code mimic:GRANITE}, {@code priority:10}, {@code digging:5}. */
     @Test
     void fullRecordResolvesEveryDirective() {
-        List<String> errors = new ArrayList<>();
+        Rec r = rec("SECRET");
+        r.mimic = "GRANITE";
+        r.priority = "10";
+        r.dig = "5";
+        r.flags = List.of("WALL", "ROCK", "DOOR_ANY", "GRANITE", "TORCH");
+        r.desc = "A door that looks like a wall.";
 
-        List<Feature> result = assemble(full("SECRET", "GRANITE", "10", "5",
-                List.of("WALL", "ROCK", "DOOR_ANY", "GRANITE", "TORCH"), "w", "", "", "", 7), errors);
+        Feature secret = one(r);
 
-        assertTrue(errors.isEmpty(), errors::toString);
-        assertEquals(1, result.size());
-        Feature secret = result.get(0);
         assertEquals(TerrainFlags.FEAT_SECRET, secret.getCodeFlags());
+        assertEquals("name of SECRET", secret.getName());
+        assertEquals("A door that looks like a wall.", secret.getDescription());
         assertTrue(secret.isMimicing());
-        assertTrue(secret.toString().contains("mimic=FEAT_GRANITE"), secret::toString);
-        assertTrue(secret.toString().contains("priority=10"), secret::toString);
-        assertTrue(secret.toString().contains("dig=5"), secret::toString);
-        assertTrue(secret.isWall(), "TF_WALL should have been set");
-        assertTrue(secret.hasAnyDoor(), "TF_DOOR_ANY should have been set");
-        assertTrue(secret.isGranite(), "TF_GRANITE should have been set");
+        assertEquals(TerrainFlags.FEAT_GRANITE, secret.getMimicTerrainFlags());
+        assertEquals(10, secret.getPriority());
+        assertEquals(5, secret.getDig());
+        assertTrue(secret.isWall());
+        assertTrue(secret.hasAnyDoor());
+        assertTrue(secret.isGranite());
     }
 
-    /**
-     * With only the header, everything optional takes C's zeroed default: priority 0, digging 0,
-     * {@code RF_NONE}, no mimic.
-     */
+    /** With only the header, everything optional takes C's zeroed {@code f_info} default. */
     @Test
     void absentOptionalDirectivesTakeTheZeroedDefaults() {
-        List<String> errors = new ArrayList<>();
+        Feature floor = one(rec("FLOOR"));
 
-        List<Feature> result = assemble(record("FLOOR"), errors);
-
-        assertTrue(errors.isEmpty(), errors::toString);
-        Feature floor = result.get(0);
         assertFalse(floor.isMimicing(), "no mimic: line must leave the mimic null, not FEAT_NONE");
-        assertTrue(floor.toString().contains("priority=0"), floor::toString);
-        assertTrue(floor.toString().contains("dig=0"), floor::toString);
-        assertTrue(floor.toString().contains("resistFlag=RF_NONE"), floor::toString);
+        assertNull(floor.getMimicTerrainFlags());
+        assertEquals(0, floor.getPriority());
+        assertEquals(0, floor.getDig());
+        assertTrue(floor.getFlags().isEmpty());
+        assertEquals(MonsterRaceFlag.RF_NONE, floor.getResistFlag());
+        assertEquals("", floor.getDescription());
+        assertEquals("", floor.getWalkMsg());
     }
 
     @Test
     void recordsComeBackInFileOrder() {
-        List<String> errors = new ArrayList<>();
+        List<Feature> result = assemble(rec("FLOOR"), rec("CLOSED"), rec("OPEN"));
 
-        List<Feature> result = assemble(List.of(record("FLOOR"), record("CLOSED"), record("OPEN")),
-                errors);
-
-        assertTrue(errors.isEmpty(), errors::toString);
         assertEquals(List.of(TerrainFlags.FEAT_FLOOR, TerrainFlags.FEAT_CLOSED, TerrainFlags.FEAT_OPEN),
                 result.stream().map(Feature::getCodeFlags).toList());
     }
 
+    @Test
+    void emptyInputGivesEmptyResult() {
+        assertTrue(assemble().isEmpty());
+    }
+
     // ---- Code: lookup_feat_code ------------------------------------------
 
-    /** {@code FEAT(NONE)} is index 0 in {@code list-terrain.h}, so {@code code:NONE} is valid. */
+    /** {@code FEAT(NONE)} is index 0 of {@code feat_code_list}, and the search starts at 0. */
     @Test
     void codeNoneIsValid() {
-        List<String> errors = new ArrayList<>();
-
-        List<Feature> result = assemble(record("NONE"), errors);
-
-        assertTrue(errors.isEmpty(), errors::toString);
-        assertEquals(TerrainFlags.FEAT_NONE, result.get(0).getCodeFlags());
+        assertEquals(TerrainFlags.FEAT_NONE, one(rec("NONE")).getCodeFlags());
     }
 
-    /**
-     * {@code list-terrain.h} has no {@code MAX} entry, so {@code lookup_feat_code("MAX")} is -1 and
-     * {@code parse_feat_code} fails with {@code PARSE_ERROR_OUT_OF_BOUNDS}. Java has a
-     * {@code FEAT_MAX} constant, so this is the case a bare {@code valueOf} would wrongly accept.
-     * The record is skipped softly, with no exception.
-     */
+    /** {@code list-terrain.h} has no {@code MAX} row, so C returns {@code PARSE_ERROR_OUT_OF_BOUNDS}. */
     @Test
-    void codeMaxIsRefusedAndTheRecordSkipped() {
-        List<String> errors = new ArrayList<>();
-
-        List<Feature> result = assemble(record("MAX"), errors);
-
-        assertTrue(result.isEmpty(), result::toString);
-        assertEquals(1, errors.size(), errors::toString);
-        assertTrue(errors.get(0).contains("illegal terrain feature code") && errors.get(0).contains("MAX"),
-                errors::toString);
+    void codeMaxIsFatal() {
+        Rec r = rec("MAX");
+        r.line = 4;
+        assertFatal(r, "sentinel terrain feature", "MAX", "line: 4", "test.txt");
     }
 
-    /**
-     * The refused {@code MAX} must not be remembered as a seen code: a real {@code NONE} record
-     * after it still loads, and so does one before it.
-     */
     @Test
-    void refusedMaxDoesNotCollideWithRealNone() {
-        List<String> errors = new ArrayList<>();
+    void unknownCodeIsFatalWithItsLine() {
+        Rec r = rec("NOTACODE");
+        r.line = 12;
+        assertFatal(r, "illegal terrain feature value", "NOTACODE", "line: 12");
+    }
 
-        List<Feature> result = assemble(List.of(record("NONE"), record("MAX"), record("FLOOR")), errors);
+    /** C compares with {@code streq()}, which is case-sensitive. */
+    @Test
+    void codeLookupIsCaseSensitive() {
+        assertFatal(rec("floor"), "floor");
+    }
 
-        assertEquals(1, errors.size(), errors::toString);
-        assertEquals(List.of(TerrainFlags.FEAT_NONE, TerrainFlags.FEAT_FLOOR),
+    /** A bad record later in the file still stops the whole load: no partial result. */
+    @Test
+    void aBadRecordAfterGoodOnesIsStillFatal() {
+        assertFatal(new Rec[]{rec("FLOOR"), rec("CLOSED"), rec("MAX")}, "MAX");
+    }
+
+    // ---- Repeated code: the same f_info slot ------------------------------
+
+    /** {@code parse_feat_name()} returns {@code PARSE_ERROR_REPEATED_DIRECTIVE} when the slot has a name. */
+    @Test
+    void secondNameForARepeatedCodeIsFatal() {
+        Rec first = rec("FLOOR");
+        Rec second = rec("FLOOR");
+        second.name = "another floor";
+        second.line = 9;
+
+        assertFatal(new Rec[]{first, rec("CLOSED"), second},
+                "second name value: another floor", "FLOOR", "line: 9");
+    }
+
+    /** No {@code name:} on the later record: the slot's name is left as it was. */
+    @Test
+    void repeatedCodeWithoutANameKeepsTheEarlierName() {
+        Rec second = rec("FLOOR");
+        second.name = "";
+
+        Feature floor = one2(rec("FLOOR"), second);
+
+        assertEquals("name of FLOOR", floor.getName());
+    }
+
+    /** The slot had no name, so C's {@code f->name} is NULL and the later name is taken. */
+    @Test
+    void repeatedCodeTakesALaterNameWhenTheEarlierHadNone() {
+        Rec first = rec("FLOOR");
+        first.name = "";
+
+        Feature floor = one2(first, rec("FLOOR"));
+
+        assertEquals("name of FLOOR", floor.getName());
+    }
+
+    /** The merged feature stays where the code first appeared, and there is only one of it. */
+    @Test
+    void repeatedCodeKeepsItsFirstPosition() {
+        List<Feature> result = assemble(rec("FLOOR"), rec("CLOSED"), unnamed("FLOOR"), rec("OPEN"));
+
+        assertEquals(List.of(TerrainFlags.FEAT_FLOOR, TerrainFlags.FEAT_CLOSED, TerrainFlags.FEAT_OPEN),
                 result.stream().map(Feature::getCodeFlags).toList());
     }
 
+    /** {@code string_append()} joins with no separator, for the description and all five messages. */
     @Test
-    void unknownCodeIsReportedWithItsLine() {
-        List<String> errors = new ArrayList<>();
+    void repeatedCodeAppendsTheTextLines() {
+        Rec first = rec("LAVA");
+        first.desc = "Hot. ";
+        first.walk = "w1";
+        first.run = "r1";
+        first.hurt = "h1";
+        first.die = "d1";
+        first.confused = "c1";
+        Rec second = unnamed("LAVA");
+        second.desc = "Very hot.";
+        second.walk = "w2";
+        second.run = "r2";
+        second.hurt = "h2";
+        second.die = "d2";
+        second.confused = "c2";
 
-        List<Feature> result = assemble(full("NOTACODE", "", "", "", List.of(), "w", "", "", "", 12), errors);
+        Feature lava = one2(first, second);
 
-        assertTrue(result.isEmpty());
-        assertEquals(1, errors.size(), errors::toString);
-        assertTrue(errors.get(0).contains("line: 12") && errors.get(0).contains("NOTACODE"), errors::toString);
+        assertEquals("Hot. Very hot.", lava.getDescription());
+        assertEquals("w1w2", lava.getWalkMsg());
+        assertEquals("r1r2", lava.getRunMsg());
+        assertEquals("h1h2", lava.getHurtMsg());
+        assertEquals("d1d2", lava.getDieMsg());
+        assertEquals("c1c2", lava.getConfusedMsg());
     }
 
-    /** C compares with {@code streq()}, which is case-sensitive; so does {@code valueOf}. */
+    /** {@code grab_flag()} turns bits on in the slot's existing set; nothing is cleared. */
     @Test
-    void codeLookupIsCaseSensitive() {
-        List<String> errors = new ArrayList<>();
+    void repeatedCodeAddsToTheFlags() {
+        Rec first = rec("FLOOR");
+        first.flags = List.of("LOS");
+        Rec second = unnamed("FLOOR");
+        second.flags = List.of("PROJECT");
 
-        List<Feature> result = assemble(record("floor"), errors);
+        Feature floor = one2(first, second);
 
-        assertTrue(result.isEmpty());
-        assertEquals(1, errors.size(), errors::toString);
+        assertTrue(floor.getFlags().has(TerrainFeatureFlags.TF_LOS));
+        assertTrue(floor.getFlags().has(TerrainFeatureFlags.TF_PROJECT));
     }
 
-    /**
-     * C returns {@code PARSE_ERROR_REPEATED_DIRECTIVE} from {@code parse_feat_name} for a second
-     * record on the same {@code f_info} slot, and the load quits. Java throws.
-     */
+    /** {@code parse_feat_graphics()} overwrites both {@code d_char} and {@code d_attr}. */
     @Test
-    void repeatedCodeThrows() {
-        List<TerrainFeatureParseRecord> records = List.of(record("FLOOR"), record("CLOSED"), record("FLOOR"));
+    void repeatedCodeReplacesTheGraphics() {
+        Rec first = rec("FLOOR");
+        first.glyph = ".";
+        first.colour = "w";
+        Rec second = unnamed("FLOOR");
+        second.glyph = "#";
+        second.colour = "r";
 
-        RuntimeException e = assertThrows(RuntimeException.class, () -> assemble(records, new ArrayList<>()));
+        Feature floor = one2(first, second);
 
-        assertTrue(e.getMessage().contains("FEAT_FLOOR"), e::getMessage);
+        assertEquals('#', floor.getDisplayCharacter().getNarrowCharacter());
+        assertEquals(ColourEnum.COLOUR_RED, floor.getDisplayCharacter().getAttributeColour());
+    }
+
+    /** The single-value lines are kept when the later record leaves them out. */
+    @Test
+    void repeatedCodeKeepsSingleValuesItDoesNotRepeat() {
+        Rec first = rec("SECRET");
+        first.mimic = "GRANITE";
+        first.priority = "10";
+        first.dig = "5";
+        first.resist = "IM_FIRE";
+
+        Feature secret = one2(first, unnamed("SECRET"));
+
+        assertEquals(TerrainFlags.FEAT_GRANITE, secret.getMimicTerrainFlags());
+        assertEquals(10, secret.getPriority());
+        assertEquals(5, secret.getDig());
+        assertEquals(MonsterRaceFlag.RF_IM_FIRE, secret.getResistFlag());
+    }
+
+    /** ... and replaced when it gives them again. */
+    @Test
+    void repeatedCodeReplacesSingleValuesItRepeats() {
+        Rec first = rec("SECRET");
+        first.mimic = "GRANITE";
+        first.priority = "10";
+        first.dig = "5";
+        first.resist = "IM_FIRE";
+        Rec second = unnamed("SECRET");
+        second.mimic = "MAGMA";
+        second.priority = "3";
+        second.dig = "2";
+        second.resist = "IM_COLD";
+
+        Feature secret = one2(first, second);
+
+        assertEquals(TerrainFlags.FEAT_MAGMA, secret.getMimicTerrainFlags());
+        assertEquals(3, secret.getPriority());
+        assertEquals(2, secret.getDig());
+        assertEquals(MonsterRaceFlag.RF_IM_COLD, secret.getResistFlag());
+    }
+
+    /** No mimic on either record: C's {@code f->mimic} stays NULL, so the feature must not mimic itself. */
+    @Test
+    void repeatedCodeWithNoMimicAnywhereIsNotAMimic() {
+        Feature floor = one2(rec("FLOOR"), unnamed("FLOOR"));
+
+        assertFalse(floor.isMimicing());
+        assertNull(floor.getMimicTerrainFlags());
+    }
+
+    /** A mimic first given on the later record is taken. */
+    @Test
+    void repeatedCodeTakesALaterMimic() {
+        Rec second = unnamed("SECRET");
+        second.mimic = "GRANITE";
+
+        assertEquals(TerrainFlags.FEAT_GRANITE, one2(rec("SECRET"), second).getMimicTerrainFlags());
     }
 
     // ---- Mimic: parse_feat_mimic -----------------------------------------
@@ -219,105 +387,69 @@ class TerrainFeatureAssemblerTest {
     /** {@code mimic:NONE} resolves in C to {@code &f_info[0]}, which is non-null. */
     @Test
     void mimicNoneIsValidAndIsAMimic() {
-        List<String> errors = new ArrayList<>();
+        Rec r = rec("FLOOR");
+        r.mimic = "NONE";
 
-        List<Feature> result = assemble(full("FLOOR", "NONE", "", "", List.of(), "w", "", "", "", 1), errors);
+        Feature floor = one(r);
 
-        assertTrue(errors.isEmpty(), errors::toString);
-        assertTrue(result.get(0).isMimicing());
-        assertTrue(result.get(0).toString().contains("mimic=FEAT_NONE"), () -> result.get(0).toString());
-    }
-
-    /** Same lookup as the code, so {@code mimic:MAX} is out of bounds in C too. */
-    @Test
-    void mimicMaxIsRefusedAndTheRecordSkipped() {
-        List<String> errors = new ArrayList<>();
-
-        List<Feature> result = assemble(full("FLOOR", "MAX", "", "", List.of(), "w", "", "", "", 3), errors);
-
-        assertTrue(result.isEmpty(), result::toString);
-        assertEquals(1, errors.size(), errors::toString);
-        assertTrue(errors.get(0).contains("illegal mimic feature code") && errors.get(0).contains("MAX"),
-                errors::toString);
+        assertTrue(floor.isMimicing());
+        assertEquals(TerrainFlags.FEAT_NONE, floor.getMimicTerrainFlags());
     }
 
     @Test
-    void unknownMimicIsReportedAndTheRecordSkipped() {
-        List<String> errors = new ArrayList<>();
+    void mimicMaxIsFatal() {
+        Rec r = rec("FLOOR");
+        r.mimic = "MAX";
+        r.line = 3;
+        assertFatal(r, "sentinel mimic", "MAX", "line: 3");
+    }
 
-        List<Feature> result = assemble(full("FLOOR", "NOTAMIMIC", "", "", List.of(), "w", "", "", "", 1), errors);
-
-        assertTrue(result.isEmpty());
-        assertEquals(1, errors.size(), errors::toString);
-        assertTrue(errors.get(0).contains("NOTAMIMIC"), errors::toString);
+    @Test
+    void unknownMimicIsFatal() {
+        Rec r = rec("FLOOR");
+        r.mimic = "NOTAMIMIC";
+        assertFatal(r, "illegal mimic value", "NOTAMIMIC");
     }
 
     @Test
     void mimicLookupIsCaseSensitive() {
-        List<String> errors = new ArrayList<>();
-
-        List<Feature> result = assemble(full("SECRET", "granite", "", "", List.of(), "w", "", "", "", 1), errors);
-
-        assertTrue(result.isEmpty());
-        assertEquals(1, errors.size(), errors::toString);
+        Rec r = rec("SECRET");
+        r.mimic = "granite";
+        assertFatal(r, "granite");
     }
 
     // ---- Flags: grab_flag against terrain_flags --------------------------
 
-    /**
-     * {@code list-terrain-flags.h} has no {@code MAX} row, so {@code grab_flag} fails and
-     * {@code parse_feat_flags} returns {@code PARSE_ERROR_INVALID_FLAG}. Java has a
-     * {@code TF_MAX} constant.
-     */
+    /** {@code list-terrain-flags.h} has no {@code MAX} row; Java has a {@code TF_MAX} constant. */
     @Test
-    void flagMaxIsRefusedAndTheRecordSkipped() {
-        List<String> errors = new ArrayList<>();
-
-        List<Feature> result = assemble(full("FLOOR", "", "", "", List.of("LOS", "MAX"), "w", "", "", "", 4),
-                errors);
-
-        assertTrue(result.isEmpty(), result::toString);
-        assertEquals(1, errors.size(), errors::toString);
-        assertTrue(errors.get(0).contains("flag: MAX") && errors.get(0).contains("line: 4"), errors::toString);
+    void flagMaxIsFatal() {
+        Rec r = rec("FLOOR");
+        r.flags = List.of("LOS", "MAX");
+        r.line = 4;
+        assertFatal(r, "sentinel terrain flag", "MAX", "line: 4");
     }
 
-    /** {@code TF(NONE, "")} is the first row of {@code list-terrain-flags.h}, so it is valid. */
+    /** {@code lookup_flag()} starts at {@code FLAG_START} (1), so the {@code NONE} row is never matched. */
     @Test
-    void flagNoneIsValid() {
-        List<String> errors = new ArrayList<>();
-
-        List<Feature> result = assemble(full("FLOOR", "", "", "", List.of("NONE", "FLOOR"), "w", "", "", "", 1),
-                errors);
-
-        assertTrue(errors.isEmpty(), errors::toString);
-        assertEquals(1, result.size());
-        assertTrue(result.get(0).isFloor());
+    void flagNoneIsFatal() {
+        Rec r = rec("FLOOR");
+        r.flags = List.of("NONE", "FLOOR");
+        assertFatal(r, "sentinel terrain flag", "NONE");
     }
 
     @Test
-    void unknownFlagIsReportedAndTheRecordSkipped() {
-        List<String> errors = new ArrayList<>();
-
-        List<Feature> result = assemble(full("FLOOR", "", "", "", List.of("NOTAFLAG"), "w", "", "", "", 1), errors);
-
-        assertTrue(result.isEmpty());
-        assertEquals(1, errors.size(), errors::toString);
+    void unknownFlagIsFatal() {
+        Rec r = rec("FLOOR");
+        r.flags = List.of("NOTAFLAG");
+        assertFatal(r, "illegal terrain flag value", "NOTAFLAG");
     }
 
-    /**
-     * Java reports every bad flag on the line, where C's {@code grab_flag} loop breaks at the
-     * first. The record is skipped either way; this pins the Java behaviour documented on
-     * {@code assemble}.
-     */
+    /** {@code parse_feat_flags()} breaks at the first bad flag, so that is the one reported. */
     @Test
-    void everyBadFlagOnTheLineIsReported() {
-        List<String> errors = new ArrayList<>();
-
-        List<Feature> result = assemble(full("FLOOR", "", "", "", List.of("BAD1", "LOS", "MAX"), "w", "", "", "", 1),
-                errors);
-
-        assertTrue(result.isEmpty());
-        assertEquals(2, errors.size(), errors::toString);
+    void theFirstBadFlagIsTheOneReported() {
+        Rec r = rec("FLOOR");
+        r.flags = List.of("LOS", "BAD1", "MAX");
+        assertFatal(r, "BAD1");
     }
 
     // ---- Digging: parse_feat_digging -------------------------------------
@@ -326,191 +458,211 @@ class TerrainFeatureAssemblerTest {
     @ParameterizedTest
     @ValueSource(strings = {"1", "2", "3", "4", "5"})
     void diggingInsideOneToFiveIsAccepted(String dig) {
-        List<String> errors = new ArrayList<>();
-
-        List<Feature> result = assemble(full("FLOOR", "", "", dig, List.of(), "w", "", "", "", 1), errors);
-
-        assertTrue(errors.isEmpty(), errors::toString);
-        assertTrue(result.get(0).toString().contains("dig=" + dig), () -> result.get(0).toString());
+        Rec r = rec("FLOOR");
+        r.dig = dig;
+        assertEquals(Integer.parseInt(dig), one(r).getDig());
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"0", "6", "100"})
-    void diggingOutsideOneToFiveIsRefused(String dig) {
-        List<String> errors = new ArrayList<>();
-
-        List<Feature> result = assemble(full("FLOOR", "", "", dig, List.of(), "w", "", "", "", 1), errors);
-
-        assertTrue(result.isEmpty());
-        assertEquals(1, errors.size(), errors::toString);
-        assertTrue(errors.get(0).contains("out of range digging"), errors::toString);
+    @ValueSource(strings = {"0", "6", "100", "-1"})
+    void diggingOutsideOneToFiveIsFatal(String dig) {
+        Rec r = rec("FLOOR");
+        r.dig = dig;
+        assertFatal(r, "out of range digging", dig);
     }
 
     @Test
-    void overflowingDiggingIsAFormatError() {
-        List<String> errors = new ArrayList<>();
-
-        List<Feature> result = assemble(full("FLOOR", "", "", "99999999999999999999", List.of(), "w", "", "", "", 1),
-                errors);
-
-        assertTrue(result.isEmpty());
-        assertTrue(errors.get(0).contains("illegal number format on digging"), errors::toString);
+    void overflowingDiggingIsFatal() {
+        Rec r = rec("FLOOR");
+        r.dig = "99999999999999999999";
+        assertFatal(r, "digging");
     }
 
     // ---- Priority: parse_feat_priority -----------------------------------
 
     @Test
     void priorityZeroIsAccepted() {
-        List<String> errors = new ArrayList<>();
-
-        List<Feature> result = assemble(full("FLOOR", "", "0", "", List.of(), "w", "", "", "", 1), errors);
-
-        assertTrue(errors.isEmpty(), errors::toString);
-        assertTrue(result.get(0).toString().contains("priority=0"));
+        Rec r = rec("FLOOR");
+        r.priority = "0";
+        assertEquals(0, one(r).getPriority());
     }
 
-    /** {@code parser_getuint()} refuses a negative value. */
-    @Test
-    void negativePriorityIsRefused() {
-        List<String> errors = new ArrayList<>();
-
-        List<Feature> result = assemble(full("FLOOR", "", "-1", "", List.of(), "w", "", "", "", 1), errors);
-
-        assertTrue(result.isEmpty());
-        assertTrue(errors.get(0).contains("negative priority"), errors::toString);
+    /** {@code parser_parse()} refuses a {@code uint} field whose token starts with {@code -}, including {@code -0}. */
+    @ParameterizedTest
+    @ValueSource(strings = {"-1", "-0"})
+    void negativePriorityIsFatal(String priority) {
+        Rec r = rec("FLOOR");
+        r.priority = priority;
+        assertFatal(r, "negative priority", priority);
     }
 
+    /**
+     * Accepted deviation (261027): C's {@code strtoul} result wraps into the 32-bit field, while
+     * {@code ParseUtils.parseIntString} clamps to the {@code int} range.
+     */
     @Test
-    void overflowingPriorityIsAFormatError() {
-        List<String> errors = new ArrayList<>();
-
-        List<Feature> result = assemble(full("FLOOR", "", "99999999999999999999", "", List.of(), "w", "", "", "", 1),
-                errors);
-
-        assertTrue(result.isEmpty());
-        assertTrue(errors.get(0).contains("illegal number format on priority"), errors::toString);
+    void overflowingPriorityClampsToIntMax() {
+        Rec r = rec("FLOOR");
+        r.priority = "99999999999999999999";
+        assertEquals(Integer.MAX_VALUE, one(r).getPriority());
     }
 
     // ---- Look strings: finish_parse_feat ---------------------------------
 
-    /**
-     * {@code finish_parse_feat()} appends a space to a prefix or preposition that does not end in
-     * one. The stock STORE_* records ship {@code look-prefix:the entrance to the} and
-     * {@code look-in-preposition:at}, both without the space.
-     */
+    /** The stock STORE_* records ship {@code look-prefix:the entrance to the} and {@code look-in-preposition:at}. */
     @Test
     void lookStringsWithoutATrailingSpaceGetOne() {
-        List<String> errors = new ArrayList<>();
+        Rec r = rec("STORE_GENERAL");
+        r.flags = List.of("SHOP");
+        r.lookPrefix = "the entrance to the";
+        r.lookIn = "at";
 
-        List<Feature> result = assemble(full("STORE_GENERAL", "", "", "", List.of("SHOP"), "w",
-                "the entrance to the", "at", "", 1), errors);
+        Feature store = one(r);
 
-        assertTrue(errors.isEmpty(), errors::toString);
-        String text = result.get(0).toString();
-        assertTrue(text.contains("lookPrefix='the entrance to the '"), text);
-        assertTrue(text.contains("lookInPreposition='at '"), text);
+        assertEquals("the entrance to the ", store.getLookPrefix());
+        assertEquals("at ", store.getLookInPreposition());
     }
 
     /** {@code suffix(str, " ")} is already true, so no second space is added. */
     @Test
     void lookStringsAlreadyEndingInASpaceAreLeftAlone() {
-        List<String> errors = new ArrayList<>();
+        Rec r = rec("OPEN");
+        r.lookPrefix = "the ";
+        r.lookIn = "in ";
 
-        List<Feature> result = assemble(full("OPEN", "", "", "", List.of(), "w", "the ", "in ", "", 1), errors);
+        Feature open = one(r);
 
-        String text = result.get(0).toString();
-        assertTrue(text.contains("lookPrefix='the '"), text);
-        assertTrue(text.contains("lookInPreposition='in '"), text);
+        assertEquals("the ", open.getLookPrefix());
+        assertEquals("in ", open.getLookInPreposition());
     }
 
     /** C's NULL stays NULL, so the callers' "a"/"an" and "on" fallbacks still apply. */
     @Test
     void absentLookStringsStayEmpty() {
-        List<String> errors = new ArrayList<>();
+        Feature floor = one(rec("FLOOR"));
 
-        List<Feature> result = assemble(record("FLOOR"), errors);
+        assertEquals("", floor.getLookPrefix());
+        assertEquals("", floor.getLookInPreposition());
+    }
 
-        String text = result.get(0).toString();
-        assertTrue(text.contains("lookPrefix=''"), text);
-        assertTrue(text.contains("lookInPreposition=''"), text);
+    /** {@code finish_parse_feat()} runs once at the end, so the raw text is joined before the space goes on. */
+    @Test
+    void repeatedCodeJoinsLookStringsRawThenAddsOneSpace() {
+        Rec first = rec("FLOOR");
+        first.lookPrefix = "a";
+        first.lookIn = "o";
+        Rec second = unnamed("FLOOR");
+        second.lookPrefix = "b";
+        second.lookIn = "n";
+
+        Feature floor = one2(first, second);
+
+        assertEquals("ab ", floor.getLookPrefix());
+        assertEquals("on ", floor.getLookInPreposition());
+    }
+
+    /** A space the file itself put at the end of the earlier text is kept. */
+    @Test
+    void repeatedCodeKeepsASpaceTheEarlierTextAlreadyHad() {
+        Rec first = rec("FLOOR");
+        first.lookPrefix = "a ";
+        Rec second = unnamed("FLOOR");
+        second.lookPrefix = "b";
+
+        assertEquals("a b ", one2(first, second).getLookPrefix());
     }
 
     // ---- Resist flag: parse_feat_resist_flag -----------------------------
 
     @Test
     void resistFlagResolvesIncludingDigitTails() {
-        List<String> errors = new ArrayList<>();
-
-        List<Feature> result = assemble(full("FLOOR", "", "", "", List.of(), "w", "", "", "RAND_50", 1), errors);
-
-        assertTrue(errors.isEmpty(), errors::toString);
-        assertTrue(result.get(0).toString().contains("resistFlag=RF_RAND_50"), () -> result.get(0).toString());
+        Rec r = rec("FLOOR");
+        r.resist = "RAND_50";
+        assertEquals(MonsterRaceFlag.RF_RAND_50, one(r).getResistFlag());
     }
 
-    /** {@code RF(NONE, ...)} is the first row of {@code list-mon-race-flags.h}, so it is valid. */
+    /** {@code lookup_flag()} starts at {@code FLAG_START} (1), so {@code RF(NONE)} at index 0 is never matched. */
     @Test
-    void resistFlagNoneIsValid() {
-        List<String> errors = new ArrayList<>();
-
-        List<Feature> result = assemble(full("FLOOR", "", "", "", List.of(), "w", "", "", "NONE", 1), errors);
-
-        assertTrue(errors.isEmpty(), errors::toString);
-        assertEquals(1, result.size());
+    void resistFlagNoneIsFatal() {
+        Rec r = rec("FLOOR");
+        r.resist = "NONE";
+        assertFatal(r, "sentinel monster race flag", "NONE");
     }
 
     @Test
-    void unknownResistFlagIsReportedAndTheRecordSkipped() {
-        List<String> errors = new ArrayList<>();
-
-        List<Feature> result = assemble(full("FLOOR", "", "", "", List.of(), "w", "", "", "NOTARESIST", 1), errors);
-
-        assertTrue(result.isEmpty());
-        assertEquals(1, errors.size(), errors::toString);
-        assertTrue(errors.get(0).contains("NOTARESIST"), errors::toString);
+    void unknownResistFlagIsFatal() {
+        Rec r = rec("FLOOR");
+        r.resist = "NOTARESIST";
+        assertFatal(r, "illegal monster race flag value", "NOTARESIST");
     }
 
-    // ---- Colour: parse_feat_graphics -------------------------------------
+    // ---- Graphics: parse_feat_graphics -----------------------------------
 
-    /**
-     * Java is stricter than C here: {@code color_text_to_attr()} falls back to white for an unknown
-     * name, where the assembler drops the record. The lexer normally stops such a token first, so
-     * this is the guard behind it.
-     */
+    /** A single character goes through {@code color_char_to_attr()}, which is case-sensitive. */
     @Test
-    void unknownColourIsReportedAndTheRecordSkipped() {
-        List<String> errors = new ArrayList<>();
-
-        List<Feature> result = assemble(full("FLOOR", "", "", "", List.of(), "NotAColour", "", "", "", 9), errors);
-
-        assertTrue(result.isEmpty());
-        assertEquals(1, errors.size(), errors::toString);
-        assertTrue(errors.get(0).contains("line: 9") && errors.get(0).contains("NotAColour"), errors::toString);
+    void singleLetterColourResolves() {
+        Rec r = rec("FLOOR");
+        r.colour = "r";
+        assertEquals(ColourEnum.COLOUR_RED, one(r).getDisplayCharacter().getAttributeColour());
     }
 
-    // ---- Partial results --------------------------------------------------
-
-    /** A skipped record costs only itself: the good ones either side still load, each bad one reported. */
+    /** A longer name goes through {@code color_text_to_attr()}, which compares with {@code my_stricmp()}. */
     @Test
-    void badRecordsAreSkippedAndGoodOnesSurvive() {
-        List<String> errors = new ArrayList<>();
+    void colourNameIsCaseInsensitive() {
+        Rec r = rec("FLOOR");
+        r.colour = "RED";
+        assertEquals(ColourEnum.COLOUR_RED, one(r).getDisplayCharacter().getAttributeColour());
+    }
 
-        List<Feature> result = assemble(List.of(
-                record("FLOOR"),
-                record("MAX"),
-                full("CLOSED", "MAX", "", "", List.of(), "w", "", "", "", 5),
-                full("OPEN", "", "", "", List.of("MAX"), "w", "", "", "", 6),
-                record("BROKEN")), errors);
+    /** {@code color_text_to_attr()} ends with "Default to white". */
+    @Test
+    void unknownColourNameFallsBackToWhite() {
+        Rec r = rec("FLOOR");
+        r.colour = "NotAColour";
+        assertEquals(ColourEnum.COLOUR_WHITE, one(r).getDisplayCharacter().getAttributeColour());
+    }
 
-        assertEquals(3, errors.size(), errors::toString);
-        assertEquals(List.of(TerrainFlags.FEAT_FLOOR, TerrainFlags.FEAT_BROKEN),
-                result.stream().map(Feature::getCodeFlags).toList());
+    /** {@code color_char_to_attr()} ends with "we assume white". */
+    @Test
+    void unknownColourLetterFallsBackToWhite() {
+        Rec r = rec("FLOOR");
+        r.colour = "!";
+        assertEquals(ColourEnum.COLOUR_WHITE, one(r).getDisplayCharacter().getAttributeColour());
     }
 
     @Test
-    void emptyInputGivesEmptyResult() {
-        List<String> errors = new ArrayList<>();
+    void glyphIsTakenFromTheRecord() {
+        Rec r = rec("PASS_RUBBLE");
+        r.glyph = ":";
+        assertEquals(':', one(r).getDisplayCharacter().getNarrowCharacter());
+    }
 
-        assertTrue(assemble(List.of(), errors).isEmpty());
-        assertTrue(errors.isEmpty());
+    /** {@code parser_getchar()} reads one wide character, so a glyph outside the BMP is kept whole. */
+    @Test
+    void supplementaryGlyphIsKeptWhole() {
+        Rec r = rec("FLOOR");
+        r.glyph = new String(Character.toChars(0x1F600));
+        assertEquals(0x1F600, one(r).getDisplayCharacter().getWideCharacter());
+    }
+
+    @Test
+    void emptyGlyphIsFatal() {
+        Rec r = rec("FLOOR");
+        r.glyph = "";
+        assertFatal(r, "empty glyph");
+    }
+
+    // ---- Helpers ----------------------------------------------------------
+
+    private static Rec unnamed(String code) {
+        Rec r = rec(code);
+        r.name = "";
+        return r;
+    }
+
+    private static Feature one2(Rec first, Rec second) {
+        List<Feature> result = assemble(first, second);
+        assertEquals(1, result.size(), "a repeated code must give one feature, not two");
+        return result.get(0);
     }
 }

@@ -118,10 +118,12 @@ public class Feature {
     /**
      * Shop number when this feature is a shop entrance, or 0 when it is not.
      * C's {@code shopnum}, which {@code finish_parse_feat()} in {@code init.c}
-     * assigns from 1 in table order to every feature carrying the SHOP flag;
-     * the assembler does the same. It is one more than the store index.
+     * assigns from 1 in table order to every feature carrying the SHOP flag.
+     * Here {@code TerrainDataLoader.loadTerrainFeatures()} does the same
+     * through {@link #setShopNum(int)} once the whole file has been parsed,
+     * so the constructor leaves it 0. It is one more than the store index.
      *
-     * <p>Field shopNum coded before 260930, commented in full on 260930.
+     * <p>Field shopNum coded before 260930, commented in full on 261030.
      */
     private int shopNum;
     /**
@@ -133,10 +135,11 @@ public class Feature {
     private int dig;
     /**
      * The glyph and colour used to draw this feature. C keeps these as
-     * {@code d_attr} and {@code d_char}; the value is {@code null} unless both
-     * were supplied in {@code terrain.txt}.
+     * {@code d_attr} and {@code d_char}. {@code TerrainFeatureAssembler} always
+     * builds one, refusing an empty glyph and falling back to white for an
+     * unknown colour, so it is never {@code null} for a loaded feature.
      *
-     * <p>Field displayCharacter coded before 260930, commented in full on 260930.
+     * <p>Field displayCharacter coded before 260930, commented in full on 261030.
      */
     private AngbandDisplayCharacter displayCharacter;
 
@@ -265,6 +268,20 @@ public class Feature {
      */
     public TerrainFlags getTerrainFlag() {
         return code;
+    }
+
+    /**
+     * Get this feature's behaviour flags. C reads {@code f_info[feat].flags}
+     * directly; this is the accessor for callers outside the cave package.
+     * The live {@link Flag} is returned, not a copy, so a change to it changes
+     * the feature.
+     *
+     * <p>Function getFlags coded before 261030, commented in full on 261030.
+     *
+     * @return this feature's {@link TerrainFeatureFlags} set
+     */
+    public Flag<TerrainFeatureFlags> getFlags() {
+        return flags;
     }
 
     /*
@@ -811,6 +828,216 @@ public class Feature {
     }
 
     /**
+     * Get the code of the terrain this feature mimics, without resolving it.
+     * C's {@code mimic} is already a resolved pointer; this is the unresolved
+     * code that {@link #getMimic()} looks up in the {@link TerrainRegistry}.
+     *
+     * <p>Function getMimicTerrainFlags coded before 261030, commented in full on 261030.
+     *
+     * @return the mimicked terrain code, or {@code null} if this feature does not mimic anything
+     */
+    public TerrainFlags getMimicTerrainFlags() {
+        return mimic;
+    }
+
+    /**
+     * Get the message shown when the player walks onto this feature. C's
+     * {@code walk_msg}.
+     *
+     * <p>Function getWalkMsg coded before 261030, commented in full on 261030.
+     *
+     * @return the walk message, or the empty string if {@code terrain.txt} gave none
+     */
+    public String getWalkMsg() {
+        return walkMsg;
+    }
+
+    /**
+     * Get the message shown when the player runs onto this feature. C's
+     * {@code run_msg}.
+     *
+     * <p>Function getRunMsg coded before 261030, commented in full on 261030.
+     *
+     * @return the run message, or the empty string if {@code terrain.txt} gave none
+     */
+    public String getRunMsg() {
+        return runMsg;
+    }
+
+    /**
+     * Get the message shown when this feature hurts the player. C's
+     * {@code hurt_msg}.
+     *
+     * <p>Function getHurtMsg coded before 261030, commented in full on 261030.
+     *
+     * @return the hurt message, or the empty string if {@code terrain.txt} gave none
+     */
+    public String getHurtMsg() {
+        return hurtMsg;
+    }
+
+    /**
+     * Get the message shown when the player dies to this feature. C's
+     * {@code die_msg}.
+     *
+     * <p>Function getDieMsg coded before 261030, commented in full on 261030.
+     *
+     * @return the death message, or the empty string if {@code terrain.txt} gave none
+     */
+    public String getDieMsg() {
+        return dieMsg;
+    }
+
+    /**
+     * Get the message shown when a confused monster moves into this feature.
+     * C's {@code confused_msg}.
+     *
+     * <p>Function getConfusedMsg coded before 261030, commented in full on 261030.
+     *
+     * @return the confused-move message, or the empty string if {@code terrain.txt} gave none
+     */
+    public String getConfusedMsg() {
+        return confusedMsg;
+    }
+
+    /**
+     * Get the preposition used in "look" output when standing in this feature.
+     * C's {@code look_in_preposition}. A non-empty value ends in a space once
+     * the assembler's pass for {@code finish_parse_feat()} in {@code init.c}
+     * has run; C keeps NULL where this is empty.
+     *
+     * <p>Function getLookInPreposition coded before 261030, commented in full on 261030.
+     *
+     * @return the "in" preposition, or the empty string if {@code terrain.txt} gave none
+     */
+    public String getLookInPreposition() {
+        return lookInPreposition;
+    }
+
+    /**
+     * Get the prefix put before this feature's name in "look" output. C's
+     * {@code look_prefix}. A non-empty value ends in a space once the
+     * assembler's pass for {@code finish_parse_feat()} in {@code init.c} has
+     * run; C keeps NULL where this is empty.
+     *
+     * <p>Function getLookPrefix coded before 261030, commented in full on 261030.
+     *
+     * @return the look prefix, or the empty string if {@code terrain.txt} gave none
+     */
+    public String getLookPrefix() {
+        return lookPrefix;
+    }
+
+    /**
+     * Get the human-readable description of this feature. C's {@code desc}.
+     *
+     * <p>Function getDescription coded before 261030, commented in full on 261030.
+     *
+     * @return the description
+     */
+    public String getDescription() {
+        return description;
+    }
+
+    /**
+     * Get this feature's terrain code. Identical to {@link #getTerrainFlag()}
+     * and {@link #getCodeFlags()}; its ordinal is C's {@code fidx}.
+     *
+     * <p>Function getCode coded before 261030, commented in full on 261030.
+     *
+     * @return this feature's terrain code
+     */
+    public TerrainFlags getCode() {
+        return code;
+    }
+
+    /**
+     * Get the digging difficulty of this feature. C's {@code dig}.
+     *
+     * <p>Function getDig coded before 261030, commented in full on 261030.
+     *
+     * @return the digging difficulty
+     */
+    public int getDig() {
+        return dig;
+    }
+
+    /**
+     * Get the glyph and colour this feature is drawn with. C's {@code d_attr}
+     * and {@code d_char} together.
+     *
+     * <p>Function getDisplayCharacter coded before 261030, commented in full on 261030.
+     *
+     * @return the display glyph and colour
+     */
+    public AngbandDisplayCharacter getDisplayCharacter() {
+        return displayCharacter;
+    }
+
+    /**
+     * Get the display priority of this feature. C's {@code priority}.
+     *
+     * <p>Function getPriority coded before 261030, commented in full on 261030.
+     *
+     * @return the display priority
+     */
+    public int getPriority() {
+        return priority;
+    }
+
+    /**
+     * Get the monster race flag that lets a monster enter this feature
+     * unharmed. C's {@code resist_flag}, which C holds as an {@code int}
+     * flag index and Java as the {@link MonsterRaceFlag} itself.
+     *
+     * <p>Function getResistFlag coded before 261030, commented in full on 261030.
+     *
+     * @return the resist flag, or {@code RF_NONE} if {@code terrain.txt} gave none (C's 0)
+     */
+    public MonsterRaceFlag getResistFlag() {
+        return resistFlag;
+    }
+
+    /**
+     * Get the shop number of this feature. C's {@code shopnum}: 1 upward for
+     * shop entrances in table order, 0 for everything else (see
+     * {@link #shopNum}).
+     *
+     * <p>Function getShopNum coded before 261030, commented in full on 261030.
+     *
+     * @return the shop number, or 0 if this feature is not a shop entrance
+     */
+    public int getShopNum() {
+        return shopNum;
+    }
+
+    /**
+     * Replace the "look" prefix. Used by {@code TerrainFeatureAssembler} for
+     * the second half of C's {@code finish_parse_feat()} in {@code init.c},
+     * which appends a trailing space to a prefix that lacks one.
+     *
+     * <p>Function setLookPrefix coded before 261030, commented in full on 261030.
+     *
+     * @param lookPrefix the new look prefix
+     */
+    public void setLookPrefix(String lookPrefix) {
+        this.lookPrefix = lookPrefix;
+    }
+
+    /**
+     * Replace the "look" in-preposition. Used by {@code TerrainFeatureAssembler}
+     * for the second half of C's {@code finish_parse_feat()} in {@code init.c},
+     * which appends a trailing space to a preposition that lacks one.
+     *
+     * <p>Function setLookInPreposition coded before 261030, commented in full on 261030.
+     *
+     * @param lookInPreposition the new look in-preposition
+     */
+    public void setLookInPreposition(String lookInPreposition) {
+        this.lookInPreposition = lookInPreposition;
+    }
+
+    /**
      * Build a debug string listing this feature's fields.
      *
      * <p>Function toString coded before 260930, commented in full on 260930.
@@ -845,14 +1072,15 @@ public class Feature {
      * C compares features by pointer or index.
      *
      * <p><strong>Outstanding:</strong> {@code flags} is compared with
-     * {@code Objects.equals} and {@code resistFlag} with {@code ==}, but
-     * {@code Flag} defines neither {@code equals} nor {@code hashCode} (only
-     * {@code isEqual}), so these are identity comparisons. Two features built
-     * from separate {@code Flag} objects with identical contents are therefore
-     * not equal, and only the same instance, or two features sharing the same
-     * {@code Flag} objects, compare equal.
+     * {@code Objects.equals}, but {@code Flag} defines neither {@code equals}
+     * nor {@code hashCode} (only {@code isEqual}), so that is an identity
+     * comparison. Two features built from separate {@code Flag} objects with
+     * identical contents are therefore not equal; only the same instance, or
+     * two features sharing the same {@code Flag} object, compare equal.
+     * ({@code resistFlag} is a {@link MonsterRaceFlag} enum constant, so its
+     * {@code ==} is correct.)
      *
-     * <p>Function equals coded before 260930, commented in full on 260930.
+     * <p>Function equals coded before 260930, commented in full on 261030.
      *
      * @param o the object to compare against
      * @return true if {@code o} is an equivalent {@code Feature}
@@ -874,11 +1102,11 @@ public class Feature {
 
     /**
      * Hash code combining the same fields as {@link #equals(Object)}. Because
-     * {@code Flag} has no {@code hashCode} of its own, the {@code flags} and
-     * {@code resistFlag} terms are identity hashes (see the note on
-     * {@code equals}).
+     * {@code Flag} has no {@code hashCode} of its own, the {@code flags} term
+     * is an identity hash (see the note on {@code equals}); the enum terms
+     * are stable for the run.
      *
-     * <p>Function hashCode coded before 260930, commented in full on 260930.
+     * <p>Function hashCode coded before 260930, commented in full on 261030.
      *
      * @return this feature's hash code
      */
@@ -904,6 +1132,16 @@ public class Feature {
         return result;
     }
 
+    /**
+     * Set the shop number. Called by
+     * {@code TerrainDataLoader.loadTerrainFeatures()} for the first half of C's
+     * {@code finish_parse_feat()} in {@code init.c}, which numbers every SHOP
+     * feature from 1 in table order (see {@link #shopNum}).
+     *
+     * <p>Function setShopNum coded before 261030, commented in full on 261030.
+     *
+     * @param shopNum the shop number, 1 upward
+     */
     public void setShopNum(int shopNum) {
         this.shopNum = shopNum;
     }

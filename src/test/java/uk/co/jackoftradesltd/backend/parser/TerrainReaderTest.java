@@ -19,6 +19,7 @@ package uk.co.jackoftradesltd.backend.parser;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.cave.Feature;
@@ -41,13 +42,15 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@code flags:}/{@code resist-flag:} resolved and every {@code graphics:} tokenised - including
  * the {@code :}-glyph rubble terrains that the {@code AngbandDisplayCharacter} glyph/separator
  * split now handles. The remaining tests each inject a single defect into a minimal fixture, one
- * per soft-error branch in {@link uk.co.jackoftradesltd.backend.parser.terrainfeature.TerrainFeatureAssembler},
- * plus the hard "missing record-count" grammar error and a soft record-count mismatch. The final
- * test proves two <em>different</em> defects are each reported independently while a valid record
- * still loads (the partial-results contract).
+ * per fatal branch in {@link uk.co.jackoftradesltd.backend.parser.terrainfeature.TerrainFeatureAssembler},
+ * plus the hard "missing record-count" grammar error and a soft record-count mismatch.
  *
- * <p>Every soft defect makes the assembler skip that one record ({@code continue}) and append a
- * message; a hard grammar error fails the whole file closed (empty items, errors carried).
+ * <p>An assembler defect is fatal, as every {@code parse_feat_*} error is in C: the
+ * {@link DataFileParseException} comes straight out of {@code parseWithResults}, nothing loads, and
+ * a later bad record is never reached. A hard grammar error fails the whole file closed (empty items,
+ * errors carried).
+ *
+ * <p>Assembler-branch tests rewritten on 261030 for the fatal-error model.
  *
  * @author Rowan Crowther
  */
@@ -134,91 +137,94 @@ class TerrainReaderTest {
                 result.errors()::toString);
     }
 
-    // ---- One test per assembler soft-error branch ------------------------
+    // ---- One test per assembler fatal branch -----------------------------
 
-    @Test
-    void unknownTerrainCodeIsReportedAndRecordSkipped() throws IOException {
-        // NOTACODE has no matching FEAT_ value in TerrainFlags.
-        String path = tempFile("bad-code.txt",
-                "record-count:1\ncode:NOTACODE\nname:x\ngraphics:.:w\n");
-
-        ParseResult<Feature> result = new TerrainReader().parseWithResults(path);
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(
-                        e -> e.contains("illegal terrain feature code") && e.contains("NOTACODE")),
-                result.errors()::toString);
+    /** Assert the load throws and the message names each fragment. */
+    private void assertFatal(String name, String content, String... fragments) throws IOException {
+        String path = tempFile(name, content);
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> new TerrainReader().parseWithResults(path));
+        for (String fragment : fragments) {
+            assertTrue(e.getMessage().contains(fragment), e::getMessage);
+        }
     }
 
+    /** C: {@code lookup_feat_code} returns -1 and {@code parse_feat_code} fails with {@code PARSE_ERROR_OUT_OF_BOUNDS}. */
     @Test
-    void unknownMimicCodeIsReportedAndRecordSkipped() throws IOException {
-        // Valid code, but the mimic references a non-existent FEAT_ value.
-        String path = tempFile("bad-mimic.txt",
-                "record-count:1\ncode:FLOOR\nname:open floor\ngraphics:.:w\nmimic:NOTAMIMIC\n");
-
-        ParseResult<Feature> result = new TerrainReader().parseWithResults(path);
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(
-                        e -> e.contains("illegal mimic feature code") && e.contains("NOTAMIMIC")),
-                result.errors()::toString);
+    void unknownTerrainCodeIsFatal() throws IOException {
+        assertFatal("bad-code.txt", "record-count:1\ncode:NOTACODE\nname:x\ngraphics:.:w\n",
+                "illegal terrain feature value: NOTACODE", "line: 2");
     }
 
+    /** C: the same lookup in {@code parse_feat_mimic}, so the same error. */
     @Test
-    void unknownTerrainFlagIsReportedAndRecordSkipped() throws IOException {
-        // NOTAFLAG has no matching TF_ value in TerrainFeatureFlags.
-        String path = tempFile("bad-flag.txt",
-                "record-count:1\ncode:FLOOR\nname:open floor\ngraphics:.:w\nflags:NOTAFLAG\n");
-
-        ParseResult<Feature> result = new TerrainReader().parseWithResults(path);
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(
-                        e -> e.contains("Illegal terrain") && e.contains("NOTAFLAG")),
-                result.errors()::toString);
+    void unknownMimicCodeIsFatal() throws IOException {
+        assertFatal("bad-mimic.txt",
+                "record-count:1\ncode:FLOOR\nname:open floor\ngraphics:.:w\nmimic:NOTAMIMIC\n",
+                "illegal mimic value: NOTAMIMIC");
     }
 
+    /** C: {@code grab_flag} fails and {@code parse_feat_flags} returns {@code PARSE_ERROR_INVALID_FLAG}. */
     @Test
-    void unknownResistFlagIsReportedAndRecordSkipped() throws IOException {
-        // NOTARESIST has no matching RF_ value in MonsterRaceFlag.
-        String path = tempFile("bad-resist.txt",
-                "record-count:1\ncode:FLOOR\nname:open floor\ngraphics:.:w\nresist-flag:NOTARESIST\n");
-
-        ParseResult<Feature> result = new TerrainReader().parseWithResults(path);
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(
-                        e -> e.contains("Illegal resist flag") && e.contains("NOTARESIST")),
-                result.errors()::toString);
+    void unknownTerrainFlagIsFatal() throws IOException {
+        assertFatal("bad-flag.txt",
+                "record-count:1\ncode:FLOOR\nname:open floor\ngraphics:.:w\nflags:NOTAFLAG\n",
+                "illegal terrain flag value: NOTAFLAG");
     }
 
+    /** C: {@code lookup_flag} returns {@code FLAG_END} and {@code parse_feat_resist_flag} returns {@code PARSE_ERROR_INVALID_FLAG}. */
     @Test
-    void overflowingPriorityIsReportedAndRecordSkipped() throws IOException {
-        // The INTEGER token guarantees digits, so the only way to reach the assembler's priority
-        // NumberFormatException branch is a value too large for int.
-        String path = tempFile("bad-priority.txt",
+    void unknownResistFlagIsFatal() throws IOException {
+        assertFatal("bad-resist.txt",
+                "record-count:1\ncode:FLOOR\nname:open floor\ngraphics:.:w\nresist-flag:NOTARESIST\n",
+                "illegal monster race flag value: NOTARESIST");
+    }
+
+    /** C: {@code lookup_flag} starts at {@code FLAG_START} (1), so the {@code NONE} row is never matched. */
+    @Test
+    void resistFlagNoneIsFatal() throws IOException {
+        assertFatal("none-resist.txt",
+                "record-count:1\ncode:FLOOR\nname:open floor\ngraphics:.:w\nresist-flag:NONE\n",
+                "sentinel monster race flag", "NONE");
+    }
+
+    /**
+     * Accepted deviation (261027): C's {@code strtoul} result wraps into the 32-bit field, while the
+     * port clamps a value above the {@code int} range to {@link Integer#MAX_VALUE}. It loads.
+     */
+    @Test
+    void overflowingPriorityClampsToIntMax() throws IOException {
+        String path = tempFile("big-priority.txt",
                 "record-count:1\ncode:FLOOR\nname:open floor\ngraphics:.:w\npriority:99999999999999999999\n");
 
         ParseResult<Feature> result = new TerrainReader().parseWithResults(path);
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(
-                        e -> e.contains("illegal number format on priority")),
-                result.errors()::toString);
+        assertFalse(result.hasErrors(), result.errors()::toString);
+        assertEquals(Integer.MAX_VALUE, result.items().get(0).getPriority());
     }
 
+    /** The clamped value is far above {@code DIGGING_MAX}, so C's {@code PARSE_ERROR_OUT_OF_BOUNDS} still applies. */
     @Test
-    void overflowingDiggingIsReportedAndRecordSkipped() throws IOException {
-        // Same as priority: digging only fails on an int-overflowing value.
-        String path = tempFile("bad-digging.txt",
-                "record-count:1\ncode:FLOOR\nname:open floor\ngraphics:.:w\ndigging:99999999999999999999\n");
+    void overflowingDiggingIsOutOfRangeAndFatal() throws IOException {
+        assertFatal("bad-digging.txt",
+                "record-count:1\ncode:FLOOR\nname:open floor\ngraphics:.:w\ndigging:99999999999999999999\n",
+                "out of range digging");
+    }
 
-        ParseResult<Feature> result = new TerrainReader().parseWithResults(path);
+    /** C: {@code parse_feat_digging} refuses anything outside {@code DIGGING_RUBBLE + 1} to {@code DIGGING_MAX}. */
+    @Test
+    void diggingZeroIsFatal() throws IOException {
+        assertFatal("zero-digging.txt",
+                "record-count:1\ncode:FLOOR\nname:open floor\ngraphics:.:w\ndigging:0\n",
+                "out of range digging");
+    }
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(
-                        e -> e.contains("illegal number format on digging")),
-                result.errors()::toString);
+    /** C: {@code parse_feat_name} returns {@code PARSE_ERROR_REPEATED_DIRECTIVE} on the slot's second name. */
+    @Test
+    void aRepeatedCodeWithASecondNameIsFatal() throws IOException {
+        assertFatal("repeat-code.txt", "record-count:2\n" + VALID_RECORD
+                        + "code:FLOOR\nname:another floor\ngraphics:.:w\n",
+                "second name value: another floor", "FLOOR");
     }
 
     // ---- Digit-bearing FLAG token (FLAG_BODY digit tail) -----------------
@@ -249,32 +255,25 @@ class TerrainReaderTest {
 
     // ---- Two different defects at once -----------------------------------
 
+    /**
+     * C quits on the first bad line, so with a good record, a bad code and then a bad flag, the bad
+     * code is the one reported and the flag is never reached. Nothing loads.
+     */
     @Test
-    void twoDifferentErrorsAreEachLoggedAndGoodRecordSurvives() throws IOException {
-        // Three records, record-count matching (so no count error): one valid, one with an unknown
-        // terrain code, one with an unknown terrain flag. The two *different* semantic errors are
-        // each reported and both bad records skipped, while the valid record still loads.
-        String path = tempFile("mixed.txt", String.join("\n",
+    void theFirstBadRecordStopsTheLoad() throws IOException {
+        String content = String.join("\n",
                 "record-count:3",
                 "code:FLOOR\nname:open floor\ngraphics:.:w",
                 "code:NOTACODE\nname:x\ngraphics:.:w",
                 "code:CLOSED\nname:closed door\ngraphics:+:w\nflags:NOTAFLAG",
-                ""));
+                "");
+        String path = tempFile("mixed.txt", content);
 
-        ParseResult<Feature> result = new TerrainReader().parseWithResults(path);
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> new TerrainReader().parseWithResults(path));
 
-        // Only the valid FLOOR record survives.
-        assertEquals(1, result.items().size(), result.items()::toString);
-        assertEquals(TerrainFlags.FEAT_FLOOR, result.items().get(0).getCodeFlags());
-
-        // Both distinct errors are present.
-        List<String> errors = result.errors();
-        assertTrue(errors.stream().anyMatch(
-                        e -> e.contains("illegal terrain feature code") && e.contains("NOTACODE")),
-                errors::toString);
-        assertTrue(errors.stream().anyMatch(
-                        e -> e.contains("Illegal terrain") && e.contains("NOTAFLAG")),
-                errors::toString);
+        assertTrue(e.getMessage().contains("NOTACODE"), e::getMessage);
+        assertFalse(e.getMessage().contains("NOTAFLAG"), e::getMessage);
     }
 
     // =====================================================================

@@ -20,7 +20,8 @@ package uk.co.jackoftradesltd.backend.parser.vault;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
+import uk.co.jackoftradesltd.backend.parser.ParseUtils;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.cave.enums.RoomFlags;
@@ -33,40 +34,91 @@ import java.util.List;
 
 /**
  * Turns the raw, text-typed {@link VaultParseRecord}s from {@code vault.txt} into typed
- * {@link Vault}s — the port of the validation C spreads across {@code parse_vault_type}/
- * {@code parse_vault_rating}/{@code parse_vault_rows}/{@code parse_vault_columns}/
- * {@code parse_vault_min_depth}/{@code parse_vault_max_depth}/{@code parse_vault_flags}/
- * {@code parse_vault_d} in {@code generate.c} ([C] src/generate.c).
+ * {@link Vault}s, C's {@code struct vault} (Java port of the {@code parse_vault_*} handlers in
+ * {@code generate.c}: {@code parse_vault_name()}, {@code parse_vault_type()},
+ * {@code parse_vault_rating()}, {@code parse_vault_rows()}, {@code parse_vault_columns()},
+ * {@code parse_vault_min_depth()}, {@code parse_vault_max_depth()}, {@code parse_vault_flags()} and
+ * {@code parse_vault_d()}).
  *
- * <p>Follows the partial-results contract every {@link Assembler} does: a record with a problem is
- * skipped (via {@code continue}) rather than aborting the whole file, and the problem is appended
- * to {@code errors} so the caller can report it. Every other record still assembles. C by contrast
- * treats each of these as a fatal parse error, so a bad line there stops the game rather than
- * costing one vault.
+ * <p>This is where interpretation happens:
+ * <ul>
+ *   <li>{@code type:} resolves to a {@link RoomType} by C's exact room-builder name, as written in
+ *       {@code list-rooms.h} ({@code "Lesser vault"}, {@code "Interesting room"},
+ *       {@code "room of chambers"}). C compares with {@code streq} in {@code parse_vault_rows()} and
+ *       {@code parse_vault_columns()}, so the match is case-sensitive, and any of the nineteen
+ *       builders is accepted, not only the vault types. No match is C's
+ *       {@code PARSE_ERROR_NO_ROOM_FOUND};</li>
+ *   <li>{@code rows:} and {@code columns:} are C {@code uint}s: a leading {@code -} is refused,
+ *       as C's {@code PARSE_ERROR_NOT_NUMBER}, using {@link ParseUtils#minusFound(String)}, and the
+ *       rest is read through {@link ParseUtils#parseIntString(String, String, int, String, String)}.
+ *       Each is capped by the type's own {@code max_height} or {@code max_width}, which is itself
+ *       allowed ({@code PARSE_ERROR_VAULT_TOO_BIG} only above it). There is no lower bound, so zero
+ *       loads as it does in C;</li>
+ *   <li>every {@code D:} line must be exactly {@code columns} characters long, C's
+ *       {@code PARSE_ERROR_VAULT_DESC_WRONG_LENGTH}. As in C, the number of {@code D:} lines is
+ *       never compared with {@code rows}. The lines are kept as a list and also joined into the
+ *       flat text C keeps in {@code v->text};</li>
+ *   <li>{@code rating:} is a signed {@code int} in C, so a negative rating loads;</li>
+ *   <li>{@code min-depth:} and {@code max-depth:} are {@code uint}s and refuse a minus as rows and
+ *       columns do. {@code max-depth:0} means "no maximum", and becomes
+ *       {@link GameConstants#getWorldMaxDepth()} ({@code z_info->max_depth}), as C rewrites it;</li>
+ *   <li>{@code flags:} resolve to {@link RoomFlags}, matched case-exactly as C's
+ *       {@code lookup_flag()} matches with {@code streq}. {@code NONE} is refused, because C's
+ *       {@code room_flags} table holds it at index 0, which {@code lookup_flag()} never reaches from
+ *       {@code FLAG_START} (1). {@code MAX} is accepted and set, because C's table holds
+ *       {@code "MAX"} from {@code list-room-flags.h} and {@code grab_flag()} turns it on.</li>
+ * </ul>
  *
- * <p>Runs after {@code GameConstants}, because {@code max-depth:0} means "no maximum" and turning
- * that into a real number needs the world's maximum depth.
+ * <p>A number outside the {@code int} range is clamped by {@code parseIntString} where C wraps it
+ * (a {@code uint} truncated to 32 bits, or a {@code long} narrowed to an {@code int}). This is an
+ * accepted deviation; the shipped data cannot reach it.
+ *
+ * <p>Each vault is put at the front of the list, so the list comes back in reverse file order, as
+ * C's {@code parse_vault_name()} builds its list by pointing each new vault at the previous head.
+ *
+ * <p><b>Error policy:</b> every bad value is fatal, as it is in C, which stops the load at the
+ * first handler that returns an error. Each one logs a fatal message and throws a
+ * {@link DataFileParseException}, so no record is dropped. The {@code errors} list is not written.
+ * Hard grammar and lexer errors are handled upstream.
+ *
+ * <p>Runs after {@code GameConstants}, because turning {@code max-depth:0} into a real number
+ * needs the world's maximum depth.
+ *
+ * <p>Class VaultAssembler coded before 260915, commented in full on 261030 (first commented
+ * 260915; rewritten 261030 once soft errors became fatal, every room builder name was accepted
+ * and the {@code uint} minus checks were added).
  *
  * @author Rowan Crowther
  */
 public class VaultAssembler implements Assembler <VaultParseRecord, List<Vault>> {
     /**
-     * Logger for this assembler, named explicitly against {@code VaultAssembler.class} rather than
-     * inferred. Currently unused below — every failure path here reports through the soft
-     * {@code errors} list instead — but kept for parity with the rest of the parser suite.
+     * Receives the fatal message logged before each {@link DataFileParseException} this class
+     * throws.
      *
-     * <p>Field logger commented in full on 260915.
+     * <p>Field logger coded before 260915, commented in full on 261030 (first commented 260915).
      */
     private static final Logger logger = LogManager.getLogger(VaultAssembler.class);
 
     /**
-     * Validate and convert every record, skipping (and reporting) any that don't resolve cleanly.
+     * Assembles every parsed vault record into a {@link Vault}, the Java form of the
+     * {@code parse_vault_*} handlers in {@code generate.c} filling each {@code struct vault}. The
+     * checks run in this order for each record: type, rows, columns, the width of each
+     * {@code D:} line, rating, minimum depth, maximum depth, then flags. C checks the type only
+     * when it reaches {@code rows:} or {@code columns:}, but the grammar requires those lines, so
+     * an unknown type fails in both languages. The first failure throws, so a file loads whole or
+     * not at all, as in C.
      *
-     * <p>Function assemble coded before 260915, commented in full on 260915.
+     * <p>Function assemble coded before 260915, commented in full on 261030 (first commented
+     * 260915; rewritten 261030 for the fatal errors and the C-exact type names).
      *
-     * @param records the raw parse records to assemble
-     * @param errors  soft-error sink; one message is appended per record that gets skipped
-     * @return the successfully assembled vaults, in file order
+     * @param records  the raw parse records to assemble
+     * @param errors   unused; formerly the soft-error channel
+     * @param filename the data file the records came from, for error messages
+     * @return the assembled vaults, in reverse file order, as C's linked list holds them
+     * @throws DataFileParseException if the type is not a room builder name, rows, columns or a
+     *                                depth starts with a minus, rows or columns exceed the type's
+     *                                limit, a {@code D:} line is not {@code columns} long, a number
+     *                                cannot be read, or a flag is unknown or {@code NONE}
      */
     @Override
     public List<Vault> assemble(@NotNull List<VaultParseRecord> records, @NotNull List<String> errors,
@@ -76,106 +128,103 @@ public class VaultAssembler implements Assembler <VaultParseRecord, List<Vault>>
         for (VaultParseRecord record : records) {
             int line = record.line();
             String name = record.name();
-            String typeString = record.type();
-            RoomType type;
-            // The data-file names don't transform mechanically into the enum's constant names:
-            // "Interesting room" drops a word to reach INTERESTING, and the three "(new)" types
-            // move the qualifier to the front (NEW_LESSER_VAULT). Listing the seven names the
-            // file may legally use is both the honest mapping and a check that no eighth appears.
-            // C does the equivalent by streq against room_builders[i].name ([C] src/generate.c)
-            // and treats no match as PARSE_ERROR_NO_ROOM_FOUND.
-            switch (typeString.toUpperCase()) {
-                case "LESSER VAULT" -> type = RoomType.LESSER_VAULT;
-                case "MEDIUM VAULT" -> type = RoomType.MEDIUM_VAULT;
-                case "GREATER VAULT" -> type = RoomType.GREATER_VAULT;
-                case "INTERESTING ROOM" -> type = RoomType.INTERESTING;
-                case "LESSER VAULT (NEW)" -> type = RoomType.NEW_LESSER_VAULT;
-                case "MEDIUM VAULT (NEW)" -> type = RoomType.NEW_MEDIUM_VAULT;
-                case "GREATER VAULT (NEW)" -> type = RoomType.NEW_GREATER_VAULT;
-                default -> type = null;
-            }
+            // The names are C's room_builders names from list-rooms.h, case and all, because C
+            // matches them with streq in parse_vault_rows and parse_vault_columns
+            // ([C] src/generate.c) and treats no match as PARSE_ERROR_NO_ROOM_FOUND. All nineteen
+            // builders are listed, not only the vaults, because C accepts any of them.
+            RoomType type = switch (record.type()) {
+                case "staircase room" -> RoomType.STAIRCASE;
+                case "simple room" -> RoomType.SIMPLE;
+                case "moria room" -> RoomType.MORIA;
+                case "large room" -> RoomType.LARGE;
+                case "crossed room" -> RoomType.CROSSED;
+                case "circular room" -> RoomType.CIRCULAR;
+                case "overlap room" -> RoomType.OVERLAP;
+                case "room template" -> RoomType.TEMPLATE;
+                case "Interesting room" -> RoomType.INTERESTING;
+                case "monster pit" -> RoomType.PIT;
+                case "monster nest" -> RoomType.NEST;
+                case "huge room" -> RoomType.HUGE;
+                case "room of chambers" -> RoomType.CHAMBERS;
+                case "Lesser vault" -> RoomType.LESSER_VAULT;
+                case "Medium vault" -> RoomType.MEDIUM_VAULT;
+                case "Greater vault" -> RoomType.GREATER_VAULT;
+                case "Lesser vault (new)" -> RoomType.NEW_LESSER_VAULT;
+                case "Medium vault (new)" -> RoomType.NEW_MEDIUM_VAULT;
+                case "Greater vault (new)" -> RoomType.NEW_GREATER_VAULT;
+                default -> null;
+            };
             if (type == null) {
-                errors.add("Vault at line: " + line + " has " +
-                        "an invalid vault type: " + typeString);
-                continue;
+                String message = "Vault starting at line: " + line + " of file: " + filename + " has " +
+                        "an illegal vault type value: " + record.type();
+                logger.fatal(message);
+                throw new DataFileParseException(message);
             }
-            int rows = 0;
-            try {
-                rows = Integer.parseInt(record.rows());
-            } catch (NumberFormatException e) {
-                errors.add("Vault profile at line: " + line + " has " +
-                        "an invalid row integer: " + record.rows());
-                continue;
+            if (ParseUtils.minusFound(record.rows())) {
+                String message = "Vault starting at line: " + line + " of file: " + filename + " has " +
+                        "an illegal negative row value: " + record.rows();
+                logger.fatal(message);
+                throw new DataFileParseException(message);
             }
+            int rows = ParseUtils.parseIntString("Vault", record.rows(), line, filename, "rows");
             // Mirrors C's parse_vault_rows, which rejects a vault taller than its own room
             // builder's max_height (PARSE_ERROR_VAULT_TOO_BIG, [C] src/generate.c). The cap is
             // per type, not global — a lesser vault gets 22 rows where a greater vault gets 44 —
             // which is why this has to run after the type has resolved.
-            if (rows <= 0 || rows > type.getMaxHeight()) {
-                errors.add("Vault profile at line: " + line + " has " +
-                        "an invalid row value (should be between 1 " +
-                        "and " + type.getMaxHeight() + ")");
-                continue;
+            if (rows > type.getMaxHeight()) {
+                String message = "Vault starting at line: " + line + " of file: " + filename + " has " +
+                        "an illegal number of rows (should be less than " + (type.getMaxHeight() + 1) + ")";
+                logger.fatal(message);
+                throw new DataFileParseException(message);
             }
-            int columns = 0;
-            try {
-                columns = Integer.parseInt(record.cols());
-            } catch (NumberFormatException e) {
-                errors.add("Vault profile at line: " + line + " has " +
-                        "an invalid column integer: " + record.cols());
-                continue;
+            if (ParseUtils.minusFound(record.cols())) {
+                String message = "Vault starting at line: " + line + " of file: " + filename + " has " +
+                        "an illegal negative column value: " + record.cols();
+                logger.fatal(message);
+                throw new DataFileParseException(message);
             }
+            int columns = ParseUtils.parseIntString("Vault", record.cols(), line, filename, "columns");
             // As above, for parse_vault_columns ([C] src/generate.c).
-            if (columns <= 0 || columns > type.getMaxWidth()) {
-                errors.add("Vault profile at line: " + line + " has " +
-                        "an invalid column value (should be between 1 " +
-                        "and " + type.getMaxWidth() + ")");
-                continue;
+            if (columns > type.getMaxWidth()) {
+                String message = "Vault starting at line: " + line + " of file: " + filename + " has " +
+                        "an illegal number of columns (should be less than " + (type.getMaxWidth() + 1) + ")";
+                logger.fatal(message);
+                throw new DataFileParseException(message);
             }
             // The layout has to match what the record declared, or every later read of it is
             // wrong: the flat mapText is indexed as text[y * columns + x], so a single row of the
             // wrong length shifts the whole vault. C enforces the width line by line as it parses
-            // (strlen(desc) != v->wid, [C] src/generate.c) and never checks the row count at
-            // all; checking both here costs nothing and catches a truncated record too.
-            boolean badMap = false;
+            // (strlen(desc) != v->wid, parse_vault_d, [C] src/generate.c) and never checks the
+            // number of lines against rows, so neither does this.
+            StringBuilder map = new StringBuilder();
             List<String> mapLines = record.map();
-            for (String mapLine : mapLines) {
+            for (String mapLine : record.map()) {
+                map.append(mapLine);
                 if (mapLine.length() != columns) {
-                    badMap = true;
+                    String message = "Vault starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal number of map columns (should be " + record.cols() + " was " +
+                            mapLine.length() + ")";
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
                 }
             }
-            if (mapLines.size() != rows) badMap = true;
-            if (badMap) {
-                errors.add("Vault profile at line: " + line + " has " +
-                        "a bad map - either the rows or the columns do not " +
-                        "match the declared values.");
-                continue;
+            String mapText = map.toString();
+            
+            int rating = ParseUtils.parseIntString("Vault", record.rating(), line, filename, "rating");
+            if (ParseUtils.minusFound(record.minLevel())) {
+                String message = "Vault starting at line: " + line + " of file: " + filename + " has " +
+                        "an illegal negative minimum level value: " + record.minLevel();
+                logger.fatal(message);
+                throw new DataFileParseException(message);
             }
-            String mapText = record.mapLines();
-            int rating = 0;
-            try {
-                rating = Integer.parseInt(record.rating());
-            } catch (NumberFormatException e) {
-                errors.add("Vault profile at line: " + line + " has " +
-                        "an invalid rating integer: " + record.rating());
-                continue;
+            int minLevel = ParseUtils.parseIntString("Vault", record.minLevel(), line, filename, "minimum level");
+            if (ParseUtils.minusFound(record.maxLevel())) {
+                String message = "Vault starting at line: " + line + " of file: " + filename + " has " +
+                        "an illegal negative maximum level value: " + record.maxLevel();
+                logger.fatal(message);
+                throw new DataFileParseException(message);
             }
-            int minLevel = 0;
-            try {
-                minLevel = Integer.parseInt(record.minLevel());
-            } catch (NumberFormatException e) {
-                errors.add("Vault profile at line: " + line + " has " +
-                        "an invalid minimum level integer: " + record.minLevel());
-                continue;
-            }
-            int maxLevel = 0;
-            try {
-                maxLevel = Integer.parseInt(record.maxLevel());
-            } catch (NumberFormatException e) {
-                errors.add("Vault profile at line: " + line + " has " +
-                        "an invalid maximum level integer: " + record.maxLevel());
-                continue;
-            }
+            int maxLevel = ParseUtils.parseIntString("Vault", record.maxLevel(), line, filename, "maximum level");
             // max-depth:0 in the file means "no maximum", not "never appears". C rewrites it to
             // z_info->max_depth while parsing ([C] src/generate.c), so nothing downstream ever
             // sees a zero and no caller needs to special-case it; 129 of the 162 shipped records
@@ -185,20 +234,24 @@ public class VaultAssembler implements Assembler <VaultParseRecord, List<Vault>>
             // A record may carry several flags: lines, each OR'd into the same set - the file's
             // own header says so, and C appends rather than replaces ([C] src/generate.c).
             // The grammar therefore hands over one flat list however many lines produced it.
-            boolean badFlag = false;
             Flag<RoomFlags> flags = new Flag<>(RoomFlags.class);
             for (String flag : record.flags()) {
                 try {
+                    RoomFlags roomFlag = RoomFlags.valueOf(flag);
+                    if (roomFlag == RoomFlags.NONE) {
+                        String message = "Vault starting at line: " + line + " of file: " + filename + " has " +
+                                "an illegal sentinel room flag value: " + flag;
+                        logger.fatal(message);
+                        throw new DataFileParseException(message);
+                    }
                     flags.on(RoomFlags.valueOf(flag));
                 } catch (IllegalArgumentException e) {
-                    errors.add("Vault at line: " + line + " has " +
-                            "an invalid flag: " + flag);
-                    badFlag = true;
+                    String message = "Vault starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal room flag value: " + flag;
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
                 }
             }
-            // Deliberately flagged rather than skipped inside the loop, so a record with three bad
-            // flags reports all three in one run instead of one per re-run.
-            if (badFlag) continue;
             
             vaults.addFirst(new Vault(name, type, mapText, mapLines, flags, rating,
                     rows, columns, minLevel, maxLevel));

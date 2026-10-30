@@ -21,6 +21,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.Channels;
 import uk.co.jackoftradesltd.channel.StartupOptions;
 import uk.co.jackoftradesltd.channel.messages.UIMessage;
@@ -74,8 +75,8 @@ class VaultReaderTest {
     private static final int EXPECTED_UNCAPPED = 129;
 
     /**
-     * A minimal well-formed record, used as the clean neighbour in the error fixtures so each of
-     * those can assert that one bad record costs only itself.
+     * A minimal well-formed record, the base the fixtures below edit one directive of, and the
+     * clean neighbour in the error fixtures, which a bad record now takes down with it as in C.
      */
     private static final String GOOD_RECORD = String.join("\n",
             "name:Good vault",
@@ -287,83 +288,55 @@ class VaultReaderTest {
     }
 
     /**
-     * A {@code type:} matching none of the seven room-builder names — C's
-     * {@code PARSE_ERROR_NO_ROOM_FOUND} ({@code generate.c}). Soft here: the record is
-     * dropped and its neighbour still loads, where C would fail the whole file.
+     * A {@code type:} matching none of the room-builder names in {@code list-rooms.h} — C's
+     * {@code PARSE_ERROR_NO_ROOM_FOUND} ({@code generate.c}), which ends the whole load.
      */
     @Test
-    void anUnknownVaultTypeDropsOnlyThatRecord() throws IOException {
+    void anUnknownVaultTypeEndsTheLoad() throws IOException {
         String badType = GOOD_RECORD.replace("name:Good vault", "name:Bad type")
                 .replace("type:Lesser vault", "type:Enormous vault");
         String path = tempFile("bad-type.txt",
                 "record-count:2\n" + badType + "\n" + GOOD_RECORD + "\n");
 
-        ParseResult<Vault> result = new VaultReader().parseWithResults(path);
-
-        assertEquals(List.of("Good vault"), names(result));
-        assertTrue(result.errors().stream()
-                        .anyMatch(e -> e.contains("an invalid vault type: Enormous vault")),
-                result.errors()::toString);
+        assertThrows(DataFileParseException.class, () -> new VaultReader().parseWithResults(path));
     }
 
     /**
-     * The type name is matched case-insensitively, so the data file's own capitalisation is not
-     * load-bearing — worth pinning, since {@code toUpperCase()} is the only reason
-     * {@code "lesser vault"} works.
+     * C matches the type with {@code streq}, which is case-sensitive, so {@code "lesser vault"} is
+     * no room builder at all.
      */
     @Test
-    void theVaultTypeNameIsMatchedCaseInsensitively() throws IOException {
+    void aLowerCaseVaultTypeEndsTheLoad() throws IOException {
         String lower = GOOD_RECORD.replace("type:Lesser vault", "type:lesser vault");
         String path = tempFile("lower-type.txt", "record-count:1\n" + lower + "\n");
 
-        ParseResult<Vault> result = new VaultReader().parseWithResults(path);
-
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
-        assertEquals(RoomType.LESSER_VAULT, result.items().getFirst().getType());
+        assertThrows(DataFileParseException.class, () -> new VaultReader().parseWithResults(path));
     }
 
     /**
-     * {@code rows:} outside {@code 1..}{@link RoomType#getMaxHeight()} — C's
-     * {@code PARSE_ERROR_VAULT_TOO_BIG} in {@code parse_vault_rows}
-     * ({@code generate.c}). The bound is per type, so a lesser vault is capped at 22;
-     * the check is {@code <= 0 || > max}, so a zero is rejected at the other end.
+     * {@code rows:} over {@link RoomType#getMaxHeight()} — C's {@code PARSE_ERROR_VAULT_TOO_BIG} in
+     * {@code parse_vault_rows} ({@code generate.c}). The bound is per type, so a lesser vault is
+     * capped at 22.
      */
     @Test
-    void rowsOutsideTheTypesBoundsAreRejectedAtBothEnds() throws IOException {
+    void rowsOverTheTypesCapEndTheLoad() throws IOException {
         String tooTall = GOOD_RECORD.replace("name:Good vault", "name:Too tall")
                 .replace("rows:3", "rows:23");
-        String noRows = GOOD_RECORD.replace("name:Good vault", "name:No rows")
-                .replace("rows:3", "rows:0");
-        String path = tempFile("bad-rows.txt",
-                "record-count:3\n" + tooTall + "\n" + noRows + "\n" + GOOD_RECORD + "\n");
+        String path = tempFile("bad-rows.txt", "record-count:1\n" + tooTall + "\n");
 
-        ParseResult<Vault> result = new VaultReader().parseWithResults(path);
-
-        assertEquals(List.of("Good vault"), names(result));
-        assertEquals(2, result.errors().stream()
-                        .filter(e -> e.contains("an invalid row value")).count(),
-                result.errors()::toString);
+        assertThrows(DataFileParseException.class, () -> new VaultReader().parseWithResults(path));
     }
 
     /**
-     * The same bound on the other axis ({@code parse_vault_columns},
-     * {@code generate.c}).
+     * The same bound on the other axis ({@code parse_vault_columns}, {@code generate.c}).
      */
     @Test
-    void columnsOutsideTheTypesBoundsAreRejectedAtBothEnds() throws IOException {
+    void columnsOverTheTypesCapEndTheLoad() throws IOException {
         String tooWide = GOOD_RECORD.replace("name:Good vault", "name:Too wide")
                 .replace("columns:3", "columns:23");
-        String noColumns = GOOD_RECORD.replace("name:Good vault", "name:No columns")
-                .replace("columns:3", "columns:0");
-        String path = tempFile("bad-columns.txt",
-                "record-count:3\n" + tooWide + "\n" + noColumns + "\n" + GOOD_RECORD + "\n");
+        String path = tempFile("bad-columns.txt", "record-count:1\n" + tooWide + "\n");
 
-        ParseResult<Vault> result = new VaultReader().parseWithResults(path);
-
-        assertEquals(List.of("Good vault"), names(result));
-        assertEquals(2, result.errors().stream()
-                        .filter(e -> e.contains("an invalid column value")).count(),
-                result.errors()::toString);
+        assertThrows(DataFileParseException.class, () -> new VaultReader().parseWithResults(path));
     }
 
     /**
@@ -389,66 +362,56 @@ class VaultReaderTest {
 
     /**
      * A {@code D:} line whose length disagrees with {@code columns:} — C checks this line by line
-     * as it parses ({@code strlen(desc) != v->wid}, {@code generate.c}). Here it is one
-     * report for the record however many rows are wrong, since the assembler only flags the map.
+     * as it parses ({@code strlen(desc) != v->wid}, {@code generate.c}) and returns
+     * {@code PARSE_ERROR_VAULT_DESC_WRONG_LENGTH}, which ends the load.
      */
     @Test
-    void aRaggedMapDropsTheRecord() throws IOException {
+    void aRaggedMapEndsTheLoad() throws IOException {
         String ragged = GOOD_RECORD.replace("name:Good vault", "name:Ragged")
                 .replace("D:#.#", "D:#..#");
         String path = tempFile("ragged.txt", "record-count:2\n" + ragged + "\n" + GOOD_RECORD + "\n");
 
-        ParseResult<Vault> result = new VaultReader().parseWithResults(path);
-
-        assertEquals(List.of("Good vault"), names(result));
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("a bad map")),
-                result.errors()::toString);
+        assertThrows(DataFileParseException.class, () -> new VaultReader().parseWithResults(path));
     }
 
     /**
-     * The row-count half of the same check: the map is rectangular, but there are fewer {@code D:}
-     * lines than {@code rows:} promises. C never checks this at all — a truncated record there
-     * leaves the tail of {@code vault.text} unwritten.
+     * Fewer {@code D:} lines than {@code rows:} promises. C never compares the two, so the record
+     * loads with its declared height and a short map.
      */
     @Test
-    void tooFewMapRowsDropsTheRecord() throws IOException {
+    void tooFewMapRowsLoadAsInC() throws IOException {
         String shortMap = GOOD_RECORD.replace("name:Good vault", "name:Short")
                 .replace("D:#.#\nD:###", "D:#.#");
-        String path = tempFile("short-map.txt",
-                "record-count:2\n" + shortMap + "\n" + GOOD_RECORD + "\n");
+        String path = tempFile("short-map.txt", "record-count:1\n" + shortMap + "\n");
 
         ParseResult<Vault> result = new VaultReader().parseWithResults(path);
 
-        assertEquals(List.of("Good vault"), names(result));
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("a bad map")),
-                result.errors()::toString);
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        Vault vault = result.items().getFirst();
+        assertEquals(3, vault.getHeight());
+        assertEquals(List.of("###", "#.#"), vault.getMap());
     }
 
     /**
-     * An unknown flag name. Every bad flag in the record is reported before the record is skipped,
-     * so one run covers all of its problems rather than one per re-run.
+     * An unknown flag name — C's {@code PARSE_ERROR_INVALID_FLAG} from {@code parse_vault_flags},
+     * which ends the load at the first bad name.
      */
     @Test
-    void unknownFlagsDropTheRecordAndReportEveryBadFlag() throws IOException {
+    void anUnknownFlagEndsTheLoad() throws IOException {
         String badFlags = GOOD_RECORD.replace("name:Good vault", "name:Bad flags")
                 .replace("max-depth:0", "max-depth:0\nflags:NOT_A_FLAG|ALSO_NOT_A_FLAG");
         String path = tempFile("bad-flags.txt",
                 "record-count:2\n" + badFlags + "\n" + GOOD_RECORD + "\n");
 
-        ParseResult<Vault> result = new VaultReader().parseWithResults(path);
-
-        assertEquals(List.of("Good vault"), names(result));
-        assertEquals(2, result.errors().stream()
-                        .filter(e -> e.contains("an invalid flag")).count(),
-                result.errors()::toString);
+        assertThrows(DataFileParseException.class, () -> new VaultReader().parseWithResults(path));
     }
 
     /**
      * Several {@code flags:} lines OR into one set rather than the last one winning — the file's
      * own header says so, and C appends ({@code generate.c}). {@link RoomFlags} carries
      * only the one real flag, so accumulation shows up two ways: repeating it is idempotent (a
-     * {@code Flag} is a set), and a bad name on the <em>second</em> line is still reported, which is
-     * what proves the line was read at all rather than overwritten.
+     * {@code Flag} is a set), and a bad name on the <em>second</em> line still ends the load, which
+     * is what proves the line was read at all rather than overwritten.
      */
     @Test
     void everyFlagsLineIsRead() throws IOException {
@@ -463,30 +426,26 @@ class VaultReaderTest {
         assertEquals(1, both.items().getFirst().getFlags().count());
         assertTrue(both.items().getFirst().getFlags().has(RoomFlags.FEW_ENTRANCES));
 
-        ParseResult<Vault> bad = new VaultReader().parseWithResults(
-                tempFile("second-flag-line-bad.txt",
-                        "record-count:2\n" + secondLineBad + "\n" + GOOD_RECORD + "\n"));
-        assertEquals(List.of("Good vault"), names(bad));
-        assertTrue(bad.errors().stream().anyMatch(e -> e.contains("an invalid flag: NOT_A_FLAG")),
-                bad.errors()::toString);
+        String badPath = tempFile("second-flag-line-bad.txt",
+                "record-count:2\n" + secondLineBad + "\n" + GOOD_RECORD + "\n");
+        assertThrows(DataFileParseException.class,
+                () -> new VaultReader().parseWithResults(badPath));
     }
 
     /**
-     * The integer directives are lexed as {@code INTEGER}, so the only way to reach the
-     * assembler's {@code NumberFormatException} arms is a value too large for an {@code int}.
+     * A rating too large for an {@code int}. C narrows {@code strtol}'s result into an {@code int},
+     * which wraps; the port clamps it to {@link Integer#MAX_VALUE} instead, an accepted deviation.
      */
     @Test
-    void anOverflowingIntegerDropsTheRecord() throws IOException {
+    void anOverflowingRatingIsClamped() throws IOException {
         String huge = GOOD_RECORD.replace("name:Good vault", "name:Huge rating")
                 .replace("rating:5", "rating:99999999999");
-        String path = tempFile("overflow.txt", "record-count:2\n" + huge + "\n" + GOOD_RECORD + "\n");
+        String path = tempFile("overflow.txt", "record-count:1\n" + huge + "\n");
 
         ParseResult<Vault> result = new VaultReader().parseWithResults(path);
 
-        assertEquals(List.of("Good vault"), names(result));
-        assertTrue(result.errors().stream()
-                        .anyMatch(e -> e.contains("an invalid rating integer: 99999999999")),
-                result.errors()::toString);
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(Integer.MAX_VALUE, result.items().getFirst().getRating());
     }
 
     /**
@@ -671,18 +630,14 @@ class VaultReaderTest {
     /**
      * C reads {@code min-depth:} and {@code max-depth:} with {@code parser_getuint}, which refuses
      * a leading minus with {@code PARSE_ERROR_NOT_NUMBER}. The lexer's {@code INTEGER} is signed,
-     * so both load here as negative numbers. Pinned so a fix to the grammar has to change it.
+     * so the minus reaches the assembler, which ends the load as C does.
      */
     @Test
-    void negativeDepthsLoadHereWhereCRefusesThem() throws IOException {
-        ParseResult<Vault> minimum = parseVariant("neg-min.txt", "min-depth:0", "min-depth:-5");
-        ParseResult<Vault> maximum = parseVariant("neg-max.txt", "max-depth:0", "max-depth:-5");
-
-        assertFalse(minimum.hasErrors(), () -> minimum.errors().toString());
-        assertEquals(-5, minimum.items().getFirst().getMinLevel());
-        assertFalse(maximum.hasErrors(), () -> maximum.errors().toString());
-        assertEquals(-5, maximum.items().getFirst().getMaxLevel(),
-                "only a declared 0 is rewritten to the world maximum");
+    void negativeDepthsEndTheLoadAsInC() {
+        assertThrows(DataFileParseException.class,
+                () -> parseVariant("neg-min.txt", "min-depth:0", "min-depth:-5"));
+        assertThrows(DataFileParseException.class,
+                () -> parseVariant("neg-max.txt", "max-depth:0", "max-depth:-5"));
     }
 
     /**
@@ -698,17 +653,15 @@ class VaultReaderTest {
     }
 
     /**
-     * C stores {@code rows:} in a {@code uint8_t}-sized field after a {@code > max_height} test, so
-     * {@code rows:0} is accepted there and leaves a vault with no height. The assembler refuses
-     * it as well as anything over the cap.
+     * C's only test on {@code rows:} is {@code > max_height}, so {@code rows:0} loads there, and
+     * the three {@code D:} lines are not counted against it. The same holds here.
      */
     @Test
-    void zeroRowsAreRefusedHereWhereCAcceptsThem() throws IOException {
+    void zeroRowsLoadAsInC() throws IOException {
         ParseResult<Vault> result = parseVariant("zero-rows.txt", "rows:3", "rows:0");
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("an invalid row value")),
-                result.errors()::toString);
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(0, result.items().getFirst().getHeight());
     }
 
     /**

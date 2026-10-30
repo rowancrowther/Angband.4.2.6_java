@@ -416,15 +416,14 @@ class DungeonLoaderTest {
     }
 
     /**
-     * One overflowing rating drops one vault; the other survives and is installed. Mirrors the
-     * profile case for the third loader.
+     * A soft error with survivors. The assembler throws on every fault of its own, so the soft
+     * error here is the reader's {@code record-count:} check: the header claims two records, the
+     * file holds one, and that one is still installed.
      */
     @Test
     @DisplayName("a vault soft error beside a good vault installs the good one")
     void vaultSoftErrorWithSurvivors() throws Exception {
-        write("vault.txt", "record-count:2\n"
-                + GOOD_VAULT.replace("name:Tiny", "name:Bad").replace("rating:5", "rating:99999999999")
-                + "\n" + GOOD_VAULT + "\n");
+        write("vault.txt", "record-count:2\n" + GOOD_VAULT + "\n");
 
         DungeonLoader.loadVaultTemplates();
 
@@ -433,17 +432,33 @@ class DungeonLoaderTest {
     }
 
     /**
-     * The vault loader's no-survivor case: stop, naming the file's kind, and write nothing.
+     * The vault loader's no-survivor case: stop, naming the file's kind, and write nothing. The
+     * soft error comes from the grammar: a record with no {@code rating:} line fails closed.
      */
     @Test
-    @DisplayName("a vault soft error that leaves no vaults stops the load")
+    @DisplayName("a vault syntax error that leaves no vaults stops the load")
     void vaultSoftErrorWithNoSurvivors() throws Exception {
-        write("vault.txt", "record-count:1\n"
-                + GOOD_VAULT.replace("rating:5", "rating:99999999999") + "\n");
+        write("vault.txt", "record-count:1\n" + GOOD_VAULT.replace("rating:5\n", "") + "\n");
 
         RuntimeException thrown = assertThrows(RuntimeException.class, DungeonLoader::loadVaultTemplates);
 
         assertEquals("Error parsing Vault profiles file", thrown.getMessage());
+        assertSame(savedVaults, registryList("vaultTemplates"), "vaults untouched");
+    }
+
+    /**
+     * A vault too tall for its type is not a soft error: C quits on
+     * {@code PARSE_ERROR_VAULT_TOO_BIG}, so the assembler throws {@code DataFileParseException},
+     * which the loader does not catch. Nothing is written, even though the good vault assembled.
+     */
+    @Test
+    @DisplayName("a vault too tall for its type stops the load before anything is written")
+    void vaultTooTallStopsTheLoad() throws Exception {
+        write("vault.txt", "record-count:2\n" + GOOD_VAULT + "\n"
+                + GOOD_VAULT.replace("name:Tiny", "name:Tall").replace("rows:3", "rows:23") + "\n");
+
+        assertThrows(DataFileParseException.class, DungeonLoader::loadVaultTemplates);
+
         assertSame(savedVaults, registryList("vaultTemplates"), "vaults untouched");
     }
 

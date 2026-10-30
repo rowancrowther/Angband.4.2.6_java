@@ -20,6 +20,7 @@ package uk.co.jackoftradesltd.backend.parser;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.backend.parser.visuals.VisualsCycleAssembler;
 import uk.co.jackoftradesltd.backend.parser.visuals.VisualsCycleParseRecord;
 import uk.co.jackoftradesltd.backend.parser.visuals.VisualsFlickerAssembler;
@@ -234,14 +235,13 @@ class VisualsReaderTest {
         }
 
         @Test
-        void flickerOnlyFileYieldsAnEmptyCyclerButNoErrors() throws IOException {
+        void flickerOnlyFileStopsTheCyclerLoadAsInC() throws IOException {
+            // No cycle blocks means no groups: visuals_cycler_new(0) returns NULL, so
+            // visuals_file_parser_finish answers PARSE_ERROR_INTERNAL.
             Path file = write("flick-only.txt", flickerBlock('d', "dark", 'd', 'R'));
 
-            ParseResult<VisualsCycler> result = new VisualsReader().parseCyclerWithResults(file.toString());
-
-            assertFalse(result.hasErrors(), () -> result.errors().toString());
-            assertTrue(result.items().getFirst().getKeys().isEmpty(),
-                    "no cycle blocks -> the cycler has no groups");
+            assertThrows(DataFileParseException.class,
+                    () -> new VisualsReader().parseCyclerWithResults(file.toString()));
         }
 
         @Test
@@ -549,21 +549,20 @@ class VisualsReaderTest {
             assertTrue(result.hasErrors());
         }
 
-        // ---- Where Java differs: the caps C enforces ------------------------
+        // ---- The caps C enforces (matched by VisualsCycleAssembler from 261030) ----
 
         @Test
-        void aThirtyThirdCycleColourLoadsHereWhereCRefusesTheFile() throws IOException {
+        void aThirtyThirdCycleColourStopsTheLoadAsInC() throws IOException {
             // visuals_parse_cycle_color returns PARSE_ERROR_TOO_MANY_ENTRIES once cycle_step_index
-            // reaches max_steps (32), which is fatal in C. Java stores every step.
-            ParseResult<VisualsCycler> result = new VisualsReader()
-                    .parseCyclerWithResults(write("thirty-three.txt", cycle("g", "n", 33)).toString());
+            // reaches max_steps (32), which is fatal in C.
+            Path file = write("thirty-three.txt", cycle("g", "n", 33));
 
-            assertFalse(result.hasErrors(), () -> result.errors().toString());
-            assertEquals(33, result.items().getFirst().getByGroup("g").get("n").getSize());
+            assertThrows(DataFileParseException.class,
+                    () -> new VisualsReader().parseCyclerWithResults(file.toString()));
         }
 
         @Test
-        void aNinthGroupIsKeptHereWhereCDropsItsCycles() throws IOException {
+        void aNinthGroupIsDroppedAsInC() throws IOException {
             // group_names holds VISUALS_GROUPS_MAX (8) names; a ninth distinct name gets no slot, its
             // cycles fall outside group_cycles and visuals_parse_context_convert never sees them.
             StringBuilder body = new StringBuilder();
@@ -572,12 +571,12 @@ class VisualsReaderTest {
             }
             VisualsCycler cycler = cycler("nine-groups.txt", body.toString());
 
-            assertEquals(9, cycler.getKeys().size());
-            assertNotNull(cycler.getByGroup("g9"));
+            assertEquals(8, cycler.getKeys().size());
+            assertNull(cycler.getByGroup("g9"));
         }
 
         @Test
-        void aSixtyFifthCycleInAGroupIsKeptHereWhereCDropsIt() throws IOException {
+        void aSixtyFifthCycleInAGroupIsDroppedAsInC() throws IOException {
             // VISUALS_CYCLES_MAX is 64 per group; the 65th distinct name finds no free slot in C.
             StringBuilder body = new StringBuilder();
             for (int i = 1; i <= 65; i++) {
@@ -585,23 +584,23 @@ class VisualsReaderTest {
             }
             VisualsCycler cycler = cycler("sixty-five.txt", body.toString());
 
-            assertEquals(65, cycler.getByGroup("g").size());
+            assertEquals(64, cycler.getByGroup("g").size());
+            assertFalse(cycler.getByGroup("g").containsKey("n65"));
         }
 
         @Test
-        void aFiveHundredAndThirteenthCycleBlockLoadsHereWhereCRefusesTheFile() throws IOException {
+        void aFiveHundredAndThirteenthCycleBlockStopsTheLoadAsInC() throws IOException {
             // max_cycles is 8 * 64 + 1 and cycles_index starts at 1, so the 513th cycle: line makes
-            // visuals_parse_cycle return PARSE_ERROR_TOO_MANY_ENTRIES. Nine groups keep it clear of
-            // the per-group cap.
+            // visuals_parse_cycle return PARSE_ERROR_TOO_MANY_ENTRIES. Every line counts, dropped or
+            // not, so the ninth group here does not keep the count down.
             StringBuilder body = new StringBuilder();
             for (int i = 0; i < 513; i++) {
                 body.append(cycle("g" + (i % 9), "n" + i, 1));
             }
-            ParseResult<VisualsCycler> result = new VisualsReader()
-                    .parseCyclerWithResults(write("five-thirteen.txt", body.toString()).toString());
+            Path file = write("five-thirteen.txt", body.toString());
 
-            assertFalse(result.hasErrors(), () -> result.errors().toString());
-            assertEquals(9, result.items().getFirst().getKeys().size());
+            assertThrows(DataFileParseException.class,
+                    () -> new VisualsReader().parseCyclerWithResults(file.toString()));
         }
     }
 
@@ -613,7 +612,11 @@ class VisualsReaderTest {
      * Direct {@link VisualsCycleAssembler} tests. Two of the assembler's branches are unreachable
      * through the reader: an empty colour string cannot be lexed (COLOUR_CHAR needs one code char),
      * and an unknown code char is a hard lexer error before the assembler ever runs. Injecting
-     * hand-built {@link VisualsCycleParseRecord}s is the only way to cover them.
+     * hand-built {@link VisualsCycleParseRecord}s is the only way to cover them. Every assembler
+     * error stops the load, as in C; the full C-derived set is in {@code VisualsCycleAssemblerTest}.
+     *
+     * <p>Class CycleAssemblerUnit coded before 261030, updated on 261030 when the assembler's soft
+     * errors became fatal, commented in full on 261030.
      *
      * @author Rowan Crowther
      */
@@ -642,51 +645,46 @@ class VisualsReaderTest {
         }
 
         @Test
-        void emptyColourStringIsASoftErrorAndSkipsTheRecord() {
+        void emptyColourStringStopsTheLoadAsInC() {
+            // visuals_parse_cycle_color: strlen(color_code) == 0 is PARSE_ERROR_INVALID_COLOR.
             List<String> errors = new ArrayList<>();
-            // The empty entry is the only reachable route into the soft-error channel.
-            List<VisualsCycler> out = new VisualsCycleAssembler()
-                    .assemble(List.of(record("g", "bad", List.of("r", ""))), errors, "test.txt");
 
-            assertEquals(1, errors.size(), errors::toString);
-            assertNull(out.getFirst().getByGroup("g"),
-                    "the whole record is dropped, so its group never gets created");
+            assertThrows(DataFileParseException.class, () -> new VisualsCycleAssembler()
+                    .assemble(List.of(record("g", "bad", List.of("r", ""))), errors, "test.txt"));
+            assertTrue(errors.isEmpty(), "a load-ending error is thrown, never added to the error list");
         }
 
         @Test
-        void oneGoodRecordSurvivesAlongsideOneSoftFailure() {
+        void oneBadRecordStopsTheLoadEvenAlongsideAGoodOne() {
+            // C's first handler error ends the whole file: no partial cycler comes back.
             List<String> errors = new ArrayList<>();
-            List<VisualsCycler> out = new VisualsCycleAssembler().assemble(List.of(
+
+            assertThrows(DataFileParseException.class, () -> new VisualsCycleAssembler().assemble(List.of(
                     record("g", "good", List.of("r", "g")),
-                    record("g", "bad", List.of(""))), errors, "test.txt");
-
-            assertEquals(1, errors.size(), errors::toString);
-            Map<String, ?> g = out.getFirst().getByGroup("g");
-            assertTrue(g.containsKey("good"));
-            assertFalse(g.containsKey("bad"), "the soft-failed record is skipped");
+                    record("g", "bad", List.of(""))), errors, "test.txt"));
+            assertTrue(errors.isEmpty());
         }
 
         @Test
-        void unknownColourCharIsASoftErrorAndSkipsTheRecord() {
-            // 'q' is not one of the 28 colour codes. getColourType now returns null on a miss (was
-            // COLOUR_DARK), so the assembler flags it and drops the record rather than silently
-            // mapping the step to Dark.
+        void unknownColourCharIsReadAsWhiteAsInC() {
+            // 'q' is not one of the 28 colour codes; color_char_to_attr falls through to
+            // COLOUR_WHITE ("we assume white").
             List<String> errors = new ArrayList<>();
             List<VisualsCycler> out = new VisualsCycleAssembler()
                     .assemble(List.of(record("g", "q", List.of("q"))), errors, "test.txt");
 
-            assertEquals(1, errors.size(), errors::toString);
-            assertNull(out.getFirst().getByGroup("g"),
-                    "the record with the unknown colour is dropped, so its group is never created");
+            assertTrue(errors.isEmpty(), errors::toString);
+            assertEquals(ColourEnum.COLOUR_WHITE, out.getFirst().getByGroup("g").get("q").getColour(0));
         }
 
         @Test
-        void emptyInputYieldsASingleEmptyCycler() {
+        void emptyInputStopsTheLoadAsInC() {
+            // visuals_cycler_new(0) returns NULL, so visuals_file_parser_finish answers
+            // PARSE_ERROR_INTERNAL.
             List<String> errors = new ArrayList<>();
-            List<VisualsCycler> out = new VisualsCycleAssembler().assemble(List.of(), errors, "test.txt");
 
-            assertEquals(1, out.size());
-            assertTrue(out.getFirst().getKeys().isEmpty());
+            assertThrows(DataFileParseException.class,
+                    () -> new VisualsCycleAssembler().assemble(List.of(), errors, "test.txt"));
             assertTrue(errors.isEmpty());
         }
     }

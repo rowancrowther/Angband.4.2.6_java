@@ -257,7 +257,7 @@ Paths are under `src/main/java/uk/co/jackoftradesltd/`. The figure in brackets i
 - `backend/parser/terrainfeature/TerrainFeatureAssembler.java` (9): ~~155, 183, 193, 198, 208, 213, 233, 248, 279~~
 - `backend/parser/trap/TrapAssembler.java` (7): ~~128, 141, 152, 163, 173, 184, 196~~
 - `backend/parser/vault/VaultAssembler.java` (10): ~~97, 105, 114, 123, 129, 148, 158, 166, 174, 193~~
-- `backend/parser/visuals/VisualsCycleAssembler.java` (2): 82, 90
+- `backend/parser/visuals/VisualsCycleAssembler.java` (2): ~~82, 90~~
 - `backend/parser/visuals/VisualsFlickerAssembler.java` (2): 74, 85
 - `frontend/ui/entry/assembler/UIEntryAssembler.java` (10): 223, 231, 250, 262, 278, 292, 313, 344, 372, 384
 - `frontend/ui/entrybase/assembler/UIEntryBaseAssembler.java` (3): 95, 105, 128

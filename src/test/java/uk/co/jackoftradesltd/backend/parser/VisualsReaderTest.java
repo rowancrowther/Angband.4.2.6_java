@@ -74,12 +74,11 @@ import static org.junit.jupiter.api.Assertions.*;
  *       opaque {@link FlickerTable} allows.</li>
  * </ul>
  * <p>
- * <strong>Coverage ceiling.</strong> {@link FlickerTable} exposes no accessor and
- * {@code ColourCycle} no getters, so nothing here can inspect a cycle's step colours or the flicker
- * table's keyed entries. That leaves the flicker half - including the per-step colour mapping and
- * the base-attribute collision behaviour - assertable only as "one aggregate, no errors". Once the
- * designed runtime accessors land ({@code FlickerTable.stepFor} / {@code ColourCycle.stepFor}),
- * those deeper properties become testable.
+ * <strong>Coverage ceiling.</strong> {@link FlickerTable} still exposes no accessor, so
+ * {@link FlickerAssemblerUnit} reads its {@code byAttr} map by reflection and each cycle's steps
+ * through {@code ColourCycle.getSteps()}. That reaches the per-step colour mapping and the
+ * base-attribute collision behaviour; once the designed runtime accessor lands
+ * ({@code FlickerTable.stepFor}), the reflection can go.
  *
  * @author Rowan Crowther
  */
@@ -690,14 +689,17 @@ class VisualsReaderTest {
     }
 
     // ----------------------------------------------------------------------
-    // Flicker assembler in isolation: as deep as the opaque FlickerTable allows.
+    // Flicker assembler in isolation, read back through FlickerTable's private map.
     // ----------------------------------------------------------------------
 
     /**
-     * Direct {@link VisualsFlickerAssembler} tests. {@link FlickerTable} has no accessor, so these
-     * can only assert structural facts - one aggregate out, never null, no throw on the awkward
-     * inputs. The per-step colour mapping and the base-attribute collision outcome are the two
-     * properties worth pinning but cannot be until the table gains a read path.
+     * Direct {@link VisualsFlickerAssembler} tests. {@link FlickerTable} has no accessor yet, so
+     * {@link #cycleFor} reads its private {@code byAttr} map by reflection. Expected values come
+     * from C's {@code ui-visuals.c}: the table is three steps wide ({@code ui_visuals_module_init()}),
+     * {@code visuals_flicker_set_color()} drops a step at index 3 or above, an unwritten slot stays
+     * zero ({@code COLOUR_DARK}), and {@code visuals_parse_flicker()} resets only the step index, so a
+     * repeated base colour is written over step by step. Colour codes resolve as
+     * {@code color_char_to_attr()} ({@code z-color.c}) does: unknown is white, space is dark.
      *
      * @author Rowan Crowther
      */
@@ -706,6 +708,233 @@ class VisualsReaderTest {
 
         private static VisualsFlickerParseRecord record(String base, List<String> steps) {
             return new VisualsFlickerParseRecord("name", base, steps, 1);
+        }
+
+        private static FlickerTable assemble(List<String> errors, VisualsFlickerParseRecord... records) {
+            List<FlickerTable> out = new VisualsFlickerAssembler().assemble(List.of(records), errors, "test.txt");
+            assertEquals(1, out.size());
+            return out.getFirst();
+        }
+
+        @SuppressWarnings("unchecked")
+        private static Map<ColourEnum, ColourCycle> byAttr(FlickerTable table) {
+            try {
+                java.lang.reflect.Field f = FlickerTable.class.getDeclaredField("byAttr");
+                f.setAccessible(true);
+                return (Map<ColourEnum, ColourCycle>) f.get(table);
+            } catch (ReflectiveOperationException e) {
+                throw new AssertionError("FlickerTable.byAttr not readable", e);
+            }
+        }
+
+        private static List<ColourEnum> cycleFor(FlickerTable table, ColourEnum base) {
+            ColourCycle cycle = byAttr(table).get(base);
+            assertNotNull(cycle, "no cycle for " + base);
+            return List.copyOf(cycle.getSteps());
+        }
+
+        @Test
+        void threeStepsLoadInOrder() {
+            List<String> errors = new ArrayList<>();
+            FlickerTable t = assemble(errors, record("r", List.of("r", "o", "y")));
+
+            assertEquals(List.of(ColourEnum.COLOUR_RED, ColourEnum.COLOUR_ORANGE, ColourEnum.COLOUR_YELLOW),
+                    cycleFor(t, ColourEnum.COLOUR_RED));
+            assertTrue(errors.isEmpty());
+        }
+
+        @Test
+        void aFourthStepIsDroppedAsCSetColorIgnoresIndexThree() {
+            FlickerTable t = assemble(new ArrayList<>(), record("r", List.of("r", "o", "y", "w")));
+
+            assertEquals(List.of(ColourEnum.COLOUR_RED, ColourEnum.COLOUR_ORANGE, ColourEnum.COLOUR_YELLOW),
+                    cycleFor(t, ColourEnum.COLOUR_RED));
+        }
+
+        @Test
+        void manyStepsStillGiveExactlyThree() {
+            FlickerTable t = assemble(new ArrayList<>(),
+                    record("b", List.of("b", "B", "g", "G", "v", "V")));
+
+            assertEquals(List.of(ColourEnum.COLOUR_BLUE, ColourEnum.COLOUR_LIGHT_BLUE, ColourEnum.COLOUR_GREEN),
+                    cycleFor(t, ColourEnum.COLOUR_BLUE));
+        }
+
+        @Test
+        void twoStepsArePaddedWithDark() {
+            FlickerTable t = assemble(new ArrayList<>(), record("r", List.of("r", "o")));
+
+            assertEquals(List.of(ColourEnum.COLOUR_RED, ColourEnum.COLOUR_ORANGE, ColourEnum.COLOUR_DARK),
+                    cycleFor(t, ColourEnum.COLOUR_RED));
+        }
+
+        @Test
+        void oneStepIsPaddedWithTwoDarks() {
+            FlickerTable t = assemble(new ArrayList<>(), record("r", List.of("y")));
+
+            assertEquals(List.of(ColourEnum.COLOUR_YELLOW, ColourEnum.COLOUR_DARK, ColourEnum.COLOUR_DARK),
+                    cycleFor(t, ColourEnum.COLOUR_RED));
+        }
+
+        @Test
+        void noStepsGivesAnAllDarkCycleAsCsZeroedRowDoes() {
+            // Unreachable through the grammar (flickerColour is '+'), but C's row is all zero here.
+            FlickerTable t = assemble(new ArrayList<>(), record("r", List.of()));
+
+            assertEquals(List.of(ColourEnum.COLOUR_DARK, ColourEnum.COLOUR_DARK, ColourEnum.COLOUR_DARK),
+                    cycleFor(t, ColourEnum.COLOUR_RED));
+        }
+
+        @Test
+        void aRepeatedBaseWithFewerStepsKeepsTheEarlierTail() {
+            FlickerTable t = assemble(new ArrayList<>(),
+                    record("r", List.of("r", "o", "y")),
+                    record("r", List.of("g")));
+
+            assertEquals(List.of(ColourEnum.COLOUR_GREEN, ColourEnum.COLOUR_ORANGE, ColourEnum.COLOUR_YELLOW),
+                    cycleFor(t, ColourEnum.COLOUR_RED));
+        }
+
+        @Test
+        void aRepeatedBaseOverAPaddedCycleOverwritesTheDarkPadding() {
+            FlickerTable t = assemble(new ArrayList<>(),
+                    record("r", List.of("r")),
+                    record("r", List.of("g", "b")));
+
+            assertEquals(List.of(ColourEnum.COLOUR_GREEN, ColourEnum.COLOUR_BLUE, ColourEnum.COLOUR_DARK),
+                    cycleFor(t, ColourEnum.COLOUR_RED));
+        }
+
+        @Test
+        void aRepeatedBaseWithFourStepsStillStopsAtThree() {
+            FlickerTable t = assemble(new ArrayList<>(),
+                    record("r", List.of("r", "o", "y")),
+                    record("r", List.of("g", "b", "v", "w")));
+
+            assertEquals(List.of(ColourEnum.COLOUR_GREEN, ColourEnum.COLOUR_BLUE, ColourEnum.COLOUR_VIOLET),
+                    cycleFor(t, ColourEnum.COLOUR_RED));
+        }
+
+        @Test
+        void aThirdBlockForTheSameBaseMergesOnceMore() {
+            FlickerTable t = assemble(new ArrayList<>(),
+                    record("r", List.of("r", "o", "y")),
+                    record("r", List.of("g", "b")),
+                    record("r", List.of("w")));
+
+            assertEquals(List.of(ColourEnum.COLOUR_WHITE, ColourEnum.COLOUR_BLUE, ColourEnum.COLOUR_YELLOW),
+                    cycleFor(t, ColourEnum.COLOUR_RED));
+        }
+
+        @Test
+        void differentBasesDoNotInterfere() {
+            FlickerTable t = assemble(new ArrayList<>(),
+                    record("r", List.of("r", "o", "y")),
+                    record("b", List.of("g")));
+
+            assertEquals(2, byAttr(t).size());
+            assertEquals(List.of(ColourEnum.COLOUR_RED, ColourEnum.COLOUR_ORANGE, ColourEnum.COLOUR_YELLOW),
+                    cycleFor(t, ColourEnum.COLOUR_RED));
+            assertEquals(List.of(ColourEnum.COLOUR_GREEN, ColourEnum.COLOUR_DARK, ColourEnum.COLOUR_DARK),
+                    cycleFor(t, ColourEnum.COLOUR_BLUE));
+        }
+
+        @Test
+        void caseMattersForTheBaseCode() {
+            // 'b' is Blue and 'B' is Light Blue in C's color_table: two separate rows.
+            FlickerTable t = assemble(new ArrayList<>(),
+                    record("b", List.of("b")),
+                    record("B", List.of("B")));
+
+            assertEquals(ColourEnum.COLOUR_BLUE, cycleFor(t, ColourEnum.COLOUR_BLUE).getFirst());
+            assertEquals(ColourEnum.COLOUR_LIGHT_BLUE, cycleFor(t, ColourEnum.COLOUR_LIGHT_BLUE).getFirst());
+        }
+
+        @Test
+        void anUnknownStepCodeBecomesWhiteAsInColorCharToAttr() {
+            List<String> errors = new ArrayList<>();
+            FlickerTable t = assemble(errors, record("r", List.of("x", "r", "o")));
+
+            assertEquals(List.of(ColourEnum.COLOUR_WHITE, ColourEnum.COLOUR_RED, ColourEnum.COLOUR_ORANGE),
+                    cycleFor(t, ColourEnum.COLOUR_RED));
+            assertTrue(errors.isEmpty());
+        }
+
+        @Test
+        void anUnknownBaseCodeKeysOnWhiteAsInColorCharToAttr() {
+            FlickerTable t = assemble(new ArrayList<>(), record("x", List.of("r", "o", "y")));
+
+            assertEquals(List.of(ColourEnum.COLOUR_RED, ColourEnum.COLOUR_ORANGE, ColourEnum.COLOUR_YELLOW),
+                    cycleFor(t, ColourEnum.COLOUR_WHITE));
+        }
+
+        @Test
+        void aSpaceStepCodeIsDarkAsInColorCharToAttr() {
+            FlickerTable t = assemble(new ArrayList<>(), record("r", List.of(" ", "r", "o")));
+
+            assertEquals(List.of(ColourEnum.COLOUR_DARK, ColourEnum.COLOUR_RED, ColourEnum.COLOUR_ORANGE),
+                    cycleFor(t, ColourEnum.COLOUR_RED));
+        }
+
+        @Test
+        void realFileGivesTwentyEightThreeStepCycles() throws IOException {
+            List<FlickerTable> tables = new ArrayList<>();
+            List<String> errors = new ArrayList<>();
+            List<VisualsFlickerParseRecord> records = new ArrayList<>();
+            for (String line : Files.readAllLines(Path.of(REAL_FILE))) {
+                if (line.startsWith("flicker:")) {
+                    records.add(record(line.substring(8, 9), new ArrayList<>()));
+                } else if (line.startsWith("flicker-color:")) {
+                    records.getLast().colours().add(line.substring(14, 15));
+                }
+            }
+            tables.addAll(new VisualsFlickerAssembler().assemble(records, errors, REAL_FILE));
+
+            Map<ColourEnum, ColourCycle> map = byAttr(tables.getFirst());
+            assertEquals(FLICKER_GROUP_CYCLES, map.size());
+            map.values().forEach(c -> assertEquals(3, c.getSize()));
+            assertTrue(errors.isEmpty());
+        }
+
+        @Test
+        void realFileDarkAndWhiteBlocksLoadTheirShippedSteps() throws IOException {
+            // visuals.txt: flicker:d -> d,D,R and flicker:w -> w,W,B; C writes each into its
+            // colors_per_cycle-3 row in order.
+            FlickerTable t = new VisualsReader().parseFlicker(REAL_FILE);
+
+            assertEquals(List.of(ColourEnum.COLOUR_DARK, ColourEnum.COLOUR_LIGHT_DARK, ColourEnum.COLOUR_LIGHT_RED),
+                    cycleFor(t, ColourEnum.COLOUR_DARK));
+            assertEquals(List.of(ColourEnum.COLOUR_WHITE, ColourEnum.COLOUR_LIGHT_SLATE, ColourEnum.COLOUR_LIGHT_BLUE),
+                    cycleFor(t, ColourEnum.COLOUR_WHITE));
+        }
+
+        @Test
+        void realFileGivesNoCycleForShade() throws IOException {
+            // No flicker: line can name Shade (' ' resolves to Dark first), so its C row is never written.
+            FlickerTable t = new VisualsReader().parseFlicker(REAL_FILE);
+
+            assertFalse(byAttr(t).containsKey(ColourEnum.COLOUR_SHADE));
+        }
+
+        @Test
+        void anUnknownBaseAndAWhiteBaseShareOneRow() {
+            // color_char_to_attr gives COLOUR_WHITE for both 'x' and 'w', so C's second block
+            // writes over row 1 from step 0.
+            FlickerTable t = assemble(new ArrayList<>(),
+                    record("x", List.of("r", "o", "y")),
+                    record("w", List.of("g")));
+
+            assertEquals(1, byAttr(t).size());
+            assertEquals(List.of(ColourEnum.COLOUR_GREEN, ColourEnum.COLOUR_ORANGE, ColourEnum.COLOUR_YELLOW),
+                    cycleFor(t, ColourEnum.COLOUR_WHITE));
+        }
+
+        @Test
+        void aSpaceBaseCodeKeysOnDarkAsInColorCharToAttr() {
+            FlickerTable t = assemble(new ArrayList<>(), record(" ", List.of("r", "o", "y")));
+
+            assertEquals(List.of(ColourEnum.COLOUR_RED, ColourEnum.COLOUR_ORANGE, ColourEnum.COLOUR_YELLOW),
+                    cycleFor(t, ColourEnum.COLOUR_DARK));
         }
 
         @Test
@@ -730,15 +959,15 @@ class VisualsReaderTest {
 
         @Test
         void twoRecordsSharingABaseAttributeDoNotThrow() {
-            // Both records key on 'd'; the byAttr map collapses them (last wins). We can only assert
-            // it assembles without error - which entry survives is not observable through FlickerTable.
+            // Both records key on 'd'. C writes the second over the first step by step, so the
+            // padded third step of the first block survives: [d,R,dark] then w,W gives [w,W,dark].
             List<String> errors = new ArrayList<>();
-            List<FlickerTable> out = new VisualsFlickerAssembler().assemble(List.of(
+            FlickerTable t = assemble(errors,
                     record("d", List.of("d", "R")),
-                    record("d", List.of("w", "W"))), errors, "test.txt");
+                    record("d", List.of("w", "W")));
 
-            assertEquals(1, out.size());
-            assertNotNull(out.getFirst());
+            assertEquals(List.of(ColourEnum.COLOUR_WHITE, ColourEnum.COLOUR_LIGHT_SLATE, ColourEnum.COLOUR_DARK),
+                    cycleFor(t, ColourEnum.COLOUR_DARK));
             assertTrue(errors.isEmpty());
         }
     }

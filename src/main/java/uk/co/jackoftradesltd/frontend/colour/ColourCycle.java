@@ -128,4 +128,8 @@ public final class ColourCycle {
     public int getSize() {
         return steps.size();
     }
+
+    public List<ColourEnum> getSteps() {
+        return List.copyOf(steps);
+    }
 }

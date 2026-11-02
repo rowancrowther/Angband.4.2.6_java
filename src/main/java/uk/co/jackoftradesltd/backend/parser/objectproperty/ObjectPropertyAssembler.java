@@ -62,7 +62,10 @@ import java.util.Map;
  * <p><b>Type.</b> The seven tokens are matched exactly as C's {@code streq} chain matches them.
  * C refuses a {@code code:} line that arrives before any {@code type:} line
  * ({@code PARSE_ERROR_MISSING_OBJ_PROP_TYPE}); the grammar makes {@code type:} the second line of
- * every record, so that case cannot reach this class.
+ * every record, so that case cannot reach this class. For the same reason an empty {@code type:}
+ * cannot arise from the grammar; the guard in {@link #assemble} refuses it with its own message
+ * ("has no type value"), where C would leave the type at {@code OBJ_PROPERTY_NONE} and carry on
+ * until a later line failed.
  *
  * <p><b>Subtype and id-type.</b> C stores both on whatever kind of property the record is, and
  * only {@code flag} records carry them in the shipped data. This class does the same: it does
@@ -87,7 +90,9 @@ import java.util.Map;
  *
  * <p><b>Type multipliers.</b> Each key is resolved by {@link TValue#fromName}, which stands in for
  * {@code tval_find_idx}, so a number, a display name in any case and either spelling of "armour"
- * all resolve. Only the tvals the record names are stored; {@link ObjectProperty#getTypeMult}
+ * all resolve. {@link TValue#fromName} also falls back to the Java constant name, so a key such as
+ * {@code drag armor} or {@code soft_armor} resolves where {@code tval_find_idx} returns -1 and C
+ * ends the load; the shipped data writes only the display names. Only the tvals the record names are stored; {@link ObjectProperty#getTypeMult}
  * supplies the default of 1 that C writes into every slot before the first line is read. Accepted
  * deviation ("A {@code type-mult:} tval written twice under two spellings can keep the earlier
  * line, where C keeps the later one" in {@code docs/Accepted_Deviations.md}): the record keeps one
@@ -111,7 +116,7 @@ import java.util.Map;
  * deviation (decided 261009, "for the time being"): the list here is base 0, has no blank slot,
  * and its size is the record count.
  *
- * <p>Class ObjectPropertyAssembler coded before 260915, commented in full on 261028.
+ * <p>Class ObjectPropertyAssembler coded before 260915, commented in full on 261102.
  *
  * @author Rowan Crowther
  */
@@ -312,7 +317,6 @@ public class ObjectPropertyAssembler implements Assembler<ObjectPropertyParseRec
                 String uiEntryName = record.bindui();
                 if (!record.tag().isEmpty())
                     uiEntryName = uiEntryName + "<" + record.tag() + ">";
-                // UIEntry uientry = UIRegistry.getUIEntry(uiEntryName);
                 ObjectProperty.UIBinding uibinding = new ObjectProperty.UIBinding(uiEntryName, value, isAux);
                 boundEntries.add(uibinding);
             }

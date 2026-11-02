@@ -333,6 +333,41 @@ class ObjectPropertyAssemblerTest {
         assertEquals(ElementEnum.ELEM_ACID, prop.getPayload().getElement(prop.getType()));
     }
 
+    /** C: obj_mods is list-stats.h (5 stats) then list-object-modifiers.h (11 modifiers), each name a valid code. */
+    @ParameterizedTest
+    @ValueSource(strings = {"STR", "INT", "WIS", "DEX", "CON", "STEALTH", "SEARCH", "INFRA", "TUNNEL",
+            "SPEED", "BLOWS", "SHOTS", "MIGHT", "LIGHT", "DAM_RED", "MOVES"})
+    void everyNameInTheModifierTableResolves(String code) {
+        ObjectProperty prop = one(ofType("mod", code));
+
+        assertEquals("OM_" + code, prop.getPayload().getModifier(prop.getType()).name());
+    }
+
+    /** C: obj_flags is "NONE", then every OF() line of list-object-flags.h (38 real flags), then "MAX". */
+    @ParameterizedTest
+    @ValueSource(strings = {"SUST_STR", "SUST_INT", "SUST_WIS", "SUST_DEX", "SUST_CON", "PROT_FEAR",
+            "PROT_BLIND", "PROT_CONF", "PROT_STUN", "SLOW_DIGEST", "FEATHER", "REGEN", "TELEPATHY",
+            "SEE_INVIS", "FREE_ACT", "HOLD_LIFE", "IMPACT", "BLESSED", "BURNS_OUT", "TAKES_FUEL",
+            "NO_FUEL", "IMPAIR_HP", "IMPAIR_MANA", "AFRAID", "NO_TELEPORT", "AGGRAVATE", "DRAIN_EXP",
+            "STICKY", "FRAGILE", "LIGHT_2", "LIGHT_3", "DIG_1", "DIG_2", "DIG_3", "EXPLODE",
+            "TRAP_IMMUNE", "THROWING", "MULTIPLY_WEIGHT"})
+    void everyNameInTheFlagTableResolves(String code) {
+        ObjectProperty prop = one(ofType("flag", code));
+
+        assertEquals("OF_" + code, prop.getPayload().getFlag(prop.getType()).name());
+    }
+
+    /** C: element_names is the 25 ELEM() lines of list-elements.h, with no sentinel. */
+    @ParameterizedTest
+    @ValueSource(strings = {"ACID", "ELEC", "FIRE", "COLD", "POIS", "LIGHT", "DARK", "SOUND", "SHARD",
+            "NEXUS", "NETHER", "CHAOS", "DISEN", "WATER", "ICE", "GRAVITY", "INERTIA", "FORCE", "TIME",
+            "PLASMA", "METEOR", "MISSILE", "MANA", "HOLY_ORB", "ARROW"})
+    void everyNameInTheElementTableResolves(String code) {
+        ObjectProperty prop = one(ofType("resistance", code));
+
+        assertEquals("ELEM_" + code, prop.getPayload().getElement(prop.getType()).name());
+    }
+
     // ---- power, mult ------------------------------------------------------------------------
 
     @Test

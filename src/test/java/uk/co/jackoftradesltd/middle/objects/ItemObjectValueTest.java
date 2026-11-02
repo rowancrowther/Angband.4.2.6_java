@@ -97,7 +97,6 @@ class ItemObjectValueTest {
      * The registry contents the class replaced, in the order {@link #seedRegistries()} saved them.
      */
     private static Object savedRenderers;
-    private static Object savedUiBases;
     private static Object savedUiEntries;
     private static Object savedProperties;
     private static Object savedFlagSets;
@@ -118,8 +117,9 @@ class ItemObjectValueTest {
     static void seedRegistries() throws Exception {
         savedRenderers = ItemFixture.setStatic(UIRegistry.class, "uiEntryRenderers",
                 new UIEntryRendererReader().parseWithResults("lib/gamedata/ui_entry_renderer.txt").items());
-        savedUiBases = ItemFixture.setStatic(UIRegistry.class, "uiEntryBases",
-                new UIEntryBaseReader().parseWithResults("lib/gamedata/ui_entry_base.txt").items());
+        // Parsing the base file registers its entries in UIRegistry as a side effect of
+        // UIEntryBaseAssembler, which UIEntryReader below seeds from.
+        new UIEntryBaseReader().parseWithResults("lib/gamedata/ui_entry_base.txt");
         savedUiEntries = ItemFixture.setStatic(UIRegistry.class, "uiEntries",
                 new UIEntryReader().parseWithResults("lib/gamedata/ui_entry.txt").items());
         savedProperties = ItemFixture.setStatic(ObjectRegistry.class, "objectProperties",
@@ -149,7 +149,6 @@ class ItemObjectValueTest {
     @AfterAll
     static void restoreRegistries() {
         ItemFixture.setStatic(UIRegistry.class, "uiEntryRenderers", savedRenderers);
-        ItemFixture.setStatic(UIRegistry.class, "uiEntryBases", savedUiBases);
         ItemFixture.setStatic(UIRegistry.class, "uiEntries", savedUiEntries);
         ItemFixture.setStatic(ObjectRegistry.class, "objectProperties", savedProperties);
         ItemFixture.setStatic(ObjectRegistry.class, "flagSets", savedFlagSets);

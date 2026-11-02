@@ -17,12 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.backend.parser.ObjectPropertyReader;
 import uk.co.jackoftradesltd.channel.utils.Flag;
@@ -72,7 +67,6 @@ import static uk.co.jackoftradesltd.testsupport.ItemFixture.set;
 class ItemObjectPartCRound2Test {
 
     private static Object savedRenderers;
-    private static Object savedUiBases;
     private static Object savedUiEntries;
     private static Object savedProperties;
     private static Object savedFlagSets;
@@ -89,8 +83,9 @@ class ItemObjectPartCRound2Test {
     static void seedRegistries() throws Exception {
         savedRenderers = ItemFixture.setStatic(UIRegistry.class, "uiEntryRenderers",
                 new UIEntryRendererReader().parseWithResults("lib/gamedata/ui_entry_renderer.txt").items());
-        savedUiBases = ItemFixture.setStatic(UIRegistry.class, "uiEntryBases",
-                new UIEntryBaseReader().parseWithResults("lib/gamedata/ui_entry_base.txt").items());
+        // Parsing the base file registers its entries in UIRegistry as a side effect of
+        // UIEntryBaseAssembler, which UIEntryReader below seeds from.
+        new UIEntryBaseReader().parseWithResults("lib/gamedata/ui_entry_base.txt");
         savedUiEntries = ItemFixture.setStatic(UIRegistry.class, "uiEntries",
                 new UIEntryReader().parseWithResults("lib/gamedata/ui_entry.txt").items());
         savedProperties = ItemFixture.setStatic(ObjectRegistry.class, "objectProperties",
@@ -116,7 +111,6 @@ class ItemObjectPartCRound2Test {
     @AfterAll
     static void restoreRegistries() {
         ItemFixture.setStatic(UIRegistry.class, "uiEntryRenderers", savedRenderers);
-        ItemFixture.setStatic(UIRegistry.class, "uiEntryBases", savedUiBases);
         ItemFixture.setStatic(UIRegistry.class, "uiEntries", savedUiEntries);
         ItemFixture.setStatic(ObjectRegistry.class, "objectProperties", savedProperties);
         ItemFixture.setStatic(ObjectRegistry.class, "flagSets", savedFlagSets);

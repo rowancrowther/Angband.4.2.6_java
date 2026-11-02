@@ -26,7 +26,6 @@ import uk.co.jackoftradesltd.channel.enums.StatElemType;
 import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.frontend.entries.UIEntry;
-import uk.co.jackoftradesltd.frontend.entries.UIEntryBase;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftradesltd.frontend.ui.entry.assembler.UIEntryAssembler;
 import uk.co.jackoftradesltd.frontend.ui.entry.reader.UIEntryReader;
@@ -76,9 +75,7 @@ class UIEntryReaderTest {
         List<UIEntryRenderer> renderers = new UIEntryRendererReader()
                 .parseWithResults("lib/gamedata/ui_entry_renderer.txt").items();
         setStatic("uiEntryRenderers", renderers);
-        List<UIEntryBase> bases = new UIEntryBaseReader()
-                .parseWithResults("lib/gamedata/ui_entry_base.txt").items();
-        setStatic("uiEntryBases", bases);
+        new UIEntryBaseReader().parseWithResults("lib/gamedata/ui_entry_base.txt");
 
         // UIEntryBaseReader runs the real UIEntryBaseAssembler as part of parsing, and that
         // assembler's own job is to also populate UIRegistry's shared UIEntry list with one

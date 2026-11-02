@@ -94,7 +94,6 @@ class RuneInitTest {
                 "sickliness", "dullness", "teleportation", "vulnerability");
 
     private static Object savedRenderers;
-    private static Object savedUiBases;
     private static Object savedUiEntries;
     private static Object savedProperties;
     private static Object savedProjections;
@@ -116,8 +115,9 @@ class RuneInitTest {
         // UI entries first: the object-property assembler resolves its bindui targets against them.
         savedRenderers = setStatic("uiEntryRenderers",
                 new UIEntryRendererReader().parseWithResults(UI_RENDERER_FILE).items());
-        savedUiBases = setStatic("uiEntryBases",
-                new UIEntryBaseReader().parseWithResults(UI_BASE_FILE).items());
+        // Parsing the base file registers its entries in UIRegistry as a side effect of
+        // UIEntryBaseAssembler, which UIEntryReader below seeds from.
+        new UIEntryBaseReader().parseWithResults(UI_BASE_FILE);
         savedUiEntries = setStatic("uiEntries",
                 new UIEntryReader().parseWithResults(UI_ENTRY_FILE).items());
 
@@ -147,7 +147,6 @@ class RuneInitTest {
     @AfterAll
     static void restore() throws Exception {
         setStatic("uiEntryRenderers", savedRenderers);
-        setStatic("uiEntryBases", savedUiBases);
         setStatic("uiEntries", savedUiEntries);
         setStatic("monsterPains", savedPains);
         setStatic("monsterBases", savedMonsterBases);

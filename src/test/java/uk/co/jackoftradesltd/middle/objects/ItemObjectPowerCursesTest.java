@@ -17,13 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -41,25 +35,15 @@ import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlagType;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 import uk.co.jackoftradesltd.middle.player.Player;
+import uk.co.jackoftradesltd.testsupport.CurseFixture;
 import uk.co.jackoftradesltd.testsupport.ItemFixture;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
-import uk.co.jackoftradesltd.testsupport.CurseFixture;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static uk.co.jackoftradesltd.testsupport.ItemFixture.read;
 import static uk.co.jackoftradesltd.testsupport.ItemFixture.set;
 
@@ -95,7 +79,6 @@ import static uk.co.jackoftradesltd.testsupport.ItemFixture.set;
 class ItemObjectPowerCursesTest {
 
     private static Object savedRenderers;
-    private static Object savedUiBases;
     private static Object savedUiEntries;
     private static Object savedProperties;
     private static Object savedFlagSets;
@@ -119,8 +102,9 @@ class ItemObjectPowerCursesTest {
     static void seedRegistries() throws Exception {
         savedRenderers = ItemFixture.setStatic(UIRegistry.class, "uiEntryRenderers",
                 new UIEntryRendererReader().parseWithResults("lib/gamedata/ui_entry_renderer.txt").items());
-        savedUiBases = ItemFixture.setStatic(UIRegistry.class, "uiEntryBases",
-                new UIEntryBaseReader().parseWithResults("lib/gamedata/ui_entry_base.txt").items());
+        // Parsing the base file registers its entries in UIRegistry as a side effect of
+        // UIEntryBaseAssembler, which UIEntryReader below seeds from.
+        new UIEntryBaseReader().parseWithResults("lib/gamedata/ui_entry_base.txt");
         savedUiEntries = ItemFixture.setStatic(UIRegistry.class, "uiEntries",
                 new UIEntryReader().parseWithResults("lib/gamedata/ui_entry.txt").items());
         savedProperties = ItemFixture.setStatic(ObjectRegistry.class, "objectProperties",
@@ -147,7 +131,6 @@ class ItemObjectPowerCursesTest {
     @AfterAll
     static void restoreRegistries() {
         ItemFixture.setStatic(UIRegistry.class, "uiEntryRenderers", savedRenderers);
-        ItemFixture.setStatic(UIRegistry.class, "uiEntryBases", savedUiBases);
         ItemFixture.setStatic(UIRegistry.class, "uiEntries", savedUiEntries);
         ItemFixture.setStatic(ObjectRegistry.class, "objectProperties", savedProperties);
         ItemFixture.setStatic(ObjectRegistry.class, "flagSets", savedFlagSets);

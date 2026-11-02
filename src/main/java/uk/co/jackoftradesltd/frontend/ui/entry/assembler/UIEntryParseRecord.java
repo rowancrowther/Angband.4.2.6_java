@@ -78,11 +78,6 @@ import java.util.List;
  *                  line.
  * @param desc      the description text, concatenated from any repeated
  *                  {@code desc:} continuation lines, or {@code ""} if unset.
- * @param nameTag   the upper-case {@code <TAG>} suffix from the name (e.g.
- *                  {@code ACID}), captured separately from {@code name} - the
- *                  full tagged name is kept there so {@code bindui} look-ups by
- *                  {@code name<TAG>} still match; {@code ""} when the name has
- *                  no tag.
  * @param line      the 1-based source line of the {@code name:} line that opened
  *                  this record, used to anchor assembler error messages.
  * @author Rowan Crowther

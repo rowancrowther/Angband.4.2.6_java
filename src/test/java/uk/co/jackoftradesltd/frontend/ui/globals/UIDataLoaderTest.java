@@ -263,4 +263,54 @@ class UIDataLoaderTest {
 
         assertEquals("Lb", entry.getShortenedLabel(1), "an explicitly-set label2 must not be recomputed");
     }
+
+    /**
+     * C's {@code finish_parse_ui_entry} converts the name with
+     * {@code text_mbstowcs(label, name, MAX_ENTRY_LABEL)} ({@code MAX_ENTRY_LABEL} is 80), so a name of
+     * 79 or 80 characters becomes the label whole and one of 81 or 100 is cut to its first 80.
+     */
+    @Test
+    void finalPassCutsANameUsedAsALabelToEightyCharacters() throws Exception {
+        for (int length : new int[]{79, 80, 81, 100}) {
+            String name = "a".repeat(length);
+            UIEntry noLabel = entry(name, "", null, null, 0, List.of());
+
+            finalPass(List.of(noLabel));
+
+            assertEquals(Math.min(length, 80), noLabel.getLabel().length(), "name length " + length);
+            assertEquals(name.substring(0, Math.min(length, 80)), noLabel.getLabel());
+        }
+    }
+
+    /** The cut keeps the first 80 characters, not the last: C copies from the start of the name. */
+    @Test
+    void finalPassKeepsTheStartOfALongName() throws Exception {
+        String name = "x".repeat(80) + "TAIL";
+        UIEntry noLabel = entry(name, "", null, null, 0, List.of());
+
+        finalPass(List.of(noLabel));
+
+        assertEquals("x".repeat(80), noLabel.getLabel());
+    }
+
+    /** The cut applies only to the name fallback: a label the data file set is never replaced by it. */
+    @Test
+    void finalPassDoesNotTouchALabelThatWasSetWhateverTheNameLength() throws Exception {
+        UIEntry labelled = entry("n".repeat(100), "Lbl", null, null, 0, List.of());
+
+        finalPass(List.of(labelled));
+
+        assertEquals("Lbl", labelled.getLabel());
+    }
+
+    /** Shortened labels are derived from the cut label: index 0 is one character, index 9 is ten. */
+    @Test
+    void finalPassDerivesShortenedLabelsFromTheCutLabel() throws Exception {
+        UIEntry noLabel = entry("abcdefghijklmnop".repeat(10), "", null, null, 0, List.of());
+
+        finalPass(List.of(noLabel));
+
+        assertEquals("a", noLabel.getShortenedLabel(0));
+        assertEquals("abcdefghij", noLabel.getShortenedLabel(9));
+    }
 }

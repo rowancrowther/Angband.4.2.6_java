@@ -19,20 +19,17 @@ package uk.co.jackoftradesltd.frontend.ui.globals;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import uk.co.jackoftradesltd.channel.enums.ChannelEntryFlag;
-import uk.co.jackoftradesltd.channel.enums.StatElemType;
+import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
 import uk.co.jackoftradesltd.channel.parser.ErrorParsing;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
-import uk.co.jackoftradesltd.channel.utils.Flag;
-import uk.co.jackoftradesltd.frontend.entries.UIEntryCategory;
-import uk.co.jackoftradesltd.frontend.globals.UIGlobals;
-import uk.co.jackoftradesltd.frontend.ui.entrybase.reader.UIEntryBaseReader;
-import uk.co.jackoftradesltd.frontend.ui.entry.reader.UIEntryReader;
-import uk.co.jackoftradesltd.frontend.ui.entryrenderer.reader.UIEntryRendererReader;
 import uk.co.jackoftradesltd.frontend.entries.UIEntry;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryBase;
+import uk.co.jackoftradesltd.frontend.entries.UIEntryCategory;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
-import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
+import uk.co.jackoftradesltd.frontend.ui.entry.assembler.UIEntryAssembler;
+import uk.co.jackoftradesltd.frontend.ui.entry.reader.UIEntryReader;
+import uk.co.jackoftradesltd.frontend.ui.entrybase.reader.UIEntryBaseReader;
+import uk.co.jackoftradesltd.frontend.ui.entryrenderer.reader.UIEntryRendererReader;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -56,9 +53,14 @@ import java.util.List;
  *
  * <p>The two private methods, {@link #finalPass(List)} and {@link #fillOutShortened(UIEntry)}, are
  * the Java form of C's {@code finish_parse_ui_entry} and {@code fill_out_shortened}
- * ({@code ui-entry.c}).
+ * ({@code ui-entry.c}). C's {@code finish_parse_ui_entry_renderer} has no method here: its backend
+ * defaulting is done by {@code UIEntryRendererAssembler}.
  *
- * <p>Class UIDataLoader coded before 260916, commented in full on 260929.
+ * <p>None of the three loaders uses the {@code boolean} that {@link ErrorParsing#reportAndCheck}
+ * returns, so a file that yields no records registers an empty list rather than stopping the load;
+ * only an exception does that.
+ *
+ * <p>Class UIDataLoader coded before 260916, commented in full on 261102.
  *
  * @author Rowan Crowther
  */
@@ -68,7 +70,7 @@ public class UIDataLoader {
      * {@link ErrorParsing#reportAndCheck}, while a hard one (an unresolvable reference or IO
      * failure) is logged here immediately before the catch block rethrows it.
      *
-     * <p>Field logger coded before 260916, commented in full on 260919.
+     * <p>Field logger coded before 260916, commented in full on 261102.
      */
     private static final Logger logger = LogManager.getLogger(UIDataLoader.class);
 
@@ -83,7 +85,12 @@ public class UIDataLoader {
      * {@code Exception} rather than {@code IOException} and <em>rethrows</em>, so an unresolvable
      * base or renderer stops the load here rather than leaving the renderer subsystem half-built.
      *
-     * <p>Function loadUIEntries coded before 260916, commented in full on 260929.
+     * <p>The list handed to {@link #finalPass(List)} is the one {@code UIEntryAssembler} returns: the
+     * {@code ui_entry_base.txt} placeholders plus the new entries, sorted by name as C's
+     * {@code entries[]} is. {@link UIRegistry#setUIEntries} replaces the placeholder-only list that
+     * {@link #loadUIEntryBases()} left there.
+     *
+     * <p>Function loadUIEntries coded before 260916, commented in full on 261102.
      *
      * @throws IOException if an IO error occurs while reading the file
      */
@@ -106,30 +113,32 @@ public class UIDataLoader {
 
     /**
      * Load the UI entry bases from {@code ui_entry_base.txt} into {@link UIRegistry}. Must run
-     * before {@link #loadUIEntries()}, which resolves each entry to one of these bases. Corresponds
+     * before {@link #loadUIEntries()}, whose records may name these bases as their {@code template:}. Corresponds
      * to the first half of C's {@code run_parse_ui_entry} ({@code ui-entry.c}), which parses
      * {@code ui_entry_base.txt} and then ORs {@code ENTRY_FLAG_TEMPLATE_ONLY} into every entry so far;
      * in Java that flagging happens in {@code UIEntryBaseAssembler} as each record is parsed.
      * <p>
      * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the bases that did
-     * assemble are registered regardless, per the partial-results contract. The catch is on
+     * assemble stay in the registry regardless, per the partial-results contract. The catch is on
      * {@code Exception} and <em>rethrows</em>; a missing base here would resurface as an
      * unresolvable reference while loading the entries, so it is stopped at source.
      *
-     * <p>Function loadUIEntryBases coded before 260916, commented in full on 260929.
+     * <p>Nothing is registered from here: the returned {@code result} is only reported on, because
+     * {@code UIEntryBaseAssembler} has already stored the folded list in {@link UIRegistry}. No
+     * finishing pass runs after this file, as in C, where {@code finish_parse_ui_entry} runs once,
+     * after {@code ui_entry.txt}.
+     *
+     * <p>Function loadUIEntryBases coded before 260916, commented in full on 261102.
      *
      * @throws IOException an IO error occurred during parsing
      */
     public static void loadUIEntryBases() throws IOException {
         UIEntryBaseReader reader = new UIEntryBaseReader();
         String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "ui_entry_base.txt";
-
         try {
             ParseResult<UIEntryBase> result = reader.parseWithResults(filename);
 
             ErrorParsing.reportAndCheck(filename, result, logger);
-
-            UIRegistry.setUIEntryBases(result.items());
         } catch (Exception e) {
             logger.error("Error while loading file {}", filename, e);
             throw e;
@@ -146,7 +155,7 @@ public class UIDataLoader {
      * did assemble are registered regardless, per the partial-results contract. The catch is on
      * {@code Exception} and <em>rethrows</em>, for the same reason as the bases above.
      *
-     * <p>Function loadUIEntryRenderers coded before 260916, commented in full on 260929.
+     * <p>Function loadUIEntryRenderers coded before 260916, commented in full on 261102.
      *
      * @throws IOException an error occurred during the parsing - log it and rethrow it
      */
@@ -170,7 +179,10 @@ public class UIDataLoader {
      * Finishing pass applied once, after both {@code ui_entry_base.txt} and {@code ui_entry.txt} have
      * been parsed and folded into one list: fills any entry's still-empty label from its name, fills
      * out its shortened labels (see {@link #fillOutShortened(UIEntry)}), and resolves any still-unset
-     * category priority to the entry's own default priority. The Java form of the per-entry loop in
+     * category priority to the entry's own default priority. The name is cut to
+     * {@link UIEntryAssembler#MAX_ENTRY_LABEL} (80) characters when it becomes the label, as C's
+     * {@code text_mbstowcs(label, name, MAX_ENTRY_LABEL)} cuts it; a 100-character name gives an
+     * 80-character label, and a label the data file set is left as it is. The Java form of the per-entry loop in
      * {@code finish_parse_ui_entry} ({@code ui-entry.c}), run over the same combined set
      * C's single {@code n_entry} covers there - both the {@code ui_entry_base.txt} placeholders and
      * the real {@code ui_entry.txt} entries - since {@code entries} here is seeded from
@@ -179,20 +191,25 @@ public class UIDataLoader {
      * <p>Two things C does there are not reproduced. C's {@code hatch_last_embryo} is the assemblers'
      * job here, and C's {@code -1} results (a label that will not convert to wide characters) have no
      * Java counterpart, as a Java string cannot fail that way. An entry whose label is {@code null}
-     * rather than empty would throw here, where C's {@code nlabel == 0} covers both; the assemblers
-     * always supply {@code ""}.
+     * rather than empty would throw a {@link NullPointerException} at the {@code isEmpty()} test,
+     * where C's {@code nlabel == 0} covers both, so the label must be non-null by the time it
+     * gets here.
      *
-     * <p>Function finalPass coded before 260919, commented in full on 260929.
+     * <p>Function finalPass coded before 260919, commented in full on 261102.
      *
-     * @param entries the merged entry list to finish, in file order
+     * @param entries the merged entry list to finish, as {@code UIEntryAssembler} returns it, sorted
+     *                by name; each entry is mutated in place
      * @return a new list holding the same entry objects, each finished in place
      */
     private static List<UIEntry> finalPass(List<UIEntry> entries) {
         List<UIEntry> results = new ArrayList<>();
 
         for (UIEntry entry : entries) {
-            if (entry.getLabel().isEmpty())
-                entry.setLabel(entry.getName());
+            if (entry.getLabel().isEmpty()) {
+                String name = entry.getName();
+                int length = Math.min(name.length(), UIEntryAssembler.MAX_ENTRY_LABEL);
+                entry.setLabel(name.substring(0, length));
+            }
 
             fillOutShortened(entry);
 
@@ -220,7 +237,12 @@ public class UIDataLoader {
      * a lower index is never the source for a higher one; only labels set by the data file, or the
      * full label, are.
      *
-     * <p>Function fillOutShortened coded before 260919, commented in full on 260929.
+     * <p>An index is filled even when its source is shorter than {@code i + 1} (a two-character label
+     * gives {@code "ab"} at every index from 1 up, never padded), and an empty source leaves
+     * {@code ""} there, which C leaves as {@code nshortened == 0}. C's wide-character buffer sizing
+     * has no counterpart.
+     *
+     * <p>Function fillOutShortened coded before 260919, commented in full on 261102.
      *
      * @param entry the entry whose shortened labels are filled in place
      */

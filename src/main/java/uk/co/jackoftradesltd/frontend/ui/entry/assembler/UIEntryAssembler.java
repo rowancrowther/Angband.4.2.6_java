@@ -108,7 +108,7 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
      *
      * <p>Field MAX_ENTRY_LABEL coded before 261102, commented in full on 261102.
      */
-    private final int MAX_ENTRY_LABEL = 80;
+    public final static int MAX_ENTRY_LABEL = 80;
 
     /**
      * The name of the file being assembled, set at the top of {@link #assemble} and quoted in every
@@ -193,9 +193,13 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
      * first record whose present fields fail to resolve (an unknown {@code parameter:}, renderer,
      * combiner, template or flag, a {@code priority:} that is neither {@code index},
      * {@code negative_index} nor a signed decimal, or a new entry with no combiner). A
-     * {@code priority:} number is refused if anything but digits follows the sign, as
+     * {@code priority:} number may be preceded by whitespace (space, tab, form feed, newline, carriage
+     * return or vertical tab - the set {@code strtol} skips, so {@code " 5"} loads as 5), but is refused
+     * if anything but digits follows the sign, trailing whitespace included, as
      * {@code parse_entry_priority}'s {@code strtol} end check refuses it
-     * ({@code PARSE_ERROR_NOT_NUMBER}), and a number past the {@code int} range is clamped.
+     * ({@code PARSE_ERROR_NOT_NUMBER}); a number past the {@code int} range is clamped. The scheme
+     * names are compared exactly, so {@code " index"} and {@code "index "} are refused as C refuses
+     * them.
      * Most records yield a single entry; a {@code parameter:stat}
      * record yields one per player stat and a {@code parameter:element} record one per element
      * (see the class comment on expansion). Each entry's {@code label}, {@code label2} and
@@ -331,6 +335,8 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
                     priorityStr = record.priority();
                 } else {
                     priorityStr = record.priority();
+                    priorityStr = ParseUtils.cTrimFront(priorityStr);
+                    
                     int sign = ParseUtils.signFound(priorityStr);
                     if (sign != 0) priorityStr = priorityStr.substring(1);
                     if (!ParseUtils.onlyDigits(priorityStr)) {
@@ -485,11 +491,13 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
      * The override path (a {@code results} lookup by name finds an existing entry) is live - the
      * thirteen {@code resist_ui_compact_0<TAG>} records reach it, since their names match what the
      * earlier {@code parameter:element resist_ui_compact_0} record's fan-out already inserted. It
-     * throws if the incoming entry still carries a stat or element parameter, mirroring
-     * {@code parse_entry_parameter}'s refusal to parameterize an entry that already exists
-     * ({@code ui-entry.c}) - that specific throw is unreached by shipped data, since
-     * none of the thirteen records carries its own {@code parameter:} line (and {@link #assemble}
-     * rejects such a record before it gets here). It then applies the record's template (if
+     * throws if the incoming entry still carries a stat or element parameter. That means a
+     * {@code parameter:} record whose bare name is new but whose fanned-out name {@code name<TAG>}
+     * is already registered, which C ends with {@code quit("Attempted to insert ui_entry with same
+     * name")} in {@code ui_entry_insert}, called from {@code hatch_embryo} ({@code ui-entry.c}). It is
+     * not {@code parse_entry_parameter}'s refusal to parameterize an existing entry: {@link #assemble}
+     * makes that check on the bare name before this method is reached. No shipped record reaches the
+     * throw. It then applies the record's template (if
      * any), renderer, combiner, label, shortened labels and flags directly onto the existing entry -
      * each an overwrite in C when its line is present ({@code parse_entry_renderer}/
      * {@code parse_entry_combine}/{@code parse_entry_label}) except flags, which C only ever ORs

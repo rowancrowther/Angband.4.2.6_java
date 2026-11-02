@@ -259,7 +259,7 @@ Paths are under `src/main/java/uk/co/jackoftradesltd/`. The figure in brackets i
 - `backend/parser/vault/VaultAssembler.java` (10): ~~97, 105, 114, 123, 129, 148, 158, 166, 174, 193~~
 - `backend/parser/visuals/VisualsCycleAssembler.java` (2): ~~82, 90~~
 - `backend/parser/visuals/VisualsFlickerAssembler.java` (2): ~~74, 85~~
-- `frontend/ui/entry/assembler/UIEntryAssembler.java` (10): 223, 231, 250, 262, 278, 292, 313, 344, 372, 384
+- `frontend/ui/entry/assembler/UIEntryAssembler.java` (10): ~~223, 231, 250, 262, 278, 292, 313, 344, 372, 384~~
 - `frontend/ui/entrybase/assembler/UIEntryBaseAssembler.java` (3): 95, 105, 128
 - `frontend/ui/entryrenderer/assembler/UIEntryRendererAssembler.java` (3): 63, 91, 104
 

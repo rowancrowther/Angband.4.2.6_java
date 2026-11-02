@@ -986,6 +986,37 @@ class UIEntryAssemblerTest {
     }
 
     @Test
+    void whitespaceBeforeThePriorityNumberIsSkippedAsStrtolSkipsIt() {
+        // strtol skips isspace() characters (space, \t, \n, \v, \f, \r) before the sign and digits;
+        // *end is then the terminator, so parse_entry_priority accepts the value.
+        assertEquals(5, defaultPriorityOf(" 5"));
+        assertEquals(-3, defaultPriorityOf("\t-3"));
+        assertEquals(7, defaultPriorityOf(" +7"));
+        assertEquals(9, defaultPriorityOf("\f9"));
+        assertEquals(4, defaultPriorityOf("\u000b4"));
+        assertEquals(12, defaultPriorityOf("  \t12"));
+    }
+
+    @Test
+    void whitespaceAfterThePriorityNumberIsFatalAsInC() {
+        // *end is the first trailing space or tab, not the terminator, so PARSE_ERROR_NOT_NUMBER.
+        for (String text : List.of("5 ", "-3\t", " 5 ")) {
+            assertEquals("UI entry starting at line: 1 of file: test.txt has an illegal priority value: "
+                    + text, fatalMessage(withPriority("pt", text)), text);
+        }
+    }
+
+    @Test
+    void whitespaceAroundASchemeNameOrBetweenSignAndDigitsIsFatalAsInC() {
+        // " index" is not a scheme name, and strtol reads nothing from " index" or "+ 5" (the digits
+        // must follow the sign directly), so *end is not the terminator in any of them.
+        for (String text : List.of(" index", "index ", " negative_index", " + 5", "  ")) {
+            assertEquals("UI entry starting at line: 1 of file: test.txt has an illegal priority value: "
+                    + text, fatalMessage(withPriority("pt", text)), text);
+        }
+    }
+
+    @Test
     void aPriorityAboveIntMaxClampsAsInC() {
         // priority = (v <= INT_MAX) ? ... : INT_MAX
         assertEquals(Integer.MAX_VALUE, defaultPriorityOf("2147483647"));

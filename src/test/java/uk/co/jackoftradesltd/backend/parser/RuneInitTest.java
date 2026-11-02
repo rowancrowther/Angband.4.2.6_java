@@ -24,6 +24,7 @@ import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.frontend.ui.entry.reader.UIEntryReader;
 import uk.co.jackoftradesltd.frontend.ui.entrybase.reader.UIEntryBaseReader;
 import uk.co.jackoftradesltd.frontend.ui.entryrenderer.reader.UIEntryRendererReader;
+import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
 import uk.co.jackoftradesltd.middle.game.event.projection.Projection;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.objects.*;
@@ -115,9 +116,8 @@ class RuneInitTest {
         // UI entries first: the object-property assembler resolves its bindui targets against them.
         savedRenderers = setStatic("uiEntryRenderers",
                 new UIEntryRendererReader().parseWithResults(UI_RENDERER_FILE).items());
-        // Parsing the base file registers its entries in UIRegistry as a side effect of
-        // UIEntryBaseAssembler, which UIEntryReader below seeds from.
-        new UIEntryBaseReader().parseWithResults(UI_BASE_FILE);
+        // The base entries must be registered for UIEntryReader below to seed from.
+        UIRegistry.setUIEntries(new UIEntryBaseReader().parseWithResults(UI_BASE_FILE).items());
         savedUiEntries = setStatic("uiEntries",
                 new UIEntryReader().parseWithResults(UI_ENTRY_FILE).items());
 

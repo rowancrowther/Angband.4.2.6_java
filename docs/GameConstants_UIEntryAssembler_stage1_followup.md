@@ -3,7 +3,7 @@
 Answers to three questions raised after the 2026-09-18 stage-1 verification pass over
 `ChannelEntryFlag.java`, `CombinerName.java`, `Core.java`, `GameConstants.java`,
 `KnownObject.java`, `ObjectProperty.java`, `ObjectValueCache.java`, `UIEntry.java`,
-`UIEntryAssembler.java`, `UIEntryBase.java`, `UIEntryBaseAssembler.java`,
+`UIEntryAssembler.java`, `UIEntryBase.java` (removed 2026-11-02, see `docs/UIEntryBase_Removal.md`), `UIEntryBaseAssembler.java`,
 `UIEntryBaseParseRecord.java`, `UIEntryCode.java`, `UIEntryRendererEnum.java`,
 `UIEntrySpec.java`, `UIEntryValue.java`, `UIEntryValueShapshot.java`, `UILoop.java`,
 `UIMessage.java`. `ChannelEntryFlag`'s `ENTRY_FLAG_TEMPLATE_ONLY` placement is settled — staying in the same enum — and

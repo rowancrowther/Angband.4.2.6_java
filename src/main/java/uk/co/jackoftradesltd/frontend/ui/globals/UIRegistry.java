@@ -41,8 +41,9 @@ import java.util.List;
  * {@code ui_entry_base.txt} and of {@code ui_entry.txt} live together, and a base record is told
  * apart only by {@code ENTRY_FLAG_TEMPLATE_ONLY}. A {@code template:} directive, an override of an
  * existing name and a {@code bind_*_to_ui_entry_by_name} call all resolve through the one
- * {@link #getUIEntry} lookup, as they all go through {@code ui_entry_lookup} in C. There is no
- * separate registry of bases (260919 decision).
+ * {@link #getUIEntry} lookup, as they all search the one {@code entries[]} in C (the first two
+ * through {@code ui_entry_lookup}, the bind functions through {@code ui_entry_search} directly).
+ * There is no separate registry of bases (260919 decision).
  *
  * <p>Class UIRegistry coded before 260924, commented in full on 261102.
  *
@@ -219,13 +220,16 @@ public class UIRegistry {
      * record while a name is present only once. C's {@code ui_entry_lookup} returns the index plus
      * one (0 for no match); this returns the entry, or {@code null}.
      *
-     * <p>In C three callers use that lookup: {@code hatch_embryo} (to find an existing record to
-     * override), {@code parse_entry_template} (to find the {@code template:} record to copy) and
-     * every {@code bind_*_to_ui_entry_by_name} function. Since {@link #uiEntries} is the single
-     * registry the 260919 decision folded {@code ui_entry_base.txt} and {@code ui_entry.txt} records
-     * into, this is the one lookup for all three, and it can return either kind: a base record is
-     * told apart only by {@code ENTRY_FLAG_TEMPLATE_ONLY} on the result, not by which method found
-     * it, so a {@code template:} may name a {@code ui_entry.txt} record as well as a base.
+     * <p>In C the name search has three kinds of caller. {@code parse_entry_name} calls
+     * {@code ui_entry_lookup} to find an existing record to override, and
+     * {@code parse_entry_template} calls it to find the {@code template:} record to copy. Each
+     * {@code bind_*_to_ui_entry_by_name} function calls {@code ui_entry_search} directly, and
+     * {@code ui_entry_insert} (reached from {@code hatch_embryo}) uses it to refuse a duplicate
+     * name. Since {@link #uiEntries} is the single registry the 260919 decision folded
+     * {@code ui_entry_base.txt} and {@code ui_entry.txt} records into, this is the one lookup for
+     * the override, template and bind cases, and it can return either kind: a base record is told
+     * apart only by {@code ENTRY_FLAG_TEMPLATE_ONLY} on the result, not by which method found it,
+     * so a {@code template:} may name a {@code ui_entry.txt} record as well as a base.
      *
      * <p>Throws rather than returning {@code null} when the registry itself is unloaded, a
      * programming error rather than a per-record failure; a name simply not found still returns

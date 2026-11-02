@@ -29,7 +29,6 @@ import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.channel.utils.FlagView;
 import uk.co.jackoftradesltd.channel.utils.combiners.CombinerName;
 import uk.co.jackoftradesltd.frontend.entries.UIEntry;
-import uk.co.jackoftradesltd.frontend.entries.UIEntryBase;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryCategory;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftradesltd.frontend.ui.entry.EmbryonicCategoryReferencies;
@@ -42,7 +41,7 @@ import java.util.List;
 /**
  * Second stage of the {@code ui_entry_base.txt} pipeline: turns the raw string
  * {@link UIEntryBaseParseRecord}s emitted by the grammar into fully resolved
- * {@link UIEntryBase} template objects. This is where the domain look-ups that
+ * {@link UIEntry} template objects. This is where the domain look-ups that
  * the grammar deliberately avoids finally happen &mdash; the {@code renderer:}
  * name is resolved against the loaded {@code ui_entry_renderer.txt} renderers,
  * and the {@code combine:} name against the {@link CombinerName} enum.
@@ -56,7 +55,7 @@ import java.util.List;
  *
  * @author Rowan Crowther
  */
-public class UIEntryBaseAssembler implements Assembler<UIEntryBaseParseRecord, List<UIEntryBase>> {
+public class UIEntryBaseAssembler implements Assembler<UIEntryBaseParseRecord, List<UIEntry>> {
     /**
      * Logger for the fatal, non-recoverable states {@link #parseEachEntry(List, UIEntry)} throws on
      * - an override record whose parameter is non-null, or a record with no combiner - both of which
@@ -67,23 +66,22 @@ public class UIEntryBaseAssembler implements Assembler<UIEntryBaseParseRecord, L
     private static final Logger logger = LogManager.getLogger(UIEntryBaseAssembler.class);
 
     /**
-     * Resolves each {@link UIEntryBaseParseRecord} into a {@link UIEntryBase},
+     * Resolves each {@link UIEntryBaseParseRecord} into a {@link UIEntry},
      * skipping (and reporting) any record whose renderer name is unknown or
      * whose combine name is not a valid {@link CombinerName}.
      *
      * @param records the raw template records produced by the grammar
      * @param errors  collector to which per-record resolution failures are
      *                appended; passed on to the builder
-     * @return the successfully assembled {@link UIEntryBase} templates, in
+     * @return the successfully assembled {@link UIEntry} templates, in
      * source order, excluding any records that failed to resolve
      *
      * <p>Function assemble coded before 260920, commented in full on 260922.
      */
     @Override
-    public List<UIEntryBase> assemble(@NotNull List<UIEntryBaseParseRecord> records,
+    public List<UIEntry> assemble(@NotNull List<UIEntryBaseParseRecord> records,
                                       @NotNull List<String> errors,
                                       @NotNull String filename) {
-        List<UIEntryBase> results = new ArrayList<>();
         List<UIEntry> entries = new ArrayList<>();
 
         for (UIEntryBaseParseRecord record : records) {
@@ -132,19 +130,14 @@ public class UIEntryBaseAssembler implements Assembler<UIEntryBaseParseRecord, L
             }
             if (badFlag) continue;
 
-            UIEntryBase base = new UIEntryBase(name, renderer, combinerName, cats, flag, desc, 0);
-
             UIEntry entry = new UIEntry(name, null,
                     null, null, renderer, combinerName, cats,
                     0, "", flag, desc, "", "", "");
 
             parseEachEntry(entries, entry);
-
-            results.add(base);
         }
 
-        UIRegistry.setUIEntries(entries);
-        return results;
+        return entries;
     }
 
     /**
@@ -203,7 +196,6 @@ public class UIEntryBaseAssembler implements Assembler<UIEntryBaseParseRecord, L
                 throw new RuntimeException(message);
             }
 
-            // At present UIEntryBases don't have templates, ignore this part
             existing.setRenderer(entry.getRenderer());
             existing.setCombinerType(entry.getCombineType());
             existing.setEntryFlags(fullFlags);
@@ -236,7 +228,6 @@ public class UIEntryBaseAssembler implements Assembler<UIEntryBaseParseRecord, L
             EmbryonicCategoryReferencies lastCat = null;
 
             // Directives in file order
-            // No template in UIEntryBase
 
             if (entry.getStatOrElement() == StatElemType.ELEMENT) {
                 paramTable = entry.getParameter();

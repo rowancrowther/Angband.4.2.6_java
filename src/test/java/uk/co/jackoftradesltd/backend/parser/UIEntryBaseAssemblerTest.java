@@ -20,8 +20,8 @@ package uk.co.jackoftradesltd.backend.parser;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.enums.ChannelEntryFlag;
+import uk.co.jackoftradesltd.channel.utils.combiners.CombinerName;
 import uk.co.jackoftradesltd.frontend.entries.UIEntry;
-import uk.co.jackoftradesltd.frontend.entries.UIEntryBase;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryCategory;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftradesltd.frontend.ui.entrybase.assembler.UIEntryBaseAssembler;
@@ -74,30 +74,29 @@ class UIEntryBaseAssemblerTest {
     @Test
     void resolvesRendererAndCombineAndCarriesRawFieldsThrough() {
         List<String> errors = new ArrayList<>();
-        List<UIEntryBase> out = new UIEntryBaseAssembler().assemble(
+        List<UIEntry> out = new UIEntryBaseAssembler().assemble(
                 List.of(rec("t", KNOWN_RENDERER, "LOGICAL_OR", "TIMED_AS_AUX", "some desc",
                         List.of("CHAR_SCREEN1", "abilities"))),
                 errors, "test.txt");
 
         assertTrue(errors.isEmpty(), errors::toString);
         assertEquals(1, out.size());
-        UIEntryBase u = out.get(0);
+        UIEntry u = out.get(0);
         assertEquals("t", u.getName());
-        assertTrue(u.getFlags().has(ChannelEntryFlag.ENTRY_FLAG_TIMED_AS_AUX));
-        // UIEntryBase does not expose desc (C's parse_entry_desc never stores it either);
-        // the remaining fields are asserted through toString(), except the categories: they are
-        // UIEntryCategory objects, which have no toString(), so their names are read through the getter.
-        String s = u.toString();
-        assertTrue(s.contains("combine=LOGICAL_OR"), s);
+        assertTrue(u.entryFlagHas(ChannelEntryFlag.ENTRY_FLAG_TIMED_AS_AUX));
+        assertTrue(u.entryFlagHas(ChannelEntryFlag.ENTRY_FLAG_TEMPLATE_ONLY),
+                "every base-file entry is template-only");
+        // desc is not stored on the entry (C's parse_entry_desc never stores it either).
+        assertEquals(CombinerName.LOGICAL_OR, u.getCombineType());
+        assertEquals(KNOWN_RENDERER, u.getRenderer().getName());
         assertEquals(List.of("CHAR_SCREEN1", "abilities"),
                 u.getCategories().stream().map(UIEntryCategory::getName).toList());
-        assertTrue(s.contains(KNOWN_RENDERER), s);
     }
 
     @Test
     void unknownRendererIsSkippedAndReported() {
         List<String> errors = new ArrayList<>();
-        List<UIEntryBase> out = new UIEntryBaseAssembler().assemble(
+        List<UIEntry> out = new UIEntryBaseAssembler().assemble(
                 List.of(rec("t", "no_such_renderer", "LOGICAL_OR", "F", "d", List.of("C"))), errors, "test.txt");
 
         assertTrue(out.isEmpty());
@@ -107,7 +106,7 @@ class UIEntryBaseAssemblerTest {
     @Test
     void invalidCombineIsSkippedAndReported() {
         List<String> errors = new ArrayList<>();
-        List<UIEntryBase> out = new UIEntryBaseAssembler().assemble(
+        List<UIEntry> out = new UIEntryBaseAssembler().assemble(
                 List.of(rec("t", KNOWN_RENDERER, "BOGUS", "F", "d", List.of("C"))), errors, "test.txt");
 
         assertTrue(out.isEmpty());
@@ -117,7 +116,7 @@ class UIEntryBaseAssemblerTest {
     @Test
     void partialResultsSurviveABadRecord() {
         List<String> errors = new ArrayList<>();
-        List<UIEntryBase> out = new UIEntryBaseAssembler().assemble(
+        List<UIEntry> out = new UIEntryBaseAssembler().assemble(
                 List.of(rec("bad", "no_such_renderer", "LOGICAL_OR", "F", "d", List.of("C")),
                         rec("good", KNOWN_RENDERER, "LOGICAL_OR", "TIMED_AS_AUX", "d", List.of("C"))),
                 errors, "test.txt");
@@ -127,20 +126,20 @@ class UIEntryBaseAssemblerTest {
         assertFalse(errors.isEmpty());
     }
 
-    // ---- the shared UIEntry registry parseEachEntry builds alongside the returned UIEntryBase ------
-    // ---- list, mirroring hatch_embryo's no-parameterisation branch (ui-entry.c:1826-1859) and -------
-    // ---- run_parse_ui_entry's post-base-file TEMPLATE_ONLY pass (ui-entry.c:2273-2278) --------------
+    // ---- the returned entry list parseEachEntry builds, mirroring hatch_embryo's -----------------
+    // ---- no-parameterisation branch and run_parse_ui_entry's post-base-file TEMPLATE_ONLY pass ----
 
     @Test
-    void createPathInsertsATemplateOnlyEntryWithUnsetCategoryPriorities() {
+    void createPathReturnsATemplateOnlyEntryWithUnsetCategoryPriorities() {
         List<String> errors = new ArrayList<>();
-        new UIEntryBaseAssembler().assemble(
+        List<UIEntry> out = new UIEntryBaseAssembler().assemble(
                 List.of(rec("good_flag_ui_compact_0", KNOWN_RENDERER, "LOGICAL_OR", "TIMED_AS_AUX",
                         "desc", List.of("CHAR_SCREEN1", "abilities"))),
                 errors, "test.txt");
 
-        UIEntry entry = UIRegistry.getUIEntry("good_flag_ui_compact_0");
-        assertNotNull(entry, "the base record should have produced a shared UIEntry");
+        assertEquals(1, out.size());
+        UIEntry entry = out.get(0);
+        assertEquals("good_flag_ui_compact_0", entry.getName());
         assertTrue(entry.entryFlagHas(ChannelEntryFlag.ENTRY_FLAG_TEMPLATE_ONLY),
                 "every base-file entry is template-only, matching C's post-base-file OR pass");
         assertTrue(entry.entryFlagHas(ChannelEntryFlag.ENTRY_FLAG_TIMED_AS_AUX));
@@ -160,7 +159,7 @@ class UIEntryBaseAssemblerTest {
     @Test
     void aRepeatedNameMergesNewCategoriesIntoTheExistingEntryRatherThanDuplicatingIt() {
         List<String> errors = new ArrayList<>();
-        List<UIEntryBase> out = new UIEntryBaseAssembler().assemble(
+        List<UIEntry> out = new UIEntryBaseAssembler().assemble(
                 List.of(rec("shared_name", KNOWN_RENDERER, "LOGICAL_OR", "TIMED_AS_AUX", "d1",
                                 List.of("CHAR_SCREEN1", "abilities")),
                         rec("shared_name", KNOWN_RENDERER, "ADD", "TIMED_AS_AUX", "d2",
@@ -168,24 +167,47 @@ class UIEntryBaseAssemblerTest {
                 errors, "test.txt");
 
         assertTrue(errors.isEmpty(), errors::toString);
-        assertEquals(2, out.size(), "both raw UIEntryBase records still come back from assemble()");
+        // The override path (hatch_embryo's embryo->exists branch) means only one entry should
+        // exist for the repeated name, not two.
+        assertEquals(1, out.size(), "a repeated name should edit the existing entry, not duplicate it");
 
-        // The override path (hatch_embryo's embryo->exists branch, ui-entry.c:1758-1759) means
-        // only one shared UIEntry should exist for the repeated name, not two.
-        long matches = UIRegistry.getUIEntries().stream()
-                .filter(e -> e.getName().equals("shared_name")).count();
-        assertEquals(1, matches, "a repeated name should edit the existing entry, not duplicate it");
-
-        UIEntry entry = UIRegistry.getUIEntry("shared_name");
+        UIEntry entry = out.get(0);
         // Renderer/combiner/flags are overwritten outright by the second record, mirroring
         // parse_entry_renderer/parse_entry_combine's unconditional assignment regardless of
-        // embryo->exists (ui-entry.c:2015-2042).
-        assertEquals(uk.co.jackoftradesltd.channel.utils.combiners.CombinerName.ADD, entry.getCombineType());
+        // embryo->exists.
+        assertEquals(CombinerName.ADD, entry.getCombineType());
 
         // Categories not already present are added; ones already there are not duplicated -
         // matching insert_embryo_category's exists-branch (ui-entry.c:1493-1513).
         List<String> categoryNames = entry.getCategories().stream().map(UIEntryCategory::getName).toList();
         assertEquals(3, categoryNames.size(), categoryNames::toString);
         assertTrue(categoryNames.containsAll(List.of("CHAR_SCREEN1", "abilities", "EQUIPCMP_SCREEN")));
+    }
+
+    /**
+     * Registering the list is {@code UIDataLoader.loadUIEntryBases}'s job: {@code assemble} only
+     * returns the entries and leaves {@link UIRegistry}'s list as it found it.
+     */
+    @Test
+    void assembleDoesNotTouchTheRegistry() {
+        List<UIEntry> before;
+        try {
+            before = UIRegistry.getUIEntries();
+        } catch (NullPointerException unloaded) {
+            before = null;
+        }
+        List<UIEntry> sentinel = new ArrayList<>();
+        UIRegistry.setUIEntries(sentinel);
+        try {
+            List<UIEntry> out = new UIEntryBaseAssembler().assemble(
+                    List.of(rec("t", KNOWN_RENDERER, "LOGICAL_OR", "TIMED_AS_AUX", "d", List.of("C"))),
+                    new ArrayList<>(), "test.txt");
+
+            assertEquals(1, out.size());
+            assertTrue(UIRegistry.getUIEntries().isEmpty(), "assemble must not register its entries");
+            assertTrue(sentinel.isEmpty(), "assemble must not add to the registry's list");
+        } finally {
+            UIRegistry.setUIEntries(before);
+        }
     }
 }

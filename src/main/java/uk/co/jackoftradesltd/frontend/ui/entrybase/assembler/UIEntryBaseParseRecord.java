@@ -28,7 +28,7 @@ import java.util.List;
  * {@code entryBase} rule. Every field is still the plain text lexed from the
  * data file: no enum resolution, renderer look-up, or validation has happened
  * yet. That second stage is {@link UIEntryBaseAssembler}'s job, which turns each
- * record into a {@link uk.co.jackoftradesltd.frontend.entries.UIEntryBase}. Keeping
+ * record into a {@code TEMPLATE_ONLY} {@link uk.co.jackoftradesltd.frontend.entries.UIEntry}. Keeping
  * the parse output as dumb strings lets the grammar stay ignorant of the domain
  * and lets the assembler report errors against the original source line.
  *

@@ -52,7 +52,7 @@ import java.util.List;
  */
 public class TunnelAssembler implements Assembler<DungeonProfileParseRecord.Tunnel, TunnelProfile> {
     /**
-     * Receives the fatal message for a record list that is {@code null} or not exactly one long,
+     * Receives the fatal message for a record list that is not exactly one long,
      * before the {@link DataFileParseException} is thrown. The number errors are logged by
      * {@link ParseUtils} under its own name. C has no counterpart: it reports through
      * {@code print_error} in {@code datafile.c} and quits.
@@ -78,10 +78,16 @@ public class TunnelAssembler implements Assembler<DungeonProfileParseRecord.Tunn
      * reaches it.
      *
      * <p>Two failures stop the load. A field with no leading digit throws, as C's
-     * {@code PARSE_ERROR_NOT_NUMBER} quits. A record list that is {@code null} or not exactly one
-     * long throws too; the nearest C case is a {@code tunnel:} line before any {@code name:},
-     * which gives {@code PARSE_ERROR_MISSING_RECORD_HEADER}. A repeated {@code tunnel:} line,
-     * where C keeps the last, never gets here, because the grammar has already kept only one.
+     * {@code PARSE_ERROR_NOT_NUMBER} quits. A record list that is not exactly one long throws
+     * too; the nearest C case is a {@code tunnel:} line before any {@code name:}, which gives
+     * {@code PARSE_ERROR_MISSING_RECORD_HEADER}. A repeated {@code tunnel:} line, where C keeps
+     * the last, never gets here, because the grammar has already kept only one.
+     *
+     * <p>A {@code null} record list is a caller bug, not a data error: {@code records} is
+     * {@code @NotNull}, so it is refused before this body runs (an
+     * {@link IllegalArgumentException} where the IDE instruments {@code @NotNull}, a
+     * {@link NullPointerException} at {@code records.size()} where it does not), and it is never
+     * a {@link DataFileParseException}.
      *
      * <p>Accepted deviation, from {@link ParseUtils}: a figure too big for an {@code int} is
      * clamped, where C keeps the low 32 bits, so {@code 99999999999} is 2147483647 here and
@@ -94,13 +100,13 @@ public class TunnelAssembler implements Assembler<DungeonProfileParseRecord.Tunn
      *                 throws
      * @param filename the file being read, for the error messages
      * @return the assembled tunnel profile; never {@code null}
-     * @throws DataFileParseException if {@code records} is {@code null} or not exactly one long, or
-     *                                a field has no leading digit
+     * @throws DataFileParseException if {@code records} is not exactly one long, or a field has no
+     *                                leading digit
      */
     @Override
     public TunnelProfile assemble(@NotNull List<DungeonProfileParseRecord.Tunnel> records, @NotNull List<String> errors,
                                     String filename) {
-        if (records == null || records.size() != 1) {
+        if (records.size() != 1) {
             String message = "Expected exactly one tunnel profile in file: " + filename;
             logger.fatal(message);
             throw new DataFileParseException(message);

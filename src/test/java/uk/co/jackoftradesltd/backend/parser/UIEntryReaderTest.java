@@ -29,7 +29,6 @@ import uk.co.jackoftradesltd.frontend.entries.UIEntry;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftradesltd.frontend.ui.entry.assembler.UIEntryAssembler;
 import uk.co.jackoftradesltd.frontend.ui.entry.reader.UIEntryReader;
-import uk.co.jackoftradesltd.frontend.ui.entrybase.reader.UIEntryBaseReader;
 import uk.co.jackoftradesltd.frontend.ui.entryrenderer.reader.UIEntryRendererReader;
 import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
 
@@ -71,18 +70,13 @@ class UIEntryReaderTest {
 
     @BeforeAll
     static void seedRegistries() throws Exception {
-        // Renderers first: the base reader's assembler resolves renderers, so it needs them seeded.
+        // Renderers first: the entry assembler resolves renderers, so it needs them seeded.
         List<UIEntryRenderer> renderers = new UIEntryRendererReader()
                 .parseWithResults("lib/gamedata/ui_entry_renderer.txt").items();
         setStatic("uiEntryRenderers", renderers);
-        new UIEntryBaseReader().parseWithResults("lib/gamedata/ui_entry_base.txt");
 
-        // UIEntryBaseReader runs the real UIEntryBaseAssembler as part of parsing, and that
-        // assembler's own job is to also populate UIRegistry's shared UIEntry list with one
-        // TEMPLATE_ONLY placeholder per base (UIEntryBaseAssembler.java:144) - a side effect this
-        // class does not want, since every test below assumes UIEntryAssembler.assemble() starts
-        // from an empty registry (UIEntryAssembler.java:108). Reset it so that seeding the bases
-        // does not leak placeholder entries into every test's result count.
+        // Every test below assumes UIEntryAssembler.assemble() starts from an empty registry, so
+        // the base entries are deliberately not registered.
         UIRegistry.setUIEntries(List.of());
     }
 

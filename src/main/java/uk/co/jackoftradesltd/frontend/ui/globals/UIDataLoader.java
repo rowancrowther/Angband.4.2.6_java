@@ -23,7 +23,6 @@ import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
 import uk.co.jackoftradesltd.channel.parser.ErrorParsing;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.frontend.entries.UIEntry;
-import uk.co.jackoftradesltd.frontend.entries.UIEntryBase;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryCategory;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftradesltd.frontend.ui.entry.assembler.UIEntryAssembler;
@@ -44,8 +43,9 @@ import java.util.List;
  * Unlike the rest of the {@code GameConstants}-driven loaders this was split out of, its three
  * public loaders are invoked from the UI thread — by {@code UILoop}'s {@code EVENT_ENTER_INIT}
  * handler, not by {@code GameConstants.init()} — in dependency order: renderers, then bases (which
- * {@code UIEntryBaseAssembler} folds into {@code TEMPLATE_ONLY} placeholder entries in
- * {@link UIRegistry} as it parses), then the real, file-parsed entries, which
+ * {@code UIEntryBaseAssembler} folds into {@code TEMPLATE_ONLY} placeholder entries and returns,
+ * for {@link #loadUIEntryBases()} to register in {@link UIRegistry}), then the real, file-parsed
+ * entries, which
  * {@code UIEntryAssembler} merges into that same list before the finishing pass below runs. In C
  * the same order is set by the {@code pl[]} table in {@code init.c}, where "ui renderers" and
  * "ui entries" precede the player-property and object-property parsers that resolve their
@@ -116,17 +116,18 @@ public class UIDataLoader {
      * before {@link #loadUIEntries()}, whose records may name these bases as their {@code template:}. Corresponds
      * to the first half of C's {@code run_parse_ui_entry} ({@code ui-entry.c}), which parses
      * {@code ui_entry_base.txt} and then ORs {@code ENTRY_FLAG_TEMPLATE_ONLY} into every entry so far;
-     * in Java that flagging happens in {@code UIEntryBaseAssembler} as each record is parsed.
+     * in Java that flagging happens in {@code UIEntryBaseAssembler} as each record is parsed, and the
+     * assembler returns the flagged entries.
      * <p>
      * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the bases that did
-     * assemble stay in the registry regardless, per the partial-results contract. The catch is on
+     * assemble are registered regardless, per the partial-results contract. The catch is on
      * {@code Exception} and <em>rethrows</em>; a missing base here would resurface as an
      * unresolvable reference while loading the entries, so it is stopped at source.
      *
-     * <p>Nothing is registered from here: the returned {@code result} is only reported on, because
-     * {@code UIEntryBaseAssembler} has already stored the folded list in {@link UIRegistry}. No
-     * finishing pass runs after this file, as in C, where {@code finish_parse_ui_entry} runs once,
-     * after {@code ui_entry.txt}.
+     * <p>This method is what registers the bases: it stores the list {@code UIEntryBaseAssembler}
+     * returns with {@link UIRegistry#setUIEntries}, as {@link #loadUIEntries()} does for the entries,
+     * because the assembler itself no longer touches the registry. No finishing pass runs after this
+     * file, as in C, where {@code finish_parse_ui_entry} runs once, after {@code ui_entry.txt}.
      *
      * <p>Function loadUIEntryBases coded before 260916, commented in full on 261102.
      *
@@ -136,9 +137,11 @@ public class UIDataLoader {
         UIEntryBaseReader reader = new UIEntryBaseReader();
         String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "ui_entry_base.txt";
         try {
-            ParseResult<UIEntryBase> result = reader.parseWithResults(filename);
+            ParseResult<UIEntry> result = reader.parseWithResults(filename);
 
             ErrorParsing.reportAndCheck(filename, result, logger);
+
+            UIRegistry.setUIEntries(result.items());
         } catch (Exception e) {
             logger.error("Error while loading file {}", filename, e);
             throw e;

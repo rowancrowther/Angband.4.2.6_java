@@ -116,10 +116,10 @@ Concretely, `UIRegistry`, its loader (`middle/game/globals/loaders/UIDataLoader.
 (`backend/parser/UIEntry{,Base,Renderer}Reader.java`,
 `backend/parser/uientry{,base,renderer}/…Assembler.java`) all still sit in `middle`/`backend` purely because that's
 where they were ported to first, not because the core needs them — every one of them already names
-`frontend.entries.UIEntry`/`UIEntryBase`/`UIEntryRenderer`, and each crossing is individually listed as an accepted,
+`frontend.entries.UIEntry`/`UIEntryRenderer`, and each crossing is individually listed as an accepted,
 dated entry in `MIDDLE_BASELINE`/`BACKEND_BASELINE`
 (`BoundaryTest.java:184-231`). The domain classes have already made the move — `UIEntry`,
-`UIEntryBase`, `UIEntryRenderer`, `UIEntryIterator` all live under `frontend.entries` today. The registry and its
+`UIEntryRenderer`, `UIEntryIterator` all live under `frontend.entries` today. The registry and its
 loader/readers/assemblers are the piece left behind, and `Architecture_migration.md`
 had already parked it as an unstarted marker (`:676-679`) before this function surfaced it as a live blocker.
 
@@ -199,7 +199,7 @@ successfully:
 
 1. **Decide the package layout** — flat `frontend.ui.entry`, or sub-packages mirroring today's split
    (`frontend.ui.entry.reader`, `.assembler`, `.grammars.uientry` etc.)? `UIEntryCode` and
-   `UIEntryPredicate` already sit at the flat `frontend.ui.entry` level; `UIEntry`/`UIEntryBase`/
+   `UIEntryPredicate` already sit at the flat `frontend.ui.entry` level; `UIEntry`/
    `UIEntryRenderer`/`UIEntryIterator` sit one level up, in `frontend.entries`. Worth deciding whether the registry
    stack joins them there instead, so UI-entry data has one home rather than two neighbouring ones.
 2. **Decide where the five generic-plumbing types land** — `channel` (this section's proposal) or stay in `backend`/
@@ -255,7 +255,7 @@ Different in three ways from the plan's proposal, all reasonable, all Rowan's ca
   `ErrorParsing`, **and `ParseErrors`** (a sixth one, missed in the original plan of 5 — an ANTLR hard-error/listener
   helper distinct from `ErrorParsing`, used by 10+ other readers codebase-wide)
   — are in `channel/parser/`.
-- `frontend.entries` (`UIEntry`, `UIEntryBase`, `UIEntryRenderer`, `UIEntryIterator`) is untouched.
+- `frontend.entries` (`UIEntry`, `UIEntryRenderer`, `UIEntryIterator`) is untouched.
 
 ### `BoundaryTest`: 15 tests, 3 failing (was 4)
 

@@ -19,8 +19,8 @@ package uk.co.jackoftradesltd.frontend.inputfromuser;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
 import uk.co.jackoftradesltd.channel.UIChannel;
+import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
 import uk.co.jackoftradesltd.channel.enums.CoreLifecycleEvent;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.enums.UILifecycleEvent;
@@ -34,7 +34,6 @@ import uk.co.jackoftradesltd.frontend.events.BirthEvents;
 import uk.co.jackoftradesltd.frontend.events.MainEvents;
 import uk.co.jackoftradesltd.frontend.screen.grid.Screen;
 import uk.co.jackoftradesltd.frontend.screen.splash.SplashScreen;
-import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
 import uk.co.jackoftradesltd.frontend.ui.RedrawRouter;
 import uk.co.jackoftradesltd.frontend.ui.globals.UIDataLoader;
 import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
@@ -308,7 +307,7 @@ public class UILoop {
                                     writeInitString("Initializing UI Entry Bases...");
                                     UIDataLoader.loadUIEntryBases();         // Dependent on UIEntryRenderers
                                     writeInitString("Initializing UI Entries...");
-                                    UIDataLoader.loadUIEntries();            // Dependent on UIEntryBase & UIEntryRenderers
+                                    UIDataLoader.loadUIEntries();            // Dependent on the base entries & UIEntryRenderers
 
                                     List<UIEntrySpec> result = new ArrayList<>();
 

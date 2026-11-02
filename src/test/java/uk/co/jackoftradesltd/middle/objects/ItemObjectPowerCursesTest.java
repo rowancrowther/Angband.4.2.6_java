@@ -102,9 +102,9 @@ class ItemObjectPowerCursesTest {
     static void seedRegistries() throws Exception {
         savedRenderers = ItemFixture.setStatic(UIRegistry.class, "uiEntryRenderers",
                 new UIEntryRendererReader().parseWithResults("lib/gamedata/ui_entry_renderer.txt").items());
-        // Parsing the base file registers its entries in UIRegistry as a side effect of
-        // UIEntryBaseAssembler, which UIEntryReader below seeds from.
-        new UIEntryBaseReader().parseWithResults("lib/gamedata/ui_entry_base.txt");
+        // The base entries must be registered for UIEntryReader below to seed from.
+        UIRegistry.setUIEntries(
+                new UIEntryBaseReader().parseWithResults("lib/gamedata/ui_entry_base.txt").items());
         savedUiEntries = ItemFixture.setStatic(UIRegistry.class, "uiEntries",
                 new UIEntryReader().parseWithResults("lib/gamedata/ui_entry.txt").items());
         savedProperties = ItemFixture.setStatic(ObjectRegistry.class, "objectProperties",

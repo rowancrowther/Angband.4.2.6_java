@@ -76,24 +76,21 @@ class UIEntryAssemblerTest {
         List<UIEntryRenderer> renderers = new UIEntryRendererReader()
                 .parseWithResults("lib/gamedata/ui_entry_renderer.txt").items();
         setStatic("uiEntryRenderers", renderers);
-        new UIEntryBaseReader().parseWithResults("lib/gamedata/ui_entry_base.txt");
 
-        // UIEntryBaseReader runs the real UIEntryBaseAssembler as part of parsing, and that
-        // assembler's own job is to also populate UIRegistry's shared UIEntry list with one
-        // TEMPLATE_ONLY placeholder per base (UIEntryBaseAssembler.java:136) - a side effect this
-        // class does not want, since every test below assumes UIEntryAssembler.assemble() starts
-        // from an empty registry (UIEntryAssembler.java:108). Reset it so that seeding the bases
-        // does not leak placeholder entries into every test's result count. The placeholders are kept
-        // aside in templatePlaceholders: parse_entry_template looks a template up among all the
-        // entries parsed so far (UIEntryAssembler.java:317), so the template tests register them
-        // again, for their own duration, through withTemplatesRegistered.
-        templatePlaceholders = new ArrayList<>(UIRegistry.getUIEntries());
+        // The base reader returns one TEMPLATE_ONLY placeholder per base. The registry is left empty,
+        // since every test below assumes UIEntryAssembler.assemble() starts from an empty registry,
+        // so the placeholders do not leak into every test's result count. They are kept aside in
+        // templatePlaceholders: parse_entry_template looks a template up among all the entries
+        // parsed so far, so the template tests register them again, for their own duration,
+        // through withTemplatesRegistered.
+        templatePlaceholders = new ArrayList<>(
+                new UIEntryBaseReader().parseWithResults("lib/gamedata/ui_entry_base.txt").items());
         UIRegistry.setUIEntries(List.of());
     }
 
     /**
      * The TEMPLATE_ONLY placeholder {@code UIEntryBaseAssembler} makes for each base in
-     * {@code ui_entry_base.txt}, captured by {@link #seedRegistries()} before it empties the registry.
+     * {@code ui_entry_base.txt}, captured by {@link #seedRegistries()} while it leaves the registry empty.
      */
     private static List<UIEntry> templatePlaceholders;
 

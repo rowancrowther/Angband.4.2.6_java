@@ -21,12 +21,13 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
-import uk.co.jackoftradesltd.frontend.entries.UIEntryBase;
+import uk.co.jackoftradesltd.channel.utils.combiners.CombinerName;
+import uk.co.jackoftradesltd.frontend.entries.UIEntry;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
+import uk.co.jackoftradesltd.frontend.ui.entrybase.assembler.UIEntryBaseAssembler;
 import uk.co.jackoftradesltd.frontend.ui.entrybase.reader.UIEntryBaseReader;
 import uk.co.jackoftradesltd.frontend.ui.entryrenderer.reader.UIEntryRendererReader;
 import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
-import uk.co.jackoftradesltd.frontend.ui.entrybase.assembler.UIEntryBaseAssembler;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -37,10 +38,10 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * End-to-end tests for the migrated UIEntryBase pipeline: text file → ANTLR lexer/parser →
+ * End-to-end tests for the {@code ui_entry_base.txt} pipeline: text file → ANTLR lexer/parser →
  * {@link UIEntryBaseReader} →
- * {@link UIEntryBaseAssembler} → resolved
- * {@link UIEntryBase} domain objects, wrapped in a {@link ParseResult}.
+ * {@link UIEntryBaseAssembler} → {@code TEMPLATE_ONLY}
+ * {@link UIEntry} objects, wrapped in a {@link ParseResult}.
  *
  * <p>These drive real fixtures through the whole chain and exercise both error channels:
  * <ul>
@@ -88,19 +89,19 @@ class UIEntryBaseReaderTest {
 
     @Test
     void cleanLoadOfTheRealFileResolvesAllTemplates() throws IOException {
-        ParseResult<UIEntryBase> result = new UIEntryBaseReader().parseWithResults(REAL_FILE);
+        ParseResult<UIEntry> result = new UIEntryBaseReader().parseWithResults(REAL_FILE);
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(3, result.items().size());
 
-        UIEntryBase first = result.items().get(0);
+        UIEntry first = result.items().get(0);
         assertEquals("good_flag_ui_compact_0", first.getName());
-        assertTrue(first.toString().contains("combine=LOGICAL_OR"), first::toString);
-        assertTrue(first.toString().contains("char_screen1_flag_renderer"), first::toString);
+        assertEquals(CombinerName.LOGICAL_OR, first.getCombineType());
+        assertEquals("char_screen1_flag_renderer", first.getRenderer().getName());
 
-        UIEntryBase last = result.items().get(2);
+        UIEntry last = result.items().get(2);
         assertEquals("numeric_as_sign_ui_0", last.getName());
-        assertTrue(last.toString().contains("combine=ADD"), last::toString);
+        assertEquals(CombinerName.ADD, last.getCombineType());
     }
 
     // ---- soft errors (partial results survive) ----------------------------------------------
@@ -111,7 +112,7 @@ class UIEntryBaseReaderTest {
         String path = tempFile("bad-count.txt",
                 "record-count:5\n" + record("x", "char_screen1_flag_renderer", "LOGICAL_OR"));
 
-        ParseResult<UIEntryBase> result = new UIEntryBaseReader().parseWithResults(path);
+        ParseResult<UIEntry> result = new UIEntryBaseReader().parseWithResults(path);
 
         assertEquals(1, result.items().size());
         assertTrue(result.errors().stream()
@@ -124,7 +125,7 @@ class UIEntryBaseReaderTest {
         String path = tempFile("bad-renderer.txt",
                 "record-count:1\n" + record("x", "no_such_renderer", "LOGICAL_OR"));
 
-        ParseResult<UIEntryBase> result = new UIEntryBaseReader().parseWithResults(path);
+        ParseResult<UIEntry> result = new UIEntryBaseReader().parseWithResults(path);
 
         assertTrue(result.items().isEmpty());
         assertTrue(result.hasErrors());
@@ -139,7 +140,7 @@ class UIEntryBaseReaderTest {
         // No record-count directive -> the file rule can't match -> grammar error via ParseErrors.
         String path = tempFile("no-header.txt", record("x", "char_screen1_flag_renderer", "LOGICAL_OR"));
 
-        ParseResult<UIEntryBase> result = new UIEntryBaseReader().parseWithResults(path);
+        ParseResult<UIEntry> result = new UIEntryBaseReader().parseWithResults(path);
 
         assertTrue(result.items().isEmpty());
         assertTrue(result.hasErrors());
@@ -152,7 +153,7 @@ class UIEntryBaseReaderTest {
                 "record-count:1\nname:x\nrenderer:char_screen1_flag_renderer\ncombine:LOGICAL_OR\n"
                         + "category:CHAR_SCREEN1\nflags:TIMED_AS_AUX\n");
 
-        ParseResult<UIEntryBase> result = new UIEntryBaseReader().parseWithResults(path);
+        ParseResult<UIEntry> result = new UIEntryBaseReader().parseWithResults(path);
 
         assertTrue(result.items().isEmpty());
         assertTrue(result.hasErrors());
@@ -170,9 +171,9 @@ class UIEntryBaseReaderTest {
                 + record("bad_combine", "char_screen1_flag_renderer", "BOGUS")
                 + record("good_last", "char_screen1_numeric_as_sign_renderer", "ADD"));
 
-        ParseResult<UIEntryBase> result = new UIEntryBaseReader().parseWithResults(path);
+        ParseResult<UIEntry> result = new UIEntryBaseReader().parseWithResults(path);
 
-        List<UIEntryBase> items = result.items();
+        List<UIEntry> items = result.items();
         assertEquals(2, items.size(), items::toString);
         assertEquals("good_first", items.get(0).getName());
         assertEquals("good_last", items.get(1).getName());

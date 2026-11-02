@@ -252,9 +252,10 @@ class UIRegistryTest {
 
             UIRegistry.setUIEntryRenderers(
                     new UIEntryRendererReader().parseWithResults("lib/gamedata/ui_entry_renderer.txt").items());
-            // Parsing the base file stores its records in UIRegistry as a side effect of
-            // UIEntryBaseAssembler; UIEntryReader then seeds from them, as the game's load order does.
-            new UIEntryBaseReader().parseWithResults("lib/gamedata/ui_entry_base.txt");
+            // Register the base entries first; UIEntryReader then seeds from them, as the game's
+            // load order does.
+            UIRegistry.setUIEntries(
+                    new UIEntryBaseReader().parseWithResults("lib/gamedata/ui_entry_base.txt").items());
             UIRegistry.setUIEntries(new UIEntryReader().parseWithResults("lib/gamedata/ui_entry.txt").items());
         }
 

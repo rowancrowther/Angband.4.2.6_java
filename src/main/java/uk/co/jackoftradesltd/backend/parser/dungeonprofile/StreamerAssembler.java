@@ -51,7 +51,7 @@ import java.util.List;
  */
 public class StreamerAssembler implements Assembler<DungeonProfileParseRecord.Streamer, StreamerProfile> {
     /**
-     * Receives the fatal message for a record list that is {@code null} or not exactly one long,
+     * Receives the fatal message for a record list that is not exactly one long,
      * before the {@link DataFileParseException} is thrown. The number errors are logged by
      * {@link ParseUtils} under its own name. C has no counterpart: it reports through
      * {@code print_error} in {@code datafile.c} and quits.
@@ -74,10 +74,16 @@ public class StreamerAssembler implements Assembler<DungeonProfileParseRecord.St
      * reaches it.
      *
      * <p>Two failures stop the load. A field with no leading digit throws, as C's
-     * {@code PARSE_ERROR_NOT_NUMBER} quits. A record list that is {@code null} or not exactly one
-     * long throws too; the nearest C case is a {@code streamer:} line before any {@code name:},
-     * which gives {@code PARSE_ERROR_MISSING_RECORD_HEADER}. A repeated {@code streamer:} line,
-     * where C keeps the last, never gets here, because the grammar has already kept only one.
+     * {@code PARSE_ERROR_NOT_NUMBER} quits. A record list that is not exactly one long throws
+     * too; the nearest C case is a {@code streamer:} line before any {@code name:}, which gives
+     * {@code PARSE_ERROR_MISSING_RECORD_HEADER}. A repeated {@code streamer:} line, where C keeps
+     * the last, never gets here, because the grammar has already kept only one.
+     *
+     * <p>A {@code null} record list is a caller bug, not a data error: {@code records} is
+     * {@code @NotNull}, so it is refused before this body runs (an
+     * {@link IllegalArgumentException} where the IDE instruments {@code @NotNull}, a
+     * {@link NullPointerException} at {@code records.size()} where it does not), and it is never
+     * a {@link DataFileParseException}.
      *
      * <p>Accepted deviation, from {@link ParseUtils}: a figure too big for an {@code int} is
      * clamped, where C keeps the low 32 bits, so {@code 99999999999} is 2147483647 here and
@@ -90,19 +96,19 @@ public class StreamerAssembler implements Assembler<DungeonProfileParseRecord.St
      *                 throws
      * @param filename the file being read, for the error messages
      * @return the assembled streamer profile; never {@code null}
-     * @throws DataFileParseException if {@code records} is {@code null} or not exactly one long, or
-     *                                a field has no leading digit
+     * @throws DataFileParseException if {@code records} is not exactly one long, or a field has no
+     *                                leading digit
      */
     @Override
     public StreamerProfile assemble(@NotNull List<DungeonProfileParseRecord.Streamer> records, @NotNull List<String> errors,
                                     String filename) {
-        if (records == null || records.size() != 1) {
+        if (records.size() != 1) {
             String msg = "Streamer profile in file: " + filename +
                     " must not be null and must have exactly one record";
             logger.fatal(msg);
             throw new DataFileParseException(msg);
         }
-        DungeonProfileParseRecord.Streamer streamer = records.get(0);
+        DungeonProfileParseRecord.Streamer streamer = records.getFirst();
         int line = streamer.lineNo();
         int density = ParseUtils.parseIntString("Streamer profile", streamer.density(), line, filename, "density");
         int range = ParseUtils.parseIntString("Streamer profile", streamer.range(), line, filename, "range");

@@ -177,11 +177,6 @@ class TunnelAssemblerTest {
     }
 
     @Test
-    void aNullRecordListStopsTheLoad() {
-        assertThrows(DataFileParseException.class, () -> assemble(null));
-    }
-
-    @Test
     void anEmptyRecordListStopsTheLoad() {
         // C embeds one tun per profile; there is no "no tunnel" record to assemble
         assertThrows(DataFileParseException.class, () -> assemble(List.of()));

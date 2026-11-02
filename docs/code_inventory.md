@@ -3267,7 +3267,7 @@
 
 | Function | Ported (coded) | Javadoc |
 |---|---|---|
-| ctor `UIEntry(String, UIEntryBase, ElementEnum, StatElemType, UIEntryRenderer, CombinerName, List<UIEntryCategory>, int, String, Flag<ChannelEntryFlag>, String, String, String, String)` | before 260916 | ✔ |
+| ctor `UIEntry(String, UIEntry, ElementEnum, StatElemType, UIEntryRenderer, CombinerName, List<UIEntryCategory>, int, String, Flag<ChannelEntryFlag>, String, String, String, String)` | before 260916 | ✔ |
 | `getName()` | before 260916 | ✔ |
 | `getEntryFlag()` | before 260916 | ✔ |
 | `uiEntryHasCategory(String)` | before 260916 | ✔ |
@@ -3304,28 +3304,9 @@
 | `copy()` | before 260916 | ✔ |
 | `setCategores(List<UIEntryCategory>)` | before 260916 | ✔ |
 | `getTemplate()` | before 260916 | ✔ |
-| `setTemplate(UIEntryBase)` | before 260916 | ✔ |
+| `setTemplate(UIEntry)` | before 260916 | ✔ |
 | `getPriorityString()` | before 260916 | ✔ |
 | `setPriorityString(String)` | before 260916 | ✔ |
-
-
-##### `UIEntryBase.java`
-
-**Responsible for:** A reusable template for UIEntry definitions: the shared defaults (renderer, combiner, categories, flags) that concrete entries inherit from.
-
-**class `UIEntryBase`** — class Javadoc: ✔ · type stamp: before 260916
-
-- Fields (6/6 documented): ✔ `logger`, `name`, `renderer`, `combine`, `categories`, `flags`
-
-| Function | Ported (coded) | Javadoc |
-|---|---|---|
-| ctor `UIEntryBase(String, UIEntryRenderer, CombinerName, List<String>, Flag<ChannelEntryFlag>, String)` | before 260916 | ✔ |
-| `getName()` | before 260916 | ✔ |
-| `toString()` | before 260916 | ✔ |
-| `getRenderer()` | before 260916 | ✔ |
-| `getCombine()` | before 260916 | ✔ |
-| `getCategories()` | before 260916 | ✔ |
-| `getFlags()` | — | ✔ |
 
 
 ##### `UIEntryCategory.java`
@@ -4304,7 +4285,7 @@
 
 ##### `UIEntryBaseAssembler.java`
 
-**Responsible for:** Second stage of the ui_entry_base.txt pipeline: turns the raw string UIEntryBaseParseRecords emitted by the grammar into fully resolved UIEntryBase template objects.
+**Responsible for:** Second stage of the ui_entry_base.txt pipeline: turns the raw string UIEntryBaseParseRecords emitted by the grammar into TEMPLATE_ONLY UIEntry objects.
 
 **class `UIEntryBaseAssembler`** — class Javadoc: ✔ · type stamp: before 260920
 
@@ -4312,7 +4293,7 @@
 
 | Function | Ported (coded) | Javadoc |
 |---|---|---|
-| `assemble(List<UIEntryBaseParseRecord>, List<String>)` | before 260920 | ✔ |
+| `assemble(List<UIEntryBaseParseRecord>, List<String>, String)` | before 260920 | ✔ |
 | `parseEachEntry(List<UIEntry>, UIEntry)` | before 260920 | ✔ |
 
 
@@ -4329,7 +4310,7 @@
 
 ##### `UIEntryBaseReader.java`
 
-**Responsible for:** Loads the relevant data-file entries into UIEntryBase objects by driving the matching ANTLR-generated lexer/parser.
+**Responsible for:** Loads ui_entry_base.txt into TEMPLATE_ONLY UIEntry objects by driving the matching ANTLR-generated lexer/parser.
 
 **class `UIEntryBaseReader`** — class Javadoc: ✔ · type stamp: —
 
@@ -4403,22 +4384,19 @@
 
 ##### `UIRegistry.java`
 
-**Responsible for:** Runtime holder for the UI-entry game data — the entry renderers, entry bases, and entries that drive the character-screen and property displays — plus the name lookups used to resolve them.
+**Responsible for:** Runtime holder for the UI-entry game data — the entry renderers and the entries (ui_entry_base.txt records included) that drive the character-screen and property displays — plus the name lookups used to resolve them.
 
 **class `UIRegistry`** — class Javadoc: ✔ · type stamp: before 260924
 
-- Fields (9/9 documented): ✔ `MAX_ENTRY_LABEL`, `MAX_SHORTENED`, `logger`, `uiEntryRenderers`, `uiEntryBases`, `uiEntries`, `statNames`, `statReducedNames`, `MAX_PALETTE`
+- Fields (8/8 documented): ✔ `MAX_ENTRY_LABEL`, `MAX_SHORTENED`, `logger`, `uiEntryRenderers`, `uiEntries`, `statNames`, `statReducedNames`, `MAX_PALETTE`
 
 | Function | Ported (coded) | Javadoc |
 |---|---|---|
 | `getUIEntryRenderers()` | before 260924 | ✔ |
 | `setUIEntryRenderers(List<UIEntryRenderer>)` | before 260924 | ✔ |
-| `getUIEntryBases()` | before 260924 | ✔ |
-| `setUIEntryBases(List<UIEntryBase>)` | before 260924 | ✔ |
 | `getUIEntries()` | before 260924 | ✔ |
 | `setUIEntries(List<UIEntry>)` | before 260924 | ✔ |
 | `getUIEntryRenderer(String, List<String>)` | before 260924 | ✔ |
-| `getUIEntryBase(String)` | before 260924 | ✔ |
 | `getUIEntry(String)` | before 260924 | ✔ |
 
 

@@ -21,28 +21,31 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
 import uk.co.jackoftradesltd.channel.parser.ParseErrors;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.channel.parser.Reader;
+import uk.co.jackoftradesltd.frontend.entries.UIEntry;
 import uk.co.jackoftradesltd.frontend.ui.entrybase.antlr4.uientrybase.UIEntryBaseGrammar;
 import uk.co.jackoftradesltd.frontend.ui.entrybase.antlr4.uientrybase.UIEntryBaseLexer;
 import uk.co.jackoftradesltd.frontend.ui.entrybase.assembler.UIEntryBaseAssembler;
 import uk.co.jackoftradesltd.frontend.ui.entrybase.assembler.UIEntryBaseParseRecord;
-import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
-import uk.co.jackoftradesltd.channel.parser.ParseResult;
-import uk.co.jackoftradesltd.channel.parser.Reader;
-import uk.co.jackoftradesltd.frontend.entries.UIEntryBase;
 
 import java.io.IOException;
 import java.util.List;
 
 /**
- * Loads the relevant data-file entries into {@link UIEntryBase} objects by driving the
- * matching ANTLR-generated lexer/parser. The thin hand-written bridge between
- * the generated grammar code and the game, implementing the shared
- * {@link Reader} contract (Java port of the equivalent C data-file parser).
+ * Loads {@code ui_entry_base.txt} into {@link UIEntry} objects by driving the
+ * matching ANTLR-generated lexer/parser. Each base record becomes a plain {@link UIEntry}
+ * flagged {@code ENTRY_FLAG_TEMPLATE_ONLY}, as in C, where bases and ordinary entries share one
+ * entry list. The thin hand-written bridge between the generated grammar code and the game,
+ * implementing the shared {@link Reader} contract (Java port of the equivalent C data-file
+ * parser). The reader does not register what it returns; {@code UIDataLoader.loadUIEntryBases()}
+ * does that.
  *
  * @author Rowan Crowther
  */
-public class UIEntryBaseReader implements Reader<UIEntryBase> {
+public class UIEntryBaseReader implements Reader<UIEntry> {
     /**
      * Logger used to report file-loading failures.
      */
@@ -58,7 +61,7 @@ public class UIEntryBaseReader implements Reader<UIEntryBase> {
     @NotNull
     @Contract("_ -> !null")
     @Override
-    public List<UIEntryBase> parse(@NotNull String filename) throws IOException {
+    public List<UIEntry> parse(@NotNull String filename) throws IOException {
         return parseWithResults(filename).items();
     }
 
@@ -70,12 +73,12 @@ public class UIEntryBaseReader implements Reader<UIEntryBase> {
      * variant directly.
      *
      * @param filename the name of the file to parse
-     * @return a {@link ParseResult} carrying the assembled {@link UIEntryBase}
-     * templates and any non-fatal errors collected along the way
+     * @return a {@link ParseResult} carrying the assembled {@code TEMPLATE_ONLY}
+     * {@link UIEntry} objects, one per base record, and any non-fatal errors collected along the way
      * @throws IOException if the file cannot be found or its {@code CharStream}
      *                     cannot be created
      */
-    public ParseResult<UIEntryBase> parseWithResults(@NotNull String filename) throws IOException {
+    public ParseResult<UIEntry> parseWithResults(@NotNull String filename) throws IOException {
         return GrammarDriver.run(filename,
                 UIEntryBaseLexer::new,
                 UIEntryBaseGrammar::new,

@@ -23,6 +23,7 @@ import uk.co.jackoftradesltd.channel.enums.StatElemType;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.frontend.entries.UIEntry;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryCategory;
+import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
 
 import java.lang.reflect.Method;
 import java.util.List;
@@ -34,12 +35,11 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@code finalPass} and {@code fillOutShortened} - checked against the C
  * original's whole-file finishing loop ({@code [C] ui-entry.c:2283-2332}).
  *
- * <p>The base-to-placeholder-entry conversion this class used to pin (C's
- * {@code run_parse_ui_entry} post-base-file {@code ENTRY_FLAG_TEMPLATE_ONLY}
- * pass, {@code [C] ui-entry.c:2263-2278}) has since moved onto
- * {@code UIEntryBaseAssembler.parseEachEntry}, which is what
- * {@code UIEntryBaseAssemblerTest} exercises now; there is no
- * {@code UIDataLoader.portUIEntryBasesToUIEntries()} left to test here.
+ * <p>The base-to-placeholder-entry conversion (C's {@code run_parse_ui_entry} post-base-file
+ * {@code ENTRY_FLAG_TEMPLATE_ONLY} pass, {@code [C] ui-entry.c:2263-2278}) lives in
+ * {@code UIEntryBaseAssembler.parseEachEntry}, which {@code UIEntryBaseAssemblerTest} exercises.
+ * The one thing pinned here is that {@link UIDataLoader#loadUIEntryBases()} registers what that
+ * assembler returns, since the assembler no longer does.
  *
  * <p>{@code finalPass} and {@code fillOutShortened} are private and static, so
  * each test reaches them through reflection rather than the public
@@ -60,6 +60,39 @@ class UIDataLoaderTest {
         Method method = UIDataLoader.class.getDeclaredMethod("fillOutShortened", UIEntry.class);
         method.setAccessible(true);
         return method;
+    }
+
+    /**
+     * {@code loadUIEntryBases} is the only thing that registers the base file's entries now: the
+     * three records of the shipped {@code ui_entry_base.txt} must end up in {@link UIRegistry},
+     * each flagged {@code TEMPLATE_ONLY}.
+     */
+    @Test
+    void loadUIEntryBasesRegistersTheBaseEntries() throws Exception {
+        List<UIEntryRenderer> savedRenderers = safely(UIRegistry::getUIEntryRenderers);
+        List<UIEntry> savedEntries = safely(UIRegistry::getUIEntries);
+        try {
+            UIDataLoader.loadUIEntryRenderers();
+            UIRegistry.setUIEntries(null);
+
+            UIDataLoader.loadUIEntryBases();
+
+            assertEquals(3, UIRegistry.getUIEntries().size());
+            UIEntry first = UIRegistry.getUIEntry("good_flag_ui_compact_0");
+            assertNotNull(first, "the first base record should be registered");
+            assertTrue(first.entryFlagHas(ChannelEntryFlag.ENTRY_FLAG_TEMPLATE_ONLY));
+        } finally {
+            UIRegistry.setUIEntryRenderers(savedRenderers);
+            UIRegistry.setUIEntries(savedEntries);
+        }
+    }
+
+    private static <T> List<T> safely(java.util.function.Supplier<List<T>> getter) {
+        try {
+            return getter.get();
+        } catch (NullPointerException unloaded) {
+            return null;
+        }
     }
 
     @SuppressWarnings("unchecked")

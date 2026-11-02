@@ -18,12 +18,13 @@
 package uk.co.jackoftradesltd.frontend.entries;
 
 import org.junit.jupiter.api.Test;
-import uk.co.jackoftradesltd.channel.enums.StatElemType;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
-import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.channel.enums.ChannelEntryFlag;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
+import uk.co.jackoftradesltd.channel.enums.StatElemType;
+import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.channel.utils.combiners.CombinerName;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -141,5 +142,342 @@ class UIEntryTest {
     void fromValueReturnsNullForAnUnrecognisedName() {
         // Matches parse_entry_parameter (ui-entry.c) falling through to PARSE_ERROR_INVALID_VALUE.
         assertNull(StatElemType.fromValue("bogus"));
+    }
+
+    // ---- uiEntryHasCategory: strcmp semantics -------------------------------------------------
+
+    @Test
+    void categoryMatchIsCaseSensitiveAsStrcmpIs() {
+        // ui_entry_search_categories compares with strcmp (ui-entry.c): "char_screen1" is not
+        // "CHAR_SCREEN1".
+        UIEntry e = entry(List.of(new UIEntryCategory("CHAR_SCREEN1", 0, false)),
+                new Flag<>(ChannelEntryFlag.class));
+
+        assertTrue(e.uiEntryHasCategory("char_screen1").isEmpty());
+    }
+
+    @Test
+    void categoryMatchNeedsTheWholeName() {
+        // strcmp of a prefix or an extension of the stored name is nonzero.
+        UIEntry e = entry(List.of(new UIEntryCategory("CHAR_SCREEN1", 0, false)),
+                new Flag<>(ChannelEntryFlag.class));
+
+        assertTrue(e.uiEntryHasCategory("CHAR_SCREEN").isEmpty());
+        assertTrue(e.uiEntryHasCategory("CHAR_SCREEN12").isEmpty());
+        assertTrue(e.uiEntryHasCategory("").isEmpty());
+    }
+
+    @Test
+    void categoryMatchFindsTheMiddleAndLastOfSeveral() {
+        // Names in strcmp order, as insert_embryo_category keeps them; C's binary search finds each.
+        UIEntry e = entry(List.of(
+                        new UIEntryCategory("A_CAT", 0, false),
+                        new UIEntryCategory("B_CAT", 0, false),
+                        new UIEntryCategory("C_CAT", 0, false),
+                        new UIEntryCategory("D_CAT", 0, false)),
+                new Flag<>(ChannelEntryFlag.class));
+
+        assertEquals(Optional.of(0), e.uiEntryHasCategory("A_CAT"));
+        assertEquals(Optional.of(1), e.uiEntryHasCategory("B_CAT"));
+        assertEquals(Optional.of(2), e.uiEntryHasCategory("C_CAT"));
+        assertEquals(Optional.of(3), e.uiEntryHasCategory("D_CAT"));
+        assertTrue(e.uiEntryHasCategory("AA_CAT").isEmpty());
+        assertTrue(e.uiEntryHasCategory("E_CAT").isEmpty());
+    }
+
+    // ---- labels: shortened_labels[] slots ------------------------------------------------------
+
+    @Test
+    void constructorSeedsLabelAndTheTwoShortenedSlotsC() {
+        // label2: fills shortened_labels[1], label5: fills shortened_labels[4] (parse_entry_shortened_label).
+        UIEntry e = entry(List.of(), new Flag<>(ChannelEntryFlag.class));
+
+        assertEquals("Label", e.getLabel());
+        assertEquals("L2", e.getLabel2());
+        assertEquals("Lbl5", e.getLabel5());
+        assertEquals("L2", e.getShortenedLabel(1));
+        assertEquals("Lbl5", e.getShortenedLabel(4));
+    }
+
+    @Test
+    void unseededShortenedSlotsAreUnset() {
+        // nshortened[i] == 0 for every slot no label directive filled.
+        UIEntry e = entry(List.of(), new Flag<>(ChannelEntryFlag.class));
+
+        for (int index : new int[]{0, 2, 3, 5, 6, 7, 8, 9}) {
+            assertNull(e.getShortenedLabel(index), "slot " + index);
+        }
+    }
+
+    @Test
+    void labelSettersWriteTheSameSlotsTheGettersRead() {
+        UIEntry e = entry(List.of(), new Flag<>(ChannelEntryFlag.class));
+
+        e.setLabel("Other");
+        e.setLabel2("O2");
+        e.setLabel5("Oth5");
+        e.setShortenedLabel(7, "Other_7");
+
+        assertEquals("Other", e.getLabel());
+        assertEquals("O2", e.getShortenedLabel(1));
+        assertEquals("Oth5", e.getShortenedLabel(4));
+        assertEquals("Other_7", e.getShortenedLabel(7));
+        assertEquals("O2", e.getLabel2());
+        assertEquals("Oth5", e.getLabel5());
+    }
+
+    @Test
+    void settingOneShortenedSlotLeavesTheOthersAlone() {
+        UIEntry e = entry(List.of(), new Flag<>(ChannelEntryFlag.class));
+
+        e.setShortenedLabel(2, "Lab");
+
+        assertEquals("Lab", e.getShortenedLabel(2));
+        assertEquals("L2", e.getLabel2());
+        assertEquals("Lbl5", e.getLabel5());
+        assertNull(e.getShortenedLabel(3));
+    }
+
+    // ---- priority ------------------------------------------------------------------------------
+
+    @Test
+    void priorityAccessorsAreSynonymsForOneField() {
+        UIEntry e = entry(List.of(), new Flag<>(ChannelEntryFlag.class));
+
+        assertEquals(5, e.getPriorityNum());
+        assertEquals(5, e.getDefaultPriority());
+
+        e.setDefaultPriority(-3);
+        assertEquals(-3, e.getPriorityNum());
+        assertEquals(-3, e.getDefaultPriority());
+
+        e.setPriorityNum(17);
+        assertEquals(17, e.getPriorityNum());
+        assertEquals(17, e.getDefaultPriority());
+    }
+
+    @Test
+    void settingThePriorityLeavesTheSchemeTextAlone() {
+        UIEntry e = new UIEntry("e", null, ElementEnum.ELEM_NONE, StatElemType.NONE, null, CombinerName.ADD,
+                List.of(), 4, "index", new Flag<>(ChannelEntryFlag.class), "d", "L", "L5", "L2");
+
+        e.setPriorityNum(9);
+
+        assertEquals("index", e.getPriorityString());
+        e.setPriorityString("negative_index");
+        assertEquals("negative_index", e.getPriorityString());
+        assertEquals(9, e.getPriorityNum());
+    }
+
+    // ---- setParamIndex: C's param_index -------------------------------------------------------
+
+    @Test
+    void setParamIndexOnAStatEntryStoresTheIndexAndLeavesTheElementAlone() {
+        UIEntry e = new UIEntry("e", null, ElementEnum.ELEM_NONE, StatElemType.STAT, null, CombinerName.ADD,
+                List.of(), 0, "", new Flag<>(ChannelEntryFlag.class), "d", "L", "L5", "L2");
+
+        e.setParamIndex(3);
+
+        assertEquals(3, e.getStatParameter());
+        assertEquals(ElementEnum.ELEM_NONE, e.getParameter());
+    }
+
+    @Test
+    void setParamIndexOnAnElementEntryFollowsCsElementOrder() {
+        // list-elements.h: ACID is index 0, ELEC 1, ... ARROW 24 (25 elements).
+        UIEntry e = entry(List.of(), new Flag<>(ChannelEntryFlag.class));
+
+        e.setParamIndex(0);
+        assertEquals(ElementEnum.ELEM_ACID, e.getParameter());
+        e.setParamIndex(1);
+        assertEquals(ElementEnum.ELEM_ELEC, e.getParameter());
+        e.setParamIndex(4);
+        assertEquals(ElementEnum.ELEM_POIS, e.getParameter());
+        e.setParamIndex(13);
+        assertEquals(ElementEnum.ELEM_WATER, e.getParameter());
+        e.setParamIndex(23);
+        assertEquals(ElementEnum.ELEM_HOLY_ORB, e.getParameter());
+        e.setParamIndex(24);
+        assertEquals(ElementEnum.ELEM_ARROW, e.getParameter());
+    }
+
+    @Test
+    void setParamIndexOnAnElementEntryLeavesTheStatIndexAlone() {
+        UIEntry e = entry(List.of(), new Flag<>(ChannelEntryFlag.class));
+
+        e.setParamIndex(2);
+
+        assertEquals(-1, e.getStatParameter());
+        assertEquals(ElementEnum.ELEM_FIRE, e.getParameter());
+    }
+
+    @Test
+    void setParamIndexOnAnUnparameterizedEntryGivesCsMinusOne() {
+        // hatch_embryo: an unparameterized entry gets param_index = -1.
+        UIEntry e = new UIEntry("e", null, ElementEnum.ELEM_ACID, StatElemType.NONE, null, CombinerName.ADD,
+                List.of(), 0, "", new Flag<>(ChannelEntryFlag.class), "d", "L", "L5", "L2");
+        e.setStatParameter(6);
+
+        e.setParamIndex(5);
+
+        assertEquals(-1, e.getStatParameter());
+        assertEquals(ElementEnum.ELEM_NONE, e.getParameter());
+    }
+
+    @Test
+    void aFreshEntryHasNoStatIndex() {
+        assertEquals(-1, entry(List.of(), new Flag<>(ChannelEntryFlag.class)).getStatParameter());
+    }
+
+    // ---- flags ---------------------------------------------------------------------------------
+
+    @Test
+    void setEntryFlagsCopiesTheCallersSet() {
+        // C copies flags by value (entry->flags = ...), so later changes to the source must not show.
+        UIEntry e = entry(List.of(), new Flag<>(ChannelEntryFlag.class));
+        Flag<ChannelEntryFlag> source = new Flag<>(ChannelEntryFlag.class, ChannelEntryFlag.ENTRY_FLAG_TIMED_AS_AUX);
+
+        e.setEntryFlags(source);
+        source.on(ChannelEntryFlag.ENTRY_FLAG_TEMPLATE_ONLY);
+        source.off(ChannelEntryFlag.ENTRY_FLAG_TIMED_AS_AUX);
+
+        assertTrue(e.entryFlagHas(ChannelEntryFlag.ENTRY_FLAG_TIMED_AS_AUX));
+        assertFalse(e.entryFlagHas(ChannelEntryFlag.ENTRY_FLAG_TEMPLATE_ONLY));
+    }
+
+    @Test
+    void setEntryFlagsReplacesRatherThanMerges() {
+        UIEntry e = entry(List.of(), new Flag<>(ChannelEntryFlag.class, ChannelEntryFlag.ENTRY_FLAG_TEMPLATE_ONLY));
+
+        e.setEntryFlags(new Flag<>(ChannelEntryFlag.class, ChannelEntryFlag.ENTRY_FLAG_TIMED_AS_AUX));
+
+        assertTrue(e.entryFlagHas(ChannelEntryFlag.ENTRY_FLAG_TIMED_AS_AUX));
+        assertFalse(e.entryFlagHas(ChannelEntryFlag.ENTRY_FLAG_TEMPLATE_ONLY));
+    }
+
+    @Test
+    void getEntryFlagViewReflectsTheEntrysFlags() {
+        UIEntry e = entry(List.of(), new Flag<>(ChannelEntryFlag.class, ChannelEntryFlag.ENTRY_FLAG_TIMED_AS_AUX));
+
+        assertTrue(e.getEntryFlag().has(ChannelEntryFlag.ENTRY_FLAG_TIMED_AS_AUX));
+        assertFalse(e.getEntryFlag().has(ChannelEntryFlag.ENTRY_FLAG_TEMPLATE_ONLY));
+    }
+
+    // ---- categories ----------------------------------------------------------------------------
+
+    @Test
+    void getNCategoryIsTheCategoryCount() {
+        // n_category in struct ui_entry.
+        assertEquals(0, entry(List.of(), new Flag<>(ChannelEntryFlag.class)).getNCategory());
+        assertEquals(2, entry(List.of(
+                        new UIEntryCategory("A", 0, false),
+                        new UIEntryCategory("B", 0, false)),
+                new Flag<>(ChannelEntryFlag.class)).getNCategory());
+    }
+
+    @Test
+    void setCategoresReplacesTheList() {
+        UIEntry e = entry(List.of(new UIEntryCategory("A", 0, false)), new Flag<>(ChannelEntryFlag.class));
+
+        e.setCategores(List.of(new UIEntryCategory("B", 0, false), new UIEntryCategory("C", 0, false)));
+
+        assertEquals(2, e.getNCategory());
+        assertTrue(e.uiEntryHasCategory("A").isEmpty());
+        assertEquals(Optional.of(1), e.uiEntryHasCategory("C"));
+    }
+
+    // ---- copy ----------------------------------------------------------------------------------
+
+    @Test
+    void copyCarriesEveryScalarField() {
+        // hatch_embryo gives each expanded entry the embryo's renderer, combiner, priority, flags
+        // and labels.
+        UIEntry template = entry(List.of(), new Flag<>(ChannelEntryFlag.class));
+        UIEntry original = new UIEntry("orig", template, ElementEnum.ELEM_COLD, StatElemType.ELEMENT, null,
+                CombinerName.ADD, new ArrayList<>(List.of(new UIEntryCategory("CAT", 7, true))), 12, "index",
+                new Flag<>(ChannelEntryFlag.class, ChannelEntryFlag.ENTRY_FLAG_TIMED_AS_AUX),
+                "desc", "Full label", "Lbl5", "L2");
+        original.setStatParameter(4);
+
+        UIEntry copy = original.copy();
+
+        assertNotSame(original, copy);
+        assertEquals("orig", copy.getName());
+        assertSame(template, copy.getTemplate());
+        assertEquals(ElementEnum.ELEM_COLD, copy.getParameter());
+        assertEquals(StatElemType.ELEMENT, copy.getStatOrElement());
+        assertEquals(4, copy.getStatParameter());
+        assertEquals(CombinerName.ADD, copy.getCombineType());
+        assertEquals(12, copy.getPriorityNum());
+        assertEquals("index", copy.getPriorityString());
+        assertEquals("Full label", copy.getLabel());
+        assertEquals("L2", copy.getLabel2());
+        assertEquals("Lbl5", copy.getLabel5());
+        assertTrue(copy.entryFlagHas(ChannelEntryFlag.ENTRY_FLAG_TIMED_AS_AUX));
+        assertEquals(1, copy.getNCategory());
+        assertEquals("CAT", copy.getCategories().get(0).getName());
+        assertEquals(7, copy.getCategories().get(0).getPriority());
+        assertTrue(copy.getCategories().get(0).isPrioritySet());
+    }
+
+    @Test
+    void copyCarriesAllTenShortenedSlots() {
+        // copy_shortened_labels copies all MAX_SHORTENED (10) slots.
+        UIEntry original = entry(List.of(), new Flag<>(ChannelEntryFlag.class));
+        for (int index = 0; index < 10; index++) {
+            original.setShortenedLabel(index, "s" + index);
+        }
+
+        UIEntry copy = original.copy();
+
+        for (int index = 0; index < 10; index++) {
+            assertEquals("s" + index, copy.getShortenedLabel(index), "slot " + index);
+        }
+    }
+
+    @Test
+    void copyHasItsOwnCategoryList() {
+        UIEntry original = entry(new ArrayList<>(List.of(new UIEntryCategory("CAT", 1, false))),
+                new Flag<>(ChannelEntryFlag.class));
+
+        UIEntry copy = original.copy();
+        copy.getCategories().get(0).setPriority(99);
+        copy.getCategories().add(new UIEntryCategory("EXTRA", 0, false));
+
+        assertEquals(1, original.getNCategory());
+        assertEquals(1, original.getCategories().get(0).getPriority());
+        assertEquals(2, copy.getNCategory());
+    }
+
+    @Test
+    void copyHasItsOwnFlagsAndLabels() {
+        UIEntry original = entry(List.of(), new Flag<>(ChannelEntryFlag.class, ChannelEntryFlag.ENTRY_FLAG_TIMED_AS_AUX));
+
+        UIEntry copy = original.copy();
+        copy.setEntryFlags(new Flag<>(ChannelEntryFlag.class, ChannelEntryFlag.ENTRY_FLAG_TEMPLATE_ONLY));
+        copy.setLabel("Changed");
+        copy.setLabel2("C2");
+        copy.setName("changed<NAME>");
+        copy.setPriorityNum(-1);
+
+        assertTrue(original.entryFlagHas(ChannelEntryFlag.ENTRY_FLAG_TIMED_AS_AUX));
+        assertFalse(original.entryFlagHas(ChannelEntryFlag.ENTRY_FLAG_TEMPLATE_ONLY));
+        assertEquals("Label", original.getLabel());
+        assertEquals("L2", original.getLabel2());
+        assertEquals("test_entry", original.getName());
+        assertEquals(5, original.getPriorityNum());
+    }
+
+    @Test
+    void copyOfAnUnparameterizedEntryKeepsMinusOneAndNone() {
+        UIEntry original = new UIEntry("e", null, ElementEnum.ELEM_NONE, StatElemType.NONE, null, CombinerName.ADD,
+                List.of(), 0, "", new Flag<>(ChannelEntryFlag.class), "d", "L", "L5", "L2");
+
+        UIEntry copy = original.copy();
+
+        assertEquals(StatElemType.NONE, copy.getStatOrElement());
+        assertEquals(-1, copy.getStatParameter());
+        assertEquals(ElementEnum.ELEM_NONE, copy.getParameter());
+        assertNull(copy.getTemplate());
     }
 }

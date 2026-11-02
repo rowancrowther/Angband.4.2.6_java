@@ -20,9 +20,9 @@ package uk.co.jackoftradesltd.backend.parser.history;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
-import uk.co.jackoftradesltd.backend.parser.ParseUtils;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
+import uk.co.jackoftradesltd.channel.parser.ParseUtils;
 import uk.co.jackoftradesltd.middle.player.PlayerHistoryChart;
 import uk.co.jackoftradesltd.middle.player.PlayerHistoryEntry;
 

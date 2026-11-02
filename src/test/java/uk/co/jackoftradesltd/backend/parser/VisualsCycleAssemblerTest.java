@@ -20,10 +20,10 @@ package uk.co.jackoftradesltd.backend.parser;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.backend.parser.visuals.VisualsCycleAssembler;
 import uk.co.jackoftradesltd.backend.parser.visuals.VisualsCycleParseRecord;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.frontend.colour.ColourCycle;
 import uk.co.jackoftradesltd.frontend.colour.VisualsCycler;
 

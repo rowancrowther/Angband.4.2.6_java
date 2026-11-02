@@ -162,10 +162,9 @@ class UIEntryGrammarTest {
 
         assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
         UIEntryParseRecord rec = ctx.entries.get(0);
-        // The <STR> tag is captured in nameTag; the name keeps the full tagged form so that
+        // The <STR> tag stays in the name: the name keeps the full tagged form so that
         // bindui look-ups by "name<TAG>" still match. With no parameter: line, parameter stays empty.
         assertEquals("resist_ui_compact_0<STR>", rec.name());
-        assertEquals("STR", rec.nameTag());
         assertEquals("", rec.parameter());
         assertEquals("Str", rec.label());
     }
@@ -178,10 +177,9 @@ class UIEntryGrammarTest {
 
         assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
         UIEntryParseRecord rec = ctx.entries.get(0);
-        // Tag and parameter: now live in separate fields: the <ACID> tag no longer overwrites the
-        // parameter: directive; the name retains the tag and nameTag/parameter are both populated.
+        // The <ACID> tag does not overwrite the parameter: directive; the name retains the tag
+        // and parameter is still populated.
         assertEquals("foo<ACID>", rec.name());
-        assertEquals("ACID", rec.nameTag());
         assertEquals("element", rec.parameter());
     }
 

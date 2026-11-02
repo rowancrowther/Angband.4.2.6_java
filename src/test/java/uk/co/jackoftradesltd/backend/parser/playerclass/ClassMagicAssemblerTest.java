@@ -20,7 +20,7 @@ package uk.co.jackoftradesltd.backend.parser.playerclass;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.middle.magic.ClassMagic;
 
 import java.util.ArrayList;

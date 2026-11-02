@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftradesltd.backend.io.bespokeexceptions;
+package uk.co.jackoftradesltd.channel.parser;
 
 public class DataFileParseException extends RuntimeException {
     public DataFileParseException(String message) {

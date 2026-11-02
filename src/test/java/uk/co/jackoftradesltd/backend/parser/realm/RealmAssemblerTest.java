@@ -18,7 +18,7 @@
 package uk.co.jackoftradesltd.backend.parser.realm;
 
 import org.junit.jupiter.api.Test;
-import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.magic.MagicRealm;
 

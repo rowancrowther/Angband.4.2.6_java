@@ -113,18 +113,7 @@ public class UIRegistry {
     public static void setUIEntryRenderers(List<UIEntryRenderer> uiEntryRenderers) {
         UIRegistry.uiEntryRenderers = uiEntryRenderers;
     }
-
-    /**
-     * Returns an unmodifiable view of the loaded UI-entry bases.
-     *
-     * <p>Function getUIEntryBases coded before 260924, commented in full on 260924.
-     *
-     * @return an unmodifiable view of the loaded UI-entry bases
-     */
-    public static List<UIEntryBase> getUIEntryBases() {
-        return Collections.unmodifiableList(uiEntryBases);
-    }
-
+    
     /**
      * Stores the loaded UI-entry bases; set once by {@code UIDataLoader} (after renderers).
      *

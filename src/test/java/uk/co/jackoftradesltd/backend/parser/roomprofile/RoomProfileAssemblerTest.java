@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.middle.cave.enums.RoomFlags;
 import uk.co.jackoftradesltd.middle.cave.profiles.room.RoomTemplate;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;

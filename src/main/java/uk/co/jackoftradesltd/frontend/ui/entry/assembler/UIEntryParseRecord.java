@@ -90,5 +90,5 @@ import java.util.List;
 public record UIEntryParseRecord(String name, String template, String label, String label5, String label2,
                                  List<String> categoriesBeforePriority, String parameter, String renderer,
                                  String combine, String priority, List<String> categoriesAfterPriority,
-                                 List<String> flags, String desc, String nameTag, int line) {
+                                 List<String> flags, String desc, int line) {
 }

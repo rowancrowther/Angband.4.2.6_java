@@ -20,7 +20,6 @@ package uk.co.jackoftradesltd.frontend.ui.entry.assembler.helperfunctions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
-import uk.co.jackoftradesltd.channel.messages.data.PlayerEventStatusUpdate;
 
 /**
  * Static holders for the small lookup functions {@link uk.co.jackoftradesltd.frontend.ui.entry.assembler.helperfunctions.UIEntryNameParameter}
@@ -41,11 +40,13 @@ import uk.co.jackoftradesltd.channel.messages.data.PlayerEventStatusUpdate;
  * {@link #getStatCount()} carry no such offset, since {@code PlayerEventStatusUpdate}'s
  * {@code statString} snapshot has no placeholder of its own.
  *
- * <p>Class ParseUtils coded before 260920, commented in full on 260920.
+ * <p>Class HelperFunctions coded before 260920, commented in full on 260920.
  *
  * @author Rowan Crowther
  */
 public class HelperFunctions {
+    public static final String [] stats = {"STR", "INT", "WIS", "DEX", "CON"};
+    
     /**
      * Logger for the index-range failures the {@code get*Name} methods below report before throwing.
      * Has no C counterpart - the C functions this class ports only {@code assert} their bounds, which
@@ -150,7 +151,7 @@ public class HelperFunctions {
             throw new IndexOutOfBoundsException("Index out of bounds for stat name in UI Entry parsing!");
         }
 
-        return PlayerEventStatusUpdate.getPlayerStatusView().statString()[index];
+        return stats[index];
     }
 
     /**

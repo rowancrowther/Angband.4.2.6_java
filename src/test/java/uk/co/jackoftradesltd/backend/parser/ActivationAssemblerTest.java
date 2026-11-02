@@ -18,9 +18,9 @@
 package uk.co.jackoftradesltd.backend.parser;
 
 import org.junit.jupiter.api.Test;
-import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.backend.parser.activation.ActivationAssembler;
 import uk.co.jackoftradesltd.backend.parser.activation.ActivationParseRecord;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.middle.Activation;
 
 import java.lang.reflect.Field;
@@ -230,6 +230,43 @@ class ActivationAssemblerTest {
         String message = stopMessage("-1", "", "");
         assertTrue(message.contains("aim"), message);
         assertTrue(stopMessage("-0", "", "").contains("aim"));
+    }
+
+    @Test
+    void aLeadingPlusIsReadAsInC() throws Exception {
+        // strtol and strtoul both take one optional '+'; the '-' test in parser.c does not mind it.
+        assertEquals(5, level(one("", "+5", "")));
+        assertEquals(8, level(one("", "+010", "")));
+        assertEquals(7, one("", "", "+7").getPower());
+        assertTrue(aim(one("+1", "", "")));
+        assertFalse(aim(one("+0", "", "")));
+    }
+
+    @Test
+    void whiteSpaceBeforeAMinusIsReadAsInC() throws Exception {
+        // parser.c tests *tok == '-' on the raw token, so " -1" is not refused as a uint, and
+        // strtol/strtoul skip the white space and read the sign. The lexer never produces such
+        // text, so it is injected by hand.
+        assertEquals(-5, level(one("", " -5", "")));
+        assertEquals(-5, level(one("", "\t-5", "")));
+        assertTrue(aim(one(" -1", "", ""))); // strtoul wraps -1 to a non-zero unsigned number
+        assertFalse(aim(one(" -0", "", "")));
+        assertEquals(0, one("", "", " -0").getPower());
+    }
+
+    @Test
+    void aNegativePowerBehindWhiteSpaceStopsTheLoadHereWhereCKeepsIt() {
+        // Deviation, not reachable from a data file. C: strtoul(" -5") wraps to 4294967291 and the
+        // int power field keeps -5, so the record loads. Java refuses the negative result.
+        assertTrue(stopMessage("", "", " -5").contains("negative power"));
+    }
+
+    @Test
+    void whiteSpaceAloneStopsTheLoadAsInC() {
+        // strtol and strtoul read no digits from "  ", so z == tok in parser.c.
+        assertTrue(stopMessage("", "  ", "").contains("invalid level"));
+        assertTrue(stopMessage("", "", "\t").contains("invalid power"));
+        assertTrue(stopMessage(" ", "", "").contains("invalid aim"));
     }
 
     @Test

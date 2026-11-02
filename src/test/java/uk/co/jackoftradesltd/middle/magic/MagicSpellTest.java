@@ -19,9 +19,9 @@ package uk.co.jackoftradesltd.middle.magic;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.backend.parser.playerclass.ClassSpellAssembler;
 import uk.co.jackoftradesltd.backend.parser.playerclass.ClassSpellParseRecord;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.middle.enums.Stats;
 

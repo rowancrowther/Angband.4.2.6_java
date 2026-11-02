@@ -15,11 +15,10 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftradesltd.backend.parser;
+package uk.co.jackoftradesltd.channel.parser;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 
 import java.math.BigInteger;
 

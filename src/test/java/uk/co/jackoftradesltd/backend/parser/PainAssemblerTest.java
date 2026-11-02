@@ -18,9 +18,9 @@
 package uk.co.jackoftradesltd.backend.parser;
 
 import org.junit.jupiter.api.Test;
-import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.backend.parser.pain.PainAssembler;
 import uk.co.jackoftradesltd.backend.parser.pain.PainParseRecord;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.middle.monsters.MonsterPain;
 
 import java.util.ArrayList;

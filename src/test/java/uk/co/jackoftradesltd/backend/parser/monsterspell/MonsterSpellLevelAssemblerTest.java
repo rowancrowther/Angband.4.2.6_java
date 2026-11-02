@@ -18,9 +18,9 @@
 package uk.co.jackoftradesltd.backend.parser.monsterspell;
 
 import org.junit.jupiter.api.Test;
-import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.backend.parser.monsterspell.MonsterSpellParseRecord.MonsterSpellLevelParseRecord;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.middle.monsters.MonsterSpellLevel;
 
 import java.util.ArrayList;

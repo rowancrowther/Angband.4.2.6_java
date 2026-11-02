@@ -191,7 +191,7 @@ uiEntry
         @after {
             $entry = new UIEntryParseRecord(nameInit, templateInit, labelInit,
             label5Init, label2Init, categoryInit1, parameterInit, rendererInit, combinerInit,
-            priorityInit, categoryInit2, flagInit, descInit, nameTagInit, line);
+            priorityInit, categoryInit2, flagInit, descInit, line);
         }
         :   name { nameInit = $name.nameStr;
                    if ($name.elemOrStat != null) nameTagInit = $name.elemOrStat;

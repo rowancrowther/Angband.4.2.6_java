@@ -35,12 +35,7 @@ import uk.co.jackoftradesltd.frontend.entries.enums.UIEntryRendererEnum;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link UIRegistry}'s name-based lookups, the port of C's {@code ui_entry_lookup}/
@@ -59,7 +54,7 @@ class UIRegistryTest {
 
     private static UIEntryBase base(String name) {
         return new UIEntryBase(name, renderer("r"), CombinerName.NONE, List.of(),
-                new Flag<>(ChannelEntryFlag.class), "desc");
+                new Flag<>(ChannelEntryFlag.class), "desc", 0);
     }
 
     private static UIEntry entry(String name) {

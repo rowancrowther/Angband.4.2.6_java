@@ -132,7 +132,7 @@ public class UIEntryBaseAssembler implements Assembler<UIEntryBaseParseRecord, L
             }
             if (badFlag) continue;
 
-            UIEntryBase base = new UIEntryBase(name, renderer, combinerName, categories, flag, desc);
+            UIEntryBase base = new UIEntryBase(name, renderer, combinerName, cats, flag, desc, 0);
 
             UIEntry entry = new UIEntry(name, null,
                     null, null, renderer, combinerName, cats,

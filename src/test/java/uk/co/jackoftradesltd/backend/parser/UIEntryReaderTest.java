@@ -21,17 +21,18 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
+import uk.co.jackoftradesltd.channel.enums.StatElemType;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.frontend.entries.UIEntry;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryBase;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
-import uk.co.jackoftradesltd.frontend.ui.entrybase.reader.UIEntryBaseReader;
-import uk.co.jackoftradesltd.frontend.ui.entry.reader.UIEntryReader;
-import uk.co.jackoftradesltd.frontend.ui.entryrenderer.reader.UIEntryRendererReader;
 import uk.co.jackoftradesltd.frontend.ui.entry.assembler.UIEntryAssembler;
+import uk.co.jackoftradesltd.frontend.ui.entry.reader.UIEntryReader;
+import uk.co.jackoftradesltd.frontend.ui.entrybase.reader.UIEntryBaseReader;
+import uk.co.jackoftradesltd.frontend.ui.entryrenderer.reader.UIEntryRendererReader;
 import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
-import uk.co.jackoftradesltd.channel.enums.StatElemType;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -50,10 +51,11 @@ import static org.junit.jupiter.api.Assertions.*;
  * load of all 47 records is itself the assertion that every renderer, template, combiner and flag
  * resolved. It also spot-checks the {@code parameter:}/{@code nameTag} split that this pipeline hinges
  * on (a generic entry gets its stat/element <em>kind</em>; a specialization keeps its full tagged name
- * and gets a concrete element). The remaining tests inject one defect each to exercise both error
- * channels: hard grammar errors (missing {@code record-count}) fail closed; soft errors (unknown
- * renderer/template, bad {@code parameter:} kind, record-count mismatch) are reported while partial
- * results survive.
+ * and gets a concrete element). The remaining tests inject one defect each to exercise the error
+ * channels: hard grammar errors (missing {@code record-count}) fail closed; an unknown
+ * renderer/template or a bad {@code parameter:} kind is fatal, ending the load with a
+ * {@link DataFileParseException} as a failed {@code parse_entry_*} callback does in C; a
+ * record-count mismatch stays a reported error, with the resolved records returned.
  *
  * <p>The assembler resolves against the renderer and base registries, so {@link #seedRegistries()}
  * loads the real renderer and base files and injects them into {@code UIRegistry}' private static
@@ -173,50 +175,46 @@ class UIEntryReaderTest {
                 result.errors()::toString);
     }
 
+    /**
+     * Read the file, expecting a fatal {@link DataFileParseException}, and return its message.
+     */
+    private static String fatalMessage(String path) {
+        return assertThrows(DataFileParseException.class,
+                () -> new UIEntryReader().parseWithResults(path)).getMessage();
+    }
+
     @Test
-    void unknownRendererIsLoggedAndRecordSkipped() throws IOException {
+    void unknownRendererIsFatal() throws IOException {
+        // A failed parse_entry_renderer ends the load in C; no partial list comes back.
         String path = tempFile("bad-renderer.txt", "record-count:1\nname:foo\nrenderer:no_such_renderer\n");
 
-        ParseResult<UIEntry> result = new UIEntryReader().parseWithResults(path);
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("no_such_renderer")),
-                result.errors()::toString);
+        assertEquals("UI entry starting at line: 2 of file: " + path
+                + " has an illegal renderer value: no_such_renderer", fatalMessage(path));
     }
 
     @Test
-    void unknownTemplateIsLoggedAndRecordSkipped() throws IOException {
+    void unknownTemplateIsFatal() throws IOException {
         String path = tempFile("bad-template.txt", "record-count:1\nname:foo\ntemplate:no_such_base\n");
 
-        ParseResult<UIEntry> result = new UIEntryReader().parseWithResults(path);
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("illegal template name")),
-                result.errors()::toString);
+        assertEquals("UI entry starting at line: 2 of file: " + path
+                + " has an illegal template value: no_such_base", fatalMessage(path));
     }
 
     @Test
-    void illegalParameterKindIsLoggedAndRecordSkipped() throws IOException {
+    void illegalParameterKindIsFatal() throws IOException {
         String path = tempFile("bad-param.txt", "record-count:1\nname:foo\nparameter:bogus\n");
 
-        ParseResult<UIEntry> result = new UIEntryReader().parseWithResults(path);
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("illegal parameter kind: bogus")),
-                result.errors()::toString);
+        assertEquals("UI entry starting at line: 2 of file: " + path
+                + " has an illegal parameter value: bogus", fatalMessage(path));
     }
 
-    // ---- reader plumbing (independent of the assembler's insert stub) -----------------------
+    // ---- reader plumbing (a valid record, so the assembler does not stop the load first) ----
 
     @Test
-    void recordCountMismatchIsReportedEvenWhenTheRecordIsSkipped() throws IOException {
-        // Declares 5, holds 1. The record itself is skipped (unknown renderer), so this does not
-        // depend on the assembler inserting into its result - only on extract() calling
+    void recordCountMismatchIsReportedForAValidRecord() throws IOException {
+        // Declares 5, holds 1. The record resolves, so the load reaches extract() calling
         // checkRecordCount with the number of records parsed.
-        String path = tempFile("count-5.txt", "record-count:5\nname:foo\nrenderer:no_such_renderer\n");
+        String path = tempFile("count-5.txt", "record-count:5\nname:foo\ncombine:ADD\n");
 
         ParseResult<UIEntry> result = new UIEntryReader().parseWithResults(path);
 
@@ -227,20 +225,24 @@ class UIEntryReaderTest {
 
     @Test
     void matchingRecordCountAddsNoCountError() throws IOException {
-        String path = tempFile("count-1.txt", "record-count:1\nname:foo\nrenderer:no_such_renderer\n");
+        String path = tempFile("count-1.txt", "record-count:1\nname:foo\ncombine:ADD\n");
 
         ParseResult<UIEntry> result = new UIEntryReader().parseWithResults(path);
 
-        assertTrue(result.errors().stream().noneMatch(e -> e.contains("record-count header")),
-                result.errors()::toString);
+        assertFalse(result.hasErrors(), result.errors()::toString);
+        assertEquals(1, result.items().size());
     }
 
     @Test
     void parseReturnsTheSameItemsAsParseWithResults() throws IOException {
-        String path = tempFile("same.txt", "record-count:1\nname:foo\nrenderer:no_such_renderer\n");
+        String path = tempFile("same.txt", "record-count:1\nname:foo\ncombine:ADD\n");
 
-        assertEquals(new UIEntryReader().parseWithResults(path).items(),
-                new UIEntryReader().parse(path));
+        List<String> withResults = new UIEntryReader().parseWithResults(path).items().stream()
+                .map(UIEntry::getName).toList();
+        List<String> plain = new UIEntryReader().parse(path).stream().map(UIEntry::getName).toList();
+
+        assertEquals(List.of("foo"), withResults);
+        assertEquals(withResults, plain);
     }
 
     @Test

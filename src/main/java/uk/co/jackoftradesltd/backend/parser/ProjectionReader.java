@@ -25,10 +25,7 @@ import uk.co.jackoftradesltd.backend.parser.grammars.projection.ProjectionGramma
 import uk.co.jackoftradesltd.backend.parser.grammars.projection.ProjectionLexer;
 import uk.co.jackoftradesltd.backend.parser.projection.ProjectionAssembler;
 import uk.co.jackoftradesltd.backend.parser.projection.ProjectionParseRecord;
-import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
-import uk.co.jackoftradesltd.channel.parser.ParseErrors;
-import uk.co.jackoftradesltd.channel.parser.ParseResult;
-import uk.co.jackoftradesltd.channel.parser.Reader;
+import uk.co.jackoftradesltd.channel.parser.*;
 import uk.co.jackoftradesltd.middle.game.event.projection.Projection;
 
 import java.io.IOException;
@@ -172,7 +169,7 @@ public class ProjectionReader implements Reader<Projection> {
      * @param filename the name of the file to parse
      * @return a {@link ParseResult} of type {@link Projection}
      * @throws IOException when the file cannot be found or read
-     * @throws uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException if the
+     * @throws DataFileParseException if the
      *         assembler stops the load, as C quits in {@code parse_projection_code} or
      *         {@code finish_parse_projection}
      */

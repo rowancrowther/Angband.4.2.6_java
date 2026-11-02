@@ -85,10 +85,12 @@ class UIEntryBaseAssemblerTest {
         assertEquals("t", u.getName());
         assertTrue(u.getFlags().has(ChannelEntryFlag.ENTRY_FLAG_TIMED_AS_AUX));
         // UIEntryBase does not expose desc (C's parse_entry_desc never stores it either);
-        // the remaining fields are asserted through toString().
+        // the remaining fields are asserted through toString(), except the categories: they are
+        // UIEntryCategory objects, which have no toString(), so their names are read through the getter.
         String s = u.toString();
         assertTrue(s.contains("combine=LOGICAL_OR"), s);
-        assertTrue(s.contains("categories=[CHAR_SCREEN1, abilities]"), s);
+        assertEquals(List.of("CHAR_SCREEN1", "abilities"),
+                u.getCategories().stream().map(UIEntryCategory::getName).toList());
         assertTrue(s.contains(KNOWN_RENDERER), s);
     }
 

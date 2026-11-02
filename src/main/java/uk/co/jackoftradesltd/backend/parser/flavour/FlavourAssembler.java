@@ -20,10 +20,10 @@ package uk.co.jackoftradesltd.backend.parser.flavour;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
-import uk.co.jackoftradesltd.backend.parser.ParseUtils;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
+import uk.co.jackoftradesltd.channel.parser.ParseUtils;
 import uk.co.jackoftradesltd.middle.objects.Flavour;
 
 import java.util.ArrayList;

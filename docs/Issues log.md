@@ -21,7 +21,7 @@ The fold is half done. The write side and the flag are in place; the read side a
 
 - `UIEntryBaseAssembler.assemble` also builds a `UIEntryBase` per record and returns `List<UIEntryBase>`, which
   `UIEntryBaseReader` returns and `UIDataLoader.loadUIEntryBases` hands to `UIRegistry.setUIEntryBases`.
-- `UIRegistry.java` still holds `uiEntryBases`, `getUIEntryBases` (no caller outside the class), `setUIEntryBases` and
+- `UIRegistry.java` still holds `uiEntryBases`, `setUIEntryBases` and
   `getUIEntryBase`, and imports `UIEntryBase`.
 - `UIEntryAssembler.java` resolves `template:` through `UIRegistry.getUIEntryBase`, declares `UIEntryBase template`, and
   reads `template.getCategories()` as strings in both the override and the create paths.
@@ -34,7 +34,7 @@ The fold is half done. The write side and the flag are in place; the read side a
   accepts any entry already in `entries[]`, not only a `TEMPLATE_ONLY` one, and copies the template's
   `default_priority` and each category's `priority` and `priority_set`. `UIEntryAssembler.java` currently copies
   neither (it sets priority 0 or the record's own and passes `false`), so port those with the type change.
-- Remove `uiEntryBases`, `getUIEntryBases`, `setUIEntryBases` and `getUIEntryBase` from `UIRegistry.java`, then
+- Remove `uiEntryBases`, `setUIEntryBases` and `getUIEntryBase` from `UIRegistry.java`, then
   `UIEntryBase.java`.
 - Change what `UIEntryBaseAssembler` and `UIEntryBaseReader` return, so nothing builds a `UIEntryBase` any more, and
   decide whether `UIDataLoader.loadUIEntryBases` or the assembler owns the `setUIEntries` call. Today it is a side

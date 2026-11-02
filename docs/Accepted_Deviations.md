@@ -593,6 +593,134 @@ recorded here as the summary states them; fill in the detail when you next touch
 - **Accepted:** 2026-10-29, during the `SlayAssembler` port pass. Marked in the `SlayAssembler` Javadoc. Pinned by
   `SlayAssemblerTest.aBaseThatMatchesALoadedMonsterBaseResolvesHereWhereCRefusesEveryBase`.
 
+## UI entry
+
+### A record that repeats the previous record's name is not merged into it, where C carries on editing the same embryo
+
+- **Java:** `UIEntryAssembler.assemble` and `parseEachEntry`, which build one entry per record. **C:**
+  `parse_entry_name` and `parse_entry_parameter` (`ui-entry.c`).
+- **Differs:** when a `name:` line equals the name of the embryo still open, `parse_entry_name` returns at once. It does
+  not hatch the embryo or reset `param_index`, `psource_index` or `last_category_index`, so the second record's lines
+  keep editing the first. If that embryo is new, a `parameter:` line is still allowed, and a second `parameter:` line
+  simply overwrites the first. Java resolves each record on its own. If the first record had no parameter, its entry is
+  already in the list, so a `parameter:` line on the second record ends the load as a pre-existing name, and any other
+  line goes down the override path. If the first record had a parameter, only the `name<X>` entries exist, so the second
+  record creates a separate entry under the bare name; a second `parameter:` line ends the load in the override path as a
+  duplicate of a parameterized entry.
+- **Agrees:** when the first embryo was an existing entry (`exists` is true), C refuses a `parameter:` line on the second
+  record, and so does Java. A repeated name that is not adjacent is an ordinary override in both.
+- **Why:** merging needs both records before the first is hatched, which does not fit the one-record-at-a-time loop. The
+  parse record also loses where each `priority:` line sat among the categories, which the merge would need (see
+  `docs/Changes_To_UIEntryAssembler.md` issues 4, 5, 10 and 15). The `#` header of `ui_entry.txt` says nothing about a
+  repeated name; C's handling is described only by a comment in `parse_entry_name`.
+- **Reach:** none from shipped data. Neither `ui_entry.txt` nor `ui_entry_base.txt` has two adjacent `name:` lines with
+  the same name (checked 2026-11-01). Hand-edited files only.
+- **Revisit:** if a modded `ui_entry.txt` ever repeats an adjacent name, or once the parse record keeps the `priority:`
+  lines in order with their categories, which makes the merge cheap.
+- **Accepted:** 2026-11-02, as item 13 of `docs/Changes_To_UIEntryAssembler.md`. Marked in the `assemble` Javadoc.
+  Pinned in `UIEntryAssemblerTest` by
+  `aParameterLineOnARepeatedNameEndsTheLoadHereWhereCAcceptsItOnANewEmbryo`,
+  `aRepeatedNameAfterAParameterisedRecordMakesASeparateBareEntryHereWhereCEditsTheSameEmbryo` and
+  `aSecondParameterLineOnARepeatedNameEndsTheLoadHereWhereCOverwritesTheFirst`; the case where Java agrees with C is
+  pinned by `aParameterLineOnARepeatedNameOfAnEntryFromAnEarlierFileIsFatalAsInC`.
+
+### A new record with no combiner fails the load at once, where C fails it when the record is hatched
+
+- **Java:** `UIEntryAssembler.assemble` and `parseEachEntry`, which throw a `DataFileParseException` for the record as
+  soon as the create path reports no combiner. **C:** `hatch_embryo`, `parse_entry_name` and `hatch_last_embryo`
+  (`ui-entry.c`).
+- **Differs:** C checks `combiner_index == 0` first thing in `hatch_embryo`, before any fan-out value is made, but
+  `hatch_embryo` only runs once the whole record has been read. That is when the next `name:` line arrives
+  (`parse_entry_name` returns `PARSE_ERROR_INVALID_VALUE`, so the error is reported against the next record's line) or
+  at end of file (`hatch_last_embryo` returns 1, with no line at all). Java throws while handling the record itself and
+  quotes that record's own line. For a `parameter:` record Java fails on the first fan-out value, where C fails the
+  record once.
+- **Agrees:** both refuse the record, and the load ends. A record that edits an existing entry needs no combiner in
+  either.
+- **Why:** Java resolves each record on its own, so there is no later point at which to run the check. The Java message
+  names the offending record, which C's does not.
+- **Reach:** none from shipped data. Every new record in `ui_entry.txt` and `ui_entry_base.txt` has a `combine:` line or
+  a `template:` line, and C's `parse_entry_template` copies the template's combiner (checked 2026-11-02). Hand-edited
+  files only, and then only the line number in the message differs.
+- **Revisit:** if the load is ever made to continue past a bad record, since the reported line and the number of
+  messages would then matter.
+- **Accepted:** 2026-11-02. Marked in the `assemble` Javadoc.
+
+### A category added to an existing entry gets a different interim priority, which the finishing pass overwrites
+
+- **Java:** `UIEntryAssembler.parseEachEntry`, override path, where a record adds a category the existing entry doesn't
+  have. **C:** `parse_entry_category` and `finish_parse_ui_entry` (`ui-entry.c`).
+- **Differs:** C gives the new category the entry's `default_priority` as it stands when that `category:` line is read,
+  with `priority_set = false`, so the value depends on whether a `priority:` line came before it. Java gives it
+  `existing.getDefaultPriority()` when the record has no priority text and `0` otherwise, with `prioritySet=false`. The
+  two values can differ.
+- **Agrees:** the final value. Both leave the category unset, and `finish_parse_ui_entry` in C and `finalPass` in
+  `UIDataLoader` then replace it with the entry's final default priority. Nothing reads the interim value in between,
+  including a later template copy, which carries `prioritySet=false` too.
+- **Why:** the interim value has no effect on the loaded data, and matching it needs the parse record to keep each
+  `priority:` line in order with its categories, which is the change for `docs/Changes_To_UIEntryAssembler.md` issues 10
+  and 15.
+- **Reach:** none, from shipped or hand-edited data. The difference is never visible after the load.
+- **Revisit:** if anything ever reads a category's priority before the finishing pass, or when issues 10 and 15 change
+  the parse record anyway.
+- **Accepted:** 2026-11-02, as item 4c of `docs/Changes_To_UIEntryAssembler.md`.
+
+### The order of `template:`, `renderer:`, `combine:`, `flags:` and `priority:` lines in a record is not kept, where C applies them in file order
+
+- **Java:** `UIEntryAssembler.parseEachEntry`, both paths, which apply the template first and the record's own values
+  after it. **C:** `parse_entry_template`, `parse_entry_renderer`, `parse_entry_combine`, `parse_entry_flags` and
+  `parse_entry_priority` (`ui-entry.c`).
+- **Differs:** `parse_entry_template` overwrites `renderer_index`, `combiner_index`, `default_priority` and `flags` at
+  the moment the `template:` line is read, so a `renderer:`, `combine:` or numeric `priority:` line written before it is
+  lost, and a `flags:` line written before it is replaced. Java receives the record with the order gone, so the
+  template always goes first and the record's own renderer, combiner, priority and flags always win or add to it.
+- **Agrees:** when `template:` is the first of those lines, which is the only order shipped data uses. The result is
+  then the same in both.
+- **Why:** the parse record holds each directive as one field, not as a list in file order. Keeping the order is the
+  same change as `docs/Changes_To_UIEntryAssembler.md` issues 10 and 15.
+- **Reach:** none from shipped data. All 32 records in `ui_entry.txt` that have a `template:` line write it first
+  (checked 2026-11-02). Hand-edited files only.
+- **Revisit:** when the parse record is changed to keep its directives in order.
+- **Accepted:** 2026-11-02. Pinned in `UIEntryAssemblerTest` by
+  `aRecordsOwnRendererBeatsItsTemplateWhateverTheLineOrderHereWhereCTakesTheLastLine`.
+
+### Only `label`, `label2` and `label5` are read, where C accepts `label1` to `label10`
+
+- **Java:** `UIEntryGrammar.g4` (the `label`, `label5` and `label2` rules), `UIEntryParseRecord` (three separate label
+  fields) and `UIEntryAssembler.assemble` and `registerLabel`. **C:** `init_parse_ui_entry` and
+  `parse_entry_shortened_label` (`ui-entry.c`).
+- **Differs:** C registers a `label<N>` line for every N from 1 to `MAX_SHORTENED` (10), in any order, and cuts each to
+  N characters. Java's grammar takes `label`, `label5` and `label2` once each, in that fixed order, so the parse
+  record has no place for `label1`, `label3`, `label4` or `label6` to `label10`. The entry itself holds ten slots.
+- **Agrees:** `label`, `label2` and `label5` in that order, which is every shortened label shipped data uses. The
+  finishing pass (`UIDataLoader.fillOutShortened`) fills the other slots from the nearest longer set slot or the full
+  label, as `fill_out_shortened` does.
+- **Why:** widening it means ten grammar rules, a parse record that holds a list or map of labels, and a change to the
+  `UIEntry` constructor, for no loaded record. The parse record is due a reshape for the line-order issues anyway
+  (`docs/Changes_To_UIEntryAssembler.md` issues 10 and 15), so one change can cover both. The grammar header already
+  notes the gap (no `label3`).
+- **Reach:** none from shipped data. `ui_entry.txt` uses only `label`, `label2` and `label5` (checked 2026-11-02).
+  Hand-edited files only.
+- **Revisit:** if a modded `ui_entry.txt` uses `label1` or `label3` to `label10`, or when the parse record is reshaped
+  for the line-order issues.
+- **Accepted:** 2026-11-02.
+
+### A `priority:` of `-2147483648` or below loads as `-2147483647`, where C clamps it to `INT_MIN`
+
+- **Java:** `UIEntryAssembler.assemble`, which strips the sign, reads the digits with `ParseUtils.parseIntString` and
+  then multiplies by the sign. **C:** `parse_entry_priority` (`ui-entry.c`).
+- **Differs:** C reads the whole text with `strtol` in base 10 and clamps the signed result, so `-2147483648` and
+  anything below it give `INT_MIN`. Java clamps the unsigned digits to `INT_MAX` first and negates after, so the same
+  text gives `-INT_MAX`, one above `INT_MIN`.
+- **Agrees:** every value from `-2147483647` to `INT_MAX`, the clamp of anything above `INT_MAX`, and the refusal of
+  text that is not a sign and digits (`5x`, `0x10`, `+-5`, `-`).
+- **Why:** the digits are read by the shared `ParseUtils.parseIntString`, which clamps before any sign is applied. It
+  is the same shape as the `bindui` limit in `PlayerPropertyAssembler`.
+- **Reach:** none from shipped data. The lowest priority in `ui_entry.txt` is `-12` (checked 2026-11-02). Hand-edited
+  files only, and a priority that low has no visible effect beyond ordering.
+- **Revisit:** if `ParseUtils` is changed to clamp after the sign, since the assembler then needs no workaround.
+- **Accepted:** 2026-11-02.
+
 ## Pending your decision
 
 - The five `objDescNameFormat` divergences (Part G; `docs/ItemObject_round2/part_G.md`). All unreachable from shipped

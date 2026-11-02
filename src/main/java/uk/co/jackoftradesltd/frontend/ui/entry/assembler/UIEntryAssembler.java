@@ -24,21 +24,23 @@ import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftradesltd.channel.enums.ChannelEntryFlag;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.enums.StatElemType;
-import uk.co.jackoftradesltd.channel.messages.data.PlayerEventStatusUpdate;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
+import uk.co.jackoftradesltd.channel.parser.ParseUtils;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.channel.utils.FlagView;
 import uk.co.jackoftradesltd.channel.utils.combiners.CombinerName;
 import uk.co.jackoftradesltd.frontend.entries.UIEntry;
-import uk.co.jackoftradesltd.frontend.entries.UIEntryBase;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryCategory;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftradesltd.frontend.ui.entry.EmbryonicCategoryReferencies;
 import uk.co.jackoftradesltd.frontend.ui.entry.UIEntryEmbryo;
+import uk.co.jackoftradesltd.frontend.ui.entry.assembler.helperfunctions.HelperFunctions;
 import uk.co.jackoftradesltd.frontend.ui.entry.assembler.helperfunctions.UIEntryPriorityScheme;
 import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -65,32 +67,61 @@ import java.util.List;
  * {@code resist_ui_compact_0} fanned out, so all thirteen take this branch (see
  * {@code docs/precis/260920.md}, "Correction: the create path is not the common case").
  * <p>
- * Assembly is best-effort and error-collecting, like {@code UIEntryBaseAssembler}: a record whose
- * renderer, combiner, template or parameter cannot be resolved is skipped with a message appended to
- * {@code errors}, and processing continues with the next record.
+ * Assembly is fail-fast: a record whose parameter, renderer, combiner, template, priority or flags cannot
+ * be resolved ends the load with a {@link DataFileParseException}, as a failed {@code parse_entry_*}
+ * callback ends {@code parse_file} in C. A renderer that cannot be found is also appended to
+ * {@code errors} by {@link UIRegistry#getUIEntryRenderer} before the exception is thrown.
  * <p>
- * The port still diverges from C in several latent ways that no shipped {@code ui_entry.txt} record
- * reaches; each is recorded on the method it lives in ({@link #buildCategories}, {@link #assemble},
- * {@link #parseEachEntry}) and collected in {@code docs/precis/260929.md}.
+ * The label directives are cut as C cuts them: {@code label} to {@code MAX_ENTRY_LABEL} (80)
+ * characters, {@code label2} to 2 and {@code label5} to 5. {@link #registerLabel} stores the explicit
+ * shortened labels and the prefixes of the full label; the slots left empty are filled in the
+ * finishing pass, as {@code fill_out_shortened} does in C.
+ * <p>
+ * The port still diverges from C in several ways that no shipped {@code ui_entry.txt} record reaches.
+ * Each is an accepted deviation, recorded under "UI entry" in {@code docs/Accepted_Deviations.md}: a
+ * repeated adjacent {@code name:}, the timing of the no-combiner failure, the file order of
+ * {@code template:}/{@code renderer:}/{@code combine:}/{@code flags:}/{@code priority:} lines, the
+ * interim priority of a category added to an existing entry, the missing {@code label1} to
+ * {@code label10} lines (only {@code label}, {@code label2} and {@code label5} are read), and a
+ * {@code priority:} of {@code -2147483648} or below loading as {@code -2147483647}.
  *
- * <p>Class UIEntryAssembler coded before 260922, commented in full on 260929.
+ * <p>Class UIEntryAssembler coded before 260922, commented in full on 261102.
  *
  * @author Rowan Crowther
  */
-public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEntry>> {
+public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEntry>> {    
     /**
-     * Logger for the fatal, non-recoverable state {@link #parseEachEntry(List, UIEntry)} throws on -
-     * an override record whose incoming entry still carries a stat or element parameter, which
-     * mirrors a C {@code quit()}/{@code assert} rather than a soft, error-collecting failure, the same
-     * as {@code UIEntryBaseAssembler}'s equivalent check.
+     * Logger for every fatal state this assembler throws a {@link DataFileParseException} on: an illegal
+     * parameter, renderer, combiner, flag, priority or template, a pre-existing parameterized name, a
+     * new entry with no combiner, and an override record whose incoming entry still carries a stat or
+     * element parameter. Each mirrors a failed {@code parse_entry_*} callback, or a C
+     * {@code quit()}/{@code assert}, that ends the load rather than a soft, error-collecting failure.
      *
-     * <p>Field logger coded before 260922, commented in full on 260929.
+     * <p>Field logger coded before 260922, commented in full on 261102.
      */
     private final static Logger logger = LogManager.getLogger(UIEntryAssembler.class);
 
     /**
+     * The longest {@code label:} text kept, in characters - the Java form of C's {@code MAX_ENTRY_LABEL}
+     * ({@code ui-entry.c}), the limit {@code parse_entry_label} passes to {@code text_mbstowcs}.
+     * Text past it is dropped without an error.
+     *
+     * <p>Field MAX_ENTRY_LABEL coded before 261102, commented in full on 261102.
+     */
+    private final int MAX_ENTRY_LABEL = 80;
+
+    /**
+     * The name of the file being assembled, set at the top of {@link #assemble} and quoted in every
+     * error message {@link #assemble} and {@link #parseEachEntry} throw. Replaced on each call, so an
+     * instance reports the file of its latest call only.
+     *
+     * <p>Field filename coded before 261102, commented in full on 261102.
+     */
+    private String filename;
+
+    /**
      * The in-progress {@link UIEntryEmbryo} for the record currently being folded by
-     * {@link #parseEachEntry(List, UIEntry)}'s create path - the Java form of C's
+     * {@link #parseEachEntry(List, UIEntry, int, List)}'s create path - the Java form of C's
      * {@code struct embryonic_ui_entry} ({@code ui-entry.c}) while a parser works through
      * one record's directives. Reassigned (never read back across calls) by the create path each time
      * {@link #parseEachEntry} folds in an entry whose name is not already in the registry - once per
@@ -99,7 +130,7 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
      * directly instead. Being static, it is shared across assembler instances, so the class is not
      * safe to run concurrently.
      *
-     * <p>Field embryo coded before 260922, commented in full on 260929.
+     * <p>Field embryo coded before 260922, commented in full on 261102.
      */
     private static UIEntryEmbryo embryo;
 
@@ -117,47 +148,59 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
      * {@code prioritySet=false} so {@code UIDataLoader}'s finishing pass fills it from the entry's own
      * default priority later, the same as C's finishing pass in {@code ui-entry.c}.
      * <p>
-     * <b>Known divergence (found 260922, unfixed):</b> every {@code after} category is also stamped
-     * with {@code priority} here (with {@code prioritySet=false}, so it is really only waiting on the
-     * entry's default priority). That is correct only when {@code before} is empty - i.e. when the
-     * {@code priority:} line had no preceding category and so really did set the record's default
-     * ({@code parse_entry_priority}'s {@code last_category_index == -1} branch). When {@code before} is
-     * non-empty, C leaves {@code default_priority} at 0, because the {@code priority:}
-     * line attached to that category instead - but {@link #assemble} still passes the same
-     * {@code priority} value on as the record's own {@code priorityNum} at each of its three call
-     * sites, so an {@code after} category would incorrectly inherit the {@code before} category's
-     * priority instead of 0. No shipped {@code ui_entry.txt} record has a {@code category:} line
-     * before a {@code priority:} line, so this is latent, not live.
+     * Every {@code after} category is also stamped with {@code priority}, but with
+     * {@code prioritySet=false}, so the value is only a placeholder: C adds such a category with
+     * {@code priority_set = false} too, {@code hatch_embryo} resets it to 0, and the finishing pass
+     * gives it the entry's final default priority. Whether that default is the record's priority or the
+     * template's is decided in {@link #parseEachEntry}, which passes 0 as the new entry's default
+     * when a category came before the {@code priority:} line ({@code parse_entry_priority}'s
+     * {@code last_category_index != -1} branch), so the final values agree with C. The placeholder
+     * itself is not the value C holds in between; nothing reads it before the finishing pass (see "A
+     * category added to an existing entry gets a different interim priority" in
+     * {@code docs/Accepted_Deviations.md}).
      *
      * @param before          category names seen before the record's priority (if any) took effect
      * @param after           category names seen after the record's priority took effect
      * @param priority        the record's resolved numeric priority
      * @param defaultPriority the priority given to every {@code before} category except the last;
-     *                        always {@code 0} at the one call site, and moot regardless since
+     *                        always {@code 0} at the call sites, and moot regardless since
      *                        {@code prioritySet=false} means the finishing pass overwrites it
+     * @param priorityFound   {@code true} if the record had a {@code priority:} line, which is what
+     *                        makes the last {@code before} category carry {@code priority} with
+     *                        {@code prioritySet=true}
      * @return the resolved category list, in {@code before} then {@code after} order
      *
-     * <p>Function buildCategories coded before 260922, commented in full on 260929.
+     * <p>Function buildCategories coded before 260922, commented in full on 261102.
      */
     private static List<UIEntryCategory> buildCategories(List<String> before, List<String> after, int priority,
-                                                         int defaultPriority) {
+                                                         int defaultPriority, boolean priorityFound) {
         List<UIEntryCategory> categories = new ArrayList<>();
         for (int index = 0; index < before.size(); index++) {
-            if (index == before.size() - 1) {
+            if (index == before.size() - 1 && priorityFound) {
                 categories.add(new UIEntryCategory(before.get(index), priority, true));
             } else {
                 categories.add(new UIEntryCategory(before.get(index), defaultPriority, false));
             }
         }
         for (String category : after) categories.add(new UIEntryCategory(category, priority, false));
+        
         return categories;
     }
 
     /**
      * Resolve each {@link UIEntryParseRecord} into one or more {@link UIEntry}
-     * objects, skipping (never throwing on) any record whose present fields fail
-     * to resolve. Most records yield a single entry; a {@code parameter:stat}
-     * record yields one per player stat (see the class comment on expansion).
+     * objects and fold them into the shared list, throwing a {@link DataFileParseException} on the
+     * first record whose present fields fail to resolve (an unknown {@code parameter:}, renderer,
+     * combiner, template or flag, a {@code priority:} that is neither {@code index},
+     * {@code negative_index} nor a signed decimal, or a new entry with no combiner). A
+     * {@code priority:} number is refused if anything but digits follows the sign, as
+     * {@code parse_entry_priority}'s {@code strtol} end check refuses it
+     * ({@code PARSE_ERROR_NOT_NUMBER}), and a number past the {@code int} range is clamped.
+     * Most records yield a single entry; a {@code parameter:stat}
+     * record yields one per player stat and a {@code parameter:element} record one per element
+     * (see the class comment on expansion). Each entry's {@code label}, {@code label2} and
+     * {@code label5} are cut to 80, 2 and 5 characters, and its shortened-label slots are
+     * filled by {@link #registerLabel}.
      * Unlike the {@code parameter:element} loop, which threads its resolved
      * {@link ElementEnum} straight through the {@link UIEntry} constructor's
      * {@code parameter} argument, the {@code UIEntry} constructor has no slot for a
@@ -169,74 +212,82 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
      * STR's index) regardless of which of the five stats it actually is - found and
      * fixed 260922, once a regression test for the override-path fix below caught it.
      *
-     * @param records the raw parse records, in file order, from the grammar.
-     * @param errors  the soft-error sink; one message is appended, quoting the
-     *                record's source line, for each record dropped because a
-     *                present field could not be resolved. Mutated in place.
-     * @return the successfully assembled {@link UIEntry} objects in file order -
-     * the per-stat entries of an expanded {@code parameter:stat} record appear
-     * consecutively where that record sat - omitting any record that was skipped.
+     * @param records  the raw parse records, in file order, from the grammar.
+     * @param errors   the error sink; {@link UIRegistry#getUIEntryRenderer} appends a message to it
+     *                 when a renderer cannot be found, just before this method throws. Mutated in
+     *                 place.
+     * @param filename the file being assembled, quoted in every error message
+     * @return the entries seeded from {@link UIRegistry#getUIEntries()} (the
+     * {@code ui_entry_base.txt} placeholders) plus every entry created from the records, sorted by
+     * name as C's {@code entries[]} is - the per-stat entries of an expanded {@code parameter:stat}
+     * record are therefore not kept where that record sat
+     * @throws DataFileParseException on the first record that cannot be resolved, or whose
+     *                                {@code parameter:} names an entry that already exists
      *
-     * <p><b>Outstanding (found 260922):</b> the priority value computed here for a record is passed
-     * both into {@link #buildCategories(List, List, int, int)} (correct) and into the {@link UIEntry}
-     * constructor as the record's own default priority (only correct when the record has no category
-     * before its {@code priority:} line) - see {@link #buildCategories(List, List, int, int)}'s
-     * Javadoc for the full account. Latent, not live: no shipped {@code ui_entry.txt} record has a
-     * {@code category:} line before a {@code priority:} line.
+     * <p><b>Accepted deviation (261102):</b> a record that repeats the previous record's name
+     * is resolved on its own here, where C's {@code parse_entry_name} returns at once and the second
+     * record keeps editing the first embryo. If the first record had no parameter, a {@code parameter:}
+     * line on the second ends the load as a pre-existing name; if it had one, the second record makes
+     * a separate bare-name entry, and a second {@code parameter:} line ends the load in
+     * {@code parseEachEntry}. A first entry that came from an earlier file is refused in C as well.
+     * None of the shipped data repeats an adjacent name. See "UI entry" in
+     * {@code docs/Accepted_Deviations.md}.
      *
-     * <p><b>Outstanding (found 260922):</b> the {@code parameter:stat} expansion loop only creates
-     * an entry for stat index {@code i} when
-     * {@code PlayerEventStatusUpdate.getPlayerStatusView().statString()[i]} is non-empty - a guard
-     * C's {@code hatch_embryo} has no counterpart for, since it parameterizes unconditionally over
-     * all of {@code get_stat_count()}'s entries ({@code ui-entry.c}) and
-     * {@code stat_names[]} is a fixed five-element array that is never empty. Currently inert:
-     * {@code statString} is seeded from the same hardcoded {@code {"STR","INT","WIS","DEX","CON"}}
-     * order in {@code PlayerEventStatusUpdate} and is never actually empty at any index, so
-     * the guard never filters anything out in practice.
+     * <p><b>Accepted deviation (261102):</b> a new record with no combiner throws as soon as the record
+     * is handled, quoting that record's line. C checks {@code combiner_index} first thing in
+     * {@code hatch_embryo}, but that only runs when the next {@code name:} line arrives or the file
+     * ends, so C reports the failure against the next record (or none) and fails a {@code parameter:}
+     * record once, where Java fails on its first value. Every new shipped record has a {@code combine:}
+     * or {@code template:} line. See "UI entry" in {@code docs/Accepted_Deviations.md}.
      *
-     * <p><b>Outstanding (found 260929):</b> two smaller divergences from C's error handling. A
-     * {@code priority:} value outside the {@code int} range makes {@code Integer.parseInt} throw, so
-     * the record is rejected with an error, where C's {@code strtol} clamps it to {@code INT_MIN} or
-     * {@code INT_MAX}. And when the create path fails for a {@code parameter:element} record (no
-     * combiner), the loop appends one {@code "Bad entry"} message per element, where C's
-     * {@code hatch_embryo} fails the record once. The bad-flag message also quotes the record's first
-     * flag rather than the one that failed. All are latent, not live.
+     * <p><b>Accepted deviation (261102):</b> only {@code label}, {@code label2} and {@code label5} are
+     * read, where C registers {@code label1} to {@code label10}. Shipped data uses only those three.
+     * See "UI entry" in {@code docs/Accepted_Deviations.md}.
      *
-     * <p>Function assemble coded before 260922, commented in full on 260929.
+     * <p><b>Accepted deviation (261102):</b> a {@code priority:} of {@code -2147483648} or below loads as
+     * {@code -2147483647}, because {@link ParseUtils#parseIntString} clamps the digits to
+     * {@code INT_MAX} before the sign is applied, where C's {@code strtol} clamps to {@code INT_MIN}.
+     * The lowest shipped priority is {@code -12}. See "UI entry" in
+     * {@code docs/Accepted_Deviations.md}.
+     *
+     * <p><b>Accepted deviation (261102):</b> the file order of the {@code template:}, {@code renderer:},
+     * {@code combine:}, {@code flags:} and {@code priority:} lines is not kept, so the template is
+     * always applied first (see {@link #parseEachEntry}). See "UI entry" in
+     * {@code docs/Accepted_Deviations.md}.
+     *
+     * <p>Function assemble coded before 260922, commented in full on 261102.
      */
     @Override
     public List<UIEntry> assemble(@NotNull List<UIEntryParseRecord> records,
                                   @NotNull List<String> errors,
                                   @NotNull String filename) {
+        this.filename = filename;
         List<UIEntry> results = new ArrayList<>(UIRegistry.getUIEntries());
         embryo = null;
 
         for (UIEntryParseRecord record : records) {
+            boolean priorityFound = !record.priority().isEmpty();
             int line = record.line();
-            UIEntry uiEntry = null;
 
             ElementEnum parameter = ElementEnum.ELEM_NONE;
-            if (!record.nameTag().isEmpty()) {
-                try {
-                    parameter = ElementEnum.valueOf("ELEM_" + record.nameTag());
-                } catch (IllegalArgumentException e) {
-                    errors.add("Block starting on line " + line + ": " +
-                            "has illegal parameter element " + record.nameTag());
-                    continue;
-                }
-            }
             String name = record.name();
             StatElemType statElemType = StatElemType.fromValue(record.parameter());
             if (statElemType == null) {
-                errors.add("Block starting on line: " + line +
-                        " has illegal parameter kind: " + record.parameter());
-                continue;
+                String message = "UI entry starting at line: " + line + " of file: " + filename + " has " +
+                        "an illegal parameter value: " + record.parameter();
+                logger.fatal(message);
+                throw new DataFileParseException(message);
             }
             String rendStr = record.renderer();
             UIEntryRenderer renderer;
             if (!rendStr.isEmpty()) {
                 renderer = UIRegistry.getUIEntryRenderer(rendStr, errors);
-                if (renderer == null) continue;
+                if (renderer == null) {
+                    String message = "UI entry starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal renderer value: " + record.renderer();
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
+                }
             } else {
                 renderer = null;
             }
@@ -246,10 +297,17 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
             else {
                 try {
                     combinerName = CombinerName.valueOf(record.combine());
+                    if (combinerName == CombinerName.NONE) {
+                        String message = "UI entry starting at line: " + line + " of file: " + filename + " has " +
+                                "an illegal sentinel combiner name value: " + record.combine();
+                        logger.fatal(message);
+                        throw new DataFileParseException(message);
+                    }
                 } catch (IllegalArgumentException e) {
-                    errors.add("Block starting on line: " + line
-                            + " has illegal combiner enum value: " + record.combine());
-                    continue;
+                    String message = "UI entry starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal combiner name value: " + record.combine();
+                    logger.fatal(message, e);
+                    throw new DataFileParseException(message);
                 }
             }
 
@@ -259,9 +317,10 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
 
             if ((statElemType == StatElemType.ELEMENT || statElemType == StatElemType.STAT)
                     && existingEntry != null) {
-                errors.add("Block starting on line: " + line + " has " +
-                        "a stat/parameter set on an already existing entry name");
-                continue;
+                String message = "UI entry starting at line: " + line + " of file: " + filename + " has " +
+                        "an pre-existing stat/parameter name: " + name;
+                logger.fatal(message);
+                throw new DataFileParseException(message);
             }
 
             // priority must be either "index", "negative_index" or an integer
@@ -271,80 +330,89 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
                 if (record.priority().equals("index") || record.priority().equals("negative_index")) {
                     priorityStr = record.priority();
                 } else {
-                    priorityStr = null;
-                    try {
-                        priorityNum = Integer.parseInt(record.priority());
-                    } catch (NumberFormatException e) {
-                        errors.add("Block starting on line: " + line +
-                                " has illegal priority number value: " + record.priority());
-                        continue;
+                    priorityStr = record.priority();
+                    int sign = ParseUtils.signFound(priorityStr);
+                    if (sign != 0) priorityStr = priorityStr.substring(1);
+                    if (!ParseUtils.onlyDigits(priorityStr)) {
+                        String message = "UI entry starting at line: " + line + " of file: " + filename + " has " +
+                                "an illegal priority value: " + record.priority();
+                        logger.fatal(message);
+                        throw new DataFileParseException(message);
                     }
+                    priorityNum = ParseUtils.parseIntString("UI entry", priorityStr, line, filename, "priority", ParseUtils.Radix.DECIMAL);
+                    if (sign != 0) priorityNum = sign * priorityNum;
                 }
             }
             Flag<ChannelEntryFlag> flag = new Flag<>(ChannelEntryFlag.class);
-            boolean badFlag = false;
             if (!record.flags().isEmpty()) {
                 for (String flagName : record.flags()) {
                     try {
                         ChannelEntryFlag flagType = ChannelEntryFlag.valueOf("ENTRY_FLAG_" + flagName);
+                        if (flagType == ChannelEntryFlag.ENTRY_FLAG_TEMPLATE_ONLY) {
+                            String message = "UI entry starting at line: " + line + " of file: " + filename + " has " +
+                                    "an illegal entry flag value: " + flagName;
+                            logger.fatal(message);
+                            throw new DataFileParseException(message);
+                        }
                         flag.on(flagType);
                     } catch (IllegalArgumentException e) {
-                        errors.add("Block starting on line: " + line +
-                                " has illegal entry flag value: " + record.flags().getFirst());
-                        badFlag = true;
+                        String message = "UI entry starting at line: " + line + " of file: " + filename + " has " +
+                                "an unknown entry flag value: " + flagName;
+                        logger.fatal(message);
+                        throw new DataFileParseException(message);
                     }
                 }
-            }
-            if (badFlag) {
-                continue;
             }
             String desc = record.desc();
             String label = record.label();
-            String label2 = record.label2();
             String label5 = record.label5();
+            String label2 = record.label2();
             List<String> categoriesNames1 = record.categoriesBeforePriority();
             List<String> categoriesNames2 = record.categoriesAfterPriority();
-            UIEntryBase template;
+            UIEntry template;
             if (record.template().isEmpty())
                 template = null;
             else {
-                template = UIRegistry.getUIEntryBase(record.template());
+                template = results.stream().filter(r -> r.getName().equals(record.template()))
+                        .findFirst().orElse(null);
                 if (template == null) {
-                    errors.add("Block starting on line: " + line +
-                            " has illegal template name: " + record.template());
-                    continue;
+                    String message = "UI entry starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal template value: " + record.template();
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
                 }
             }
             if (statElemType == StatElemType.STAT) {
-                for (int i = 0; i < 5; i++) {
-                    int newPriorityNum;
-                    if (!PlayerEventStatusUpdate.getPlayerStatusView().statString()[i].isEmpty()) {
-                        if ("negative_index".equals(priorityStr))
-                            newPriorityNum = -i;
-                        else if ("index".equals(priorityStr))
-                            newPriorityNum = i;
-                        else if ("".equals(priorityStr))
-                            newPriorityNum = 0;
-                        else
-                            newPriorityNum = priorityNum;
-                        String statStr = PlayerEventStatusUpdate.getPlayerStatusView().statString()[i];
-                        List<UIEntryCategory> categories =
-                                buildCategories(categoriesNames1, categoriesNames2, newPriorityNum, 0);
-                        String newLabel = record.label();
-                        if (record.label() == null || record.label().isEmpty())
-                            newLabel = statStr;
-                        UIEntry entry = new UIEntry(name + "<" + statStr + ">", template, parameter, statElemType,
-                                renderer, combinerName, categories, newPriorityNum, priorityStr,
-                                flag, desc, newLabel, label5, label2);
-                        // The constructor has no stat-index slot (unlike elementParameter above);
-                        // stamp it directly so an override merge (parseEachEntry) can later resolve
-                        // an index/negative_index priority scheme against it.
-                        entry.setStatParameter(i);
-                        if (!parseEachEntry(results, entry)) {
-                            errors.add("Bad entry: " + name + " no combiner found.");
-                            continue;
-                        }
+                for (int i = 0; i < HelperFunctions.stats.length; i++) {
+                    int newPriorityNum = switch (priorityStr) {
+                        case "negative_index" -> -i;
+                        case "index" -> i;
+                        case "" -> 0;
+                        default -> priorityNum;
+                    };
+                    String statStr = HelperFunctions.stats[i];
+                    List<UIEntryCategory> categories =
+                            buildCategories(categoriesNames1, categoriesNames2, newPriorityNum, 0, priorityFound);
+                    String newLabel = record.label();
+                    if (record.label().isEmpty())
+                        newLabel = statStr;
+                    int labelLength = Math.min(MAX_ENTRY_LABEL, newLabel.length());
+                    newLabel = newLabel.substring(0, labelLength);
+                    UIEntry entry = new UIEntry(name + "<" + statStr + ">", template, parameter, statElemType,
+                            renderer, combinerName, categories, newPriorityNum, priorityStr,
+                            flag, desc, newLabel, label5, label2);
+                    registerLabel(entry, newLabel, label5, label2);
+                    // The constructor has no stat-index slot (unlike elementParameter above);
+                    // stamp it directly so an override merge (parseEachEntry) can later resolve
+                    // an index/negative_index priority scheme against it.
+                    entry.setStatParameter(i);
+                    if (!parseEachEntry(results, entry, line, record.categoriesBeforePriority())) {
+                        String message = "UI entry starting at line: " + line + " of file: " + filename + " has " +
+                                "no combiner";
+                        logger.fatal(message);
+                        throw new DataFileParseException(message);
                     }
+
                 }
             } else if (statElemType == StatElemType.ELEMENT) {
                 for (ElementEnum elementEnum : ElementEnum.values()) {
@@ -353,40 +421,54 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
 
                     int newPriorityNum;
                     int indexNum = elementEnum.ordinal() - 1;
-                    if ("negative_index".equals(priorityStr))
-                        newPriorityNum = -indexNum;
-                    else if ("index".equals(priorityStr))
-                        newPriorityNum = indexNum;
-                    else if ("".equals(priorityStr))
-                        newPriorityNum = 0;
-                    else
-                        newPriorityNum = priorityNum;
+                    newPriorityNum = switch (priorityStr) {
+                        case "negative_index" -> -indexNum;
+                        case "index" -> indexNum;
+                        case "" -> 0;
+                        default -> priorityNum;
+                    };
                     List<UIEntryCategory> categories =
-                            buildCategories(categoriesNames1, categoriesNames2, newPriorityNum, 0);
+                            buildCategories(categoriesNames1, categoriesNames2, newPriorityNum, 0, priorityFound);
                     String newLabel = label;
-                    if (record.label() == null || record.label().isEmpty())
+                    if (record.label().isEmpty())
                         newLabel = elementEnum.name().substring(5);
-                    if (!parseEachEntry(results, new UIEntry(name + "<" + elementEnum.name().substring(5) + ">",
+                    int newLabelLength = Math.min(MAX_ENTRY_LABEL, newLabel.length());
+                    newLabel = newLabel.substring(0, newLabelLength);
+                    UIEntry entry = new UIEntry(name + "<" + elementEnum.name().substring(5) + ">",
                             template, elementEnum, statElemType, renderer, combinerName,
-                            categories, newPriorityNum, priorityStr, flag, desc, newLabel, label5, label2))) {
-                        errors.add("Bad entry: " + name + " no combiner found.");
-                        continue;
+                            categories, newPriorityNum, priorityStr, flag, desc, newLabel, label5, label2);
+                    registerLabel(entry, label, label5, label2);
+
+                    if (!parseEachEntry(results, entry, line, record.categoriesBeforePriority())) {
+                        String message = "UI entry starting at line: " + line + " of file: " + filename + " has " +
+                                "no combiner";
+                        logger.fatal(message);
+                        throw new DataFileParseException(message);
                     }
                 }
             } else {
                 List<UIEntryCategory> categories
-                        = buildCategories(categoriesNames1, categoriesNames2, priorityNum, 0);
-
-                if (!parseEachEntry(results, new UIEntry(name, template, parameter, statElemType,
+                        = buildCategories(categoriesNames1, categoriesNames2, priorityNum, 0, priorityFound);
+                
+                int labelLength = Math.min(MAX_ENTRY_LABEL, label.length());
+                label = label.substring(0, labelLength);
+                
+                UIEntry entry = new UIEntry(name, template, parameter, statElemType,
                         renderer, combinerName, categories,
                         priorityNum, priorityStr, flag,
-                        desc, label, label5, label2))) {
-                    errors.add("Bad entry: " + name + " no combiner found.");
-                    continue;
+                        desc, label, label5, label2);
+
+                registerLabel(entry, label, label5, label2);
+
+                if (!parseEachEntry(results, entry, line, record.categoriesBeforePriority())) {
+                    String message = "UI entry starting at line: " + line + " of file: " + filename + " has " +
+                            "no combiner";
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
                 }
             }
         }
-
+        results.sort(Comparator.comparing(UIEntry::getName));
         return results;
     }
 
@@ -409,9 +491,10 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
      * none of the thirteen records carries its own {@code parameter:} line (and {@link #assemble}
      * rejects such a record before it gets here). It then applies the record's template (if
      * any), renderer, combiner, label, shortened labels and flags directly onto the existing entry -
-     * each an unconditional overwrite in C ({@code parse_entry_renderer}/{@code parse_entry_combine}/
-     * {@code parse_entry_label}) except flags, which C only ever ORs
-     * in ({@code parse_entry_flags}) - before merging in categories
+     * each an overwrite in C when its line is present ({@code parse_entry_renderer}/
+     * {@code parse_entry_combine}/{@code parse_entry_label}) except flags, which C only ever ORs
+     * in ({@code parse_entry_flags}); a value the record left empty is skipped here, as an absent
+     * line is skipped in C - before merging in categories
      * not already present and applying the record's priority to either the existing entry's default
      * priority or its last-merged category, matching {@code parse_entry_priority}'s
      * {@code last_category_index} branch.
@@ -423,9 +506,9 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
      * {@code hatch_embryo} does. Carrying the record's flags onto the blank entry was fixed 260929: it
      * had been dropping them, which lost {@code TIMED_AS_AUX} on all thirteen
      * {@code resist_ui_compact_0<TAG>} entries. The categories were already given their resolved priority by
-     * {@link #buildCategories(List, List, int, int)} before this method ever sees them; see that
-     * method's Javadoc for a known divergence in how a category-attached (rather than record-default)
-     * priority is threaded through here. The blank entry's constructor carries across {@code entry}'s
+     * {@link #buildCategories(List, List, int, int, boolean)} before this method ever sees them; the
+     * blank entry's default priority is the record's priority only when no category came before the
+     * {@code priority:} line, and 0 otherwise. The blank entry's constructor carries across {@code entry}'s
      * resolved element parameter directly, but has no slot for a stat index, so
      * {@link UIEntry#getStatParameter()} is copied across separately with
      * {@link UIEntry#setStatParameter(int)} - without it, an override targeting a stat-parameterized
@@ -433,55 +516,73 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
      * wrong (default {@code 0}) index; found and fixed 260922 via {@code assemble}'s
      * {@code parameter:stat} loop.
      * <p>
-     * <b>Outstanding (found 260929), override path:</b> {@code lastCategory} is the last category of
-     * the whole merged list, so a {@code priority:} written before any category sets that last
-     * category's priority where C sets the entry's default priority; a template's flags are never
-     * copied onto the existing entry, where C sets {@code flags = template flags & ~TEMPLATE_ONLY};
-     * and an {@code index} or {@code negative_index} scheme on a non-parameterized entry resolves to
-     * {@code 0} where C uses {@code param_index} ({@code -1}).
+     * Where the two paths agree with C:
+     * <ul>
+     *   <li>The template's renderer, combiner, default priority and flags (with
+     *       {@code TEMPLATE_ONLY} masked off) are copied first, and its categories are added with
+     *       their own priority and {@code prioritySet}, as {@code parse_entry_template} does.</li>
+     *   <li>The record's own flags are OR'd in, never replaced.</li>
+     *   <li>A {@code priority:} number or scheme goes to the entry's default priority when no category
+     *       came before the line, and otherwise to the last category before it
+     *       ({@code categoriesBeforePriority}), as {@code parse_entry_priority} does with
+     *       {@code last_category_index}. On the override path an {@code index} or
+     *       {@code negative_index} scheme is resolved against the existing entry's parameter, or
+     *       {@code -1} if it has none, as C's {@code param_index} is.</li>
+     *   <li>Categories end up sorted by name, as {@code insert_embryo_category} keeps them.</li>
+     *   <li>An empty {@code label:} or shortened label on the override path leaves the existing one
+     *       alone, as an absent line does in C.</li>
+     * </ul>
      * <p>
-     * <b>Outstanding (found 260929), create path:</b> the template's own default priority and each
-     * template category's priority and {@code priority_set} are replaced by the record's priority and
-     * {@code prioritySet=false}, where C copies them from the template; a template's flags replace the
-     * record's own flags rather than being OR'd with them, so a record with both a {@code template:}
-     * and {@code flags:} line would lose the latter; and categories stay in insertion order where C
-     * keeps them sorted by name. All are latent: {@code ui_entry_base.txt} gives no base entry a
-     * priority or a category priority, and no shipped record has both a template and flags.
+     * <b>Accepted deviations (261102):</b> the template is always applied before the record's own
+     * renderer, combiner, flags and priority, where C applies them in file order; and a category
+     * added to an existing entry carries a different placeholder priority than C's until the finishing
+     * pass overwrites it. Both are recorded under "UI entry" in {@code docs/Accepted_Deviations.md}.
      *
-     * @param results the shared entry list being built up across all of {@code ui_entry.txt} (seeded
-     *                from the registry's existing entries, including the {@code ui_entry_base.txt}
-     *                placeholders); mutated in place
-     * @param entry   the resolved {@link UIEntry} {@link #assemble} built from one parse record, not
-     *                yet folded into {@code results}
+     * @param results                  the shared entry list being built up across all of {@code ui_entry.txt} (seeded
+     *                                 from the registry's existing entries, including the {@code ui_entry_base.txt}
+     *                                 placeholders); mutated in place
+     * @param entry                    the resolved {@link UIEntry} {@link #assemble} built from one parse record, not
+     *                                 yet folded into {@code results}
+     * @param line                     the line the record starts on, quoted in the duplicate-parameter error
+     * @param categoriesBeforePriority the names of the categories written before the record's
+     *                                 {@code priority:} line, used to find the category that
+     *                                 line applies to and to decide whether it sets the entry's
+     *                                 default priority instead
      * @return {@code true} if the entry was merged or added; {@code false} if the create path rejected
      * it for having no combiner, in which case nothing is added to {@code results}
+     * @throws DataFileParseException if the override path is given an entry that still carries a stat
+     *                                or element parameter
      *
-     * <p>Function parseEachEntry coded before 260922, commented in full on 260929.
+     * <p>Function parseEachEntry coded before 260922, commented in full on 261102.
      */
-    private boolean parseEachEntry(List<UIEntry> results, UIEntry entry) {
+    private boolean parseEachEntry(List<UIEntry> results, UIEntry entry, int line, List<String> categoriesBeforePriority) {
         UIEntry existing = results.stream()
                 .filter(e -> e.getName().equals(entry.getName())).findFirst().orElse(null);
         if (existing != null) {
             // Override path
             if ((entry.getStatOrElement() == StatElemType.ELEMENT && entry.getParameter() != null) ||
                     (entry.getStatOrElement() == StatElemType.STAT && entry.getStatParameter() != -1)) {
-                String message = "Invalid entry found - existing UIEntry with non-null parameter";
+                String message = "UI Entry starting at line: " + line + " of file: " + filename + " is " +
+                        "a duplicate of a non null parameter";
                 logger.fatal(message);
-                throw new RuntimeException(message);
+                throw new DataFileParseException(message);
             }
 
             // Templates
             UIEntryCategory lastCategory = null;
-            UIEntryBase template = entry.getTemplate();
+            UIEntry template = entry.getTemplate();
             if (template != null) {
+                Flag<ChannelEntryFlag> flagSet = new Flag<>(ChannelEntryFlag.class);
+                flagSet.copyFrom(template.getEntryFlag());
+                flagSet.off(ChannelEntryFlag.ENTRY_FLAG_TEMPLATE_ONLY);
+                existing.setEntryFlags(flagSet);
                 existing.setRenderer(template.getRenderer());
-                existing.setCombinerType(template.getCombine());
-                existing.setDefaultPriority(0); // May need to change if ever UIEntryBases gain priorities
-                for (String catStr : template.getCategories()) {
-                    UIEntryCategory cat = new UIEntryCategory(catStr, existing.getDefaultPriority(), false);
+                existing.setCombinerType(template.getCombineType());
+                existing.setDefaultPriority(template.getDefaultPriority());
+                for (UIEntryCategory category : template.getCategories()) {
                     if (existing.getCategories().stream()
-                            .noneMatch(c -> c.getName().equals(catStr))) {
-                        existing.getCategories().add(cat);
+                            .noneMatch(c -> c.getName().equals(category.getName()))) {
+                        existing.getCategories().add(category.copy());
                     }
                 }
             }
@@ -490,11 +591,11 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
                 existing.setRenderer(entry.getRenderer());
             if (entry.getCombineType() != null && entry.getCombineType() != CombinerName.NONE)
                 existing.setCombinerType(entry.getCombineType());
-            if (entry.getLabel() != null)
+            if (entry.getLabel() != null && !entry.getLabel().isEmpty())
                 existing.setLabel(entry.getLabel());
 
             for (int index = 0; index < 10; index++) {
-                if (entry.getShortenedLabel(index) != null)
+                if (entry.getShortenedLabel(index) != null && !entry.getShortenedLabel(index).isEmpty())
                     existing.setShortenedLabel(index, entry.getShortenedLabel(index));
             }
             FlagView<ChannelEntryFlag> entryFlags = entry.getEntryFlag();
@@ -523,13 +624,22 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
                             .filter(c -> c.getName().equals(cat.getName()))
                             .findFirst().orElse(null);
                 }
-                lastCategory = category;
+                if (!categoriesBeforePriority.isEmpty()) {
+                    String nameToCheck = categoriesBeforePriority.getLast();
+                    lastCategory = existing.getCategories().stream()
+                            .filter(c -> c.getName().equals(nameToCheck))
+                            .findFirst().orElse(null);
+                } else {
+                    lastCategory = null;
+                }
             }
+            
+            existing.getCategories().sort(Comparator.comparing(UIEntryCategory::getName));
 
             String scheme = entry.getPriorityString();
             int value;
-            if (scheme != null) {
-                int parmIndex = 0;
+            if (scheme.equals("negative_index") || scheme.equals("index")) {
+                int parmIndex = -1;
                 if (existing.getStatOrElement() == StatElemType.ELEMENT) {
                     parmIndex = existing.getParameter().ordinal() - 1;
                 } else if (existing.getStatOrElement() == StatElemType.STAT) {
@@ -542,7 +652,7 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
             } else {
                 value = entry.getPriorityNum();
             }
-            if (scheme == null || !scheme.isEmpty()) {
+            if (!scheme.isEmpty()) {
                 if (lastCategory == null) {
                     existing.setDefaultPriority(value);
                 } else {
@@ -554,8 +664,11 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
             // Create path
             Flag<ChannelEntryFlag> entryFlags = new Flag<>(ChannelEntryFlag.class);
             entryFlags.copyFrom(entry.getEntryFlag());
-            UIEntry blank = new UIEntry(entry.getName(), null, entry.getParameter(), entry.getStatOrElement(),
-                    null, null, new ArrayList<>(), entry.getPriorityNum(), entry.getPriorityString(),
+            int catPriorityToPass = entry.getPriorityNum();
+            if (!categoriesBeforePriority.isEmpty())
+                catPriorityToPass = 0;
+            UIEntry blank = new UIEntry(entry.getName(), null, entry.getParameter(), entry.getStatOrElement(), 
+                    null, null, new ArrayList<>(), catPriorityToPass, entry.getPriorityString(),
                     entryFlags, "To keep alive", null, null, null);
             // The constructor above carries entry's element parameter across but has no slot for a
             // stat index; copy it separately so a later override merge resolves against it correctly.
@@ -563,36 +676,40 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
 
             UIEntryPriorityScheme pSourceIndex;
             String priorityString = entry.getPriorityString();
-            if (priorityString == null || priorityString.isEmpty()) {
-                pSourceIndex = UIEntryPriorityScheme.PRIORITY_SCHEME_NONE;
-            } else if (priorityString.equals("negative_index")) {
+            if (priorityString.equals("negative_index")) {
                 pSourceIndex = UIEntryPriorityScheme.PRIORITY_SCHEME_NEGATIVE_INDEX;
-            } else {
+            } else if (priorityString.equals("index")) {
                 pSourceIndex = UIEntryPriorityScheme.PRIORITY_SCHEME_INDEX;
+            } else {
+                pSourceIndex = UIEntryPriorityScheme.PRIORITY_SCHEME_NONE;
             }
 
             embryo = new UIEntryEmbryo(blank, new ArrayList<>(),
                     null, pSourceIndex, null, false);
 
-            UIEntryBase template = entry.getTemplate();
+            UIEntry template = entry.getTemplate();
             if (template != null) {
                 embryo.getUiEntry().setRenderer(template.getRenderer());
-                embryo.getUiEntry().setCombinerType(template.getCombine());
-                embryo.getUiEntry().setDefaultPriority(entry.getPriorityNum());
+                embryo.getUiEntry().setCombinerType(template.getCombineType());
+                embryo.getUiEntry().setDefaultPriority(template.getDefaultPriority());
+                if (!entry.getPriorityString().isEmpty() && categoriesBeforePriority.isEmpty()) {
+                    embryo.getUiEntry().setDefaultPriority(entry.getPriorityNum());
+                }
                 Flag<ChannelEntryFlag> newFlags = new Flag<>(ChannelEntryFlag.class);
-                newFlags.copyFrom(template.getFlags());
+                newFlags.copyFrom(entry.getEntryFlag());
+                for (ChannelEntryFlag flg : template.getEntryFlag()) {
+                    newFlags.on(flg);
+                }
                 newFlags.off(ChannelEntryFlag.ENTRY_FLAG_TEMPLATE_ONLY);
                 embryo.getUiEntry().setEntryFlags(newFlags);
-
                 if (!template.getCategories().isEmpty()) {
-                    for (String catName : template.getCategories()) {
-                        UIEntryCategory category = new UIEntryCategory(catName,
-                                embryo.getUiEntry().getDefaultPriority(), false);
-                        embryo.getUiEntry().getCategories().add(category);
-                        EmbryonicCategoryReferencies embCat = new EmbryonicCategoryReferencies(category,
+                    for (UIEntryCategory category : template.getCategories()) {
+                        UIEntryCategory copyCategory = category.copy();
+                        EmbryonicCategoryReferencies embCat = new EmbryonicCategoryReferencies(copyCategory,
                                 UIEntryPriorityScheme.PRIORITY_SCHEME_NONE,
                                 embryo.getUiEntry().getDefaultPriority(), false);
                         embryo.getCategories().add(embCat);
+                        embryo.getUiEntry().getCategories().add(copyCategory);
                     }
                 }
             }
@@ -616,17 +733,79 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
                     embCat = new EmbryonicCategoryReferencies(category, null, 0, false);
                     embryo.getCategories().add(embCat);
                     embryo.getUiEntry().getCategories().add(embCat.getCategory());
+                } else if (category.isPrioritySet()) {
+                    embCat.getCategory().setPriority(category.getPriority());
+                    embCat.getCategory().setPrioritySet(true);
                 }
             }
+            
+            embryo.getUiEntry().getCategories().sort(Comparator.comparing(UIEntryCategory::getName));
 
             if (embryo.getUiEntry().getCombineType() == null
                     || embryo.getUiEntry().getCombineType() == CombinerName.NONE) {
                 return false;
             }
-            
+
             results.add(embryo.getUiEntry());
         }
 
         return true;
+    }
+    
+    /**
+     * Stores the shortened labels a record gives an entry, cutting {@code label5} to 5 characters and
+     * {@code label2} to 2 as {@code parse_entry_shortened_label} cuts them with its limit of N. The
+     * Java form of that callback, run once per record on the finished {@link UIEntry}.
+     * <p>
+     * Slots are indexed by length minus one, as {@link UIEntry#setShortenedLabel(int, String)} takes
+     * them:
+     * <ul>
+     *   <li>Slots 5 to 8 (6 to 9 characters) get prefixes of {@code label}.</li>
+     *   <li>Slots 2 to 4 get prefixes of the cut {@code label5}, so slot 4 is {@code label5} itself,
+     *       and slot 3 and slot 2 are its first 4 and 3 characters.</li>
+     *   <li>Slots 0 and 1 get prefixes of the cut {@code label2}, so slot 1 is {@code label2} itself
+     *       and slot 0 is its first character.</li>
+     * </ul>
+     * A slot whose source is empty is stored as {@code ""}, which is how {@link UIEntry} marks a slot
+     * as unset ({@code nshortened == 0} in C). {@code UIDataLoader.fillOutShortened} then fills it in
+     * the finishing pass from the nearest longer set slot, or the full label, as
+     * {@code fill_out_shortened} does, so an absent {@code label5} leaves slots 2 to 4 to be derived
+     * from the label. Slot 9 (10 characters) is left unset and filled the same way.
+     * <p>
+     * The full label itself is not cut here; {@link #assemble} cuts it to {@code MAX_ENTRY_LABEL}
+     * before the entry is built. {@code label5} and {@code label2} are reassigned locally, so the
+     * caller's copies are unchanged.
+     *
+     * <p>Function registerLabel coded on 261102, commented in full on 261102.
+     *
+     * @param entry  the entry whose shortened labels are set; its slots 0 to 8 are overwritten
+     * @param label  the entry's full label, already cut, which slots 5 to 8 are prefixes of
+     * @param label5 the record's {@code label5:} text, or {@code ""} if it had none
+     * @param label2 the record's {@code label2:} text, or {@code ""} if it had none
+     */
+    private void registerLabel(UIEntry entry, String label, String label5, String label2) {
+        for (int index = 8; index >= 5; index--) {
+            int currLength = Math.min(label.length(), index + 1);
+            String currLabel = label.substring(0, currLength);
+            entry.setShortenedLabel(index, currLabel);
+        }
+        if (!label5.isEmpty()) {
+            int l5Length = Math.min(label5.length(), 5);
+            label5 = label5.substring(0, l5Length);
+        }
+        for (int index = 4; index >= 2; index--) {
+            int currLength = Math.min(label5.length(), index + 1);
+            String currLabel = label5.substring(0, currLength);
+            entry.setShortenedLabel(index, currLabel);
+        }
+        if (!label2.isEmpty()) {
+            int l2Length = Math.min(label2.length(), 2);
+            label2 = label2.substring(0, l2Length);
+        }
+        for (int index = 1; index >= 0; index--) {
+            int currLength = Math.min(label2.length(), index + 1);
+            String currLabel = label2.substring(0, currLength);
+            entry.setShortenedLabel(index, currLabel);
+        }
     }
 }

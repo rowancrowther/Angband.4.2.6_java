@@ -18,11 +18,11 @@
 package uk.co.jackoftradesltd.frontend.entries;
 
 import uk.co.jackoftradesltd.channel.enums.ChannelEntryFlag;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.enums.StatElemType;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.channel.utils.FlagView;
 import uk.co.jackoftradesltd.channel.utils.combiners.CombinerName;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 
 import java.util.*;
 
@@ -59,7 +59,7 @@ public class UIEntry {
      *
      * <p>Field template coded before 260916, commented in full on 260922.
      */
-    private UIEntryBase template;
+    private UIEntry template;
     /**
      * The element this entry tracks, when its parameter is an element.
      *
@@ -135,7 +135,7 @@ public class UIEntry {
      *
      * <p>Field shortenedLabels coded before 260916, commented in full on 260922.
      */
-    private Map<Integer, String> shortenedLabels;
+    private final Map<Integer, String> shortenedLabels;
     /**
      * Categories this entry belongs to (used for grouping on screen).
      *
@@ -171,7 +171,7 @@ public class UIEntry {
      * @param label2      two-character label variant
      */
     public UIEntry(String name,
-                   UIEntryBase template,
+                   UIEntry template,
                    ElementEnum parameter,
                    StatElemType parmType,
                    UIEntryRenderer renderer,
@@ -711,7 +711,7 @@ public class UIEntry {
      *
      * @return this entry's template, or {@code null} if it was not built from one
      */
-    public UIEntryBase getTemplate() {
+    public UIEntry getTemplate() {
         return template;
     }
 
@@ -722,7 +722,7 @@ public class UIEntry {
      *
      * @param template the new template reference
      */
-    public void setTemplate(UIEntryBase template) {
+    public void setTemplate(UIEntry template) {
         this.template = template;
     }
 

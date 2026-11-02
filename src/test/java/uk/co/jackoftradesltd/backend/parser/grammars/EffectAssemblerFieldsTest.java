@@ -18,8 +18,8 @@
 package uk.co.jackoftradesltd.backend.parser.grammars;
 
 import org.junit.jupiter.api.Test;
-import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.middle.effect.EffectSubTypeEnum;
 import uk.co.jackoftradesltd.middle.effect.EffectSubTypeWrapper;

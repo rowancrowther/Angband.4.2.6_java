@@ -100,7 +100,7 @@ public class UIEntryBase {
      *
      * <p>Field categories coded before 260916, commented in full on 260916.
      */
-    private final List<String> categories;
+    private final List<UIEntryCategory> categories;
     /**
      * Behavioural flags applied to entries built from this template.
      * The Java form of C's {@code entry->flags}
@@ -114,6 +114,8 @@ public class UIEntryBase {
      * through unchecked; commented in full on 260916.
      */
     private final Flag<ChannelEntryFlag> flags;
+    
+    private final int defaultPriority;
 
     /**
      * Build a UI-entry template from its parsed fields. {@code desc} is
@@ -142,7 +144,8 @@ public class UIEntryBase {
      * flags and drop the stored description, commented in full on 260916.
      */
     public UIEntryBase(String name, UIEntryRenderer renderer, CombinerName combine,
-                       List<String> categories, Flag<ChannelEntryFlag> flags, String desc) {
+                       List<UIEntryCategory> categories, Flag<ChannelEntryFlag> flags, String desc,
+                       int defaultPriority) {
         if (desc == null)
             throw new IllegalArgumentException("Description cannot be null in UIEntryBase " + name);
 
@@ -151,6 +154,7 @@ public class UIEntryBase {
         this.combine = combine;
         this.categories = categories;
         this.flags = flags;
+        this.defaultPriority = defaultPriority;
     }
 
     /**
@@ -217,7 +221,7 @@ public class UIEntryBase {
      * <p>Function getCategories() coded before 260916, commented in full on
      * 260916.
      */
-    public List<String> getCategories() {
+    public List<UIEntryCategory> getCategories() {
         return categories;
     }
 
@@ -233,5 +237,9 @@ public class UIEntryBase {
      */
     public Flag<ChannelEntryFlag> getFlags() {
         return flags;
+    }
+
+    public int getDefaultPriority() {
+        return defaultPriority;
     }
 }

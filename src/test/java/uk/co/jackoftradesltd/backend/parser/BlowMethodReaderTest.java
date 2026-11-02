@@ -19,7 +19,7 @@ package uk.co.jackoftradesltd.backend.parser;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.combat.BlowMethod;
 import uk.co.jackoftradesltd.middle.enums.MessageType;

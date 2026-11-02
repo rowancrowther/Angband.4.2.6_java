@@ -21,9 +21,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.backend.parser.dungeonprofile.DungeonProfileParseRecord.Tunnel;
 import uk.co.jackoftradesltd.backend.parser.dungeonprofile.TunnelAssembler;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.middle.cave.profiles.dungeon.TunnelProfile;
 
 import java.util.ArrayList;

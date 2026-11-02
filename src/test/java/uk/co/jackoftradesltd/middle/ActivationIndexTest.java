@@ -19,10 +19,10 @@ package uk.co.jackoftradesltd.middle;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.backend.parser.ActivationReader;
 import uk.co.jackoftradesltd.backend.parser.activation.ActivationAssembler;
 import uk.co.jackoftradesltd.backend.parser.activation.ActivationParseRecord;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 
 import java.io.IOException;
 import java.lang.reflect.Field;

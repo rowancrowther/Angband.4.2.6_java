@@ -22,9 +22,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.backend.parser.blowmethod.BlowMethodAssembler;
 import uk.co.jackoftradesltd.backend.parser.blowmethod.BlowMethodParseRecord;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.middle.combat.BlowMethod;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
 

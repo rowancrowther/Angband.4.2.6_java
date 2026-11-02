@@ -18,9 +18,10 @@
 package uk.co.jackoftradesltd.backend.parser.monsterspell;
 
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftradesltd.backend.parser.ParseUtils;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
+import uk.co.jackoftradesltd.channel.parser.ParseUtils;
 import uk.co.jackoftradesltd.middle.monsters.MonsterSpellLevel;
 
 import java.util.ArrayList;
@@ -83,7 +84,7 @@ public class MonsterSpellLevelAssembler implements Assembler<MonsterSpellParseRe
      * merged level whose combined text is empty is {@code null} too.
      * <p>
      * The result is never {@code null}: a {@code power-cutoff:} that cannot be read throws
-     * {@link uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException} from
+     * {@link DataFileParseException} from
      * {@link ParseUtils#parseIntString}, which stops the load as C's parse error does. This
      * once returned {@code null} to ask the caller to drop the spell, and the caller no longer
      * needs to test for it.
@@ -94,7 +95,7 @@ public class MonsterSpellLevelAssembler implements Assembler<MonsterSpellParseRe
      * @param errors   unused: nothing here is a soft error any longer
      * @param filename the file being read, for the message of a bad {@code power-cutoff:}
      * @return the assembled levels in file order, never {@code null} and never empty
-     * @throws uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException if a
+     * @throws DataFileParseException if a
      *         {@code power-cutoff:} value has no digits
      */
     @Override

@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/frontend/ui/entry/UIEntryGrammar.g4 by ANTLR 4.13.2
+// Generated from UIEntryGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.frontend.ui.entry.antlr4.uientry;
 
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
@@ -36,173 +36,110 @@ public class UIEntryGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitRecordCount(UIEntryGrammar.RecordCountContext ctx) {
-		return visitChildren(ctx);
-	}
-
+	@Override public T visitRecordCount(UIEntryGrammar.RecordCountContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitTag(UIEntryGrammar.TagContext ctx) {
-		return visitChildren(ctx);
-	}
-
+	@Override public T visitTag(UIEntryGrammar.TagContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitName(UIEntryGrammar.NameContext ctx) {
-		return visitChildren(ctx);
-	}
-
+	@Override public T visitName(UIEntryGrammar.NameContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitParameter(UIEntryGrammar.ParameterContext ctx) {
-		return visitChildren(ctx);
-	}
-
+	@Override public T visitParameter(UIEntryGrammar.ParameterContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitRenderer(UIEntryGrammar.RendererContext ctx) {
-		return visitChildren(ctx);
-	}
-
+	@Override public T visitRenderer(UIEntryGrammar.RendererContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitCombine(UIEntryGrammar.CombineContext ctx) {
-		return visitChildren(ctx);
-	}
-
+	@Override public T visitCombine(UIEntryGrammar.CombineContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitPriority(UIEntryGrammar.PriorityContext ctx) {
-		return visitChildren(ctx);
-	}
-
+	@Override public T visitPriority(UIEntryGrammar.PriorityContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitCategory(UIEntryGrammar.CategoryContext ctx) {
-		return visitChildren(ctx);
-	}
-
+	@Override public T visitCategory(UIEntryGrammar.CategoryContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitFlags(UIEntryGrammar.FlagsContext ctx) {
-		return visitChildren(ctx);
-	}
-
+	@Override public T visitFlags(UIEntryGrammar.FlagsContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitDesc(UIEntryGrammar.DescContext ctx) {
-		return visitChildren(ctx);
-	}
-
+	@Override public T visitDesc(UIEntryGrammar.DescContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitLabel(UIEntryGrammar.LabelContext ctx) {
-		return visitChildren(ctx);
-	}
-
+	@Override public T visitLabel(UIEntryGrammar.LabelContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitLabel5(UIEntryGrammar.Label5Context ctx) {
-		return visitChildren(ctx);
-	}
-
+	@Override public T visitLabel5(UIEntryGrammar.Label5Context ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitLabel2(UIEntryGrammar.Label2Context ctx) {
-		return visitChildren(ctx);
-	}
-
+	@Override public T visitLabel2(UIEntryGrammar.Label2Context ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitTemplate(UIEntryGrammar.TemplateContext ctx) {
-		return visitChildren(ctx);
-	}
-
+	@Override public T visitTemplate(UIEntryGrammar.TemplateContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitUiEntry(UIEntryGrammar.UiEntryContext ctx) {
-		return visitChildren(ctx);
-	}
-
+	@Override public T visitUiEntry(UIEntryGrammar.UiEntryContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitFile(UIEntryGrammar.FileContext ctx) {
-		return visitChildren(ctx);
-	}
+	@Override public T visitFile(UIEntryGrammar.FileContext ctx) { return visitChildren(ctx); }
 }

@@ -19,11 +19,11 @@ package uk.co.jackoftradesltd.backend.parser;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.backend.parser.curse.CurseAssembler;
 import uk.co.jackoftradesltd.backend.parser.curse.CurseParseRecord;
 import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
 import uk.co.jackoftradesltd.middle.objects.Curse;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;

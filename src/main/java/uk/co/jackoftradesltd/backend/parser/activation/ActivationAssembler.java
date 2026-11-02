@@ -20,10 +20,10 @@ package uk.co.jackoftradesltd.backend.parser.activation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
-import uk.co.jackoftradesltd.backend.parser.ParseUtils;
 import uk.co.jackoftradesltd.backend.parser.grammars.EffectAssembler;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
+import uk.co.jackoftradesltd.channel.parser.ParseUtils;
 import uk.co.jackoftradesltd.middle.Activation;
 import uk.co.jackoftradesltd.middle.effect.Effect;
 
@@ -67,9 +67,28 @@ import java.util.List;
  * throws {@link DataFileParseException}, as C's {@code print_error} in {@code datafile.c} quits.
  * Nothing is skipped and nothing goes to the soft-error channel for later. Records are checked in
  * file order, and within a record {@code aim:}, then {@code level:}, then {@code power:}, then the
- * effects. {@link EffectAssembler} still appends to {@code errors} and returns {@code null} for a
- * bad effect, and this class turns that {@code null} into the throw. Hard grammar and lexer errors
- * are handled upstream by {@code GrammarDriver}.
+ * effects. A bad effect throws from inside {@link EffectAssembler#assemble}, which names the
+ * effect's own line; that method never returns a partial list and never returns {@code null}.
+ * Hard grammar and lexer errors are handled upstream by {@code GrammarDriver}.
+ *
+ * <p><b>Outstanding.</b> Three things in this file, all checked against the code and against
+ * {@code obj-init.c} and {@code parser.c}:
+ * <ul>
+ *   <li>The grammar keeps only the last {@code aim:} or {@code power:} line of a record, but C
+ *       reads every line and stops at the first one it refuses. A record with {@code power:-3}
+ *       followed by {@code power:5} stops the load in C ({@code *tok == '-'} in
+ *       {@code parser_parse()} gives {@code PARSE_ERROR_NOT_NUMBER}) and loads with power 5 here,
+ *       because this class never sees the first line. The fix is in {@code ActivationsGrammar.g4}
+ *       and {@link ActivationParseRecord}, not here, and it is not yet in
+ *       {@code docs/Accepted_Deviations.md}. None on shipped data.</li>
+ *   <li>The {@code effects == null} test in {@link #assemble} cannot run: it follows an
+ *       {@link EffectAssembler#assemble} that no longer returns {@code null}.</li>
+ *   <li>Text with white space in front of the {@code -} ({@code " -5"}) gets past the first-character
+ *       {@code -} test on {@code power:}, as it does in C, but the reading then makes it negative
+ *       and the {@code power < 0} test refuses it. C's {@code strtoul} wraps it to a huge unsigned
+ *       number, which the {@code int} field keeps as -5, so C loads it. The lexer never produces
+ *       white space in a number, so no data file reaches this; the test is otherwise unreachable.</li>
+ * </ul>
  *
  * <p><b>Accepted deviations</b> (all in {@code docs/Accepted_Deviations.md}, section Activation):
  * <ul>
@@ -84,7 +103,8 @@ import java.util.List;
  * The list is also base 0 and holds only real records, the accepted base-0 deviation, so each
  * activation's index is one lower than C's {@code activations[]} slot.
  *
- * <p>Class ActivationAssembler coded before 260915, commented in full on 261022.
+ * <p>Class ActivationAssembler coded before 260915, commented in full on 261102 (error policy
+ * brought into line with {@link EffectAssembler} throwing, outstanding notes added).
  *
  * @author Rowan Crowther
  */
@@ -93,7 +113,7 @@ public class ActivationAssembler implements Assembler<ActivationParseRecord, Lis
      * The logger this assembler writes its fatal messages to, just before it throws
      * {@link DataFileParseException}. The thrown message carries the same text.
      *
-     * <p>Field logger coded before 260915, commented in full on 261022.
+     * <p>Field logger coded before 260915, commented in full on 261102.
      */
     private static final Logger logger = LogManager.getLogger(ActivationAssembler.class);
 
@@ -112,17 +132,16 @@ public class ActivationAssembler implements Assembler<ActivationParseRecord, Lis
      * from the head: the last record in {@code activation.txt} comes first, as {@code activations[1]}.
      * Each activation is then numbered by its place in that list, from 0 where C counts from 1.
      *
-     * <p>Function assemble coded before 260915, commented in full on 261022, updated on 261022 to
+     * <p>Function assemble coded before 260915, commented in full on 261102, updated on 261022 to
      * stop the load on a bad record.
      *
      * @param records  the raw activation records captured by the grammar
-     * @param errors   the soft-error channel, passed on to {@link EffectAssembler}, which appends to it
-     *                 before returning {@code null} for a bad effect; this method never skips a record
-     *                 and adds nothing to it itself
+     * @param errors   the soft-error channel, passed on to {@link EffectAssembler#assemble}, which no
+     *                 longer appends to it; this method never skips a record and adds nothing to it itself
      * @param filename the file the records came from, named in every stop-the-load message
      * @return the assembled activations, in reverse file order (C's {@code activations[]} order)
      * @throws DataFileParseException if a number cannot be read, {@code aim:} or {@code power:} is negative,
-     *                                or an effect does not resolve
+     *                                or an effect does not resolve (thrown by {@link EffectAssembler})
      */
     @Override
     public List<Activation> assemble(@NotNull List<ActivationParseRecord> records, @NotNull List<String> errors,
@@ -167,8 +186,9 @@ public class ActivationAssembler implements Assembler<ActivationParseRecord, Lis
                 throw new DataFileParseException(message);
             }
             // EffectAssembler is all-or-nothing: if any single effect in the block
-            // fails to resolve it returns null (not a partial list), so one bad effect
+            // fails to resolve it throws (not a partial list), so one bad effect
             // stops the load rather than silently loading the activation minus a power.
+            // The null test below is a leftover from when it returned null instead.
             List<Effect> effects = EffectAssembler.assemble(record.effects(), errors, filename);
             if (effects == null) {
                 String message = "A malformed effect was found in the Activation beginning at line: " +

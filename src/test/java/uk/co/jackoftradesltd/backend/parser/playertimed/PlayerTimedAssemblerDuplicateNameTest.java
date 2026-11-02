@@ -19,8 +19,8 @@ package uk.co.jackoftradesltd.backend.parser.playertimed;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
 import uk.co.jackoftradesltd.middle.player.PlayerTimedEffect;
 import uk.co.jackoftradesltd.middle.player.TimedFailure;

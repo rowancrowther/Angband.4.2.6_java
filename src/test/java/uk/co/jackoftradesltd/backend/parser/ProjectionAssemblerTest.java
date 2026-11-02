@@ -18,11 +18,11 @@
 package uk.co.jackoftradesltd.backend.parser;
 
 import org.junit.jupiter.api.Test;
-import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.backend.parser.projection.ProjectionAssembler;
 import uk.co.jackoftradesltd.backend.parser.projection.ProjectionParseRecord;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.combat.enums.ProjectionType;
 import uk.co.jackoftradesltd.middle.enums.MessageType;

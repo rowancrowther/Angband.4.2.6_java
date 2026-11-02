@@ -18,10 +18,10 @@
 package uk.co.jackoftradesltd.backend.parser;
 
 import org.junit.jupiter.api.Test;
-import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.backend.parser.chesttrap.ChestTrapAssembler;
 import uk.co.jackoftradesltd.backend.parser.chesttrap.ChestTrapParseRecord;
 import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.middle.objects.ChestTrap;
 import uk.co.jackoftradesltd.middle.objects.enums.ChestTrapCode;
 

@@ -132,4 +132,8 @@ public class UIEntryCategory {
     public void setPrioritySet(boolean set) {
         this.prioritySet = set;
     }
+
+    public UIEntryCategory copy() {
+        return new UIEntryCategory(name, priority, prioritySet);
+    }
 }

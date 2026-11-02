@@ -46,7 +46,7 @@ class UIEntryBaseTest {
 
     private static UIEntryBase base(Flag<ChannelEntryFlag> flags, String desc) {
         return new UIEntryBase("test_base", null, CombinerName.LOGICAL_OR,
-                List.of("CHAR_SCREEN1"), flags, desc);
+                List.of(new UIEntryCategory("CHAR_SCREEN1", 0, false)), flags, desc, 0);
     }
 
     private static Flag<ChannelEntryFlag> flagsOf(ChannelEntryFlag... on) {
@@ -105,12 +105,14 @@ class UIEntryBaseTest {
     void gettersReturnTheConstructorArguments() {
         UIEntryRenderer renderer = null;
         UIEntryBase b = new UIEntryBase("t", renderer, CombinerName.ADD,
-                List.of("CHAR_SCREEN1", "abilities"),
-                flagsOf(ChannelEntryFlag.ENTRY_FLAG_TIMED_AS_AUX), "d");
+                List.of(new UIEntryCategory("CHAR_SCREEN1", 0, false), new UIEntryCategory("abilities", 3, true)),
+                flagsOf(ChannelEntryFlag.ENTRY_FLAG_TIMED_AS_AUX), "d", 7);
 
         assertEquals("t", b.getName());
         assertEquals(renderer, b.getRenderer());
         assertEquals(CombinerName.ADD, b.getCombine());
-        assertEquals(List.of("CHAR_SCREEN1", "abilities"), b.getCategories());
+        assertEquals(List.of("CHAR_SCREEN1", "abilities"),
+                b.getCategories().stream().map(UIEntryCategory::getName).toList());
+        assertEquals(7, b.getDefaultPriority());
     }
 }

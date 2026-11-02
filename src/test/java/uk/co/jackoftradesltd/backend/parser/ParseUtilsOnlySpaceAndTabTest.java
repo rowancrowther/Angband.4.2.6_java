@@ -20,6 +20,7 @@ package uk.co.jackoftradesltd.backend.parser;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import uk.co.jackoftradesltd.channel.parser.ParseUtils;
 
 import static org.junit.jupiter.api.Assertions.*;
 

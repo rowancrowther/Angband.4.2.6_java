@@ -21,10 +21,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import uk.co.jackoftradesltd.backend.io.bespokeexceptions.DataFileParseException;
 import uk.co.jackoftradesltd.backend.parser.objectproperty.ObjectPropertyAssembler;
 import uk.co.jackoftradesltd.backend.parser.objectproperty.ObjectPropertyParseRecord;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.middle.objects.ObjectProperty;
 import uk.co.jackoftradesltd.middle.objects.enums.*;
 

@@ -20,17 +20,19 @@ package uk.co.jackoftradesltd.backend.parser;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftradesltd.frontend.entries.enums.UIEntryEnum;
 import uk.co.jackoftradesltd.frontend.entries.enums.UIEntryRendererEnum;
-import uk.co.jackoftradesltd.frontend.ui.entryrenderer.reader.UIEntryRendererReader;
 import uk.co.jackoftradesltd.frontend.ui.entryrenderer.assembler.UIEntryRendererAssembler;
+import uk.co.jackoftradesltd.frontend.ui.entryrenderer.reader.UIEntryRendererReader;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.OptionalInt;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -86,14 +88,14 @@ class UIEntryRendererReaderTest {
         assertEquals("char_screen1_resist_renderer", first.getName());
         assertEquals(firstCode, first.getCode());
         assertEquals("wwwwwwGGGrrGGGwGrGwwrwWWWWWWGGGrrGGGWGrGWWrW", first.getColours());
-        assertEquals(firstCode.getDefaultDigits(), first.getnDigit());
+        assertEquals(OptionalInt.of(firstCode.getDefaultDigits()), first.getnDigit());
         assertEquals(firstCode.getEntry(), first.getSign());
 
         // Last renderer is the only one that sets ndigit and sign explicitly.
         UIEntryRenderer last = result.items().get(4);
         assertEquals("char_screen1_stat_mod_renderer", last.getName());
         assertEquals(UIEntryRendererEnum.UI_ENTRY_RENDERER_NUMERIC_RENDERER_WITH_BOOL_AUX, last.getCode());
-        assertEquals(1, last.getnDigit());
+        assertEquals(OptionalInt.of(1), last.getnDigit());
         assertEquals(UIEntryEnum.UI_ENTRY_NO_SIGN, last.getSign());
     }
 
@@ -113,37 +115,38 @@ class UIEntryRendererReaderTest {
         assertEquals(FLAG.getDefaultColours(), u.getColours());
         assertEquals(FLAG.getDefaultLabelColours(), u.getLabelColours());
         assertEquals(FLAG.getDefaultSymbols(), u.getSymbols());
-        assertEquals(FLAG.getDefaultDigits(), u.getnDigit());
+        assertEquals(OptionalInt.of(FLAG.getDefaultDigits()), u.getnDigit());
         assertEquals(FLAG.getEntry(), u.getSign());
     }
 
     // ---- soft errors (partial results survive) ----------------------------------------------
 
     @Test
-    void unknownCodeIsLoggedAndRecordSkipped() throws IOException {
+    void unknownCodeIsFatal() throws IOException {
+        // C: lookup_backend_by_name returns 0, so parse_renderer_code gives PARSE_ERROR_INVALID_VALUE.
         String path = tempFile("bad-code.txt",
                 "record-count:1\nname:x\ncode:NOTACODE\n");
 
-        ParseResult<UIEntryRenderer> result = new UIEntryRendererReader().parseWithResults(path);
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> new UIEntryRendererReader().parseWithResults(path));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
-        assertTrue(result.errors().stream()
-                        .anyMatch(e -> e.contains("illegal code enum value") && e.contains("NOTACODE")),
-                result.errors()::toString);
+        assertTrue(e.getMessage().contains("illegal code value") && e.getMessage().contains("NOTACODE"),
+                e::getMessage);
     }
 
     @Test
-    void invalidSignIsLoggedAndRecordSkipped() throws IOException {
-        String path = tempFile("bad-sign.txt",
-                "record-count:1\nname:x\ncode:COMPACT_FLAG_RENDERER_WITH_COMBINED_AUX\nsign:BOGUS\n");
+    void invalidSignIsFatal() throws IOException {
+        // C: parse_renderer_sign accepts only NO_SIGN, ALWAYS_SIGN and NEGATIVE_SIGN.
+        for (String bad : List.of("BOGUS", "SIGN_DEFAULT")) {
+            String path = tempFile("bad-sign-" + bad + ".txt",
+                    "record-count:1\nname:x\ncode:COMPACT_FLAG_RENDERER_WITH_COMBINED_AUX\nsign:" + bad + "\n");
 
-        ParseResult<UIEntryRenderer> result = new UIEntryRendererReader().parseWithResults(path);
+            DataFileParseException e = assertThrows(DataFileParseException.class,
+                    () -> new UIEntryRendererReader().parseWithResults(path), bad);
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream()
-                        .anyMatch(e -> e.contains("illegal sign enum value") && e.contains("BOGUS")),
-                result.errors()::toString);
+            assertTrue(e.getMessage().contains("illegal") && e.getMessage().contains("sign")
+                    && e.getMessage().contains(bad), e::getMessage);
+        }
     }
 
     @Test
@@ -189,9 +192,9 @@ class UIEntryRendererReaderTest {
     // ---- several distinct failures at once ---------------------------------------------------
 
     @Test
-    void multipleDistinctFailuresAreEachLoggedAndGoodRecordsSurvive() throws IOException {
-        // Four records: valid, unknown-code, invalid-sign, valid. record-count matches the raw
-        // count (4), so the only errors are the two semantic ones - and both valid records survive.
+    void theFirstBadRecordStopsTheLoadAndNamesItsLine() throws IOException {
+        // Soft errors were made fatal: the NOTACODE record is the first failure, so the load
+        // stops there and nothing after it (the BOGUS sign) is reached.
         String path = tempFile("mixed.txt", String.join("\n",
                 "record-count:4",
                 "name:good_first",
@@ -205,23 +208,11 @@ class UIEntryRendererReaderTest {
                 "code:NUMERIC_RENDERER_WITH_BOOL_AUX",
                 ""));
 
-        ParseResult<UIEntryRenderer> result = new UIEntryRendererReader().parseWithResults(path);
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> new UIEntryRendererReader().parseWithResults(path));
 
-        // Two valid records survive, in order.
-        List<UIEntryRenderer> items = result.items();
-        assertEquals(2, items.size(), items::toString);
-        assertEquals("good_first", items.get(0).getName());
-        assertEquals("good_last", items.get(1).getName());
-
-        // Exactly the two semantic errors are logged - no spurious count mismatch, one per failure.
-        List<String> errors = result.errors();
-        assertEquals(2, errors.size(), errors::toString);
-        assertTrue(errors.stream()
-                        .anyMatch(e -> e.contains("illegal code enum value") && e.contains("NOTACODE")),
-                errors::toString);
-        assertTrue(errors.stream()
-                        .anyMatch(e -> e.contains("illegal sign enum value") && e.contains("BOGUS")),
-                errors::toString);
+        assertTrue(e.getMessage().contains("NOTACODE"), e::getMessage);
+        assertFalse(e.getMessage().contains("BOGUS"), e::getMessage);
     }
 
     // ---- palette top-up and cap (C: augment_colors, augment_symbols, MAX_PALETTE) ------------
@@ -291,21 +282,20 @@ class UIEntryRendererReaderTest {
     @Test
     void explicitNdigitBelowOneIsRejectedButABackendDefaultOfZeroIsNot() throws IOException {
         // C checks ndigit < 1 only on the explicit directive; the flag backend's default of 0 is fine.
-        assertEquals(0, loadOne("").getnDigit());
+        assertEquals(OptionalInt.of(0), loadOne("").getnDigit());
 
         for (String bad : List.of("0", "-3")) {
-            ParseResult<UIEntryRenderer> result = new UIEntryRendererReader()
-                    .parseWithResults(tempFile("nd" + bad + ".txt", FLAG_HEADER + "ndigit:" + bad + "\n"));
-            assertTrue(result.items().isEmpty(), "ndigit:" + bad);
-            assertTrue(result.errors().stream().anyMatch(e -> e.contains("nDigits") && e.contains(bad)),
-                    result.errors()::toString);
+            String path = tempFile("nd" + bad + ".txt", FLAG_HEADER + "ndigit:" + bad + "\n");
+            DataFileParseException e = assertThrows(DataFileParseException.class,
+                    () -> new UIEntryRendererReader().parseWithResults(path), "ndigit:" + bad);
+            assertTrue(e.getMessage().contains("number of digits") && e.getMessage().contains(bad), e::getMessage);
         }
     }
 
     @Test
     void explicitNdigitIsStoredAndOverridesTheBackendDefault() throws IOException {
-        assertEquals(1, loadOne("ndigit:1\n").getnDigit());
-        assertEquals(7, loadOne("ndigit:7\n").getnDigit());
+        assertEquals(OptionalInt.of(1), loadOne("ndigit:1\n").getnDigit());
+        assertEquals(OptionalInt.of(7), loadOne("ndigit:7\n").getnDigit());
     }
 
     @Test
@@ -340,7 +330,7 @@ class UIEntryRendererReaderTest {
             assertEquals(row[1], u.getColours(), row[0]);
             assertEquals(row[2], u.getLabelColours(), row[0]);
             assertEquals(row[3], u.getSymbols(), row[0]);
-            assertEquals(Integer.parseInt(row[4]), u.getnDigit(), row[0]);
+            assertEquals(OptionalInt.of(Integer.parseInt(row[4])), u.getnDigit(), row[0]);
             assertEquals(UIEntryEnum.UI_ENTRY_NO_SIGN, u.getSign(), row[0]);
         }
     }
@@ -396,7 +386,7 @@ class UIEntryRendererReaderTest {
         assertEquals(1, result.items().size());
         UIEntryRenderer u = result.items().get(0);
         assertEquals(UIEntryRendererEnum.UI_ENTRY_RENDERER_NUMERIC_RENDERER_WITH_BOOL_AUX, u.getCode());
-        assertEquals(2, u.getnDigit());
+        assertEquals(OptionalInt.of(2), u.getnDigit());
         assertEquals(UIEntryEnum.UI_ENTRY_NO_SIGN, u.getSign());
     }
 }

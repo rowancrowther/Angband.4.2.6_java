@@ -33,6 +33,7 @@ import uk.co.jackoftradesltd.frontend.ui.entryrenderer.reader.UIEntryRendererRea
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.OptionalInt;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -48,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class UIRegistryTest {
 
     private static UIEntryRenderer renderer(String name) {
-        return new UIEntryRenderer(name, UIEntryRendererEnum.UI_ENTRY_RENDERER_NONE, "", "", "", 0, null);
+        return new UIEntryRenderer(name, UIEntryRendererEnum.UI_ENTRY_RENDERER_NONE, "", "", "", OptionalInt.of(0), null);
     }
 
     private static UIEntry entry(String name) {

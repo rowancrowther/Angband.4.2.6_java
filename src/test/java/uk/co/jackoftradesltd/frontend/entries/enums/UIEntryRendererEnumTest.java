@@ -19,7 +19,10 @@ package uk.co.jackoftradesltd.frontend.entries.enums;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  * Unit tests for {@link UIEntryRendererEnum}, checked against the
@@ -36,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class UIEntryRendererEnumTest {
 
-    // ---- COMPACT_RESIST_RENDERER_WITH_COMBINED_AUX: list-ui-entry-renderers.h line 13 --------------
+    // ---- COMPACT_RESIST_RENDERER_WITH_COMBINED_AUX: list-ui-entry-renderers.h --------------
 
     @Test
     void compactResistRendererMatchesTheCTableRow() {
@@ -49,7 +52,7 @@ class UIEntryRendererEnumTest {
         assertEquals(UIEntryEnum.UI_ENTRY_NO_SIGN, r.getEntry());
     }
 
-    // ---- COMPACT_FLAG_RENDERER_WITH_COMBINED_AUX: list-ui-entry-renderers.h line 14 ----------------
+    // ---- COMPACT_FLAG_RENDERER_WITH_COMBINED_AUX: list-ui-entry-renderers.h ----------------
 
     @Test
     void compactFlagRendererMatchesTheCTableRow() {
@@ -62,7 +65,7 @@ class UIEntryRendererEnumTest {
         assertEquals(UIEntryEnum.UI_ENTRY_NO_SIGN, r.getEntry());
     }
 
-    // ---- COMPACT_FLAG_WITH_CANCEL_RENDERER_WITH_COMBINED_AUX: line 15 ------------------------------
+    // ---- COMPACT_FLAG_WITH_CANCEL_RENDERER_WITH_COMBINED_AUX ------------------------------
 
     @Test
     void compactFlagWithCancelRendererMatchesTheCTableRow() {
@@ -75,7 +78,7 @@ class UIEntryRendererEnumTest {
         assertEquals(UIEntryEnum.UI_ENTRY_NO_SIGN, r.getEntry());
     }
 
-    // ---- NUMERIC_AS_SIGN_RENDERER_WITH_COMBINED_AUX: line 16 ---------------------------------------
+    // ---- NUMERIC_AS_SIGN_RENDERER_WITH_COMBINED_AUX ---------------------------------------
 
     @Test
     void numericAsSignRendererMatchesTheCTableRow() {
@@ -88,7 +91,7 @@ class UIEntryRendererEnumTest {
         assertEquals(UIEntryEnum.UI_ENTRY_NO_SIGN, r.getEntry());
     }
 
-    // ---- NUMERIC_RENDERER_WITH_COMBINED_AUX: line 17 (1-digit boundary) ----------------------------
+    // ---- NUMERIC_RENDERER_WITH_COMBINED_AUX (1-digit boundary) ----------------------------
 
     @Test
     void numericRendererMatchesTheCTableRow() {
@@ -101,7 +104,7 @@ class UIEntryRendererEnumTest {
         assertEquals(UIEntryEnum.UI_ENTRY_NO_SIGN, r.getEntry());
     }
 
-    // ---- NUMERIC_RENDERER_WITH_BOOL_AUX: line 18 (1-digit boundary) --------------------------------
+    // ---- NUMERIC_RENDERER_WITH_BOOL_AUX (1-digit boundary) --------------------------------
 
     @Test
     void numericRendererWithBoolAuxMatchesTheCTableRow() {
@@ -134,5 +137,47 @@ class UIEntryRendererEnumTest {
     @Test
     void allSevenConstantsExist() {
         assertEquals(7, UIEntryRendererEnum.values().length);
+    }
+
+    // ---- Row order: C's backends[] index is the table row, 1-based once index 0 means "none" -------
+
+    @Test
+    void constantsFollowTheCTableRowOrderAfterTheNoneSentinel() {
+        List<String> cRowOrder = List.of(
+                "COMPACT_RESIST_RENDERER_WITH_COMBINED_AUX",
+                "COMPACT_FLAG_RENDERER_WITH_COMBINED_AUX",
+                "COMPACT_FLAG_WITH_CANCEL_RENDERER_WITH_COMBINED_AUX",
+                "NUMERIC_AS_SIGN_RENDERER_WITH_COMBINED_AUX",
+                "NUMERIC_RENDERER_WITH_COMBINED_AUX",
+                "NUMERIC_RENDERER_WITH_BOOL_AUX");
+
+        assertEquals(0, UIEntryRendererEnum.UI_ENTRY_RENDERER_NONE.ordinal());
+        for (int i = 0; i < cRowOrder.size(); i++) {
+            UIEntryRendererEnum r = UIEntryRendererEnum.valueOf("UI_ENTRY_RENDERER_" + cRowOrder.get(i));
+            assertEquals(i + 1, r.ordinal(), cRowOrder.get(i));
+        }
+    }
+
+    // ---- getEntry: finish_parse_ui_entry_renderer's sign fallback; every C row is NO_SIGN -----------
+
+    @Test
+    void everyConstantDefaultsToNoSign() {
+        for (UIEntryRendererEnum r : UIEntryRendererEnum.values()) {
+            assertEquals(UIEntryEnum.UI_ENTRY_NO_SIGN, r.getEntry(), r.name());
+        }
+    }
+
+    // ---- Packed tables: augment_colors/augment_symbols pad from these, so no C row is empty ---------
+
+    @Test
+    void everyCRowHasNonEmptyTables() {
+        for (UIEntryRendererEnum r : UIEntryRendererEnum.values()) {
+            if (r == UIEntryRendererEnum.UI_ENTRY_RENDERER_NONE) {
+                continue;
+            }
+            assertFalse(r.getDefaultColours().isEmpty(), r.name());
+            assertFalse(r.getDefaultLabelColours().isEmpty(), r.name());
+            assertFalse(r.getDefaultSymbols().isEmpty(), r.name());
+        }
     }
 }

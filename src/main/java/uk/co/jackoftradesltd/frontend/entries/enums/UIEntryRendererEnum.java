@@ -39,7 +39,16 @@ import uk.co.jackoftradesltd.channel.utils.combiners.CombinerName;
  * state), so the individual constants are documented collectively here
  * rather than spelling out every table.
  *
- * <p>Class UIEntryRendererEnum coded before 260916, commented in full on 260916.
+ * <p>C's {@code backends[]} rows also carry the {@code renderer_##x} draw
+ * function and the {@code valuewidth_##x} width function for each renderer;
+ * those are not held here. The constant's name stands in for C's parallel
+ * {@code backend_names[]} table, and its declaration order matches the C
+ * row order. Every C row uses {@code NO_SIGN}, so every constant carries
+ * {@link UIEntryEnum#UI_ENTRY_NO_SIGN}. The {@code combiner} is stored but
+ * has no getter yet, as the {@code combine:} directive is not parsed and
+ * nothing reads the default.
+ *
+ * <p>Class UIEntryRendererEnum coded before 260916, commented in full on 261104.
  *
  * @author Rowan Crowther
  */
@@ -147,9 +156,13 @@ public enum UIEntryRendererEnum {
     /**
      * Returns the default sign-display mode applied by this renderer.
      * Corresponds to C's {@code default_sign} ({@code struct backend_info},
-     * {@code ui-entry-renderers.c}).
+     * {@code ui-entry-renderers.c}), which C's {@code
+     * finish_parse_ui_entry_renderer} uses in place of a sign still at
+     * {@code UI_ENTRY_SIGN_DEFAULT}, the same pattern as the {@code ndigit}
+     * default. Every C row, and so every constant, gives
+     * {@link UIEntryEnum#UI_ENTRY_NO_SIGN}.
      *
-     * <p>Function getEntry coded before 260916, commented in full on 260916.
+     * <p>Function getEntry coded before 260916, commented in full on 261104.
      *
      * @return the default sign for this UI Entry Renderer enum
      */

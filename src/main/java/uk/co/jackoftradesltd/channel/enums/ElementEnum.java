@@ -17,6 +17,8 @@
 
 package uk.co.jackoftradesltd.channel.enums;
 
+import java.util.Arrays;
+
 /**
  * The damage elements as referenced by object code (resistances, brands, slays).
  * Mirrors the C original's {@code ELEM_*} list; the constants are self-describing
@@ -32,6 +34,13 @@ package uk.co.jackoftradesltd.channel.enums;
  * {@link #ordinal()} is one greater than its C value. Nothing in the port depends on the numeric
  * value — runes and properties hold the constant itself — but the difference matters when reading
  * the original alongside this.
+ *
+ * <p>The same placeholders are visible to {@link #lookup(String)}, which finds an element by its
+ * name without the {@code ELEM_} prefix. C's name list holds only the real elements, so
+ * {@link #ELEM_NONE} and {@link #ELEM_MAX} are answers that lookup can give and C's search cannot;
+ * a caller that parses data files must refuse them itself.
+ *
+ * <p>Enum ElementEnum coded before 260817, commented in full on 261105.
  *
  * @author Rowan Crowther
  */
@@ -192,5 +201,32 @@ public enum ElementEnum {
         } catch (IllegalArgumentException e) {
             return null;
         }
+    }
+
+    /**
+     * Finds the element whose name is {@code name} with the {@code ELEM_} prefix left off:
+     * {@code "FIRE"} gives {@link #ELEM_FIRE} and {@code "HOLY_ORB"} gives {@link #ELEM_HOLY_ORB}.
+     * Ports the {@code streq} search of {@code element_names} in {@code obj-init.c}, function
+     * {@code grab_element_flag()}, so the comparison is exact and case-sensitive: {@code "fire"}
+     * finds nothing.
+     *
+     * <p>Unlike C's name list, the search can return the placeholders {@link #ELEM_NONE} and
+     * {@link #ELEM_MAX}, because the constants exist here; {@code lookup("NONE")} gives
+     * {@link #ELEM_NONE}. The caller must refuse them, as {@code ParseUtils.grabElementFlag} does.
+     *
+     * <p>The text is taken as given, so the same inputs that find nothing in C find nothing here:
+     * the empty string, a lower-case or mixed-case name, a name with leading or trailing space, and
+     * a name that still carries its {@code ELEM_} prefix ({@code "ELEM_FIRE"} is looked for as
+     * {@code ELEM_ELEM_FIRE}). A {@code null} argument also gives {@code null}; C never reaches the
+     * search with a null name. Each name is unique, so the order of the constants does not affect
+     * the answer.
+     *
+     * <p>Method lookup coded before 261105, commented in full on 261105.
+     *
+     * @param flag the element name without its {@code ELEM_} prefix
+     * @return the matching constant, or {@code null} if there is none
+     */
+    public static ElementEnum lookup(String flag) {
+        return Arrays.stream(ElementEnum.values()).filter(e -> e.name().equals("ELEM_" + flag)).findFirst().orElse(null);
     }
 }

@@ -19,8 +19,12 @@ package uk.co.jackoftradesltd.channel.parser;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
+import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
+import uk.co.jackoftradesltd.middle.objects.ElementInfo;
 
 import java.math.BigInteger;
+import java.util.Map;
 
 /**
  * Shared number and text reading for the assemblers: every assembler whose data file holds a
@@ -90,10 +94,14 @@ import java.math.BigInteger;
  * trimmers has a single C function behind it: C trims by moving a pointer, and these return the
  * shorter string.
  *
- * <p>Class ParseUtils coded on 261022, commented in full on 261028 (third way in added 261023,
+ * <p>{@link #grabElementFlag(Map, String)} is the one function here that reads a flag word and not
+ * a number or a trim: it ports {@code grab_element_flag} in {@code obj-init.c}, which turns an
+ * {@code IGNORE_<element>} or {@code HATES_<element>} word into a flag on that element.
+ *
+ * <p>Class ParseUtils coded on 261022, commented in full on 261105 (third way in added 261023,
  * sign and digit tests added 261024, fourth way in and the {@code 0x} reading added 261025,
  * {@code onlySpaceAndTab} added by 261026; the whitespace skipping in the fixed-base reading and
- * the trimmers were in place before 261028).
+ * the trimmers were in place before 261028; {@code grabElementFlag} noted 261105).
  */
 public class ParseUtils {
     /** Receives the fatal message before each {@link DataFileParseException} is thrown. */
@@ -963,6 +971,68 @@ public class ParseUtils {
         }
 
         return string;
+    }
+
+    /**
+     * Reads one {@code IGNORE_<element>} or {@code HATES_<element>} word of a {@code values:}-style
+     * line and switches the matching {@link ElementInfoEnum} flag on for that element. Ports
+     * {@code grab_element_flag} in {@code obj-init.c}, which every object-side parser tries on a
+     * flag word before it gives up on it: the object-base, curse, object-kind, ego-item and artifact
+     * readers all call it.
+     *
+     * <p>The word is cut at its first underscore. Nothing before the underscore means the word is
+     * not for this function and gives {@code false}, so a word with no underscore at all is refused.
+     * The text after the underscore must be an element name exactly as {@link ElementEnum#lookup}
+     * finds it, upper case and without the {@code ELEM_} prefix, and it keeps any underscore of its
+     * own ({@code HATES_HOLY_ORB} is the holy orb, not an element called {@code ORB}). The
+     * placeholders {@link ElementEnum#ELEM_NONE} and {@link ElementEnum#ELEM_MAX} are Java
+     * additions that C's name list does not hold, so {@code IGNORE_NONE} and {@code HATES_MAX}
+     * give {@code false} here as they do there.
+     *
+     * <p>The text before the underscore is not compared whole. C calls {@code strncmp} with the
+     * length of that text, so the text only has to be a <em>prefix</em> of {@code IGNORE} or
+     * {@code HATES}: {@code IGN_FIRE} and {@code H_FIRE} are accepted, and so is {@code _FIRE},
+     * whose empty prefix matches {@code IGNORE} first and so ignores. Text longer than the word
+     * ({@code IGNORED_FIRE}, {@code HATESX_FIRE}) fails at the terminating NUL, and text that is a
+     * prefix of neither ({@code RESIST_FIRE}) gives {@code false}. {@code IGNORE} is tried before
+     * {@code HATES}, as in C. {@link String#startsWith(String)} on the word gives the same answers
+     * as {@code strncmp}.
+     *
+     * <p>C writes into a fixed array of {@code struct element_info}, one slot per element, and the
+     * flag is OR-ed in. Here the slot is created in {@code elInfo} the first time an element is
+     * named, and a repeated word finds the flag already set: the result is still {@code true},
+     * because {@link uk.co.jackoftradesltd.channel.utils.Flag#on} answering {@code false} for a flag
+     * that was already on is not a failure to read the word. Nothing is added to {@code elInfo} for
+     * a word that returns {@code false}.
+     *
+     * <p>Function grabElementFlag coded before 261105, commented in full on 261105.
+     *
+     * @param elInfo the per-element flags to update, keyed by element; a slot is created for an
+     *               element on its first flag
+     * @param flag   the flag word, such as {@code IGNORE_ACID} or {@code HATES_HOLY_ORB}
+     * @return {@code true} if the word named an element and a known {@code IGNORE}/{@code HATES}
+     * prefix and the flag is now on; {@code false} if it was not such a word
+     */
+    public static boolean grabElementFlag(Map<ElementEnum, ElementInfo> elInfo, String flag) {
+        if (!flag.contains("_")) return false;
+        
+        int underscorePosition = flag.indexOf("_");
+        String token = flag.substring(0, underscorePosition);
+        String name = flag.substring(underscorePosition + 1);
+        ElementEnum element = ElementEnum.lookup(name);
+        if (element == null || element == ElementEnum.ELEM_NONE || element == ElementEnum.ELEM_MAX) return false;
+        
+        if ("IGNORE".startsWith(token)) {
+            elInfo.computeIfAbsent(element, k -> new ElementInfo()).on(ElementInfoEnum.EL_INFO_IGNORE);
+            return true;
+        }
+        
+        if ("HATES".startsWith(token)) {
+            elInfo.computeIfAbsent(element, k -> new ElementInfo()).on(ElementInfoEnum.EL_INFO_HATES);
+            return true;
+        }
+        
+        return false;
     }
     
     /**

@@ -59,14 +59,16 @@ Found 2026-10-17 during `/port backend/parser/SummonReader.java`. Not fixed.
 
 ## `summon/SummonAssembler.java`: `msgt:` lookup is exact-case and name-only
 
-Found 2026-10-17 during `/port backend/parser/SummonReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/SummonReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-05 for `SummonAssembler.java`: it now resolves `msgt:` with `MessageType.lookupByName` (`SummonAssembler.java:118`) and a `null` result throws a fatal `DataFileParseException`, as C's `PARSE_ERROR_INVALID_MESSAGE` ends the load. `lookupByName` is case-insensitive, accepts a message number below `MSG_MAX`, and refuses `NONE`. Still open in `SummonLexer.g4`, tracked in `docs/grammar_issues.md`. The bullets below describe the state before the fix.]
 
 - `parse_summon_message_type` in `mon-summon.c` calls `message_lookup_by_name`, the same lookup as the blow-method
   `msg:` entry above: case-insensitive, with a numeric form, and no name `NONE`.
-- `SummonAssembler.java` uses `MessageType.valueOf("MSG_" + rawMsgt)`, which is exact-case and has no numeric form, and
-  `msgt:NONE` resolves to `MSG_NONE`, which C rejects.
+- `SummonAssembler.java` used `MessageType.valueOf("MSG_" + rawMsgt)`, which is exact-case and has no numeric form, and
+  `msgt:NONE` resolved to `MSG_NONE`, which C rejects.
 - The lexer rejects lower-case and numeric values before they reach the assembler (see `docs/grammar_issues.md`), so
-  only `msgt:NONE` is reachable through the assembler today.
+  only `msgt:NONE` was reachable through the assembler. That lexer restriction is unchanged: `FLAG` in
+  `imports/Flags.g4` still requires an upper-case first letter, so `lookupByName`'s case-blind and numeric paths cannot
+  be reached from `summon.txt`.
 
 ## `summon/SummonAssembler.java`: an unresolved `fallback:` is an error here, silent in C
 

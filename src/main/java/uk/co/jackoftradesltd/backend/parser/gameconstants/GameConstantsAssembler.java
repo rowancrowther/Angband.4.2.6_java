@@ -56,8 +56,11 @@ import java.util.List;
  *   <li>The {@code chance} and {@code dice} of the O-combat level lines are {@code uint} in C, so a
  *   leading {@code -} is refused even on {@code -0}, and a {@code chance} of 0 is refused.</li>
  *   <li>The message of a level line goes through {@code message_lookup_by_name()}, here
- *   {@link MessageType#lookupByName}. It accepts a name or a number, and refuses an unknown name and
- *   {@code NONE}, which C has no message for.</li>
+ *   {@link MessageType#lookupByName}. It accepts a name (case-insensitive, without the {@code MSG_}
+ *   prefix) or a number from 0 to 152, and returns {@code null} for anything else: an unknown name,
+ *   {@code NONE}, which C has no message for, a number of 153 or more, or a negative number other than
+ *   {@code -0}. C returns {@code -1} for each of these and the handler returns
+ *   {@code INVALID_MESSAGE}; here a {@code null} throws a {@link DataFileParseException}.</li>
  *   <li>A label set twice keeps the later value, as in C.</li>
  * </ul>
  *
@@ -193,8 +196,9 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      * {@code uint}; {@link ParseUtils#minusFound} looks at the raw text because the number reader
      * loses the sign of a zero), or if the message is unknown. The message is every field from the
      * third on joined with {@code :}, because C's {@code str} takes the rest of the line, and is
-     * looked up with {@link MessageType#lookupByName}. That returns {@code null} for an unknown name
-     * and for {@code NONE}, as C returns {@code -1}.
+     * looked up with {@link MessageType#lookupByName}. That returns {@code null} for an unknown name,
+     * for {@code NONE}, for a number of 153 or more and for a negative number other than {@code -0},
+     * as C returns {@code -1}.
      *
      * <p>A {@code chance} of 0 is not thrown here. The builder's {@code addORangedCriticalLevel}
      * throws a {@link DataFileParseException} for it, and the load ends. C refuses it with
@@ -249,7 +253,7 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
         messageTypeEnum = MessageType.lookupByName(messageType);
         if (messageTypeEnum == null) {
             String msg = "Game constant starting at line: " + line + " of file: " + filename + " has " +
-                    "an illegal message type value: " + f.get(2);
+                    "an illegal message type value: " + messageType;
             logger.fatal(msg);
             throw new DataFileParseException(msg);
         }
@@ -338,8 +342,9 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      * {@code uint}; {@link ParseUtils#minusFound} looks at the raw text because the number reader
      * loses the sign of a zero), or if the message is unknown. The message is every field from the
      * third on joined with {@code :}, because C's {@code str} takes the rest of the line, and is
-     * looked up with {@link MessageType#lookupByName}. That returns {@code null} for an unknown name
-     * and for {@code NONE}, as C returns {@code -1}.
+     * looked up with {@link MessageType#lookupByName}. That returns {@code null} for an unknown name,
+     * for {@code NONE}, for a number of 153 or more and for a negative number other than {@code -0},
+     * as C returns {@code -1}.
      *
      * <p>A {@code chance} of 0 is not thrown here. The builder's {@code addOMeleeCriticalLevelData}
      * throws a {@link DataFileParseException} for it, and the load ends. C refuses it with
@@ -386,7 +391,7 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
         messageTypeEnum = MessageType.lookupByName(messageType);
         if (messageTypeEnum == null) {
             String msg = "Game constant starting at line: " + line + " of file: " + filename + " has " +
-                    "an illegal message type value: " + f.get(2);
+                    "an illegal message type value: " + messageType;
             logger.fatal(msg);
             throw new DataFileParseException(msg);
         }
@@ -465,8 +470,9 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      * <p>Fewer than four fields throws. The three numbers are signed and have no sign check, as in C,
      * so the {@code -1} cutoff that ends the shipped list loads. The message is every field from the
      * fourth on joined with {@code :}, because C's {@code str} takes the rest of the line, and is
-     * looked up with {@link MessageType#lookupByName}. An unknown name, or {@code NONE}, throws, as
-     * C's {@code INVALID_MESSAGE} does.
+     * looked up with {@link MessageType#lookupByName}. An unknown name, {@code NONE}, a number of 153
+     * or more and a negative number other than {@code -0} all throw, as C's {@code INVALID_MESSAGE}
+     * does.
      *
      * <p>The row is added in file order. Whether the cutoffs strictly increase is checked once every
      * line is in, by the builder's {@code checkCriticalLevelDataLists}, which {@link #assemble} calls.
@@ -503,7 +509,7 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
         messageTypeEnum = MessageType.lookupByName(messageType);
         if (messageTypeEnum == null) {
             String msg = "Game constant starting at line: " + line + " of file: " + filename + " has " +
-                    "an illegal message type value: " + f.get(3);
+                    "an illegal message type value: " + messageType;
             logger.fatal(msg);
             throw new DataFileParseException(msg);
         }
@@ -596,8 +602,9 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      * <p>Fewer than four fields throws. The three numbers are signed and have no sign check, as in C,
      * so the {@code -1} cutoff that ends the shipped list loads. The message is every field from the
      * fourth on joined with {@code :}, because C's {@code str} takes the rest of the line, and is
-     * looked up with {@link MessageType#lookupByName}. An unknown name, or {@code NONE}, throws, as
-     * C's {@code INVALID_MESSAGE} does.
+     * looked up with {@link MessageType#lookupByName}. An unknown name, {@code NONE}, a number of 153
+     * or more and a negative number other than {@code -0} all throw, as C's {@code INVALID_MESSAGE}
+     * does.
      *
      * <p>The row is added in file order. Whether the cutoffs strictly increase is checked once every
      * line is in, by the builder's {@code checkCriticalLevelDataLists}, which {@link #assemble} calls.
@@ -634,7 +641,7 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
         messageTypeEnum = MessageType.lookupByName(messageType);
         if (messageTypeEnum == null) {
             String msg = "Game constant starting at line: " + line + " of file: " + filename + " has " +
-                    "an illegal message type value: " + f.get(3);
+                    "an illegal message type value: " + messageType;
             logger.fatal(msg);
             throw new DataFileParseException(msg);
         }

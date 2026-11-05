@@ -56,12 +56,11 @@ import java.util.stream.IntStream;
  *       {@code PARSE_ERROR_FIELD_TOO_LONG} (or missing field) does. The code point is kept whole,
  *       as C keeps a {@code wchar_t}.</li>
  *   <li>An index or colour fault in a block's flavours ends the load from inside
- *       {@link FlavourAssembler}. Nothing in this class is a soft error, so the {@code errors} list
- *       is never appended to.</li>
+ *       {@link FlavourAssembler}.</li>
  *   <li>A {@code fixed:} sval that names no kind is not an error: C's {@code lookup_sval} answers
  *       -1, which the {@code uint8_t sval} of {@code struct flavor} holds as 255, so the flavour is
  *       kept with 255. A literal number is stored as it stands, wrapped to eight bits, whether or
- *       not any kind carries it; see {@link #assemble(List, List, String)}.</li>
+ *       not any kind carries it; see {@link #assemble(List, String)}.</li>
  * </ul>
  *
  * <p>Accepted deviation (2026-10-25, "A {@code fixed:} sval with trailing spaces or tabs is looked
@@ -70,7 +69,8 @@ import java.util.stream.IntStream;
  * misses, and the flavour stores 255. All 8 {@code fixed:} lines in {@code flavor.txt} name their
  * kind in words.
  *
- * <p>Class FlavourKindAssembler coded before 260915, commented in full on 261025.
+ * <p>Class FlavourKindAssembler coded before 260915, commented in full on 261025, updated on 261105
+ * for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -122,7 +122,6 @@ public class FlavourKindAssembler implements Assembler<FlavourKindParseRecord, L
      * for literal numbers, commented in full on 261025.
      *
      * @param records  the raw {@code kind:} blocks parsed from the file
-     * @param errors   the soft-error sink, passed to {@link FlavourAssembler} and not appended to
      * @param filename the file being read, for the messages
      * @return the assembled flavour kinds
      * @throws DataFileParseException if a block's tval resolves to nothing or to {@code TV_NONE},
@@ -132,7 +131,7 @@ public class FlavourKindAssembler implements Assembler<FlavourKindParseRecord, L
      *                                {@code fixed:} flavour
      */
     @Override
-    public List<FlavourKind> assemble(@NotNull List<FlavourKindParseRecord> records, @NotNull List<String> errors,
+    public List<FlavourKind> assemble(@NotNull List<FlavourKindParseRecord> records,
                                     String filename) {
         List<FlavourKind> flavourKinds = new ArrayList<>();
 
@@ -157,7 +156,7 @@ public class FlavourKindAssembler implements Assembler<FlavourKindParseRecord, L
                 throw new DataFileParseException(msg);
             }
             
-            List<Flavour> flavours = new FlavourAssembler().assemble(record.records(), errors, filename);
+            List<Flavour> flavours = new FlavourAssembler().assemble(record.records(), filename);
 
             // Resolve the fixed: flavours' sval symbols now that the tval is known
             // (a random flavour keeps sVal 0 = SV_UNKNOWN). A symbol that names no

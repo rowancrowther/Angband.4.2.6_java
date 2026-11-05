@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/BrandGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/BrandGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.brand;
 
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
@@ -25,94 +25,67 @@ import org.antlr.v4.runtime.tree.ParseTreeVisitor;
  * by {@link BrandGrammar}.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
- *            operations with no return type.
+ * operations with no return type.
  */
 public interface BrandGrammarVisitor<T> extends ParseTreeVisitor<T> {
-    /**
-     * Visit a parse tree produced by {@link BrandGrammar#recordCount}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitRecordCount(BrandGrammar.RecordCountContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link BrandGrammar#code}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitCode(BrandGrammar.CodeContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link BrandGrammar#name}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitName(BrandGrammar.NameContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link BrandGrammar#multiplier}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitMultiplier(BrandGrammar.MultiplierContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link BrandGrammar#oMultiplier}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitOMultiplier(BrandGrammar.OMultiplierContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link BrandGrammar#power}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitPower(BrandGrammar.PowerContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link BrandGrammar#verb}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitVerb(BrandGrammar.VerbContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link BrandGrammar#resistFlag}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitResistFlag(BrandGrammar.ResistFlagContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link BrandGrammar#vulnFlag}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitVulnFlag(BrandGrammar.VulnFlagContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link BrandGrammar#brand}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitBrand(BrandGrammar.BrandContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link BrandGrammar#file}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitFile(BrandGrammar.FileContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link BrandGrammar#code}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitCode(BrandGrammar.CodeContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link BrandGrammar#name}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitName(BrandGrammar.NameContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link BrandGrammar#multiplier}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitMultiplier(BrandGrammar.MultiplierContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link BrandGrammar#oMultiplier}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitOMultiplier(BrandGrammar.OMultiplierContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link BrandGrammar#power}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPower(BrandGrammar.PowerContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link BrandGrammar#verb}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitVerb(BrandGrammar.VerbContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link BrandGrammar#resistFlag}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitResistFlag(BrandGrammar.ResistFlagContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link BrandGrammar#vulnFlag}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitVulnFlag(BrandGrammar.VulnFlagContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link BrandGrammar#brand}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitBrand(BrandGrammar.BrandContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link BrandGrammar#file}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFile(BrandGrammar.FileContext ctx);
 }

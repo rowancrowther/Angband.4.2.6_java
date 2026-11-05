@@ -72,15 +72,14 @@ import java.util.List;
  * wherever two curses share a name and the first is kept ({@code lookup_curse}), and a curse's
  * index is its position in this list.
  * <p>
+ * As in C, the first error stops the load and nothing is returned: a syntax error is thrown from
+ * {@link #extract} as a {@code ParseCancellationException}, and a record the assembler refuses (an
+ * unknown type, flag, modifier or element, a weight outside 16 bits, an unknown effect, more than
+ * 254 curses) is thrown as a {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}.
+ * Neither is caught here.
+ * <p>
  * Differences from C worth knowing about:
  * <ul>
- *   <li>The {@code record-count:} header is a Java-only addition, checked as a soft error; the
- *       upstream {@code curse.txt} has no such line, and this repository's copy adds it.</li>
- *   <li>C stops at the first parse error. Here a syntax error is fatal and returns no items, but an
- *       assembler error (an unknown type, flag, modifier or element, a weight outside 16 bits, an
- *       unknown effect) skips only the offending record and the rest still load. The 254-curse limit
- *       is the exception: it is thrown as an {@link IllegalArgumentException} that escapes
- *       {@link #parseWithResults}.</li>
  *   <li>C takes the directives after {@code name:} in any order and accepts a record that is only a
  *       name. The grammar accepts any order for {@code type:}, {@code weight:}, {@code combat:},
  *       {@code flags:}, {@code values:}, {@code msg:}, {@code desc:}, {@code conflict:},
@@ -91,7 +90,7 @@ import java.util.List;
  *       where C appends it, and {@code flags:} lists need a pipe between names where C also splits
  *       on spaces; see {@code docs/grammar_issues.md}.</li>
  *   <li>A curse with no {@code msg:} line carries an empty message where C's is {@code NULL}, and a
- *       {@code conflict:} name no curse has is a soft error where C never checks it; see
+ *       {@code conflict:} name no curse has ends the load where C never checks it; see
  *       {@code docs/Assembler_Issues.md}.</li>
  *   <li>The list is base 0 and holds only real records: no blank slot 0. This is the accepted
  *       deviation recorded in the registry's class block, so {@code curse_max} is the plain record
@@ -100,34 +99,35 @@ import java.util.List;
  *       customised copy in the user directory first.</li>
  * </ul>
  *
- * <p>Class CurseReader coded before 260915, commented in full on 261017.
+ * <p>Class CurseReader coded before 260915, commented in full on 261017, updated on 261105 for the
+ * removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
 public class CurseReader implements Reader<Curse> {
     /**
      * Logger handed to {@link GrammarDriver#run} so that an {@link IOException} while reading
-     * {@code curse.txt} is logged under this reader's name before it is rethrown. Syntax and soft
-     * errors do not go through it; they travel in the {@link ParseResult}.
+     * {@code curse.txt} is logged under this reader's name before it is rethrown. Syntax and
+     * assembler errors do not go through it; they are thrown unlogged to the caller.
      *
-     * <p>Field logger coded before 260915, commented in full on 261017.
+     * <p>Field logger coded before 260915, commented in full on 261017, updated on 261105 for the
+     * removal of the soft-error path.
      */
     private static final Logger logger = LogManager.getLogger();
 
     /**
      * Parse the given file and return just the assembled curses, in C's order (the reverse of the
-     * file's, see the class block), discarding the soft-error channel (use
-     * {@link #parseWithResults} to inspect the errors). Satisfies the {@link Reader} contract.
+     * file's, see the class block), unwrapped from the {@link ParseResult} that
+     * {@link #parseWithResults} gives. Satisfies the {@link Reader} contract.
      * <p>
-     * Because the errors are dropped, a syntax error and a clean empty file are indistinguishable
-     * here: both give an empty list, and a record skipped for an unknown type or flag just goes
-     * missing. Callers that must tell a partial or failed load from a clean one have to use
-     * {@link #parseWithResults}.
+     * A syntax error or a refused record throws, exactly as in {@link #parseWithResults}, so an
+     * empty list only ever means a clean file with no records.
      *
-     * <p>Function parse coded before 260915, commented in full on 261017.
+     * <p>Function parse coded before 260915, commented in full on 261017, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param filename the curse data file to read
-     * @return the assembled {@link Curse} list (empty if the parse failed closed)
+     * @return every {@link Curse} in the file, in C's order
      * @throws IOException if the file cannot be read
      */
     @Override
@@ -137,70 +137,59 @@ public class CurseReader implements Reader<Curse> {
 
     /**
      * The {@link GrammarDriver.Extractor} for this grammar: run the parser's {@code file} entry
-     * rule, fail closed on any hard lexer/parser error, validate the {@code record-count:} header,
-     * and hand back the raw {@link CurseParseRecord}s, still holding unresolved text.
+     * rule, fail closed on any hard lexer/parser error, and hand back the raw
+     * {@link CurseParseRecord}s, still holding unresolved text.
      * <p>
      * Ordering matters: {@link ParseErrors#throwIfAny()} must fire <em>after</em> the parse but
      * <em>before</em> the records are used, so a malformed file aborts with a
-     * {@code ParseCancellationException} here rather than reaching the assembler, and a half-built
-     * record list is never measured against the declared count to produce a second, misleading
-     * error. That covers the cases where C returns a parser error too: a directive before any
-     * {@code name:} line (C's {@code PARSE_ERROR_MISSING_RECORD_HEADER}), an unknown directive
+     * {@code ParseCancellationException} here rather than reaching the assembler. That covers the
+     * cases where C returns a parser error too: a directive before any {@code name:} line (C's
+     * {@code PARSE_ERROR_MISSING_RECORD_HEADER}), an unknown directive
      * ({@code PARSE_ERROR_UNDEFINED_DIRECTIVE}) and a numeric directive with no number
-     * ({@code PARSE_ERROR_NOT_NUMBER}). The header check is soft - {@link GrammarDriver#checkRecordCount}
-     * only appends to {@code errors}, so a miscount never discards the records that did parse.
+     * ({@code PARSE_ERROR_NOT_NUMBER}).
      * <p>
      * The records stay in file order here. The reversal into C's order is done later, by
      * {@link CurseAssembler}. The copy at the end detaches the result from the parse tree, so the
      * returned list is the caller's to keep.
      *
-     * <p>Function extract coded before 260915, commented in full on 261017.
+     * <p>Function extract coded before 260915, commented in full on 261017, updated on 261105 for
+     * the removal of the soft-error path and the {@code record-count:} header.
      *
      * @param parser       the generated Curse parser, positioned at the start of the file
      * @param errorCatcher the live hard-error collector installed by the driver
-     * @param errors       the soft-error sink, appended to on a record-count mismatch
      * @return the parsed {@link CurseParseRecord}s in file order
      */
     private static List<CurseParseRecord> extract(
             @NotNull CurseGrammar parser,
-            @NotNull ParseErrors errorCatcher,
-            @NotNull List<String> errors) {
+            @NotNull ParseErrors errorCatcher) {
         CurseGrammar.FileContext output = parser.file();
         List<CurseParseRecord> records = output.records;
         errorCatcher.throwIfAny();
-
-        String declaredRecordCount = output.declaredCount;
-        GrammarDriver.checkRecordCount(declaredRecordCount, records.size(), errors);
 
         return new ArrayList<>(records);
     }
 
     /**
-     * Parse the given file, returning both the assembled {@link Curse} list (in C's order, the
-     * reverse of the file's) and any soft errors gathered along the way, for callers that need to
-     * tell a clean load from a partial one.
+     * Parse the given file, returning the assembled {@link Curse} list (in C's order, the reverse
+     * of the file's) wrapped in a {@link ParseResult}.
      * <p>
      * This is the Java counterpart of {@code run_parse_curse} and the {@code parse_curse_*}
      * handlers in {@code obj-init.c}: it wires {@code CurseLexer}, {@code CurseGrammar},
-     * {@link #extract} and {@link CurseAssembler} into {@link GrammarDriver#run}. A syntax error
-     * returns no items and the collected messages; an unresolved type, flag or modifier, a weight
-     * outside 16 bits, a negative weight on a {@code MULTIPLY_WEIGHT} curse, an unknown effect, an
-     * unmatched {@code conflict:} name or a {@code record-count:} mismatch leaves the good records
-     * in the result alongside the messages, so the list can be short without anything having been
-     * thrown. C would have stopped at the first of any of these. An unreadable file is not a result
-     * at all but an {@link IOException}, the analogue of {@code parse_file_quit_not_found}'s
-     * {@code quit()}. A file of more than 254 curses is not a result either: the assembler throws
-     * an {@link IllegalArgumentException}, which this method does not catch.
-     * <p>
-     * This is the variant callers should prefer: {@code ObjectDataLoader.loadCurses} gates on the
-     * errors for exactly that reason.
+     * {@link #extract} and {@link CurseAssembler} into {@link GrammarDriver#run}. As C stops at the
+     * first error, so does this: a syntax error throws a {@code ParseCancellationException}, and an
+     * unresolved type, flag or modifier, a weight outside 16 bits, a negative weight on a
+     * {@code MULTIPLY_WEIGHT} curse, an unknown effect, an unmatched {@code conflict:} name or a
+     * file of more than 254 curses throws a
+     * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}, and no result is
+     * returned. An unreadable file is an {@link IOException}, the analogue of
+     * {@code parse_file_quit_not_found}'s {@code quit()}.
      *
-     * <p>Function parseWithResults coded before 260915, commented in full on 261017.
+     * <p>Function parseWithResults coded before 260915, commented in full on 261017, updated on
+     * 261105 for the removal of the soft-error path.
      *
      * @param filename the curse data file to read
-     * @return a {@link ParseResult} of the assembled curses plus any soft errors
+     * @return every curse in the file, in C's order
      * @throws IOException if the file cannot be read
-     * @throws IllegalArgumentException if the file holds more than 254 curses
      */
     public @NotNull ParseResult<Curse> parseWithResults(@NotNull String filename) throws IOException {
         return GrammarDriver.run(filename,

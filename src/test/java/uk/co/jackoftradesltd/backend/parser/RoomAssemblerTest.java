@@ -27,7 +27,6 @@ import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.middle.cave.profiles.dungeon.RoomProfile;
 import uk.co.jackoftradesltd.middle.cave.roombuilders.RoomType;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -68,7 +67,7 @@ class RoomAssemblerTest {
     }
 
     private static List<RoomProfile> assemble(List<Room> records) {
-        return new RoomAssembler().assemble(records, new ArrayList<>(), FILE);
+        return new RoomAssembler().assemble(records, FILE);
     }
 
     private static RoomProfile one(Room record) {
@@ -239,13 +238,5 @@ class RoomAssemblerTest {
         assertThrows(DataFileParseException.class, () -> assemble(List.of(
                 room("simple room", "0", "11", "33", "1", "0", "0", "100", 1),
                 room("bogus room", "0", "11", "33", "1", "0", "0", "100", 2))));
-    }
-
-    @Test
-    void errorsListIsLeftUntouched() {
-        List<String> errors = new ArrayList<>();
-        new RoomAssembler().assemble(List.of(room("simple room", "0", "11", "33", "1", "0", "0", "100", 1)),
-                errors, FILE);
-        assertTrue(errors.isEmpty());
     }
 }

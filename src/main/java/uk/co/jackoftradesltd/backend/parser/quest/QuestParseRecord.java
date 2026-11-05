@@ -27,13 +27,16 @@ package uk.co.jackoftradesltd.backend.parser.quest;
  * a malformed field survives parsing intact and can be reported with its original spelling, rather
  * than being lost to an exception mid-parse.
  *
- * @param name   the quest's display name (C {@code quest.name}); starts a new record
+ * <p>Record QuestParseRecord coded before 261105, updated on 261105 for the removal of the
+ * soft-error path.
+ *
+ * @param name  the quest's display name (C {@code quest.name}); starts a new record
  * @param level  the dungeon depth as raw text (C {@code quest.level}), parsed to an int downstream
  * @param race   the target monster's full name as written (C {@code quest.race}), resolved to a
  *               {@link uk.co.jackoftradesltd.middle.monsters.MonsterRace} downstream
  * @param number the required kill count as raw text (C {@code quest.max_num}), parsed downstream
  * @param line   the source line of this record's {@code name:} directive, carried so the assembler
- *               can point any soft error at the offending record
+ *               can quote it in the {@code DataFileParseException} it throws if it refuses the record
  * @author Rowan Crowther
  */
 public record QuestParseRecord(String name,

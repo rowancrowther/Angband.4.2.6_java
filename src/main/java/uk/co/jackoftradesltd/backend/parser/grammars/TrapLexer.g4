@@ -3,10 +3,6 @@ lexer grammar TrapLexer;
 import CommentsAndEol, EffectBlockLexer, AngbandDisplayCharacter, Flags;
 
 
-RECORD_COUNT
-        :   'record-count:'
-        ;
-
 NAME
         :   'name:' -> pushMode(DELIMITED_MODE)
         ;

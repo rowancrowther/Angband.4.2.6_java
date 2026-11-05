@@ -27,8 +27,6 @@
 # Current disarming difficulty calculations depend on there being six types
 # of trap; if there are more than six, those calculations will need to change.
 
-record-count:7
-
 name:locked
 code:NO_TRAP
 level:1

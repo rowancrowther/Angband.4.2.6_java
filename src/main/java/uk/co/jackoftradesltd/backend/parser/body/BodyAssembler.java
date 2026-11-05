@@ -42,10 +42,10 @@ import java.util.List;
  *
  * <p>As C's {@code parse_body_slot} ends the whole {@code body.txt} load with
  * {@code PARSE_ERROR_INVALID_FLAG} on a slot type it cannot find, so does this assembler: the bad
- * value is logged and thrown as a {@link DataFileParseException} rather than reported as a soft
- * error, and nothing is added to the caller's error list.
+ * value is logged and thrown as a {@link DataFileParseException}, and no record is skipped.
  *
- * <p>Class BodyAssembler coded before 260915, commented in full on 261023.
+ * <p>Class BodyAssembler coded before 260915, commented in full on 261023, updated on 261105 for the
+ * removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -87,7 +87,6 @@ public class BodyAssembler implements Assembler<BodyParseRecord, List<PlayerBody
      * load-ending errors on 261023.
      *
      * @param records  the raw {@link BodyParseRecord}s, in the order the grammar produced them
-     * @param errors   unused: every error ends the load by throwing instead
      * @param filename the name of the data file, used in the error messages
      * @return the assembled {@link PlayerBody}s, in record order, each with its slots in declared
      *         order
@@ -95,7 +94,7 @@ public class BodyAssembler implements Assembler<BodyParseRecord, List<PlayerBody
      *                                no {@link EquipmentSlotsEnum} member
      */
     @Override
-    public List<PlayerBody> assemble(@NotNull List<BodyParseRecord> records, @NotNull List<String> errors,
+    public List<PlayerBody> assemble(@NotNull List<BodyParseRecord> records,
                                      String filename) {
         List<PlayerBody> bodies = new ArrayList<>();
 

@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -38,20 +39,17 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p>The happy-path tests run against the real {@code lib/gamedata/activation.txt}; the
  * error-path tests write small malformed files to a temp directory. They exercise the two
- * outcomes of the collect-and-report design end to end:
+ * outcomes of a load end to end:
  * <ul>
- *   <li>a clean file yields all items and no errors;</li>
- *   <li>a parse error (checkpoint 1) or a data error (checkpoint 2) yields <em>no</em> items
- *       and a populated error list carrying the source line.</li>
+ *   <li>a clean file yields all items;</li>
+ *   <li>a parse error (checkpoint 1) throws {@code ParseCancellationException}, and a data error
+ *       (checkpoint 2) throws {@link DataFileParseException} naming the source line, so nothing
+ *       loads.</li>
  * </ul>
  *
  * <p>{@link Activation} exposes only {@code getName()} and {@code getPower()}, so the other
  * fields ({@code aim}, {@code level}, {@code message}, {@code desc} and the effect list) are read by
  * reflection, as {@code ActivationIndexTest} reads {@code index}.
- *
- * <p>Record counts are no longer asserted against a hard-coded sentinel: under C12 the
- * data file declares its own {@code record-count}, and the reader treats a declared-vs-actual
- * mismatch as a soft error. A clean load therefore <em>is</em> the count assertion.
  *
  * <p>The second half pins the reader's own contract against {@code act_parser} in
  * {@code obj-init.c}. The totals and spot-checked records are worked out from the upstream
@@ -71,7 +69,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * number too big for an int is clamped, an accepted deviation from C's wrap.
  *
  * <p>Class ActivationReaderTest coded before 261017, extended and commented in full on 261017,
- * updated on 261022 for the stop-the-load policy.
+ * updated on 261022 for the stop-the-load policy, and on 261105 for the removal of the soft-error
+ * path.
  *
  * @author Rowan Crowther
  */
@@ -96,10 +95,9 @@ class ActivationReaderTest {
 
     @Test
     void parseWithResultLoadsAllRecordsCleanly() throws IOException {
-        ParseResult<Activation> result = new ActivationReader().parseWithResult(REAL_FILE);
+        ParseResult<Activation> result = new ActivationReader().parseWithResults(REAL_FILE);
 
         // No errors implies the file's declared record-count matched the records found.
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertFalse(result.items().isEmpty());
         // C's activations[] runs in reverse file order, so the last record, DRAGON_POWER, is first
         assertEquals("DRAGON_POWER", result.items().get(0).getName());
@@ -122,13 +120,13 @@ class ActivationReaderTest {
         // of the effect: line, as C's parser reports the line it was reading: record-count is
         // line 1, name 2, aim 3, level 4, power 5, effect 6.
         String path = tempFile("bad-data.txt",
-                "record-count:1\nname:TEST_BAD\naim:0\nlevel:5\npower:1\neffect:NOTAREALEFFECT\ndesc:bad activation\n");
+                "name:TEST_BAD\naim:0\nlevel:5\npower:1\neffect:NOTAREALEFFECT\ndesc:bad activation\n");
 
         DataFileParseException thrown = assertThrows(DataFileParseException.class,
-                () -> new ActivationReader().parseWithResult(path));
+                () -> new ActivationReader().parseWithResults(path));
 
         assertTrue(thrown.getMessage().contains("illegal element value: NOTAREALEFFECT"), thrown.getMessage());
-        assertTrue(thrown.getMessage().contains("line: 6"), thrown.getMessage());
+        assertTrue(thrown.getMessage().contains("line: 5"), thrown.getMessage());
         assertTrue(thrown.getMessage().contains("bad-data.txt"), thrown.getMessage());
     }
 
@@ -136,12 +134,10 @@ class ActivationReaderTest {
     void parseErrorYieldsNoItemsAndAReportedError() throws IOException {
         // Header is present, but a record must begin with "name:"; this one starts
         // with "power:" — a syntax error (checkpoint 1).
-        String path = tempFile("bad-syntax.txt", "record-count:1\npower:5\n");
+        String path = tempFile("bad-syntax.txt", "power:5\n");
 
-        ParseResult<Activation> result = new ActivationReader().parseWithResult(path);
+        assertThrows(ParseCancellationException.class, () -> new ActivationReader().parseWithResults(path));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty());
     }
 
     @Test
@@ -157,31 +153,8 @@ class ActivationReaderTest {
         assertEquals(Integer.MIN_VALUE, level(small));
     }
 
-    @Test
-    void recordCountMismatchIsReportedButRecordsStillLoad() throws IOException {
-        // The header declares 5 records but the file holds only 1. Under GrammarDriver's
-        // partial-results contract this is a soft error: the mismatch is reported, but the
-        // records that did parse still load. (Contrast the old hard-error behaviour, where a
-        // mismatch discarded the whole file.) The single record here parses and assembles
-        // cleanly, so it survives alongside the reported count error.
-        String path = tempFile("bad-count.txt",
-                "record-count:5\nname:TEST_OK\naim:0\nlevel:5\npower:1\neffect:CURE:POISONED\ndesc:fine\n");
-
-        ParseResult<Activation> result = new ActivationReader().parseWithResult(path);
-
-        assertTrue(result.hasErrors());
-        assertEquals(1, result.items().size());
-        assertEquals("TEST_OK", result.items().get(0).getName());
-        String error = result.errors().get(0);
-        assertTrue(error.contains("declares 5"), error);
-        assertTrue(error.contains("contains 1"), error);
-    }
-
     // ---- fixture helpers -------------------------------------------------
 
-    private static String withHeader(int count, String body) {
-        return "record-count:" + count + "\n" + body;
-    }
 
     /**
      * A complete, valid single record named {@code T}, with {@code extra} appended after its lines.
@@ -192,7 +165,7 @@ class ActivationReaderTest {
     }
 
     private ParseResult<Activation> load(String name, String content) throws IOException {
-        return new ActivationReader().parseWithResult(tempFile(name, content));
+        return new ActivationReader().parseWithResults(tempFile(name, content));
     }
 
     /**
@@ -200,8 +173,7 @@ class ActivationReaderTest {
      * failing if there were errors or the count of items is not 1.
      */
     private Activation loadOne(String content) throws IOException {
-        ParseResult<Activation> result = load("one.txt", withHeader(1, content));
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        ParseResult<Activation> result = load("one.txt", content);
         assertEquals(1, result.items().size());
         return result.items().get(0);
     }
@@ -210,9 +182,7 @@ class ActivationReaderTest {
      * Asserts the load failed closed: a hard error, so no items at all.
      */
     private void assertHardError(String content) throws IOException {
-        ParseResult<Activation> result = load("hard.txt", content);
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty(), () -> result.items().size() + " items loaded");
+        assertThrows(ParseCancellationException.class, () -> load("hard.txt", content));
     }
 
     private static Object field(Activation a, String name) throws Exception {
@@ -263,7 +233,7 @@ class ActivationReaderTest {
 
     @Test
     void theShippedFileLoadsEveryRecordInCsLastFirstOrder() throws IOException {
-        List<Activation> items = new ActivationReader().parseWithResult(REAL_FILE).items();
+        List<Activation> items = new ActivationReader().parseWithResults(REAL_FILE).items();
 
         List<String> expected = namesInTheFile().reversed();
         assertEquals(163, expected.size());
@@ -274,7 +244,7 @@ class ActivationReaderTest {
 
     @Test
     void theShippedFileTotalsAgreeWithTheUpstreamFile() throws Exception {
-        List<Activation> items = new ActivationReader().parseWithResult(REAL_FILE).items();
+        List<Activation> items = new ActivationReader().parseWithResults(REAL_FILE).items();
 
         int aimed = 0, levels = 0, powers = 0, effects = 0, messages = 0, descriptions = 0;
         for (Activation a : items) {
@@ -298,7 +268,7 @@ class ActivationReaderTest {
 
     @Test
     void spotCheckedRecordsAgreeWithTheUpstreamFile() throws Exception {
-        List<Activation> items = new ActivationReader().parseWithResult(REAL_FILE).items();
+        List<Activation> items = new ActivationReader().parseWithResults(REAL_FILE).items();
 
         Activation curePoison = named(items, "CURE_POISON");
         assertFalse(aim(curePoison));
@@ -341,7 +311,7 @@ class ActivationReaderTest {
         ActivationReader reader = new ActivationReader();
 
         List<String> viaParse = reader.parse(REAL_FILE).stream().map(Activation::getName).toList();
-        List<String> viaResult = reader.parseWithResult(REAL_FILE).items().stream()
+        List<String> viaResult = reader.parseWithResults(REAL_FILE).items().stream()
                 .map(Activation::getName).toList();
 
         assertEquals(viaResult, viaParse);
@@ -352,7 +322,7 @@ class ActivationReaderTest {
         // run_parse_act calls parse_file_quit_not_found, which quits; here the caller gets an
         // IOException to decide that for itself.
         assertThrows(IOException.class,
-                () -> new ActivationReader().parseWithResult(tempDir.resolve("absent.txt").toString()));
+                () -> new ActivationReader().parseWithResults(tempDir.resolve("absent.txt").toString()));
         assertThrows(IOException.class,
                 () -> new ActivationReader().parse(tempDir.resolve("absent.txt").toString()));
     }
@@ -404,10 +374,8 @@ class ActivationReaderTest {
     @Test
     void twoRecordsSharingANameBothLoadWithTheLaterFirst() throws Exception {
         // C keeps both; findact walks activations[] from slot 1, which is the later record.
-        ParseResult<Activation> result = load("dup.txt", withHeader(2,
-                "name:T\nlevel:1\neffect:CURE:POISONED\n\nname:T\nlevel:2\neffect:CURE:POISONED\n"));
+        ParseResult<Activation> result = load("dup.txt", "name:T\nlevel:1\neffect:CURE:POISONED\n\nname:T\nlevel:2\neffect:CURE:POISONED\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(2, result.items().size());
         assertEquals(2, level(result.items().get(0)));
         assertEquals(1, level(result.items().get(1)));
@@ -441,35 +409,29 @@ class ActivationReaderTest {
     void anEmptyDescOrMsgIsAHardErrorAsInC() throws IOException {
         // strtok(sp, "") on an empty remainder gives NULL, so parser_parse returns
         // PARSE_ERROR_MISSING_FIELD for the str field.
-        assertHardError(withHeader(1, record("desc:\n")));
-        assertHardError(withHeader(1, record("msg:\n")));
+        assertHardError(record("desc:\n"));
+        assertHardError(record("msg:\n"));
     }
 
     @Test
     void aNumericDirectiveWithNoNumberIsAHardError() throws IOException {
-        assertHardError(withHeader(1, "name:T\naim:\neffect:CURE:POISONED\n"));
-        assertHardError(withHeader(1, "name:T\nlevel:\neffect:CURE:POISONED\n"));
-        assertHardError(withHeader(1, "name:T\npower:\neffect:CURE:POISONED\n"));
+        assertHardError("name:T\naim:\neffect:CURE:POISONED\n");
+        assertHardError("name:T\nlevel:\neffect:CURE:POISONED\n");
+        assertHardError("name:T\npower:\neffect:CURE:POISONED\n");
     }
 
     @Test
     void aDirectiveBeforeTheNameIsAHardError() throws IOException {
         // PARSE_ERROR_MISSING_RECORD_HEADER in C.
-        assertHardError(withHeader(1, "aim:1\nname:T\neffect:CURE:POISONED\n"));
-        assertHardError(withHeader(1, "desc:d\nname:T\neffect:CURE:POISONED\n"));
-    }
-
-    @Test
-    void aMissingRecordCountHeaderIsAHardError() throws IOException {
-        // The header is a Java-only addition and the grammar requires it.
-        assertHardError("name:T\nlevel:1\neffect:CURE:POISONED\n");
+        assertHardError("aim:1\nname:T\neffect:CURE:POISONED\n");
+        assertHardError("desc:d\nname:T\neffect:CURE:POISONED\n");
     }
 
     @Test
     void anUnreadableRecordAfterAGoodOneStillCostsTheWholeFile() throws IOException {
         // A syntax error anywhere is fatal for the file, where C would have loaded the records
         // before it and then quit.
-        assertHardError(withHeader(2, record("\nname:U\nlevel:x\neffect:CURE:POISONED\n")));
+        assertHardError(record("\nname:U\nlevel:x\neffect:CURE:POISONED\n"));
     }
 
     @Test
@@ -477,15 +439,14 @@ class ActivationReaderTest {
         // C quits on the first line that fails, so the second record is never read. The first
         // record's power is negative, which "power uint power" refuses. The header is line 1, so
         // BAD starts on line 2.
-        String path = tempFile("partial.txt", withHeader(2,
-                "name:BAD\npower:-3\neffect:CURE:POISONED\n\nname:GOOD\nlevel:2\n"
-                        + "effect:CURE:POISONED\n"));
+        String path = tempFile("partial.txt", "name:BAD\npower:-3\neffect:CURE:POISONED\n\nname:GOOD\nlevel:2\n"
+                        + "effect:CURE:POISONED\n");
 
         DataFileParseException thrown = assertThrows(DataFileParseException.class,
-                () -> new ActivationReader().parseWithResult(path));
+                () -> new ActivationReader().parseWithResults(path));
 
         assertTrue(thrown.getMessage().contains("negative power"), thrown.getMessage());
-        assertTrue(thrown.getMessage().contains("line: 2"), thrown.getMessage());
+        assertTrue(thrown.getMessage().contains("line: 1"), thrown.getMessage());
         assertTrue(thrown.getMessage().contains("partial.txt"), thrown.getMessage());
     }
 
@@ -510,7 +471,7 @@ class ActivationReaderTest {
 
     @Test
     void theShippedTeleLongAndResistAllKeepBothDescLinesAsCDoes() throws Exception {
-        List<Activation> items = new ActivationReader().parseWithResult(REAL_FILE).items();
+        List<Activation> items = new ActivationReader().parseWithResults(REAL_FILE).items();
 
         assertEquals("teleports you randomly about 60 per cent of the largest distance you could go",
                 desc(named(items, "TELE_LONG")));
@@ -529,20 +490,20 @@ class ActivationReaderTest {
     @Test
     void aRecordWithOnlyANameIsAHardErrorHereWhereCAcceptsIt() throws IOException {
         // parse_act_name builds a complete record on its own.
-        assertHardError(withHeader(1, "name:T\n"));
+        assertHardError("name:T\n");
     }
 
     @Test
     void aFileWithNoRecordsIsAHardErrorHereWhereCLoadsNothing() throws IOException {
         // finish_parse_act copes with an empty chain: act_max becomes 1, only the blank slot.
-        assertHardError("record-count:0\n");
+        assertHardError("");
     }
 
     @Test
     void aLowerCaseNameIsAHardErrorHereWhereCTakesAnyString() throws IOException {
         // name is "str name" in C; the lexer takes only upper case, digits and underscore.
-        assertHardError(withHeader(1, "name:lower\neffect:CURE:POISONED\n"));
-        assertHardError(withHeader(1, "name:TWO WORDS\neffect:CURE:POISONED\n"));
+        assertHardError("name:lower\neffect:CURE:POISONED\n");
+        assertHardError("name:TWO WORDS\neffect:CURE:POISONED\n");
     }
 
     @Test
@@ -557,10 +518,10 @@ class ActivationReaderTest {
     void aNegativePowerStopsTheLoadAsInC() throws IOException {
         // "power uint power": parser_parse refuses a token starting with '-', even -0.
         for (String power : List.of("-3", "-0")) {
-            String path = tempFile("negpower.txt", withHeader(1, record("power:" + power + "\n")));
+            String path = tempFile("negpower.txt", record("power:" + power + "\n"));
 
             DataFileParseException thrown = assertThrows(DataFileParseException.class,
-                    () -> new ActivationReader().parseWithResult(path));
+                    () -> new ActivationReader().parseWithResults(path));
 
             assertTrue(thrown.getMessage().contains("negative power: " + power), thrown.getMessage());
         }
@@ -569,10 +530,10 @@ class ActivationReaderTest {
     @Test
     void aNegativeAimStopsTheLoadAsInC() throws IOException {
         // "aim uint aim": the same refusal as power.
-        String path = tempFile("negaim.txt", withHeader(1, record("aim:-1\n")));
+        String path = tempFile("negaim.txt", record("aim:-1\n"));
 
         DataFileParseException thrown = assertThrows(DataFileParseException.class,
-                () -> new ActivationReader().parseWithResult(path));
+                () -> new ActivationReader().parseWithResults(path));
 
         assertTrue(thrown.getMessage().contains("aim"), thrown.getMessage());
     }
@@ -601,7 +562,7 @@ class ActivationReaderTest {
 
     @Test
     void aHexLevelIsAHardErrorHereWhereCReadsItAsSixteen() throws IOException {
-        assertHardError(withHeader(1, record("level:0x10\n")));
+        assertHardError(record("level:0x10\n"));
     }
 
     @Test
@@ -616,24 +577,24 @@ class ActivationReaderTest {
     @Test
     void anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent() throws IOException {
         // parser_parse skips leading white space; the shared CommentsAndEol rules do not.
-        assertHardError(withHeader(1, "name:T\n  level:4\neffect:CURE:POISONED\n"));
+        assertHardError("name:T\n  level:4\neffect:CURE:POISONED\n");
     }
 
     @Test
     void aDiceLineBeforeAnyEffectIsAHardErrorHereWhereCIgnoresIt() throws IOException {
         // parse_act_dice: "If there is no effect, assume that this is human and not parser error."
-        assertHardError(withHeader(1, "name:T\ndice:20\neffect:CURE:POISONED\n"));
+        assertHardError("name:T\ndice:20\neffect:CURE:POISONED\n");
     }
 
     @Test
     void anEffectYxLineBeforeAnyEffectIsAHardErrorHereWhereCIgnoresIt() throws IOException {
-        assertHardError(withHeader(1, "name:T\neffect-yx:22:40\neffect:CURE:POISONED\n"));
+        assertHardError("name:T\neffect-yx:22:40\neffect:CURE:POISONED\n");
     }
 
     @Test
     void effectYxAndDiceOnTheSameEffectAreAHardErrorHereWhereCTakesBoth() throws IOException {
-        assertHardError(withHeader(1, "name:T\neffect:CURE:POISONED\neffect-yx:22:40\ndice:20\n"));
-        assertHardError(withHeader(1, "name:T\neffect:CURE:POISONED\ndice:20\neffect-yx:22:40\n"));
+        assertHardError("name:T\neffect:CURE:POISONED\neffect-yx:22:40\ndice:20\n");
+        assertHardError("name:T\neffect:CURE:POISONED\ndice:20\neffect-yx:22:40\n");
     }
 
     @Test

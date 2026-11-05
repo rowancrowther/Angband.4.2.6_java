@@ -22,16 +22,15 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-
+import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
 import uk.co.jackoftradesltd.channel.parser.ParseErrors;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.channel.parser.Reader;
+import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftradesltd.frontend.ui.entryrenderer.antlr4.uientryrenderer.UIEntryRendererGrammar;
 import uk.co.jackoftradesltd.frontend.ui.entryrenderer.antlr4.uientryrenderer.UIEntryRendererLexer;
 import uk.co.jackoftradesltd.frontend.ui.entryrenderer.assembler.UIEntryRendererAssembler;
 import uk.co.jackoftradesltd.frontend.ui.entryrenderer.assembler.UIEntryRendererParseRecord;
-import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
-import uk.co.jackoftradesltd.channel.parser.ParseResult;
-import uk.co.jackoftradesltd.channel.parser.Reader;
-import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -90,21 +89,15 @@ public class UIEntryRendererReader implements Reader<UIEntryRenderer> {
      *
      * @param parser       the generated grammar positioned at the start of the file
      * @param errorCatcher collects lexer and grammar errors; a non-empty catcher aborts the read
-     * @param errors       receives the soft {@code record-count} mismatch message
      * @return one parse record per record in the file, in file order
      */
     private static List<UIEntryRendererParseRecord> extract(
             @NotNull UIEntryRendererGrammar parser,
-            @NotNull ParseErrors errorCatcher,
-            @NotNull List<String> errors) {
+            @NotNull ParseErrors errorCatcher) {
         List<UIEntryRendererParseRecord> records = new ArrayList<>();
         UIEntryRendererGrammar.FileContext output = parser.file();
         List<List<String>> results = output.renderers;
         errorCatcher.throwIfAny();
-
-        String declaredRecordCount = output.record;
-        GrammarDriver.checkRecordCount(declaredRecordCount,
-                results.size(), errors);
 
         for (List<String> result : results) {
             records.add(getUiEntryRendererParseRecord(result));

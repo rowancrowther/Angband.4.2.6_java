@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
@@ -39,6 +40,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * readers this suite needs no registry bootstrap - it parses the real file and small {@link TempDir}
  * fixtures directly.
  *
+ * <p>Test class HintReaderTest coded before 261105, updated on 261105 for the removal of the
+ * soft-error path.
+ *
  * @author Rowan Crowther
  */
 class HintReaderTest {
@@ -53,9 +57,6 @@ class HintReaderTest {
     @TempDir
     Path tempDir;
 
-    private static String withHeader(int count, String body) {
-        return "record-count:" + count + "\n\n" + body;
-    }
 
     private ParseResult<Hint> load(String name, String content) throws IOException {
         Path file = tempDir.resolve(name);
@@ -69,7 +70,6 @@ class HintReaderTest {
     void realFileLoadsAllHintsWithNoErrors() throws IOException {
         ParseResult<Hint> result = new HintReader().parseWithResults(REAL_FILE);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(EXPECTED_HINTS, result.items().size());
     }
 
@@ -91,41 +91,13 @@ class HintReaderTest {
     @Test
     void hintTextPreservesPunctuationVerbatim() throws IOException {
         String text = "Inscribe an item with \"!s\", use '{', or try \"@v0\" - all pass through.";
-        ParseResult<Hint> result = load("punct.txt", withHeader(1, "H:" + text + "\n"));
+        ParseResult<Hint> result = load("punct.txt", "H:" + text + "\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size());
         assertEquals(text, result.items().get(0).getHint());
     }
 
-    // ---- Soft error ------------------------------------------------------
-
-    @Test
-    void recordCountMismatchIsASoftError() throws IOException {
-        // Header claims five, body holds two; both still load (partial-results contract).
-        ParseResult<Hint> result = load("miscount.txt",
-                withHeader(5, "H:First hint.\nH:Second hint.\n"));
-
-        assertEquals(2, result.items().size());
-        assertTrue(result.hasErrors());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("record-count header declares")),
-                () -> result.errors().toString());
-    }
-
     // ---- Hard error (fail-closed) ----------------------------------------
-
-    /**
-     * The {@code file} rule requires the {@code record-count} header, so a file without it is a hard
-     * grammar error: {@code throwIfAny()} fires and the driver returns an empty result carrying the
-     * collected errors rather than a partial load.
-     */
-    @Test
-    void missingRecordCountHeaderIsAHardErrorYieldingEmptyResult() throws IOException {
-        ParseResult<Hint> result = load("noheader.txt", "H:A lonely headerless hint.\n");
-
-        assertTrue(result.items().isEmpty(), "a hard grammar error must fail closed");
-        assertTrue(result.hasErrors());
-    }
 
     // ---- The shipped file against the upstream one -----------------------
 
@@ -188,18 +160,16 @@ class HintReaderTest {
      */
     @Test
     void trailingSpacesAreKeptAsCDoes() throws IOException {
-        ParseResult<Hint> result = load("trailing.txt", withHeader(1, "H:Keep alive. \n"));
+        ParseResult<Hint> result = load("trailing.txt", "H:Keep alive. \n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals("Keep alive. ", result.items().get(0).getHint());
     }
 
     /** Spaces straight after {@code H:} are part of the text too, and a line of only spaces is a hint. */
     @Test
     void leadingAndAllSpaceTextIsKept() throws IOException {
-        ParseResult<Hint> result = load("spaces.txt", withHeader(2, "H: leading\nH:   \n"));
+        ParseResult<Hint> result = load("spaces.txt", "H: leading\nH:   \n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(" leading", result.items().get(0).getHint());
         assertEquals("   ", result.items().get(1).getHint());
     }
@@ -207,35 +177,31 @@ class HintReaderTest {
     /** Only the first {@code :} splits the directive off, so a hint may begin with or contain one. */
     @Test
     void colonsInTheTextSurvive() throws IOException {
-        ParseResult<Hint> result = load("colon.txt", withHeader(1, "H::a:b\n"));
+        ParseResult<Hint> result = load("colon.txt", "H::a:b\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(":a:b", result.items().get(0).getHint());
     }
 
     @Test
     void nonAsciiTextSurvives() throws IOException {
-        ParseResult<Hint> result = load("utf8.txt", withHeader(1, "H:caf\u00e9 \u2014 ok\n"));
+        ParseResult<Hint> result = load("utf8.txt", "H:caf\u00e9 \u2014 ok\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals("caf\u00e9 \u2014 ok", result.items().get(0).getHint());
     }
 
     /** A hint on the last line needs no newline after it. */
     @Test
     void finalHintNeedsNoTrailingNewline() throws IOException {
-        ParseResult<Hint> result = load("nofinalnl.txt", withHeader(1, "H:last"));
+        ParseResult<Hint> result = load("nofinalnl.txt", "H:last");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals("last", result.items().get(0).getHint());
     }
 
     /** A Windows line ending does not leave a carriage return on the hint. */
     @Test
     void carriageReturnIsNotPartOfTheText() throws IOException {
-        ParseResult<Hint> result = load("crlf.txt", "record-count:1\r\nH:abc\r\n");
+        ParseResult<Hint> result = load("crlf.txt", "H:abc\r\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals("abc", result.items().get(0).getHint());
     }
 
@@ -243,16 +209,15 @@ class HintReaderTest {
     @Test
     void commentsAndBlankLinesAreSkipped() throws IOException {
         ParseResult<Hint> result = load("comments.txt",
-                withHeader(2, "# a comment\nH:one\n\n# another\nH:two\n# last\n"));
+                "# a comment\nH:one\n\n# another\nH:two\n# last\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(List.of("one", "two"),
                 result.items().stream().map(Hint::getHint).toList());
     }
 
     @Test
     void hintsComeBackInFileOrderWhereCsListIsReversed() throws IOException {
-        ParseResult<Hint> result = load("order.txt", withHeader(3, "H:a\nH:b\nH:c\n"));
+        ParseResult<Hint> result = load("order.txt", "H:a\nH:b\nH:c\n");
 
         assertEquals(List.of("a", "b", "c"),
                 result.items().stream().map(Hint::getHint).toList());
@@ -263,19 +228,9 @@ class HintReaderTest {
     /** C accepts a file with no {@code H:} line (and leaves {@code hints} NULL); here it is an empty list. */
     @Test
     void aFileWithNoHintsLoadsEmptyWhenTheHeaderSaysZero() throws IOException {
-        ParseResult<Hint> result = load("zero.txt", "record-count:0\n# nothing here\n");
+        ParseResult<Hint> result = load("zero.txt", "# nothing here\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertTrue(result.items().isEmpty());
-    }
-
-    @Test
-    void aHeaderDeclaringTooFewIsASoftErrorToo() throws IOException {
-        ParseResult<Hint> result = load("toofew.txt", withHeader(1, "H:a\nH:b\n"));
-
-        assertEquals(2, result.items().size());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("record-count header declares")),
-                () -> result.errors().toString());
     }
 
     // ---- Hard errors (fail-closed) ---------------------------------------
@@ -283,38 +238,16 @@ class HintReaderTest {
     /** C needs text after {@code H:} (MISSING_FIELD otherwise); the lexer cannot produce a STRING for it. */
     @Test
     void anHLineWithNoTextIsAHardError() throws IOException {
-        ParseResult<Hint> result = load("emptyh.txt", withHeader(1, "H:\n"));
+        assertThrows(ParseCancellationException.class, () -> load("emptyh.txt", "H:\n"));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     /** C only has the {@code H:} directive, and its directive names are case-sensitive. */
     @Test
     void anUnknownDirectiveIsAHardError() throws IOException {
         for (String bad : List.of("X:abc\n", "h:abc\n")) {
-            ParseResult<Hint> result = load("bad.txt", withHeader(1, bad));
+            assertThrows(ParseCancellationException.class, () -> load("bad.txt", bad), bad);
 
-            assertTrue(result.items().isEmpty(), bad);
-            assertTrue(result.hasErrors(), bad);
-        }
-    }
-
-    @Test
-    void anEmptyFileIsAHardErrorForWantOfTheHeader() throws IOException {
-        ParseResult<Hint> result = load("empty.txt", "");
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
-    }
-
-    @Test
-    void theHeaderMustComeFirstAndOnlyOnce() throws IOException {
-        for (String bad : List.of("H:a\nrecord-count:1\n", "record-count:1\nrecord-count:1\nH:a\n")) {
-            ParseResult<Hint> result = load("header.txt", bad);
-
-            assertTrue(result.items().isEmpty(), bad);
-            assertTrue(result.hasErrors(), bad);
         }
     }
 
@@ -328,10 +261,8 @@ class HintReaderTest {
     void leadingWhitespaceBeforeADirectiveIsAHardErrorWhereCSkipsIt() throws IOException {
         for (String bad : List.of("  H:indented\n", "  # indented comment\nH:a\n", "\t\nH:a\n",
                 "H:a\n# no newline")) {
-            ParseResult<Hint> result = load("ws.txt", withHeader(1, bad));
+            assertThrows(ParseCancellationException.class, () -> load("ws.txt", bad), bad);
 
-            assertTrue(result.items().isEmpty(), bad);
-            assertTrue(result.hasErrors(), bad);
         }
     }
 

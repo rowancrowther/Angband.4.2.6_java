@@ -36,7 +36,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Pins the level {@code ArtifactAssembler} gives a special artifact's kind against the order of the
@@ -123,9 +124,8 @@ class ArtifactKindLevelOrderTest {
      */
     private Artifact loadOne(String fileName, String body) throws IOException {
         Path file = tempDir.resolve(fileName);
-        Files.writeString(file, "record-count:1\nname:X\n" + body);
+        Files.writeString(file, "name:X\n" + body);
         ParseResult<Artifact> r = new ArtifactReader().parseWithResults(file.toString());
-        assertFalse(r.hasErrors(), () -> r.errors().toString());
         assertEquals(1, r.items().size());
         return r.items().get(0);
     }

@@ -20,6 +20,7 @@ package uk.co.jackoftradesltd.backend.parser;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.enums.ChannelEntryFlag;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.channel.utils.combiners.CombinerName;
 import uk.co.jackoftradesltd.frontend.entries.UIEntry;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryCategory;
@@ -40,8 +41,8 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p>These construct {@link UIEntryBaseParseRecord}s directly (no grammar/reader), so they exercise
  * the assembler in isolation: {@code renderer} resolution against the {@link UIRegistry} renderer
- * registry, {@code combine} enum resolution, and skip-and-continue (a record whose renderer or
- * combiner fails to resolve is dropped with an error, the rest survive).
+ * registry, {@code combine} enum resolution, and stop-the-load (a record whose renderer or
+ * combiner fails to resolve ends the load with a {@link DataFileParseException}, as in C).
  *
  * <p>The assembler reaches into {@code UIRegistry.getUIEntryRenderer}, which needs the renderer
  * registry populated. There is no public setter (the game loads it in {@code GameConstants.init()}),
@@ -73,13 +74,11 @@ class UIEntryBaseAssemblerTest {
 
     @Test
     void resolvesRendererAndCombineAndCarriesRawFieldsThrough() {
-        List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryBaseAssembler().assemble(
                 List.of(rec("t", KNOWN_RENDERER, "LOGICAL_OR", "TIMED_AS_AUX", "some desc",
                         List.of("CHAR_SCREEN1", "abilities"))),
-                errors, "test.txt");
+                "test.txt");
 
-        assertTrue(errors.isEmpty(), errors::toString);
         assertEquals(1, out.size());
         UIEntry u = out.get(0);
         assertEquals("t", u.getName());
@@ -93,37 +92,40 @@ class UIEntryBaseAssemblerTest {
                 u.getCategories().stream().map(UIEntryCategory::getName).toList());
     }
 
+    /**
+     * C's {@code parse_entry_renderer} returns {@code PARSE_ERROR_INVALID_VALUE} for a name with no
+     * renderer, which ends the load. Here the assembler stops with a {@link DataFileParseException}
+     * naming the record's line and the file.
+     */
     @Test
-    void unknownRendererIsSkippedAndReported() {
-        List<String> errors = new ArrayList<>();
-        List<UIEntry> out = new UIEntryBaseAssembler().assemble(
-                List.of(rec("t", "no_such_renderer", "LOGICAL_OR", "F", "d", List.of("C"))), errors, "test.txt");
+    void unknownRendererStopsTheLoad() {
+        DataFileParseException thrown = assertThrows(DataFileParseException.class,
+                () -> new UIEntryBaseAssembler().assemble(
+                        List.of(rec("t", "no_such_renderer", "LOGICAL_OR", "F", "d", List.of("C"))), "test.txt"));
 
-        assertTrue(out.isEmpty());
-        assertTrue(errors.stream().anyMatch(e -> e.contains("no_such_renderer")), errors::toString);
+        assertTrue(thrown.getMessage().contains("no_such_renderer"), thrown::getMessage);
+        assertTrue(thrown.getMessage().contains("line: 1"), thrown::getMessage);
+        assertTrue(thrown.getMessage().contains("test.txt"), thrown::getMessage);
     }
 
+    /** An unknown {@code combine:} name ends the load, as C's {@code PARSE_ERROR_INVALID_VALUE} does. */
     @Test
-    void invalidCombineIsSkippedAndReported() {
-        List<String> errors = new ArrayList<>();
-        List<UIEntry> out = new UIEntryBaseAssembler().assemble(
-                List.of(rec("t", KNOWN_RENDERER, "BOGUS", "F", "d", List.of("C"))), errors, "test.txt");
+    void invalidCombineStopsTheLoad() {
+        DataFileParseException thrown = assertThrows(DataFileParseException.class,
+                () -> new UIEntryBaseAssembler().assemble(
+                        List.of(rec("t", KNOWN_RENDERER, "BOGUS", "F", "d", List.of("C"))), "test.txt"));
 
-        assertTrue(out.isEmpty());
-        assertTrue(errors.stream().anyMatch(e -> e.contains("Illegal combine name")), errors::toString);
+        assertTrue(thrown.getMessage().contains("illegal combiner name value: BOGUS"), thrown::getMessage);
+        assertTrue(thrown.getMessage().contains("line: 1"), thrown::getMessage);
     }
 
+    /** C's first error ends the file, so a good record after a bad one does not rescue the load. */
     @Test
-    void partialResultsSurviveABadRecord() {
-        List<String> errors = new ArrayList<>();
-        List<UIEntry> out = new UIEntryBaseAssembler().assemble(
-                List.of(rec("bad", "no_such_renderer", "LOGICAL_OR", "F", "d", List.of("C")),
+    void aBadRecordStopsTheLoadEvenWithAGoodOneAfterIt() {
+        assertThrows(DataFileParseException.class, () -> new UIEntryBaseAssembler().assemble(
+                List.of(rec("bad", KNOWN_RENDERER, "BOGUS", "F", "d", List.of("C")),
                         rec("good", KNOWN_RENDERER, "LOGICAL_OR", "TIMED_AS_AUX", "d", List.of("C"))),
-                errors, "test.txt");
-
-        assertEquals(1, out.size());
-        assertEquals("good", out.get(0).getName());
-        assertFalse(errors.isEmpty());
+                "test.txt"));
     }
 
     // ---- the returned entry list parseEachEntry builds, mirroring hatch_embryo's -----------------
@@ -131,11 +133,10 @@ class UIEntryBaseAssemblerTest {
 
     @Test
     void createPathReturnsATemplateOnlyEntryWithUnsetCategoryPriorities() {
-        List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryBaseAssembler().assemble(
                 List.of(rec("good_flag_ui_compact_0", KNOWN_RENDERER, "LOGICAL_OR", "TIMED_AS_AUX",
                         "desc", List.of("CHAR_SCREEN1", "abilities"))),
-                errors, "test.txt");
+                "test.txt");
 
         assertEquals(1, out.size());
         UIEntry entry = out.get(0);
@@ -158,15 +159,13 @@ class UIEntryBaseAssemblerTest {
 
     @Test
     void aRepeatedNameMergesNewCategoriesIntoTheExistingEntryRatherThanDuplicatingIt() {
-        List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryBaseAssembler().assemble(
                 List.of(rec("shared_name", KNOWN_RENDERER, "LOGICAL_OR", "TIMED_AS_AUX", "d1",
                                 List.of("CHAR_SCREEN1", "abilities")),
                         rec("shared_name", KNOWN_RENDERER, "ADD", "TIMED_AS_AUX", "d2",
                                 List.of("abilities", "EQUIPCMP_SCREEN"))),
-                errors, "test.txt");
+                "test.txt");
 
-        assertTrue(errors.isEmpty(), errors::toString);
         // The override path (hatch_embryo's embryo->exists branch) means only one entry should
         // exist for the repeated name, not two.
         assertEquals(1, out.size(), "a repeated name should edit the existing entry, not duplicate it");
@@ -201,7 +200,7 @@ class UIEntryBaseAssemblerTest {
         try {
             List<UIEntry> out = new UIEntryBaseAssembler().assemble(
                     List.of(rec("t", KNOWN_RENDERER, "LOGICAL_OR", "TIMED_AS_AUX", "d", List.of("C"))),
-                    new ArrayList<>(), "test.txt");
+                    "test.txt");
 
             assertEquals(1, out.size());
             assertTrue(UIRegistry.getUIEntries().isEmpty(), "assemble must not register its entries");

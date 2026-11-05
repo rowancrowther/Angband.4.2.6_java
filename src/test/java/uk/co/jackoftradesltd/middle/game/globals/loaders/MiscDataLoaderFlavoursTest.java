@@ -17,12 +17,14 @@
 
 package uk.co.jackoftradesltd.middle.game.globals.loaders;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.middle.game.globals.registry.MiscRegistry;
 import uk.co.jackoftradesltd.middle.objects.FlavourKind;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
@@ -39,8 +41,10 @@ import static org.junit.jupiter.api.Assertions.*;
  * Tests {@code MiscDataLoader.loadFlavours} against C's {@code flavor_parser} ({@code init.c}). C
  * stops the game with {@code quit} when {@code flavor.txt} cannot be opened
  * ({@code parse_file_quit_not_found}) or the parser reports an error ({@code run_parser} in
- * {@code datafile.c}); the loader throws in the same two cases, and registers whatever assembled
- * when only soft errors were found.
+ * {@code datafile.c}); the loader throws in the same two cases and registers nothing. A missing
+ * file is wrapped in a {@code RuntimeException} naming it; a grammar error
+ * ({@link ParseCancellationException}) or an assembler error ({@link DataFileParseException})
+ * passes through unwrapped.
  *
  * <p>The files written here use only {@code flavor:} lines, never {@code fixed:} ones, so no object
  * kinds need seeding: a {@code fixed:} line resolves its sub-type through the loaded kind table,
@@ -50,6 +54,9 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p>Each test points {@code ANGBAND_DIRS.GAMEDATA} at a temporary directory and puts it, and the
  * registry's flavours, back afterwards.
+ *
+ * <p>Class MiscDataLoaderFlavoursTest coded before 261104, commented in full on 261104 for the
+ * removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -95,7 +102,7 @@ class MiscDataLoaderFlavoursTest {
     @Test
     @DisplayName("a good file registers one FlavourKind per kind: block, with its tval and glyph")
     void goodFileLoads() throws IOException {
-        writeFlavours("record-count:1\nkind:ring:=\nflavor:2:Green:Alexandrite\nflavor:3:Red:Ruby\n");
+        writeFlavours("kind:ring:=\nflavor:2:Green:Alexandrite\nflavor:3:Red:Ruby\n");
 
         MiscDataLoader.loadFlavours();
 
@@ -107,19 +114,9 @@ class MiscDataLoaderFlavoursTest {
     }
 
     @Test
-    @DisplayName("a soft error that leaves a kind block is logged and the block still registers")
-    void softErrorWithRecordsStillRegisters() throws IOException {
-        writeFlavours("record-count:5\nkind:ring:=\nflavor:2:Green:Alexandrite\n");
-
-        MiscDataLoader.loadFlavours();
-
-        assertEquals(1, MiscRegistry.getFlavours().size());
-    }
-
-    @Test
     @DisplayName("a missing file stops start-up, as parse_file_quit_not_found does, and registers nothing")
     void missingFileThrows() throws IOException {
-        writeFlavours("record-count:1\nkind:ring:=\nflavor:2:Green:Alexandrite\n");
+        writeFlavours("kind:ring:=\nflavor:2:Green:Alexandrite\n");
         MiscDataLoader.loadFlavours();
         List<FlavourKind> before = List.copyOf(MiscRegistry.getFlavours());
         Files.delete(tempDir.resolve("flavor.txt"));
@@ -131,25 +128,39 @@ class MiscDataLoaderFlavoursTest {
         assertEquals(before, MiscRegistry.getFlavours());
     }
 
+    /**
+     * A grammar error stops start-up, as C's {@code run_parser} quits on a parser error, and the
+     * registry keeps the previous load. The {@link ParseCancellationException} passes through the
+     * loader unwrapped.
+     *
+     * <p>Function hardGrammarErrorThrows coded before 261104, commented in full on 261104, rewritten
+     * on 261104 for the removal of the soft-error path.
+     */
     @Test
-    @DisplayName("a hard grammar error yields no kinds with errors, which stops start-up")
+    @DisplayName("a grammar error stops start-up and registers nothing")
     void hardGrammarErrorThrows() throws IOException {
-        writeFlavours("record-count:1\nkind:ring:=\nflavor:2:Green:Alexandrite\n");
+        writeFlavours("kind:ring:=\nflavor:2:Green:Alexandrite\n");
         MiscDataLoader.loadFlavours();
         List<FlavourKind> before = List.copyOf(MiscRegistry.getFlavours());
-        writeFlavours("kind:ring:=\nflavor:2:Green:No record-count header\n");
+        writeFlavours("kind:ring:=\nflavor:2:Green:Alexandrite\nnonsense\n");
 
-        RuntimeException thrown = assertThrows(RuntimeException.class, MiscDataLoader::loadFlavours);
+        assertThrows(ParseCancellationException.class, MiscDataLoader::loadFlavours);
 
-        assertTrue(thrown.getMessage().contains("flavor.txt"));
         assertEquals(before, MiscRegistry.getFlavours());
     }
 
+    /**
+     * An unrecognised tval stops start-up, as C's {@code parse_flavor_kind} returns
+     * {@code PARSE_ERROR_UNRECOGNISED_TVAL}.
+     *
+     * <p>Function unrecognisedTvalThrows coded before 261104, commented in full on 261104, renamed
+     * on 261104: the block is no longer dropped, so the load stops at it.
+     */
     @Test
-    @DisplayName("an unrecognised tval drops the block, and with no block left the load throws")
-    void onlyBlockDroppedThrows() throws IOException {
-        writeFlavours("record-count:1\nkind:notatval:=\nflavor:1:Green:Foo\n");
+    @DisplayName("an unrecognised tval stops start-up")
+    void unrecognisedTvalThrows() throws IOException {
+        writeFlavours("kind:notatval:=\nflavor:1:Green:Foo\n");
 
-        assertThrows(RuntimeException.class, MiscDataLoader::loadFlavours);
+        assertThrows(DataFileParseException.class, MiscDataLoader::loadFlavours);
     }
 }

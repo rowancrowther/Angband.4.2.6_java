@@ -26,12 +26,7 @@
  * directive table at obj-chest.c:245-254 (parse_chest_trap_name/_code/
  * _level/_effect/_dice/_expr/_destroy/_magic/_msg/_msg_death).
  *
- * Two notes on where this file departs from the C original.
- *
- * The C parser registers no "record-count" directive - chest_trap.txt is
- * read by parse_file_quit_not_found (obj-chest.c:259) with no declared
- * total - so RECORD_COUNT below is an addition of this port, matching the
- * convention the other gamedata files follow here.
+ * One note on where this file departs from the C original.
  *
  * The C struct's pval field (object.h:73) has no directive either: it is
  * synthesized while parsing, one bit per record in file order
@@ -41,16 +36,6 @@
 lexer grammar ChestTrapLexer;
 
 import CommentsAndEol, EffectBlockLexer;
-
-/*
- * @author Rowan Crowther
- *
- * record-count directive
- * cf ChestTrapGrammar.g4's 'recordCount' rule
- */
-RECORD_COUNT
-        :   'record-count:'
-        ;
 
 /*
  * @author Rowan Crowther

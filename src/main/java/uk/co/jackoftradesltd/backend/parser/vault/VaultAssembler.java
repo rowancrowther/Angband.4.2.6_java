@@ -78,15 +78,16 @@ import java.util.List;
  *
  * <p><b>Error policy:</b> every bad value is fatal, as it is in C, which stops the load at the
  * first handler that returns an error. Each one logs a fatal message and throws a
- * {@link DataFileParseException}, so no record is dropped. The {@code errors} list is not written.
- * Hard grammar and lexer errors are handled upstream.
+ * {@link DataFileParseException}, so no record is dropped. Hard grammar and lexer errors are
+ * handled upstream.
  *
  * <p>Runs after {@code GameConstants}, because turning {@code max-depth:0} into a real number
  * needs the world's maximum depth.
  *
  * <p>Class VaultAssembler coded before 260915, commented in full on 261030 (first commented
  * 260915; rewritten 261030 once soft errors became fatal, every room builder name was accepted
- * and the {@code uint} minus checks were added).
+ * and the {@code uint} minus checks were added; updated on 261105 for the removal of the
+ * soft-error path).
  *
  * @author Rowan Crowther
  */
@@ -112,7 +113,6 @@ public class VaultAssembler implements Assembler <VaultParseRecord, List<Vault>>
      * 260915; rewritten 261030 for the fatal errors and the C-exact type names).
      *
      * @param records  the raw parse records to assemble
-     * @param errors   unused; formerly the soft-error channel
      * @param filename the data file the records came from, for error messages
      * @return the assembled vaults, in reverse file order, as C's linked list holds them
      * @throws DataFileParseException if the type is not a room builder name, rows, columns or a
@@ -121,7 +121,7 @@ public class VaultAssembler implements Assembler <VaultParseRecord, List<Vault>>
      *                                cannot be read, or a flag is unknown or {@code NONE}
      */
     @Override
-    public List<Vault> assemble(@NotNull List<VaultParseRecord> records, @NotNull List<String> errors,
+    public List<Vault> assemble(@NotNull List<VaultParseRecord> records,
                                     String filename) {
         List<Vault> vaults = new ArrayList<>();
 

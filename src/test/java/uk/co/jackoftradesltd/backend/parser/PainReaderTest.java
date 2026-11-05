@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
@@ -35,9 +36,11 @@ import static org.junit.jupiter.api.Assertions.*;
  * PainGrammar} -> {@code PainParseRecord} -> {@code PainAssembler} -> {@link MonsterPain}. Where
  * {@code PainGrammarTest} stops at the raw parse record, these pin the assembler half - the
  * {@code type:} serial being peeled back off the front of the message list and parsed, the
- * seven-message contract, and the record-count soft error that {@code GrammarDriver} threads
- * through {@link ParseResult}. A bad serial or an eighth message is no longer a soft error: the
- * assembler stops the load with a {@code DataFileParseException}, as C quits on the first bad line.
+ * seven-message contract, and the faults that stop the load. A bad serial or an eighth message
+ * ends it with a {@code DataFileParseException}, as C quits on the first bad line.
+ *
+ * <p>Test class PainReaderTest coded before 261105, updated on 261105 for the removal of the
+ * soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -48,12 +51,6 @@ class PainReaderTest {
     @TempDir
     Path tempDir;
 
-    /**
-     * Prefix a body with the {@code record-count:} header the {@code file} rule requires.
-     */
-    private static String withHeader(int count, String body) {
-        return "record-count:" + count + "\n" + body;
-    }
 
     /**
      * Render one {@code type:}/{@code message:} block; the grammar demands exactly seven messages.
@@ -80,7 +77,6 @@ class PainReaderTest {
     void cleanLoadOfTheRealFileYieldsTwelveMonsterPains() throws IOException {
         ParseResult<MonsterPain> result = new PainReader().parseWithResults(REAL_FILE);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(12, result.items().size());
     }
 
@@ -96,7 +92,7 @@ class PainReaderTest {
         assertEquals("cr[ies|y] out feebly.", first.getMessage(6), "seventh/last message");
     }
 
-    // ---- Assembler soft-error branches -----------------------------------
+    // ---- Assembler number and message-count branches --------------------
 
     @Test
     void aSerialBeyondIntRangeIsClampedAndLoads() throws IOException {
@@ -105,44 +101,19 @@ class PainReaderTest {
         String oversized = "type:99999999999999999999\n"
                 + "message:m1\nmessage:m2\nmessage:m3\nmessage:m4\n"
                 + "message:m5\nmessage:m6\nmessage:m7\n";
-        ParseResult<MonsterPain> result = load("bad-type.txt", withHeader(1, oversized));
+        ParseResult<MonsterPain> result = load("bad-type.txt", oversized);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(Integer.MAX_VALUE, result.items().get(0).getPainIndex());
-    }
-
-    @Test
-    void recordCountMismatchIsReportedButValidRecordsStillLoad() throws IOException {
-        // Header over-declares (5 vs the single entry). Soft: the entry still assembles.
-        ParseResult<MonsterPain> result = load("bad-count.txt", withHeader(5, entry(1, SEVEN)));
-
-        assertEquals(1, result.items().size());
-        assertTrue(result.errors().stream().anyMatch(
-                        e -> e.contains("declares 5") && e.contains("contains 1")),
-                result.errors()::toString);
     }
 
     @Test
     void twoWellFormedEntriesBothAssemble() throws IOException {
         ParseResult<MonsterPain> result =
-                load("two.txt", withHeader(2, entry(1, SEVEN) + entry(2, SEVEN)));
+                load("two.txt", entry(1, SEVEN) + entry(2, SEVEN));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(2, result.items().size());
         assertEquals(1, result.items().get(0).getPainIndex());
         assertEquals(2, result.items().get(1).getPainIndex());
-    }
-
-    @Test
-    void underDeclaredRecordCountIsReportedButAllRecordsLoad() throws IOException {
-        // Complement of the over-declared case: header says 1, file has 2. Still soft.
-        ParseResult<MonsterPain> result =
-                load("under.txt", withHeader(1, entry(1, SEVEN) + entry(2, SEVEN)));
-
-        assertEquals(2, result.items().size());
-        assertTrue(result.errors().stream().anyMatch(
-                        e -> e.contains("declares 1") && e.contains("contains 2")),
-                result.errors()::toString);
     }
 
     @Test
@@ -151,10 +122,10 @@ class PainReaderTest {
         // PARSE_ERROR_NOT_NUMBER when the token starts with '-'. The assembler throws, naming the
         // type: line (2, after the header) and the file.
         DataFileParseException thrown = assertThrows(DataFileParseException.class,
-                () -> load("neg.txt", withHeader(1, entry(-1, SEVEN))));
+                () -> load("neg.txt", entry(-1, SEVEN)));
 
         assertTrue(thrown.getMessage().contains("illegal negative found on the type value: -1"), thrown::getMessage);
-        assertTrue(thrown.getMessage().contains("line: 2"), thrown::getMessage);
+        assertTrue(thrown.getMessage().contains("line: 1"), thrown::getMessage);
         assertTrue(thrown.getMessage().contains("neg.txt"), thrown::getMessage);
     }
 
@@ -166,9 +137,8 @@ class PainReaderTest {
         // The grammar accepts any number of message: lines and the assembler pads with null.
         String sixMsgs = "type:1\n"
                 + "message:m1\nmessage:m2\nmessage:m3\nmessage:m4\nmessage:m5\nmessage:m6\n";
-        ParseResult<MonsterPain> result = load("too-few.txt", withHeader(1, sixMsgs));
+        ParseResult<MonsterPain> result = load("too-few.txt", sixMsgs);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals("m6", result.items().get(0).getMessage(5));
         assertNull(result.items().get(0).getMessage(6));
     }
@@ -179,20 +149,11 @@ class PainReaderTest {
         // The grammar lets it through, so the assembler throws, naming the type: line and the file.
         String eightMsgs = entry(1, SEVEN) + "message:extra\n";
         DataFileParseException thrown = assertThrows(DataFileParseException.class,
-                () -> load("too-many.txt", withHeader(1, eightMsgs)));
+                () -> load("too-many.txt", eightMsgs));
 
         assertTrue(thrown.getMessage().contains("Should be 7, is: 8"), thrown::getMessage);
-        assertTrue(thrown.getMessage().contains("line: 2"), thrown::getMessage);
+        assertTrue(thrown.getMessage().contains("line: 1"), thrown::getMessage);
         assertTrue(thrown.getMessage().contains("too-many.txt"), thrown::getMessage);
-    }
-
-    @Test
-    void missingRecordCountHeaderIsAHardError() throws IOException {
-        // file starts with recordCount; a bare type: block with no header cannot match it.
-        ParseResult<MonsterPain> result = load("no-header.txt", entry(1, SEVEN));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
@@ -201,10 +162,8 @@ class PainReaderTest {
         // for (STRING needs >=1 char), so it is a hard lexer error - not a silently empty message.
         String emptyFirst = "type:1\n"
                 + "message:\nmessage:m2\nmessage:m3\nmessage:m4\nmessage:m5\nmessage:m6\nmessage:m7\n";
-        ParseResult<MonsterPain> result = load("empty-msg.txt", withHeader(1, emptyFirst));
+        assertThrows(ParseCancellationException.class, () -> load("empty-msg.txt", emptyFirst));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     // ---- Contract of the reader itself (expected values from C's pain.txt and mon-init.c) ----
@@ -263,11 +222,11 @@ class PainReaderTest {
     }
 
     @Test
-    void parseDropsErrorsSoASyntaxErrorLooksLikeAnEmptyList() throws IOException {
+    void parseThrowsOnASyntaxErrorRatherThanReturningAnEmptyList() throws IOException {
         Path file = tempDir.resolve("broken.txt");
-        Files.writeString(file, withHeader(1, "message:orphan\n"));
+        Files.writeString(file, "message:orphan\n");
 
-        assertTrue(new PainReader().parse(file.toString()).isEmpty());
+        assertThrows(ParseCancellationException.class, () -> new PainReader().parse(file.toString()));
     }
 
     @Test
@@ -283,11 +242,8 @@ class PainReaderTest {
     void messageBeforeAnyTypeLineIsAHardError() throws IOException {
         // C: parse_pain_message returns PARSE_ERROR_MISSING_RECORD_HEADER while the private pointer
         // is still NULL, and the init code quits on any parser error.
-        ParseResult<MonsterPain> result =
-                load("headless.txt", withHeader(1, "message:m1\n" + entry(1, SEVEN)));
+        assertThrows(ParseCancellationException.class, () -> load("headless.txt", "message:m1\n" + entry(1, SEVEN)));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
@@ -295,9 +251,8 @@ class PainReaderTest {
         // pain.txt's header says serials "must increase", but parse_pain_type only reads a uint and
         // checks nothing, so a descending pair loads. Here the list stays in file order.
         ParseResult<MonsterPain> result =
-                load("desc.txt", withHeader(2, entry(5, SEVEN) + entry(2, SEVEN)));
+                load("desc.txt", entry(5, SEVEN) + entry(2, SEVEN));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(List.of(5, 2), result.items().stream().map(MonsterPain::getPainIndex).toList());
     }
 
@@ -306,11 +261,9 @@ class PainReaderTest {
         // C would file both into the same pain_messages slot, the earlier one in the file winning
         // (the parser list is newest-first, so the earlier record is copied last). The list here
         // keeps both; MonsterRegistry.lookupMonsterPain finds the earlier, so lookups agree with C.
-        ParseResult<MonsterPain> result = load("dup.txt", withHeader(2,
-                entry(3, "a1", "a2", "a3", "a4", "a5", "a6", "a7")
-                        + entry(3, "b1", "b2", "b3", "b4", "b5", "b6", "b7")));
+        ParseResult<MonsterPain> result = load("dup.txt", entry(3, "a1", "a2", "a3", "a4", "a5", "a6", "a7")
+                        + entry(3, "b1", "b2", "b3", "b4", "b5", "b6", "b7"));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(2, result.items().size());
         assertEquals("a1", result.items().get(0).getMessage(0));
         assertEquals("b1", result.items().get(1).getMessage(0));
@@ -320,10 +273,8 @@ class PainReaderTest {
     void messageTextRunsToTheEndOfTheLineColonsAndSpacesIncluded() throws IOException {
         // C declares the field "str message", and parser_parse hands a str the whole remainder of
         // the line (strtok with an empty delimiter set): colons are kept and nothing is trimmed.
-        ParseResult<MonsterPain> result = load("colon.txt", withHeader(1,
-                entry(1, "a: b", " lead", "x:y:z", "m4", "m5", "m6", "m7")));
+        ParseResult<MonsterPain> result = load("colon.txt", entry(1, "a: b", " lead", "x:y:z", "m4", "m5", "m6", "m7"));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         MonsterPain pain = result.items().get(0);
         assertEquals("a: b", pain.getMessage(0));
         assertEquals(" lead", pain.getMessage(1));
@@ -333,8 +284,7 @@ class PainReaderTest {
     @Test
     void messagesComeBackInTheOrderTheLinesAppear() throws IOException {
         // C fills messages[0..6] in order; level 0 is the first message: line.
-        ParseResult<MonsterPain> result = load("order.txt", withHeader(1,
-                entry(4, "m1", "m2", "m3", "m4", "m5", "m6", "m7")));
+        ParseResult<MonsterPain> result = load("order.txt", entry(4, "m1", "m2", "m3", "m4", "m5", "m6", "m7"));
 
         MonsterPain pain = result.items().get(0);
         for (int level = 0; level < 7; level++) {
@@ -346,9 +296,8 @@ class PainReaderTest {
     void indexZeroIsAcceptedAsARealRecord() throws IOException {
         // C reads the serial with parser_getuint, so 0 is legal there (it would simply land in the
         // blank slot 0 of pain_messages). Nothing here treats 0 as special.
-        ParseResult<MonsterPain> result = load("zero.txt", withHeader(1, entry(0, SEVEN)));
+        ParseResult<MonsterPain> result = load("zero.txt", entry(0, SEVEN));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(0, result.items().get(0).getPainIndex());
     }
 
@@ -359,21 +308,15 @@ class PainReaderTest {
         // C: parser_parse skips leading isspace() before it looks for the directive, so "  type:1"
         // reads as "type:1". CommentsAndEol only skips trailing spaces before a newline, so the
         // lexer has no rule for a line that starts with a space. Pins the current behaviour.
-        ParseResult<MonsterPain> result =
-                load("indented.txt", withHeader(1, "  " + entry(1, SEVEN)));
+        assertThrows(ParseCancellationException.class, () -> load("indented.txt", "  " + entry(1, SEVEN)));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void indentedCommentLineIsAHardErrorHereWhereCSkipsIt() throws IOException {
         // C: after the leading whitespace is skipped, a line starting '#' is a comment. COMMENT
         // here must start in column 0. Pins the current behaviour.
-        ParseResult<MonsterPain> result =
-                load("indented-comment.txt", withHeader(1, "  # note\n" + entry(1, SEVEN)));
+        assertThrows(ParseCancellationException.class, () -> load("indented-comment.txt", "  # note\n" + entry(1, SEVEN)));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 }

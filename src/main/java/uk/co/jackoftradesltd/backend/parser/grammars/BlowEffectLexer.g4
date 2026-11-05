@@ -39,16 +39,6 @@ import CommentsAndEol;
 /*
  * @author Rowan Crowther
  *
- * The record-count header this port adds to each data file, giving the number of
- * records that should follow. Validated softly by the reader, not here.
- */
-RECORD_COUNT
-        :   'record-count:'
-        ;
-
-/*
- * @author Rowan Crowther
- *
  * Opens a record. The name is free text only so that one rule can serve every
  * directive that runs to end-of-line; the values themselves are code-like
  * (HURT, DRAIN_CHARGES) and are matched against the monster.txt references.

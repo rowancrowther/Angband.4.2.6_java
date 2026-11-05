@@ -92,7 +92,6 @@ class BlowEffectTest {
 
     private static List<BlowEffect> realFile() throws IOException {
         ParseResult<BlowEffect> result = new BlowEffectReader().parseWithResults(REAL_FILE);
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         return result.items();
     }
 

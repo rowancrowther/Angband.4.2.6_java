@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/UIEntryBaseGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/frontend/ui/entrybase/UIEntryBaseGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.frontend.ui.entrybase.antlr4.uientrybase;
 
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
@@ -36,89 +36,54 @@ public class UIEntryBaseGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitRecordCount(UIEntryBaseGrammar.RecordCountContext ctx) {
-		return visitChildren(ctx);
-	}
+	@Override public T visitName(UIEntryBaseGrammar.NameContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitName(UIEntryBaseGrammar.NameContext ctx) {
-		return visitChildren(ctx);
-	}
+	@Override public T visitRenderer(UIEntryBaseGrammar.RendererContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitRenderer(UIEntryBaseGrammar.RendererContext ctx) {
-		return visitChildren(ctx);
-	}
+	@Override public T visitCombine(UIEntryBaseGrammar.CombineContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitCombine(UIEntryBaseGrammar.CombineContext ctx) {
-		return visitChildren(ctx);
-	}
+	@Override public T visitCategory(UIEntryBaseGrammar.CategoryContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitCategory(UIEntryBaseGrammar.CategoryContext ctx) {
-		return visitChildren(ctx);
-	}
+	@Override public T visitFlags(UIEntryBaseGrammar.FlagsContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitFlags(UIEntryBaseGrammar.FlagsContext ctx) {
-		return visitChildren(ctx);
-	}
+	@Override public T visitDesc(UIEntryBaseGrammar.DescContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitDesc(UIEntryBaseGrammar.DescContext ctx) {
-		return visitChildren(ctx);
-	}
+	@Override public T visitEntryBase(UIEntryBaseGrammar.EntryBaseContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitEntryBase(UIEntryBaseGrammar.EntryBaseContext ctx) {
-		return visitChildren(ctx);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override
-	public T visitFile(UIEntryBaseGrammar.FileContext ctx) {
-		return visitChildren(ctx);
-	}
+	@Override public T visitFile(UIEntryBaseGrammar.FileContext ctx) { return visitChildren(ctx); }
 }

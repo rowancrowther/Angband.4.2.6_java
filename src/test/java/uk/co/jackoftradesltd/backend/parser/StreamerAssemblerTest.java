@@ -26,7 +26,6 @@ import uk.co.jackoftradesltd.backend.parser.dungeonprofile.StreamerAssembler;
 import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.middle.cave.profiles.dungeon.StreamerProfile;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.ToIntFunction;
 
@@ -68,7 +67,7 @@ class StreamerAssemblerTest {
     }
 
     private static StreamerProfile assemble(List<Streamer> records) {
-        return new StreamerAssembler().assemble(records, new ArrayList<>(), FILE);
+        return new StreamerAssembler().assemble(records, FILE);
     }
 
     private static StreamerProfile one(Streamer record) {
@@ -121,13 +120,6 @@ class StreamerAssemblerTest {
     void theAllZeroRecordForAProfileWithNoStreamerLineIsCsZeroFill() {
         // DungeonProfileAssembler hands over six "0"s; C's mem_zalloc leaves str all zero
         assertProfile(one(streamer("0", "0", "0", "0", "0", "0")), 0, 0, 0, 0, 0, 0);
-    }
-
-    @Test
-    void nothingIsAddedToTheErrorList() {
-        List<String> errors = new ArrayList<>();
-        new StreamerAssembler().assemble(List.of(streamer("5", "2", "3", "90", "2", "40")), errors, FILE);
-        assertTrue(errors.isEmpty(), errors::toString);
     }
 
     // ---- Number reading: strtol in base 0 ----------------------------------

@@ -14,10 +14,6 @@ lexer grammar RoomProfileLexer;
 
 import CommentsAndEol, Flags;
 
-RECORD_COUNT
-        :   'record-count:'
-        ;
-
 NAME
         :   'name:' -> pushMode(REST_OF_LINE)
         ;

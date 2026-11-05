@@ -21,7 +21,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftradesltd.backend.parser.*;
 import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
-import uk.co.jackoftradesltd.channel.parser.ErrorParsing;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.Activation;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
@@ -46,19 +45,25 @@ import java.io.IOException;
  * copies the parsed linked list into the direct-access array and sets the {@code z_info} counter.
  * The loaders are invoked by {@code GameConstants.init()} in dependency order — bases before
  * slays/brands/curses; curses and item objects before ego items and artifacts. {@code loadItemObjects}
- * registers the ordinary object kinds, and the artifact reader {@code loadArtifacts} drives
- * synthesizes the special artifact kinds into the same table, so their order is load-bearing. It was
- * split out of {@code GameConstants} as one domain slice of the loader/registry refactor.
+ * registers the ordinary object kinds, and {@code loadArtifacts} synthesizes the special artifact
+ * kinds into the same table, so their order is load-bearing. It was split out of
+ * {@code GameConstants} as one domain slice of the loader/registry refactor.
  *
- * <p>Failure behaviour is the same in every file loader, and it is C's: a file that is missing or
- * unreadable stops the load, as {@code parse_file_quit_not_found} and {@code init_arrays}
- * ({@code init.c}) quit the game in C. Here each loader logs the failure at {@code FATAL} and
- * throws a {@link RuntimeException}, so nothing is swallowed; a parse that reports errors and
- * assembles no record at all stops the load the same way. Soft errors on individual records are a
- * deliberate departure: they are logged through {@link ErrorParsing#reportAndCheck} and the records
- * that did assemble are registered regardless (the partial-results contract), where C fails the
- * whole parse on the first one. The user-directory override that C's {@code parse_file} tries first
- * is not ported: only the gamedata directory is read.
+ * <p>Every error is fatal, as in C: a missing or unreadable file, or a bad line anywhere in it,
+ * stops the load, as {@code parse_file_quit_not_found} and {@code init_arrays} ({@code init.c})
+ * quit the game. There are three ways a load fails, and only the first is handled here:
+ * <ul>
+ *   <li>an {@link IOException} from the reader is logged at {@code FATAL} and rethrown wrapped in a
+ *       {@link RuntimeException};</li>
+ *   <li>a grammar or lexer error is thrown by the reader as a {@code ParseCancellationException}
+ *       ({@code ParseErrors.throwIfAny});</li>
+ *   <li>a record the assembler refuses is thrown as a {@code DataFileParseException}.</li>
+ * </ul>
+ * The last two are unchecked and pass through every loader except {@link #loadCurses()} unlogged
+ * and unwrapped; {@code GameConstants.init()} catches them and names the file. Nothing is
+ * registered from a file that fails, so the registry never holds a partial list. The user-directory
+ * override that C's {@code parse_file} tries first is not ported: only the gamedata directory is
+ * read.
  *
  * <p>The {@code *Max} counters the registry keeps are the plain record counts. C's {@code z_info}
  * counters are one higher for the placeholder slot its arrays carry (see {@link ObjectRegistry}),
@@ -77,17 +82,19 @@ import java.io.IOException;
  * {@code obj-init.c}.
  *
  * <p>Class ObjectDataLoader coded before 261005, class description updated for the curse-kind pass
- * on 261005, commented in full on 261013.
+ * on 261005, commented in full on 261013, failure paragraph rewritten on 261104 for the removal of
+ * the soft-error path.
  *
  * @author Rowan Crowther
  */
 public class ObjectDataLoader {
     /**
-     * The log every loader here writes to: soft parse errors through
-     * {@link ErrorParsing#reportAndCheck}, and the {@code FATAL} line that precedes a thrown
-     * {@link RuntimeException}.
+     * The log every loader here writes to: the {@code FATAL} line that precedes a wrapped
+     * {@link RuntimeException}. Grammar and assembler errors are not logged here, except in
+     * {@link #loadCurses()}, which catches every exception.
      *
-     * <p>Field logger coded before 261005, commented in full on 261013.
+     * <p>Field logger coded before 261005, commented in full on 261013, updated on 261104 for the
+     * removal of the soft-error path.
      */
     private static final Logger logger = LogManager.getLogger(ObjectDataLoader.class);
 
@@ -97,12 +104,12 @@ public class ObjectDataLoader {
      * {@code finish_parse_object_property} builds {@code obj_properties}. Must run after the UI
      * entries, which the property assembler resolves {@code bindui} targets against.
      * <p>
-     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the properties that
-     * did assemble are registered regardless, per the partial-results contract. An IO failure, or a
-     * file that yields no properties while reporting errors, is logged and <em>rethrown</em> as a
-     * {@link RuntimeException}, as C quits when this file cannot be read.
+     * Every error stops the load. An IO failure is logged and <em>rethrown</em> as a
+     * {@link RuntimeException}, as C quits when this file cannot be read; a grammar or assembler
+     * error passes through unwrapped (see the class description).
      *
-     * <p>Function loadObjectProperties coded before 261005, commented in full on 261013.
+     * <p>Function loadObjectProperties coded before 261005, commented in full on 261013, updated on
+     * 261104 for the removal of the soft-error path.
      */
     public static void loadObjectProperties() {
         ObjectPropertyReader parser = new ObjectPropertyReader();
@@ -110,12 +117,6 @@ public class ObjectDataLoader {
 
         try {
             ParseResult<ObjectProperty> result = parser.parseWithResults(filename);
-
-            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
-                String message = "Error parsing file: " + filename;
-                logger.error(message);
-                throw new RuntimeException(message);
-            }
 
             ObjectRegistry.setObjectProperties(result.items());
         } catch (IOException e) {
@@ -132,16 +133,15 @@ public class ObjectDataLoader {
      * effect resolves against - and so, transitively, after monster bases and pains. Nothing else in
      * the object slice depends on this list, so it may run late.
      * <p>
-     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and whatever assembled is
-     * registered regardless, per the partial-results contract. Note that this file is validated as a
-     * whole rather than record by record: if it breaks any of the structural rules stated at the top
-     * of {@code chest_trap.txt}, the assembler returns an empty list rather than a partial set. That
-     * empty result comes with errors, so {@link ErrorParsing#reportAndCheck} answers {@code false}
-     * and the loader throws; the registry is never left holding a partial trap list. An IO failure
-     * is logged and <em>rethrown</em> as a {@link RuntimeException}, as C quits when this file cannot
-     * be read.
+     * Every error stops the load. A file that breaks any of the structural rules stated at the top
+     * of {@code chest_trap.txt} is refused by {@code ChestTrapAssembler} with a
+     * {@code DataFileParseException}, which passes through unwrapped, so the registry is never left
+     * holding a partial trap list. A grammar error passes through the same way. An IO failure is
+     * logged and <em>rethrown</em> as a {@link RuntimeException}, as C quits when this file cannot be
+     * read.
      *
-     * <p>Function loadChestTraps coded before 261005, commented in full on 261013.
+     * <p>Function loadChestTraps coded before 261005, commented in full on 261013, updated on 261104
+     * for the removal of the soft-error path.
      */
     public static void loadChestTraps() {
         ChestTrapReader parser = new ChestTrapReader();
@@ -149,12 +149,6 @@ public class ObjectDataLoader {
 
         try {
             ParseResult<ChestTrap> result = parser.parseWithResults(filename);
-
-            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
-                String message = "Error parsing file: " + filename;
-                logger.error(message);
-                throw new RuntimeException(message);
-            }
 
             ObjectRegistry.setChestTraps(result.items());
         } catch (IOException e) {
@@ -173,12 +167,9 @@ public class ObjectDataLoader {
      * (so the ordinary kinds are already registered) and after activations, brands, slays and
      * curses, which artifacts reference.
      * <p>
-     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the artifacts that
-     * did assemble are registered regardless, per the partial-results contract. An IO failure, or a
-     * file that yields no artifacts while reporting errors, is logged and <em>rethrown</em> as a
-     * {@link RuntimeException}. Note the synthesis side effect: a dropped artifact also means its
-     * special object kind is never added, so the kind table silently differs from the C original's -
-     * worth remembering when comparing counts.
+     * Every error stops the load. An IO failure is logged and <em>rethrown</em> as a
+     * {@link RuntimeException}; a grammar or assembler error passes through unwrapped (see the class
+     * description).
      * <p>
      * This is also the loader {@code PlayerBirth} runs a second time to restore the standard
      * artifacts after a randart set, as C re-runs {@code artifact_parser} in
@@ -188,7 +179,8 @@ public class ObjectDataLoader {
      * second run does not repeat the curse-kind pass; the curses are not reloaded, so
      * {@link #parseCurseKinds()} has nothing to redo.
      *
-     * <p>Function loadArtifacts coded before 261005, commented in full on 261013.
+     * <p>Function loadArtifacts coded before 261005, commented in full on 261013, updated on 261104
+     * for the removal of the soft-error path.
      */
     public static void loadArtifacts() {
         ArtifactReader parser = new ArtifactReader();
@@ -196,12 +188,6 @@ public class ObjectDataLoader {
 
         try {
             ParseResult<Artifact> result = parser.parseWithResults(filename);
-
-            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
-                String message = "Error parsing file: " + filename;
-                logger.error(message);
-                throw new RuntimeException(message);
-            }
 
             ObjectRegistry.setArtifacts(result.items());
         } catch (IOException e) {
@@ -217,12 +203,12 @@ public class ObjectDataLoader {
      * Must run after activations, brands, slays and curses, and after the object kinds its
      * {@code poss-items:} lines resolve against.
      * <p>
-     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the ego items that
-     * did assemble are registered regardless, per the partial-results contract. An IO failure, or a
-     * file that yields no ego items while reporting errors, is logged and <em>rethrown</em> as a
-     * {@link RuntimeException}.
+     * Every error stops the load. An IO failure is logged and <em>rethrown</em> as a
+     * {@link RuntimeException}; a grammar or assembler error passes through unwrapped (see the class
+     * description).
      *
-     * <p>Function loadEgoItems coded before 261005, commented in full on 261013.
+     * <p>Function loadEgoItems coded before 261005, commented in full on 261013, updated on 261104
+     * for the removal of the soft-error path.
      */
     public static void loadEgoItems() {
         EgoItemReader reader = new EgoItemReader();
@@ -230,12 +216,6 @@ public class ObjectDataLoader {
 
         try {
             ParseResult<EgoItem> results = reader.parseWithResults(filename);
-
-            if (!ErrorParsing.reportAndCheck(filename, results, logger)) {
-                String message = "Error parsing file: " + filename;
-                logger.error(message);
-                throw new RuntimeException(message);
-            }
 
             ObjectRegistry.setEgoItems(results.items());
         } catch (IOException e) {
@@ -251,11 +231,9 @@ public class ObjectDataLoader {
      * {@code activations}. Must run before ego items and artifacts, which name an activation
      * directly (C's {@code findact}).
      * <p>
-     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the activations that
-     * did assemble are registered regardless, per the partial-results contract; a dropped activation
-     * surfaces as an unresolved name in the two loaders that follow. An IO failure, or a file that
-     * yields no activations while reporting errors, is logged and <em>rethrown</em> as a
-     * {@link RuntimeException}.
+     * Every error stops the load. An IO failure is logged and <em>rethrown</em> as a
+     * {@link RuntimeException}; a grammar or assembler error passes through unwrapped (see the class
+     * description).
      * <p>
      * The list is stored in reverse file order, as the assembler returns it, which is C's
      * {@code activations[]} order. C's {@code finish_parse_act} also numbers each activation by its
@@ -264,21 +242,16 @@ public class ObjectDataLoader {
      * it is in order, from 0 at the head, where C counts from 1. {@code Activation} has no getter
      * for the index yet, because the savefile is not ported.
      *
-     * <p>Function loadActivations coded before 261005, commented in full on 261013.
+     * <p>Function loadActivations coded before 261005, commented in full on 261013, updated on 261104
+     * for the removal of the soft-error path.
      */
     public static void loadActivations() {
         ActivationReader reader = new ActivationReader();
         String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "activation.txt";
 
         try {
-            ParseResult<Activation> results = reader.parseWithResult(filename);
-
-            if (!ErrorParsing.reportAndCheck(filename, results, logger)) {
-                String message = "Error parsing file: " + filename;
-                logger.error(message);
-                throw new RuntimeException(message);
-            }
-
+            ParseResult<Activation> results = reader.parseWithResults(filename);
+            
             ObjectRegistry.setActivations(results.items());
         } catch (IOException e) {
             String message = "Error while loading file " + filename;
@@ -307,14 +280,14 @@ public class ObjectDataLoader {
      * nothing between the two reads them. C resolves a third sentinel there, {@code pile_kind}, which
      * has no Java counterpart yet.
      * <p>
-     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the kinds that did
-     * assemble are registered regardless, per the partial-results contract - note this loader adds
-     * kinds one at a time rather than setting a list, so a partial parse leaves a genuinely partial
-     * table. An IO failure, or a file that yields no kinds while reporting errors, is logged and
-     * <em>rethrown</em> as a {@link RuntimeException}: this is the widest dependency in the suite,
-     * and continuing without it turns one failure into many.
+     * Every error stops the load. An IO failure is logged and <em>rethrown</em> as a
+     * {@link RuntimeException}; a grammar or assembler error passes through unwrapped (see the class
+     * description). Either way the throw comes before the first {@code addObjectKind}, so a failed
+     * file adds no kinds. This is the widest dependency in the suite, and continuing without it
+     * would turn one failure into many.
      *
-     * <p>Function loadItemObjects coded before 261005, commented in full on 261013.
+     * <p>Function loadItemObjects coded before 261005, commented in full on 261013, updated on 261104
+     * for the removal of the soft-error path.
      *
      * @throws IOException declared but never thrown: the {@code IOException} from the parse is caught
      *                     inside and rethrown wrapped in a {@link RuntimeException}
@@ -325,12 +298,6 @@ public class ObjectDataLoader {
 
         try {
             ParseResult<ObjectKind> results = parser.parseWithResults(filename);
-
-            if (!ErrorParsing.reportAndCheck(filename, results, logger)) {
-                String message = "Error parsing file: " + filename;
-                logger.error(message);
-                throw new RuntimeException(message);
-            }
 
             for (ObjectKind kind : results.items()) {
                 ObjectRegistry.addObjectKind(kind);
@@ -352,20 +319,18 @@ public class ObjectDataLoader {
      * items and artifacts that carry a curse. The curse objects loaded here have no kind yet;
      * {@link #parseCurseKinds()} gives them one once the kind table is complete.
      * <p>
-     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the curses that did
-     * assemble are registered regardless, per the partial-results contract. The catch is on
-     * {@code Exception} rather than {@code IOException} and <em>rethrows</em>, so any failure stops
-     * the load. That includes the {@link RuntimeException} this method throws itself when
-     * {@link ErrorParsing#reportAndCheck} answers {@code false}, which is caught and wrapped a
-     * second time, so the exception that escapes reads "Error while loading file" with the "Error
-     * parsing file" one as its cause.
+     * Every error stops the load. Unlike the other loaders here, the catch is on {@code Exception}
+     * rather than {@code IOException}, so a grammar error ({@code ParseCancellationException}) or an
+     * assembler refusal ({@code DataFileParseException}) is logged at {@code FATAL} and wrapped too:
+     * the exception that escapes reads "Error while loading file" with the original as its cause.
      * <p>
      * The list is stored in reverse file order, as {@code CurseAssembler} returns it, which is C's
      * {@code curses[]} order. The two checks C makes in {@code finish_parse_curse} - no more than
      * 254 curses, and no {@code MULTIPLY_WEIGHT} curse with a negative weight - are made in that
      * assembler, not here.
      *
-     * <p>Function loadCurses coded before 261005, commented in full on 261013.
+     * <p>Function loadCurses coded before 261005, commented in full on 261013, updated on 261104 for
+     * the removal of the soft-error path.
      *
      * @throws IOException declared but never thrown: every failure, the {@code IOException}
      *                     included, is caught inside and rethrown wrapped in a
@@ -377,12 +342,6 @@ public class ObjectDataLoader {
 
         try {
             ParseResult<Curse> result = parser.parseWithResults(filename);
-
-            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
-                String message = "Error parsing file: " + filename;
-                logger.error(message);
-                throw new RuntimeException(message);
-            }
 
             ObjectRegistry.setCurses(result.items());
         } catch (Exception e) {
@@ -397,17 +356,17 @@ public class ObjectDataLoader {
      * {@code brand_parser} ({@code obj-init.c}), whose {@code finish_parse_brand} builds
      * {@code brands}. Must run before the object kinds, ego items and artifacts that name a brand.
      * <p>
-     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the brands that did
-     * assemble are registered regardless, per the partial-results contract. An IO failure, or a file
-     * that yields no brands while reporting errors, is logged and <em>rethrown</em> as a
-     * {@link RuntimeException}, since three later loaders resolve against this list.
+     * Every error stops the load, which matters here because three later loaders resolve against
+     * this list. An IO failure is logged and <em>rethrown</em> as a {@link RuntimeException}; a
+     * grammar or assembler error passes through unwrapped (see the class description).
      * <p>
      * The list is stored in reverse file order, as the assembler returns it, which is C's
      * {@code brands[]} order. C's {@code finish_parse_brand} also fails the parse when the file
      * holds more than 254 brands ({@code PARSE_ERROR_TOO_MANY_ENTRIES}); neither this loader nor
      * {@code BrandAssembler} applies that limit, so a longer file would register in full.
      *
-     * <p>Function loadBrands coded before 261005, commented in full on 261013.
+     * <p>Function loadBrands coded before 261005, commented in full on 261013, updated on 261104 for
+     * the removal of the soft-error path.
      *
      * @throws IOException declared but never thrown: the {@code IOException} from the parse is caught
      *                     inside and rethrown wrapped in a {@link RuntimeException}
@@ -418,12 +377,6 @@ public class ObjectDataLoader {
 
         try {
             ParseResult<Brand> result = parser.parseWithResults(filename);
-
-            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
-                String message = "Error parsing file: " + filename;
-                logger.error(message);
-                throw new RuntimeException(message);
-            }
 
             ObjectRegistry.setBrands(result.items());
         } catch (IOException e) {
@@ -439,18 +392,18 @@ public class ObjectDataLoader {
      * Must run after monster bases, whose names each slay targets, and before the object kinds, ego
      * items and artifacts that name a slay.
      * <p>
-     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the slays that did
-     * assemble are registered regardless, per the partial-results contract. An IO failure, or a file
-     * that yields no slays while reporting errors, is logged and <em>rethrown</em> as a
-     * {@link RuntimeException}, matching brands - the symmetric loader beside it - since three later
-     * loaders resolve against this list.
+     * Every error stops the load, matching brands - the symmetric loader beside it - since three
+     * later loaders resolve against this list. An IO failure is logged and <em>rethrown</em> as a
+     * {@link RuntimeException}; a grammar or assembler error passes through unwrapped (see the class
+     * description).
      * <p>
      * The list is stored in reverse file order, as the assembler returns it, which is C's
      * {@code slays[]} order. C's {@code finish_parse_slay} also fails the parse when the file holds
      * more than 254 slays ({@code PARSE_ERROR_TOO_MANY_ENTRIES}); neither this loader nor
      * {@code SlayAssembler} applies that limit, so a longer file would register in full.
      *
-     * <p>Function loadSlays coded before 261005, commented in full on 261013.
+     * <p>Function loadSlays coded before 261005, commented in full on 261013, updated on 261104 for
+     * the removal of the soft-error path.
      *
      * @throws IOException declared but never thrown: the {@code IOException} from the parse is caught
      *                     inside and rethrown wrapped in a {@link RuntimeException}
@@ -461,12 +414,6 @@ public class ObjectDataLoader {
 
         try {
             ParseResult<Slay> result = parser.parseWithResults(filename);
-
-            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
-                String message = "Error parsing file: " + filename;
-                logger.error(message);
-                throw new RuntimeException(message);
-            }
 
             ObjectRegistry.setSlays(result.items());
         } catch (IOException e) {
@@ -483,17 +430,17 @@ public class ObjectDataLoader {
      * {@code kb_info}, indexed by tval. The first object-side loader to run, and a prerequisite for
      * curses, object kinds and everything downstream of them.
      * <p>
-     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the bases that did
-     * assemble are registered regardless, per the partial-results contract. An IO failure, or a file
-     * that yields no bases while reporting errors, is logged and <em>rethrown</em> as a
-     * {@link RuntimeException}.
+     * Every error stops the load. An IO failure is logged and <em>rethrown</em> as a
+     * {@link RuntimeException}; a grammar or assembler error passes through unwrapped (see the class
+     * description).
      * <p>
-     * This is the loader whose earlier swallow-and-skip behaviour proved the case for the
-     * partial-results contract: a rejected file left {@link ObjectRegistry} holding {@code null}
-     * rather than an empty list, and the failure surfaced fifteen loaders later as an
-     * {@code IllegalStateException} from an unrelated assembler.
+     * This is the loader whose earlier swallow-and-skip behaviour showed why a failure must stop the
+     * load: a rejected file left {@link ObjectRegistry} holding {@code null} rather than an empty
+     * list, and the failure surfaced fifteen loaders later as an {@code IllegalStateException} from
+     * an unrelated assembler.
      *
-     * <p>Function loadObjectBases coded before 261005, commented in full on 261013.
+     * <p>Function loadObjectBases coded before 261005, commented in full on 261013, updated on 261104
+     * for the removal of the soft-error path.
      *
      * @throws IOException declared but never thrown: the {@code IOException} from the parse is caught
      *                     inside and rethrown wrapped in a {@link RuntimeException}
@@ -504,12 +451,6 @@ public class ObjectDataLoader {
 
         try {
             ParseResult<ObjectBase> result = parser.parseWithResults(filename);
-
-            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
-                String message = "Error parsing file: " + filename;
-                logger.error(message);
-                throw new RuntimeException(message);
-            }
 
             ObjectRegistry.setObjectBases(result.items());
         } catch (IOException e) {

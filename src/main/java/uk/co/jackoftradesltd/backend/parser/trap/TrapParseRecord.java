@@ -31,8 +31,11 @@ import java.util.List;
  * {@code parse_trap_desc}): the {@code name:} line's second field is captured as {@link #description}
  * (C {@code desc}, the {@code lookupTrap} key) while the {@code desc:} directive is captured as
  * {@link #text} (C {@code text}); and the assembler assigns the real {@code trapKindIndex}
- * instead, by position among the records that assemble, so a record dropped on a soft error
- * shifts the indices of the ones after it.
+ * instead, by file position from 0. A refused record throws and ends the load, so no record is
+ * dropped and no index is skipped.
+ *
+ * <p>Record TrapParseRecord coded before 261105, updated on 261105 for the removal of the
+ * soft-error path.
  *
  * @param name        the {@code name:} line's first field — the (non-unique) grouping name
  * @param text        the {@code desc:} directive's flavour text (C {@code text})

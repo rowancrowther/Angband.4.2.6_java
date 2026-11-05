@@ -49,11 +49,10 @@ import java.util.List;
  * <p><b>Dependency:</b> race resolution needs {@code monster.txt} already loaded, which is why
  * {@code loadQuests()} runs late in {@link GameConstants}' init order (after {@code loadMonsters()}).
  *
- * <p><b>Every fault stops the load.</b> The assembler has no soft errors: a negative {@code level} or
+ * <p><b>Every fault stops the load.</b> A negative {@code level} or
  * {@code number}, a figure with no digits, and a {@code race} that matches no monster each log at
  * {@code fatal} and throw {@link DataFileParseException}, as C's {@code PARSE_ERROR_NOT_NUMBER} and
- * {@code PARSE_ERROR_INVALID_MONSTER} end the whole {@code quest.txt} load. No record is ever dropped
- * and the {@code errors} list passed to {@link #assemble} is never written to.
+ * {@code PARSE_ERROR_INVALID_MONSTER} end the whole {@code quest.txt} load. No record is ever dropped.
  *
  * <p><b>Integers.</b> {@code level} and {@code number} are {@code uint} fields in C, read by
  * {@code parser_parse} ({@code parser.c}) with {@code strtoul} in base 0 into an {@code unsigned int}.
@@ -71,7 +70,8 @@ import java.util.List;
  * 2147483647 where C stores {@code INT_MIN}. The shipped {@code quest.txt} holds levels 99 and 100 and
  * a number of 1.
  *
- * <p>Class QuestAssembler coded before 261013, commented in full on 261029.
+ * <p>Class QuestAssembler coded before 261013, commented in full on 261029, updated on 261105 for the
+ * removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -109,8 +109,7 @@ public class QuestAssembler implements Assembler<QuestParseRecord, List<Quest>> 
      *       then the first race whose name contains the text.</li>
      * </ul>
      * A record that fails on {@code level} never has its {@code race} looked up, and one that fails on
-     * {@code race} never reaches {@code number}. Because the load stops, no record is dropped and
-     * {@code errors} is never written to.
+     * {@code race} never reaches {@code number}. Because the load stops, no record is dropped.
      *
      * <p><b>Level.</b> C's {@code quest.level} is a {@code uint8_t}, so the stored level is the
      * base 0 value modulo 256: {@code 255} stays 255, {@code 256} gives 0, {@code 257} gives 1,
@@ -132,17 +131,17 @@ public class QuestAssembler implements Assembler<QuestParseRecord, List<Quest>> 
      * directives mandatory and in one order, so no field is ever absent here as it can be in C.
      *
      * <p>Function assemble coded before 260915, level and number handling reworked on 261013,
-     * soft errors made fatal before 261029, commented in full on 261029.
+     * soft errors made fatal before 261029, commented in full on 261029, updated on 261105 for the
+     * removal of the soft-error path.
      *
      * @param records  the raw quest records in file order
-     * @param errors   the soft-error sink required by {@link Assembler}; never written to here
      * @param filename the file being read, for the messages
      * @return the assembled quests, in file order, each with the index of its position
      * @throws DataFileParseException if a record's {@code level} or {@code number} is negative or has
      *                                no digits, or its {@code race} matches no monster
      */
     @Override
-    public List<Quest> assemble(@NotNull List<QuestParseRecord> records, @NotNull List<String> errors,
+    public List<Quest> assemble(@NotNull List<QuestParseRecord> records,
                                     String filename) {
         List<Quest> quests = new ArrayList<>();
         int index = -1;

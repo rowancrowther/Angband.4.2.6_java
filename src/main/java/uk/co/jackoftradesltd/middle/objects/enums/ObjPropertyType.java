@@ -158,12 +158,13 @@ public enum ObjPropertyType {
      * likewise rejected, and a {@code null} token returns {@code null}.
      *
      * <p>Function fromValue coded before 261009, updated on 261009 to reject
-     * {@code NONE} and {@code MAX}, commented in full on 261009.
+     * {@code NONE} and {@code MAX}, commented in full on 261009, {@code @return} updated on
+     * 261105 for the removal of the soft-error path.
      *
      * @param value the token from {@code object_property.txt}
      * @return the matching category, or {@code null} if the token is unrecognized
-     * or names {@code NONE}/{@code MAX} (the caller reports it as a soft error, as C
-     * returns {@code PARSE_ERROR_INVALID_PROPERTY})
+     * or names {@code NONE}/{@code MAX} (the caller throws {@code DataFileParseException}
+     * and ends the load, as C returns {@code PARSE_ERROR_INVALID_PROPERTY})
      */
     public static ObjPropertyType fromValue(String value) {
         ObjPropertyType type = Arrays.stream(values())

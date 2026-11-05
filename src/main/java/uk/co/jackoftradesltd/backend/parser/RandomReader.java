@@ -42,8 +42,8 @@ import uk.co.jackoftradesltd.middle.numerics.Random;
  *
  * <p><b>Why it is not like the other readers.</b> It does not implement {@link Reader}. The input is
  * a string, not a data file, and there is exactly one value to read, not a list, so there is no
- * {@code GrammarDriver} run, no assembler, no {@code record-count:} header and no soft-error channel
- * - only the grammar's own hard errors.
+ * {@code GrammarDriver} run, no assembler and no {@code record-count:} header - only the
+ * grammar's own errors.
  *
  * <p><b>Two C parsers, one grammar.</b> C has two parsers for this notation. {@code parse_random} in
  * {@code parser.c} reads every {@code rand} field of the data files and has no {@code $} variables;
@@ -55,7 +55,7 @@ import uk.co.jackoftradesltd.middle.numerics.Random;
  * both accept a string they produce the same four terms. The differences are written up in
  * {@code docs/grammar_issues.md}.
  *
- * <p>Class commented in full on 261019.
+ * <p>Class commented in full on 261019, updated on 261105 for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */

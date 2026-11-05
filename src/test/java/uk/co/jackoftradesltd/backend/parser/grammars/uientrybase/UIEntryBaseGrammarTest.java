@@ -38,6 +38,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * reader/assembler's job. The record's fixed shape is
  * {@code name renderer combine category+ flags desc+}.
  *
+ * <p>Class UIEntryBaseGrammarTest coded before 261104, updated on 261104 once the {@code record-count:} header was removed.
+ *
  * @author Rowan Crowther
  */
 class UIEntryBaseGrammarTest {
@@ -67,12 +69,11 @@ class UIEntryBaseGrammarTest {
     void fullRecordKeepsEveryFieldVerbatimAndCapturesTheLineNumber() {
         Errors errors = new Errors();
         UIEntryBaseGrammar.FileContext ctx = parser(
-                "record-count:1\nname:foo\nrenderer:bar_renderer\ncombine:LOGICAL_OR\n"
+                "name:foo\nrenderer:bar_renderer\ncombine:LOGICAL_OR\n"
                         + "category:CHAR_SCREEN1\nflags:TIMED_AS_AUX\ndesc:hello world\n",
                 errors).file();
 
         assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
-        assertEquals("1", ctx.declaredCount);
         assertEquals(1, ctx.uiEntryBases.size());
         UIEntryBaseParseRecord rec = ctx.uiEntryBases.get(0);
         assertEquals("foo", rec.name());
@@ -82,14 +83,14 @@ class UIEntryBaseGrammarTest {
         assertEquals("TIMED_AS_AUX", rec.flags());
         assertEquals("hello world", rec.desc());
         // name: is on source line 2 (record-count: is line 1).
-        assertEquals(2, rec.lineNumber());
+        assertEquals(1, rec.lineNumber());
     }
 
     @Test
     void repeatedCategoryLinesAreCollectedInOrder() {
         Errors errors = new Errors();
         UIEntryBaseGrammar.FileContext ctx = parser(
-                "record-count:1\nname:foo\nrenderer:r\ncombine:ADD\n"
+                "name:foo\nrenderer:r\ncombine:ADD\n"
                         + "category:CHAR_SCREEN1\ncategory:EQUIPCMP_SCREEN\ncategory:abilities\n"
                         + "flags:TIMED_AS_AUX\ndesc:d\n",
                 errors).file();
@@ -105,7 +106,7 @@ class UIEntryBaseGrammarTest {
         // with no separator, so the leading space on continuation lines is preserved verbatim.
         Errors errors = new Errors();
         UIEntryBaseGrammar.FileContext ctx = parser(
-                "record-count:1\nname:foo\nrenderer:r\ncombine:ADD\ncategory:C\nflags:F\n"
+                "name:foo\nrenderer:r\ncombine:ADD\ncategory:C\nflags:F\n"
                         + "desc:one\ndesc: two\n",
                 errors).file();
 
@@ -119,7 +120,7 @@ class UIEntryBaseGrammarTest {
         // symbolic name, digits and all, so a digit-tail flag survives the parse untouched.
         Errors errors = new Errors();
         UIEntryBaseGrammar.FileContext ctx = parser(
-                "record-count:1\nname:foo\nrenderer:r\ncombine:ADD_2\ncategory:C\n"
+                "name:foo\nrenderer:r\ncombine:ADD_2\ncategory:C\n"
                         + "flags:RAND_50\ndesc:d\n",
                 errors).file();
 
@@ -129,45 +130,17 @@ class UIEntryBaseGrammarTest {
     }
 
     @Test
-    void recordCountIsCapturedAndMultipleRecordsAreCollectedInOrder() {
-        Errors errors = new Errors();
-        UIEntryBaseGrammar.FileContext ctx = parser(
-                "record-count:2\n"
-                        + "name:a\nrenderer:ra\ncombine:ADD\ncategory:CAT\nflags:FL\ndesc:da\n"
-                        + "name:b\nrenderer:rb\ncombine:ADD\ncategory:CAT\nflags:FL\ndesc:db\n",
-                errors).file();
-
-        assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
-        assertEquals("2", ctx.declaredCount);
-        assertEquals(2, ctx.uiEntryBases.size());
-        assertEquals("a", ctx.uiEntryBases.get(0).name());
-        assertEquals("b", ctx.uiEntryBases.get(1).name());
-        // First name: on line 2, second on line 8 (six directive lines per record).
-        assertEquals(2, ctx.uiEntryBases.get(0).lineNumber());
-        assertEquals(8, ctx.uiEntryBases.get(1).lineNumber());
-    }
-
-    @Test
     void lineNumbersSurviveSkippedComments() {
         Errors errors = new Errors();
         UIEntryBaseGrammar.FileContext ctx = parser(
-                "record-count:2\n"
-                        + "name:a\nrenderer:ra\ncombine:ADD\ncategory:CAT\nflags:FL\ndesc:da\n"
+                "name:a\nrenderer:ra\ncombine:ADD\ncategory:CAT\nflags:FL\ndesc:da\n"
                         + "# a comment line\n"
                         + "name:b\nrenderer:rb\ncombine:ADD\ncategory:CAT\nflags:FL\ndesc:db\n",
                 errors).file();
 
         assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
-        // The comment on line 8 is skipped but still counted, so the second record's name: is line 9.
-        assertEquals(9, ctx.uiEntryBases.get(1).lineNumber());
-    }
-
-    @Test
-    void missingRecordCountIsAParseError() {
-        Errors errors = new Errors();
-        parser("name:foo\nrenderer:r\ncombine:ADD\ncategory:C\nflags:F\ndesc:d\n", errors).file();
-
-        assertFalse(errors.messages.isEmpty(), "a file that does not open with record-count must not parse");
+        // The comment on line 7 is skipped but still counted, so the second record's name: is line 8.
+        assertEquals(8, ctx.uiEntryBases.get(1).lineNumber());
     }
 
     @Test
@@ -175,8 +148,32 @@ class UIEntryBaseGrammarTest {
         // desc+ is mandatory (as are name/renderer/combine/category+/flags): a record that stops
         // after flags cannot complete the fixed sequence.
         Errors errors = new Errors();
-        parser("record-count:1\nname:foo\nrenderer:r\ncombine:ADD\ncategory:C\nflags:F\n", errors).file();
+        parser("name:foo\nrenderer:r\ncombine:ADD\ncategory:C\nflags:F\n", errors).file();
 
         assertFalse(errors.messages.isEmpty(), "a record missing the mandatory desc: field must not parse");
+    }
+
+    /**
+     * Two records are collected in file order, each carrying the line of its {@code name:}.
+     *
+     * <p>Function multipleRecordsAreCollectedInOrder coded on 261104, commented in full on 261104.
+     * It replaces recordCountIsCapturedAndMultipleRecordsAreCollectedInOrder, whose
+     * {@code record-count:} half went with the header.
+     */
+    @Test
+    void multipleRecordsAreCollectedInOrder() {
+        Errors errors = new Errors();
+        UIEntryBaseGrammar.FileContext ctx = parser(
+                "name:a\nrenderer:ra\ncombine:ADD\ncategory:CAT\nflags:FL\ndesc:da\n"
+                        + "name:b\nrenderer:rb\ncombine:ADD\ncategory:CAT\nflags:FL\ndesc:db\n",
+                errors).file();
+
+        assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
+        assertEquals(2, ctx.uiEntryBases.size());
+        assertEquals("a", ctx.uiEntryBases.get(0).name());
+        assertEquals("b", ctx.uiEntryBases.get(1).name());
+        // First name: on line 1, second on line 7 (six directive lines per record).
+        assertEquals(1, ctx.uiEntryBases.get(0).lineNumber());
+        assertEquals(7, ctx.uiEntryBases.get(1).lineNumber());
     }
 }

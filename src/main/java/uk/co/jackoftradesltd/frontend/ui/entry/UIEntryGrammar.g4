@@ -56,11 +56,6 @@ options { tokenVocab = UIEntryLexer; }
     import java.util.ArrayList;
 }
 
-recordCount
-        returns[String count]
-        :   RECORD_COUNT INTEGER { $count = $INTEGER.getText(); }
-        ;
-
 // A "<ELEMENT>"/"<STAT>" suffix on a specialized entry's name, e.g. the
 // "<ACID>" in "resist_ui_compact_0<ACID>".
 tag
@@ -212,11 +207,10 @@ uiEntry
 
 // Top-level rule: the whole file is one or more entry records.
 file
-        returns[List<UIEntryParseRecord> entries, String declaredRecordCount]
+        returns[List<UIEntryParseRecord> entries]
         @init {
             $entries = new ArrayList<>();
         }
-        :   recordCount { $declaredRecordCount = $recordCount.count; }
-            (uiEntry { $entries.add($uiEntry.entry); })+
+        :   (uiEntry { $entries.add($uiEntry.entry); })+
             EOF
         ;

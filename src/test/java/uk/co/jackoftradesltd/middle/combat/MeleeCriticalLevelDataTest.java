@@ -18,7 +18,6 @@
 package uk.co.jackoftradesltd.middle.combat;
 
 import org.junit.jupiter.api.Test;
-import uk.co.jackoftradesltd.backend.parser.GameConstantsParseResult;
 import uk.co.jackoftradesltd.backend.parser.GameConstantsReader;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
 import uk.co.jackoftradesltd.middle.game.globals.data.GameConstantsData;
@@ -35,13 +34,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * rows of {@code melee-critical-level} and {@code ranged-critical-level} in the shipped
  * {@code lib/gamedata/constants.txt}, not read back off the Java implementation.
  *
+ * <p>Class MeleeCriticalLevelDataTest coded before 261104, updated on 261104 once {@code GameConstantsParseResult} was deleted.
+ *
  * @author Rowan Crowther
  */
 class MeleeCriticalLevelDataTest {
 
     private static GameConstantsData load() throws IOException {
-        GameConstantsParseResult result = new GameConstantsReader().parseWithResults("lib/gamedata/constants.txt");
-        return result.getData();
+        return new GameConstantsReader().parseWithResults("lib/gamedata/constants.txt");
     }
 
     @Test

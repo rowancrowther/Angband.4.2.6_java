@@ -9,11 +9,6 @@ options { tokenVocab = NamesLexer; }
     import java.util.ArrayList;
 }
 
-recordCount
-        returns[String count]
-        :   RECORD_COUNT INTEGER { $count = $INTEGER.getText(); }
-        ;
-
 section
         returns[String sectionNum, int line]
         :   SECTION INTEGER { $sectionNum = $INTEGER.getText(); 
@@ -36,8 +31,7 @@ record
         ;
 
 file
-    returns[String declaredRecordCount, List<NamesParseRecord> records]
+    returns[List<NamesParseRecord> records]
     @init { $records = new ArrayList<>(); }
-    :   recordCount { $declaredRecordCount = $recordCount.count; }
-        (record { $records.add($record.rec); })* EOF
+    :   (record { $records.add($record.rec); })* EOF
     ;

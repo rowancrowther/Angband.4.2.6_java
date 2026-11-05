@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -60,9 +61,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * runs after {@code loadArtifacts()}. Registries are restored in {@link #restore()} so no global
  * state leaks into other suites.
  *
- * <p>The real {@code flavor.txt} carries no {@code record-count} header upstream; the port adds one
- * (the port-wide convention), and it counts the eight {@code kind:} blocks — the top-level records
- * the grammar's {@code file} rule returns — not the 302 individual flavours.
+ * <p>Test class FlavourReaderTest coded before 261105, updated on 261105 for the removal of the
+ * soft-error path and the {@code record-count:} header.
  *
  * @author Rowan Crowther
  */
@@ -159,16 +159,6 @@ class FlavourReaderTest {
         return new FlavourReader().parseWithResults(file.toString());
     }
 
-    private static String withHeader(int count, String body) {
-        return "record-count:" + count + "\n" + body;
-    }
-
-    /**
-     * True if any collected error contains {@code fragment}.
-     */
-    private static boolean hasError(ParseResult<FlavourKind> r, String fragment) {
-        return r.errors().stream().anyMatch(s -> s.contains(fragment));
-    }
 
     private static Object setStatic(String field, Object value) throws Exception {
         Field f = RegistrySeeding.resolve(field);
@@ -203,13 +193,11 @@ class FlavourReaderTest {
     // =====================================================================
 
     /**
-     * A clean load is the end-to-end proof: an unresolved fixed sval, unknown colour or bad tval
-     * would each have appended a soft error. Eight kind blocks, 302 flavours, the right glyph on
-     * each block.
+     * A clean load is the end-to-end proof: an unresolved fixed sval or bad tval would have thrown
+     * and ended the load. Eight kind blocks, 302 flavours, the right glyph on each block.
      */
     @Test
     void theRealFileLoadsEightKindsAnd302FlavoursWithNoErrors() {
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(8, result.items().size());
 
         assertGlyphAndCount(TValue.TV_RING, '=', 43);
@@ -283,7 +271,7 @@ class FlavourReaderTest {
     }
 
     // =====================================================================
-    // (2) SOFT-ERROR SITES  (one reachable failure per test)
+    // (2) LOAD-STOPPING ERRORS  (one reachable failure per test)
     // =====================================================================
 
     /**
@@ -294,7 +282,7 @@ class FlavourReaderTest {
     @Test
     void unknownTvalStopsTheLoad() {
         DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("badtval.txt",
-                withHeader(1, "kind:notatval:=\nflavor:1:Green:Foo\n")));
+                "kind:notatval:=\nflavor:1:Green:Foo\n"));
         assertTrue(e.getMessage().contains("illegal TValue value: notatval"), e.getMessage());
     }
 
@@ -304,7 +292,7 @@ class FlavourReaderTest {
     @Test
     void multiCharacterGlyphStopsTheLoad() {
         DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("badglyph.txt",
-                withHeader(1, "kind:ring:==\nflavor:1:Green:Foo\n")));
+                "kind:ring:==\nflavor:1:Green:Foo\n"));
         assertTrue(e.getMessage().contains("illegal glyph value: =="), e.getMessage());
     }
 
@@ -314,9 +302,7 @@ class FlavourReaderTest {
      */
     @Test
     void anUnknownColourIsKeptAsWhite() throws IOException {
-        ParseResult<FlavourKind> r = load("badcolour.txt", withHeader(1,
-                "kind:ring:=\nflavor:2:Notacolour:Foo\n"));
-        assertFalse(r.hasErrors(), () -> r.errors().toString());
+        ParseResult<FlavourKind> r = load("badcolour.txt", "kind:ring:=\nflavor:2:Notacolour:Foo\n");
         assertEquals(ColourEnum.COLOUR_WHITE, r.items().getFirst().getFlavours().getFirst().getColour());
     }
 
@@ -327,8 +313,7 @@ class FlavourReaderTest {
      */
     @Test
     void aMalformedIndexStopsTheLoad() {
-        assertThrows(DataFileParseException.class, () -> load("badindex.txt", withHeader(1,
-                "kind:ring:=\nflavor:abc:Green:Foo\n")));
+        assertThrows(DataFileParseException.class, () -> load("badindex.txt", "kind:ring:=\nflavor:abc:Green:Foo\n"));
     }
 
     /**
@@ -339,9 +324,7 @@ class FlavourReaderTest {
      */
     @Test
     void unresolvableFixedSvalIsKeptAs255() throws IOException {
-        ParseResult<FlavourKind> r = load("badsval.txt", withHeader(1,
-                "kind:ring:=\nfixed:1:Nonexistent Ring:Yellow:Foo\nflavor:2:Green:Bar\n"));
-        assertFalse(r.hasErrors(), () -> r.errors().toString());
+        ParseResult<FlavourKind> r = load("badsval.txt", "kind:ring:=\nfixed:1:Nonexistent Ring:Yellow:Foo\nflavor:2:Green:Bar\n");
         assertEquals(1, r.items().size(), "the block is kept");
         FlavourKind block = r.items().getFirst();
         assertEquals(2, block.getFlavours().size(), "so is the sibling flavour");
@@ -352,29 +335,6 @@ class FlavourReaderTest {
     // =====================================================================
     // (3) HEADER / STRUCTURE
     // =====================================================================
-
-    /**
-     * The soft record-count check compares the declared header against the number of kind blocks
-     * parsed (not the number of flavours); a wrong declaration is reported.
-     */
-    @Test
-    void wrongRecordCountIsReported() throws IOException {
-        ParseResult<FlavourKind> r = load("badcount.txt", withHeader(5,
-                "kind:ring:=\nflavor:2:Green:Foo\n"));   // one block, header says five
-        assertTrue(hasError(r, "record-count header declares 5"));
-    }
-
-    /**
-     * The {@code file} rule requires the {@code record-count} header first; a file without it is a
-     * hard syntax error, so no items come back and the failure is surfaced.
-     */
-    @Test
-    void missingRecordCountHeaderIsAHardError() throws IOException {
-        ParseResult<FlavourKind> r = load("noheader.txt",
-                "kind:ring:=\nflavor:2:Green:Foo\n");
-        assertTrue(r.hasErrors());
-        assertTrue(r.items().isEmpty());
-    }
 
     // =====================================================================
     // (4) READER CONTRACT  (init_parse_flavor / run_parse_flavor / finish_parse_flavor)
@@ -419,22 +379,20 @@ class FlavourReaderTest {
      */
     @Test
     void aBlockComesBackLastFileLineFirst() throws IOException {
-        ParseResult<FlavourKind> r = load("order.txt", withHeader(1,
-                "kind:ring:=\nflavor:2:Green:First\nflavor:3:Violet:Second\nflavor:4:Red:Third\n"));
-        assertFalse(r.hasErrors(), () -> r.errors().toString());
+        ParseResult<FlavourKind> r = load("order.txt", "kind:ring:=\nflavor:2:Green:First\nflavor:3:Violet:Second\nflavor:4:Red:Third\n");
         assertEquals(java.util.List.of(4, 3, 2),
                 r.items().getFirst().getFlavours().stream().map(Flavour::getIndex).toList());
     }
 
     /**
-     * {@code parse} is {@code parseWithResults(...).items()}: the soft errors are dropped and the
-     * items come back. The header here declares 7 records against 2 present, which is a soft
-     * error, so the discarded error is real; both flavours are kept, the unknown colour as white.
+     * {@code parse} is {@code parseWithResults(...).items()}: the items come back with nothing else
+     * attached. Both flavours are kept, the unknown colour as white, since an unknown colour is not
+     * an error.
      */
     @Test
-    void parseReturnsTheItemsAndDiscardsTheSoftErrors() throws IOException {
+    void parseReturnsTheItems() throws IOException {
         Path file = tempDir.resolve("parse.txt");
-        Files.writeString(file, withHeader(7, "kind:ring:=\nflavor:2:Green:Foo\nflavor:3:Notacolour:Bar\n"));
+        Files.writeString(file, "kind:ring:=\nflavor:2:Green:Foo\nflavor:3:Notacolour:Bar\n");
         java.util.List<FlavourKind> items = new FlavourReader().parse(file.toString());
         assertEquals(1, items.size());
         assertEquals(2, items.getFirst().getFlavours().size());
@@ -468,8 +426,7 @@ class FlavourReaderTest {
     @Test
     void commentsBlankLinesAndCrlfAreSkipped() throws IOException {
         ParseResult<FlavourKind> r = load("crlf.txt",
-                "# header\r\n\r\nrecord-count:1\r\n# note\r\nkind:ring:=\r\n\r\nflavor:2:Green:Foo\r\n");
-        assertFalse(r.hasErrors(), () -> r.errors().toString());
+                "# header\r\n\r\n# note\r\nkind:ring:=\r\n\r\nflavor:2:Green:Foo\r\n");
         assertEquals(1, r.items().size());
         assertEquals("Foo", r.items().getFirst().getFlavours().getFirst().getText());
     }
@@ -481,9 +438,7 @@ class FlavourReaderTest {
      */
     @Test
     void twoBlocksForOneTvalStayTwoBlocks() throws IOException {
-        ParseResult<FlavourKind> r = load("twice.txt", withHeader(2,
-                "kind:ring:=\nflavor:2:Green:Foo\nkind:ring:=\nflavor:3:Violet:Bar\n"));
-        assertFalse(r.hasErrors(), () -> r.errors().toString());
+        ParseResult<FlavourKind> r = load("twice.txt", "kind:ring:=\nflavor:2:Green:Foo\nkind:ring:=\nflavor:3:Violet:Bar\n");
         assertEquals(2, r.items().size());
     }
 
@@ -492,9 +447,7 @@ class FlavourReaderTest {
     // =====================================================================
 
     private void assertHardError(String name, String body) throws IOException {
-        ParseResult<FlavourKind> r = load(name, body);
-        assertTrue(r.hasErrors(), () -> name + " should be rejected");
-        assertTrue(r.items().isEmpty(), () -> name + " should give no items");
+        assertThrows(ParseCancellationException.class, () -> load(name, body), () -> name + " should be rejected");
     }
 
     /**
@@ -503,7 +456,7 @@ class FlavourReaderTest {
      */
     @Test
     void aKindWithNoFlavoursIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        assertHardError("emptykind.txt", withHeader(1, "kind:ring:=\n"));
+        assertHardError("emptykind.txt", "kind:ring:=\n");
     }
 
     /**
@@ -512,7 +465,7 @@ class FlavourReaderTest {
      */
     @Test
     void aFlavourBeforeAnyKindIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        assertHardError("nokind.txt", withHeader(1, "flavor:2:Green:Foo\n"));
+        assertHardError("nokind.txt", "flavor:2:Green:Foo\n");
     }
 
     /**
@@ -522,7 +475,7 @@ class FlavourReaderTest {
      */
     @Test
     void aColonInTheDescriptionIsAHardErrorHereWhereCKeepsItInTheText() throws IOException {
-        assertHardError("colontext.txt", withHeader(1, "kind:ring:=\nflavor:2:Green:A: B\n"));
+        assertHardError("colontext.txt", "kind:ring:=\nflavor:2:Green:A: B\n");
     }
 
     /**
@@ -532,7 +485,7 @@ class FlavourReaderTest {
      */
     @Test
     void aTrailingColonAfterTheColourIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        assertHardError("trailingcolon.txt", withHeader(1, "kind:ring:=\nflavor:2:Green:\n"));
+        assertHardError("trailingcolon.txt", "kind:ring:=\nflavor:2:Green:\n");
     }
 
     /**
@@ -542,7 +495,7 @@ class FlavourReaderTest {
      */
     @Test
     void anIndentedLineIsAHardErrorHereWhereCSkipsLeadingWhitespace() throws IOException {
-        assertHardError("indent.txt", withHeader(1, "kind:ring:=\n  flavor:2:Green:Foo\n"));
+        assertHardError("indent.txt", "kind:ring:=\n  flavor:2:Green:Foo\n");
     }
 
     /**
@@ -552,7 +505,7 @@ class FlavourReaderTest {
      */
     @Test
     void textAfterTheGlyphIsAHardErrorHereWhereCIgnoresIt() throws IOException {
-        assertHardError("glyphextra.txt", withHeader(1, "kind:ring:=:extra\nflavor:2:Green:Foo\n"));
+        assertHardError("glyphextra.txt", "kind:ring:=:extra\nflavor:2:Green:Foo\n");
     }
 
     /**
@@ -561,7 +514,7 @@ class FlavourReaderTest {
      */
     @Test
     void anEmptyFileWithAZeroCountIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        assertHardError("empty.txt", "record-count:0\n");
+        assertHardError("empty.txt", "");
     }
 
     /**
@@ -570,7 +523,7 @@ class FlavourReaderTest {
      */
     @Test
     void anUnknownDirectiveIsAHardError() throws IOException {
-        assertHardError("unknown.txt", withHeader(1, "kind:ring:=\nname:Foo\n"));
+        assertHardError("unknown.txt", "kind:ring:=\nname:Foo\n");
     }
 
     // =====================================================================
@@ -584,9 +537,7 @@ class FlavourReaderTest {
      */
     @Test
     void anUnknownColourNameIsPaintedWhiteAsCDoes() throws IOException {
-        ParseResult<FlavourKind> r = load("whitefallback.txt", withHeader(1,
-                "kind:ring:=\nflavor:2:Notacolour:Foo\nflavor:3:Green:Bar\n"));
-        assertFalse(r.hasErrors(), () -> r.errors().toString());
+        ParseResult<FlavourKind> r = load("whitefallback.txt", "kind:ring:=\nflavor:2:Notacolour:Foo\nflavor:3:Green:Bar\n");
         assertEquals(2, r.items().getFirst().getFlavours().size());
         Flavour foo = r.items().getFirst().getFlavours().stream()
                 .filter(f -> f.getIndex() == 2).findFirst().orElseThrow();
@@ -600,12 +551,9 @@ class FlavourReaderTest {
      */
     @Test
     void aNegativeIndexStopsTheLoadAndAHexIndexIsRead() throws IOException {
-        assertThrows(DataFileParseException.class, () -> load("negindex.txt", withHeader(1,
-                "kind:ring:=\nflavor:-5:Green:Foo\n")));
+        assertThrows(DataFileParseException.class, () -> load("negindex.txt", "kind:ring:=\nflavor:-5:Green:Foo\n"));
 
-        ParseResult<FlavourKind> hex = load("hexindex.txt", withHeader(1,
-                "kind:ring:=\nflavor:0x10:Green:Foo\n"));
-        assertFalse(hex.hasErrors(), () -> hex.errors().toString());
+        ParseResult<FlavourKind> hex = load("hexindex.txt", "kind:ring:=\nflavor:0x10:Green:Foo\n");
         assertEquals(16, hex.items().getFirst().getFlavours().getFirst().getIndex());
     }
 }

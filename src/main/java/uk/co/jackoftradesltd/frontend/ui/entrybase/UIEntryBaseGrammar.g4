@@ -40,11 +40,6 @@ options { tokenVocab = UIEntryBaseLexer; }
     import java.util.ArrayList;
 }
 
-recordCount
-        returns[String count]
-        :   RECORD_COUNT INTEGER { $count = $INTEGER.getText(); }
-        ;
-
 // "name:<text>" - starts a new template record; referenced by ui_entry.txt.
 name
         returns[String nameStr]
@@ -138,12 +133,11 @@ entryBase
 
 // Top-level rule: the whole file is one or more template records.
 file
-        returns[List<UIEntryBaseParseRecord> uiEntryBases, String declaredCount]
+        returns[List<UIEntryBaseParseRecord> uiEntryBases]
         @init{
             $uiEntryBases = new ArrayList<>();
         }
-        :   recordCount { $declaredCount = $recordCount.count; }
-            (entryBase {
+        :   (entryBase {
             $uiEntryBases.add($entryBase.base);
         })+ EOF
         ;

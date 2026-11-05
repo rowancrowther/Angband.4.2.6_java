@@ -99,13 +99,12 @@ public class NamesAssembler implements Assembler<NamesParseRecord, List<Name>> {
      *
      * @param records  the raw names records from the grammar, one per {@code section:} block, in
      *                 file order
-     * @param errors   unused: nothing here is a soft error any longer
      * @param filename the file being read, for the message of a refused section
      * @return the assembled name sections, in file order
      * @throws DataFileParseException if a section is negative, not a number, 0, or above 2
      */
     @Override
-    public List<Name> assemble(@NotNull List<NamesParseRecord> records, @NotNull List<String> errors,
+    public List<Name> assemble(@NotNull List<NamesParseRecord> records,
                                     String filename) {
         List<Name> names = new ArrayList<>();
 

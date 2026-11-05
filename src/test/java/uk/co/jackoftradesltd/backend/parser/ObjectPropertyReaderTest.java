@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
@@ -55,8 +56,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@code type-mult} tval lookup, the {@code <TAG>}-decorated {@code bindui} key,
  * the {@code aux}/{@code value} split, and the promise that a record with no
  * {@code bindui} line ends up with an empty binding list rather than a binding
- * to nothing. Two injected-defect tests exercise the hard (missing
- * {@code record-count}) and soft (record-count mismatch) error channels.
+ * to nothing. Injected-defect tests check that a syntax or assembler error ends the load.
  *
  * <p>{@link ObjectProperty} has getters for most fields, which the newer tests use; the adjectives,
  * the description and the type-mult map have none, so those reads go through the
@@ -119,7 +119,6 @@ class ObjectPropertyReaderTest {
     void realFileLoadsAll79RecordsWithCorrectShape() throws IOException {
         ParseResult<ObjectProperty> result = new ObjectPropertyReader().parseWithResults(REAL_FILE);
 
-        assertEquals(List.of(), result.errors(), () -> "expected a clean load but got: " + result.errors());
         List<ObjectProperty> items = result.items();
         assertEquals(79, items.size());
 
@@ -148,7 +147,6 @@ class ObjectPropertyReaderTest {
     @Test
     void elementRelationTypesResolve() throws IOException {
         String path = tempFile("elems.txt", """
-                record-count:4
                 name:acid resistance
                 type:resistance
                 code:ACID
@@ -169,7 +167,6 @@ class ObjectPropertyReaderTest {
 
         ParseResult<ObjectProperty> result = new ObjectPropertyReader().parseWithResults(path);
 
-        assertEquals(List.of(), result.errors(), result.errors()::toString);
         assertEquals(4, result.items().size());
         assertEquals(ObjPropertyType.OBJ_PROPERTY_RESIST, field(byName(result.items(), "acid resistance"), "type"));
         assertEquals(ObjPropertyType.OBJ_PROPERTY_VULN, field(byName(result.items(), "fire vulnerability"), "type"));
@@ -194,7 +191,6 @@ class ObjectPropertyReaderTest {
     @Test
     void typeMultResolvesAgainstTvalNames() throws IOException {
         String path = tempFile("typemult.txt", """
-                record-count:1
                 name:dexterity
                 type:stat
                 code:DEX
@@ -205,7 +201,6 @@ class ObjectPropertyReaderTest {
 
         ParseResult<ObjectProperty> result = new ObjectPropertyReader().parseWithResults(path);
 
-        assertEquals(List.of(), result.errors(), result.errors()::toString);
         @SuppressWarnings("unchecked")
         Map<TValue, Integer> typeMults =
                 (Map<TValue, Integer>) field(byName(result.items(), "dexterity"), "typeMults");
@@ -224,7 +219,6 @@ class ObjectPropertyReaderTest {
     @Test
     void taggedBinduiCapturesTagAndAuxIsRead() throws IOException {
         String path = tempFile("tagged.txt", """
-                record-count:1
                 name:sustain strength
                 type:flag
                 subtype:sustain
@@ -236,7 +230,6 @@ class ObjectPropertyReaderTest {
 
         ParseResult<ObjectProperty> result = new ObjectPropertyReader().parseWithResults(path);
 
-        assertEquals(List.of(), result.errors(), result.errors()::toString);
         List<ObjectProperty.UIBinding> binds = bindings(byName(result.items(), "sustain strength"));
         assertEquals(1, binds.size());
         ObjectProperty.UIBinding bind = binds.get(0);
@@ -254,7 +247,6 @@ class ObjectPropertyReaderTest {
     @Test
     void binduiExplicitValueIsParsed() throws IOException {
         String path = tempFile("uival.txt", """
-                record-count:1
                 name:power 1 digging
                 type:flag
                 subtype:dig
@@ -266,7 +258,6 @@ class ObjectPropertyReaderTest {
 
         ParseResult<ObjectProperty> result = new ObjectPropertyReader().parseWithResults(path);
 
-        assertEquals(List.of(), result.errors(), result.errors()::toString);
         ObjectProperty.UIBinding bind = bindings(byName(result.items(), "power 1 digging")).get(0);
         assertEquals("tunneling_ui_compact_0", bind.entry());
         assertFalse(bind.aux(), "aux param is 0");
@@ -281,7 +272,6 @@ class ObjectPropertyReaderTest {
     @Test
     void recordWithoutBinduiHasNoBindings() throws IOException {
         String path = tempFile("nobind.txt", """
-                record-count:1
                 name:multiply
                 type:flag
                 subtype:curse-only
@@ -292,7 +282,6 @@ class ObjectPropertyReaderTest {
 
         ParseResult<ObjectProperty> result = new ObjectPropertyReader().parseWithResults(path);
 
-        assertEquals(List.of(), result.errors(), result.errors()::toString);
         assertTrue(bindings(byName(result.items(), "multiply")).isEmpty(),
                 "no bindui line -> no bindings (not a binding to a null entry)");
     }
@@ -307,7 +296,6 @@ class ObjectPropertyReaderTest {
     @Test
     void flagRecordResolvesSubtypeIdTypeAndCode() throws IOException {
         String path = tempFile("flag.txt", """
-                record-count:1
                 name:free action
                 type:flag
                 subtype:misc ability
@@ -318,7 +306,6 @@ class ObjectPropertyReaderTest {
 
         ParseResult<ObjectProperty> result = new ObjectPropertyReader().parseWithResults(path);
 
-        assertEquals(List.of(), result.errors(), result.errors()::toString);
         ObjectProperty prop = byName(result.items(), "free action");
         assertEquals(ObjPropertyType.OBJ_PROPERTY_FLAG, field(prop, "type"));
         assertEquals(ObjectFlagType.OFT_MISC, field(prop, "subtype"));
@@ -333,7 +320,6 @@ class ObjectPropertyReaderTest {
     @Test
     void statRecordResolvesCodeToModifier() throws IOException {
         String path = tempFile("stat.txt", """
-                record-count:1
                 name:strength
                 type:stat
                 code:STR
@@ -345,7 +331,6 @@ class ObjectPropertyReaderTest {
 
         ParseResult<ObjectProperty> result = new ObjectPropertyReader().parseWithResults(path);
 
-        assertEquals(List.of(), result.errors(), result.errors()::toString);
         ObjectProperty prop = byName(result.items(), "strength");
         assertEquals(ObjPropertyType.OBJ_PROPERTY_STAT, field(prop, "type"));
         assertEquals(9, field(prop, "power"));
@@ -358,30 +343,6 @@ class ObjectPropertyReaderTest {
 
     // ---- error channels --------------------------------------------------------------------
 
-    @Test
-    void missingRecordCountHeaderFailsClosed() throws IOException {
-        // No record-count directive -> the file rule can't match -> grammar error via ParseErrors.
-        String path = tempFile("no-header.txt", "name:strength\ntype:stat\ncode:STR\npower:9\n");
-
-        ParseResult<ObjectProperty> result = new ObjectPropertyReader().parseWithResults(path);
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
-    }
-
-    @Test
-    void recordCountMismatchIsLoggedButValidRecordSurvives() throws IOException {
-        String path = tempFile("bad-count.txt",
-                "record-count:5\nname:strength\ntype:stat\ncode:STR\npower:9\n");
-
-        ParseResult<ObjectProperty> result = new ObjectPropertyReader().parseWithResults(path);
-
-        assertEquals(1, result.items().size());
-        assertTrue(result.errors().stream()
-                        .anyMatch(e -> e.contains("declares 5") && e.contains("contains 1")),
-                result.errors()::toString);
-    }
-
     /**
      * NOT_A_REAL_FLAG is not in {@code obj_flags}, so {@code code_index_in_array} gives -1 and C
      * returns {@code PARSE_ERROR_INVALID_OBJ_PROP_CODE}: the load ends.
@@ -389,8 +350,8 @@ class ObjectPropertyReaderTest {
     @Test
     void anUnresolvableCodeEndsTheLoad() throws IOException {
         assertStopsTheLoad(
-                "record-count:1\nname:bogus\ntype:flag\nsubtype:bad\nid-type:on wield\ncode:NOT_A_REAL_FLAG\npower:0\n",
-                2, "an illegal code value: NOT_A_REAL_FLAG");
+                "name:bogus\ntype:flag\nsubtype:bad\nid-type:on wield\ncode:NOT_A_REAL_FLAG\npower:0\n",
+                1, "an illegal code value: NOT_A_REAL_FLAG");
     }
 
     // ---- the reader's own contract, against values worked out from the upstream file --------------
@@ -555,7 +516,6 @@ class ObjectPropertyReaderTest {
     void realFileComesBackInFileOrderWithEveryFieldAsUpstream() throws IOException {
         ParseResult<ObjectProperty> result = new ObjectPropertyReader().parseWithResults(REAL_FILE);
 
-        assertEquals(List.of(), result.errors());
         List<ObjectProperty> items = result.items();
         assertEquals(UPSTREAM.length, items.size());
         for (int i = 0; i < UPSTREAM.length; i++) {
@@ -630,14 +590,18 @@ class ObjectPropertyReaderTest {
     }
 
     /**
-     * A hard grammar error gives no items at all, and {@code parse} cannot tell it from an empty file.
+     * A grammar error is thrown from both entry points, so {@code parse} can no longer mistake it for
+     * an empty file.
+     *
+     * <p>Function bothEntryPointsThrowOnASyntaxError coded on 261104, commented in full on 261104.
+     * It replaces aSyntaxErrorGivesNoItemsAndParseHidesTheMessages.
      */
     @Test
-    void aSyntaxErrorGivesNoItemsAndParseHidesTheMessages() throws IOException {
-        String path = tempFile("syntax.txt", "record-count:1\nname:x\ntype:stat\nbogus-directive:1\n");
+    void bothEntryPointsThrowOnASyntaxError() throws IOException {
+        String path = tempFile("syntax.txt", "name:x\ntype:stat\nbogus-directive:1\n");
 
-        assertTrue(new ObjectPropertyReader().parse(path).isEmpty());
-        assertTrue(new ObjectPropertyReader().parseWithResults(path).hasErrors());
+        assertThrows(ParseCancellationException.class, () -> new ObjectPropertyReader().parse(path));
+        assertThrows(ParseCancellationException.class, () -> new ObjectPropertyReader().parseWithResults(path));
     }
 
     /**
@@ -647,7 +611,6 @@ class ObjectPropertyReaderTest {
     @Test
     void anAssemblerErrorEndsTheLoad() throws IOException {
         assertStopsTheLoad("""
-                record-count:3
                 name:first
                 type:flag
                 code:FREE_ACT
@@ -658,7 +621,7 @@ class ObjectPropertyReaderTest {
                 name:third
                 type:flag
                 code:PROT_FEAR
-                """, 5, "an illegal subtype value: no such subtype");
+                """, 4, "an illegal subtype value: no such subtype");
     }
 
     /**
@@ -668,7 +631,6 @@ class ObjectPropertyReaderTest {
     @Test
     void duplicateNamesBothLoadInFileOrder() throws IOException {
         ParseResult<ObjectProperty> result = load("""
-                record-count:2
                 name:twin
                 type:flag
                 code:FREE_ACT
@@ -679,7 +641,6 @@ class ObjectPropertyReaderTest {
                 power:2
                 """);
 
-        assertEquals(List.of(), result.errors());
         assertEquals(2, result.items().size());
         assertEquals(1, result.items().get(0).getPower());
         assertEquals(2, result.items().get(1).getPower());
@@ -692,7 +653,6 @@ class ObjectPropertyReaderTest {
     @Test
     void directivesAfterTypeMayComeInAnyOrder() throws IOException {
         ParseResult<ObjectProperty> result = load("""
-                record-count:1
                 name:jumbled
                 type:stat
                 mult:7
@@ -705,7 +665,6 @@ class ObjectPropertyReaderTest {
                 msg:a message
                 """);
 
-        assertEquals(List.of(), result.errors());
         ObjectProperty prop = result.items().get(0);
         assertEquals(7, prop.getMultiplier());
         assertEquals(3, prop.getPower());
@@ -720,7 +679,7 @@ class ObjectPropertyReaderTest {
      */
     @Test
     void absentPowerAndMultAreZero() throws IOException {
-        ObjectProperty prop = load("record-count:1\nname:bare\ntype:flag\ncode:FREE_ACT\n").items().get(0);
+        ObjectProperty prop = load("name:bare\ntype:flag\ncode:FREE_ACT\n").items().get(0);
 
         assertEquals(0, prop.getPower());
         assertEquals(0, prop.getMultiplier());
@@ -731,7 +690,7 @@ class ObjectPropertyReaderTest {
      */
     @Test
     void negativePowerAndMultAreAccepted() throws IOException {
-        ObjectProperty prop = load("record-count:1\nname:bad\ntype:flag\ncode:FREE_ACT\npower:-5\nmult:-2\n")
+        ObjectProperty prop = load("name:bad\ntype:flag\ncode:FREE_ACT\npower:-5\nmult:-2\n")
                 .items().get(0);
 
         assertEquals(-5, prop.getPower());
@@ -747,7 +706,6 @@ class ObjectPropertyReaderTest {
     @Test
     void typeMultDefaultsToOneAndAnExplicitZeroSurvives() throws IOException {
         ObjectProperty prop = load("""
-                record-count:1
                 name:dexterity
                 type:stat
                 code:DEX
@@ -767,7 +725,6 @@ class ObjectPropertyReaderTest {
     @Test
     void aRepeatedTypeMultTvalKeepsTheLaterFigure() throws IOException {
         ObjectProperty prop = load("""
-                record-count:1
                 name:dexterity
                 type:stat
                 code:DEX
@@ -785,7 +742,6 @@ class ObjectPropertyReaderTest {
     @Test
     void typeMultTvalNamesIgnoreCaseAndAcceptArmourSpelling() throws IOException {
         ObjectProperty prop = load("""
-                record-count:1
                 name:dexterity
                 type:stat
                 code:DEX
@@ -804,13 +760,12 @@ class ObjectPropertyReaderTest {
     @Test
     void anUnknownTypeMultTvalEndsTheLoad() throws IOException {
         assertStopsTheLoad("""
-                record-count:1
                 name:dexterity
                 type:stat
                 code:DEX
                 type-mult:not a tval:2
                 type-mult:gloves:3
-                """, 2, "an illegal tValue value: not a tval");
+                """, 1, "an illegal tValue value: not a tval");
     }
 
     /**
@@ -819,10 +774,8 @@ class ObjectPropertyReaderTest {
      */
     @Test
     void codeBeforeTypeIsAHardError() throws IOException {
-        ParseResult<ObjectProperty> result = load("record-count:1\nname:x\ncode:STR\ntype:stat\n");
+        assertThrows(ParseCancellationException.class, () -> load("name:x\ncode:STR\ntype:stat\n"));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     /**
@@ -831,7 +784,7 @@ class ObjectPropertyReaderTest {
      */
     @Test
     void anUnknownTypeEndsTheLoad() throws IOException {
-        assertStopsTheLoad("record-count:1\nname:x\ntype:resist\ncode:ACID\n", 2, "an illegal type value: resist");
+        assertStopsTheLoad("name:x\ntype:resist\ncode:ACID\n", 1, "an illegal type value: resist");
     }
 
     /**
@@ -842,7 +795,6 @@ class ObjectPropertyReaderTest {
     @Test
     void theTypeDecidesWhichTableACodeIsLookedUpIn() throws IOException {
         ParseResult<ObjectProperty> result = load("""
-                record-count:2
                 name:light modifier
                 type:mod
                 code:LIGHT
@@ -855,7 +807,7 @@ class ObjectPropertyReaderTest {
                 result.items().stream().map(ObjectProperty::getName).toList());
         assertEquals(ObjectModifier.OM_LIGHT, result.items().get(0).getPayload().getModifier(ObjPropertyType.OBJ_PROPERTY_MOD));
         assertEquals(ElementEnum.ELEM_LIGHT, result.items().get(1).getPayload().getElement(ObjPropertyType.OBJ_PROPERTY_RESIST));
-        assertStopsTheLoad("record-count:1\nname:light flag\ntype:flag\ncode:LIGHT\n", 2,
+        assertStopsTheLoad("name:light flag\ntype:flag\ncode:LIGHT\n", 1,
                 "an illegal code value: LIGHT");
     }
 
@@ -869,7 +821,6 @@ class ObjectPropertyReaderTest {
     @Test
     void aSecondMsgOrDescLineIsAppendedHereWhereCReplacesIt() throws IOException {
         ObjectProperty prop = load("""
-                record-count:1
                 name:twice
                 type:flag
                 code:FREE_ACT
@@ -892,7 +843,6 @@ class ObjectPropertyReaderTest {
     @Test
     void aSecondBinduiLineReplacesTheFirstHereWhereCBindsBoth() throws IOException {
         ObjectProperty prop = load("""
-                record-count:1
                 name:strength
                 type:stat
                 code:STR
@@ -912,11 +862,9 @@ class ObjectPropertyReaderTest {
      */
     @Test
     void aMissingOrLateTypeIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        ParseResult<ObjectProperty> none = load("record-count:1\nname:x\npower:1\n");
-        ParseResult<ObjectProperty> late = load("record-count:1\nname:x\npower:1\ntype:flag\ncode:FREE_ACT\n");
 
-        assertTrue(none.items().isEmpty() && none.hasErrors());
-        assertTrue(late.items().isEmpty() && late.hasErrors());
+        assertThrows(ParseCancellationException.class, () -> load("name:x\npower:1\n"));
+        assertThrows(ParseCancellationException.class, () -> load("name:x\npower:1\ntype:flag\ncode:FREE_ACT\n"));
     }
 
     /**
@@ -925,10 +873,8 @@ class ObjectPropertyReaderTest {
      */
     @Test
     void aSecondTypeLineIsAHardErrorHereWhereCOverwrites() throws IOException {
-        ParseResult<ObjectProperty> result = load("record-count:1\nname:x\ntype:stat\ntype:mod\ncode:STR\n");
+        assertThrows(ParseCancellationException.class, () -> load("name:x\ntype:stat\ntype:mod\ncode:STR\n"));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     /**
@@ -937,10 +883,8 @@ class ObjectPropertyReaderTest {
      */
     @Test
     void aFileWithNoRecordsIsAHardErrorHereWhereCLoadsNothing() throws IOException {
-        ParseResult<ObjectProperty> result = load("record-count:0\n");
+        assertThrows(ParseCancellationException.class, () -> load(""));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     /**
@@ -949,9 +893,8 @@ class ObjectPropertyReaderTest {
      */
     @Test
     void aSubtypeOnANonFlagIsKeptAsInC() throws IOException {
-        ParseResult<ObjectProperty> result = load("record-count:1\nname:x\ntype:stat\nsubtype:sustain\ncode:STR\n");
+        ParseResult<ObjectProperty> result = load("name:x\ntype:stat\nsubtype:sustain\ncode:STR\n");
 
-        assertEquals(List.of(), result.errors());
         assertEquals(ObjectFlagType.OFT_SUST, result.items().get(0).getSubtype());
     }
 
@@ -968,12 +911,12 @@ class ObjectPropertyReaderTest {
                 {"mod", "NONE"}, {"mod", "MAX"}, {"stat", "NONE"}, {"stat", "MAX"},
                 {"resistance", "NONE"}, {"resistance", "MAX"}};
         for (String[] c : cases) {
-            assertStopsTheLoad("record-count:1\nname:x\ntype:" + c[0] + "\ncode:" + c[1] + "\n", 2,
+            assertStopsTheLoad("name:x\ntype:" + c[0] + "\ncode:" + c[1] + "\n", 1,
                     "an illegal sentinel");
         }
-        assertEquals(ObjectFlag.OF_NONE, load("record-count:1\nname:x\ntype:flag\ncode:NONE\n").items().get(0)
+        assertEquals(ObjectFlag.OF_NONE, load("name:x\ntype:flag\ncode:NONE\n").items().get(0)
                 .getPayload().getFlag(ObjPropertyType.OBJ_PROPERTY_FLAG));
-        assertEquals(ObjectFlag.OF_MAX, load("record-count:1\nname:x\ntype:flag\ncode:MAX\n").items().get(0)
+        assertEquals(ObjectFlag.OF_MAX, load("name:x\ntype:flag\ncode:MAX\n").items().get(0)
                 .getPayload().getFlag(ObjPropertyType.OBJ_PROPERTY_FLAG));
     }
 
@@ -984,11 +927,9 @@ class ObjectPropertyReaderTest {
      */
     @Test
     void anAdjectiveWithASpaceOrACapitalIsAHardErrorHereWhereCTakesAnyString() throws IOException {
-        ParseResult<ObjectProperty> spaced = load("record-count:1\nname:x\ntype:stat\ncode:STR\nadjective:very strong\n");
-        ParseResult<ObjectProperty> capital = load("record-count:1\nname:x\ntype:stat\ncode:STR\nadjective:Strong\n");
 
-        assertTrue(spaced.items().isEmpty() && spaced.hasErrors());
-        assertTrue(capital.items().isEmpty() && capital.hasErrors());
+        assertThrows(ParseCancellationException.class, () -> load("name:x\ntype:stat\ncode:STR\nadjective:very strong\n"));
+        assertThrows(ParseCancellationException.class, () -> load("name:x\ntype:stat\ncode:STR\nadjective:Strong\n"));
     }
 
     /**
@@ -997,9 +938,9 @@ class ObjectPropertyReaderTest {
      */
     @Test
     void anAuxWrittenAsZeroInAnySpellingIsFalse() throws IOException {
-        ObjectProperty padded = load("record-count:1\nname:x\ntype:stat\ncode:STR\nbindui:entry:00\n").items().get(0);
-        ObjectProperty negative = load("record-count:1\nname:x\ntype:stat\ncode:STR\nbindui:entry:-0\n").items().get(0);
-        ObjectProperty plain = load("record-count:1\nname:x\ntype:stat\ncode:STR\nbindui:entry:0\n").items().get(0);
+        ObjectProperty padded = load("name:x\ntype:stat\ncode:STR\nbindui:entry:00\n").items().get(0);
+        ObjectProperty negative = load("name:x\ntype:stat\ncode:STR\nbindui:entry:-0\n").items().get(0);
+        ObjectProperty plain = load("name:x\ntype:stat\ncode:STR\nbindui:entry:0\n").items().get(0);
 
         assertFalse(padded.getBoundEntries().get(0).aux());
         assertFalse(negative.getBoundEntries().get(0).aux());
@@ -1013,10 +954,8 @@ class ObjectPropertyReaderTest {
      */
     @Test
     void aNumericTvalInTypeMultIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        ParseResult<ObjectProperty> result = load("record-count:1\nname:x\ntype:stat\ncode:STR\ntype-mult:3:2\n");
+        assertThrows(ParseCancellationException.class, () -> load("name:x\ntype:stat\ncode:STR\ntype-mult:3:2\n"));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     /**
@@ -1026,13 +965,11 @@ class ObjectPropertyReaderTest {
      */
     @Test
     void anOctalPowerIsReadAsInCButASignOrHexIsALexerError() throws IOException {
-        ObjectProperty octal = load("record-count:1\nname:x\ntype:stat\ncode:STR\npower:010\n").items().get(0);
-        ParseResult<ObjectProperty> plus = load("record-count:1\nname:x\ntype:stat\ncode:STR\npower:+5\n");
-        ParseResult<ObjectProperty> hex = load("record-count:1\nname:x\ntype:stat\ncode:STR\npower:0x10\n");
+        ObjectProperty octal = load("name:x\ntype:stat\ncode:STR\npower:010\n").items().get(0);
 
         assertEquals(8, octal.getPower());
-        assertTrue(plus.items().isEmpty() && plus.hasErrors());
-        assertTrue(hex.items().isEmpty() && hex.hasErrors());
+        assertThrows(ParseCancellationException.class, () -> load("name:x\ntype:stat\ncode:STR\npower:+5\n"));
+        assertThrows(ParseCancellationException.class, () -> load("name:x\ntype:stat\ncode:STR\npower:0x10\n"));
     }
 
     /**
@@ -1041,10 +978,8 @@ class ObjectPropertyReaderTest {
      */
     @Test
     void anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent() throws IOException {
-        ParseResult<ObjectProperty> result = load("record-count:1\nname:x\ntype:stat\n  code:STR\n");
+        assertThrows(ParseCancellationException.class, () -> load("name:x\ntype:stat\n  code:STR\n"));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     /**
@@ -1054,9 +989,8 @@ class ObjectPropertyReaderTest {
      */
     @Test
     void aRecordWithNoCodeHoldsIndexZeroAsInC() throws IOException {
-        ParseResult<ObjectProperty> result = load("record-count:1\nname:x\ntype:stat\npower:1\n");
+        ParseResult<ObjectProperty> result = load("name:x\ntype:stat\npower:1\n");
 
-        assertEquals(List.of(), result.errors());
         assertEquals(ObjectModifier.OM_STR, result.items().get(0).getPayload().getModifier(ObjPropertyType.OBJ_PROPERTY_STAT));
     }
 }

@@ -20,15 +20,12 @@ package uk.co.jackoftradesltd.middle.game.globals.data;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
 
-import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link GameConstantsData.GameConstantsBuilder} against the C it ports: the
@@ -44,7 +41,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * never compared. The one deliberate Java-only rule (a middle {@code -1} cutoff is rejected) is
  * tested separately and labelled as a divergence.
  *
- * <p>Class GameConstantsDataTest coded on 261002, commented in full on 261002.
+ * <p>Every rejection is a thrown {@link DataFileParseException} (the soft-error list was turned fatal),
+ * so the tests check the exception and its message rather than a returned string, and
+ * {@code build()} takes no error list and never returns {@code null}.
+ *
+ * <p>Class GameConstantsDataTest coded on 261002, commented in full on 261104.
  *
  * @author Rowan Crowther
  */
@@ -56,6 +57,21 @@ class GameConstantsDataTest {
             "Invalid sentinel value -1 found in middle of melee critical level data";
     private static final String RANGED_SENTINEL =
             "Invalid sentinel value -1 found in middle of ranged critical level data";
+
+    /**
+     * Asserts that {@code call} throws a {@link DataFileParseException} carrying exactly
+     * {@code message}. Every rejection in the builder is fatal, standing in for C's handler
+     * returning a parse error, which abandons the file.
+     *
+     * <p>Function assertFails coded on 261104, commented in full on 261104.
+     *
+     * @param message the expected exception message
+     * @param call    the builder call that must fail
+     */
+    private static void assertFails(String message, org.junit.jupiter.api.function.Executable call) {
+        DataFileParseException e = assertThrows(DataFileParseException.class, call);
+        assertEquals(message, e.getMessage());
+    }
 
     /**
      * Builds a melee level row with only the cutoff mattering; the other fields are fixed.
@@ -131,7 +147,7 @@ class GameConstantsDataTest {
         @Test
         @DisplayName("nothing set -> every constant 0, every list empty (mem_zalloc)")
         void nothingSetGivesAllZero() {
-            GameConstantsData d = new GameConstantsData.GameConstantsBuilder().build(new ArrayList<>());
+            GameConstantsData d = new GameConstantsData.GameConstantsBuilder().build();
             assertNotNull(d);
             assertEquals(new LevelMaxData(0), d.levelMax());
             assertEquals(new MonGenData(0, 0, 0, 0, 0, 0, 0, 0, 0), d.monGen());
@@ -153,16 +169,23 @@ class GameConstantsDataTest {
         }
 
         /**
-         * Any error already collected makes the whole file fail, as C's {@code run_parser()} does.
+         * {@code build()} writes its zero defaults back into the builder, so a second call gives an
+         * equal record, and the level lists are handed over uncopied (the same list object both
+         * times), matching C, where {@code z_info} is the parser's own struct.
          *
-         * <p>Function anyErrorGivesNull coded on 261002, commented in full on 261002.
+         * <p>Function buildTwiceSameValuesSameLists coded on 261104, commented in full on 261104.
          */
         @Test
-        @DisplayName("errors not empty -> null")
-        void anyErrorGivesNull() {
-            GameConstantsData.GameConstantsBuilder b = new GameConstantsData.GameConstantsBuilder();
+        @DisplayName("build twice -> equal records sharing the same level lists (no copy)")
+        void buildTwiceSameValuesSameLists() {
+            GameConstantsData.GameConstantsBuilder b = withMelee(400, 700, -1);
             b.setWorldMaxDepth(128);
-            assertNull(b.build(new ArrayList<>(List.of("Line: 3 unknown category"))));
+            GameConstantsData first = b.build();
+            GameConstantsData second = b.build();
+            assertEquals(first, second);
+            assertSame(first.meleeCriticalLevel(), second.meleeCriticalLevel());
+            b.addMeleeCriticalLevelData(melee(5));
+            assertEquals(4, first.meleeCriticalLevel().size());
         }
 
         /**
@@ -176,7 +199,7 @@ class GameConstantsDataTest {
             GameConstantsData.GameConstantsBuilder b = new GameConstantsData.GameConstantsBuilder();
             b.setWorldMaxDepth(128);
             b.setWorldMoveEnergy(100);
-            GameConstantsData d = b.build(new ArrayList<>());
+            GameConstantsData d = b.build();
             assertNotNull(d);
             assertEquals(new WorldData(128, 0, 0, 0, 0, 0, 0, 0, 0, 100), d.world());
         }
@@ -289,7 +312,7 @@ class GameConstantsDataTest {
             b.setORangedCriticalChancePowerScaleDenominator(127);
             b.setORangedCriticalChanceAddDenominator(128);
 
-            GameConstantsData d = b.build(new ArrayList<>());
+            GameConstantsData d = b.build();
             assertNotNull(d);
             assertEquals(new LevelMaxData(1), d.levelMax());
             assertEquals(new MonGenData(11, 12, 13, 14, 15, 16, 17, 18, 19), d.monGen());
@@ -319,7 +342,7 @@ class GameConstantsDataTest {
             GameConstantsData.GameConstantsBuilder b = new GameConstantsData.GameConstantsBuilder();
             b.setMeleeCriticalChanceOffset(-20);
             b.setORangedCriticalDebuffToh(-3);
-            GameConstantsData d = b.build(new ArrayList<>());
+            GameConstantsData d = b.build();
             assertNotNull(d);
             assertEquals(-20, d.meleeCritical().chanceOffset());
             assertEquals(-3, d.oRangedCritical().debuffToh());
@@ -352,9 +375,9 @@ class GameConstantsDataTest {
                     new OMeleeCriticalLevelData(2, 2, MessageType.MSG_HIT_GREAT),
                     new OMeleeCriticalLevelData(1, 1, MessageType.MSG_HIT_GOOD));
             for (OMeleeCriticalLevelData r : rows) {
-                assertEquals("", b.addOMeleeCriticalLevelData(r));
+                assertDoesNotThrow(() -> b.addOMeleeCriticalLevelData(r));
             }
-            GameConstantsData d = b.build(new ArrayList<>());
+            GameConstantsData d = b.build();
             assertNotNull(d);
             assertEquals(rows, d.oMeleeCriticalLevel());
         }
@@ -373,9 +396,9 @@ class GameConstantsDataTest {
                     new ORangedCriticalLevelData(10, 2, MessageType.MSG_HIT_GREAT),
                     new ORangedCriticalLevelData(1, 1, MessageType.MSG_HIT_GOOD));
             for (ORangedCriticalLevelData r : rows) {
-                assertEquals("", b.addORangedCriticalLevel(r));
+                assertDoesNotThrow(() -> b.addORangedCriticalLevel(r));
             }
-            GameConstantsData d = b.build(new ArrayList<>());
+            GameConstantsData d = b.build();
             assertNotNull(d);
             assertEquals(rows, d.oRangedCriticalLevel());
         }
@@ -389,11 +412,9 @@ class GameConstantsDataTest {
         @DisplayName("chance 0 -> rejected, not added (C: PARSE_ERROR_INVALID_VALUE)")
         void zeroChanceRejected() {
             GameConstantsData.GameConstantsBuilder b = new GameConstantsData.GameConstantsBuilder();
-            assertEquals("Negative or zero chance found in oMelee critical level data",
-                    b.addOMeleeCriticalLevelData(new OMeleeCriticalLevelData(0, 1, MessageType.MSG_HIT_GOOD)));
-            assertEquals("Negative or zero chance found in oRanged critical level data",
-                    b.addORangedCriticalLevel(new ORangedCriticalLevelData(0, 1, MessageType.MSG_HIT_GOOD)));
-            GameConstantsData d = b.build(new ArrayList<>());
+            assertFails("Negative or zero chance found in oMelee critical level data", () -> b.addOMeleeCriticalLevelData(new OMeleeCriticalLevelData(0, 1, MessageType.MSG_HIT_GOOD)));
+            assertFails("Negative or zero chance found in oRanged critical level data", () -> b.addORangedCriticalLevel(new ORangedCriticalLevelData(0, 1, MessageType.MSG_HIT_GOOD)));
+            GameConstantsData d = b.build();
             assertNotNull(d);
             assertTrue(d.oMeleeCriticalLevel().isEmpty());
             assertTrue(d.oRangedCriticalLevel().isEmpty());
@@ -409,18 +430,49 @@ class GameConstantsDataTest {
         @DisplayName("negative chance or dice -> rejected (C: uint refuses '-')")
         void negativeChanceOrDiceRejected() {
             GameConstantsData.GameConstantsBuilder b = new GameConstantsData.GameConstantsBuilder();
-            assertEquals("Negative or zero chance found in oMelee critical level data",
-                    b.addOMeleeCriticalLevelData(new OMeleeCriticalLevelData(-1, 1, MessageType.MSG_HIT_GOOD)));
-            assertEquals("Negative dice found in oMelee critical level data",
-                    b.addOMeleeCriticalLevelData(new OMeleeCriticalLevelData(1, -1, MessageType.MSG_HIT_GOOD)));
-            assertEquals("Negative or zero chance found in oRanged critical level data",
-                    b.addORangedCriticalLevel(new ORangedCriticalLevelData(-1, 1, MessageType.MSG_HIT_GOOD)));
-            assertEquals("Negative dice found in oRanged critical level data",
-                    b.addORangedCriticalLevel(new ORangedCriticalLevelData(1, -1, MessageType.MSG_HIT_GOOD)));
-            GameConstantsData d = b.build(new ArrayList<>());
+            assertFails("Negative or zero chance found in oMelee critical level data", () -> b.addOMeleeCriticalLevelData(new OMeleeCriticalLevelData(-1, 1, MessageType.MSG_HIT_GOOD)));
+            assertFails("Negative dice found in oMelee critical level data", () -> b.addOMeleeCriticalLevelData(new OMeleeCriticalLevelData(1, -1, MessageType.MSG_HIT_GOOD)));
+            assertFails("Negative or zero chance found in oRanged critical level data", () -> b.addORangedCriticalLevel(new ORangedCriticalLevelData(-1, 1, MessageType.MSG_HIT_GOOD)));
+            assertFails("Negative dice found in oRanged critical level data", () -> b.addORangedCriticalLevel(new ORangedCriticalLevelData(1, -1, MessageType.MSG_HIT_GOOD)));
+            GameConstantsData d = b.build();
             assertNotNull(d);
             assertTrue(d.oMeleeCriticalLevel().isEmpty());
             assertTrue(d.oRangedCriticalLevel().isEmpty());
+        }
+
+        /**
+         * A row with both a zero chance and a negative dice is rejected either way. C's {@code uint}
+         * parse refuses the {@code -1} dice before the handler runs; Java checks the chance first and
+         * reports that. Only the wording differs.
+         *
+         * <p>Function zeroChanceAndNegativeDiceRejected coded on 261104, commented in full on 261104.
+         */
+        @Test
+        @DisplayName("chance 0 and dice -1 -> rejected (chance reported first in Java)")
+        void zeroChanceAndNegativeDiceRejected() {
+            GameConstantsData.GameConstantsBuilder b = new GameConstantsData.GameConstantsBuilder();
+            assertFails("Negative or zero chance found in oMelee critical level data",
+                    () -> b.addOMeleeCriticalLevelData(new OMeleeCriticalLevelData(0, -1, MessageType.MSG_HIT_GOOD)));
+            assertFails("Negative or zero chance found in oRanged critical level data",
+                    () -> b.addORangedCriticalLevel(new ORangedCriticalLevelData(0, -1, MessageType.MSG_HIT_GOOD)));
+            assertTrue(b.build().oMeleeCriticalLevel().isEmpty());
+        }
+
+        /**
+         * A rejected row leaves the rows already added untouched; C's list stays as it was when the
+         * handler returns the error.
+         *
+         * <p>Function rejectedRowLeavesEarlierRows coded on 261104, commented in full on 261104.
+         */
+        @Test
+        @DisplayName("rejected row -> earlier rows kept, bad row not added")
+        void rejectedRowLeavesEarlierRows() {
+            GameConstantsData.GameConstantsBuilder b = new GameConstantsData.GameConstantsBuilder();
+            ORangedCriticalLevelData good = new ORangedCriticalLevelData(50, 3, MessageType.MSG_HIT_SUPERB);
+            b.addORangedCriticalLevel(good);
+            assertThrows(DataFileParseException.class,
+                    () -> b.addORangedCriticalLevel(new ORangedCriticalLevelData(0, 1, MessageType.MSG_HIT_GOOD)));
+            assertEquals(List.of(good), b.build().oRangedCriticalLevel());
         }
 
         /**
@@ -433,9 +485,9 @@ class GameConstantsDataTest {
         @DisplayName("chance 1, dice 0 -> accepted (boundary)")
         void chanceOneDiceZeroAccepted() {
             GameConstantsData.GameConstantsBuilder b = new GameConstantsData.GameConstantsBuilder();
-            assertEquals("", b.addOMeleeCriticalLevelData(new OMeleeCriticalLevelData(1, 0, MessageType.MSG_HIT_GOOD)));
-            assertEquals("", b.addORangedCriticalLevel(new ORangedCriticalLevelData(1, 0, MessageType.MSG_HIT_GOOD)));
-            GameConstantsData d = b.build(new ArrayList<>());
+            assertDoesNotThrow(() -> b.addOMeleeCriticalLevelData(new OMeleeCriticalLevelData(1, 0, MessageType.MSG_HIT_GOOD)));
+            assertDoesNotThrow(() -> b.addORangedCriticalLevel(new ORangedCriticalLevelData(1, 0, MessageType.MSG_HIT_GOOD)));
+            GameConstantsData d = b.build();
             assertNotNull(d);
             assertEquals(1, d.oMeleeCriticalLevel().size());
             assertEquals(1, d.oRangedCriticalLevel().size());
@@ -459,7 +511,7 @@ class GameConstantsDataTest {
             b.addMeleeCriticalLevelData(m2);
             b.addRangedCriticalLevelData(r1);
             b.addRangedCriticalLevelData(r2);
-            GameConstantsData d = b.build(new ArrayList<>());
+            GameConstantsData d = b.build();
             assertNotNull(d);
             assertEquals(List.of(m1, m2), d.meleeCriticalLevel());
             assertEquals(List.of(r1, r2), d.rangedCriticalLevel());
@@ -488,7 +540,7 @@ class GameConstantsDataTest {
             b.addRangedCriticalLevelData(ranged(500));
             b.addRangedCriticalLevelData(ranged(1000));
             b.addRangedCriticalLevelData(ranged(-1));
-            assertEquals("", b.checkCriticalLevelDataLists());
+            assertDoesNotThrow(() -> b.checkCriticalLevelDataLists());
         }
 
         /**
@@ -499,7 +551,7 @@ class GameConstantsDataTest {
         @Test
         @DisplayName("empty lists -> pass")
         void emptyPasses() {
-            assertEquals("", new GameConstantsData.GameConstantsBuilder().checkCriticalLevelDataLists());
+            assertDoesNotThrow(() -> new GameConstantsData.GameConstantsBuilder().checkCriticalLevelDataLists());
         }
 
         /**
@@ -511,10 +563,10 @@ class GameConstantsDataTest {
         @Test
         @DisplayName("one or two rows -> pass whatever the values")
         void oneOrTwoRowsAlwaysPass() {
-            assertEquals("", withMelee(-1).checkCriticalLevelDataLists());
-            assertEquals("", withMelee(500, 3).checkCriticalLevelDataLists());
-            assertEquals("", withMelee(500, 500).checkCriticalLevelDataLists());
-            assertEquals("", withRanged(500, -1).checkCriticalLevelDataLists());
+            assertDoesNotThrow(() -> withMelee(-1).checkCriticalLevelDataLists());
+            assertDoesNotThrow(() -> withMelee(500, 3).checkCriticalLevelDataLists());
+            assertDoesNotThrow(() -> withMelee(500, 500).checkCriticalLevelDataLists());
+            assertDoesNotThrow(() -> withRanged(500, -1).checkCriticalLevelDataLists());
         }
 
         /**
@@ -525,8 +577,8 @@ class GameConstantsDataTest {
         @Test
         @DisplayName("last cutoff below previous -> pass (last is ignored)")
         void lastCutoffIgnored() {
-            assertEquals("", withMelee(400, 700, 500).checkCriticalLevelDataLists());
-            assertEquals("", withRanged(400, 700, 0).checkCriticalLevelDataLists());
+            assertDoesNotThrow(() -> withMelee(400, 700, 500).checkCriticalLevelDataLists());
+            assertDoesNotThrow(() -> withRanged(400, 700, 0).checkCriticalLevelDataLists());
         }
 
         /**
@@ -537,8 +589,8 @@ class GameConstantsDataTest {
         @Test
         @DisplayName("equal middle cutoff -> not strictly increasing")
         void equalMiddleCutoffFails() {
-            assertEquals(MELEE_NOT_INCREASING, withMelee(400, 400, -1).checkCriticalLevelDataLists());
-            assertEquals(RANGED_NOT_INCREASING, withRanged(400, 400, -1).checkCriticalLevelDataLists());
+            assertFails(MELEE_NOT_INCREASING, () -> withMelee(400, 400, -1).checkCriticalLevelDataLists());
+            assertFails(RANGED_NOT_INCREASING, () -> withRanged(400, 400, -1).checkCriticalLevelDataLists());
         }
 
         /**
@@ -549,8 +601,8 @@ class GameConstantsDataTest {
         @Test
         @DisplayName("second cutoff below first -> not strictly increasing")
         void firstCutoffIsComparedAgainst() {
-            assertEquals(MELEE_NOT_INCREASING, withMelee(1000, 500, -1).checkCriticalLevelDataLists());
-            assertEquals("", withMelee(1000, 2000, -1).checkCriticalLevelDataLists());
+            assertFails(MELEE_NOT_INCREASING, () -> withMelee(1000, 500, -1).checkCriticalLevelDataLists());
+            assertDoesNotThrow(() -> withMelee(1000, 2000, -1).checkCriticalLevelDataLists());
         }
 
         /**
@@ -562,7 +614,7 @@ class GameConstantsDataTest {
         @Test
         @DisplayName("decrease at a later middle row -> not strictly increasing")
         void laterDecreaseFails() {
-            assertEquals(MELEE_NOT_INCREASING, withMelee(400, 700, 900, 800, -1).checkCriticalLevelDataLists());
+            assertFails(MELEE_NOT_INCREASING, () -> withMelee(400, 700, 900, 800, -1).checkCriticalLevelDataLists());
         }
 
         /**
@@ -578,7 +630,7 @@ class GameConstantsDataTest {
             b.addRangedCriticalLevelData(ranged(400));
             b.addRangedCriticalLevelData(ranged(300));
             b.addRangedCriticalLevelData(ranged(-1));
-            assertEquals(MELEE_NOT_INCREASING, b.checkCriticalLevelDataLists());
+            assertFails(MELEE_NOT_INCREASING, () -> b.checkCriticalLevelDataLists());
         }
 
         /**
@@ -593,7 +645,7 @@ class GameConstantsDataTest {
             b.addRangedCriticalLevelData(ranged(400));
             b.addRangedCriticalLevelData(ranged(300));
             b.addRangedCriticalLevelData(ranged(-1));
-            assertEquals(RANGED_NOT_INCREASING, b.checkCriticalLevelDataLists());
+            assertFails(RANGED_NOT_INCREASING, () -> b.checkCriticalLevelDataLists());
         }
 
         /**
@@ -607,9 +659,9 @@ class GameConstantsDataTest {
         @Test
         @DisplayName("DIVERGENCE: middle -1 -> sentinel error (C: order error, or pass if still increasing)")
         void middleMinusOneRejectedDivergence() {
-            assertEquals(MELEE_SENTINEL, withMelee(400, -1, 900, -1).checkCriticalLevelDataLists());
-            assertEquals(MELEE_SENTINEL, withMelee(-5, -1, 10, -1).checkCriticalLevelDataLists());
-            assertEquals(RANGED_SENTINEL, withRanged(-5, -1, 10, -1).checkCriticalLevelDataLists());
+            assertFails(MELEE_SENTINEL, () -> withMelee(400, -1, 900, -1).checkCriticalLevelDataLists());
+            assertFails(MELEE_SENTINEL, () -> withMelee(-5, -1, 10, -1).checkCriticalLevelDataLists());
+            assertFails(RANGED_SENTINEL, () -> withRanged(-5, -1, 10, -1).checkCriticalLevelDataLists());
         }
 
         /**
@@ -621,7 +673,7 @@ class GameConstantsDataTest {
         @Test
         @DisplayName("first cutoff -1 -> only the order rule applies")
         void firstMinusOneNotSentinelChecked() {
-            assertEquals("", withMelee(-1, 400, -1).checkCriticalLevelDataLists());
+            assertDoesNotThrow(() -> withMelee(-1, 400, -1).checkCriticalLevelDataLists());
         }
     }
 }

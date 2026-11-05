@@ -88,7 +88,7 @@ class PlayerTimedAssemblerDuplicateNameTest {
     }
 
     private static List<PlayerTimedEffect> assemble(PlayerTimedParseRecord... records) {
-        return new PlayerTimedAssembler().assemble(new ArrayList<>(List.of(records)), new ArrayList<>(), "test.txt");
+        return new PlayerTimedAssembler().assemble(new ArrayList<>(List.of(records)), "test.txt");
     }
 
     private static PlayerTimedEffect only(List<PlayerTimedEffect> effects, TimedEffect name) {

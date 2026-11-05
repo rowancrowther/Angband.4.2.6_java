@@ -23,7 +23,6 @@ import uk.co.jackoftradesltd.backend.parser.FlavourReader;
 import uk.co.jackoftradesltd.backend.parser.HintReader;
 import uk.co.jackoftradesltd.backend.parser.NamesReader;
 import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
-import uk.co.jackoftradesltd.channel.parser.ErrorParsing;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.game.Hint;
 import uk.co.jackoftradesltd.middle.game.Name;
@@ -48,29 +47,33 @@ import java.io.IOException;
  * {@code names_parser}), run by {@code run_parser} ({@code datafile.c}). C stops the game with
  * {@code quit} in two cases: the file cannot be opened ({@code parse_file_quit_not_found}), and the
  * parse reports an error ({@code init_arrays} then quits with "Cannot initialize"). The loaders
- * stop start-up in the same two cases, by throwing a {@link RuntimeException} that
- * {@code GameConstants.init} wraps with the failing file's name:
+ * stop start-up in the same cases, and {@code GameConstants.init} wraps whatever is thrown with the
+ * failing file's name. There are three ways a load fails, and only the first is handled here:
  * <ul>
- *   <li>the file cannot be read (an {@link java.io.IOException} from the reader);</li>
- *   <li>the parse yields no records at all and has errors — a hard grammar error cancels the parse
- *       and gives exactly this, so {@link ErrorParsing#reportAndCheck} returns {@code false}.</li>
+ *   <li>an {@link java.io.IOException} from the reader is logged at {@code FATAL} and rethrown
+ *       wrapped in a {@link RuntimeException};</li>
+ *   <li>a grammar or lexer error is thrown by the reader as a {@code ParseCancellationException}
+ *       ({@code ParseErrors.throwIfAny});</li>
+ *   <li>a record the assembler refuses is thrown as a {@code DataFileParseException}.</li>
  * </ul>
- * Soft errors that leave at least one assembled record are the one place the port is more forgiving
- * than C, whose parser stops at the first error: they are logged through
- * {@link ErrorParsing#reportAndCheck} and the records that did assemble are still registered, per
- * the partial-results contract. The user-directory override that C's {@code parse_file} tries first
- * is not ported: only the gamedata directory is read.
+ * The last two are unchecked and pass through these loaders unlogged and unwrapped. Nothing is
+ * registered from a file that fails, so the registry never holds a partial list. The user-directory
+ * override that C's {@code parse_file} tries first is not ported: only the gamedata directory is
+ * read.
  *
- * <p>Class MiscDataLoader coded before 261009, commented in full on 261013.
+ * <p>Class MiscDataLoader coded before 261009, commented in full on 261013, failure paragraph
+ * rewritten on 261104 for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
 public class MiscDataLoader {
     /**
-     * Reports file-loading failures and the soft parse errors of the three misc files, so each is
-     * attributed to this loader rather than to the reader that found it.
+     * Reports the IO failures of the three misc files at {@code FATAL}, so each is attributed to
+     * this loader rather than to the reader that found it. Grammar and assembler errors are not
+     * logged here (see the class description).
      *
-     * <p>Field logger coded before 261009, commented in full on 261013.
+     * <p>Field logger coded before 261009, commented in full on 261013, updated on 261104 for the
+     * removal of the soft-error path.
      */
     private static final Logger logger = LogManager.getLogger(MiscDataLoader.class);
 
@@ -80,15 +83,15 @@ public class MiscDataLoader {
      *
      * <p>The port of C's {@code run_parse_flavor} and {@code finish_parse_flavor} ({@code init.c}),
      * the latter of which does no more than assign the parsed list to the global {@code flavors}.
-     * Soft errors are reported through {@link ErrorParsing#reportAndCheck}, and the flavours that did
-     * assemble are registered regardless, per the partial-results contract. A file that cannot be
-     * read, or a parse that yields no flavours while reporting errors, stops start-up as C's
-     * {@code quit} does, and nothing is registered.
+     * Every error stops start-up as C's {@code quit} does, and nothing is registered: an unreadable
+     * file is logged and rethrown as a {@link RuntimeException}, and a grammar or assembler error
+     * passes through unwrapped (see the class description).
      *
-     * <p>Method loadFlavours coded before 261009, commented in full on 261013.
+     * <p>Method loadFlavours coded before 261009, commented in full on 261013, updated on 261104 for
+     * the removal of the soft-error path.
      *
-     * @throws RuntimeException if {@code flavor.txt} cannot be read, or yields no flavours with
-     *         errors reported
+     * @throws RuntimeException if {@code flavor.txt} cannot be read; or, unwrapped, if it holds a
+     *         grammar or assembler error
      */
     public static void loadFlavours() {
         FlavourReader parser = new FlavourReader();
@@ -96,12 +99,6 @@ public class MiscDataLoader {
 
         try {
             ParseResult<FlavourKind> result = parser.parseWithResults(filename);
-
-            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
-                String message = "Error while parsing file " + filename;
-                logger.fatal(message);
-                throw new RuntimeException(message);
-            }
 
             MiscRegistry.setFlavours(result.items());
         } catch (IOException e) {
@@ -117,19 +114,17 @@ public class MiscDataLoader {
      *
      * <p>The port of C's {@code run_parse_hints} and {@code finish_parse_hints} ({@code init.c}),
      * the latter of which does no more than assign the parsed list to the global {@code hints}.
-     * Soft errors are reported through {@link ErrorParsing#reportAndCheck}, and the hints that did
-     * assemble are registered regardless, per the partial-results contract. A file that cannot be
-     * read, or a parse that yields no hints while reporting errors, stops start-up as C's
-     * {@code quit} does, and nothing is registered. A hint file with no {@code H:} line at all is
-     * accepted, as in C, provided its {@code record-count} header says {@code 0}: {@code HintGrammar}
-     * takes zero or more hints, and the registry is given an empty list where C leaves {@code hints}
-     * {@code NULL}. A header that promises hints the file does not have is the record-count soft
-     * error with no hints behind it, so that file does stop start-up.
+     * Every error stops start-up as C's {@code quit} does, and nothing is registered: an unreadable
+     * file is logged and rethrown as a {@link RuntimeException}, and a grammar or assembler error
+     * passes through unwrapped (see the class description). A hint file with no hint lines at all
+     * is accepted, as in C: {@code HintGrammar} takes zero or more hints, and the registry is given an
+     * empty list where C leaves {@code hints} {@code NULL}.
      *
-     * <p>Method loadHints coded before 261009, commented in full on 261013.
+     * <p>Method loadHints coded before 261009, commented in full on 261013, updated on 261104 for the
+     * removal of the soft-error path and the {@code record-count:} header.
      *
-     * @throws RuntimeException if {@code hints.txt} cannot be read, or yields no hints with errors
-     *         reported
+     * @throws RuntimeException if {@code hints.txt} cannot be read; or, unwrapped, if it holds a
+     *         grammar or assembler error
      */
     public static void loadHints() {
         HintReader parser = new HintReader();
@@ -137,12 +132,6 @@ public class MiscDataLoader {
 
         try {
             ParseResult<Hint> result = parser.parseWithResults(filename);
-
-            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
-                String message = "Error while parsing file " + filename;
-                logger.fatal(message);
-                throw new RuntimeException(message);
-            }
             
             MiscRegistry.setHints(result.items());
         } catch (IOException e) {
@@ -158,23 +147,23 @@ public class MiscDataLoader {
      *
      * <p>The port of C's {@code run_parse_names} and {@code finish_parse_names} ({@code init.c});
      * the flattening into per-section word lists that {@code finish_parse_names} does is
-     * {@link MiscRegistry#setNames}. Soft errors are reported through
-     * {@link ErrorParsing#reportAndCheck}, and the name records that did assemble are registered
-     * regardless, per the partial-results contract. A file that cannot be read, or a parse that
-     * yields no records while reporting errors, stops start-up as C's {@code quit} does, and
-     * nothing is registered.
+     * {@link MiscRegistry#setNames}. Every error stops start-up as C's {@code quit} does, and
+     * nothing is registered: an unreadable file is logged and rethrown as a
+     * {@link RuntimeException}, and a grammar or assembler error passes through unwrapped (see the
+     * class description).
      *
-     * <p>A second hard failure is a record whose {@code section:} is outside the usable range —
+     * <p>One more failure is a record whose {@code section:} is outside the usable range —
      * C's {@code PARSE_ERROR_OUT_OF_BOUNDS} from {@code parse_names_section} ({@code init.c}), which
      * stops C from starting. {@link MiscRegistry#setNames} throws an
      * {@link IllegalArgumentException} for it and this method deliberately does not catch it, so it
      * reaches {@code GameConstants.init}, which stops start-up with an error naming
      * {@code names.txt}. The port is stricter than C only for section zero, which C accepts.
      *
-     * <p>Method loadNames coded before 261009, commented in full on 261013.
+     * <p>Method loadNames coded before 261009, commented in full on 261013, updated on 261104 for the
+     * removal of the soft-error path.
      *
-     * @throws RuntimeException if {@code names.txt} cannot be read, or yields no records with
-     *         errors reported
+     * @throws RuntimeException if {@code names.txt} cannot be read; or, unwrapped, if it holds a
+     *         grammar or assembler error
      * @throws IllegalArgumentException if a name record's section names no usable
      *         {@link uk.co.jackoftradesltd.middle.player.enums.RandnameType}
      */
@@ -184,12 +173,6 @@ public class MiscDataLoader {
 
         try {
             ParseResult<Name> result = parser.parseWithResults(filename);
-
-            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
-                String message = "Error while parsing file " + filename;
-                logger.fatal(message);
-                throw new RuntimeException(message);
-            }
             
             MiscRegistry.setNames(result.items());
         } catch (IOException e) {

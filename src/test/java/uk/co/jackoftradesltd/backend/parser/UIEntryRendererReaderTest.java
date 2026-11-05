@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -41,16 +42,18 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@link UIEntryRendererReader} → {@link UIEntryRendererAssembler}
  * → resolved {@link UIEntryRenderer} domain objects, wrapped in a {@link ParseResult}.
  *
- * <p>These drive real fixtures through the whole chain, so they exercise both of the reader's error
- * channels:
+ * <p>These drive real fixtures through the whole chain, so they exercise both ways a load stops:
  * <ul>
- *   <li><b>hard</b> grammar/lex errors, caught by {@code ParseErrors} - fail-closed: empty list +
- *       collected errors (missing {@code record-count} header, a record missing a mandatory field);</li>
- *   <li><b>soft</b> interpretation/validation errors, appended to the returned list while partial
- *       results survive (unknown {@code code}, invalid {@code sign}, {@code record-count} mismatch).</li>
+ *   <li>grammar/lex errors, caught by {@code ParseErrors} and thrown as a
+ *       {@code ParseCancellationException} (a record missing a mandatory field);</li>
+ *   <li>assembler refusals, thrown as a {@code DataFileParseException} (unknown {@code code},
+ *       invalid {@code sign}).</li>
  * </ul>
- * The final test injects several distinct failures at once to confirm every one is logged
- * independently and the valid records still come through.
+ * The several-failures test confirms the first bad record stops the load and names its line, and
+ * nothing after it is reached.
+ *
+ * <p>Test class UIEntryRendererReaderTest coded before 261105, updated on 261105 for the removal of
+ * the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -79,7 +82,6 @@ class UIEntryRendererReaderTest {
     void cleanLoadOfTheRealFileResolvesAllRenderers() throws IOException {
         ParseResult<UIEntryRenderer> result = new UIEntryRendererReader().parseWithResults(REAL_FILE);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(5, result.items().size());
 
         // First renderer omits ndigit/sign -> both default from the resolved code.
@@ -104,11 +106,10 @@ class UIEntryRendererReaderTest {
         // Only the two mandatory fields; the loosened grammar accepts this, and every optional
         // field must fall back to the resolved code's backend default (decision (b), end-to-end).
         String path = tempFile("defaults.txt",
-                "record-count:1\nname:only_mandatory\ncode:COMPACT_FLAG_RENDERER_WITH_COMBINED_AUX\n");
+                "name:only_mandatory\ncode:COMPACT_FLAG_RENDERER_WITH_COMBINED_AUX\n");
 
         ParseResult<UIEntryRenderer> result = new UIEntryRendererReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size());
         UIEntryRenderer u = result.items().get(0);
         assertEquals(FLAG, u.getCode());
@@ -119,13 +120,13 @@ class UIEntryRendererReaderTest {
         assertEquals(FLAG.getEntry(), u.getSign());
     }
 
-    // ---- soft errors (partial results survive) ----------------------------------------------
+    // ---- assembler refusals ------------------------------------------------------------------
 
     @Test
     void unknownCodeIsFatal() throws IOException {
         // C: lookup_backend_by_name returns 0, so parse_renderer_code gives PARSE_ERROR_INVALID_VALUE.
         String path = tempFile("bad-code.txt",
-                "record-count:1\nname:x\ncode:NOTACODE\n");
+                "name:x\ncode:NOTACODE\n");
 
         DataFileParseException e = assertThrows(DataFileParseException.class,
                 () -> new UIEntryRendererReader().parseWithResults(path));
@@ -139,7 +140,7 @@ class UIEntryRendererReaderTest {
         // C: parse_renderer_sign accepts only NO_SIGN, ALWAYS_SIGN and NEGATIVE_SIGN.
         for (String bad : List.of("BOGUS", "SIGN_DEFAULT")) {
             String path = tempFile("bad-sign-" + bad + ".txt",
-                    "record-count:1\nname:x\ncode:COMPACT_FLAG_RENDERER_WITH_COMBINED_AUX\nsign:" + bad + "\n");
+                    "name:x\ncode:COMPACT_FLAG_RENDERER_WITH_COMBINED_AUX\nsign:" + bad + "\n");
 
             DataFileParseException e = assertThrows(DataFileParseException.class,
                     () -> new UIEntryRendererReader().parseWithResults(path), bad);
@@ -149,44 +150,16 @@ class UIEntryRendererReaderTest {
         }
     }
 
-    @Test
-    void recordCountMismatchIsLoggedButValidRecordSurvives() throws IOException {
-        // Header over-declares (5) vs one actual record; the record itself is valid and comes through.
-        String path = tempFile("bad-count.txt",
-                "record-count:5\nname:x\ncode:COMPACT_FLAG_RENDERER_WITH_COMBINED_AUX\n");
-
-        ParseResult<UIEntryRenderer> result = new UIEntryRendererReader().parseWithResults(path);
-
-        assertEquals(1, result.items().size());
-        assertTrue(result.errors().stream()
-                        .anyMatch(e -> e.contains("declares 5") && e.contains("contains 1")),
-                result.errors()::toString);
-    }
-
-    // ---- hard errors (fail-closed: empty list) ----------------------------------------------
-
-    @Test
-    void missingRecordCountHeaderFailsClosed() throws IOException {
-        // No record-count directive -> the file rule can't match -> grammar error via ParseErrors.
-        String path = tempFile("no-header.txt",
-                "name:x\ncode:COMPACT_FLAG_RENDERER_WITH_COMBINED_AUX\n");
-
-        ParseResult<UIEntryRenderer> result = new UIEntryRendererReader().parseWithResults(path);
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
-    }
+    // ---- grammar errors -----------------------------------------------------------------------
 
     @Test
     void recordMissingMandatoryCodeFailsClosed() throws IOException {
-        // 'code' is mandatory; a record with only 'name' is a grammar error, not a soft one.
+        // 'code' is mandatory; a record with only 'name' is a grammar error.
         String path = tempFile("no-code.txt",
-                "record-count:1\nname:x\ncolors:w\n");
+                "name:x\ncolors:w\n");
 
-        ParseResult<UIEntryRenderer> result = new UIEntryRendererReader().parseWithResults(path);
+        assertThrows(ParseCancellationException.class, () -> new UIEntryRendererReader().parseWithResults(path));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     // ---- several distinct failures at once ---------------------------------------------------
@@ -196,7 +169,6 @@ class UIEntryRendererReaderTest {
         // Soft errors were made fatal: the NOTACODE record is the first failure, so the load
         // stops there and nothing after it (the BOGUS sign) is reached.
         String path = tempFile("mixed.txt", String.join("\n",
-                "record-count:4",
                 "name:good_first",
                 "code:COMPACT_FLAG_RENDERER_WITH_COMBINED_AUX",
                 "name:bad_code",
@@ -223,12 +195,11 @@ class UIEntryRendererReaderTest {
      * {@code swBw}, symbols {@code ?..+!}, 0 digits and no sign.
      */
     private static final String FLAG_HEADER =
-            "record-count:1\nname:x\ncode:COMPACT_FLAG_RENDERER_WITH_COMBINED_AUX\n";
+            "name:x\ncode:COMPACT_FLAG_RENDERER_WITH_COMBINED_AUX\n";
 
     private UIEntryRenderer loadOne(String body) throws IOException {
         ParseResult<UIEntryRenderer> result = new UIEntryRendererReader()
                 .parseWithResults(tempFile("one.txt", FLAG_HEADER + body));
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size());
         return result.items().get(0);
     }
@@ -323,9 +294,8 @@ class UIEntryRendererReaderTest {
                 {"NUMERIC_RENDERER_WITH_BOOL_AUX", "wdsgGgrRwdsgGgrR", "wwwwwww", "? .s*=", "1"},
         };
         for (String[] row : rows) {
-            String path = tempFile(row[0] + ".txt", "record-count:1\nname:x\ncode:" + row[0] + "\n");
+            String path = tempFile(row[0] + ".txt", "name:x\ncode:" + row[0] + "\n");
             ParseResult<UIEntryRenderer> result = new UIEntryRendererReader().parseWithResults(path);
-            assertFalse(result.hasErrors(), () -> row[0] + " " + result.errors());
             UIEntryRenderer u = result.items().get(0);
             assertEquals(row[1], u.getColours(), row[0]);
             assertEquals(row[2], u.getLabelColours(), row[0]);
@@ -341,23 +311,20 @@ class UIEntryRendererReaderTest {
     @Test
     @Disabled("Known divergence: the Java-only NONE sentinel is accepted as a code; C rejects it as an unknown backend")
     void codeNoneIsRejectedAsAnUnknownBackend() throws IOException {
-        String path = tempFile("none.txt", "record-count:1\nname:x\ncode:NONE\n");
+        String path = tempFile("none.txt", "name:x\ncode:NONE\n");
 
-        ParseResult<UIEntryRenderer> result = new UIEntryRendererReader().parseWithResults(path);
+        assertThrows(DataFileParseException.class, () -> new UIEntryRendererReader().parseWithResults(path));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     @Disabled("Known divergence: the grammar fixes the directive order; C accepts any order")
     void directivesAfterNameMayComeInAnyOrder() throws IOException {
         String path = tempFile("order.txt",
-                "record-count:1\nname:x\nsymbols:?\ncode:COMPACT_FLAG_RENDERER_WITH_COMBINED_AUX\ncolors:GG\n");
+                "name:x\nsymbols:?\ncode:COMPACT_FLAG_RENDERER_WITH_COMBINED_AUX\ncolors:GG\n");
 
         ParseResult<UIEntryRenderer> result = new UIEntryRendererReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals("GGwwGWWWWG", result.items().get(0).getColours());
     }
 
@@ -365,12 +332,11 @@ class UIEntryRendererReaderTest {
     @Disabled("Known divergence: combine, units and combined-renderer are not in the grammar or the parse record")
     void combineUnitsAndCombinedRendererDirectivesAreAccepted() throws IOException {
         String path = tempFile("extras.txt",
-                "record-count:1\nname:x\ncode:COMPACT_FLAG_RENDERER_WITH_COMBINED_AUX\n"
+                "name:x\ncode:COMPACT_FLAG_RENDERER_WITH_COMBINED_AUX\n"
                         + "combine:ADD\nunits:%\ncombined-renderer:x\n");
 
         ParseResult<UIEntryRenderer> result = new UIEntryRendererReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size());
     }
 
@@ -378,7 +344,7 @@ class UIEntryRendererReaderTest {
     @Disabled("Known divergence: C merges a repeated name into one renderer; Java has no merge and the grammar rejects it")
     void aRepeatedNameMergesIntoOneRendererFieldByField() throws IOException {
         // parse_renderer_name reopens the existing renderer, so the second block only overrides sign.
-        String path = tempFile("merge.txt", "record-count:2\nname:foo\ncode:NUMERIC_RENDERER_WITH_BOOL_AUX\n"
+        String path = tempFile("merge.txt", "name:foo\ncode:NUMERIC_RENDERER_WITH_BOOL_AUX\n"
                 + "ndigit:2\nname:foo\nsign:NO_SIGN\n");
 
         ParseResult<UIEntryRenderer> result = new UIEntryRendererReader().parseWithResults(path);

@@ -70,9 +70,8 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
      * flag, modifier, element, brand, slay or curse name, a bad number or dice string, an
      * {@code alloc:} depth outside 0 to 255) throws a {@link DataFileParseException} naming the
      * record's {@code name:} line and {@code filename}, as C ends the load on the first parse
-     * error. No record is skipped, so {@code errors} is never written to; it stays in the
-     * signature because {@link Assembler} requires it. For the same reason an ego's index is its
-     * place in the file counted from 0, as {@code finish_parse_ego} numbers it.
+     * error. No record is skipped, so an ego's index is its place in the file counted from 0, as
+     * {@code finish_parse_ego} numbers it.
      *
      * <p><b>Eligible kinds.</b> {@code possItems} follows C's head-pushed {@code poss_items}
      * chain. The grammar hands over the {@code type:} and {@code item:} lines last first. An
@@ -125,16 +124,16 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
      * {@code null}. An ego with no {@code act:} line, or one naming an unknown activation, has a
      * {@code null} activation with no error, as {@code findact} answers {@code NULL}.
      *
-     * <p>Function assemble coded before 260915, commented in full on 261024.
+     * <p>Function assemble coded before 260915, commented in full on 261024, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param records  the raw ego-item records from the grammar, in file order
-     * @param errors   never written to, because every failure throws; see above
      * @param filename the file the records were read from, named in the message of a failure
      * @return the assembled ego items, one per record, in file order
      * @throws DataFileParseException if any field of any record cannot be resolved
      */
     @Override
-    public List<EgoItem> assemble(@NotNull List<EgoItemParseRecord> records, @NotNull List<String> errors,
+    public List<EgoItem> assemble(@NotNull List<EgoItemParseRecord> records,
                                     String filename) {
         List<EgoItem> items = new ArrayList<>();
         

@@ -2,10 +2,6 @@ lexer grammar QuestLexer;
 
 import CommentsAndEol;
 
-RECORD_COUNT
-        :   'record-count:'
-        ;
-
 NAME
         :   'name:' -> pushMode(REST_OF_LINE)
         ;

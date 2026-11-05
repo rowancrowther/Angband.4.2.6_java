@@ -51,8 +51,9 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p>Two things still want attention, both flagged in the grammar's own comments:
  * {@link LoreReader} still hand-rolls the ANTLR plumbing instead of delegating to
- * {@link GrammarDriver} (so it has no {@code parseWithResults} and no soft-error channel — see
- * {@link #unknownFlagsAreReportedAsSoftErrorsRatherThanThrown()}), and {@code GameConstants} keeps
+ * {@link GrammarDriver} (so it has no {@code parseWithResults} and a bad flag escapes as an
+ * {@code IllegalArgumentException} rather than a {@code DataFileParseException} — see
+ * {@link #unknownFlagsStopTheLoadWithADataFileParseException()}), and {@code GameConstants} keeps
  * its {@code loadMonsterLore()} commented out, so nothing calls the reader at start-up yet and
  * {@link #eachRecordIsAttachedToItsMonsterRace()} still needs a {@code GameConstants.init()}
  * bootstrap this class does not provide.
@@ -71,6 +72,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * themselves rather than running
  * {@link uk.co.jackoftradesltd.middle.game.globals.GameConstants#init()}, so they stay hermetic and
  * order-independent — bar the two still-disabled ones below, which need the real registries.
+ *
+ * <p>Test class LoreReaderTest coded before 261105, updated on 261105 for the removal of the
+ * soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -276,12 +280,12 @@ class LoreReaderTest {
     }
 
     @Test
-    @Disabled("LoreReader still hand-rolls its ANTLR plumbing - no ParseResult, no soft errors")
-    void unknownFlagsAreReportedAsSoftErrorsRatherThanThrown() {
+    @Disabled("LoreReader still hand-rolls its ANTLR plumbing - no GrammarDriver, no assembler")
+    void unknownFlagsStopTheLoadWithADataFileParseException() {
         // Today an unrecognised flag name reaches MonsterRaceFlag.valueOf inside a grammar action
         // and throws IllegalArgumentException straight out of parse(). Once the reader moves onto
-        // GrammarDriver it should report and skip, per the partial-results contract every other
-        // reader follows.
+        // GrammarDriver and an assembler, it should throw DataFileParseException naming the line
+        // and file, as every other reader does since the soft-error path was removed (261104).
         fail("enable once LoreReader delegates to GrammarDriver and gains parseWithResults");
     }
 }

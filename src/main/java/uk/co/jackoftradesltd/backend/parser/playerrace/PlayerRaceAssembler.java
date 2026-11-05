@@ -98,8 +98,6 @@ public class PlayerRaceAssembler implements Assembler<PlayerRaceParseRecord, Lis
      * history, sentinels, resist prefix and absent stat and skill lines, commented in full on 261029.
      *
      * @param records  the raw race records, in file order
-     * @param errors   not used: the {@link Assembler} contract carries a soft-error list, but every
-     *                 failure here ends the load by exception, as C's parser errors do
      * @param filename the file being read, named in every error message
      * @return one race per record, in file order
      * @throws DataFileParseException    for any value C's parser would reject
@@ -107,7 +105,7 @@ public class PlayerRaceAssembler implements Assembler<PlayerRaceParseRecord, Lis
      * @throws IndexOutOfBoundsException if no body has been loaded at index 0
      */
     @Override
-    public List<PlayerRace> assemble(@NotNull List<PlayerRaceParseRecord> records, @NotNull List<String> errors,
+    public List<PlayerRace> assemble(@NotNull List<PlayerRaceParseRecord> records,
                                     String filename) {
         List<PlayerRace> races = new ArrayList<>();
         

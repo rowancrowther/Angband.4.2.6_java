@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
@@ -81,9 +82,6 @@ class HistoryReaderTest {
 
     // ---- fixture helpers -------------------------------------------------
 
-    private static String withHeader(int count, String body) {
-        return "record-count:" + count + "\n" + body;
-    }
 
     /**
      * One parse-record: a chart line and its phrase line.
@@ -123,7 +121,6 @@ class HistoryReaderTest {
     void realFileLoadsAll44ChartsWithNoErrors() throws IOException {
         ParseResult<PlayerHistoryChart> result = new HistoryReader().parseWithResults(REAL_FILE);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(REAL_CHART_COUNT, result.items().size());
     }
 
@@ -200,20 +197,17 @@ class HistoryReaderTest {
         // C keeps isucc on every entry, so entries of chart 5 may name 0 and 7. The port holds one
         // successor per chart (PlayerHistoryChart), so the second record is refused. The message
         // names the line of the offending chart line and the successor the chart began with.
-        DataFileParseException thrown = assertStopsTheLoad("mismatch.txt", withHeader(2,
-                        record(5, 0, 50, "alpha") + record(5, 7, 60, "beta")),
+        DataFileParseException thrown = assertStopsTheLoad("mismatch.txt", record(5, 0, 50, "alpha") + record(5, 7, 60, "beta"),
                 "a successor chart value: 7 that disagrees with 0");
 
-        assertTrue(thrown.getMessage().contains("line: 4"), thrown::getMessage);
+        assertTrue(thrown.getMessage().contains("line: 3"), thrown::getMessage);
     }
 
     @Test
     void aChartRepeatedWithTheSameSuccessorKeepsEveryEntryInFileOrder() throws IOException {
         // findchart reuses chart 5, and finish_parse_history puts the entries back in file order.
-        ParseResult<PlayerHistoryChart> result = load("repeat.txt", withHeader(3,
-                record(5, 0, 10, "a") + record(6, 0, 100, "z") + record(5, 0, 100, "b")));
+        ParseResult<PlayerHistoryChart> result = load("repeat.txt", record(5, 0, 10, "a") + record(6, 0, 100, "z") + record(5, 0, 100, "b"));
 
-        assertFalse(result.hasErrors(), result.errors()::toString);
         assertEquals(2, result.items().size());
         List<PlayerHistoryEntry> entries = entriesOf(byNumber(result.items(), 5));
         assertEquals(List.of("a", "b"), entries.stream().map(PlayerHistoryEntry::getText).toList());
@@ -223,21 +217,21 @@ class HistoryReaderTest {
     @Test
     void danglingSuccessorStopsTheLoadAsInC() {
         // finish_parse_history returns -1 when findchart misses a non-zero isucc.
-        assertStopsTheLoad("dangling.txt", withHeader(1, record(1, 999, 50, "lonely")),
+        assertStopsTheLoad("dangling.txt", record(1, 999, 50, "lonely"),
                 "has an unknown successor chart: 999");
     }
 
     @Test
     void aNegativeSuccessorIsNonZeroSoItIsLookedUpAndStopsTheLoadAsInC() {
         // isucc is an int, -1 is non-zero, and findchart(-1) matches no chart.
-        assertStopsTheLoad("negative-next.txt", withHeader(1, record(1, -1, 50, "x")),
+        assertStopsTheLoad("negative-next.txt", record(1, -1, 50, "x"),
                 "has an unknown successor chart: -1");
     }
 
     @Test
     void aSuccessorOfTheChartItselfLinksToItself() throws IOException {
         // findchart finds chart 4 for isucc 4, so the loop is allowed; the port links the same object.
-        ParseResult<PlayerHistoryChart> result = load("self.txt", withHeader(1, record(4, 4, 100, "x")));
+        ParseResult<PlayerHistoryChart> result = load("self.txt", record(4, 4, 100, "x"));
 
         PlayerHistoryChart chart = byNumber(result.items(), 4);
         assertSame(chart, chart.getSuccessor());
@@ -246,8 +240,7 @@ class HistoryReaderTest {
     @Test
     void aSuccessorMayNameAChartThatAppearsLaterInTheFile() throws IOException {
         // The reason C resolves in finish_parse_history and not at load.
-        ParseResult<PlayerHistoryChart> result = load("forward.txt", withHeader(2,
-                record(1, 2, 100, "a") + record(2, 0, 100, "b")));
+        ParseResult<PlayerHistoryChart> result = load("forward.txt", record(1, 2, 100, "a") + record(2, 0, 100, "b"));
 
         assertSame(byNumber(result.items(), 2), byNumber(result.items(), 1).getSuccessor());
     }
@@ -256,52 +249,25 @@ class HistoryReaderTest {
     void integerOverflowInPercentIsClampedWhereCWrapsIt() throws IOException {
         // strtol returns a long and C keeps the low 32 bits in the int field; ParseUtils clamps
         // instead (accepted deviation 2026-10-22). The record loads either way.
-        ParseResult<PlayerHistoryChart> result = load("overflow.txt", withHeader(1,
-                "chart:1:0:99999999999999999\nphrase:too big\n"));
+        ParseResult<PlayerHistoryChart> result = load("overflow.txt", "chart:1:0:99999999999999999\nphrase:too big\n");
 
-        assertFalse(result.hasErrors(), result.errors()::toString);
         assertEquals(Integer.MAX_VALUE, entriesOf(byNumber(result.items(), 1)).get(0).getRoll());
-    }
-
-    @Test
-    void recordCountMismatchIsReportedButValidChartStillLoads() throws IOException {
-        // A wrong record-count header is soft: the records that parsed still load.
-        ParseResult<PlayerHistoryChart> result = load("bad-count.txt", withHeader(5,
-                record(1, 0, 50, "solo")));
-
-        assertEquals(1, result.items().size());
-        assertTrue(result.hasErrors());
     }
 
     // ---- Hard errors: fail closed, nothing loads -------------------------
 
     @Test
-    void missingRecordCountHeaderIsAHardError() throws IOException {
-        // The grammar requires the record-count header; without it the file fails closed.
-        ParseResult<PlayerHistoryChart> result = load("no-header.txt", record(1, 0, 50, "x"));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
-    }
-
-    @Test
     void phraseWithoutAChartIsAHardError() throws IOException {
         // A record is 'chart' then 'phrase'; a bare phrase has no chart to attach to.
-        ParseResult<PlayerHistoryChart> result = load("orphan-phrase.txt", withHeader(1,
-                "phrase:orphaned\n"));
+        assertThrows(ParseCancellationException.class, () -> load("orphan-phrase.txt", "phrase:orphaned\n"));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void chartWithoutAPhraseIsAHardError() throws IOException {
         // Every chart line must be followed by its phrase line; a trailing chart is a parse error.
-        ParseResult<PlayerHistoryChart> result = load("chart-no-phrase.txt", withHeader(1,
-                "chart:1:0:50\n"));
+        assertThrows(ParseCancellationException.class, () -> load("chart-no-phrase.txt", "chart:1:0:50\n"));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     // ---- Against the upstream file and C's parser ------------------------
@@ -354,8 +320,7 @@ class HistoryReaderTest {
     @Test
     void chartsComeBackInFirstAppearanceOrderWhereCListsThemNewestFirst() throws IOException {
         // C pushes each new chart on the front of 'histories'; the port keeps them in a List.
-        ParseResult<PlayerHistoryChart> result = load("order.txt", withHeader(3,
-                record(7, 0, 100, "a") + record(3, 0, 100, "b") + record(5, 0, 100, "c")));
+        ParseResult<PlayerHistoryChart> result = load("order.txt", record(7, 0, 100, "a") + record(3, 0, 100, "b") + record(5, 0, 100, "c"));
 
         assertEquals(List.of(7, 3, 5),
                 result.items().stream().map(PlayerHistoryChart::getChartNumber).toList());
@@ -370,29 +335,24 @@ class HistoryReaderTest {
     @Test
     void aPhraseKeepsColonsAndLeadingSpaces() throws IOException {
         // C's 'str text' field consumes the rest of the line, so nothing in it is a separator.
-        ParseResult<PlayerHistoryChart> result = load("raw.txt", withHeader(1,
-                record(1, 0, 100, "  a: b:c ")));
+        ParseResult<PlayerHistoryChart> result = load("raw.txt", record(1, 0, 100, "  a: b:c "));
 
-        assertFalse(result.hasErrors(), result.errors()::toString);
         assertEquals("  a: b:c ", entriesOf(byNumber(result.items(), 1)).get(0).getText());
     }
 
     @Test
     void commentsAndBlankLinesBetweenTheLinesAreSkipped() throws IOException {
         ParseResult<PlayerHistoryChart> result = load("comments.txt",
-                "# header\n\nrecord-count:1\n\n# note\nchart:1:0:100\n\n# between\nphrase:kept\n\n");
+                "# header\n\n\n# note\nchart:1:0:100\n\n# between\nphrase:kept\n\n");
 
-        assertFalse(result.hasErrors(), result.errors()::toString);
         assertEquals("kept", entriesOf(byNumber(result.items(), 1)).get(0).getText());
     }
 
     @Test
     void aNegativeNextAndRollAreAcceptedAsInC() throws IOException {
         // 'next' and 'roll' are plain ints in C, so a minus sign is fine.
-        ParseResult<PlayerHistoryChart> result = load("negative-roll.txt", withHeader(1,
-                record(1, 0, -5, "x")));
+        ParseResult<PlayerHistoryChart> result = load("negative-roll.txt", record(1, 0, -5, "x"));
 
-        assertFalse(result.hasErrors(), result.errors()::toString);
         assertEquals(-5, entriesOf(byNumber(result.items(), 1)).get(0).getRoll());
     }
 
@@ -401,56 +361,44 @@ class HistoryReaderTest {
     @Test
     void aChartWithNoPhraseBetweenTwoRecordsIsAHardErrorHereWhereCAcceptsIt() throws IOException {
         // C makes an entry with NULL text; the grammar needs a phrase after every chart line.
-        ParseResult<PlayerHistoryChart> result = load("no-phrase-mid.txt", withHeader(2,
-                "chart:1:0:50\n" + record(1, 0, 100, "x")));
+        assertThrows(ParseCancellationException.class, () -> load("no-phrase-mid.txt", "chart:1:0:50\n" + record(1, 0, 100, "x")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void aSecondPhraseLineIsAHardErrorHereWhereCAppendsItToTheEntry() throws IOException {
         // parse_history_phrase string_appends onto the newest entry, so C reads 'onetwo'.
-        ParseResult<PlayerHistoryChart> result = load("two-phrases.txt", withHeader(1,
-                "chart:1:0:100\nphrase:one\nphrase:two\n"));
+        assertThrows(ParseCancellationException.class, () -> load("two-phrases.txt", "chart:1:0:100\nphrase:one\nphrase:two\n"));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void anEmptyPhraseIsAHardErrorAsInC() throws IOException {
         // C: strtok on an empty remainder gives NULL, so PARSE_ERROR_MISSING_FIELD. Both refuse it.
-        ParseResult<PlayerHistoryChart> result = load("empty-phrase.txt", withHeader(1,
-                "chart:1:0:100\nphrase:\n"));
+        assertThrows(ParseCancellationException.class, () -> load("empty-phrase.txt", "chart:1:0:100\nphrase:\n"));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void aNegativeChartNumberStopsTheLoadAsInC() {
         // 'chart' is a uint in init_parse_history and parser_parse refuses a leading '-'.
-        DataFileParseException thrown = assertStopsTheLoad("negative-chart.txt", withHeader(1,
-                record(-1, 0, 100, "x")), "an illegal negative current chart value: -1");
+        DataFileParseException thrown = assertStopsTheLoad("negative-chart.txt", record(-1, 0, 100, "x"), "an illegal negative current chart value: -1");
 
-        assertTrue(thrown.getMessage().contains("line: 2"), thrown::getMessage);
+        assertTrue(thrown.getMessage().contains("line: 1"), thrown::getMessage);
     }
 
     @Test
     void minusZeroIsRefusedAsInCBecauseTheTextIsTestedNotTheValue() {
         // parser_parse tests *tok == '-', so -0 is NOT_NUMBER even though its value is 0.
-        assertStopsTheLoad("minus-zero.txt", withHeader(1, "chart:-0:0:100\nphrase:x\n"),
+        assertStopsTheLoad("minus-zero.txt", "chart:-0:0:100\nphrase:x\n",
                 "an illegal negative current chart value: -0");
     }
 
     @Test
     void chartZeroLoadsAsInC() throws IOException {
         // strtoul accepts 0 and findchart(0) misses, so C builds a chart whose idx is 0.
-        ParseResult<PlayerHistoryChart> result = load("chart-zero.txt", withHeader(1,
-                record(0, 0, 100, "x")));
+        ParseResult<PlayerHistoryChart> result = load("chart-zero.txt", record(0, 0, 100, "x"));
 
-        assertFalse(result.hasErrors(), result.errors()::toString);
         assertEquals(1, result.items().size());
         assertEquals(0, result.items().get(0).getChartNumber());
     }
@@ -459,8 +407,7 @@ class HistoryReaderTest {
     void aChartZeroCanNotBeNamedAsASuccessorBecauseZeroEndsTheChain() throws IOException {
         // isucc 0 is skipped in finish_parse_history, so chart 1 ends the chain even though a
         // chart 0 exists.
-        ParseResult<PlayerHistoryChart> result = load("zero-target.txt", withHeader(2,
-                record(0, 0, 100, "zero") + record(1, 0, 100, "one")));
+        ParseResult<PlayerHistoryChart> result = load("zero-target.txt", record(0, 0, 100, "zero") + record(1, 0, 100, "one"));
 
         assertNull(byNumber(result.items(), 1).getSuccessor());
     }
@@ -470,31 +417,23 @@ class HistoryReaderTest {
         // The last int field is the final strtok token on ':' and the rest is dropped, so C reads
         // roll 10 from both 'chart:1:0:10:extra' and 'chart:1:0:10abc'.
         for (String tail : new String[]{":extra", "abc"}) {
-            ParseResult<PlayerHistoryChart> result = load("tail.txt", withHeader(1,
-                    "chart:1:0:10" + tail + "\nphrase:x\n"));
+            assertThrows(ParseCancellationException.class, () -> load("tail.txt", "chart:1:0:10" + tail + "\nphrase:x\n"), tail);
 
-            assertTrue(result.items().isEmpty(), tail);
-            assertTrue(result.hasErrors(), tail);
         }
     }
 
     @Test
     void aHexRollIsAHardErrorHereWhereCReadsItInBaseSixteen() throws IOException {
         // strtol base 0 gives 16 for 0x10.
-        ParseResult<PlayerHistoryChart> result = load("hex.txt", withHeader(1,
-                "chart:1:0:0x10\nphrase:x\n"));
+        assertThrows(ParseCancellationException.class, () -> load("hex.txt", "chart:1:0:0x10\nphrase:x\n"));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void zeroPaddedNumbersAreReadInOctalAsInC() throws IOException {
         // strtoul and strtol base 0 read 010 as 8 for the chart, the next and the roll alike.
-        ParseResult<PlayerHistoryChart> result = load("octal.txt", withHeader(2,
-                "chart:010:010:010\nphrase:x\n" + record(8, 8, 100, "y")));
+        ParseResult<PlayerHistoryChart> result = load("octal.txt", "chart:010:010:010\nphrase:x\n" + record(8, 8, 100, "y"));
 
-        assertFalse(result.hasErrors(), result.errors()::toString);
         PlayerHistoryChart chart = byNumber(result.items(), 8);
         assertEquals(2, entriesOf(chart).size());
         assertEquals(8, chart.getSuccessorNumber());
@@ -504,18 +443,13 @@ class HistoryReaderTest {
     @Test
     void anIndentedLineIsAHardErrorHereWhereCSkipsLeadingWhitespace() throws IOException {
         // parser_parse skips leading whitespace, so C reads an indented directive.
-        ParseResult<PlayerHistoryChart> result = load("indented.txt", withHeader(1,
-                "  chart:1:0:100\nphrase:x\n"));
+        assertThrows(ParseCancellationException.class, () -> load("indented.txt", "  chart:1:0:100\nphrase:x\n"));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void aHeaderWithNoRecordsIsAHardErrorHereWhereCAcceptsAnEmptyFile() throws IOException {
-        ParseResult<PlayerHistoryChart> result = load("empty.txt", "record-count:0\n");
+        assertThrows(ParseCancellationException.class, () -> load("empty.txt", ""));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 }

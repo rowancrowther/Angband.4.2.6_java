@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from UIEntryGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/frontend/ui/entry/UIEntryGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.frontend.ui.entry.antlr4.uientry;
 
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
@@ -30,13 +30,6 @@ import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
  */
 @SuppressWarnings("CheckReturnValue")
 public class UIEntryGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements UIEntryGrammarVisitor<T> {
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitRecordCount(UIEntryGrammar.RecordCountContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *

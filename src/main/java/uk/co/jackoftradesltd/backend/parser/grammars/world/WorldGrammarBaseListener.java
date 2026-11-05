@@ -14,7 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-// Generated from WorldGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/WorldGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.world;
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -28,101 +28,66 @@ import org.antlr.v4.runtime.tree.TerminalNode;
  */
 @SuppressWarnings("CheckReturnValue")
 public class WorldGrammarBaseListener implements WorldGrammarListener {
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void enterRecordCount(WorldGrammar.RecordCountContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void exitRecordCount(WorldGrammar.RecordCountContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void enterLevelNum(WorldGrammar.LevelNumContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void exitLevelNum(WorldGrammar.LevelNumContext ctx) {
-    }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void enterLevelName(WorldGrammar.LevelNameContext ctx) { }
+	 */
+	@Override public void enterLevelNum(WorldGrammar.LevelNumContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void exitLevelName(WorldGrammar.LevelNameContext ctx) { }
+	 */
+	@Override public void exitLevelNum(WorldGrammar.LevelNumContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void enterUpAndDown(WorldGrammar.UpAndDownContext ctx) { }
+	 */
+	@Override public void enterLevelName(WorldGrammar.LevelNameContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void exitUpAndDown(WorldGrammar.UpAndDownContext ctx) { }
+	 */
+	@Override public void exitLevelName(WorldGrammar.LevelNameContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void enterLine(WorldGrammar.LineContext ctx) { }
+	 */
+	@Override public void enterUpAndDown(WorldGrammar.UpAndDownContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void exitLine(WorldGrammar.LineContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void enterFile(WorldGrammar.FileContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void exitFile(WorldGrammar.FileContext ctx) { }
+	 */
+	@Override public void exitUpAndDown(WorldGrammar.UpAndDownContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterLine(WorldGrammar.LineContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitLine(WorldGrammar.LineContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterFile(WorldGrammar.FileContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitFile(WorldGrammar.FileContext ctx) { }
 
 	/**
 	 * {@inheritDoc}

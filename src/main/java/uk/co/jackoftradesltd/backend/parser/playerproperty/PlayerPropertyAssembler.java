@@ -152,13 +152,12 @@ public class PlayerPropertyAssembler implements Assembler<PlayerPropertyParseRec
      * </ol>
      * Bindings keep file order, not C's reverse order (accepted deviation, class block).
      *
-     * <p>Every refusal logs at {@code fatal} and throws, so the {@code errors} list is not
-     * written to; it is part of the {@link Assembler} signature only.
+     * <p>Every refusal logs at {@code fatal} and throws, so no record is skipped.
      *
-     * <p>Function assemble coded before 260915, commented in full on 261029.
+     * <p>Function assemble coded before 260915, commented in full on 261029, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param records  the raw parse records, in file order, from the grammar.
-     * @param errors   unused here; no refusal is collected any more.
      * @param filename the file being read, quoted in each message.
      * @return the {@link PlayerProperty} objects, in file order, with each {@code element}
      * record expanded in place.
@@ -166,7 +165,6 @@ public class PlayerPropertyAssembler implements Assembler<PlayerPropertyParseRec
      */
     @Override
     public List<PlayerProperty> assemble(@NotNull List<PlayerPropertyParseRecord> records,
-                                         @NotNull List<String> errors,
                                          @NotNull String filename) {
         List<PlayerProperty> results = new ArrayList<>();
 

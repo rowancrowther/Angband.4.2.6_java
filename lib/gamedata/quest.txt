@@ -7,8 +7,6 @@
 # to this file).  It would also only require fairly small game code changes to
 # allow other quests to be added as a result of game events.
 
-record-count:2
-
 name:Sauron
 level:99
 race:Sauron, the Sorcerer

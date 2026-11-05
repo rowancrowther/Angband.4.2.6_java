@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.game.globals.loaders;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -44,22 +45,23 @@ import static org.junit.jupiter.api.Assertions.*;
  * parser in {@code obj-chest.c}, reads its file through {@code parse_file_quit_not_found} in
  * {@code datafile.c}, which calls {@code quit()} with "Cannot open" when the file is missing, and
  * {@code run_parser} quits when a parser reports an error. So in C a missing file always ends the
- * program. The port stops the load the same way for a missing file, and for a file whose errors left
- * no records at all; it deliberately lets through a file whose soft errors still left some records
- * (the partial-results contract).
+ * program. The port stops the load on every error too, and registers nothing from a file that
+ * fails: a missing file is wrapped in a {@code RuntimeException} naming it, and a grammar error
+ * ({@link ParseCancellationException}) passes through unwrapped, except in {@code loadCurses}.
  *
  * <p><b>What is tested.</b> A missing file for each of the ten loaders (an empty temporary directory
  * stands in for the gamedata directory). Then, for a file that is not valid at all, that the load
  * stops and that the registry's counter is left as it was: {@code brand.txt} and {@code slay.txt}
- * for the plain route, which lets the {@link RuntimeException} from the error check escape as it is,
+ * for the plain route, which lets the reader's {@link ParseCancellationException} escape as it is,
  * and {@code curse.txt} for the one loader whose {@code catch} is on {@code Exception}, which wraps
- * that same exception a second time. The clean path through all ten is covered by
+ * that exception in a {@code RuntimeException} naming the file. The clean path through all ten is covered by
  * {@link ObjectDataLoaderRegistryTest}, which runs {@code GameConstants.init} on the real gamedata.
  *
  * <p>Each test points {@code ANGBAND_DIRS.GAMEDATA} at the temporary directory and puts it back
  * afterwards. Nothing here loads a good file, so the registry is only read, never written.
  *
- * <p>Class ObjectDataLoaderFailurePathsTest coded on 261013, commented in full on 261013.
+ * <p>Class ObjectDataLoaderFailurePathsTest coded on 261013, commented in full on 261013, updated on
+ * 261104 for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -135,10 +137,12 @@ class ObjectDataLoaderFailurePathsTest {
     }
 
     /**
-     * A file that is not a brand file at all is a hard syntax error. The reader turns it into an
-     * empty result carrying the error, so the error check answers {@code false} and the loader's own
-     * {@code RuntimeException} escapes unwrapped. {@code setBrands} is never reached, so the
-     * registry's brand counter is what it was.
+     * A file that is not a brand file at all is a grammar error. The reader throws a
+     * {@link ParseCancellationException}, which the loader does not catch, so it escapes as it is.
+     * {@code setBrands} is never reached, so the registry's brand counter is what it was.
+     *
+     * <p>Function invalidBrandFileStopsTheLoad coded on 261013, commented in full on 261013,
+     * updated on 261104 for the removal of the soft-error path.
      */
     @Test
     @DisplayName("an invalid brand file stops the load and leaves the registry alone")
@@ -146,10 +150,8 @@ class ObjectDataLoaderFailurePathsTest {
         int brandMaxBefore = ObjectRegistry.getBrandMax();
         Files.writeString(tempDir.resolve("brand.txt"), "this is not a brand file\n");
 
-        RuntimeException thrown = assertThrows(RuntimeException.class, ObjectDataLoader::loadBrands);
+        assertThrows(ParseCancellationException.class, ObjectDataLoader::loadBrands);
 
-        assertTrue(thrown.getMessage().contains("brand.txt"), thrown.getMessage());
-        assertNull(thrown.getCause(), "the plain route throws its own exception, wrapping nothing");
         assertEquals(brandMaxBefore, ObjectRegistry.getBrandMax(), "brand counter");
     }
 
@@ -162,16 +164,18 @@ class ObjectDataLoaderFailurePathsTest {
         int slayMaxBefore = ObjectRegistry.getSlayMax();
         Files.writeString(tempDir.resolve("slay.txt"), "this is not a slay file\n");
 
-        RuntimeException thrown = assertThrows(RuntimeException.class, ObjectDataLoader::loadSlays);
+        assertThrows(ParseCancellationException.class, ObjectDataLoader::loadSlays);
 
-        assertTrue(thrown.getMessage().contains("slay.txt"), thrown.getMessage());
         assertEquals(slayMaxBefore, ObjectRegistry.getSlayMax(), "slay counter");
     }
 
     /**
-     * {@code loadCurses} catches {@code Exception}, so the {@code RuntimeException} it throws for a
-     * failed error check is caught by its own handler and wrapped: the exception that escapes says
-     * "Error while loading file" and carries the "Error parsing file" one as its cause.
+     * {@code loadCurses} catches {@code Exception}, so the reader's
+     * {@link ParseCancellationException} is caught and wrapped: the exception that escapes says
+     * "Error while loading file", names the file, and carries the grammar error as its cause.
+     *
+     * <p>Function invalidCurseFileIsWrapped coded on 261013, commented in full on 261013, updated
+     * on 261104 for the removal of the soft-error path.
      */
     @Test
     @DisplayName("an invalid curse file stops the load, wrapped a second time")
@@ -183,8 +187,7 @@ class ObjectDataLoaderFailurePathsTest {
 
         assertTrue(thrown.getMessage().startsWith("Error while loading file"), thrown.getMessage());
         assertTrue(thrown.getMessage().contains("curse.txt"), thrown.getMessage());
-        assertInstanceOf(RuntimeException.class, thrown.getCause());
-        assertTrue(thrown.getCause().getMessage().startsWith("Error parsing file"), thrown.getCause().getMessage());
+        assertInstanceOf(ParseCancellationException.class, thrown.getCause());
         assertEquals(curseMaxBefore, ObjectRegistry.getCurseMax(), "curse counter");
     }
 }

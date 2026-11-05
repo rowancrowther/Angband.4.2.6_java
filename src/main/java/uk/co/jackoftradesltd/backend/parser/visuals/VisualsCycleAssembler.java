@@ -55,8 +55,8 @@ import java.util.*;
  * lines, counting repeated and dropped ones; the 513th stops the load. Java counts records from 0
  * with no blank slot (the accepted base-0 deviation), so the same limit reads as "more than 512".
  * <p>
- * <strong>Fatal errors.</strong> Each throws a {@link DataFileParseException} after a fatal log line;
- * nothing is reported into {@code errors}. In order of checking: more than 512 records; an empty
+ * <strong>Fatal errors.</strong> Each throws a {@link DataFileParseException} after a fatal log line.
+ * In order of checking: more than 512 records; an empty
  * colour string (C's {@code PARSE_ERROR_INVALID_COLOR}); more than 32 colours in one block; and,
  * after every record is placed, no group at all (C's {@code visuals_cycler_new()} returns NULL for
  * a zero group count) or a cycle with no colours still installed (C's
@@ -71,7 +71,8 @@ import java.util.*;
  * difference.
  *
  * <p>Class VisualsCycleAssembler coded before 260915, reworked to fatal errors and C's capacity
- * limits on 261030, commented in full on 261030.
+ * limits on 261030, commented in full on 261030, updated on 261105 for the removal of the soft-error
+ * path.
  *
  * @author Rowan Crowther
  */
@@ -120,13 +121,12 @@ public class VisualsCycleAssembler implements Assembler<VisualsCycleParseRecord,
      * 261030, commented in full on 261030.
      *
      * @param records  the parsed {@code cycle:} blocks, in file order
-     * @param errors   the shared soft-error sink; unused, since every error here is fatal
      * @param filename the data file's name, quoted in each error message
      * @return a one-element list holding the assembled {@link VisualsCycler}
      * @throws DataFileParseException for any of the fatal errors listed in the class comment
      */
     @Override
-    public List<VisualsCycler> assemble(@NotNull List<VisualsCycleParseRecord> records, @NotNull List<String> errors,
+    public List<VisualsCycler> assemble(@NotNull List<VisualsCycleParseRecord> records,
                                     String filename) {
         Map<String, Map<String, ColourCycle>> byGroup = new HashMap<>();
         

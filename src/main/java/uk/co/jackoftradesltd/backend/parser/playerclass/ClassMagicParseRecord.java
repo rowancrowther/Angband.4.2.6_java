@@ -27,11 +27,15 @@ import java.util.List;
  *
  * <p>Format: {@code magic:firstSpell:spellWeight:numBooks} followed by one or more {@code book:} blocks.
  *
+ * <p>Record ClassMagicParseRecord coded before 261105, updated on 261105 for the removal of the
+ * soft-error path.
+ *
  * @param firstSpell  the character level of the class's first spell, as raw text
  * @param spellWeight the per-book weight that burdens spellcasting, as raw text
  * @param numBooks    the declared number of books the class uses, as raw text
  * @param books       the parsed spellbook blocks, in file order
- * @param line        the 1-based source line, retained so soft errors can point back at the file
+ * @param line        the 1-based source line, quoted in the {@code DataFileParseException} the
+ *                    assembler throws if it refuses the record
  * @author Rowan Crowther
  */
 public record ClassMagicParseRecord(String firstSpell,

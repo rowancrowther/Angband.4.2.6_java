@@ -44,17 +44,6 @@ options { tokenVocab = BlowEffectLexer; }
 /*
  * @author Rowan Crowther
  *
- * The record-count header. Returned as text for the reader to check against the
- * number of records actually parsed.
- */
-recordCount
-        returns[String count]
-        :   RECORD_COUNT INTEGER { $count = $INTEGER.getText(); }
-        ;
-
-/*
- * @author Rowan Crowther
- *
  * The directive that opens a record. Also captures the line it sits on, which is
  * what the assembler quotes when reporting a bad value further down the record.
  */
@@ -205,17 +194,16 @@ blowEffect
 /*
  * @author Rowan Crowther
  *
- * The whole file: the record-count header followed by at least one record.
+ * The whole file: at least one record.
  *
  * EOF is required so that a record the grammar cannot match is reported as a
  * syntax error rather than quietly ending the file early with the remaining
  * records dropped.
  */
 file
-        returns[String declaredRecordCount, List<BlowEffectParseRecord> blowEffects]
+        returns[List<BlowEffectParseRecord> blowEffects]
         @init {
             $blowEffects = new ArrayList<>();
         }
-        :   recordCount { $declaredRecordCount = $recordCount.count; }
-            (blowEffect { $blowEffects.add($blowEffect.effect); })+ EOF
+        :   (blowEffect { $blowEffects.add($blowEffect.effect); })+ EOF
         ;

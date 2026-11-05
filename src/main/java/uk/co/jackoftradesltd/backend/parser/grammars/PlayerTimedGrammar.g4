@@ -2,7 +2,7 @@
  * @author Rowan Crowther
  *
  * Parser for player_timed.txt. Each rule assembles one directive into a piece of a
- * PlayerTimedParseRecord; the top-level `file` rule requires a record-count header followed by one
+ * PlayerTimedParseRecord; the top-level `file` rule requires one
  * or more `playerTimed` records, each opening with a `name` line and then accepting its directives
  * in any order. The rule actions build only the loss-less string/sub-record capture — all
  * resolution to domain types happens later in PlayerTimedAssembler. Grades carry an optional fifth
@@ -22,11 +22,6 @@ options {tokenVocab = PlayerTimedLexer; }
     import java.util.List;
     import java.util.ArrayList;
 }
-
-recordCount
-        returns[String count]
-        :   RECORD_COUNT INTEGER { $count = $INTEGER.getText(); }
-        ;
 
 name
         returns[String nameStr, int lineNo]
@@ -203,10 +198,9 @@ playerTimed
         ;
 
 file
-        returns[String declaredRecordCount, List<PlayerTimedParseRecord> results]
+        returns[List<PlayerTimedParseRecord> results]
         @init {
             $results = new ArrayList<>();
         }
-        :   recordCount { $declaredRecordCount = $recordCount.count; }
-            (playerTimed { $results.add($playerTimed.timed); })+ EOF
+        :   (playerTimed { $results.add($playerTimed.timed); })+ EOF
         ;

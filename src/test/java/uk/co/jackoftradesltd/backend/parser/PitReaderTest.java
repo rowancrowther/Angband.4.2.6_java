@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -180,7 +181,6 @@ class PitReaderTest {
     void realFileLoadsAllPitsWithNoErrors() throws IOException {
         ParseResult<PitProfile> result = new PitReader().parseWithResults(REAL_FILE);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(EXPECTED_PITS, result.items().size());
     }
 
@@ -245,11 +245,10 @@ class PitReaderTest {
      */
     @Test
     void theFixtureRecordLoadsCleanly() throws Exception {
-        String path = tempFile("good.txt", "record-count:1\n" + GOOD_RECORD + "\n");
+        String path = tempFile("good.txt", GOOD_RECORD + "\n");
 
         ParseResult<PitProfile> result = new PitReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         PitProfile good = result.items().getFirst();
         assertEquals("Good pit", field(good, "name"));
         assertEquals(PitRoomType.PIT_TYPE_PIT, field(good, "roomType"));
@@ -280,7 +279,7 @@ class PitReaderTest {
         String badFlags = GOOD_RECORD.replace("name:Good pit", "name:Bad flags")
                 .replace("flags-req:ANIMAL", "flags-req:NOT_A_FLAG | ALSO_NOT_A_FLAG");
         String path = tempFile("bad-flags.txt",
-                "record-count:2\n" + badFlags + "\n" + GOOD_RECORD + "\n");
+                badFlags + "\n" + GOOD_RECORD + "\n");
 
         DataFileParseException e = assertThrows(DataFileParseException.class,
                 () -> new PitReader().parseWithResults(path));
@@ -298,7 +297,7 @@ class PitReaderTest {
         String badBan = GOOD_RECORD.replace("name:Good pit", "name:Bad flag ban")
                 .replace("flags-ban:UNIQUE", "flags-ban:NOT_A_FLAG");
         String path = tempFile("bad-flag-ban.txt",
-                "record-count:2\n" + badBan + "\n" + GOOD_RECORD + "\n");
+                badBan + "\n" + GOOD_RECORD + "\n");
 
         DataFileParseException e = assertThrows(DataFileParseException.class,
                 () -> new PitReader().parseWithResults(path));
@@ -318,8 +317,8 @@ class PitReaderTest {
                 .replace("spell-req:BR_ACID", "spell-req:BR_NOTHING");
         String badBan = GOOD_RECORD.replace("name:Good pit", "name:Bad spell ban")
                 .replace("spell-ban:BR_ELEC", "spell-ban:BR_NOTHING_ELSE");
-        String reqPath = tempFile("bad-spell-req.txt", "record-count:2\n" + badReq + "\n" + GOOD_RECORD + "\n");
-        String banPath = tempFile("bad-spell-ban.txt", "record-count:2\n" + badBan + "\n" + GOOD_RECORD + "\n");
+        String reqPath = tempFile("bad-spell-req.txt", badReq + "\n" + GOOD_RECORD + "\n");
+        String banPath = tempFile("bad-spell-ban.txt", badBan + "\n" + GOOD_RECORD + "\n");
 
         DataFileParseException req = assertThrows(DataFileParseException.class,
                 () -> new PitReader().parseWithResults(reqPath));
@@ -344,15 +343,14 @@ class PitReaderTest {
                 .replace("mon-base:orc", "mon-base:hippogriff");
         String badBan = GOOD_RECORD.replace("name:Good pit", "name:Bad ban")
                 .replace("mon-ban:Horned Reaper", "mon-ban:Norman the Unlikely");
-        String basePath = tempFile("bad-base.txt", "record-count:2\n" + badBase + "\n" + GOOD_RECORD + "\n");
-        String banPath = tempFile("bad-ban.txt", "record-count:2\n" + badBan + "\n" + GOOD_RECORD + "\n");
+        String basePath = tempFile("bad-base.txt", badBase + "\n" + GOOD_RECORD + "\n");
+        String banPath = tempFile("bad-ban.txt", badBan + "\n" + GOOD_RECORD + "\n");
 
         DataFileParseException e = assertThrows(DataFileParseException.class,
                 () -> new PitReader().parseWithResults(basePath));
         ParseResult<PitProfile> result = new PitReader().parseWithResults(banPath);
 
         assertTrue(e.getMessage().endsWith("an illegal monster base value: hippogriff"), e.getMessage());
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(List.of("Bad ban", "Good pit"), names(result));
         List<MonsterRace> banned = field(byName(result.items(), "Bad ban"), "forbiddenMonsters");
         assertEquals(1, banned.size());
@@ -367,7 +365,7 @@ class PitReaderTest {
     void innateFreqIsRangeCheckedAndStoredAsHundredOverPercent() throws Exception {
         for (String bad : List.of("0", "101")) {
             String record = GOOD_RECORD.replace("innate-freq:5", "innate-freq:" + bad);
-            String badPath = tempFile("freq-" + bad + ".txt", "record-count:1\n" + record + "\n");
+            String badPath = tempFile("freq-" + bad + ".txt", record + "\n");
 
             DataFileParseException e = assertThrows(DataFileParseException.class,
                     () -> new PitReader().parseWithResults(badPath));
@@ -377,12 +375,11 @@ class PitReaderTest {
         String one = GOOD_RECORD.replace("name:Good pit", "name:One").replace("innate-freq:5", "innate-freq:1");
         String four = GOOD_RECORD.replace("name:Good pit", "name:Four").replace("innate-freq:5", "innate-freq:4");
         String hundred = GOOD_RECORD.replace("name:Good pit", "name:Hundred").replace("innate-freq:5", "innate-freq:100");
-        String path = tempFile("freq-range.txt", "record-count:3\n" + one + "\n" + four + "\n" + hundred + "\n");
+        String path = tempFile("freq-range.txt", one + "\n" + four + "\n" + hundred + "\n");
 
         ParseResult<PitProfile> result = new PitReader().parseWithResults(path);
 
         assertEquals(List.of("One", "Four", "Hundred"), names(result));
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         int storedOne = field(result.items().get(0), "freqInnate");
         int storedFour = field(result.items().get(1), "freqInnate");
         int storedHundred = field(result.items().get(2), "freqInnate");
@@ -403,14 +400,13 @@ class PitReaderTest {
                 .replace("obj-rarity:0", "obj-rarity:99999999999");
         String badFreq = GOOD_RECORD.replace("name:Good pit", "name:Huge freq")
                 .replace("innate-freq:5", "innate-freq:99999999999");
-        String path = tempFile("overflow.txt", "record-count:1\n" + hugeUints + "\n");
-        String freqPath = tempFile("overflow-freq.txt", "record-count:1\n" + badFreq + "\n");
+        String path = tempFile("overflow.txt", hugeUints + "\n");
+        String freqPath = tempFile("overflow-freq.txt", badFreq + "\n");
 
         ParseResult<PitProfile> result = new PitReader().parseWithResults(path);
         DataFileParseException e = assertThrows(DataFileParseException.class,
                 () -> new PitReader().parseWithResults(freqPath));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         PitProfile pit = result.items().getFirst();
         int rarity = field(pit, "rarity");
         int ave = field(pit, "ave");
@@ -434,11 +430,10 @@ class PitReaderTest {
                 "mon-base:orc",
                 "alloc:2:30",
                 "room:2");
-        String path = tempFile("reordered.txt", "record-count:1\n" + reordered + "\n");
+        String path = tempFile("reordered.txt", reordered + "\n");
 
         ParseResult<PitProfile> result = new PitReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         PitProfile pit = result.items().getFirst();
         assertEquals(PitRoomType.PIT_TYPE_NEST, field(pit, "roomType"));
         int rarity = field(pit, "rarity");
@@ -463,11 +458,10 @@ class PitReaderTest {
         String oddRoom = GOOD_RECORD.replace("room:1", "room:9");
         String noRoom = GOOD_RECORD.replace("name:Good pit", "name:No room").replace("room:1\n", "");
         String path = tempFile("room-digits.txt",
-                "record-count:2\n" + oddRoom + "\n" + noRoom + "\n");
+                oddRoom + "\n" + noRoom + "\n");
 
         ParseResult<PitProfile> result = new PitReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(PitRoomType.PIT_TYPE_NONE, field(result.items().getFirst(), "roomType"));
         assertEquals(PitRoomType.PIT_TYPE_NONE, field(result.items().getLast(), "roomType"));
     }
@@ -479,28 +473,10 @@ class PitReaderTest {
     @Test
     void aRecordWithNoDirectivesFailsClosed() throws IOException {
         String path = tempFile("name-only.txt",
-                "record-count:2\nname:Nothing but a name\n" + GOOD_RECORD + "\n");
+                "name:Nothing but a name\n" + GOOD_RECORD + "\n");
 
-        ParseResult<PitProfile> result = new PitReader().parseWithResults(path);
+        assertThrows(ParseCancellationException.class, () -> new PitReader().parseWithResults(path));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty(), result.items()::toString);
-    }
-
-    /**
-     * A wrong {@code record-count:} is soft: reported, but the records that parsed still load. C's
-     * own parser never validates this header at all, so this check is stricter than the original.
-     */
-    @Test
-    void recordCountMismatchIsReportedButPitsStillLoad() throws IOException {
-        String path = tempFile("bad-count.txt", "record-count:7\n" + GOOD_RECORD + "\n");
-
-        ParseResult<PitProfile> result = new PitReader().parseWithResults(path);
-
-        assertEquals(1, result.items().size(), "the count check must not cost the file its records");
-        assertTrue(result.errors().stream()
-                        .anyMatch(e -> e.contains("declares 7") && e.contains("contains 1")),
-                result.errors()::toString);
     }
 
     /**
@@ -514,12 +490,10 @@ class PitReaderTest {
     @Test
     void anUnknownColourCodeIsALexerErrorNotASoftOne() throws IOException {
         String badColour = GOOD_RECORD.replace("color:r", "color:q");
-        String path = tempFile("bad-colour.txt", "record-count:1\n" + badColour + "\n");
+        String path = tempFile("bad-colour.txt", badColour + "\n");
 
-        ParseResult<PitProfile> result = new PitReader().parseWithResults(path);
+        assertThrows(ParseCancellationException.class, () -> new PitReader().parseWithResults(path));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty(), result.items()::toString);
     }
 
     /**
@@ -680,7 +654,7 @@ class PitReaderTest {
      * Writes a file of the given records with a matching {@code record-count:} header and loads it.
      */
     private ParseResult<PitProfile> load(String name, String... records) throws IOException {
-        String path = tempFile(name, "record-count:" + records.length + "\n" + String.join("\n", records) + "\n");
+        String path = tempFile(name, String.join("\n", records) + "\n");
         return new PitReader().parseWithResults(path);
     }
 
@@ -697,7 +671,6 @@ class PitReaderTest {
                 "obj-rarity:1", "obj-rarity:7",
                 "innate-freq:10", "innate-freq:50"));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         PitProfile pit = result.items().getFirst();
         assertEquals(PitRoomType.PIT_TYPE_OTHER, field(pit, "roomType"));
         int rarity = field(pit, "rarity");
@@ -727,7 +700,6 @@ class PitReaderTest {
                 "mon-ban:Horned Reaper", "mon-ban:Grip, Farmer Maggot's Dog",
                 "color:r", "color:g"));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         PitProfile pit = result.items().getFirst();
         Flag<MonsterRaceFlag> flags = field(pit, "flags");
         Flag<MonsterRaceFlag> forbiddenFlags = field(pit, "forbiddenFlags");
@@ -755,7 +727,6 @@ class PitReaderTest {
                 "mon-base:orc", "mon-base:troll", "mon-base:giant",
                 "color:r", "color:g", "color:b"));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         List<MonsterBase> bases = field(result.items().getFirst(), "bases");
         assertEquals(List.of("orc", "troll", "giant"), bases.stream().map(MonsterBase::getCodeName).toList());
         assertEquals(List.of(ColourEnum.COLOUR_RED, ColourEnum.COLOUR_GREEN, ColourEnum.COLOUR_BLUE),
@@ -771,7 +742,6 @@ class PitReaderTest {
         ParseResult<PitProfile> result = load("dup-names.txt",
                 "name:Same\nalloc:1:10", "name:Same\nalloc:2:20");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(List.of("Same", "Same"), names(result));
         int first = field(result.items().get(0), "ave");
         int second = field(result.items().get(1), "ave");
@@ -788,7 +758,6 @@ class PitReaderTest {
     void aMonBanNameMatchesCaseInsensitivelyAsLookupMonsterDoes() throws Exception {
         ParseResult<PitProfile> result = load("ban-case.txt", "name:Case\nmon-ban:HORNED REAPER");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         List<MonsterRace> banned = field(result.items().getFirst(), "forbiddenMonsters");
         assertEquals("horned reaper", banned.getFirst().getName());
     }
@@ -814,10 +783,8 @@ class PitReaderTest {
      */
     @Test
     void anEmptyFlagListIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        ParseResult<PitProfile> result = load("empty-flags.txt", "name:Empty\nflags-req:", GOOD_RECORD);
+        assertThrows(ParseCancellationException.class, () -> load("empty-flags.txt", "name:Empty\nflags-req:", GOOD_RECORD));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty(), result.items()::toString);
     }
 
     /**
@@ -829,10 +796,8 @@ class PitReaderTest {
     void spaceSeparatedOrPaddedFlagListsAreAHardErrorHereWhereCSplitsOnSpaceToo() throws IOException {
         for (String line : List.of("flags-req:ANIMAL EVIL", "flags-req: ANIMAL", "flags-req:ANIMAL ",
                 "flags-req:ANIMAL |", "spell-ban:BR_FIRE BR_COLD")) {
-            ParseResult<PitProfile> result = load("padded-flags.txt", "name:Padded\n" + line);
+            assertThrows(ParseCancellationException.class, () -> load("padded-flags.txt", "name:Padded\n" + line), line);
 
-            assertTrue(result.hasErrors(), line);
-            assertTrue(result.items().isEmpty(), line);
         }
     }
 
@@ -843,10 +808,8 @@ class PitReaderTest {
      */
     @Test
     void aColourNameIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        ParseResult<PitProfile> result = load("colour-name.txt", "name:Named\ncolor:Red");
+        assertThrows(ParseCancellationException.class, () -> load("colour-name.txt", "name:Named\ncolor:Red"));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty(), result.items()::toString);
     }
 
     /**
@@ -860,7 +823,7 @@ class PitReaderTest {
             DataFileParseException e = assertThrows(DataFileParseException.class,
                     () -> load("negative.txt", "name:Negative\n" + line), line);
 
-            assertTrue(e.getMessage().startsWith("Pit record starting at line: 2 of file: "), e.getMessage());
+            assertTrue(e.getMessage().startsWith("Pit record starting at line: 1 of file: "), e.getMessage());
         }
     }
 
@@ -870,12 +833,10 @@ class PitReaderTest {
      */
     @Test
     void aFileWithNoRecordsIsAHardErrorHereWhereCLoadsNothing() throws IOException {
-        String path = tempFile("no-records.txt", "record-count:0\n");
+        String path = tempFile("no-records.txt", "");
 
-        ParseResult<PitProfile> result = new PitReader().parseWithResults(path);
+        assertThrows(ParseCancellationException.class, () -> new PitReader().parseWithResults(path));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty(), result.items()::toString);
     }
 
     // ---- Hard errors, which C also treats as fatal -----------------------
@@ -887,12 +848,10 @@ class PitReaderTest {
      */
     @Test
     void aDirectiveBeforeAnyNameIsAHardError() throws IOException {
-        String path = tempFile("no-header.txt", "record-count:1\nroom:1\n" + GOOD_RECORD + "\n");
+        String path = tempFile("no-header.txt", "room:1\n" + GOOD_RECORD + "\n");
 
-        ParseResult<PitProfile> result = new PitReader().parseWithResults(path);
+        assertThrows(ParseCancellationException.class, () -> new PitReader().parseWithResults(path));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty(), result.items()::toString);
     }
 
     /**
@@ -901,10 +860,8 @@ class PitReaderTest {
      */
     @Test
     void aNameLineWithNoNameIsAHardError() throws IOException {
-        ParseResult<PitProfile> result = load("empty-name.txt", "name:\nroom:1");
+        assertThrows(ParseCancellationException.class, () -> load("empty-name.txt", "name:\nroom:1"));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty(), result.items()::toString);
     }
 
     /**
@@ -913,10 +870,8 @@ class PitReaderTest {
      */
     @Test
     void anAllocLineWithOneNumberIsAHardError() throws IOException {
-        ParseResult<PitProfile> result = load("alloc-one.txt", "name:One\nalloc:3");
+        assertThrows(ParseCancellationException.class, () -> load("alloc-one.txt", "name:One\nalloc:3"));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty(), result.items()::toString);
     }
 
     /**
@@ -927,25 +882,8 @@ class PitReaderTest {
      */
     @Test
     void aLowerCaseFlagCodeIsAHardError() throws IOException {
-        ParseResult<PitProfile> result = load("lower-flag.txt", "name:Lower\nflags-req:animal");
+        assertThrows(ParseCancellationException.class, () -> load("lower-flag.txt", "name:Lower\nflags-req:animal"));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty(), result.items()::toString);
-    }
-
-    /**
-     * The {@code record-count:} header is the Java port's own and C has no such line, so the driver's
-     * soft check cannot help when it is missing: the grammar's first rule is the header, and a file
-     * without one is a syntax error that loads nothing.
-     */
-    @Test
-    void aMissingRecordCountHeaderIsAHardError() throws IOException {
-        String path = tempFile("no-count.txt", GOOD_RECORD + "\n");
-
-        ParseResult<PitProfile> result = new PitReader().parseWithResults(path);
-
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty(), result.items()::toString);
     }
 
     /**
@@ -954,31 +892,14 @@ class PitReaderTest {
      */
     @Test
     void blankLinesCommentsCrlfAndNoFinalNewlineAreAllRead() throws Exception {
-        String text = "# header\r\n\r\nrecord-count:1\r\n\r\n# note\r\nname:Plain\r\n\r\nroom:2\r\n# tail\r\nalloc:3:4";
+        String text = "# header\r\n\r\n\r\n# note\r\nname:Plain\r\n\r\nroom:2\r\n# tail\r\nalloc:3:4";
 
         ParseResult<PitProfile> result = new PitReader().parseWithResults(tempFile("layout.txt", text));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(List.of("Plain"), names(result));
         assertEquals(PitRoomType.PIT_TYPE_NEST, field(result.items().getFirst(), "roomType"));
         int ave = field(result.items().getFirst(), "ave");
         assertEquals(4, ave);
     }
 
-    /**
-     * A hard error and a soft error in the same file: the hard one wins, and the result is empty with
-     * its message, as the extractor's ordering promises.
-     */
-    @Test
-    void aHardErrorDiscardsTheItemsAndTheCountMismatchIsNotAlsoReported() throws IOException {
-        String path = tempFile("hard-and-count.txt",
-                "record-count:9\n" + GOOD_RECORD + "\nname:Broken\nalloc:3\n");
-
-        ParseResult<PitProfile> result = new PitReader().parseWithResults(path);
-
-        assertTrue(result.items().isEmpty(), result.items()::toString);
-        assertTrue(result.hasErrors());
-        assertTrue(result.errors().stream().noneMatch(e -> e.contains("record-count header declares")),
-                result.errors()::toString);
-    }
 }

@@ -8,7 +8,6 @@
 # flavor:<index>:<attr>:<text>
 # fixed:<index>:<sval>:<attr>:<text>
 
-record-count:8
 
 ##### Rings #####
 # These are precious or semi-precious stones

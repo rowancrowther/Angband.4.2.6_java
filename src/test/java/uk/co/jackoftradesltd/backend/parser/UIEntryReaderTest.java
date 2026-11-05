@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -38,7 +39,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * End-to-end tests for the UIEntry pipeline: text file → ANTLR lexer/parser →
@@ -50,10 +52,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * resolved. It also spot-checks the {@code parameter:}/{@code nameTag} split that this pipeline hinges
  * on (a generic entry gets its stat/element <em>kind</em>; a specialization keeps its full tagged name
  * and gets a concrete element). The remaining tests inject one defect each to exercise the error
- * channels: hard grammar errors (missing {@code record-count}) fail closed; an unknown
- * renderer/template or a bad {@code parameter:} kind is fatal, ending the load with a
- * {@link DataFileParseException} as a failed {@code parse_entry_*} callback does in C; a
- * record-count mismatch stays a reported error, with the resolved records returned.
+ * channels: a grammar error fails closed; an unknown renderer/template or a bad
+ * {@code parameter:} kind is fatal, ending the load with a {@link DataFileParseException} as a
+ * failed {@code parse_entry_*} callback does in C.
  *
  * <p>The assembler resolves against the renderer and base registries, so {@link #seedRegistries()}
  * loads the real renderer and base files and injects them into {@code UIRegistry}' private static
@@ -106,7 +107,6 @@ class UIEntryReaderTest {
     void cleanLoadOfTheRealFileResolvesAllEntries() throws IOException {
         ParseResult<UIEntry> result = new UIEntryReader().parseWithResults(REAL_FILE);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         // 47 records in the file, but the single stat_mod_ui_compact_0 + parameter:stat entry is
         // expanded into one tagged entry per stat (STR..CON), so 47 - 1 + 5 = 51 resolved entries.
         assertEquals(51, result.items().size());
@@ -134,11 +134,10 @@ class UIEntryReaderTest {
     void parameterAndNameTagSplitSurviveTheWholePipeline() throws IOException {
         // A generic (parameter:element, no tag) and a specialization (tag, no parameter:) together.
         String path = tempFile("split.txt",
-                "record-count:2\nname:generic_thing\nparameter:element\nname:tagged_thing<ACID>\n");
+                "name:generic_thing\nparameter:element\nname:tagged_thing<ACID>\n");
 
         ParseResult<UIEntry> result = new UIEntryReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(2, result.items().size());
 
         UIEntry generic = byName(result.items(), "generic_thing");
@@ -150,21 +149,7 @@ class UIEntryReaderTest {
         assertEquals(ElementEnum.ELEM_ACID, tagged.getParameter());
     }
 
-    // ---- soft errors (partial results survive) ----------------------------------------------
-
-    @Test
-    @Disabled("UIEntryAssembler.assemble() doesn't insert into results yet - embryo dispatch is "
-            + "stubbed out (260919); re-enable once it actually populates its return value")
-    void recordCountMismatchIsLoggedButValidRecordSurvives() throws IOException {
-        String path = tempFile("bad-count.txt", "record-count:5\nname:foo\n");
-
-        ParseResult<UIEntry> result = new UIEntryReader().parseWithResults(path);
-
-        assertEquals(1, result.items().size());
-        assertTrue(result.errors().stream()
-                        .anyMatch(e -> e.contains("declares 5") && e.contains("contains 1")),
-                result.errors()::toString);
-    }
+    // ---- fatal errors ------------------------------------------------------------------------
 
     /**
      * Read the file, expecting a fatal {@link DataFileParseException}, and return its message.
@@ -177,56 +162,33 @@ class UIEntryReaderTest {
     @Test
     void unknownRendererIsFatal() throws IOException {
         // A failed parse_entry_renderer ends the load in C; no partial list comes back.
-        String path = tempFile("bad-renderer.txt", "record-count:1\nname:foo\nrenderer:no_such_renderer\n");
+        String path = tempFile("bad-renderer.txt", "name:foo\nrenderer:no_such_renderer\n");
 
-        assertEquals("UI entry starting at line: 2 of file: " + path
+        assertEquals("UI entry starting at line: 1 of file: " + path
                 + " has an illegal renderer value: no_such_renderer", fatalMessage(path));
     }
 
     @Test
     void unknownTemplateIsFatal() throws IOException {
-        String path = tempFile("bad-template.txt", "record-count:1\nname:foo\ntemplate:no_such_base\n");
+        String path = tempFile("bad-template.txt", "name:foo\ntemplate:no_such_base\n");
 
-        assertEquals("UI entry starting at line: 2 of file: " + path
+        assertEquals("UI entry starting at line: 1 of file: " + path
                 + " has an illegal template value: no_such_base", fatalMessage(path));
     }
 
     @Test
     void illegalParameterKindIsFatal() throws IOException {
-        String path = tempFile("bad-param.txt", "record-count:1\nname:foo\nparameter:bogus\n");
+        String path = tempFile("bad-param.txt", "name:foo\nparameter:bogus\n");
 
-        assertEquals("UI entry starting at line: 2 of file: " + path
+        assertEquals("UI entry starting at line: 1 of file: " + path
                 + " has an illegal parameter value: bogus", fatalMessage(path));
     }
 
     // ---- reader plumbing (a valid record, so the assembler does not stop the load first) ----
 
     @Test
-    void recordCountMismatchIsReportedForAValidRecord() throws IOException {
-        // Declares 5, holds 1. The record resolves, so the load reaches extract() calling
-        // checkRecordCount with the number of records parsed.
-        String path = tempFile("count-5.txt", "record-count:5\nname:foo\ncombine:ADD\n");
-
-        ParseResult<UIEntry> result = new UIEntryReader().parseWithResults(path);
-
-        assertTrue(result.errors().stream()
-                        .anyMatch(e -> e.contains("declares 5 records, but file contains 1")),
-                result.errors()::toString);
-    }
-
-    @Test
-    void matchingRecordCountAddsNoCountError() throws IOException {
-        String path = tempFile("count-1.txt", "record-count:1\nname:foo\ncombine:ADD\n");
-
-        ParseResult<UIEntry> result = new UIEntryReader().parseWithResults(path);
-
-        assertFalse(result.hasErrors(), result.errors()::toString);
-        assertEquals(1, result.items().size());
-    }
-
-    @Test
     void parseReturnsTheSameItemsAsParseWithResults() throws IOException {
-        String path = tempFile("same.txt", "record-count:1\nname:foo\ncombine:ADD\n");
+        String path = tempFile("same.txt", "name:foo\ncombine:ADD\n");
 
         List<String> withResults = new UIEntryReader().parseWithResults(path).items().stream()
                 .map(UIEntry::getName).toList();
@@ -243,30 +205,19 @@ class UIEntryReaderTest {
         assertThrows(IOException.class, () -> new UIEntryReader().parseWithResults(path));
     }
 
+    /**
+     * A syntax error stops the load, so no partial list comes back.
+     *
+     * <p>Function aSyntaxErrorFailsClosed coded on 261104, commented in full on 261104. It replaces
+     * syntaxErrorAfterAValidHeaderFailsClosedAndSkipsTheCountCheck.
+     */
     @Test
-    void syntaxErrorAfterAValidHeaderFailsClosedAndSkipsTheCountCheck() throws IOException {
-        // A hard error must abort before extract() reaches checkRecordCount, so the only
-        // messages are the grammar's, and no partial list comes back.
-        String path = tempFile("garbage.txt", "record-count:1\nthis is not a directive\n");
+    void aSyntaxErrorFailsClosed() throws IOException {
+        String path = tempFile("garbage.txt", "this is not a directive\n");
 
-        ParseResult<UIEntry> result = new UIEntryReader().parseWithResults(path);
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
-        assertTrue(result.errors().stream().noneMatch(e -> e.contains("record-count header")),
-                result.errors()::toString);
+        assertThrows(ParseCancellationException.class, () -> new UIEntryReader().parseWithResults(path));
     }
 
     // ---- hard errors (fail-closed: empty list) ----------------------------------------------
 
-    @Test
-    void missingRecordCountHeaderFailsClosed() throws IOException {
-        // No record-count directive -> the file rule can't match -> grammar error via ParseErrors.
-        String path = tempFile("no-header.txt", "name:foo\n");
-
-        ParseResult<UIEntry> result = new UIEntryReader().parseWithResults(path);
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
-    }
 }

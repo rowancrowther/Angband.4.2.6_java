@@ -15,16 +15,8 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from MonsterGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/MonsterGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.monster;
-
-    import uk.co.jackoftradesltd.backend.parser.monster.MonsterParseRecord;
-    import uk.co.jackoftradesltd.backend.parser.monster.MonsterParseRecord.*;
-
-    import java.util.List;
-    import java.util.ArrayList;
-    import java.util.Map;
-    import java.util.HashMap;
 
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
@@ -38,13 +30,6 @@ import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
  */
 @SuppressWarnings("CheckReturnValue")
 public class MonsterGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements MonsterGrammarVisitor<T> {
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitRecordCount(MonsterGrammar.RecordCountContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *

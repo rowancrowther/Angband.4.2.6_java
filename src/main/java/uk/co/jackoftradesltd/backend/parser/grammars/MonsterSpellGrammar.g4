@@ -13,11 +13,6 @@ import EffectBlock;
     import java.util.List;
 }
 
-recordCount
-        returns[String count]
-        :   RECORD_COUNT INTEGER {$count = $INTEGER.getText(); }
-        ;
-
 name
         returns[String nameStr, int line]
         :   NAME STRING { $nameStr = $STRING.getText(); $line = $start.getLine(); }
@@ -166,8 +161,7 @@ powerCutoffBlock
           ;
         
 file
-        returns[String declaredRecordCount, List<MonsterSpellParseRecord> monsterSpells]
-        :   recordCount { $declaredRecordCount = $recordCount.count;
-                          $monsterSpells = new ArrayList<>(); }
+        returns[List<MonsterSpellParseRecord> monsterSpells]
+        :   { $monsterSpells = new ArrayList<>(); }
             (monsterSpell { $monsterSpells.add($monsterSpell.spell); } )+ EOF
         ;

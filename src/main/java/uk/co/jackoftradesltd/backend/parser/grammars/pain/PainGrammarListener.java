@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from PainGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/PainGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.pain;
 
 import org.antlr.v4.runtime.tree.ParseTreeListener;
@@ -25,16 +25,6 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
  * {@link PainGrammar}.
  */
 public interface PainGrammarListener extends ParseTreeListener {
-	/**
-	 * Enter a parse tree produced by {@link PainGrammar#recordCount}.
-	 * @param ctx the parse tree
-	 */
-	void enterRecordCount(PainGrammar.RecordCountContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link PainGrammar#recordCount}.
-	 * @param ctx the parse tree
-	 */
-	void exitRecordCount(PainGrammar.RecordCountContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link PainGrammar#type}.
 	 * @param ctx the parse tree

@@ -21,7 +21,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftradesltd.backend.parser.*;
 import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
-import uk.co.jackoftradesltd.channel.parser.ErrorParsing;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.frontend.colour.FlickerTable;
 import uk.co.jackoftradesltd.frontend.colour.VisualsCycler;
@@ -54,25 +53,33 @@ import java.io.IOException;
  * against the {@code MonsterSpell} enum, as C resolves them against the static
  * {@code r_info_spell_flags} names.
  *
- * <p>Failure handling is the one place the loaders differ from C, and they all behave alike. C's run
- * functions call {@code parse_file_quit_not_found} ({@code datafile.c}), which quits on a missing
- * file, and {@code init_arrays} quits on any parser error. Here an IO failure is logged at fatal
- * level and rethrown wrapped in a {@link RuntimeException}, so a missing or unreadable file stops
- * start-up as it does in C. A soft error is gentler than in C: it is reported, the records that did
- * assemble are kept, and the loader throws a {@link RuntimeException} only when
- * {@link ErrorParsing#reportAndCheck} returns {@code false}, which it does when the file carried
- * errors and yielded no records at all. Because every {@code IOException} is wrapped, none escapes
- * a loader.
+ * <p>Every error is fatal, as in C, and the loaders all behave alike. C's run functions call
+ * {@code parse_file_quit_not_found} ({@code datafile.c}), which quits on a missing file, and
+ * {@code init_arrays} quits on any parser error. There are three ways a load fails here, and only
+ * the first is handled by the loaders:
+ * <ul>
+ *   <li>an {@link IOException} from the reader is logged at {@code FATAL} and rethrown wrapped in a
+ *       {@link RuntimeException}, so none escapes a loader;</li>
+ *   <li>a grammar or lexer error is thrown by the reader as a {@code ParseCancellationException}
+ *       ({@code ParseErrors.throwIfAny});</li>
+ *   <li>a record the assembler refuses is thrown as a {@code DataFileParseException}.</li>
+ * </ul>
+ * The last two are unchecked and pass through every loader unlogged and unwrapped;
+ * {@code GameConstants.init()} catches them and names the file. Nothing is registered from a file
+ * that fails, so the registry never holds a partial list.
  *
- * <p>Class MonsterDataLoader coded before 261011, commented in full on 261013.
+ * <p>Class MonsterDataLoader coded before 261011, commented in full on 261013, failure paragraph
+ * rewritten on 261104 for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
 public class MonsterDataLoader {
     /**
-     * Log4j logger for this class, used by every loader to report a data problem or an IO failure.
+     * Log4j logger for this class, used by every loader to report an IO failure at {@code FATAL}
+     * before it is rethrown. Grammar and assembler errors are not logged here (see the class block).
      *
-     * <p>Field logger coded before 261011, commented in full on 261013.
+     * <p>Field logger coded before 261011, commented in full on 261013, updated on 261104 for the
+     * removal of the soft-error path.
      */
     private static final Logger logger = LogManager.getLogger(MonsterDataLoader.class);
 
@@ -100,20 +107,20 @@ public class MonsterDataLoader {
      * ({@code z_info->mon_blows_max}); this sizes each to its own race's blow count, as the race's
      * blow list is not padded either (see {@link MonsterLore}).
      * <p>
-     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the races that did
-     * assemble are registered, per the partial-results contract. An IO failure, or a file that
-     * carries errors and yields no races, is fatal (see the class block). Watch the second pass
-     * here: friend and shape references are resolved against the races just registered, so a race
-     * dropped by a soft error becomes an unresolvable reference for its neighbours rather than a
-     * silent absence. A reference that cannot be resolved throws from
-     * {@link MonsterRace#resolveFriends()} or {@link MonsterRace#resolveShapes()} and is not caught
-     * here, which stops the pass part-way, so only the races before it have lore.
+     * Any error in the file is fatal and nothing is registered (see the class block). The second
+     * pass is the exception to "nothing registered": it runs after the races are registered, and a
+     * friend or shape reference that cannot be resolved throws from
+     * {@link MonsterRace#resolveFriends()} or {@link MonsterRace#resolveShapes()}. That is not caught
+     * here, so it stops the load part-way, with the races registered and only those before it given
+     * lore.
      * <p>
      * A race that already has a lore record keeps it, and only has its blows sized.
      *
-     * <p>Function loadMonsters coded before 261011, commented in full on 261013.
+     * <p>Function loadMonsters coded before 261011, commented in full on 261013, updated on 261104 for the
+     * removal of the soft-error path.
      *
-     * @throws RuntimeException if {@code monster.txt} cannot be read or yields no races
+     * @throws RuntimeException if {@code monster.txt} cannot be read; or, unwrapped, if it holds a
+     *                          grammar or assembler error or a reference that cannot be resolved
      */
     public static void loadMonsters() {
         MonsterReader parser = new MonsterReader();
@@ -121,12 +128,6 @@ public class MonsterDataLoader {
 
         try {
             ParseResult<MonsterRace> result = parser.parseWithResults(filename);
-
-            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
-                String message = "Error while parsing file " + filename;
-                logger.fatal(message);
-                throw new RuntimeException(message);
-            }
 
             MonsterRegistry.setMonsterRaces(result.items());
             
@@ -163,14 +164,15 @@ public class MonsterDataLoader {
      * {@link MonsterRegistry#getMonsterPitTypeMax()} is the plain size (see the registry's class
      * block).
      * <p>
-     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the profiles that did
-     * assemble are registered, per the partial-results contract. An IO failure, or a file that
-     * carries errors and yields no profiles, is fatal (see the class block). {@code MonsterRegistry}
-     * has no accessor for the profiles yet, so nothing reads the result back.
+     * Any error in the file is fatal and nothing is registered (see the class block).
+     * {@code MonsterRegistry} has no accessor for the profiles yet, so nothing reads the result
+     * back.
      *
-     * <p>Function loadPitProfiles coded before 261011, commented in full on 261013.
+     * <p>Function loadPitProfiles coded before 261011, commented in full on 261013, updated on 261104 for the
+     * removal of the soft-error path.
      *
-     * @throws RuntimeException if {@code pit.txt} cannot be read or yields no profiles
+     * @throws RuntimeException if {@code pit.txt} cannot be read; or, unwrapped, if it holds a
+     *                          grammar or assembler error
      */
     public static void loadPitProfiles() {
         PitReader parser = new PitReader();
@@ -178,12 +180,6 @@ public class MonsterDataLoader {
 
         try {
             ParseResult<PitProfile> result = parser.parseWithResults(filename);
-
-            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
-                String message = "Error while parsing file " + filename;
-                logger.fatal(message);
-                throw new RuntimeException(message);
-            }
 
             MonsterRegistry.setMonsterPitProfiles(result.items());
         } catch (IOException e) {
@@ -202,21 +198,21 @@ public class MonsterDataLoader {
      * module quits, if no cycler table came out of the parse.
      * <p>
      * The odd one out: {@code visuals.txt} is parsed <em>twice</em>, once for cyclers and once for
-     * flickers, so this is the only loader that reports two {@link ParseResult}s - both are passed
-     * through {@link ErrorParsing#reportAndCheck} so neither parse's errors are lost. An IO failure,
-     * or either parse carrying errors and yielding nothing, is fatal (see the class block).
+     * flickers, so this is the only loader that gets two {@link ParseResult}s. Any error in either
+     * parse is fatal (see the class block).
      * <p>
      * Both registrations take {@code items().getFirst()}, so unlike its neighbours this loader
-     * needs a non-empty parse. A hard parse failure yields an empty list carrying its errors, which
-     * {@code reportAndCheck} turns into the fatal throw before {@code getFirst()} is reached; the
-     * {@link java.util.NoSuchElementException} can only come from a parse that reported no errors
-     * and still produced no table. Both results are checked before either table is registered, so a
-     * failed flicker parse leaves the cyclers unset as well.
+     * needs a non-empty parse. A failed parse throws inside the reader, so {@code getFirst()} is
+     * only reached after a clean one; the {@link java.util.NoSuchElementException} can only come
+     * from a clean parse that still produced no table, and it is not caught here. Both files are
+     * parsed before either table is registered, so a failed flicker parse leaves the cyclers unset
+     * as well.
      *
-     * <p>Function loadVisualTables coded before 261011, commented in full on 261013.
+     * <p>Function loadVisualTables coded before 261011, commented in full on 261013, updated on 261104 for the
+     * removal of the soft-error path.
      *
-     * @throws RuntimeException if {@code visuals.txt} cannot be read, or either parse carries errors
-     *                          and yields nothing
+     * @throws RuntimeException if {@code visuals.txt} cannot be read; or, unwrapped, if either parse
+     *                          holds a grammar or assembler error
      */
     public static void loadVisualTables() {
         VisualsReader parser = new VisualsReader();
@@ -225,18 +221,7 @@ public class MonsterDataLoader {
         try {
             ParseResult<VisualsCycler> cyclers = parser.parseCyclerWithResults(filename);
             ParseResult<FlickerTable> flickers = parser.parseFlickerWithResults(filename);
-
-            if (!ErrorParsing.reportAndCheck(filename, cyclers, logger)) {
-                String message = "Error while parsing file " + filename;
-                logger.fatal(message);
-                throw new RuntimeException(message);
-            }
-            if (!ErrorParsing.reportAndCheck(filename, flickers, logger)) {
-                String message = "Error while parsing file " + filename;
-                logger.fatal(message);
-                throw new RuntimeException(message);
-            }
-
+            
             MonsterRegistry.setVisualsCyclerTable(cyclers.items().getFirst());
             MonsterRegistry.setVisualsFlickerTable(flickers.items().getFirst());
         } catch (IOException e) {
@@ -256,15 +241,15 @@ public class MonsterDataLoader {
      * {@link MonsterRegistry#lookupSummon}, which throws if the summons have not been loaded.
      * Loading summons in turn needs monster bases, which need monster pains.
      * <p>
-     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the spells that did
-     * assemble are registered, per the partial-results contract. An IO failure, or a file that
-     * carries errors and yields no spells, is fatal (see the class block). {@code MonsterRegistry}
-     * has no accessor for the spell types yet, and neither the monster nor the pit loader depends
-     * on them.
+     * Any error in the file is fatal and nothing is registered (see the class block).
+     * {@code MonsterRegistry} has no accessor for the spell types yet, and neither the monster nor
+     * the pit loader depends on them.
      *
-     * <p>Function loadMonsterSpellTypes coded before 261011, commented in full on 261013.
+     * <p>Function loadMonsterSpellTypes coded before 261011, commented in full on 261013, updated on 261104 for the
+     * removal of the soft-error path.
      *
-     * @throws RuntimeException if {@code monster_spell.txt} cannot be read or yields no spells
+     * @throws RuntimeException if {@code monster_spell.txt} cannot be read; or, unwrapped, if it
+     *                          holds a grammar or assembler error
      */
     public static void loadMonsterSpellTypes() {
         MonsterSpellReader parser = new MonsterSpellReader();
@@ -272,12 +257,6 @@ public class MonsterDataLoader {
 
         try {
             ParseResult<MonsterSpellType> result = parser.parseWithResults(filename);
-
-            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
-                String message = "Error while parsing file " + filename;
-                logger.fatal(message);
-                throw new RuntimeException(message);
-            }
 
             MonsterRegistry.setMonsterSpellTypes(result.items());
         } catch (IOException e) {
@@ -298,15 +277,15 @@ public class MonsterDataLoader {
      * The list here has no blank slot and {@link MonsterRegistry#getMonsterBlowsEffectsMax()} is the
      * plain size (see the registry's class block).
      * <p>
-     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the effects that did
-     * assemble are registered, per the partial-results contract. An IO failure, or a file that
-     * carries errors and yields no effects, is fatal (see the class block), so
+     * Any error in the file is fatal and nothing is registered (see the class block), so
      * {@link #loadMonsters()} never reaches {@link MonsterRegistry#lookupBlowEffect} with the
      * table unloaded.
      *
-     * <p>Function loadBlowEffects coded before 261011, commented in full on 261013.
+     * <p>Function loadBlowEffects coded before 261011, commented in full on 261013, updated on 261104 for the
+     * removal of the soft-error path.
      *
-     * @throws RuntimeException if {@code blow_effects.txt} cannot be read or yields no effects
+     * @throws RuntimeException if {@code blow_effects.txt} cannot be read; or, unwrapped, if it
+     *                          holds a grammar or assembler error
      */
     public static void loadBlowEffects() {
         BlowEffectReader parser = new BlowEffectReader();
@@ -314,12 +293,6 @@ public class MonsterDataLoader {
 
         try {
             ParseResult<BlowEffect> result = parser.parseWithResults(filename);
-
-            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
-                String message = "Error while parsing file " + filename;
-                logger.fatal(message);
-                throw new RuntimeException(message);
-            }
             
             MonsterRegistry.setBlowEffects(result.items());
         } catch (IOException e) {
@@ -339,15 +312,15 @@ public class MonsterDataLoader {
      * has no blank slot and {@link MonsterRegistry#getMonsterBlowsMethodsMax()} is the plain size
      * (see the registry's class block).
      * <p>
-     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the methods that did
-     * assemble are registered, per the partial-results contract. An IO failure, or a file that
-     * carries errors and yields no methods, is fatal (see the class block), so
+     * Any error in the file is fatal and nothing is registered (see the class block), so
      * {@link #loadMonsters()} never reaches {@link MonsterRegistry#lookupBlowMethod} with the
      * table unloaded.
      *
-     * <p>Function loadBlowMethods coded before 261011, commented in full on 261013.
+     * <p>Function loadBlowMethods coded before 261011, commented in full on 261013, updated on 261104 for the
+     * removal of the soft-error path.
      *
-     * @throws RuntimeException if {@code blow_methods.txt} cannot be read or yields no methods
+     * @throws RuntimeException if {@code blow_methods.txt} cannot be read; or, unwrapped, if it
+     *                          holds a grammar or assembler error
      */
     public static void loadBlowMethods() {
         BlowMethodReader parser = new BlowMethodReader();
@@ -355,12 +328,6 @@ public class MonsterDataLoader {
 
         try {
             ParseResult<BlowMethod> result = parser.parseWithResults(filename);
-
-            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
-                String message = "Error while parsing file " + filename;
-                logger.fatal(message);
-                throw new RuntimeException(message);
-            }
             
             MonsterRegistry.setBlowMethods(result.items());
         } catch (IOException e) {
@@ -379,19 +346,19 @@ public class MonsterDataLoader {
      * <p>
      * C's finish function also back-patches each summon's fallback index from its {@code fallback:}
      * name, with -1 for a name that matches nothing. Here the assembler's second pass links the
-     * {@code Summon} references instead, and an unresolvable fallback name is reported but the
-     * summon is kept with a {@code null} fallback. C's {@code summon_max} is one higher than the
+     * {@code Summon} references instead, and an unresolvable fallback name is not a fault: the
+     * summon is kept with a {@code null} fallback, without a report, as C stores -1. C's {@code summon_max} is one higher than the
      * record count and the registry keeps no count.
      * <p>
-     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the summons that did
-     * assemble are registered, per the partial-results contract. An IO failure, or a file that
-     * carries errors and yields no summons, is fatal (see the class block): {@code lookupSummon}
-     * throws {@link IllegalStateException} while the summons are unloaded, so continuing past a
-     * failure here would only relocate the crash.
+     * Any error in the file is fatal and nothing is registered (see the class block):
+     * {@code lookupSummon} throws {@link IllegalStateException} while the summons are unloaded, so
+     * continuing past a failure here would only relocate the crash.
      *
-     * <p>Function loadSummons coded before 261011, commented in full on 261013.
+     * <p>Function loadSummons coded before 261011, commented in full on 261013, updated on 261104 for the
+     * removal of the soft-error path.
      *
-     * @throws RuntimeException if {@code summon.txt} cannot be read or yields no summons
+     * @throws RuntimeException if {@code summon.txt} cannot be read; or, unwrapped, if it holds a
+     *                          grammar or assembler error
      */
     public static void loadSummons() {
         SummonReader parser = new SummonReader();
@@ -399,12 +366,6 @@ public class MonsterDataLoader {
 
         try {
             ParseResult<Summon> result = parser.parseWithResults(filename);
-
-            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
-                String message = "Error while parsing file " + filename;
-                logger.fatal(message);
-                throw new RuntimeException(message);
-            }
 
             MonsterRegistry.setSummons(result.items());
         } catch (IOException e) {
@@ -421,15 +382,15 @@ public class MonsterDataLoader {
      * monsters and pit profiles, all of which resolve a base by name. C's finish function only keeps
      * the parsed list as {@code rb_info}.
      * <p>
-     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the bases that did
-     * assemble are registered, per the partial-results contract. An IO failure, or a file that
-     * carries errors and yields no bases, is fatal (see the class block); with four loaders
-     * downstream this is one to stop on rather than let resurface as a wall of unresolved base
-     * names.
+     * Any error in the file is fatal and nothing is registered (see the class block); with four
+     * loaders downstream this is one to stop on rather than let resurface as a wall of unresolved
+     * base names.
      *
-     * <p>Function loadMonsterBases coded before 261011, commented in full on 261013.
+     * <p>Function loadMonsterBases coded before 261011, commented in full on 261013, updated on 261104 for the
+     * removal of the soft-error path.
      *
-     * @throws RuntimeException if {@code monster_base.txt} cannot be read or yields no bases
+     * @throws RuntimeException if {@code monster_base.txt} cannot be read; or, unwrapped, if it
+     *                          holds a grammar or assembler error
      */
     public static void loadMonsterBases() {
         MonsterBaseReader parser = new MonsterBaseReader();
@@ -437,12 +398,6 @@ public class MonsterDataLoader {
 
         try {
             ParseResult<MonsterBase> result = parser.parseWithResults(filename);
-
-            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
-                String message = "Error while parsing file " + filename;
-                logger.fatal(message);
-                throw new RuntimeException(message);
-            }
 
             MonsterRegistry.setMonsterBases(result.items());
         } catch (IOException e) {
@@ -463,14 +418,14 @@ public class MonsterDataLoader {
      * {@link MonsterRegistry#getMonsterPainMsgMax()} is the list size (see the registry's class
      * block). The shipped {@code pain.txt} has twelve sets, indices 1 to 12.
      * <p>
-     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the pain sets that
-     * did assemble are registered, per the partial-results contract. An IO failure, or a file that
-     * carries errors and yields no sets, is fatal (see the class block), stopping the load at the
-     * root of the monster chain.
+     * Any error in the file is fatal and nothing is registered (see the class block), stopping the
+     * load at the root of the monster chain.
      *
-     * <p>Function loadPain coded before 261011, commented in full on 261013.
+     * <p>Function loadPain coded before 261011, commented in full on 261013, updated on 261104 for the
+     * removal of the soft-error path.
      *
-     * @throws RuntimeException if {@code pain.txt} cannot be read or yields no pain sets
+     * @throws RuntimeException if {@code pain.txt} cannot be read; or, unwrapped, if it holds a
+     *                          grammar or assembler error
      */
     public static void loadPain() {
         PainReader parser = new PainReader();
@@ -478,12 +433,6 @@ public class MonsterDataLoader {
 
         try {
             ParseResult<MonsterPain> result = parser.parseWithResults(filename);
-
-            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
-                String message = "Error while parsing file " + filename;
-                logger.fatal(message);
-                throw new RuntimeException(message);
-            }
 
             MonsterRegistry.setMonsterPains(result.items());
         } catch (IOException e) {

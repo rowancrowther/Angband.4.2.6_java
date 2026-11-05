@@ -28,7 +28,6 @@ import uk.co.jackoftradesltd.middle.objects.Flavour;
 import uk.co.jackoftradesltd.middle.objects.FlavourKind;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -57,7 +56,7 @@ class FlavourKindAssemblerBlockTest {
     }
 
     private static List<FlavourKind> assemble(FlavourKindParseRecord... blocks) {
-        return new FlavourKindAssembler().assemble(List.of(blocks), new ArrayList<>(), FILE);
+        return new FlavourKindAssembler().assemble(List.of(blocks), FILE);
     }
 
     private static FlavourKindParseRecord block(String tval, String glyph, int line, FlavourParseRecord... flavours) {

@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from ItemObjectGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ItemObjectGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.itemobject;
 
 import org.antlr.v4.runtime.tree.ParseTreeListener;
@@ -25,16 +25,6 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
  * {@link ItemObjectGrammar}.
  */
 public interface ItemObjectGrammarListener extends ParseTreeListener {
-	/**
-	 * Enter a parse tree produced by {@link ItemObjectGrammar#recordCount}.
-	 * @param ctx the parse tree
-	 */
-	void enterRecordCount(ItemObjectGrammar.RecordCountContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link ItemObjectGrammar#recordCount}.
-	 * @param ctx the parse tree
-	 */
-	void exitRecordCount(ItemObjectGrammar.RecordCountContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link ItemObjectGrammar#name}.
 	 * @param ctx the parse tree

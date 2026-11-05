@@ -148,20 +148,18 @@ class PlayerClassAssemblerTest {
                 "", "", "", "", "", List.of(), List.of(), List.of(), titles, null, LINE);
     }
 
-    private static List<PlayerClass> run(List<String> errors, PlayerClassParseRecord... records) {
-        return new PlayerClassAssembler().assemble(List.of(records), errors, FILE);
+    private static List<PlayerClass> run(PlayerClassParseRecord... records) {
+        return new PlayerClassAssembler().assemble(List.of(records), FILE);
     }
 
     private static PlayerClass one(PlayerClassParseRecord record) {
-        List<String> errors = new ArrayList<>();
-        List<PlayerClass> result = run(errors, record);
+        List<PlayerClass> result = run(record);
         assertEquals(1, result.size());
-        assertTrue(errors.isEmpty(), errors::toString);
         return result.getFirst();
     }
 
     private static DataFileParseException stops(PlayerClassParseRecord record) {
-        return assertThrows(DataFileParseException.class, () -> run(new ArrayList<>(), record));
+        return assertThrows(DataFileParseException.class, () -> run(record));
     }
 
     private static void assertNames(DataFileParseException e, String... parts) {
@@ -298,7 +296,7 @@ class PlayerClassAssemblerTest {
     @Test
     @DisplayName("records come back in file order, which is C's cidx order")
     void classesKeepFileOrder() {
-        List<PlayerClass> result = run(new ArrayList<>(), bare("First"), bare("Second"), bare("Third"));
+        List<PlayerClass> result = run(bare("First"), bare("Second"), bare("Third"));
 
         assertEquals(List.of("First", "Second", "Third"),
                 result.stream().map(PlayerClass::getName).toList());
@@ -307,7 +305,7 @@ class PlayerClassAssemblerTest {
     @Test
     @DisplayName("an empty record list gives an empty result")
     void noRecords() {
-        assertTrue(run(new ArrayList<>()).isEmpty());
+        assertTrue(run().isEmpty());
     }
 
     @Test
@@ -473,19 +471,9 @@ class PlayerClassAssemblerTest {
         PlayerClassParseRecord bad = withOFlags("NOTAFLAG");
 
         DataFileParseException e = assertThrows(DataFileParseException.class,
-                () -> run(new ArrayList<>(), bare("Good"), bad, bare("NeverReached")));
+                () -> run(bare("Good"), bad, bare("NeverReached")));
 
         assertNames(e, "OF_NOTAFLAG");
-    }
-
-    @Test
-    @DisplayName("the errors list is not written to when every record is good")
-    void theErrorsListStaysEmpty() {
-        List<String> errors = new ArrayList<>();
-
-        run(errors, bare("A"), withTitles(3));
-
-        assertTrue(errors.isEmpty(), errors::toString);
     }
 
     // ---- ACCEPTED DEVIATION --------------------------------------------------------------------

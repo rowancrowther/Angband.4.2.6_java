@@ -26,7 +26,6 @@ import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -91,7 +90,7 @@ class ActivationIndexTest {
     @Test
     @DisplayName("on the real file the index equals the slot: DRAGON_POWER 0 up to CURE_POISON 162")
     void indexEqualsSlotOnTheRealFile() throws Exception {
-        List<Activation> activations = new ActivationReader().parseWithResult(REAL_FILE).items();
+        List<Activation> activations = new ActivationReader().parseWithResults(REAL_FILE).items();
 
         assertEquals(163, activations.size());
         for (int slot = 0; slot < activations.size(); slot++) {
@@ -105,12 +104,9 @@ class ActivationIndexTest {
     @Test
     @DisplayName("every record is numbered, with no gap: three records are 0, 1, 2 in stored order")
     void everyRecordIsNumberedWithNoGap() throws Exception {
-        List<String> errors = new ArrayList<>();
-
         List<Activation> out = new ActivationAssembler().assemble(
-                List.of(rec("FIRST", "5", 3), rec("MIDDLE", "5", 9), rec("LAST", "5", 15)), errors, "test.txt");
+                List.of(rec("FIRST", "5", 3), rec("MIDDLE", "5", 9), rec("LAST", "5", 15)), "test.txt");
 
-        assertTrue(errors.isEmpty(), errors::toString);
         assertEquals(3, out.size());
         assertEquals("LAST", out.get(0).getName(), "last file record is stored first, as in C");
         assertEquals(0, indexOf(out.get(0)));
@@ -126,18 +122,18 @@ class ActivationIndexTest {
         // C quits on the first record that fails, so the survivors are never counted or numbered.
         assertThrows(DataFileParseException.class, () -> new ActivationAssembler().assemble(
                 List.of(rec("FIRST", "5", 3), rec("BROKEN", "high", 9), rec("LAST", "5", 15)),
-                new ArrayList<>(), "test.txt"));
+                "test.txt"));
     }
 
     @Test
     @DisplayName("an empty record list assembles to an empty list")
     void emptyInputGivesEmptyList() {
-        assertTrue(new ActivationAssembler().assemble(List.of(), new ArrayList<>(), "test.txt").isEmpty());
+        assertTrue(new ActivationAssembler().assemble(List.of(), "test.txt").isEmpty());
     }
 
     @Test
     @DisplayName("the real file loads without errors")
     void realFileIsClean() throws IOException {
-        assertFalse(new ActivationReader().parseWithResult(REAL_FILE).hasErrors());
+        assertDoesNotThrow(() -> new ActivationReader().parseWithResults(REAL_FILE));
     }
 }

@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from TerrainFeatureGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/TerrainFeatureGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.terrainfeature;
 
 import org.antlr.v4.runtime.*;
@@ -40,46 +40,45 @@ public class TerrainFeatureGrammar extends Parser {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		RECORD_COUNT=1, CODE=2, NAME=3, MIMIC=4, PRIORITY=5, FLAGS=6, DIGGING=7, 
-		WALK_MESSAGE=8, RUN_MESSAGE=9, HURT_MESSAGE=10, DIE_MESSAGE=11, CONFUSED_MESSAGE=12, 
-		LOOK_PREFIX=13, LOOK_IN_PREPOSITION=14, RESIST_FLAG=15, DESC=16, INTEGER=17, 
-		COMMENT=18, EOL=19, GRAPHICS=20, COLOUR_ONLY=21, GLYPH_ONLY=22, STRING=23, 
-		FLAG=24, FLAG_OR=25, FLAG_EOL=26, COLOUR_VALUES=27, GLYPH_VALUES=28, GLYPH_COLON_SWITCH=29, 
-		GLYPH_EOL=30;
+		CODE=1, NAME=2, MIMIC=3, PRIORITY=4, FLAGS=5, DIGGING=6, WALK_MESSAGE=7, 
+		RUN_MESSAGE=8, HURT_MESSAGE=9, DIE_MESSAGE=10, CONFUSED_MESSAGE=11, LOOK_PREFIX=12, 
+		LOOK_IN_PREPOSITION=13, RESIST_FLAG=14, DESC=15, INTEGER=16, COMMENT=17, 
+		EOL=18, GRAPHICS=19, COLOUR_ONLY=20, GLYPH_ONLY=21, STRING=22, FLAG=23, 
+		FLAG_OR=24, FLAG_EOL=25, COLOUR_VALUES=26, GLYPH_VALUES=27, GLYPH_COLON_SWITCH=28, 
+		GLYPH_EOL=29;
 	public static final int
-		RULE_recordCount = 0, RULE_code = 1, RULE_name = 2, RULE_graphics = 3, 
-		RULE_mimic = 4, RULE_priority = 5, RULE_flags = 6, RULE_digging = 7, RULE_walk_message = 8, 
-		RULE_run_message = 9, RULE_hurt_message = 10, RULE_die_message = 11, RULE_confused_message = 12, 
-		RULE_look_prefix = 13, RULE_look_in_preposition = 14, RULE_resist_flag = 15, 
-		RULE_desc = 16, RULE_terrain = 17, RULE_file = 18;
+		RULE_code = 0, RULE_name = 1, RULE_graphics = 2, RULE_mimic = 3, RULE_priority = 4, 
+		RULE_flags = 5, RULE_digging = 6, RULE_walk_message = 7, RULE_run_message = 8, 
+		RULE_hurt_message = 9, RULE_die_message = 10, RULE_confused_message = 11, 
+		RULE_look_prefix = 12, RULE_look_in_preposition = 13, RULE_resist_flag = 14, 
+		RULE_desc = 15, RULE_terrain = 16, RULE_file = 17;
 	private static String[] makeRuleNames() {
 		return new String[] {
-			"recordCount", "code", "name", "graphics", "mimic", "priority", "flags", 
-			"digging", "walk_message", "run_message", "hurt_message", "die_message", 
-			"confused_message", "look_prefix", "look_in_preposition", "resist_flag", 
-			"desc", "terrain", "file"
+			"code", "name", "graphics", "mimic", "priority", "flags", "digging", 
+			"walk_message", "run_message", "hurt_message", "die_message", "confused_message", 
+			"look_prefix", "look_in_preposition", "resist_flag", "desc", "terrain", 
+			"file"
 		};
 	}
 	public static final String[] ruleNames = makeRuleNames();
 
 	private static String[] makeLiteralNames() {
 		return new String[] {
-			null, "'record-count:'", "'code:'", "'name:'", "'mimic:'", "'priority:'", 
-			"'flags:'", "'digging:'", "'walk-msg:'", "'run-msg:'", "'hurt-msg:'", 
-			"'die-msg:'", "'confused-msg:'", "'look-prefix:'", "'look-in-preposition:'", 
-			"'resist-flag:'", "'desc:'", null, null, null, "'graphics:'", "'color:'", 
-			"'glyph:'", null, null, null, null, null, null, "':'"
+			null, "'code:'", "'name:'", "'mimic:'", "'priority:'", "'flags:'", "'digging:'", 
+			"'walk-msg:'", "'run-msg:'", "'hurt-msg:'", "'die-msg:'", "'confused-msg:'", 
+			"'look-prefix:'", "'look-in-preposition:'", "'resist-flag:'", "'desc:'", 
+			null, null, null, "'graphics:'", "'color:'", "'glyph:'", null, null, 
+			null, null, null, null, "':'"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
-			null, "RECORD_COUNT", "CODE", "NAME", "MIMIC", "PRIORITY", "FLAGS", "DIGGING", 
-			"WALK_MESSAGE", "RUN_MESSAGE", "HURT_MESSAGE", "DIE_MESSAGE", "CONFUSED_MESSAGE", 
-			"LOOK_PREFIX", "LOOK_IN_PREPOSITION", "RESIST_FLAG", "DESC", "INTEGER", 
-			"COMMENT", "EOL", "GRAPHICS", "COLOUR_ONLY", "GLYPH_ONLY", "STRING", 
-			"FLAG", "FLAG_OR", "FLAG_EOL", "COLOUR_VALUES", "GLYPH_VALUES", "GLYPH_COLON_SWITCH", 
-			"GLYPH_EOL"
+			null, "CODE", "NAME", "MIMIC", "PRIORITY", "FLAGS", "DIGGING", "WALK_MESSAGE", 
+			"RUN_MESSAGE", "HURT_MESSAGE", "DIE_MESSAGE", "CONFUSED_MESSAGE", "LOOK_PREFIX", 
+			"LOOK_IN_PREPOSITION", "RESIST_FLAG", "DESC", "INTEGER", "COMMENT", "EOL", 
+			"GRAPHICS", "COLOUR_ONLY", "GLYPH_ONLY", "STRING", "FLAG", "FLAG_OR", 
+			"FLAG_EOL", "COLOUR_VALUES", "GLYPH_VALUES", "GLYPH_COLON_SWITCH", "GLYPH_EOL"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -134,55 +133,6 @@ public class TerrainFeatureGrammar extends Parser {
 	}
 
 	@SuppressWarnings("CheckReturnValue")
-	public static class RecordCountContext extends ParserRuleContext {
-		public String count;
-		public Token INTEGER;
-		public TerminalNode RECORD_COUNT() { return getToken(TerrainFeatureGrammar.RECORD_COUNT, 0); }
-		public TerminalNode INTEGER() { return getToken(TerrainFeatureGrammar.INTEGER, 0); }
-		public RecordCountContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-		@Override public int getRuleIndex() { return RULE_recordCount; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof TerrainFeatureGrammarListener ) ((TerrainFeatureGrammarListener)listener).enterRecordCount(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof TerrainFeatureGrammarListener ) ((TerrainFeatureGrammarListener)listener).exitRecordCount(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof TerrainFeatureGrammarVisitor ) return ((TerrainFeatureGrammarVisitor<? extends T>)visitor).visitRecordCount(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	public final RecordCountContext recordCount() throws RecognitionException {
-		RecordCountContext _localctx = new RecordCountContext(_ctx, getState());
-		enterRule(_localctx, 0, RULE_recordCount);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(38);
-			match(RECORD_COUNT);
-			setState(39);
-			((RecordCountContext)_localctx).INTEGER = match(INTEGER);
-			 ((RecordCountContext)_localctx).count =  ((RecordCountContext)_localctx).INTEGER.getText(); 
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	@SuppressWarnings("CheckReturnValue")
 	public static class CodeContext extends ParserRuleContext {
 		public String codeFlag;
 		public int lineNo;
@@ -211,15 +161,15 @@ public class TerrainFeatureGrammar extends Parser {
 
 	public final CodeContext code() throws RecognitionException {
 		CodeContext _localctx = new CodeContext(_ctx, getState());
-		enterRule(_localctx, 2, RULE_code);
+		enterRule(_localctx, 0, RULE_code);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(42);
+			setState(36);
 			match(CODE);
-			setState(43);
+			setState(37);
 			((CodeContext)_localctx).FLAG = match(FLAG);
-			setState(44);
+			setState(38);
 			match(FLAG_EOL);
 
 			                ((CodeContext)_localctx).codeFlag =  ((CodeContext)_localctx).FLAG.getText();
@@ -265,13 +215,13 @@ public class TerrainFeatureGrammar extends Parser {
 
 	public final NameContext name() throws RecognitionException {
 		NameContext _localctx = new NameContext(_ctx, getState());
-		enterRule(_localctx, 4, RULE_name);
+		enterRule(_localctx, 2, RULE_name);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(47);
+			setState(41);
 			match(NAME);
-			setState(48);
+			setState(42);
 			((NameContext)_localctx).STRING = match(STRING);
 			 ((NameContext)_localctx).nameStr =  ((NameContext)_localctx).STRING.getText(); 
 			}
@@ -318,17 +268,17 @@ public class TerrainFeatureGrammar extends Parser {
 
 	public final GraphicsContext graphics() throws RecognitionException {
 		GraphicsContext _localctx = new GraphicsContext(_ctx, getState());
-		enterRule(_localctx, 6, RULE_graphics);
+		enterRule(_localctx, 4, RULE_graphics);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(51);
+			setState(45);
 			match(GRAPHICS);
-			setState(52);
+			setState(46);
 			((GraphicsContext)_localctx).gly = match(GLYPH_VALUES);
-			setState(53);
+			setState(47);
 			match(GLYPH_COLON_SWITCH);
-			setState(54);
+			setState(48);
 			((GraphicsContext)_localctx).col = match(COLOUR_VALUES);
 
 			                ((GraphicsContext)_localctx).glyph =  ((GraphicsContext)_localctx).gly.getText();
@@ -375,15 +325,15 @@ public class TerrainFeatureGrammar extends Parser {
 
 	public final MimicContext mimic() throws RecognitionException {
 		MimicContext _localctx = new MimicContext(_ctx, getState());
-		enterRule(_localctx, 8, RULE_mimic);
+		enterRule(_localctx, 6, RULE_mimic);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(57);
+			setState(51);
 			match(MIMIC);
-			setState(58);
+			setState(52);
 			((MimicContext)_localctx).FLAG = match(FLAG);
-			setState(59);
+			setState(53);
 			match(FLAG_EOL);
 
 			                ((MimicContext)_localctx).mimicFlag =  ((MimicContext)_localctx).FLAG.getText();
@@ -428,13 +378,13 @@ public class TerrainFeatureGrammar extends Parser {
 
 	public final PriorityContext priority() throws RecognitionException {
 		PriorityContext _localctx = new PriorityContext(_ctx, getState());
-		enterRule(_localctx, 10, RULE_priority);
+		enterRule(_localctx, 8, RULE_priority);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(62);
+			setState(56);
 			match(PRIORITY);
-			setState(63);
+			setState(57);
 			((PriorityContext)_localctx).INTEGER = match(INTEGER);
 
 			                ((PriorityContext)_localctx).priorityNum =  ((PriorityContext)_localctx).INTEGER.getText();
@@ -488,7 +438,7 @@ public class TerrainFeatureGrammar extends Parser {
 
 	public final FlagsContext flags() throws RecognitionException {
 		FlagsContext _localctx = new FlagsContext(_ctx, getState());
-		enterRule(_localctx, 12, RULE_flags);
+		enterRule(_localctx, 10, RULE_flags);
 
 		            ((FlagsContext)_localctx).flagsList =  new ArrayList<>();
 		        
@@ -496,33 +446,33 @@ public class TerrainFeatureGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(66);
+			setState(60);
 			match(FLAGS);
-			setState(67);
+			setState(61);
 			((FlagsContext)_localctx).f1 = match(FLAG);
 
 			                _localctx.flagsList.add(((FlagsContext)_localctx).f1.getText());
 			            
-			setState(74);
+			setState(68);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==FLAG_OR) {
 				{
 				{
-				setState(69);
+				setState(63);
 				match(FLAG_OR);
-				setState(70);
+				setState(64);
 				((FlagsContext)_localctx).f2 = match(FLAG);
 
 				                _localctx.flagsList.add(((FlagsContext)_localctx).f2.getText());
 				            
 				}
 				}
-				setState(76);
+				setState(70);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
-			setState(77);
+			setState(71);
 			match(FLAG_EOL);
 			}
 		}
@@ -564,13 +514,13 @@ public class TerrainFeatureGrammar extends Parser {
 
 	public final DiggingContext digging() throws RecognitionException {
 		DiggingContext _localctx = new DiggingContext(_ctx, getState());
-		enterRule(_localctx, 14, RULE_digging);
+		enterRule(_localctx, 12, RULE_digging);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(79);
+			setState(73);
 			match(DIGGING);
-			setState(80);
+			setState(74);
 			((DiggingContext)_localctx).INTEGER = match(INTEGER);
 
 			                ((DiggingContext)_localctx).diggingNum =  ((DiggingContext)_localctx).INTEGER.getText();
@@ -615,13 +565,13 @@ public class TerrainFeatureGrammar extends Parser {
 
 	public final Walk_messageContext walk_message() throws RecognitionException {
 		Walk_messageContext _localctx = new Walk_messageContext(_ctx, getState());
-		enterRule(_localctx, 16, RULE_walk_message);
+		enterRule(_localctx, 14, RULE_walk_message);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(83);
+			setState(77);
 			match(WALK_MESSAGE);
-			setState(84);
+			setState(78);
 			((Walk_messageContext)_localctx).STRING = match(STRING);
 
 			                ((Walk_messageContext)_localctx).walkMsgStr =  ((Walk_messageContext)_localctx).STRING.getText();
@@ -666,13 +616,13 @@ public class TerrainFeatureGrammar extends Parser {
 
 	public final Run_messageContext run_message() throws RecognitionException {
 		Run_messageContext _localctx = new Run_messageContext(_ctx, getState());
-		enterRule(_localctx, 18, RULE_run_message);
+		enterRule(_localctx, 16, RULE_run_message);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(87);
+			setState(81);
 			match(RUN_MESSAGE);
-			setState(88);
+			setState(82);
 			((Run_messageContext)_localctx).STRING = match(STRING);
 
 			                ((Run_messageContext)_localctx).runMsgStr =  ((Run_messageContext)_localctx).STRING.getText();
@@ -717,13 +667,13 @@ public class TerrainFeatureGrammar extends Parser {
 
 	public final Hurt_messageContext hurt_message() throws RecognitionException {
 		Hurt_messageContext _localctx = new Hurt_messageContext(_ctx, getState());
-		enterRule(_localctx, 20, RULE_hurt_message);
+		enterRule(_localctx, 18, RULE_hurt_message);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(91);
+			setState(85);
 			match(HURT_MESSAGE);
-			setState(92);
+			setState(86);
 			((Hurt_messageContext)_localctx).STRING = match(STRING);
 
 			                ((Hurt_messageContext)_localctx).hurtMsgStr =  ((Hurt_messageContext)_localctx).STRING.getText();
@@ -768,13 +718,13 @@ public class TerrainFeatureGrammar extends Parser {
 
 	public final Die_messageContext die_message() throws RecognitionException {
 		Die_messageContext _localctx = new Die_messageContext(_ctx, getState());
-		enterRule(_localctx, 22, RULE_die_message);
+		enterRule(_localctx, 20, RULE_die_message);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(95);
+			setState(89);
 			match(DIE_MESSAGE);
-			setState(96);
+			setState(90);
 			((Die_messageContext)_localctx).STRING = match(STRING);
 
 			                ((Die_messageContext)_localctx).dieMsgStr =  ((Die_messageContext)_localctx).STRING.getText();
@@ -819,13 +769,13 @@ public class TerrainFeatureGrammar extends Parser {
 
 	public final Confused_messageContext confused_message() throws RecognitionException {
 		Confused_messageContext _localctx = new Confused_messageContext(_ctx, getState());
-		enterRule(_localctx, 24, RULE_confused_message);
+		enterRule(_localctx, 22, RULE_confused_message);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(99);
+			setState(93);
 			match(CONFUSED_MESSAGE);
-			setState(100);
+			setState(94);
 			((Confused_messageContext)_localctx).STRING = match(STRING);
 
 			                ((Confused_messageContext)_localctx).confMsgStr =  ((Confused_messageContext)_localctx).STRING.getText();
@@ -870,13 +820,13 @@ public class TerrainFeatureGrammar extends Parser {
 
 	public final Look_prefixContext look_prefix() throws RecognitionException {
 		Look_prefixContext _localctx = new Look_prefixContext(_ctx, getState());
-		enterRule(_localctx, 26, RULE_look_prefix);
+		enterRule(_localctx, 24, RULE_look_prefix);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(103);
+			setState(97);
 			match(LOOK_PREFIX);
-			setState(104);
+			setState(98);
 			((Look_prefixContext)_localctx).STRING = match(STRING);
 
 			                ((Look_prefixContext)_localctx).prefixStr =  ((Look_prefixContext)_localctx).STRING.getText();
@@ -921,13 +871,13 @@ public class TerrainFeatureGrammar extends Parser {
 
 	public final Look_in_prepositionContext look_in_preposition() throws RecognitionException {
 		Look_in_prepositionContext _localctx = new Look_in_prepositionContext(_ctx, getState());
-		enterRule(_localctx, 28, RULE_look_in_preposition);
+		enterRule(_localctx, 26, RULE_look_in_preposition);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(107);
+			setState(101);
 			match(LOOK_IN_PREPOSITION);
-			setState(108);
+			setState(102);
 			((Look_in_prepositionContext)_localctx).STRING = match(STRING);
 
 			                ((Look_in_prepositionContext)_localctx).prepositionStr =  ((Look_in_prepositionContext)_localctx).STRING.getText();
@@ -973,17 +923,17 @@ public class TerrainFeatureGrammar extends Parser {
 
 	public final Resist_flagContext resist_flag() throws RecognitionException {
 		Resist_flagContext _localctx = new Resist_flagContext(_ctx, getState());
-		enterRule(_localctx, 30, RULE_resist_flag);
+		enterRule(_localctx, 28, RULE_resist_flag);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(111);
+			setState(105);
 			match(RESIST_FLAG);
-			setState(112);
+			setState(106);
 			((Resist_flagContext)_localctx).f1 = match(FLAG);
 
 			                ((Resist_flagContext)_localctx).resistFlag =  ((Resist_flagContext)_localctx).f1.getText(); 
-			setState(114);
+			setState(108);
 			match(FLAG_EOL);
 			}
 		}
@@ -1031,7 +981,7 @@ public class TerrainFeatureGrammar extends Parser {
 
 	public final DescContext desc() throws RecognitionException {
 		DescContext _localctx = new DescContext(_ctx, getState());
-		enterRule(_localctx, 32, RULE_desc);
+		enterRule(_localctx, 30, RULE_desc);
 
 		            StringBuilder sb = new StringBuilder();
 		        
@@ -1039,7 +989,7 @@ public class TerrainFeatureGrammar extends Parser {
 			int _alt;
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(119); 
+			setState(113); 
 			_errHandler.sync(this);
 			_alt = 1;
 			do {
@@ -1047,9 +997,9 @@ public class TerrainFeatureGrammar extends Parser {
 				case 1:
 					{
 					{
-					setState(116);
+					setState(110);
 					match(DESC);
-					setState(117);
+					setState(111);
 					((DescContext)_localctx).STRING = match(STRING);
 
 					                sb.append(((DescContext)_localctx).STRING.getText());
@@ -1060,7 +1010,7 @@ public class TerrainFeatureGrammar extends Parser {
 				default:
 					throw new NoViableAltException(this);
 				}
-				setState(121); 
+				setState(115); 
 				_errHandler.sync(this);
 				_alt = getInterpreter().adaptivePredict(_input,1,_ctx);
 			} while ( _alt!=2 && _alt!=org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER );
@@ -1208,7 +1158,7 @@ public class TerrainFeatureGrammar extends Parser {
 
 	public final TerrainContext terrain() throws RecognitionException {
 		TerrainContext _localctx = new TerrainContext(_ctx, getState());
-		enterRule(_localctx, 34, RULE_terrain);
+		enterRule(_localctx, 32, RULE_terrain);
 
 		            String codeInit = "";
 		            String nameInit = "";
@@ -1234,34 +1184,34 @@ public class TerrainFeatureGrammar extends Parser {
 			int _alt;
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(123);
+			setState(117);
 			((TerrainContext)_localctx).code = code();
 
 			                codeInit = ((TerrainContext)_localctx).code.codeFlag;
 			                lineNo = ((TerrainContext)_localctx).code.lineNo;
 			            
-			setState(125);
+			setState(119);
 			((TerrainContext)_localctx).name = name();
 
 			                nameInit = ((TerrainContext)_localctx).name.nameStr;
 			            
-			setState(127);
+			setState(121);
 			((TerrainContext)_localctx).graphics = graphics();
 
 			                glyph = ((TerrainContext)_localctx).graphics.glyph;
 			                colour = ((TerrainContext)_localctx).graphics.colour;
 			            
-			setState(174);
+			setState(168);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 131056L) != 0)) {
+			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 65528L) != 0)) {
 				{
-				setState(172);
+				setState(166);
 				_errHandler.sync(this);
 				switch (_input.LA(1)) {
 				case PRIORITY:
 					{
-					setState(129);
+					setState(123);
 					((TerrainContext)_localctx).priority = priority();
 
 					                    priorityInit = ((TerrainContext)_localctx).priority.priorityNum;
@@ -1270,7 +1220,7 @@ public class TerrainFeatureGrammar extends Parser {
 					break;
 				case MIMIC:
 					{
-					setState(132);
+					setState(126);
 					((TerrainContext)_localctx).mimic = mimic();
 
 					                    mimicInit = ((TerrainContext)_localctx).mimic.mimicFlag;
@@ -1279,7 +1229,7 @@ public class TerrainFeatureGrammar extends Parser {
 					break;
 				case FLAGS:
 					{
-					setState(138); 
+					setState(132); 
 					_errHandler.sync(this);
 					_alt = 1;
 					do {
@@ -1287,7 +1237,7 @@ public class TerrainFeatureGrammar extends Parser {
 						case 1:
 							{
 							{
-							setState(135);
+							setState(129);
 							((TerrainContext)_localctx).flags = flags();
 
 							                    tfFlags.addAll(((TerrainContext)_localctx).flags.flagsList);
@@ -1298,7 +1248,7 @@ public class TerrainFeatureGrammar extends Parser {
 						default:
 							throw new NoViableAltException(this);
 						}
-						setState(140); 
+						setState(134); 
 						_errHandler.sync(this);
 						_alt = getInterpreter().adaptivePredict(_input,2,_ctx);
 					} while ( _alt!=2 && _alt!=org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER );
@@ -1306,7 +1256,7 @@ public class TerrainFeatureGrammar extends Parser {
 					break;
 				case DIGGING:
 					{
-					setState(142);
+					setState(136);
 					((TerrainContext)_localctx).digging = digging();
 
 					                    diggingInit = ((TerrainContext)_localctx).digging.diggingNum;
@@ -1315,7 +1265,7 @@ public class TerrainFeatureGrammar extends Parser {
 					break;
 				case WALK_MESSAGE:
 					{
-					setState(145);
+					setState(139);
 					((TerrainContext)_localctx).walk_message = walk_message();
 
 					                    walkInit = ((TerrainContext)_localctx).walk_message.walkMsgStr;
@@ -1324,7 +1274,7 @@ public class TerrainFeatureGrammar extends Parser {
 					break;
 				case RUN_MESSAGE:
 					{
-					setState(148);
+					setState(142);
 					((TerrainContext)_localctx).run_message = run_message();
 
 					                    runInit = ((TerrainContext)_localctx).run_message.runMsgStr;
@@ -1333,7 +1283,7 @@ public class TerrainFeatureGrammar extends Parser {
 					break;
 				case HURT_MESSAGE:
 					{
-					setState(151);
+					setState(145);
 					((TerrainContext)_localctx).hurt_message = hurt_message();
 
 					                    hurtInit = ((TerrainContext)_localctx).hurt_message.hurtMsgStr;
@@ -1342,7 +1292,7 @@ public class TerrainFeatureGrammar extends Parser {
 					break;
 				case DIE_MESSAGE:
 					{
-					setState(154);
+					setState(148);
 					((TerrainContext)_localctx).die_message = die_message();
 
 					                    dieInit = ((TerrainContext)_localctx).die_message.dieMsgStr;
@@ -1351,7 +1301,7 @@ public class TerrainFeatureGrammar extends Parser {
 					break;
 				case CONFUSED_MESSAGE:
 					{
-					setState(157);
+					setState(151);
 					((TerrainContext)_localctx).confused_message = confused_message();
 
 					                    confInit = ((TerrainContext)_localctx).confused_message.confMsgStr;
@@ -1360,7 +1310,7 @@ public class TerrainFeatureGrammar extends Parser {
 					break;
 				case LOOK_PREFIX:
 					{
-					setState(160);
+					setState(154);
 					((TerrainContext)_localctx).look_prefix = look_prefix();
 
 					                    prefixInit = ((TerrainContext)_localctx).look_prefix.prefixStr;
@@ -1369,7 +1319,7 @@ public class TerrainFeatureGrammar extends Parser {
 					break;
 				case LOOK_IN_PREPOSITION:
 					{
-					setState(163);
+					setState(157);
 					((TerrainContext)_localctx).look_in_preposition = look_in_preposition();
 
 					                    prepositionInit = ((TerrainContext)_localctx).look_in_preposition.prepositionStr;
@@ -1378,7 +1328,7 @@ public class TerrainFeatureGrammar extends Parser {
 					break;
 				case RESIST_FLAG:
 					{
-					setState(166);
+					setState(160);
 					((TerrainContext)_localctx).resist_flag = resist_flag();
 
 					                    resistInit = ((TerrainContext)_localctx).resist_flag.resistFlag;
@@ -1387,7 +1337,7 @@ public class TerrainFeatureGrammar extends Parser {
 					break;
 				case DESC:
 					{
-					setState(169);
+					setState(163);
 					((TerrainContext)_localctx).desc = desc();
 
 					                    descInit = descInit + ((TerrainContext)_localctx).desc.descStr;
@@ -1398,7 +1348,7 @@ public class TerrainFeatureGrammar extends Parser {
 					throw new NoViableAltException(this);
 				}
 				}
-				setState(176);
+				setState(170);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -1427,12 +1377,7 @@ public class TerrainFeatureGrammar extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class FileContext extends ParserRuleContext {
 		public List<TerrainFeatureParseRecord> features;
-		public String declaredRecordCount;
-		public RecordCountContext recordCount;
 		public TerrainContext terrain;
-		public RecordCountContext recordCount() {
-			return getRuleContext(RecordCountContext.class,0);
-		}
 		public TerminalNode EOF() { return getToken(TerrainFeatureGrammar.EOF, 0); }
 		public List<TerrainContext> terrain() {
 			return getRuleContexts(TerrainContext.class);
@@ -1461,33 +1406,30 @@ public class TerrainFeatureGrammar extends Parser {
 
 	public final FileContext file() throws RecognitionException {
 		FileContext _localctx = new FileContext(_ctx, getState());
-		enterRule(_localctx, 36, RULE_file);
+		enterRule(_localctx, 34, RULE_file);
 		 ((FileContext)_localctx).features =  new ArrayList<>(); 
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(177);
-			((FileContext)_localctx).recordCount = recordCount();
-			 ((FileContext)_localctx).declaredRecordCount =  ((FileContext)_localctx).recordCount.count; 
-			setState(182); 
+			setState(174); 
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			do {
 				{
 				{
-				setState(179);
+				setState(171);
 				((FileContext)_localctx).terrain = terrain();
 
 				                _localctx.features.add(((FileContext)_localctx).terrain.feature);
 				            
 				}
 				}
-				setState(184); 
+				setState(176); 
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			} while ( _la==CODE );
-			setState(186);
+			setState(178);
 			match(EOF);
 			}
 		}
@@ -1503,120 +1445,115 @@ public class TerrainFeatureGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u001e\u00bd\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001"+
+		"\u0004\u0001\u001d\u00b5\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001"+
 		"\u0002\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004"+
 		"\u0002\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007"+
 		"\u0002\b\u0007\b\u0002\t\u0007\t\u0002\n\u0007\n\u0002\u000b\u0007\u000b"+
 		"\u0002\f\u0007\f\u0002\r\u0007\r\u0002\u000e\u0007\u000e\u0002\u000f\u0007"+
-		"\u000f\u0002\u0010\u0007\u0010\u0002\u0011\u0007\u0011\u0002\u0012\u0007"+
-		"\u0012\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0001\u0001"+
-		"\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0002\u0001\u0002\u0001"+
+		"\u000f\u0002\u0010\u0007\u0010\u0002\u0011\u0007\u0011\u0001\u0000\u0001"+
+		"\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0001"+
+		"\u0001\u0001\u0001\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0002\u0001"+
 		"\u0002\u0001\u0002\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0001"+
-		"\u0003\u0001\u0003\u0001\u0004\u0001\u0004\u0001\u0004\u0001\u0004\u0001"+
-		"\u0004\u0001\u0005\u0001\u0005\u0001\u0005\u0001\u0005\u0001\u0006\u0001"+
-		"\u0006\u0001\u0006\u0001\u0006\u0001\u0006\u0001\u0006\u0005\u0006I\b"+
-		"\u0006\n\u0006\f\u0006L\t\u0006\u0001\u0006\u0001\u0006\u0001\u0007\u0001"+
-		"\u0007\u0001\u0007\u0001\u0007\u0001\b\u0001\b\u0001\b\u0001\b\u0001\t"+
-		"\u0001\t\u0001\t\u0001\t\u0001\n\u0001\n\u0001\n\u0001\n\u0001\u000b\u0001"+
-		"\u000b\u0001\u000b\u0001\u000b\u0001\f\u0001\f\u0001\f\u0001\f\u0001\r"+
-		"\u0001\r\u0001\r\u0001\r\u0001\u000e\u0001\u000e\u0001\u000e\u0001\u000e"+
-		"\u0001\u000f\u0001\u000f\u0001\u000f\u0001\u000f\u0001\u000f\u0001\u0010"+
-		"\u0001\u0010\u0001\u0010\u0004\u0010x\b\u0010\u000b\u0010\f\u0010y\u0001"+
-		"\u0011\u0001\u0011\u0001\u0011\u0001\u0011\u0001\u0011\u0001\u0011\u0001"+
-		"\u0011\u0001\u0011\u0001\u0011\u0001\u0011\u0001\u0011\u0001\u0011\u0001"+
-		"\u0011\u0001\u0011\u0001\u0011\u0004\u0011\u008b\b\u0011\u000b\u0011\f"+
-		"\u0011\u008c\u0001\u0011\u0001\u0011\u0001\u0011\u0001\u0011\u0001\u0011"+
-		"\u0001\u0011\u0001\u0011\u0001\u0011\u0001\u0011\u0001\u0011\u0001\u0011"+
-		"\u0001\u0011\u0001\u0011\u0001\u0011\u0001\u0011\u0001\u0011\u0001\u0011"+
-		"\u0001\u0011\u0001\u0011\u0001\u0011\u0001\u0011\u0001\u0011\u0001\u0011"+
-		"\u0001\u0011\u0001\u0011\u0001\u0011\u0001\u0011\u0001\u0011\u0001\u0011"+
-		"\u0001\u0011\u0005\u0011\u00ad\b\u0011\n\u0011\f\u0011\u00b0\t\u0011\u0001"+
-		"\u0012\u0001\u0012\u0001\u0012\u0001\u0012\u0001\u0012\u0004\u0012\u00b7"+
-		"\b\u0012\u000b\u0012\f\u0012\u00b8\u0001\u0012\u0001\u0012\u0001\u0012"+
-		"\u0000\u0000\u0013\u0000\u0002\u0004\u0006\b\n\f\u000e\u0010\u0012\u0014"+
-		"\u0016\u0018\u001a\u001c\u001e \"$\u0000\u0000\u00ba\u0000&\u0001\u0000"+
-		"\u0000\u0000\u0002*\u0001\u0000\u0000\u0000\u0004/\u0001\u0000\u0000\u0000"+
-		"\u00063\u0001\u0000\u0000\u0000\b9\u0001\u0000\u0000\u0000\n>\u0001\u0000"+
-		"\u0000\u0000\fB\u0001\u0000\u0000\u0000\u000eO\u0001\u0000\u0000\u0000"+
-		"\u0010S\u0001\u0000\u0000\u0000\u0012W\u0001\u0000\u0000\u0000\u0014["+
-		"\u0001\u0000\u0000\u0000\u0016_\u0001\u0000\u0000\u0000\u0018c\u0001\u0000"+
-		"\u0000\u0000\u001ag\u0001\u0000\u0000\u0000\u001ck\u0001\u0000\u0000\u0000"+
-		"\u001eo\u0001\u0000\u0000\u0000 w\u0001\u0000\u0000\u0000\"{\u0001\u0000"+
-		"\u0000\u0000$\u00b1\u0001\u0000\u0000\u0000&\'\u0005\u0001\u0000\u0000"+
-		"\'(\u0005\u0011\u0000\u0000()\u0006\u0000\uffff\uffff\u0000)\u0001\u0001"+
-		"\u0000\u0000\u0000*+\u0005\u0002\u0000\u0000+,\u0005\u0018\u0000\u0000"+
-		",-\u0005\u001a\u0000\u0000-.\u0006\u0001\uffff\uffff\u0000.\u0003\u0001"+
-		"\u0000\u0000\u0000/0\u0005\u0003\u0000\u000001\u0005\u0017\u0000\u0000"+
+		"\u0003\u0001\u0004\u0001\u0004\u0001\u0004\u0001\u0004\u0001\u0005\u0001"+
+		"\u0005\u0001\u0005\u0001\u0005\u0001\u0005\u0001\u0005\u0005\u0005C\b"+
+		"\u0005\n\u0005\f\u0005F\t\u0005\u0001\u0005\u0001\u0005\u0001\u0006\u0001"+
+		"\u0006\u0001\u0006\u0001\u0006\u0001\u0007\u0001\u0007\u0001\u0007\u0001"+
+		"\u0007\u0001\b\u0001\b\u0001\b\u0001\b\u0001\t\u0001\t\u0001\t\u0001\t"+
+		"\u0001\n\u0001\n\u0001\n\u0001\n\u0001\u000b\u0001\u000b\u0001\u000b\u0001"+
+		"\u000b\u0001\f\u0001\f\u0001\f\u0001\f\u0001\r\u0001\r\u0001\r\u0001\r"+
+		"\u0001\u000e\u0001\u000e\u0001\u000e\u0001\u000e\u0001\u000e\u0001\u000f"+
+		"\u0001\u000f\u0001\u000f\u0004\u000fr\b\u000f\u000b\u000f\f\u000fs\u0001"+
+		"\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001"+
+		"\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001"+
+		"\u0010\u0001\u0010\u0001\u0010\u0004\u0010\u0085\b\u0010\u000b\u0010\f"+
+		"\u0010\u0086\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010"+
+		"\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010"+
+		"\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010"+
+		"\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010"+
+		"\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010"+
+		"\u0001\u0010\u0005\u0010\u00a7\b\u0010\n\u0010\f\u0010\u00aa\t\u0010\u0001"+
+		"\u0011\u0001\u0011\u0001\u0011\u0004\u0011\u00af\b\u0011\u000b\u0011\f"+
+		"\u0011\u00b0\u0001\u0011\u0001\u0011\u0001\u0011\u0000\u0000\u0012\u0000"+
+		"\u0002\u0004\u0006\b\n\f\u000e\u0010\u0012\u0014\u0016\u0018\u001a\u001c"+
+		"\u001e \"\u0000\u0000\u00b3\u0000$\u0001\u0000\u0000\u0000\u0002)\u0001"+
+		"\u0000\u0000\u0000\u0004-\u0001\u0000\u0000\u0000\u00063\u0001\u0000\u0000"+
+		"\u0000\b8\u0001\u0000\u0000\u0000\n<\u0001\u0000\u0000\u0000\fI\u0001"+
+		"\u0000\u0000\u0000\u000eM\u0001\u0000\u0000\u0000\u0010Q\u0001\u0000\u0000"+
+		"\u0000\u0012U\u0001\u0000\u0000\u0000\u0014Y\u0001\u0000\u0000\u0000\u0016"+
+		"]\u0001\u0000\u0000\u0000\u0018a\u0001\u0000\u0000\u0000\u001ae\u0001"+
+		"\u0000\u0000\u0000\u001ci\u0001\u0000\u0000\u0000\u001eq\u0001\u0000\u0000"+
+		"\u0000 u\u0001\u0000\u0000\u0000\"\u00ae\u0001\u0000\u0000\u0000$%\u0005"+
+		"\u0001\u0000\u0000%&\u0005\u0017\u0000\u0000&\'\u0005\u0019\u0000\u0000"+
+		"\'(\u0006\u0000\uffff\uffff\u0000(\u0001\u0001\u0000\u0000\u0000)*\u0005"+
+		"\u0002\u0000\u0000*+\u0005\u0016\u0000\u0000+,\u0006\u0001\uffff\uffff"+
+		"\u0000,\u0003\u0001\u0000\u0000\u0000-.\u0005\u0013\u0000\u0000./\u0005"+
+		"\u001b\u0000\u0000/0\u0005\u001c\u0000\u000001\u0005\u001a\u0000\u0000"+
 		"12\u0006\u0002\uffff\uffff\u00002\u0005\u0001\u0000\u0000\u000034\u0005"+
-		"\u0014\u0000\u000045\u0005\u001c\u0000\u000056\u0005\u001d\u0000\u0000"+
-		"67\u0005\u001b\u0000\u000078\u0006\u0003\uffff\uffff\u00008\u0007\u0001"+
-		"\u0000\u0000\u00009:\u0005\u0004\u0000\u0000:;\u0005\u0018\u0000\u0000"+
-		";<\u0005\u001a\u0000\u0000<=\u0006\u0004\uffff\uffff\u0000=\t\u0001\u0000"+
-		"\u0000\u0000>?\u0005\u0005\u0000\u0000?@\u0005\u0011\u0000\u0000@A\u0006"+
-		"\u0005\uffff\uffff\u0000A\u000b\u0001\u0000\u0000\u0000BC\u0005\u0006"+
-		"\u0000\u0000CD\u0005\u0018\u0000\u0000DJ\u0006\u0006\uffff\uffff\u0000"+
-		"EF\u0005\u0019\u0000\u0000FG\u0005\u0018\u0000\u0000GI\u0006\u0006\uffff"+
-		"\uffff\u0000HE\u0001\u0000\u0000\u0000IL\u0001\u0000\u0000\u0000JH\u0001"+
-		"\u0000\u0000\u0000JK\u0001\u0000\u0000\u0000KM\u0001\u0000\u0000\u0000"+
-		"LJ\u0001\u0000\u0000\u0000MN\u0005\u001a\u0000\u0000N\r\u0001\u0000\u0000"+
-		"\u0000OP\u0005\u0007\u0000\u0000PQ\u0005\u0011\u0000\u0000QR\u0006\u0007"+
-		"\uffff\uffff\u0000R\u000f\u0001\u0000\u0000\u0000ST\u0005\b\u0000\u0000"+
-		"TU\u0005\u0017\u0000\u0000UV\u0006\b\uffff\uffff\u0000V\u0011\u0001\u0000"+
-		"\u0000\u0000WX\u0005\t\u0000\u0000XY\u0005\u0017\u0000\u0000YZ\u0006\t"+
-		"\uffff\uffff\u0000Z\u0013\u0001\u0000\u0000\u0000[\\\u0005\n\u0000\u0000"+
-		"\\]\u0005\u0017\u0000\u0000]^\u0006\n\uffff\uffff\u0000^\u0015\u0001\u0000"+
-		"\u0000\u0000_`\u0005\u000b\u0000\u0000`a\u0005\u0017\u0000\u0000ab\u0006"+
-		"\u000b\uffff\uffff\u0000b\u0017\u0001\u0000\u0000\u0000cd\u0005\f\u0000"+
-		"\u0000de\u0005\u0017\u0000\u0000ef\u0006\f\uffff\uffff\u0000f\u0019\u0001"+
-		"\u0000\u0000\u0000gh\u0005\r\u0000\u0000hi\u0005\u0017\u0000\u0000ij\u0006"+
-		"\r\uffff\uffff\u0000j\u001b\u0001\u0000\u0000\u0000kl\u0005\u000e\u0000"+
-		"\u0000lm\u0005\u0017\u0000\u0000mn\u0006\u000e\uffff\uffff\u0000n\u001d"+
-		"\u0001\u0000\u0000\u0000op\u0005\u000f\u0000\u0000pq\u0005\u0018\u0000"+
-		"\u0000qr\u0006\u000f\uffff\uffff\u0000rs\u0005\u001a\u0000\u0000s\u001f"+
-		"\u0001\u0000\u0000\u0000tu\u0005\u0010\u0000\u0000uv\u0005\u0017\u0000"+
-		"\u0000vx\u0006\u0010\uffff\uffff\u0000wt\u0001\u0000\u0000\u0000xy\u0001"+
-		"\u0000\u0000\u0000yw\u0001\u0000\u0000\u0000yz\u0001\u0000\u0000\u0000"+
-		"z!\u0001\u0000\u0000\u0000{|\u0003\u0002\u0001\u0000|}\u0006\u0011\uffff"+
-		"\uffff\u0000}~\u0003\u0004\u0002\u0000~\u007f\u0006\u0011\uffff\uffff"+
-		"\u0000\u007f\u0080\u0003\u0006\u0003\u0000\u0080\u00ae\u0006\u0011\uffff"+
-		"\uffff\u0000\u0081\u0082\u0003\n\u0005\u0000\u0082\u0083\u0006\u0011\uffff"+
-		"\uffff\u0000\u0083\u00ad\u0001\u0000\u0000\u0000\u0084\u0085\u0003\b\u0004"+
-		"\u0000\u0085\u0086\u0006\u0011\uffff\uffff\u0000\u0086\u00ad\u0001\u0000"+
-		"\u0000\u0000\u0087\u0088\u0003\f\u0006\u0000\u0088\u0089\u0006\u0011\uffff"+
-		"\uffff\u0000\u0089\u008b\u0001\u0000\u0000\u0000\u008a\u0087\u0001\u0000"+
-		"\u0000\u0000\u008b\u008c\u0001\u0000\u0000\u0000\u008c\u008a\u0001\u0000"+
-		"\u0000\u0000\u008c\u008d\u0001\u0000\u0000\u0000\u008d\u00ad\u0001\u0000"+
-		"\u0000\u0000\u008e\u008f\u0003\u000e\u0007\u0000\u008f\u0090\u0006\u0011"+
-		"\uffff\uffff\u0000\u0090\u00ad\u0001\u0000\u0000\u0000\u0091\u0092\u0003"+
-		"\u0010\b\u0000\u0092\u0093\u0006\u0011\uffff\uffff\u0000\u0093\u00ad\u0001"+
-		"\u0000\u0000\u0000\u0094\u0095\u0003\u0012\t\u0000\u0095\u0096\u0006\u0011"+
-		"\uffff\uffff\u0000\u0096\u00ad\u0001\u0000\u0000\u0000\u0097\u0098\u0003"+
-		"\u0014\n\u0000\u0098\u0099\u0006\u0011\uffff\uffff\u0000\u0099\u00ad\u0001"+
-		"\u0000\u0000\u0000\u009a\u009b\u0003\u0016\u000b\u0000\u009b\u009c\u0006"+
-		"\u0011\uffff\uffff\u0000\u009c\u00ad\u0001\u0000\u0000\u0000\u009d\u009e"+
-		"\u0003\u0018\f\u0000\u009e\u009f\u0006\u0011\uffff\uffff\u0000\u009f\u00ad"+
-		"\u0001\u0000\u0000\u0000\u00a0\u00a1\u0003\u001a\r\u0000\u00a1\u00a2\u0006"+
-		"\u0011\uffff\uffff\u0000\u00a2\u00ad\u0001\u0000\u0000\u0000\u00a3\u00a4"+
-		"\u0003\u001c\u000e\u0000\u00a4\u00a5\u0006\u0011\uffff\uffff\u0000\u00a5"+
-		"\u00ad\u0001\u0000\u0000\u0000\u00a6\u00a7\u0003\u001e\u000f\u0000\u00a7"+
-		"\u00a8\u0006\u0011\uffff\uffff\u0000\u00a8\u00ad\u0001\u0000\u0000\u0000"+
-		"\u00a9\u00aa\u0003 \u0010\u0000\u00aa\u00ab\u0006\u0011\uffff\uffff\u0000"+
-		"\u00ab\u00ad\u0001\u0000\u0000\u0000\u00ac\u0081\u0001\u0000\u0000\u0000"+
-		"\u00ac\u0084\u0001\u0000\u0000\u0000\u00ac\u008a\u0001\u0000\u0000\u0000"+
-		"\u00ac\u008e\u0001\u0000\u0000\u0000\u00ac\u0091\u0001\u0000\u0000\u0000"+
-		"\u00ac\u0094\u0001\u0000\u0000\u0000\u00ac\u0097\u0001\u0000\u0000\u0000"+
-		"\u00ac\u009a\u0001\u0000\u0000\u0000\u00ac\u009d\u0001\u0000\u0000\u0000"+
-		"\u00ac\u00a0\u0001\u0000\u0000\u0000\u00ac\u00a3\u0001\u0000\u0000\u0000"+
-		"\u00ac\u00a6\u0001\u0000\u0000\u0000\u00ac\u00a9\u0001\u0000\u0000\u0000"+
-		"\u00ad\u00b0\u0001\u0000\u0000\u0000\u00ae\u00ac\u0001\u0000\u0000\u0000"+
-		"\u00ae\u00af\u0001\u0000\u0000\u0000\u00af#\u0001\u0000\u0000\u0000\u00b0"+
-		"\u00ae\u0001\u0000\u0000\u0000\u00b1\u00b2\u0003\u0000\u0000\u0000\u00b2"+
-		"\u00b6\u0006\u0012\uffff\uffff\u0000\u00b3\u00b4\u0003\"\u0011\u0000\u00b4"+
-		"\u00b5\u0006\u0012\uffff\uffff\u0000\u00b5\u00b7\u0001\u0000\u0000\u0000"+
-		"\u00b6\u00b3\u0001\u0000\u0000\u0000\u00b7\u00b8\u0001\u0000\u0000\u0000"+
-		"\u00b8\u00b6\u0001\u0000\u0000\u0000\u00b8\u00b9\u0001\u0000\u0000\u0000"+
-		"\u00b9\u00ba\u0001\u0000\u0000\u0000\u00ba\u00bb\u0005\u0000\u0000\u0001"+
-		"\u00bb%\u0001\u0000\u0000\u0000\u0006Jy\u008c\u00ac\u00ae\u00b8";
+		"\u0003\u0000\u000045\u0005\u0017\u0000\u000056\u0005\u0019\u0000\u0000"+
+		"67\u0006\u0003\uffff\uffff\u00007\u0007\u0001\u0000\u0000\u000089\u0005"+
+		"\u0004\u0000\u00009:\u0005\u0010\u0000\u0000:;\u0006\u0004\uffff\uffff"+
+		"\u0000;\t\u0001\u0000\u0000\u0000<=\u0005\u0005\u0000\u0000=>\u0005\u0017"+
+		"\u0000\u0000>D\u0006\u0005\uffff\uffff\u0000?@\u0005\u0018\u0000\u0000"+
+		"@A\u0005\u0017\u0000\u0000AC\u0006\u0005\uffff\uffff\u0000B?\u0001\u0000"+
+		"\u0000\u0000CF\u0001\u0000\u0000\u0000DB\u0001\u0000\u0000\u0000DE\u0001"+
+		"\u0000\u0000\u0000EG\u0001\u0000\u0000\u0000FD\u0001\u0000\u0000\u0000"+
+		"GH\u0005\u0019\u0000\u0000H\u000b\u0001\u0000\u0000\u0000IJ\u0005\u0006"+
+		"\u0000\u0000JK\u0005\u0010\u0000\u0000KL\u0006\u0006\uffff\uffff\u0000"+
+		"L\r\u0001\u0000\u0000\u0000MN\u0005\u0007\u0000\u0000NO\u0005\u0016\u0000"+
+		"\u0000OP\u0006\u0007\uffff\uffff\u0000P\u000f\u0001\u0000\u0000\u0000"+
+		"QR\u0005\b\u0000\u0000RS\u0005\u0016\u0000\u0000ST\u0006\b\uffff\uffff"+
+		"\u0000T\u0011\u0001\u0000\u0000\u0000UV\u0005\t\u0000\u0000VW\u0005\u0016"+
+		"\u0000\u0000WX\u0006\t\uffff\uffff\u0000X\u0013\u0001\u0000\u0000\u0000"+
+		"YZ\u0005\n\u0000\u0000Z[\u0005\u0016\u0000\u0000[\\\u0006\n\uffff\uffff"+
+		"\u0000\\\u0015\u0001\u0000\u0000\u0000]^\u0005\u000b\u0000\u0000^_\u0005"+
+		"\u0016\u0000\u0000_`\u0006\u000b\uffff\uffff\u0000`\u0017\u0001\u0000"+
+		"\u0000\u0000ab\u0005\f\u0000\u0000bc\u0005\u0016\u0000\u0000cd\u0006\f"+
+		"\uffff\uffff\u0000d\u0019\u0001\u0000\u0000\u0000ef\u0005\r\u0000\u0000"+
+		"fg\u0005\u0016\u0000\u0000gh\u0006\r\uffff\uffff\u0000h\u001b\u0001\u0000"+
+		"\u0000\u0000ij\u0005\u000e\u0000\u0000jk\u0005\u0017\u0000\u0000kl\u0006"+
+		"\u000e\uffff\uffff\u0000lm\u0005\u0019\u0000\u0000m\u001d\u0001\u0000"+
+		"\u0000\u0000no\u0005\u000f\u0000\u0000op\u0005\u0016\u0000\u0000pr\u0006"+
+		"\u000f\uffff\uffff\u0000qn\u0001\u0000\u0000\u0000rs\u0001\u0000\u0000"+
+		"\u0000sq\u0001\u0000\u0000\u0000st\u0001\u0000\u0000\u0000t\u001f\u0001"+
+		"\u0000\u0000\u0000uv\u0003\u0000\u0000\u0000vw\u0006\u0010\uffff\uffff"+
+		"\u0000wx\u0003\u0002\u0001\u0000xy\u0006\u0010\uffff\uffff\u0000yz\u0003"+
+		"\u0004\u0002\u0000z\u00a8\u0006\u0010\uffff\uffff\u0000{|\u0003\b\u0004"+
+		"\u0000|}\u0006\u0010\uffff\uffff\u0000}\u00a7\u0001\u0000\u0000\u0000"+
+		"~\u007f\u0003\u0006\u0003\u0000\u007f\u0080\u0006\u0010\uffff\uffff\u0000"+
+		"\u0080\u00a7\u0001\u0000\u0000\u0000\u0081\u0082\u0003\n\u0005\u0000\u0082"+
+		"\u0083\u0006\u0010\uffff\uffff\u0000\u0083\u0085\u0001\u0000\u0000\u0000"+
+		"\u0084\u0081\u0001\u0000\u0000\u0000\u0085\u0086\u0001\u0000\u0000\u0000"+
+		"\u0086\u0084\u0001\u0000\u0000\u0000\u0086\u0087\u0001\u0000\u0000\u0000"+
+		"\u0087\u00a7\u0001\u0000\u0000\u0000\u0088\u0089\u0003\f\u0006\u0000\u0089"+
+		"\u008a\u0006\u0010\uffff\uffff\u0000\u008a\u00a7\u0001\u0000\u0000\u0000"+
+		"\u008b\u008c\u0003\u000e\u0007\u0000\u008c\u008d\u0006\u0010\uffff\uffff"+
+		"\u0000\u008d\u00a7\u0001\u0000\u0000\u0000\u008e\u008f\u0003\u0010\b\u0000"+
+		"\u008f\u0090\u0006\u0010\uffff\uffff\u0000\u0090\u00a7\u0001\u0000\u0000"+
+		"\u0000\u0091\u0092\u0003\u0012\t\u0000\u0092\u0093\u0006\u0010\uffff\uffff"+
+		"\u0000\u0093\u00a7\u0001\u0000\u0000\u0000\u0094\u0095\u0003\u0014\n\u0000"+
+		"\u0095\u0096\u0006\u0010\uffff\uffff\u0000\u0096\u00a7\u0001\u0000\u0000"+
+		"\u0000\u0097\u0098\u0003\u0016\u000b\u0000\u0098\u0099\u0006\u0010\uffff"+
+		"\uffff\u0000\u0099\u00a7\u0001\u0000\u0000\u0000\u009a\u009b\u0003\u0018"+
+		"\f\u0000\u009b\u009c\u0006\u0010\uffff\uffff\u0000\u009c\u00a7\u0001\u0000"+
+		"\u0000\u0000\u009d\u009e\u0003\u001a\r\u0000\u009e\u009f\u0006\u0010\uffff"+
+		"\uffff\u0000\u009f\u00a7\u0001\u0000\u0000\u0000\u00a0\u00a1\u0003\u001c"+
+		"\u000e\u0000\u00a1\u00a2\u0006\u0010\uffff\uffff\u0000\u00a2\u00a7\u0001"+
+		"\u0000\u0000\u0000\u00a3\u00a4\u0003\u001e\u000f\u0000\u00a4\u00a5\u0006"+
+		"\u0010\uffff\uffff\u0000\u00a5\u00a7\u0001\u0000\u0000\u0000\u00a6{\u0001"+
+		"\u0000\u0000\u0000\u00a6~\u0001\u0000\u0000\u0000\u00a6\u0084\u0001\u0000"+
+		"\u0000\u0000\u00a6\u0088\u0001\u0000\u0000\u0000\u00a6\u008b\u0001\u0000"+
+		"\u0000\u0000\u00a6\u008e\u0001\u0000\u0000\u0000\u00a6\u0091\u0001\u0000"+
+		"\u0000\u0000\u00a6\u0094\u0001\u0000\u0000\u0000\u00a6\u0097\u0001\u0000"+
+		"\u0000\u0000\u00a6\u009a\u0001\u0000\u0000\u0000\u00a6\u009d\u0001\u0000"+
+		"\u0000\u0000\u00a6\u00a0\u0001\u0000\u0000\u0000\u00a6\u00a3\u0001\u0000"+
+		"\u0000\u0000\u00a7\u00aa\u0001\u0000\u0000\u0000\u00a8\u00a6\u0001\u0000"+
+		"\u0000\u0000\u00a8\u00a9\u0001\u0000\u0000\u0000\u00a9!\u0001\u0000\u0000"+
+		"\u0000\u00aa\u00a8\u0001\u0000\u0000\u0000\u00ab\u00ac\u0003 \u0010\u0000"+
+		"\u00ac\u00ad\u0006\u0011\uffff\uffff\u0000\u00ad\u00af\u0001\u0000\u0000"+
+		"\u0000\u00ae\u00ab\u0001\u0000\u0000\u0000\u00af\u00b0\u0001\u0000\u0000"+
+		"\u0000\u00b0\u00ae\u0001\u0000\u0000\u0000\u00b0\u00b1\u0001\u0000\u0000"+
+		"\u0000\u00b1\u00b2\u0001\u0000\u0000\u0000\u00b2\u00b3\u0005\u0000\u0000"+
+		"\u0001\u00b3#\u0001\u0000\u0000\u0000\u0006Ds\u0086\u00a6\u00a8\u00b0";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

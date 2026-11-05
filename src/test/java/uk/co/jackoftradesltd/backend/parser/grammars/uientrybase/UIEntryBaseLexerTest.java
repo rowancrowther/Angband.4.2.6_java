@@ -37,6 +37,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * mode and take an {@code LCASE} lowercase-with-underscore/digit run; the header count is
  * {@code INTEGER}.
  *
+ * <p>Class UIEntryBaseLexerTest coded before 261104, updated on 261104 once the {@code record-count:} header and its token were removed.
+ *
  * @author Rowan Crowther
  */
 class UIEntryBaseLexerTest {
@@ -80,14 +82,13 @@ class UIEntryBaseLexerTest {
         // One directive of each shape, showing default-mode NAME/RENDERER (LCASE) and INTEGER,
         // FLAG_MODE (combine/flags) and FREE_TEXT_MODE (category/desc) all push/pop cleanly.
         assertEquals(
-                List.of("RECORD_COUNT=record-count:", "INTEGER=3",
-                        "NAME=name:", "LCASE=foo",
+                List.of("NAME=name:", "LCASE=foo",
                         "RENDERER=renderer:", "LCASE=bar_renderer",
                         "COMBINE=combine:", "FLAG=LOGICAL_OR",
                         "CATEGORY=category:", "STRING=CHAR_SCREEN1",
                         "FLAGS=flags:", "FLAG=TIMED_AS_AUX",
                         "DESC=desc:", "STRING=hello world"),
-                tokens("record-count:3\nname:foo\nrenderer:bar_renderer\ncombine:LOGICAL_OR\n"
+                tokens("name:foo\nrenderer:bar_renderer\ncombine:LOGICAL_OR\n"
                         + "category:CHAR_SCREEN1\nflags:TIMED_AS_AUX\ndesc:hello world\n"));
     }
 
@@ -120,9 +121,9 @@ class UIEntryBaseLexerTest {
 
     @Test
     void commentsAndBlankLinesAreSkippedAndCrlfIsClean() {
-        String src = "# File: ui_entry_base.txt\r\n\r\nrecord-count:3\r\nname:foo\r\n";
+        String src = "# File: ui_entry_base.txt\r\n\r\nname:foo\r\n";
         assertEquals(
-                List.of("RECORD_COUNT=record-count:", "INTEGER=3", "NAME=name:", "LCASE=foo"),
+                List.of("NAME=name:", "LCASE=foo"),
                 tokens(src));
         assertEquals(0, lexErrors(src));
     }

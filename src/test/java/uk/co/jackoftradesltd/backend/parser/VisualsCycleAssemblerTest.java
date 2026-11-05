@@ -77,18 +77,14 @@ class VisualsCycleAssemblerTest {
     }
 
     private static VisualsCycler assemble(List<VisualsCycleParseRecord> records) {
-        List<String> errors = new ArrayList<>();
-        List<VisualsCycler> result = new VisualsCycleAssembler().assemble(records, errors, FILE);
+        List<VisualsCycler> result = new VisualsCycleAssembler().assemble(records, FILE);
         assertEquals(1, result.size());
-        assertTrue(errors.isEmpty(), "every error is fatal, none is reported into the list");
         return result.getFirst();
     }
 
     private static void refused(List<VisualsCycleParseRecord> records) {
-        List<String> errors = new ArrayList<>();
         assertThrows(DataFileParseException.class,
-                () -> new VisualsCycleAssembler().assemble(records, errors, FILE));
-        assertTrue(errors.isEmpty(), "a load-ending error is thrown, never added to the error list");
+                () -> new VisualsCycleAssembler().assemble(records, FILE));
     }
 
     private static List<ColourEnum> colours(ColourCycle cycle) {

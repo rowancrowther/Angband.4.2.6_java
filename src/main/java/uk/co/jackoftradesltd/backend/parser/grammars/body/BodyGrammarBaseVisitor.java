@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/BodyGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/BodyGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.body;
 
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
@@ -36,49 +36,26 @@ public class BodyGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitRecordCount(BodyGrammar.RecordCountContext ctx) {
-		return visitChildren(ctx);
-	}
+	@Override public T visitBody(BodyGrammar.BodyContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitBody(BodyGrammar.BodyContext ctx) {
-		return visitChildren(ctx);
-	}
+	@Override public T visitSlot(BodyGrammar.SlotContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitSlot(BodyGrammar.SlotContext ctx) {
-		return visitChildren(ctx);
-	}
+	@Override public T visitBodyType(BodyGrammar.BodyTypeContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitBodyType(BodyGrammar.BodyTypeContext ctx) {
-		return visitChildren(ctx);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override
-	public T visitFile(BodyGrammar.FileContext ctx) {
-		return visitChildren(ctx);
-	}
+	@Override public T visitFile(BodyGrammar.FileContext ctx) { return visitChildren(ctx); }
 }

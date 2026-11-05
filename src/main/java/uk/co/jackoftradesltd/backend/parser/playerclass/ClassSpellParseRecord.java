@@ -31,6 +31,9 @@ import java.util.List;
  *
  * <p>Format: {@code spell:name:level:mana:fail:exp} followed by its {@code effect:}/{@code desc:} lines.
  *
+ * <p>Record ClassSpellParseRecord coded before 261105, updated on 261105 for the removal of the
+ * soft-error path.
+ *
  * @param name    the spell's display name
  * @param level   the character level at which the spell becomes castable, as raw text
  * @param mana    the mana cost, as raw text
@@ -38,7 +41,8 @@ import java.util.List;
  * @param desc    the concatenated {@code desc:} description text
  * @param effects the parsed effect blocks produced when the spell is cast, in file order
  * @param exp     the first-cast experience reward, as raw text
- * @param line    the 1-based source line, retained so soft errors can point back at the file
+ * @param line    the 1-based source line, quoted in the {@code DataFileParseException} the
+ *                assembler throws if it refuses the record
  * @author Rowan Crowther
  */
 public record ClassSpellParseRecord(String name,

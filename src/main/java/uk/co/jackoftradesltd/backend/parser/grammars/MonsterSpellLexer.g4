@@ -2,10 +2,6 @@ lexer grammar MonsterSpellLexer;
 
 import CommentsAndEol, EffectBlockLexer;
 
-RECORD_COUNT
-        :   'record-count:'
-        ;
-
 NAME
         :   'name:' -> pushMode(MS_FREE_TEXT_MODE)
         ;

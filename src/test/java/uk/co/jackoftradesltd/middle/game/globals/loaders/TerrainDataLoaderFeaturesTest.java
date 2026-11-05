@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * ({@code init_parse_feat}, {@code run_parse_feat} and {@code finish_parse_feat} in {@code init.c}).
  *
  * <p><b>Expected values come from C's data, not from the port.</b> The shipped {@code terrain.txt}
- * is the C original with a {@code record-count:} line added. The expectations below were read from
+ * is the C original. The expectations below were read from
  * it: 25 records, one per {@code FEAT_} code and in the order of {@code list-terrain.h}; eight
  * {@code SHOP} features (the seven stores, then the home), numbered 1 to 8 by
  * {@code finish_parse_feat}, which also sets {@code z_info->store_max} to 8; one {@code mimic:}
@@ -77,7 +77,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * <p>Each test points {@code ANGBAND_DIRS.GAMEDATA} at a temporary directory (the real-data tests
  * leave it alone) and puts the feature list and the store count back afterwards.
  *
- * <p>Class TerrainDataLoaderFeaturesTest coded on 261013, commented in full on 261013.
+ * <p>Class TerrainDataLoaderFeaturesTest coded on 261013, commented in full on 261013, updated on 261104
+ * once the {@code record-count:} header was removed.
  *
  * @author Rowan Crowther
  */
@@ -301,7 +302,7 @@ class TerrainDataLoaderFeaturesTest {
         @Test
         @DisplayName("a file in which every record is dropped throws and leaves the registry alone")
         void everyRecordDropped() throws IOException {
-            writeTerrain("record-count:1\n\ncode:NOTACODE\nname:nothing\ngraphics:.:w\n\n");
+            writeTerrain("\ncode:NOTACODE\nname:nothing\ngraphics:.:w\n\n");
 
             assertThrows(RuntimeException.class, TerrainDataLoader::loadTerrainFeatures);
 
@@ -326,8 +327,7 @@ class TerrainDataLoaderFeaturesTest {
         @DisplayName("a file that lacks the last record loads the other 24, as C does, but has no entry for the missing code")
         void shortFileLoads() throws IOException {
             String shipped = shippedTerrain();
-            String withoutLast = shipped.substring(0, shipped.indexOf("code:PASS_RUBBLE"))
-                    .replace("record-count:25", "record-count:24");
+            String withoutLast = shipped.substring(0, shipped.indexOf("code:PASS_RUBBLE"));
             writeTerrain(withoutLast);
 
             TerrainDataLoader.loadTerrainFeatures();
@@ -345,8 +345,7 @@ class TerrainDataLoaderFeaturesTest {
             String shipped = shippedTerrain();
             String floor = shipped.substring(shipped.indexOf("code:FLOOR"), shipped.indexOf("code:CLOSED"))
                     .replace("name:open floor", "name:second floor");
-            writeTerrain(shipped.replace("record-count:25", "record-count:26")
-                    .replace("code:CLOSED", floor + "code:CLOSED"));
+            writeTerrain(shipped.replace("code:CLOSED", floor + "code:CLOSED"));
 
             RuntimeException thrown = assertThrows(RuntimeException.class, TerrainDataLoader::loadTerrainFeatures);
 
@@ -377,7 +376,7 @@ class TerrainDataLoaderFeaturesTest {
         void storeMaxSurvivesAFailedLoad() throws IOException {
             GameConstants.setStoreMax(99);
             // no records survive: the only record has a bad code, so the parse has errors and no features
-            writeTerrain("record-count:1\n\ncode:NOTACODE\nname:nothing\ngraphics:.:w\n\n");
+            writeTerrain("\ncode:NOTACODE\nname:nothing\ngraphics:.:w\n\n");
 
             assertThrows(RuntimeException.class, TerrainDataLoader::loadTerrainFeatures);
 

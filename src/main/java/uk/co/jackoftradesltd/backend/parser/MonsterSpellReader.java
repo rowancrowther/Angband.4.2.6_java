@@ -70,15 +70,14 @@ import java.util.List;
  * and a Java lookup over this list has to take the last match to agree; see
  * {@code docs/Assembler_Issues.md}.
  * <p>
+ * As in C, the first error stops the load and nothing is returned: a syntax error is thrown from
+ * {@link #extract} as a {@code ParseCancellationException}, and a record the assembler refuses (an
+ * unknown spell name or message type, a bad {@code hit:} value, an effect that does not resolve)
+ * is thrown as a {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}. Neither is
+ * caught here.
+ * <p>
  * Differences from C worth knowing about:
  * <ul>
- *   <li>The {@code record-count:} header is a Java-only addition; the upstream
- *       {@code monster_spell.txt} has no such line, and this repository's copy adds
- *       {@code record-count:91}. A wrong count is a soft error and the records still load, but a
- *       missing header is a syntax error and loads nothing.</li>
- *   <li>C stops at the first parse error. Here a syntax error is fatal and returns no items, but an
- *       assembler error (an unknown spell name, message type, colour or effect) skips only the
- *       offending record, or level, and the rest still load.</li>
  *   <li>C takes the directives in any order and attaches each to the last record, effect or level.
  *       The grammar is stricter and in places looser: it wants a directive after every
  *       {@code name:}, closes a level when another kind of directive interrupts the lore and
@@ -93,33 +92,33 @@ import java.util.List;
  *
  * @author Rowan Crowther
  *
- * <p>Class MonsterSpellReader coded before 260915, commented in full on 261017.
+ * <p>Class MonsterSpellReader coded before 260915, commented in full on 261017, updated on 261105
+ * for the removal of the soft-error path.
  */
 public class MonsterSpellReader implements Reader<MonsterSpellType> {
     /**
      * Logger handed to {@link GrammarDriver#run} so that an {@link IOException} while reading
      * {@code monster_spell.txt} is logged under this reader's name before it is rethrown. Syntax and
-     * soft errors do not go through it; they travel in the {@link ParseResult}.
+     * assembler errors do not go through it; they are thrown unlogged to the caller.
      *
-     * <p>Field logger coded before 260915, commented in full on 261017.
+     * <p>Field logger coded before 260915, commented in full on 261017, updated on 261105 for the
+     * removal of the soft-error path.
      */
     private final static Logger logger = LogManager.getLogger();
 
     /**
      * Parse the given file and return just the assembled monster spells, in file order (see the
-     * class block for how that differs from C's chain), discarding the soft-error channel (use
-     * {@link #parseWithResults} to inspect the errors). Satisfies the {@link Reader} contract.
+     * class block for how that differs from C's chain), unwrapped from the {@link ParseResult}
+     * that {@link #parseWithResults} gives. Satisfies the {@link Reader} contract.
      * <p>
-     * Because the errors are dropped, a syntax error and a clean load are told apart only by the
-     * list being empty, and a record skipped for an unknown spell name, message type, colour or
-     * effect just goes missing. Callers that must tell a partial or failed load from a clean one
-     * have to use {@link #parseWithResults}, as {@code MonsterDataLoader.loadMonsterSpellTypes}
-     * does.
+     * A syntax error or a refused record throws, exactly as in {@link #parseWithResults}, so an
+     * empty list only ever means a clean file with no records.
      *
-     * <p>Function parse coded before 260915, commented in full on 261017.
+     * <p>Function parse coded before 260915, commented in full on 261017, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param filename the data file to read
-     * @return the assembled {@link MonsterSpellType} list (empty if the parse failed closed)
+     * @return every {@link MonsterSpellType} in the file, in file order
      * @throws IOException if the file cannot be read
      */
     @Override
@@ -129,65 +128,55 @@ public class MonsterSpellReader implements Reader<MonsterSpellType> {
 
     /**
      * The {@link GrammarDriver.Extractor} for this grammar: run the parser's {@code file} entry
-     * rule, fail closed on any hard lexer/parser error, validate the {@code record-count:} header,
-     * and hand back the raw {@link MonsterSpellParseRecord}s, still holding unconverted text.
+     * rule, fail closed on any hard lexer/parser error, and hand back the raw
+     * {@link MonsterSpellParseRecord}s, still holding unconverted text.
      * <p>
      * Ordering matters: {@link ParseErrors#throwIfAny()} must fire <em>after</em> the parse but
      * <em>before</em> the records are used, so a malformed file aborts with a
-     * {@code ParseCancellationException} here rather than reaching the assembler, and a half-built
-     * record list is never measured against the declared count to produce a second, misleading
-     * error. That covers the cases where C returns a parser error too, such as a malformed
-     * {@code hit:} or {@code power-cutoff:} number or a directive before any {@code name:} (C's
-     * {@code PARSE_ERROR_MISSING_RECORD_HEADER}). The header check is soft -
-     * {@link GrammarDriver#checkRecordCount} only appends to {@code errors}, so a miscount never
-     * discards the records that did parse.
+     * {@code ParseCancellationException} here rather than reaching the assembler. That covers the
+     * cases where C returns a parser error too, such as a malformed {@code hit:} or
+     * {@code power-cutoff:} number or a directive before any {@code name:} (C's
+     * {@code PARSE_ERROR_MISSING_RECORD_HEADER}).
      * <p>
      * The records stay in file order. The copy at the end detaches the result from the parse tree,
      * so the returned list is the caller's to keep.
      *
-     * <p>Function extract coded before 260915, commented in full on 261017.
+     * <p>Function extract coded before 260915, commented in full on 261017, updated on 261105 for
+     * the removal of the soft-error path and the {@code record-count:} header.
      *
      * @param parser       the generated parser for this file
      * @param errorCatcher the live hard-error collector installed by the driver
-     * @param errors       the soft-error sink (record-count mismatches are appended here)
      * @return the parsed {@link MonsterSpellParseRecord}s in file order
      */
     private static List<MonsterSpellParseRecord> extract(
             @NotNull MonsterSpellGrammar parser,
-            @NotNull ParseErrors errorCatcher,
-            @NotNull List<String> errors) {
+            @NotNull ParseErrors errorCatcher) {
         MonsterSpellGrammar.FileContext output = parser.file();
         List<MonsterSpellParseRecord> records = output.monsterSpells;
         errorCatcher.throwIfAny();
-
-        String declaredRecordCount = output.declaredRecordCount;
-        GrammarDriver.checkRecordCount(declaredRecordCount, records.size(), errors);
 
         return new ArrayList<>(records);
     }
 
     /**
-     * Parse the given file, returning both the assembled {@link MonsterSpellType} list (in file
-     * order, see the class block) and any soft errors gathered along the way, for callers that need
-     * to tell a clean load from a partial one.
+     * Parse the given file, returning the assembled {@link MonsterSpellType} list (in file order,
+     * see the class block) wrapped in a {@link ParseResult}.
      * <p>
      * This is the Java counterpart of {@code run_parse_mon_spell} and the
      * {@code parse_mon_spell_*} handlers in {@code mon-init.c}: it wires {@code MonsterSpellLexer},
      * {@code MonsterSpellGrammar}, {@link #extract} and {@link MonsterSpellAssembler} into
-     * {@link GrammarDriver#run}, so the reader stays a thin wiring layer. A syntax error returns no
-     * items and the collected messages; an unknown name, an unresolved effect or colour or a
-     * {@code record-count:} mismatch leaves the good records in the result alongside the messages,
-     * so the list can be short without anything having been thrown. C would have stopped at the
-     * first of any of these. An unreadable file is not a result at all but an {@link IOException},
-     * the analogue of {@code parse_file_quit_not_found}'s {@code quit()}.
-     * <p>
-     * This is the variant callers should prefer: {@code MonsterDataLoader.loadMonsterSpellTypes}
-     * treats a result that carries errors and no spells as fatal, and reports the errors either way.
+     * {@link GrammarDriver#run}, so the reader stays a thin wiring layer. As C stops at the first
+     * error, so does this: a syntax error throws a {@code ParseCancellationException}, and an
+     * unknown name or message type, a bad {@code hit:} value or an unresolved effect throws a
+     * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}, and no result is
+     * returned. An unreadable file is an {@link IOException}, the analogue of
+     * {@code parse_file_quit_not_found}'s {@code quit()}.
      *
-     * <p>Function parseWithResults coded before 260915, commented in full on 261017.
+     * <p>Function parseWithResults coded before 260915, commented in full on 261017, updated on
+     * 261105 for the removal of the soft-error path.
      *
      * @param filename the monster-spell data file to read
-     * @return a {@link ParseResult} of the assembled spells plus any soft errors
+     * @return every monster spell in the file, in file order
      * @throws IOException if the file cannot be read
      */
     public ParseResult<MonsterSpellType> parseWithResults(@NotNull String filename) throws IOException {

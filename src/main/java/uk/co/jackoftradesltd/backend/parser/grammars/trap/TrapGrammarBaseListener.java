@@ -15,15 +15,8 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from TrapGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/TrapGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.trap;
-
-    import uk.co.jackoftradesltd.backend.parser.trap.TrapParseRecord;
-    import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
-
-    import java.util.List;
-    import java.util.ArrayList;
-
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
@@ -36,18 +29,6 @@ import org.antlr.v4.runtime.tree.TerminalNode;
  */
 @SuppressWarnings("CheckReturnValue")
 public class TrapGrammarBaseListener implements TrapGrammarListener {
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterRecordCount(TrapGrammar.RecordCountContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitRecordCount(TrapGrammar.RecordCountContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

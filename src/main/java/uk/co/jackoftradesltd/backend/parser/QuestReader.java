@@ -52,12 +52,17 @@ import java.util.List;
  * <p><b>Where the grammar is stricter than C</b> (recorded in {@code docs/grammar_issues.md}): C
  * registers four independent one-line directives and so accepts them in any order, missing, repeated,
  * indented or followed by a further {@code :} field, and accepts a file with no quests. {@code QuestGrammar}
- * demands a {@code record-count:} header and then one or more records of exactly {@code name:},
- * {@code level:}, {@code race:}, {@code number:} in that order, and refuses the whole file otherwise.
- * The shipped {@code quest.txt} satisfies all of that. The {@code record-count:} header is a
- * Java-only addition checked by {@link GrammarDriver#checkRecordCount}.
+ * demands one or more records of exactly {@code name:}, {@code level:}, {@code race:},
+ * {@code number:} in that order, and refuses the whole file otherwise. The shipped
+ * {@code quest.txt} satisfies all of that.
  *
- * <p>Class QuestReader coded before 260915, commented in full on 261019.
+ * <p><b>Errors:</b> as in C, the first error stops the load and nothing is returned. A syntax error
+ * is thrown from {@link #extract} as a {@code ParseCancellationException}, and an unresolved
+ * {@code race:} or a bad integer is thrown by {@link QuestAssembler} as a
+ * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}. Neither is caught here.
+ *
+ * <p>Class QuestReader coded before 260915, commented in full on 261019, updated on 261105 for the
+ * removal of the soft-error path and the {@code record-count:} header.
  *
  * @author Rowan Crowther
  */
@@ -72,18 +77,17 @@ public class QuestReader implements Reader<Quest> {
     private final static Logger logger = LogManager.getLogger();
 
     /**
-     * Parse the file and return just the assembled quests, discarding the error list.
+     * Parse the file and return just the assembled quests, unwrapped from the {@link ParseResult}
+     * that {@link #parseWithResults} gives.
      *
-     * <p>This is {@link #parseWithResults} with its soft errors thrown away, so a caller that needs to
-     * know a quest was dropped (a bad {@code level} or {@code number}, a record-count mismatch) must
-     * use that method instead. A hard grammar error gives an empty list here, indistinguishable from an
-     * empty file. The C counterpart is the {@code quests_parser} run as a whole
-     * ({@code player-quest.c}); C has no partial result.
+     * <p>Any error throws exactly as it does there, so there is no partial result, as in C. The C
+     * counterpart is the {@code quests_parser} run as a whole ({@code player-quest.c}).
      *
-     * <p>Function parse coded before 260915, commented in full on 261019.
+     * <p>Function parse coded before 260915, commented in full on 261019, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param filename the quest data file to read
-     * @return the quests that assembled successfully
+     * @return every quest in the file, in file order
      * @throws IOException if the file cannot be read
      */
     @Override
@@ -96,46 +100,45 @@ public class QuestReader implements Reader<Quest> {
      * {@code file} rule and pull the raw records out of its result.
      *
      * <p>Ordering is deliberate - {@link ParseErrors#throwIfAny()} fires straight after the parse so
-     * that a hard grammar error (e.g. a missing {@code record-count} header) fails closed before the
-     * soft {@link GrammarDriver#checkRecordCount} check runs against whatever did parse. The records
-     * come back in file order, which is the order {@code finish_parse_quest} in {@code player-quest.c}
-     * gives the quests (index 0 is the first {@code name:} in the file). The grammar's own
-     * {@code ArrayList} is copied so the caller owns the result.
+     * that a hard grammar error (e.g. a directive out of order) fails closed with a
+     * {@code ParseCancellationException} before any record is used. The records come back in file
+     * order, which is the order {@code finish_parse_quest} in {@code player-quest.c} gives the
+     * quests (index 0 is the first {@code name:} in the file). The grammar's own {@code ArrayList}
+     * is copied so the caller owns the result.
      *
-     * <p>Function extract coded before 260915, commented in full on 261019.
+     * <p>Function extract coded before 260915, commented in full on 261019, updated on 261105 for
+     * the removal of the soft-error path and the {@code record-count:} header.
      *
      * @param parser       the parser positioned at the start of the file
      * @param errorCatcher the shared collector for hard grammar/lexer errors
-     * @param errors       the soft-error sink, passed on to the record-count check
      * @return the raw parse records, ready for the assembler
      */
     private static List<QuestParseRecord> extract(
             @NotNull QuestGrammar parser,
-            @NotNull ParseErrors errorCatcher,
-            @NotNull List<String> errors) {
+            @NotNull ParseErrors errorCatcher) {
         QuestGrammar.FileContext output = parser.file();
         List<QuestParseRecord> records = output.quests;
         errorCatcher.throwIfAny();
-
-        String declaredRecordCount = output.declaredRecordCount;
-        GrammarDriver.checkRecordCount(declaredRecordCount, records.size(), errors);
 
         return new ArrayList<>(records);
     }
 
     /**
-     * Parse the file and return both the assembled quests and any soft errors gathered along the way
-     * (unresolved races, bad integers, a record-count mismatch). The preferred entry point when the
-     * caller wants to gate on {@link ParseResult#hasErrors()} - as {@code GameConstants.loadQuests()}
-     * does before storing the result. A missing or unreadable file is an {@link IOException}
-     * (C: {@code parse_file_quit_not_found} quits); an unresolved {@code race:} or a negative integer
-     * is not a soft error but an exception from {@link QuestAssembler}, as C's parse errors abort the
-     * load.
+     * Parse the file and return the assembled quests, in file order, wrapped in a
+     * {@link ParseResult}. This is the entry point {@code WorldDataLoader.loadQuests} uses.
      *
-     * <p>Function parseWithResults coded before 260915, commented in full on 261019.
+     * <p>A missing or unreadable file is an {@link IOException} (C: {@code parse_file_quit_not_found}
+     * quits). A grammar error throws a {@code ParseCancellationException}, and an unresolved
+     * {@code race:} or a bad integer throws a
+     * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException} from
+     * {@link QuestAssembler}, as C's parse errors abort the load. No result is returned for a file
+     * that fails.
+     *
+     * <p>Function parseWithResults coded before 260915, commented in full on 261019, updated on
+     * 261105 for the removal of the soft-error path.
      *
      * @param filename the quest data file to read
-     * @return the assembled quests plus any soft errors
+     * @return every quest in the file, in file order
      * @throws IOException if the file cannot be read
      */
     public ParseResult<Quest> parseWithResults(@NotNull String filename) throws IOException {

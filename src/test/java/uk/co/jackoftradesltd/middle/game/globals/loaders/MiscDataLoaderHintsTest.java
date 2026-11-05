@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.game.globals.loaders;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -39,12 +40,16 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@code H:} lines each become a hint, and the parse is stopped with {@code quit} if the file
  * cannot be opened ({@code parse_file_quit_not_found}) or the parser reports an error
  * ({@code run_parser} in {@code datafile.c}, then {@code init_arrays}). The loader stops start-up
- * the same way by throwing, with one deliberate softening: soft errors that leave at least one hint
- * are logged and the hints still register.
+ * the same way by throwing, and registers nothing: a missing file is wrapped in a
+ * {@code RuntimeException} naming it, and a grammar error ({@link ParseCancellationException})
+ * passes through unwrapped.
  *
  * <p>Each test points {@code ANGBAND_DIRS.GAMEDATA} at a temporary directory and puts it, and the
  * registry's hints, back afterwards. The expected texts are taken from {@code hints.txt} as C ships
  * it, not from what the loader returns.
+ *
+ * <p>Class MiscDataLoaderHintsTest coded before 261104, commented in full on 261104 for the removal
+ * of the soft-error path and the {@code record-count:} header.
  *
  * @author Rowan Crowther
  */
@@ -94,7 +99,7 @@ class MiscDataLoaderHintsTest {
     @Test
     @DisplayName("a good file registers every H: line, in file order")
     void goodFileLoads() throws IOException {
-        writeHints("record-count:2\nH:Staves can be used even when confused and blinded.\n"
+        writeHints("H:Staves can be used even when confused and blinded.\n"
                 + "H:Resistances cut damage to 1/3rd for the four basic elements.\n");
 
         MiscDataLoader.loadHints();
@@ -105,11 +110,11 @@ class MiscDataLoaderHintsTest {
     }
 
     @Test
-    @DisplayName("a file with no H: line and record-count:0 loads, as C accepts it, with an empty list")
+    @DisplayName("a file with no H: line loads, as C accepts it, with an empty list")
     void emptyFileLoadsEmptyList() throws IOException {
-        writeHints("record-count:1\nH:Old hint.\n");
+        writeHints("H:Old hint.\n");
         MiscDataLoader.loadHints();
-        writeHints("record-count:0\n");
+        writeHints("");
 
         MiscDataLoader.loadHints();
 
@@ -117,33 +122,9 @@ class MiscDataLoaderHintsTest {
     }
 
     @Test
-    @DisplayName("a record-count promising hints the file lacks leaves no hints with errors, which stops start-up")
-    void promisedHintsMissingThrows() throws IOException {
-        writeHints("record-count:1\nH:Old hint.\n");
-        MiscDataLoader.loadHints();
-        writeHints("record-count:3\n");
-
-        RuntimeException thrown = assertThrows(RuntimeException.class, MiscDataLoader::loadHints);
-
-        assertTrue(thrown.getMessage().contains("hints.txt"));
-        assertEquals(List.of("Old hint."), texts(MiscRegistry.getHints()));
-    }
-
-    @Test
-    @DisplayName("a soft error that leaves a hint is logged and the hint still registers")
-    void softErrorWithRecordsStillRegisters() throws IOException {
-        writeHints("record-count:5\nH:Staves can be used even when confused and blinded.\n");
-
-        MiscDataLoader.loadHints();
-
-        assertEquals(List.of("Staves can be used even when confused and blinded."),
-                texts(MiscRegistry.getHints()));
-    }
-
-    @Test
     @DisplayName("a missing file stops start-up, as parse_file_quit_not_found does, and registers nothing")
     void missingFileThrows() throws IOException {
-        writeHints("record-count:1\nH:Old hint.\n");
+        writeHints("H:Old hint.\n");
         MiscDataLoader.loadHints();
         Files.delete(tempDir.resolve("hints.txt"));
 
@@ -154,16 +135,22 @@ class MiscDataLoaderHintsTest {
         assertEquals(List.of("Old hint."), texts(MiscRegistry.getHints()));
     }
 
+    /**
+     * A grammar error stops start-up and the registry keeps the previous load. The
+     * {@link ParseCancellationException} passes through the loader unwrapped.
+     *
+     * <p>Function hardGrammarErrorThrows coded before 261104, commented in full on 261104, rewritten
+     * on 261104 for the removal of the soft-error path.
+     */
     @Test
-    @DisplayName("a hard grammar error yields no hints with errors, which stops start-up")
+    @DisplayName("a grammar error stops start-up and registers nothing")
     void hardGrammarErrorThrows() throws IOException {
-        writeHints("record-count:1\nH:Old hint.\n");
+        writeHints("H:Old hint.\n");
         MiscDataLoader.loadHints();
-        writeHints("H:No record-count header, so the file rule fails.\n");
+        writeHints("H:A good hint.\nnonsense\n");
 
-        RuntimeException thrown = assertThrows(RuntimeException.class, MiscDataLoader::loadHints);
+        assertThrows(ParseCancellationException.class, MiscDataLoader::loadHints);
 
-        assertTrue(thrown.getMessage().contains("hints.txt"));
         assertEquals(List.of("Old hint."), texts(MiscRegistry.getHints()));
     }
 

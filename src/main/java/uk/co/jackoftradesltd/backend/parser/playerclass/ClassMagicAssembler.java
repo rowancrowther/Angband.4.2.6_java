@@ -44,11 +44,9 @@ import java.util.List;
  *
  * <p>A malformed scalar or a surplus book is fatal, as it is in C, where the matching
  * {@code PARSE_ERROR_*} stops the parse: the problem is logged and a
- * {@link DataFileParseException} naming the line and file is thrown. The {@code errors} list that
- * the {@link Assembler} contract passes in is never written to here; it is handed on to
- * {@link ClassSpellBookAssembler}, which appends a message for each book it cannot build and skips
- * that book. A skipped book still counts toward the declared limit, because the count is taken
- * from the parse records and not from the books that came back.
+ * {@link DataFileParseException} naming the line and file is thrown. The books are built by
+ * {@link ClassSpellBookAssembler}, which throws in the same way for a book it cannot build, so no
+ * book is skipped and the declared limit is checked against every book in the record.
  *
  * <p>Differences from C, none of which a shipped {@code class.txt} reaches:
  * <ul>
@@ -64,7 +62,8 @@ import java.util.List;
  *       class only ever sees the last one.</li>
  * </ul>
  *
- * <p>Class ClassMagicAssembler coded before 260915, commented in full on 261028.
+ * <p>Class ClassMagicAssembler coded before 260915, commented in full on 261028, updated on 261105
+ * for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -105,19 +104,18 @@ public class ClassMagicAssembler implements Assembler<ClassMagicParseRecord, Lis
      * checks run in the order above for a single record, and a fault in an earlier record stops
      * the load before a later record is read.
      *
-     * <p>Function assemble coded before 260915, commented in full on 261028.
+     * <p>Function assemble coded before 260915, commented in full on 261028, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param records  the raw magic record(s) for one class, normally exactly one
-     * @param errors   not written to by this method; it is passed on to {@link ClassSpellBookAssembler},
-     *                 which appends a message for each book it skips
      * @param filename the class file being read, for the error message
-     * @return one {@link ClassMagic} per record, in order, built from the books that were not
-     *         skipped
-     * @throws DataFileParseException if a scalar is negative or not a number, or the record has
-     *                                more books than it declares
+     * @return one {@link ClassMagic} per record, in order, holding every book of that record
+     * @throws DataFileParseException if a scalar is negative or not a number, the record has more
+     *                                books than it declares, or {@link ClassSpellBookAssembler}
+     *                                refuses a book
      */
     @Override
-    public List<ClassMagic> assemble(@NotNull List<ClassMagicParseRecord> records, @NotNull List<String> errors,
+    public List<ClassMagic> assemble(@NotNull List<ClassMagicParseRecord> records,
                                     String filename) {
         List<ClassMagic> results = new ArrayList<>();
         
@@ -147,7 +145,7 @@ public class ClassMagicAssembler implements Assembler<ClassMagicParseRecord, Lis
             }
             int numBooks = ParseUtils.parseIntString("Class magic", record.numBooks(), line, filename, "number of books");
             
-            List<MagicBook> magicBooks = new ClassSpellBookAssembler().assemble(record.books(), errors, filename);
+            List<MagicBook> magicBooks = new ClassSpellBookAssembler().assemble(record.books(), filename);
             
             if (record.books().size() > numBooks) {
                 String msg = "Class magic starting at line: " + line + " of file: " + filename + " has " +

@@ -95,14 +95,12 @@ class QuestAssemblerTest {
         return new QuestParseRecord("Test", level, race, number, 7);
     }
 
-    private static List<Quest> assemble(List<String> errors, QuestParseRecord... records) {
-        return new QuestAssembler().assemble(List.of(records), errors, "test.txt");
+    private static List<Quest> assemble(QuestParseRecord... records) {
+        return new QuestAssembler().assemble(List.of(records), "test.txt");
     }
 
     private static Quest single(String level, String race, String number) {
-        List<String> errors = new ArrayList<>();
-        List<Quest> quests = assemble(errors, record(level, race, number));
-        assertTrue(errors.isEmpty(), errors::toString);
+        List<Quest> quests = assemble(record(level, race, number));
         assertEquals(1, quests.size());
         return quests.get(0);
     }
@@ -112,9 +110,7 @@ class QuestAssemblerTest {
      * to be still empty, because this assembler never writes to it.
      */
     private static String stopMessage(QuestParseRecord... records) {
-        List<String> errors = new ArrayList<>();
-        DataFileParseException e = assertThrows(DataFileParseException.class, () -> assemble(errors, records));
-        assertTrue(errors.isEmpty(), errors::toString);
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> assemble(records));
         return e.getMessage();
     }
 
@@ -138,10 +134,7 @@ class QuestAssemblerTest {
 
     @Test
     void emptyRecordListGivesEmptyQuestList() {
-        List<String> errors = new ArrayList<>();
-
-        assertTrue(new QuestAssembler().assemble(List.of(), errors, "test.txt").isEmpty());
-        assertTrue(errors.isEmpty());
+        assertTrue(new QuestAssembler().assemble(List.of(), "test.txt").isEmpty());
     }
 
     /**
@@ -150,12 +143,9 @@ class QuestAssemblerTest {
      */
     @Test
     void indicesFollowFileOrder() {
-        List<String> errors = new ArrayList<>();
-        List<Quest> quests = assemble(errors,
-                record("99", SAURON, "1"),
+        List<Quest> quests = assemble(record("99", SAURON, "1"),
                 record("100", MORGOTH, "1"));
 
-        assertTrue(errors.isEmpty(), errors::toString);
         assertEquals(2, quests.size());
         assertEquals(0, quests.get(0).getIndex());
         assertEquals(SAURON, quests.get(0).getRace().getName());
@@ -171,7 +161,7 @@ class QuestAssemblerTest {
     void eachRecordKeepsItsOwnName() {
         List<Quest> quests = new QuestAssembler().assemble(List.of(
                 new QuestParseRecord("Sauron", "99", SAURON, "1", 3),
-                new QuestParseRecord("Morgoth", "100", MORGOTH, "1", 8)), new ArrayList<>(), "test.txt");
+                new QuestParseRecord("Morgoth", "100", MORGOTH, "1", 8)), "test.txt");
 
         assertEquals("Sauron", quests.get(0).getName());
         assertEquals("Morgoth", quests.get(1).getName());
@@ -410,18 +400,15 @@ class QuestAssemblerTest {
 
     /**
      * Nothing is dropped any more: oversized figures are clamped and kept, so the indices stay the
-     * records' positions and the error list stays empty.
+     * records' positions.
      */
     @Test
     void oversizedFiguresKeepTheirRecordsAndIndices() {
-        List<String> errors = new ArrayList<>();
-        List<Quest> quests = assemble(errors,
-                record("5", SAURON, "2147483648"),
+        List<Quest> quests = assemble(record("5", SAURON, "2147483648"),
                 record("99", SAURON, "1"),
                 record("9223372036854775808", SAURON, "1"),
                 record("100", MORGOTH, "1"));
 
-        assertTrue(errors.isEmpty(), errors::toString);
         assertEquals(4, quests.size());
         for (int i = 0; i < quests.size(); i++) {
             assertEquals(i, quests.get(i).getIndex());

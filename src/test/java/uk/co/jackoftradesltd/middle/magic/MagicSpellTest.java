@@ -180,14 +180,12 @@ class MagicSpellTest {
     @Test
     @DisplayName("ClassSpellAssembler maps the file's level:mana:fail:exp onto the right members")
     void assemblerKeepsFileOrder() throws ReflectiveOperationException {
-        List<String> errors = new ArrayList<>();
         List<MagicSpell> spells = new ClassSpellAssembler().assemble(List.of(
                 record("Magic Missile", "1", "1", "22", "4"),
                 record("Light Room", "1", "2", "26", "4"),
                 record("Find Traps, Doors & Stairs", "1", "1", "20", "2"),
-                record("Phase Door", "2", "2", "22", "4")), errors, "test.txt");
+                record("Phase Door", "2", "2", "22", "4")), "test.txt");
 
-        assertTrue(errors.isEmpty(), errors.toString());
         assertEquals(4, spells.size());
 
         MagicSpell lightRoom = spells.get(1);
@@ -216,24 +214,21 @@ class MagicSpellTest {
     @DisplayName("ClassSpellAssembler leaves the realm null for the book assembler to set")
     void assemblerDoesNotSetTheRealm() throws ReflectiveOperationException {
         List<MagicSpell> spells = new ClassSpellAssembler().assemble(
-                List.of(record("Magic Missile", "1", "1", "22", "4")), new ArrayList<>(), "test.txt");
+                List.of(record("Magic Missile", "1", "1", "22", "4")), "test.txt");
 
         assertNull(read(spells.getFirst(), "realm"));
     }
 
     /**
      * Class MagicSpellTest, ClassSpellAssembler. A malformed scalar stops the load, as a C parse
-     * error does, and nothing is added to the errors list.
+     * error does.
      */
     @Test
     @DisplayName("ClassSpellAssembler stops the load on a spell with a malformed scalar")
     void malformedScalarStopsTheLoad() {
-        List<String> errors = new ArrayList<>();
-
         assertThrows(DataFileParseException.class, () -> new ClassSpellAssembler().assemble(List.of(
                 record("Magic Missile", "1", "1", "22", "4"),
                 record("Broken", "1", "x", "22", "4"),
-                record("Phase Door", "2", "2", "22", "4")), errors, "test.txt"));
-        assertTrue(errors.isEmpty(), errors.toString());
+                record("Phase Door", "2", "2", "22", "4")), "test.txt"));
     }
 }

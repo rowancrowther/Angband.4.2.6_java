@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from UIEntryGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/frontend/ui/entry/UIEntryGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.frontend.ui.entry.antlr4.uientry;
 
 import org.antlr.v4.runtime.tree.ParseTreeListener;
@@ -25,16 +25,6 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
  * {@link UIEntryGrammar}.
  */
 public interface UIEntryGrammarListener extends ParseTreeListener {
-	/**
-	 * Enter a parse tree produced by {@link UIEntryGrammar#recordCount}.
-	 * @param ctx the parse tree
-	 */
-	void enterRecordCount(UIEntryGrammar.RecordCountContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link UIEntryGrammar#recordCount}.
-	 * @param ctx the parse tree
-	 */
-	void exitRecordCount(UIEntryGrammar.RecordCountContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link UIEntryGrammar#tag}.
 	 * @param ctx the parse tree

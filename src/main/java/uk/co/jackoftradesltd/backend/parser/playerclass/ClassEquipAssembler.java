@@ -48,8 +48,7 @@ import java.util.List;
  * <p>A malformed entry is fatal, as it is in C, where the matching {@code PARSE_ERROR_*} stops the
  * parse: the problem is logged and a {@link DataFileParseException} naming the line and file is
  * thrown. That includes a bad exclusion option, which in C fails the whole line with
- * {@code PARSE_ERROR_INVALID_OPTION} (see {@link #parseEopts}). The {@code errors} list that the
- * {@link Assembler} contract passes in is never written to.
+ * {@code PARSE_ERROR_INVALID_OPTION} (see {@link #parseEopts}). No entry is skipped.
  *
  * <p>Accepted deviations (decided 261028), both in the numeric form of the subtype, which no
  * shipped {@code class.txt} reaches. C's {@code lookup_sval()} refuses a number of
@@ -58,7 +57,8 @@ import java.util.List;
  * the {@code int} range in {@code min} and {@code max} are refused rather than wrapped, as
  * everywhere in the port.
  *
- * <p>Class ClassEquipAssembler coded before 260915, commented in full on 261028.
+ * <p>Class ClassEquipAssembler coded before 260915, commented in full on 261028, updated on 261105
+ * for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -108,14 +108,13 @@ public class ClassEquipAssembler implements Assembler<ClassEquipParseRecord, Lis
      * <p>Function assemble coded before 260915, commented in full on 261028.
      *
      * @param records  the raw equipment lines for one class, in file order
-     * @param errors   unused; part of the {@link Assembler} contract, and failures are thrown, not appended
      * @param filename the class file being read, for the error message
      * @return the resolved starting items in reverse file order
      * @throws DataFileParseException if any line is malformed, as listed above
      * @throws IllegalStateException  if a subtype given by name is looked up before the object kinds are loaded
      */
     @Override
-    public List<StartItem> assemble(@NotNull List<ClassEquipParseRecord> records, @NotNull List<String> errors,
+    public List<StartItem> assemble(@NotNull List<ClassEquipParseRecord> records,
                                     String filename) {
         List<StartItem> results = new ArrayList<>();
 
@@ -186,7 +185,7 @@ public class ClassEquipAssembler implements Assembler<ClassEquipParseRecord, Lis
                 logger.fatal(msg);
                 throw new DataFileParseException(msg);
             }
-            List<StartOptionExclusion> eopts = parseEopts(record.eopts(), errors, line, filename);
+            List<StartOptionExclusion> eopts = parseEopts(record.eopts(), line, filename);
             
             results.add(new StartItem(tVal, parsedSValue, min, max, eopts));
         }
@@ -213,13 +212,12 @@ public class ClassEquipAssembler implements Assembler<ClassEquipParseRecord, Lis
      * <p>Function parseEopts coded before 260915, commented in full on 261028.
      *
      * @param eopts    the raw exclusion clause text
-     * @param errors   unused; failures are thrown rather than appended
      * @param line     the 1-based source line, for the error message
      * @param filename the class file being read, for the error message
      * @return the resolved exclusions, empty for {@code none}; never {@code null}
      * @throws DataFileParseException if any token names an unknown or non-birth option
      */
-    private List<StartOptionExclusion> parseEopts(@NotNull String eopts, @NotNull List<String> errors, int line, String filename) {
+    private List<StartOptionExclusion> parseEopts(@NotNull String eopts, int line, String filename) {
         List<StartOptionExclusion> result = new ArrayList<>();
         String[] eoptPart = eopts.split("[ |]+");
 

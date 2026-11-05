@@ -27,7 +27,6 @@ import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftradesltd.middle.objects.Brand;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -73,20 +72,18 @@ class BrandAssemblerTest {
         return record("FIRE_3", "3", "25", "113", resist, vuln);
     }
 
-    private static List<Brand> assemble(List<BrandParseRecord> records, List<String> errors) {
-        return new BrandAssembler().assemble(records, errors, FILE);
+    private static List<Brand> assemble(List<BrandParseRecord> records) {
+        return new BrandAssembler().assemble(records, FILE);
     }
 
     private static Brand one(BrandParseRecord record) {
-        List<Brand> brands = assemble(List.of(record), new ArrayList<>());
+        List<Brand> brands = assemble(List.of(record));
         assertEquals(1, brands.size());
         return brands.getFirst();
     }
 
     private static void refused(BrandParseRecord record) {
-        List<String> errors = new ArrayList<>();
-        assertThrows(DataFileParseException.class, () -> assemble(List.of(record), errors));
-        assertTrue(errors.isEmpty(), "a load-ending error is thrown, never added to the error list");
+        assertThrows(DataFileParseException.class, () -> assemble(List.of(record)));
     }
 
     // ---- Ordinary path -----------------------------------------------------
@@ -94,12 +91,10 @@ class BrandAssemblerTest {
     @Test
     void theUpstreamFire3RecordAssemblesFieldForField() {
         // lib/gamedata/brand.txt's FIRE_3 block, as C's handlers store it.
-        List<String> errors = new ArrayList<>();
-        Brand brand = assemble(List.of(fire3("IM_FIRE", "HURT_FIRE")), errors).getFirst();
+        Brand brand = assemble(List.of(fire3("IM_FIRE", "HURT_FIRE"))).getFirst();
 
         assertEquals(new Brand("FIRE_3", "fire", "burn", MonsterRaceFlag.RF_IM_FIRE,
                 MonsterRaceFlag.RF_HURT_FIRE, 3, 25, 113), brand);
-        assertTrue(errors.isEmpty());
     }
 
     @Test
@@ -114,14 +109,14 @@ class BrandAssemblerTest {
         List<Brand> brands = assemble(List.of(
                 record("ACID_3", "3", "25", "161", "IM_ACID", ""),
                 record("ELEC_3", "3", "25", "116", "IM_ELEC", ""),
-                record("FIRE_3", "3", "25", "113", "IM_FIRE", "HURT_FIRE")), new ArrayList<>());
+                record("FIRE_3", "3", "25", "113", "IM_FIRE", "HURT_FIRE")));
 
         assertEquals(List.of("FIRE_3", "ELEC_3", "ACID_3"), brands.stream().map(Brand::getCode).toList());
     }
 
     @Test
     void noRecordsGiveNoBrands() {
-        assertTrue(assemble(List.of(), new ArrayList<>()).isEmpty());
+        assertTrue(assemble(List.of()).isEmpty());
     }
 
     // ---- Flags -------------------------------------------------------------
@@ -200,6 +195,6 @@ class BrandAssemblerTest {
                 record("ACID_3", "3", "25", "161", "IM_ACID", ""),
                 record("BAD_3", "3", "25", "113", "NONE", ""),
                 record("FIRE_3", "3", "25", "113", "IM_FIRE", ""));
-        assertThrows(DataFileParseException.class, () -> assemble(records, new ArrayList<>()));
+        assertThrows(DataFileParseException.class, () -> assemble(records));
     }
 }

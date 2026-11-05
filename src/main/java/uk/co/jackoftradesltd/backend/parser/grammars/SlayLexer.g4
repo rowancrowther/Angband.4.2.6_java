@@ -38,12 +38,6 @@ lexer grammar SlayLexer;
 // mode end-of-line handling; Flags contributes the shared FLAG_BODY fragment.
 import CommentsAndEol, Flags;
 
-// "record-count:<n>" - header declaring how many slay records follow; checked
-// against the number actually parsed by the reader.
-RECORD_COUNT
-        :   'record-count:'
-        ;
-
 // "code:<CODE>" - opens a new slay record. The value is the cross-reference
 // code (e.g. EVIL_2) other data files use, read as free text.
 CODE

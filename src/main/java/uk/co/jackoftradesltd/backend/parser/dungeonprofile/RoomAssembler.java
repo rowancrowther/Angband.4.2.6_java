@@ -83,7 +83,6 @@ public class RoomAssembler implements Assembler<DungeonProfileParseRecord.Room, 
      * on 261023.
      *
      * @param records  the parsed room lines of one profile, in file order
-     * @param errors   unused; every fault now ends the load by throwing, so nothing is appended
      * @param filename the file being read, for the message
      * @return the assembled room profiles, one per record, in file order
      * @throws DataFileParseException if a room name matches no {@link RoomType}, or a number field
@@ -91,7 +90,7 @@ public class RoomAssembler implements Assembler<DungeonProfileParseRecord.Room, 
      *                                line the room starts on
      */
     @Override
-    public List<RoomProfile> assemble(@NotNull List<DungeonProfileParseRecord.Room> records, @NotNull List<String> errors,
+    public List<RoomProfile> assemble(@NotNull List<DungeonProfileParseRecord.Room> records,
                                       String filename) {
         List<RoomProfile> roomProfiles = new ArrayList<>();
 

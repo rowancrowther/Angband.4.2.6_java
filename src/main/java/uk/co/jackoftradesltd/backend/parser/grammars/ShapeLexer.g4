@@ -2,10 +2,6 @@ lexer grammar ShapeLexer;
 
 import EffectBlockLexer, CommentsAndEol, Flags;
 
-RECORD_COUNT
-        :   'record-count:'
-        ;
-
 NAME
         :   'name:' -> pushMode(SHAPE_FREE_TEXT_MODE)
         ;

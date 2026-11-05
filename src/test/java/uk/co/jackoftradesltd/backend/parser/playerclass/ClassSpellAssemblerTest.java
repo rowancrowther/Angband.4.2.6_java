@@ -26,7 +26,6 @@ import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.middle.magic.MagicSpell;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -86,18 +85,18 @@ class ClassSpellAssemblerTest {
         return new EffectParseRecord(type, "", "", "", "", "", "", "", "", "", "", line);
     }
 
-    private static List<MagicSpell> run(List<String> errors, ClassSpellParseRecord... records) {
-        return new ClassSpellAssembler().assemble(List.of(records), errors, FILE);
+    private static List<MagicSpell> run(ClassSpellParseRecord... records) {
+        return new ClassSpellAssembler().assemble(List.of(records), FILE);
     }
 
     private static MagicSpell one(String level, String mana, String fail, String exp) {
-        List<MagicSpell> result = run(new ArrayList<>(), spell(level, mana, fail, exp));
+        List<MagicSpell> result = run(spell(level, mana, fail, exp));
         assertEquals(1, result.size());
         return result.getFirst();
     }
 
     private static DataFileParseException stops(ClassSpellParseRecord... records) {
-        return assertThrows(DataFileParseException.class, () -> run(new ArrayList<>(), records));
+        return assertThrows(DataFileParseException.class, () -> run(records));
     }
 
     private static void assertNames(DataFileParseException e, String... parts) {
@@ -145,14 +144,13 @@ class ClassSpellAssemblerTest {
     @Test
     @DisplayName("an empty record list gives an empty result")
     void noRecordsGivesNoResult() {
-        assertTrue(new ClassSpellAssembler().assemble(List.of(), new ArrayList<>(), FILE).isEmpty());
+        assertTrue(new ClassSpellAssembler().assemble(List.of(), FILE).isEmpty());
     }
 
     @Test
     @DisplayName("records give spells in file order, each read on its own")
     void recordsAreReadInOrder() throws ReflectiveOperationException {
-        List<MagicSpell> result = run(new ArrayList<>(),
-                new ClassSpellParseRecord("Magic Missile", "1", "1", "22", "", List.of(), "4", 211),
+        List<MagicSpell> result = run(new ClassSpellParseRecord("Magic Missile", "1", "1", "22", "", List.of(), "4", 211),
                 new ClassSpellParseRecord("Light Room", "1", "2", "26", "", List.of(), "4", 221),
                 new ClassSpellParseRecord("Phase Door", "2", "2", "22", "", List.of(), "4", 238));
 
@@ -190,7 +188,7 @@ class ClassSpellAssemblerTest {
     @Test
     @DisplayName("the name is kept as written, commas, ampersand and spaces included")
     void nameIsKeptVerbatim() {
-        List<MagicSpell> result = run(new ArrayList<>(), withEffects("Find Traps, Doors & Stairs", ""));
+        List<MagicSpell> result = run(withEffects("Find Traps, Doors & Stairs", ""));
 
         assertEquals("Find Traps, Doors & Stairs", result.getFirst().getSpellName());
     }
@@ -200,8 +198,7 @@ class ClassSpellAssemblerTest {
     void descriptionIsPassedOn() throws ReflectiveOperationException {
         String text = "Fires a magic missile that always hits its target and does" +
                 " unresistable damage.";
-        List<MagicSpell> result = run(new ArrayList<>(),
-                withEffects("Magic Missile", text), withEffects("Light Room", ""));
+        List<MagicSpell> result = run(withEffects("Magic Missile", text), withEffects("Light Room", ""));
 
         assertEquals(text, read(result.get(0), "spellDescription"));
         assertEquals("", read(result.get(1), "spellDescription"));
@@ -210,21 +207,18 @@ class ClassSpellAssemblerTest {
     @Test
     @DisplayName("a spell with no effect blocks has an empty effect list")
     void noEffects() throws ReflectiveOperationException {
-        List<MagicSpell> result = run(new ArrayList<>(), withEffects("Magic Missile", ""));
+        List<MagicSpell> result = run(withEffects("Magic Missile", ""));
 
         assertEquals(List.of(), read(result.getFirst(), "effects"));
     }
 
     @Test
-    @DisplayName("each effect block becomes one effect, in file order, and the errors list stays empty")
+    @DisplayName("each effect block becomes one effect, in file order")
     void effectsAreResolved() throws ReflectiveOperationException {
-        List<String> errors = new ArrayList<>();
-        List<MagicSpell> result = run(errors,
-                withEffects("Light Room", "", effect("LIGHT_AREA", 222), effect("NOURISH", 223)));
+        List<MagicSpell> result = run(withEffects("Light Room", "", effect("LIGHT_AREA", 222), effect("NOURISH", 223)));
 
         List<?> effects = (List<?>) read(result.getFirst(), "effects");
         assertEquals(2, effects.size());
-        assertTrue(errors.isEmpty(), errors.toString());
     }
 
     @Test

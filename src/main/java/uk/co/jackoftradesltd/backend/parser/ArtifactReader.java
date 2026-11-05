@@ -70,8 +70,7 @@ import java.util.List;
  * first record in the file is {@code aidx} 1. (The sibling readers whose C lists run last-first,
  * such as {@code SlayReader}, are the opposite case.) The first record of the shipped file is "of
  * Galadriel" and the last is "of Morgoth". An {@link Artifact} carries no index of its own, so its
- * place in the list is its index, and a record the assembler skips moves every later artifact up one
- * place.
+ * place in the list is its index.
  * <p>
  * <strong>The kind table is written to as a side effect.</strong> A record whose {@code base-object:}
  * sval is not in {@code object.txt} gets an object kind of its own, as C's
@@ -83,14 +82,16 @@ import java.util.List;
  * the artifact. A second parse of the same file finds the kinds the first one left behind and
  * registers none; see {@code ObjectDataLoader.loadArtifacts} for why that matters at birth.
  * <p>
+ * As in C, the first error stops the load and nothing is returned: a syntax error is thrown from
+ * {@link #extract} as a {@code ParseCancellationException}, and a record the assembler refuses (an
+ * unknown tval, flag, value name, element, brand, slay or curse, or a number or dice string that
+ * does not parse) is thrown as a
+ * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}. Neither is caught here. An
+ * unknown {@code act:} name is only a warning, as {@code findact} returning {@code NULL} is not an
+ * error in C.
+ * <p>
  * Differences from C worth knowing about:
  * <ul>
- *   <li>The {@code record-count:} header is a Java-only addition, checked as a soft error; the
- *       upstream {@code artifact.txt} has no such line, and this repository's copy adds one.</li>
- *   <li>C stops at the first parse error. Here a syntax error is fatal and returns no items, but an
- *       assembler error (an unknown tval, flag, value name, element, brand, slay, curse or
- *       activation, or a number or dice string that does not parse) skips only the offending record
- *       and the rest still load.</li>
  *   <li>C takes the directives in any order and lets a repeated scalar one overwrite while
  *       {@code flags:}, {@code values:}, {@code slay:}, {@code brand:}, {@code msg:} and
  *       {@code desc:} accumulate (the message and description lines are joined with no separator).
@@ -104,35 +105,35 @@ import java.util.List;
  *       customised copy in the user directory first.</li>
  * </ul>
  *
- * <p>Class ArtifactReader coded before 260915, commented in full on 261017.
+ * <p>Class ArtifactReader coded before 260915, commented in full on 261017, updated on 261105 for
+ * the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
 public class ArtifactReader implements Reader {
     /**
      * Logger handed to {@link GrammarDriver#run} so that an {@link IOException} while reading
-     * {@code artifact.txt} is logged under this reader's name before it is rethrown. Syntax and soft
-     * errors do not go through it; they travel in the {@link ParseResult}.
+     * {@code artifact.txt} is logged under this reader's name before it is rethrown. Syntax and
+     * assembler errors do not go through it; they are thrown unlogged to the caller.
      *
-     * <p>Field logger coded before 260915, commented in full on 261017.
+     * <p>Field logger coded before 260915, commented in full on 261017, updated on 261105 for the
+     * removal of the soft-error path.
      */
     private static final Logger logger = LogManager.getLogger();
 
     /**
-     * Parses {@code filename} and returns just the assembled artifacts, in file order, discarding
-     * the soft-error channel (use {@link #parseWithResults} to inspect errors). Satisfies the
+     * Parses {@code filename} and returns just the assembled artifacts, in file order, unwrapped
+     * from the {@link ParseResult} that {@link #parseWithResults} gives. Satisfies the
      * {@link Reader} contract.
      * <p>
-     * Because the errors are dropped, a syntax error and a clean empty result are indistinguishable
-     * here: a syntax error gives an empty list, and a record skipped for an unknown tval, flag,
-     * brand, slay, curse or activation just goes missing. Callers that must tell a partial or failed
-     * load from a clean one have to use {@link #parseWithResults}, as
-     * {@code ObjectDataLoader.loadArtifacts} does.
+     * A syntax error or a refused record throws, exactly as in {@link #parseWithResults}, so an
+     * empty list only ever means a clean file with no records.
      *
-     * <p>Function parse coded before 260915, commented in full on 261017.
+     * <p>Function parse coded before 260915, commented in full on 261017, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param filename the data file to read
-     * @return the artifacts read from the file (empty if the parse failed closed)
+     * @return every artifact in the file, in file order
      * @throws IOException if the file cannot be read
      */
     @Override
@@ -142,68 +143,58 @@ public class ArtifactReader implements Reader {
 
     /**
      * The {@link GrammarDriver.Extractor} for this grammar: runs the parser's {@code file} entry
-     * rule, fails closed on any hard lexer/parser error, validates the {@code record-count:} header,
-     * and hands back the raw {@link ArtifactParseRecord}s, still holding unresolved text.
+     * rule, fails closed on any hard lexer/parser error, and hands back the raw
+     * {@link ArtifactParseRecord}s, still holding unresolved text.
      * <p>
      * Ordering matters: {@link ParseErrors#throwIfAny()} must fire <em>after</em> the parse but
      * <em>before</em> the records are used, so a malformed file aborts with a
-     * {@code ParseCancellationException} here rather than reaching the assembler, and a half-built
-     * record list is never measured against the declared count to produce a second, misleading
-     * error. That covers the cases where C returns a parser error too: a directive before any
-     * {@code name:} line (C's {@code PARSE_ERROR_MISSING_RECORD_HEADER}), an unknown directive
+     * {@code ParseCancellationException} here rather than reaching the assembler. That covers the
+     * cases where C returns a parser error too: a directive before any {@code name:} line (C's
+     * {@code PARSE_ERROR_MISSING_RECORD_HEADER}), an unknown directive
      * ({@code PARSE_ERROR_UNDEFINED_DIRECTIVE}) and a directive with nothing after its colon, such as
-     * an empty {@code desc:}. The header check is soft - {@link GrammarDriver#checkRecordCount} only
-     * appends to {@code errors}, so a miscount never discards the records that did parse.
+     * an empty {@code desc:}.
      * <p>
      * The records stay in file order, which is the order the artifacts are returned in. The list is
      * the grammar's own, not a copy.
      *
-     * <p>Function extract coded before 260915, commented in full on 261017.
+     * <p>Function extract coded before 260915, commented in full on 261017, updated on 261105 for
+     * the removal of the soft-error path and the {@code record-count:} header.
      *
      * @param parser       the generated {@code ArtifactGrammar} parser, positioned at the start of the file
      * @param errorCatcher the live hard-error collector installed by the driver
-     * @param errors       the soft-error sink, mutated in place
      * @return the parsed {@link ArtifactParseRecord}s in file order
      */
     private static List<ArtifactParseRecord> extract(
             @NotNull ArtifactGrammar parser,
-            @NotNull ParseErrors errorCatcher,
-            @NotNull List<String> errors) {
+            @NotNull ParseErrors errorCatcher) {
         ArtifactGrammar.FileContext output = parser.file();
         List<ArtifactParseRecord> result = output.records;
         errorCatcher.throwIfAny();
-
-        String declaredRecordCount = output.declaredRecordCount;
-        GrammarDriver.checkRecordCount(declaredRecordCount, result.size(), errors);
 
         return result;
     }
 
     /**
-     * Parses {@code filename} and returns both the assembled {@link Artifact} list (in file order)
-     * and any soft errors gathered along the way, for callers that need to tell a clean load from a
-     * partial one. {@link #parse} is the items-only convenience over this.
+     * Parses {@code filename} and returns the assembled {@link Artifact} list (in file order)
+     * wrapped in a {@link ParseResult}. {@link #parse} is the items-only convenience over this.
      * <p>
      * This is the Java counterpart of {@code run_parse_artifact} and the {@code parse_artifact_*}
      * handlers in {@code obj-init.c}: it wires {@code ArtifactLexer}, {@code ArtifactGrammar},
-     * {@link #extract} and {@link ArtifactAssembler} into {@link GrammarDriver#run}. A syntax error
-     * returns no items and the collected messages; an unresolved tval, flag, value name, brand, slay,
-     * curse or activation, or a {@code record-count:} mismatch, leaves the good records in the result
-     * alongside the messages, so the list can be short without anything having been thrown. C would
-     * have stopped at the first of any of these (bar an unknown {@code act:} name, which C does not
-     * treat as an error at all). An unreadable file is not a result at all but an
+     * {@link #extract} and {@link ArtifactAssembler} into {@link GrammarDriver#run}. As C stops at
+     * the first error, so does this: a syntax error throws a {@code ParseCancellationException},
+     * and an unresolved tval, flag, value name, brand, slay or curse throws a
+     * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}, and no result is
+     * returned. An unknown {@code act:} name is only a warning, as in C. An unreadable file is an
      * {@link IOException}, the analogue of {@code parse_file_quit_not_found}'s {@code quit()}.
      * <p>
      * The first call also registers the object kinds of the special artifacts in
      * {@code ObjectRegistry} (see the class description); a repeat call finds them and adds none.
-     * <p>
-     * This is the variant callers should prefer: {@code ObjectDataLoader.loadArtifacts} gates on the
-     * errors for exactly that reason.
      *
-     * <p>Function parseWithResults coded before 260915, commented in full on 261017.
+     * <p>Function parseWithResults coded before 260915, commented in full on 261017, updated on
+     * 261105 for the removal of the soft-error path.
      *
      * @param filename the artifact data file to read
-     * @return a {@link ParseResult} of the assembled artifacts plus any soft errors
+     * @return every artifact in the file, in file order
      * @throws IOException if the file cannot be read
      */
     public ParseResult<Artifact> parseWithResults(@NotNull String filename) throws IOException {

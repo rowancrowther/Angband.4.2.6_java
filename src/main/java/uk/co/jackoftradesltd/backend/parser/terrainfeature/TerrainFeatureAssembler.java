@@ -105,8 +105,8 @@ import java.util.List;
  * logged at fatal and thrown as a {@link DataFileParseException}: an unknown or sentinel code, mimic,
  * terrain flag or resist flag; a negative or unparseable {@code priority}; a {@code digging} outside
  * 1 to 5 or unparseable; an empty glyph; and a second {@code name:} for a repeated code. The first
- * bad terrain flag on a line throws, as C's {@code parse_feat_flags()} stops at the first. Nothing
- * is added to the {@code errors} list, and no record is skipped. An unknown colour is not an error:
+ * bad terrain flag on a line throws, as C's {@code parse_feat_flags()} stops at the first. No
+ * record is skipped. An unknown colour is not an error:
  * like C's {@code color_text_to_attr()} and {@code color_char_to_attr()} ({@code z-color.c}), it
  * falls back to white.
  *
@@ -117,7 +117,7 @@ import java.util.List;
  * form of C's NULL pointer for the name, description, message and look strings.
  *
  * <p>Class TerrainFeatureAssembler coded before 260915, reworked to fatal errors and repeated codes
- * on 261030, commented in full on 261030.
+ * on 261030, commented in full on 261030, updated on 261105 for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -160,14 +160,12 @@ public class TerrainFeatureAssembler implements Assembler<TerrainFeatureParseRec
      * 261030, commented in full on 261030.
      *
      * @param records  the raw terrain parse records, in file order
-     * @param errors   the soft-error channel the {@link Assembler} contract supplies; not written to,
-     *                 since every error here is fatal
      * @param filename the data file the records came from, quoted in every error message
      * @return one feature per distinct code, in the order each code first appeared
      * @throws DataFileParseException on any unresolvable value, as listed in the class comment
      */
     @Override
-    public List<Feature> assemble(@NotNull List<TerrainFeatureParseRecord> records, @NotNull List<String> errors,
+    public List<Feature> assemble(@NotNull List<TerrainFeatureParseRecord> records,
                                     String filename) {
         List<Feature> result = new ArrayList<>();
         List<String> allFlagsSeen = new ArrayList<>();

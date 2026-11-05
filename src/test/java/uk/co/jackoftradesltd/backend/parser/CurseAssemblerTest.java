@@ -72,10 +72,10 @@ class CurseAssemblerTest {
 
     // ---- fixture helpers -------------------------------------------------
 
-    private static List<Curse> assemble(List<String> errors, Rec... recs) {
+    private static List<Curse> assemble(Rec... recs) {
         List<CurseParseRecord> records = new ArrayList<>();
         for (Rec r : recs) records.add(r.build());
-        return new CurseAssembler().assemble(records, errors, "test.txt");
+        return new CurseAssembler().assemble(records, "test.txt");
     }
 
     /**
@@ -86,7 +86,7 @@ class CurseAssemblerTest {
      * @return the exception, for its message
      */
     private static DataFileParseException stops(Rec... recs) {
-        return assertThrows(DataFileParseException.class, () -> assemble(new ArrayList<>(), recs));
+        return assertThrows(DataFileParseException.class, () -> assemble(recs));
     }
 
     private static Curse only(List<Curse> curses) {
@@ -116,7 +116,7 @@ class CurseAssemblerTest {
     @Test
     @DisplayName("type: lines are kept as tvals, in file order")
     void typesAreTvals() {
-        Curse c = only(assemble(new ArrayList<>(), new Rec("a").type("cloak", "soft armor")));
+        Curse c = only(assemble(new Rec("a").type("cloak", "soft armor")));
 
         assertEquals(List.of(TValue.TV_CLOAK, TValue.TV_SOFT_ARMOR), c.getTValues());
     }
@@ -124,17 +124,15 @@ class CurseAssemblerTest {
     @Test
     @DisplayName("a tval with no object base (none, other book) loads, as tval_find_idx accepts it")
     void tvalWithNoObjectBaseLoads() {
-        List<String> errors = new ArrayList<>();
-        Curse c = only(assemble(errors, new Rec("a").type("none", "other book")));
+        Curse c = only(assemble(new Rec("a").type("none", "other book")));
 
-        assertAll(() -> assertEquals(List.of(TValue.TV_NONE, TValue.TV_OTHER_BOOK), c.getTValues()),
-                () -> assertTrue(errors.isEmpty(), errors::toString));
+        assertAll(() -> assertEquals(List.of(TValue.TV_NONE, TValue.TV_OTHER_BOOK), c.getTValues()));
     }
 
     @Test
     @DisplayName("a numeric type: is a tval index, as tval_find_idx reads it with strtoul (15 is cloak)")
     void numericTypeIsTvalIndex() {
-        Curse c = only(assemble(new ArrayList<>(), new Rec("a").type("15")));
+        Curse c = only(assemble(new Rec("a").type("15")));
 
         assertEquals(List.of(TValue.TV_CLOAK), c.getTValues());
     }
@@ -142,7 +140,7 @@ class CurseAssemblerTest {
     @Test
     @DisplayName("British spelling of an armour tval resolves, as de_armour rewrites it first")
     void britishArmourSpellingResolves() {
-        Curse c = only(assemble(new ArrayList<>(), new Rec("a").type("dragon armour")));
+        Curse c = only(assemble(new Rec("a").type("dragon armour")));
 
         assertEquals(List.of(TValue.TV_DRAG_ARMOR), c.getTValues());
     }
@@ -167,34 +165,28 @@ class CurseAssemblerTest {
     @Test
     @DisplayName("an absent weight line means 0, not an error")
     void absentWeightIsZero() {
-        List<String> errors = new ArrayList<>();
-        Curse c = only(assemble(errors, new Rec("a")));
+        Curse c = only(assemble(new Rec("a")));
 
-        assertAll(() -> assertEquals(0, c.getItemObject().getWeight()),
-                () -> assertTrue(errors.isEmpty(), errors::toString));
+        assertAll(() -> assertEquals(0, c.getItemObject().getWeight()));
     }
 
     @Test
     @DisplayName("a negative weight adjustment is kept, not clamped to 0")
     void negativeWeightIsKept() {
-        List<String> errors = new ArrayList<>();
-        Curse c = only(assemble(errors, new Rec("a").weight("-5")));
+        Curse c = only(assemble(new Rec("a").weight("-5")));
 
-        assertAll(() -> assertEquals(-5, c.getItemObject().getWeight()),
-                () -> assertTrue(errors.isEmpty(), errors::toString));
+        assertAll(() -> assertEquals(-5, c.getItemObject().getWeight()));
     }
 
     @Test
     @DisplayName("weight bounds -32768 and 32767 are both accepted (inclusive)")
     void weightBoundsAreInclusive() {
-        List<String> errors = new ArrayList<>();
-        List<Curse> curses = assemble(errors, new Rec("lo").weight("-32768"), new Rec("hi").weight("32767"));
+        List<Curse> curses = assemble(new Rec("lo").weight("-32768"), new Rec("hi").weight("32767"));
 
         // Result order is reversed against the file, so hi is first
         assertAll(() -> assertEquals(2, curses.size()),
                 () -> assertEquals(32767, curses.get(0).getItemObject().getWeight()),
-                () -> assertEquals(-32768, curses.get(1).getItemObject().getWeight()),
-                () -> assertTrue(errors.isEmpty(), errors::toString));
+                () -> assertEquals(-32768, curses.get(1).getItemObject().getWeight()));
     }
 
     @Test
@@ -251,14 +243,11 @@ class CurseAssemblerTest {
     @Test
     @DisplayName("MULTIPLY_WEIGHT with weight 0 or positive loads; negative weight without the flag loads")
     void multiplyWeightBoundaryCases() {
-        List<String> errors = new ArrayList<>();
-        List<Curse> curses = assemble(errors,
-                new Rec("zero").weight("0").flags("MULTIPLY_WEIGHT"),
+        List<Curse> curses = assemble(new Rec("zero").weight("0").flags("MULTIPLY_WEIGHT"),
                 new Rec("pos").weight("150").flags("MULTIPLY_WEIGHT"),
                 new Rec("neg-no-flag").weight("-1"));
 
         assertAll(() -> assertEquals(3, curses.size()),
-                () -> assertTrue(errors.isEmpty(), errors::toString),
                 () -> assertTrue(curses.get(1).getItemObject().getFlags().has(ObjectFlag.OF_MULTIPLY_WEIGHT)));
     }
 
@@ -267,19 +256,17 @@ class CurseAssemblerTest {
     @Test
     @DisplayName("combat values map to to-hit, to-dam and to-AC in that order, negatives kept")
     void combatMapsInOrder() {
-        List<String> errors = new ArrayList<>();
-        Curse c = only(assemble(errors, new Rec("a").combat("-5", "-6", "20")));
+        Curse c = only(assemble(new Rec("a").combat("-5", "-6", "20")));
 
         assertAll(() -> assertEquals(-5, c.getItemObject().getToHit()),
                 () -> assertEquals(-6, c.getItemObject().getToDam()),
-                () -> assertEquals(20, c.getItemObject().getToAC()),
-                () -> assertTrue(errors.isEmpty(), errors::toString));
+                () -> assertEquals(20, c.getItemObject().getToAC()));
     }
 
     @Test
     @DisplayName("an absent combat line means 0 for all three, as C's zero-filled object")
     void absentCombatIsZero() {
-        Curse c = only(assemble(new ArrayList<>(), new Rec("a")));
+        Curse c = only(assemble(new Rec("a")));
 
         assertAll(() -> assertEquals(0, c.getItemObject().getToHit()),
                 () -> assertEquals(0, c.getItemObject().getToDam()),
@@ -312,21 +299,19 @@ class CurseAssemblerTest {
     @Test
     @DisplayName("HATES_FIRE on flags: and RES_FIRE on values: share one element entry")
     void flagsAndValuesShareOneElementInfo() {
-        List<String> errors = new ArrayList<>();
-        Curse c = only(assemble(errors, new Rec("a").flags("HATES_FIRE").value("RES_FIRE", "-1")));
+        Curse c = only(assemble(new Rec("a").flags("HATES_FIRE").value("RES_FIRE", "-1")));
 
         var info = c.getItemObject().getElInfo().get(ElementEnum.ELEM_FIRE);
         assertAll(() -> assertEquals(1, c.getItemObject().getElInfo().size()),
                 () -> assertNotNull(info),
                 () -> assertTrue(info.getFlags().has(ElementInfoEnum.EL_INFO_HATES)),
-                () -> assertEquals(-1, info.getResLevel()),
-                () -> assertTrue(errors.isEmpty(), errors::toString));
+                () -> assertEquals(-1, info.getResLevel()));
     }
 
     @Test
     @DisplayName("IGNORE_ sets the ignore element flag and an ordinary token sets an object flag")
     void ignoreAndObjectFlags() {
-        Curse c = only(assemble(new ArrayList<>(), new Rec("a").flags("IGNORE_ACID", "NO_TELEPORT")));
+        Curse c = only(assemble(new Rec("a").flags("IGNORE_ACID", "NO_TELEPORT")));
 
         assertAll(() -> assertTrue(c.getItemObject().getElInfo().get(ElementEnum.ELEM_ACID)
                         .getFlags().has(ElementInfoEnum.EL_INFO_IGNORE)),
@@ -352,7 +337,7 @@ class CurseAssemblerTest {
     @Test
     @DisplayName("a modifier value lands on the object")
     void modifierLands() {
-        Curse c = only(assemble(new ArrayList<>(), new Rec("a").value("STR", "-3")));
+        Curse c = only(assemble(new Rec("a").value("STR", "-3")));
 
         assertEquals(-3, c.getItemObject().getModifiers().get(ObjectModifier.OM_STR));
     }
@@ -399,10 +384,9 @@ class CurseAssemblerTest {
     @Test
     @DisplayName("no effect lines give an empty effect list, not an error")
     void noEffectsIsEmpty() {
-        List<String> errors = new ArrayList<>();
-        assemble(errors, new Rec("a"));
+        Curse c = only(assemble(new Rec("a")));
 
-        assertTrue(errors.isEmpty(), errors::toString);
+        assertTrue(c.getItemObject().getEffect().isEmpty());
     }
 
     // ---- time: parse_curse_time ------------------------------------------
@@ -419,7 +403,7 @@ class CurseAssemblerTest {
     @Test
     @DisplayName("desc lines are concatenated with no separator")
     void descLinesConcatenate() {
-        Curse c = only(assemble(new ArrayList<>(), new Rec("a").desc("makes you ", "mentally slow")));
+        Curse c = only(assemble(new Rec("a").desc("makes you ", "mentally slow")));
 
         assertEquals("makes you mentally slow", c.getDescription());
     }
@@ -429,13 +413,11 @@ class CurseAssemblerTest {
     @Test
     @DisplayName("conflict-flags set the conflict flag set, not the curse object's flags")
     void conflictFlagsLandOnTheCurse() {
-        List<String> errors = new ArrayList<>();
-        Curse c = only(assemble(errors, new Rec("a").cFlag("NO_TELEPORT", "AFRAID")));
+        Curse c = only(assemble(new Rec("a").cFlag("NO_TELEPORT", "AFRAID")));
 
         assertAll(() -> assertTrue(c.getConflictFlags().has(ObjectFlag.OF_NO_TELEPORT)),
                 () -> assertTrue(c.getConflictFlags().has(ObjectFlag.OF_AFRAID)),
-                () -> assertTrue(c.getItemObject().getFlags().isEmpty()),
-                () -> assertTrue(errors.isEmpty(), errors::toString));
+                () -> assertTrue(c.getItemObject().getFlags().isEmpty()));
     }
 
     @Test
@@ -450,7 +432,7 @@ class CurseAssemblerTest {
     @Test
     @DisplayName("the last curse in the file comes first, and indexes run 0.. in that order")
     void resultIsReversedAndIndexed() {
-        List<Curse> curses = assemble(new ArrayList<>(), new Rec("first"), new Rec("second"), new Rec("third"));
+        List<Curse> curses = assemble(new Rec("first"), new Rec("second"), new Rec("third"));
 
         assertAll(() -> assertEquals(List.of("third", "second", "first"),
                         curses.stream().map(Curse::getName).toList()),
@@ -462,7 +444,7 @@ class CurseAssemblerTest {
     @Test
     @DisplayName("254 curses load")
     void exactlyTheCapLoads() {
-        assertEquals(254, assemble(new ArrayList<>(), numbered(254)).size());
+        assertEquals(254, assemble(numbered(254)).size());
     }
 
     @Test
@@ -494,14 +476,12 @@ class CurseAssemblerTest {
     @Test
     @DisplayName("a conflict naming a later curse links to that same instance")
     void forwardConflictReferenceLinks() {
-        List<String> errors = new ArrayList<>();
-        List<Curse> curses = assemble(errors, new Rec("a").conflict("b"), new Rec("b"));
+        List<Curse> curses = assemble(new Rec("a").conflict("b"), new Rec("b"));
 
         Curse a = curses.stream().filter(c -> c.getName().equals("a")).findFirst().orElseThrow();
         Curse b = curses.stream().filter(c -> c.getName().equals("b")).findFirst().orElseThrow();
         assertAll(() -> assertEquals(1, a.getConflict().size()),
-                () -> assertSame(b, a.getConflict().get(0)),
-                () -> assertTrue(errors.isEmpty(), errors::toString));
+                () -> assertSame(b, a.getConflict().get(0)));
     }
 
     @Test

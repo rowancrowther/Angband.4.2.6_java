@@ -35,6 +35,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * Symbolic fields (code/msgt) are read in {@code FLAG_MODE} as a {@code FLAG} (the token was named {@code TAG}
  * until the parser was regenerated on 261018); numeric fields are the single sign-capable {@code INTEGER} (C7).
  *
+ * <p>Class ProjectionLexerTest coded before 261104, updated on 261104 once the {@code record-count:} header and its token were removed.
+ *
  * @author Rowan Crowther
  */
 class ProjectionLexerTest {
@@ -101,17 +103,10 @@ class ProjectionLexerTest {
     }
 
     @Test
-    void recordCountAndSignedInteger() {
-        assertEquals(List.of("RECORD_COUNT=record-count:", "INTEGER=56"), tokens("record-count:56"));
-        // INTEGER is sign-capable (C7), even though projection values are non-negative in practice.
-        assertEquals(List.of("NUMERATOR=numerator:", "INTEGER=-1"), tokens("numerator:-1"));
-    }
-
-    @Test
     void commentsAndBlankLinesAreSkippedAndCrlfIsClean() {
-        String src = "# header\r\n\r\nrecord-count:56\r\ncode:ACID\r\n";
+        String src = "# header\r\n\r\ncode:ACID\r\n";
         assertEquals(
-                List.of("RECORD_COUNT=record-count:", "INTEGER=56", "CODE=code:", "FLAG=ACID"),
+                List.of("CODE=code:", "FLAG=ACID"),
                 tokens(src));
         assertEquals(0, lexErrors(src));
     }

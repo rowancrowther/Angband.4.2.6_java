@@ -2,10 +2,6 @@ lexer grammar NamesLexer;
 
 import CommentsAndEol;
 
-RECORD_COUNT
-        :   'record-count:'
-        ;
-
 SECTION
         :   'section:'
         ;

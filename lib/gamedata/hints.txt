@@ -11,8 +11,6 @@
 # Format:
 # H:Hint text.
 
-record-count:99
-
 H:Cure Critical Wounds potions will cure blindness and confusion; carry lots.
 H:Staves can be used even when confused and blinded.
 H:Potions of Heroism or Berserk Strength will protect you from being scared.

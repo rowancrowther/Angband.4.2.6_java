@@ -27,7 +27,6 @@ import uk.co.jackoftradesltd.middle.player.PlayerTimedEffect;
 import uk.co.jackoftradesltd.middle.player.TimedGrade;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -52,7 +51,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * grade that does not sit strictly above the one before it. Getting the ceiling's direction wrong
  * is easy and invisible: it only shows on a data file nobody has written yet.
  *
- * <p>Class PlayerTimedAssemblerGradeTest coded on 260820, commented in full on 261029.
+ * <p>Class PlayerTimedAssemblerGradeTest coded on 260820, commented in full on 261029, error sinks
+ * removed on 261105 for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -121,11 +121,10 @@ class PlayerTimedAssemblerGradeTest {
      * Runs the assembler over one record.
      *
      * @param record the record to assemble
-     * @param errors the soft-error channel to fill
      * @return the effects that survived
      */
-    private static List<PlayerTimedEffect> assemble(PlayerTimedParseRecord record, List<String> errors) {
-        return new PlayerTimedAssembler().assemble(List.of(record), errors, "test.txt");
+    private static List<PlayerTimedEffect> assemble(PlayerTimedParseRecord record) {
+        return new PlayerTimedAssembler().assemble(List.of(record), "test.txt");
     }
 
     /**
@@ -148,15 +147,13 @@ class PlayerTimedAssemblerGradeTest {
         @Test
         @DisplayName("FOOD grades are multiplied by the food-value constant")
         void foodGradesAreScaled() {
-            List<String> errors = new ArrayList<>();
             List<PlayerTimedEffect> effects = assemble(record("FOOD",
                     grade("1", "Starving"), grade("4", "Faint"), grade("8", "Weak"),
-                    grade("15", "Hungry"), grade("90", "Fed"), grade("100", "Full")), errors);
+                    grade("15", "Hungry"), grade("90", "Fed"), grade("100", "Full")));
 
             List<TimedGrade> grades = effects.get(0).getGrade();
 
             assertAll(
-                    () -> assertTrue(errors.isEmpty(), errors.toString()),
                     () -> assertEquals(1 * FOOD_SCALE, grades.get(1).max()),
                     () -> assertEquals(15 * FOOD_SCALE, grades.get(4).max()),
                     () -> assertEquals(90 * FOOD_SCALE, grades.get(5).max()),
@@ -173,15 +170,13 @@ class PlayerTimedAssemblerGradeTest {
         @Test
         @DisplayName("other effects keep their grade maxima unscaled")
         void otherEffectsAreNotScaled() {
-            List<String> errors = new ArrayList<>();
             List<PlayerTimedEffect> effects = assemble(record("STUN",
                     grade("50", "Stun"), grade("150", "Heavy Stun"),
-                    grade("10000", "Knocked Out")), errors);
+                    grade("10000", "Knocked Out")));
 
             List<TimedGrade> grades = effects.get(0).getGrade();
 
             assertAll(
-                    () -> assertTrue(errors.isEmpty(), errors.toString()),
                     () -> assertEquals(50, grades.get(1).max()),
                     () -> assertEquals(150, grades.get(2).max()),
                     () -> assertEquals(10000, grades.get(3).max()));
@@ -219,14 +214,12 @@ class PlayerTimedAssemblerGradeTest {
         @Test
         @DisplayName("a zeroed, unnamed band heads the list")
         void headIsZeroedAndUnnamed() {
-            List<String> errors = new ArrayList<>();
             List<PlayerTimedEffect> effects =
-                    assemble(record("BLIND", grade("10000", "Blind")), errors);
+                    assemble(record("BLIND", grade("10000", "Blind")));
 
             List<TimedGrade> grades = effects.get(0).getGrade();
 
             assertAll(
-                    () -> assertTrue(errors.isEmpty(), errors.toString()),
                     () -> assertEquals(2, grades.size(), "one declared band plus the head"),
                     () -> assertEquals(0, grades.get(0).Grade()),
                     () -> assertEquals(0, grades.get(0).max()),
@@ -245,15 +238,13 @@ class PlayerTimedAssemblerGradeTest {
         @Test
         @DisplayName("declared bands are numbered from one")
         void declaredBandsAreNumberedFromOne() {
-            List<String> errors = new ArrayList<>();
             List<PlayerTimedEffect> effects = assemble(record("STUN",
                     grade("50", "Stun"), grade("150", "Heavy Stun"),
-                    grade("10000", "Knocked Out")), errors);
+                    grade("10000", "Knocked Out")));
 
             List<TimedGrade> grades = effects.get(0).getGrade();
 
             assertAll(
-                    () -> assertTrue(errors.isEmpty(), errors.toString()),
                     () -> assertEquals(4, grades.size()),
                     () -> assertEquals(0, grades.get(0).Grade()),
                     () -> assertEquals(1, grades.get(1).Grade()),
@@ -270,14 +261,12 @@ class PlayerTimedAssemblerGradeTest {
         @Test
         @DisplayName("each effect gets exactly one head")
         void eachEffectGetsItsOwnHead() {
-            List<String> errors = new ArrayList<>();
             List<PlayerTimedEffect> effects = new PlayerTimedAssembler().assemble(
                     List.of(record("BLIND", grade("10000", "Blind")),
                             record("STUN", grade("50", "Stun"), grade("150", "Heavy Stun"))),
-                    errors, "test.txt");
+                    "test.txt");
 
             assertAll(
-                    () -> assertTrue(errors.isEmpty(), errors.toString()),
                     () -> assertEquals(2, effects.size()),
                     () -> assertEquals(2, effects.get(0).getGrade().size()),
                     () -> assertEquals(3, effects.get(1).getGrade().size()),
@@ -296,14 +285,12 @@ class PlayerTimedAssemblerGradeTest {
         @Test
         @DisplayName("no declared band can share the head's zero maximum")
         void headsZeroMaximumIsUnique() {
-            List<String> errors = new ArrayList<>();
             List<PlayerTimedEffect> effects = assemble(record("STUN",
-                    grade("50", "Stun"), grade("150", "Heavy Stun")), errors);
+                    grade("50", "Stun"), grade("150", "Heavy Stun")));
 
             List<TimedGrade> grades = effects.get(0).getGrade();
 
             assertAll(
-                    () -> assertTrue(errors.isEmpty(), errors.toString()),
                     () -> assertEquals(1, grades.stream().filter(g -> g.max() == 0).count()));
         }
     }
@@ -326,7 +313,7 @@ class PlayerTimedAssemblerGradeTest {
          */
         private void assertStopsTheLoad(PlayerTimedParseRecord record, String tail) {
             DataFileParseException thrown = assertThrows(DataFileParseException.class,
-                    () -> assemble(record, new ArrayList<>()));
+                    () -> assemble(record));
 
             assertTrue(thrown.getMessage().contains(tail), thrown::getMessage);
             assertTrue(thrown.getMessage().contains("line: 1 "), thrown::getMessage);
@@ -354,18 +341,17 @@ class PlayerTimedAssemblerGradeTest {
         @Test
         @DisplayName("the ceiling applies to the scaled value, so FOOD is capped far lower")
         void ceilingAppliesAfterScaling() {
-            List<String> foodJustFits = new ArrayList<>();
-            List<String> stunSameNumber = new ArrayList<>();
-
             assertStopsTheLoad(record("FOOD", grade("328", "Fed")),
                     "has an illegal out of range maximum value: 328 must be between 1 and 327");
-            assemble(record("FOOD", grade("327", "Fed")), foodJustFits);
-            assemble(record("STUN", grade("400", "Stun")), stunSameNumber);
 
             assertAll(
-                    () -> assertTrue(foodJustFits.isEmpty(), foodJustFits.toString()),
-                    () -> assertTrue(stunSameNumber.isEmpty(),
-                            "the same number is fine unscaled"));
+                    () -> assertEquals(327 * FOOD_SCALE, assertDoesNotThrow(
+                            () -> assemble(record("FOOD", grade("327", "Fed"))))
+                            .get(0).getGrade().get(1).max()),
+                    () -> assertEquals(400, assertDoesNotThrow(
+                            () -> assemble(record("STUN", grade("400", "Stun"))),
+                            "the same number is fine unscaled")
+                            .get(0).getGrade().get(1).max()));
         }
 
         /**
@@ -374,7 +360,7 @@ class PlayerTimedAssemblerGradeTest {
         @Test
         @DisplayName("an unscaled grade may reach 32767 but not 32768")
         void unscaledCeilingIs32767() {
-            assertEquals(32767, assemble(record("STUN", grade("32767", "Stun")), new ArrayList<>())
+            assertEquals(32767, assemble(record("STUN", grade("32767", "Stun")))
                     .get(0).getGrade().get(1).max());
             assertStopsTheLoad(record("STUN", grade("32768", "Stun")),
                     "has an illegal out of range maximum value: 32768 must be between 1 and 32767");
@@ -388,15 +374,12 @@ class PlayerTimedAssemblerGradeTest {
         @Test
         @DisplayName("grades must strictly ascend")
         void gradesMustAscend() {
-            List<String> ascending = new ArrayList<>();
-
             assertStopsTheLoad(record("STUN", grade("150", "Stun"), grade("50", "Heavy Stun")),
                     "has an illegal value: 50 for STUN. Values must be strictly increasing");
             assertStopsTheLoad(record("STUN", grade("50", "Stun"), grade("50", "Heavy Stun")),
                     "has an illegal value: 50 for STUN. Values must be strictly increasing");
-            assemble(record("STUN", grade("50", "Stun"), grade("150", "Heavy Stun")), ascending);
-
-            assertTrue(ascending.isEmpty(), ascending.toString());
+            assertDoesNotThrow(
+                    () -> assemble(record("STUN", grade("50", "Stun"), grade("150", "Heavy Stun"))));
         }
 
         /**

@@ -31,17 +31,6 @@ import CommentsAndEol;
 /*
  * @author Rowan Crowther
  *
- * The number of records in this file defined in the file itself. Used to
- * check against during reading.
- * cf WorldGrammar.g4's 'recordCount' rule.
- */
-RECORD_COUNT
-        :   'record-count:'
-        ;
-
-/*
- * @author Rowan Crowther
- *
  * Literal directive keyword introducing every record.
  * cf WorldGrammar.g4's 'line' rule.
  */
@@ -60,9 +49,8 @@ COLON   :   ':'
 /*
  * @author Rowan Crowther
  *
- * A bare (optionally signed) integer - the record-count value and the depth
- * field.
- * cf WorldGrammar.g4's 'recordCount' and 'levelNum' rules.
+ * A bare (optionally signed) integer - the depth field.
+ * cf WorldGrammar.g4's 'levelNum' rule.
  */
 INTEGER
         :  '-'? ('0'..'9')+

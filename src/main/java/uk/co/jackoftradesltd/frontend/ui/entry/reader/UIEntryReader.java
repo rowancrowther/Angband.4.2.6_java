@@ -20,15 +20,15 @@ package uk.co.jackoftradesltd.frontend.ui.entry.reader;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
 import uk.co.jackoftradesltd.channel.parser.ParseErrors;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.channel.parser.Reader;
+import uk.co.jackoftradesltd.frontend.entries.UIEntry;
 import uk.co.jackoftradesltd.frontend.ui.entry.antlr4.uientry.UIEntryGrammar;
 import uk.co.jackoftradesltd.frontend.ui.entry.antlr4.uientry.UIEntryLexer;
 import uk.co.jackoftradesltd.frontend.ui.entry.assembler.UIEntryAssembler;
 import uk.co.jackoftradesltd.frontend.ui.entry.assembler.UIEntryParseRecord;
-import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
-import uk.co.jackoftradesltd.channel.parser.ParseResult;
-import uk.co.jackoftradesltd.channel.parser.Reader;
-import uk.co.jackoftradesltd.frontend.entries.UIEntry;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -76,44 +76,39 @@ public class UIEntryReader implements Reader<UIEntry> {
      * Driver callback that runs the {@code file} start rule and pulls the raw
      * {@link UIEntryParseRecord}s off the resulting parse tree.
      * <p>
-     * Syntax errors are hard: {@link ParseErrors#throwIfAny()} is called before
-     * anything else is returned, so a malformed file aborts the parse rather
-     * than yielding a partial list. The declared {@code record-count} header is
-     * then validated against the number of records actually parsed - a
-     * mismatch is a <em>soft</em> error recorded in {@code errors}, not a
-     * failure, so a miscounted-but-otherwise-valid file still loads.
+     * Syntax errors are fatal: {@link ParseErrors#throwIfAny()} is called before
+     * anything is returned, so a malformed file aborts the load rather than
+     * yielding a partial list.
      *
      * @param parser       the parser positioned at the start of the file.
      * @param errorCatcher the collector holding any syntax errors seen so far.
-     * @param errors       the soft-error sink for the record-count check.
      * @return a fresh, mutable copy of the parsed records, in file order.
      *
-     * <p>Method extract coded before 260929, commented in full on 260929.
+     * <p>Method extract coded before 260929, commented in full on 260929,
+     * updated on 261104 for the removal of the soft-error path and the
+     * {@code record-count:} header.
      */
     private static List<UIEntryParseRecord> extract(
             @NotNull UIEntryGrammar parser,
-            @NotNull ParseErrors errorCatcher,
-            @NotNull List<String> errors) {
+            @NotNull ParseErrors errorCatcher) {
         UIEntryGrammar.FileContext output = parser.file();
         List<UIEntryParseRecord> results = output.entries;
         errorCatcher.throwIfAny();
-
-        String declaredRecordCount = output.declaredRecordCount;
-        GrammarDriver.checkRecordCount(declaredRecordCount,
-                results.size(), errors);
 
         return new ArrayList<>(results);
     }
 
     /**
-     * Parse the file into assembled {@link UIEntry} objects, discarding the
-     * accompanying soft-error list (see {@link #parseWithResults} to keep it).
+     * Parse the file into assembled {@link UIEntry} objects, unwrapping the
+     * {@link ParseResult} that {@link #parseWithResults} returns. Every error
+     * is thrown, as there.
      *
      * @param filename the path of the {@code ui_entry.txt} data file to read.
      * @return the assembled entries, in file order.
      * @throws IOException if the file cannot be read.
      *
-     * <p>Method parse coded before 260929, commented in full on 260929.
+     * <p>Method parse coded before 260929, commented in full on 260929,
+     * updated on 261104 for the removal of the soft-error path.
      */
     @Override
     public @NotNull List<UIEntry> parse(@NotNull String filename) throws IOException {
@@ -121,21 +116,23 @@ public class UIEntryReader implements Reader<UIEntry> {
     }
 
     /**
-     * Parse the file and return both the assembled {@link UIEntry} objects and
-     * the collected soft errors (record-count mismatches and any records the
-     * assembler skipped), for callers that need to inspect or report them.
+     * Parse the file and return the assembled {@link UIEntry} objects wrapped
+     * in a {@link ParseResult}, by driving it through {@link GrammarDriver#run}.
      * <p>
-     * A hard syntax error aborts the parse: {@link GrammarDriver#run} then returns an
-     * <em>empty</em> item list carrying the collected error messages, mirroring C's
-     * {@code parse_file} returning non-zero and {@code run_parse_ui_entry} bailing out
-     * without reading further. Callers must therefore treat "empty items plus errors" as a
-     * failed load, not as a file with no entries.
+     * Every error is fatal and none is caught here, mirroring C's
+     * {@code parse_file} returning non-zero and {@code run_parse_ui_entry}
+     * bailing out without reading further. A syntax error is thrown as a
+     * {@code ParseCancellationException} by {@link #extract}; an entry the
+     * assembler refuses is thrown as a {@code DataFileParseException}. A
+     * result is only returned for a clean file, so an empty item list means a
+     * file with no entries, not a failed load.
      *
      * @param filename the path of the {@code ui_entry.txt} data file to read.
-     * @return the assembled entries paired with the soft-error list.
+     * @return the assembled entries.
      * @throws IOException if the file cannot be read.
      *
-     * <p>Method parseWithResults coded before 260929, commented in full on 260929.
+     * <p>Method parseWithResults coded before 260929, commented in full on 260929,
+     * updated on 261104 for the removal of the soft-error path.
      */
     public @NotNull ParseResult<UIEntry> parseWithResults(@NotNull String filename) throws IOException {
         return GrammarDriver.run(filename,

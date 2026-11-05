@@ -20,7 +20,6 @@ package uk.co.jackoftradesltd.frontend.ui.globals;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
-import uk.co.jackoftradesltd.channel.parser.ErrorParsing;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.frontend.entries.UIEntry;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryCategory;
@@ -56,21 +55,27 @@ import java.util.List;
  * ({@code ui-entry.c}). C's {@code finish_parse_ui_entry_renderer} has no method here: its backend
  * defaulting is done by {@code UIEntryRendererAssembler}.
  *
- * <p>None of the three loaders uses the {@code boolean} that {@link ErrorParsing#reportAndCheck}
- * returns, so a file that yields no records registers an empty list rather than stopping the load;
- * only an exception does that.
+ * <p>Every error is fatal, as in C, where {@code parse_file_quit_not_found} quits on a missing file
+ * and {@code run_parser} on a bad line. Each loader catches {@code Exception}, logs it under the
+ * file's name and rethrows it unchanged, so an IO failure, a grammar or lexer error
+ * ({@code ParseCancellationException}) and a record the assembler refuses
+ * ({@code DataFileParseException}) all stop the load. Nothing is registered from a file that fails.
+ * There is no check on the number of records: a file the grammar accepts with no records registers
+ * an empty list.
  *
- * <p>Class UIDataLoader coded before 260916, commented in full on 261102.
+ * <p>Class UIDataLoader coded before 260916, commented in full on 261102, failure paragraph
+ * rewritten on 261104 for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
 public class UIDataLoader {
     /**
-     * Logger for the soft/hard failures each loader below reports: a soft parse error goes through
-     * {@link ErrorParsing#reportAndCheck}, while a hard one (an unresolvable reference or IO
-     * failure) is logged here immediately before the catch block rethrows it.
+     * Logger for the failures each loader below reports: every exception, whether an IO failure, a
+     * grammar error or an assembler error, is logged here at {@code ERROR} immediately before the
+     * catch block rethrows it.
      *
-     * <p>Field logger coded before 260916, commented in full on 261102.
+     * <p>Field logger coded before 260916, commented in full on 261102, updated on 261104 for the
+     * removal of the soft-error path.
      */
     private static final Logger logger = LogManager.getLogger(UIDataLoader.class);
 
@@ -80,17 +85,17 @@ public class UIDataLoader {
      * {@code run_parse_ui_entry} ({@code ui-entry.c}), which parses {@code ui_entry.txt} once the
      * bases are in, followed by {@code finish_parse_ui_entry}, here {@link #finalPass(List)}.
      * <p>
-     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the entries that did
-     * assemble are registered regardless, per the partial-results contract. The catch is on
-     * {@code Exception} rather than {@code IOException} and <em>rethrows</em>, so an unresolvable
-     * base or renderer stops the load here rather than leaving the renderer subsystem half-built.
+     * Every error stops the load and nothing is registered. The catch is on {@code Exception}
+     * rather than {@code IOException} and <em>rethrows</em>, so an unresolvable base or renderer
+     * stops the load here rather than leaving the renderer subsystem half-built.
      *
      * <p>The list handed to {@link #finalPass(List)} is the one {@code UIEntryAssembler} returns: the
      * {@code ui_entry_base.txt} placeholders plus the new entries, sorted by name as C's
      * {@code entries[]} is. {@link UIRegistry#setUIEntries} replaces the placeholder-only list that
      * {@link #loadUIEntryBases()} left there.
      *
-     * <p>Function loadUIEntries coded before 260916, commented in full on 261102.
+     * <p>Function loadUIEntries coded before 260916, commented in full on 261102, updated on 261104
+     * for the removal of the soft-error path.
      *
      * @throws IOException if an IO error occurs while reading the file
      */
@@ -101,9 +106,7 @@ public class UIDataLoader {
 
         try {
             result = parser.parseWithResults(filename);
-
-            ErrorParsing.reportAndCheck(filename, result, logger);
-
+            
             UIRegistry.setUIEntries(finalPass(result.items()));
         } catch (Exception e) {
             logger.error("Error while loading file {}", filename, e);
@@ -119,17 +122,17 @@ public class UIDataLoader {
      * in Java that flagging happens in {@code UIEntryBaseAssembler} as each record is parsed, and the
      * assembler returns the flagged entries.
      * <p>
-     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the bases that did
-     * assemble are registered regardless, per the partial-results contract. The catch is on
-     * {@code Exception} and <em>rethrows</em>; a missing base here would resurface as an
-     * unresolvable reference while loading the entries, so it is stopped at source.
+     * Every error stops the load and nothing is registered. The catch is on {@code Exception} and
+     * <em>rethrows</em>; a missing base here would resurface as an unresolvable reference while
+     * loading the entries, so it is stopped at source.
      *
      * <p>This method is what registers the bases: it stores the list {@code UIEntryBaseAssembler}
      * returns with {@link UIRegistry#setUIEntries}, as {@link #loadUIEntries()} does for the entries,
      * because the assembler itself no longer touches the registry. No finishing pass runs after this
      * file, as in C, where {@code finish_parse_ui_entry} runs once, after {@code ui_entry.txt}.
      *
-     * <p>Function loadUIEntryBases coded before 260916, commented in full on 261102.
+     * <p>Function loadUIEntryBases coded before 260916, commented in full on 261102, updated on
+     * 261104 for the removal of the soft-error path.
      *
      * @throws IOException an IO error occurred during parsing
      */
@@ -138,8 +141,6 @@ public class UIDataLoader {
         String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "ui_entry_base.txt";
         try {
             ParseResult<UIEntry> result = reader.parseWithResults(filename);
-
-            ErrorParsing.reportAndCheck(filename, result, logger);
 
             UIRegistry.setUIEntries(result.items());
         } catch (Exception e) {
@@ -154,11 +155,11 @@ public class UIDataLoader {
      * Corresponds to {@code run_parse_ui_entry_renderer} in {@code ui-entry-renderers.c}, which is
      * just {@code parse_file} on {@code ui_entry_renderer.txt}.
      * <p>
-     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the renderers that
-     * did assemble are registered regardless, per the partial-results contract. The catch is on
-     * {@code Exception} and <em>rethrows</em>, for the same reason as the bases above.
+     * Every error stops the load and nothing is registered. The catch is on {@code Exception} and
+     * <em>rethrows</em>, for the same reason as the bases above.
      *
-     * <p>Function loadUIEntryRenderers coded before 260916, commented in full on 261102.
+     * <p>Function loadUIEntryRenderers coded before 260916, commented in full on 261102, updated on
+     * 261104 for the removal of the soft-error path.
      *
      * @throws IOException an error occurred during the parsing - log it and rethrow it
      */
@@ -168,8 +169,6 @@ public class UIDataLoader {
 
         try {
             ParseResult<UIEntryRenderer> result = reader.parseWithResults(filename);
-
-            ErrorParsing.reportAndCheck(filename, result, logger);
 
             UIRegistry.setUIEntryRenderers(result.items());
         } catch (Exception e) {

@@ -41,8 +41,7 @@ import java.util.List;
  *
  * <p>Every fault ends the load. C turns any {@code PARSE_ERROR_*} from this file into a start-up
  * failure ({@code quit("Cannot initialize room templates")}), and this class does the same by
- * logging the problem and throwing {@link DataFileParseException}. No record is ever skipped, and
- * the {@code errors} list is not used.
+ * logging the problem and throwing {@link DataFileParseException}. No record is ever skipped.
  *
  * <p>The number fields follow C's types. {@code type:}, {@code rows:}, {@code columns:} and
  * {@code doors:} are read as unsigned ({@code parser_getuint}), so a leading minus sign, including
@@ -56,7 +55,8 @@ import java.util.List;
  * buffer with no test against {@code rows:} or {@code columns:}, so a ragged layout, or a number of
  * lines that differs from {@code rows:}, loads here too.
  *
- * <p>Class RoomProfileAssembler coded before 260915, commented in full on 261029.
+ * <p>Class RoomProfileAssembler coded before 260915, commented in full on 261029, updated on 261105
+ * for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -96,14 +96,13 @@ public class RoomProfileAssembler implements Assembler<RoomProfileParseRecord, L
      * {@code uint8_t} wrap, commented in full on 261029.
      *
      * @param records  the raw parse records to assemble, in file order
-     * @param errors   not used: every fault is thrown rather than collected
      * @param filename the file the records came from, named in each failure message
      * @return the templates, in reverse file order
      * @throws DataFileParseException if any record has a fault listed above, or a number that
      *                                {@link ParseUtils#parseIntString} cannot read
      */
     @Override
-    public List<RoomTemplate> assemble(@NotNull List<RoomProfileParseRecord> records, @NotNull List<String> errors,
+    public List<RoomTemplate> assemble(@NotNull List<RoomProfileParseRecord> records,
                                     String filename) {
         List<RoomTemplate> profiles = new ArrayList<>();
 

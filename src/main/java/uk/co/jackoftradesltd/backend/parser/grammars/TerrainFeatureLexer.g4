@@ -38,10 +38,6 @@ import CommentsAndEol, Flags, AngbandDisplayCharacter;
 
 // CODE through DESC below: one literal directive-keyword token each,
 // matching the rule of the same purpose above.
-RECORD_COUNT
-        : 'record-count:'
-        ;
-
 CODE
         :   'code:' -> pushMode(FLAG_MODE)
         ;

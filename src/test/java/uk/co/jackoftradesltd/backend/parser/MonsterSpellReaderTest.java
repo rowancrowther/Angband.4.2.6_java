@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -231,12 +232,6 @@ class MonsterSpellReaderTest {
 
     // ---- fixture helpers -------------------------------------------------
 
-    /**
-     * Prefix a body with the {@code record-count:} header the {@code file} rule requires.
-     */
-    private static String withHeader(int count, String body) {
-        return "record-count:" + count + "\n" + body;
-    }
 
     /**
      * Render one minimal but complete spell block: a name, a hit chance, and the level-0
@@ -269,7 +264,6 @@ class MonsterSpellReaderTest {
     void cleanLoadOfTheRealFileYieldsAllNinetyOneSpells() throws IOException {
         ParseResult<MonsterSpellType> result = new MonsterSpellReader().parseWithResults(REAL_FILE);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(REAL_FILE_RECORDS, result.items().size());
     }
 
@@ -280,7 +274,6 @@ class MonsterSpellReaderTest {
         ParseResult<MonsterSpellType> result = new MonsterSpellReader().parseWithResults(REAL_FILE);
 
         assertEquals(REAL_FILE_RECORDS, result.items().size());
-        assertTrue(result.errors().isEmpty());
     }
 
     // ---- The optional msgt: directive ------------------------------------
@@ -291,22 +284,20 @@ class MonsterSpellReaderTest {
         // msgt. 49 of the 91 shipped records rely on this; treating "" as an invalid message type
         // silently discarded more than half the spell table.
         ParseResult<MonsterSpellType> result =
-                load("no-msgt.txt", withHeader(1, entry("BLINK", null, null)));
+                load("no-msgt.txt", entry("BLINK", null, null));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size(), "a missing msgt: must not drop the record");
     }
 
     @Test
     void presentMsgtLineIsStillResolvedAndValidated() throws IOException {
         ParseResult<MonsterSpellType> good =
-                load("good-msgt.txt", withHeader(1, entry("BLINK", "TELEPORT", null)));
-        assertFalse(good.hasErrors(), () -> good.errors().toString());
+                load("good-msgt.txt", entry("BLINK", "TELEPORT", null));
         assertEquals(1, good.items().size());
 
         // [C] message_lookup_by_name() returns -1 and the handler returns PARSE_ERROR_INVALID_MESSAGE,
         // which stops the load.
-        String badFile = withHeader(1, entry("BLINK", "NOT_A_MESSAGE", null));
+        String badFile = entry("BLINK", "NOT_A_MESSAGE", null);
         DataFileParseException bad = assertThrows(DataFileParseException.class,
                 () -> load("bad-msgt.txt", badFile), "an unrecognised msgt: stops the load");
         assertTrue(bad.getMessage().contains("illegal message type value: NOT_A_MESSAGE"), bad::getMessage);
@@ -317,21 +308,12 @@ class MonsterSpellReaderTest {
     @Test
     void unknownSpellNameStopsTheLoad() {
         // [C] grab_name() fails, parse_mon_spell_name returns PARSE_ERROR_INVALID_SPELL_NAME.
-        String file = withHeader(1, entry("NOT_A_SPELL", "TELEPORT", null));
+        String file = entry("NOT_A_SPELL", "TELEPORT", null);
         DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("bad-name.txt", file));
 
         assertTrue(e.getMessage().contains("Monster spell starting at line: " + lineOf(file, "name:NOT_A_SPELL")),
                 e::getMessage);
         assertTrue(e.getMessage().contains("illegal monster spell value: NOT_A_SPELL"), e::getMessage);
-    }
-
-    @Test
-    void recordCountHeaderMismatchIsReported() throws IOException {
-        // The header is a port-ism rather than a C feature, validated softly by GrammarDriver.
-        ParseResult<MonsterSpellType> result =
-                load("bad-count.txt", withHeader(7, entry("BLINK", "TELEPORT", null)));
-
-        assertTrue(result.hasErrors(), "a declared count that disagrees with the body must be flagged");
     }
 
     // ---- Effect subtypes: the teleport pair ------------------------------
@@ -341,15 +323,13 @@ class MonsterSpellReaderTest {
         // The two shipped uses, and the only place in lib/gamedata where TELEPORT/TELEPORT_TO
         // are given a subtype at all.
         ParseResult<MonsterSpellType> away =
-                load("tele-away.txt", withHeader(1, entry("TELE_AWAY", "TELEPORT",
-                        "effect:TELEPORT:AWAY\ndice:100\n")));
-        assertFalse(away.hasErrors(), () -> away.errors().toString());
+                load("tele-away.txt", entry("TELE_AWAY", "TELEPORT",
+                        "effect:TELEPORT:AWAY\ndice:100\n"));
         assertEquals(1, away.items().size());
 
         ParseResult<MonsterSpellType> self =
-                load("tele-self.txt", withHeader(1, entry("TELE_SELF_TO", "TELEPORT",
-                        "effect:TELEPORT_TO:SELF\n")));
-        assertFalse(self.hasErrors(), () -> self.errors().toString());
+                load("tele-self.txt", entry("TELE_SELF_TO", "TELEPORT",
+                        "effect:TELEPORT_TO:SELF\n"));
         assertEquals(1, self.items().size());
     }
 
@@ -360,7 +340,7 @@ class MonsterSpellReaderTest {
         // enum-based lookup accepted either on either, which is why this is worth pinning.
         // Each -1 from effect_subtype is an error from grab_effect_data, and C quits on it, so the
         // load stops with an exception naming the effect's own line.
-        String selfFile = withHeader(1, entry("TELE_AWAY", "TELEPORT", "effect:TELEPORT:SELF\n"));
+        String selfFile = entry("TELE_AWAY", "TELEPORT", "effect:TELEPORT:SELF\n");
         DataFileParseException selfOnTeleport = assertThrows(DataFileParseException.class,
                 () -> load("tele-cross-1.txt", selfFile), "SELF is not valid on TELEPORT");
         assertTrue(selfOnTeleport.getMessage().contains("Effect starting at line: "
@@ -368,7 +348,7 @@ class MonsterSpellReaderTest {
         assertTrue(selfOnTeleport.getMessage().contains("illegal teleport value: SELF"),
                 selfOnTeleport::getMessage);
 
-        String awayFile = withHeader(1, entry("TELE_SELF_TO", "TELEPORT", "effect:TELEPORT_TO:AWAY\n"));
+        String awayFile = entry("TELE_SELF_TO", "TELEPORT", "effect:TELEPORT_TO:AWAY\n");
         DataFileParseException awayOnTeleportTo = assertThrows(DataFileParseException.class,
                 () -> load("tele-cross-2.txt", awayFile), "AWAY is not valid on TELEPORT_TO");
         assertTrue(awayOnTeleportTo.getMessage().contains("Effect starting at line: "
@@ -383,17 +363,16 @@ class MonsterSpellReaderTest {
         // The port has to route this through the subtype switch anyway so that the false-valued
         // wrapper is built rather than a bare EST_NONE.
         ParseResult<MonsterSpellType> result =
-                load("tele-bare.txt", withHeader(1, entry("BLINK", "TELEPORT",
-                        "effect:TELEPORT\ndice:10\n")));
+                load("tele-bare.txt", entry("BLINK", "TELEPORT",
+                        "effect:TELEPORT\ndice:10\n"));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size());
     }
 
     @Test
     void unknownTeleportSubtypeStopsTheLoad() {
         // effect_subtype returns -1 for SIDEWAYS, grab_effect_data reports it, and C quits
-        String file = withHeader(1, entry("TELE_AWAY", "TELEPORT", "effect:TELEPORT:SIDEWAYS\n"));
+        String file = entry("TELE_AWAY", "TELEPORT", "effect:TELEPORT:SIDEWAYS\n");
         DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("tele-bad.txt", file));
 
         assertTrue(e.getMessage().contains("Effect starting at line: "
@@ -423,9 +402,8 @@ class MonsterSpellReaderTest {
         // allocates it at name: time. If the grammar required a power-cutoff to open a level
         // block, this record would fail to parse.
         ParseResult<MonsterSpellType> result =
-                load("level-zero.txt", withHeader(1, entry("BLINK", "TELEPORT", null)));
+                load("level-zero.txt", entry("BLINK", "TELEPORT", null));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size());
     }
 
@@ -436,9 +414,8 @@ class MonsterSpellReaderTest {
                 + "lore:do something impressive\n"
                 + "lore-color-base:Light Red\n"
                 + "message-vis:{name} does something impressive.\n";
-        ParseResult<MonsterSpellType> result = load("two-levels.txt", withHeader(1, body));
+        ParseResult<MonsterSpellType> result = load("two-levels.txt", body);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size());
     }
 
@@ -452,9 +429,8 @@ class MonsterSpellReaderTest {
                 + "lore-color-base:Orange\n"
                 + "message-vis:{name} acts.\nmessage-vis: Twice.\n"
                 + "message-invis:Something happens.\n";
-        ParseResult<MonsterSpellType> result = load("repeated.txt", withHeader(1, body));
+        ParseResult<MonsterSpellType> result = load("repeated.txt", body);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size());
     }
 
@@ -463,9 +439,8 @@ class MonsterSpellReaderTest {
         String body = entry("BLINK", "TELEPORT", null)
                 + entry("TPORT", "TELEPORT", null)
                 + entry("DARKNESS", null, null);
-        ParseResult<MonsterSpellType> result = load("three.txt", withHeader(3, body));
+        ParseResult<MonsterSpellType> result = load("three.txt", body);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(3, result.items().size());
     }
 
@@ -547,12 +522,11 @@ class MonsterSpellReaderTest {
 
     @Test
     void parseReturnsTheItemsAndDropsTheErrors() throws IOException {
-        // The Reader contract: parse() is parseWithResults().items(). The one soft error left is
-        // the Java-only record-count header, which parse() drops without a trace, which is why
-        // callers that care use parseWithResults.
+        // The Reader contract: parse() is parseWithResults().items(), so a clean file gives the
+        // same records through either.
         String body = entry("BLINK", "TELEPORT", null) + entry("TPORT", null, null);
         Path file = tempDir.resolve("parse-only.txt");
-        Files.writeString(file, withHeader(7, body));
+        Files.writeString(file, body);
 
         List<MonsterSpellType> items = new MonsterSpellReader().parse(file.toString());
 
@@ -569,57 +543,38 @@ class MonsterSpellReaderTest {
 
     @Test
     void syntaxErrorIsAHardErrorThatLoadsNothing() throws IOException {
-        // No record-count: header, so the file rule cannot start. C has no header at all, so this
-        // is a Java-only way to fail, but it shows the hard channel: no items, the message kept.
-        ParseResult<MonsterSpellType> result =
-                load("no-header.txt", entry("BLINK", "TELEPORT", null));
+        // A line that is no directive at all is a grammar error, and it ends the load.
+        assertThrows(ParseCancellationException.class, () -> load("garbage.txt", "not a directive\n"));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void aDirectiveBeforeAnyNameIsAHardError() throws IOException {
         // C: every parse_mon_spell_* handler returns PARSE_ERROR_MISSING_RECORD_HEADER when no
         // name: has been seen. Java agrees, by way of the file rule starting a record at name:.
-        ParseResult<MonsterSpellType> result = load("no-name.txt",
-                withHeader(1, "hit:100\n" + entry("BLINK", "TELEPORT", null)));
+        assertThrows(ParseCancellationException.class, () -> load("no-name.txt",
+                "hit:100\n" + entry("BLINK", "TELEPORT", null)));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void aNonNumericHitIsAHardError() throws IOException {
         // C: parser_getuint fails on text with PARSE_ERROR_NOT_NUMBER and the load stops.
-        ParseResult<MonsterSpellType> result = load("hit-text.txt", withHeader(1,
-                "name:BLINK\nmsgt:TELEPORT\nhit:lots\nlore:x\n"));
+        assertThrows(ParseCancellationException.class, () -> load("hit-text.txt", "name:BLINK\nmsgt:TELEPORT\nhit:lots\nlore:x\n"));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void anUnknownSpellNameInTheMiddleStopsTheWholeLoad() {
         // C stops the whole load at the first bad record (PARSE_ERROR_INVALID_SPELL_NAME), and
         // so does the assembler: the neighbours do not load.
-        String file = withHeader(3, entry("BLINK", "TELEPORT", null)
+        String file = entry("BLINK", "TELEPORT", null)
                 + entry("NOT_A_SPELL", null, null)
-                + entry("TPORT", "TELEPORT", null));
+                + entry("TPORT", "TELEPORT", null);
         DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("one-bad.txt", file));
 
         assertTrue(e.getMessage().contains("starting at line: " + lineOf(file, "name:NOT_A_SPELL")),
                 e::getMessage);
-    }
-
-    @Test
-    void aWrongRecordCountIsASoftErrorAndTheRecordsStillLoad() throws IOException {
-        ParseResult<MonsterSpellType> result =
-                load("count-keeps.txt", withHeader(7, entry("BLINK", "TELEPORT", null)));
-
-        assertEquals(1, result.items().size());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("record-count")),
-                () -> result.errors().toString());
     }
 
     @Test
@@ -628,9 +583,8 @@ class MonsterSpellReaderTest {
         // of the two. The Java list runs last-first too, so a first-match search agrees.
         String first = "name:BLINK\nmsgt:TELEPORT\nhit:10\nlore:first\n";
         String second = "name:BLINK\nmsgt:TELEPORT\nhit:20\nlore:second\n";
-        ParseResult<MonsterSpellType> result = load("dupes.txt", withHeader(2, first + second));
+        ParseResult<MonsterSpellType> result = load("dupes.txt", first + second);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(2, result.items().size());
         assertEquals(20, field(result.items().get(0), "hit"));
         assertEquals(10, field(result.items().get(1), "hit"));
@@ -643,8 +597,7 @@ class MonsterSpellReaderTest {
         String body = "name:BLINK\nmsgt:TELEPORT\nhit:100\n"
                 + "lore:do something\nlore: and then something else\n"
                 + "message-vis:{name} acts.\nmessage-vis: Twice.\n";
-        ParseResult<MonsterSpellType> result = load("append.txt", withHeader(1, body));
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        ParseResult<MonsterSpellType> result = load("append.txt", body);
 
         Object level = levelsOf(result.items().get(0)).get(0);
         assertEquals("do something and then something else", field(level, "loreDesc"));
@@ -657,9 +610,8 @@ class MonsterSpellReaderTest {
         // message lines are kept together here; apart, they split the level (see below).
         String body = "name:BLINK\nlore:text\nmessage-vis:seen\nhit:60\nmsgt:TELEPORT\n"
                 + "effect:TELEPORT:AWAY\ndice:100\n";
-        ParseResult<MonsterSpellType> result = load("any-order.txt", withHeader(1, body));
+        ParseResult<MonsterSpellType> result = load("any-order.txt", body);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         MonsterSpellType spell = result.items().get(0);
         assertEquals(60, field(spell, "hit"));
         assertEquals("MSG_TELEPORT", field(spell, "msgT").toString());
@@ -672,11 +624,8 @@ class MonsterSpellReaderTest {
     @Test
     void aRecordWithOnlyANameIsASyntaxErrorHereWhereCAcceptsIt() throws IOException {
         // C: parse_mon_spell_name needs nothing after it. The grammar's (...)+ wants one directive.
-        ParseResult<MonsterSpellType> result =
-                load("name-only.txt", withHeader(1, "name:BLINK\n"));
+        assertThrows(ParseCancellationException.class, () -> load("name-only.txt", "name:BLINK\n"));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
@@ -686,9 +635,8 @@ class MonsterSpellReaderTest {
         // second, power-less record, which the level assembler merges into the level before it.
         String body = "name:BLINK\nmsgt:TELEPORT\nhit:100\nlore:one\n"
                 + "effect:TELEPORT:AWAY\ndice:100\nlore: two\n";
-        ParseResult<MonsterSpellType> result = load("lore-split.txt", withHeader(1, body));
+        ParseResult<MonsterSpellType> result = load("lore-split.txt", body);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         List<Object> levels = levelsOf(result.items().get(0));
         assertEquals(1, levels.size());
         assertEquals("one two", field(levels.get(0), "loreDesc"));
@@ -699,9 +647,8 @@ class MonsterSpellReaderTest {
         // The same split as above, caused by a plain directive instead of an effect: any
         // non-text directive closes the grammar's level block.
         String body = "name:BLINK\nlore:one\nhit:100\nlore: two\n";
-        ParseResult<MonsterSpellType> result = load("lore-split-hit.txt", withHeader(1, body));
+        ParseResult<MonsterSpellType> result = load("lore-split-hit.txt", body);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         List<Object> levels = levelsOf(result.items().get(0));
         assertEquals(1, levels.size());
         assertEquals("one two", field(levels.get(0), "loreDesc"));
@@ -712,9 +659,8 @@ class MonsterSpellReaderTest {
         // C: the lore: after the effect still goes onto the last level, which is the 40 one.
         String body = "name:BLINK\nmsgt:TELEPORT\nhit:100\nlore:zero\npower-cutoff:40\nlore:forty\n"
                 + "effect:TELEPORT:AWAY\ndice:100\nlore: more\n";
-        ParseResult<MonsterSpellType> result = load("lore-split-40.txt", withHeader(1, body));
+        ParseResult<MonsterSpellType> result = load("lore-split-40.txt", body);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         List<Object> levels = levelsOf(result.items().get(0));
         assertEquals(List.of(0, 40), powersOf(result.items().get(0)));
         assertEquals("zero", field(levels.get(0), "loreDesc"));
@@ -727,9 +673,8 @@ class MonsterSpellReaderTest {
         // there with no text, and the chain is [0, 10, 20].
         String body = entry("BLINK", "TELEPORT", null)
                 + "power-cutoff:10\npower-cutoff:20\nlore:x\n";
-        ParseResult<MonsterSpellType> result = load("empty-level.txt", withHeader(1, body));
+        ParseResult<MonsterSpellType> result = load("empty-level.txt", body);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(List.of(0, 10, 20), powersOf(result.items().get(0)));
         assertNull(field(levelsOf(result.items().get(0)).get(1), "loreDesc"));
         assertEquals("x", field(levelsOf(result.items().get(0)).get(2), "loreDesc"));
@@ -738,32 +683,25 @@ class MonsterSpellReaderTest {
     @Test
     void effectYxAndDiceOnTheSameEffectAreASyntaxErrorHereWhereCTakesBoth() throws IOException {
         // C: effect-yx and dice both attach to the last effect, in either order.
-        ParseResult<MonsterSpellType> result = load("yx-dice.txt", withHeader(1,
-                entry("BLINK", "TELEPORT", "effect:TELEPORT:AWAY\neffect-yx:1:2\ndice:100\n")));
+        assertThrows(ParseCancellationException.class, () -> load("yx-dice.txt", entry("BLINK", "TELEPORT", "effect:TELEPORT:AWAY\neffect-yx:1:2\ndice:100\n")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void aDiceLineBeforeAnyEffectIsASyntaxErrorHereWhereCIgnoresIt() throws IOException {
         // C: parse_mon_spell_dice returns PARSE_ERROR_NONE when the record has no effect yet,
         // "assume that this is human and not parser error".
-        ParseResult<MonsterSpellType> result = load("orphan-dice.txt", withHeader(1,
-                entry("BLINK", "TELEPORT", "dice:100\n")));
+        assertThrows(ParseCancellationException.class, () -> load("orphan-dice.txt", entry("BLINK", "TELEPORT", "dice:100\n")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void effectMsgIsAcceptedHereWhereCHasNoSuchDirective() throws IOException {
         // C's mon_spell_parser registers no effect-msg: line, so it is PARSE_ERROR_UNDEFINED_DIRECTIVE.
         // The shared effect block takes it.
-        ParseResult<MonsterSpellType> result = load("effect-msg.txt", withHeader(1,
-                entry("BLINK", "TELEPORT", "effect:TELEPORT:AWAY\ndice:100\neffect-msg:Hello\n")));
+        ParseResult<MonsterSpellType> result = load("effect-msg.txt", entry("BLINK", "TELEPORT", "effect:TELEPORT:AWAY\ndice:100\neffect-msg:Hello\n"));
 
-        assertEquals(1, result.items().size(), () -> result.errors().toString());
+        assertEquals(1, result.items().size());
     }
 
     @Test
@@ -771,7 +709,7 @@ class MonsterSpellReaderTest {
         // C: hit is "uint", and parser.c rejects a token starting with '-' (PARSE_ERROR_NOT_NUMBER),
         // whatever the value, so -0 goes too.
         for (String hit : new String[]{"-5", "-0"}) {
-            String file = withHeader(1, "name:BLINK\nmsgt:TELEPORT\nhit:" + hit + "\nlore:x\n");
+            String file = "name:BLINK\nmsgt:TELEPORT\nhit:" + hit + "\nlore:x\n";
             DataFileParseException e = assertThrows(DataFileParseException.class,
                     () -> load("neg-hit.txt", file), "hit:" + hit);
             assertTrue(e.getMessage().contains("illegal monster hit value: " + hit), e::getMessage);
@@ -784,9 +722,8 @@ class MonsterSpellReaderTest {
     void anAbsentHitLoadsWithZeroAsCDoes() throws Exception {
         // C: mem_zalloc leaves hit at 0 when there is no hit: line.
         String body = "name:BLINK\nmsgt:TELEPORT\nlore:x\n";
-        ParseResult<MonsterSpellType> result = load("no-hit.txt", withHeader(1, body));
+        ParseResult<MonsterSpellType> result = load("no-hit.txt", body);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size());
         assertEquals(0, field(result.items().get(0), "hit"));
     }
@@ -796,9 +733,8 @@ class MonsterSpellReaderTest {
         // C: color_text_to_attr() and color_char_to_attr() fall back to white, so no colour is ever
         // invalid and the spell loads with its level.
         String body = "name:BLINK\nmsgt:TELEPORT\nhit:100\nlore:x\nlore-color-base:Nonsense\n";
-        ParseResult<MonsterSpellType> result = load("bad-colour.txt", withHeader(1, body));
+        ParseResult<MonsterSpellType> result = load("bad-colour.txt", body);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size());
         List<Object> levels = levelsOf(result.items().get(0));
         assertEquals(1, levels.size());
@@ -813,8 +749,7 @@ class MonsterSpellReaderTest {
         String[][] cases = {{"teleport", "MSG_TELEPORT"}, {"6", "MSG_KILL"}, {"0", "MSG_GENERIC"}};
         for (String[] c : cases) {
             ParseResult<MonsterSpellType> result = load("msgt-" + c[0] + ".txt",
-                    withHeader(1, "name:BLINK\nmsgt:" + c[0] + "\nhit:100\nlore:x\n"));
-            assertFalse(result.hasErrors(), () -> result.errors().toString());
+                    "name:BLINK\nmsgt:" + c[0] + "\nhit:100\nlore:x\n");
             assertEquals(c[1], field(result.items().get(0), "msgT").toString(), "msgt:" + c[0]);
         }
     }
@@ -823,7 +758,7 @@ class MonsterSpellReaderTest {
     void msgtNoneStopsTheLoadAsCHasNoSuchMessage() {
         // MSG_NONE is a Java-only constant (an accepted divergence); list-message.h has no NONE,
         // so message_lookup_by_name() returns -1 and C stops the load.
-        String file = withHeader(1, "name:BLINK\nmsgt:NONE\nhit:100\nlore:x\n");
+        String file = "name:BLINK\nmsgt:NONE\nhit:100\nlore:x\n";
         DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("msgt-none.txt", file));
 
         assertTrue(e.getMessage().contains("illegal message type value: NONE"), e::getMessage);
@@ -834,9 +769,8 @@ class MonsterSpellReaderTest {
         // C: the level made at name: time (power 0, no text) is always first, so a record that
         // opens with power-cutoff:20 has levels [0, 20]. No shipped record starts this way.
         String body = "name:BLINK\nmsgt:TELEPORT\nhit:100\npower-cutoff:20\nlore:x\n";
-        ParseResult<MonsterSpellType> result = load("lead-cutoff.txt", withHeader(1, body));
+        ParseResult<MonsterSpellType> result = load("lead-cutoff.txt", body);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(List.of(0, 20), powersOf(result.items().get(0)));
         assertNull(field(levelsOf(result.items().get(0)).get(0), "loreDesc"));
     }
@@ -846,9 +780,8 @@ class MonsterSpellReaderTest {
         // C: spell->level is allocated at name: time, and mon-spell.c dereferences it without a
         // check. Every shipped record has lore, so this cannot happen with the real file.
         String body = "name:BLINK\nmsgt:TELEPORT\nhit:100\neffect:TELEPORT:AWAY\ndice:100\n";
-        ParseResult<MonsterSpellType> result = load("no-text.txt", withHeader(1, body));
+        ParseResult<MonsterSpellType> result = load("no-text.txt", body);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         List<Object> levels = levelsOf(result.items().get(0));
         assertEquals(1, levels.size());
         assertEquals(0, field(levels.get(0), "power"));

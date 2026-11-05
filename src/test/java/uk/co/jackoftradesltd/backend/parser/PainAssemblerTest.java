@@ -37,15 +37,16 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p>Every test is driven from a hand-built {@link PainParseRecord}, whose message list is
  * {@code [typeNum, msg1..msgN]} as the grammar hands it over, so one thing can be varied at a time.
- * C quits on the first bad line, so the refusals expect a {@link DataFileParseException}, never an
- * entry in {@code errors} and never a record dropped. The serials are the text of an
+ * C quits on the first bad line, so the refusals expect a {@link DataFileParseException} and never
+ * a record dropped. The serials are the text of an
  * {@code INTEGER} token, which is digits with an optional {@code -}; hexadecimal cannot reach the
  * assembler.
  *
  * <p>Number-reading cases that C wraps at 32 bits (such as {@code 4294967296}) are not tested: the
  * port clamps to an {@code int} on purpose (decided 261027).
  *
- * <p>Test class PainAssemblerTest coded on 261028, commented in full on 261028.
+ * <p>Test class PainAssemblerTest coded on 261028, commented in full on 261028, error sink test
+ * removed on 261105 for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -67,7 +68,7 @@ class PainAssemblerTest {
     }
 
     private static List<MonsterPain> assemble(PainParseRecord... records) {
-        return new PainAssembler().assemble(List.of(records), new ArrayList<>(), FILE);
+        return new PainAssembler().assemble(List.of(records), FILE);
     }
 
     private static int indexOf(String serial) {
@@ -111,19 +112,6 @@ class PainAssemblerTest {
     @Test
     void noRecordsGivesAnEmptyList() {
         assertTrue(assemble().isEmpty());
-    }
-
-    /**
-     * The assembler throws rather than collects, so a clean load leaves the soft-error sink as it
-     * found it.
-     */
-    @Test
-    void theErrorSinkIsLeftEmpty() {
-        List<String> errors = new ArrayList<>();
-
-        new PainAssembler().assemble(List.of(record("1", 7, 1)), errors, FILE);
-
-        assertTrue(errors.isEmpty(), errors::toString);
     }
 
     /**

@@ -27,7 +27,6 @@ import uk.co.jackoftradesltd.middle.cave.enums.RoomFlags;
 import uk.co.jackoftradesltd.middle.cave.profiles.vault.Vault;
 import uk.co.jackoftradesltd.middle.cave.roombuilders.RoomType;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -102,27 +101,26 @@ class VaultAssemblerTest {
     }
 
     private static Vault one(VaultParseRecord record) {
-        List<Vault> vaults = new VaultAssembler().assemble(List.of(record), new ArrayList<>(), FILE);
+        List<Vault> vaults = new VaultAssembler().assemble(List.of(record), FILE);
         assertEquals(1, vaults.size());
         return vaults.getFirst();
     }
 
     private static void assertThrowsFor(VaultParseRecord record) {
         assertThrows(DataFileParseException.class,
-                () -> new VaultAssembler().assemble(List.of(record), new ArrayList<>(), FILE));
+                () -> new VaultAssembler().assemble(List.of(record), FILE));
     }
 
     // --- ordinary path and list order ---
 
     @Test
     void emptyRecordListGivesNoVaults() {
-        assertTrue(new VaultAssembler().assemble(List.of(), new ArrayList<>(), FILE).isEmpty());
+        assertTrue(new VaultAssembler().assemble(List.of(), FILE).isEmpty());
     }
 
     @Test
     void aPlainRecordCarriesEveryField() {
-        List<String> errors = new ArrayList<>();
-        Vault vault = new VaultAssembler().assemble(List.of(plain("Plain")), errors, FILE).getFirst();
+        Vault vault = new VaultAssembler().assemble(List.of(plain("Plain")), FILE).getFirst();
 
         assertEquals("Plain", vault.getName());
         assertEquals(RoomType.LESSER_VAULT, vault.getType());
@@ -134,14 +132,13 @@ class VaultAssemblerTest {
         assertTrue(vault.getFlags().isEmpty());
         assertEquals(List.of("###", "#.#", "###"), vault.getMap());
         assertEquals("####.####", vault.getMapLines(), "C's v->text is the D: lines appended");
-        assertTrue(errors.isEmpty(), "the errors list is no longer written");
     }
 
     /** C's {@code parse_vault_name()} points each new vault at the previous head. */
     @Test
     void theListComesBackInReverseFileOrder() {
         List<Vault> vaults = new VaultAssembler().assemble(
-                List.of(plain("First"), plain("Second"), plain("Third")), new ArrayList<>(), FILE);
+                List.of(plain("First"), plain("Second"), plain("Third")), FILE);
 
         assertEquals(List.of("Third", "Second", "First"), vaults.stream().map(Vault::getName).toList());
     }
@@ -405,6 +402,6 @@ class VaultAssemblerTest {
     void aBadRecordAfterGoodOnesEndsTheWholeLoad() {
         List<VaultParseRecord> records = List.of(plain("Good"), withRows("23"), plain("Also good"));
         assertThrows(DataFileParseException.class,
-                () -> new VaultAssembler().assemble(records, new ArrayList<>(), FILE));
+                () -> new VaultAssembler().assemble(records, FILE));
     }
 }

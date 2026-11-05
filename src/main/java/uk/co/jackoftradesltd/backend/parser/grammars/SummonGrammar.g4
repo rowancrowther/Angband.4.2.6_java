@@ -34,13 +34,6 @@ options { tokenVocab = SummonLexer; }
     import java.util.ArrayList;
 }
 
-// "record-count:<n>" header; the declared count is handed to the reader to
-// check against the number of records actually parsed.
-recordCount
-        returns[String count]
-        :   RECORD_COUNT INTEGER { $count = $INTEGER.getText(); }
-        ;
-
 // "name:<CODE>" - the record header that opens each summon. Also captures the
 // source line number so the assembler can report errors against the record.
 name
@@ -127,12 +120,11 @@ summon
             desc { descInit = $desc.description; }
         ;
 
-// Top-level rule: the record-count header followed by one or more summon records.
+// Top-level rule: one or more summon records.
 file
-        returns[List<SummonParseRecord> summons, String declaredRecordCount]
+        returns[List<SummonParseRecord> summons]
         @init {
             $summons = new ArrayList<>();
         }
-        :   recordCount { $declaredRecordCount = $recordCount.count; }
-            (summon { $summons.add($summon.record); })+ EOF
+        :   (summon { $summons.add($summon.record); })+ EOF
         ;

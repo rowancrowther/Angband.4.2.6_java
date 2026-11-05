@@ -51,7 +51,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * Two accepted deviations are pinned as well: section 0, which C accepts and Java refuses, and a
  * number outside the {@code int} range, which C wraps to 32 bits and Java refuses.
  *
- * <p>Class NamesAssemblerTest coded on 261027, commented in full on 261027.
+ * <p>Class NamesAssemblerTest coded on 261027, commented in full on 261027, error sinks removed on
+ * 261105 for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -59,13 +60,12 @@ class NamesAssemblerTest {
 
     private static final String FILE = "names.txt";
 
-    private static List<Name> assemble(List<NamesParseRecord> records, List<String> errors) {
-        return new NamesAssembler().assemble(records, errors, FILE);
+    private static List<Name> assemble(List<NamesParseRecord> records) {
+        return new NamesAssembler().assemble(records, FILE);
     }
 
     private static Name one(String section) {
-        List<Name> names = assemble(List.of(new NamesParseRecord(section, List.of("w"), 7)),
-                new ArrayList<>());
+        List<Name> names = assemble(List.of(new NamesParseRecord(section, List.of("w"), 7)));
         assertEquals(1, names.size());
         return names.getFirst();
     }
@@ -104,14 +104,14 @@ class NamesAssemblerTest {
     @Test
     void theWordsAndTheirOrderPassThroughUnchanged() {
         List<String> words = List.of("b", " a ", "b", "Gil-galad's");
-        List<Name> names = assemble(List.of(new NamesParseRecord("1", words, 3)), new ArrayList<>());
+        List<Name> names = assemble(List.of(new NamesParseRecord("1", words, 3)));
 
         assertEquals(words, names.getFirst().getWord());
     }
 
     @Test
     void aSectionWithNoWordsGivesAnEmptyList() {
-        assertTrue(assemble(List.of(new NamesParseRecord("2", List.of(), 3)), new ArrayList<>())
+        assertTrue(assemble(List.of(new NamesParseRecord("2", List.of(), 3)))
                 .getFirst().getWord().isEmpty());
     }
 
@@ -124,7 +124,7 @@ class NamesAssemblerTest {
         List<Name> names = assemble(List.of(
                 new NamesParseRecord("2", List.of("x"), 3),
                 new NamesParseRecord("1", List.of("y"), 5),
-                new NamesParseRecord("2", List.of("z"), 7)), new ArrayList<>());
+                new NamesParseRecord("2", List.of("z"), 7)));
 
         assertEquals(List.of(2, 1, 2), names.stream().map(Name::getSection).toList());
         assertEquals(List.of("z"), names.get(2).getWord());
@@ -134,28 +134,15 @@ class NamesAssemblerTest {
     @Test
     void theWordListIsCopied() {
         List<String> words = new ArrayList<>(List.of("a"));
-        Name name = assemble(List.of(new NamesParseRecord("1", words, 3)), new ArrayList<>()).getFirst();
+        Name name = assemble(List.of(new NamesParseRecord("1", words, 3))).getFirst();
         words.add("b");
 
         assertEquals(List.of("a"), name.getWord());
     }
 
     @Test
-    void anEmptyListGivesAnEmptyResultAndNoErrors() {
-        List<String> errors = new ArrayList<>();
-
-        assertTrue(assemble(List.of(), errors).isEmpty());
-        assertTrue(errors.isEmpty());
-    }
-
-    /** Nothing is a soft error any longer: a good load leaves the sink empty. */
-    @Test
-    void nothingIsWrittenToTheErrorList() {
-        List<String> errors = new ArrayList<>();
-        assemble(List.of(new NamesParseRecord("1", List.of("a"), 3),
-                new NamesParseRecord("2", List.of("b"), 5)), errors);
-
-        assertTrue(errors.isEmpty(), errors::toString);
+    void anEmptyListGivesAnEmptyResult() {
+        assertTrue(assemble(List.of()).isEmpty());
     }
 
     // ---- Refused sections --------------------------------------------------
@@ -229,7 +216,7 @@ class NamesAssemblerTest {
                 new NamesParseRecord("2", List.of("c"), 7));
 
         DataFileParseException thrown = assertThrows(DataFileParseException.class,
-                () -> assemble(records, new ArrayList<>()));
+                () -> assemble(records));
         assertTrue(thrown.getMessage().contains("line: 5"), thrown::getMessage);
     }
 }

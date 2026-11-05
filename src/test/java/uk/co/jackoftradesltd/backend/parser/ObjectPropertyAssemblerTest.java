@@ -29,7 +29,6 @@ import uk.co.jackoftradesltd.middle.objects.ObjectProperty;
 import uk.co.jackoftradesltd.middle.objects.enums.*;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -111,7 +110,7 @@ class ObjectPropertyAssemblerTest {
     }
 
     private static List<ObjectProperty> assemble(ObjectPropertyParseRecord... records) {
-        return new ObjectPropertyAssembler().assemble(List.of(records), new ArrayList<>(), FILE);
+        return new ObjectPropertyAssembler().assemble(List.of(records), FILE);
     }
 
     private static ObjectProperty one(ObjectPropertyParseRecord record) {
@@ -554,19 +553,7 @@ class ObjectPropertyAssemblerTest {
                 full("a", "stat", "", "", "STR", "", "", new LinkedHashMap<>(), "", "", "", "", 3));
 
         assertEquals(List.of("b", "a"), result.stream().map(ObjectProperty::getName).toList());
-        assertEquals(List.of(), new ObjectPropertyAssembler().assemble(List.of(), new ArrayList<>(), FILE));
-    }
-
-    /** Every fault ends the load, so nothing is ever appended to the errors list. */
-    @Test
-    void theErrorsListIsNeverWritten() {
-        List<String> errors = new ArrayList<>();
-
-        new ObjectPropertyAssembler().assemble(List.of(ofType("stat", "STR")), errors, FILE);
-        assertThrows(DataFileParseException.class,
-                () -> new ObjectPropertyAssembler().assemble(List.of(ofType("bogus", "STR")), errors, FILE));
-
-        assertEquals(List.of(), errors);
+        assertEquals(List.of(), new ObjectPropertyAssembler().assemble(List.of(), FILE));
     }
 
     /** C's first parser error ends the whole file: no record after the bad one is read, and none comes back. */

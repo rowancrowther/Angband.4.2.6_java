@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.game.globals.loaders;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.api.io.TempDir;
@@ -27,6 +28,7 @@ import uk.co.jackoftradesltd.channel.StartupOptions;
 import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
 import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
 import uk.co.jackoftradesltd.channel.messages.UIMessage;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.channel.uichannel.UIEntrySpec;
 import uk.co.jackoftradesltd.frontend.entries.UIEntry;
 import uk.co.jackoftradesltd.frontend.ui.globals.UIDataLoader;
@@ -56,7 +58,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@code projection_parser} ({@code obj-init.c}) and {@code quests_parser} ({@code player-quest.c}).
  *
  * <p><b>Expected values come from C's data, not from the port.</b> The shipped files in
- * {@code lib/gamedata} are the C originals (the port only adds {@code record-count:} lines), and
+ * {@code lib/gamedata} are the C originals, and
  * the expectations below were counted and read from them: 128 {@code level:} records in
  * {@code world.txt}, "Town" at depth 0 with no level above it to "Angband 127" with none below;
  * 56 {@code code:} records in {@code projection.txt}, the first 25 of {@code type:element}, running
@@ -68,8 +70,10 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@code run_parser} quits when a parser reports an error, and {@code finish_parse_world} quits with
  * "Invalid level reference" when a level's {@code up} or {@code down} names no loaded level, unless the
  * text is {@code "None"}. {@code finish_parse_projection} quits when the file does not hold exactly
- * the 25 elements. The port stops the same way in each case, and deliberately lets through a parse
- * whose soft errors still left some records (the partial-results contract).
+ * the 25 elements. The port stops on every one of these, and nothing is registered from a file that
+ * fails. A missing file and a bad level reference are thrown as a {@code RuntimeException}; a
+ * grammar error ({@link ParseCancellationException}) and an assembler error
+ * ({@link DataFileParseException}) pass through the loader unwrapped.
  *
  * <p><b>What is tested.</b> The real files, then fixtures in a temporary directory standing in for
  * the gamedata directory: a missing file for each loader, every branch of the level reference check,
@@ -80,7 +84,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * <p>Each test saves the three {@code WorldRegistry} lists and the gamedata directory and puts them
  * back afterwards.
  *
- * <p>Class WorldDataLoaderTest coded on 261014, commented in full on 261014.
+ * <p>Class WorldDataLoaderTest coded on 261014, commented in full on 261014, updated on 261104 for the
+ * removal of the soft-error path and the {@code record-count:} header.
  *
  * @author Rowan Crowther
  */
@@ -180,8 +185,8 @@ class WorldDataLoaderTest {
         return "level:" + depth + ":" + name + ":" + up + ":" + down + "\n";
     }
 
-    private static String worldFile(int count, String... levels) {
-        return "record-count:" + count + "\n\n" + String.join("", levels);
+    private static String worldFile(String... levels) {
+        return String.join("", levels);
     }
 
     /** One loader, with the data file it reads. */
@@ -310,8 +315,7 @@ class WorldDataLoaderTest {
         @Test
         @DisplayName("a forward reference and a None in the middle of the list are accepted")
         void forwardReferenceAndNone() throws Exception {
-            write("world.txt", worldFile(3,
-                    level(0, "A", "None", "C"),
+            write("world.txt", worldFile(level(0, "A", "None", "C"),
                     level(1, "B", "None", "None"),
                     level(2, "C", "A", "None")));
 
@@ -327,7 +331,7 @@ class WorldDataLoaderTest {
         @Test
         @DisplayName("a level that names itself is accepted")
         void selfReference() throws Exception {
-            write("world.txt", worldFile(1, level(0, "Loop", "Loop", "Loop")));
+            write("world.txt", worldFile(level(0, "Loop", "Loop", "Loop")));
 
             WorldDataLoader.loadWorld();
 
@@ -340,8 +344,7 @@ class WorldDataLoaderTest {
         @Test
         @DisplayName("repeated and out-of-order depths are accepted")
         void depthsAreNotChecked() throws Exception {
-            write("world.txt", worldFile(3,
-                    level(5, "Low", "None", "None"),
+            write("world.txt", worldFile(level(5, "Low", "None", "None"),
                     level(5, "Same", "None", "None"),
                     level(1, "Back", "None", "None")));
 
@@ -354,8 +357,7 @@ class WorldDataLoaderTest {
         @Test
         @DisplayName("a previous level that is not loaded stops the load")
         void missingPrevious() throws Exception {
-            write("world.txt", worldFile(2,
-                    level(0, "A", "None", "B"),
+            write("world.txt", worldFile(level(0, "A", "None", "B"),
                     level(1, "B", "Nowhere", "None")));
 
             RuntimeException thrown = assertThrows(RuntimeException.class, WorldDataLoader::loadWorld);
@@ -367,8 +369,7 @@ class WorldDataLoaderTest {
         @Test
         @DisplayName("a next level that is not loaded stops the load")
         void missingNext() throws Exception {
-            write("world.txt", worldFile(2,
-                    level(0, "A", "None", "Nowhere"),
+            write("world.txt", worldFile(level(0, "A", "None", "Nowhere"),
                     level(1, "B", "A", "None")));
 
             RuntimeException thrown = assertThrows(RuntimeException.class, WorldDataLoader::loadWorld);
@@ -385,10 +386,10 @@ class WorldDataLoaderTest {
         @MethodSource("uk.co.jackoftradesltd.middle.game.globals.loaders.WorldDataLoaderTest#notNone")
         @DisplayName("only the exact text None means no neighbour")
         void noneIsCaseSensitive(String spelling) throws Exception {
-            write("world.txt", worldFile(1, level(0, "A", spelling, "None")));
+            write("world.txt", worldFile(level(0, "A", spelling, "None")));
             assertThrows(RuntimeException.class, WorldDataLoader::loadWorld, "previous");
 
-            write("world.txt", worldFile(1, level(0, "A", "None", spelling)));
+            write("world.txt", worldFile(level(0, "A", "None", spelling)));
             assertThrows(RuntimeException.class, WorldDataLoader::loadWorld, "next");
 
             assertSame(savedWorlds, registryList("worlds"), "worlds untouched");
@@ -400,13 +401,11 @@ class WorldDataLoaderTest {
         @Test
         @DisplayName("a name must match a level exactly, not as a prefix or in another case")
         void exactNameMatch() throws Exception {
-            write("world.txt", worldFile(2,
-                    level(0, "Angband 1", "None", "None"),
+            write("world.txt", worldFile(level(0, "Angband 1", "None", "None"),
                     level(1, "B", "Angband", "None")));
             assertThrows(RuntimeException.class, WorldDataLoader::loadWorld, "prefix");
 
-            write("world.txt", worldFile(2,
-                    level(0, "Angband 1", "None", "None"),
+            write("world.txt", worldFile(level(0, "Angband 1", "None", "None"),
                     level(1, "B", "angband 1", "None")));
             assertThrows(RuntimeException.class, WorldDataLoader::loadWorld, "case");
         }
@@ -427,8 +426,7 @@ class WorldDataLoaderTest {
         assertEquals(128, WorldRegistry.getWorlds().size());
 
         AngbandDirs.ANGBAND_DIRS.GAMEDATA.setPath(tempDir + File.separator);
-        write("world.txt", worldFile(2,
-                level(0, "Top", "None", "Bottom"),
+        write("world.txt", worldFile(level(0, "Top", "None", "Bottom"),
                 level(1, "Bottom", "Top", "None")));
 
         WorldDataLoader.loadWorld();
@@ -453,7 +451,7 @@ class WorldDataLoaderTest {
         write("projection.txt", real.substring(0, type) + "type:environs"
                 + real.substring(type + "type:element".length()));
 
-        RuntimeException thrown = assertThrows(RuntimeException.class, WorldDataLoader::loadProjections);
+        DataFileParseException thrown = assertThrows(DataFileParseException.class, WorldDataLoader::loadProjections);
 
         assertTrue(thrown.getMessage().contains("projection.txt"), thrown.getMessage());
         assertSame(savedProjections, registryList("projections"), "projections untouched");
@@ -470,9 +468,9 @@ class WorldDataLoaderTest {
     @Test
     @DisplayName("an empty quest file stops the load, where C loads no quests")
     void emptyQuestFile() throws Exception {
-        write("quest.txt", "record-count:0\n");
+        write("quest.txt", "");
 
-        assertThrows(RuntimeException.class, WorldDataLoader::loadQuests);
+        assertThrows(ParseCancellationException.class, WorldDataLoader::loadQuests);
 
         assertSame(savedQuests, registryList("quests"), "quests untouched");
     }
@@ -484,9 +482,9 @@ class WorldDataLoaderTest {
     @Test
     @DisplayName("a quest naming an unknown monster stops the load")
     void unknownRace() throws Exception {
-        write("quest.txt", "record-count:1\n\nname:Ghost\nlevel:50\nrace:Zzzzzz Nonexistent Beast\nnumber:1\n");
+        write("quest.txt", "\nname:Ghost\nlevel:50\nrace:Zzzzzz Nonexistent Beast\nnumber:1\n");
 
-        assertThrows(RuntimeException.class, WorldDataLoader::loadQuests);
+        assertThrows(DataFileParseException.class, WorldDataLoader::loadQuests);
 
         assertSame(savedQuests, registryList("quests"), "quests untouched");
     }
@@ -503,7 +501,7 @@ class WorldDataLoaderTest {
         assertEquals(2, WorldRegistry.getQuestMax());
 
         AngbandDirs.ANGBAND_DIRS.GAMEDATA.setPath(tempDir + File.separator);
-        write("quest.txt", "record-count:1\n\nname:Morgoth\nlevel:100\nrace:Morgoth, Lord of Darkness\nnumber:1\n");
+        write("quest.txt", "\nname:Morgoth\nlevel:100\nrace:Morgoth, Lord of Darkness\nnumber:1\n");
 
         WorldDataLoader.loadQuests();
 

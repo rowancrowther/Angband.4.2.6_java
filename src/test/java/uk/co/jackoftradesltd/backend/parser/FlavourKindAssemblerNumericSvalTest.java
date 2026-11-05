@@ -86,7 +86,7 @@ class FlavourKindAssemblerNumericSvalTest {
     private static int svalOf(String symbol) {
         FlavourParseRecord fixed = new FlavourParseRecord("1", symbol, "Yellow", "Foo", 2);
         FlavourKindParseRecord record = new FlavourKindParseRecord("ring", "=", List.of(fixed), 1);
-        List<FlavourKind> kinds = new FlavourKindAssembler().assemble(List.of(record), new ArrayList<>(),
+        List<FlavourKind> kinds = new FlavourKindAssembler().assemble(List.of(record), 
                 "flavor.txt");
         return kinds.getFirst().getFlavours().getFirst().getsVal();
     }

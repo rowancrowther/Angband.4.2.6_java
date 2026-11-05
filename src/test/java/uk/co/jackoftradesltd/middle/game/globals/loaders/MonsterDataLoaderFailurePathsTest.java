@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.game.globals.loaders;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.middle.game.globals.registry.MonsterRegistry;
 
 import java.io.File;
@@ -43,23 +45,24 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@code mon-summon.c}, and the visuals parser in {@code ui-visuals.c}, reads its file through
  * {@code parse_file_quit_not_found} in {@code datafile.c}, which calls {@code quit()} with "Cannot
  * open" when the file is missing, and {@code run_parser} quits when a parser reports an error. So in C
- * a missing file always ends the program. The port stops the load the same way for a missing file,
- * and for a file whose errors left no records at all; it deliberately lets through a file whose soft
- * errors still left some records (the partial-results contract).
+ * a missing file always ends the program. The port stops the load on every error too, and registers
+ * nothing from a file that fails: a missing file is wrapped in a {@code RuntimeException} naming it,
+ * and a grammar error ({@link ParseCancellationException}) or an assembler error
+ * ({@link DataFileParseException}) passes through the loader unwrapped.
  *
  * <p><b>What is tested.</b> A missing file for each of the nine loaders (an empty temporary directory
  * stands in for the gamedata directory), then, using {@code pain.txt} as the example, the outcomes of
- * the error check: errors that leave no records stop the load and leave the registry alone, a header
- * miscount that still leaves records registers them, and a hard syntax error, which the reader turns
- * into an empty result, stops the load too. The clean path through all nine is covered by
+ * the two error kinds: an assembler error and a grammar error each stop the load and leave the
+ * registry alone. The clean path through all nine is covered by
  * {@link MonsterDataLoaderRegistryTest} and {@link MonsterDataLoaderLoreTest}, which run
  * {@code GameConstants.init} on the real gamedata.
  *
  * <p>Each test points {@code ANGBAND_DIRS.GAMEDATA} at the temporary directory. {@code pain.txt} is
- * loaded from the real gamedata before each test, and again after it, so the pain registry the soft
- * error tests write to is the real one both before and after.
+ * loaded from the real gamedata before each test, and again after it, so the pain registry is the
+ * real one both before and after.
  *
- * <p>Class MonsterDataLoaderFailurePathsTest coded on 261013, commented in full on 261013.
+ * <p>Class MonsterDataLoaderFailurePathsTest coded on 261013, commented in full on 261013, updated on
+ * 261104 for the removal of the soft-error path and the {@code record-count:} header.
  *
  * @author Rowan Crowther
  */
@@ -141,11 +144,11 @@ class MonsterDataLoaderFailurePathsTest {
      * is registered, so the real pain sets are still there.
      */
     @Test
-    @DisplayName("errors that leave no records stop the load and leave the registry alone")
-    void errorsWithNoRecordsStopTheLoad() throws IOException {
-        Files.writeString(tempDir.resolve("pain.txt"), "record-count:1\n" + painSet("-1"));
+    @DisplayName("an assembler error stops the load and leaves the registry alone")
+    void anAssemblerErrorStopsTheLoad() throws IOException {
+        Files.writeString(tempDir.resolve("pain.txt"), painSet("-1"));
 
-        RuntimeException thrown = assertThrows(RuntimeException.class, MonsterDataLoader::loadPain);
+        DataFileParseException thrown = assertThrows(DataFileParseException.class, MonsterDataLoader::loadPain);
 
         assertTrue(thrown.getMessage().contains("pain.txt"), thrown.getMessage());
         assertEquals(12, MonsterRegistry.getMonsterPainMsgMax(), "pain counter");
@@ -153,14 +156,17 @@ class MonsterDataLoaderFailurePathsTest {
     }
 
     /**
-     * A {@code record-count} header that disagrees with the number of sets is a soft error that
-     * never discards the records that did parse. This is the deliberate softening of C: the one set
-     * is registered, replacing the real twelve, and the load carries on.
+     * A clean one-set file replaces the real twelve: the registry holds exactly what the file
+     * gave, and the counter is the record count.
+     *
+     * <p>Function aCleanFileReplacesTheRegistry coded on 261104, commented in full on 261104. It
+     * replaces miscountWithRecordsRegistersThem, which needed the removed {@code record-count:}
+     * header to produce a soft error.
      */
     @Test
-    @DisplayName("a header miscount that still leaves records registers them and carries on")
-    void miscountWithRecordsRegistersThem() throws IOException {
-        Files.writeString(tempDir.resolve("pain.txt"), "record-count:5\n" + painSet("1"));
+    @DisplayName("a clean file replaces the registered sets")
+    void aCleanFileReplacesTheRegistry() throws IOException {
+        Files.writeString(tempDir.resolve("pain.txt"), painSet("1"));
 
         MonsterDataLoader.loadPain();
 
@@ -170,20 +176,20 @@ class MonsterDataLoaderFailurePathsTest {
     }
 
     /**
-     * {@code record-count:0} followed by nothing is a hard syntax error. {@code GrammarDriver.run}
-     * catches it and returns an empty result carrying the error, which the loader treats as a file
-     * that yielded nothing: the load stops with the loader's own message and the registry is not
-     * touched.
+     * An empty file is a grammar error, since {@code PainGrammar} needs at least one set. The
+     * {@link ParseCancellationException} passes through the loader unwrapped and the registry is
+     * not touched.
+     *
+     * <p>Function syntaxErrorStopsTheLoad coded on 261013, commented in full on 261013, rewritten on
+     * 261104 for the removal of the soft-error path.
      */
     @Test
-    @DisplayName("a hard syntax error stops the load through the empty-result route")
+    @DisplayName("a grammar error stops the load and leaves the registry alone")
     void syntaxErrorStopsTheLoad() throws IOException {
-        Files.writeString(tempDir.resolve("pain.txt"), "record-count:0\n");
+        Files.writeString(tempDir.resolve("pain.txt"), "");
 
-        RuntimeException thrown = assertThrows(RuntimeException.class, MonsterDataLoader::loadPain);
+        assertThrows(ParseCancellationException.class, MonsterDataLoader::loadPain);
 
-        assertEquals("Error while parsing file " + tempDir + File.separator + "pain.txt",
-                thrown.getMessage());
         assertEquals(12, MonsterRegistry.getMonsterPainMsgMax(), "pain counter");
     }
 

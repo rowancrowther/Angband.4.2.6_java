@@ -67,13 +67,13 @@ import java.util.List;
  * in the file (DRAGON_POWER in the shipped data). It matters wherever a name is used twice, since
  * C's {@code findact} then finds the later record first.
  * <p>
+ * As in C, the first error stops the load and nothing is returned: a syntax error is thrown from
+ * {@link #extract} as a {@code ParseCancellationException}, and a record the assembler refuses (a
+ * number too large for an int, an effect that does not resolve) is thrown as a
+ * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}. Neither is caught here.
+ * <p>
  * Differences from C worth knowing about:
  * <ul>
- *   <li>The {@code record-count:} header is a Java-only addition, checked as a soft error; the
- *       upstream {@code activation.txt} has no such line, and this repository's copy adds it.</li>
- *   <li>C stops at the first parse error. Here a syntax error is fatal and returns no items, but an
- *       assembler error (a number too large for an int, an effect that does not resolve) skips only
- *       the offending record and the rest still load.</li>
  *   <li>C takes the directives in any order and a repeated {@code aim:}, {@code level:} or
  *       {@code power:} overwrites. The grammar does the same, but C <em>appends</em> a repeated
  *       {@code msg:} or {@code desc:} and the grammar overwrites, which the shipped data hits:
@@ -89,7 +89,8 @@ import java.util.List;
  *       customised copy in the user directory first.</li>
  * </ul>
  *
- * <p>Class ActivationReader coded before 260915, commented in full on 261017.
+ * <p>Class ActivationReader coded before 260915, commented in full on 261017, updated on 261105 for
+ * the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -97,98 +98,86 @@ public class ActivationReader implements Reader<Activation> {
     /**
      * Logger handed to {@link GrammarDriver#run} so that an {@link IOException} while reading
      * {@code activation.txt} is logged under this reader's name before it is rethrown. Syntax and
-     * soft errors do not go through it; they travel in the {@link ParseResult}.
+     * assembler errors do not go through it; they are thrown unlogged to the caller.
      *
-     * <p>Field logger coded before 260915, commented in full on 261017.
+     * <p>Field logger coded before 260915, commented in full on 261017, updated on 261105 for the
+     * removal of the soft-error path.
      */
     private static final Logger logger = LogManager.getLogger();
 
     /**
      * Parse the given file and return just the assembled activations, in C's order (the reverse of
-     * the file's, see the class block), discarding the soft-error channel (use
-     * {@link #parseWithResult} to inspect the errors). Satisfies the {@link Reader} contract.
+     * the file's, see the class block), unwrapped from the {@link ParseResult} that
+     * {@link #parseWithResults} gives. Satisfies the {@link Reader} contract.
      * <p>
-     * Because the errors are dropped, a syntax error and a clean empty file are indistinguishable
-     * here: both give an empty list, and a record skipped for a number too large for an int or an
-     * effect that does not resolve just goes missing. Callers that must tell a partial or failed
-     * load from a clean one have to use {@link #parseWithResult}.
+     * A syntax error or a refused record throws, exactly as in {@link #parseWithResults}, so an
+     * empty list only ever means a clean file with no records.
      *
-     * <p>Function parse coded before 260915, commented in full on 261017.
+     * <p>Function parse coded before 260915, commented in full on 261017, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param filename the activation data file to read
-     * @return the assembled {@link Activation} list (empty if the parse failed closed)
+     * @return every {@link Activation} in the file, in C's order
      * @throws IOException if the file cannot be read
      */
     @Override
     public @NotNull List<Activation> parse(@NotNull String filename) throws IOException {
-        return parseWithResult(filename).items();
+        return parseWithResults(filename).items();
     }
 
     /**
      * The {@link GrammarDriver.Extractor} for this grammar: run the parser's {@code file} entry
-     * rule, fail closed on any hard lexer/parser error, validate the {@code record-count:} header,
-     * and hand back the raw {@link ActivationParseRecord}s, still holding unresolved text.
+     * rule, fail closed on any hard lexer/parser error, and hand back the raw
+     * {@link ActivationParseRecord}s, still holding unresolved text.
      * <p>
      * Ordering matters: {@link ParseErrors#throwIfAny()} must fire <em>after</em> the parse but
      * <em>before</em> the records are used, so a malformed file aborts with a
-     * {@code ParseCancellationException} here rather than reaching the assembler, and a half-built
-     * record list is never measured against the declared count to produce a second, misleading
-     * error. That covers the cases where C returns a parser error too: a directive before any
-     * {@code name:} line (C's {@code PARSE_ERROR_MISSING_RECORD_HEADER}) and a numeric directive
-     * with no number. The header check is soft - {@link GrammarDriver#checkRecordCount} only appends
-     * to {@code errors}, so a miscount never discards the records that did parse.
+     * {@code ParseCancellationException} here rather than reaching the assembler. That covers the
+     * cases where C returns a parser error too: a directive before any {@code name:} line (C's
+     * {@code PARSE_ERROR_MISSING_RECORD_HEADER}) and a numeric directive with no number.
      * <p>
      * The records stay in file order here. The reversal into C's order is done later, by
      * {@link ActivationAssembler}. The copy at the end detaches the result from the parse tree, so
      * the returned list is the caller's to keep.
      *
-     * <p>Function extract coded before 260915, commented in full on 261017.
+     * <p>Function extract coded before 260915, commented in full on 261017, updated on 261105 for
+     * the removal of the soft-error path and the {@code record-count:} header.
      *
      * @param parser       the generated Activations parser, positioned at the start of the file
      * @param errorCatcher the live hard-error collector installed by the driver
-     * @param errors       the soft-error sink, mutated in place
      * @return the parsed {@link ActivationParseRecord}s in file order
      */
     private static List<ActivationParseRecord> extract(
             @NotNull ActivationsGrammar parser,
-            @NotNull ParseErrors errorCatcher,
-            @NotNull List<String> errors) {
+            @NotNull ParseErrors errorCatcher) {
         ActivationsGrammar.FileContext output = parser.file();
         List<ActivationParseRecord> result = output.records;
         errorCatcher.throwIfAny();
-
-        String declaredRecordCount = output.declaredCount;
-        GrammarDriver.checkRecordCount(declaredRecordCount, result.size(), errors);
 
         return new ArrayList<>(result);
     }
 
     /**
-     * Parse the given file, returning both the assembled {@link Activation} list (in C's order, the
-     * reverse of the file's) and any soft errors gathered along the way, for callers that need to
-     * tell a clean load from a partial one.
+     * Parse the given file, returning the assembled {@link Activation} list (in C's order, the
+     * reverse of the file's) wrapped in a {@link ParseResult}.
      * <p>
      * This is the Java counterpart of {@code run_parse_act} and the {@code parse_act_*} handlers in
      * {@code obj-init.c}: it wires {@code ActivationsLexer}, {@code ActivationsGrammar},
-     * {@link #extract} and {@link ActivationAssembler} into {@link GrammarDriver#run}. A syntax
-     * error returns no items and the collected messages; a number too large for an int, an effect
-     * that does not resolve or a {@code record-count:} mismatch leaves the good records in the
-     * result alongside the messages, so the list can be short without anything having been thrown.
-     * C would have stopped at the first of any of these. An unreadable file is not a result at all
-     * but an {@link IOException}, the analogue of {@code parse_file_quit_not_found}'s
-     * {@code quit()}.
-     * <p>
-     * This is the variant callers should prefer: {@code ObjectDataLoader.loadActivations} gates on
-     * the errors for exactly that reason. Most of the other readers spell this method
-     * {@code parseWithResults}; this one is singular.
+     * {@link #extract} and {@link ActivationAssembler} into {@link GrammarDriver#run}. As C stops at
+     * the first error, so does this: a syntax error throws a {@code ParseCancellationException},
+     * and a number too large for an int or an effect that does not resolve throws a
+     * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}, and no result is
+     * returned. An unreadable file is an {@link IOException}, the analogue of
+     * {@code parse_file_quit_not_found}'s {@code quit()}.
      *
-     * <p>Function parseWithResult coded before 260915, commented in full on 261017.
+     * <p>Function parseWithResults coded before 260915, commented in full on 261017, updated on
+     * 261105 for the removal of the soft-error path.
      *
      * @param filename the activation data file to read
-     * @return a {@link ParseResult} of the assembled activations plus any soft errors
+     * @return every activation in the file, in C's order
      * @throws IOException if the file cannot be read
      */
-    public ParseResult<Activation> parseWithResult(@NotNull String filename) throws IOException {
+    public ParseResult<Activation> parseWithResults(@NotNull String filename) throws IOException {
         return GrammarDriver.run(filename,
                 ActivationsLexer::new,
                 ActivationsGrammar::new,

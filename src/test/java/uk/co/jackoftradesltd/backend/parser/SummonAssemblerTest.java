@@ -32,7 +32,6 @@ import uk.co.jackoftradesltd.middle.monsters.MonsterBase;
 import uk.co.jackoftradesltd.middle.monsters.Summon;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -107,21 +106,19 @@ class SummonAssemblerTest {
         return record(name, "SUM_MONSTER", "0", List.of(), "", "");
     }
 
-    private static List<Summon> assemble(List<SummonParseRecord> records, List<String> errors) {
-        return new SummonAssembler().assemble(records, errors, FILE);
+    private static List<Summon> assemble(List<SummonParseRecord> records) {
+        return new SummonAssembler().assemble(records, FILE);
     }
 
     private static Summon one(SummonParseRecord record) {
-        List<Summon> summons = assemble(List.of(record), new ArrayList<>());
+        List<Summon> summons = assemble(List.of(record));
         assertEquals(1, summons.size());
         return summons.getFirst();
     }
 
     private static DataFileParseException refused(SummonParseRecord... records) {
-        List<String> errors = new ArrayList<>();
         DataFileParseException e =
-                assertThrows(DataFileParseException.class, () -> assemble(List.of(records), errors));
-        assertTrue(errors.isEmpty(), "a load-ending error is thrown, never added to the error list");
+                assertThrows(DataFileParseException.class, () -> assemble(List.of(records)));
         return e;
     }
 
@@ -133,7 +130,7 @@ class SummonAssemblerTest {
         // fallback HI_UNDEAD. Here the base is one the seeded registry holds.
         List<Summon> summons = assemble(List.of(
                 plain("HI_UNDEAD"),
-                record("WRAITH", "SUM_WRAITH", "1", List.of(BASE), "UNIQUE", "HI_UNDEAD")), new ArrayList<>());
+                record("WRAITH", "SUM_WRAITH", "1", List.of(BASE), "UNIQUE", "HI_UNDEAD")));
 
         Summon wraith = summons.get(1);
         assertEquals("WRAITH", wraith.getName());
@@ -150,21 +147,14 @@ class SummonAssemblerTest {
     void theRecordsComeBackInFileOrder() {
         // finish_parse_summon fills summons[] from the highest index down while walking the head-first
         // chain, so the array is in file order.
-        List<Summon> summons = assemble(List.of(plain("ANY"), plain("KIN"), plain("MONSTER")), new ArrayList<>());
+        List<Summon> summons = assemble(List.of(plain("ANY"), plain("KIN"), plain("MONSTER")));
 
         assertEquals(List.of("ANY", "KIN", "MONSTER"), summons.stream().map(Summon::getName).toList());
     }
 
     @Test
     void noRecordsGiveNoSummons() {
-        assertTrue(assemble(List.of(), new ArrayList<>()).isEmpty());
-    }
-
-    @Test
-    void theErrorListIsLeftAloneOnSuccess() {
-        List<String> errors = new ArrayList<>(List.of("kept"));
-        assemble(List.of(plain("ANY")), errors);
-        assertEquals(List.of("kept"), errors);
+        assertTrue(assemble(List.of()).isEmpty());
     }
 
     // ---- msgt: -------------------------------------------------------------
@@ -292,7 +282,7 @@ class SummonAssemblerTest {
     void aFallbackNamingAnEarlierSummonResolves() {
         List<Summon> summons = assemble(List.of(
                 plain("HI_UNDEAD"),
-                record("WRAITH", "SUM_MONSTER", "0", List.of(), "", "HI_UNDEAD")), new ArrayList<>());
+                record("WRAITH", "SUM_MONSTER", "0", List.of(), "", "HI_UNDEAD")));
 
         assertSame(summons.get(0), summons.get(1).getFallback());
     }
@@ -302,7 +292,7 @@ class SummonAssemblerTest {
         // finish_parse_summon links after every summon exists, so a forward reference works.
         List<Summon> summons = assemble(List.of(
                 record("WRAITH", "SUM_MONSTER", "0", List.of(), "", "HI_UNDEAD"),
-                plain("HI_UNDEAD")), new ArrayList<>());
+                plain("HI_UNDEAD")));
 
         assertSame(summons.get(1), summons.get(0).getFallback());
     }
@@ -320,7 +310,7 @@ class SummonAssemblerTest {
         List<Summon> summons = assemble(List.of(
                 plain("TWIN"),
                 plain("TWIN"),
-                record("A", "SUM_MONSTER", "0", List.of(), "", "TWIN")), new ArrayList<>());
+                record("A", "SUM_MONSTER", "0", List.of(), "", "TWIN")));
 
         assertEquals(3, summons.size());
         assertSame(summons.get(0), summons.get(2).getFallback());
@@ -330,15 +320,13 @@ class SummonAssemblerTest {
     @ValueSource(strings = {"NOSUCH", "hi_undead", "HI_UNDEAD ", "HI"})
     void anUnresolvedFallbackIsSilentAndTheRecordIsKept(String fallback) {
         // summon_name_to_idx is streq and gives -1 for a miss; finish_parse_summon reports nothing.
-        List<String> errors = new ArrayList<>();
         List<Summon> summons = assemble(List.of(
                 plain("HI_UNDEAD"),
-                record("A", "SUM_MONSTER", "0", List.of(), "", fallback)), errors);
+                record("A", "SUM_MONSTER", "0", List.of(), "", fallback)));
 
         assertEquals(2, summons.size());
         assertNull(summons.get(1).getFallback());
         assertEquals(fallback, summons.get(1).getFallbackName());
-        assertTrue(errors.isEmpty());
     }
 
     // ---- Stopping the load -------------------------------------------------

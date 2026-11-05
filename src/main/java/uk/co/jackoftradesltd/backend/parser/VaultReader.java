@@ -60,13 +60,17 @@ import java.util.List;
  * <p><b>Where the Java differs from C</b> (the grammar half is recorded in
  * {@code docs/grammar_issues.md}, the assembler half in {@code docs/Assembler_Issues.md}): C
  * registers nine independent one-line directives and so accepts them in any order, missing,
- * repeated or indented; {@code VaultGrammar} demands a {@code record-count:} header, which the
- * shipped C file does not carry and which {@link GrammarDriver#checkRecordCount} checks, and then
- * one or more records in the fixed order {@code name:} to {@code max-depth:}, any number of
- * {@code flags:} lines, then the {@code D:} lines. A bad record costs only itself in Java, where
- * every one of C's {@code PARSE_ERROR_*} results stops the load.
+ * repeated or indented; {@code VaultGrammar} demands one or more records in the fixed order
+ * {@code name:} to {@code max-depth:}, any number of {@code flags:} lines, then the {@code D:}
+ * lines.
  *
- * <p>Class VaultReader coded before 260915, commented in full on 261019.
+ * <p><b>Errors:</b> as in C, where every {@code PARSE_ERROR_*} result stops the load, the first
+ * error stops it here and nothing is returned. A syntax error is thrown from {@link #extract} as a
+ * {@code ParseCancellationException}, and a record the assembler refuses is thrown as a
+ * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}. Neither is caught here.
+ *
+ * <p>Class VaultReader coded before 260915, commented in full on 261019, updated on 261105 for the
+ * removal of the soft-error path and the {@code record-count:} header.
  *
  * @author Rowan Crowther
  */
@@ -81,19 +85,17 @@ public class VaultReader implements Reader<Vault> {
     private final static Logger logger = LogManager.getLogger(VaultReader.class);
 
     /**
-     * Parse the file and return just the assembled vaults, discarding the error list.
+     * Parse the file and return just the assembled vaults, unwrapped from the {@link ParseResult}
+     * that {@link #parseWithResults} gives.
      *
-     * <p>This is {@link #parseWithResults} with its soft errors thrown away, so a caller that needs
-     * to know a vault was dropped (an unknown {@code type:}, a size over the room builder's cap, a
-     * ragged layout, a bad flag, a record-count mismatch) must use that method instead. A hard
-     * grammar error gives an empty list here, indistinguishable from a file with no vaults. The C
-     * counterpart is the {@code vault_parser} run as a whole ({@code generate.c}); C has no
-     * partial result.
+     * <p>Any error throws exactly as it does there, so there is no partial result, as in C. The C
+     * counterpart is the {@code vault_parser} run as a whole ({@code generate.c}).
      *
-     * <p>Function parse coded before 260915, commented in full on 261019.
+     * <p>Function parse coded before 260915, commented in full on 261019, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param filename the data file to parse
-     * @return the successfully assembled vaults, in reverse file order
+     * @return every vault in the file, in reverse file order
      * @throws IOException if the file cannot be read
      */
     @Override
@@ -106,52 +108,46 @@ public class VaultReader implements Reader<Vault> {
      * {@code file} rule and pull the raw records out of its result.
      *
      * <p>Ordering is deliberate. {@link ParseErrors#throwIfAny()} fires straight after the parse, so
-     * a hard grammar or lexer error fails closed before the soft
-     * {@link GrammarDriver#checkRecordCount} check runs against whatever did parse. That check
-     * compares the file's {@code record-count:} header with the number of records parsed and is a
-     * soft error on mismatch; C's own parser never reads this header, so a mismatch here is
-     * stricter than the original. The records come back in file order, and the grammar's own
+     * a hard grammar or lexer error fails closed with a {@code ParseCancellationException} before
+     * any record is used. The records come back in file order, and the grammar's own
      * {@code ArrayList} is copied so the caller owns the result. {@link VaultAssembler} then
      * type-checks them, and is where the order becomes C's.
      *
-     * <p>Function extract coded before 260915, commented in full on 261019.
+     * <p>Function extract coded before 260915, commented in full on 261019, updated on 261105 for
+     * the removal of the soft-error path and the {@code record-count:} header.
      *
      * @param parser       the constructed parser, ready to run its entry rule
      * @param errorCatcher the installed error listener; {@link ParseErrors#throwIfAny()} must run
      *                     before the records are read out, so a lexer/parser failure aborts here
      *                     rather than handing back a partially-built list
-     * @param errors       soft-error sink for the record-count check
      * @return the raw parse records, in file order
      */
     private static List<VaultParseRecord> extract (
             @NotNull VaultGrammar parser,
-            @NotNull ParseErrors errorCatcher,
-            @NotNull List<String> errors) {
+            @NotNull ParseErrors errorCatcher) {
         VaultGrammar.FileContext output = parser.file();
         List<VaultParseRecord> result = output.profiles;
         errorCatcher.throwIfAny();
-        
-        String declaredRecordCount = output.declaredRecordCount;
-        GrammarDriver.checkRecordCount(declaredRecordCount, result.size(), errors);
         
         return new ArrayList<>(result);
     }
     
     /**
-     * As {@link #parse}, but keeps the soft errors alongside the assembled vaults rather than
-     * discarding them. The preferred entry point when the caller wants to gate on
-     * {@link ParseResult#hasErrors()}, as {@code DungeonLoader.loadVaultTemplates} does before
-     * storing the result.
+     * Parses {@code filename} and returns the assembled vaults, in reverse file order, wrapped in a
+     * {@link ParseResult}. This is the entry point {@code DungeonLoader.loadVaultTemplates} uses.
      *
      * <p>A missing or unreadable file is an {@link IOException} (C: {@code parse_file_quit_not_found}
-     * quits). A hard grammar or lexer error gives an empty list with the messages as errors. Every
-     * problem {@link VaultAssembler} finds, where C would stop on a {@code PARSE_ERROR_*}, is a
-     * soft error that drops that one vault and leaves the rest.
+     * quits). A hard grammar or lexer error throws a {@code ParseCancellationException}. Every
+     * problem {@link VaultAssembler} finds (an unknown {@code type:}, a size over the room builder's
+     * cap, a ragged layout, a bad flag) throws a
+     * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}, as C stops on a
+     * {@code PARSE_ERROR_*}. No result is returned for a file that fails.
      *
-     * <p>Function parseWithResults coded before 260915, commented in full on 261019.
+     * <p>Function parseWithResults coded before 260915, commented in full on 261019, updated on
+     * 261105 for the removal of the soft-error path.
      *
      * @param filename the data file to parse
-     * @return the assembled vaults, in reverse file order, plus any soft errors gathered along the way
+     * @return every vault in the file, in reverse file order
      * @throws IOException if the file cannot be read
      */
     public ParseResult<Vault> parseWithResults(@NotNull String filename) throws IOException {

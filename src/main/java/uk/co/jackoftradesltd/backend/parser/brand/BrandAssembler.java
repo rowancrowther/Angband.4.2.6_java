@@ -49,10 +49,11 @@ import java.util.List;
  *
  * <p><strong>Every error ends the load.</strong> As C's handlers return
  * {@code PARSE_ERROR_INVALID_FLAG} or {@code PARSE_ERROR_NOT_NUMBER} and stop the whole
- * {@code brand.txt} load, the bad value is logged and thrown as a {@link DataFileParseException}
- * rather than reported as a soft error, and nothing is added to the caller's error list.
+ * {@code brand.txt} load, the bad value is logged and thrown as a {@link DataFileParseException},
+ * and no record is skipped.
  *
- * <p>Class BrandAssembler coded before 260915, commented in full on 261023.
+ * <p>Class BrandAssembler coded before 260915, commented in full on 261023, updated on 261105 for
+ * the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -102,7 +103,6 @@ public class BrandAssembler implements Assembler<BrandParseRecord, List<Brand>> 
      * load-ending errors on 261023.
      *
      * @param records  the raw {@link BrandParseRecord}s, in file order
-     * @param errors   unused: every error ends the load by throwing instead
      * @param filename the name of the data file, used in the error messages
      * @return the assembled brands, in reverse file order (C's {@code brands[]} order)
      * @throws DataFileParseException on a flag of {@code NONE} or one that names no
@@ -110,7 +110,7 @@ public class BrandAssembler implements Assembler<BrandParseRecord, List<Brand>> 
      *                                {@code -}
      */
     @Override
-    public List<Brand> assemble(@NotNull List<BrandParseRecord> records, @NotNull List<String> errors,
+    public List<Brand> assemble(@NotNull List<BrandParseRecord> records,
                                 String filename) {
         List<Brand> brands = new ArrayList<>();
 

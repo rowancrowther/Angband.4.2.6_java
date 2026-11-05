@@ -68,16 +68,15 @@ import java.util.List;
  * can tell the two apart: {@code mon_pit_hook} in {@code gen-room.c} only asks whether a race matches
  * some entry.
  * <p>
+ * As in C, the first error stops the load and nothing is returned: a syntax error is thrown from
+ * {@link #extract} as a {@code ParseCancellationException}, and a record the assembler refuses (an
+ * unknown flag, spell or monster base, or an {@code innate-freq:} outside 1 to 100) is thrown as a
+ * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}. Neither is caught here. An
+ * unresolved {@code mon-ban:} name is not an error: it is kept as a {@code null} race, as C keeps a
+ * {@code NULL} one.
+ * <p>
  * Differences from C worth knowing about:
  * <ul>
- *   <li>The {@code record-count:} header is a Java-only addition; the upstream {@code pit.txt} has no
- *       such line, and this repository's copy adds {@code record-count:40}. A wrong count is a soft
- *       error and the records still load, but a missing header is a syntax error and loads nothing.</li>
- *   <li>C stops at the first parse error. Here a syntax error is fatal and returns no items, but an
- *       assembler error (an unknown flag, spell, monster base or monster name, or an
- *       {@code innate-freq:} outside 1 to 100) skips only the offending record and the rest still
- *       load. C silently keeps an unresolved {@code mon-ban:} name as a null race; see
- *       {@code docs/Assembler_Issues.md}.</li>
  *   <li>C takes the directives in any order, and so does the grammar, but the grammar is stricter in
  *       the value shapes it lexes and in demanding at least one record with at least one directive
  *       after each {@code name:}; see {@code docs/grammar_issues.md}.</li>
@@ -90,32 +89,33 @@ import java.util.List;
  *
  * @author Rowan Crowther
  *
- * <p>Class PitReader coded before 260915, commented in full on 261017.
+ * <p>Class PitReader coded before 260915, commented in full on 261017, updated on 261105 for the
+ * removal of the soft-error path.
  */
 public class PitReader implements Reader<PitProfile> {
     /**
      * Logger handed to {@link GrammarDriver#run} so that an {@link IOException} while reading
-     * {@code pit.txt} is logged under this reader's name before it is rethrown. Syntax and soft
-     * errors do not go through it; they travel in the {@link ParseResult}.
+     * {@code pit.txt} is logged under this reader's name before it is rethrown. Syntax and
+     * assembler errors do not go through it; they are thrown unlogged to the caller.
      *
-     * <p>Field logger coded before 260915, commented in full on 261017.
+     * <p>Field logger coded before 260915, commented in full on 261017, updated on 261105 for the
+     * removal of the soft-error path.
      */
     private static final Logger logger = LogManager.getLogger();
 
     /**
      * Parse the given file and return just the assembled pit profiles, in file order (which is
-     * C's {@code pit_info} order, see the class block), discarding the soft-error channel (use
-     * {@link #parseWithResults} to inspect the errors). Satisfies the {@link Reader} contract.
+     * C's {@code pit_info} order, see the class block), unwrapped from the {@link ParseResult}
+     * that {@link #parseWithResults} gives. Satisfies the {@link Reader} contract.
      * <p>
-     * Because the errors are dropped, a syntax error and a clean load are told apart only by the
-     * list being empty, and a record skipped for an unknown flag, spell, monster base or monster
-     * name just goes missing. Callers that must tell a partial or failed load from a clean one have
-     * to use {@link #parseWithResults}, as {@code MonsterDataLoader.loadPitProfiles} does.
+     * A syntax error or a refused record throws, exactly as in {@link #parseWithResults}, so an
+     * empty list only ever means a clean file with no records.
      *
-     * <p>Function parse coded before 260915, commented in full on 261017.
+     * <p>Function parse coded before 260915, commented in full on 261017, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param filename the data file to read
-     * @return the assembled {@link PitProfile} list (empty if the parse failed closed)
+     * @return every {@link PitProfile} in the file, in file order
      * @throws IOException if the file cannot be read
      */
     @Override
@@ -125,63 +125,53 @@ public class PitReader implements Reader<PitProfile> {
 
     /**
      * The {@link GrammarDriver.Extractor} for this grammar: run the parser's {@code file} entry
-     * rule, fail closed on any hard lexer/parser error, validate the {@code record-count:} header,
-     * and hand back the raw {@link PitParseRecord}s, still holding unconverted text.
+     * rule, fail closed on any hard lexer/parser error, and hand back the raw
+     * {@link PitParseRecord}s, still holding unconverted text.
      * <p>
      * Ordering matters: {@link ParseErrors#throwIfAny()} must fire <em>after</em> the parse but
      * <em>before</em> the records are used, so a malformed file aborts with a
-     * {@code ParseCancellationException} here rather than reaching the assembler, and a half-built
-     * record list is never measured against the declared count to produce a second, misleading
-     * error. That covers the cases where C returns a parser error too: a directive before any
-     * {@code name:} (C's {@code PARSE_ERROR_MISSING_RECORD_HEADER}), an {@code alloc:} line with
-     * one number and a lower-case flag code. The header check is soft -
-     * {@link GrammarDriver#checkRecordCount} only appends to {@code errors}, so a miscount never
-     * discards the records that did parse.
+     * {@code ParseCancellationException} here rather than reaching the assembler. That covers the
+     * cases where C returns a parser error too: a directive before any {@code name:} (C's
+     * {@code PARSE_ERROR_MISSING_RECORD_HEADER}), an {@code alloc:} line with one number and a
+     * lower-case flag code.
      * <p>
      * The records stay in file order. The copy at the end detaches the result from the parse tree,
      * so the returned list is the caller's to keep.
      *
-     * <p>Function extract coded before 260915, commented in full on 261017.
+     * <p>Function extract coded before 260915, commented in full on 261017, updated on 261105 for
+     * the removal of the soft-error path and the {@code record-count:} header.
      *
      * @param parser       the generated parser for this file
      * @param errorCatcher the live hard-error collector installed by the driver
-     * @param errors       the soft-error sink (record-count mismatches are appended here)
      * @return the parsed {@link PitParseRecord}s in file order
      */
     private static List<PitParseRecord> extract(@NotNull PitGrammar parser,
-                                                @NotNull ParseErrors errorCatcher,
-                                                @NotNull List<String> errors) {
+                                                @NotNull ParseErrors errorCatcher) {
         PitGrammar.FileContext output = parser.file();
         List<PitParseRecord> pits = output.pits;
         errorCatcher.throwIfAny();
-
-        String declaredRecordCount = output.declaredRecordCount;
-        GrammarDriver.checkRecordCount(declaredRecordCount, pits.size(), errors);
 
         return new ArrayList<>(pits);
     }
 
     /**
-     * Parse the given file, returning both the assembled {@link PitProfile} list (in file order,
-     * which is C's {@code pit_info} order) and any soft errors gathered along the way, for callers
-     * that need to tell a clean load from a partial one.
+     * Parse the given file, returning the assembled {@link PitProfile} list (in file order, which
+     * is C's {@code pit_info} order) wrapped in a {@link ParseResult}.
      * <p>
      * This is the Java counterpart of {@code run_parse_pit} and the {@code parse_pit_*} handlers in
      * {@code mon-init.c}: it wires {@code PitLexer}, {@code PitGrammar}, {@link #extract} and
      * {@link PitAssembler} into {@link GrammarDriver#run}, so the reader stays a thin wiring layer.
-     * A syntax error returns no items and the collected messages; an unresolved name, an unknown
-     * code or a {@code record-count:} mismatch leaves the good records in the result alongside the
-     * messages, so the list can be short without anything having been thrown. C would have stopped
-     * at the first of any of these. An unreadable file is not a result at all but an
-     * {@link IOException}, the analogue of {@code parse_file_quit_not_found}'s {@code quit()}.
-     * <p>
-     * This is the variant callers should prefer: {@code MonsterDataLoader.loadPitProfiles} gates on
-     * the result's errors for exactly that reason.
+     * As C stops at the first error, so does this: a syntax error throws a
+     * {@code ParseCancellationException}, and an unknown code or monster base throws a
+     * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}, and no result is
+     * returned. An unreadable file is an {@link IOException}, the analogue of
+     * {@code parse_file_quit_not_found}'s {@code quit()}.
      *
-     * <p>Function parseWithResults coded before 260915, commented in full on 261017.
+     * <p>Function parseWithResults coded before 260915, commented in full on 261017, updated on
+     * 261105 for the removal of the soft-error path.
      *
      * @param filename the data file to parse
-     * @return a {@link ParseResult} of the assembled profiles plus any soft errors
+     * @return every pit profile in the file, in file order
      * @throws IOException if the file cannot be read
      */
     public @NotNull ParseResult<PitProfile> parseWithResults(@NotNull String filename) throws IOException {

@@ -19,11 +19,6 @@ lexer grammar PitLexer;
 
 import Flags, CommentsAndEol, Colours;
 
-// "record-count:<n>" - the leading count header every gamedata list file carries.
-RECORD_COUNT
-        :   'record-count:'
-        ;
-
 // "name:<text>" - starts a record; the name runs to end of line, so free-text mode.
 NAME
         :   'name:' -> pushMode(REST_OF_LINE)

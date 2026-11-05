@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from HistoryGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/HistoryGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.history;
 
 import org.antlr.v4.runtime.tree.ParseTreeListener;
@@ -25,73 +25,44 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
  * {@link HistoryGrammar}.
  */
 public interface HistoryGrammarListener extends ParseTreeListener {
-    /**
-     * Enter a parse tree produced by {@link HistoryGrammar#recordCount}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterRecordCount(HistoryGrammar.RecordCountContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link HistoryGrammar#recordCount}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitRecordCount(HistoryGrammar.RecordCountContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link HistoryGrammar#chart}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterChart(HistoryGrammar.ChartContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link HistoryGrammar#chart}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitChart(HistoryGrammar.ChartContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link HistoryGrammar#phrase}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterPhrase(HistoryGrammar.PhraseContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link HistoryGrammar#phrase}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitPhrase(HistoryGrammar.PhraseContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link HistoryGrammar#record}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterRecord(HistoryGrammar.RecordContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link HistoryGrammar#record}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitRecord(HistoryGrammar.RecordContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link HistoryGrammar#file}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterFile(HistoryGrammar.FileContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link HistoryGrammar#file}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitFile(HistoryGrammar.FileContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link HistoryGrammar#chart}.
+	 * @param ctx the parse tree
+	 */
+	void enterChart(HistoryGrammar.ChartContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link HistoryGrammar#chart}.
+	 * @param ctx the parse tree
+	 */
+	void exitChart(HistoryGrammar.ChartContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link HistoryGrammar#phrase}.
+	 * @param ctx the parse tree
+	 */
+	void enterPhrase(HistoryGrammar.PhraseContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link HistoryGrammar#phrase}.
+	 * @param ctx the parse tree
+	 */
+	void exitPhrase(HistoryGrammar.PhraseContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link HistoryGrammar#record}.
+	 * @param ctx the parse tree
+	 */
+	void enterRecord(HistoryGrammar.RecordContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link HistoryGrammar#record}.
+	 * @param ctx the parse tree
+	 */
+	void exitRecord(HistoryGrammar.RecordContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link HistoryGrammar#file}.
+	 * @param ctx the parse tree
+	 */
+	void enterFile(HistoryGrammar.FileContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link HistoryGrammar#file}.
+	 * @param ctx the parse tree
+	 */
+	void exitFile(HistoryGrammar.FileContext ctx);
 }

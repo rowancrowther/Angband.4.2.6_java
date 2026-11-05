@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -50,7 +51,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * → resolved {@link PlayerProperty} domain objects, wrapped in a {@link ParseResult}.
  *
  * <p>The happy-path test runs against the real shipped
- * {@code lib/gamedata/player_property.txt}; a clean load with no soft errors is
+ * {@code lib/gamedata/player_property.txt}; a load that does not throw is
  * itself the assertion that every {@code type}, {@code code} flag and
  * {@code bindui} reference resolved. A {@code type:element} record is a template, not a
  * finished property - {@code PlayerPropertyAssembler.spreadPlayerPropertyOut} expands it into
@@ -64,12 +65,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@code value}), and pins a <em>digit-bearing</em> code ({@code BRAVERY_30}) so
  * the {@code FLAG} lexer rule is exercised on a flag name containing digits.
  *
- * <p>The remaining tests inject one defect each to exercise both error channels:
- * a hard grammar error (missing {@code record-count}) fails closed with an empty
- * list; the soft errors (record-count mismatch, an unresolvable {@code code})
- * are reported while the offending record still survives, per the assembler's
- * best-effort contract. A final test puts two <em>different</em> soft-error
- * types in a single load and confirms both are reported together.
+ * <p>The remaining tests inject one defect each. A grammar error throws
+ * {@code ParseCancellationException}; an assembler refusal (an unresolvable {@code code})
+ * throws {@code DataFileParseException} and ends the load, as C's first parser error does.
  *
  * <p>The tests from "the contract of the reader itself" onward were added on 261018 for the port
  * check of {@link PlayerPropertyReader} against {@code run_parse_player_prop} and the parsers of
@@ -85,6 +83,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * look-up to the UI layer (via {@code UIRegistryLoader}) at the point the entry
  * is actually needed. A {@code bindui} naming a UI entry that does not exist is
  * therefore no longer an error at this stage.
+ *
+ * <p>Test class PlayerPropertyReaderTest coded before 261105, updated on 261105 for the removal of the
+ * soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -162,7 +163,6 @@ class PlayerPropertyReaderTest {
         // (PlayerPropertyAssembler.spreadPlayerPropertyOut), so the three records yield
         // 2 + ELEMENT_COUNT results, not 3.
         String path = tempFile("clean.txt", """
-                record-count:3
                 type:player
                 code:BRAVERY_30
                 name:Relentless
@@ -180,7 +180,6 @@ class PlayerPropertyReaderTest {
 
         ParseResult<PlayerProperty> result = new PlayerPropertyReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(2 + ELEMENT_COUNT, result.items().size());
 
         // Player flag with a digit-bearing code: exercises the FLAG lexer rule on a name
@@ -220,7 +219,7 @@ class PlayerPropertyReaderTest {
     }
 
     /**
-     * The real {@code player_property.txt} declares 44 records and loads with no soft errors.
+     * The real {@code player_property.txt} declares 44 records and loads without throwing.
      * Its three {@code type:element} records (Resistance/Immunity/Vulnerability) each expand into
      * one {@link PlayerProperty} per real {@link ElementEnum}, so the assembled count is
      * {@code 44 - 3 + 3 * ELEMENT_COUNT}, not 44. In particular the five {@code type:object}
@@ -233,7 +232,6 @@ class PlayerPropertyReaderTest {
         ParseResult<PlayerProperty> result = new PlayerPropertyReader().parseWithResults(REAL_FILE);
 
         assertEquals(44 - 3 + 3 * ELEMENT_COUNT, result.items().size());
-        assertEquals(List.of(), result.errors(), () -> "expected a clean load but got: " + result.errors());
 
         // The stat-sustain bindui's name+tag is captured verbatim.
         PlayerProperty sustStr = byName(result.items(), "Sustain Strength");
@@ -276,7 +274,6 @@ class PlayerPropertyReaderTest {
         Object saved = setStatic("projections", withoutCold);
         try {
             String path = tempFile("element-only.txt", """
-                    record-count:1
                     type:element
                     bindui:resist_ui_compact_0:0:1
                     name:Resistance
@@ -286,7 +283,6 @@ class PlayerPropertyReaderTest {
 
             ParseResult<PlayerProperty> result = new PlayerPropertyReader().parseWithResults(path);
 
-            assertFalse(result.hasErrors(), () -> result.errors().toString());
             assertEquals(ELEMENT_COUNT - 1, result.items().size());
             assertTrue(result.items().stream().noneMatch(p -> "Cold Resistance".equals(p.getName())));
             assertTrue(result.items().stream().anyMatch(p -> "Fire Resistance".equals(p.getName())));
@@ -295,40 +291,14 @@ class PlayerPropertyReaderTest {
         }
     }
 
-    // ---- hard error (fail-closed: empty list) -----------------------------------------------
-
-    @Test
-    void missingRecordCountHeaderFailsClosed() throws IOException {
-        // No record-count directive -> the file rule can't match -> grammar error via ParseErrors.
-        String path = tempFile("no-header.txt", "type:player\ncode:ROCK\nname:Rock\n");
-
-        ParseResult<PlayerProperty> result = new PlayerPropertyReader().parseWithResults(path);
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
-    }
-
-    // ---- soft errors (partial results survive) ----------------------------------------------
-
-    @Test
-    void recordCountMismatchIsLoggedButValidRecordSurvives() throws IOException {
-        String path = tempFile("bad-count.txt", "record-count:5\ntype:player\ncode:ROCK\nname:Rock\n");
-
-        ParseResult<PlayerProperty> result = new PlayerPropertyReader().parseWithResults(path);
-
-        assertEquals(1, result.items().size());
-        assertEquals(PlayerFlag.PF_ROCK, result.items().get(0).getpCode());
-        assertTrue(result.errors().stream()
-                        .anyMatch(e -> e.contains("declares 5") && e.contains("contains 1")),
-                result.errors()::toString);
-    }
+    // ---- load-stopping errors and what is not one ---------------------------------------------
 
     @Test
     void anUnresolvableObjectCodeIsAHardErrorAsInC() {
         // "NOT_A_REAL_FLAG" is not in list_obj_flag_names, so code_index_in_array returns -1 and
         // C ends the load with PARSE_ERROR_INVALID_PLAY_PROP_CODE.
-        assertAssemblerRefuses("record-count:1\ntype:object\ncode:NOT_A_REAL_FLAG\nname:Bogus\n",
-                "starting at line: 2", "illegal object flag value: NOT_A_REAL_FLAG");
+        assertAssemblerRefuses("type:object\ncode:NOT_A_REAL_FLAG\nname:Bogus\n",
+                "starting at line: 1", "illegal object flag value: NOT_A_REAL_FLAG");
     }
 
     @Test
@@ -337,25 +307,13 @@ class PlayerPropertyReaderTest {
         // just stores the raw name+tag string for the UI layer to resolve later via
         // UIRegistryLoader. A name with no corresponding UI entry is not an error at this stage.
         String path = tempFile("no-such-entry.txt",
-                "record-count:1\ntype:player\ncode:ROCK\nbindui:no_such_ui_entry:0:1\nname:Rock\n");
+                "type:player\ncode:ROCK\nbindui:no_such_ui_entry:0:1\nname:Rock\n");
 
         ParseResult<PlayerProperty> result = new PlayerPropertyReader().parseWithResults(path);
 
         assertEquals(1, result.items().size());
-        assertFalse(result.hasErrors(), result.errors()::toString);
         assertEquals(1, result.items().get(0).getEntries().size());
         assertEquals("no_such_ui_entry", result.items().get(0).getEntries().get(0).uiEntry());
-    }
-
-    // ---- two different error types in one load -----------------------------------------------
-
-    @Test
-    void anAssemblerRefusalIsTheOnlyThingReportedAndSkipsTheRecordCountCheck() {
-        // The count says 5 and the file holds 1, but the bad binding value ends the load first.
-        DataFileParseException thrown = assertAssemblerRefuses(
-                "record-count:5\ntype:player\ncode:ROCK\nbindui:also_bad:0:notanumber\nname:Rock\n",
-                "invalid bindui value: notanumber");
-        assertFalse(thrown.getMessage().contains("declares"), thrown::getMessage);
     }
 
     // ---- the contract of the reader itself ----------------------------------------------------
@@ -452,9 +410,7 @@ class PlayerPropertyReaderTest {
     }
 
     private void assertHardError(String content) throws IOException {
-        ParseResult<PlayerProperty> result = load(content);
-        assertTrue(result.items().isEmpty(), () -> "expected no properties but got " + result.items().size());
-        assertTrue(result.hasErrors());
+        assertThrows(ParseCancellationException.class, () -> load(content));
     }
 
     @Test
@@ -470,9 +426,10 @@ class PlayerPropertyReaderTest {
     }
 
     @Test
-    void parseDiscardsTheErrorChannel() throws IOException {
-        // A hard grammar error: parse() cannot tell it from an empty file.
-        assertEquals(List.of(), new PlayerPropertyReader().parse(tempFile("no-header.txt", "type:player\ncode:ROCK\nname:Rock\n")));
+    void parseThrowsOnASyntaxErrorRatherThanReturningAnEmptyList() throws IOException {
+        // A line that is no directive at all is a grammar error, and parse() passes it on.
+        String path = tempFile("garbage.txt", "not a directive\n");
+        assertThrows(ParseCancellationException.class, () -> new PlayerPropertyReader().parse(path));
     }
 
     @Test
@@ -484,13 +441,13 @@ class PlayerPropertyReaderTest {
     }
 
     @Test
-    void theShippedFileDiffersFromUpstreamInTheRecordCountHeaderAndThreeCommentLines() throws IOException {
-        // lib/gamedata/player_property.txt carries "record-count:44" where the upstream file has no
-        // header, and "gameEngine" for "game" in three comment lines. The record lines are identical,
-        // so the table below, worked out from the upstream file, applies to it.
+    void theShippedFileDiffersFromUpstreamOnlyInThreeCommentLines() throws IOException {
+        // lib/gamedata/player_property.txt has "gameEngine" for "game" in three comment lines, and,
+        // like the upstream file, no record-count header. The record lines are identical, so the
+        // table below, worked out from the upstream file, applies to it.
         String shipped = Files.readString(Path.of(REAL_FILE));
 
-        assertTrue(shipped.contains("record-count:44"));
+        assertFalse(shipped.contains("record-count:"));
         assertEquals(44, shipped.lines().filter(l -> l.startsWith("type:")).count());
         assertEquals(3, shipped.lines().filter(l -> l.startsWith("#") && l.contains("gameEngine")).count());
     }
@@ -575,27 +532,16 @@ class PlayerPropertyReaderTest {
     }
 
     @Test
-    void anElementRecordCountsOnceTowardsTheRecordCount() throws IOException {
-        // record-count: counts type: lines, so one element record is one record although it expands
-        // to 25 properties.
-        ParseResult<PlayerProperty> result = load("record-count:1\ntype:element\nname:Resistance\ndesc:You resist\nvalue:1\n");
-
-        assertEquals(List.of(), result.errors());
-        assertEquals(ELEMENT_COUNT, result.items().size());
-    }
-
-    @Test
     void anElementValueOtherThanOneThreeOrMinusOneIsKeptAsGiven() throws IOException {
         // C stores parser_getint's result without a range check.
-        ParseResult<PlayerProperty> result = load("record-count:1\ntype:element\nname:Resistance\ndesc:You resist\nvalue:2\n");
+        ParseResult<PlayerProperty> result = load("type:element\nname:Resistance\ndesc:You resist\nvalue:2\n");
 
-        assertEquals(List.of(), result.errors());
         assertEquals(2, byName(result.items(), "Fire Resistance").getValue());
     }
 
     @Test
     void anElementRecordWithNoValueLineHasValueZero() throws IOException {
-        ParseResult<PlayerProperty> result = load("record-count:1\ntype:element\nname:Resistance\ndesc:You resist\n");
+        ParseResult<PlayerProperty> result = load("type:element\nname:Resistance\ndesc:You resist\n");
 
         assertEquals(0, byName(result.items(), "Fire Resistance").getValue());
     }
@@ -603,7 +549,7 @@ class PlayerPropertyReaderTest {
     @Test
     void everyBindingOfAnElementRecordGainsTheElementTagInFileOrder() throws IOException {
         ParseResult<PlayerProperty> result = load(
-                "record-count:1\ntype:element\nbindui:first_ui:0:1\nbindui:second_ui:1:2\nname:Resistance\ndesc:You resist\nvalue:1\n");
+                "type:element\nbindui:first_ui:0:1\nbindui:second_ui:1:2\nname:Resistance\ndesc:You resist\nvalue:1\n");
 
         PlayerProperty holy = byName(result.items(), "Holy power Resistance");
         assertEquals(ElementEnum.ELEM_HOLY_ORB, holy.geteCode());
@@ -617,7 +563,7 @@ class PlayerPropertyReaderTest {
     @Test
     void aPlayerRecordWithTwoBindingsKeepsBothInFileOrder() throws IOException {
         ParseResult<PlayerProperty> result = load(
-                "record-count:1\ntype:player\ncode:ROCK\nbindui:a_b:0:1\nbindui:c_d:1:2\nname:Rock\n");
+                "type:player\ncode:ROCK\nbindui:a_b:0:1\nbindui:c_d:1:2\nname:Rock\n");
 
         assertEquals(List.of("a_b", "c_d"),
                 result.items().get(0).getEntries().stream().map(PlayerProperty.BindUI::uiEntry).toList());
@@ -627,7 +573,7 @@ class PlayerPropertyReaderTest {
     void aBindingTagIsKeptWithTheNameAsOneString() throws IOException {
         // C's "sym ui" is the whole text up to the colon, tag included.
         ParseResult<PlayerProperty> result = load(
-                "record-count:1\ntype:player\ncode:ROCK\nbindui:resist_ui_compact_0<DARK>:0:1\nname:Rock\n");
+                "type:player\ncode:ROCK\nbindui:resist_ui_compact_0<DARK>:0:1\nname:Rock\n");
 
         assertEquals("resist_ui_compact_0<DARK>", result.items().get(0).getEntries().get(0).uiEntry());
     }
@@ -635,7 +581,7 @@ class PlayerPropertyReaderTest {
     @Test
     void aBindingValueOfSpecialIsSpecialWithValueZero() throws IOException {
         ParseResult<PlayerProperty> result = load(
-                "record-count:1\ntype:player\ncode:ROCK\nbindui:a_b:0:special\nname:Rock\n");
+                "type:player\ncode:ROCK\nbindui:a_b:0:special\nname:Rock\n");
 
         PlayerProperty.BindUI bind = result.items().get(0).getEntries().get(0);
         assertTrue(bind.special());
@@ -645,7 +591,7 @@ class PlayerPropertyReaderTest {
     @Test
     void aNonZeroAuxFlagIsAux() throws IOException {
         ParseResult<PlayerProperty> result = load(
-                "record-count:1\ntype:player\ncode:ROCK\nbindui:a_b:1:1\nbindui:c_d:2:1\nname:Rock\n");
+                "type:player\ncode:ROCK\nbindui:a_b:1:1\nbindui:c_d:2:1\nname:Rock\n");
 
         assertTrue(result.items().get(0).getEntries().get(0).aux());
         assertTrue(result.items().get(0).getEntries().get(1).aux());
@@ -657,21 +603,20 @@ class PlayerPropertyReaderTest {
      */
     @Test
     void aBindingValueOfIntMaxIsAHardErrorAsInC() {
-        assertAssemblerRefuses("record-count:1\ntype:player\ncode:ROCK\nbindui:max_ui:0:2147483647\nname:Rock\n",
+        assertAssemblerRefuses("type:player\ncode:ROCK\nbindui:max_ui:0:2147483647\nname:Rock\n",
                 "out of range bindui value: 2147483647");
     }
 
     @Test
     void aBindingValueBeyondIntMaxIsAHardErrorAsInC() {
         // C: strtol gives 2147483648 (or LONG_MAX), and v >= INT_MAX is refused.
-        assertAssemblerRefuses("record-count:1\ntype:player\ncode:ROCK\nbindui:max_ui:0:99999999999999999999\nname:Rock\n",
+        assertAssemblerRefuses("type:player\ncode:ROCK\nbindui:max_ui:0:99999999999999999999\nname:Rock\n",
                 "out of range bindui value");
     }
 
     @Test
     void theBindingValuesNextToTheLimitsLoad() throws IOException {
         ParseResult<PlayerProperty> result = load("""
-                record-count:1
                 type:player
                 code:ROCK
                 bindui:max_less_ui:0:2147483646
@@ -689,13 +634,13 @@ class PlayerPropertyReaderTest {
         // Accepted deviation 261029: only the positive limit is refused. C: v <= INT_MIN is
         // PARSE_ERROR_INVALID_VALUE.
         assertEquals(-2147483647,
-                load("record-count:1\ntype:player\ncode:ROCK\nbindui:min_ui:0:-2147483648\nname:Rock\n")
+                load("type:player\ncode:ROCK\nbindui:min_ui:0:-2147483648\nname:Rock\n")
                         .items().get(0).getEntries().get(0).value());
     }
 
     @Test
     void aBindingValueOfMinusZeroIsZero() throws IOException {
-        PlayerProperty.BindUI bind = load("record-count:1\ntype:player\ncode:ROCK\nbindui:a_b:0:-0\nname:Rock\n")
+        PlayerProperty.BindUI bind = load("type:player\ncode:ROCK\nbindui:a_b:0:-0\nname:Rock\n")
                 .items().get(0).getEntries().get(0);
         assertEquals(0, bind.value());
         assertFalse(bind.special());
@@ -703,7 +648,7 @@ class PlayerPropertyReaderTest {
 
     @Test
     void aSpecialBindingKeepsItsAuxFlag() throws IOException {
-        PlayerProperty.BindUI bind = load("record-count:1\ntype:player\ncode:ROCK\nbindui:a_b:1:special\nname:Rock\n")
+        PlayerProperty.BindUI bind = load("type:player\ncode:ROCK\nbindui:a_b:1:special\nname:Rock\n")
                 .items().get(0).getEntries().get(0);
         assertTrue(bind.special());
         assertTrue(bind.aux());
@@ -713,50 +658,50 @@ class PlayerPropertyReaderTest {
     @Test
     void aTextWithColonsInTheNameIsKeptWhole() throws IOException {
         // "name str desc" takes the rest of the line.
-        assertEquals("A:B", load("record-count:1\ntype:player\ncode:ROCK\nname:A:B\n").items().get(0).getName());
+        assertEquals("A:B", load("type:player\ncode:ROCK\nname:A:B\n").items().get(0).getName());
     }
 
     @Test
     void trailingSpacesInTheNameAreKept() throws IOException {
-        assertEquals("A  ", load("record-count:1\ntype:player\ncode:ROCK\nname:A  \n").items().get(0).getName());
+        assertEquals("A  ", load("type:player\ncode:ROCK\nname:A  \n").items().get(0).getName());
     }
 
     @Test
     void descLinesJoinWithNoSeparator() throws IOException {
         // C: string_append, so any space has to be written into the data.
         assertEquals("one two",
-                load("record-count:1\ntype:player\ncode:ROCK\nname:A\ndesc:one \ndesc:two\n").items().get(0).getDescription());
+                load("type:player\ncode:ROCK\nname:A\ndesc:one \ndesc:two\n").items().get(0).getDescription());
         assertEquals("onetwo",
-                load("record-count:1\ntype:player\ncode:ROCK\nname:A\ndesc:one\ndesc:two\n").items().get(0).getDescription());
+                load("type:player\ncode:ROCK\nname:A\ndesc:one\ndesc:two\n").items().get(0).getDescription());
     }
 
     @Test
     void anEmptyNameLineIsAHardErrorAsInC() throws IOException {
         // C: strtok finds no field, so PARSE_ERROR_MISSING_FIELD.
-        assertHardError("record-count:1\ntype:player\ncode:ROCK\nname:\n");
+        assertHardError("type:player\ncode:ROCK\nname:\n");
     }
 
     @Test
     void anEmptyDescLineIsAHardErrorAsInC() throws IOException {
-        assertHardError("record-count:1\ntype:player\ncode:ROCK\nname:A\ndesc:\n");
+        assertHardError("type:player\ncode:ROCK\nname:A\ndesc:\n");
     }
 
     @Test
     void aValueThatIsNotANumberIsAHardErrorAsInC() throws IOException {
         // C: PARSE_ERROR_NOT_NUMBER.
-        assertHardError("record-count:1\ntype:element\nname:R\ndesc:You resist\nvalue:x\n");
+        assertHardError("type:element\nname:R\ndesc:You resist\nvalue:x\n");
     }
 
     @Test
     void aBindingAuxThatIsNotANumberIsAHardErrorAsInC() throws IOException {
-        assertHardError("record-count:1\ntype:player\ncode:ROCK\nbindui:a_b:x:1\nname:A\n");
+        assertHardError("type:player\ncode:ROCK\nbindui:a_b:x:1\nname:A\n");
     }
 
     @Test
     void aCodeInTheOtherFlagListIsAHardErrorAsInC() {
         // PROT_FEAR is an object flag; for type:player C's code_index_in_array finds nothing and the
         // load stops.
-        assertAssemblerRefuses("record-count:1\ntype:player\ncode:PROT_FEAR\nname:A\n",
+        assertAssemblerRefuses("type:player\ncode:PROT_FEAR\nname:A\n",
                 "illegal player flag value: PROT_FEAR");
     }
 
@@ -764,32 +709,31 @@ class PlayerPropertyReaderTest {
     void aBadBindingValueIsAHardErrorAsInC() {
         // C: strtol leaves *end non-zero, so PARSE_ERROR_NOT_NUMBER.
         assertAssemblerRefuses(
-                "record-count:1\ntype:player\ncode:ROCK\nbindui:good_ui:0:1\nbindui:bad_ui:0:abc\nname:A\n",
-                "starting at line: 2", "invalid bindui value: abc");
+                "type:player\ncode:ROCK\nbindui:good_ui:0:1\nbindui:bad_ui:0:abc\nname:A\n",
+                "starting at line: 1", "invalid bindui value: abc");
     }
 
     @Test
     void codeNoneIsValidForAPlayerRecordAsInC() throws IOException {
         // C's player_info_flags and list_obj_flag_names both begin with NONE.
-        assertEquals(PlayerFlag.PF_NONE, load("record-count:1\ntype:player\ncode:NONE\nname:A\n").items().get(0).getpCode());
-        assertEquals(ObjectFlag.OF_NONE, load("record-count:1\ntype:object\ncode:NONE\nname:A\n").items().get(0).getoCode());
+        assertEquals(PlayerFlag.PF_NONE, load("type:player\ncode:NONE\nname:A\n").items().get(0).getpCode());
+        assertEquals(ObjectFlag.OF_NONE, load("type:object\ncode:NONE\nname:A\n").items().get(0).getoCode());
     }
 
     @Test
     void codeMaxIsRejectedForAPlayerRecordAsInC() {
-        assertAssemblerRefuses("record-count:1\ntype:player\ncode:MAX\nname:A\n", "illegal player flag value: MAX");
+        assertAssemblerRefuses("type:player\ncode:MAX\nname:A\n", "illegal player flag value: MAX");
     }
 
     @Test
     void aLowerCaseCodeIsAHardError() throws IOException {
         // C compares with streq and finds nothing; here the lexer rejects it.
-        assertHardError("record-count:1\ntype:player\ncode:rock\nname:A\n");
+        assertHardError("type:player\ncode:rock\nname:A\n");
     }
 
     @Test
     void aHardErrorLateInTheFileDiscardsTheRecordsBeforeIt() throws IOException {
-        ParseResult<PlayerProperty> result = load("""
-                record-count:2
+        assertThrows(ParseCancellationException.class, () -> load("""
                 type:player
                 code:ROCK
                 name:Rock
@@ -797,42 +741,14 @@ class PlayerPropertyReaderTest {
                 code:SEE_ORE
                 bogus:line
                 name:Miner
-                """);
+                """));
 
-        assertEquals(0, result.items().size());
-        assertTrue(result.hasErrors());
-    }
-
-    @Test
-    void aHardErrorSuppressesTheRecordCountCheck() throws IOException {
-        ParseResult<PlayerProperty> result = load("record-count:9\ntype:player\ncode:ROCK\nname:A\nbogus:line\n");
-
-        assertTrue(result.errors().stream().noneMatch(e -> e.contains("declares")), result.errors()::toString);
-    }
-
-    @Test
-    void aRecordCountThatIsNotANumberIsAHardError() throws IOException {
-        assertHardError("record-count:many\ntype:player\ncode:ROCK\nname:A\n");
-    }
-
-    @Test
-    void aMatchingRecordCountReportsNothing() throws IOException {
-        assertEquals(List.of(), load("record-count:2\ntype:player\ncode:ROCK\nname:A\ntype:player\ncode:SEE_ORE\nname:B\n").errors());
-    }
-
-    @Test
-    void aTooHighRecordCountIsASoftErrorAndTheRecordsLoad() throws IOException {
-        ParseResult<PlayerProperty> result = load("record-count:3\ntype:player\ncode:ROCK\nname:A\n");
-
-        assertEquals(1, result.items().size());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("declares 3") && e.contains("contains 1")),
-                result.errors()::toString);
     }
 
     @Test
     void aRecordWithNoCodeLoadsWithTheNoneFlag() throws IOException {
         // C leaves the index at zero, which is NONE in both flag lists.
-        PlayerProperty p = load("record-count:1\ntype:player\nname:A\n").items().get(0);
+        PlayerProperty p = load("type:player\nname:A\n").items().get(0);
 
         assertEquals(PlayerFlag.PF_NONE, p.getpCode());
         assertEquals(ObjectFlag.OF_NONE, p.getoCode());
@@ -840,101 +756,101 @@ class PlayerPropertyReaderTest {
 
     @Test
     void aRecordWithNoDescHasEmptyDescriptionHereWhereCHasNull() throws IOException {
-        assertEquals("", load("record-count:1\ntype:player\ncode:ROCK\nname:A\n").items().get(0).getDescription());
+        assertEquals("", load("type:player\ncode:ROCK\nname:A\n").items().get(0).getDescription());
     }
 
     @Test
     void aRecordWithNoValueLineHasValueZero() throws IOException {
-        assertEquals(0, load("record-count:1\ntype:player\ncode:ROCK\nname:A\n").items().get(0).getValue());
+        assertEquals(0, load("type:player\ncode:ROCK\nname:A\n").items().get(0).getValue());
     }
 
     // ---- differences from C: the grammar -------------------------------------------------------
 
     @Test
     void aBindingAfterTheNameIsAHardErrorHereWhereCAcceptsAnyOrder() throws IOException {
-        assertHardError("record-count:1\ntype:player\ncode:ROCK\nname:Rock\nbindui:a_b:0:1\n");
+        assertHardError("type:player\ncode:ROCK\nname:Rock\nbindui:a_b:0:1\n");
     }
 
     @Test
     void aDescBeforeTheNameIsAHardErrorHereWhereCAcceptsAnyOrder() throws IOException {
-        assertHardError("record-count:1\ntype:player\ncode:ROCK\ndesc:x\nname:A\n");
+        assertHardError("type:player\ncode:ROCK\ndesc:x\nname:A\n");
     }
 
     @Test
     void aValueBeforeTheDescIsAHardErrorHereWhereCAcceptsAnyOrder() throws IOException {
-        assertHardError("record-count:1\ntype:element\nname:A\nvalue:1\ndesc:x\n");
+        assertHardError("type:element\nname:A\nvalue:1\ndesc:x\n");
     }
 
     @Test
     void aRecordWithNoNameIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        assertHardError("record-count:1\ntype:player\ncode:ROCK\n");
+        assertHardError("type:player\ncode:ROCK\n");
     }
 
     @Test
     void aRepeatedNameIsAHardErrorHereWhereCKeepsTheLast() throws IOException {
-        assertHardError("record-count:1\ntype:player\ncode:ROCK\nname:A\nname:B\n");
+        assertHardError("type:player\ncode:ROCK\nname:A\nname:B\n");
     }
 
     @Test
     void aRepeatedValueIsAHardErrorHereWhereCKeepsTheLast() throws IOException {
-        assertHardError("record-count:1\ntype:element\nname:A\ndesc:x\nvalue:1\nvalue:3\n");
+        assertHardError("type:element\nname:A\ndesc:x\nvalue:1\nvalue:3\n");
     }
 
     @Test
     void aRepeatedCodeIsAHardErrorHereWhereCKeepsTheLast() throws IOException {
-        assertHardError("record-count:1\ntype:player\ncode:ROCK\ncode:SEE_ORE\nname:A\n");
+        assertHardError("type:player\ncode:ROCK\ncode:SEE_ORE\nname:A\n");
     }
 
     @Test
     void aDescSplitByAnotherLineIsAHardErrorHereWhereCAppendsIt() throws IOException {
-        assertHardError("record-count:1\ntype:element\nname:A\ndesc:x\nvalue:1\ndesc:y\n");
+        assertHardError("type:element\nname:A\ndesc:x\nvalue:1\ndesc:y\n");
     }
 
     @Test
     void aHeaderWithNoRecordsIsAHardErrorHereWhereCAcceptsAnEmptyFile() throws IOException {
-        assertHardError("record-count:0\n");
+        assertHardError("");
     }
 
     @Test
     void anUnknownTypeIsAHardErrorHereWhereCTakesAnyText() throws IOException {
-        assertHardError("record-count:1\ntype:thing\nname:A\n");
+        assertHardError("type:thing\nname:A\n");
     }
 
     @Test
     void anUpperCaseBindingNameIsAHardErrorHereWhereCTakesAnySymbol() throws IOException {
-        assertHardError("record-count:1\ntype:player\ncode:ROCK\nbindui:A_B:0:1\nname:A\n");
+        assertHardError("type:player\ncode:ROCK\nbindui:A_B:0:1\nname:A\n");
     }
 
     @Test
     void aBindingNameWithAHyphenIsAHardErrorHereWhereCTakesAnySymbol() throws IOException {
-        assertHardError("record-count:1\ntype:player\ncode:ROCK\nbindui:a-b:0:1\nname:A\n");
+        assertHardError("type:player\ncode:ROCK\nbindui:a-b:0:1\nname:A\n");
     }
 
     @Test
     void aBindingTagWithAnUnderscoreIsAHardErrorHereWhereCTakesAnySymbol() throws IOException {
-        assertHardError("record-count:1\ntype:player\ncode:ROCK\nbindui:a_b<HOLY_ORB>:0:1\nname:A\n");
+        assertHardError("type:player\ncode:ROCK\nbindui:a_b<HOLY_ORB>:0:1\nname:A\n");
     }
 
     @Test
     void aLowerCaseBindingTagIsAHardErrorHereWhereCTakesAnySymbol() throws IOException {
-        assertHardError("record-count:1\ntype:player\ncode:ROCK\nbindui:a_b<dark>:0:1\nname:A\n");
+        assertHardError("type:player\ncode:ROCK\nbindui:a_b<dark>:0:1\nname:A\n");
     }
 
     @Test
     void anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent() throws IOException {
-        assertHardError("record-count:1\n  type:player\ncode:ROCK\nname:A\n");
+        assertHardError("  type:player\ncode:ROCK\nname:A\n");
     }
 
     @Test
     void aHexadecimalValueIsAHardErrorHereWhereCReadsBaseZero() throws IOException {
         // C: strtol(tok, &z, 0), so 0x3 is 3.
-        assertHardError("record-count:1\ntype:element\nname:A\ndesc:x\nvalue:0x3\n");
+        assertHardError("type:element\nname:A\ndesc:x\nvalue:0x3\n");
     }
 
     @Test
     void textAfterTheValueNumberIsAHardErrorHereWhereCIgnoresIt() throws IOException {
         // C: parse stops at the first non-digit and no one checks z, so 1x is 1.
-        assertHardError("record-count:1\ntype:element\nname:A\ndesc:x\nvalue:1x\n");
+        assertHardError("type:element\nname:A\ndesc:x\nvalue:1x\n");
     }
 
     // ---- differences from C: the assembler ------------------------------------------------------
@@ -943,37 +859,37 @@ class PlayerPropertyReaderTest {
     void aCodeOnAnElementRecordIsAHardErrorAsInC() {
         // C: parse_player_prop_code leaves index at -1 for any type but player and object, so the
         // load stops with PARSE_ERROR_INVALID_PLAY_PROP_CODE.
-        assertAssemblerRefuses("record-count:1\ntype:element\ncode:ACID\nname:R\ndesc:You resist\nvalue:1\n",
-                "starting at line: 2", "illegal code for an element value: ACID");
+        assertAssemblerRefuses("type:element\ncode:ACID\nname:R\ndesc:You resist\nvalue:1\n",
+                "starting at line: 1", "illegal code for an element value: ACID");
     }
 
     @Test
     void aValueOnAPlayerRecordIsDroppedAsInC() throws IOException {
         // C: finish_parse_player_prop copies type, index, desc and name for a record that is not an
         // element, but not value, which stays zero. The line is still read, so a bad one is an error.
-        assertEquals(0, load("record-count:1\ntype:player\ncode:ROCK\nname:A\nvalue:3\n").items().get(0).getValue());
+        assertEquals(0, load("type:player\ncode:ROCK\nname:A\nvalue:3\n").items().get(0).getValue());
     }
 
     @Test
     void aValueOnAnObjectRecordIsDroppedAsInC() throws IOException {
-        assertEquals(0, load("record-count:1\ntype:object\ncode:FEATHER\nname:A\nvalue:-1\n").items().get(0).getValue());
+        assertEquals(0, load("type:object\ncode:FEATHER\nname:A\nvalue:-1\n").items().get(0).getValue());
     }
 
     @Test
     void anAuxOfDoubleZeroIsNotAuxAsInC() throws IOException {
         // C: strtol("00") is 0, so isaux is false.
-        assertFalse(load("record-count:1\ntype:player\ncode:ROCK\nbindui:a_b:00:1\nname:A\n").items().get(0).getEntries().get(0).aux());
+        assertFalse(load("type:player\ncode:ROCK\nbindui:a_b:00:1\nname:A\n").items().get(0).getEntries().get(0).aux());
     }
 
     @Test
     void anAuxOfMinusZeroIsNotAuxAsInC() throws IOException {
-        assertFalse(load("record-count:1\ntype:player\ncode:ROCK\nbindui:a_b:-0:1\nname:A\n").items().get(0).getEntries().get(0).aux());
+        assertFalse(load("type:player\ncode:ROCK\nbindui:a_b:-0:1\nname:A\n").items().get(0).getEntries().get(0).aux());
     }
 
     @Test
     void codeMaxIsRejectedForAnObjectRecordAsInC() {
         // C's list_obj_flag_names holds NONE and the real flags, with no MAX.
-        assertAssemblerRefuses("record-count:1\ntype:object\ncode:MAX\nname:A\n", "illegal sentinel object flag value: MAX");
+        assertAssemblerRefuses("type:object\ncode:MAX\nname:A\n", "illegal sentinel object flag value: MAX");
     }
 
     @Test
@@ -981,7 +897,7 @@ class PlayerPropertyReaderTest {
         // Reached past the lexer by a hand-built record: the grammar only lets digits through.
         DataFileParseException thrown = assertThrows(DataFileParseException.class, () ->
                 new PlayerPropertyAssembler().assemble(List.of(new PlayerPropertyParseRecord("player", "ROCK",
-                        List.of(List.of("a_b", "", "x", "1")), "A", "", "", 7)), new java.util.ArrayList<>(), "hand.txt"));
+                        List.of(List.of("a_b", "", "x", "1")), "A", "", "", 7)), "hand.txt"));
         assertTrue(thrown.getMessage().contains("line: 7"), thrown::getMessage);
         assertTrue(thrown.getMessage().contains("hand.txt"), thrown::getMessage);
     }
@@ -991,7 +907,7 @@ class PlayerPropertyReaderTest {
         // No counterpart in C, which stores any type string; the grammar can't produce one.
         List<PlayerProperty> items = new PlayerPropertyAssembler().assemble(List.of(
                 new PlayerPropertyParseRecord("modifier", "STR", List.of(), "A", "", "", 1)),
-                new java.util.ArrayList<>(), "hand.txt");
+                "hand.txt");
 
         assertEquals(PlayerProperty.PlayerPropertyType.PROP_TYPE_OBJECT_MODIFIER, items.get(0).getPlayerPropertyType());
         assertEquals(ObjectModifier.OM_STR, items.get(0).getomCode());
@@ -1001,14 +917,14 @@ class PlayerPropertyReaderTest {
     void aHandBuiltObjectModifierWithTheNoneSentinelIsRefused() {
         assertThrows(DataFileParseException.class, () -> new PlayerPropertyAssembler().assemble(List.of(
                 new PlayerPropertyParseRecord("modifier", "NONE", List.of(), "A", "", "", 1)),
-                new java.util.ArrayList<>(), "hand.txt"));
+                "hand.txt"));
     }
 
     @Test
     void aBindingToAnUnknownEntryIsKeptHereWhereCDropsTheBindingQuietly() throws IOException {
         // C: bind_player_ability_to_ui_entry_by_name returns 1 when ui_entry_search finds nothing
         // and the caller ignores it. Here the raw name is stored for the UI layer.
-        ParseResult<PlayerProperty> result = load("record-count:1\ntype:player\ncode:ROCK\nbindui:no_such_entry:0:1\nname:A\n");
+        ParseResult<PlayerProperty> result = load("type:player\ncode:ROCK\nbindui:no_such_entry:0:1\nname:A\n");
 
         assertEquals("no_such_entry", result.items().get(0).getEntries().get(0).uiEntry());
     }

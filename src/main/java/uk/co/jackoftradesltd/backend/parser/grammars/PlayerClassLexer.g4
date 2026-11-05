@@ -7,10 +7,6 @@ lexer grammar PlayerClassLexer;
 
 import CommentsAndEol, Flags, EffectBlockLexer, AngbandDisplayCharacter;
 
-RECORD_COUNT
-        :   'record-count:'
-        ;
-
 NAME
         :   'name:' -> pushMode(CLASS_FREE_TEXT_MODE)
         ;

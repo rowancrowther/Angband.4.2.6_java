@@ -14,7 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-// Generated from HintGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/HintGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.hint;
 
 import org.antlr.v4.runtime.*;
@@ -39,25 +39,25 @@ public class HintGrammar extends Parser {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		RECORD_COUNT=1, HINT=2, INTEGER=3, COMMENT=4, EOL=5, STRING=6;
+		HINT=1, INTEGER=2, COMMENT=3, EOL=4, STRING=5;
 	public static final int
-		RULE_recordCount = 0, RULE_hint = 1, RULE_hintRecord = 2, RULE_file = 3;
+		RULE_hint = 0, RULE_hintRecord = 1, RULE_file = 2;
 	private static String[] makeRuleNames() {
 		return new String[] {
-			"recordCount", "hint", "hintRecord", "file"
+			"hint", "hintRecord", "file"
 		};
 	}
 	public static final String[] ruleNames = makeRuleNames();
 
 	private static String[] makeLiteralNames() {
 		return new String[] {
-			null, "'record-count:'", "'H:'"
+			null, "'H:'"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
-			null, "RECORD_COUNT", "HINT", "INTEGER", "COMMENT", "EOL", "STRING"
+			null, "HINT", "INTEGER", "COMMENT", "EOL", "STRING"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -112,55 +112,6 @@ public class HintGrammar extends Parser {
 	}
 
 	@SuppressWarnings("CheckReturnValue")
-	public static class RecordCountContext extends ParserRuleContext {
-		public String count;
-		public Token INTEGER;
-		public TerminalNode RECORD_COUNT() { return getToken(HintGrammar.RECORD_COUNT, 0); }
-		public TerminalNode INTEGER() { return getToken(HintGrammar.INTEGER, 0); }
-		public RecordCountContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-		@Override public int getRuleIndex() { return RULE_recordCount; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof HintGrammarListener ) ((HintGrammarListener)listener).enterRecordCount(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof HintGrammarListener ) ((HintGrammarListener)listener).exitRecordCount(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof HintGrammarVisitor ) return ((HintGrammarVisitor<? extends T>)visitor).visitRecordCount(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	public final RecordCountContext recordCount() throws RecognitionException {
-		RecordCountContext _localctx = new RecordCountContext(_ctx, getState());
-		enterRule(_localctx, 0, RULE_recordCount);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(8);
-			match(RECORD_COUNT);
-			setState(9);
-			((RecordCountContext)_localctx).INTEGER = match(INTEGER);
-			 ((RecordCountContext)_localctx).count =  ((RecordCountContext)_localctx).INTEGER.getText(); 
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	@SuppressWarnings("CheckReturnValue")
 	public static class HintContext extends ParserRuleContext {
 		public String hintLine;
 		public int line;
@@ -188,13 +139,13 @@ public class HintGrammar extends Parser {
 
 	public final HintContext hint() throws RecognitionException {
 		HintContext _localctx = new HintContext(_ctx, getState());
-		enterRule(_localctx, 2, RULE_hint);
+		enterRule(_localctx, 0, RULE_hint);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(12);
+			setState(6);
 			match(HINT);
-			setState(13);
+			setState(7);
 			((HintContext)_localctx).STRING = match(STRING);
 			 ((HintContext)_localctx).hintLine =  ((HintContext)_localctx).STRING.getText();
 			                          ((HintContext)_localctx).line =  _localctx.start.getLine(); 
@@ -239,11 +190,11 @@ public class HintGrammar extends Parser {
 
 	public final HintRecordContext hintRecord() throws RecognitionException {
 		HintRecordContext _localctx = new HintRecordContext(_ctx, getState());
-		enterRule(_localctx, 4, RULE_hintRecord);
+		enterRule(_localctx, 2, RULE_hintRecord);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(16);
+			setState(10);
 			((HintRecordContext)_localctx).hint = hint();
 			 ((HintRecordContext)_localctx).record =  new HintParseRecord(((HintRecordContext)_localctx).hint.hintLine,
 			                ((HintRecordContext)_localctx).hint.line); 
@@ -262,13 +213,8 @@ public class HintGrammar extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class FileContext extends ParserRuleContext {
-		public String declaredRecordCount;
 		public List<HintParseRecord> hints;
-		public RecordCountContext recordCount;
 		public HintRecordContext hintRecord;
-		public RecordCountContext recordCount() {
-			return getRuleContext(RecordCountContext.class,0);
-		}
 		public TerminalNode EOF() { return getToken(HintGrammar.EOF, 0); }
 		public List<HintRecordContext> hintRecord() {
 			return getRuleContexts(HintRecordContext.class);
@@ -297,31 +243,28 @@ public class HintGrammar extends Parser {
 
 	public final FileContext file() throws RecognitionException {
 		FileContext _localctx = new FileContext(_ctx, getState());
-		enterRule(_localctx, 6, RULE_file);
+		enterRule(_localctx, 4, RULE_file);
 		 ((FileContext)_localctx).hints =  new ArrayList<>(); 
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(19);
-			((FileContext)_localctx).recordCount = recordCount();
-			 ((FileContext)_localctx).declaredRecordCount =  ((FileContext)_localctx).recordCount.count; 
-			setState(26);
+			setState(18);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==HINT) {
 				{
 				{
-				setState(21);
+				setState(13);
 				((FileContext)_localctx).hintRecord = hintRecord();
 				 _localctx.hints.add(((FileContext)_localctx).hintRecord.record); 
 				}
 				}
-				setState(28);
+				setState(20);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
-			setState(29);
+			setState(21);
 			match(EOF);
 			}
 		}
@@ -337,27 +280,22 @@ public class HintGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u0006 \u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
-		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0001\u0000\u0001\u0000\u0001"+
-		"\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001"+
-		"\u0002\u0001\u0002\u0001\u0002\u0001\u0003\u0001\u0003\u0001\u0003\u0001"+
-		"\u0003\u0001\u0003\u0005\u0003\u0019\b\u0003\n\u0003\f\u0003\u001c\t\u0003"+
-		"\u0001\u0003\u0001\u0003\u0001\u0003\u0000\u0000\u0004\u0000\u0002\u0004"+
-		"\u0006\u0000\u0000\u001c\u0000\b\u0001\u0000\u0000\u0000\u0002\f\u0001"+
-		"\u0000\u0000\u0000\u0004\u0010\u0001\u0000\u0000\u0000\u0006\u0013\u0001"+
-		"\u0000\u0000\u0000\b\t\u0005\u0001\u0000\u0000\t\n\u0005\u0003\u0000\u0000"+
-		"\n\u000b\u0006\u0000\uffff\uffff\u0000\u000b\u0001\u0001\u0000\u0000\u0000"+
-		"\f\r\u0005\u0002\u0000\u0000\r\u000e\u0005\u0006\u0000\u0000\u000e\u000f"+
-		"\u0006\u0001\uffff\uffff\u0000\u000f\u0003\u0001\u0000\u0000\u0000\u0010"+
-		"\u0011\u0003\u0002\u0001\u0000\u0011\u0012\u0006\u0002\uffff\uffff\u0000"+
-		"\u0012\u0005\u0001\u0000\u0000\u0000\u0013\u0014\u0003\u0000\u0000\u0000"+
-		"\u0014\u001a\u0006\u0003\uffff\uffff\u0000\u0015\u0016\u0003\u0004\u0002"+
-		"\u0000\u0016\u0017\u0006\u0003\uffff\uffff\u0000\u0017\u0019\u0001\u0000"+
-		"\u0000\u0000\u0018\u0015\u0001\u0000\u0000\u0000\u0019\u001c\u0001\u0000"+
-		"\u0000\u0000\u001a\u0018\u0001\u0000\u0000\u0000\u001a\u001b\u0001\u0000"+
-		"\u0000\u0000\u001b\u001d\u0001\u0000\u0000\u0000\u001c\u001a\u0001\u0000"+
-		"\u0000\u0000\u001d\u001e\u0005\u0000\u0000\u0001\u001e\u0007\u0001\u0000"+
-		"\u0000\u0000\u0001\u001a";
+		"\u0004\u0001\u0005\u0018\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001"+
+		"\u0002\u0002\u0007\u0002\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000"+
+		"\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0002\u0001\u0002\u0001\u0002"+
+		"\u0005\u0002\u0011\b\u0002\n\u0002\f\u0002\u0014\t\u0002\u0001\u0002\u0001"+
+		"\u0002\u0001\u0002\u0000\u0000\u0003\u0000\u0002\u0004\u0000\u0000\u0015"+
+		"\u0000\u0006\u0001\u0000\u0000\u0000\u0002\n\u0001\u0000\u0000\u0000\u0004"+
+		"\u0012\u0001\u0000\u0000\u0000\u0006\u0007\u0005\u0001\u0000\u0000\u0007"+
+		"\b\u0005\u0005\u0000\u0000\b\t\u0006\u0000\uffff\uffff\u0000\t\u0001\u0001"+
+		"\u0000\u0000\u0000\n\u000b\u0003\u0000\u0000\u0000\u000b\f\u0006\u0001"+
+		"\uffff\uffff\u0000\f\u0003\u0001\u0000\u0000\u0000\r\u000e\u0003\u0002"+
+		"\u0001\u0000\u000e\u000f\u0006\u0002\uffff\uffff\u0000\u000f\u0011\u0001"+
+		"\u0000\u0000\u0000\u0010\r\u0001\u0000\u0000\u0000\u0011\u0014\u0001\u0000"+
+		"\u0000\u0000\u0012\u0010\u0001\u0000\u0000\u0000\u0012\u0013\u0001\u0000"+
+		"\u0000\u0000\u0013\u0015\u0001\u0000\u0000\u0000\u0014\u0012\u0001\u0000"+
+		"\u0000\u0000\u0015\u0016\u0005\u0000\u0000\u0001\u0016\u0005\u0001\u0000"+
+		"\u0000\u0000\u0001\u0012";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

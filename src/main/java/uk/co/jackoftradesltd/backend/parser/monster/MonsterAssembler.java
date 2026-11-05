@@ -55,7 +55,7 @@ import java.util.Map;
  * <p>Two conventions run through {@link #assemble}. Every failure stops the load: a bad
  * cross-reference, number, flag or glyph logs a message naming the record's line and the file and
  * throws a {@link DataFileParseException}, as C ends the load on the parser error its
- * {@code parse_monster_*} function returns. There is no soft error and no dropped record. And the
+ * {@code parse_monster_*} function returns. No record is dropped. And the
  * {@link MonsterBase} template is applied first, so a monster's own flags and glyph layer on top of
  * the ones it inherits from its base.
  *
@@ -71,7 +71,8 @@ import java.util.Map;
  * overwrites is not checked for a minus, and a {@code friends:} name of {@code same} is resolved by
  * name. It also gives each race its own {@code color-cycle:} where C stores every cycle in slot 0.
  *
- * <p>Class MonsterAssembler coded before 260915, commented in full on 261026.
+ * <p>Class MonsterAssembler coded before 260915, commented in full on 261026, updated on 261105 for
+ * the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -125,18 +126,16 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
      * which is C's head-pushed (reverse file) order. Every failure logs and throws a
      * {@link DataFileParseException}.
      *
-     * <p>Outstanding: {@code errors} is not used.
-     *
-     * <p>Function assemble coded before 260915, commented in full on 261026.
+     * <p>Function assemble coded before 260915, commented in full on 261026, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param records  the parsed monster records, in file order
-     * @param errors   not used: no failure is collected, each one throws
      * @param filename the file the records were read from, named in every failure message
      * @return one {@link MonsterRace} per record, in file order
      * @throws DataFileParseException on the first record with a value C's parser would refuse
      */
     @Override
-    public List<MonsterRace> assemble(@NotNull List<MonsterParseRecord> records, @NotNull List<String> errors,
+    public List<MonsterRace> assemble(@NotNull List<MonsterParseRecord> records,
                                     String filename) {
         List<MonsterRace> monsters = new ArrayList<>();
 

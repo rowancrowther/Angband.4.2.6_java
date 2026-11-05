@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -49,6 +50,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * yet), so {@link #loadPainSets()} loads {@code pain.txt} directly through {@link PainReader} and
  * injects the result into the private static field by reflection, restoring it afterwards so no
  * global state leaks to other suites.
+ *
+ * <p>Test class MonsterBaseReaderTest coded before 261105, updated on 261105 for the removal of the
+ * soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -84,9 +88,6 @@ class MonsterBaseReaderTest {
 
     // ---- fixture helpers -------------------------------------------------
 
-    private static String withHeader(int count, String body) {
-        return "record-count:" + count + "\n" + body;
-    }
 
     private static String entry(String name, char glyph, int pain, String desc, String... flagLines) {
         StringBuilder sb = new StringBuilder("name:").append(name).append("\n")
@@ -113,7 +114,6 @@ class MonsterBaseReaderTest {
 
         // Every one of the 56 bases resolves (all pain indices are 1..12) and the header declares
         // the real count, so the load is completely error-free.
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(56, result.items().size());
         // The list is in C's chain order, so the first record in the file is the last in the list.
         assertEquals("ancient dragon", result.items().get(55).getCodeName());
@@ -122,9 +122,8 @@ class MonsterBaseReaderTest {
     @Test
     void aWellFormedSyntheticRecordAssemblesWithNoErrors() throws IOException {
         ParseResult<MonsterBase> result =
-                load("ok.txt", withHeader(1, entry("orc", 'o', 3, "Orc", "ANIMAL | OPEN_DOOR")));
+                load("ok.txt", entry("orc", 'o', 3, "Orc", "ANIMAL | OPEN_DOOR"));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size());
         assertEquals("orc", result.items().get(0).getCodeName());
     }
@@ -136,10 +135,10 @@ class MonsterBaseReaderTest {
         // grab_flag fails, parse_mon_base_flags returns PARSE_ERROR_INVALID_FLAG and C's load stops.
         // The message names the bad flag, not the glyph, plus the record's line and the file.
         DataFileParseException e = assertThrows(DataFileParseException.class,
-                () -> load("bad-flag.txt", withHeader(1, entry("orc", 'o', 3, "Orc", "NOTAFLAG"))));
+                () -> load("bad-flag.txt", entry("orc", 'o', 3, "Orc", "NOTAFLAG")));
 
         assertTrue(e.getMessage().contains("illegal monster race value: NOTAFLAG"), e::getMessage);
-        assertTrue(e.getMessage().contains("starting at line: 2"), e::getMessage);
+        assertTrue(e.getMessage().contains("starting at line: 1"), e::getMessage);
         assertTrue(e.getMessage().contains("bad-flag.txt"), e::getMessage);
     }
 
@@ -147,7 +146,7 @@ class MonsterBaseReaderTest {
     void theBadFlagInAListIsTheOneNamedEvenWhenGoodOnesComeFirst() {
         DataFileParseException e = assertThrows(DataFileParseException.class,
                 () -> load("bad-second.txt",
-                        withHeader(1, entry("orc", 'o', 3, "Orc", "ANIMAL | NOTAFLAG | EVIL"))));
+                        entry("orc", 'o', 3, "Orc", "ANIMAL | NOTAFLAG | EVIL")));
 
         assertTrue(e.getMessage().contains("illegal monster race value: NOTAFLAG"), e::getMessage);
     }
@@ -157,9 +156,8 @@ class MonsterBaseReaderTest {
         // NONE is the first row of list-mon-race-flags.h, so r_info_flags holds it and grab_flag
         // accepts it.
         ParseResult<MonsterBase> result =
-                load("none-flag.txt", withHeader(1, entry("orc", 'o', 3, "Orc", "NONE")));
+                load("none-flag.txt", entry("orc", 'o', 3, "Orc", "NONE"));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size());
     }
 
@@ -167,7 +165,7 @@ class MonsterBaseReaderTest {
     void theMaxTerminatorIsNotAFlag() {
         // r_info_flags ends in NULL, not a "MAX" name, so grab_flag rejects it.
         DataFileParseException e = assertThrows(DataFileParseException.class,
-                () -> load("max-flag.txt", withHeader(1, entry("orc", 'o', 3, "Orc", "MAX"))));
+                () -> load("max-flag.txt", entry("orc", 'o', 3, "Orc", "MAX")));
 
         assertTrue(e.getMessage().contains("illegal monster race value: MAX"), e::getMessage);
     }
@@ -175,29 +173,26 @@ class MonsterBaseReaderTest {
     @Test
     void aLowerCaseFlagIsRejected() throws IOException {
         // lookup_flag compares names exactly, so "animal" is not ANIMAL. Whether the lexer or the
-        // assembler refuses it, no base may come back from it.
+        // assembler refuses it, the load must stop.
         boolean rejected;
         try {
-            ParseResult<MonsterBase> result =
-                    load("lower-flag.txt", withHeader(1, entry("orc", 'o', 3, "Orc", "animal")));
-            rejected = result.items().isEmpty() && result.hasErrors();
-        } catch (DataFileParseException e) {
+            load("lower-flag.txt", entry("orc", 'o', 3, "Orc", "animal"));
+            rejected = false;
+        } catch (DataFileParseException | ParseCancellationException e) {
             rejected = true;
         }
         assertTrue(rejected);
     }
 
     @Test
-    void aBadFlagIsFatalWithNoSoftErrorWritten() {
-        // The assembler never writes to the soft-error list: a bad flag throws instead.
-        List<String> errors = new java.util.ArrayList<>();
+    void aBadFlagIsFatal() {
+        // A bad flag throws DataFileParseException and ends the load.
         var record = new uk.co.jackoftradesltd.backend.parser.monsterbase.MonsterBaseParseRecord(
                 "orc", "Orc", List.of("NOTAFLAG"), "o", "3", "Orc", 7);
 
         assertThrows(DataFileParseException.class,
                 () -> new uk.co.jackoftradesltd.backend.parser.monsterbase.MonsterBaseAssembler()
-                        .assemble(List.of(record), errors, "direct.txt"));
-        assertTrue(errors.isEmpty());
+                        .assemble(List.of(record), "direct.txt"));
     }
 
     @Test
@@ -205,7 +200,7 @@ class MonsterBaseReaderTest {
         // Pain 99 is out of range, so lookupMonsterPain returns null. The assembler must throw, NOT
         // build a base with a null pain set.
         DataFileParseException e = assertThrows(DataFileParseException.class,
-                () -> load("bad-pain.txt", withHeader(1, entry("orc", 'o', 99, "Orc", "ANIMAL"))));
+                () -> load("bad-pain.txt", entry("orc", 'o', 99, "Orc", "ANIMAL")));
 
         assertTrue(e.getMessage().contains("illegal pain value: 99"), e::getMessage);
     }
@@ -216,20 +211,9 @@ class MonsterBaseReaderTest {
         // value too large for int.
         String oversized = "name:orc\nglyph:o\npain:99999999999999999999\nflags:ANIMAL\ndesc:Orc\n";
         DataFileParseException e = assertThrows(DataFileParseException.class,
-                () -> load("overflow-pain.txt", withHeader(1, oversized)));
+                () -> load("overflow-pain.txt", oversized));
 
         assertTrue(e.getMessage().contains("illegal pain value: 99999999999999999999"), e::getMessage);
-    }
-
-    @Test
-    void recordCountMismatchIsReportedButValidRecordStillLoads() throws IOException {
-        ParseResult<MonsterBase> result =
-                load("bad-count.txt", withHeader(5, entry("orc", 'o', 3, "Orc", "ANIMAL")));
-
-        assertEquals(1, result.items().size());
-        assertTrue(result.errors().stream().anyMatch(
-                        e -> e.contains("declares 5") && e.contains("contains 1")),
-                result.errors()::toString);
     }
 
     // ---- Hard (fail-closed) parse errors ---------------------------------
@@ -239,20 +223,10 @@ class MonsterBaseReaderTest {
         // monsterBase requires a desc: after the flags; omitting it is a syntax error, which the hard
         // channel turns into an empty result carrying the error.
         String noDesc = "name:orc\nglyph:o\npain:3\nflags:ANIMAL\n";
-        ParseResult<MonsterBase> result = load("no-desc.txt", withHeader(1, noDesc));
+        assertThrows(ParseCancellationException.class, () -> load("no-desc.txt", noDesc));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
-    @Test
-    void missingRecordCountHeaderIsAHardError() throws IOException {
-        ParseResult<MonsterBase> result =
-                load("no-header.txt", entry("orc", 'o', 3, "Orc", "ANIMAL"));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
-    }
     // ---- The reader against the upstream monster_base.txt ----------------
 
     /**
@@ -329,18 +303,16 @@ class MonsterBaseReaderTest {
         // parse_mon_base_desc does rb->text = string_append(rb->text, desc); string_append adds no
         // separator, so "ab" + "cd" is "abcd".
         String twoDescs = "name:orc\nglyph:o\npain:1\ndesc:ab\ndesc:cd\n";
-        ParseResult<MonsterBase> result = load("two-desc.txt", withHeader(1, twoDescs));
+        ParseResult<MonsterBase> result = load("two-desc.txt", twoDescs);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals("abcd", descOf(result.items().get(0)));
     }
 
     @Test
     void aTemplateWithNoFlagsLinesLoadsWithAnEmptyFlagSet() throws IOException {
         String noFlags = "name:orc\nglyph:o\npain:1\ndesc:Orc\n";
-        ParseResult<MonsterBase> result = load("no-flags.txt", withHeader(1, noFlags));
+        ParseResult<MonsterBase> result = load("no-flags.txt", noFlags);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertTrue(result.items().get(0).getFlags().isEmpty());
     }
 
@@ -352,9 +324,9 @@ class MonsterBaseReaderTest {
                 + entry("second", 'b', 1, "B", "NOTAFLAG")
                 + entry("third", 'c', 1, "C", "EVIL");
         DataFileParseException e = assertThrows(DataFileParseException.class,
-                () -> load("skip.txt", withHeader(3, body)));
+                () -> load("skip.txt", body));
 
-        assertTrue(e.getMessage().contains("starting at line: 7"), e::getMessage);
+        assertTrue(e.getMessage().contains("starting at line: 6"), e::getMessage);
         assertTrue(e.getMessage().contains("NOTAFLAG"), e::getMessage);
     }
 
@@ -364,9 +336,8 @@ class MonsterBaseReaderTest {
         // LATER record. The list is [second, first], so a first-match search finds the later one.
         String body = entry("orc", 'o', 1, "First")
                 + entry("orc", 'O', 2, "Second");
-        ParseResult<MonsterBase> result = load("dup.txt", withHeader(2, body));
+        ParseResult<MonsterBase> result = load("dup.txt", body);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(2, result.items().size());
         assertEquals("Second", descOf(result.items().get(0)));
         assertEquals("First", descOf(result.items().get(1)));
@@ -377,7 +348,7 @@ class MonsterBaseReaderTest {
         // Accepted blank-slot deviation: pain_messages[0] is a blank record in C and parse_mon_base_pain
         // accepts 0 (0 < mp_max). The Java list holds only real records, and pain.txt has no serial 0.
         DataFileParseException e = assertThrows(DataFileParseException.class,
-                () -> load("pain0.txt", withHeader(1, entry("orc", 'o', 0, "Orc"))));
+                () -> load("pain0.txt", entry("orc", 'o', 0, "Orc")));
 
         assertTrue(e.getMessage().contains("illegal pain value: 0"), e::getMessage);
     }
@@ -385,11 +356,9 @@ class MonsterBaseReaderTest {
     @Test
     void aSupplementaryGlyphLeavesTheNarrowHalfAtNulWhileAnAsciiOneLeavesTheWideHalfAtZero()
             throws IOException {
-        ParseResult<MonsterBase> result = load("both.txt", withHeader(2,
-                entry("narrow", 'n', 1, "N")
-                        + "name:wide\nglyph:🐉\npain:1\ndesc:W\n"));
+        ParseResult<MonsterBase> result = load("both.txt", entry("narrow", 'n', 1, "N")
+                        + "name:wide\nglyph:🐉\npain:1\ndesc:W\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         // Chain order: the wide record, second in the file, comes first.
         MonsterBase wide = result.items().get(0);
         MonsterBase narrow = result.items().get(1);
@@ -407,7 +376,7 @@ class MonsterBaseReaderTest {
                 "orc", "Orc", List.of(), "oo", "1", "Orc", 9);
         DataFileParseException e = assertThrows(DataFileParseException.class,
                 () -> new uk.co.jackoftradesltd.backend.parser.monsterbase.MonsterBaseAssembler()
-                        .assemble(List.of(record), new java.util.ArrayList<>(), "direct.txt"));
+                        .assemble(List.of(record), "direct.txt"));
 
         assertTrue(e.getMessage().contains("starting at line: 9"), e::getMessage);
         assertTrue(e.getMessage().contains("direct.txt"), e::getMessage);
@@ -437,10 +406,8 @@ class MonsterBaseReaderTest {
         // field separator (PARSE_ERROR_FIELD_TOO_LONG). Both sides reject; C reports it as a
         // parser error, the grammar as a syntax error.
         String body = "name:orc\nglyph:oo\npain:1\ndesc:Orc\n";
-        ParseResult<MonsterBase> result = load("glyph2.txt", withHeader(1, body));
+        assertThrows(ParseCancellationException.class, () -> load("glyph2.txt", body));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
@@ -448,10 +415,8 @@ class MonsterBaseReaderTest {
         // "flags ?str flags" is optional and parse_mon_base_flags returns PARSE_ERROR_NONE when
         // parser_hasval is false, so C loads this record with no flags.
         String body = "name:orc\nglyph:o\npain:1\nflags:\ndesc:Orc\n";
-        ParseResult<MonsterBase> result = load("empty-flags.txt", withHeader(1, body));
+        assertThrows(ParseCancellationException.class, () -> load("empty-flags.txt", body));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
@@ -459,30 +424,24 @@ class MonsterBaseReaderTest {
         // strtok(flags, " |") in parse_mon_base_flags splits on a space as well as a bar, so C
         // reads ANIMAL and EVIL here.
         String body = "name:orc\nglyph:o\npain:1\nflags:ANIMAL EVIL\ndesc:Orc\n";
-        ParseResult<MonsterBase> result = load("space-flags.txt", withHeader(1, body));
+        assertThrows(ParseCancellationException.class, () -> load("space-flags.txt", body));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void directivesOutOfOrderAreAHardErrorHereWhereCTakesAnyOrder() throws IOException {
         // Each parse_mon_base_* handler only needs the record header; C accepts pain: before glyph:.
         String body = "name:orc\npain:1\nglyph:o\ndesc:Orc\n";
-        ParseResult<MonsterBase> result = load("order.txt", withHeader(1, body));
+        assertThrows(ParseCancellationException.class, () -> load("order.txt", body));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void aTemplateWithNoGlyphIsAHardErrorHereWhereCLeavesTheGlyphZero() throws IOException {
         // C's mem_zalloc leaves d_char as 0 when glyph: is absent; the grammar needs the line.
         String body = "name:orc\npain:1\ndesc:Orc\n";
-        ParseResult<MonsterBase> result = load("no-glyph.txt", withHeader(1, body));
+        assertThrows(ParseCancellationException.class, () -> load("no-glyph.txt", body));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
@@ -490,9 +449,8 @@ class MonsterBaseReaderTest {
         // "pain uint pain" is read with strtoul(tok, &z, 0): base 0, so "010" is octal 8 in C. The
         // lexer's INTEGER is decimal, so the assembler reads 10 and picks the zombie set.
         String body = entry("orc", 'o', 1, "Orc").replace("pain:1", "pain:010");
-        ParseResult<MonsterBase> result = load("octal.txt", withHeader(1, body));
+        ParseResult<MonsterBase> result = load("octal.txt", body);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(10, painIndexOf(result.items().get(0)));
     }
 
@@ -502,7 +460,7 @@ class MonsterBaseReaderTest {
         // INTEGER accepts the minus, so the assembler throws because no pain set has that serial.
         String body = entry("orc", 'o', 1, "Orc").replace("pain:1", "pain:-1");
         DataFileParseException e = assertThrows(DataFileParseException.class,
-                () -> load("neg-pain.txt", withHeader(1, body)));
+                () -> load("neg-pain.txt", body));
 
         assertTrue(e.getMessage().contains("illegal pain value: -1"), e::getMessage);
     }
@@ -512,7 +470,7 @@ class MonsterBaseReaderTest {
         // parse_mon_base_pain returns PARSE_ERROR_OUT_OF_BOUNDS when pain_idx >= z_info->mp_max.
         // pain.txt's highest serial is 12, so mp_max is 13 and 13 is the first rejected value.
         DataFileParseException e = assertThrows(DataFileParseException.class,
-                () -> load("pain13.txt", withHeader(1, entry("orc", 'o', 13, "Orc"))));
+                () -> load("pain13.txt", entry("orc", 'o', 13, "Orc")));
 
         assertTrue(e.getMessage().contains("illegal pain value: 13"), e::getMessage);
     }
@@ -520,9 +478,8 @@ class MonsterBaseReaderTest {
     @Test
     void theHighestPainSerialInPainTxtIsAccepted() throws Exception {
         ParseResult<MonsterBase> result =
-                load("pain12.txt", withHeader(1, entry("orc", 'o', 12, "Orc")));
+                load("pain12.txt", entry("orc", 'o', 12, "Orc"));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(12, painIndexOf(result.items().get(0)));
     }
 
@@ -531,9 +488,8 @@ class MonsterBaseReaderTest {
         // d_char is a wchar_t, which holds U+1F600, so C loads the record. A Java char does not hold
         // it, so the port keeps it in the wide half and leaves the narrow half at '\0'.
         String body = "name:orc\nglyph:😀\npain:1\ndesc:Orc\n";
-        ParseResult<MonsterBase> result = load("astral.txt", withHeader(1, body));
+        ParseResult<MonsterBase> result = load("astral.txt", body);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size());
         MonsterBase base = result.items().get(0);
         assertTrue(base.isWideChar());
@@ -545,9 +501,7 @@ class MonsterBaseReaderTest {
     void anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent() throws IOException {
         // parser_parse skips leading isspace before reading the directive.
         String body = "name:orc\n  glyph:o\npain:1\ndesc:Orc\n";
-        ParseResult<MonsterBase> result = load("indent.txt", withHeader(1, body));
+        assertThrows(ParseCancellationException.class, () -> load("indent.txt", body));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 }

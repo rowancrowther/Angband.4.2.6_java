@@ -29,45 +29,96 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Class to collect the errors occurring during the parsing of game data files
- * and store them to throw them in one list at the end.
+ * Shared ANTLR error listener that collects every error raised while one game data file is
+ * lexed, parsed and checked, and turns them into a single fatal failure at the end.
+ *
+ * <p>This is the Java side of the error path in {@code datafile.c}: function
+ * {@code parse_file()} feeds the file to {@code parser_parse()} a line at a time and stops at the
+ * first line that returns an error; {@code run_parser()} then calls {@code print_error()}, which
+ * shows {@code "Parse error in <file> line <n> column <c>: ..."} and quits. Here the grammar has
+ * already parsed the whole file by the time anyone looks, so every syntax error the lexer or
+ * parser reports, and every semantic error a reader adds through {@link #add(int, String)} or
+ * {@link #add(String)}, is kept in order. The reader then calls {@link #throwIfAny()}, which logs
+ * each one and throws, so a bad file is still fatal to the load, as it is in C.
+ *
+ * <p>Deliberate differences from C:
+ * <ul>
+ *   <li>C reports only the first error in a file; this class reports all of them;</li>
+ *   <li>C's "column" is the colon-separated field number the parser had reached
+ *       ({@code parser.c}, {@code colno}, counting from 1); a syntax error here carries ANTLR's
+ *       character offset within the line, counting from 0, and an {@code add} error carries no
+ *       column at all;</li>
+ *   <li>C quits the program from inside {@code print_error()}; this class throws a
+ *       {@link ParseCancellationException}, which nothing on the load path catches until
+ *       {@code GameConstants.init()}, so the load still stops. Neither {@link GrammarDriver}
+ *       nor the loaders turn it into an empty result.</li>
+ * </ul>
+ *
+ * <p>Class ParseErrors coded before 261104, commented in full on 261104, last bullet updated on
+ * 261104 for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
 public final class ParseErrors extends BaseErrorListener {
     /**
-     * Logger - used to create the log files for this class
+     * Log4j logger for this class. {@link #throwIfAny()} writes each collected error to it at
+     * {@code ERROR} level just before throwing, so the details reach the error log rather than
+     * the exception message. It stands in for the {@code msg()} call in C's
+     * {@code print_error()} ({@code datafile.c}).
+     *
+     * <p>Field logger coded before 261104, commented in full on 261104.
      */
     private static final Logger logger = LogManager.getLogger();
 
     /**
-     * List to save the error strings in
+     * The formatted error lines collected so far, in the order they were reported. Each one
+     * starts with {@code "file: "} and {@link #sourceName}. {@link #syntaxError},
+     * {@link #add(int, String)} and {@link #add(String)} write to it;
+     * {@link #throwIfAny()}, {@link #hasErrors()} and {@link #getErrors()} read it. It is never
+     * cleared, so one instance serves one file.
+     *
+     * <p>Field errors coded on 261104, commented in full on 261104.
      */
     private final List<String> errors = new ArrayList<>();
 
     /**
-     * The name of the file we are parsing
+     * The name of the data file being parsed, as given to {@link #install}. Every collected error
+     * starts with it, as {@code fp->name} starts every message in C's {@code print_error()}
+     * ({@code datafile.c}).
+     *
+     * <p>Field sourceName coded before 261104, commented in full on 261104.
      */
     private final String sourceName;
 
     /**
-     * Private constructor - to force construction through the install
-     * method
+     * Creates an empty collector for one file. It is private so that every instance comes
+     * through {@link #install}, which also wires it onto the lexer and parser; a collector that
+     * was never installed would never hear a syntax error.
      *
-     * @param sourceName The name of the file we are parsing
+     * <p>Constructor ParseErrors coded before 261104, commented in full on 261104.
+     *
+     * @param sourceName the name of the data file being parsed, used as the prefix of every
+     *                   error
      */
     private ParseErrors(String sourceName) {
         this.sourceName = sourceName;
     }
 
     /**
-     * Installs this ParseErrors class on a given lexer and parser
+     * Creates a collector for {@code filename} and makes it the only error listener on both
+     * {@code lexer} and {@code parser}. Removing the existing listeners first takes off ANTLR's
+     * default {@code ConsoleErrorListener}, so errors are no longer printed to stderr and go only
+     * here. Lexer and parser share the one collector, so all errors for the file end up in one
+     * list, in the order they were raised. The parser's error strategy is left alone, so the
+     * parser still recovers and goes on to find further errors.
      *
-     * @param lexer    The ANTLR4 lexer we are checking for errors on
-     * @param parser   The ANTLR4 parser we are checking for errors on
-     * @param filename The filename of the file we are lexing/parsing
-     * @return The ParseErrors class set up for this lexer/parser combination
-     * parsing filename
+     * <p>Function install coded before 261104, commented in full on 261104.
+     *
+     * @param lexer    the ANTLR lexer for the file
+     * @param parser   the ANTLR parser reading that lexer's tokens
+     * @param filename the name of the data file, used as the prefix of every error
+     * @return the installed collector, for the reader to call {@link #add(int, String)} and
+     *         {@link #throwIfAny()} on
      */
     public static ParseErrors install(Lexer lexer, Parser parser, String filename) {
         ParseErrors collector = new ParseErrors(filename);
@@ -82,23 +133,25 @@ public final class ParseErrors extends BaseErrorListener {
     }
 
     /**
-     * @param recognizer         What parser got the error. From this
-     *                           object, you can access the context as well
-     *                           as the input stream.
-     * @param offendingSymbol    The offending token in the input token
-     *                           stream, unless recognizer is a lexer (then it's null). If
-     *                           no viable alternative error, {@code e} has token at which we
-     *                           started production for the decision.
-     * @param line               The line number in the input where the error occurred.
-     * @param charPositionInLine The character position within that line where the error occurred.
-     * @param msg                The message to emit.
-     * @param e                  The exception generated by the parser that led to
-     *                           the reporting of an error. It is null in the case where
-     *                           the parser was able to recover in line without exiting the
-     *                           surrounding rule.
-     *                           ---
-     *                           Overridden to add an error to the error list and then return without
-     *                           throwing it.
+     * Records a lexer or parser syntax error as
+     * {@code "file: <sourceName> line <line>:<charPositionInLine> <msg>"} and returns without
+     * throwing, so ANTLR's recovery carries on and later errors in the same file are also
+     * collected. C instead stops at the first line {@code parser_parse()} rejects
+     * ({@code datafile.c}, function {@code parse_file()}); see the class comment.
+     *
+     * <p>{@code line} counts from 1, as C's line number does. {@code charPositionInLine} is a
+     * character offset counting from 0, not C's field number.
+     *
+     * <p>Function syntaxError coded on 261104, commented in full on 261104.
+     *
+     * @param recognizer         the lexer or parser that found the error; not used
+     * @param offendingSymbol    the token at fault, or {@code null} when the lexer reports;
+     *                           not used
+     * @param line               the line of the file where the error occurred, counting from 1
+     * @param charPositionInLine the character offset within that line, counting from 0
+     * @param msg                ANTLR's description of the error
+     * @param e                  the exception behind the error, or {@code null} if the parser
+     *                           recovered within the rule; not used
      */
     @Override
     public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line, int charPositionInLine, String msg, RecognitionException e) {
@@ -106,8 +159,20 @@ public final class ParseErrors extends BaseErrorListener {
     }
 
     /**
-     * Final method - if no errors have been collected returns otherwise uses the logger
-     * to throw them all
+     * Makes the collected errors fatal. If none have been collected it returns and does nothing.
+     * Otherwise it logs each error at {@code ERROR} level, in the order collected, and then
+     * throws. The exception message is a fixed pointer to the error log; it doesn't include the
+     * errors. This is the Java version of the {@code print_error()} call in {@code datafile.c},
+     * function {@code run_parser()}, except that C reports one error and quits rather than
+     * throwing.
+     *
+     * <p>It doesn't clear the list, so a second call after a throw throws again. Readers call it
+     * straight after the parse, so that grammar errors stop the load before any records are
+     * assembled.
+     *
+     * <p>Function throwIfAny coded on 261104, commented in full on 261104.
+     *
+     * @throws ParseCancellationException if at least one error has been collected
      */
     public void throwIfAny() {
         if (errors.isEmpty())
@@ -121,9 +186,14 @@ public final class ParseErrors extends BaseErrorListener {
     }
 
     /**
-     * Add in a new error outside the syntaxError route
+     * Records an error found after the parse, such as a reader's semantic check, against a line
+     * of the file, as {@code "file: <sourceName> line <line> <msg>"}. Unlike
+     * {@link #syntaxError}, the entry has no column. Nothing is thrown until
+     * {@link #throwIfAny()}.
      *
-     * @param line the line number of the file being parsed where the error occured
+     * <p>Function add coded on 261104, commented in full on 261104.
+     *
+     * @param line the line of the file where the error was found, counting from 1
      * @param msg  the error message
      */
     public void add(int line, String msg) {
@@ -131,7 +201,13 @@ public final class ParseErrors extends BaseErrorListener {
     }
 
     /**
-     * Add in a new file error outside the syntaxError route
+     * Records an error that belongs to the file as a whole rather than to one line, as
+     * {@code "file: <sourceName> <msg>"}. Nothing is thrown until {@link #throwIfAny()}. Its one
+     * planned caller, the {@code record-count:} check, was removed on 261104, so nothing calls it
+     * at present.
+     *
+     * <p>Function add coded on 261104, commented in full on 261104, example replaced on 261104 once
+     * the {@code record-count:} header was removed.
      *
      * @param msg the error message
      */
@@ -140,10 +216,13 @@ public final class ParseErrors extends BaseErrorListener {
     }
 
     /**
-     * Determine whether any errors have been collected by this listener
+     * Reports whether any error has been collected, either from {@link #syntaxError} or from
+     * {@code add}. It lets a caller check without the throw that {@link #throwIfAny()} would
+     * cause.
      *
-     * @return true if an error has been caught and is in the queue, false
-     * otherwise
+     * <p>Function hasErrors coded on 261104, commented in full on 261104.
+     *
+     * @return {@code true} if at least one error has been collected, {@code false} otherwise
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -152,9 +231,13 @@ public final class ParseErrors extends BaseErrorListener {
     }
 
     /**
-     * Return the current list of errors for external examination
+     * Returns the collected errors, in order, as a read-only view. It is a live view, not a copy:
+     * errors added later show up in a list already returned. Any attempt to change it throws
+     * {@link UnsupportedOperationException}.
      *
-     * @return the current list of errors
+     * <p>Function getErrors coded on 261104, commented in full on 261104.
+     *
+     * @return an unmodifiable, live view of the collected error lines
      */
     @CheckReturnValue
     @Contract(pure = true)

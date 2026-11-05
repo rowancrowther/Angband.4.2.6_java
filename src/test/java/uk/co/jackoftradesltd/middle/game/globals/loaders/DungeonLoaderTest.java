@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.game.globals.loaders;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -56,7 +57,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * parsers, run in that order.
  *
  * <p><b>Expected values come from C's data, not from the port.</b> The shipped files in
- * {@code lib/gamedata} are the C originals (the port only adds {@code record-count:} lines), and
+ * {@code lib/gamedata} are the C originals, and
  * the expectations below were counted and read from them with {@code grep}: 9 {@code name:} records
  * in {@code dungeon_profile.txt}, in the order town, labyrinth, cavern, classic, modified, moria,
  * lair, gauntlet, hard centre; 500 in {@code room_template.txt}, from "Tiny hidden room" to "Rod
@@ -67,20 +68,22 @@ import static org.junit.jupiter.api.Assertions.*;
  * file order, and the tests below expect "Rod chamber" and "Golden Flower" at the head.
  *
  * <p><b>The C failure behaviour.</b> {@code parse_file_quit_not_found} quits on a missing file, and
- * {@code run_template_parser} quits when a parser reports an error. The port stops the same way for
- * a missing file and for a parse that leaves errors and no records, and deliberately lets through a
- * parse whose soft errors still left some records (the partial-results contract).
+ * {@code run_template_parser} quits when a parser reports an error. The port stops on every error
+ * too: a missing file is wrapped in a {@code RuntimeException} naming the file, and a grammar error
+ * ({@link ParseCancellationException}) or an assembler error ({@link DataFileParseException})
+ * passes through unwrapped. In every case nothing is written to the registry.
  *
  * <p><b>What is tested.</b> The real files, then fixtures in a temporary directory standing in for
- * the gamedata directory: a missing file for each loader, soft errors that leave records and soft
- * errors that leave none, a reload replacing rather than appending, and the profile count that
+ * the gamedata directory: a missing file for each loader, a grammar error and an assembler error for
+ * each, a reload replacing rather than appending, and the profile count that
  * {@code finish_parse_profile} writes to {@code z_info->profile_max}. The vault {@code max-depth:0}
  * rewrite needs {@code GameConstants}, which the real-data tests load if no earlier test has.
  *
  * <p>Each test points {@code ANGBAND_DIRS.GAMEDATA} at the temporary directory and puts it, the
  * three registry lists and the profile count back afterwards.
  *
- * <p>Class DungeonLoaderTest coded on 261013, commented in full on 261013.
+ * <p>Class DungeonLoaderTest coded on 261013, commented in full on 261013, updated on 261104 for the
+ * removal of the soft-error path and the {@code record-count:} header.
  *
  * @author Rowan Crowther
  */
@@ -321,7 +324,6 @@ class DungeonLoaderTest {
 
         AngbandDirs.ANGBAND_DIRS.GAMEDATA.setPath(tempDir + File.separator);
         write("dungeon_profile.txt", String.join("\n",
-                "record-count:2",
                 "name:town", "params:1:0:200:0", "alloc:5",
                 "name:classic", "params:3:0:200:0", "min-level:4", "alloc:6", ""));
 
@@ -343,7 +345,6 @@ class DungeonLoaderTest {
     @DisplayName("an overflowing params value loads its profile, clamped, and counts it")
     void profileOverflowLoadsClamped() throws Exception {
         write("dungeon_profile.txt", String.join("\n",
-                "record-count:2",
                 "name:town", "params:99999999999:0:200:0", "alloc:5",
                 "name:classic", "params:1:0:200:0", "alloc:6", ""));
 
@@ -356,20 +357,21 @@ class DungeonLoaderTest {
     }
 
     /**
-     * A file the grammar refuses (here, no {@code record-count:} header) leaves errors and no
-     * profile, which {@code ErrorParsing.reportAndCheck} reports as {@code false}: the load stops,
-     * as C's {@code run_template_parser} does on any parser error, before registry or count are
-     * written.
+     * A file the grammar refuses (here, a line that is no directive at all) stops the load, as C's
+     * {@code run_template_parser} does on any parser error, before registry or count are written.
+     * The {@link ParseCancellationException} passes through the loader unwrapped.
+     *
+     * <p>Function profileGrammarErrorStopsTheLoad coded on 261013, commented in full on 261013,
+     * renamed and rewritten on 261104 for the removal of the soft-error path.
      */
     @Test
-    @DisplayName("errors that leave no profiles stop the load before anything is written")
-    void profileErrorWithNoSurvivors() throws Exception {
+    @DisplayName("a profile grammar error stops the load before anything is written")
+    void profileGrammarErrorStopsTheLoad() throws Exception {
         write("dungeon_profile.txt", String.join("\n",
-                "name:town", "params:1:0:200:0", "alloc:5", ""));
+                "name:town", "params:1:0:200:0", "alloc:5", "nonsense", ""));
 
-        RuntimeException thrown = assertThrows(RuntimeException.class, DungeonLoader::loadDungeonProfiles);
+        assertThrows(ParseCancellationException.class, DungeonLoader::loadDungeonProfiles);
 
-        assertEquals("Error parsing Dungeon profiles file", thrown.getMessage());
         assertSame(savedProfiles, registryList("caveProfiles"), "profiles untouched");
         assertEquals(savedProfileMax, GameConstants.getCaveProfileMax(), "profile count untouched");
     }
@@ -383,7 +385,6 @@ class DungeonLoaderTest {
     @DisplayName("an unknown profile name stops the load before anything is written")
     void unknownProfileNameStopsTheLoad() throws Exception {
         write("dungeon_profile.txt", String.join("\n",
-                "record-count:2",
                 "name:town", "params:1:0:200:0", "alloc:5",
                 "name:no such profile", "alloc:6", ""));
 
@@ -402,7 +403,7 @@ class DungeonLoaderTest {
     @Test
     @DisplayName("a vault with an explicit max-depth keeps it")
     void vaultExplicitDepths() throws Exception {
-        write("vault.txt", "record-count:1\n" + GOOD_VAULT + "\n");
+        write("vault.txt", GOOD_VAULT + "\n");
 
         DungeonLoader.loadVaultTemplates();
 
@@ -416,33 +417,20 @@ class DungeonLoaderTest {
     }
 
     /**
-     * A soft error with survivors. The assembler throws on every fault of its own, so the soft
-     * error here is the reader's {@code record-count:} check: the header claims two records, the
-     * file holds one, and that one is still installed.
+     * A vault grammar error stops the load and writes nothing: a record with no {@code rating:}
+     * line fails closed in the grammar, and the {@link ParseCancellationException} passes through
+     * the loader unwrapped.
+     *
+     * <p>Function vaultGrammarErrorStopsTheLoad coded on 261013, commented in full on 261013,
+     * renamed and rewritten on 261104 for the removal of the soft-error path.
      */
     @Test
-    @DisplayName("a vault soft error beside a good vault installs the good one")
-    void vaultSoftErrorWithSurvivors() throws Exception {
-        write("vault.txt", "record-count:2\n" + GOOD_VAULT + "\n");
+    @DisplayName("a vault grammar error stops the load before anything is written")
+    void vaultGrammarErrorStopsTheLoad() throws Exception {
+        write("vault.txt", GOOD_VAULT.replace("rating:5\n", "") + "\n");
 
-        DungeonLoader.loadVaultTemplates();
+        assertThrows(ParseCancellationException.class, DungeonLoader::loadVaultTemplates);
 
-        List<Vault> vaults = registryList("vaultTemplates");
-        assertEquals(List.of("Tiny"), vaults.stream().map(Vault::getName).toList());
-    }
-
-    /**
-     * The vault loader's no-survivor case: stop, naming the file's kind, and write nothing. The
-     * soft error comes from the grammar: a record with no {@code rating:} line fails closed.
-     */
-    @Test
-    @DisplayName("a vault syntax error that leaves no vaults stops the load")
-    void vaultSoftErrorWithNoSurvivors() throws Exception {
-        write("vault.txt", "record-count:1\n" + GOOD_VAULT.replace("rating:5\n", "") + "\n");
-
-        RuntimeException thrown = assertThrows(RuntimeException.class, DungeonLoader::loadVaultTemplates);
-
-        assertEquals("Error parsing Vault profiles file", thrown.getMessage());
         assertSame(savedVaults, registryList("vaultTemplates"), "vaults untouched");
     }
 
@@ -454,7 +442,7 @@ class DungeonLoaderTest {
     @Test
     @DisplayName("a vault too tall for its type stops the load before anything is written")
     void vaultTooTallStopsTheLoad() throws Exception {
-        write("vault.txt", "record-count:2\n" + GOOD_VAULT + "\n"
+        write("vault.txt", GOOD_VAULT + "\n"
                 + GOOD_VAULT.replace("name:Tiny", "name:Tall").replace("rows:3", "rows:23") + "\n");
 
         assertThrows(DataFileParseException.class, DungeonLoader::loadVaultTemplates);
@@ -463,20 +451,21 @@ class DungeonLoaderTest {
     }
 
     /**
-     * The room-template loader's no-survivor case. The assembler throws on every fault of its own,
-     * so the soft error here comes from the grammar: a record with no {@code doors:} line.
+     * A room-template grammar error stops the load and writes nothing: a record with no
+     * {@code doors:} line fails closed in the grammar.
+     *
+     * <p>Function roomGrammarErrorStopsTheLoad coded on 261013, commented in full on 261013,
+     * renamed and rewritten on 261104 for the removal of the soft-error path.
      */
     @Test
-    @DisplayName("a room-template syntax error that leaves no templates stops the load")
-    void roomSoftErrorWithNoSurvivors() throws Exception {
+    @DisplayName("a room-template grammar error stops the load before anything is written")
+    void roomGrammarErrorStopsTheLoad() throws Exception {
         write("room_template.txt", String.join("\n",
-                "record-count:1",
                 "name:Bad", "type:1", "rating:1", "rows:3", "columns:3",
                 "tval:0", "D:###", "D:#.#", "D:###", ""));
 
-        RuntimeException thrown = assertThrows(RuntimeException.class, DungeonLoader::loadRoomTemplates);
+        assertThrows(ParseCancellationException.class, DungeonLoader::loadRoomTemplates);
 
-        assertEquals("Error parsing Room profiles file", thrown.getMessage());
         assertSame(savedRooms, registryList("roomTemplates"), "templates untouched");
     }
 }

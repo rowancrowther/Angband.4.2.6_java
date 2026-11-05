@@ -57,12 +57,13 @@ import java.util.List;
  * This class itself only supplies the pieces {@link GrammarDriver#run} needs - the lexer and parser
  * constructors, the {@link #extract} step and the assembler - and owns the logger.
  * <p>
+ * As in C, the first error stops the load and nothing is returned: a syntax error is thrown from
+ * {@link #extract} as a {@code ParseCancellationException}, and a record the assembler refuses is
+ * thrown as a {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}. Neither is
+ * caught here.
+ * <p>
  * Differences from C worth knowing about:
  * <ul>
- *   <li>The {@code record-count:} header is a Java-only addition, checked as a soft error; the
- *       upstream {@code pain.txt} has no such line, and this repository's copy adds it.</li>
- *   <li>C stops at the first parse error. Here a syntax error is fatal and returns no items, but an
- *       assembler error skips only the offending record and the rest still load.</li>
  *   <li>C accepts a {@code type:} block with fewer than seven {@code message:} lines and leaves the
  *       missing slots {@code NULL}. The grammar demands exactly seven, so such a block is a syntax
  *       error here. The file's own header says every entry must have seven.</li>
@@ -75,31 +76,33 @@ import java.util.List;
  *
  * @author Rowan Crowther
  *
- * <p>Class PainReader coded before 260915, commented in full on 261017.
+ * <p>Class PainReader coded before 260915, commented in full on 261017, updated on 261105 for the
+ * removal of the soft-error path.
  */
 public class PainReader implements Reader<MonsterPain> {
     /**
      * Logger handed to {@link GrammarDriver#run} so that an {@link IOException} while reading
-     * {@code pain.txt} is logged under this reader's name before it is rethrown. Syntax and soft
-     * errors do not go through it; they travel in the {@link ParseResult}.
+     * {@code pain.txt} is logged under this reader's name before it is rethrown. Syntax and
+     * assembler errors do not go through it; they are thrown unlogged to the caller.
      *
-     * <p>Field logger coded before 260915, commented in full on 261017.
+     * <p>Field logger coded before 260915, commented in full on 261017, updated on 261105 for the
+     * removal of the soft-error path.
      */
     private static final Logger logger = LogManager.getLogger();
 
     /**
-     * Parse the given file and return just the assembled pain sets, in file order, discarding the
-     * soft-error channel (use {@link #parseWithResults} to inspect the errors). Satisfies the
-     * {@link Reader} contract.
+     * Parse the given file and return just the assembled pain sets, in file order, unwrapped from
+     * the {@link ParseResult} that {@link #parseWithResults} gives. Satisfies the {@link Reader}
+     * contract.
      * <p>
-     * Because the errors are dropped, a syntax error and a clean empty file are indistinguishable
-     * here: both give an empty list. Callers that must tell a partial or failed load from a clean
-     * one have to use {@link #parseWithResults}.
+     * A syntax error or a refused record throws, exactly as in {@link #parseWithResults}, so an
+     * empty list only ever means a clean file with no records.
      *
-     * <p>Function parse coded before 260915, commented in full on 261017.
+     * <p>Function parse coded before 260915, commented in full on 261017, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param filename the data file to parse
-     * @return the assembled {@link MonsterPain} list (empty if the parse failed closed)
+     * @return every {@link MonsterPain} in the file, in file order
      * @throws IOException if the file cannot be read
      */
     @NotNull
@@ -110,59 +113,55 @@ public class PainReader implements Reader<MonsterPain> {
 
     /**
      * The {@link GrammarDriver.Extractor} for this grammar: run the parser's {@code file} entry
-     * rule, fail closed on any hard lexer/parser error, validate the {@code record-count:} header,
-     * and hand back the raw {@link PainParseRecord}s, still holding unparsed text.
+     * rule, fail closed on any hard lexer/parser error, and hand back the raw
+     * {@link PainParseRecord}s, still holding unparsed text.
      * <p>
      * Ordering matters: {@link ParseErrors#throwIfAny()} must fire <em>after</em> the parse but
-     * <em>before</em> the records are used, so a malformed file aborts here rather than reaching
-     * the assembler. That covers the cases where C returns a parser error too: a {@code message:}
-     * line before any {@code type:} (C's {@code PARSE_ERROR_MISSING_RECORD_HEADER}), an eighth
-     * {@code message:} line (C's {@code PARSE_ERROR_TOO_MANY_ENTRIES}), and a {@code type:} line
-     * with no number. The header check is soft - {@link GrammarDriver#checkRecordCount} only appends
-     * to {@code errors}, so a miscount never discards the records that did parse. Records come back
-     * in file order, which is the order C's {@code finish_parse_pain} files them in once it has
-     * indexed them by {@code pain_idx}, for a file whose serials ascend as the header requires.
+     * <em>before</em> the records are used, so a malformed file aborts with a
+     * {@code ParseCancellationException} here rather than reaching the assembler. That covers the
+     * cases where C returns a parser error too: a {@code message:} line before any {@code type:}
+     * (C's {@code PARSE_ERROR_MISSING_RECORD_HEADER}), an eighth {@code message:} line (C's
+     * {@code PARSE_ERROR_TOO_MANY_ENTRIES}), and a {@code type:} line with no number. Records come
+     * back in file order, which is the order C's {@code finish_parse_pain} files them in once it
+     * has indexed them by {@code pain_idx}, for a file whose serials ascend as the header requires.
      * <p>
      * The copy at the end detaches the result from the parse tree, so the returned list is the
      * caller's to keep.
      *
-     * <p>Function extract coded before 260915, commented in full on 261017.
+     * <p>Function extract coded before 260915, commented in full on 261017, updated on 261105 for
+     * the removal of the soft-error path and the {@code record-count:} header.
      *
      * @param parser       the generated parser for this file
      * @param errorCatcher the live hard-error collector installed by the driver
-     * @param errors       the soft-error sink, mutated in place
      * @return the parsed {@link PainParseRecord}s in file order
      */
     private static List<PainParseRecord> extract(
             @NotNull PainGrammar parser,
-            @NotNull ParseErrors errorCatcher,
-            @NotNull List<String> errors) {
+            @NotNull ParseErrors errorCatcher) {
         PainGrammar.FileContext output = parser.file();
         List<PainParseRecord> results = output.monsterPain;
         errorCatcher.throwIfAny();
-
-        String declaredRecordCount = output.declaredRecords;
-        GrammarDriver.checkRecordCount(declaredRecordCount, results.size(), errors);
 
         return new ArrayList<>(results);
     }
 
     /**
-     * Parse the given file, returning both the assembled {@link MonsterPain} list and any soft
-     * errors gathered along the way, for callers that need to tell a clean load from a partial one.
+     * Parse the given file, returning the assembled {@link MonsterPain} list wrapped in a
+     * {@link ParseResult}.
      * <p>
      * This is the Java counterpart of {@code run_parse_pain} and the {@code parse_pain_*} handlers
      * in {@code mon-init.c}: it wires {@code PainLexer}, {@code PainGrammar}, {@link #extract} and
-     * {@link PainAssembler} into {@link GrammarDriver#run}. A syntax error returns no items and the
-     * collected messages; an assembler error or a {@code record-count:} mismatch leaves the good
-     * records in the result alongside the messages. C would have stopped at the first of any of
-     * these. An unreadable file is not a result at all but an {@link IOException}, the analogue of
+     * {@link PainAssembler} into {@link GrammarDriver#run}. As C stops at the first error, so does
+     * this: a syntax error throws a {@code ParseCancellationException}, an assembler error throws a
+     * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}, and no result is
+     * returned. An unreadable file is an {@link IOException}, the analogue of
      * {@code parse_file_quit_not_found}'s {@code quit()}.
      *
-     * <p>Function parseWithResults coded before 260915, commented in full on 261017.
+     * <p>Function parseWithResults coded before 260915, commented in full on 261017, updated on
+     * 261105 for the removal of the soft-error path.
      *
      * @param filename the data file to parse
-     * @return a {@link ParseResult} of the assembled sets plus any soft errors
+     * @return every pain set in the file, in file order
      * @throws IOException if the file cannot be read
      */
     public ParseResult<MonsterPain> parseWithResults(@NotNull String filename) throws IOException {

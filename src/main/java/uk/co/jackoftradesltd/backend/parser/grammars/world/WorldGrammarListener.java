@@ -14,7 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-// Generated from WorldGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/WorldGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.world;
 
 import org.antlr.v4.runtime.tree.ParseTreeListener;
@@ -24,87 +24,54 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
  * {@link WorldGrammar}.
  */
 public interface WorldGrammarListener extends ParseTreeListener {
-    /**
-     * Enter a parse tree produced by {@link WorldGrammar#recordCount}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterRecordCount(WorldGrammar.RecordCountContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link WorldGrammar#recordCount}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitRecordCount(WorldGrammar.RecordCountContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link WorldGrammar#levelNum}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterLevelNum(WorldGrammar.LevelNumContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link WorldGrammar#levelNum}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitLevelNum(WorldGrammar.LevelNumContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link WorldGrammar#levelName}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterLevelName(WorldGrammar.LevelNameContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link WorldGrammar#levelName}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitLevelName(WorldGrammar.LevelNameContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link WorldGrammar#upAndDown}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterUpAndDown(WorldGrammar.UpAndDownContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link WorldGrammar#upAndDown}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitUpAndDown(WorldGrammar.UpAndDownContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link WorldGrammar#line}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterLine(WorldGrammar.LineContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link WorldGrammar#line}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitLine(WorldGrammar.LineContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link WorldGrammar#file}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterFile(WorldGrammar.FileContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link WorldGrammar#file}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitFile(WorldGrammar.FileContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link WorldGrammar#levelNum}.
+	 * @param ctx the parse tree
+	 */
+	void enterLevelNum(WorldGrammar.LevelNumContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link WorldGrammar#levelNum}.
+	 * @param ctx the parse tree
+	 */
+	void exitLevelNum(WorldGrammar.LevelNumContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link WorldGrammar#levelName}.
+	 * @param ctx the parse tree
+	 */
+	void enterLevelName(WorldGrammar.LevelNameContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link WorldGrammar#levelName}.
+	 * @param ctx the parse tree
+	 */
+	void exitLevelName(WorldGrammar.LevelNameContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link WorldGrammar#upAndDown}.
+	 * @param ctx the parse tree
+	 */
+	void enterUpAndDown(WorldGrammar.UpAndDownContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link WorldGrammar#upAndDown}.
+	 * @param ctx the parse tree
+	 */
+	void exitUpAndDown(WorldGrammar.UpAndDownContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link WorldGrammar#line}.
+	 * @param ctx the parse tree
+	 */
+	void enterLine(WorldGrammar.LineContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link WorldGrammar#line}.
+	 * @param ctx the parse tree
+	 */
+	void exitLine(WorldGrammar.LineContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link WorldGrammar#file}.
+	 * @param ctx the parse tree
+	 */
+	void enterFile(WorldGrammar.FileContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link WorldGrammar#file}.
+	 * @param ctx the parse tree
+	 */
+	void exitFile(WorldGrammar.FileContext ctx);
 }

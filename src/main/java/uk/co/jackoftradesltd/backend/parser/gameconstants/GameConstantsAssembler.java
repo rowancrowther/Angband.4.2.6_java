@@ -64,10 +64,10 @@ import java.util.List;
  * <p>Differences from C worth knowing:
  * <ul>
  *   <li>A bad line throws a {@link DataFileParseException} at once, where C returns a
- *   {@code PARSE_ERROR_*} and then stops the load. Only two problems are reported through the
- *   {@code errors} list instead: an O-combat level row with a {@code chance} of 0, and critical
- *   cutoffs that do not strictly increase. {@code build} returns {@code null} when that list is not
- *   empty.</li>
+ *   {@code PARSE_ERROR_*} and then stops the load. Two problems are refused by the builder rather
+ *   than here: an O-combat level row with a {@code chance} of 0, and critical cutoffs that do not
+ *   strictly increase. Those also throw and end the load, but their messages name neither the line
+ *   nor the file.</li>
  *   <li>Integers are clamped to the range of an {@code int} by {@link ParseUtils}, where C keeps the
  *   low bits of the {@code strtol} result.</li>
  *   <li>The builder also refuses a {@code -1} cutoff in the middle of the melee or ranged list, a
@@ -76,7 +76,8 @@ import java.util.List;
  *   used by two threads at once.</li>
  * </ul>
  *
- * <p>Class GameConstantsAssembler coded before 260915, commented in full on 261025.
+ * <p>Class GameConstantsAssembler coded before 260915, commented in full on 261025, updated on
+ * 261105 for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -102,7 +103,7 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      * Assembles a {@link GameConstantsData} from the parsed lines of {@code constants.txt}. Each record
      * goes to {@link #dispatch}, which stores it in a {@link GameConstantsData.GameConstantsBuilder}
      * or throws. The builder is then asked to check the melee and ranged critical cutoffs, and the
-     * result is whatever {@link GameConstantsData.GameConstantsBuilder#build(List)} makes of it.
+     * result is whatever {@link GameConstantsData.GameConstantsBuilder#build()} makes of it.
      *
      * <p>This is all of C's {@code constants_parser} once the file has been read: the
      * {@code parse_constants_*()} handlers run in file order, then {@code finish_parse_constants()}
@@ -110,37 +111,33 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      * {@code PARSE_ERROR_NON_SEQUENTIAL_RECORDS}. A constant that no line sets is 0, as with the
      * {@code mem_zalloc}ed struct in C.
      *
-     * <p>A bad line throws a {@link DataFileParseException} out of {@link #dispatch}, so nothing is
-     * returned. Two problems are added to {@code errors} instead, and the remaining lines are still
-     * read: an O-combat level row with a {@code chance} of 0, and cutoffs that do not strictly
-     * increase. Because {@code build} returns {@code null} whenever {@code errors} is not empty, so
-     * does this method, including when the caller passed in a list that already held a message.
+     * <p>Every fault ends the load. A bad line throws a {@link DataFileParseException} out of
+     * {@link #dispatch}, and the remaining lines are not read. An O-combat level row with a
+     * {@code chance} of 0 is thrown by the builder's add method, and cutoffs that do not strictly
+     * increase by {@code checkCriticalLevelDataLists}. {@code build} does no checking of its own, so
+     * this method never returns {@code null}, whatever its {@code @Nullable} annotation says.
      *
-     * <p>Function assemble coded before 260915, commented in full on 261025.
+     * <p>Function assemble coded before 260915, commented in full on 261025, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param records  The list of records to create the {@link GameConstantsData} from
-     * @param errors   The list the soft errors are added to; any entry makes the result {@code null}
      * @param filename The name of the file the records came from, used in the error messages
-     * @return the {@link GameConstantsData} containing the data, or {@code null} if {@code errors}
-     * is not empty
+     * @return the {@link GameConstantsData} containing the data, never {@code null}
+     * @throws DataFileParseException if any line, O-combat row or critical cutoff list is refused
      */
     @Override
     @Nullable
     @CheckReturnValue
     public GameConstantsData assemble(@NotNull List<GameConstantsParseRecord> records,
-                                      @NotNull List<String> errors,
                                       @NotNull String filename) {
         this.filename = filename;
         GameConstantsData.GameConstantsBuilder b = new GameConstantsData.GameConstantsBuilder();
         for (GameConstantsParseRecord record : records) {
-            dispatch(record, b, errors);
+            dispatch(record, b);
         }
-        String result = b.checkCriticalLevelDataLists();
-        if (!result.isEmpty()) {
-            errors.add(result);
-        }
-
-        return b.build(errors);
+        b.checkCriticalLevelDataLists();
+        
+        return b.build();
     }
 
     /**
@@ -156,28 +153,26 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      *
      * @param rec    The record from the constants.txt file
      * @param b      The builder to build the records from
-     * @param errors The list of current errors
      */
-    private void dispatch(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
-                          @NotNull List<String> errors) {
+    private void dispatch(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b) {
         switch (rec.getCategory()) {
-            case "level-max" -> levelMax(rec, b, errors);
-            case "mon-gen" -> monGen(rec, b, errors);
-            case "mon-play" -> monPlay(rec, b, errors);
-            case "dun-gen" -> dunGen(rec, b, errors);
-            case "world" -> world(rec, b, errors);
-            case "carry-cap" -> carryCap(rec, b, errors);
-            case "store" -> store(rec, b, errors);
-            case "obj-make" -> objGen(rec, b, errors);
-            case "player" -> player(rec, b, errors);
-            case "melee-critical" -> meleeCritical(rec, b, errors);
-            case "melee-critical-level" -> meleeCriticalLevel(rec, b, errors);
-            case "ranged-critical" -> rangedCritical(rec, b, errors);
-            case "ranged-critical-level" -> rangedCriticalLevel(rec, b, errors);
-            case "o-melee-critical" -> oMeleeCritical(rec, b, errors);
-            case "o-melee-critical-level" -> oMeleeCriticalLevel(rec, b, errors);
-            case "o-ranged-critical" -> oRangedCritical(rec, b, errors);
-            case "o-ranged-critical-level" -> oRangedCriticalLevel(rec, b, errors);
+            case "level-max" -> levelMax(rec, b);
+            case "mon-gen" -> monGen(rec, b);
+            case "mon-play" -> monPlay(rec, b);
+            case "dun-gen" -> dunGen(rec, b);
+            case "world" -> world(rec, b);
+            case "carry-cap" -> carryCap(rec, b);
+            case "store" -> store(rec, b);
+            case "obj-make" -> objGen(rec, b);
+            case "player" -> player(rec, b);
+            case "melee-critical" -> meleeCritical(rec, b);
+            case "melee-critical-level" -> meleeCriticalLevel(rec, b);
+            case "ranged-critical" -> rangedCritical(rec, b);
+            case "ranged-critical-level" -> rangedCriticalLevel(rec, b);
+            case "o-melee-critical" -> oMeleeCritical(rec, b);
+            case "o-melee-critical-level" -> oMeleeCriticalLevel(rec, b);
+            case "o-ranged-critical" -> oRangedCritical(rec, b);
+            case "o-ranged-critical-level" -> oRangedCriticalLevel(rec, b);
             default -> {
                 String msg = "Game constant starting at line: " + rec.getLineNumber() + " of file: " + filename + " has " +
                         "an unknown category: " + rec.getCategory();
@@ -202,18 +197,17 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      * and for {@code NONE}, as C returns {@code -1}.
      *
      * <p>A {@code chance} of 0 is not thrown here. The builder's {@code addORangedCriticalLevel}
-     * returns a message, which goes into {@code errors}, and the row is not added. C refuses it
-     * with {@code INVALID_VALUE} before it looks at the message, so a line with both faults reports
-     * the message here. A {@code dice} of 0 is accepted.
+     * throws a {@link DataFileParseException} for it, and the load ends. C refuses it with
+     * {@code INVALID_VALUE} before it looks at the message, so a line with both faults reports the
+     * message here. A {@code dice} of 0 is accepted.
      *
-     * <p>Function oRangedCriticalLevel coded before 260915, commented in full on 261025.
+     * <p>Function oRangedCriticalLevel coded before 260915, commented in full on 261025, updated on
+     * 261105 for the removal of the soft-error path.
      *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
-     * @param errors The list of current errors
      */
-    private void oRangedCriticalLevel(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
-                                      @NotNull List<String> errors) {
+    private void oRangedCriticalLevel(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b) {
         List<String> f = rec.getFields();
         int line = rec.getLineNumber();
 
@@ -224,10 +218,8 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
             throw new DataFileParseException(msg);
         }
 
-        Integer chance = coerceInt(f.get(0), line, errors);
-        Integer dice = coerceInt(f.get(1), line, errors);
-        if (chance == null || dice == null)
-            return;
+        int chance = coerceInt(f.get(0), line);
+        int dice = coerceInt(f.get(1), line);
 
         if (ParseUtils.minusFound(f.get(0)) || ParseUtils.minusFound(f.get(1))) {
             String msg = "Game constant starting at line: " + line + " of file: " + filename + " has " +
@@ -263,10 +255,7 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
         }
 
         ORangedCriticalLevelData record = new ORangedCriticalLevelData(chance, dice, messageTypeEnum);
-        String result = b.addORangedCriticalLevel(record);
-        if (!result.isEmpty()) {
-            errors.add(result);
-        }
+        b.addORangedCriticalLevel(record);
     }
 
     /**
@@ -287,12 +276,10 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      *
      * <p>Function oRangedCritical coded before 260915, commented in full on 261025.
      *
-     * @param rec    The entry from the list
-     * @param b      The builder responsible for building the game data
-     * @param errors The list of current errors
+     * @param rec The entry from the list
+     * @param b   The builder responsible for building the game data
      */
-    private void oRangedCritical(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
-                                 @NotNull List<String> errors) {
+    private void oRangedCritical(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b) {
         List<String> f = rec.getFields();
         int line = rec.getLineNumber();
 
@@ -304,8 +291,7 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
         }
 
         String label = f.get(0);
-        Integer value = coerceInt(f.get(1), line, errors);
-        if (value == null) return;
+        int value = coerceInt(f.get(1), line);
 
         switch (label) {
             case "debuff-toh" -> {
@@ -356,18 +342,17 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      * and for {@code NONE}, as C returns {@code -1}.
      *
      * <p>A {@code chance} of 0 is not thrown here. The builder's {@code addOMeleeCriticalLevelData}
-     * returns a message, which goes into {@code errors}, and the row is not added. C refuses it
-     * with {@code INVALID_VALUE} before it looks at the message, so a line with both faults reports
-     * the message here. A {@code dice} of 0 is accepted.
+     * throws a {@link DataFileParseException} for it, and the load ends. C refuses it with
+     * {@code INVALID_VALUE} before it looks at the message, so a line with both faults reports the
+     * message here. A {@code dice} of 0 is accepted.
      *
-     * <p>Function oMeleeCriticalLevel coded before 260915, commented in full on 261025.
+     * <p>Function oMeleeCriticalLevel coded before 260915, commented in full on 261025, updated on
+     * 261105 for the removal of the soft-error path.
      *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
-     * @param errors The list of current errors
      */
-    private void oMeleeCriticalLevel(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
-                                     @NotNull List<String> errors) {
+    private void oMeleeCriticalLevel(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b) {
         List<String> f = rec.getFields();
         int line = rec.getLineNumber();
 
@@ -378,8 +363,8 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
             throw new DataFileParseException(msg);
         }
 
-        Integer chance = coerceInt(f.get(0), line, errors);
-        Integer dice = coerceInt(f.get(1), line, errors);
+        int chance = coerceInt(f.get(0), line);
+        int dice = coerceInt(f.get(1), line);
         
         if (ParseUtils.minusFound(f.get(0)) || ParseUtils.minusFound(f.get(1))) {
             String msg = "Game constant starting at line: " + line + " of file: " + filename + " has " +
@@ -398,10 +383,6 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
         String messageType = messageBuilder.substring(0, messageBuilder.toString().length() - 1);
         MessageType messageTypeEnum;
 
-        if (chance == null || dice == null) {
-            return;
-        }
-
         messageTypeEnum = MessageType.lookupByName(messageType);
         if (messageTypeEnum == null) {
             String msg = "Game constant starting at line: " + line + " of file: " + filename + " has " +
@@ -411,10 +392,7 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
         }
 
         OMeleeCriticalLevelData record = new OMeleeCriticalLevelData(chance, dice, messageTypeEnum);
-        String result = b.addOMeleeCriticalLevelData(record);
-        if (!result.isEmpty()) {
-            errors.add(result);
-        }
+        b.addOMeleeCriticalLevelData(record);
     }
 
     /**
@@ -435,10 +413,8 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
-     * @param errors The list of current errors
      */
-    private void oMeleeCritical(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
-                                @NotNull List<String> errors) {
+    private void oMeleeCritical(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b) {
         List<String> f = rec.getFields();
         int line = rec.getLineNumber();
 
@@ -450,8 +426,7 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
         }
 
         String label = f.get(0);
-        Integer value = coerceInt(f.get(1), line, errors);
-        if (value == null) return;
+        int value = coerceInt(f.get(1), line);
 
         switch (label) {
             case "debuff-toh" -> {
@@ -500,10 +475,8 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
-     * @param errors The list of current errors
      */
-    private void rangedCriticalLevel(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
-                                     @NotNull List<String> errors) {
+    private void rangedCriticalLevel(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b) {
         List<String> f = rec.getFields();
         int line = rec.getLineNumber();
 
@@ -514,11 +487,9 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
             throw new DataFileParseException(msg);
         }
 
-        Integer cutoff = coerceInt(f.get(0), line, errors);
-        Integer damageMultiplier = coerceInt(f.get(1), line, errors);
-        Integer damageAdded = coerceInt(f.get(2), line, errors);
-        if (cutoff == null || damageMultiplier == null || damageAdded == null)
-            return;
+        int cutoff = coerceInt(f.get(0), line);
+        int damageMultiplier = coerceInt(f.get(1), line);
+        int damageAdded = coerceInt(f.get(2), line);
 
         StringBuilder messageBuilder = new StringBuilder();
         for (int index = 3; index < f.size(); index++) {
@@ -560,10 +531,8 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
-     * @param errors The list of current errors
      */
-    private void rangedCritical(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
-                                @NotNull List<String> errors) {
+    private void rangedCritical(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b) {
         List<String> f = rec.getFields();
         int line = rec.getLineNumber();
 
@@ -575,8 +544,7 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
         }
 
         String label = f.get(0);
-        Integer value = coerceInt(f.get(1), line, errors);
-        if (value == null) return;
+        int value = coerceInt(f.get(1), line);
 
         switch (label) {
             case "debuff-toh" -> {
@@ -638,10 +606,8 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
-     * @param errors The list of current errors
      */
-    private void meleeCriticalLevel(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
-                                    @NotNull List<String> errors) {
+    private void meleeCriticalLevel(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b) {
         List<String> f = rec.getFields();
         int line = rec.getLineNumber();
 
@@ -652,10 +618,9 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
             throw new DataFileParseException(msg);
         }
 
-        Integer cutoff = coerceInt(f.get(0), line, errors);
-        Integer damageMultiplier = coerceInt(f.get(1), line, errors);
-        Integer damageAddition = coerceInt(f.get(2), line, errors);
-        if (cutoff == null || damageMultiplier == null || damageAddition == null) return;
+        int cutoff = coerceInt(f.get(0), line);
+        int damageMultiplier = coerceInt(f.get(1), line);
+        int damageAddition = coerceInt(f.get(2), line);
 
         StringBuilder messageBuilder = new StringBuilder();
         for (int index = 3; index < f.size(); index++) {
@@ -700,10 +665,8 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
-     * @param errors The list of current errors
      */
-    private void meleeCritical(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
-                               @NotNull List<String> errors) {
+    private void meleeCritical(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b) {
         List<String> f = rec.getFields();
         int line = rec.getLineNumber();
 
@@ -715,8 +678,7 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
         }
 
         String label = f.get(0);
-        Integer value = coerceInt(f.get(1), line, errors);
-        if (value == null) return;
+        int value = coerceInt(f.get(1), line);
 
         switch (label) {
             case "debuff-toh" -> {
@@ -769,10 +731,8 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
-     * @param errors The list of current errors
      */
-    private void player(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
-                        @NotNull List<String> errors) {
+    private void player(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b) {
         List<String> f = rec.getFields();
         int line = rec.getLineNumber();
 
@@ -784,8 +744,7 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
         }
 
         String label = f.get(0);
-        Integer value = coerceInt(f.get(1), line, errors);
-        if (value == null) return;
+        int value = coerceInt(f.get(1), line);
 
         if (value < 0) {
             String msg = "Game constant starting at line: " + line + " of file: " + filename + " has " +
@@ -831,10 +790,8 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
-     * @param errors The list of current errors
      */
-    private void objGen(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
-                        @NotNull List<String> errors) {
+    private void objGen(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b) {
         List<String> f = rec.getFields();
         int line = rec.getLineNumber();
 
@@ -846,8 +803,7 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
         }
 
         String label = f.get(0);
-        Integer value = coerceInt(f.get(1), line, errors);
-        if (value == null) return;
+        int value = coerceInt(f.get(1), line);
 
         if (value < 0) {
             String msg = "Game constant starting at line: " + line + " of file: " + filename + " has " +
@@ -898,10 +854,8 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
-     * @param errors The list of current errors
      */
-    private void store(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
-                       @NotNull List<String> errors) {
+    private void store(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b) {
         List<String> f = rec.getFields();
         int line = rec.getLineNumber();
 
@@ -913,8 +867,7 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
         }
 
         String label = f.get(0);
-        Integer value = coerceInt(f.get(1), line, errors);
-        if (value == null) return;
+        int value = coerceInt(f.get(1), line);
 
         if (value < 0) {
             String msg = "Game constant starting at line: " + line + " of file: " + filename + " has " +
@@ -960,10 +913,8 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
-     * @param errors The list of current errors
      */
-    private void carryCap(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
-                          @NotNull List<String> errors) {
+    private void carryCap(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b) {
         List<String> f = rec.getFields();
         int line = rec.getLineNumber();
 
@@ -975,8 +926,7 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
         }
 
         String label = f.get(0);
-        Integer value = coerceInt(f.get(1), line, errors);
-        if (value == null) return;
+        int value = coerceInt(f.get(1), line);
 
         if (value < 0) {
             String msg = "Game constant starting at line: " + line + " of file: " + filename + " has " +
@@ -1029,10 +979,8 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
-     * @param errors The list of current errors
      */
-    private void world(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
-                       @NotNull List<String> errors) {
+    private void world(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b) {
         List<String> f = rec.getFields();
         int line = rec.getLineNumber();
 
@@ -1044,8 +992,7 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
         }
 
         String label = f.get(0);
-        Integer value = coerceInt(f.get(1), line, errors);
-        if (value == null) return;
+        int value = coerceInt(f.get(1), line);
 
         if (value < 0) {
             String msg = "Game constant starting at line: " + line + " of file: " + filename + " has " +
@@ -1110,10 +1057,8 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
-     * @param errors The list of current errors
      */
-    private void dunGen(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
-                        @NotNull List<String> errors) {
+    private void dunGen(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b) {
         List<String> f = rec.getFields();
         int line = rec.getLineNumber();
 
@@ -1125,8 +1070,7 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
         }
 
         String label = f.get(0);
-        Integer value = coerceInt(f.get(1), line, errors);
-        if (value == null) return;
+        int value = coerceInt(f.get(1), line);
 
         if (value < 0) {
             String msg = "Game constant starting at line: " + line + " of file: " + filename + " has " +
@@ -1185,10 +1129,8 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
-     * @param errors The list of current errors
      */
-    private void monPlay(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
-                         @NotNull List<String> errors) {
+    private void monPlay(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b) {
         List<String> f = rec.getFields();
         int line = rec.getLineNumber();
 
@@ -1200,8 +1142,7 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
         }
 
         String label = f.get(0);
-        Integer value = coerceInt(f.get(1), line, errors);
-        if (value == null) return;
+        int value = coerceInt(f.get(1), line);
 
         if (value < 0) {
             String msg = "Game constant starting at line: " + line + " of file: " + filename + " has " +
@@ -1252,10 +1193,8 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
-     * @param errors The list of current errors
      */
-    private void monGen(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
-                        @NotNull List<String> errors) {
+    private void monGen(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b) {
         List<String> f = rec.getFields();
         int line = rec.getLineNumber();
 
@@ -1267,8 +1206,7 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
         }
 
         String label = f.get(0);
-        Integer value = coerceInt(f.get(1), line, errors);
-        if (value == null) return;
+        int value = coerceInt(f.get(1), line);
 
         if (value < 0) {
             String msg = "Game constant starting at line: " + line + " of file: " + filename + " has " +
@@ -1329,10 +1267,8 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
-     * @param errors The list of current errors
      */
-    private void levelMax(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
-                          @NotNull List<String> errors) {
+    private void levelMax(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b) {
         List<String> f = rec.getFields();
         int line = rec.getLineNumber();
 
@@ -1344,9 +1280,8 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
         }
 
         String label = f.get(0);
-        Integer value = coerceInt(f.get(1), line, errors);
-        if (value == null) return;
-
+        int value = coerceInt(f.get(1), line);
+        
         if (label.equals("monsters") && value >= 0) {
             b.setLevelMaxMonsters(value);
         } else {
@@ -1367,20 +1302,18 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      *
      * <p>Despite the {@link Nullable} annotation it never returns {@code null}. Text with no digits
      * makes {@code parseIntString} throw a {@link DataFileParseException}, as C returns
-     * {@code PARSE_ERROR_NOT_NUMBER}. The {@code errors} list is not used, and the
-     * {@code == null} tests in the handlers cannot be true.
+     * {@code PARSE_ERROR_NOT_NUMBER}, and the {@code == null} tests in the handlers cannot be true.
      *
-     * <p>Function coerceInt coded before 260915, commented in full on 261025.
+     * <p>Function coerceInt coded before 260915, commented in full on 261025, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param raw    The string expression of the integer
      * @param line   The line this string was found on in the datafile
-     * @param errors The list of current errors; not used
      * @return the value of {@code raw}, never {@code null}
      * @throws DataFileParseException if {@code raw} has no digits
      */
-    @Nullable
     @CheckReturnValue
-    private Integer coerceInt(@NotNull String raw, int line, @NotNull List<String> errors) {
+    private @NotNull int coerceInt(@NotNull String raw, int line) {
         return ParseUtils.parseIntString("Game constant", raw, line, filename, "integer");
     }
 }

@@ -77,17 +77,17 @@ public class VisualsFlickerAssembler implements Assembler<VisualsFlickerParseRec
      * as C's step-index reset does. A stored cycle always holds exactly three steps, so that overwrite
      * by index never runs off the end of the list. The cycle stored for the key is then rebuilt
      * around the list, named with the block's own base code as a label only.
-     * Nothing is ever written to {@code errors}.
+     * Nothing here throws.
      *
-     * <p>Function assemble coded on 2026-10-30, commented in full on 2026-10-30.
+     * <p>Function assemble coded on 2026-10-30, commented in full on 2026-10-30, updated on 261105
+     * for the removal of the soft-error path.
      *
      * @param records  the parsed {@code flicker:} blocks, in file order
-     * @param errors   the soft-error sink; never written to, since every outcome C allows is loaded
      * @param filename the file being assembled; unused here
      * @return a one-element list holding the assembled {@link FlickerTable}
      */
     @Override
-    public List<FlickerTable> assemble(@NotNull List<VisualsFlickerParseRecord> records, @NotNull List<String> errors,
+    public List<FlickerTable> assemble(@NotNull List<VisualsFlickerParseRecord> records,
                                     String filename) {
         Map<ColourEnum, ColourCycle> byAttr = new HashMap<>();
 

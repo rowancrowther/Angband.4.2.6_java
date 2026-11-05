@@ -39,16 +39,6 @@ options { tokenVocab = WorldLexer; }
 /*
  * @author Rowan Crowther
  *
- * The declared number of records in the file
- */
-recordCount
-        returns[String count]
-        :   RECORD_COUNT INTEGER { $count = $INTEGER.getText(); }
-        ;
-
-/*
- * @author Rowan Crowther
- *
  * The depth field of a "level:" line, e.g. the "0" in "level:0:Town:None:Angband 1"
  */
 levelNum
@@ -107,15 +97,13 @@ line    returns[List<String> world]
 /*
  * @author Rowan Crowther
  *
- * Top-level rule: the number of declared records from the top
- * of the file, followed by one or more level records, in depth order
+ * Top-level rule: one or more level records, in depth order
  */
-file    returns[List<List<String>> levels, String declaredCount]
+file    returns[List<List<String>> levels]
         @init {
             $levels = new ArrayList<>();
         }
         :
-            recordCount { $declaredCount = $recordCount.count; }
             (line
             {
                 $levels.add($line.world);

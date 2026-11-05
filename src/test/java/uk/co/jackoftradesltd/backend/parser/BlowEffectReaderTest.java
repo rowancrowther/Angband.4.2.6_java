@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -117,7 +118,6 @@ class BlowEffectReaderTest {
 
     private static List<BlowEffect> realFile() throws IOException {
         ParseResult<BlowEffect> result = new BlowEffectReader().parseWithResults(REAL_FILE);
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         return result.items();
     }
 
@@ -277,73 +277,37 @@ class BlowEffectReaderTest {
     }
 
     @Test
-    void syntaxErrorYieldsNoItemsAndAnErrorMessage(@TempDir Path dir) throws IOException {
+    void aSyntaxErrorEndsTheLoad(@TempDir Path dir) throws IOException {
         // A directive before any name: has no record to belong to. C asserts or returns
         // PARSE_ERROR_MISSING_RECORD_HEADER; either way nothing is loaded.
-        String file = write(dir, "record-count:1\n\npower:5\n");
+        String file = write(dir, "\npower:5\n");
 
-        ParseResult<BlowEffect> result = new BlowEffectReader().parseWithResults(file);
+        assertThrows(ParseCancellationException.class, () -> new BlowEffectReader().parseWithResults(file));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
-    void parseDropsErrorsSoASyntaxErrorLooksLikeAnEmptyList(@TempDir Path dir) throws IOException {
-        String file = write(dir, "record-count:1\n\npower:5\n");
+    void parseThrowsOnASyntaxErrorTooRatherThanReturningAnEmptyList(@TempDir Path dir) throws IOException {
+        String file = write(dir, "\npower:5\n");
 
-        assertTrue(new BlowEffectReader().parse(file).isEmpty());
-    }
-
-    @Test
-    void recordCountMismatchIsASoftErrorAndTheRecordsStillLoad(@TempDir Path dir) throws IOException {
-        // record-count: is a Java-only header; upstream has no count to check.
-        String file = write(dir, "record-count:5\n\nname:NONE\npower:0\n\nname:HURT\npower:40\n");
-
-        ParseResult<BlowEffect> result = new BlowEffectReader().parseWithResults(file);
-
-        assertEquals(2, result.items().size());
-        assertEquals(1, result.errors().size());
-        assertTrue(result.errors().get(0).contains("5"), result.errors().toString());
-    }
-
-    @Test
-    void matchingRecordCountLeavesNoErrors(@TempDir Path dir) throws IOException {
-        String file = write(dir, "record-count:2\n\nname:NONE\npower:0\n\nname:HURT\npower:40\n");
-
-        ParseResult<BlowEffect> result = new BlowEffectReader().parseWithResults(file);
-
-        assertFalse(result.hasErrors(), result.errors().toString());
-        assertEquals(2, result.items().size());
-    }
-
-    @Test
-    void nonNumericRecordCountIsAHardErrorHere(@TempDir Path dir) throws IOException {
-        // The grammar only accepts an INTEGER after record-count:, so a bad count is a syntax
-        // error rather than the soft one checkRecordCount reports: nothing loads.
-        String file = write(dir, "record-count:many\n\nname:NONE\npower:0\n");
-
-        ParseResult<BlowEffect> result = new BlowEffectReader().parseWithResults(file);
-
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty());
+        assertThrows(ParseCancellationException.class, () -> new BlowEffectReader().parse(file));
     }
 
     @Test
     void aBadRecordEndsTheLoadAsInC(@TempDir Path dir) throws IOException {
         // C stops at the first parse error, and so does the port: a resist: with no effect-type:
         // in the middle record ends the whole load rather than being skipped.
-        String file = write(dir, "record-count:3\n\nname:NONE\npower:0\n\nname:HURT\nresist:POIS\n\nname:POISON\npower:20\n");
+        String file = write(dir, "\nname:NONE\npower:0\n\nname:HURT\nresist:POIS\n\nname:POISON\npower:20\n");
 
         DataFileParseException e = assertThrows(DataFileParseException.class,
                 () -> new BlowEffectReader().parseWithResults(file));
-        assertTrue(e.getMessage().contains("line: 6"), e.getMessage());
+        assertTrue(e.getMessage().contains("line: 5"), e.getMessage());
     }
 
     @Test
     void repeatedDirectiveKeepsTheLastValue(@TempDir Path dir) throws IOException {
         // C: parse_eff_power just overwrites eff->power.
-        String file = write(dir, "record-count:1\n\nname:HURT\npower:10\npower:40\n");
+        String file = write(dir, "\nname:HURT\npower:10\npower:40\n");
 
         assertEquals(40, new BlowEffectReader().parseWithResults(file).items().get(0).getPower());
     }
@@ -351,7 +315,7 @@ class BlowEffectReaderTest {
     @Test
     void duplicateNamesAreBothKept(@TempDir Path dir) throws IOException {
         // C's parse_eff_name allocates a new record every time and never looks for a clash.
-        String file = write(dir, "record-count:2\n\nname:HURT\npower:10\n\nname:HURT\npower:40\n");
+        String file = write(dir, "\nname:HURT\npower:10\n\nname:HURT\npower:40\n");
 
         List<BlowEffect> items = new BlowEffectReader().parseWithResults(file).items();
 
@@ -364,7 +328,7 @@ class BlowEffectReaderTest {
     void resistMayPrecedeEffectTypeUnlikeC(@TempDir Path dir) throws IOException {
         // C resolves resist: while parsing, so effect-type: must come first (the other way round
         // reads a null effect_type). The port resolves from the finished record, so order is free.
-        String file = write(dir, "record-count:1\n\nname:POISON\nresist:POIS\neffect-type:element\n");
+        String file = write(dir, "\nname:POISON\nresist:POIS\neffect-type:element\n");
 
         BlowEffect poison = new BlowEffectReader().parseWithResults(file).items().get(0);
 
@@ -375,7 +339,7 @@ class BlowEffectReaderTest {
     @Test
     void resistWithNoEffectTypeEndsTheLoad(@TempDir Path dir) throws IOException {
         // C: streq on a NULL effect_type; the port treats it as the missing type it is.
-        String file = write(dir, "record-count:1\n\nname:POISON\nresist:POIS\n");
+        String file = write(dir, "\nname:POISON\nresist:POIS\n");
 
         assertThrows(DataFileParseException.class, () -> new BlowEffectReader().parseWithResults(file));
     }
@@ -383,7 +347,7 @@ class BlowEffectReaderTest {
     @Test
     void resistOnANonResistEffectTypeEndsTheLoad(@TempDir Path dir) throws IOException {
         // C: parse_eff_resist returns PARSE_ERROR_MISSING_BLOW_EFF_TYPE for "theft".
-        String file = write(dir, "record-count:1\n\nname:EAT_GOLD\neffect-type:theft\nresist:POIS\n");
+        String file = write(dir, "\nname:EAT_GOLD\neffect-type:theft\nresist:POIS\n");
 
         assertThrows(DataFileParseException.class, () -> new BlowEffectReader().parseWithResults(file));
     }
@@ -392,9 +356,8 @@ class BlowEffectReaderTest {
 
     /** Loads a one-record file whose record is {@code name:X} followed by {@code body}. */
     private static BlowEffect one(Path dir, String body) throws IOException {
-        String file = write(dir, "record-count:1\n\nname:X\n" + body);
+        String file = write(dir, "\nname:X\n" + body);
         ParseResult<BlowEffect> result = new BlowEffectReader().parseWithResults(file);
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size());
         return result.items().get(0);
     }

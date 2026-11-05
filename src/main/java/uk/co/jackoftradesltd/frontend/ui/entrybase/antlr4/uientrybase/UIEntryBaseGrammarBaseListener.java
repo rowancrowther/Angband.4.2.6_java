@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/UIEntryBaseGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/frontend/ui/entrybase/UIEntryBaseGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.frontend.ui.entrybase.antlr4.uientrybase;
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -34,130 +34,97 @@ public class UIEntryBaseGrammarBaseListener implements UIEntryBaseGrammarListene
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void enterRecordCount(UIEntryBaseGrammar.RecordCountContext ctx) {
-	}
-
+	@Override public void enterName(UIEntryBaseGrammar.NameContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void exitRecordCount(UIEntryBaseGrammar.RecordCountContext ctx) {
-	}
+	@Override public void exitName(UIEntryBaseGrammar.NameContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void enterName(UIEntryBaseGrammar.NameContext ctx) { }
+	@Override public void enterRenderer(UIEntryBaseGrammar.RendererContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void exitName(UIEntryBaseGrammar.NameContext ctx) { }
+	@Override public void exitRenderer(UIEntryBaseGrammar.RendererContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void enterRenderer(UIEntryBaseGrammar.RendererContext ctx) { }
+	@Override public void enterCombine(UIEntryBaseGrammar.CombineContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void exitRenderer(UIEntryBaseGrammar.RendererContext ctx) { }
+	@Override public void exitCombine(UIEntryBaseGrammar.CombineContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void enterCombine(UIEntryBaseGrammar.CombineContext ctx) { }
+	@Override public void enterCategory(UIEntryBaseGrammar.CategoryContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void exitCombine(UIEntryBaseGrammar.CombineContext ctx) { }
+	@Override public void exitCategory(UIEntryBaseGrammar.CategoryContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void enterCategory(UIEntryBaseGrammar.CategoryContext ctx) { }
+	@Override public void enterFlags(UIEntryBaseGrammar.FlagsContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void exitCategory(UIEntryBaseGrammar.CategoryContext ctx) { }
+	@Override public void exitFlags(UIEntryBaseGrammar.FlagsContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void enterFlags(UIEntryBaseGrammar.FlagsContext ctx) { }
+	@Override public void enterDesc(UIEntryBaseGrammar.DescContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void exitFlags(UIEntryBaseGrammar.FlagsContext ctx) { }
+	@Override public void exitDesc(UIEntryBaseGrammar.DescContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void enterDesc(UIEntryBaseGrammar.DescContext ctx) { }
+	@Override public void enterEntryBase(UIEntryBaseGrammar.EntryBaseContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void exitDesc(UIEntryBaseGrammar.DescContext ctx) { }
+	@Override public void exitEntryBase(UIEntryBaseGrammar.EntryBaseContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void enterEntryBase(UIEntryBaseGrammar.EntryBaseContext ctx) { }
+	@Override public void enterFile(UIEntryBaseGrammar.FileContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void exitEntryBase(UIEntryBaseGrammar.EntryBaseContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override
-	public void enterFile(UIEntryBaseGrammar.FileContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override
-	public void exitFile(UIEntryBaseGrammar.FileContext ctx) { }
+	@Override public void exitFile(UIEntryBaseGrammar.FileContext ctx) { }
 
 	/**
 	 * {@inheritDoc}

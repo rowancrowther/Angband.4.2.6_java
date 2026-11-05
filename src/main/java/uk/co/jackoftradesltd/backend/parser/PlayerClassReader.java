@@ -54,14 +54,13 @@ import java.util.List;
  * {@code parse_class_name} pushes each new class on the front, and {@code finish_parse_class} then
  * numbers {@code cidx} down the list so that the first class in the file is {@code cidx} 0. The
  * port does not store {@code cidx}: a class's position in the list is that index, which is what
- * {@code PlayerClass.getClassFromIndex} reads. A class the assembler drops closes the gap, so every
- * class after it moves up one place, where C would have quit.
+ * {@code PlayerClass.getClassFromIndex} reads.
  *
- * <p>C quits on the first bad line. This reader follows the shared two-channel contract instead: a
- * lexer or grammar error returns no classes and the messages, and a {@code record-count:} mismatch
- * is a soft error that leaves the classes that did parse loaded. The {@code record-count:} header is
- * Java-only, the upstream file has none, and it counts {@code name:} lines. A file that cannot be
- * opened is an {@link IOException}, where C quits.
+ * <p>C quits on the first bad line, and so does this reader: a lexer or grammar error is thrown
+ * from {@link #extract} as a {@code ParseCancellationException}, and anything the assemblers
+ * refuse is thrown as a {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}.
+ * Neither is caught here, and no classes are returned. A file that cannot be opened is an
+ * {@link IOException}, where C quits.
  *
  * <p>The grammar is stricter than C in several places: a class with only a {@code name:} line, a
  * {@code magic:} line with no {@code book:} after it, a book with no {@code spell:}, flags separated
@@ -70,7 +69,8 @@ import java.util.List;
  * replaces the first where C rejects it, and a book keeps more spells than it declared. They are
  * written up in {@code docs/grammar_issues.md} and {@code docs/Assembler_Issues.md}.
  *
- * <p>Class PlayerClassReader coded before 260915, commented in full on 261018.
+ * <p>Class PlayerClassReader coded before 260915, commented in full on 261018, updated on 261105
+ * for the removal of the soft-error path and the {@code record-count:} header.
  *
  * @author Rowan Crowther
  */
@@ -84,15 +84,15 @@ public class PlayerClassReader implements Reader<PlayerClass> {
     private static final Logger logger = LogManager.getLogger();
 
     /**
-     * Reads {@code filename} and returns the assembled classes in file order, discarding the error
-     * messages. The convenience form of {@link #parseWithResults}, which is the one to call when the
-     * errors matter: with this one a hard grammar error and a file in which every class was dropped
-     * look the same.
+     * Reads {@code filename} and returns the assembled classes in file order, unwrapped from the
+     * {@link ParseResult} that {@link #parseWithResults} gives. Any error throws exactly as it does
+     * there.
      *
-     * <p>Function parse coded before 260915, commented in full on 261018.
+     * <p>Function parse coded before 260915, commented in full on 261018, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param filename the class data file to read
-     * @return the classes read from the file, empty if the parse failed
+     * @return every class in the file, in file order
      * @throws IOException if the file cannot be opened or read
      */
     @Override
@@ -102,59 +102,51 @@ public class PlayerClassReader implements Reader<PlayerClass> {
 
     /**
      * The grammar-specific step handed to {@link GrammarDriver}: runs the grammar's {@code file}
-     * rule, fails closed on any hard lexer or grammar error through {@link ParseErrors#throwIfAny()},
-     * and soft-checks the {@code record-count:} header against the number of {@code name:} blocks
-     * parsed. No value is interpreted here: numbers, flag names, tvals and realm names stay as text
-     * for the assemblers, and the grammar has already gathered each class's titles, start items,
-     * flags and magic into its {@link PlayerClassParseRecord}.
+     * rule and fails closed on any hard lexer or grammar error through
+     * {@link ParseErrors#throwIfAny()}. No value is interpreted here: numbers, flag names, tvals and
+     * realm names stay as text for the assemblers, and the grammar has already gathered each
+     * class's titles, start items, flags and magic into its {@link PlayerClassParseRecord}.
      *
      * <p>The ordering is deliberate: {@code throwIfAny} fires straight after the parse, so a hard
-     * grammar error (a missing {@code record-count:} header, a directive before any {@code name:},
-     * a {@code name:} with nothing after it, a line the lexer does not know) fails closed before the
-     * count check runs against whatever did parse. The rule needs at least one class, where C
-     * accepts a file with none. The rows are copied into a new list so the assembler cannot alter
-     * the parser's own.
+     * grammar error (a directive before any {@code name:}, a {@code name:} with nothing after it, a
+     * line the lexer does not know) fails closed before any row is used. The rule needs at least
+     * one class, where C accepts a file with none. The rows are copied into a new list so the
+     * assembler cannot alter the parser's own.
      *
-     * <p>Function extract coded before 260915, commented in full on 261018.
+     * <p>Function extract coded before 260915, commented in full on 261018, updated on 261105 for
+     * the removal of the soft-error path and the {@code record-count:} header.
      *
      * @param parser       the generated parser, positioned at the start of the file
      * @param errorCatcher the hard-error channel; {@code throwIfAny} aborts before the rows are used
-     * @param errors       the soft-error sink: a record-count mismatch is appended here
      * @return the parse records, one per {@code name:} block, in file order
      */
     private static List<PlayerClassParseRecord> extract(
             @NotNull PlayerClassGrammar parser,
-            @NotNull ParseErrors errorCatcher,
-            @NotNull List<String> errors) {
+            @NotNull ParseErrors errorCatcher) {
         PlayerClassGrammar.FileContext output = parser.file();
         List<PlayerClassParseRecord> results = output.playerClasses;
         errorCatcher.throwIfAny();
-
-        String declaredRecordCount = output.declaredRecordCount;
-        GrammarDriver.checkRecordCount(declaredRecordCount, results.size(), errors);
 
         return new ArrayList<>(results);
     }
 
     /**
-     * Reads {@code filename} and returns the full {@link ParseResult}: the assembled
-     * {@link PlayerClass}es and every error message collected on the way. This is the Java form of
-     * C's {@code run_parse_class} followed by {@code finish_parse_class}, and the entry point
-     * {@code PlayerDataLoader.loadPlayerClasses()} uses so that it can inspect
-     * {@link ParseResult#hasErrors()} before registering the result. {@link GrammarDriver#run} does
-     * the lex, parse, extract and assemble.
+     * Reads {@code filename} and returns the assembled {@link PlayerClass}es wrapped in a
+     * {@link ParseResult}. This is the Java form of C's {@code run_parse_class} followed by
+     * {@code finish_parse_class}, and the entry point {@code PlayerDataLoader.loadPlayerClasses()}
+     * uses. {@link GrammarDriver#run} does the lex, parse, extract and assemble.
      *
-     * <p>Where C quits on a stat, flag, tval, option or realm it cannot resolve, the assemblers
-     * record a soft error and drop the smallest piece they can: the whole class for a bad flag, a
-     * bad scalar or more than ten titles, one start item for an unknown tval or sval, and one book
-     * for an unknown base or realm. A class whose books are all dropped still loads, with
-     * {@code ClassMagic.NONE}. A file that cannot be opened is an {@link IOException}, where C's
+     * <p>As C quits on a stat, flag, tval, option or realm it cannot resolve, the assemblers throw a
+     * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException} on the first such value,
+     * and a grammar error throws a {@code ParseCancellationException}; no result is returned for a
+     * file that fails. A file that cannot be opened is an {@link IOException}, where C's
      * {@code parse_file_quit_not_found} quits.
      *
-     * <p>Function parseWithResults coded before 260915, commented in full on 261018.
+     * <p>Function parseWithResults coded before 260915, commented in full on 261018, updated on
+     * 261105 for the removal of the soft-error path.
      *
      * @param filename the class data file to read
-     * @return the parse result: the classes in file order plus any error messages
+     * @return every class in the file, in file order
      * @throws IOException if the file cannot be opened or read
      */
     public ParseResult<PlayerClass> parseWithResults(@NotNull String filename) throws IOException {

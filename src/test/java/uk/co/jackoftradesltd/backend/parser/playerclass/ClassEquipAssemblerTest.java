@@ -104,7 +104,7 @@ class ClassEquipAssemblerTest {
     }
 
     private static DataFileParseException stops(ClassEquipParseRecord... records) {
-        return assertThrows(DataFileParseException.class, () -> run(new ArrayList<>(), records));
+        return assertThrows(DataFileParseException.class, () -> run(records));
     }
 
     private static void assertNames(DataFileParseException e, String... parts) {
@@ -112,17 +112,15 @@ class ClassEquipAssemblerTest {
             assertTrue(e.getMessage().contains(part), () -> "expected \"" + part + "\" in: " + e.getMessage());
     }
 
-    private static List<StartItem> run(List<String> errors, ClassEquipParseRecord... records) {
-        return new ClassEquipAssembler().assemble(List.of(records), errors, "test.txt");
+    private static List<StartItem> run(ClassEquipParseRecord... records) {
+        return new ClassEquipAssembler().assemble(List.of(records), "test.txt");
     }
 
     @Test
     @DisplayName("1:3 and the C maximum 99:99 are accepted unchanged")
     void validRanges() {
-        List<String> errors = new ArrayList<>();
-        List<StartItem> items = run(errors, food("1", "3"), food("99", "99"));
+        List<StartItem> items = run(food("1", "3"), food("99", "99"));
 
-        assertTrue(errors.isEmpty(), errors.toString());
         assertEquals(2, items.size());
         assertEquals(99, items.get(0).getMin());
         assertEquals(99, items.get(0).getMax());
@@ -169,10 +167,8 @@ class ClassEquipAssemblerTest {
     @Test
     @DisplayName("min 0 and min above max are not C errors, so both are kept")
     void zeroAndInvertedRangesKept() {
-        List<String> errors = new ArrayList<>();
-        List<StartItem> items = run(errors, food("0", "0"), food("3", "1"));
+        List<StartItem> items = run(food("0", "0"), food("3", "1"));
 
-        assertTrue(errors.isEmpty(), errors.toString());
         assertEquals(2, items.size());
     }
 
@@ -187,9 +183,7 @@ class ClassEquipAssemblerTest {
     @Test
     @DisplayName("items come back in reverse file order, as C's head-insertion chain is walked")
     void reverseFileOrder() {
-        List<String> errors = new ArrayList<>();
-        List<StartItem> items = run(errors,
-                food("1", "3"),
+        List<StartItem> items = run(food("1", "3"),
                 new ClassEquipParseRecord("light", "Wooden Torch", "1", "3", "none", 2));
 
         assertEquals(2, items.size());
@@ -204,10 +198,8 @@ class ClassEquipAssemblerTest {
     @Test
     @DisplayName("a birth option and a NOT- birth option are both kept, in order")
     void validEoptsKept() {
-        List<String> errors = new ArrayList<>();
-        List<StartItem> items = run(errors, withEopts("birth_no_recall | NOT-birth_start_kit"));
+        List<StartItem> items = run(withEopts("birth_no_recall | NOT-birth_start_kit"));
 
-        assertTrue(errors.isEmpty(), errors.toString());
         assertEquals(1, items.size());
         assertEquals(2, items.get(0).geteOpts().size());
         assertEquals(PlayerOptionEnum.OP_birth_no_recall, items.get(0).geteOpts().get(0).option());
@@ -247,9 +239,7 @@ class ClassEquipAssemblerTest {
     }
 
     private static StartItem only(ClassEquipParseRecord record) {
-        List<String> errors = new ArrayList<>();
-        List<StartItem> items = run(errors, record);
-        assertTrue(errors.isEmpty(), errors.toString());
+        List<StartItem> items = run(record);
         assertEquals(1, items.size());
         return items.get(0);
     }
@@ -364,7 +354,7 @@ class ClassEquipAssemblerTest {
     @Test
     @DisplayName("'none' beside a real option is skipped and the option kept")
     void noneBesideRealOption() {
-        List<StartItem> items = run(new ArrayList<>(), withEopts("none birth_no_recall"));
+        List<StartItem> items = run(withEopts("none birth_no_recall"));
 
         assertEquals(1, items.get(0).geteOpts().size());
         assertEquals(PlayerOptionEnum.OP_birth_no_recall, items.get(0).geteOpts().get(0).option());

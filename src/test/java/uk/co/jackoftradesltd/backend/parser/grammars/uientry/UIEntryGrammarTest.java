@@ -60,6 +60,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@link ParseErrors#throwIfAny()} reports them together — see
  * {@link #twoMalformedRecordsBothReportedThenThrownTogether()}.
  *
+ * <p>Class UIEntryGrammarTest coded before 261104, updated on 261104 once the {@code record-count:} header was removed.
+ *
  * @author Rowan Crowther
  */
 class UIEntryGrammarTest {
@@ -100,15 +102,13 @@ class UIEntryGrammarTest {
     void fullRecordKeepsEveryFieldVerbatimAndCapturesTheLineNumber() {
         Errors errors = new Errors();
         UIEntryGrammar.FileContext ctx = parser(
-                "record-count:1\n"
-                        + "name:foo\ntemplate:tmpl\nlabel:Acid\nlabel5:Acidx\nlabel2:Ac\n"
+                "name:foo\ntemplate:tmpl\nlabel:Acid\nlabel5:Acidx\nlabel2:Ac\n"
                         + "category:CHAR_SCREEN1\nparameter:element\nrenderer:some_renderer\n"
                         + "combine:RESIST_0\npriority:negative_index\ncategory:EQUIPCMP_SCREEN\n"
                         + "flags:TIMED_AS_AUX\ndesc:hello world\n",
                 errors).file();
 
         assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
-        assertEquals("1", ctx.declaredRecordCount);
         assertEquals(1, ctx.entries.size());
         UIEntryParseRecord rec = ctx.entries.get(0);
         assertEquals("foo", rec.name());
@@ -126,14 +126,14 @@ class UIEntryGrammarTest {
         assertEquals(List.of("TIMED_AS_AUX"), rec.flags());
         assertEquals("hello world", rec.desc());
         // name: is source line 2 (record-count: is line 1).
-        assertEquals(2, rec.line());
+        assertEquals(1, rec.line());
     }
 
     @Test
     void minimalRecordIsJustNameAndLeavesOptionalFieldsUnset() {
         Errors errors = new Errors();
         UIEntryGrammar.FileContext ctx =
-                parser("record-count:1\nname:bar\n", errors).file();
+                parser("name:bar\n", errors).file();
 
         assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
         assertEquals(1, ctx.entries.size());
@@ -158,7 +158,7 @@ class UIEntryGrammarTest {
     void nameTagIsCapturedSeparatelyAndTheNameKeepsTheTag() {
         Errors errors = new Errors();
         UIEntryGrammar.FileContext ctx =
-                parser("record-count:1\nname:resist_ui_compact_0<STR>\nlabel:Str\n", errors).file();
+                parser("name:resist_ui_compact_0<STR>\nlabel:Str\n", errors).file();
 
         assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
         UIEntryParseRecord rec = ctx.entries.get(0);
@@ -173,7 +173,7 @@ class UIEntryGrammarTest {
     void parameterLineAndNameTagAreCapturedIndependently() {
         Errors errors = new Errors();
         UIEntryGrammar.FileContext ctx =
-                parser("record-count:1\nname:foo<ACID>\nparameter:element\n", errors).file();
+                parser("name:foo<ACID>\nparameter:element\n", errors).file();
 
         assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
         UIEntryParseRecord rec = ctx.entries.get(0);
@@ -190,7 +190,7 @@ class UIEntryGrammarTest {
         // merging them, so the assembler can tell which is which.
         Errors errors = new Errors();
         UIEntryGrammar.FileContext ctx = parser(
-                "record-count:1\nname:foo\ncategory:CHAR_SCREEN1\nparameter:element\n"
+                "name:foo\ncategory:CHAR_SCREEN1\nparameter:element\n"
                         + "priority:index\ncategory:EQUIPCMP_SCREEN\n",
                 errors).file();
 
@@ -205,7 +205,7 @@ class UIEntryGrammarTest {
         // and a '|'-separated list is collected in order (here including the digit-tail RAND_50).
         Errors errors = new Errors();
         UIEntryGrammar.FileContext ctx = parser(
-                "record-count:1\nname:foo\nflags:RAND_50 | TIMED_AS_AUX\n", errors).file();
+                "name:foo\nflags:RAND_50 | TIMED_AS_AUX\n", errors).file();
 
         assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
         assertEquals(List.of("RAND_50", "TIMED_AS_AUX"), ctx.entries.get(0).flags());
@@ -217,7 +217,7 @@ class UIEntryGrammarTest {
         // with no separator, so the leading space on the continuation line is preserved verbatim.
         Errors errors = new Errors();
         UIEntryGrammar.FileContext ctx =
-                parser("record-count:1\nname:foo\ndesc:one\ndesc: two\n", errors).file();
+                parser("name:foo\ndesc:one\ndesc: two\n", errors).file();
 
         assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
         assertEquals("one two", ctx.entries.get(0).desc());
@@ -229,26 +229,10 @@ class UIEntryGrammarTest {
         // later, in the assembler); a numeric priority survives as its raw string.
         Errors errors = new Errors();
         UIEntryGrammar.FileContext ctx =
-                parser("record-count:1\nname:foo\npriority:5\n", errors).file();
+                parser("name:foo\npriority:5\n", errors).file();
 
         assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
         assertEquals("5", ctx.entries.get(0).priority());
-    }
-
-    @Test
-    void recordCountIsCapturedAndMultipleRecordsAreCollectedAcrossSkippedComments() {
-        Errors errors = new Errors();
-        UIEntryGrammar.FileContext ctx = parser(
-                "record-count:2\nname:a\n# a comment line\nname:b\n", errors).file();
-
-        assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
-        assertEquals("2", ctx.declaredRecordCount);
-        assertEquals(2, ctx.entries.size());
-        assertEquals("a", ctx.entries.get(0).name());
-        assertEquals("b", ctx.entries.get(1).name());
-        // First name: on line 2; the comment on line 3 is skipped but still counted, so b is line 4.
-        assertEquals(2, ctx.entries.get(0).line());
-        assertEquals(4, ctx.entries.get(1).line());
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -256,20 +240,12 @@ class UIEntryGrammarTest {
     // ---------------------------------------------------------------------------------------------
 
     @Test
-    void missingRecordCountIsAParseError() {
-        Errors errors = new Errors();
-        parser("name:foo\n", errors).file();
-
-        assertFalse(errors.messages.isEmpty(), "a file that does not open with record-count must not parse");
-    }
-
-    @Test
     void fileWithNoEntriesIsAParseError() {
-        // file is `recordCount (uiEntry)+ EOF`: at least one entry is mandatory.
+        // file is `(uiEntry)+ EOF`: at least one entry is mandatory.
         Errors errors = new Errors();
-        parser("record-count:1\n", errors).file();
+        parser("", errors).file();
 
-        assertFalse(errors.messages.isEmpty(), "a record-count with no following entry must not parse");
+        assertFalse(errors.messages.isEmpty(), "a file with no entry must not parse");
     }
 
     @Test
@@ -277,7 +253,7 @@ class UIEntryGrammarTest {
         // The name: value is an LCASE token (lower-case/digits/underscore); an all-caps value lexes as
         // PARAMETER_VALUE instead, so it cannot satisfy `NAME LCASE`.
         Errors errors = new Errors();
-        parser("record-count:1\nname:FOO\n", errors).file();
+        parser("name:FOO\n", errors).file();
 
         assertFalse(errors.messages.isEmpty(), "an upper-case name: value must not parse");
         assertTrue(errors.messages.stream().anyMatch(m -> m.contains("LCASE")),
@@ -288,7 +264,7 @@ class UIEntryGrammarTest {
     void unterminatedNameTagIsAParseError() {
         // The tag rule is `LTHAN PARAMETER_VALUE GTHAN`; dropping the closing '>' leaves the tag open.
         Errors errors = new Errors();
-        parser("record-count:1\nname:foo<ACID\n", errors).file();
+        parser("name:foo<ACID\n", errors).file();
 
         assertFalse(errors.messages.isEmpty(), "an unterminated <TAG> must not parse");
         assertTrue(errors.messages.stream().anyMatch(m -> m.contains("'>'")),
@@ -301,7 +277,7 @@ class UIEntryGrammarTest {
         // produce their own syntax error, the parser recovers between them, and ParseErrors holds both
         // so throwIfAny() reports them one after the other before raising a single cancellation.
         UIEntryLexer lexer = new UIEntryLexer(CharStreams.fromString(
-                "record-count:2\nname:FOO\nname:BAR\n"));
+                "name:FOO\nname:BAR\n"));
         UIEntryGrammar parser = new UIEntryGrammar(new CommonTokenStream(lexer));
         ParseErrors errorCatcher = ParseErrors.install(lexer, parser, "two-faults");
 
@@ -310,10 +286,32 @@ class UIEntryGrammarTest {
         assertTrue(errorCatcher.hasErrors());
         List<String> collected = errorCatcher.getErrors();
         assertEquals(2, collected.size(), () -> "expected exactly two collected errors, got: " + collected);
-        // Two distinct failures, one per bad record, on consecutive source lines (2 and 3).
-        assertTrue(collected.get(0).contains("line 2"), () -> collected.toString());
-        assertTrue(collected.get(1).contains("line 3"), () -> collected.toString());
+        // Two distinct failures, one per bad record, on consecutive source lines (1 and 2).
+        assertTrue(collected.get(0).contains("line 1"), () -> collected.toString());
+        assertTrue(collected.get(1).contains("line 2"), () -> collected.toString());
         // Only after both are collected does throwIfAny raise - and it raises once, for the pair.
         assertThrows(ParseCancellationException.class, errorCatcher::throwIfAny);
+    }
+
+    /**
+     * Two records are collected in file order across a skipped comment, each carrying the line of
+     * its {@code name:}.
+     *
+     * <p>Function multipleRecordsAreCollectedAcrossSkippedComments coded on 261104, commented in full
+     * on 261104. It replaces recordCountIsCapturedAndMultipleRecordsAreCollectedAcrossSkippedComments,
+     * whose {@code record-count:} half went with the header.
+     */
+    @Test
+    void multipleRecordsAreCollectedAcrossSkippedComments() {
+        Errors errors = new Errors();
+        UIEntryGrammar.FileContext ctx = parser("name:a\n# a comment line\nname:b\n", errors).file();
+
+        assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
+        assertEquals(2, ctx.entries.size());
+        assertEquals("a", ctx.entries.get(0).name());
+        assertEquals("b", ctx.entries.get(1).name());
+        // First name: on line 1; the comment on line 2 is skipped but still counted, so b is line 3.
+        assertEquals(1, ctx.entries.get(0).line());
+        assertEquals(3, ctx.entries.get(1).line());
     }
 }

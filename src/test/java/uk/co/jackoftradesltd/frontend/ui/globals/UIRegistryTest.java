@@ -31,7 +31,6 @@ import uk.co.jackoftradesltd.frontend.ui.entry.reader.UIEntryReader;
 import uk.co.jackoftradesltd.frontend.ui.entrybase.reader.UIEntryBaseReader;
 import uk.co.jackoftradesltd.frontend.ui.entryrenderer.reader.UIEntryRendererReader;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalInt;
 
@@ -42,7 +41,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@code ui_entry_search} (in {@code ui-entry.c}) over the one shared entry list and of
  * {@code ui_entry_renderer_lookup} (in {@code ui-entry-renderers.c}) over the renderers.
  *
- * <p>Class UIRegistryTest coded on 260924, commented in full on 261102.
+ * <p>Class UIRegistryTest coded on 260924, commented in full on 261102, updated on 261104 once
+ * {@code getUIEntryRenderer} lost its {@code errors} parameter and began throwing
+ * {@link IllegalArgumentException} for an unknown name or an unloaded registry.
  *
  * @author Rowan Crowther
  */
@@ -80,19 +81,14 @@ class UIRegistryTest {
         @Test
         @DisplayName("finds a loaded renderer by name")
         void findsALoadedRenderer() {
-            List<String> errors = new ArrayList<>();
-            UIEntryRenderer result = UIRegistry.getUIEntryRenderer("known_renderer", errors);
+            UIEntryRenderer result = UIRegistry.getUIEntryRenderer("known_renderer");
             assertEquals("known_renderer", result.getName());
-            assertTrue(errors.isEmpty());
         }
 
         @Test
-        @DisplayName("returns null and appends an error naming an unknown renderer")
-        void reportsAnUnknownName() {
-            List<String> errors = new ArrayList<>();
-            assertNull(UIRegistry.getUIEntryRenderer("no_such_renderer", errors));
-            assertEquals(1, errors.size());
-            assertTrue(errors.get(0).contains("no_such_renderer"));
+        @DisplayName("returns null for an unknown name, as C's lookup returns 0 and leaves the error to the caller")
+        void returnsNullForAnUnknownName() {
+            assertNull(UIRegistry.getUIEntryRenderer("no_such_renderer"));
         }
 
         @Test
@@ -101,7 +97,7 @@ class UIRegistryTest {
             UIEntryRenderer first = renderer("dup");
             UIEntryRenderer second = renderer("dup");
             UIRegistry.setUIEntryRenderers(List.of(renderer("other"), first, second));
-            assertSame(first, UIRegistry.getUIEntryRenderer("dup", new ArrayList<>()));
+            assertSame(first, UIRegistry.getUIEntryRenderer("dup"));
         }
     }
 
@@ -150,7 +146,7 @@ class UIRegistryTest {
         @DisplayName("names are matched case-sensitively, as strcmp and streq do")
         void matchIsCaseSensitive() {
             assertNull(UIRegistry.getUIEntry("KNOWN_ENTRY"));
-            assertNull(UIRegistry.getUIEntryRenderer("KNOWN_RENDERER", new ArrayList<>()));
+            assertNull(UIRegistry.getUIEntryRenderer("KNOWN_RENDERER"));
         }
 
         @Test
@@ -159,7 +155,7 @@ class UIRegistryTest {
             assertNull(UIRegistry.getUIEntry("known"));
             assertNull(UIRegistry.getUIEntry("known_entry2"));
             assertNull(UIRegistry.getUIEntry(""));
-            assertNull(UIRegistry.getUIEntryRenderer("known", new ArrayList<>()));
+            assertNull(UIRegistry.getUIEntryRenderer("known"));
         }
 
         @Test
@@ -204,12 +200,10 @@ class UIRegistryTest {
         }
 
         @Test
-        @DisplayName("an unloaded renderer registry reports through errors and returns null")
-        void unloadedRenderersReportThroughErrors() {
+        @DisplayName("an unloaded renderer registry throws")
+        void unloadedRenderersThrow() {
             UIRegistry.setUIEntryRenderers(null);
-            List<String> errors = new ArrayList<>();
-            assertNull(UIRegistry.getUIEntryRenderer("x", errors));
-            assertEquals(1, errors.size());
+            assertThrows(IllegalArgumentException.class, () -> UIRegistry.getUIEntryRenderer("x"));
         }
 
         @Test
@@ -277,10 +271,8 @@ class UIRegistryTest {
         @Test
         @DisplayName("a renderer named in ui_entry_renderer.txt is found")
         void realRendererIsFound() {
-            List<String> errors = new ArrayList<>();
-            UIEntryRenderer renderer = UIRegistry.getUIEntryRenderer("char_screen1_flag_renderer", errors);
+            UIEntryRenderer renderer = UIRegistry.getUIEntryRenderer("char_screen1_flag_renderer");
             assertEquals("char_screen1_flag_renderer", renderer.getName());
-            assertTrue(errors.isEmpty());
         }
 
         @Test

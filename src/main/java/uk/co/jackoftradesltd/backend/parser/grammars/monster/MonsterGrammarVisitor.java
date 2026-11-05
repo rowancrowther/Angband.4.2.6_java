@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from MonsterGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/MonsterGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.monster;
 
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
@@ -28,12 +28,6 @@ import org.antlr.v4.runtime.tree.ParseTreeVisitor;
  * operations with no return type.
  */
 public interface MonsterGrammarVisitor<T> extends ParseTreeVisitor<T> {
-	/**
-	 * Visit a parse tree produced by {@link MonsterGrammar#recordCount}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitRecordCount(MonsterGrammar.RecordCountContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link MonsterGrammar#name}.
 	 * @param ctx the parse tree

@@ -14,7 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-// Generated from HintLexer.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/HintLexer.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.hint;
 
 import org.antlr.v4.runtime.*;
@@ -26,171 +26,144 @@ import org.antlr.v4.runtime.dfa.DFA;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue", "this-escape"})
 public class HintLexer extends Lexer {
-    static {
-        RuntimeMetaData.checkVersion("4.13.2", RuntimeMetaData.VERSION);
-    }
+	static { RuntimeMetaData.checkVersion("4.13.2", RuntimeMetaData.VERSION); }
 
-    protected static final DFA[] _decisionToDFA;
-    protected static final PredictionContextCache _sharedContextCache =
-            new PredictionContextCache();
-    public static final int
-            RECORD_COUNT = 1, HINT = 2, INTEGER = 3, COMMENT = 4, EOL = 5, STRING = 6;
-    public static final int
-            STRING_MODE = 1;
-    public static String[] channelNames = {
-            "DEFAULT_TOKEN_CHANNEL", "HIDDEN"
-    };
+	protected static final DFA[] _decisionToDFA;
+	protected static final PredictionContextCache _sharedContextCache =
+		new PredictionContextCache();
+	public static final int
+		HINT=1, INTEGER=2, COMMENT=3, EOL=4, STRING=5;
+	public static final int
+		STRING_MODE=1;
+	public static String[] channelNames = {
+		"DEFAULT_TOKEN_CHANNEL", "HIDDEN"
+	};
 
-    public static String[] modeNames = {
-            "DEFAULT_MODE", "STRING_MODE"
-    };
+	public static String[] modeNames = {
+		"DEFAULT_MODE", "STRING_MODE"
+	};
 
-    private static String[] makeRuleNames() {
-        return new String[]{
-                "RECORD_COUNT", "HINT", "INTEGER", "COMMENT", "EOL", "STRING"
-        };
-    }
+	private static String[] makeRuleNames() {
+		return new String[] {
+			"HINT", "INTEGER", "COMMENT", "EOL", "STRING"
+		};
+	}
+	public static final String[] ruleNames = makeRuleNames();
 
-    public static final String[] ruleNames = makeRuleNames();
+	private static String[] makeLiteralNames() {
+		return new String[] {
+			null, "'H:'"
+		};
+	}
+	private static final String[] _LITERAL_NAMES = makeLiteralNames();
+	private static String[] makeSymbolicNames() {
+		return new String[] {
+			null, "HINT", "INTEGER", "COMMENT", "EOL", "STRING"
+		};
+	}
+	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
+	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
 
-    private static String[] makeLiteralNames() {
-        return new String[]{
-                null, "'record-count:'", "'H:'"
-        };
-    }
+	/**
+	 * @deprecated Use {@link #VOCABULARY} instead.
+	 */
+	@Deprecated
+	public static final String[] tokenNames;
+	static {
+		tokenNames = new String[_SYMBOLIC_NAMES.length];
+		for (int i = 0; i < tokenNames.length; i++) {
+			tokenNames[i] = VOCABULARY.getLiteralName(i);
+			if (tokenNames[i] == null) {
+				tokenNames[i] = VOCABULARY.getSymbolicName(i);
+			}
 
-    private static final String[] _LITERAL_NAMES = makeLiteralNames();
+			if (tokenNames[i] == null) {
+				tokenNames[i] = "<INVALID>";
+			}
+		}
+	}
 
-    private static String[] makeSymbolicNames() {
-        return new String[]{
-                null, "RECORD_COUNT", "HINT", "INTEGER", "COMMENT", "EOL", "STRING"
-        };
-    }
+	@Override
+	@Deprecated
+	public String[] getTokenNames() {
+		return tokenNames;
+	}
 
-    private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
-    public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
+	@Override
 
-    /**
-     * @deprecated Use {@link #VOCABULARY} instead.
-     */
-    @Deprecated
-    public static final String[] tokenNames;
-
-    static {
-        tokenNames = new String[_SYMBOLIC_NAMES.length];
-        for (int i = 0; i < tokenNames.length; i++) {
-            tokenNames[i] = VOCABULARY.getLiteralName(i);
-            if (tokenNames[i] == null) {
-                tokenNames[i] = VOCABULARY.getSymbolicName(i);
-            }
-
-            if (tokenNames[i] == null) {
-                tokenNames[i] = "<INVALID>";
-            }
-        }
-    }
-
-    @Override
-    @Deprecated
-    public String[] getTokenNames() {
-        return tokenNames;
-    }
-
-    @Override
-
-    public Vocabulary getVocabulary() {
-        return VOCABULARY;
-    }
+	public Vocabulary getVocabulary() {
+		return VOCABULARY;
+	}
 
 
-    public HintLexer(CharStream input) {
-        super(input);
-        _interp = new LexerATNSimulator(this, _ATN, _decisionToDFA, _sharedContextCache);
-    }
+	public HintLexer(CharStream input) {
+		super(input);
+		_interp = new LexerATNSimulator(this,_ATN,_decisionToDFA,_sharedContextCache);
+	}
 
-    @Override
-    public String getGrammarFileName() {
-        return "HintLexer.g4";
-    }
+	@Override
+	public String getGrammarFileName() { return "HintLexer.g4"; }
 
-    @Override
-    public String[] getRuleNames() {
-        return ruleNames;
-    }
+	@Override
+	public String[] getRuleNames() { return ruleNames; }
 
-    @Override
-    public String getSerializedATN() {
-        return _serializedATN;
-    }
+	@Override
+	public String getSerializedATN() { return _serializedATN; }
 
-    @Override
-    public String[] getChannelNames() {
-        return channelNames;
-    }
+	@Override
+	public String[] getChannelNames() { return channelNames; }
 
-    @Override
-    public String[] getModeNames() {
-        return modeNames;
-    }
+	@Override
+	public String[] getModeNames() { return modeNames; }
 
-    @Override
-    public ATN getATN() {
-        return _ATN;
-    }
+	@Override
+	public ATN getATN() { return _ATN; }
 
-    public static final String _serializedATN =
-            "\u0004\u0000\u0006H\u0006\uffff\uffff\u0006\uffff\uffff\u0002\u0000\u0007" +
-                    "\u0000\u0002\u0001\u0007\u0001\u0002\u0002\u0007\u0002\u0002\u0003\u0007" +
-                    "\u0003\u0002\u0004\u0007\u0004\u0002\u0005\u0007\u0005\u0001\u0000\u0001" +
-                    "\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001" +
-                    "\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001" +
-                    "\u0000\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001" +
-                    "\u0002\u0003\u0002#\b\u0002\u0001\u0002\u0004\u0002&\b\u0002\u000b\u0002" +
-                    "\f\u0002\'\u0001\u0003\u0001\u0003\u0005\u0003,\b\u0003\n\u0003\f\u0003" +
-                    "/\t\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0004" +
-                    "\u0005\u00046\b\u0004\n\u0004\f\u00049\t\u0004\u0001\u0004\u0003\u0004" +
-                    "<\b\u0004\u0001\u0004\u0001\u0004\u0001\u0004\u0001\u0004\u0001\u0005" +
-                    "\u0004\u0005C\b\u0005\u000b\u0005\f\u0005D\u0001\u0005\u0001\u0005\u0000" +
-                    "\u0000\u0006\u0002\u0001\u0004\u0002\u0006\u0003\b\u0004\n\u0005\f\u0006" +
-                    "\u0002\u0000\u0001\u0002\u0001\u0000\n\n\u0002\u0000\n\n\r\rL\u0000\u0002" +
-                    "\u0001\u0000\u0000\u0000\u0000\u0004\u0001\u0000\u0000\u0000\u0000\u0006" +
-                    "\u0001\u0000\u0000\u0000\u0000\b\u0001\u0000\u0000\u0000\u0000\n\u0001" +
-                    "\u0000\u0000\u0000\u0001\f\u0001\u0000\u0000\u0000\u0002\u000e\u0001\u0000" +
-                    "\u0000\u0000\u0004\u001c\u0001\u0000\u0000\u0000\u0006\"\u0001\u0000\u0000" +
-                    "\u0000\b)\u0001\u0000\u0000\u0000\n7\u0001\u0000\u0000\u0000\fB\u0001" +
-                    "\u0000\u0000\u0000\u000e\u000f\u0005r\u0000\u0000\u000f\u0010\u0005e\u0000" +
-                    "\u0000\u0010\u0011\u0005c\u0000\u0000\u0011\u0012\u0005o\u0000\u0000\u0012" +
-                    "\u0013\u0005r\u0000\u0000\u0013\u0014\u0005d\u0000\u0000\u0014\u0015\u0005" +
-                    "-\u0000\u0000\u0015\u0016\u0005c\u0000\u0000\u0016\u0017\u0005o\u0000" +
-                    "\u0000\u0017\u0018\u0005u\u0000\u0000\u0018\u0019\u0005n\u0000\u0000\u0019" +
-                    "\u001a\u0005t\u0000\u0000\u001a\u001b\u0005:\u0000\u0000\u001b\u0003\u0001" +
-                    "\u0000\u0000\u0000\u001c\u001d\u0005H\u0000\u0000\u001d\u001e\u0005:\u0000" +
-                    "\u0000\u001e\u001f\u0001\u0000\u0000\u0000\u001f \u0006\u0001\u0000\u0000" +
-                    " \u0005\u0001\u0000\u0000\u0000!#\u0005-\u0000\u0000\"!\u0001\u0000\u0000" +
-                    "\u0000\"#\u0001\u0000\u0000\u0000#%\u0001\u0000\u0000\u0000$&\u000209" +
-                    "\u0000%$\u0001\u0000\u0000\u0000&\'\u0001\u0000\u0000\u0000\'%\u0001\u0000" +
-                    "\u0000\u0000\'(\u0001\u0000\u0000\u0000(\u0007\u0001\u0000\u0000\u0000" +
-                    ")-\u0005#\u0000\u0000*,\b\u0000\u0000\u0000+*\u0001\u0000\u0000\u0000" +
-                    ",/\u0001\u0000\u0000\u0000-+\u0001\u0000\u0000\u0000-.\u0001\u0000\u0000" +
-                    "\u0000.0\u0001\u0000\u0000\u0000/-\u0001\u0000\u0000\u000001\u0005\n\u0000" +
-                    "\u000012\u0001\u0000\u0000\u000023\u0006\u0003\u0001\u00003\t\u0001\u0000" +
-                    "\u0000\u000046\u0005 \u0000\u000054\u0001\u0000\u0000\u000069\u0001\u0000" +
-                    "\u0000\u000075\u0001\u0000\u0000\u000078\u0001\u0000\u0000\u00008;\u0001" +
-                    "\u0000\u0000\u000097\u0001\u0000\u0000\u0000:<\u0005\r\u0000\u0000;:\u0001" +
-                    "\u0000\u0000\u0000;<\u0001\u0000\u0000\u0000<=\u0001\u0000\u0000\u0000" +
-                    "=>\u0005\n\u0000\u0000>?\u0001\u0000\u0000\u0000?@\u0006\u0004\u0001\u0000" +
-                    "@\u000b\u0001\u0000\u0000\u0000AC\b\u0001\u0000\u0000BA\u0001\u0000\u0000" +
-                    "\u0000CD\u0001\u0000\u0000\u0000DB\u0001\u0000\u0000\u0000DE\u0001\u0000" +
-                    "\u0000\u0000EF\u0001\u0000\u0000\u0000FG\u0006\u0005\u0002\u0000G\r\u0001" +
-                    "\u0000\u0000\u0000\b\u0000\u0001\"\'-7;D\u0003\u0005\u0001\u0000\u0006" +
-                    "\u0000\u0000\u0004\u0000\u0000";
-    public static final ATN _ATN =
-            new ATNDeserializer().deserialize(_serializedATN.toCharArray());
-
-    static {
-        _decisionToDFA = new DFA[_ATN.getNumberOfDecisions()];
-        for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
-            _decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
-        }
-    }
+	public static final String _serializedATN =
+		"\u0004\u0000\u00058\u0006\uffff\uffff\u0006\uffff\uffff\u0002\u0000\u0007"+
+		"\u0000\u0002\u0001\u0007\u0001\u0002\u0002\u0007\u0002\u0002\u0003\u0007"+
+		"\u0003\u0002\u0004\u0007\u0004\u0001\u0000\u0001\u0000\u0001\u0000\u0001"+
+		"\u0000\u0001\u0000\u0001\u0001\u0003\u0001\u0013\b\u0001\u0001\u0001\u0004"+
+		"\u0001\u0016\b\u0001\u000b\u0001\f\u0001\u0017\u0001\u0002\u0001\u0002"+
+		"\u0005\u0002\u001c\b\u0002\n\u0002\f\u0002\u001f\t\u0002\u0001\u0002\u0001"+
+		"\u0002\u0001\u0002\u0001\u0002\u0001\u0003\u0005\u0003&\b\u0003\n\u0003"+
+		"\f\u0003)\t\u0003\u0001\u0003\u0003\u0003,\b\u0003\u0001\u0003\u0001\u0003"+
+		"\u0001\u0003\u0001\u0003\u0001\u0004\u0004\u00043\b\u0004\u000b\u0004"+
+		"\f\u00044\u0001\u0004\u0001\u0004\u0000\u0000\u0005\u0002\u0001\u0004"+
+		"\u0002\u0006\u0003\b\u0004\n\u0005\u0002\u0000\u0001\u0002\u0001\u0000"+
+		"\n\n\u0002\u0000\n\n\r\r<\u0000\u0002\u0001\u0000\u0000\u0000\u0000\u0004"+
+		"\u0001\u0000\u0000\u0000\u0000\u0006\u0001\u0000\u0000\u0000\u0000\b\u0001"+
+		"\u0000\u0000\u0000\u0001\n\u0001\u0000\u0000\u0000\u0002\f\u0001\u0000"+
+		"\u0000\u0000\u0004\u0012\u0001\u0000\u0000\u0000\u0006\u0019\u0001\u0000"+
+		"\u0000\u0000\b\'\u0001\u0000\u0000\u0000\n2\u0001\u0000\u0000\u0000\f"+
+		"\r\u0005H\u0000\u0000\r\u000e\u0005:\u0000\u0000\u000e\u000f\u0001\u0000"+
+		"\u0000\u0000\u000f\u0010\u0006\u0000\u0000\u0000\u0010\u0003\u0001\u0000"+
+		"\u0000\u0000\u0011\u0013\u0005-\u0000\u0000\u0012\u0011\u0001\u0000\u0000"+
+		"\u0000\u0012\u0013\u0001\u0000\u0000\u0000\u0013\u0015\u0001\u0000\u0000"+
+		"\u0000\u0014\u0016\u000209\u0000\u0015\u0014\u0001\u0000\u0000\u0000\u0016"+
+		"\u0017\u0001\u0000\u0000\u0000\u0017\u0015\u0001\u0000\u0000\u0000\u0017"+
+		"\u0018\u0001\u0000\u0000\u0000\u0018\u0005\u0001\u0000\u0000\u0000\u0019"+
+		"\u001d\u0005#\u0000\u0000\u001a\u001c\b\u0000\u0000\u0000\u001b\u001a"+
+		"\u0001\u0000\u0000\u0000\u001c\u001f\u0001\u0000\u0000\u0000\u001d\u001b"+
+		"\u0001\u0000\u0000\u0000\u001d\u001e\u0001\u0000\u0000\u0000\u001e \u0001"+
+		"\u0000\u0000\u0000\u001f\u001d\u0001\u0000\u0000\u0000 !\u0005\n\u0000"+
+		"\u0000!\"\u0001\u0000\u0000\u0000\"#\u0006\u0002\u0001\u0000#\u0007\u0001"+
+		"\u0000\u0000\u0000$&\u0005 \u0000\u0000%$\u0001\u0000\u0000\u0000&)\u0001"+
+		"\u0000\u0000\u0000\'%\u0001\u0000\u0000\u0000\'(\u0001\u0000\u0000\u0000"+
+		"(+\u0001\u0000\u0000\u0000)\'\u0001\u0000\u0000\u0000*,\u0005\r\u0000"+
+		"\u0000+*\u0001\u0000\u0000\u0000+,\u0001\u0000\u0000\u0000,-\u0001\u0000"+
+		"\u0000\u0000-.\u0005\n\u0000\u0000./\u0001\u0000\u0000\u0000/0\u0006\u0003"+
+		"\u0001\u00000\t\u0001\u0000\u0000\u000013\b\u0001\u0000\u000021\u0001"+
+		"\u0000\u0000\u000034\u0001\u0000\u0000\u000042\u0001\u0000\u0000\u0000"+
+		"45\u0001\u0000\u0000\u000056\u0001\u0000\u0000\u000067\u0006\u0004\u0002"+
+		"\u00007\u000b\u0001\u0000\u0000\u0000\b\u0000\u0001\u0012\u0017\u001d"+
+		"\'+4\u0003\u0005\u0001\u0000\u0006\u0000\u0000\u0004\u0000\u0000";
+	public static final ATN _ATN =
+		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
+	static {
+		_decisionToDFA = new DFA[_ATN.getNumberOfDecisions()];
+		for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
+			_decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
+		}
+	}
 }

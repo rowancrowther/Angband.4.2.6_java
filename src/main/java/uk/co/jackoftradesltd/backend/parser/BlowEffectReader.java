@@ -53,12 +53,13 @@ import java.util.List;
  * This class itself only supplies the four pieces {@link GrammarDriver#run} needs - the lexer and
  * parser constructors, the {@link #extract} step and the assembler - and owns the logger.
  * <p>
+ * As in C, the first error stops the load and nothing is returned: a syntax error is thrown
+ * from {@link #extract} as a {@code ParseCancellationException}, and a record the assembler
+ * refuses is thrown as a {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}.
+ * Neither is caught here.
+ * <p>
  * Differences from C worth knowing about:
  * <ul>
- *   <li>The {@code record-count:} header is a Java-only addition, checked as a soft error;
- *       {@code blow_effects.txt} in C has no such line.</li>
- *   <li>C stops at the first parse error. Here a syntax error is fatal and returns no items, but
- *       an assembler error skips only the offending record and the rest still load.</li>
  *   <li>The list is base 0 and holds only real records, with no blank trailing slot; this is the
  *       accepted deviation recorded in the registry's class block, so the {@code blow_effects_max}
  *       counter is the plain record count, one lower than C's.</li>
@@ -68,27 +69,29 @@ import java.util.List;
  *
  * @author Rowan Crowther
  *
- * <p>Class BlowEffectReader coded before 260915, commented in full on 261017.
+ * <p>Class BlowEffectReader coded before 260915, commented in full on 261017, updated on 261105
+ * for the removal of the soft-error path.
  */
 public class BlowEffectReader implements Reader<BlowEffect> {
     /**
      * Logger handed to {@link GrammarDriver#run} so that an {@link IOException} while reading
      * {@code blow_effects.txt} is logged under this reader's name before it is rethrown. Syntax
-     * and soft errors do not go through it; they travel in the {@link ParseResult}.
+     * and assembler errors do not go through it; they are thrown unlogged to the caller.
      *
-     * <p>Field logger coded before 260915, commented in full on 261017.
+     * <p>Field logger coded before 260915, commented in full on 261017, updated on 261105 for the
+     * removal of the soft-error path.
      */
     private static final Logger logger = LogManager.getLogger();
 
     /**
      * Parses {@code filename} and returns just the assembled blow effects, in file order,
-     * discarding the soft-error channel (use {@link #parseWithResults} to inspect errors).
+     * unwrapped from the {@link ParseResult} that {@link #parseWithResults} gives.
      * <p>
-     * Because the errors are dropped, a syntax error and a clean empty file are indistinguishable
-     * here: both give an empty list. Callers that must tell a partial or failed load from a clean
-     * one have to use {@link #parseWithResults}.
+     * A syntax error or a refused record throws, exactly as in {@link #parseWithResults}, so an
+     * empty list only ever means a clean file with no records.
      *
-     * <p>Function parse coded before 260915, commented in full on 261017.
+     * <p>Function parse coded before 260915, commented in full on 261017, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param filename the data file to read
      * @return the blow effects read from the file
@@ -104,52 +107,47 @@ public class BlowEffectReader implements Reader<BlowEffect> {
      * back its records as {@link BlowEffectParseRecord}s, still holding raw text.
      * <p>
      * Syntax errors are fatal: {@link ParseErrors#throwIfAny()} runs straight after the parse and
-     * throws, which {@link GrammarDriver#run} turns into an empty {@link ParseResult}, so a caller
-     * never sees a half-read file. The {@code record-count:} header, by contrast, is a soft check
-     * that only adds to {@code errors}. Records come back in file order, which is the order C's
-     * {@code finish_parse_eff} files them into {@code blow_effects}.
+     * throws a {@code ParseCancellationException}, which {@link GrammarDriver#run} does not catch,
+     * so a caller never sees a half-read file. Records come back in file order, which is the order
+     * C's {@code finish_parse_eff} files them into {@code blow_effects}.
      * <p>
      * The copy at the end detaches the result from the parse tree, so the returned list is the
      * caller's to keep.
      *
-     * <p>Function extract coded before 260915, commented in full on 261017.
+     * <p>Function extract coded before 260915, commented in full on 261017, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param parser       the parser, positioned at the start of the token stream
      * @param errorCatcher collector for the lexer/parser syntax errors
-     * @param errors       collector for soft errors, shared with the assembler
      * @return the parsed records in file order
      */
     private static List<BlowEffectParseRecord> extract(
             @NotNull BlowEffectGrammar parser,
-            @NotNull ParseErrors errorCatcher,
-            @NotNull List<String> errors) {
+            @NotNull ParseErrors errorCatcher) {
         BlowEffectGrammar.FileContext output = parser.file();
         List<BlowEffectParseRecord> results = output.blowEffects;
         errorCatcher.throwIfAny();
-
-        String declaredRecordCount = output.declaredRecordCount;
-        GrammarDriver.checkRecordCount(declaredRecordCount, results.size(), errors);
 
         return new ArrayList<>(results);
     }
 
     /**
-     * Run the parser and return the assembled effects together with any soft errors, for
-     * callers that need to distinguish a clean load from a partial one.
+     * Run the parser and return the assembled effects wrapped in a {@link ParseResult}.
      * <p>
      * This is the Java counterpart of {@code run_parse_eff} and the {@code parse_eff_*} handlers
      * in {@code mon-init.c}: it wires {@code BlowEffectLexer}, {@code BlowEffectGrammar},
-     * {@link #extract} and {@link BlowEffectAssembler} into {@link GrammarDriver#run}. A syntax
-     * error returns no items and the collected messages; an assembler error or a
-     * {@code record-count:} mismatch leaves the good records in the result alongside the messages.
-     * C would have stopped at the first of any of these. An unreadable file is not a result at all
-     * but an {@link IOException}, the analogue of {@code parse_file_quit_not_found}'s
-     * {@code quit()}.
+     * {@link #extract} and {@link BlowEffectAssembler} into {@link GrammarDriver#run}. As C stops
+     * at the first error, so does this: a syntax error throws a
+     * {@code ParseCancellationException} and a refused record throws a
+     * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}, and no result is
+     * returned. An unreadable file is an {@link IOException}, the analogue of
+     * {@code parse_file_quit_not_found}'s {@code quit()}.
      *
-     * <p>Function parseWithResults coded before 260915, commented in full on 261017.
+     * <p>Function parseWithResults coded before 260915, commented in full on 261017, updated on
+     * 261105 for the removal of the soft-error path.
      *
      * @param filename the name of the file
-     * @return the assembled blow effects plus the errors collected while assembling them
+     * @return every blow effect in the file, in file order
      * @throws IOException if the file cannot be read
      */
     public ParseResult<BlowEffect> parseWithResults(@NotNull String filename) throws IOException {

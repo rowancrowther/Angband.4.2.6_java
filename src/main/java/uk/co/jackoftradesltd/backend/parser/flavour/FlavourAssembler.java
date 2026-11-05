@@ -44,9 +44,7 @@ import java.util.List;
  * {@code parser_parse()} reading of its {@code uint index} in {@code parser.c}. Its outcomes are:
  * <ul>
  *   <li>An index that is not a number, or that starts with {@code -}, ends the load with
- *       {@link DataFileParseException}, as C's {@code PARSE_ERROR_NOT_NUMBER} does. Nothing in
- *       this class is a soft error, so the {@code errors} list passed to
- *       {@link #assemble(List, List, String)} is never appended to.</li>
+ *       {@link DataFileParseException}, as C's {@code PARSE_ERROR_NOT_NUMBER} does.</li>
  *   <li>A colour that matches nothing is not an error: C's {@code color_char_to_attr()} and
  *       {@code color_text_to_attr()} both answer white, so the flavour is kept and painted
  *       white. {@code PARSE_ERROR_INVALID_COLOR} in C is reachable only for a negative
@@ -55,7 +53,8 @@ import java.util.List;
  *       carries a name that could select it.</li>
  * </ul>
  *
- * <p>Class FlavourAssembler coded before 260915, commented in full on 261025.
+ * <p>Class FlavourAssembler coded before 260915, commented in full on 261025, updated on 261105 for
+ * the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -76,20 +75,19 @@ public class FlavourAssembler implements Assembler<FlavourParseRecord, List<Flav
      * {@code fixed:} line, which keeps the symbol text for {@link FlavourKindAssembler} to resolve.
      *
      * <p>No record is skipped: a bad index throws and a bad colour becomes white, so the list has
-     * as many flavours as there are records. {@code errors} is part of the {@link Assembler}
-     * contract and is not used here.
+     * as many flavours as there are records.
      *
-     * <p>Function assemble coded before 260915, commented in full on 261025.
+     * <p>Function assemble coded before 260915, commented in full on 261025, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param records  the raw flavour/fixed records of a single {@code kind:} block
-     * @param errors   the soft-error sink, not appended to by this class
      * @param filename the file being read, for the messages
      * @return the assembled flavours (fixed ones still awaiting sval resolution)
      * @throws DataFileParseException if a record's index starts with {@code -} or has no leading
      *                                digits
      */
     @Override
-    public List<Flavour> assemble(@NotNull List<FlavourParseRecord> records, @NotNull List<String> errors,
+    public List<Flavour> assemble(@NotNull List<FlavourParseRecord> records,
                                     String filename) {
         List<Flavour> flavours = new ArrayList<>();
 

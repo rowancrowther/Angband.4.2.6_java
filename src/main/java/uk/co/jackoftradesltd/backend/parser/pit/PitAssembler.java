@@ -131,13 +131,12 @@ public class PitAssembler implements Assembler<PitParseRecord, List<PitProfile>>
      * constant, so {@code RF_} or {@code RSF_} is put back to resolve them, and a sentinel ({@code NONE})
      * is refused. A {@code mon-ban:} name is looked up and added whether or not it resolves.
      *
-     * <p>Every failure is fatal and the rest of the file is not read. {@code errors} is not written
-     * to: it is part of the {@link Assembler} contract and nothing here is a soft error any more.
+     * <p>Every failure is fatal and the rest of the file is not read.
      *
-     * <p>Function assemble coded before 260915, commented in full on 261028.
+     * <p>Function assemble coded before 260915, commented in full on 261028, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param records  the raw pit records from the parser
-     * @param errors   the soft-error sink, left untouched
      * @param filename the file being read, for the messages
      * @return one {@link PitProfile} per record, in file order
      * @throws DataFileParseException if a {@code room:}, {@code alloc:} or {@code obj-rarity:} number
@@ -147,7 +146,7 @@ public class PitAssembler implements Assembler<PitParseRecord, List<PitProfile>>
      * @throws IllegalStateException  if the monster bases or races have not been loaded yet
      */
     @Override
-    public List<PitProfile> assemble(@NotNull List<PitParseRecord> records, @NotNull List<String> errors,
+    public List<PitProfile> assemble(@NotNull List<PitParseRecord> records,
                                     String filename) {
         List<PitProfile> pits = new ArrayList<>();
 

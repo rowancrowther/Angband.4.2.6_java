@@ -14,7 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-// Generated from NamesGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/NamesGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.names;
 
 import org.antlr.v4.runtime.*;
@@ -39,27 +39,25 @@ public class NamesGrammar extends Parser {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		RECORD_COUNT=1, SECTION=2, WORD=3, INTEGER=4, COMMENT=5, EOL=6, STRING=7;
+		SECTION=1, WORD=2, INTEGER=3, COMMENT=4, EOL=5, STRING=6;
 	public static final int
-		RULE_recordCount = 0, RULE_section = 1, RULE_word = 2, RULE_record = 3, 
-		RULE_file = 4;
+		RULE_section = 0, RULE_word = 1, RULE_record = 2, RULE_file = 3;
 	private static String[] makeRuleNames() {
 		return new String[] {
-			"recordCount", "section", "word", "record", "file"
+			"section", "word", "record", "file"
 		};
 	}
 	public static final String[] ruleNames = makeRuleNames();
 
 	private static String[] makeLiteralNames() {
 		return new String[] {
-			null, "'record-count:'", "'section:'", "'word:'"
+			null, "'section:'", "'word:'"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
-			null, "RECORD_COUNT", "SECTION", "WORD", "INTEGER", "COMMENT", "EOL", 
-			"STRING"
+			null, "SECTION", "WORD", "INTEGER", "COMMENT", "EOL", "STRING"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -114,55 +112,6 @@ public class NamesGrammar extends Parser {
 	}
 
 	@SuppressWarnings("CheckReturnValue")
-	public static class RecordCountContext extends ParserRuleContext {
-		public String count;
-		public Token INTEGER;
-		public TerminalNode RECORD_COUNT() { return getToken(NamesGrammar.RECORD_COUNT, 0); }
-		public TerminalNode INTEGER() { return getToken(NamesGrammar.INTEGER, 0); }
-		public RecordCountContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-		@Override public int getRuleIndex() { return RULE_recordCount; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof NamesGrammarListener ) ((NamesGrammarListener)listener).enterRecordCount(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof NamesGrammarListener ) ((NamesGrammarListener)listener).exitRecordCount(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof NamesGrammarVisitor ) return ((NamesGrammarVisitor<? extends T>)visitor).visitRecordCount(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	public final RecordCountContext recordCount() throws RecognitionException {
-		RecordCountContext _localctx = new RecordCountContext(_ctx, getState());
-		enterRule(_localctx, 0, RULE_recordCount);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(10);
-			match(RECORD_COUNT);
-			setState(11);
-			((RecordCountContext)_localctx).INTEGER = match(INTEGER);
-			 ((RecordCountContext)_localctx).count =  ((RecordCountContext)_localctx).INTEGER.getText(); 
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	@SuppressWarnings("CheckReturnValue")
 	public static class SectionContext extends ParserRuleContext {
 		public String sectionNum;
 		public int line;
@@ -190,13 +139,13 @@ public class NamesGrammar extends Parser {
 
 	public final SectionContext section() throws RecognitionException {
 		SectionContext _localctx = new SectionContext(_ctx, getState());
-		enterRule(_localctx, 2, RULE_section);
+		enterRule(_localctx, 0, RULE_section);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(14);
+			setState(8);
 			match(SECTION);
-			setState(15);
+			setState(9);
 			((SectionContext)_localctx).INTEGER = match(INTEGER);
 			 ((SectionContext)_localctx).sectionNum =  ((SectionContext)_localctx).INTEGER.getText(); 
 			            ((SectionContext)_localctx).line =  _localctx.start.getLine(); 
@@ -240,13 +189,13 @@ public class NamesGrammar extends Parser {
 
 	public final WordContext word() throws RecognitionException {
 		WordContext _localctx = new WordContext(_ctx, getState());
-		enterRule(_localctx, 4, RULE_word);
+		enterRule(_localctx, 2, RULE_word);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(18);
+			setState(12);
 			match(WORD);
-			setState(19);
+			setState(13);
 			((WordContext)_localctx).STRING = match(STRING);
 			 ((WordContext)_localctx).wordVal =  ((WordContext)_localctx).STRING.getText(); 
 			}
@@ -297,27 +246,27 @@ public class NamesGrammar extends Parser {
 
 	public final RecordContext record() throws RecognitionException {
 		RecordContext _localctx = new RecordContext(_ctx, getState());
-		enterRule(_localctx, 6, RULE_record);
+		enterRule(_localctx, 4, RULE_record);
 		 List<String> wordList = new ArrayList<>(); String sec = ""; int lineNo = 0; 
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(22);
+			setState(16);
 			((RecordContext)_localctx).section = section();
 			 sec = ((RecordContext)_localctx).section.sectionNum; lineNo = ((RecordContext)_localctx).section.line; 
-			setState(29);
+			setState(23);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==WORD) {
 				{
 				{
-				setState(24);
+				setState(18);
 				((RecordContext)_localctx).word = word();
 				 wordList.add(((RecordContext)_localctx).word.wordVal); 
 				}
 				}
-				setState(31);
+				setState(25);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -340,13 +289,8 @@ public class NamesGrammar extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class FileContext extends ParserRuleContext {
-		public String declaredRecordCount;
 		public List<NamesParseRecord> records;
-		public RecordCountContext recordCount;
 		public RecordContext record;
-		public RecordCountContext recordCount() {
-			return getRuleContext(RecordCountContext.class,0);
-		}
 		public TerminalNode EOF() { return getToken(NamesGrammar.EOF, 0); }
 		public List<RecordContext> record() {
 			return getRuleContexts(RecordContext.class);
@@ -375,31 +319,28 @@ public class NamesGrammar extends Parser {
 
 	public final FileContext file() throws RecognitionException {
 		FileContext _localctx = new FileContext(_ctx, getState());
-		enterRule(_localctx, 8, RULE_file);
+		enterRule(_localctx, 6, RULE_file);
 		 ((FileContext)_localctx).records =  new ArrayList<>(); 
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(32);
-			((FileContext)_localctx).recordCount = recordCount();
-			 ((FileContext)_localctx).declaredRecordCount =  ((FileContext)_localctx).recordCount.count; 
-			setState(39);
+			setState(31);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==SECTION) {
 				{
 				{
-				setState(34);
+				setState(26);
 				((FileContext)_localctx).record = record();
 				 _localctx.records.add(((FileContext)_localctx).record.rec); 
 				}
 				}
-				setState(41);
+				setState(33);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
-			setState(42);
+			setState(34);
 			match(EOF);
 			}
 		}
@@ -415,34 +356,30 @@ public class NamesGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u0007-\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
-		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0001"+
-		"\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0001"+
-		"\u0001\u0001\u0001\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0002\u0001"+
-		"\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0005\u0003\u001c"+
-		"\b\u0003\n\u0003\f\u0003\u001f\t\u0003\u0001\u0004\u0001\u0004\u0001\u0004"+
-		"\u0001\u0004\u0001\u0004\u0005\u0004&\b\u0004\n\u0004\f\u0004)\t\u0004"+
-		"\u0001\u0004\u0001\u0004\u0001\u0004\u0000\u0000\u0005\u0000\u0002\u0004"+
-		"\u0006\b\u0000\u0000)\u0000\n\u0001\u0000\u0000\u0000\u0002\u000e\u0001"+
-		"\u0000\u0000\u0000\u0004\u0012\u0001\u0000\u0000\u0000\u0006\u0016\u0001"+
-		"\u0000\u0000\u0000\b \u0001\u0000\u0000\u0000\n\u000b\u0005\u0001\u0000"+
-		"\u0000\u000b\f\u0005\u0004\u0000\u0000\f\r\u0006\u0000\uffff\uffff\u0000"+
-		"\r\u0001\u0001\u0000\u0000\u0000\u000e\u000f\u0005\u0002\u0000\u0000\u000f"+
-		"\u0010\u0005\u0004\u0000\u0000\u0010\u0011\u0006\u0001\uffff\uffff\u0000"+
-		"\u0011\u0003\u0001\u0000\u0000\u0000\u0012\u0013\u0005\u0003\u0000\u0000"+
-		"\u0013\u0014\u0005\u0007\u0000\u0000\u0014\u0015\u0006\u0002\uffff\uffff"+
-		"\u0000\u0015\u0005\u0001\u0000\u0000\u0000\u0016\u0017\u0003\u0002\u0001"+
-		"\u0000\u0017\u001d\u0006\u0003\uffff\uffff\u0000\u0018\u0019\u0003\u0004"+
-		"\u0002\u0000\u0019\u001a\u0006\u0003\uffff\uffff\u0000\u001a\u001c\u0001"+
-		"\u0000\u0000\u0000\u001b\u0018\u0001\u0000\u0000\u0000\u001c\u001f\u0001"+
-		"\u0000\u0000\u0000\u001d\u001b\u0001\u0000\u0000\u0000\u001d\u001e\u0001"+
-		"\u0000\u0000\u0000\u001e\u0007\u0001\u0000\u0000\u0000\u001f\u001d\u0001"+
-		"\u0000\u0000\u0000 !\u0003\u0000\u0000\u0000!\'\u0006\u0004\uffff\uffff"+
-		"\u0000\"#\u0003\u0006\u0003\u0000#$\u0006\u0004\uffff\uffff\u0000$&\u0001"+
-		"\u0000\u0000\u0000%\"\u0001\u0000\u0000\u0000&)\u0001\u0000\u0000\u0000"+
-		"\'%\u0001\u0000\u0000\u0000\'(\u0001\u0000\u0000\u0000(*\u0001\u0000\u0000"+
-		"\u0000)\'\u0001\u0000\u0000\u0000*+\u0005\u0000\u0000\u0001+\t\u0001\u0000"+
-		"\u0000\u0000\u0002\u001d\'";
+		"\u0004\u0001\u0006%\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0001\u0000\u0001\u0000\u0001"+
+		"\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001"+
+		"\u0002\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0002\u0005\u0002\u0016"+
+		"\b\u0002\n\u0002\f\u0002\u0019\t\u0002\u0001\u0003\u0001\u0003\u0001\u0003"+
+		"\u0005\u0003\u001e\b\u0003\n\u0003\f\u0003!\t\u0003\u0001\u0003\u0001"+
+		"\u0003\u0001\u0003\u0000\u0000\u0004\u0000\u0002\u0004\u0006\u0000\u0000"+
+		"\"\u0000\b\u0001\u0000\u0000\u0000\u0002\f\u0001\u0000\u0000\u0000\u0004"+
+		"\u0010\u0001\u0000\u0000\u0000\u0006\u001f\u0001\u0000\u0000\u0000\b\t"+
+		"\u0005\u0001\u0000\u0000\t\n\u0005\u0003\u0000\u0000\n\u000b\u0006\u0000"+
+		"\uffff\uffff\u0000\u000b\u0001\u0001\u0000\u0000\u0000\f\r\u0005\u0002"+
+		"\u0000\u0000\r\u000e\u0005\u0006\u0000\u0000\u000e\u000f\u0006\u0001\uffff"+
+		"\uffff\u0000\u000f\u0003\u0001\u0000\u0000\u0000\u0010\u0011\u0003\u0000"+
+		"\u0000\u0000\u0011\u0017\u0006\u0002\uffff\uffff\u0000\u0012\u0013\u0003"+
+		"\u0002\u0001\u0000\u0013\u0014\u0006\u0002\uffff\uffff\u0000\u0014\u0016"+
+		"\u0001\u0000\u0000\u0000\u0015\u0012\u0001\u0000\u0000\u0000\u0016\u0019"+
+		"\u0001\u0000\u0000\u0000\u0017\u0015\u0001\u0000\u0000\u0000\u0017\u0018"+
+		"\u0001\u0000\u0000\u0000\u0018\u0005\u0001\u0000\u0000\u0000\u0019\u0017"+
+		"\u0001\u0000\u0000\u0000\u001a\u001b\u0003\u0004\u0002\u0000\u001b\u001c"+
+		"\u0006\u0003\uffff\uffff\u0000\u001c\u001e\u0001\u0000\u0000\u0000\u001d"+
+		"\u001a\u0001\u0000\u0000\u0000\u001e!\u0001\u0000\u0000\u0000\u001f\u001d"+
+		"\u0001\u0000\u0000\u0000\u001f \u0001\u0000\u0000\u0000 \"\u0001\u0000"+
+		"\u0000\u0000!\u001f\u0001\u0000\u0000\u0000\"#\u0005\u0000\u0000\u0001"+
+		"#\u0007\u0001\u0000\u0000\u0000\u0002\u0017\u001f";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

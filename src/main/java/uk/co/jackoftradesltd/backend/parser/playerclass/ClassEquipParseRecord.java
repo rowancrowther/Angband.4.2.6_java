@@ -22,17 +22,21 @@ package uk.co.jackoftradesltd.backend.parser.playerclass;
  * piece of a class's starting equipment. Every field is held as the verbatim file text (a
  * "lossless DTO"); interpretation into a {@link uk.co.jackoftradesltd.middle.player.StartItem}
  * — resolving the tval, parsing the quantities and expanding the exclusion options — is deferred
- * to {@link ClassEquipAssembler}, so a malformed value here is reported as a soft error rather
- * than aborting the parse.
+ * to {@link ClassEquipAssembler}, so a malformed value here is refused by the assembler with a
+ * {@code DataFileParseException} naming the file line, not by an exception from inside the grammar.
  *
  * <p>Format: {@code equip:tval:sval:min:max:eopts}.
+ *
+ * <p>Record ClassEquipParseRecord coded before 261105, updated on 261105 for the removal of the
+ * soft-error path.
  *
  * @param tValue the item's base type name, e.g. {@code "sword"} (resolved to a {@code TValue})
  * @param sValue the item's subtype, held by name e.g. {@code "Dagger"} (resolved later by lookup)
  * @param min    the minimum quantity granted at birth, as raw text
  * @param max    the maximum quantity granted at birth, as raw text
  * @param eopts  the birth-option exclusion clause ({@code "none"}, or a space/{@code |}-separated list)
- * @param line   the 1-based source line, retained so soft errors can point back at the file
+ * @param line   the 1-based source line, quoted in the {@code DataFileParseException} the
+ *               assembler throws if it refuses the record
  * @author Rowan Crowther
  */
 public record ClassEquipParseRecord(String tValue,

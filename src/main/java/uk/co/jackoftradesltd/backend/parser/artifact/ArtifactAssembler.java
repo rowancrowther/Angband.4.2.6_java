@@ -104,13 +104,12 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
      * load-ending errors on 261023, special-kind level note added on 261023.
      *
      * @param records  the raw artifact records from the grammar, in file order
-     * @param errors   unused: every error ends the load by throwing instead
      * @param filename the name of the data file, used in the error messages
      * @return the assembled artifacts, in file order
      * @throws DataFileParseException on the first record with a field C would refuse
      */
     @Override
-    public List<Artifact> assemble(@NotNull List<ArtifactParseRecord> records, @NotNull List<String> errors,
+    public List<Artifact> assemble(@NotNull List<ArtifactParseRecord> records,
                                    String filename) {
         List<Artifact> artifacts = new ArrayList<>();
 

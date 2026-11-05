@@ -14,7 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-// Generated from WorldGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/WorldGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.world;
 
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
@@ -29,63 +29,39 @@ import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
  */
 @SuppressWarnings("CheckReturnValue")
 public class WorldGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements WorldGrammarVisitor<T> {
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitRecordCount(WorldGrammar.RecordCountContext ctx) {
-        return visitChildren(ctx);
-    }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitLevelNum(WorldGrammar.LevelNumContext ctx) {
-        return visitChildren(ctx); }
+	 */
+	@Override public T visitLevelNum(WorldGrammar.LevelNumContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitLevelName(WorldGrammar.LevelNameContext ctx) {
-        return visitChildren(ctx); }
+	 */
+	@Override public T visitLevelName(WorldGrammar.LevelNameContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitUpAndDown(WorldGrammar.UpAndDownContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitLine(WorldGrammar.LineContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitFile(WorldGrammar.FileContext ctx) {
-        return visitChildren(ctx); }
+	 */
+	@Override public T visitUpAndDown(WorldGrammar.UpAndDownContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitLine(WorldGrammar.LineContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitFile(WorldGrammar.FileContext ctx) { return visitChildren(ctx); }
 }

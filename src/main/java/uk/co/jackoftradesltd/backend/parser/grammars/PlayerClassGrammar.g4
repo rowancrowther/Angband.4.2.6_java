@@ -19,11 +19,6 @@ import EffectBlock;
     import java.util.HashMap;
 }
 
-recordCount
-        returns[String count]
-        :   RECORD_COUNT INTEGER { $count = $INTEGER.getText(); }
-        ;
-
 name
         returns[String nameStr, int lineNo]
         :   NAME STRING { $nameStr = $STRING.getText(); $lineNo = $start.getLine(); }
@@ -391,8 +386,7 @@ playerClass
         ;
 
 file
-        returns[String declaredRecordCount, List<PlayerClassParseRecord> playerClasses]
-        :   recordCount { $playerClasses = new ArrayList<>();
-                          $declaredRecordCount = $recordCount.count; }
+        returns[List<PlayerClassParseRecord> playerClasses]
+        :   { $playerClasses = new ArrayList<>(); }
             (playerClass { $playerClasses.add($playerClass.pClass); })+ EOF
         ;

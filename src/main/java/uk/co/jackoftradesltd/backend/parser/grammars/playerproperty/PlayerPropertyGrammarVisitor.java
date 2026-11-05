@@ -14,7 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-// Generated from PlayerPropertyGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/PlayerPropertyGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.playerproperty;
 
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
@@ -24,86 +24,61 @@ import org.antlr.v4.runtime.tree.ParseTreeVisitor;
  * by {@link PlayerPropertyGrammar}.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
- *            operations with no return type.
+ * operations with no return type.
  */
 public interface PlayerPropertyGrammarVisitor<T> extends ParseTreeVisitor<T> {
-    /**
-     * Visit a parse tree produced by {@link PlayerPropertyGrammar#recordCount}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitRecordCount(PlayerPropertyGrammar.RecordCountContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link PlayerPropertyGrammar#type}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitType(PlayerPropertyGrammar.TypeContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link PlayerPropertyGrammar#code}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitCode(PlayerPropertyGrammar.CodeContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link PlayerPropertyGrammar#binduiEntry}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitBinduiEntry(PlayerPropertyGrammar.BinduiEntryContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link PlayerPropertyGrammar#bindUI}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitBindUI(PlayerPropertyGrammar.BindUIContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link PlayerPropertyGrammar#name}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitName(PlayerPropertyGrammar.NameContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link PlayerPropertyGrammar#desc}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitDesc(PlayerPropertyGrammar.DescContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link PlayerPropertyGrammar#value}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitValue(PlayerPropertyGrammar.ValueContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link PlayerPropertyGrammar#property}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitProperty(PlayerPropertyGrammar.PropertyContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link PlayerPropertyGrammar#file}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitFile(PlayerPropertyGrammar.FileContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PlayerPropertyGrammar#type}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitType(PlayerPropertyGrammar.TypeContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PlayerPropertyGrammar#code}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitCode(PlayerPropertyGrammar.CodeContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PlayerPropertyGrammar#binduiEntry}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitBinduiEntry(PlayerPropertyGrammar.BinduiEntryContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PlayerPropertyGrammar#bindUI}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitBindUI(PlayerPropertyGrammar.BindUIContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PlayerPropertyGrammar#name}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitName(PlayerPropertyGrammar.NameContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PlayerPropertyGrammar#desc}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitDesc(PlayerPropertyGrammar.DescContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PlayerPropertyGrammar#value}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitValue(PlayerPropertyGrammar.ValueContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PlayerPropertyGrammar#property}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitProperty(PlayerPropertyGrammar.PropertyContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PlayerPropertyGrammar#file}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFile(PlayerPropertyGrammar.FileContext ctx);
 }

@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -196,16 +197,6 @@ class ArtifactReaderTest {
         return new ArtifactReader().parseWithResults(file.toString());
     }
 
-    private static String withHeader(int count, String body) {
-        return "record-count:" + count + "\n" + body;
-    }
-
-    /**
-     * True if any collected error contains {@code fragment}.
-     */
-    private static boolean hasError(ParseResult<Artifact> r, String fragment) {
-        return r.errors().stream().anyMatch(s -> s.contains(fragment));
-    }
 
     private static Object setStatic(String field, Object value) throws Exception {
         Field f = RegistrySeeding.resolve(field);
@@ -247,7 +238,6 @@ class ArtifactReaderTest {
     void theRealFileLoadsAll138ArtifactsWithNoErrorsAndTheirFieldsAreCorrect() throws Exception {
         // A clean load is the end-to-end proof: any unresolved brand, slay or curse would have
         // stopped the load with a DataFileParseException.
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(138, result.items().size());
 
         // ---- the Phial of Galadriel: the first record, and a full spread of field types ----
@@ -477,20 +467,20 @@ class ArtifactReaderTest {
     void everyReachableErrorSiteStopsTheLoadAndNamesTheOffendingValue() {
         // One record per place the assembler can stop the load. Each stops at once, so each needs its
         // own file; the header count is right in every one so the stop is the assembler's.
-        assertStops("bad-tval.txt", withHeader(1, "name:BadTval\nbase-object:notatval:Thing\n"),
+        assertStops("bad-tval.txt", "name:BadTval\nbase-object:notatval:Thing\n",
                 "unknown base-obj tvalue: notatval");
-        assertStops("bad-flag.txt", withHeader(1, "name:BadFlag\nflags:NOTAFLAG\n"),
+        assertStops("bad-flag.txt", "name:BadFlag\nflags:NOTAFLAG\n",
                 "unknown flag: NOTAFLAG");
-        assertStops("bad-modifier.txt", withHeader(1, "name:BadModifier\nvalues:NOTAMOD[1]\n"),
+        assertStops("bad-modifier.txt", "name:BadModifier\nvalues:NOTAMOD[1]\n",
                 "unknown modifier/element name: NOTAMOD");
         // RES_ is stripped before the ELEM_ lookup, so the message echoes the bare element name.
-        assertStops("bad-element.txt", withHeader(1, "name:BadElement\nvalues:RES_NOTANELEM[1]\n"),
+        assertStops("bad-element.txt", "name:BadElement\nvalues:RES_NOTANELEM[1]\n",
                 "unknown modifier/element name: NOTANELEM");
-        assertStops("bad-brand.txt", withHeader(1, "name:BadBrand\nbrand:NOTABRAND\n"),
+        assertStops("bad-brand.txt", "name:BadBrand\nbrand:NOTABRAND\n",
                 "unknown brand: NOTABRAND");
-        assertStops("bad-slay.txt", withHeader(1, "name:BadSlay\nslay:NOTASLAY\n"),
+        assertStops("bad-slay.txt", "name:BadSlay\nslay:NOTASLAY\n",
                 "unknown slay: NOTASLAY");
-        assertStops("bad-curse.txt", withHeader(1, "name:BadCurse\ncurse:notacurse:10\n"),
+        assertStops("bad-curse.txt", "name:BadCurse\ncurse:notacurse:10\n",
                 "unknown curse: notacurse");
     }
 
@@ -502,7 +492,7 @@ class ArtifactReaderTest {
     void twoBadFlagsOnOneArtifactStopAtTheFirst() {
         // The flag loop throws on the first bad flag, so the second is never reached.
         DataFileParseException e = assertThrows(DataFileParseException.class, () ->
-                load("two-bad-flags.txt", withHeader(1, "name:DoublyBad\nflags:NOTAFLAG | ALSONOTAFLAG\n")));
+                load("two-bad-flags.txt", "name:DoublyBad\nflags:NOTAFLAG | ALSONOTAFLAG\n"));
 
         assertTrue(e.getMessage().contains("unknown flag: NOTAFLAG"), e::getMessage);
         assertFalse(e.getMessage().contains("ALSONOTAFLAG"), e::getMessage);
@@ -529,10 +519,14 @@ class ArtifactReaderTest {
         return r.items().stream().map(Artifact::getName).toList();
     }
 
-    private void assertHardError(String fileName, String content) throws IOException {
-        ParseResult<Artifact> r = load(fileName, content);
-        assertTrue(r.items().isEmpty(), () -> r.items().toString());
-        assertFalse(r.errors().isEmpty(), "a hard error has to say why");
+    /**
+     * A grammar or lexer error: the load stops with a {@link ParseCancellationException}.
+     *
+     * <p>Function assertHardError coded before 261104, rewritten on 261104 for the removal of the
+     * soft-error path.
+     */
+    private void assertHardError(String fileName, String content) {
+        assertThrows(ParseCancellationException.class, () -> load(fileName, content));
     }
 
     /**
@@ -540,8 +534,7 @@ class ArtifactReaderTest {
      * insists on a clean result.
      */
     private Artifact loadClean(String fileName, String body) throws IOException {
-        ParseResult<Artifact> r = load(fileName, withHeader(1, "name:X\n" + BASE + body));
-        assertFalse(r.hasErrors(), () -> r.errors().toString());
+        ParseResult<Artifact> r = load(fileName, "name:X\n" + BASE + body);
         assertEquals(1, r.items().size());
         return r.items().get(0);
     }
@@ -586,27 +579,34 @@ class ArtifactReaderTest {
         }
     }
 
+    /**
+     * A syntax error is thrown from both entry points: {@code parse} no longer hides it as an
+     * empty list.
+     *
+     * <p>Function bothEntryPointsThrowOnASyntaxError coded on 261104, commented in full on 261104.
+     * It replaces parseHidesASyntaxErrorAsAnEmptyListWhereParseWithResultsReportsIt.
+     */
     @Test
-    void parseHidesASyntaxErrorAsAnEmptyListWhereParseWithResultsReportsIt() throws IOException {
+    void bothEntryPointsThrowOnASyntaxError() throws IOException {
         Path file = tempDir.resolve("unknown-directive.txt");
-        Files.writeString(file, withHeader(1, "name:X\n" + BASE + "foo:bar\n"));
+        Files.writeString(file, "name:X\n" + BASE + "foo:bar\n");
 
-        assertTrue(new ArtifactReader().parse(file.toString()).isEmpty());
-        assertTrue(new ArtifactReader().parseWithResults(file.toString()).hasErrors());
+        assertThrows(ParseCancellationException.class, () -> new ArtifactReader().parse(file.toString()));
+        assertThrows(ParseCancellationException.class, () -> new ArtifactReader().parseWithResults(file.toString()));
     }
 
+    /**
+     * The shipped file has no {@code record-count:} header, as upstream {@code artifact.txt} has
+     * none, and holds the 138 {@code name:} records C's file does.
+     *
+     * <p>Function theShippedFileHasNoHeaderAndTheUpstreamRecordCount coded on 261104, commented in
+     * full on 261104. It replaces theShippedFileDeclaresItsRecordCountAndAMiscountKeepsTheRecords.
+     */
     @Test
-    void theShippedFileDeclaresItsRecordCountAndAMiscountKeepsTheRecords() throws IOException {
-        // The header is this repository's addition; upstream artifact.txt has none. It must equal the
-        // number of name: lines or every normal load would report a miscount.
+    void theShippedFileHasNoHeaderAndTheUpstreamRecordCount() throws IOException {
         List<String> lines = Files.readAllLines(Path.of(ARTIFACT_FILE));
-        assertEquals(1, lines.stream().filter(l -> l.startsWith("record-count:")).count());
-        assertTrue(lines.contains("record-count:138"));
+        assertEquals(0, lines.stream().filter(l -> l.startsWith("record-count:")).count());
         assertEquals(138, lines.stream().filter(l -> l.startsWith("name:")).count());
-
-        ParseResult<Artifact> r = load("miscount.txt", withHeader(5, "name:A\n" + BASE));
-        assertEquals(List.of("A"), names(r));
-        assertTrue(hasError(r, "record-count header declares 5 records, but file contains 1"), r.errors()::toString);
     }
 
     /**
@@ -627,7 +627,6 @@ class ArtifactReaderTest {
         Map<String, String> colours = Map.of("y", "COLOUR_YELLOW", "d", "COLOUR_DARK",
                 "g", "COLOUR_GREEN", "w", "COLOUR_WHITE");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(138, rows.size());
         assertEquals(rows.size(), result.items().size());
         for (int i = 0; i < rows.size(); i++) {
@@ -709,16 +708,14 @@ class ArtifactReaderTest {
      */
     @Test
     void aBadRecordEndsTheLoadSoNoListComesBack() {
-        assertStops("skip.txt", withHeader(3,
-                "name:A\n" + BASE + "name:Bad\n" + BASE + "flags:NOTAFLAG\n" + "name:C\n" + BASE),
+        assertStops("skip.txt", "name:A\n" + BASE + "name:Bad\n" + BASE + "flags:NOTAFLAG\n" + "name:C\n" + BASE,
                 "unknown flag: NOTAFLAG");
     }
 
     @Test
     void twoRecordsWithTheSameNameBothLoad() throws IOException {
         // parse_artifact_name allocates a new record each time and checks nothing against the others.
-        ParseResult<Artifact> r = load("dupes.txt", withHeader(2,
-                "name:A\n" + BASE + "level:1\n" + "name:A\n" + BASE + "level:3\n"));
+        ParseResult<Artifact> r = load("dupes.txt", "name:A\n" + BASE + "level:1\n" + "name:A\n" + BASE + "level:3\n");
 
         assertEquals(List.of("A", "A"), names(r));
         assertEquals(1, r.items().get(0).getLevel());
@@ -727,8 +724,7 @@ class ArtifactReaderTest {
 
     @Test
     void recordsComeBackInFileOrderNotSortedOrder() throws IOException {
-        ParseResult<Artifact> r = load("order.txt", withHeader(3,
-                "name:B\n" + BASE + "name:A\n" + BASE + "name:C\n" + BASE));
+        ParseResult<Artifact> r = load("order.txt", "name:B\n" + BASE + "name:A\n" + BASE + "name:C\n" + BASE);
 
         assertEquals(List.of("B", "A", "C"), names(r));
     }
@@ -742,11 +738,9 @@ class ArtifactReaderTest {
      */
     @Test
     void directivesMayComeInAnyOrder() throws IOException {
-        ParseResult<Artifact> r = load("any-order.txt", withHeader(1,
-                "name:X\nlevel:7\nflags:NO_FUEL\nbase-object:sword:Dagger\nalloc:5:10 to 20\n"
+        ParseResult<Artifact> r = load("any-order.txt", "name:X\nlevel:7\nflags:NO_FUEL\nbase-object:sword:Dagger\nalloc:5:10 to 20\n"
                         + "attack:2d4:3:4\narmor:1:2\nvalues:STR[2]\nslay:EVIL_2\nbrand:ACID_3\n"
-                        + "curse:air swing:30\ndesc: d\nmsg:m\nweight:12\ncost:99\n"));
-        assertFalse(r.hasErrors(), () -> r.errors().toString());
+                        + "curse:air swing:30\ndesc: d\nmsg:m\nweight:12\ncost:99\n");
         Artifact a = r.items().get(0);
 
         assertEquals(7, a.getLevel());
@@ -817,24 +811,22 @@ class ArtifactReaderTest {
 
     @Test
     void anUnknownCurseNameStopsTheLoad() {
-        assertStops("curse-unknown.txt", withHeader(1, "name:X\n" + BASE + "curse:zzz:5\n"), "unknown curse: zzz");
+        assertStops("curse-unknown.txt", "name:X\n" + BASE + "curse:zzz:5\n", "unknown curse: zzz");
     }
 
     @Test
     void commentsAndBlankLinesBetweenDirectivesAreIgnored() throws IOException {
         ParseResult<Artifact> r = load("comments.txt",
-                "# header comment\n\nrecord-count:1\n# before\nname:X\n# middle\n" + BASE + "\nlevel:3\n# end\n");
+                "# header comment\n\n# before\nname:X\n# middle\n" + BASE + "\nlevel:3\n# end\n");
 
-        assertFalse(r.hasErrors(), () -> r.errors().toString());
         assertEquals(3, r.items().get(0).getLevel());
     }
 
     @Test
     void windowsLineEndingsLoad() throws IOException {
         ParseResult<Artifact> r = load("crlf.txt",
-                "record-count:1\r\nname:X\r\nbase-object:sword:Dagger\r\nlevel:3\r\ndesc: a\r\n");
+                "name:X\r\nbase-object:sword:Dagger\r\nlevel:3\r\ndesc: a\r\n");
 
-        assertFalse(r.hasErrors(), () -> r.errors().toString());
         assertEquals(3, r.items().get(0).getLevel());
         assertEquals(" a", r.items().get(0).getText());
     }
@@ -842,7 +834,7 @@ class ArtifactReaderTest {
     @Test
     void aNameKeepsItsTrailingBlankAsInC() throws IOException {
         // name is a str, which takes the rest of the line.
-        ParseResult<Artifact> r = load("name-blank.txt", withHeader(1, "name:X \n" + BASE));
+        ParseResult<Artifact> r = load("name-blank.txt", "name:X \n" + BASE);
 
         assertEquals(List.of("X "), names(r));
     }
@@ -853,8 +845,7 @@ class ArtifactReaderTest {
         // compares the kind name with my_stricmp too.
         for (String base : List.of("SWORD:Dagger", "sword:DAGGER", "soft armour:Soft Leather Armour",
                 "soft armor:Soft Leather Armour")) {
-            ParseResult<Artifact> r = load("base.txt", withHeader(1, "name:X\nbase-object:" + base + "\n"));
-            assertFalse(r.hasErrors(), () -> base + ": " + r.errors());
+            ParseResult<Artifact> r = load("base.txt", "name:X\nbase-object:" + base + "\n");
             assertEquals(1, r.items().size(), base);
         }
     }
@@ -891,37 +882,29 @@ class ArtifactReaderTest {
     // ---- Errors that are errors in C too ---------------------------------
 
     @Test
-    void aMissingRecordCountHeaderIsAHardError() throws IOException {
-        // Java only: the header is this port's addition.
-        assertHardError("no-header.txt", "name:X\n" + BASE);
-        assertHardError("empty-file.txt", "");
-        assertHardError("header-not-a-number.txt", "record-count:abc\nname:X\n" + BASE);
-    }
-
-    @Test
     void aDirectiveBeforeAnyNameIsAHardErrorAsInC() throws IOException {
         // PARSE_ERROR_MISSING_RECORD_HEADER.
-        assertHardError("before-name.txt", withHeader(1, "level:5\nname:X\n" + BASE));
+        assertHardError("before-name.txt", "level:5\nname:X\n" + BASE);
     }
 
     @Test
     void anUnknownDirectiveIsAHardErrorAsInC() throws IOException {
         // PARSE_ERROR_UNDEFINED_DIRECTIVE.
-        assertHardError("unknown-directive.txt", withHeader(1, "name:X\n" + BASE + "foo:bar\n"));
+        assertHardError("unknown-directive.txt", "name:X\n" + BASE + "foo:bar\n");
     }
 
     @Test
     void anEmptyDescOrMsgIsAHardErrorAsInC() throws IOException {
         // A str field with nothing after the colon is PARSE_ERROR_MISSING_FIELD.
-        assertHardError("desc-empty.txt", withHeader(1, "name:X\n" + BASE + "desc:\n"));
-        assertHardError("msg-empty.txt", withHeader(1, "name:X\n" + BASE + "msg:\n"));
+        assertHardError("desc-empty.txt", "name:X\n" + BASE + "desc:\n");
+        assertHardError("msg-empty.txt", "name:X\n" + BASE + "msg:\n");
     }
 
     @Test
     void aLowercaseFlagOrModifierIsRejectedAsInC() throws IOException {
         // grab_flag and grab_int_value compare with streq, so only the upper-case names match.
-        assertHardError("flag-lower.txt", withHeader(1, "name:X\n" + BASE + "flags:no_fuel\n"));
-        assertHardError("value-lower.txt", withHeader(1, "name:X\n" + BASE + "values:str[2]\n"));
+        assertHardError("flag-lower.txt", "name:X\n" + BASE + "flags:no_fuel\n");
+        assertHardError("value-lower.txt", "name:X\n" + BASE + "values:str[2]\n");
     }
 
     /**
@@ -931,15 +914,15 @@ class ArtifactReaderTest {
      */
     @Test
     void aValueOfIntMaxOrIntMinOrBeyondStopsTheLoadAsInC() throws IOException {
-        assertStops("value-int-max.txt", withHeader(1, "name:X\n" + BASE + "values:STR[2147483647]\n"),
+        assertStops("value-int-max.txt", "name:X\n" + BASE + "values:STR[2147483647]\n",
                 "value out of bounds: 2147483647");
-        assertStops("value-int-min.txt", withHeader(1, "name:X\n" + BASE + "values:STR[-2147483648]\n"),
+        assertStops("value-int-min.txt", "name:X\n" + BASE + "values:STR[-2147483648]\n",
                 "value out of bounds: -2147483648");
-        assertStops("value-res-int-max.txt", withHeader(1, "name:X\n" + BASE + "values:RES_FIRE[2147483647]\n"),
+        assertStops("value-res-int-max.txt", "name:X\n" + BASE + "values:RES_FIRE[2147483647]\n",
                 "value out of bounds: 2147483647");
-        assertStops("value-above-int.txt", withHeader(1, "name:X\n" + BASE + "values:STR[2147483648]\n"),
+        assertStops("value-above-int.txt", "name:X\n" + BASE + "values:STR[2147483648]\n",
                 "malformed value integer: 2147483648");
-        assertStops("value-below-int.txt", withHeader(1, "name:X\n" + BASE + "values:STR[-2147483649]\n"),
+        assertStops("value-below-int.txt", "name:X\n" + BASE + "values:STR[-2147483649]\n",
                 "malformed value integer: -2147483649");
 
         assertEquals("STR=2147483646", valueList(loadClean("value-max-less-one.txt", "values:STR[2147483646]\n")));
@@ -954,8 +937,8 @@ class ArtifactReaderTest {
      */
     @Test
     void aRecordOfOnlyANameOrAFileOfNoRecordsIsASyntaxErrorHereWhereCAcceptsThem() throws IOException {
-        assertHardError("name-only.txt", withHeader(1, "name:X\n"));
-        assertHardError("no-records.txt", "record-count:0\n");
+        assertHardError("name-only.txt", "name:X\n");
+        assertHardError("no-records.txt", "");
     }
 
     /**
@@ -964,7 +947,7 @@ class ArtifactReaderTest {
      */
     @Test
     void anEmptyFlagsLineIsASyntaxErrorHereWhereCAcceptsIt() throws IOException {
-        assertHardError("flags-empty.txt", withHeader(1, "name:X\n" + BASE + "flags:\n"));
+        assertHardError("flags-empty.txt", "name:X\n" + BASE + "flags:\n");
     }
 
     /**
@@ -973,10 +956,10 @@ class ArtifactReaderTest {
      */
     @Test
     void flagsOrValuesSeparatedBySpaceAloneOrByOddBarsAreSyntaxErrorsHereWhereCAcceptsThem() throws IOException {
-        assertHardError("flags-space.txt", withHeader(1, "name:X\n" + BASE + "flags:NO_FUEL SEE_INVIS\n"));
-        assertHardError("flags-double-bar.txt", withHeader(1, "name:X\n" + BASE + "flags:NO_FUEL || SEE_INVIS\n"));
-        assertHardError("flags-leading-bar.txt", withHeader(1, "name:X\n" + BASE + "flags:| NO_FUEL\n"));
-        assertHardError("values-space.txt", withHeader(1, "name:X\n" + BASE + "values:STR[1] DEX[2]\n"));
+        assertHardError("flags-space.txt", "name:X\n" + BASE + "flags:NO_FUEL SEE_INVIS\n");
+        assertHardError("flags-double-bar.txt", "name:X\n" + BASE + "flags:NO_FUEL || SEE_INVIS\n");
+        assertHardError("flags-leading-bar.txt", "name:X\n" + BASE + "flags:| NO_FUEL\n");
+        assertHardError("values-space.txt", "name:X\n" + BASE + "values:STR[1] DEX[2]\n");
     }
 
     /**
@@ -1000,8 +983,8 @@ class ArtifactReaderTest {
      */
     @Test
     void allocSpacingOtherThanOneSpaceEitherSideOfToIsASyntaxErrorHereWhereCAcceptsIt() throws IOException {
-        assertHardError("alloc-two-spaces.txt", withHeader(1, "name:X\n" + BASE + "alloc:1:2  to 3\n"));
-        assertHardError("alloc-no-spaces.txt", withHeader(1, "name:X\n" + BASE + "alloc:1:2to3\n"));
+        assertHardError("alloc-two-spaces.txt", "name:X\n" + BASE + "alloc:1:2  to 3\n");
+        assertHardError("alloc-no-spaces.txt", "name:X\n" + BASE + "alloc:1:2to3\n");
     }
 
     /**
@@ -1011,10 +994,10 @@ class ArtifactReaderTest {
      */
     @Test
     void integersWithLeadingSpaceAPlusSignOrAHexPrefixAreLexerErrorsHereWhereCAcceptsThem() throws IOException {
-        assertHardError("level-space.txt", withHeader(1, "name:X\n" + BASE + "level: 5\n"));
-        assertHardError("level-plus.txt", withHeader(1, "name:X\n" + BASE + "level:+5\n"));
-        assertHardError("level-hex.txt", withHeader(1, "name:X\n" + BASE + "level:0x10\n"));
-        assertHardError("value-plus.txt", withHeader(1, "name:X\n" + BASE + "values:STR[+2]\n"));
+        assertHardError("level-space.txt", "name:X\n" + BASE + "level: 5\n");
+        assertHardError("level-plus.txt", "name:X\n" + BASE + "level:+5\n");
+        assertHardError("level-hex.txt", "name:X\n" + BASE + "level:0x10\n");
+        assertHardError("value-plus.txt", "name:X\n" + BASE + "values:STR[+2]\n");
     }
 
     /**
@@ -1033,8 +1016,8 @@ class ArtifactReaderTest {
      */
     @Test
     void aNumericTvalOrSvalInBaseObjectIsASyntaxErrorHereWhereCAcceptsIt() throws IOException {
-        assertHardError("tval-number.txt", withHeader(1, "name:X\nbase-object:23:Dagger\n"));
-        assertHardError("sval-number.txt", withHeader(1, "name:X\nbase-object:sword:1\n"));
+        assertHardError("tval-number.txt", "name:X\nbase-object:23:Dagger\n");
+        assertHardError("sval-number.txt", "name:X\nbase-object:sword:1\n");
     }
 
     @Test
@@ -1061,9 +1044,9 @@ class ArtifactReaderTest {
     @Test
     void allocFiguresAbove255OrBelowZeroStopTheLoadAsInC() throws IOException {
         // parse_artifact_alloc returns PARSE_ERROR_OUT_OF_BOUNDS for a figure above 255 or below 0.
-        assertStops("alloc-high.txt", withHeader(1, "name:X\n" + BASE + "alloc:1:300 to 400\n"),
+        assertStops("alloc-high.txt", "name:X\n" + BASE + "alloc:1:300 to 400\n",
                 "min value: 300");
-        assertStops("alloc-negative.txt", withHeader(1, "name:X\n" + BASE + "alloc:1:-5 to 10\n"),
+        assertStops("alloc-negative.txt", "name:X\n" + BASE + "alloc:1:-5 to 10\n",
                 "min value: -5");
 
         // C has no check on the order, so this one loads.
@@ -1088,7 +1071,7 @@ class ArtifactReaderTest {
         char glyph = dagger.getCharacter().getNarrowCharacter();
         Object colour = dagger.getCharacter().getAttributeColour();
 
-        assertStops("graphics-ordinary.txt", withHeader(1, "name:X\n" + BASE + "graphics:#:r\n"),
+        assertStops("graphics-ordinary.txt", "name:X\n" + BASE + "graphics:#:r\n",
                 "glyph value: #");
 
         assertEquals(glyph, dagger.getCharacter().getNarrowCharacter());
@@ -1099,7 +1082,7 @@ class ArtifactReaderTest {
     void aRecordWithNoBaseObjectStopsTheLoadHereWhereCKeepsItWithTvalZero() {
         // parse_artifact_name zeroes the record, so tval and sval stay 0. (weight:, cost:, graphics:,
         // act: and time: would then assert on a missing kind; level: and the rest do not.)
-        assertStops("no-base.txt", withHeader(1, "name:X\nlevel:3\n"), "unknown object type");
+        assertStops("no-base.txt", "name:X\nlevel:3\n", "unknown object type");
     }
 
     /**
@@ -1115,7 +1098,6 @@ class ArtifactReaderTest {
 
         ParseResult<Artifact> second = new ArtifactReader().parseWithResults(ARTIFACT_FILE);
 
-        assertFalse(second.hasErrors(), () -> second.errors().toString());
         assertEquals(138, second.items().size());
         assertEquals(kindsBefore, ObjectRegistry.getObjectKindCount(), "the special kinds are found again, not added again");
 
@@ -1147,27 +1129,23 @@ class ArtifactReaderTest {
         assertEquals("10+1d10", time, "the shipped file's time:10+d10");
 
         try {
-            ParseResult<Artifact> bare = load("phial-bare.txt", withHeader(1, "name:X\nbase-object:light:Phial\n"));
-            assertFalse(bare.hasErrors(), () -> bare.errors().toString());
+            ParseResult<Artifact> bare = load("phial-bare.txt", "name:X\nbase-object:light:Phial\n");
             assertEquals(weight, (int) kindField(phial, "weight"), "no weight: line, so the kind keeps its weight");
             assertEquals(cost, (int) kindField(phial, "cost"), "no cost: line, so the kind keeps its cost");
             assertEquals(time, dice(kindField(phial, "time")), "no time: line, so the kind keeps its time");
 
             ParseResult<Artifact> onlyWeight = load("phial-weight.txt",
-                    withHeader(1, "name:X\nbase-object:light:Phial\nweight:77\n"));
-            assertFalse(onlyWeight.hasErrors(), () -> onlyWeight.errors().toString());
+                    "name:X\nbase-object:light:Phial\nweight:77\n");
             assertEquals(77, (int) kindField(phial, "weight"), "weight: is written");
             assertEquals(cost, (int) kindField(phial, "cost"), "cost: is absent, so it is not");
 
             ParseResult<Artifact> onlyCost = load("phial-cost.txt",
-                    withHeader(1, "name:X\nbase-object:light:Phial\ncost:55\n"));
-            assertFalse(onlyCost.hasErrors(), () -> onlyCost.errors().toString());
+                    "name:X\nbase-object:light:Phial\ncost:55\n");
             assertEquals(77, (int) kindField(phial, "weight"), "weight: is absent, so it is not");
             assertEquals(55, (int) kindField(phial, "cost"), "cost: is written");
 
             ParseResult<Artifact> zeros = load("phial-zeros.txt",
-                    withHeader(1, "name:X\nbase-object:light:Phial\nweight:0\ncost:0\ntime:0\n"));
-            assertFalse(zeros.hasErrors(), () -> zeros.errors().toString());
+                    "name:X\nbase-object:light:Phial\nweight:0\ncost:0\ntime:0\n");
             assertEquals(0, (int) kindField(phial, "weight"), "a written weight:0 is a line, not an absent one");
             assertEquals(0, (int) kindField(phial, "cost"), "a written cost:0 is a line, not an absent one");
             assertEquals("0+0d0", dice(kindField(phial, "time")), "a written time:0 is a line, not an absent one");
@@ -1192,20 +1170,17 @@ class ArtifactReaderTest {
         assertEquals("ILLUMINATION", original.get(0).getName(), "the shipped file's act:ILLUMINATION");
 
         try {
-            ParseResult<Artifact> bare = load("phial-no-act.txt", withHeader(1, "name:X\nbase-object:light:Phial\n"));
-            assertFalse(bare.hasErrors(), () -> bare.errors().toString());
+            ParseResult<Artifact> bare = load("phial-no-act.txt", "name:X\nbase-object:light:Phial\n");
             assertEquals(original, phial.getActivations(), "no act: line, so the kind keeps its activation");
 
             ParseResult<Artifact> changed = load("phial-act.txt",
-                    withHeader(1, "name:X\nbase-object:light:Phial\nact:MAPPING\n"));
-            assertFalse(changed.hasErrors(), () -> changed.errors().toString());
+                    "name:X\nbase-object:light:Phial\nact:MAPPING\n");
             assertEquals(1, phial.getActivations().size());
             assertEquals("MAPPING", phial.getActivations().get(0).getName(), "a known act: replaces the kind's");
             assertNull(changed.items().get(0).getActivation(), "the artifact keeps none");
 
             ParseResult<Artifact> unknown = load("phial-bad-act.txt",
-                    withHeader(1, "name:X\nbase-object:light:Phial\nact:NO_SUCH_ACTIVATION\n"));
-            assertFalse(unknown.hasErrors(), () -> unknown.errors().toString());
+                    "name:X\nbase-object:light:Phial\nact:NO_SUCH_ACTIVATION\n");
             assertTrue(phial.getActivations().isEmpty(), "an unknown act: clears the kind's, as findact's NULL does");
             assertNull(unknown.items().get(0).getActivation(), "the artifact keeps none");
         } finally {

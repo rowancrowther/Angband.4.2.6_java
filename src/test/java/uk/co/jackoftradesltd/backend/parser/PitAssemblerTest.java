@@ -78,7 +78,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * One accepted deviation is pinned as well: a number outside the {@code int} range is refused where
  * C keeps the low 32 bits (decided 261027).
  *
- * <p>Test class PitAssemblerTest coded on 261028, commented in full on 261028.
+ * <p>Test class PitAssemblerTest coded on 261028, commented in full on 261028, error sink tests
+ * removed on 261105 for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -175,7 +176,7 @@ class PitAssemblerTest {
         for (Rec r : records) {
             built.add(r.build());
         }
-        return new PitAssembler().assemble(built, new ArrayList<>(), FILE);
+        return new PitAssembler().assemble(built, FILE);
     }
 
     private static PitProfile one(Rec record) {
@@ -311,16 +312,6 @@ class PitAssemblerTest {
     @Test
     void noRecordsGivesAnEmptyList() {
         assertTrue(assemble().isEmpty());
-    }
-
-    /** The assembler throws rather than collects, so the soft-error sink is left as it was found. */
-    @Test
-    void theErrorSinkIsLeftEmpty() {
-        List<String> errors = new ArrayList<>();
-
-        new PitAssembler().assemble(List.of(new Rec().build()), errors, FILE);
-
-        assertTrue(errors.isEmpty(), errors::toString);
     }
 
     /** {@code string_make(parser_getstr(...))} copies the name exactly, edge spaces and colons included. */
@@ -702,16 +693,5 @@ class PitAssemblerTest {
 
         assertTrue(after.getMessage().contains("line: 12 "), after.getMessage());
         assertTrue(before.getMessage().contains("line: 5 "), before.getMessage());
-    }
-
-    /** Nothing is written to the soft-error sink on the way to a refusal either. */
-    @Test
-    void theErrorSinkIsStillEmptyAfterARefusal() {
-        List<String> errors = new ArrayList<>();
-
-        assertThrows(DataFileParseException.class,
-                () -> new PitAssembler().assemble(List.of(new Rec().flags("NOT_A_FLAG").build()), errors, FILE));
-
-        assertTrue(errors.isEmpty(), errors::toString);
     }
 }

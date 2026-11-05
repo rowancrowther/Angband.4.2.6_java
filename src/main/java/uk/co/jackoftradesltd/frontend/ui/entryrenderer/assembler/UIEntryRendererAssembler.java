@@ -114,7 +114,6 @@ public class UIEntryRendererAssembler
      * commented in full on 261104.
      *
      * @param records  the parse records from {@code ui_entry_renderer.txt}, in file order
-     * @param errors   the shared error list; this assembler fails fast and never adds to it
      * @param filename the data file name, quoted in error messages
      * @return the resolved renderers, one per distinct name, in order of first appearance
      * @throws DataFileParseException if a record has an unknown or {@code NONE} code, an
@@ -122,7 +121,7 @@ public class UIEntryRendererAssembler
      *                                one of the three file values
      */
     @Override
-    public List<UIEntryRenderer> assemble(@NotNull List<UIEntryRendererParseRecord> records, @NotNull List<String> errors,
+    public List<UIEntryRenderer> assemble(@NotNull List<UIEntryRendererParseRecord> records,
                                     String filename) {
         List<UIEntryRenderer> results = new ArrayList<>();
         for (UIEntryRendererParseRecord record : records) {

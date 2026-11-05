@@ -34,11 +34,6 @@ lexer grammar MonsterBaseLexer;
 // mode end-of-line handling; Flags contributes the shared FLAG_BODY fragment.
 import CommentsAndEol, Flags;
 
-// "record-count:<n>" - header declaring how many template records follow.
-RECORD_COUNT
-        :   'record-count:'
-        ;
-
 // "name:<text>" - opens a new template record; this name is what monster.txt's
 // base: lines reference. Read as free text.
 NAME

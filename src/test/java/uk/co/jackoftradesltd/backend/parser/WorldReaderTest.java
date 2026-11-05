@@ -17,8 +17,10 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.cave.World;
 
@@ -80,15 +82,15 @@ class WorldReaderTest {
         return new WorldReader().parseWithResults(tempFile("world.txt", content));
     }
 
-    private static boolean anyError(ParseResult<World> result, String... fragments) {
-        return result.errors().stream().anyMatch(e -> {
-            for (String fragment : fragments) {
-                if (!e.contains(fragment)) {
-                    return false;
-                }
-            }
-            return true;
-        });
+    /**
+     * Reads {@code content}, expects the load to stop with a {@link DataFileParseException}, and
+     * returns that exception's message.
+     *
+     * <p>Function refusal coded on 261104, commented in full on 261104. It replaces anyError, which
+     * searched the errors list a failed load no longer has.
+     */
+    private String refusal(String content) {
+        return assertThrows(DataFileParseException.class, () -> read(content)).getMessage();
     }
 
     // ---------------------------------------------------------------- the shipped file
@@ -97,7 +99,6 @@ class WorldReaderTest {
     void cleanLoadOfTheRealFileReportsNoErrorsAndAllLevels() throws IOException {
         ParseResult<World> result = new WorldReader().parseWithResults(REAL_FILE);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
 
         List<World> levels = result.items();
         assertEquals(128, levels.size());
@@ -145,51 +146,46 @@ class WorldReaderTest {
 
     @Test
     void aSingleLevelWithNoNeighboursKeepsTheNoneTextOnBothSides() throws IOException {
-        ParseResult<World> result = read("record-count:1\nlevel:0:Town:None:None\n");
+        ParseResult<World> result = read("level:0:Town:None:None\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(List.of(new World(0, "Town", "None", "None")), result.items());
     }
 
     @Test
     void levelsComeBackInFileOrderNotDepthOrder() throws IOException {
         ParseResult<World> result = read(
-                "record-count:3\nlevel:2:Two:One:None\nlevel:0:Zero:None:One\nlevel:1:One:Zero:Two\n");
+                "level:2:Two:One:None\nlevel:0:Zero:None:One\nlevel:1:One:Zero:Two\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(List.of(2, 0, 1), result.items().stream().map(World::levelNumber).toList());
     }
 
     @Test
     void namesWithSpacesAndDigitsAreKeptWhole() throws IOException {
-        ParseResult<World> result = read("record-count:1\nlevel:5:Angband 5:Angband 4:Angband 6\n");
+        ParseResult<World> result = read("level:5:Angband 5:Angband 4:Angband 6\n");
 
         assertEquals(new World(5, "Angband 5", "Angband 4", "Angband 6"), result.items().get(0));
     }
 
     @Test
     void aNegativeDepthIsAcceptedAsInC() throws IOException {
-        ParseResult<World> result = read("record-count:1\nlevel:-1:Pit:None:None\n");
+        ParseResult<World> result = read("level:-1:Pit:None:None\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(-1, result.items().get(0).levelNumber());
     }
 
     @Test
     void theLargestIntDepthIsAcceptedAndOneMoreIsHard() throws IOException {
-        ParseResult<World> ok = read("record-count:1\nlevel:2147483647:Max:None:None\n");
-        assertFalse(ok.hasErrors(), () -> ok.errors().toString());
+        ParseResult<World> ok = read("level:2147483647:Max:None:None\n");
         assertEquals(Integer.MAX_VALUE, ok.items().get(0).levelNumber());
 
-        ParseResult<World> over = read("record-count:1\nlevel:2147483648:Over:None:None\n");
-        assertTrue(over.items().isEmpty());
-        assertTrue(anyError(over, "Invalid level number", "2147483648"), over.errors()::toString);
+        String message = refusal("level:2147483648:Over:None:None\n");
+        assertTrue(message.contains("illegal level value") && message.contains("2147483648"), message);
     }
 
     @Test
     void aLeadingZeroDepthIsReadAsDecimalWhereCReadsItAsOctal() throws IOException {
         // strtol(tok, &z, 0) reads "010" as 8; the Java INTEGER token and parseInt read 10.
-        ParseResult<World> result = read("record-count:1\nlevel:010:Ten:None:None\n");
+        ParseResult<World> result = read("level:010:Ten:None:None\n");
 
         assertEquals(10, result.items().get(0).levelNumber());
     }
@@ -197,145 +193,70 @@ class WorldReaderTest {
     @Test
     void commentsAndBlankLinesAreSkipped() throws IOException {
         ParseResult<World> result = read(
-                "# a comment\n\nrecord-count:1\n\n# another\nlevel:0:Town:None:None\n");
-
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
-        assertEquals(1, result.items().size());
-    }
-
-    // ---------------------------------------------------------------- the record-count header
-
-    @Test
-    void aShortHeaderIsASoftErrorAndTheLevelsStillLoad() throws IOException {
-        ParseResult<World> result = read("record-count:5\nlevel:0:Town:None:Angband 1\n");
+                "# a comment\n\n# another\nlevel:0:Town:None:None\n");
 
         assertEquals(1, result.items().size());
-        assertTrue(anyError(result, "declares 5", "contains 1"), result.errors()::toString);
-    }
-
-    @Test
-    void anOverShortHeaderIsASoftErrorToo() throws IOException {
-        ParseResult<World> result = read(
-                "record-count:1\nlevel:0:Town:None:Angband 1\nlevel:1:Angband 1:Town:None\n");
-
-        assertEquals(2, result.items().size());
-        assertTrue(anyError(result, "declares 1", "contains 2"), result.errors()::toString);
-    }
-
-    @Test
-    void aHeaderThatOverflowsIntIsASoftErrorNotACrash() throws IOException {
-        ParseResult<World> result = read("record-count:99999999999\nlevel:0:Town:None:Angband 1\n");
-
-        assertEquals(1, result.items().size());
-        assertTrue(anyError(result, "Invalid number format", "99999999999"), result.errors()::toString);
-    }
-
-    @Test
-    void aNonNumericHeaderIsAHardGrammarError() throws IOException {
-        ParseResult<World> result = read("record-count:abc\nlevel:0:Town:None:Angband 1\n");
-
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty());
-    }
-
-    @Test
-    void aMissingHeaderIsAHardErrorHereWhereCHasNone() throws IOException {
-        ParseResult<World> result = read("level:0:Town:None:Angband 1\n");
-
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty());
     }
 
     // ---------------------------------------------------------------- hard errors
 
     @Test
     void anOverflowingLevelNumberIsHardAndNamesTheLine() throws IOException {
-        ParseResult<World> result = read("record-count:1\nlevel:99999999999:Deep:None:None\n");
+        String message = refusal("level:99999999999:Deep:None:None\n");
 
-        assertTrue(result.items().isEmpty(), result.items()::toString);
-        assertTrue(anyError(result, "line 2", "Invalid level number", "99999999999"), result.errors()::toString);
-    }
-
-    @Test
-    void aBadLevelNumberAbortsBeforeTheHeaderIsChecked() throws IOException {
-        // The header over-declares AND the second depth overflows. The hard error aborts the parse
-        // first, so the count mismatch is never reported and nothing loads.
-        ParseResult<World> result = read(String.join("\n",
-                "record-count:5",
-                "level:0:Town:None:Angband 1",
-                "level:99999999999:Deep:Angband 1:None",
-                ""));
-
-        assertTrue(result.items().isEmpty(), result.items()::toString);
-        assertTrue(anyError(result, "line 3", "Invalid level number"), result.errors()::toString);
-        assertFalse(anyError(result, "declares"), result.errors()::toString);
+        assertTrue(message.contains("line: 1") && message.contains("illegal level value")
+                && message.contains("99999999999"), message);
     }
 
     @Test
     void aLevelWithTooFewFieldsIsHardAsInC() throws IOException {
         // PARSE_ERROR_MISSING_FIELD in C, which run_parser turns into a quit.
-        ParseResult<World> result = read("record-count:1\nlevel:0:Town:None\n");
+        assertThrows(ParseCancellationException.class, () -> read("level:0:Town:None\n"));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty());
     }
 
     @Test
     void anUnknownDirectiveIsHardAsInC() throws IOException {
-        ParseResult<World> result = read("record-count:1\nlevl:0:Town:None:None\n");
+        assertThrows(ParseCancellationException.class, () -> read("levl:0:Town:None:None\n"));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty());
     }
 
     @Test
     void aNonNumericDepthIsHardAsInC() throws IOException {
-        ParseResult<World> result = read("record-count:1\nlevel:zero:Town:None:None\n");
+        assertThrows(ParseCancellationException.class, () -> read("level:zero:Town:None:None\n"));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty());
     }
 
     // ---------------------------------------------------------------- places C is more lenient
 
     @Test
     void aHeaderWithNoLevelsIsHardHereWhereCLoadsAnEmptyWorld() throws IOException {
-        ParseResult<World> result = read("record-count:0\n");
+        assertThrows(ParseCancellationException.class, () -> read(""));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty());
     }
 
     @Test
     void anEmptyFileIsHardHereWhereCLoadsAnEmptyWorld() throws IOException {
-        ParseResult<World> result = read("");
+        assertThrows(ParseCancellationException.class, () -> read(""));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty());
     }
 
     @Test
     void aFieldAfterTheDownNameIsHardHereWhereCIgnoresIt() throws IOException {
-        ParseResult<World> result = read("record-count:1\nlevel:0:Town:None:Angband 1:extra\n");
+        assertThrows(ParseCancellationException.class, () -> read("level:0:Town:None:Angband 1:extra\n"));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty());
     }
 
     @Test
     void aHyphenInANameIsHardHereWhereCTakesAnySymExceptColon() throws IOException {
-        ParseResult<World> result = read("record-count:1\nlevel:0:Hell-hole:None:None\n");
+        assertThrows(ParseCancellationException.class, () -> read("level:0:Hell-hole:None:None\n"));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty());
     }
 
     @Test
     void aHexadecimalDepthIsHardHereWhereCReadsBaseZero() throws IOException {
         // strtol(tok, &z, 0) reads "0x10" as 16.
-        ParseResult<World> result = read("record-count:1\nlevel:0x10:Town:None:None\n");
+        assertThrows(ParseCancellationException.class, () -> read("level:0x10:Town:None:None\n"));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty());
     }
 }

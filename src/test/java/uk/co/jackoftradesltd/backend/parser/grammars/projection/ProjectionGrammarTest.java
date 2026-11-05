@@ -36,6 +36,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * record's source line number. All values are verbatim strings; enum resolution and defaulting are
  * the reader's job.
  *
+ * <p>Class ProjectionGrammarTest coded before 261104, updated on 261104 once the {@code record-count:} header was removed.
+ *
  * @author Rowan Crowther
  */
 class ProjectionGrammarTest {
@@ -65,16 +67,15 @@ class ProjectionGrammarTest {
     void mandatoryOnlyRecordFillsOptionalsWithNullAndAppendsLineNumber() {
         Errors errors = new Errors();
         ProjectionGrammar.FileContext ctx = parser(
-                "record-count:1\ncode:ACID\ntype:element\ndesc:acid\nblind-desc:acid\nobvious:1\ncolor:Slate\n",
+                "code:ACID\ntype:element\ndesc:acid\nblind-desc:acid\nobvious:1\ncolor:Slate\n",
                 errors).file();
 
         assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
-        assertEquals("1", ctx.records);
         assertEquals(1, ctx.projections.size());
         // [code,name,type,desc,player,blind,lash,num,den,div,cap,msgt,obvious,wake,colour, lineNo]
-        // code: is on source line 2, so the trailing line-number element is "2".
+        // code: is on source line 1, so the trailing line-number element is "1".
         assertEquals(
-                Arrays.asList("ACID", null, "element", "acid", null, "acid", null, null, null, null, null, null, "1", null, "Slate", "2"),
+                Arrays.asList("ACID", null, "element", "acid", null, "acid", null, null, null, null, null, null, "1", null, "Slate", "1"),
                 ctx.projections.get(0));
     }
 
@@ -82,7 +83,7 @@ class ProjectionGrammarTest {
     void fullRecordKeepsEveryFieldVerbatim() {
         Errors errors = new Errors();
         ProjectionGrammar.FileContext ctx = parser(
-                "record-count:1\ncode:ACID\nname:acid\ntype:element\ndesc:acid\nplayer-desc:acid\n"
+                "code:ACID\nname:acid\ntype:element\ndesc:acid\nplayer-desc:acid\n"
                         + "blind-desc:acid\nlash-desc:acid\nnumerator:1\ndenominator:8+1d4\ndivisor:3\n"
                         + "damage-cap:1600\nmsgt:BR_ACID\nobvious:1\nwake:1\ncolor:Slate\n",
                 errors).file();
@@ -90,7 +91,7 @@ class ProjectionGrammarTest {
         assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
         assertEquals(
                 List.of("ACID", "acid", "element", "acid", "acid", "acid", "acid", "1", "8+1d4", "3",
-                        "1600", "BR_ACID", "1", "1", "Slate", "2"),
+                        "1600", "BR_ACID", "1", "1", "Slate", "1"),
                 ctx.projections.get(0));
     }
 
@@ -98,32 +99,23 @@ class ProjectionGrammarTest {
     void lineNumbersSurviveSkippedComments() {
         Errors errors = new Errors();
         ProjectionGrammar.FileContext ctx = parser(
-                "record-count:2\n"
-                        + "code:ACID\ntype:element\ndesc:acid\nblind-desc:acid\nobvious:1\ncolor:Slate\n"
+                "code:ACID\ntype:element\ndesc:acid\nblind-desc:acid\nobvious:1\ncolor:Slate\n"
                         + "# a comment line\n"
                         + "code:ELEC\ntype:element\ndesc:lightning\nblind-desc:lightning\nobvious:1\ncolor:Blue\n",
                 errors).file();
 
         assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
         assertEquals(2, ctx.projections.size());
-        // First code: on line 2; second on line 9 (the comment on line 8 is skipped but still counted).
-        assertEquals("2", ctx.projections.get(0).getLast());
-        assertEquals("9", ctx.projections.get(1).getLast());
-    }
-
-    @Test
-    void missingRecordCountIsAParseError() {
-        Errors errors = new Errors();
-        parser("code:ACID\ntype:element\ndesc:acid\nblind-desc:acid\nobvious:1\ncolor:Slate\n", errors).file();
-
-        assertFalse(errors.messages.isEmpty(), "a file that does not open with record-count must not parse");
+        // First code: on line 1; second on line 8 (the comment on line 7 is skipped but still counted).
+        assertEquals("1", ctx.projections.get(0).getLast());
+        assertEquals("8", ctx.projections.get(1).getLast());
     }
 
     @Test
     void recordMissingAMandatoryFieldIsAParseError() {
         // No desc/blind-desc/obvious/color after type: the mandatory sequence can't complete.
         Errors errors = new Errors();
-        parser("record-count:1\ncode:ACID\ntype:element\n", errors).file();
+        parser("code:ACID\ntype:element\n", errors).file();
 
         assertFalse(errors.messages.isEmpty(), "a record missing a mandatory field must not parse");
     }

@@ -25,6 +25,7 @@ import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.enums.StatElemType;
 import uk.co.jackoftradesltd.channel.messages.data.PlayerEventStatusUpdate;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.channel.utils.FlagView;
 import uk.co.jackoftradesltd.channel.utils.combiners.CombinerName;
@@ -46,41 +47,51 @@ import java.util.List;
  * name is resolved against the loaded {@code ui_entry_renderer.txt} renderers,
  * and the {@code combine:} name against the {@link CombinerName} enum.
  * <p>
- * Assembly is best-effort and error-collecting rather than fail-fast: a record
- * whose renderer or combiner cannot be resolved is skipped with a message
- * appended to {@code errors} (quoting its source line), and processing
- * continues with the next record, so one bad block does not hide the rest.
+ * Assembly is fail-fast: the first record that cannot be resolved ends the
+ * load, and nothing is skipped. An unknown renderer name makes
+ * {@link UIRegistry#getUIEntryRenderer} throw an {@link IllegalArgumentException};
+ * an unknown combiner or flag name, a repeated name carrying a parameter, or a
+ * record with no combiner throws a {@link DataFileParseException} naming the file
+ * (and, for the combiner and flag, the record's line).
  *
- * <p>Class UIEntryBaseAssembler coded before 260920, commented in full on 260922.
+ * <p>Class UIEntryBaseAssembler coded before 260920, commented in full on 260922, updated on 261105
+ * for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
 public class UIEntryBaseAssembler implements Assembler<UIEntryBaseParseRecord, List<UIEntry>> {
     /**
-     * Logger for the fatal, non-recoverable states {@link #parseEachEntry(List, UIEntry)} throws on
-     * - an override record whose parameter is non-null, or a record with no combiner - both of which
-     * mirror a C {@code quit()}/{@code assert} rather than a soft, error-collecting failure.
+     * Logger for the fatal states this class throws on: an unknown combiner or flag name in
+     * {@link #assemble}, and, in {@code parseEachEntry}, an override record whose parameter is
+     * non-null or a record with no combiner. Each is logged at {@code fatal} just before its
+     * {@link DataFileParseException}, standing in for C's {@code quit()}/{@code assert}.
      *
-     * <p>Field logger coded before 260920, commented in full on 260920.
+     * <p>Field logger coded before 260920, commented in full on 260920, updated on 261105 for the
+     * removal of the soft-error path.
      */
     private static final Logger logger = LogManager.getLogger(UIEntryBaseAssembler.class);
 
     /**
-     * Resolves each {@link UIEntryBaseParseRecord} into a {@link UIEntry},
-     * skipping (and reporting) any record whose renderer name is unknown or
-     * whose combine name is not a valid {@link CombinerName}.
+     * Resolves each {@link UIEntryBaseParseRecord} into a {@link UIEntry} and folds it into the
+     * result list through {@code parseEachEntry}. The renderer name is looked up with
+     * {@link UIRegistry#getUIEntryRenderer}, the combine name with {@link CombinerName#valueOf}, and
+     * each {@code |}-separated flag as {@code ENTRY_FLAG_<NAME>}.
      *
-     * @param records the raw template records produced by the grammar
-     * @param errors  collector to which per-record resolution failures are
-     *                appended; passed on to the builder
-     * @return the successfully assembled {@link UIEntry} templates, in
-     * source order, excluding any records that failed to resolve
+     * <p>The first record that fails ends the load; none is skipped and no partial list is
+     * returned.
      *
-     * <p>Function assemble coded before 260920, commented in full on 260922.
+     * <p>Function assemble coded before 260920, commented in full on 260922, updated on 261105 for
+     * the removal of the soft-error path.
+     *
+     * @param records  the raw template records produced by the grammar
+     * @param filename the file the records were read from, named in every error message
+     * @return the assembled {@link UIEntry} templates, in source order
+     * @throws IllegalArgumentException if a renderer name matches no loaded renderer
+     * @throws DataFileParseException   if a combine or flag name is unknown, or
+     *                                  {@code parseEachEntry} refuses the record
      */
     @Override
     public List<UIEntry> assemble(@NotNull List<UIEntryBaseParseRecord> records,
-                                      @NotNull List<String> errors,
                                       @NotNull String filename) {
         List<UIEntry> entries = new ArrayList<>();
 
@@ -89,20 +100,23 @@ public class UIEntryBaseAssembler implements Assembler<UIEntryBaseParseRecord, L
 
             String name = record.name();
             String rendererName = record.renderer();
-            UIEntryRenderer renderer = UIRegistry.getUIEntryRenderer(rendererName, errors);
+            UIEntryRenderer renderer = UIRegistry.getUIEntryRenderer(rendererName);
+            
             if (renderer == null) {
-                errors.add("Block starting on line: " + line +
-                        " has renderer " + rendererName +
-                        " not found for record " + name);
-                continue;
+                String message = "UI entry base starting at line: " + line + " of file: " + filename + " has " +
+                        "an illegal renderer name value: " + record.renderer();
+                logger.fatal(message);
+                throw new DataFileParseException(message);
             }
 
             CombinerName combinerName;
             try {
                 combinerName = CombinerName.valueOf(record.combine());
             } catch (IllegalArgumentException e) {
-                errors.add("Line: " + line + ": Illegal combine name for record " + record.name());
-                continue;
+                String message = "UI entry base starting at line: " + line + " of file: " + filename + " has " +
+                        "an illegal combiner name value: " + record.combine();
+                logger.fatal(message, e);
+                throw new DataFileParseException(message);
             }
             List<String> categories = record.categories();
             String flags = record.flags();
@@ -116,7 +130,6 @@ public class UIEntryBaseAssembler implements Assembler<UIEntryBaseParseRecord, L
 
             Flag<ChannelEntryFlag> flag = new Flag<>(ChannelEntryFlag.class);
             String[] flagStrings = flags.split("\\|");
-            boolean badFlag = false;
             for (String flagString : flagStrings) {
                 flagString = flagString.trim();
                 try {
@@ -124,17 +137,18 @@ public class UIEntryBaseAssembler implements Assembler<UIEntryBaseParseRecord, L
                             + flagString.toUpperCase());
                     flag.on(channelEntryFlag);
                 } catch (IllegalArgumentException e) {
-                    errors.add("Line: " + line + ": Illegal channel flag name " + flagString);
-                    badFlag = true;
+                    String message = "UI entry base starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal flag value: " + flagString;
+                    logger.fatal(message, e);
+                    throw new DataFileParseException(message);
                 }
             }
-            if (badFlag) continue;
 
             UIEntry entry = new UIEntry(name, null,
                     null, null, renderer, combinerName, cats,
                     0, "", flag, desc, "", "", "");
 
-            parseEachEntry(entries, entry);
+            parseEachEntry(entries, entry, filename);
         }
 
         return entries;
@@ -145,38 +159,43 @@ public class UIEntryBaseAssembler implements Assembler<UIEntryBaseParseRecord, L
      * either merging it into an already-inserted entry of the same name (the override path) or
      * turning it into a fresh, {@code TEMPLATE_ONLY}-flagged entry (the create path). Together with
      * the flag it sets on every path, this is the Java form of C's {@code hatch_embryo}
-     * ({@code [C] ui-entry.c:1756-1863}) as it applies to the base file specifically, and of
+     * (in {@code ui-entry.c}) as it applies to the base file specifically, and of
      * {@code run_parse_ui_entry}'s post-base-file loop that OR's {@code ENTRY_FLAG_TEMPLATE_ONLY}
-     * into every entry parsed so far ({@code [C] ui-entry.c:2276-2278}) - done here per entry rather
-     * than in one pass afterwards.
+     * into every entry parsed so far - done here per entry rather than in one pass afterwards.
      * <p>
      * The override path (an {@code entries} lookup by name finds an existing entry) mirrors
      * {@code hatch_embryo}'s {@code embryo->exists} branch: the renderer, combiner and flags are
      * overwritten outright, and only categories not already present are added, at the existing
      * entry's own default priority and with {@code priority_set} left {@code false} - matching
-     * {@code insert_embryo_category}'s call from {@code parse_entry_category}
-     * ({@code [C] ui-entry.c:1447-1561, 2114-2130}). It throws if the incoming entry carries a
-     * non-null parameter, since C's {@code parse_entry_parameter} refuses to parameterize an entry
-     * that already exists ({@code [C] ui-entry.c:1996-1998}) - a case {@code ui_entry_base.txt} never
+     * {@code insert_embryo_category}'s call from {@code parse_entry_category}. It throws if the
+     * incoming entry carries a non-null parameter, since C's {@code parse_entry_parameter} refuses
+     * to parameterize an entry that already exists - a case {@code ui_entry_base.txt} never
      * produces, since no record in it repeats an earlier record's name.
      * <p>
      * The create path builds one {@link EmbryonicCategoryReferencies} per category (mirroring
      * {@code embryo->categories} before it is parameterized) and then expands the entry once per
      * element or per stat if the source record's parameter says to, or once outright otherwise -
-     * the same three-way shape as {@code hatch_embryo}'s parameterized-name loop
-     * ({@code [C] ui-entry.c:1771-1822}), though {@code ui_entry_base.txt} only ever takes the
-     * "otherwise" branch, since none of its records set a {@code parameter:}. It throws if the
-     * entry has no combiner, mirroring the required-field check at the top of
-     * {@code hatch_embryo} ({@code [C] ui-entry.c:1762-1769}).
+     * the same three-way shape as {@code hatch_embryo}'s parameterized-name loop, though
+     * {@code ui_entry_base.txt} only ever takes the "otherwise" branch, since none of its records
+     * set a {@code parameter:}. It throws if the entry has no combiner, mirroring the
+     * required-field check at the top of {@code hatch_embryo}.
+     * <p>
+     * Both throws are fatal and end the load, following the 261104 decision that every data-file
+     * error is; neither message carries a line number, because the {@link UIEntry} passed in no
+     * longer holds the record's line.
      *
-     * <p>Function parseEachEntry coded before 260920, commented in full on 260920.
+     * <p>Function parseEachEntry coded before 260920, commented in full on 260920, updated on 261105
+     * for the removal of the soft-error path.
      *
-     * @param entries the shared entry list being built up across all of {@code ui_entry_base.txt};
-     *                mutated in place
-     * @param entry   the raw {@link UIEntry} {@link #assemble} built from one parse record, not yet
-     *                folded into {@code entries}
+     * @param entries  the shared entry list being built up across all of {@code ui_entry_base.txt};
+     *                 mutated in place
+     * @param entry    the raw {@link UIEntry} {@link #assemble} built from one parse record, not yet
+     *                 folded into {@code entries}
+     * @param filename the file the record was read from, named in both error messages
+     * @throws DataFileParseException if an entry of the same name already exists and {@code entry}
+     *                                carries a non-null parameter, or if a new entry has no combiner
      */
-    private void parseEachEntry(List<UIEntry> entries, UIEntry entry) {
+    private void parseEachEntry(List<UIEntry> entries, UIEntry entry, String filename) {
         Flag<ChannelEntryFlag> fullFlags = new Flag<>(ChannelEntryFlag.class);
         fullFlags.copyFrom(entry.getEntryFlag());
         fullFlags.on(ChannelEntryFlag.ENTRY_FLAG_TEMPLATE_ONLY);
@@ -191,9 +210,10 @@ public class UIEntryBaseAssembler implements Assembler<UIEntryBaseParseRecord, L
             UIEntryCategory lastCategory;
             // Override path
             if (entry.getParameter() != null) {
-                String message = "Invalid entry found - existing UIEntry with non-null parameter";
+                String message = "UI entry base " + entry.getName() + " of file: " + filename + " has " +
+                        "an illegal value, existing UIEntry with a non-null parameter";
                 logger.fatal(message);
-                throw new RuntimeException(message);
+                throw new DataFileParseException(message);
             }
 
             existing.setRenderer(entry.getRenderer());
@@ -261,9 +281,10 @@ public class UIEntryBaseAssembler implements Assembler<UIEntryBaseParseRecord, L
 
             // Hatch
             if (entry.getCombineType() == null) {
-                String message = "Fatal error occurred while parsing entry " + entry.getName() + " no combiner found!";
+                String message = "UI entry base: " + entry.getName() + " of file: " + filename + " has " +
+                        "caused a fatal error: No combiner found!";
                 logger.fatal(message);
-                throw new RuntimeException(message);
+                throw new DataFileParseException(message);
             }
 
             if (entry.getStatOrElement() == StatElemType.ELEMENT) {

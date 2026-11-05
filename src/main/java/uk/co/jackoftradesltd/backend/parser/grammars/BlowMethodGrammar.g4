@@ -24,11 +24,6 @@ options { tokenVocab = BlowMethodLexer; }
     import java.util.ArrayList;
 }
 
-recordCount
-        returns[String count]
-        :   RECORD_COUNT INTEGER { $count = $INTEGER.getText(); }
-        ;
-
 // name: opens a record. The line number is captured here (rather than anywhere else in
 // the block) so that a soft error raised later by the assembler can point at the line
 // the reader would recognize as the start of the offending method.
@@ -129,20 +124,14 @@ blow
             desc { descInit = $desc.descStr; }
         ;
 
-// Entry rule: the record-count header followed by one or more blow-method blocks.
-//
-// record-count: is a port-ism rather than something C reads - it is required here so a
-// truncated or over-trimmed data file is caught. The count is returned as raw text for
-// BlowMethodReader to hand to GrammarDriver.checkRecordCount, which reports a mismatch
-// as a SOFT error: the records that did parse still load.
+// Entry rule: one or more blow-method blocks.
 //
 // The trailing EOF is what forces the whole file to be consumed, so trailing junk after
 // the last block is a syntax error rather than being silently ignored.
 file
-        returns[String declaredRecordCount, List<BlowMethodParseRecord> records]
+        returns[List<BlowMethodParseRecord> records]
         @init {
             $records = new ArrayList<>();
         }
-        :   recordCount { $declaredRecordCount = $recordCount.count;}
-            (blow { $records.add($blow.record); })+ EOF
+        :   (blow { $records.add($blow.record); })+ EOF
         ;

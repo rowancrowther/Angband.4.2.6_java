@@ -87,20 +87,19 @@ public class PainAssembler implements Assembler<PainParseRecord, List<MonsterPai
      * <p>C reports the eighth message at the line of that {@code message:} directive; the message
      * here names the line of the {@code type:} directive that opened the record.
      *
-     * <p>Every failure is fatal and the rest of the file is not read. {@code errors} is not written
-     * to: it is part of the {@link Assembler} contract and nothing here is a soft error any more.
+     * <p>Every failure is fatal and the rest of the file is not read.
      *
-     * <p>Function assemble coded before 260915, commented in full on 261028.
+     * <p>Function assemble coded before 260915, commented in full on 261028, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param records  the raw pain records from the grammar, each {@code [typeNum, msg1..msgN]}
-     * @param errors   the soft-error sink, left untouched
      * @param filename the file being read, for the messages
      * @return one {@link MonsterPain} per record, in the order given, each holding seven messages
      * @throws DataFileParseException if a serial starts with {@code -} or has no leading digits, or
      *                                a record has more than seven messages
      */
     @Override
-    public List<MonsterPain> assemble(@NotNull List<PainParseRecord> records, @NotNull List<String> errors,
+    public List<MonsterPain> assemble(@NotNull List<PainParseRecord> records,
                                     String filename) {
         List<MonsterPain> monsterPains = new ArrayList<>();
 

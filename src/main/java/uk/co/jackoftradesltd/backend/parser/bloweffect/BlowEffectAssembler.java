@@ -63,9 +63,10 @@ import java.util.List;
  * </ul>
  * As C's {@code parse_eff_*} handlers end the whole {@code blow_effects.txt} load on their
  * first parser error, so does this assembler: a bad value is logged and thrown as a
- * {@link DataFileParseException} rather than reported as a soft error.
+ * {@link DataFileParseException}, and no record is skipped.
  *
- * <p>Class BlowEffectAssembler coded before 260915, commented in full on 261023.
+ * <p>Class BlowEffectAssembler coded before 260915, commented in full on 261023, updated on 261105
+ * for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -126,14 +127,13 @@ public class BlowEffectAssembler implements Assembler<BlowEffectParseRecord, Lis
      * the load-ending errors, the white colour fallback and base 0 integers on 261023.
      *
      * @param records  the blow-effect records in file order, as produced by the grammar
-     * @param errors   unused: every error ends the load by throwing instead
      * @param filename the name of the data file, used in the error messages
      * @return the assembled blow effects, in file order
      * @throws DataFileParseException on a {@code resist:} on an effect type that cannot carry
      *                                one, or a {@code power:} or {@code eval:} with no digits
      */
     @Override
-    public List<BlowEffect> assemble(@NotNull List<BlowEffectParseRecord> records, @NotNull List<String> errors,
+    public List<BlowEffect> assemble(@NotNull List<BlowEffectParseRecord> records,
                                      String filename) {
         List<BlowEffect> effects = new ArrayList<>();
 
@@ -220,8 +220,8 @@ public class BlowEffectAssembler implements Assembler<BlowEffectParseRecord, Lis
             // Unlike every other resolution here, an unknown lash type is not an error: [C]
             // falls back to PROJ_MISSILE. The shipped file depends on it - SHATTER declares
             // lash-type:SHARDS while the projection code is SHARD, upstream included - so both
-            // the unknown-name and no-such-projection paths land on MISSILE rather than adding
-            // to errors. ProjectionEnum spans elements then projections, mirroring the merged
+            // the unknown-name and no-such-projection paths land on MISSILE rather than ending
+            // the load. ProjectionEnum spans elements then projections, mirroring the merged
             // list [C] searches in proj_name_to_idx (project.c, proj_name_list).
             if (!proj.isEmpty()) {
                 ProjectionEnum projEnum;

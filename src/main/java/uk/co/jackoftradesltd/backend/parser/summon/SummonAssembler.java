@@ -39,8 +39,8 @@ import java.util.List;
  * {@code finish_parse_summon} in the original {@code mon-summon.c}.
  *
  * <p><strong>Every fault stops the load.</strong> C's first parser error ends the whole file, and so
- * does this: a fault is logged as fatal and thrown as a {@link DataFileParseException}, no later
- * record is read, and nothing is added to the {@code errors} list. The faults are a {@code msgt:}
+ * does this: a fault is logged as fatal and thrown as a {@link DataFileParseException}, and no
+ * later record is read. The faults are a {@code msgt:}
  * that {@link MessageType#lookupByName} cannot resolve ({@code parse_summon_message_type} returns
  * {@code PARSE_ERROR_INVALID_MESSAGE}), a {@code base:} that matches no monster base
  * ({@code PARSE_ERROR_INVALID_MONSTER_BASE}), and a {@code race-flag:} that names no flag
@@ -68,7 +68,8 @@ import java.util.List;
  * holds only real records, with no blank slot at the end and so no counterpart of {@code summon_max};
  * this is the accepted deviation recorded on {@code MonsterRegistry}.
  *
- * <p>Class SummonAssembler coded before 260915, commented in full on 261029.
+ * <p>Class SummonAssembler coded before 260915, commented in full on 261029, updated on 261105 for
+ * the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -99,15 +100,13 @@ public class SummonAssembler implements Assembler<SummonParseRecord, List<Summon
      * <p>Function assemble coded before 260915, commented in full on 261029.
      *
      * @param records  the raw parse records, in file order
-     * @param errors   the soft-error sink required by {@link Assembler}; not used, because every fault
-     *                 here stops the load and nothing is added to it
      * @param filename the file the records were read from, named in the message of a fault
      * @return the assembled summons in file order, with fallback references linked where they resolve
      * @throws DataFileParseException if a {@code msgt:}, {@code base:} or {@code race-flag:} does not
      *                                resolve, or a {@code uniques:} figure has no digits
      */
     @Override
-    public List<Summon> assemble(@NotNull List<SummonParseRecord> records, @NotNull List<String> errors,
+    public List<Summon> assemble(@NotNull List<SummonParseRecord> records,
                                     String filename) {
         // First pass: build every summon, carrying its raw fallback name.
         // Second pass (below) links the fallback references, which can only be done once all

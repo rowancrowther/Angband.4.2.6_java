@@ -2,10 +2,6 @@ lexer grammar HistoryLexer;
 
 import CommentsAndEol;
 
-RECORD_COUNT
-        :   'record-count:'
-        ;
-
 CHART
         :   'chart:'
         ;

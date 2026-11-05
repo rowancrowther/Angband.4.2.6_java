@@ -42,8 +42,7 @@ import java.util.List;
  * <p><b>Every fault stops the load.</b> The one fault the assembler can find is a {@code stat:} that
  * names no stat. It logs at {@code fatal} and throws {@link DataFileParseException}, as C's
  * {@code PARSE_ERROR_INVALID_SPELL_STAT} from {@code parse_realm_stat} ends the whole
- * {@code realm.txt} load. No realm is ever dropped, and the {@code errors} list passed to
- * {@link #assemble} is never written to.
+ * {@code realm.txt} load. No realm is ever dropped.
  *
  * <p><b>The stat.</b> The text goes through {@link Stats#statNameToIdx(String)}, the port of C's
  * {@code stat_name_to_idx}, so it is matched ignoring case, {@code NONE} is refused (C's
@@ -58,7 +57,8 @@ import java.util.List;
  * {@code ""} for a directive the record lacks, where C leaves the pointer {@code NULL}
  * (see {@code docs/grammar_issues.md}); nothing in the port reads those fields yet.
  *
- * <p>Class RealmAssembler coded before 260915, commented in full on 261029.
+ * <p>Class RealmAssembler coded before 260915, commented in full on 261029, updated on 261105 for
+ * the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -91,13 +91,12 @@ public class RealmAssembler implements Assembler<RealmParseRecord, List<MagicRea
      * absent stat as strength, commented in full on 261029.
      *
      * @param records  the raw per-realm parse records, in file order
-     * @param errors   not written to; every fault is thrown
      * @param filename the file the records came from, named in the failure message
      * @return the assembled realms in reverse file order, one per record
      * @throws DataFileParseException if a record's {@code stat:} names no stat
      */
     @Override
-    public List<MagicRealm> assemble(@NotNull List<RealmParseRecord> records, @NotNull List<String> errors,
+    public List<MagicRealm> assemble(@NotNull List<RealmParseRecord> records,
                                     String filename) {
         List<MagicRealm> realms = new ArrayList<>();
 

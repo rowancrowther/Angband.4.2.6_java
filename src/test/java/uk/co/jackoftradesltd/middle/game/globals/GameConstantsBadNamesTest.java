@@ -106,7 +106,7 @@ class GameConstantsBadNamesTest {
     @DisplayName("section 3 stops start-up with an error that names names.txt")
     void sectionAtMarkerStopsStartUp() throws IOException {
         Files.writeString(tempDir.resolve("names.txt"),
-                "record-count:2\nsection:1\nword:beleg\nsection:3\nword:bad\n");
+                "section:1\nword:beleg\nsection:3\nword:bad\n");
         Core core = core();
 
         RuntimeException thrown = assertThrows(RuntimeException.class, () -> GameConstants.init(core));

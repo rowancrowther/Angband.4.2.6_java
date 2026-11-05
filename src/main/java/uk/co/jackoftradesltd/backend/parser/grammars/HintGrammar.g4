@@ -6,11 +6,6 @@ options { tokenVocab = HintLexer; }
     import uk.co.jackoftradesltd.backend.parser.hint.HintParseRecord;
 }
 
-recordCount
-        returns[String count]
-        :   RECORD_COUNT INTEGER { $count = $INTEGER.getText(); }
-        ;
-
 hint
         returns[String hintLine, int line]
         :   HINT STRING { $hintLine = $STRING.getText();
@@ -24,8 +19,7 @@ hintRecord
         ;
 
 file
-        returns[String declaredRecordCount, List<HintParseRecord> hints]
+        returns[List<HintParseRecord> hints]
         @init { $hints = new ArrayList<>(); }
-        :   recordCount { $declaredRecordCount = $recordCount.count; }
-            ( hintRecord { $hints.add($hintRecord.record); })* EOF
+        :   ( hintRecord { $hints.add($hintRecord.record); })* EOF
         ;

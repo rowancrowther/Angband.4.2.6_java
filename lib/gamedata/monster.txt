@@ -226,7 +226,6 @@
 
 # TODO: Explain the other monster and spell flags. But maybe in another file.
 
-record-count:624
 
 ##### Non-race (contains the "player" picture) #####
 

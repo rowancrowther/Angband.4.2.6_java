@@ -32,11 +32,6 @@ lexer grammar PainLexer;
 // mode end-of-line handling.
 import CommentsAndEol;
 
-// "record-count:<n>" - header declaring how many pain-message sets follow.
-RECORD_COUNT
-        :   'record-count:'
-        ;
-
 // "type:<n>" - opens a new pain-message set; the value is its index.
 TYPE
         :   'type:'

@@ -26,7 +26,6 @@ import uk.co.jackoftradesltd.backend.parser.dungeonprofile.TunnelAssembler;
 import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.middle.cave.profiles.dungeon.TunnelProfile;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.ToIntFunction;
 
@@ -68,7 +67,7 @@ class TunnelAssemblerTest {
     }
 
     private static TunnelProfile assemble(List<Tunnel> records) {
-        return new TunnelAssembler().assemble(records, new ArrayList<>(), FILE);
+        return new TunnelAssembler().assemble(records, FILE);
     }
 
     private static TunnelProfile one(Tunnel record) {
@@ -114,13 +113,6 @@ class TunnelAssemblerTest {
     void eachFieldLandsInItsOwnSlot() {
         // C: rnd, chg, con, pen, jct in that order; five distinct values catch any swap
         assertProfile(one(tunnel("11", "12", "13", "14", "15")), 11, 12, 13, 14, 15);
-    }
-
-    @Test
-    void nothingIsAddedToTheErrorList() {
-        List<String> errors = new ArrayList<>();
-        new TunnelAssembler().assemble(List.of(tunnel("10", "30", "15", "25", "50")), errors, FILE);
-        assertTrue(errors.isEmpty(), errors::toString);
     }
 
     // ---- Number reading: strtol in base 0 ----------------------------------

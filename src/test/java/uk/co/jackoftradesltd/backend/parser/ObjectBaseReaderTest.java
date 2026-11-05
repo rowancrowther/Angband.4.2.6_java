@@ -19,6 +19,7 @@ package uk.co.jackoftradesltd.backend.parser;
 
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftradesltd.backend.parser.grammars.objectbase.ObjectBaseGrammar;
@@ -62,8 +63,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * will need to change with the fix recorded in {@code docs/grammar_issues.md} or
  * {@code docs/Assembler_Issues.md}.
  *
- * <p>Every synthetic fixture carries the header the {@code file} rule requires - a
- * {@code record-count:} line and at least one {@code default:} line - via {@link #withHeader}.
+ * <p>Every synthetic fixture opens with {@link #DEFAULTS}, the {@code default:} lines the
+ * {@code file} rule requires, except the tests about those lines themselves.
  *
  * @author Rowan Crowther
  */
@@ -79,12 +80,6 @@ class ObjectBaseReaderTest {
     @TempDir
     Path tempDir;
 
-    /**
-     * Prefix a record body with a matching {@code record-count:} and the mandatory defaults.
-     */
-    private static String withHeader(int count, String body) {
-        return "record-count:" + count + "\n" + DEFAULTS + body;
-    }
 
     private String tempFile(String name, String content) throws IOException {
         Path file = tempDir.resolve(name);
@@ -116,7 +111,6 @@ class ObjectBaseReaderTest {
     void cleanLoadOfTheRealFileReportsNoErrorsAndAll34Bases() throws IOException {
         ParseResult<ObjectBase> result = new ObjectBaseReader().parseWithResults(REAL_FILE);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(34, declared(result).size(), () -> "loaded: " + declared(result).size());
     }
 
@@ -150,9 +144,8 @@ class ObjectBaseReaderTest {
         // No break:/max-stack: on the record, so both come from the file-wide defaults folded in
         // by the grammar's file rule.
         ParseResult<ObjectBase> result =
-                load("minimal.txt", withHeader(1, "name:sword:Bladed weapon~\ngraphics:white\n"));
+                load("minimal.txt", DEFAULTS + "name:sword:Bladed weapon~\ngraphics:white\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, declared(result).size());
         ObjectBase base = declared(result).get(0);
         assertEquals(TValue.TV_SWORD, base.gettVal());
@@ -163,9 +156,8 @@ class ObjectBaseReaderTest {
     @Test
     void explicitBreakAndMaxStackOverrideTheDefaults() throws IOException {
         ParseResult<ObjectBase> result = load("override.txt",
-                withHeader(1, "name:shot:Shot~\ngraphics:light umber\nbreak:0\nmax-stack:99\n"));
+                DEFAULTS + "name:shot:Shot~\ngraphics:light umber\nbreak:0\nmax-stack:99\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         ObjectBase base = result.items().get(0);
         assertEquals(0, base.getBreakPerc());
         assertEquals(99, base.getMaxStack());
@@ -177,9 +169,8 @@ class ObjectBaseReaderTest {
     void dragonArmorResolvesToItsTVal() throws IOException {
         // Regression for the "DRAG__ARMOR" double-underscore bug: "dragon armor" must resolve.
         ParseResult<ObjectBase> result = load("dragon.txt",
-                withHeader(1, "name:dragon armor:Dragon Armor~\ngraphics:white\n"));
+                DEFAULTS + "name:dragon armor:Dragon Armor~\ngraphics:white\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(TValue.TV_DRAG_ARMOR, result.items().get(0).gettVal());
     }
 
@@ -188,9 +179,8 @@ class ObjectBaseReaderTest {
         // "name:gold" has no ":plural" part - exercises the second `name` alternative and the
         // T_VAL lexer rule that must stop at the newline.
         ParseResult<ObjectBase> result = load("gold.txt",
-                withHeader(1, "name:gold\ngraphics:light yellow\n"));
+                DEFAULTS + "name:gold\ngraphics:light yellow\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(TValue.TV_GOLD, result.items().get(0).gettVal());
     }
 
@@ -199,9 +189,8 @@ class ObjectBaseReaderTest {
     @Test
     void colourResolvesToTheNamedColourNotTheDarkDefault() throws IOException {
         ParseResult<ObjectBase> result = load("colour.txt",
-                withHeader(1, "name:chest:Chest~\ngraphics:slate\n"));
+                DEFAULTS + "name:chest:Chest~\ngraphics:slate\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         ColourEnum attr = result.items().get(0).getAttr();
         assertEquals(ColourEnum.fromCode("slate"), attr);
         assertNotEquals(ColourEnum.COLOUR_DARK, attr, "colour should resolve, not fall back to DARK");
@@ -213,8 +202,7 @@ class ObjectBaseReaderTest {
     void repeatedFlagsLinesMergeRatherThanReplace() {
         // The merge happens in the grammar (object_base's `(flags {...})*` addAll). ObjectBase
         // exposes no flag accessor, so assert on the ObjectBaseParseRecord the grammar builds.
-        String src = withHeader(1,
-                "name:arrow:Arrow~\ngraphics:light umber\nflags:HATES_ACID | HATES_FIRE\nflags:SHOW_DICE\n");
+        String src = DEFAULTS + "name:arrow:Arrow~\ngraphics:light umber\nflags:HATES_ACID | HATES_FIRE\nflags:SHOW_DICE\n";
         ObjectBaseLexer lexer = new ObjectBaseLexer(CharStreams.fromString(src));
         ObjectBaseGrammar parser = new ObjectBaseGrammar(new CommonTokenStream(lexer));
 
@@ -229,12 +217,12 @@ class ObjectBaseReaderTest {
 
     /**
      * The load ends with a {@link DataFileParseException} naming the record's line (the
-     * {@code name:} line, 4 in every fixture here, after the header) and the file, and quoting the
+     * {@code name:} line, 3 in every fixture here, after the two {@code default:} lines) and the file, and quoting the
      * offending text. C's handler returns a parser error and {@code init_angband} quits.
      */
     private void assertFatal(String name, String content, String... expectedInMessage) {
-        DataFileParseException thrown = assertThrows(DataFileParseException.class, () -> load(name, content));
-        assertTrue(thrown.getMessage().contains("line: 4"), thrown::getMessage);
+        DataFileParseException thrown = assertThrows(DataFileParseException.class, () -> load(name, DEFAULTS + content));
+        assertTrue(thrown.getMessage().contains("line: 3"), thrown::getMessage);
         assertTrue(thrown.getMessage().contains(name), thrown::getMessage);
         for (String text : expectedInMessage) {
             assertTrue(thrown.getMessage().contains(text), thrown::getMessage);
@@ -244,21 +232,21 @@ class ObjectBaseReaderTest {
     @Test
     void unknownTValEndsTheLoad() {
         // The message echoes the tval exactly as the file spelled it.
-        assertFatal("bad-tval.txt", withHeader(1, "name:notatval:Thing~\ngraphics:white\n"),
+        assertFatal("bad-tval.txt", "name:notatval:Thing~\ngraphics:white\n",
                 "illegal tValue value", "notatval");
     }
 
     @Test
     void unknownKindFlagEndsTheLoad() {
         assertFatal("bad-flag.txt",
-                withHeader(1, "name:sword:Bladed weapon~\ngraphics:white\nflags:NOTAFLAG\n"),
+                "name:sword:Bladed weapon~\ngraphics:white\nflags:NOTAFLAG\n",
                 "illegal flag value", "NOTAFLAG");
     }
 
     @Test
     void unknownHatesFlagEndsTheLoad() {
         assertFatal("bad-hates.txt",
-                withHeader(1, "name:sword:Bladed weapon~\ngraphics:white\nflags:HATES_NOTANELEMENT\n"),
+                "name:sword:Bladed weapon~\ngraphics:white\nflags:HATES_NOTANELEMENT\n",
                 "illegal hates element flag value", "HATES_NOTANELEMENT");
     }
 
@@ -267,23 +255,9 @@ class ObjectBaseReaderTest {
         // Accepted deviation (docs/Accepted_Deviations.md): C keeps the low 32 bits of the strtol
         // result, ParseUtils.parseIntString clamps, so the record loads with Integer.MAX_VALUE.
         ParseResult<ObjectBase> result = load("big-break.txt",
-                withHeader(1, "name:sword:Bladed weapon~\ngraphics:white\nbreak:99999999999999999999\n"));
+                DEFAULTS + "name:sword:Bladed weapon~\ngraphics:white\nbreak:99999999999999999999\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(Integer.MAX_VALUE, declared(result).get(0).getBreakPerc());
-    }
-
-    // ---- Soft record-count mismatch --------------------------------------
-
-    @Test
-    void recordCountMismatchIsReportedButValidRecordStillLoads() throws IOException {
-        // Header over-declares (5 vs the single record). Soft: the record still loads.
-        ParseResult<ObjectBase> result = load("bad-count.txt",
-                withHeader(5, "name:sword:Bladed weapon~\ngraphics:white\n"));
-
-        assertEquals(1, declared(result).size());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("declares 5") && e.contains("contains 1")),
-                result.errors()::toString);
     }
 
     // ---- FLAG token: digit-bearing tail ----------------------------------
@@ -294,7 +268,7 @@ class ObjectBaseReaderTest {
         // the assembler's "illegal flag value: SHOW_2" - proof it lexed as one FLAG rather than a
         // syntax error splitting on the digit.
         assertFatal("digit-flag.txt",
-                withHeader(1, "name:sword:Bladed weapon~\ngraphics:white\nflags:SHOW_2\n"),
+                "name:sword:Bladed weapon~\ngraphics:white\nflags:SHOW_2\n",
                 "illegal flag value", "SHOW_2");
     }
 
@@ -452,15 +426,14 @@ class ObjectBaseReaderTest {
         assertThrows(IOException.class, () -> new ObjectBaseReader().parseWithResults(missing));
     }
 
+    /** A syntax error ends the load on both entry points; {@code parse} no longer hides it. */
     @Test
-    void aSyntaxErrorReturnsNoItemsAndTheMessagesAndParseHidesThem() throws IOException {
-        String file = tempFile("syntax.txt", withHeader(1, "name:sword:S~\nflags:SHOW_DICE\n"));
+    void aSyntaxErrorEndsTheLoadOnBothEntryPoints() throws IOException {
+        String file = tempFile("syntax.txt", DEFAULTS + "name:sword:S~\nflags:SHOW_DICE\n");
 
-        ParseResult<ObjectBase> result = new ObjectBaseReader().parseWithResults(file);
+        assertThrows(ParseCancellationException.class, () -> new ObjectBaseReader().parseWithResults(file));
 
-        assertTrue(result.items().isEmpty(), "not even the synthetic TV_NONE base");
-        assertTrue(result.hasErrors());
-        assertTrue(new ObjectBaseReader().parse(file).isEmpty());
+        assertThrows(ParseCancellationException.class, () -> new ObjectBaseReader().parse(file));
     }
 
     /**
@@ -469,8 +442,7 @@ class ObjectBaseReaderTest {
      */
     @Test
     void aBadRecordEndsTheLoadEvenWhenALaterRecordIsGood() {
-        assertThrows(DataFileParseException.class, () -> load("bad-then-good.txt", withHeader(2,
-                "name:notatval:T~\ngraphics:white\nname:sword:S~\ngraphics:white\n")));
+        assertThrows(DataFileParseException.class, () -> load("bad-then-good.txt", DEFAULTS + "name:notatval:T~\ngraphics:white\nname:sword:S~\ngraphics:white\n"));
     }
 
     // ---- Duplicate tval: C keeps the first in the file -------------------
@@ -483,10 +455,8 @@ class ObjectBaseReaderTest {
      */
     @Test
     void aRepeatedTvalKeepsBothRecordsWithTheFirstOneFirst() throws IOException {
-        ParseResult<ObjectBase> result = load("dup-tval.txt", withHeader(2,
-                "name:sword:First~\ngraphics:white\nbreak:1\nname:sword:Second~\ngraphics:red\nbreak:2\n"));
+        ParseResult<ObjectBase> result = load("dup-tval.txt", DEFAULTS + "name:sword:First~\ngraphics:white\nbreak:1\nname:sword:Second~\ngraphics:red\nbreak:2\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         List<ObjectBase> swords = declared(result);
         assertEquals(2, swords.size());
         assertEquals("First~", swords.get(0).getName());
@@ -503,10 +473,9 @@ class ObjectBaseReaderTest {
     @Test
     void aLaterDefaultOverwritesAnEarlierOne() throws IOException {
         ParseResult<ObjectBase> result = load("two-defaults.txt",
-                "record-count:1\ndefault:break-chance:10\ndefault:break-chance:25\ndefault:max-stack:40\n"
+                "default:break-chance:10\ndefault:break-chance:25\ndefault:max-stack:40\n"
                         + "name:sword:S~\ngraphics:white\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(25, declared(result).get(0).getBreakPerc());
     }
 
@@ -516,10 +485,8 @@ class ObjectBaseReaderTest {
      */
     @Test
     void eachDefaultFillsOnlyTheFieldTheRecordLeftOut() throws IOException {
-        ParseResult<ObjectBase> result = load("partial.txt", withHeader(2,
-                "name:sword:S~\ngraphics:white\nbreak:3\nname:shot:T~\ngraphics:white\nmax-stack:7\n"));
+        ParseResult<ObjectBase> result = load("partial.txt", DEFAULTS + "name:sword:S~\ngraphics:white\nbreak:3\nname:shot:T~\ngraphics:white\nmax-stack:7\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         ObjectBase sword = declared(result).get(0);
         ObjectBase shot = declared(result).get(1);
         assertEquals(3, sword.getBreakPerc());
@@ -532,9 +499,8 @@ class ObjectBaseReaderTest {
     @Test
     void aNegativeBreakChanceIsStoredAsGiven() throws IOException {
         ParseResult<ObjectBase> result = load("neg-break.txt",
-                withHeader(1, "name:sword:S~\ngraphics:white\nbreak:-5\n"));
+                DEFAULTS + "name:sword:S~\ngraphics:white\nbreak:-5\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(-5, declared(result).get(0).getBreakPerc());
     }
 
@@ -542,9 +508,8 @@ class ObjectBaseReaderTest {
     @Test
     void aNumericTvalResolvesAsInC() throws IOException {
         ParseResult<ObjectBase> result = load("numeric-tval.txt",
-                withHeader(1, "name:9:S~\ngraphics:white\n"));
+                DEFAULTS + "name:9:S~\ngraphics:white\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(TValue.TV_SWORD, declared(result).get(0).gettVal());
     }
 
@@ -552,9 +517,8 @@ class ObjectBaseReaderTest {
     @Test
     void tvalAndColourNamesMatchIgnoringCase() throws IOException {
         ParseResult<ObjectBase> result = load("case.txt",
-                withHeader(1, "name:SWORD:S~\ngraphics:LIGHT UMBER\n"));
+                DEFAULTS + "name:SWORD:S~\ngraphics:LIGHT UMBER\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(TValue.TV_SWORD, declared(result).get(0).gettVal());
         assertEquals(ColourEnum.fromCode("light umber"), declared(result).get(0).getAttr());
     }
@@ -565,10 +529,8 @@ class ObjectBaseReaderTest {
      */
     @Test
     void aOneCharacterColourIsLookedUpByItsIndexCharacter() throws IOException {
-        ParseResult<ObjectBase> result = load("char-colour.txt", withHeader(2,
-                "name:sword:S~\ngraphics:w\nname:shot:T~\ngraphics:W\n"));
+        ParseResult<ObjectBase> result = load("char-colour.txt", DEFAULTS + "name:sword:S~\ngraphics:w\nname:shot:T~\ngraphics:W\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(ColourEnum.COLOUR_WHITE, declared(result).get(0).getAttr());
         assertEquals(ColourEnum.COLOUR_LIGHT_SLATE, declared(result).get(1).getAttr());
     }
@@ -580,10 +542,8 @@ class ObjectBaseReaderTest {
      */
     @Test
     void flagsSplitOnPipesWithOrWithoutSpacesAndAccumulateAcrossLines() throws IOException {
-        ParseResult<ObjectBase> result = load("flags.txt", withHeader(1,
-                "name:sword:S~\ngraphics:white\nflags:HATES_ACID|EASY_KNOW\nflags:HATES_COLD | SHOW_DICE\n"));
+        ParseResult<ObjectBase> result = load("flags.txt", DEFAULTS + "name:sword:S~\ngraphics:white\nflags:HATES_ACID|EASY_KNOW\nflags:HATES_COLD | SHOW_DICE\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         ObjectBase base = declared(result).get(0);
         assertEquals(Set.of("EASY_KNOW", "SHOW_DICE"), kindFlagNames(base));
         assertEquals(Set.of("ACID", "COLD"), hatedElementNames(base));
@@ -592,34 +552,31 @@ class ObjectBaseReaderTest {
     @Test
     void aNameWithNoPluralPartLoadsWithANullName() throws IOException {
         ParseResult<ObjectBase> result = load("no-plural.txt",
-                withHeader(1, "name:gold\ngraphics:light yellow\n"));
+                DEFAULTS + "name:gold\ngraphics:light yellow\n");
 
         assertNull(declared(result).get(0).getName(), "C leaves the name NULL");
     }
 
     @Test
     void windowsLineEndingsLoadTheSameAsUnix() throws IOException {
-        String body = withHeader(1, "name:sword:S~\ngraphics:white\nflags:HATES_ACID\n").replace("\n", "\r\n");
+        String body = DEFAULTS + "name:sword:S~\ngraphics:white\nflags:HATES_ACID\n".replace("\n", "\r\n");
 
         ParseResult<ObjectBase> result = load("crlf.txt", body);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(Set.of("ACID"), hatedElementNames(declared(result).get(0)));
     }
 
     // ---- Where C accepts and the grammar does not (docs/grammar_issues.md) ----
 
     private void assertHardError(String name, String content) throws IOException {
-        ParseResult<ObjectBase> result = load(name, content);
+        assertThrows(ParseCancellationException.class, () -> load(name, content));
 
-        assertTrue(result.items().isEmpty(), () -> "items: " + result.items().size());
-        assertTrue(result.hasErrors());
     }
 
     /** C: any number of {@code default:} lines, including none. The grammar needs at least one. */
     @Test
     void aFileWithNoDefaultLineIsAHardErrorWhereCAcceptsIt() throws IOException {
-        assertHardError("no-default.txt", "record-count:1\nname:sword:S~\ngraphics:white\n");
+        assertHardError("no-default.txt", "name:sword:S~\ngraphics:white\n");
     }
 
     /**
@@ -628,41 +585,37 @@ class ObjectBaseReaderTest {
      */
     @Test
     void aDefaultLineAfterARecordIsAHardErrorWhereCAcceptsIt() throws IOException {
-        assertHardError("late-default.txt", withHeader(2,
-                "name:sword:A~\ngraphics:white\ndefault:break-chance:99\nname:shot:B~\ngraphics:red\n"));
+        assertHardError("late-default.txt", DEFAULTS + "name:sword:A~\ngraphics:white\ndefault:break-chance:99\nname:shot:B~\ngraphics:red\n");
     }
 
     /** C: a file with no record at all leaves {@code kb_info} zeroed. The grammar needs one. */
     @Test
     void aFileWithNoRecordIsAHardErrorWhereCAcceptsIt() throws IOException {
-        assertHardError("no-records.txt", "record-count:0\n" + DEFAULTS);
+        assertHardError("no-records.txt", DEFAULTS);
     }
 
     /** C: {@code graphics:} is optional, and a record without one keeps colour 0. */
     @Test
     void aRecordWithNoGraphicsLineIsAHardErrorWhereCAcceptsIt() throws IOException {
-        assertHardError("no-graphics.txt", withHeader(1, "name:sword:S~\n"));
+        assertHardError("no-graphics.txt", DEFAULTS + "name:sword:S~\n");
     }
 
     /** C: the record directives may come in any order. The grammar fixes it. */
     @Test
     void maxStackBeforeBreakIsAHardErrorWhereCAcceptsAnyOrder() throws IOException {
-        assertHardError("order.txt", withHeader(1,
-                "name:sword:S~\ngraphics:white\nmax-stack:5\nbreak:3\n"));
+        assertHardError("order.txt", DEFAULTS + "name:sword:S~\ngraphics:white\nmax-stack:5\nbreak:3\n");
     }
 
     /** C: a repeated {@code break:} overwrites the first. The grammar allows it once. */
     @Test
     void aRepeatedBreakLineIsAHardErrorWhereCLetsItOverwrite() throws IOException {
-        assertHardError("repeat-break.txt", withHeader(1,
-                "name:sword:S~\ngraphics:white\nbreak:3\nbreak:4\n"));
+        assertHardError("repeat-break.txt", DEFAULTS + "name:sword:S~\ngraphics:white\nbreak:3\nbreak:4\n");
     }
 
     /** C: flag names are separated by any run of spaces and pipes. The grammar needs a pipe. */
     @Test
     void flagsSeparatedBySpacesAloneAreAHardErrorWhereCAcceptsThem() throws IOException {
-        assertHardError("space-flags.txt", withHeader(1,
-                "name:sword:S~\ngraphics:white\nflags:HATES_ACID HATES_FIRE\n"));
+        assertHardError("space-flags.txt", DEFAULTS + "name:sword:S~\ngraphics:white\nflags:HATES_ACID HATES_FIRE\n");
     }
 
     // ---- Where C and Java agree on failing -------------------------------
@@ -670,22 +623,16 @@ class ObjectBaseReaderTest {
     /** {@code PARSE_ERROR_MISSING_RECORD_HEADER}: a record directive before any {@code name:}. */
     @Test
     void aRecordDirectiveBeforeAnyNameIsAHardError() throws IOException {
-        assertHardError("before-name.txt", withHeader(1, "break:5\nname:sword:S~\ngraphics:white\n"));
-        assertHardError("before-name2.txt", withHeader(1, "graphics:white\nname:sword:S~\ngraphics:white\n"));
-        assertHardError("before-name3.txt", withHeader(1, "flags:SHOW_DICE\nname:sword:S~\ngraphics:white\n"));
+        assertHardError("before-name.txt", DEFAULTS + "break:5\nname:sword:S~\ngraphics:white\n");
+        assertHardError("before-name2.txt", DEFAULTS + "graphics:white\nname:sword:S~\ngraphics:white\n");
+        assertHardError("before-name3.txt", DEFAULTS + "flags:SHOW_DICE\nname:sword:S~\ngraphics:white\n");
     }
 
     /** {@code PARSE_ERROR_UNDEFINED_DIRECTIVE}: a {@code default:} label other than the two C knows. */
     @Test
     void anUnknownDefaultLabelIsAHardError() throws IOException {
         assertHardError("bad-default.txt",
-                "record-count:1\ndefault:weight:5\n" + DEFAULTS + "name:sword:S~\ngraphics:white\n");
-    }
-
-    /** A header the port adds: the upstream file has none, so a file without it is not C's. */
-    @Test
-    void aFileWithoutTheRecordCountHeaderIsAHardError() throws IOException {
-        assertHardError("no-header.txt", DEFAULTS + "name:sword:S~\ngraphics:white\n");
+                "default:weight:5\n" + DEFAULTS + "name:sword:S~\ngraphics:white\n");
     }
 
     // ---- Where the assembler once differed from C (docs/Assembler_Issues.md) ----
@@ -697,9 +644,8 @@ class ObjectBaseReaderTest {
     @Test
     void anUnknownColourIsWhiteAsInC() throws IOException {
         ParseResult<ObjectBase> result = load("bad-colour.txt",
-                withHeader(1, "name:sword:S~\ngraphics:nosuchcolour\n"));
+                DEFAULTS + "name:sword:S~\ngraphics:nosuchcolour\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(ColourEnum.COLOUR_WHITE, declared(result).get(0).getAttr());
     }
 
@@ -710,9 +656,8 @@ class ObjectBaseReaderTest {
     @Test
     void anIgnoreElementFlagSetsTheIgnoreBitAsInC() throws IOException {
         ParseResult<ObjectBase> result = load("ignore.txt",
-                withHeader(1, "name:sword:S~\ngraphics:white\nflags:IGNORE_ACID\n"));
+                DEFAULTS + "name:sword:S~\ngraphics:white\nflags:IGNORE_ACID\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         ObjectBase base = declared(result).get(0);
         assertEquals(Set.of(ElementEnum.ELEM_ACID), base.getElementMap().keySet());
         assertEquals(List.of(ElementInfoEnum.EL_INFO_IGNORE),
@@ -727,9 +672,8 @@ class ObjectBaseReaderTest {
     @Test
     void aMissingDefaultStoresZeroAsInC() throws IOException {
         ParseResult<ObjectBase> result = load("one-default.txt",
-                "record-count:1\ndefault:break-chance:7\nname:sword:S~\ngraphics:white\n");
+                "default:break-chance:7\nname:sword:S~\ngraphics:white\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(7, declared(result).get(0).getBreakPerc());
         assertEquals(0, declared(result).get(0).getMaxStack());
     }

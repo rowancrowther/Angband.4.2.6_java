@@ -58,11 +58,11 @@ import java.util.List;
  * {@code body.txt} holds the one {@code Humanoid} body. A second body would be first in C's list,
  * so C and the port would disagree on which one a race's index {@code 0} names.
  *
- * <p>C quits on the first bad line. This reader follows the shared two-channel contract instead: a
- * lexer or grammar error returns no bodies and the messages, and a {@code record-count:} mismatch
- * is a soft error that leaves the bodies that did parse loaded. The {@code record-count:} header
- * is Java-only, the upstream file has none, and it counts {@code body:} lines. A file that cannot
- * be opened is an {@link IOException}, where C quits.
+ * <p>C quits on the first bad line, and so does this reader: a lexer or grammar error is thrown
+ * from {@link #extract} as a {@code ParseCancellationException}, and a slot type the assembler
+ * cannot resolve is thrown as a
+ * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}. Neither is caught here, and
+ * no bodies are returned. A file that cannot be opened is an {@link IOException}, where C quits.
  *
  * <p>The grammar is stricter than C in one place: a {@code body:} line with no {@code slot:} line
  * after it is a grammar error, where C accepts a body with no slots. It is written up in
@@ -70,7 +70,8 @@ import java.util.List;
  * slot types {@code NONE} and {@code MAX} where C rejects them, are in
  * {@code docs/Assembler_Issues.md}.
  *
- * <p>Class BodyReader coded before 260915, commented in full on 261018.
+ * <p>Class BodyReader coded before 260915, commented in full on 261018, updated on 261105 for the
+ * removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -84,15 +85,15 @@ public class BodyReader implements Reader<PlayerBody> {
     private static final Logger logger = LogManager.getLogger();
 
     /**
-     * Reads {@code filename} and returns the assembled bodies in file order, discarding the error
-     * messages. The convenience form of {@link #parseWithResults}, which is the one to call when
-     * the errors matter: with this one a hard grammar error and a file with no bodies look the
-     * same.
+     * Reads {@code filename} and returns the assembled bodies in file order, unwrapped from the
+     * {@link ParseResult} that {@link #parseWithResults} gives. Any error throws exactly as it
+     * does there.
      *
-     * <p>Function parse coded before 260915, commented in full on 261018.
+     * <p>Function parse coded before 260915, commented in full on 261018, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param filename the body data file to read
-     * @return the bodies read from the file, empty if the parse failed
+     * @return every body in the file, in file order
      * @throws IOException if the file cannot be opened or read
      */
     @Override
@@ -102,56 +103,50 @@ public class BodyReader implements Reader<PlayerBody> {
 
     /**
      * The grammar-specific step handed to {@link GrammarDriver}: runs the grammar's {@code file}
-     * rule, fails closed on any hard lexer or grammar error through {@link ParseErrors#throwIfAny()},
-     * and soft-checks the {@code record-count:} header against the number of {@code body:} blocks
-     * parsed. No value is interpreted here: the slot type text is resolved to an enum by the
-     * assembler, and the body and slot names are copied through.
+     * rule and fails closed on any hard lexer or grammar error through
+     * {@link ParseErrors#throwIfAny()}. No value is interpreted here: the slot type text is
+     * resolved to an enum by the assembler, and the body and slot names are copied through.
      *
      * <p>The ordering is deliberate: {@code throwIfAny} fires straight after the parse, so a hard
-     * grammar error (a missing {@code record-count:} header, a {@code slot:} line before any
-     * {@code body:}, a {@code body:} with no {@code slot:}, a line the lexer does not know) fails
-     * closed before the count check runs against whatever did parse. The grammar builds each
-     * {@link BodyParseRecord} itself, so the rows are only copied into a new list. The rule needs
-     * at least one body, where C accepts a file with none.
+     * grammar error (a {@code slot:} line before any {@code body:}, a {@code body:} with no
+     * {@code slot:}, a line the lexer does not know) fails closed before any row is used. The
+     * grammar builds each {@link BodyParseRecord} itself, so the rows are only copied into a new
+     * list. The rule needs at least one body, where C accepts a file with none.
      *
-     * <p>Function extract coded before 260915, commented in full on 261018.
+     * <p>Function extract coded before 260915, commented in full on 261018, updated on 261105 for
+     * the removal of the soft-error path and the {@code record-count:} header.
      *
      * @param parser       the generated parser, positioned at the start of the file
      * @param errorCatcher the hard-error channel; {@code throwIfAny} aborts before the rows are used
-     * @param errors       the soft-error sink: a record-count mismatch is appended here
      * @return the parse records, one per {@code body:} block, in file order
      */
     private static List<BodyParseRecord> extract(
             @NotNull BodyGrammar parser,
-            @NotNull ParseErrors errorCatcher,
-            @NotNull List<String> errors) {
+            @NotNull ParseErrors errorCatcher) {
         BodyGrammar.FileContext output = parser.file();
         List<BodyParseRecord> records = output.bodies;
         errorCatcher.throwIfAny();
-
-        String declaredRecordCount = output.declaredRecordCount;
-        GrammarDriver.checkRecordCount(declaredRecordCount, records.size(), errors);
 
         return new ArrayList<>(records);
     }
 
     /**
-     * Reads {@code filename} and returns the full {@link ParseResult}: the assembled
-     * {@link PlayerBody}s and every error message collected on the way. This is the Java form of
-     * C's {@code run_parse_body} followed by {@code finish_parse_body}, and the entry point
-     * {@code PlayerDataLoader.loadBodies()} uses so that it can gate on
-     * {@link ParseResult#hasErrors()} before registering the result. {@link GrammarDriver#run}
-     * does the lex, parse, extract and assemble.
+     * Reads {@code filename} and returns the assembled {@link PlayerBody}s wrapped in a
+     * {@link ParseResult}. This is the Java form of C's {@code run_parse_body} followed by
+     * {@code finish_parse_body}, and the entry point {@code PlayerDataLoader.loadBodies()} uses.
+     * {@link GrammarDriver#run} does the lex, parse, extract and assemble.
      *
-     * <p>Where C fails the load on a slot type it cannot resolve, the assembler records a soft
-     * error and drops that whole body, so that no later slot changes index. A file that cannot be
-     * opened is an {@link IOException}, where C's {@code parse_file_quit_not_found} quits.
+     * <p>As C fails the load on the first error, so does this: a grammar error throws a
+     * {@code ParseCancellationException}, a slot type the assembler cannot resolve throws a
+     * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}, and no result is
+     * returned. A file that cannot be opened is an {@link IOException}, where C's
+     * {@code parse_file_quit_not_found} quits.
      *
-     * <p>Function parseWithResults coded before 260915, commented in full on 261018.
+     * <p>Function parseWithResults coded before 260915, commented in full on 261018, updated on
+     * 261105 for the removal of the soft-error path.
      *
      * @param filename the body data file to load
-     * @return the assembled bodies plus any error messages; the bodies are empty if the parse
-     *         failed
+     * @return every body in the file, in file order
      * @throws IOException if the file cannot be opened or read
      */
     public ParseResult<PlayerBody> parseWithResults(@NotNull String filename) throws IOException {

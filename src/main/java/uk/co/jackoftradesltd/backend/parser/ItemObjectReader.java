@@ -71,14 +71,15 @@ import java.util.List;
  * {@code <curse object>}; they load like any other record, and {@code ObjectDataLoader} picks the
  * ones it needs out afterwards.
  * <p>
+ * As in C, the first error stops the load and nothing is returned: a syntax error is thrown from
+ * {@link #extract} as a {@code ParseCancellationException}, and a record the assembler refuses (an
+ * unknown tval, flag, value name, element, brand, slay or curse, or a number or dice string that
+ * does not parse) is thrown as a
+ * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}. Neither is caught here. A
+ * colour that does not resolve is not an error; it becomes white, as in C.
+ * <p>
  * Differences from C worth knowing about:
  * <ul>
- *   <li>The {@code record-count:} header is a Java-only addition, checked as a soft error; the
- *       upstream {@code object.txt} has no such line, and this repository's copy adds one.</li>
- *   <li>C stops at the first parse error. Here a syntax error is fatal and returns no items, but an
- *       assembler error (an unknown tval, flag, value name, element, brand, slay or curse, or a
- *       number, dice string or colour that does not parse) skips only the offending record and the
- *       rest still load.</li>
  *   <li>C takes the directives in any order and lets a repeated scalar one overwrite while
  *       {@code flags:}, {@code values:}, {@code slay:}, {@code brand:}, {@code msg:},
  *       {@code vis-msg:} and {@code desc:} accumulate (the three texts are joined with no
@@ -95,34 +96,35 @@ import java.util.List;
  *       customised copy in the user directory first.</li>
  * </ul>
  *
- * <p>Class ItemObjectReader coded before 260915, commented in full on 261017.
+ * <p>Class ItemObjectReader coded before 260915, commented in full on 261017, updated on 261105 for
+ * the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
 public class ItemObjectReader implements Reader<ObjectKind> {
     /**
      * Logger handed to {@link GrammarDriver#run} so that an {@link IOException} while reading
-     * {@code object.txt} is logged under this reader's name before it is rethrown. Syntax and soft
-     * errors do not go through it; they travel in the {@link ParseResult}.
+     * {@code object.txt} is logged under this reader's name before it is rethrown. Syntax and
+     * assembler errors do not go through it; they are thrown unlogged to the caller.
      *
-     * <p>Field logger coded before 260915, commented in full on 261017.
+     * <p>Field logger coded before 260915, commented in full on 261017, updated on 261105 for the
+     * removal of the soft-error path.
      */
     private final static Logger logger = LogManager.getLogger();
 
     /**
-     * Parse the given file and return just the assembled kinds, in file order, discarding the
-     * soft-error channel (use {@link #parseWithResults} to inspect the errors). Satisfies the
-     * {@link Reader} contract.
+     * Parse the given file and return just the assembled kinds, in file order, unwrapped from the
+     * {@link ParseResult} that {@link #parseWithResults} gives. Satisfies the {@link Reader}
+     * contract.
      * <p>
-     * Because the errors are dropped, a syntax error and a clean empty file are indistinguishable
-     * here: both give an empty list, and a record skipped for an unknown tval, flag, brand, slay or
-     * curse just goes missing. Callers that must tell a partial or failed load from a clean one have
-     * to use {@link #parseWithResults}, as {@code ObjectDataLoader.loadItemObjects} does.
+     * A syntax error or a refused record throws, exactly as in {@link #parseWithResults}, so an
+     * empty list only ever means a clean file with no records.
      *
-     * <p>Function parse coded before 260915, commented in full on 261017.
+     * <p>Function parse coded before 260915, commented in full on 261017, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param filename the object data file to read
-     * @return the assembled {@link ObjectKind} list (empty if the parse failed closed)
+     * @return every {@link ObjectKind} in the file, in file order
      * @throws IOException if the file cannot be read
      */
     @Override
@@ -132,67 +134,57 @@ public class ItemObjectReader implements Reader<ObjectKind> {
 
     /**
      * The {@link GrammarDriver.Extractor} for this grammar: run the parser's {@code file} entry
-     * rule, fail closed on any hard lexer/parser error, validate the {@code record-count:} header,
-     * and hand back the raw {@link ItemObjectParseRecord}s, still holding unresolved text.
+     * rule, fail closed on any hard lexer/parser error, and hand back the raw
+     * {@link ItemObjectParseRecord}s, still holding unresolved text.
      * <p>
      * Ordering matters: {@link ParseErrors#throwIfAny()} must fire <em>after</em> the parse but
      * <em>before</em> the records are used, so a malformed file aborts with a
-     * {@code ParseCancellationException} here rather than reaching the assembler, and a half-built
-     * record list is never measured against the declared count to produce a second, misleading
-     * error. That covers the cases where C returns a parser error too: a directive before any
-     * {@code name:} line (C's {@code PARSE_ERROR_MISSING_RECORD_HEADER}), an unknown directive, and
-     * a directive missing one of its fields, such as an {@code attack:} with two of its three dice.
-     * The header check is soft - {@link GrammarDriver#checkRecordCount} only appends to
-     * {@code errors}, so a miscount never discards the records that did parse.
+     * {@code ParseCancellationException} here rather than reaching the assembler. That covers the
+     * cases where C returns a parser error too: a directive before any {@code name:} line (C's
+     * {@code PARSE_ERROR_MISSING_RECORD_HEADER}), an unknown directive, and a directive missing one
+     * of its fields, such as an {@code attack:} with two of its three dice.
      * <p>
      * The records stay in file order, which is the order the kinds are returned in. The copy at the
      * end detaches the result from the parse tree, so the returned list is the caller's to keep.
      *
      * <p>Function extract commented in full before 260915, provenance stamp added on 260915,
-     * commented in full again on 261017.
+     * commented in full again on 261017, updated on 261105 for the removal of the soft-error path
+     * and the {@code record-count:} header.
      *
      * @param parser       the generated {@code ItemObjectGrammar} parser
      * @param errorCatcher the live hard-error collector installed by the driver
-     * @param errors       the soft-error sink, mutated in place
      * @return the parsed {@link ItemObjectParseRecord}s in file order
      */
     private static @NotNull List<ItemObjectParseRecord> extract(
             @NotNull ItemObjectGrammar parser,
-            @NotNull ParseErrors errorCatcher,
-            @NotNull List<String> errors) {
+            @NotNull ParseErrors errorCatcher) {
         ItemObjectGrammar.FileContext output = parser.file();
         List<ItemObjectParseRecord> records = output.itemObjects;
+        
         errorCatcher.throwIfAny();
-
-        String declaredRecordCount = output.declaredRecordCount;
-        GrammarDriver.checkRecordCount(declaredRecordCount, records.size(), errors);
 
         return new ArrayList<>(records);
     }
 
     /**
-     * Parse the given file, returning both the assembled {@link ObjectKind} list (in file order) and
-     * any soft errors gathered along the way, for callers that need to tell a clean load from a
-     * partial one.
+     * Parse the given file, returning the assembled {@link ObjectKind} list (in file order) wrapped
+     * in a {@link ParseResult}.
      * <p>
      * This is the Java counterpart of {@code run_parse_object} and the {@code parse_object_*}
      * handlers in {@code obj-init.c}: it wires {@code ItemObjectLexer}, {@code ItemObjectGrammar},
-     * {@link #extract} and {@link ItemObjectAssembler} into {@link GrammarDriver#run}. A syntax
-     * error returns no items and the collected messages; an unresolved tval, flag, value name,
-     * brand, slay or curse, a number, dice string or colour that does not parse, or a
-     * {@code record-count:} mismatch leaves the good records in the result alongside the messages,
-     * so the list can be short without anything having been thrown. C would have stopped at the
-     * first of any of these. An unreadable file is not a result at all but an {@link IOException},
-     * the analogue of {@code parse_file_quit_not_found}'s {@code quit()}.
-     * <p>
-     * This is the variant callers should prefer: {@code ObjectDataLoader.loadItemObjects} gates on
-     * the errors for exactly that reason.
+     * {@link #extract} and {@link ItemObjectAssembler} into {@link GrammarDriver#run}. As C stops at
+     * the first error, so does this: a syntax error throws a {@code ParseCancellationException},
+     * and an unresolved tval, flag, value name, brand, slay or curse, or a number or dice string
+     * that does not parse, throws a
+     * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}, and no result is
+     * returned. An unreadable file is an {@link IOException}, the analogue of
+     * {@code parse_file_quit_not_found}'s {@code quit()}.
      *
      * <p>Function parseWithResults commented in full before 260915, provenance stamp added on 260915,
-     * commented in full again on 261017.
+     * commented in full again on 261017, updated on 261105 for the removal of the soft-error path.
      *
      * @param filename the object data file to read
-     * @return a {@link ParseResult} of the assembled kinds plus any soft errors
+     * @return every object kind in the file, in file order
      * @throws IOException if the file cannot be read
      */
     public ParseResult<ObjectKind> parseWithResults(@NotNull String filename) throws IOException {

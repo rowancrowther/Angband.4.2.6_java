@@ -168,9 +168,6 @@ public class CurseAssembler implements Assembler<CurseParseRecord, List<Curse>> 
      * fatal and {@code type:} held as {@link TValue}s on 261023.
      *
      * @param records  the raw parse records from the grammar
-     * @param errors   receives the per-effect messages from {@link EffectAssembler#assemble}; a
-     *                 failed effect then ends the load here, so the list never carries a
-     *                 skipped record
      * @param filename the file being read, for the messages
      * @return the assembled curses in C's order (last curse in the file first), with
      *         conflict links resolved
@@ -179,7 +176,7 @@ public class CurseAssembler implements Assembler<CurseParseRecord, List<Curse>> 
      *                                conflict fault
      */
     @Override
-    public List<Curse> assemble(@NotNull List<CurseParseRecord> records, @NotNull List<String> errors,
+    public List<Curse> assemble(@NotNull List<CurseParseRecord> records,
                                 String filename) {
         List<Curse> results = new ArrayList<>();
 
@@ -226,16 +223,12 @@ public class CurseAssembler implements Assembler<CurseParseRecord, List<Curse>> 
                     throw new DataFileParseException(msg);
                 }
             }
-            // EffectAssembler is all-or-nothing: a null return means at least one effect
-            // in the block failed to resolve (its messages are already in errors). C's
+            // EffectAssembler is all-or-nothing: the first effect in the block that fails to
+            // resolve throws a DataFileParseException, which ends the load here. C's
             // parse_curse_effect returns grab_effect_data's error, which stops the load, so this does too.
-            List<Effect> effects = EffectAssembler.assemble(record.effects(), errors, filename);
-            if (effects == null && !record.effects().isEmpty()) {
-                String msg = "Curse starting at line: " + line + " of file: " + filename + " has " +
-                        "an invalid effect list starting at line: " + record.effects().getFirst().line();
-                logger.fatal(msg);
-                throw new DataFileParseException(msg);
-            }            
+            // assemble never returns null, so the null test below cannot fire.
+            List<Effect> effects = EffectAssembler.assemble(record.effects(), filename);
+            
             Map<ElementEnum, ElementInfo> elInfo = new HashMap<>();
             Flag<ObjectFlag> objectFlags = new Flag<>(ObjectFlag.class);
             // flags: line fans out — HATES_/IGNORE_ set element flags on elInfo,

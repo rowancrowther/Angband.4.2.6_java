@@ -112,8 +112,6 @@ public class ChestTrapAssembler implements Assembler<ChestTrapParseRecord, List<
      *
      * @param records  the raw {@link ChestTrapParseRecord}s, in file order, expected in
      *                 {@link ChestTrapCode} declaration order
-     * @param errors   passed on to {@link EffectAssembler#assemble}, which adds the reason an
-     *                 effect block failed before the load ends; this method adds nothing itself
      * @param filename the name of the data file, used in the error messages
      * @return the assembled chest traps, one per {@link ChestTrapCode} constant, in file order
      * @throws DataFileParseException on a code that is missing, names no {@link ChestTrapCode}
@@ -123,7 +121,7 @@ public class ChestTrapAssembler implements Assembler<ChestTrapParseRecord, List<
      *                                effect block that fails to resolve
      */
     @Override
-    public List<ChestTrap> assemble(@NotNull List<ChestTrapParseRecord> records, @NotNull List<String> errors,
+    public List<ChestTrap> assemble(@NotNull List<ChestTrapParseRecord> records,
                                     String filename) {
         List<ChestTrap> chestTraps = new ArrayList<>();
         ChestTrapCode[] expected = ChestTrapCode.values();
@@ -175,7 +173,7 @@ public class ChestTrapAssembler implements Assembler<ChestTrapParseRecord, List<
             previousLevel = level;
             List<Effect> effects = new ArrayList<>();
             if (record.effect() != null && !record.effect().isEmpty()) {
-                effects = EffectAssembler.assemble(record.effect(), errors, filename);
+                effects = EffectAssembler.assemble(record.effect(), filename);
                 if (effects == null) {
                     String message = "Chest Trap starting at line: " + line + " of file: " + filename + " has " +
                             "no valid effects";

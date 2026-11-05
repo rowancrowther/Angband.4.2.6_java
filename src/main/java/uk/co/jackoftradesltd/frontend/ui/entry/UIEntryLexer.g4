@@ -19,7 +19,7 @@
  * @author Rowan Crowther
  *
  * Lexer for lib/gamedata/ui_entry.txt - tokenizes the UI-element definitions
- * parsed by UIEntryGrammar.g4: the record-count header, the directive keywords
+ * parsed by UIEntryGrammar.g4: the directive keywords
  * (name:/parameter:/renderer:/combine:/priority:/category:/flags:/desc:/label:/
  * label5:/label2:/template:), the '<TAG>' punctuation with its upper-case
  * element/stat value, lower-case symbolic names and integers.
@@ -37,10 +37,6 @@
 lexer grammar UIEntryLexer;
 
 import CommentsAndEol, Flags;
-
-RECORD_COUNT
-        :   'record-count:'
-        ;
 
 // NAME through TEMPLATE below: one literal directive-keyword token each,
 // matching the parser rule of the same purpose. Those whose value is free text
@@ -105,9 +101,10 @@ GTHAN
         :   '>'
         ;
 
-// A (possibly negative) literal integer. Only the record-count: header uses it
-// (RECORD_COUNT INTEGER); every other numeric value - including a numeric
-// priority: - is a free-text STRING, so it never reaches this token. Declared
+// A (possibly negative) literal integer. No UIEntryGrammar rule has referenced
+// it since the record-count: header was removed (261104); every numeric value -
+// including a numeric priority: - is a free-text STRING, so it never reaches this
+// token. Declared
 // before LCASE so a pure-digit run matches INTEGER rather than LCASE.
 INTEGER
         :   '-'? ('0'..'9')+

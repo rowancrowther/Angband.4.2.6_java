@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
@@ -59,12 +60,6 @@ class BlowMethodReaderTest {
     @TempDir
     Path tempDir;
 
-    /**
-     * Prefix a body with the {@code record-count:} header the {@code file} rule requires.
-     */
-    private static String withHeader(int count, String body) {
-        return "record-count:" + count + "\n" + body;
-    }
 
     /**
      * Render one complete blow-method block in directive order, with a single {@code act:}.
@@ -101,7 +96,6 @@ class BlowMethodReaderTest {
     void cleanLoadOfTheRealFileYieldsNineteenBlowMethods() throws IOException {
         ParseResult<BlowMethod> result = new BlowMethodReader().parseWithResults(REAL_FILE);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(19, result.items().size());
     }
 
@@ -186,7 +180,7 @@ class BlowMethodReaderTest {
         String body = entry("POKE", 0, 0, 1, 1, "MON_HIT", "first")
                 + entry("PROD", 0, 0, 1, 1, "MON_HIT", "middle")
                 + entry("POKE", 0, 0, 1, 1, "MON_HIT", "second");
-        ParseResult<BlowMethod> result = load("dupes.txt", withHeader(3, body));
+        ParseResult<BlowMethod> result = load("dupes.txt", body);
 
         assertEquals(List.of("POKE", "PROD", "POKE"), names(result.items()));
         assertEquals("second", byName(result.items(), "POKE").getDesc());
@@ -201,8 +195,8 @@ class BlowMethodReaderTest {
                 + entry("C", 0, 0, 1, 1, "MON_HIT", "c");
 
         DataFileParseException e = assertThrows(DataFileParseException.class,
-                () -> load("skip-middle.txt", withHeader(3, body)));
-        assertTrue(e.getMessage().contains("line: 10"), e::getMessage);
+                () -> load("skip-middle.txt", body));
+        assertTrue(e.getMessage().contains("line: 9"), e::getMessage);
     }
 
     @Test
@@ -212,7 +206,7 @@ class BlowMethodReaderTest {
         // the same random number picks a different message here. Pinned as a known difference.
         String body = "name:ONE\ncut:0\nstun:0\nmiss:1\nphys:1\nmsg:MON_HIT\nact:a\nact:b\ndesc:one\n"
                 + "name:TWO\ncut:0\nstun:0\nmiss:1\nphys:1\nmsg:MON_HIT\nact:c\nact:d\ndesc:two\n";
-        ParseResult<BlowMethod> result = load("acts.txt", withHeader(2, body));
+        ParseResult<BlowMethod> result = load("acts.txt", body);
 
         assertEquals(List.of("TWO", "ONE"), names(result.items()));
         assertEquals(List.of("a", "b"), byName(result.items(), "ONE").getBlowMessage());
@@ -229,24 +223,29 @@ class BlowMethodReaderTest {
                 () -> new BlowMethodReader().parse(tempDir.resolve("absent.txt").toString()));
     }
 
+    /**
+     * A syntax error is thrown from both entry points: {@code parse} no longer hides it as an
+     * empty list.
+     *
+     * <p>Function bothEntryPointsThrowOnASyntaxError coded on 261104, commented in full on 261104.
+     * It replaces parseDropsTheErrorsSoASyntaxErrorLooksLikeAnEmptyList.
+     */
     @Test
-    void parseDropsTheErrorsSoASyntaxErrorLooksLikeAnEmptyList() throws IOException {
+    void bothEntryPointsThrowOnASyntaxError() throws IOException {
         Path file = tempDir.resolve("broken.txt");
-        Files.writeString(file, withHeader(1, "name:POKE\ncut:0\n"));
+        Files.writeString(file, "name:POKE\ncut:0\n");
 
-        assertTrue(new BlowMethodReader().parse(file.toString()).isEmpty());
-        assertTrue(new BlowMethodReader().parseWithResults(file.toString()).hasErrors());
+        assertThrows(ParseCancellationException.class, () -> new BlowMethodReader().parse(file.toString()));
+        assertThrows(ParseCancellationException.class, () -> new BlowMethodReader().parseWithResults(file.toString()));
     }
 
     @Test
     void actBeforeAnyNameIsAHardError() throws IOException {
         // [C] parse_meth_act_msg returns PARSE_ERROR_MISSING_RECORD_HEADER when no name: has
         // been seen; the other handlers would assert. Either way the load fails.
-        ParseResult<BlowMethod> result = load("act-first.txt",
-                withHeader(1, "act:pokes {target}\n" + entry("POKE", 0, 0, 1, 1, "MON_HIT", "poke")));
+        assertThrows(ParseCancellationException.class, () -> load("act-first.txt",
+                "act:pokes {target}\n" + entry("POKE", 0, 0, 1, 1, "MON_HIT", "poke")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     // ---- Where the grammar is stricter than C (docs/grammar_issues.md) ---
@@ -256,27 +255,23 @@ class BlowMethodReaderTest {
         // [C] parse_meth_desc does string_append, so two desc: lines would join. The grammar
         // closes a record on its one desc:, so the second is a syntax error.
         String twice = "name:POKE\ncut:0\nstun:0\nmiss:1\nphys:1\nmsg:MON_HIT\nact:p\ndesc:po\ndesc:ke\n";
-        ParseResult<BlowMethod> result = load("desc-twice.txt", withHeader(1, twice));
+        assertThrows(ParseCancellationException.class, () -> load("desc-twice.txt", twice));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void nameOnlyRecordIsAHardErrorHereWhereCAcceptsIt() throws IOException {
         // [C] src/tests/parse/blowm.c test_name0: a bare name: leaves every flag false and
         // desc NULL, and parses without error.
-        ParseResult<BlowMethod> result = load("name-only.txt", withHeader(1, "name:POKE\n"));
+        assertThrows(ParseCancellationException.class, () -> load("name-only.txt", "name:POKE\n"));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void leadingZeroFlagReadsFalseAsInC() throws IOException {
         // [C] parser_getuint uses strtoul base 0, so "00" is the number 0 and the flag is false.
         String body = "name:POKE\ncut:00\nstun:0\nmiss:1\nphys:1\nmsg:MON_HIT\nact:p\ndesc:poke\n";
-        ParseResult<BlowMethod> result = load("zero-zero.txt", withHeader(1, body));
+        ParseResult<BlowMethod> result = load("zero-zero.txt", body);
 
         assertFalse(result.items().get(0).isCut());
     }
@@ -287,7 +282,7 @@ class BlowMethodReaderTest {
         // lexer's INTEGER lets the '-' through, so the assembler has to refuse it.
         String body = "name:POKE\ncut:0\nstun:-1\nmiss:1\nphys:1\nmsg:MON_HIT\nact:p\ndesc:poke\n";
 
-        assertThrows(DataFileParseException.class, () -> load("negative.txt", withHeader(1, body)));
+        assertThrows(DataFileParseException.class, () -> load("negative.txt", body));
     }
 
     // ---- The optional msg: directive -------------------------------------
@@ -297,9 +292,8 @@ class BlowMethodReaderTest {
         // [C] parse_meth_message_type simply returns without touching msgt when the value is
         // absent, leaving the mem_zalloc'd 0 == MSG_GENERIC.
         ParseResult<BlowMethod> result =
-                load("no-msg.txt", withHeader(1, entry("POKE", 0, 0, 1, 1, null, "poke")));
+                load("no-msg.txt", entry("POKE", 0, 0, 1, 1, null, "poke"));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(MessageType.MSG_GENERIC, result.items().get(0).getMesgT());
     }
 
@@ -310,9 +304,8 @@ class BlowMethodReaderTest {
         // too, so this must behave exactly like the omitted-line case above - not as an error.
         String bare = "name:POKE\ncut:0\nstun:0\nmiss:1\nphys:1\n"
                 + "msg:\nact:pokes {target}\ndesc:poke\n";
-        ParseResult<BlowMethod> result = load("bare-msg.txt", withHeader(1, bare));
+        ParseResult<BlowMethod> result = load("bare-msg.txt", bare);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size(), "a valueless msg: must not drop the record");
         assertEquals(MessageType.MSG_GENERIC, result.items().get(0).getMesgT());
     }
@@ -321,7 +314,7 @@ class BlowMethodReaderTest {
     void unresolvableMsgEndsTheLoad() {
         // [C] parse_meth_message_type returns PARSE_ERROR_INVALID_MESSAGE.
         DataFileParseException e = assertThrows(DataFileParseException.class,
-                () -> load("bad-msg.txt", withHeader(1, entry("POKE", 0, 0, 1, 1, "NO_SUCH_MESSAGE", "poke"))));
+                () -> load("bad-msg.txt", entry("POKE", 0, 0, 1, 1, "NO_SUCH_MESSAGE", "poke")));
 
         assertTrue(e.getMessage().contains("unrecognized MessageType NO_SUCH_MESSAGE"), e::getMessage);
     }
@@ -332,7 +325,7 @@ class BlowMethodReaderTest {
         String body = entry("BAD", 0, 0, 1, 1, "NO_SUCH_MESSAGE", "bad")
                 + entry("GOOD", 0, 0, 1, 1, "MON_HIT", "good");
 
-        assertThrows(DataFileParseException.class, () -> load("mixed.txt", withHeader(2, body)));
+        assertThrows(DataFileParseException.class, () -> load("mixed.txt", body));
     }
 
     @Test
@@ -341,9 +334,8 @@ class BlowMethodReaderTest {
         // 34 is MON_HIT's position in list-message.h.
         String body = entry("LOWER", 0, 0, 1, 1, "mon_hit", "lower")
                 + entry("INDEX", 0, 0, 1, 1, "34", "index");
-        ParseResult<BlowMethod> result = load("msg-forms.txt", withHeader(2, body));
+        ParseResult<BlowMethod> result = load("msg-forms.txt", body);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(MessageType.MSG_MON_HIT, byName(result.items(), "LOWER").getMesgT());
         assertEquals(MessageType.MSG_MON_HIT, byName(result.items(), "INDEX").getMesgT());
     }
@@ -356,9 +348,8 @@ class BlowMethodReaderTest {
         // base 0, as parser_getuint does, and tests it for non-zero.
         String body = "name:POKE\ncut:2\nstun:7\nmiss:1\nphys:1\n"
                 + "msg:MON_HIT\nact:pokes {target}\ndesc:poke\n";
-        ParseResult<BlowMethod> result = load("truthy.txt", withHeader(1, body));
+        ParseResult<BlowMethod> result = load("truthy.txt", body);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         BlowMethod poke = result.items().get(0);
         assertTrue(poke.isCut());
         assertTrue(poke.isStun());
@@ -366,46 +357,22 @@ class BlowMethodReaderTest {
 
     // ---- record-count header (soft) --------------------------------------
 
-    @Test
-    void recordCountMismatchIsReportedButValidRecordsStillLoad() throws IOException {
-        ParseResult<BlowMethod> result =
-                load("bad-count.txt", withHeader(5, entry("POKE", 0, 0, 1, 1, "MON_HIT", "poke")));
-
-        assertEquals(1, result.items().size());
-        assertTrue(result.errors().stream().anyMatch(
-                        e -> e.contains("declares 5") && e.contains("contains 1")),
-                result.errors()::toString);
-    }
-
     // ---- Hard (fail-closed) parse errors: empty result + errors ----------
 
     @Test
     void missingDescIsAHardError() throws IOException {
         // desc is mandatory and closes the block, so dropping it leaves the blow rule unmatched.
         String noDesc = "name:POKE\ncut:0\nstun:0\nmiss:1\nphys:1\nmsg:MON_HIT\nact:pokes {target}\n";
-        ParseResult<BlowMethod> result = load("no-desc.txt", withHeader(1, noDesc));
+        assertThrows(ParseCancellationException.class, () -> load("no-desc.txt", noDesc));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void outOfOrderDirectivesAreAHardError() throws IOException {
         // The blow rule is a fixed sequence, not a set - stun: before cut: cannot match.
         String swapped = "name:POKE\nstun:0\ncut:0\nmiss:1\nphys:1\nmsg:MON_HIT\nact:p\ndesc:poke\n";
-        ParseResult<BlowMethod> result = load("swapped.txt", withHeader(1, swapped));
+        assertThrows(ParseCancellationException.class, () -> load("swapped.txt", swapped));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
-    }
-
-    @Test
-    void missingRecordCountHeaderIsAHardError() throws IOException {
-        ParseResult<BlowMethod> result =
-                load("no-header.txt", entry("POKE", 0, 0, 1, 1, "MON_HIT", "poke"));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
@@ -413,9 +380,8 @@ class BlowMethodReaderTest {
         // act: is a (…)* in the grammar and [C] never requires one, so a method with no action
         // string is legal - it just carries an empty message list.
         String noAct = "name:POKE\ncut:0\nstun:0\nmiss:1\nphys:1\nmsg:MON_HIT\ndesc:poke\n";
-        ParseResult<BlowMethod> result = load("no-act.txt", withHeader(1, noAct));
+        ParseResult<BlowMethod> result = load("no-act.txt", noAct);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertTrue(result.items().get(0).getBlowMessage().isEmpty());
     }
 }

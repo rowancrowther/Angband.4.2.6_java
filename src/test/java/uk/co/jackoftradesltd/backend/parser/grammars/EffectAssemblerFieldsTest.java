@@ -29,7 +29,6 @@ import uk.co.jackoftradesltd.middle.enums.EffectEnum;
 import uk.co.jackoftradesltd.middle.player.enums.TimedEffect;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -73,7 +72,7 @@ class EffectAssemblerFieldsTest {
     }
 
     private static Effect one(EffectParseRecord r) {
-        return EffectAssembler.assemble(List.of(r), new ArrayList<>(), "test.txt").get(0);
+        return EffectAssembler.assemble(List.of(r), "test.txt").get(0);
     }
 
     private static Effect plain(String type, String sub) {
@@ -86,7 +85,7 @@ class EffectAssemblerFieldsTest {
 
     private static DataFileParseException refusedWith(EffectParseRecord r) {
         return assertThrows(DataFileParseException.class,
-                () -> EffectAssembler.assemble(List.of(r), new ArrayList<>(), "test.txt"));
+                () -> EffectAssembler.assemble(List.of(r), "test.txt"));
     }
 
     // ---- which sub-type kind each effect takes (the effect_subtype switch) ----
@@ -308,14 +307,14 @@ class EffectAssemblerFieldsTest {
         EffectParseRecord good = record("DAMAGE", "", "", "", "", "", "", "", "", "", null, 1);
         EffectParseRecord bad = record("NOTANEFFECT", "", "", "", "", "", "", "", "", "", null, 2);
         assertThrows(DataFileParseException.class,
-                () -> EffectAssembler.assemble(List.of(good, bad, good), new ArrayList<>(), "test.txt"));
+                () -> EffectAssembler.assemble(List.of(good, bad, good), "test.txt"));
     }
 
     // ---- assemble itself ----
 
     @Test
     void anEmptyBlockGivesAnEmptyList() {
-        assertEquals(List.of(), EffectAssembler.assemble(List.of(), new ArrayList<>(), "test.txt"));
+        assertEquals(List.of(), EffectAssembler.assemble(List.of(), "test.txt"));
     }
 
     @Test
@@ -323,18 +322,10 @@ class EffectAssemblerFieldsTest {
         List<Effect> out = EffectAssembler.assemble(List.of(
                 record("DAMAGE", "", "", "", "", "", "", "", "", "", null, 1),
                 record("BOLT", "FIRE", "", "", "", "", "", "", "", "", null, 2),
-                record("HEAL_HP", "", "", "", "", "", "", "", "", "", null, 3)), new ArrayList<>(), "test.txt");
+                record("HEAL_HP", "", "", "", "", "", "", "", "", "", null, 3)), "test.txt");
         assertEquals(3, out.size());
         assertEquals(EffectEnum.EF_DAMAGE, field(out.get(0), "index"));
         assertEquals(EffectEnum.EF_BOLT, field(out.get(1), "index"));
         assertEquals(EffectEnum.EF_HEAL_HP, field(out.get(2), "index"));
-    }
-
-    @Test
-    void theErrorsListIsNeverWrittenTo() {
-        List<String> errors = new ArrayList<>();
-        EffectAssembler.assemble(List.of(record("DAMAGE", "", "1", "2", "", "3", "4", "", "", "", null, 1)),
-                errors, "test.txt");
-        assertTrue(errors.isEmpty());
     }
 }

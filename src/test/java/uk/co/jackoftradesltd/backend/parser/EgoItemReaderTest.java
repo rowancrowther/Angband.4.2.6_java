@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -150,9 +151,6 @@ class EgoItemReaderTest {
         return new EgoItemReader().parseWithResults(file.toString());
     }
 
-    private static String withHeader(int count, String body) {
-        return "record-count:" + count + "\n" + body;
-    }
 
     /**
      * A single ego record: a name line followed by whatever body lines the test supplies.
@@ -165,8 +163,7 @@ class EgoItemReaderTest {
      * Loads exactly one ego record and returns it, asserting the parse was clean.
      */
     private EgoItem loadOne(String fileName, String body) throws IOException {
-        ParseResult<EgoItem> result = load(fileName, withHeader(1, ego("test", body)));
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        ParseResult<EgoItem> result = load(fileName, ego("test", body));
         assertEquals(1, result.items().size());
         return result.items().get(0);
     }
@@ -187,7 +184,6 @@ class EgoItemReaderTest {
     void realFileLoadsAllEgosWithNoErrors() throws IOException {
         ParseResult<EgoItem> result = new EgoItemReader().parseWithResults(REAL_FILE);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(107, result.items().size());
     }
 
@@ -423,12 +419,11 @@ class EgoItemReaderTest {
     @Test
     void curseWithNoPowerIsSkippedNotRejected() throws Exception {
         ParseResult<EgoItem> zero = load("curse-zero.txt",
-                withHeader(1, ego("test", "type:sword\ncurse:vulnerability:0\n")));
+                ego("test", "type:sword\ncurse:vulnerability:0\n"));
         ParseResult<EgoItem> negative = load("curse-negative.txt",
-                withHeader(1, ego("test", "type:sword\ncurse:vulnerability:-3\n")));
+                ego("test", "type:sword\ncurse:vulnerability:-3\n"));
 
         for (ParseResult<EgoItem> result : List.of(zero, negative)) {
-            assertFalse(result.hasErrors(), () -> result.errors().toString());
             assertEquals(1, result.items().size());
             Map<?, ?> curses = field(result.items().get(0), "curses");
             assertTrue(curses.isEmpty());
@@ -528,31 +523,12 @@ class EgoItemReaderTest {
         }
     }
 
-    // ---- record-count + hard (fail-closed) errors ------------------------
-
-    @Test
-    void recordCountMismatchIsReportedButValidEgoStillLoads() throws IOException {
-        ParseResult<EgoItem> result = load("bad-count.txt",
-                withHeader(5, ego("plain", "type:sword\n")));
-
-        assertEquals(1, result.items().size());
-        assertTrue(result.hasErrors());
-    }
-
-    @Test
-    void missingRecordCountHeaderIsAHardError() throws IOException {
-        ParseResult<EgoItem> result = load("no-header.txt", ego("plain", "type:sword\n"));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
-    }
+    // ---- hard (fail-closed) errors ------------------------
 
     @Test
     void recordNotOpeningWithNameIsAHardError() throws IOException {
-        ParseResult<EgoItem> result = load("no-name.txt", withHeader(1, "type:sword\n"));
+        assertThrows(ParseCancellationException.class, () -> load("no-name.txt", "type:sword\n"));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     // ---- Reader contract, worked out from the upstream ego_item.txt and obj-init.c ----
@@ -649,9 +625,7 @@ class EgoItemReaderTest {
     }
 
     private void assertHardError(String fileName, String body) throws IOException {
-        ParseResult<EgoItem> result = load(fileName, withHeader(1, ego("test", body)));
-        assertTrue(result.items().isEmpty(), "a syntax error returns no items");
-        assertTrue(result.hasErrors());
+        assertThrows(ParseCancellationException.class, () -> load(fileName, ego("test", body)));
     }
 
     /**
@@ -661,9 +635,9 @@ class EgoItemReaderTest {
      */
     private void assertStopsTheLoad(String fileName, String body, String message) {
         DataFileParseException thrown = assertThrows(DataFileParseException.class,
-                () -> load(fileName, withHeader(1, ego("test", body))));
+                () -> load(fileName, ego("test", body)));
         assertTrue(thrown.getMessage().contains(message), thrown::getMessage);
-        assertTrue(thrown.getMessage().contains("line: 2"), thrown::getMessage);
+        assertTrue(thrown.getMessage().contains("line: 1"), thrown::getMessage);
         assertTrue(thrown.getMessage().contains(fileName), thrown::getMessage);
     }
 
@@ -689,24 +663,20 @@ class EgoItemReaderTest {
         }
     }
 
+    /**
+     * A syntax error is thrown from both entry points: {@code parse} no longer hides it as an
+     * empty list.
+     *
+     * <p>Function bothEntryPointsThrowOnASyntaxError coded on 261104, commented in full on 261104.
+     * It replaces parseHidesASyntaxErrorAsAnEmptyListWhereParseWithResultsReportsIt.
+     */
     @Test
-    void parseHidesASyntaxErrorAsAnEmptyListWhereParseWithResultsReportsIt() throws IOException {
+    void bothEntryPointsThrowOnASyntaxError() throws IOException {
         Path file = tempDir.resolve("name-only.txt");
-        Files.writeString(file, withHeader(1, "name:lonely\n"));
+        Files.writeString(file, "name:lonely\n");
 
-        assertTrue(new EgoItemReader().parse(file.toString()).isEmpty());
-        assertTrue(new EgoItemReader().parseWithResults(file.toString()).hasErrors());
-    }
-
-    @Test
-    void shippedFileDeclaresItsRecordCount() throws IOException {
-        // The header is this repository's addition; upstream ego_item.txt has none. It must equal
-        // the number of name: lines or every normal load would report a miscount.
-        List<String> lines = Files.readAllLines(Path.of(REAL_FILE));
-
-        assertEquals(1, lines.stream().filter(l -> l.startsWith("record-count:")).count());
-        assertTrue(lines.contains("record-count:107"));
-        assertEquals(107, lines.stream().filter(l -> l.startsWith("name:")).count());
+        assertThrows(ParseCancellationException.class, () -> new EgoItemReader().parse(file.toString()));
+        assertThrows(ParseCancellationException.class, () -> new EgoItemReader().parseWithResults(file.toString()));
     }
 
     /**
@@ -722,7 +692,6 @@ class EgoItemReaderTest {
         ParseResult<EgoItem> result = new EgoItemReader().parseWithResults(REAL_FILE);
         String[] expected = EXPECTED_TABLE.strip().split("\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(expected.length, result.items().size());
         for (int i = 0; i < expected.length; i++) {
             assertEquals(expected[i], render(result.items().get(i)), "record " + i);
@@ -739,13 +708,12 @@ class EgoItemReaderTest {
     @Test
     void aBadRecordInTheMiddleStopsTheWholeLoadAndNamesItsLine() {
         DataFileParseException thrown = assertThrows(DataFileParseException.class,
-                () -> load("skip-index.txt", withHeader(3,
-                        ego("first", "type:sword\n")
+                () -> load("skip-index.txt", ego("first", "type:sword\n")
                                 + ego("second", "type:sword\nflags:NOTAFLAG\n")
-                                + ego("third", "type:sword\n"))));
+                                + ego("third", "type:sword\n")));
 
-        // record-count is line 1, "first" is lines 2-3, so "second" opens on line 4.
-        assertTrue(thrown.getMessage().contains("line: 4"), thrown::getMessage);
+        // "first" is lines 1-2, so "second" opens on line 3.
+        assertTrue(thrown.getMessage().contains("line: 3"), thrown::getMessage);
         assertTrue(thrown.getMessage().contains("skip-index.txt"), thrown::getMessage);
         assertTrue(thrown.getMessage().contains("NOTAFLAG"), thrown::getMessage);
     }
@@ -753,10 +721,8 @@ class EgoItemReaderTest {
     @Test
     void twoRecordsWithTheSameNameBothLoad() throws Exception {
         // parse_ego_name allocates a new record each time and checks nothing against the others.
-        ParseResult<EgoItem> result = load("dupe-names.txt", withHeader(2,
-                ego("same", "info:100:1\n") + ego("same", "info:200:2\n")));
+        ParseResult<EgoItem> result = load("dupe-names.txt", ego("same", "info:100:1\n") + ego("same", "info:200:2\n"));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(2, result.items().size());
         assertEquals(100, (int) field(result.items().get(0), "cost"));
         assertEquals(200, (int) field(result.items().get(1), "cost"));
@@ -847,9 +813,8 @@ class EgoItemReaderTest {
     @Test
     void windowsLineEndingsLoad() throws Exception {
         ParseResult<EgoItem> result = load("crlf.txt",
-                "record-count:1\r\nname:test\r\ntype:sword\r\ninfo:100:5\r\nflags:SEE_INVIS\r\n");
+                "name:test\r\ntype:sword\r\ninfo:100:5\r\nflags:SEE_INVIS\r\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size());
         assertEquals(100, (int) field(result.items().get(0), "cost"));
     }
@@ -1150,18 +1115,14 @@ class EgoItemReaderTest {
      */
     @Test
     void aRecordOfOnlyANameIsASyntaxErrorHereWhereCAcceptsIt() throws IOException {
-        ParseResult<EgoItem> result = load("name-only.txt", withHeader(1, "name:lonely\n"));
+        assertThrows(ParseCancellationException.class, () -> load("name-only.txt", "name:lonely\n"));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void aFileWithNoRecordsIsASyntaxErrorHereWhereCLoadsNothing() throws IOException {
-        ParseResult<EgoItem> result = load("no-records.txt", "record-count:0\n");
+        assertThrows(ParseCancellationException.class, () -> load("no-records.txt", ""));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     /**

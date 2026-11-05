@@ -87,7 +87,7 @@ class ObjectBaseAssemblerTest {
     }
 
     private static List<ObjectBase> assemble(ObjectBaseParseRecord... records) {
-        return new ObjectBaseAssembler().assemble(List.of(records), new ArrayList<>(), FILE);
+        return new ObjectBaseAssembler().assemble(List.of(records), FILE);
     }
 
     /** The one declared base, with the trailing sentinel checked and dropped. */
@@ -156,15 +156,6 @@ class ObjectBaseAssemblerTest {
         assertEquals(3, bases.size());
         assertEquals("First~", bases.get(0).getName());
         assertEquals("Second~", bases.get(1).getName());
-    }
-
-    @Test
-    void theErrorsListIsNeverWrittenTo() {
-        List<String> errors = new ArrayList<>();
-
-        new ObjectBaseAssembler().assemble(List.of(withFlags("SHOW_DICE")), errors, FILE);
-
-        assertTrue(errors.isEmpty());
     }
 
     // ---- The sentinel ------------------------------------------------------
@@ -488,7 +479,7 @@ class ObjectBaseAssemblerTest {
         ObjectBaseParseRecord bad = new ObjectBaseParseRecord("B~", "nope", "white", List.of(), "1", "1", 11);
 
         DataFileParseException thrown = assertThrows(DataFileParseException.class,
-                () -> new ObjectBaseAssembler().assemble(List.of(good, bad), new ArrayList<>(), "mod_base.txt"));
+                () -> new ObjectBaseAssembler().assemble(List.of(good, bad), "mod_base.txt"));
 
         assertTrue(thrown.getMessage().contains("line: 11"), thrown::getMessage);
         assertTrue(thrown.getMessage().contains("mod_base.txt"), thrown::getMessage);

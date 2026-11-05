@@ -26,8 +26,11 @@ import java.util.List;
  *
  * <p>{@code messages} arrives as {@code [typeNum, msg1..msg7]} - the {@code type:} serial number is
  * carried as element 0 ahead of the seven graduated pain messages, for the assembler to peel off.
- * {@code line} is the source line of the {@code type:} header, used to anchor any soft error the
- * assembler reports back to the file.
+ * {@code line} is the source line of the {@code type:} header, quoted in the
+ * {@code DataFileParseException} the assembler throws if it refuses the block.
+ *
+ * <p>Record PainParseRecord coded before 261105, updated on 261105 for the removal of the
+ * soft-error path.
  *
  * @param messages the serial number followed by the seven pain-message strings, all raw
  * @param line     the 1-based source line of this block's {@code type:} header

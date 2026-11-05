@@ -84,7 +84,7 @@ class HintTest {
         records.add(new HintParseRecord("two", 1));
         records.add(new HintParseRecord("one", 1));
 
-        List<Hint> hints = new HintAssembler().assemble(records, new ArrayList<>(), "test.txt");
+        List<Hint> hints = new HintAssembler().assemble(records, "test.txt");
 
         assertEquals(3, hints.size());
         assertEquals("one", hints.get(0).getHint());

@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/MonsterBaseGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/MonsterBaseGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.monsterbase;
 
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
@@ -25,70 +25,49 @@ import org.antlr.v4.runtime.tree.ParseTreeVisitor;
  * by {@link MonsterBaseGrammar}.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
- *            operations with no return type.
+ * operations with no return type.
  */
 public interface MonsterBaseGrammarVisitor<T> extends ParseTreeVisitor<T> {
-    /**
-     * Visit a parse tree produced by {@link MonsterBaseGrammar#recordCount}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitRecordCount(MonsterBaseGrammar.RecordCountContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link MonsterBaseGrammar#name}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitName(MonsterBaseGrammar.NameContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link MonsterBaseGrammar#glyph}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitGlyph(MonsterBaseGrammar.GlyphContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link MonsterBaseGrammar#pain}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitPain(MonsterBaseGrammar.PainContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link MonsterBaseGrammar#flags}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitFlags(MonsterBaseGrammar.FlagsContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link MonsterBaseGrammar#desc}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitDesc(MonsterBaseGrammar.DescContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link MonsterBaseGrammar#monsterBase}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitMonsterBase(MonsterBaseGrammar.MonsterBaseContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link MonsterBaseGrammar#file}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitFile(MonsterBaseGrammar.FileContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link MonsterBaseGrammar#name}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitName(MonsterBaseGrammar.NameContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link MonsterBaseGrammar#glyph}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitGlyph(MonsterBaseGrammar.GlyphContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link MonsterBaseGrammar#pain}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPain(MonsterBaseGrammar.PainContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link MonsterBaseGrammar#flags}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFlags(MonsterBaseGrammar.FlagsContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link MonsterBaseGrammar#desc}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitDesc(MonsterBaseGrammar.DescContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link MonsterBaseGrammar#monsterBase}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitMonsterBase(MonsterBaseGrammar.MonsterBaseContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link MonsterBaseGrammar#file}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFile(MonsterBaseGrammar.FileContext ctx);
 }

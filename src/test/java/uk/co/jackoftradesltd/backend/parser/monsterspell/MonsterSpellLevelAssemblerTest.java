@@ -63,7 +63,7 @@ class MonsterSpellLevelAssemblerTest {
     }
 
     private static List<MonsterSpellLevel> assemble(MonsterSpellLevelParseRecord... records) {
-        return new MonsterSpellLevelAssembler().assemble(List.of(records), new ArrayList<>(), FILE);
+        return new MonsterSpellLevelAssembler().assemble(List.of(records), FILE);
     }
 
     private static List<Integer> powers(List<MonsterSpellLevel> levels) {
@@ -315,16 +315,5 @@ class MonsterSpellLevelAssemblerTest {
     @Test
     void aSpaceColourCharacterIsDarkAsInColorCharToAttr() {
         assertEquals(ColourEnum.COLOUR_DARK, baseColourOf(" "));
-    }
-
-    // ---- The error list -----------------------------------------------------------
-
-    @Test
-    void nothingIsWrittenToTheErrorList() {
-        List<String> errors = new ArrayList<>();
-
-        new MonsterSpellLevelAssembler().assemble(List.of(colours("10", "Nonsense", "#", "zzz")), errors, FILE);
-
-        assertTrue(errors.isEmpty(), errors::toString);
     }
 }

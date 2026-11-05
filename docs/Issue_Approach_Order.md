@@ -261,7 +261,9 @@ Paths are under `src/main/java/uk/co/jackoftradesltd/`. The figure in brackets i
 - `backend/parser/visuals/VisualsFlickerAssembler.java` (2): ~~74, 85~~
 - `frontend/ui/entry/assembler/UIEntryAssembler.java` (10): ~~223, 231, 250, 262, 278, 292, 313, 344, 372, 384~~
 ~~- `frontend/ui/entrybase/assembler/UIEntryBaseAssembler.java` (3): 95, 105, 128~~
-- `frontend/ui/entryrenderer/assembler/UIEntryRendererAssembler.java` (3): 63, 91, 104
+- `frontend/ui/entryrenderer/assembler/UIEntryRendererAssembler.java` (3): ~~63, 91, 104~~
+
+## Stage 2.5: remove soft error functionality ##
 
 ## Stage 3: shared assembler helpers, fixed once and applied everywhere
 

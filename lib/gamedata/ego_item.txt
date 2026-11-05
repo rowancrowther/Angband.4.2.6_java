@@ -120,7 +120,6 @@
 # ends or the beginning of the next line to prevent words from running
 # together.
 
-record-count:107
 
 ### Lanterns/torches
 

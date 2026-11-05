@@ -34,11 +34,6 @@ lexer grammar SummonLexer;
 // mode end-of-line handling; Flags contributes the shared FLAG_BODY fragment.
 import CommentsAndEol, Flags;
 
-// "record-count:<n>" - header declaring how many summon records follow.
-RECORD_COUNT
-        :   'record-count:'
-        ;
-
 // "name:<CODE>" - opens a new summon record; the value (e.g. HI_UNDEAD) is the
 // summon type's identifier, read as free text. Referenced by fallback: lines.
 NAME

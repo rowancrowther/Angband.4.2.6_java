@@ -24,7 +24,6 @@ import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.middle.Activation;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -89,7 +88,7 @@ class ActivationAssemblerTest {
      */
     private static Activation one(String aim, String level, String power) {
         List<Activation> out = new ActivationAssembler()
-                .assemble(List.of(rec("T", aim, level, power, 3)), new ArrayList<>(), "test.txt");
+                .assemble(List.of(rec("T", aim, level, power, 3)), "test.txt");
         assertEquals(1, out.size());
         return out.get(0);
     }
@@ -117,12 +116,9 @@ class ActivationAssemblerTest {
 
     @Test
     void cleanRecordAssemblesToOneActivation() {
-        List<String> errors = new ArrayList<>();
-
         List<Activation> out = new ActivationAssembler()
-                .assemble(List.of(rec("CURE_LIGHT", "0", "5", "10", 3)), errors, "test.txt");
+                .assemble(List.of(rec("CURE_LIGHT", "0", "5", "10", 3)), "test.txt");
 
-        assertTrue(errors.isEmpty(), errors::toString);
         assertEquals(1, out.size());
         assertEquals("CURE_LIGHT", out.get(0).getName());
         assertEquals(10, out.get(0).getPower());
@@ -283,7 +279,7 @@ class ActivationAssemblerTest {
     @Test
     void theStopMessageNamesTheFileAndTheLineTheRecordStartsOn() {
         String message = assertThrows(DataFileParseException.class, () -> new ActivationAssembler()
-                .assemble(List.of(rec("BAD_LEVEL", "0", "high", "1", 7)), new ArrayList<>(), "activation.txt"))
+                .assemble(List.of(rec("BAD_LEVEL", "0", "high", "1", 7)), "activation.txt"))
                 .getMessage();
 
         assertTrue(message.contains("line: 7 of file: activation.txt"), message);
@@ -298,7 +294,7 @@ class ActivationAssemblerTest {
                 List.of(rec("FINE", "0", "5", "1", 2),
                         rec("BROKEN", "0", "nope", "1", 4),
                         rec("WORSE", "0", "alsonot", "1", 8)),
-                new ArrayList<>(), "test.txt")).getMessage();
+                "test.txt")).getMessage();
 
         assertTrue(message.contains("line: 4 of"), message);
         assertFalse(message.contains("line: 8"), message);
@@ -352,7 +348,7 @@ class ActivationAssemblerTest {
     void theResultIsInReverseFileOrderAndNumberedFromZero() {
         List<Activation> out = new ActivationAssembler().assemble(
                 List.of(rec("FIRST", "0", "5", "1", 2), rec("SECOND", "1", "6", "2", 6), rec("THIRD", "0", "7", "3", 10)),
-                new ArrayList<>(), "test.txt");
+                "test.txt");
 
         assertEquals(List.of("THIRD", "SECOND", "FIRST"), out.stream().map(Activation::getName).toList());
     }
@@ -363,7 +359,7 @@ class ActivationAssemblerTest {
         // C counts from 1; the accepted base-0 deviation makes the Java index one lower.
         List<Activation> out = new ActivationAssembler().assemble(
                 List.of(rec("FIRST", "0", "5", "1", 2), rec("SECOND", "1", "6", "2", 6), rec("THIRD", "0", "7", "3", 10)),
-                new ArrayList<>(), "test.txt");
+                "test.txt");
 
         assertEquals(0, field(out.get(0), "index"));
         assertEquals(1, field(out.get(1), "index"));
@@ -376,7 +372,7 @@ class ActivationAssemblerTest {
         List<Activation> out = new ActivationAssembler().assemble(
                 List.of(new ActivationParseRecord("BOTH", "", "", "", "You fire.", "fires a bolt", List.of(), 2),
                         new ActivationParseRecord("NEITHER", "", "", "", null, null, List.of(), 6)),
-                new ArrayList<>(), "test.txt");
+                "test.txt");
 
         assertEquals(null, field(out.get(0), "message"));
         assertEquals(null, field(out.get(0), "desc"));
@@ -394,6 +390,6 @@ class ActivationAssemblerTest {
 
     @Test
     void anEmptyRecordListAssemblesToAnEmptyList() {
-        assertTrue(new ActivationAssembler().assemble(List.of(), new ArrayList<>(), "test.txt").isEmpty());
+        assertTrue(new ActivationAssembler().assemble(List.of(), "test.txt").isEmpty());
     }
 }

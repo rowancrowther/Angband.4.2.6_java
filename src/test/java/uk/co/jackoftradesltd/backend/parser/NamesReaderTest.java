@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftradesltd.backend.parser.names.NamesAssembler;
@@ -37,12 +38,15 @@ import static org.junit.jupiter.api.Assertions.*;
  * End-to-end throughput test for {@link NamesReader}: file text -&gt; {@code NamesLexer}/
  * {@code NamesGrammar} -&gt; {@link NamesParseRecord} -&gt; {@link NamesAssembler} -&gt; {@link Name}.
  *
- * <p>{@code names.txt} is the random-name source: a {@code record-count} header followed by two
+ * <p>{@code names.txt} is the random-name source: two
  * {@code section:} blocks (1 = Tolkien-ish names, 2 = scroll-title syllables), each block a run of
  * {@code word:} lines. A record here is therefore <em>one whole section plus its word list</em>, not
  * a single word - so the happy-path assertions check both the section count and the per-section word
  * totals. Names carry no cross-references, so like {@code HintReaderTest} this suite needs no registry
  * bootstrap and drives the real file and small {@link TempDir} fixtures directly.
+ *
+ * <p>Test class NamesReaderTest coded before 261105, updated on 261105 for the removal of the
+ * soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -51,7 +55,7 @@ class NamesReaderTest {
     private static final String REAL_FILE = "lib/gamedata/names.txt";
 
     /**
-     * names.txt's {@code record-count:} header, and the number of {@code section:} blocks in it.
+     * The number of {@code section:} blocks in names.txt.
      */
     private static final int EXPECTED_SECTIONS = 2;
 
@@ -64,9 +68,6 @@ class NamesReaderTest {
     @TempDir
     Path tempDir;
 
-    private static String withHeader(int count, String body) {
-        return "record-count:" + count + "\n\n" + body;
-    }
 
     private ParseResult<Name> load(String name, String content) throws IOException {
         Path file = tempDir.resolve(name);
@@ -80,7 +81,6 @@ class NamesReaderTest {
     void realFileLoadsBothSectionsWithNoErrors() throws IOException {
         ParseResult<Name> result = new NamesReader().parseWithResults(REAL_FILE);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(EXPECTED_SECTIONS, result.items().size());
     }
 
@@ -136,10 +136,8 @@ class NamesReaderTest {
      */
     @Test
     void multipleSectionsPartitionTheirWordsOnSectionBoundaries() throws IOException {
-        ParseResult<Name> result = load("two.txt", withHeader(2,
-                "section:1\nword:alpha\nword:beta\n\nsection:2\nword:gamma\n"));
+        ParseResult<Name> result = load("two.txt", "section:1\nword:alpha\nword:beta\n\nsection:2\nword:gamma\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(2, result.items().size());
         assertEquals(List.of("alpha", "beta"), result.items().get(0).getWord());
         assertEquals(List.of("gamma"), result.items().get(1).getWord());
@@ -153,40 +151,12 @@ class NamesReaderTest {
     @Test
     void wordValuePreservesCaseAndPunctuationVerbatim() throws IOException {
         String odd = "Gil-galad's Host";
-        ParseResult<Name> result = load("odd.txt", withHeader(1, "section:1\nword:" + odd + "\n"));
+        ParseResult<Name> result = load("odd.txt", "section:1\nword:" + odd + "\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(odd, result.items().get(0).getWord().get(0));
     }
 
-    // ---- Soft error ------------------------------------------------------
-
-    @Test
-    void recordCountMismatchIsASoftError() throws IOException {
-        // Header claims five sections, body holds one; the section still loads (partial-results contract).
-        ParseResult<Name> result = load("miscount.txt",
-                withHeader(5, "section:1\nword:only\n"));
-
-        assertEquals(1, result.items().size());
-        assertTrue(result.hasErrors());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("record-count header declares")),
-                () -> result.errors().toString());
-    }
-
     // ---- Hard error (fail-closed) ----------------------------------------
-
-    /**
-     * The {@code file} rule requires the {@code record-count} header, so a file without it is a hard
-     * grammar error: {@code throwIfAny()} fires and the driver returns an empty result carrying the
-     * collected errors rather than a partial load.
-     */
-    @Test
-    void missingRecordCountHeaderIsAHardErrorYieldingEmptyResult() throws IOException {
-        ParseResult<Name> result = load("noheader.txt", "section:1\nword:orphan\n");
-
-        assertTrue(result.items().isEmpty(), "a hard grammar error must fail closed");
-        assertTrue(result.hasErrors());
-    }
 
     /**
      * The {@code section} rule requires an {@code INTEGER}, so a non-numeric section label is a hard
@@ -194,19 +164,17 @@ class NamesReaderTest {
      */
     @Test
     void nonNumericSectionLabelIsAHardErrorYieldingEmptyResult() throws IOException {
-        ParseResult<Name> result = load("badsection.txt",
-                withHeader(1, "section:tolkien\nword:x\n"));
+        assertThrows(ParseCancellationException.class, () -> load("badsection.txt",
+                "section:tolkien\nword:x\n"));
 
-        assertTrue(result.items().isEmpty(), "a hard grammar error must fail closed");
-        assertTrue(result.hasErrors());
     }
 
     // ---- The shipped file against the upstream one -----------------------
 
     /**
      * The upstream {@code lib/gamedata/names.txt} puts 601 words under {@code section:1} (file lines
-     * 63-663) and 587 under {@code section:2} (lines 667-1253); the shipped copy adds only the
-     * {@code record-count:2} header and strips trailing spaces from comments. The expected side is a
+     * 63-663) and 587 under {@code section:2} (lines 667-1253); the shipped copy only
+     * strips trailing spaces from comments. The expected side is a
      * plain line split of the file, not the reader's output.
      */
     @Test
@@ -250,10 +218,8 @@ class NamesReaderTest {
      */
     @Test
     void aRepeatedSectionGivesTwoRecordsWhereCJoinsThemIntoOneList() throws IOException {
-        ParseResult<Name> result = load("repeat.txt", withHeader(3,
-                "section:1\nword:a\nsection:2\nword:b\nsection:1\nword:c\n"));
+        ParseResult<Name> result = load("repeat.txt", "section:1\nword:a\nsection:2\nword:b\nsection:1\nword:c\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(3, result.items().size());
         assertEquals(1, result.items().get(0).getSection());
         assertEquals(2, result.items().get(1).getSection());
@@ -264,10 +230,8 @@ class NamesReaderTest {
     /** A section with no {@code word:} lines is a valid, empty record; the next block starts a new one. */
     @Test
     void aSectionWithNoWordsIsAnEmptyRecord() throws IOException {
-        ParseResult<Name> result = load("empty-section.txt", withHeader(2,
-                "section:1\nsection:2\nword:a\n"));
+        ParseResult<Name> result = load("empty-section.txt", "section:1\nsection:2\nword:a\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(2, result.items().size());
         assertTrue(result.items().get(0).getWord().isEmpty());
         assertEquals(List.of("a"), result.items().get(1).getWord());
@@ -299,22 +263,21 @@ class NamesReaderTest {
      */
     @Test
     void aZeroPaddedSectionIsReadInBaseZero() throws IOException {
-        ParseResult<Name> result = load("padded.txt", withHeader(1, "section:02\nword:a\n"));
+        ParseResult<Name> result = load("padded.txt", "section:02\nword:a\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(2, result.items().get(0).getSection());
         assertStopsTheLoad("octal.txt", "section:010\nword:b\n", "illegal section value: 010");
     }
 
     /**
      * The assembler's refusal is a {@link DataFileParseException} that comes straight out of the
-     * reader, naming the {@code section:} line (3, after the header and blank line) and the file.
+     * reader, naming the {@code section:} line (1) and the file.
      */
     private void assertStopsTheLoad(String fileName, String body, String message) {
         DataFileParseException thrown = assertThrows(DataFileParseException.class,
-                () -> load(fileName, withHeader(1, body)));
+                () -> load(fileName, body));
         assertTrue(thrown.getMessage().contains(message), thrown::getMessage);
-        assertTrue(thrown.getMessage().contains("line: 3"), thrown::getMessage);
+        assertTrue(thrown.getMessage().contains("line: 1"), thrown::getMessage);
         assertTrue(thrown.getMessage().contains(fileName), thrown::getMessage);
     }
 
@@ -326,32 +289,30 @@ class NamesReaderTest {
      */
     @Test
     void leadingAndTrailingSpacesAreKeptAsCDoes() throws IOException {
-        ParseResult<Name> result = load("spaces.txt", withHeader(1, "section:1\nword: pad \n"));
+        ParseResult<Name> result = load("spaces.txt", "section:1\nword: pad \n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(" pad ", result.items().get(0).getWord().get(0));
     }
 
     /** Only the first {@code :} splits the directive off, so a word may contain a colon or a hash. */
     @Test
     void colonsAndHashesInTheTextSurvive() throws IOException {
-        ParseResult<Name> result = load("colon.txt", withHeader(1, "section:1\nword::a:b#c\n"));
+        ParseResult<Name> result = load("colon.txt", "section:1\nword::a:b#c\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(":a:b#c", result.items().get(0).getWord().get(0));
     }
 
     /** The same word twice is two entries: the letter counts in {@code build_prob} depend on it. */
     @Test
     void duplicateWordsAreBothKept() throws IOException {
-        ParseResult<Name> result = load("dup.txt", withHeader(1, "section:1\nword:ab\nword:ab\n"));
+        ParseResult<Name> result = load("dup.txt", "section:1\nword:ab\nword:ab\n");
 
         assertEquals(List.of("ab", "ab"), result.items().get(0).getWord());
     }
 
     @Test
     void wordsComeBackInFileOrderWhereCsListIsReversed() throws IOException {
-        ParseResult<Name> result = load("order.txt", withHeader(1, "section:1\nword:a\nword:b\nword:c\n"));
+        ParseResult<Name> result = load("order.txt", "section:1\nword:a\nword:b\nword:c\n");
 
         assertEquals(List.of("a", "b", "c"), result.items().get(0).getWord());
     }
@@ -359,21 +320,18 @@ class NamesReaderTest {
     /** A final word needs no newline after it, and a Windows line ending leaves no carriage return. */
     @Test
     void finalWordNeedsNoNewlineAndCarriageReturnsAreDropped() throws IOException {
-        ParseResult<Name> noNewline = load("nonl.txt", withHeader(1, "section:1\nword:last"));
-        ParseResult<Name> crlf = load("crlf.txt", "record-count:1\r\nsection:1\r\nword:abc\r\n");
+        ParseResult<Name> noNewline = load("nonl.txt", "section:1\nword:last");
+        ParseResult<Name> crlf = load("crlf.txt", "section:1\r\nword:abc\r\n");
 
         assertEquals("last", noNewline.items().get(0).getWord().get(0));
-        assertFalse(crlf.hasErrors(), () -> crlf.errors().toString());
         assertEquals("abc", crlf.items().get(0).getWord().get(0));
     }
 
     /** Comment and blank lines between and after the lines are skipped, as C skips them. */
     @Test
     void commentsAndBlankLinesAreSkipped() throws IOException {
-        ParseResult<Name> result = load("comments.txt", withHeader(1,
-                "# top\nsection:1\n\n# between\nword:one\n\nword:two\n# last\n"));
+        ParseResult<Name> result = load("comments.txt", "# top\nsection:1\n\n# between\nword:one\n\nword:two\n# last\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(List.of("one", "two"), result.items().get(0).getWord());
     }
 
@@ -382,29 +340,9 @@ class NamesReaderTest {
     /** C accepts a file with no sections at all; the header then says zero and the list is empty. */
     @Test
     void aFileWithNoSectionsLoadsEmptyWhenTheHeaderSaysZero() throws IOException {
-        ParseResult<Name> result = load("zero.txt", "record-count:0\n# nothing here\n");
+        ParseResult<Name> result = load("zero.txt", "# nothing here\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertTrue(result.items().isEmpty());
-    }
-
-    /** The header counts {@code section:} blocks, not words: 2 blocks with 3 words is a count of 2. */
-    @Test
-    void theHeaderCountsSectionsNotWords() throws IOException {
-        assertFalse(load("two.txt", withHeader(2, "section:1\nword:a\nword:b\nsection:2\nword:c\n"))
-                .hasErrors());
-        assertTrue(load("three.txt", withHeader(3, "section:1\nword:a\nword:b\nsection:2\nword:c\n"))
-                .hasErrors());
-    }
-
-    @Test
-    void aHeaderDeclaringTooFewIsASoftErrorToo() throws IOException {
-        ParseResult<Name> result = load("toofew.txt", withHeader(1,
-                "section:1\nword:a\nsection:2\nword:b\n"));
-
-        assertEquals(2, result.items().size());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("record-count header declares")),
-                () -> result.errors().toString());
     }
 
     // ---- Hard errors (fail-closed) ---------------------------------------
@@ -416,10 +354,8 @@ class NamesReaderTest {
      */
     @Test
     void aWordBeforeAnySectionIsAHardErrorWhereCFilesItUnderSectionZero() throws IOException {
-        ParseResult<Name> result = load("orphan.txt", withHeader(1, "word:orphan\nsection:1\nword:a\n"));
+        assertThrows(ParseCancellationException.class, () -> load("orphan.txt", "word:orphan\nsection:1\nword:a\n"));
 
-        assertTrue(result.items().isEmpty(), "a hard grammar error must fail closed");
-        assertTrue(result.hasErrors());
     }
 
     /**
@@ -435,47 +371,22 @@ class NamesReaderTest {
     /** C needs text after {@code word:} (MISSING_FIELD otherwise); the lexer cannot produce a STRING for it. */
     @Test
     void aWordLineWithNoTextIsAHardError() throws IOException {
-        ParseResult<Name> result = load("emptyword.txt", withHeader(1, "section:1\nword:\n"));
+        assertThrows(ParseCancellationException.class, () -> load("emptyword.txt", "section:1\nword:\n"));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void aSectionLineWithNoNumberIsAHardError() throws IOException {
-        ParseResult<Name> result = load("nonum.txt", withHeader(1, "section:\nword:a\n"));
+        assertThrows(ParseCancellationException.class, () -> load("nonum.txt", "section:\nword:a\n"));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     /** C only has {@code section:} and {@code word:}, and its directive names are case-sensitive. */
     @Test
     void anUnknownDirectiveIsAHardError() throws IOException {
         for (String bad : List.of("name:abc\n", "Word:abc\n", "SECTION:1\n")) {
-            ParseResult<Name> result = load("bad.txt", withHeader(1, "section:1\n" + bad));
+            assertThrows(ParseCancellationException.class, () -> load("bad.txt", "section:1\n" + bad), bad);
 
-            assertTrue(result.items().isEmpty(), bad);
-            assertTrue(result.hasErrors(), bad);
-        }
-    }
-
-    @Test
-    void anEmptyFileIsAHardErrorForWantOfTheHeader() throws IOException {
-        ParseResult<Name> result = load("empty.txt", "");
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
-    }
-
-    @Test
-    void theHeaderMustComeFirstAndOnlyOnce() throws IOException {
-        for (String bad : List.of("section:1\nrecord-count:1\n",
-                "record-count:1\nrecord-count:1\nsection:1\n")) {
-            ParseResult<Name> result = load("header.txt", bad);
-
-            assertTrue(result.items().isEmpty(), bad);
-            assertTrue(result.hasErrors(), bad);
         }
     }
 
@@ -489,10 +400,8 @@ class NamesReaderTest {
     void leadingWhitespaceBeforeADirectiveIsAHardErrorWhereCSkipsIt() throws IOException {
         for (String bad : List.of("  word:indented\n", "  # indented comment\n", "\t\n",
                 "# no newline")) {
-            ParseResult<Name> result = load("ws.txt", withHeader(1, "section:1\n" + bad));
+            assertThrows(ParseCancellationException.class, () -> load("ws.txt", "section:1\n" + bad), bad);
 
-            assertTrue(result.items().isEmpty(), bad);
-            assertTrue(result.hasErrors(), bad);
         }
     }
 

@@ -2,10 +2,6 @@ lexer grammar EgoItemsLexer;
 
 import CommentsAndEol, Flags, DiceStrings;
 
-RECORD_COUNT
-        :   'record-count:'
-        ;
-
 NAME
         :   'name:' -> pushMode(FREE_TEXT)
         ;

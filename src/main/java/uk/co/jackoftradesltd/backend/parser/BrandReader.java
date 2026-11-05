@@ -67,13 +67,13 @@ import java.util.List;
  * shipped data) and ACID_3 comes last. It matters wherever two brands share a name and the first is
  * kept, such as {@code Rune.initRunes}.
  * <p>
+ * As in C, the first error stops the load and nothing is returned: a syntax error is thrown from
+ * {@link #extract} as a {@code ParseCancellationException}, and a record the assembler refuses (an
+ * unknown resist or vulnerability flag, a number too large for an int) is thrown as a
+ * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}. Neither is caught here.
+ * <p>
  * Differences from C worth knowing about:
  * <ul>
- *   <li>The {@code record-count:} header is a Java-only addition, checked as a soft error; the
- *       upstream {@code brand.txt} has no such line, and this repository's copy adds it.</li>
- *   <li>C stops at the first parse error. Here a syntax error is fatal and returns no items, but an
- *       assembler error (an unknown resist or vulnerability flag, a number too large for an int)
- *       skips only the offending record and the rest still load.</li>
  *   <li>C takes the directives in any order, leaves any of them out, and lets a repeated one
  *       overwrite. The grammar insists on {@code code:}, {@code name:}, {@code verb:},
  *       {@code multiplier:}, {@code o-multiplier:}, {@code power:} and {@code resist-flag:} in that
@@ -89,35 +89,36 @@ import java.util.List;
  *       customised copy in the user directory first.</li>
  * </ul>
  *
- * <p>Class BrandReader coded before 260915, commented in full on 261017.
+ * <p>Class BrandReader coded before 260915, commented in full on 261017, updated on 261105 for the
+ * removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
 public class BrandReader implements Reader<Brand> {
     /**
      * Logger handed to {@link GrammarDriver#run} so that an {@link IOException} while reading
-     * {@code brand.txt} is logged under this reader's name before it is rethrown. Syntax and soft
-     * errors do not go through it; they travel in the {@link ParseResult}.
+     * {@code brand.txt} is logged under this reader's name before it is rethrown. Syntax and
+     * assembler errors do not go through it; they are thrown unlogged to the caller.
      *
-     * <p>Field logger coded before 260915, commented in full on 261017.
+     * <p>Field logger coded before 260915, commented in full on 261017, updated on 261105 for the
+     * removal of the soft-error path.
      */
     private static final Logger logger = LogManager.getLogger();
 
 
     /**
      * Parse the given file and return just the assembled brands, in C's order (the reverse of the
-     * file's, see the class block), discarding the soft-error channel (use
-     * {@link #parseWithResults} to inspect the errors). Satisfies the {@link Reader} contract.
+     * file's, see the class block), unwrapped from the {@link ParseResult} that
+     * {@link #parseWithResults} gives. Satisfies the {@link Reader} contract.
      * <p>
-     * Because the errors are dropped, a syntax error and a clean empty file are indistinguishable
-     * here: both give an empty list, and a record skipped for an unknown flag just goes missing.
-     * Callers that must tell a partial or failed load from a clean one have to use
-     * {@link #parseWithResults}.
+     * A syntax error or a refused record throws, exactly as in {@link #parseWithResults}, so an
+     * empty list only ever means a clean file with no records.
      *
-     * <p>Function parse coded before 260915, commented in full on 261017.
+     * <p>Function parse coded before 260915, commented in full on 261017, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param filename the brand data file to read
-     * @return the assembled {@link Brand} list (empty if the parse failed closed)
+     * @return every {@link Brand} in the file, in C's order
      * @throws IOException if the file cannot be read
      */
     @Override
@@ -127,66 +128,55 @@ public class BrandReader implements Reader<Brand> {
 
     /**
      * The {@link GrammarDriver.Extractor} for this grammar: run the parser's {@code file} entry
-     * rule, fail closed on any hard lexer/parser error, validate the {@code record-count:} header,
-     * and hand back the raw {@link BrandParseRecord}s, still holding unresolved text.
+     * rule, fail closed on any hard lexer/parser error, and hand back the raw
+     * {@link BrandParseRecord}s, still holding unresolved text.
      * <p>
      * Ordering matters: {@link ParseErrors#throwIfAny()} must fire <em>after</em> the parse but
      * <em>before</em> the records are used, so a malformed file aborts with a
-     * {@code ParseCancellationException} here rather than reaching the assembler, and a half-built
-     * record list is never measured against the declared count to produce a second, misleading
-     * error. That covers the cases where C returns a parser error too: a directive before any
-     * {@code code:} line (C's {@code PARSE_ERROR_MISSING_RECORD_HEADER}) and a numeric directive
-     * with no number. The header check is soft - {@link GrammarDriver#checkRecordCount} only appends
-     * to {@code errors}, so a miscount never discards the records that did parse.
+     * {@code ParseCancellationException} here rather than reaching the assembler. That covers the
+     * cases where C returns a parser error too: a directive before any {@code code:} line (C's
+     * {@code PARSE_ERROR_MISSING_RECORD_HEADER}) and a numeric directive with no number.
      * <p>
      * The records stay in file order here. The reversal into C's order is done later, by
      * {@link BrandAssembler}. The copy at the end detaches the result from the parse tree, so the
      * returned list is the caller's to keep.
      *
      * <p>Function extract commented in full before 260915, provenance stamp added on 260915,
-     * commented in full again on 261017.
+     * commented in full again on 261017, updated on 261105 for the removal of the soft-error path
+     * and the {@code record-count:} header.
      *
      * @param parser       the generated Brand parser
      * @param errorCatcher the live hard-error collector installed by the driver
-     * @param errors       the soft-error sink, mutated in place
      * @return the parsed {@link BrandParseRecord}s in file order
      */
     private static @NotNull List<BrandParseRecord> extract(
             @NotNull BrandGrammar parser,
-            @NotNull ParseErrors errorCatcher,
-            @NotNull List<String> errors) {
+            @NotNull ParseErrors errorCatcher) {
         BrandGrammar.FileContext output = parser.file();
         List<BrandParseRecord> results = output.records;
         errorCatcher.throwIfAny();
-
-        String declaredRecordCount = output.declaredRecordCount;
-        GrammarDriver.checkRecordCount(declaredRecordCount, results.size(), errors);
 
         return new ArrayList<>(results);
     }
 
     /**
-     * Parse the given file, returning both the assembled {@link Brand} list (in C's order, the
-     * reverse of the file's) and any soft errors gathered along the way, for callers that need to
-     * tell a clean load from a partial one.
+     * Parse the given file, returning the assembled {@link Brand} list (in C's order, the reverse
+     * of the file's) wrapped in a {@link ParseResult}.
      * <p>
      * This is the Java counterpart of {@code run_parse_brand} and the {@code parse_brand_*}
      * handlers in {@code obj-init.c}: it wires {@code BrandLexer}, {@code BrandGrammar},
-     * {@link #extract} and {@link BrandAssembler} into {@link GrammarDriver#run}. A syntax error
-     * returns no items and the collected messages; an unresolved flag, a number too large for an
-     * int or a {@code record-count:} mismatch leaves the good records in the result alongside the
-     * messages, so the list can be short without anything having been thrown. C would have stopped
-     * at the first of any of these. An unreadable file is not a result at all but an
-     * {@link IOException}, the analogue of {@code parse_file_quit_not_found}'s {@code quit()}.
-     * <p>
-     * This is the variant callers should prefer: {@code ObjectDataLoader.loadBrands} gates on the
-     * errors for exactly that reason.
+     * {@link #extract} and {@link BrandAssembler} into {@link GrammarDriver#run}. As C stops at the
+     * first error, so does this: a syntax error throws a {@code ParseCancellationException}, an
+     * unresolved flag or a number too large for an int throws a
+     * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}, and no result is
+     * returned. An unreadable file is an {@link IOException}, the analogue of
+     * {@code parse_file_quit_not_found}'s {@code quit()}.
      *
      * <p>Function parseWithResults commented in full before 260915, provenance stamp added on 260915,
-     * commented in full again on 261017.
+     * commented in full again on 261017, updated on 261105 for the removal of the soft-error path.
      *
      * @param filename the brand data file to read
-     * @return a {@link ParseResult} of the assembled brands plus any soft errors
+     * @return every brand in the file, in C's order
      * @throws IOException if the file cannot be read
      */
     public @NotNull ParseResult<Brand> parseWithResults(@NotNull String filename) throws IOException {

@@ -8,8 +8,7 @@
  * directive keywords (maximal munch swallows the whole line). Instead each
  * keyword switches into the FREE_TEXT mode at its colon and the value is
  * captured there, popping back at end of line - the same pattern the
- * PlayerRace/Body lexers use. record-count: stays in the default mode because
- * its value is a plain INTEGER, not free text.
+ * PlayerRace/Body lexers use.
  *
  * @author Rowan Crowther
  */
@@ -18,12 +17,6 @@ lexer grammar RealmLexer;
 // Shared skip-rules: COMMENT ('#' to end of line) and EOL (a blank line). Both
 // are discarded, so comments and blank lines may fall between any tokens.
 import CommentsAndEol;
-
-// record-count:<n> - the port-added header; its value is read as INTEGER (below)
-// and checked against the number of records actually parsed by the reader.
-RECORD_COUNT
-        :   'record-count:'
-        ;
 
 // Each directive keyword consumes up to its colon, then pushes FREE_TEXT so the
 // remainder of the line is captured verbatim as one STRING value.
@@ -47,8 +40,8 @@ BOOK_NOUN
         :   'book-noun:' -> pushMode(FREE_TEXT)
         ;
 
-// The record-count value - the only number in the file, lexed in the default
-// mode (record-count: deliberately does not switch to FREE_TEXT).
+// A literal integer in the default mode. No RealmGrammar rule has referenced it
+// since the record-count: header was removed (261104).
 INTEGER
         :   '-'? ('0'..'9')+
         ;

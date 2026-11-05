@@ -58,19 +58,20 @@ import java.util.List;
  * the last race in the file, both work from file order. The assembler passes 0 for every race's own
  * index field instead of numbering it, which is written up in {@code docs/Assembler_Issues.md}.
  *
- * <p>C quits on the first bad line. This reader follows the shared two-channel contract instead: a
- * lexer or grammar error returns no races and the messages, and a {@code record-count:} mismatch is
- * a soft error that leaves the races that did parse loaded. The {@code record-count:} header is
- * Java-only, the upstream file has none, and it counts {@code name:} lines. A file that cannot be
- * opened is an {@link IOException}, where C quits.
+ * <p>C quits on the first bad line, and so does this reader: a lexer or grammar error is thrown
+ * from {@link #extract} as a {@code ParseCancellationException}, and a value the assembler cannot
+ * resolve is thrown as a {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}.
+ * Neither is caught here, and no races are returned. A file that cannot be opened is an
+ * {@link IOException}, where C quits.
  *
  * <p>The grammar is stricter than C in several places: a {@code name:} line with nothing after it,
- * and flags or values separated by spaces alone, are errors where C accepts them, and a header with
+ * and flags or values separated by spaces alone, are errors where C accepts them, and a file with
  * no races is an error where C accepts an empty file. They are written up in
  * {@code docs/grammar_issues.md}. The assembler's own differences are in
  * {@code docs/Assembler_Issues.md}.
  *
- * <p>Class PlayerRaceReader coded before 260915, commented in full on 261018.
+ * <p>Class PlayerRaceReader coded before 260915, commented in full on 261018, updated on 261105 for
+ * the removal of the soft-error path and the {@code record-count:} header.
  *
  * @author Rowan Crowther
  */
@@ -84,15 +85,15 @@ public class PlayerRaceReader implements Reader<PlayerRace> {
     private static final Logger logger = LogManager.getLogger();
 
     /**
-     * Reads {@code filename} and returns the assembled races in file order, discarding the error
-     * messages. The convenience form of {@link #parseWithResults}, which is the one to call when the
-     * errors matter: with this one a hard grammar error and a file in which every race was dropped
-     * look the same.
+     * Reads {@code filename} and returns the assembled races in file order, unwrapped from the
+     * {@link ParseResult} that {@link #parseWithResults} gives. Any error throws exactly as it does
+     * there.
      *
-     * <p>Function parse coded before 260915, commented in full on 261018.
+     * <p>Function parse coded before 260915, commented in full on 261018, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param filename the player-race data file to read
-     * @return the races read from the file, empty if the parse failed
+     * @return every race in the file, in file order
      * @throws IOException if the file cannot be opened or read
      */
     @Override
@@ -102,57 +103,51 @@ public class PlayerRaceReader implements Reader<PlayerRace> {
 
     /**
      * The grammar-specific step handed to {@link GrammarDriver}: runs the grammar's {@code file}
-     * rule, fails closed on any hard lexer or grammar error through {@link ParseErrors#throwIfAny()},
-     * and soft-checks the {@code record-count:} header against the number of {@code name:} blocks
-     * parsed. No value is interpreted here: numbers, flag names and the history chart index stay as
-     * text for the assembler, and the name is copied through.
+     * rule and fails closed on any hard lexer or grammar error through
+     * {@link ParseErrors#throwIfAny()}. No value is interpreted here: numbers, flag names and the
+     * history chart index stay as text for the assembler, and the name is copied through.
      *
      * <p>The ordering is deliberate: {@code throwIfAny} fires straight after the parse, so a hard
-     * grammar error (a missing {@code record-count:} header, a directive line before any
-     * {@code name:}, a {@code name:} with nothing after it, a line the lexer does not know) fails
-     * closed before the count check runs against whatever did parse. The grammar builds each
-     * {@link PlayerRaceParseRecord} itself, so the rows are only copied into a new list. The rule
-     * needs at least one race, where C accepts a file with none.
+     * grammar error (a directive line before any {@code name:}, a {@code name:} with nothing after
+     * it, a line the lexer does not know) fails closed before any row is used. The grammar builds
+     * each {@link PlayerRaceParseRecord} itself, so the rows are only copied into a new list. The
+     * rule needs at least one race, where C accepts a file with none.
      *
-     * <p>Function extract coded before 260915, commented in full on 261018.
+     * <p>Function extract coded before 260915, commented in full on 261018, updated on 261105 for
+     * the removal of the soft-error path and the {@code record-count:} header.
      *
      * @param parser       the generated parser, positioned at the start of the file
      * @param errorCatcher the hard-error channel; {@code throwIfAny} aborts before the rows are used
-     * @param errors       the soft-error sink: a record-count mismatch is appended here
      * @return the parse records, one per {@code name:} block, in file order
      */
     private static List<PlayerRaceParseRecord> extract(
             @NotNull PlayerRaceGrammar parser,
-            @NotNull ParseErrors errorCatcher,
-            @NotNull List<String> errors) {
+            @NotNull ParseErrors errorCatcher) {
         PlayerRaceGrammar.FileContext output = parser.file();
         List<PlayerRaceParseRecord> result = output.races;
         errorCatcher.throwIfAny();
-
-        String declaredRecordCount = output.declaredRecordCount;
-        GrammarDriver.checkRecordCount(declaredRecordCount, result.size(), errors);
 
         return new ArrayList<>(result);
     }
 
     /**
-     * Reads {@code filename} and returns the full {@link ParseResult}: the assembled
-     * {@link PlayerRace}s and every error message collected on the way. This is the Java form of C's
-     * {@code run_parse_p_race} followed by {@code finish_parse_p_race}, and the entry point
-     * {@code PlayerDataLoader.loadPlayerRaces()} uses so that it can gate on
-     * {@link ParseResult#hasErrors()} before registering the result. {@link GrammarDriver#run} does
-     * the lex, parse, extract and assemble.
+     * Reads {@code filename} and returns the assembled {@link PlayerRace}s wrapped in a
+     * {@link ParseResult}. This is the Java form of C's {@code run_parse_p_race} followed by
+     * {@code finish_parse_p_race}, and the entry point {@code PlayerDataLoader.loadPlayerRaces()}
+     * uses. {@link GrammarDriver#run} does the lex, parse, extract and assemble.
      *
-     * <p>Where C fails the load on a flag, resist or history chart it cannot resolve, the assembler
-     * records a soft error and drops that whole race, so the other races load. The assembler needs
-     * the body and history registries loaded first, and throws {@link IllegalStateException} from
-     * {@code PlayerRegistry} if they are not. A file that cannot be opened is an
-     * {@link IOException}, where C's {@code parse_file_quit_not_found} quits.
+     * <p>As C fails the load on a flag, resist or history chart it cannot resolve, the assembler
+     * throws a {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException} there, and a
+     * grammar error throws a {@code ParseCancellationException}; no result is returned for a file
+     * that fails. The assembler needs the body and history registries loaded first, and throws
+     * {@link IllegalStateException} from {@code PlayerRegistry} if they are not. A file that cannot
+     * be opened is an {@link IOException}, where C's {@code parse_file_quit_not_found} quits.
      *
-     * <p>Function parseWithResults coded before 260915, commented in full on 261018.
+     * <p>Function parseWithResults coded before 260915, commented in full on 261018, updated on
+     * 261105 for the removal of the soft-error path.
      *
      * @param filename the player-race data file to load
-     * @return the assembled races plus any error messages; the races are empty if the parse failed
+     * @return every race in the file, in file order
      * @throws IOException if the file cannot be opened or read
      */
     public @NotNull ParseResult<PlayerRace> parseWithResults(@NotNull String filename) throws IOException {

@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -66,7 +67,7 @@ class QuestReaderTest {
     private static final String REAL_FILE = "lib/gamedata/quest.txt";
 
     /**
-     * quest.txt's {@code record-count:} header, and the number of {@code name:} records in it.
+     * The number of {@code name:} records in quest.txt.
      */
     private static final int EXPECTED_QUESTS = 2;
 
@@ -116,9 +117,6 @@ class QuestReaderTest {
                 + "number:" + number + "\n";
     }
 
-    private static String withHeader(int count, String body) {
-        return "record-count:" + count + "\n\n" + body;
-    }
 
     private ParseResult<Quest> load(String name, String content) throws IOException {
         Path file = tempDir.resolve(name);
@@ -146,7 +144,6 @@ class QuestReaderTest {
     void realFileLoadsBothQuestsWithNoErrors() throws IOException {
         ParseResult<Quest> result = new QuestReader().parseWithResults(REAL_FILE);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(EXPECTED_QUESTS, result.items().size());
     }
 
@@ -196,9 +193,8 @@ class QuestReaderTest {
     @Test
     void raceResolvesViaCaseInsensitiveSubstringFallback() throws IOException {
         ParseResult<Quest> result = load("partial.txt",
-                withHeader(1, quest("Spider Hunt", "5", "spider", "3")));
+                quest("Spider Hunt", "5", "spider", "3"));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size());
         assertEquals("cave spider", result.items().get(0).getRace().getName());
     }
@@ -212,7 +208,7 @@ class QuestReaderTest {
     @Test
     void unknownRaceAbortsTheLoad() {
         DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("badrace.txt",
-                withHeader(1, quest("Impossible", "5", "Xyzzy the Nonexistent", "1"))));
+                quest("Impossible", "5", "Xyzzy the Nonexistent", "1")));
 
         assertTrue(e.getMessage().contains("has an illegal monster race value: Xyzzy the Nonexistent"),
                 e.getMessage());
@@ -226,12 +222,12 @@ class QuestReaderTest {
     @Test
     void negativeLevelAbortsTheLoad() {
         DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("neglevel.txt",
-                withHeader(1, quest("Below", "-3", "Sauron, the Sorcerer", "1"))));
+                quest("Below", "-3", "Sauron, the Sorcerer", "1")));
 
         assertTrue(e.getMessage().contains("has an illegal negative level value: -3"), e.getMessage());
     }
 
-    // ---- No record is dropped; the record count is the only soft error ---
+    // ---- No record is dropped ------------------------------------------
 
     /**
      * 99999999999 is above {@code int} but within {@code unsigned long}, so C accepts it and stores
@@ -241,9 +237,8 @@ class QuestReaderTest {
     @Test
     void levelBeyondIntWrapsToAByteAndIsKept() throws IOException {
         ParseResult<Quest> result = load("biglevel.txt",
-                withHeader(1, quest("Deep", "99999999999", "Sauron, the Sorcerer", "1")));
+                quest("Deep", "99999999999", "Sauron, the Sorcerer", "1"));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size());
         assertEquals(255, result.items().get(0).getLevel());
     }
@@ -256,23 +251,10 @@ class QuestReaderTest {
     @Test
     void numberBeyondIntIsClampedAndTheRecordKept() throws IOException {
         ParseResult<Quest> result = load("bignumber.txt",
-                withHeader(1, quest("Many", "5", "Sauron, the Sorcerer", "99999999999")));
+                quest("Many", "5", "Sauron, the Sorcerer", "99999999999"));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size());
         assertEquals(Integer.MAX_VALUE, result.items().get(0).getMaxNumber());
-    }
-
-    @Test
-    void recordCountMismatchIsASoftError() throws IOException {
-        // Header claims three, body holds one; the one still loads (partial-results contract).
-        ParseResult<Quest> result = load("miscount.txt",
-                withHeader(3, quest("Solo", "5", "Sauron, the Sorcerer", "1")));
-
-        assertEquals(1, result.items().size());
-        assertTrue(result.hasErrors());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("record-count header declares")),
-                () -> result.errors().toString());
     }
 
     /**
@@ -284,7 +266,7 @@ class QuestReaderTest {
         String body = quest("Big", "5", "Sauron, the Sorcerer", "99999999999")
                 + "\n"
                 + quest("Next", "10", "Morgoth, Lord of Darkness", "1");
-        ParseResult<Quest> result = load("gap.txt", withHeader(2, body));
+        ParseResult<Quest> result = load("gap.txt", body);
 
         assertEquals(2, result.items().size());
         assertEquals(0, result.items().get(0).getIndex());
@@ -293,20 +275,6 @@ class QuestReaderTest {
     }
 
     // ---- Hard error (fail-closed) ----------------------------------------
-
-    /**
-     * The {@code file} rule requires the {@code record-count} header, so a file without it is a hard
-     * grammar error: {@code throwIfAny()} fires and the driver returns an empty result carrying the
-     * collected errors, rather than a partial load.
-     */
-    @Test
-    void missingRecordCountHeaderIsAHardErrorYieldingEmptyResult() throws IOException {
-        ParseResult<Quest> result = load("noheader.txt",
-                quest("Headerless", "5", "Sauron, the Sorcerer", "1"));
-
-        assertTrue(result.items().isEmpty(), "a hard grammar error must fail closed");
-        assertTrue(result.hasErrors());
-    }
 
     // ---- Reader surface: parse(), missing file, record order -------------
 
@@ -342,9 +310,8 @@ class QuestReaderTest {
         String body = quest("First", "1", "Sauron, the Sorcerer", "1") + "\n"
                 + quest("Second", "2", "Morgoth, Lord of Darkness", "2") + "\n"
                 + quest("Third", "3", "Sauron, the Sorcerer", "3");
-        ParseResult<Quest> result = load("three.txt", withHeader(3, body));
+        ParseResult<Quest> result = load("three.txt", body);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(3, result.items().size());
         for (int i = 0; i < 3; i++) {
             assertEquals(i, result.items().get(i).getIndex());
@@ -362,9 +329,8 @@ class QuestReaderTest {
     @Test
     void nameKeepsColonsInTheRestOfTheLine() throws IOException {
         ParseResult<Quest> result = load("colon.txt",
-                withHeader(1, quest("The Hunt: Part 2", "5", "Sauron, the Sorcerer", "1")));
+                quest("The Hunt: Part 2", "5", "Sauron, the Sorcerer", "1"));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals("The Hunt: Part 2", result.items().get(0).getName());
     }
 
@@ -374,11 +340,10 @@ class QuestReaderTest {
      */
     @Test
     void commentsAndBlankLinesBetweenDirectivesAreIgnored() throws IOException {
-        String text = "# header comment\nrecord-count:1\n\n# before\nname:Sauron\n\n# inside\nlevel:99\n"
+        String text = "# header comment\n\n# before\nname:Sauron\n\n# inside\nlevel:99\n"
                 + "race:Sauron, the Sorcerer\n# more\nnumber:1\n# after\n";
         ParseResult<Quest> result = load("comments.txt", text);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size());
         assertEquals(99, result.items().get(0).getLevel());
     }
@@ -395,7 +360,7 @@ class QuestReaderTest {
                 + quest("Top", "255", "Sauron, the Sorcerer", "1") + "\n"
                 + quest("Wrap", "256", "Sauron, the Sorcerer", "1") + "\n"
                 + quest("Wrap44", "300", "Sauron, the Sorcerer", "1");
-        List<Quest> quests = load("levels.txt", withHeader(4, body)).items();
+        List<Quest> quests = load("levels.txt", body).items();
 
         assertEquals(0, quests.get(0).getLevel());
         assertEquals(255, quests.get(1).getLevel());
@@ -409,24 +374,24 @@ class QuestReaderTest {
     @Test
     void numberIsKeptWithoutTruncation() throws IOException {
         List<Quest> quests = load("number.txt",
-                withHeader(1, quest("Horde", "5", "Sauron, the Sorcerer", "300"))).items();
+                quest("Horde", "5", "Sauron, the Sorcerer", "300")).items();
 
         assertEquals(300, quests.get(0).getMaxNumber());
         assertEquals(0, quests.get(0).getCurrentNumber());
     }
 
     /**
-     * A fault names the line of the {@code name:} directive that opened the record. Header on
-     * line 1, first record on lines 3-6, second record's {@code name:} on line 8.
+     * A fault names the line of the {@code name:} directive that opened the record. First record
+     * on lines 1-4, a blank line, second record's {@code name:} on line 6.
      */
     @Test
     void aFaultNamesTheLineOfTheRecordsNameDirective() {
         String body = quest("Good", "5", "Sauron, the Sorcerer", "1") + "\n"
                 + quest("Bad", "5", "Sauron, the Sorcerer", "-1");
         DataFileParseException e = assertThrows(DataFileParseException.class,
-                () -> load("lines.txt", withHeader(2, body)));
+                () -> load("lines.txt", body));
 
-        assertTrue(e.getMessage().contains("line: 8"), e.getMessage());
+        assertTrue(e.getMessage().contains("line: 6"), e.getMessage());
         assertTrue(e.getMessage().contains("illegal negative number value: -1"), e.getMessage());
     }
 
@@ -436,7 +401,7 @@ class QuestReaderTest {
     @Test
     void aLeadingZeroLevelIsReadAsOctalAsInC() throws IOException {
         List<Quest> quests = load("octal.txt",
-                withHeader(1, quest("Octal", "010", "Sauron, the Sorcerer", "010"))).items();
+                quest("Octal", "010", "Sauron, the Sorcerer", "010")).items();
 
         assertEquals(8, quests.get(0).getLevel());
         assertEquals(8, quests.get(0).getMaxNumber());
@@ -448,11 +413,9 @@ class QuestReaderTest {
      */
     @Test
     void aHexadecimalLevelIsRefusedHereWhereCReadsBaseZero() throws IOException {
-        ParseResult<Quest> result = load("hex.txt",
-                withHeader(1, quest("Hex", "0x10", "Sauron, the Sorcerer", "1")));
+        assertThrows(ParseCancellationException.class, () -> load("hex.txt",
+                quest("Hex", "0x10", "Sauron, the Sorcerer", "1")));
 
-        assertTrue(result.items().isEmpty(), "C would store level 16");
-        assertTrue(result.hasErrors());
     }
 
     // ---- Where the grammar is stricter than C ----------------------------
@@ -461,72 +424,56 @@ class QuestReaderTest {
 
     @Test
     void directivesInAnotherOrderAreRefusedHereWhereCAcceptsThem() throws IOException {
-        String text = "record-count:1\n\nname:Sauron\nrace:Sauron, the Sorcerer\nlevel:99\nnumber:1\n";
-        ParseResult<Quest> result = load("order.txt", text);
+        String text = "\nname:Sauron\nrace:Sauron, the Sorcerer\nlevel:99\nnumber:1\n";
+        assertThrows(ParseCancellationException.class, () -> load("order.txt", text));
 
-        assertTrue(result.items().isEmpty(), "C loads the quest with every field set");
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void aMissingDirectiveIsRefusedHereWhereCLeavesTheFieldZero() throws IOException {
-        String text = "record-count:1\n\nname:Sauron\nlevel:99\nrace:Sauron, the Sorcerer\n";
-        ParseResult<Quest> result = load("nonumber.txt", text);
+        String text = "\nname:Sauron\nlevel:99\nrace:Sauron, the Sorcerer\n";
+        assertThrows(ParseCancellationException.class, () -> load("nonumber.txt", text));
 
-        assertTrue(result.items().isEmpty(), "C loads the quest with max_num 0");
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void aRepeatedDirectiveIsRefusedHereWhereCTakesTheLastOne() throws IOException {
-        String text = "record-count:1\n\nname:Sauron\nlevel:5\nlevel:99\nrace:Sauron, the Sorcerer\nnumber:1\n";
-        ParseResult<Quest> result = load("dup.txt", text);
+        String text = "\nname:Sauron\nlevel:5\nlevel:99\nrace:Sauron, the Sorcerer\nnumber:1\n";
+        assertThrows(ParseCancellationException.class, () -> load("dup.txt", text));
 
-        assertTrue(result.items().isEmpty(), "C loads the quest with level 99");
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void aFileWithNoQuestsIsRefusedHereWhereCLoadsAnEmptyList() throws IOException {
-        ParseResult<Quest> result = load("empty.txt", "record-count:0\n");
+        assertThrows(ParseCancellationException.class, () -> load("empty.txt", ""), "C finishes with z_info->quest_max 0 and no error");
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors(), "C finishes with z_info->quest_max 0 and no error");
     }
 
     @Test
     void aFieldAfterTheValueIsRefusedHereWhereCIgnoresIt() throws IOException {
-        ParseResult<Quest> result = load("extra.txt",
-                withHeader(1, quest("Sauron", "99:7", "Sauron, the Sorcerer", "1")));
+        assertThrows(ParseCancellationException.class, () -> load("extra.txt",
+                quest("Sauron", "99:7", "Sauron, the Sorcerer", "1")));
 
-        assertTrue(result.items().isEmpty(), "C reads level 99 and ignores the rest");
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void anIndentedLineIsRefusedHereWhereCSkipsTheIndent() throws IOException {
-        String text = "record-count:1\n\nname:Sauron\n  level:99\nrace:Sauron, the Sorcerer\nnumber:1\n";
-        ParseResult<Quest> result = load("indent.txt", text);
+        String text = "\nname:Sauron\n  level:99\nrace:Sauron, the Sorcerer\nnumber:1\n";
+        assertThrows(ParseCancellationException.class, () -> load("indent.txt", text));
 
-        assertTrue(result.items().isEmpty(), "C skips leading whitespace");
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void aFinalCommentWithoutANewlineIsRefusedHereWhereCSkipsIt() throws IOException {
-        String text = withHeader(1, quest("Sauron", "99", "Sauron, the Sorcerer", "1")) + "# end";
-        ParseResult<Quest> result = load("lastcomment.txt", text);
+        String text = quest("Sauron", "99", "Sauron, the Sorcerer", "1") + "# end";
+        assertThrows(ParseCancellationException.class, () -> load("lastcomment.txt", text));
 
-        assertTrue(result.items().isEmpty(), "C ignores a comment on the last line");
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void anUnknownDirectiveRefusesTheFileAsInC() throws IOException {
-        String text = withHeader(1, quest("Sauron", "99", "Sauron, the Sorcerer", "1")) + "colour:red\n";
-        ParseResult<Quest> result = load("unknown.txt", text);
+        String text = quest("Sauron", "99", "Sauron, the Sorcerer", "1") + "colour:red\n";
+        assertThrows(ParseCancellationException.class, () -> load("unknown.txt", text));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 }

@@ -96,15 +96,13 @@ public class TunnelAssembler implements Assembler<DungeonProfileParseRecord.Tunn
      * <p>Function assemble coded before 260915, commented in full on 261023.
      *
      * @param records  exactly one parsed tunnel record
-     * @param errors   the shared error list; nothing is added to it, because every failure here
-     *                 throws
      * @param filename the file being read, for the error messages
      * @return the assembled tunnel profile; never {@code null}
      * @throws DataFileParseException if {@code records} is not exactly one long, or a field has no
      *                                leading digit
      */
     @Override
-    public TunnelProfile assemble(@NotNull List<DungeonProfileParseRecord.Tunnel> records, @NotNull List<String> errors,
+    public TunnelProfile assemble(@NotNull List<DungeonProfileParseRecord.Tunnel> records,
                                     String filename) {
         if (records.size() != 1) {
             String message = "Expected exactly one tunnel profile in file: " + filename;

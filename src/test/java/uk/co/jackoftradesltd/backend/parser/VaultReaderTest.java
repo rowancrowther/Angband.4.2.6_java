@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -59,7 +60,7 @@ class VaultReaderTest {
     private static final String REAL_FILE = "lib/gamedata/vault.txt";
 
     /**
-     * vault.txt's {@code record-count:} header, and the number of {@code name:} records in it.
+     * The number of {@code name:} records in vault.txt.
      */
     private static final int EXPECTED_VAULTS = 162;
 
@@ -158,7 +159,6 @@ class VaultReaderTest {
     void parsesEveryVaultWithoutError() throws Exception {
         ParseResult<Vault> result = new VaultReader().parseWithResults(REAL_FILE);
 
-        assertTrue(result.errors().isEmpty(), () -> "unexpected errors: " + result.errors());
         assertEquals(EXPECTED_VAULTS, result.items().size());
     }
 
@@ -275,11 +275,10 @@ class VaultReaderTest {
      */
     @Test
     void theFixtureRecordLoadsCleanly() throws IOException {
-        String path = tempFile("good.txt", "record-count:1\n" + GOOD_RECORD + "\n");
+        String path = tempFile("good.txt", GOOD_RECORD + "\n");
 
         ParseResult<Vault> result = new VaultReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         Vault good = result.items().getFirst();
         assertEquals("Good vault", good.getName());
         assertEquals(RoomType.LESSER_VAULT, good.getType());
@@ -296,7 +295,7 @@ class VaultReaderTest {
         String badType = GOOD_RECORD.replace("name:Good vault", "name:Bad type")
                 .replace("type:Lesser vault", "type:Enormous vault");
         String path = tempFile("bad-type.txt",
-                "record-count:2\n" + badType + "\n" + GOOD_RECORD + "\n");
+                badType + "\n" + GOOD_RECORD + "\n");
 
         assertThrows(DataFileParseException.class, () -> new VaultReader().parseWithResults(path));
     }
@@ -308,7 +307,7 @@ class VaultReaderTest {
     @Test
     void aLowerCaseVaultTypeEndsTheLoad() throws IOException {
         String lower = GOOD_RECORD.replace("type:Lesser vault", "type:lesser vault");
-        String path = tempFile("lower-type.txt", "record-count:1\n" + lower + "\n");
+        String path = tempFile("lower-type.txt", lower + "\n");
 
         assertThrows(DataFileParseException.class, () -> new VaultReader().parseWithResults(path));
     }
@@ -322,7 +321,7 @@ class VaultReaderTest {
     void rowsOverTheTypesCapEndTheLoad() throws IOException {
         String tooTall = GOOD_RECORD.replace("name:Good vault", "name:Too tall")
                 .replace("rows:3", "rows:23");
-        String path = tempFile("bad-rows.txt", "record-count:1\n" + tooTall + "\n");
+        String path = tempFile("bad-rows.txt", tooTall + "\n");
 
         assertThrows(DataFileParseException.class, () -> new VaultReader().parseWithResults(path));
     }
@@ -334,7 +333,7 @@ class VaultReaderTest {
     void columnsOverTheTypesCapEndTheLoad() throws IOException {
         String tooWide = GOOD_RECORD.replace("name:Good vault", "name:Too wide")
                 .replace("columns:3", "columns:23");
-        String path = tempFile("bad-columns.txt", "record-count:1\n" + tooWide + "\n");
+        String path = tempFile("bad-columns.txt", tooWide + "\n");
 
         assertThrows(DataFileParseException.class, () -> new VaultReader().parseWithResults(path));
     }
@@ -350,11 +349,10 @@ class VaultReaderTest {
                 .replace("type:Lesser vault", "type:Interesting room")
                 .replace("rows:3", "rows:23")
                 .replace("D:###\nD:#.#\nD:###", "D:###\n".repeat(22) + "D:###");
-        String path = tempFile("interesting.txt", "record-count:1\n" + interesting + "\n");
+        String path = tempFile("interesting.txt", interesting + "\n");
 
         ParseResult<Vault> result = new VaultReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         Vault tall = result.items().getFirst();
         assertEquals(RoomType.INTERESTING, tall.getType());
         assertEquals(23, tall.getHeight());
@@ -369,7 +367,7 @@ class VaultReaderTest {
     void aRaggedMapEndsTheLoad() throws IOException {
         String ragged = GOOD_RECORD.replace("name:Good vault", "name:Ragged")
                 .replace("D:#.#", "D:#..#");
-        String path = tempFile("ragged.txt", "record-count:2\n" + ragged + "\n" + GOOD_RECORD + "\n");
+        String path = tempFile("ragged.txt", ragged + "\n" + GOOD_RECORD + "\n");
 
         assertThrows(DataFileParseException.class, () -> new VaultReader().parseWithResults(path));
     }
@@ -382,11 +380,10 @@ class VaultReaderTest {
     void tooFewMapRowsLoadAsInC() throws IOException {
         String shortMap = GOOD_RECORD.replace("name:Good vault", "name:Short")
                 .replace("D:#.#\nD:###", "D:#.#");
-        String path = tempFile("short-map.txt", "record-count:1\n" + shortMap + "\n");
+        String path = tempFile("short-map.txt", shortMap + "\n");
 
         ParseResult<Vault> result = new VaultReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         Vault vault = result.items().getFirst();
         assertEquals(3, vault.getHeight());
         assertEquals(List.of("###", "#.#"), vault.getMap());
@@ -401,7 +398,7 @@ class VaultReaderTest {
         String badFlags = GOOD_RECORD.replace("name:Good vault", "name:Bad flags")
                 .replace("max-depth:0", "max-depth:0\nflags:NOT_A_FLAG|ALSO_NOT_A_FLAG");
         String path = tempFile("bad-flags.txt",
-                "record-count:2\n" + badFlags + "\n" + GOOD_RECORD + "\n");
+                badFlags + "\n" + GOOD_RECORD + "\n");
 
         assertThrows(DataFileParseException.class, () -> new VaultReader().parseWithResults(path));
     }
@@ -421,13 +418,12 @@ class VaultReaderTest {
                 .replace("max-depth:0", "max-depth:0\nflags:FEW_ENTRANCES\nflags:NOT_A_FLAG");
 
         ParseResult<Vault> both = new VaultReader().parseWithResults(
-                tempFile("repeated-flags.txt", "record-count:1\n" + repeated + "\n"));
-        assertFalse(both.hasErrors(), () -> both.errors().toString());
+                tempFile("repeated-flags.txt", repeated + "\n"));
         assertEquals(1, both.items().getFirst().getFlags().count());
         assertTrue(both.items().getFirst().getFlags().has(RoomFlags.FEW_ENTRANCES));
 
         String badPath = tempFile("second-flag-line-bad.txt",
-                "record-count:2\n" + secondLineBad + "\n" + GOOD_RECORD + "\n");
+                secondLineBad + "\n" + GOOD_RECORD + "\n");
         assertThrows(DataFileParseException.class,
                 () -> new VaultReader().parseWithResults(badPath));
     }
@@ -440,28 +436,11 @@ class VaultReaderTest {
     void anOverflowingRatingIsClamped() throws IOException {
         String huge = GOOD_RECORD.replace("name:Good vault", "name:Huge rating")
                 .replace("rating:5", "rating:99999999999");
-        String path = tempFile("overflow.txt", "record-count:1\n" + huge + "\n");
+        String path = tempFile("overflow.txt", huge + "\n");
 
         ParseResult<Vault> result = new VaultReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(Integer.MAX_VALUE, result.items().getFirst().getRating());
-    }
-
-    /**
-     * A wrong {@code record-count:} is soft: reported, but the records that parsed still load. C's
-     * own parser never validates this header at all, so this check is stricter than the original.
-     */
-    @Test
-    void recordCountMismatchIsReportedButVaultsStillLoad() throws IOException {
-        String path = tempFile("bad-count.txt", "record-count:7\n" + GOOD_RECORD + "\n");
-
-        ParseResult<Vault> result = new VaultReader().parseWithResults(path);
-
-        assertEquals(1, result.items().size(), "the count check must not cost the file its records");
-        assertTrue(result.errors().stream()
-                        .anyMatch(e -> e.contains("declares 7") && e.contains("contains 1")),
-                result.errors()::toString);
     }
 
     /**
@@ -472,12 +451,10 @@ class VaultReaderTest {
     void aMissingMandatoryDirectiveFailsClosed() throws IOException {
         String noRating = GOOD_RECORD.replace("rating:5\n", "");
         String path = tempFile("no-rating.txt",
-                "record-count:2\n" + noRating + "\n" + GOOD_RECORD + "\n");
+                noRating + "\n" + GOOD_RECORD + "\n");
 
-        ParseResult<Vault> result = new VaultReader().parseWithResults(path);
+        assertThrows(ParseCancellationException.class, () -> new VaultReader().parseWithResults(path));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty(), result.items()::toString);
     }
 
     /**
@@ -487,12 +464,10 @@ class VaultReaderTest {
     @Test
     void directivesOutOfOrderFailClosed() throws IOException {
         String swapped = GOOD_RECORD.replace("rating:5\nrows:3", "rows:3\nrating:5");
-        String path = tempFile("out-of-order.txt", "record-count:1\n" + swapped + "\n");
+        String path = tempFile("out-of-order.txt", swapped + "\n");
 
-        ParseResult<Vault> result = new VaultReader().parseWithResults(path);
+        assertThrows(ParseCancellationException.class, () -> new VaultReader().parseWithResults(path));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty(), result.items()::toString);
     }
 
     /**
@@ -504,11 +479,10 @@ class VaultReaderTest {
     @Test
     void aMapRowKeepsItsHashesAndItsTrailingPadding() throws IOException {
         String padded = GOOD_RECORD.replace("D:#.#", "D:#. ");
-        String path = tempFile("padded.txt", "# a real comment\nrecord-count:1\n" + padded + "\n");
+        String path = tempFile("padded.txt", "# a real comment\n" + padded + "\n");
 
         ParseResult<Vault> result = new VaultReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         Vault vault = result.items().getFirst();
         assertEquals(List.of("###", "#. ", "###"), vault.getMap());
         assertEquals("####. ###", vault.getMapLines());
@@ -540,13 +514,13 @@ class VaultReaderTest {
 
     /**
      * Parses a one-record file made from {@link #GOOD_RECORD} with {@code from} replaced by
-     * {@code to}, with the {@code record-count:} header C's file does not carry.
+     * {@code to}.
      */
     private ParseResult<Vault> parseVariant(String fileName, String from, String to)
             throws IOException {
         String record = GOOD_RECORD.replace(from, to);
         return new VaultReader().parseWithResults(
-                tempFile(fileName, "record-count:1\n" + record + "\n"));
+                tempFile(fileName, record + "\n"));
     }
 
     /**
@@ -569,7 +543,7 @@ class VaultReaderTest {
     void twoRecordsComeBackSecondFirst() throws IOException {
         String first = GOOD_RECORD.replace("name:Good vault", "name:First");
         String second = GOOD_RECORD.replace("name:Good vault", "name:Second");
-        String path = tempFile("two.txt", "record-count:2\n" + first + "\n" + second + "\n");
+        String path = tempFile("two.txt", first + "\n" + second + "\n");
 
         ParseResult<Vault> result = new VaultReader().parseWithResults(path);
 
@@ -584,7 +558,6 @@ class VaultReaderTest {
     void aNameKeepsItsTrailingSpaceAndAnyColon() throws IOException {
         ParseResult<Vault> result = parseVariant("name.txt", "name:Good vault", "name:Odd: name ");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals("Odd: name ", result.items().getFirst().getName());
     }
 
@@ -619,11 +592,10 @@ class VaultReaderTest {
         String row = "D:" + "#".repeat(22) + "\n";
         String record = String.join("\n", "name:Full size", "type:Lesser vault", "rating:1",
                 "rows:22", "columns:22", "min-depth:0", "max-depth:0") + "\n" + row.repeat(22);
-        String path = tempFile("full.txt", "record-count:1\n" + record);
+        String path = tempFile("full.txt", record);
 
         ParseResult<Vault> result = new VaultReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(22 * 22, result.items().getFirst().getMapLines().length());
     }
 
@@ -648,7 +620,6 @@ class VaultReaderTest {
     void aNegativeRatingIsAccepted() throws IOException {
         ParseResult<Vault> result = parseVariant("neg-rating.txt", "rating:5", "rating:-3");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(-3, result.items().getFirst().getRating());
     }
 
@@ -660,7 +631,6 @@ class VaultReaderTest {
     void zeroRowsLoadAsInC() throws IOException {
         ParseResult<Vault> result = parseVariant("zero-rows.txt", "rows:3", "rows:0");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(0, result.items().getFirst().getHeight());
     }
 
@@ -672,12 +642,10 @@ class VaultReaderTest {
     void typeAfterRowsIsRefusedHereWhereCTakesItInAnyOrder() throws IOException {
         String reordered = GOOD_RECORD.replace("type:Lesser vault\nrating:5\nrows:3",
                 "rating:5\nrows:3\ntype:Lesser vault");
-        String path = tempFile("type-late.txt", "record-count:1\n" + reordered + "\n");
+        String path = tempFile("type-late.txt", reordered + "\n");
 
-        ParseResult<Vault> result = new VaultReader().parseWithResults(path);
+        assertThrows(ParseCancellationException.class, () -> new VaultReader().parseWithResults(path));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty());
     }
 
     /**
@@ -686,11 +654,9 @@ class VaultReaderTest {
      */
     @Test
     void aFileWithNoVaultsIsRefusedHereWhereCLoadsAnEmptyList() throws IOException {
-        ParseResult<Vault> result = new VaultReader().parseWithResults(
-                tempFile("empty.txt", "record-count:0\n"));
+        assertThrows(ParseCancellationException.class, () -> new VaultReader().parseWithResults(
+                tempFile("empty.txt", "")));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty());
     }
 
     /**
@@ -699,10 +665,8 @@ class VaultReaderTest {
      */
     @Test
     void anIndentedDirectiveIsRefusedHereWhereCSkipsTheIndent() throws IOException {
-        ParseResult<Vault> result = parseVariant("indent.txt", "rating:5", "  rating:5");
+        assertThrows(ParseCancellationException.class, () -> parseVariant("indent.txt", "rating:5", "  rating:5"));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty());
     }
 
     /**
@@ -711,10 +675,8 @@ class VaultReaderTest {
      */
     @Test
     void aHexadecimalRowCountIsRefusedHereWhereCReadsBaseZero() throws IOException {
-        ParseResult<Vault> result = parseVariant("hex.txt", "rows:3", "rows:0x3");
+        assertThrows(ParseCancellationException.class, () -> parseVariant("hex.txt", "rows:3", "rows:0x3"));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty());
     }
 
     /**
@@ -726,7 +688,6 @@ class VaultReaderTest {
         ParseResult<Vault> result = parseVariant("flag-spaces.txt", "max-depth:0",
                 "max-depth:0\nflags:FEW_ENTRANCES | FEW_ENTRANCES");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertTrue(result.items().getFirst().getFlags().has(RoomFlags.FEW_ENTRANCES));
     }
 
@@ -736,24 +697,26 @@ class VaultReaderTest {
      */
     @Test
     void aFinalMapRowWithoutANewlineStillLoads() throws IOException {
-        String path = tempFile("no-newline.txt", "record-count:1\n" + GOOD_RECORD);
+        String path = tempFile("no-newline.txt", GOOD_RECORD);
 
         ParseResult<Vault> result = new VaultReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals("###", result.items().getFirst().getMap().getLast());
     }
 
     /**
-     * A hard grammar error fails closed: {@link VaultReader#parse} hands back an empty list, the
-     * same as for a file with no vaults, while {@link VaultReader#parseWithResults} says why.
+     * A grammar error is thrown from both entry points, so {@link VaultReader#parse} can no longer
+     * mistake it for a file with no vaults.
+     *
+     * <p>Function bothEntryPointsThrowOnAGrammarError coded on 261104, commented in full on 261104.
+     * It replaces parseCannotTellAHardErrorFromAnEmptyFile.
      */
     @Test
-    void parseCannotTellAHardErrorFromAnEmptyFile() throws IOException {
-        String path = tempFile("garbage.txt", "record-count:1\nthis is not a vault\n");
+    void bothEntryPointsThrowOnAGrammarError() throws IOException {
+        String path = tempFile("garbage.txt", "this is not a vault\n");
         VaultReader reader = new VaultReader();
 
-        assertTrue(reader.parse(path).isEmpty());
-        assertTrue(reader.parseWithResults(path).hasErrors());
+        assertThrows(ParseCancellationException.class, () -> reader.parse(path));
+        assertThrows(ParseCancellationException.class, () -> reader.parseWithResults(path));
     }
 }

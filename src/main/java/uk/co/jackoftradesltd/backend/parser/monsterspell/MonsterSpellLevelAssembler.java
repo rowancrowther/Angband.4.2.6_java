@@ -55,10 +55,10 @@ import java.util.List;
  * <p>
  * The only fatal path is an unreadable {@code power-cutoff:}, reported by
  * {@link ParseUtils#parseIntString} (a {@code strtol}-style reading that clamps an oversize
- * number where C wraps, as its own Javadoc records). Nothing is written to the {@code errors}
- * list, and the result is never {@code null}.
+ * number where C wraps, as its own Javadoc records). The result is never {@code null}.
  *
- * <p>Class MonsterSpellLevelAssembler coded before 260915, commented in full on 261027.
+ * <p>Class MonsterSpellLevelAssembler coded before 260915, commented in full on 261027, updated on
+ * 261105 for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -92,14 +92,13 @@ public class MonsterSpellLevelAssembler implements Assembler<MonsterSpellParseRe
      * <p>Function assemble coded before 260915, commented in full on 261027.
      *
      * @param records  the parsed level blocks for a single spell, possibly empty
-     * @param errors   unused: nothing here is a soft error any longer
      * @param filename the file being read, for the message of a bad {@code power-cutoff:}
      * @return the assembled levels in file order, never {@code null} and never empty
      * @throws DataFileParseException if a
      *         {@code power-cutoff:} value has no digits
      */
     @Override
-    public List<MonsterSpellLevel> assemble(@NotNull List<MonsterSpellParseRecord.MonsterSpellLevelParseRecord> records, @NotNull List<String> errors,
+    public List<MonsterSpellLevel> assemble(@NotNull List<MonsterSpellParseRecord.MonsterSpellLevelParseRecord> records,
                                     String filename) {
         List<MonsterSpellLevel> monsterSpellLevels = new ArrayList<>();
         

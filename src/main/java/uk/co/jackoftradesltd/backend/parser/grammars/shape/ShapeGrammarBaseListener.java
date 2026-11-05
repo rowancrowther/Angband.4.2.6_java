@@ -15,17 +15,8 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from ShapeGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ShapeGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.shape;
-
-    import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
-    import uk.co.jackoftradesltd.backend.parser.shape.ShapeParseRecord;
-
-    import java.util.List;
-    import java.util.Map;
-    import java.util.ArrayList;
-    import java.util.HashMap;
-
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
@@ -38,18 +29,6 @@ import org.antlr.v4.runtime.tree.TerminalNode;
  */
 @SuppressWarnings("CheckReturnValue")
 public class ShapeGrammarBaseListener implements ShapeGrammarListener {
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterRecordCount(ShapeGrammar.RecordCountContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitRecordCount(ShapeGrammar.RecordCountContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

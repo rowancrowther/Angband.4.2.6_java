@@ -53,14 +53,20 @@ import java.util.List;
  * {@code summon.txt} must already be loaded when this runs - as in C's {@code init_arrays}, where
  * {@code summon_parser} comes before {@code chest_trap_parser} - and summons in turn need monster
  * bases, which need pains. Running this first instead throws {@code IllegalStateException} out of
- * {@code MonsterRegistry.lookupSummon} rather than reporting a soft error.
+ * {@code MonsterRegistry.lookupSummon}.
  *
- * <p><b>Where it differs from C.</b> The file needs a {@code record-count:} header that the upstream
- * file does not carry, and a record needs {@code code:} straight after {@code name:}; both are
- * grammar choices, written up in {@code docs/grammar_issues.md}. The assembler rejects the whole file
- * if its structural rules fail, which C cannot do (see {@code docs/Assembler_Issues.md}).
+ * <p><b>Errors.</b> As in C, the first error stops the load and nothing is returned: a syntax error
+ * is thrown from {@link #extract} as a {@code ParseCancellationException}, and a record or file the
+ * assembler refuses is thrown as a
+ * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}. Neither is caught here.
  *
- * <p>Class commented in full on 261019.
+ * <p><b>Where it differs from C.</b> A record needs {@code code:} straight after {@code name:}, a
+ * grammar choice written up in {@code docs/grammar_issues.md}. The assembler also checks the
+ * structural rules {@code chest_trap.txt} states in prose and ends the load if one fails, which C
+ * cannot do (see {@code docs/Assembler_Issues.md}).
+ *
+ * <p>Class commented in full on 261019, updated on 261105 for the removal of the soft-error path
+ * and the {@code record-count:} header.
  *
  * @author Rowan Crowther
  */
@@ -76,48 +82,39 @@ public class ChestTrapReader implements Reader<ChestTrap> {
     private static final Logger logger = LogManager.getLogger(ChestTrapReader.class);
 
     /**
-     * {@link GrammarDriver} extraction hook: runs the {@code file} rule, surfaces any hard parse
-     * errors via {@code errorCatcher}, and soft-validates the declared {@code record-count:} header
-     * against the number of records actually parsed.
+     * {@link GrammarDriver} extraction hook: runs the {@code file} rule and surfaces any hard parse
+     * errors via {@code errorCatcher}, whose {@code throwIfAny} throws a
+     * {@code ParseCancellationException} before any record is used.
      *
-     * <p>The count is this port's own addition - C's chest trap parser registers no
-     * {@code record-count} directive - so the check exists to catch a hand-edited file, not to
-     * mirror the original. A wrong count is a soft error and the records still come back; a
-     * non-numeric count is a hard error and stops the parse. The returned list is a copy, so the
-     * assembler cannot disturb the parse tree.
+     * <p>The returned list is a copy, so the assembler cannot disturb the parse tree.
      *
-     * <p>Function extract coded before 260915, commented in full on 261019.
+     * <p>Function extract coded before 260915, commented in full on 261019, updated on 261105 for
+     * the removal of the soft-error path and the {@code record-count:} header.
      *
      * @param parser       the grammar positioned at the start of the file
      * @param errorCatcher collects hard lexer/parser errors; {@code throwIfAny} aborts on failure
-     * @param errors       the soft-error channel (e.g. a record-count mismatch)
      * @return the raw parsed chest trap records for the assembler
      */
     private static List<ChestTrapParseRecord> extract(
             @NotNull ChestTrapGrammar parser,
-            @NotNull ParseErrors errorCatcher,
-            @NotNull List<String> errors) {
+            @NotNull ParseErrors errorCatcher) {
         ChestTrapGrammar.FileContext output = parser.file();
         List<ChestTrapParseRecord> records = output.chestTraps;
         errorCatcher.throwIfAny();
-
-        String declaredRecordCount = output.declaredRecordCount;
-        GrammarDriver.checkRecordCount(declaredRecordCount, records.size(), errors);
 
         return new ArrayList<>(records);
     }
 
     /**
-     * Parses {@code filename} and returns just the assembled chest traps, discarding the
-     * soft-error channel (use {@link #parseWithResults} to inspect errors).
+     * Parses {@code filename} and returns just the assembled chest traps, unwrapped from the
+     * {@link ParseResult} that {@link #parseWithResults} gives. Any error throws exactly as it
+     * does there.
      *
-     * <p>A file broken enough to be rejected whole comes back as an empty list with no hint why;
-     * callers that need the reason use {@link #parseWithResults}.
-     *
-     * <p>Function parse coded before 260915, commented in full on 261019.
+     * <p>Function parse coded before 260915, commented in full on 261019, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param filename the data file to read
-     * @return the chest traps read from the file
+     * @return every chest trap in the file
      * @throws IOException if the file cannot be read
      */
     @Override
@@ -126,23 +123,21 @@ public class ChestTrapReader implements Reader<ChestTrap> {
     }
 
     /**
-     * Parse {@code filename}, returning both the assembled {@link ChestTrap}s and the error channels
-     * (soft assembly errors plus any hard grammar/lexer failure), so callers can gate on
-     * {@link ParseResult#hasErrors()}.
+     * Parse {@code filename}, returning the assembled {@link ChestTrap}s wrapped in a
+     * {@link ParseResult}.
      *
-     * <p>Note that this file is validated as a whole, not record by record: {@link ChestTrapAssembler}
-     * returns an <em>empty</em> list if the file breaks any of the structural rules
-     * {@code chest_trap.txt} states in prose, so an empty result with errors reported means the file
-     * was rejected outright rather than that it held no traps.
-     *
-     * <p>A missing file is an {@code IOException}, where C quits. Hard grammar or lexer failures come
-     * back as errors with no traps, not as an exception. This is the port of
+     * <p>Every error is fatal, as in C. A grammar or lexer failure throws a
+     * {@code ParseCancellationException}. {@link ChestTrapAssembler} checks each record and also
+     * the structural rules {@code chest_trap.txt} states in prose, and throws a
+     * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException} on the first that fails.
+     * A missing file is an {@code IOException}, where C quits. This is the port of
      * {@code run_parse_chest_trap}; C's {@code finish_parse_chest_trap} has nothing to port.
      *
-     * <p>Function parseWithResults coded before 260915, commented in full on 261019.
+     * <p>Function parseWithResults coded before 260915, commented in full on 261019, updated on
+     * 261105 for the removal of the soft-error path.
      *
      * @param filename path to the chest trap data file
-     * @return the parse result: the chest traps and any errors collected
+     * @return every chest trap in the file
      * @throws IOException if the file cannot be read
      */
     public @NotNull ParseResult<ChestTrap> parseWithResults(@NotNull String filename) throws IOException {

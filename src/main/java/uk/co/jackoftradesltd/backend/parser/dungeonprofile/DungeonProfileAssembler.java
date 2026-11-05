@@ -99,15 +99,13 @@ public class DungeonProfileAssembler implements Assembler<DungeonProfileParseRec
      * <p>Function assemble coded before 260915, commented in full on 261023.
      *
      * @param records  the parsed profile records, in file order
-     * @param errors   the error list handed on to the sub-assemblers; this method adds nothing to
-     *                 it, because every failure here throws
      * @param filename the file being read, for the error messages
      * @return the assembled profiles, in file order, one for each record
      * @throws DataFileParseException if a profile name matches no builder, or a number, here or in
      *                                a sub-record, has no leading digits
      */
     @Override
-    public List<CaveProfile> assemble(@NotNull List<DungeonProfileParseRecord> records, @NotNull List<String> errors,
+    public List<CaveProfile> assemble(@NotNull List<DungeonProfileParseRecord> records,
                                       String filename) {
         List<CaveProfile> caveProfiles = new ArrayList<>();
 
@@ -139,22 +137,22 @@ public class DungeonProfileAssembler implements Assembler<DungeonProfileParseRec
             if (record.tunnel() != null) {
                 List<DungeonProfileParseRecord.Tunnel> tunnelProfiles = new ArrayList<>();
                 tunnelProfiles.add(record.tunnel());
-                tunnelProfile = new TunnelAssembler().assemble(tunnelProfiles, errors, filename);
+                tunnelProfile = new TunnelAssembler().assemble(tunnelProfiles, filename);
             } else
                 tunnelProfile = null;
             StreamerProfile streamerProfile;
             if (record.streamer() != null) {
                 List<DungeonProfileParseRecord.Streamer> streamers = new ArrayList<>();
                 streamers.add(record.streamer());
-                streamerProfile = new StreamerAssembler().assemble(streamers, errors, filename);
+                streamerProfile = new StreamerAssembler().assemble(streamers, filename);
             } else {
                 DungeonProfileParseRecord.Streamer streamer = new DungeonProfileParseRecord.Streamer("0", "0",
                         "0", "0", "0", "0", 0);
                 List<DungeonProfileParseRecord.Streamer> streamers = new ArrayList<>();
                 streamers.add(streamer);
-                streamerProfile = new StreamerAssembler().assemble(streamers, errors, filename);
+                streamerProfile = new StreamerAssembler().assemble(streamers, filename);
             }
-            List<RoomProfile> roomProfiles = new RoomAssembler().assemble(record.rooms(), errors, filename);
+            List<RoomProfile> roomProfiles = new RoomAssembler().assemble(record.rooms(), filename);
             int minLevel = record.minLevel() == null ? 0 : ParseUtils.parseIntString("Dungeon profile", record.minLevel(), line, filename, "min level", 0);
             int alloc = record.alloc() == null ? 0 : ParseUtils.parseIntString("Dungeon profile", record.alloc(), line, filename, "allocation", 0);
             

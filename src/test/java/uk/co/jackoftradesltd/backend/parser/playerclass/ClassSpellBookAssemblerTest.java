@@ -162,7 +162,7 @@ class ClassSpellBookAssemblerTest {
     }
 
     private static List<MagicBook> run(ClassSpellBookParseRecord... records) {
-        return new ClassSpellBookAssembler().assemble(List.of(records), new ArrayList<>(), FILE);
+        return new ClassSpellBookAssembler().assemble(List.of(records), FILE);
     }
 
     private static MagicBook one(ClassSpellBookParseRecord record) {
@@ -297,18 +297,9 @@ class ClassSpellBookAssemblerTest {
     }
 
     @Test
-    @DisplayName("the errors list is untouched on a good load")
-    void errorsListUntouched() {
-        List<String> errors = new ArrayList<>();
-        new ClassSpellBookAssembler().assemble(List.of(town()), errors, FILE);
-
-        assertTrue(errors.isEmpty());
-    }
-
-    @Test
     @DisplayName("an empty record list gives an empty result and registers nothing")
     void noRecords() {
-        assertTrue(new ClassSpellBookAssembler().assemble(List.of(), new ArrayList<>(), FILE).isEmpty());
+        assertTrue(new ClassSpellBookAssembler().assemble(List.of(), FILE).isEmpty());
         assertEquals(1, ObjectRegistry.getObjectKinds().size(), "only the placeholder is there");
     }
 

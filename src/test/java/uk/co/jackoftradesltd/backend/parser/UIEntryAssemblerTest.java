@@ -130,11 +130,9 @@ class UIEntryAssemblerTest {
 
     @Test
     void aTaggedNameWithNoParameterLineHasNoElementParameter() {
-        List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
-                rec("resist_ui_compact_0<DARK>", "", "", "ADD", "")), errors, "test.txt");
+                rec("resist_ui_compact_0<DARK>", "", "", "ADD", "")), "test.txt");
 
-        assertTrue(errors.isEmpty(), errors::toString);
         assertEquals(1, out.size());
         UIEntry u = out.get(0);
         // hatch_embryo leaves param_index at -1 when the record has no parameter: line, so the
@@ -146,11 +144,9 @@ class UIEntryAssemblerTest {
 
     @Test
     void resolvesAKnownRendererFromTheRegistry() {
-        List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
-                rec("x", "", KNOWN_RENDERER, "ADD", "")), errors, "test.txt");
+                rec("x", "", KNOWN_RENDERER, "ADD", "")), "test.txt");
 
-        assertTrue(errors.isEmpty(), errors::toString);
         assertEquals(1, out.size());
         assertTrue(out.get(0).toString().contains(KNOWN_RENDERER), out.get(0)::toString);
     }
@@ -160,7 +156,7 @@ class UIEntryAssemblerTest {
      */
     private static String fatalMessage(UIEntryParseRecord... records) {
         return assertThrows(DataFileParseException.class,
-                () -> new UIEntryAssembler().assemble(List.of(records), new ArrayList<>(), "test.txt"))
+                () -> new UIEntryAssembler().assemble(List.of(records), "test.txt"))
                 .getMessage();
     }
 
@@ -219,13 +215,11 @@ class UIEntryAssemblerTest {
 
     @Test
     void overridePriorityIndexReadsTheExistingEntrysElementIndex() {
-        List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                 rec("e2", "element", "", "ADD", ""),
                 new UIEntryParseRecord("e2<ELEC>", "", "", "", "", List.of(), "", "", "",
-                        "index", List.of(), List.of(), "", 1)), errors, "test.txt");
+                        "index", List.of(), List.of(), "", 1)), "test.txt");
 
-        assertTrue(errors.isEmpty(), errors::toString);
         UIEntry elec = out.stream().filter(e -> e.getName().equals("e2<ELEC>"))
                 .findFirst().orElseThrow();
         // ELEC is C's element_names[] index 1 (ACID=0, ELEC=1); get_priority_from_index(1) == 1.
@@ -234,13 +228,11 @@ class UIEntryAssemblerTest {
 
     @Test
     void overridePriorityNegativeIndexReadsTheExistingEntrysElementIndex() {
-        List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                 rec("e3", "element", "", "ADD", ""),
                 new UIEntryParseRecord("e3<FIRE>", "", "", "", "", List.of(), "", "", "",
-                        "negative_index", List.of(), List.of(), "", 1)), errors, "test.txt");
+                        "negative_index", List.of(), List.of(), "", 1)), "test.txt");
 
-        assertTrue(errors.isEmpty(), errors::toString);
         UIEntry fire = out.stream().filter(e -> e.getName().equals("e3<FIRE>"))
                 .findFirst().orElseThrow();
         // FIRE is C's element_names[] index 2; get_priority_from_negative_index(2) == -2.
@@ -249,16 +241,14 @@ class UIEntryAssemblerTest {
 
     @Test
     void statOrElementResolvesFromTheParameterKind() {
-        List<String> errors = new ArrayList<>();
         // A created entry with neither combine: nor template: is dropped by the create path's
         // combiner_index==0 guard (UIEntryAssembler.java:583-586, mirroring hatch_embryo -
         // ui-entry.c), so every record here needs a real combiner to survive.
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                 rec("s", "stat", "", "ADD", ""),
                 rec("e", "element", "", "ADD", ""),
-                rec("n", "", "", "ADD", "")), errors, "test.txt");
+                rec("n", "", "", "ADD", "")), "test.txt");
 
-        assertTrue(errors.isEmpty(), errors::toString);
         // The parameter:stat record expands into one tagged entry per stat (STR..CON) and the
         // parameter:element record expands into one tagged entry per real element (ACID..ARROW,
         // skipping the Java-only ELEM_NONE/ELEM_MAX placeholders), so the three input records
@@ -284,13 +274,11 @@ class UIEntryAssemblerTest {
 
     @Test
     void overridePriorityIndexReadsTheExistingEntrysStatIndex() {
-        List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                 rec("s2", "stat", "", "ADD", ""),
                 new UIEntryParseRecord("s2<DEX>", "", "", "", "", List.of(), "", "", "",
-                        "index", List.of(), List.of(), "", 1)), errors, "test.txt");
+                        "index", List.of(), List.of(), "", 1)), "test.txt");
 
-        assertTrue(errors.isEmpty(), errors::toString);
         UIEntry dex = out.stream().filter(e -> e.getName().equals("s2<DEX>"))
                 .findFirst().orElseThrow();
         // Stats (STR,INT,WIS,DEX,CON) carry no NONE-style placeholder to offset for, so DEX's
@@ -307,13 +295,11 @@ class UIEntryAssemblerTest {
 
     @Test
     void overridePriorityIndexWithACategoryAttachesToTheCategoryNotTheEntry() {
-        List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                 rec("e4", "element", "", "ADD", ""),
                 new UIEntryParseRecord("e4<FIRE>", "", "", "", "", List.of("mycat"), "", "", "",
-                        "index", List.of(), List.of(), "", 1)), errors, "test.txt");
+                        "index", List.of(), List.of(), "", 1)), "test.txt");
 
-        assertTrue(errors.isEmpty(), errors::toString);
         UIEntry fire = out.stream().filter(e -> e.getName().equals("e4<FIRE>"))
                 .findFirst().orElseThrow();
         // The priority: line attaches to the category just declared before it, not the entry's own
@@ -328,12 +314,10 @@ class UIEntryAssemblerTest {
 
     @Test
     void createPathKeepsTheRecordsOwnFlagsOnEveryElementEntry() {
-        List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                 full("f1", "", "", "", List.of(), "element", "ADD", "", List.of(),
-                        List.of("TIMED_AS_AUX"))), errors, "test.txt");
+                        List.of("TIMED_AS_AUX"))), "test.txt");
 
-        assertTrue(errors.isEmpty(), errors::toString);
         assertEquals(25, out.size());
         // parse_entry_flags sets the flag on the embryo, and hatch_embryo copies flags to each
         // parameterised entry, so all 25 carry it (this is resist_ui_compact_0's shape).
@@ -342,9 +326,8 @@ class UIEntryAssemblerTest {
 
     @Test
     void createPathWithNoFlagsLeavesTheFlagSetEmpty() {
-        List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
-                full("f2", "", "", "", List.of(), "", "ADD", "", List.of(), List.of())), errors, "test.txt");
+                full("f2", "", "", "", List.of(), "", "ADD", "", List.of(), List.of())), "test.txt");
 
         assertEquals(1, out.size());
         assertTrue(out.get(0).getEntryFlag().isEmpty());
@@ -361,11 +344,10 @@ class UIEntryAssemblerTest {
 
     @Test
     void elementLabelDefaultsToTheElementNameUnlessTheRecordGivesOne() {
-        List<String> errors = new ArrayList<>();
         List<UIEntry> unlabelled = new UIEntryAssembler().assemble(List.of(
-                full("l1", "", "", "", List.of(), "element", "ADD", "", List.of(), List.of())), errors, "test.txt");
+                full("l1", "", "", "", List.of(), "element", "ADD", "", List.of(), List.of())), "test.txt");
         List<UIEntry> labelled = new UIEntryAssembler().assemble(List.of(
-                full("l2", "", "Res", "", List.of(), "element", "ADD", "", List.of(), List.of())), errors, "test.txt");
+                full("l2", "", "Res", "", List.of(), "element", "ADD", "", List.of(), List.of())), "test.txt");
 
         assertEquals("ACID", byName(unlabelled, "l1<ACID>").getLabel());
         assertEquals("ARROW", byName(unlabelled, "l1<ARROW>").getLabel());
@@ -377,7 +359,7 @@ class UIEntryAssemblerTest {
     void statLabelDefaultsToTheStatName() {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                         full("l3", "", "", "", List.of(), "stat", "ADD", "", List.of(), List.of())),
-                new ArrayList<>(), "test.txt");
+                "test.txt");
 
         assertEquals("STR", byName(out, "l3<STR>").getLabel());
         assertEquals("CON", byName(out, "l3<CON>").getLabel());
@@ -387,7 +369,7 @@ class UIEntryAssemblerTest {
     void shortenedLabelIsCopiedToEveryParameterisedEntry() {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                         full("sh", "", "Poison", "Pois", List.of(), "element", "ADD", "", List.of(), List.of())),
-                new ArrayList<>(), "test.txt");
+                "test.txt");
 
         // copy_shortened_labels in hatch_embryo copies label5 to each entry.
         assertTrue(out.stream().allMatch(e -> "Pois".equals(e.getLabel5())));
@@ -397,7 +379,7 @@ class UIEntryAssemblerTest {
     void indexSchemeGivesEachElementEntryItsIndexAsDefaultPriority() {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                         full("p1", "", "", "", List.of(), "element", "ADD", "index", List.of(), List.of())),
-                new ArrayList<>(), "test.txt");
+                "test.txt");
 
         // get_priority_from_index(i) == i over element_names[]: ACID 0, CHAOS 11, ARROW 24.
         assertEquals(0, byName(out, "p1<ACID>").getDefaultPriority());
@@ -409,7 +391,7 @@ class UIEntryAssemblerTest {
     void negativeIndexSchemeGivesEachStatEntryTheNegatedIndex() {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                         full("p2", "", "", "", List.of(), "stat", "ADD", "negative_index", List.of(), List.of())),
-                new ArrayList<>(), "test.txt");
+                "test.txt");
 
         assertEquals(0, byName(out, "p2<STR>").getDefaultPriority());
         assertEquals(-4, byName(out, "p2<CON>").getDefaultPriority());
@@ -419,7 +401,7 @@ class UIEntryAssemblerTest {
     void numericPriorityIsTheDefaultPriorityOfAnEntryWithNoCategories() {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                         full("p3", "", "", "", List.of(), "", "ADD", "7", List.of(), List.of())),
-                new ArrayList<>(), "test.txt");
+                "test.txt");
 
         assertEquals(7, out.get(0).getDefaultPriority());
     }
@@ -428,7 +410,7 @@ class UIEntryAssemblerTest {
     void categoryBeforeAPriorityLineTakesTheParameterisedPriority() {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                 full("p4", "", "", "", List.of("c1"), "element", "ADD", "negative_index", List.of(),
-                        List.of())), new ArrayList<>(), "test.txt");
+                        List.of())), "test.txt");
 
         UIEntry fire = out.stream().filter(e -> e.getName().equals("p4<FIRE>")).findFirst().orElseThrow();
         UIEntryCategory c1 = fire.getCategories().get(0);
@@ -448,7 +430,7 @@ class UIEntryAssemblerTest {
     void numericPriorityAfterACategoryLeavesTheDefaultPriorityZero() {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                         full("c1", "", "", "", List.of("first"), "", "ADD", "5", List.of(), List.of())),
-                new ArrayList<>(), "test.txt");
+                "test.txt");
 
         UIEntry created = byName(out, "c1");
         assertEquals(0, created.getDefaultPriority());
@@ -461,7 +443,7 @@ class UIEntryAssemblerTest {
     void aCategoryAfterThePriorityLineDoesNotInheritADefaultThePriorityNeverSet() {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                         full("c2", "", "", "", List.of("first"), "", "ADD", "5", List.of("second"), List.of())),
-                new ArrayList<>(), "test.txt");
+                "test.txt");
 
         UIEntry created = byName(out, "c2");
         // The 5 went to "first"; "second" is priority_set false and waits on the entry's default, 0.
@@ -475,7 +457,7 @@ class UIEntryAssemblerTest {
     void numericPriorityAfterACategoryLeavesEveryParameterisedDefaultZero() {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                         full("c3", "", "", "", List.of("first"), "element", "ADD", "5", List.of(), List.of())),
-                new ArrayList<>(), "test.txt");
+                "test.txt");
 
         assertEquals(25, out.size());
         assertTrue(out.stream().allMatch(e -> e.getDefaultPriority() == 0));
@@ -487,7 +469,7 @@ class UIEntryAssemblerTest {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                         full("c4", "", "", "", List.of(), "element", "ADD", "", List.of(), List.of()),
                         full("c4<ACID>", "", "", "", List.of("mycat"), "", "", "5", List.of(), List.of())),
-                new ArrayList<>(), "test.txt");
+                "test.txt");
 
         UIEntry acid = byName(out, "c4<ACID>");
         // The override path still reads the record's raw number: only the create path's default changed.
@@ -502,7 +484,7 @@ class UIEntryAssemblerTest {
     void categoryAfterAPriorityLineIsLeftForTheFinishingPass() {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                         full("p5", "", "", "", List.of(), "", "ADD", "3", List.of("c2"), List.of())),
-                new ArrayList<>(), "test.txt");
+                "test.txt");
 
         // priority: with no category yet sets the default; the later category is priority_set false.
         assertEquals(3, out.get(0).getDefaultPriority());
@@ -525,14 +507,12 @@ class UIEntryAssemblerTest {
     @Test
     void templateSuppliesCombinerFlagsAndCategoriesAndDropsTemplateOnly() {
         withTemplatesRegistered(() -> {
-            List<String> errors = new ArrayList<>();
             List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                             full("t1", "good_flag_ui_compact_0", "", "", List.of(), "", "", "", List.of(), List.of())),
-                    errors, "test.txt");
+                    "test.txt");
 
             // parse_entry_template copies renderer, combiner, flags (minus TEMPLATE_ONLY) and categories,
             // so a record with no combine: of its own still survives hatch_embryo's combiner check.
-            assertTrue(errors.isEmpty(), errors::toString);
             UIEntry e = byName(out, "t1");
             assertEquals(CombinerName.LOGICAL_OR, e.getCombineType());
             assertTrue(e.getEntryFlag().has(ChannelEntryFlag.ENTRY_FLAG_TIMED_AS_AUX));
@@ -544,16 +524,14 @@ class UIEntryAssemblerTest {
 
     @Test
     void anEarlierRecordCanBeUsedAsATemplate() {
-        List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                         full("tpl_src", "", "", "", List.of(), "", "LOGICAL_OR", "5", List.of("srccat"),
                                 List.of("TIMED_AS_AUX")),
                         full("tpl_user", "tpl_src", "", "", List.of(), "", "", "", List.of(), List.of())),
-                errors, "test.txt");
+                "test.txt");
 
         // ui_entry_lookup searches every entry parsed so far, not just ui_entry_base.txt, so the
         // second record inherits combiner, flags, categories and default priority from the first.
-        assertTrue(errors.isEmpty(), errors::toString);
         UIEntry e = byName(out, "tpl_user");
         assertEquals(CombinerName.LOGICAL_OR, e.getCombineType());
         assertTrue(e.getEntryFlag().has(ChannelEntryFlag.ENTRY_FLAG_TIMED_AS_AUX));
@@ -597,7 +575,7 @@ class UIEntryAssemblerTest {
         withTemplateDefaultPriority(7, () -> {
             List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                             full("tp1", PRIORITY_TEMPLATE, "", "", List.of(), "", "", "", List.of(), List.of())),
-                    new ArrayList<>(), "test.txt");
+                    "test.txt");
             // parse_entry_template copies tentry->default_priority and nothing overwrites it.
             assertEquals(7, byName(out, "tp1").getDefaultPriority());
         });
@@ -608,7 +586,7 @@ class UIEntryAssemblerTest {
         withTemplateDefaultPriority(7, () -> {
             List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                             full("tp2", PRIORITY_TEMPLATE, "", "", List.of(), "", "", "3", List.of(), List.of())),
-                    new ArrayList<>(), "test.txt");
+                    "test.txt");
             // last_category_index == -1, so parse_entry_priority sets default_priority.
             assertEquals(3, byName(out, "tp2").getDefaultPriority());
         });
@@ -619,7 +597,7 @@ class UIEntryAssemblerTest {
         withTemplateDefaultPriority(7, () -> {
             List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                             full("tp3", PRIORITY_TEMPLATE, "", "", List.of(), "", "", "0", List.of(), List.of())),
-                    new ArrayList<>(), "test.txt");
+                    "test.txt");
             assertEquals(0, byName(out, "tp3").getDefaultPriority());
         });
     }
@@ -629,7 +607,7 @@ class UIEntryAssemblerTest {
         withTemplateDefaultPriority(7, () -> {
             List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                             full("tp4", PRIORITY_TEMPLATE, "", "", List.of("zz"), "", "", "3", List.of(), List.of())),
-                    new ArrayList<>(), "test.txt");
+                    "test.txt");
             // The priority went to category zz (priority_set true); default_priority stays the template's.
             assertEquals(7, byName(out, "tp4").getDefaultPriority());
             UIEntryCategory zz = byName(out, "tp4").getCategories().stream()
@@ -644,7 +622,7 @@ class UIEntryAssemblerTest {
         withTemplateDefaultPriority(7, () -> {
             List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                             full("tp5", PRIORITY_TEMPLATE, "", "", List.of(), "", "", "index", List.of(), List.of())),
-                    new ArrayList<>(), "test.txt");
+                    "test.txt");
             // psource_index is set but never applied without a parameter, and priority is 0.
             assertEquals(0, byName(out, "tp5").getDefaultPriority());
         });
@@ -655,7 +633,7 @@ class UIEntryAssemblerTest {
         withTemplateDefaultPriority(7, () -> {
             List<UIEntry> plain = new UIEntryAssembler().assemble(List.of(
                             full("tp6", PRIORITY_TEMPLATE, "", "", List.of(), "element", "", "", List.of(), List.of())),
-                    new ArrayList<>(), "test.txt");
+                    "test.txt");
             // No priority line: psource_index is 0, so every element entry keeps the template's default.
             List<UIEntry> plainOnes = plain.stream().filter(e -> e.getName().startsWith("tp6<")).toList();
             assertFalse(plainOnes.isEmpty());
@@ -664,7 +642,7 @@ class UIEntryAssemblerTest {
             }
             List<UIEntry> indexed = new UIEntryAssembler().assemble(List.of(
                             full("tp7", PRIORITY_TEMPLATE, "", "", List.of(), "element", "", "index", List.of(), List.of())),
-                    new ArrayList<>(), "test.txt");
+                    "test.txt");
             // hatch_embryo replaces the default with scheme(i), i being the element's index.
             UIEntry fire = indexed.stream().filter(e -> e.getName().equals("tp7<FIRE>")).findFirst().orElseThrow();
             assertEquals(2, fire.getDefaultPriority());
@@ -679,7 +657,7 @@ class UIEntryAssemblerTest {
                         full("o1", "", "", "", List.of(), "element", "ADD", "", List.of(), List.of()),
                         full("o1<ACID>", "", "", "", List.of(), "", "", "", List.of(), List.of("TIMED_AS_AUX")),
                         full("o1<ELEC>", "", "", "", List.of(), "", "", "", List.of(), List.of())),
-                new ArrayList<>(), "test.txt");
+                "test.txt");
 
         UIEntry acid = out.stream().filter(e -> e.getName().equals("o1<ACID>")).findFirst().orElseThrow();
         UIEntry elec = out.stream().filter(e -> e.getName().equals("o1<ELEC>")).findFirst().orElseThrow();
@@ -692,7 +670,7 @@ class UIEntryAssemblerTest {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                         full("o2", "", "", "", List.of(), "element", "ADD", "", List.of(), List.of()),
                         full("o2<FIRE>", "", "Fire", "", List.of(), "", "LOGICAL_OR", "", List.of(), List.of())),
-                new ArrayList<>(), "test.txt");
+                "test.txt");
 
         UIEntry fire = out.stream().filter(e -> e.getName().equals("o2<FIRE>")).findFirst().orElseThrow();
         UIEntry cold = out.stream().filter(e -> e.getName().equals("o2<COLD>")).findFirst().orElseThrow();
@@ -711,7 +689,7 @@ class UIEntryAssemblerTest {
                                 "", List.of(), List.of(), "", 1),
                         new UIEntryParseRecord("o4<ACID>", "", "", "", "", List.of(), "", "", "",
                                 "", List.of(), List.of(), "", 2)),
-                new ArrayList<>(), "test.txt");
+                "test.txt");
 
         UIEntry acid = out.stream().filter(e -> e.getName().equals("o4<ACID>")).findFirst().orElseThrow();
         assertEquals("Res", acid.getLabel());
@@ -726,7 +704,7 @@ class UIEntryAssemblerTest {
                                 "", List.of(), List.of(), "", 1),
                         new UIEntryParseRecord("o5<ACID>", "", "", "", "Xx", List.of(), "", "", "",
                                 "", List.of(), List.of(), "", 2)),
-                new ArrayList<>(), "test.txt");
+                "test.txt");
 
         UIEntry acid = out.stream().filter(e -> e.getName().equals("o5<ACID>")).findFirst().orElseThrow();
         assertEquals("Xx", acid.getLabel2());
@@ -739,7 +717,7 @@ class UIEntryAssemblerTest {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                         full("o3", "", "", "", List.of("a"), "element", "ADD", "", List.of(), List.of()),
                         full("o3<ACID>", "", "", "", List.of("a", "b"), "", "", "", List.of(), List.of())),
-                new ArrayList<>(), "test.txt");
+                "test.txt");
 
         UIEntry acid = out.stream().filter(e -> e.getName().equals("o3<ACID>")).findFirst().orElseThrow();
         List<String> cats = acid.getCategories().stream().map(UIEntryCategory::getName).toList();
@@ -776,7 +754,7 @@ class UIEntryAssemblerTest {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                         full("o6", "", "", "", List.of(), "stat", "ADD", "", List.of(), List.of()),
                         full("o6", "", "", "", List.of(), "", "ADD", "", List.of(), List.of())),
-                new ArrayList<>(), "test.txt");
+                "test.txt");
 
         assertEquals(6, out.size(), () -> out.stream().map(UIEntry::getName).toList().toString());
         assertEquals("o6", byName(out, "o6").getName());
@@ -802,7 +780,7 @@ class UIEntryAssemblerTest {
         // case when the name was entered by an earlier file (ui_entry_base.txt); Java agrees.
         List<UIEntry> earlier = new UIEntryAssembler().assemble(List.of(
                         full("o8", "", "", "", List.of(), "", "ADD", "", List.of(), List.of())),
-                new ArrayList<>(), "base.txt");
+                "base.txt");
         UIRegistry.setUIEntries(new ArrayList<>(earlier));
         try {
             String message = fatalMessage(
@@ -826,7 +804,7 @@ class UIEntryAssemblerTest {
             List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                             new UIEntryParseRecord("ro1", PRIORITY_TEMPLATE, "", "", "", List.of(), "",
                                     "char_screen1_numeric_as_sign_renderer", "", "", List.of(), List.of(), "", 1)),
-                    new ArrayList<>(), "test.txt");
+                    "test.txt");
 
             assertEquals("char_screen1_numeric_as_sign_renderer", byName(out, "ro1").getRenderer().getName());
         });
@@ -841,7 +819,7 @@ class UIEntryAssemblerTest {
             List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                             full("dc1", PRIORITY_TEMPLATE, "", "", List.of("abilities"), "", "", "5",
                                     List.of(), List.of())),
-                    new ArrayList<>(), "test.txt");
+                    "test.txt");
 
             UIEntryCategory abilities = byName(out, "dc1").getCategories().stream()
                     .filter(c -> c.getName().equals("abilities")).findFirst().orElseThrow();
@@ -859,7 +837,7 @@ class UIEntryAssemblerTest {
     void noPriorityLineLeavesEveryBeforeCategoryUnset() {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                         full("np1", "", "", "", List.of("a", "b"), "", "ADD", "", List.of(), List.of())),
-                new ArrayList<>(), "test.txt");
+                "test.txt");
 
         UIEntry created = byName(out, "np1");
         assertEquals(0, created.getDefaultPriority());
@@ -875,7 +853,7 @@ class UIEntryAssemblerTest {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                         full("np2_tpl", "", "", "", List.of(), "", "ADD", "5", List.of(), List.of()),
                         full("np2", "np2_tpl", "", "", List.of("x"), "", "", "", List.of(), List.of())),
-                new ArrayList<>(), "test.txt");
+                "test.txt");
 
         UIEntry created = byName(out, "np2");
         assertEquals(5, created.getDefaultPriority());
@@ -889,7 +867,7 @@ class UIEntryAssemblerTest {
         // "0" is a priority line, unlike the empty string that means there was none.
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                         full("np3", "", "", "", List.of("a", "b"), "", "ADD", "0", List.of(), List.of())),
-                new ArrayList<>(), "test.txt");
+                "test.txt");
 
         List<UIEntryCategory> cats = byName(out, "np3").getCategories();
         assertFalse(cats.get(0).isPrioritySet(), "a");
@@ -901,7 +879,7 @@ class UIEntryAssemblerTest {
     void noPriorityLineLeavesTheBeforeCategoriesOfEachElementEntryUnset() {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                         full("np4", "", "", "", List.of("x"), "element", "ADD", "", List.of(), List.of())),
-                new ArrayList<>(), "test.txt");
+                "test.txt");
 
         for (String tag : List.of("ACID", "CHAOS", "ARROW")) {
             UIEntryCategory x = byName(out, "np4<" + tag + ">").getCategories().get(0);
@@ -913,7 +891,7 @@ class UIEntryAssemblerTest {
     void noPriorityLineLeavesTheBeforeCategoriesOfEachStatEntryUnset() {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                         full("np5", "", "", "", List.of("x"), "stat", "ADD", "", List.of(), List.of())),
-                new ArrayList<>(), "test.txt");
+                "test.txt");
 
         for (String tag : List.of("STR", "CON")) {
             UIEntryCategory x = byName(out, "np5<" + tag + ">").getCategories().get(0);
@@ -926,7 +904,7 @@ class UIEntryAssemblerTest {
         // get_priority_from_index(i) == i; the priority: line attaches to the category before it.
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                         full("np6", "", "", "", List.of("x"), "element", "ADD", "index", List.of(), List.of())),
-                new ArrayList<>(), "test.txt");
+                "test.txt");
 
         UIEntryCategory fire = byName(out, "np6<FIRE>").getCategories().get(0);
         assertTrue(fire.isPrioritySet());
@@ -949,7 +927,7 @@ class UIEntryAssemblerTest {
      */
     private static int defaultPriorityOf(String priority) {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(withPriority("pt", priority)),
-                new ArrayList<>(), "test.txt");
+                "test.txt");
         return byName(out, "pt").getDefaultPriority();
     }
 
@@ -1060,11 +1038,11 @@ class UIEntryAssemblerTest {
 
         List<UIEntry> plain = new UIEntryAssembler().assemble(List.of(
                 withLabels("w80", "", eighty, "", ""), withLabels("w81", "", eightyOne, "", ""),
-                withLabels("w100", "", longest, "", "")), new ArrayList<>(), "test.txt");
+                withLabels("w100", "", longest, "", "")), "test.txt");
         List<UIEntry> element = new UIEntryAssembler().assemble(List.of(
-                withLabels("e81", "element", eightyOne, "", "")), new ArrayList<>(), "test.txt");
+                withLabels("e81", "element", eightyOne, "", "")), "test.txt");
         List<UIEntry> stat = new UIEntryAssembler().assemble(List.of(
-                withLabels("s81", "stat", eightyOne, "", "")), new ArrayList<>(), "test.txt");
+                withLabels("s81", "stat", eightyOne, "", "")), "test.txt");
 
         assertEquals(eighty, byName(plain, "w80").getLabel());
         assertEquals(eighty, byName(plain, "w81").getLabel());
@@ -1079,11 +1057,11 @@ class UIEntryAssemblerTest {
     void label5AndLabel2AreCutToFiveAndTwoCharactersOnEveryPath() {
         // text_mbstowcs(shortened_labels[n - 1], name, n) keeps at most n characters.
         List<UIEntry> plain = new UIEntryAssembler().assemble(List.of(
-                withLabels("c1", "", "Tunneling", "ABCDEFGH", "XYZ")), new ArrayList<>(), "test.txt");
+                withLabels("c1", "", "Tunneling", "ABCDEFGH", "XYZ")), "test.txt");
         List<UIEntry> element = new UIEntryAssembler().assemble(List.of(
-                withLabels("c2", "element", "Tunneling", "ABCDEFGH", "XYZ")), new ArrayList<>(), "test.txt");
+                withLabels("c2", "element", "Tunneling", "ABCDEFGH", "XYZ")), "test.txt");
         List<UIEntry> stat = new UIEntryAssembler().assemble(List.of(
-                withLabels("c3", "stat", "Tunneling", "ABCDEFGH", "XYZ")), new ArrayList<>(), "test.txt");
+                withLabels("c3", "stat", "Tunneling", "ABCDEFGH", "XYZ")), "test.txt");
 
         for (UIEntry entry : List.of(byName(plain, "c1"), byName(element, "c2<ACID>"),
                 byName(element, "c2<ARROW>"), byName(stat, "c3<STR>"), byName(stat, "c3<CON>"))) {
@@ -1097,7 +1075,7 @@ class UIEntryAssemblerTest {
         // Slot 4 is label5 itself ("Tunn." is not a prefix of "Tunneling"); fill_out_shortened takes
         // slots 3 and 2 from the next longer slot that is set, which is label5.
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
-                withLabels("sl1", "", "Tunneling", "Tunn.", "")), new ArrayList<>(), "test.txt");
+                withLabels("sl1", "", "Tunneling", "Tunn.", "")), "test.txt");
 
         UIEntry entry = byName(out, "sl1");
         assertEquals("Tunn.", entry.getShortenedLabel(4));
@@ -1109,7 +1087,7 @@ class UIEntryAssemblerTest {
     @Test
     void anExplicitLabel2IsKeptAndSlotZeroIsItsFirstCharacter() {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
-                withLabels("sl2", "", "Tunneling", "", "Tx")), new ArrayList<>(), "test.txt");
+                withLabels("sl2", "", "Tunneling", "", "Tx")), "test.txt");
 
         UIEntry entry = byName(out, "sl2");
         assertEquals("Tx", entry.getShortenedLabel(1));
@@ -1120,7 +1098,7 @@ class UIEntryAssemblerTest {
     void slotsAboveFiveArePrefixesOfTheFullLabel() {
         // No label6 to label10 line is read, so these come from the full label, as in C.
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
-                withLabels("sl3", "", "Tunneling", "Tunn.", "Tx")), new ArrayList<>(), "test.txt");
+                withLabels("sl3", "", "Tunneling", "Tunn.", "Tx")), "test.txt");
 
         UIEntry entry = byName(out, "sl3");
         assertEquals("Tunnel", entry.getShortenedLabel(5));
@@ -1133,7 +1111,7 @@ class UIEntryAssemblerTest {
     void anAbsentLabel5AndLabel2LeaveTheirSlotsUnsetForTheFinishingPass() {
         // C stores nothing for a label line that is absent; fill_out_shortened fills the slot later.
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
-                withLabels("sl4", "", "Tunneling", "", "")), new ArrayList<>(), "test.txt");
+                withLabels("sl4", "", "Tunneling", "", "")), "test.txt");
 
         UIEntry entry = byName(out, "sl4");
         for (int slot = 0; slot <= 4; slot++) {
@@ -1144,7 +1122,7 @@ class UIEntryAssemblerTest {
     @Test
     void aRecordWithNoLabelLinesLeavesEverySlotUnsetOnAnElementEntry() {
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
-                withLabels("sl5", "element", "", "", "")), new ArrayList<>(), "test.txt");
+                withLabels("sl5", "element", "", "", "")), "test.txt");
 
         UIEntry entry = byName(out, "sl5<ACID>");
         for (int slot = 0; slot <= 8; slot++) {
@@ -1156,7 +1134,7 @@ class UIEntryAssemblerTest {
     void aLabelShorterThanTheShortenedLabelsDoesNotOverrun() {
         // A 3 character label with a 5 character label5: nothing may index past either string.
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
-                withLabels("sl6", "", "Res", "Resis", "Rs")), new ArrayList<>(), "test.txt");
+                withLabels("sl6", "", "Res", "Resis", "Rs")), "test.txt");
 
         UIEntry entry = byName(out, "sl6");
         assertEquals("Res", entry.getLabel());

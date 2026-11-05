@@ -21,31 +21,26 @@ import java.util.List;
 
 /**
  * A generic holder for the outcome of parsing one {@code lib/gamedata} file: the items
- * successfully assembled from it, plus any soft errors gathered along the way.
+ * assembled from it, in the order the assembler returned them.
  * <p>
- * There is no single C original for this record to be checked against. The C parser
- * (see {@code parser.h}, {@code struct parser_state}) reports one {@code enum parser_error}
- * at a time and fails fast; this Java port instead lets a reader keep parsing past a bad line
- * and collect every error into {@link #errors()} as a list of strings, so a caller such as
- * {@link GrammarDriver} can gate on {@link #hasErrors()} after the whole file has been read
- * rather than aborting on the first bad line.
+ * There is no single C original for this record to be checked against. C's
+ * {@code run_parser()} ({@code datafile.c}) quits on the first error, so a file either loads
+ * whole or stops the game. This record follows the same rule: every error in a file is
+ * thrown before a {@code ParseResult} is built ({@link ParseErrors#throwIfAny()} for a grammar
+ * or lexer error, {@link DataFileParseException} for a record the assembler refuses), so an
+ * instance only ever holds a complete, clean file. There is no error list and no partial
+ * result.
+ * <p>
+ * Its one component could be returned as a bare {@code List<T>}; the record is kept so each
+ * reader's {@code parseWithResults} signature and each loader's {@code result.items()} stay as
+ * they are. Whether to fold it away is a separate decision.
  *
- * @param items  the items successfully parsed from the file, of type T (the template class)
- * @param errors the soft errors gathered while parsing the file, as human-readable strings
+ * @param items  the items assembled from the file, of type T (the template class)
  * @param <T>    the object type which this parser is holding
  * @author Rowan Crowther
  *
- * <p>Record ParseResult coded on 260911, commented in full on 260915.
+ * <p>Record ParseResult coded on 260911, commented in full on 260915, errors component removed
+ * and description rewritten on 261104 for the removal of the soft-error path.
  */
-public record ParseResult<T>(List<T> items, List<String> errors) {
-    /**
-     * Reports whether the parse that produced this result gathered any soft errors.
-     *
-     * @return {@code true} if {@link #errors()} is non-empty, {@code false} otherwise
-     *
-     * <p>Function hasErrors coded on 260911, commented in full on 260915.
-     */
-    public boolean hasErrors() {
-        return !errors.isEmpty();
-    }
+public record ParseResult<T>(List<T> items) {
 }

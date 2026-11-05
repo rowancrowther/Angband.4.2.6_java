@@ -27,6 +27,9 @@ import java.util.List;
  * type stays decoupled from the churning domain API - the grammar-extracts,
  * assembler-resolves split used across the parser suite.
  *
+ * <p>Record PlayerPropertyParseRecord coded before 261105, updated on 261105 for the removal of
+ * the soft-error path.
+ *
  * @param type   the record's {@code type:} value - {@code player}, {@code object} or
  *               {@code element}.
  * @param code   the {@code code:} value: the flag name to resolve ({@code PF_}/
@@ -42,8 +45,8 @@ import java.util.List;
  *               several {@code desc:} lines).
  * @param value  the {@code value:} text - {@code 1}/{@code 3}/{@code -1} for
  *               resistance/immunity/vulnerability, empty otherwise.
- * @param line   the 1-based source line the record started on, used to anchor any
- *               soft-error messages the assembler raises.
+ * @param line   the 1-based source line the record started on, quoted in the
+ *               {@code DataFileParseException} the assembler throws if it refuses the record.
  * @author Rowan Crowther
  */
 public record PlayerPropertyParseRecord(String type, String code,

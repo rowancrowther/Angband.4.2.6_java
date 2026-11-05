@@ -34,11 +34,6 @@ options { tokenVocab = MonsterBaseLexer; }
     import java.util.ArrayList;
 }
 
-recordCount
-        returns[String count]
-        :   RECORD_COUNT INTEGER { $count = $INTEGER.getText(); }
-        ;
-
 // "name:<text>" - starts a new template record; this name is referenced by
 // monster.txt's base: lines.
 name
@@ -119,10 +114,9 @@ monsterBase
 
 // Top-level rule: the whole file is one or more template records.
 file
-        returns[List<MonsterBaseParseRecord> bases, String declaredRecordCount]
+        returns[List<MonsterBaseParseRecord> bases]
         @init {
             $bases = new ArrayList<>();
         }
-        :   recordCount { $declaredRecordCount = $recordCount.count; }
-            (monsterBase { $bases.add($monsterBase.base); })+ EOF
+        :   (monsterBase { $bases.add($monsterBase.base); })+ EOF
         ;

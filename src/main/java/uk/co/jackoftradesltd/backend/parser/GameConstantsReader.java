@@ -20,7 +20,6 @@ package uk.co.jackoftradesltd.backend.parser;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
@@ -33,7 +32,6 @@ import uk.co.jackoftradesltd.channel.parser.ParseErrors;
 import uk.co.jackoftradesltd.middle.game.globals.data.GameConstantsData;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -56,89 +54,86 @@ import java.util.List;
  * <p>Differences from C worth knowing:
  * <ul>
  *   <li>There is no {@code record-count:} header, as in C, so there is no count check.</li>
- *   <li>Any error means no constants. A grammar error is hard and a bad line or cutoff order is
- *   collected as a soft error, but in both cases the result carries {@code null} data and the
- *   messages. C stops at the first error; this collects every error the assembler finds. The caller
- *   treats any error as fatal, as C's {@code quit_fmt} does.</li>
+ *   <li>Any error means no constants, and the load stops, as C's {@code quit_fmt} does. A grammar
+ *   or lexer error is thrown by {@link ParseErrors#throwIfAny()}, after every such error in the file
+ *   has been logged; C stops at the first. A bad line or a bad cutoff order is thrown by the
+ *   assembler or the builder at the first one found, as in C.</li>
  *   <li>The grammar is stricter than C's line parser about the shape of a line. See
  *   {@code docs/grammar_issues.md}.</li>
  *   <li>A file that cannot be read throws, where C quits.</li>
  * </ul>
  *
- * <p>Class GameConstantsReader coded before 260915, commented in full on 261019.
+ * <p>Class GameConstantsReader coded before 260915, commented in full on 261019, updated on 261104
+ * for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
 public class GameConstantsReader {
     /**
-     * Logger used to report file-loading failures: an unreadable file is logged here before the
-     * {@link IOException} is rethrown, and a hard grammar failure is logged before the empty result is
-     * returned. C has no counterpart: it reports through {@code quit()}.
+     * Logger used to report an unreadable file, which is logged here before the {@link IOException}
+     * is rethrown. Grammar and assembler errors are not logged here: {@link ParseErrors} and the
+     * assembler log their own. C has no counterpart: it reports through {@code quit()}.
      *
-     * <p>Field logger coded before 260915, commented in full on 261019.
+     * <p>Field logger coded before 260915, commented in full on 261019, updated on 261104 for the
+     * removal of the soft-error path.
      */
     private static final Logger logger = LogManager.getLogger();
 
     /**
-     * Alias for {@link #parseWithResults}: unlike every other reader in this package, {@code parse}
-     * does not unwrap to an items-only view - {@link GameConstantsParseResult} is a single aggregate
-     * rather than a {@code List}, so there is nothing to discard and no soft-error channel to drop.
-     * The two methods are identical; this one exists only so the class carries the conventional
-     * {@code parse} entry point other readers expose.
+     * Alias for {@link #parseWithResults}: the two methods are identical. Every other reader in this
+     * package has a {@code parse} that unwraps a {@code ParseResult} to its items; this reader returns
+     * one {@link GameConstantsData} with no wrapper, so there is nothing to unwrap. This method exists
+     * only so the class carries the conventional {@code parse} entry point other readers expose.
      *
-     * <p>Function parse coded before 260915, commented in full on 261019.
+     * <p>Function parse coded before 260915, commented in full on 261019, updated on 261104 once the
+     * {@code GameConstantsParseResult} wrapper was deleted.
      *
      * @param filename the name of the file to parse
-     * @return the assembled game constants plus any soft errors, or a null-data result on a hard
-     * parse failure
+     * @return the assembled game constants, never {@code null}
      * @throws IOException if the file cannot be read
      */
-    public GameConstantsParseResult parse(@NotNull String filename) throws IOException {
+    public GameConstantsData parse(@NotNull String filename) throws IOException {
         return parseWithResults(filename);
     }
 
     /**
-     * Parses {@code constants.txt} and returns the full {@link GameConstantsParseResult}: the
-     * assembled {@link GameConstantsData} together with any soft errors collected during assembly.
-     * Unlike the other readers in this package, this does not delegate to 
+     * Parses {@code constants.txt} and returns the assembled {@link GameConstantsData}. Unlike the
+     * other readers in this package, this does not delegate to
      * {@link uk.co.jackoftradesltd.channel.parser.GrammarDriver} -
      * {@code GameConstantsAssembler} produces a single aggregate rather than a {@code List}, so the
      * lex/parse/assemble ritual is inlined here instead.
      *
-     * <p>Two kinds of problem:
+     * <p>Every error is fatal, as in C's {@code run_parser()}, and none is caught here:
      * <ul>
-     *   <li><b>Hard</b>, collected by {@link ParseErrors} and aborted by its {@code throwIfAny}: any
-     *   lexer or grammar error. The result carries {@code null} data and those messages.</li>
-     *   <li><b>Soft</b>, added to {@code errors} by {@code GameConstantsAssembler}: an unknown
-     *   category or label, a wrong number of fields, a value that is not an {@code int}, an unknown
-     *   message name, or critical-level cutoffs that do not strictly increase (C's
-     *   {@code finish_parse_constants}). The builder returns {@code null} when {@code errors} is not
-     *   empty, so the result again carries {@code null} data, with the messages.</li>
+     *   <li>a lexer or grammar error is collected by {@link ParseErrors} and thrown by its
+     *   {@code throwIfAny}, before anything is assembled;</li>
+     *   <li>an unknown category or label, a wrong number of fields, a value that is not an
+     *   {@code int}, or an unknown message name is thrown by {@code GameConstantsAssembler} as a
+     *   {@code DataFileParseException};</li>
+     *   <li>critical-level cutoffs that do not strictly increase (C's {@code finish_parse_constants})
+     *   are thrown by {@code GameConstantsData.GameConstantsBuilder}, also as a
+     *   {@code DataFileParseException}.</li>
      * </ul>
-     * Either way {@link GameConstantsParseResult#hasErrors()} is true and
-     * {@link GameConstantsParseResult#getData()} is {@code null}. A clean file gives the data and no
-     * errors. An empty file, or one of only comments, is clean and gives every constant as {@code 0}
-     * and empty critical-level lists, as C's {@code mem_zalloc}ed {@code struct angband_constants}
-     * would.
+     * A clean file gives the data. An empty file, or one of only comments, is clean and gives every
+     * constant as {@code 0} and empty critical-level lists, as C's {@code mem_zalloc}ed
+     * {@code struct angband_constants} would.
      *
-     * <p>The second {@code throwIfAny} after assembling cannot fire: the assembler reports into
-     * {@code errors}, not into the {@link ParseErrors} listener.
+     * <p>The second {@code throwIfAny} after assembling cannot fire: the assembler throws its own
+     * exceptions and adds nothing to the {@link ParseErrors} listener.
      *
-     * <p>An {@link IOException} is logged and rethrown rather than wrapped. {@link #parse} is the
-     * data-only convenience over this.
+     * <p>An {@link IOException} is logged and rethrown rather than wrapped. {@link #parse} is an alias
+     * for this.
      *
-     * <p>Function parseWithResults coded before 260915, commented in full on 261019.
+     * <p>Function parseWithResults coded before 260915, commented in full on 261019, updated on 261104
+     * for the removal of the soft-error path.
      *
      * @param filename the name of the file to parse
-     * @return the assembled game constants plus any soft errors, or a null-data result on a hard
-     * parse failure
+     * @return the assembled game constants, never {@code null}
      * @throws IOException if the file cannot be read
      */
     @CheckReturnValue
-    public GameConstantsParseResult parseWithResults(@NotNull String filename) throws IOException {
-        GameConstantsData data = null;
+    public GameConstantsData parseWithResults(@NotNull String filename) throws IOException {
         ParseErrors errorCatcher = null;
-        List<String> errors = new ArrayList<>();
 
         try {
             CharStream input = CharStreams.fromFileName(filename);
@@ -154,17 +149,14 @@ public class GameConstantsReader {
 
             List<GameConstantsParseRecord> records = output.results;
 
-            data = new GameConstantsAssembler().assemble(records, errors, filename);
+            GameConstantsData data = new GameConstantsAssembler().assemble(records, filename);
 
             errorCatcher.throwIfAny();
+            
+            return data;
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
             throw e;
-        } catch (ParseCancellationException e) {
-            logger.error("Error while parsing file {}", filename, e);
-            return new GameConstantsParseResult(null, errorCatcher.getErrors());
         }
-
-        return new GameConstantsParseResult(data, errors);
     }
 }

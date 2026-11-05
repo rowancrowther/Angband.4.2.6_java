@@ -15,9 +15,8 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/SummonGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/SummonGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.summon;
-
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
@@ -35,161 +34,109 @@ public class SummonGrammarBaseListener implements SummonGrammarListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void enterRecordCount(SummonGrammar.RecordCountContext ctx) {
-	}
+	@Override public void enterName(SummonGrammar.NameContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void exitRecordCount(SummonGrammar.RecordCountContext ctx) {
-	}
+	@Override public void exitName(SummonGrammar.NameContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void enterName(SummonGrammar.NameContext ctx) {
-	}
+	@Override public void enterMsgt(SummonGrammar.MsgtContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void exitName(SummonGrammar.NameContext ctx) {
-	}
+	@Override public void exitMsgt(SummonGrammar.MsgtContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void enterMsgt(SummonGrammar.MsgtContext ctx) {
-	}
+	@Override public void enterUniques(SummonGrammar.UniquesContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void exitMsgt(SummonGrammar.MsgtContext ctx) {
-	}
+	@Override public void exitUniques(SummonGrammar.UniquesContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void enterUniques(SummonGrammar.UniquesContext ctx) {
-	}
+	@Override public void enterBase(SummonGrammar.BaseContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void exitUniques(SummonGrammar.UniquesContext ctx) {
-	}
+	@Override public void exitBase(SummonGrammar.BaseContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void enterBase(SummonGrammar.BaseContext ctx) {
-	}
+	@Override public void enterRaceFlag(SummonGrammar.RaceFlagContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void exitBase(SummonGrammar.BaseContext ctx) {
-	}
+	@Override public void exitRaceFlag(SummonGrammar.RaceFlagContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void enterRaceFlag(SummonGrammar.RaceFlagContext ctx) {
-	}
+	@Override public void enterFallback(SummonGrammar.FallbackContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void exitRaceFlag(SummonGrammar.RaceFlagContext ctx) {
-	}
+	@Override public void exitFallback(SummonGrammar.FallbackContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void enterFallback(SummonGrammar.FallbackContext ctx) {
-	}
+	@Override public void enterDesc(SummonGrammar.DescContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void exitFallback(SummonGrammar.FallbackContext ctx) {
-	}
+	@Override public void exitDesc(SummonGrammar.DescContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void enterDesc(SummonGrammar.DescContext ctx) {
-	}
+	@Override public void enterSummon(SummonGrammar.SummonContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void exitDesc(SummonGrammar.DescContext ctx) {
-	}
+	@Override public void exitSummon(SummonGrammar.SummonContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void enterSummon(SummonGrammar.SummonContext ctx) {
-	}
+	@Override public void enterFile(SummonGrammar.FileContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void exitSummon(SummonGrammar.SummonContext ctx) {
-	}
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override
-	public void enterFile(SummonGrammar.FileContext ctx) {
-	}
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override
-	public void exitFile(SummonGrammar.FileContext ctx) {
-	}
+	@Override public void exitFile(SummonGrammar.FileContext ctx) { }
 
 	/**
 	 * {@inheritDoc}

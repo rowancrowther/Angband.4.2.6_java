@@ -14,7 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-// Generated from ArtifactGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ArtifactGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.artifact;
 
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
@@ -27,12 +27,6 @@ import org.antlr.v4.runtime.tree.ParseTreeVisitor;
  * operations with no return type.
  */
 public interface ArtifactGrammarVisitor<T> extends ParseTreeVisitor<T> {
-	/**
-	 * Visit a parse tree produced by {@link ArtifactGrammar#recordCount}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitRecordCount(ArtifactGrammar.RecordCountContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link ArtifactGrammar#name}.
 	 * @param ctx the parse tree

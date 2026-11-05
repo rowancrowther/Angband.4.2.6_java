@@ -12,11 +12,6 @@ import EffectBlock;
     import java.util.ArrayList;
 }
 
-recordCount
-        returns[String declaredRecordCount]
-        :   RECORD_COUNT INTEGER { $declaredRecordCount = $INTEGER.getText(); }
-        ;
-
 name
         returns[String nameStr, String textStr, int line]
         :   NAME n=DELIMITED_STRING
@@ -185,8 +180,7 @@ trapRecord
         ;
 
 file
-        returns[String declaredRecordCount, List<TrapParseRecord> traps]
+        returns[List<TrapParseRecord> traps]
         :   { $traps = new ArrayList<>(); }
-            recordCount { $declaredRecordCount = $recordCount.declaredRecordCount; }
             (trapRecord { $traps.add($trapRecord.trap); })+ EOF
         ;

@@ -13,11 +13,6 @@ options { tokenVocab = EgoItemsLexer; }
     import java.util.ArrayList;
 }
 
-recordCount
-        returns[String count]
-        :   RECORD_COUNT INTEGER { $count = $INTEGER.getText(); }
-        ;
-
 name
         returns[String nameStr, int lineNo]
         :   NAME STRING { $nameStr = $STRING.getText();
@@ -214,8 +209,9 @@ egoItem
         ;
 
 file
-        returns[List<EgoItemParseRecord> items, String declaredRecordCount]
-        :   recordCount { $declaredRecordCount = $recordCount.count;
-                          $items = new ArrayList<>(); }
-            ( egoItem { $items.add($egoItem.record); })+ EOF
+        returns[List<EgoItemParseRecord> items]
+        @init {
+            $items = new ArrayList<>();
+        }
+        :   ( egoItem { $items.add($egoItem.record); })+ EOF
         ;

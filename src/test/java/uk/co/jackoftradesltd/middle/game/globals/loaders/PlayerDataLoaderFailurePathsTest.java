@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.game.globals.loaders;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftradesltd.middle.player.PlayerShape;
 
@@ -45,21 +47,23 @@ import static org.junit.jupiter.api.Assertions.*;
  * in {@code player-timed.c}) reads its file through {@code parse_file_quit_not_found} in
  * {@code datafile.c}, which calls {@code quit()} with "Cannot open" when the file is missing, and
  * {@code init_arrays()} calls {@code quit_fmt("Cannot initialize %s.")} when a parser reports an
- * error. So in C a missing file always ends the program. The port stops the load the same way for a
- * missing file, and for a file whose soft errors left no records at all; it deliberately lets
- * through a file whose soft errors still left some records (the partial-results contract).
+ * error. So in C a missing file always ends the program. The port stops the load on every error
+ * too, and registers nothing from a file that fails: a missing file is wrapped in a
+ * {@code RuntimeException} naming it, and a grammar error ({@link ParseCancellationException}) or
+ * an assembler error ({@link DataFileParseException}) passes through the loader unwrapped.
  *
  * <p><b>What is tested.</b> A missing file for each of the eight loaders (an empty temporary
  * directory stands in for the gamedata directory), then, using {@code shape.txt} as the example,
- * the outcomes of the error check: a shape that does not resolve stops the load, a soft error that
- * leaves some records (a {@code record-count:} mismatch) registers them, and a hard syntax error,
- * which the reader turns into an empty result, stops the load too. The clean path through all eight is covered by the tests that run
+ * the two error kinds: a shape that does not resolve and a grammar error each stop the load and
+ * leave the registry alone, and a clean file replaces it. The clean path through all eight is
+ * covered by the tests that run
  * {@code GameConstants.init} on the real gamedata.
  *
  * <p>Each test points {@code ANGBAND_DIRS.GAMEDATA} at the temporary directory and puts it, and the
  * registered shapes, back afterwards.
  *
- * <p>Class PlayerDataLoaderFailurePathsTest coded on 261011, commented in full on 261011.
+ * <p>Class PlayerDataLoaderFailurePathsTest coded on 261011, commented in full on 261011, updated on
+ * 261104 for the removal of the soft-error path and the {@code record-count:} header.
  *
  * @author Rowan Crowther
  */
@@ -74,7 +78,7 @@ class PlayerDataLoaderFailurePathsTest {
 
     /**
      * Points the gamedata directory at the empty temporary directory and saves the registered
-     * shapes, which are the one registry the soft-error tests write to.
+     * shapes, which are the one registry these tests write to.
      */
     @BeforeEach
     void pointAtTempDir() {
@@ -150,9 +154,10 @@ class PlayerDataLoaderFailurePathsTest {
     @DisplayName("a shape that does not resolve stops the load and leaves the registry alone")
     void anUnresolvedShapeStopsTheLoad() throws IOException {
         Files.writeString(tempDir.resolve("shape.txt"),
-                "record-count:1\nname:weird\nobj-flags:NOTAFLAG\n");
+                "name:weird\nobj-flags:NOTAFLAG\n");
 
-        RuntimeException thrown = assertThrows(RuntimeException.class, PlayerDataLoader::loadPlayerShapes);
+        DataFileParseException thrown =
+                assertThrows(DataFileParseException.class, PlayerDataLoader::loadPlayerShapes);
 
         assertTrue(thrown.getMessage().contains("shape.txt"), thrown.getMessage());
         assertTrue(thrown.getMessage().contains("illegal object flag value: NOTAFLAG"), thrown.getMessage());
@@ -160,15 +165,17 @@ class PlayerDataLoaderFailurePathsTest {
     }
 
     /**
-     * A soft error that leaves records is the deliberate softening of C: a {@code record-count:}
-     * header that disagrees with the number of shapes read is reported, but the shapes it did read
-     * are registered and the load carries on.
+     * A clean one-shape file replaces whatever was registered, and the counter follows.
+     *
+     * <p>Function aCleanFileReplacesTheShapes coded on 261104, commented in full on 261104. It
+     * replaces aRecordCountMismatchRegistersTheShapesRead, which needed the removed
+     * {@code record-count:} header to produce a soft error.
      */
     @Test
-    @DisplayName("a record-count mismatch still registers the shapes that were read")
-    void aRecordCountMismatchRegistersTheShapesRead() throws IOException {
+    @DisplayName("a clean file replaces the registered shapes")
+    void aCleanFileReplacesTheShapes() throws IOException {
         Files.writeString(tempDir.resolve("shape.txt"),
-                "record-count:2\nname:plain\ncombat:0:0:0\n");
+                "name:plain\ncombat:0:0:0\n");
 
         PlayerDataLoader.loadPlayerShapes();
 
@@ -179,20 +186,20 @@ class PlayerDataLoaderFailurePathsTest {
     }
 
     /**
-     * The shape grammar needs at least one {@code name:} record after the header, so a header
-     * alone is a hard syntax error. {@code GrammarDriver.run} catches the resulting
-     * {@code ParseCancellationException} and returns an empty result, which the loader treats as a
-     * file that yielded nothing: the load stops with the loader's own "Error parsing" message, not
-     * with the {@code ParseCancellationException}, and the registry is not touched.
+     * The shape grammar needs at least one {@code name:} record, so an empty file is a grammar
+     * error. The {@link ParseCancellationException} passes through the loader unwrapped and the
+     * registry is not touched.
+     *
+     * <p>Function syntaxErrorStopsTheLoad coded on 261011, commented in full on 261011, rewritten on
+     * 261104 for the removal of the soft-error path.
      */
     @Test
-    @DisplayName("a hard syntax error stops the load through the empty-result route")
+    @DisplayName("a grammar error stops the load and leaves the registry alone")
     void syntaxErrorStopsTheLoad() throws IOException {
-        Files.writeString(tempDir.resolve("shape.txt"), "record-count:0\n");
+        Files.writeString(tempDir.resolve("shape.txt"), "");
 
-        RuntimeException thrown = assertThrows(RuntimeException.class, PlayerDataLoader::loadPlayerShapes);
+        assertThrows(ParseCancellationException.class, PlayerDataLoader::loadPlayerShapes);
 
-        assertEquals("Error parsing " + tempDir + File.separator + "shape.txt", thrown.getMessage());
         assertEquals(savedShapes, currentShapes(), "registered shapes");
     }
 

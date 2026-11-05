@@ -28,9 +28,11 @@ import java.util.List;
  * Turns the raw {@link HintParseRecord}s from {@code hints.txt} into domain {@link Hint}s.
  *
  * <p>The simplest assembler in the suite: a hint needs no conversion or cross-reference resolution,
- * so this is a straight one-to-one copy of each record's text into a {@link Hint}. The {@code errors}
- * sink is therefore never written to - it is kept only to satisfy the {@link Assembler} contract
- * shared with the readers that do validate.
+ * so this is a straight one-to-one copy of each record's text into a {@link Hint}. It has nothing to
+ * check and never throws.
+ *
+ * <p>Class HintAssembler coded before 260915, updated on 261105 for the removal of the soft-error
+ * path.
  *
  * @author Rowan Crowther
  */
@@ -41,11 +43,10 @@ public class HintAssembler implements Assembler<HintParseRecord, List<Hint>> {
      * <p>Function assemble coded before 260915, commented in full on 260915.
      *
      * @param records the raw hint records in file order
-     * @param errors  the soft-error sink (unused here - hints cannot fail assembly)
      * @return the hints, one per record, in file order
      */
     @Override
-    public List<Hint> assemble(@NotNull List<HintParseRecord> records, @NotNull List<String> errors,
+    public List<Hint> assemble(@NotNull List<HintParseRecord> records,
                                     String filename) {
         List<Hint> hints = new ArrayList<>();
 

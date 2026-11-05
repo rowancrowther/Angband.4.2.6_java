@@ -14,7 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-// Generated from BlowEffectGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/BlowEffectGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.bloweffect;
 
 import org.antlr.v4.runtime.tree.ParseTreeListener;
@@ -24,16 +24,6 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
  * {@link BlowEffectGrammar}.
  */
 public interface BlowEffectGrammarListener extends ParseTreeListener {
-	/**
-	 * Enter a parse tree produced by {@link BlowEffectGrammar#recordCount}.
-	 * @param ctx the parse tree
-	 */
-	void enterRecordCount(BlowEffectGrammar.RecordCountContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link BlowEffectGrammar#recordCount}.
-	 * @param ctx the parse tree
-	 */
-	void exitRecordCount(BlowEffectGrammar.RecordCountContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link BlowEffectGrammar#name}.
 	 * @param ctx the parse tree

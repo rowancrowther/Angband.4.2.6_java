@@ -47,9 +47,8 @@ import java.util.List;
  *
  * <p>A malformed figure is fatal, as it is in C, where the matching {@code PARSE_ERROR_*} stops
  * the parse: the problem is logged and a {@link DataFileParseException} naming the line and file
- * is thrown, so no spell is skipped and the load carried on. The {@code errors} list that the
- * {@link Assembler} contract passes in is never written to here; it is only handed on to
- * {@link EffectAssembler}, which does not write to it either.
+ * is thrown, so no spell is skipped and the load does not carry on. A spell's effects go through
+ * {@link EffectAssembler}, which throws in the same way.
  *
  * <p>Differences from C, none of which a shipped {@code class.txt} reaches:
  * <ul>
@@ -65,7 +64,8 @@ import java.util.List;
  *       spell's {@code text} {@code NULL}.</li>
  * </ul>
  *
- * <p>Class ClassSpellAssembler coded before 260915, commented in full on 261028.
+ * <p>Class ClassSpellAssembler coded before 260915, commented in full on 261028, updated on 261105
+ * for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -100,14 +100,13 @@ public class ClassSpellAssembler implements Assembler<ClassSpellParseRecord, Lis
      * <p>Function assemble coded before 260915, commented in full on 261028.
      *
      * @param records  the raw spell blocks for one book, in file order
-     * @param errors   not written to by this method; it is passed on to {@link EffectAssembler}
      * @param filename the class file being read, for the error message
      * @return one {@link MagicSpell} per record, in file order; the realm is not set
      * @throws DataFileParseException if a figure is negative or has no digits, or an effect block
      *                                cannot be resolved
      */
     @Override
-    public List<MagicSpell> assemble(@NotNull List<ClassSpellParseRecord> records, @NotNull List<String> errors,
+    public List<MagicSpell> assemble(@NotNull List<ClassSpellParseRecord> records,
                                     String filename) {
         List<MagicSpell> spells = new ArrayList<>();
 
@@ -143,7 +142,7 @@ public class ClassSpellAssembler implements Assembler<ClassSpellParseRecord, Lis
             }
             int exp = ParseUtils.parseIntString("Class spell", record.exp(), line, filename, "experience");
             
-            List<Effect> effects = EffectAssembler.assemble(record.effects(), errors, filename);
+            List<Effect> effects = EffectAssembler.assemble(record.effects(), filename);
             String spellDescription = record.desc();
 
             spells.add(new MagicSpell(spellName, level, fail, mana, exp, effects, spellDescription));

@@ -12,10 +12,6 @@ options { tokenVocab = MonsterLexer; }
     import java.util.HashMap;
 }
 
-recordCount
-        returns[String count]
-        :   RECORD_COUNT MON_INTEGER { $count = $MON_INTEGER.getText(); }
-        ;
 name
         returns[String nameStr, int line]
         :   NAME STRING { $nameStr = $STRING.getText(); $line = $start.getLine(); }
@@ -330,10 +326,9 @@ monster
         )+;
 
 file
-        returns[String declaredRecordCount, List<MonsterParseRecord> monsters]
+        returns[List<MonsterParseRecord> monsters]
         @init {
             $monsters = new ArrayList<>();
         }
-        :   recordCount { $declaredRecordCount = $recordCount.count; }
-            (monster { $monsters.add($monster.monsterRecord); })+ EOF
+        :   (monster { $monsters.add($monster.monsterRecord); })+ EOF
         ;

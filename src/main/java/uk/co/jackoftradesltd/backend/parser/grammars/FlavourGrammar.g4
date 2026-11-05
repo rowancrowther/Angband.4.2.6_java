@@ -19,8 +19,8 @@
 // directive table in init_parse_flavor() (src/init.c:4242-4249).
 //
 // Grammar shape mirrors the file's block structure: a "kind:" line and the run
-// of "flavor:"/"fixed:" lines beneath it form one section, and the file is a
-// record-count header followed by one or more sections. Each rule builds the
+// of "flavor:"/"fixed:" lines beneath it form one section, and the file is
+// one or more sections. Each rule builds the
 // matching raw ParseRecord (all fields kept as their source strings); resolving
 // tval, colour and the fixed: sval symbol is the assemblers' job.
 //
@@ -37,13 +37,6 @@ options { tokenVocab = FlavourLexer; }
     import java.util.List;
     import java.util.ArrayList;
 }
-
-// The "record-count:<n>" header. Its declared count is carried up to the reader,
-// which checks it against the number of sections actually parsed.
-recordCount
-        returns[String count]
-        :   RECORD_COUNT INTEGER { $count = $INTEGER.getText(); }
-        ;
 
 // A "kind:<tval>:<glyph>" line: the object type and the display glyph shared by
 // every flavour in the block that follows.
@@ -101,10 +94,9 @@ section
             }
         ;
 
-// The whole file: the record-count header followed by one or more kind sections.
+// The whole file: one or more kind sections.
 file
-        returns[String declaredRecordCount, List<FlavourKindParseRecord> sections]
+        returns[List<FlavourKindParseRecord> sections]
         @init { $sections = new ArrayList<>(); }
-        :   recordCount { $declaredRecordCount = $recordCount.count; }
-            (section { $sections.add($section.kinds); })+ EOF
+        :   (section { $sections.add($section.kinds); })+ EOF
         ;

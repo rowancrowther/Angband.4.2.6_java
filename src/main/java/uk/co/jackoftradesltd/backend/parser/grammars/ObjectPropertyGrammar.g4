@@ -31,11 +31,6 @@ options { tokenVocab = ObjectPropertyLexer; }
     import java.util.LinkedHashMap;
 }
 
-recordCount
-        returns[String count]
-        :   RECORD_COUNT INTEGER { $count = $INTEGER.getText(); }
-        ;
-
 name
         returns[String nameString, int lineNo]
         :   NAME STRING { $nameString = $STRING.getText(); $lineNo = $start.getLine(); }
@@ -171,13 +166,11 @@ objectProperty
         |   desc { descSB.append($desc.line); })+
         ;
 
-// Whole file: the mandatory record-count header (validated softly by the reader
-// against the actual count) followed by one or more records.
+// Whole file: one or more records.
 file
-        returns[String declaredRecordCount, List<ObjectPropertyParseRecord> properties]
+        returns[List<ObjectPropertyParseRecord> properties]
         @init {
             $properties = new ArrayList<>();
         }
-        :   recordCount {$declaredRecordCount = $recordCount.count; }
-            (objectProperty {$properties.add($objectProperty.property); })+ EOF
+        :   (objectProperty {$properties.add($objectProperty.property); })+ EOF
         ;

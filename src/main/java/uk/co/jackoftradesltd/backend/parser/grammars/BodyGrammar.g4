@@ -10,11 +10,6 @@ options { tokenVocab = BodyLexer; }
     import uk.co.jackoftradesltd.backend.parser.body.BodyParseRecord.BodySlotRecord;
 }
 
-recordCount
-        returns[String count]
-        :   RECORD_COUNT INTEGER { $count = $INTEGER.getText(); }
-        ;
-
 body
         returns[String bodyName, int line]
         :   BODY STRING { $bodyName = $STRING.getText();
@@ -51,8 +46,9 @@ bodyType
         ;
 
 file
-        returns[String declaredRecordCount, List<BodyParseRecord> bodies]
-        :   recordCount { $declaredRecordCount = $recordCount.count;
-                          $bodies = new ArrayList<>(); }
-            (bodyType { $bodies.addFirst($bodyType.record); })+ EOF
+        returns[List<BodyParseRecord> bodies]
+        @init {
+            $bodies = new ArrayList<>();
+        }
+        :   (bodyType { $bodies.addFirst($bodyType.record); })+ EOF
         ;

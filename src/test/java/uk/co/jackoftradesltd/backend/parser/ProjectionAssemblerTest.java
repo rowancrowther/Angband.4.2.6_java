@@ -52,8 +52,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * environs row.
  *
  * <p>C quits on the first bad line, so every fault is expected to stop the load by throwing
- * {@link DataFileParseException}, never to skip a record or return an empty list, and the
- * {@code errors} list is never written to. The code of a record is only looked at for the first 25
+ * {@link DataFileParseException}, never to skip a record or return an empty list. The code of a record is only looked at for the first 25
  * records, as in C's {@code parse_projection_code()}: an unknown or empty code stops the load
  * there, and past them an unknown code is stored as {@code PROJ_NONE} with no error, while an empty
  * one still stops it.
@@ -149,8 +148,8 @@ class ProjectionAssemblerTest {
                 r.willWake(), colour);
     }
 
-    private static List<Projection> assemble(List<ProjectionParseRecord> records, List<String> errors) {
-        return new ProjectionAssembler().assemble(records, errors, "test.txt");
+    private static List<Projection> assemble(List<ProjectionParseRecord> records) {
+        return new ProjectionAssembler().assemble(records, "test.txt");
     }
 
     /**
@@ -158,7 +157,7 @@ class ProjectionAssemblerTest {
      * the assembler returns instead.
      */
     private static DataFileParseException assembleAndStop(List<ProjectionParseRecord> records) {
-        return assertThrows(DataFileParseException.class, () -> assemble(records, new ArrayList<>()));
+        return assertThrows(DataFileParseException.class, () -> assemble(records));
     }
 
     private static long countOfType(List<Projection> projections, ProjectionType type) {
@@ -185,12 +184,10 @@ class ProjectionAssemblerTest {
     private static Projection assembleWith(int index, ProjectionParseRecord broken) {
         List<ProjectionParseRecord> records = validFile();
         records.set(index, broken);
-        List<String> errors = new ArrayList<>();
 
-        List<Projection> result = assemble(records, errors);
+        List<Projection> result = assemble(records);
 
         assertEquals(56, result.size());
-        assertTrue(errors.isEmpty(), errors.toString());
         return result.get(index);
     }
 
@@ -204,7 +201,6 @@ class ProjectionAssemblerTest {
     void realFileLoadsAllFiftySixProjections() throws IOException {
         ParseResult<Projection> result = new ProjectionReader().parseWithResults(REAL_FILE);
 
-        assertTrue(result.errors().isEmpty(), result.errors().toString());
         List<Projection> items = result.items();
         assertEquals(56, items.size());
         assertEquals(25, countOfType(items, ProjectionType.PT_ELEMENT));
@@ -265,12 +261,9 @@ class ProjectionAssemblerTest {
 
     @Test
     void wellFormedHandBuiltFileLoadsWithNoErrors() {
-        List<String> errors = new ArrayList<>();
-
-        List<Projection> result = assemble(validFile(), errors);
+        List<Projection> result = assemble(validFile());
 
         assertEquals(56, result.size());
-        assertTrue(errors.isEmpty(), errors.toString());
     }
 
     /**
@@ -463,12 +456,10 @@ class ProjectionAssemblerTest {
     void unknownCodeAfterTheElementBlockIsStoredAsProjNoneWithNoError() {
         List<ProjectionParseRecord> records = validFile();
         records.add(record("BOGUS", "monster", 99));
-        List<String> errors = new ArrayList<>();
 
-        List<Projection> result = assemble(records, errors);
+        List<Projection> result = assemble(records);
 
         assertEquals(57, result.size());
-        assertTrue(errors.isEmpty(), errors.toString());
         assertEquals(ProjectionEnum.PROJ_NONE, result.getLast().getProjection());
         assertEquals(ProjectionType.PT_MONSTER, result.getLast().getType());
     }
@@ -482,7 +473,7 @@ class ProjectionAssemblerTest {
         List<ProjectionParseRecord> records = validFile();
         records.add(record("ACID", "monster", 99));
 
-        List<Projection> result = assemble(records, new ArrayList<>());
+        List<Projection> result = assemble(records);
 
         assertEquals(57, result.size());
         assertEquals(ProjectionEnum.PROJ_ACID, result.getLast().getProjection());
@@ -498,12 +489,10 @@ class ProjectionAssemblerTest {
         ProjectionParseRecord first = records.get(25);
         records.set(25, records.get(26));
         records.set(26, first);
-        List<String> errors = new ArrayList<>();
 
-        List<Projection> result = assemble(records, errors);
+        List<Projection> result = assemble(records);
 
         assertEquals(56, result.size());
-        assertTrue(errors.isEmpty(), errors.toString());
         assertEquals(ProjectionEnum.PROJ_DARK_WEAK, result.get(25).getProjection());
         assertEquals(ProjectionEnum.PROJ_LIGHT_WEAK, result.get(26).getProjection());
     }
@@ -570,9 +559,7 @@ class ProjectionAssemblerTest {
 
     @Test
     void typeStringsMapToTheirEnumConstants() {
-        List<String> errors = new ArrayList<>();
-
-        List<Projection> result = assemble(validFile(), errors);
+        List<Projection> result = assemble(validFile());
 
         assertEquals(ProjectionType.PT_ELEMENT, result.get(0).getType());
         assertEquals(ProjectionType.PT_ELEMENT, result.get(24).getType());
@@ -610,16 +597,14 @@ class ProjectionAssemblerTest {
                     case "obvious" -> withObvious(base, c[1]);
                     default -> withWake(base, c[1]);
                 });
-                List<String> errors = new ArrayList<>();
 
                 DataFileParseException e = assertThrows(DataFileParseException.class,
-                        () -> assemble(records, errors), c[0] + " " + c[1]);
+                        () -> assemble(records), c[0] + " " + c[1]);
 
                 assertTrue(e.getMessage().contains("line: " + (index + 1)), c[0] + " " + c[1] + ": " + e.getMessage());
                 assertTrue(e.getMessage().contains(c[0].equals("numerator") ? "numerator"
                         : c[0].equals("divisor") ? "divisor" : c[0].equals("damage cap") ? "damage cap"
                         : c[0].equals("obvious") ? "obvious" : "will wake"), c[0] + " " + c[1] + ": " + e.getMessage());
-                assertTrue(errors.isEmpty(), "errors is never written to: " + errors);
             }
         }
     }

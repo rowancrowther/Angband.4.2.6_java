@@ -34,11 +34,6 @@ lexer grammar BrandLexer;
 // mode end-of-line handling; Flags contributes the shared FLAG_BODY fragment.
 import CommentsAndEol, Flags;
 
-// "record-count:<n>" - header declaring how many brand records follow.
-RECORD_COUNT
-        :   'record-count:'
-        ;
-
 // "code:<CODE>" - opens a new brand record; the value (e.g. FIRE_3) is the
 // cross-reference code other data files use, read as free text.
 CODE

@@ -37,6 +37,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * each record carries its own source line number, line numbers survive skipped comment/blank lines,
  * and the file must open with a {@code record-count} directive.
  *
+ * <p>Class WorldGrammarTest coded before 261104, updated on 261104 once the {@code record-count:} header was removed.
+ *
  * @author Rowan Crowther
  */
 class WorldGrammarTest {
@@ -68,23 +70,20 @@ class WorldGrammarTest {
     @Test
     void singleRecordExtractsAllFiveFieldsVerbatim() {
         Errors errors = new Errors();
-        WorldGrammar.FileContext ctx = parser("record-count:1\nlevel:0:Town:None:Angband 1\n", errors).file();
+        WorldGrammar.FileContext ctx = parser("level:0:Town:None:Angband 1\n", errors).file();
 
         assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
-        // declaredCount is left as a String for the reader to parse.
-        assertEquals("1", ctx.declaredCount);
         assertEquals(1, ctx.levels.size());
         // [depth, name, up, down, lineNumber]; "None" is verbatim (not null), and the level sits on
-        // source line 2 (record-count is line 1).
-        assertEquals(List.of("0", "Town", "None", "Angband 1", "2"), ctx.levels.get(0));
+        // source line 1.
+        assertEquals(List.of("0", "Town", "None", "Angband 1", "1"), ctx.levels.get(0));
     }
 
     @Test
     void lineNumbersSurviveSkippedComments() {
         Errors errors = new Errors();
         WorldGrammar.FileContext ctx = parser(
-                "record-count:2\n"
-                        + "level:0:Town:None:Angband 1\n"
+                "level:0:Town:None:Angband 1\n"
                         + "# a comment line\n"
                         + "level:1:Angband 1:Town:Angband 2\n",
                 errors).file();
@@ -92,25 +91,16 @@ class WorldGrammarTest {
         assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
         assertEquals(2, ctx.levels.size());
         // The comment on line 3 carries no record, but line counting still advances, so the second
-        // record reports line 4 (record-count=1, first level=2, comment=3, second level=4).
-        assertEquals("2", ctx.levels.get(0).get(4));
-        assertEquals("4", ctx.levels.get(1).get(4));
-    }
-
-    @Test
-    void missingRecordCountIsAParseError() {
-        // file requires a recordCount directive before any level record.
-        Errors errors = new Errors();
-        parser("level:0:Town:None:Angband 1\n", errors).file();
-
-        assertFalse(errors.messages.isEmpty(), "a file with no record-count header must not parse");
+        // record reports line 3 (first level=1, comment=2, second level=3).
+        assertEquals("1", ctx.levels.get(0).get(4));
+        assertEquals("3", ctx.levels.get(1).get(4));
     }
 
     @Test
     void recordMissingAFieldIsAParseError() {
         // "level:0:Town:None" has no down level, so upAndDown (NAME COLON NAME) can't complete.
         Errors errors = new Errors();
-        parser("record-count:1\nlevel:0:Town:None\n", errors).file();
+        parser("level:0:Town:None\n", errors).file();
 
         assertFalse(errors.messages.isEmpty(), "a level record missing the down field must not parse");
     }

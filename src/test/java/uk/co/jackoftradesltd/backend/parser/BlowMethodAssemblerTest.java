@@ -28,7 +28,6 @@ import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.middle.combat.BlowMethod;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -73,7 +72,7 @@ class BlowMethodAssemblerTest {
     }
 
     private static BlowMethod one(BlowMethodParseRecord record) {
-        List<BlowMethod> methods = new BlowMethodAssembler().assemble(List.of(record), new ArrayList<>(), FILE);
+        List<BlowMethod> methods = new BlowMethodAssembler().assemble(List.of(record), FILE);
         assertEquals(1, methods.size());
         return methods.getFirst();
     }
@@ -204,7 +203,7 @@ class BlowMethodAssemblerTest {
         assertTrue(e.getMessage().contains("BOGUS"), e::getMessage);
     }
 
-    // ---- Order, pass-through and the error list --------------------------
+    // ---- Order and pass-through ------------------------------------------
 
     @Test
     void recordsComeBackInReverseFileOrder() {
@@ -213,7 +212,7 @@ class BlowMethodAssemblerTest {
                 rec("SECOND", "0", "0", "0", "0", "MON_HIT", 10),
                 rec("THIRD", "0", "0", "0", "0", "MON_HIT", 18));
 
-        List<String> names = new BlowMethodAssembler().assemble(records, new ArrayList<>(), FILE)
+        List<String> names = new BlowMethodAssembler().assemble(records, FILE)
                 .stream().map(BlowMethod::getName).toList();
 
         assertEquals(List.of("THIRD", "SECOND", "FIRST"), names);
@@ -235,18 +234,7 @@ class BlowMethodAssemblerTest {
                 rec("BAD2", "0", "0", "0", "0", "BOGUS_TWO", 18));
 
         DataFileParseException e = assertThrows(DataFileParseException.class,
-                () -> new BlowMethodAssembler().assemble(records, new ArrayList<>(), FILE));
+                () -> new BlowMethodAssembler().assemble(records, FILE));
         assertTrue(e.getMessage().contains("BOGUS_ONE"), e::getMessage);
-    }
-
-    @Test
-    void theErrorListIsNeverWritten() {
-        List<String> errors = new ArrayList<>();
-        new BlowMethodAssembler().assemble(List.of(rec("POKE", "1", "1", "1", "1", "MON_HIT", 2)), errors, FILE);
-        assertTrue(errors.isEmpty());
-
-        assertThrows(DataFileParseException.class, () -> new BlowMethodAssembler()
-                .assemble(List.of(rec("POKE", "0", "0", "0", "0", "BOGUS", 2)), errors, FILE));
-        assertTrue(errors.isEmpty());
     }
 }

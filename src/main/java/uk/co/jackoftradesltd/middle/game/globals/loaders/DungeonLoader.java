@@ -23,7 +23,6 @@ import uk.co.jackoftradesltd.backend.parser.DungeonProfileReader;
 import uk.co.jackoftradesltd.backend.parser.RoomProfileReader;
 import uk.co.jackoftradesltd.backend.parser.VaultReader;
 import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
-import uk.co.jackoftradesltd.channel.parser.ErrorParsing;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.cave.profiles.dungeon.CaveProfile;
 import uk.co.jackoftradesltd.middle.cave.profiles.room.RoomTemplate;
@@ -44,33 +43,38 @@ import java.io.IOException;
  * then {@code player_module}, then {@code generate_module}.
  *
  * <p>Every loader follows the same shape: build the reader, parse the file under
- * {@code lib/gamedata}, report data problems, and install what assembled into
- * {@link DungeonRegistry}. A file that cannot be read, or whose parse leaves errors and no
- * records at all, stops start-up with a {@link RuntimeException} naming the file, which is the
- * port of C's {@code quit()} (a missing file in {@code parse_file_quit_not_found}, anything else
- * in {@code run_template_parser()}).
+ * {@code lib/gamedata}, and install the assembled list into {@link DungeonRegistry}.
  *
- * <p>They differ from C in two ways:
+ * <p>Every error is fatal, as in C, where {@code run_template_parser()} quits on a missing file
+ * ({@code parse_file_quit_not_found}) or a bad line. There are three ways a load fails, and only
+ * the first is handled here:
  * <ul>
- *   <li>Soft errors are not fatal while at least one record assembled. C's parser stops at the
- *   first bad line and quits; here {@code ErrorParsing.reportAndCheck} logs every error, and
- *   the records that survived are installed anyway. This is the same deliberate softening the
- *   other data loaders make.</li>
- *   <li>The file is read from the gamedata directory only. C's {@code parse_file}
- *   ({@code datafile.c}) tries a customised copy in the user directory first.</li>
+ *   <li>an {@link IOException} from the reader is logged at {@code FATAL} and rethrown wrapped in a
+ *       {@link RuntimeException} naming the file;</li>
+ *   <li>a grammar or lexer error is thrown by the reader as a {@code ParseCancellationException}
+ *       ({@code ParseErrors.throwIfAny});</li>
+ *   <li>a record the assembler refuses is thrown as a {@code DataFileParseException}.</li>
  * </ul>
+ * The last two are unchecked and pass through these loaders, and through
+ * {@code GameEngine.loadGameConstants}, unlogged and unwrapped. Nothing is installed from a file
+ * that fails, so the registry never holds a partial list.
  *
- * <p>Class DungeonLoader coded before 261010, commented in full on 261013.
+ * <p>The file is read from the gamedata directory only. C's {@code parse_file}
+ * ({@code datafile.c}) tries a customised copy in the user directory first.
+ *
+ * <p>Class DungeonLoader coded before 261010, commented in full on 261013, failure paragraph
+ * rewritten on 261104 for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
 public class DungeonLoader {
     /**
-     * Logger for the three loaders: the soft errors {@code ErrorParsing.reportAndCheck} finds in
-     * each file, and the fatal line written before a load failure is thrown. C has no
-     * counterpart: it reports through {@code quit()} and the parser's own error text.
+     * Logger for the three loaders: the {@code FATAL} line written before an IO failure is
+     * rethrown. Grammar and assembler errors are not logged here (see the class description). C
+     * has no counterpart: it reports through {@code quit()} and the parser's own error text.
      *
-     * <p>Field logger coded before 261010, commented in full on 261013.
+     * <p>Field logger coded before 261010, commented in full on 261013, updated on 261104 for the
+     * removal of the soft-error path.
      */
     private static final Logger logger = LogManager.getLogger(DungeonLoader.class);
 
@@ -78,13 +82,12 @@ public class DungeonLoader {
      * Read {@code dungeon_profile.txt} and install the profiles in {@link DungeonRegistry} - the
      * first of the three parsers in C's {@code run_template_parser()} ({@code generate.c}).
      *
-     * <p>Soft data problems are reported but not fatal — {@code ErrorParsing.reportAndCheck} logs
-     * whatever the reader gathered, and the profiles that did assemble are still installed. Two
-     * cases stop start-up instead, as C's {@code quit()} does: an unreadable file, which C's
-     * {@code run_parse_profile} reaches through {@code parse_file_quit_not_found}
-     * ({@code generate.c}), and a parse that leaves errors and no profiles. Both are logged at
-     * fatal and thrown, before the registry is touched. A file that parses cleanly but is empty
-     * installs an empty list, as in C.
+     * <p>Every error stops start-up, as C's {@code quit()} does, before the registry is touched. An
+     * unreadable file, which C's {@code run_parse_profile} reaches through
+     * {@code parse_file_quit_not_found} ({@code generate.c}), is logged at fatal and rethrown as a
+     * {@link RuntimeException}; a grammar or assembler error passes through unwrapped (see the
+     * class description). A file that parses cleanly but is empty installs an empty list, as in
+     * C.
      *
      * <p>The profile count is recorded in {@code GameConstants} as well: C's
      * {@code finish_parse_profile} ({@code generate.c}) counts the parsed profiles into
@@ -95,10 +98,11 @@ public class DungeonLoader {
      * replaced. C builds its profile array back to front from a prepended list, so the finished
      * array is in file order, which is the order installed here.
      *
-     * <p>Method loadDungeonProfiles coded before 261010, commented in full on 261013.
+     * <p>Method loadDungeonProfiles coded before 261010, commented in full on 261013, updated on
+     * 261104 for the removal of the soft-error path.
      *
-     * @throws RuntimeException if {@code dungeon_profile.txt} cannot be read, or the parse leaves
-     *                          errors and no profiles
+     * @throws RuntimeException if {@code dungeon_profile.txt} cannot be read, or (unwrapped) if it
+     *                          holds a grammar or assembler error
      */
     public static void loadDungeonProfiles() {
         DungeonProfileReader parser = new DungeonProfileReader();
@@ -106,12 +110,6 @@ public class DungeonLoader {
 
         try {
             ParseResult<CaveProfile> result = parser.parseWithResults(filename);
-
-            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
-                String message = "Error parsing Dungeon profiles file";
-                logger.fatal(message);
-                throw new RuntimeException(message);
-            }
 
             DungeonRegistry.setCaveProfiles(result.items());
             GameConstants.setCaveProfileMax(result.items().size());
@@ -125,20 +123,20 @@ public class DungeonLoader {
     /**
      * Read {@code room_template.txt} and install the templates in {@link DungeonRegistry}.
      *
-     * <p>Failure handling follows {@link #loadDungeonProfiles()}: soft errors are logged by
-     * {@code ErrorParsing.reportAndCheck} and the templates that did assemble are still installed,
-     * while an unreadable file (C's {@code run_parse_room} also uses
-     * {@code parse_file_quit_not_found}, {@code generate.c}) or a parse that leaves errors and no
-     * templates is logged at fatal and thrown, before the registry is touched. The second of the
-     * three parsers in {@code run_template_parser()}.
+     * <p>Failure handling follows {@link #loadDungeonProfiles()}: every error stops start-up before
+     * the registry is touched. An unreadable file (C's {@code run_parse_room} also uses
+     * {@code parse_file_quit_not_found}, {@code generate.c}) is logged at fatal and rethrown; a
+     * grammar or assembler error passes through unwrapped. The second of the three parsers in
+     * {@code run_template_parser()}.
      *
      * <p>Unlike the profiles, no count is recorded: C's {@code finish_parse_room} just keeps the
      * list as {@code room_templates}, and nothing in {@code z_info} counts it.
      *
-     * <p>Method loadRoomTemplates coded before 261010, commented in full on 261013.
+     * <p>Method loadRoomTemplates coded before 261010, commented in full on 261013, updated on
+     * 261104 for the removal of the soft-error path.
      *
-     * @throws RuntimeException if {@code room_template.txt} cannot be read, or the parse leaves
-     *                          errors and no templates
+     * @throws RuntimeException if {@code room_template.txt} cannot be read, or (unwrapped) if it
+     *                          holds a grammar or assembler error
      */
     public static void loadRoomTemplates() {
         RoomProfileReader parser = new RoomProfileReader();
@@ -147,12 +145,6 @@ public class DungeonLoader {
         try {
             ParseResult<RoomTemplate> result = parser.parseWithResults(filename);
 
-            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
-                String message = "Error parsing Room profiles file";
-                logger.fatal(message);
-                throw new RuntimeException(message);
-            }
-            
             DungeonRegistry.setRoomTemplates(result.items());
         } catch (IOException e) {
             logger.fatal("Error while loading file {}", filename, e);
@@ -163,21 +155,21 @@ public class DungeonLoader {
     /**
      * Read {@code vault.txt} and install the vaults in {@link DungeonRegistry}.
      *
-     * <p>Failure handling follows {@link #loadDungeonProfiles()}: soft errors are logged by
-     * {@code ErrorParsing.reportAndCheck} and the vaults that did assemble are still installed,
-     * while an unreadable file (C's {@code run_parse_vault} also uses
-     * {@code parse_file_quit_not_found}, {@code generate.c}) or a parse that leaves errors and no
-     * vaults is logged at fatal and thrown, before the registry is touched. The last of the three
-     * parsers in {@code run_template_parser()}.
+     * <p>Failure handling follows {@link #loadDungeonProfiles()}: every error stops start-up before
+     * the registry is touched. An unreadable file (C's {@code run_parse_vault} also uses
+     * {@code parse_file_quit_not_found}, {@code generate.c}) is logged at fatal and rethrown; a
+     * grammar or assembler error passes through unwrapped. The last of the three parsers in
+     * {@code run_template_parser()}.
      *
      * <p>Must run after {@code GameConstants}, because the assembler needs the world's maximum
      * depth: {@code vault.txt} writes {@code max-depth:0} to mean "no maximum", and C rewrites that
      * to {@code z_info->max_depth} in {@code parse_vault_max_depth()} ({@code generate.c}).
      *
-     * <p>Method loadVaultTemplates coded before 261010, commented in full on 261013.
+     * <p>Method loadVaultTemplates coded before 261010, commented in full on 261013, updated on
+     * 261104 for the removal of the soft-error path.
      *
-     * @throws RuntimeException if {@code vault.txt} cannot be read, or the parse leaves errors and
-     *                          no vaults
+     * @throws RuntimeException if {@code vault.txt} cannot be read, or (unwrapped) if it holds a
+     *                          grammar or assembler error
      */
     public static void loadVaultTemplates() {
         VaultReader parser = new VaultReader();
@@ -186,12 +178,6 @@ public class DungeonLoader {
         try {
             ParseResult<Vault> result = parser.parseWithResults(filename);
 
-            if (!ErrorParsing.reportAndCheck(filename, result, logger)) {
-                String message = "Error parsing Vault profiles file";
-                logger.fatal(message);
-                throw new RuntimeException(message);
-            }
-            
             DungeonRegistry.setVaultTemplates(result.items());
         } catch (IOException e) {
             logger.fatal("Error while loading file {}", filename, e);

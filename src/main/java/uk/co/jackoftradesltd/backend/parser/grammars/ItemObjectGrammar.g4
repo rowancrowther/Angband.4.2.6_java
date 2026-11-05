@@ -14,11 +14,6 @@ import EffectBlock;
     import java.util.Map;
 }
 
-recordCount
-        returns[String count]
-        :   RECORD_COUNT INTEGER { $count = $INTEGER.getText(); }
-        ;
-
 name
         returns[String nameStr, int line]
         :   NAME OBJECT_STRING { $nameStr = $OBJECT_STRING.getText();
@@ -250,8 +245,7 @@ itemObject
         ;
 
 file
-        returns[String declaredRecordCount, List<ItemObjectParseRecord> itemObjects]
-        :   recordCount { $itemObjects = new ArrayList<>();
-                          $declaredRecordCount = $recordCount.count; }
+        returns[List<ItemObjectParseRecord> itemObjects]
+        :   { $itemObjects = new ArrayList<>(); }
             (itemObject { $itemObjects.add($itemObject.object); } )+ EOF
         ;

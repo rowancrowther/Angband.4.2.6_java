@@ -52,19 +52,6 @@ options { tokenVocab = DungeonProfileLexer; }
 /*
  * @author Rowan Crowther
  *
- * The file's declared record count, checked by the reader against the number
- * of profiles actually parsed. A port-ism: C has no such header.
- *
- * @return count the declared count, unparsed
- */
-recordCount
-        returns[String count]
-        :   RECORD_COUNT INTEGER { $count = $INTEGER.getText(); }
-        ;
-
-/*
- * @author Rowan Crowther
- *
  * "name:<profile name>" - opens a profile record.
  * Cf. parse_profile_name (generate.c), which also resolves the name against
  * cave_builders[]; that resolution is deferred to the assembler here.
@@ -301,18 +288,16 @@ profile
 /*
  * @author Rowan Crowther
  *
- * The whole file: the record-count header, then one or more profiles.
+ * The whole file: one or more profiles.
  * EOF is matched explicitly so trailing rubbish is an error rather than
  * silently ignored.
  *
- * @return declaredRecordCount the header's count, for the reader to check
- * @return profiles            every profile in the file, in file order
+ * @return profiles every profile in the file, in file order
  */
 file
-        returns[String declaredRecordCount, List<DungeonProfileParseRecord> profiles]
+        returns[List<DungeonProfileParseRecord> profiles]
         @init {
             $profiles = new ArrayList<>();
         }
-        :   recordCount { $declaredRecordCount = $recordCount.count; }
-            (profile { $profiles.add($profile.record); })+ EOF
+        :   (profile { $profiles.add($profile.record); })+ EOF
         ;

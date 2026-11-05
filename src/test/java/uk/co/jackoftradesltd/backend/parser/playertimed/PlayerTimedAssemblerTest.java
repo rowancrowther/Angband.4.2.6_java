@@ -37,7 +37,6 @@ import uk.co.jackoftradesltd.middle.player.enums.TimedEffect;
 import uk.co.jackoftradesltd.middle.player.enums.TimedEffectReasonType;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -153,7 +152,7 @@ class PlayerTimedAssemblerTest {
     }
 
     private static PlayerTimedEffect assembleOne(PlayerTimedParseRecord record) {
-        List<PlayerTimedEffect> effects = new PlayerTimedAssembler().assemble(List.of(record), new ArrayList<>(), FILE);
+        List<PlayerTimedEffect> effects = new PlayerTimedAssembler().assemble(List.of(record), FILE);
         assertEquals(1, effects.size());
         return effects.get(0);
     }
@@ -167,7 +166,7 @@ class PlayerTimedAssemblerTest {
      */
     private static void assertStopsTheLoad(PlayerTimedParseRecord record, String tail) {
         DataFileParseException thrown = assertThrows(DataFileParseException.class,
-                () -> new PlayerTimedAssembler().assemble(List.of(record), new ArrayList<>(), FILE));
+                () -> new PlayerTimedAssembler().assemble(List.of(record), FILE));
 
         assertTrue(thrown.getMessage().contains(tail), thrown::getMessage);
         assertTrue(thrown.getMessage().contains("line: " + LINE + " "), thrown::getMessage);

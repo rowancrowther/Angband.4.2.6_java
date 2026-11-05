@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -43,8 +44,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * race-flag-or-base branch (resolve the one that is present, accept neither, refuse both), the
  * numeric-field parsing, and the faults that stop the load: the assembler throws a
  * {@code DataFileParseException} out of the reader, as C's first parser error ends the file. The
- * record-count mismatch is the one soft error left, and it travels in {@link ParseResult}; the
- * fail-closed hard-error channel covers the syntax errors.
+ * fail-closed {@code ParseErrors} channel covers the syntax errors.
  *
  * <p>The assembler resolves {@code base:} via {@link MonsterRegistry#getBaseFromName}, which reads the
  * static {@code monsterBases} list (and throws if it is {@code null}); loading those in turn needs
@@ -59,7 +59,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * the places the grammar and assembler differ from C, each named for the C behaviour it departs
  * from, so that an assembler or grammar fix shows up here as a test to flip.
  *
- * <p>Class SlayReaderTest coded before 261017, extended and commented in full on 261017.
+ * <p>Class SlayReaderTest coded before 261017, extended and commented in full on 261017,
+ * updated on 261105 for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -105,9 +106,6 @@ class SlayReaderTest {
 
     // ---- fixture helpers -------------------------------------------------
 
-    private static String withHeader(int count, String body) {
-        return "record-count:" + count + "\n" + body;
-    }
 
     /**
      * A complete slay record. {@code discriminator} is the race-flag/base line(s) between name and
@@ -145,7 +143,6 @@ class SlayReaderTest {
     void realFileLoadsAllElevenSlaysWithNoErrors() throws IOException {
         ParseResult<Slay> result = new SlayReader().parseWithResults(REAL_FILE);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(11, result.items().size());
         // C's slays[] runs in reverse file order, so the last record, UNDEAD_5, is first
         assertEquals("UNDEAD_5", result.items().get(0).getCode());
@@ -153,9 +150,8 @@ class SlayReaderTest {
 
     @Test
     void syntheticRaceFlagSlayAssembles() throws IOException {
-        ParseResult<Slay> result = load("ok-flag.txt", withHeader(1, raceFlagSlay("EVIL_2", "EVIL")));
+        ParseResult<Slay> result = load("ok-flag.txt", raceFlagSlay("EVIL_2", "EVIL"));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size());
         assertEquals("EVIL_2", result.items().get(0).getCode());
     }
@@ -165,9 +161,8 @@ class SlayReaderTest {
         // A base: record never appears in the shipped slay.txt, so this is the only coverage of the
         // base branch - it also proves getMonsterBase found a match (a miss would skip the record).
         ParseResult<Slay> result =
-                load("ok-base.txt", withHeader(1, slay("DRAGON_5", "base:" + KNOWN_BASE, "5", "35", "110")));
+                load("ok-base.txt", slay("DRAGON_5", "base:" + KNOWN_BASE, "5", "35", "110"));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size());
         assertFalse(result.items().get(0).toString().contains("base=null"),
                 () -> "expected a resolved base, got: " + result.items().get(0));
@@ -179,20 +174,20 @@ class SlayReaderTest {
     void bothRaceFlagAndBaseStopTheLoad() {
         // PARSE_ERROR_INVALID_SLAY: "Flag or base, not both".
         assertThrows(DataFileParseException.class, () -> load("both.txt",
-                withHeader(1, slay("EVIL_2", "race-flag:EVIL\nbase:" + KNOWN_BASE, "2", "18", "100"))));
+                slay("EVIL_2", "race-flag:EVIL\nbase:" + KNOWN_BASE, "2", "18", "100")));
     }
 
     @Test
     void unknownRaceFlagStopsTheLoad() {
         DataFileParseException e = assertThrows(DataFileParseException.class,
-                () -> load("bad-flag.txt", withHeader(1, raceFlagSlay("EVIL_2", "NOTAFLAG"))));
+                () -> load("bad-flag.txt", raceFlagSlay("EVIL_2", "NOTAFLAG")));
         assertTrue(e.getMessage().contains("NOTAFLAG"), e::getMessage);
     }
 
     @Test
     void unknownBaseStopsTheLoad() {
         DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("bad-base.txt",
-                withHeader(1, slay("EVIL_2", "base:no such base", "2", "18", "100"))));
+                slay("EVIL_2", "base:no such base", "2", "18", "100")));
         assertTrue(e.getMessage().contains("no such base"), e::getMessage);
     }
 
@@ -200,9 +195,8 @@ class SlayReaderTest {
     void neitherRaceFlagNorBaseLoadsAsInC() throws IOException {
         // No handler and no check in finish_parse_slay requires a target.
         ParseResult<Slay> result =
-                load("neither.txt", withHeader(1, slay("EVIL_2", "", "2", "18", "100")));
+                load("neither.txt", slay("EVIL_2", "", "2", "18", "100"));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size());
         assertTrue(result.items().get(0).toString().contains("base=null"));
         assertTrue(result.items().get(0).toString().contains("raceFlag=null"));
@@ -212,50 +206,26 @@ class SlayReaderTest {
     void figuresAboveIntMaxAreClampedWhereCWrapsThem() throws IOException {
         // Accepted deviation (ParseUtils): strtoul wraps into the 32-bit field, here it clamps.
         ParseResult<Slay> result = load("big.txt",
-                withHeader(1, raceFlagSlayWith("EVIL_2", "EVIL", "99999999999999", "99999999999999",
-                        "99999999999999")));
+                raceFlagSlayWith("EVIL_2", "EVIL", "99999999999999", "99999999999999",
+                        "99999999999999"));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(Integer.MAX_VALUE, result.items().get(0).getMultiplier());
         assertEquals(Integer.MAX_VALUE, result.items().get(0).getPower());
         assertTrue(result.items().get(0).toString().contains("oMultiplier=" + Integer.MAX_VALUE));
     }
 
-    @Test
-    void recordCountMismatchIsReportedButValidRecordStillLoads() throws IOException {
-        ParseResult<Slay> result =
-                load("bad-count.txt", withHeader(5, raceFlagSlay("EVIL_2", "EVIL")));
-
-        assertEquals(1, result.items().size());
-        assertTrue(result.errors().stream().anyMatch(
-                        e -> e.contains("declares 5") && e.contains("contains 1")),
-                result.errors()::toString);
-    }
-
     // ---- Hard (fail-closed) parse errors ---------------------------------
-
-    @Test
-    void missingRecordCountHeaderIsAHardError() throws IOException {
-        // The file rule requires the record-count header; without it the parse fails and the hard
-        // channel yields an empty result carrying the error.
-        ParseResult<Slay> result = load("no-header.txt", raceFlagSlay("EVIL_2", "EVIL"));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
-    }
 
     @Test
     void missingCodeHeaderIsAHardError() throws IOException {
         // A record must open with code:; starting with name: is a syntax error.
         String noCode = "name:orphan\nrace-flag:EVIL\nmultiplier:2\no-multiplier:18\n"
                 + "power:100\nmelee-verb:smite\nrange-verb:pierces\n";
-        ParseResult<Slay> result = load("no-code.txt", withHeader(1, noCode));
+        assertThrows(ParseCancellationException.class, () -> load("no-code.txt", noCode));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
-    // ---- Two soft errors at once -----------------------------------------
+    // ---- Two bad records at once ------------------------------------------
 
     @Test
     void aBadRecordAmongGoodOnesStopsTheWholeLoad() {
@@ -266,7 +236,7 @@ class SlayReaderTest {
                 + slay("BOTH_2", "race-flag:EVIL\nbase:" + KNOWN_BASE, "2", "18", "100");
 
         DataFileParseException e = assertThrows(DataFileParseException.class,
-                () -> load("two-errors.txt", withHeader(3, body)));
+                () -> load("two-errors.txt", body));
         assertTrue(e.getMessage().contains("NOTAFLAG"), e::getMessage);
     }
 
@@ -338,11 +308,11 @@ class SlayReaderTest {
     }
 
     @Test
-    void parseDropsErrorsSoASyntaxErrorLooksLikeAnEmptyList() throws IOException {
+    void parseThrowsOnASyntaxErrorRatherThanReturningAnEmptyList() throws IOException {
         Path file = tempDir.resolve("bad-syntax.txt");
-        Files.writeString(file, withHeader(1, "name:orphan\n"));
+        Files.writeString(file, "name:orphan\n");
 
-        assertTrue(new SlayReader().parse(file.toString()).isEmpty());
+        assertThrows(ParseCancellationException.class, () -> new SlayReader().parse(file.toString()));
     }
 
     @Test
@@ -360,9 +330,8 @@ class SlayReaderTest {
         // C dispatches on the keyword, so only code: has to come first.
         String body = "code:ORC_3\nrange-verb:pierces\npower:101\nmelee-verb:smite\n"
                 + "o-multiplier:25\nrace-flag:ORC\nmultiplier:3\nname:orcs\n";
-        ParseResult<Slay> result = load("any-order.txt", withHeader(1, body));
+        ParseResult<Slay> result = load("any-order.txt", body);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(List.of(expected("ORC_3", "orcs", "ORC", 3, 25, 101, "smite", "pierces")),
                 result.items().stream().map(Slay::toString).toList());
     }
@@ -372,9 +341,8 @@ class SlayReaderTest {
         // parse_slay_name, _multiplier and _melee_verb free or overwrite the earlier value.
         String body = "code:ORC_3\nname:first\nname:orcs\nrace-flag:ORC\nmultiplier:9\nmultiplier:3\n"
                 + "o-multiplier:25\npower:101\nmelee-verb:hit\nmelee-verb:smite\nrange-verb:pierces\n";
-        ParseResult<Slay> result = load("repeat.txt", withHeader(1, body));
+        ParseResult<Slay> result = load("repeat.txt", body);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(expected("ORC_3", "orcs", "ORC", 3, 25, 101, "smite", "pierces"),
                 result.items().get(0).toString());
     }
@@ -384,9 +352,8 @@ class SlayReaderTest {
         // C does not check codes for uniqueness: both records go onto the chain.
         String body = raceFlagSlay("EVIL_2", "EVIL")
                 + slay("EVIL_2", "race-flag:ORC", "3", "25", "101");
-        ParseResult<Slay> result = load("dup.txt", withHeader(2, body));
+        ParseResult<Slay> result = load("dup.txt", body);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(2, result.items().size());
         assertEquals(3, result.items().get(0).getMultiplier());
         assertEquals(2, result.items().get(1).getMultiplier());
@@ -397,9 +364,8 @@ class SlayReaderTest {
         // parser_getstr takes the rest of the line, so a colon in a name or verb is data.
         String body = "code:EVIL_2\nname:evil: creatures of note\nrace-flag:EVIL\nmultiplier:2\n"
                 + "o-multiplier:18\npower:200\nmelee-verb:smite: hard\nrange-verb:pierces\n";
-        ParseResult<Slay> result = load("colons.txt", withHeader(1, body));
+        ParseResult<Slay> result = load("colons.txt", body);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals("evil: creatures of note", result.items().get(0).getName());
         assertTrue(result.items().get(0).toString().contains("meleeVerb='smite: hard'"));
     }
@@ -408,9 +374,8 @@ class SlayReaderTest {
     void commentsAndBlankLinesBetweenDirectivesAreSkipped() throws IOException {
         String body = "# a comment\n\ncode:EVIL_2\n# between\nname:evil creatures\n\nrace-flag:EVIL\n"
                 + "multiplier:2\no-multiplier:18\npower:200\nmelee-verb:smite\nrange-verb:pierces\n";
-        ParseResult<Slay> result = load("comments.txt", withHeader(1, body));
+        ParseResult<Slay> result = load("comments.txt", body);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size());
     }
 
@@ -422,9 +387,8 @@ class SlayReaderTest {
         // ("not both nor multiple race flags") and the load stops. Here the grammar keeps the last.
         String body = "code:EVIL_2\nname:evil creatures\nrace-flag:ORC\nrace-flag:EVIL\nmultiplier:2\n"
                 + "o-multiplier:18\npower:200\nmelee-verb:smite\nrange-verb:pierces\n";
-        ParseResult<Slay> result = load("two-flags.txt", withHeader(1, body));
+        ParseResult<Slay> result = load("two-flags.txt", body);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertTrue(result.items().get(0).toString().contains("raceFlag=RF_EVIL"));
     }
 
@@ -436,7 +400,7 @@ class SlayReaderTest {
         // The last base: wins, and it is the unknown one, so the load stops for that reason and
         // not because there were two of them.
         DataFileParseException e = assertThrows(DataFileParseException.class,
-                () -> load("two-bases.txt", withHeader(1, body)));
+                () -> load("two-bases.txt", body));
         assertTrue(e.getMessage().contains("no such base"), e::getMessage);
     }
 
@@ -445,9 +409,8 @@ class SlayReaderTest {
         // C allocates the slay zeroed, so a record with no power: loads with power 0.
         String body = "code:EVIL_2\nname:evil creatures\nrace-flag:EVIL\nmultiplier:2\n"
                 + "o-multiplier:18\nmelee-verb:smite\nrange-verb:pierces\n";
-        ParseResult<Slay> result = load("no-power.txt", withHeader(1, body));
+        ParseResult<Slay> result = load("no-power.txt", body);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(0, result.items().get(0).getPower());
         assertEquals(2, result.items().get(0).getMultiplier());
     }
@@ -456,9 +419,8 @@ class SlayReaderTest {
     void missingMultiplierLoadsAsZeroAsInC() throws IOException {
         String body = "code:EVIL_2\nname:evil creatures\nrace-flag:EVIL\n"
                 + "o-multiplier:18\npower:200\nmelee-verb:smite\nrange-verb:pierces\n";
-        ParseResult<Slay> result = load("no-mult.txt", withHeader(1, body));
+        ParseResult<Slay> result = load("no-mult.txt", body);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(0, result.items().get(0).getMultiplier());
         assertEquals(200, result.items().get(0).getPower());
     }
@@ -466,9 +428,8 @@ class SlayReaderTest {
     @Test
     void missingNameAndVerbsLoadAsNullAsInC() throws IOException {
         String body = "code:EVIL_2\nrace-flag:EVIL\nmultiplier:2\no-multiplier:18\npower:200\n";
-        ParseResult<Slay> result = load("no-text.txt", withHeader(1, body));
+        ParseResult<Slay> result = load("no-text.txt", body);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertNull(result.items().get(0).getName());
         assertTrue(result.items().get(0).toString().contains("meleeVerb='null'"));
     }
@@ -477,7 +438,7 @@ class SlayReaderTest {
     void negativeMultiplierStopsTheLoadAsParserGetUintRefusesIt() {
         // C reads the three numbers with parser_getuint, which refuses a leading minus sign.
         assertThrows(DataFileParseException.class, () -> load("negative.txt",
-                withHeader(1, raceFlagSlayWith("EVIL_2", "EVIL", "-2", "18", "200"))));
+                raceFlagSlayWith("EVIL_2", "EVIL", "-2", "18", "200")));
     }
 
     @Test
@@ -485,7 +446,7 @@ class SlayReaderTest {
         // lookup_flag starts at FLAG_START (1), so "NONE" at index 0 is never found and C returns
         // PARSE_ERROR_INVALID_FLAG.
         assertThrows(DataFileParseException.class, () -> load("none-flag.txt",
-                withHeader(1, slay("EVIL_2", "race-flag:NONE", "2", "18", "200"))));
+                slay("EVIL_2", "race-flag:NONE", "2", "18", "200")));
     }
 
     @Test
@@ -493,9 +454,8 @@ class SlayReaderTest {
         // C never takes the code apart, so BANE, EVIL_X and a bare EVIL are all records. The Slay
         // constructor stores the text as given and the load neither throws nor skips the record.
         for (String code : new String[]{"BANE", "EVIL", "EVIL_X", "NOSUCHFLAG_2"}) {
-            ParseResult<Slay> result = load("odd-code.txt", withHeader(1, raceFlagSlay(code, "EVIL")));
+            ParseResult<Slay> result = load("odd-code.txt", raceFlagSlay(code, "EVIL"));
 
-            assertFalse(result.hasErrors(), () -> code + ": " + result.errors());
             assertEquals(1, result.items().size(), code);
             assertEquals(code, result.items().get(0).getCode());
             assertTrue(result.items().get(0).toString().contains("raceFlag=RF_EVIL"), code);
@@ -505,10 +465,8 @@ class SlayReaderTest {
     @Test
     void headerOnlyFileIsAHardErrorHereWhereCAcceptsAnEmptyFile() throws IOException {
         // The file rule needs at least one slay record after record-count:.
-        ParseResult<Slay> result = load("empty.txt", withHeader(0, ""));
+        assertThrows(ParseCancellationException.class, () -> load("empty.txt", ""));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     /**

@@ -39,9 +39,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p>The behaviours under test are the ones we reasoned through while fixing the grammar:
  * <ul>
- *   <li>the lexer's {@code FREE_TEXT_MODE} keeps {@code STRING} from swallowing the {@code type:} /
- *       {@code record-count:} keyword lines (the maximal-munch bug);</li>
- *   <li>the {@code file} rule reads the {@code record-count:} header once, then loops the entries;</li>
+ *   <li>the lexer's {@code FREE_TEXT_MODE} keeps {@code STRING} from swallowing the {@code type:}
+ *       keyword lines (the maximal-munch bug);</li>
+ *   <li>the {@code file} rule loops the entries, one record each;</li>
  *   <li>each {@code painEntry} yields a record of {@code [typeNum, msg1..msg7]} (the serial number is
  *       carried as element 0 for the assembler to peel off) plus the {@code type:} line number;</li>
  *   <li>the {@code [s]} / {@code [ies|y]} pluralisation and {@code |} alternation syntax in the
@@ -50,6 +50,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p>Both lexer and parser are wired to {@link #FAIL_FAST} so any hard syntax error surfaces as a
  * test failure rather than ANTLR's silent recovery.
+ *
+ * <p>Class PainGrammarTest coded before 261104, updated on 261104 once the {@code record-count:} header was removed.
  *
  * @author Rowan Crowther
  */
@@ -76,13 +78,6 @@ class PainGrammarTest {
     };
 
     // ---- fixture helpers -------------------------------------------------
-
-    /**
-     * Prefix a body with the {@code record-count:} header the {@code file} rule requires.
-     */
-    private static String withHeader(int count, String body) {
-        return "record-count:" + count + "\n" + body;
-    }
 
     /**
      * Render one {@code type:}/{@code message:} block; the grammar demands exactly seven messages.
@@ -116,7 +111,6 @@ class PainGrammarTest {
     void cleanLoadOfTheRealFileParsesAll12Sets() throws IOException {
         PainGrammar.FileContext file = parse(CharStreams.fromFileName(REAL_FILE));
 
-        assertEquals("12", file.declaredRecords, "record-count header captured raw");
         assertEquals(12, file.monsterPain.size(), "one PainParseRecord per type: block");
         for (PainParseRecord record : file.monsterPain) {
             assertEquals(8, record.messages().size(),
@@ -132,7 +126,7 @@ class PainGrammarTest {
         assertEquals("1", first.messages().get(0), "serial number carried as element 0");
         assertEquals("shrug[s] off the attack.", first.messages().get(1), "first graduated message");
         assertEquals("cr[ies|y] out feebly.", first.messages().get(7), "last graduated message");
-        assertEquals(23, first.line(), "line is the type: line in pain.txt");
+        assertEquals(21, first.line(), "line is the type: line in C's pain.txt");
     }
 
     @Test
@@ -149,25 +143,13 @@ class PainGrammarTest {
     // ---- Synthetic structure checks --------------------------------------
 
     @Test
-    void headerIsReadOnceAndEveryEntryBecomesItsOwnRecord() {
-        // Regression for the earlier "record-count inside the loop" bug: one header, many entries.
+    void everyEntryBecomesItsOwnRecord() {
         PainGrammar.FileContext file = parse(
-                withHeader(2, entry(1, SEVEN) + entry(2, SEVEN)));
+                entry(1, SEVEN) + entry(2, SEVEN));
 
-        assertEquals("2", file.declaredRecords);
         assertEquals(2, file.monsterPain.size());
         assertEquals("1", file.monsterPain.get(0).messages().get(0));
         assertEquals("2", file.monsterPain.get(1).messages().get(0));
-    }
-
-    @Test
-    void declaredCountIsCapturedRawAndNotValidatedByTheGrammar() {
-        // The header over-declares (5 vs the single entry). Validation is the assembler's job, so the
-        // grammar must still parse and simply hand back "5".
-        PainGrammar.FileContext file = parse(withHeader(5, entry(1, SEVEN)));
-
-        assertEquals("5", file.declaredRecords);
-        assertEquals(1, file.monsterPain.size());
     }
 
     @Test
@@ -176,7 +158,7 @@ class PainGrammarTest {
         // lexer mode (not the specific shipped data) that keeps the message whole.
         String tricky = "cr[ies|y] out | [s] in pain.";
         PainGrammar.FileContext file = parse(
-                withHeader(1, entry(1, tricky, "m2", "m3", "m4", "m5", "m6", "m7")));
+                entry(1, tricky, "m2", "m3", "m4", "m5", "m6", "m7"));
 
         List<String> messages = file.monsterPain.get(0).messages();
         assertEquals(8, messages.size());
@@ -190,8 +172,7 @@ class PainGrammarTest {
     void commentsAndBlankLinesAreSkippedAroundAndWithinEntries() {
         // The shared CommentsAndEol import skips '#' comment lines and blank lines; they must be
         // invisible to the parser whether they sit between entries or between an entry's messages.
-        String src = "record-count:1\n"
-                + "# a leading comment\n"
+        String src = "# a leading comment\n"
                 + "\n"
                 + "type:1\n"
                 + "message:m1\n"
@@ -213,7 +194,7 @@ class PainGrammarTest {
     void crlfLineEndingsAreHandledAndNotCapturedInMessages() {
         // On Windows the file arrives CRLF; STRING stops at '\r' and the EOL rule eats "\r\n", so no
         // stray carriage return should cling to a message.
-        String src = ("record-count:1\n" + entry(1, SEVEN)).replace("\n", "\r\n");
+        String src = (entry(1, SEVEN)).replace("\n", "\r\n");
         PainGrammar.FileContext file = parse(src);
 
         PainParseRecord record = file.monsterPain.get(0);

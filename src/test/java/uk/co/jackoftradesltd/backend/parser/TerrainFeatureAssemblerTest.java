@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * colour lookups in {@code z-color.c}. Three things drive most of the cases:
  * <ul>
  *   <li>every {@code parse_feat_*} error ends the load in C, so every error here must throw
- *       {@link DataFileParseException} and leave the {@code errors} list alone;</li>
+ *       {@link DataFileParseException};</li>
  *   <li>{@code lookup_flag()} starts at {@code FLAG_START} (1), so {@code NONE} is refused for
  *       terrain and resist flags, while {@code lookup_feat_code()} starts at 0 and accepts
  *       {@code NONE} as a code or mimic; no table has a {@code MAX} entry;</li>
@@ -98,19 +98,12 @@ class TerrainFeatureAssemblerTest {
         return new Rec(code);
     }
 
-    private static List<Feature> assemble(List<String> errors, Rec... recs) {
+    private static List<Feature> assemble(Rec... recs) {
         List<TerrainFeatureParseRecord> records = new ArrayList<>();
         for (Rec r : recs) {
             records.add(r.build());
         }
-        return new TerrainFeatureAssembler().assemble(records, errors, "test.txt");
-    }
-
-    private static List<Feature> assemble(Rec... recs) {
-        List<String> errors = new ArrayList<>();
-        List<Feature> result = assemble(errors, recs);
-        assertTrue(errors.isEmpty(), errors::toString);
-        return result;
+        return new TerrainFeatureAssembler().assemble(records, "test.txt");
     }
 
     private static Feature one(Rec r) {
@@ -119,11 +112,9 @@ class TerrainFeatureAssemblerTest {
         return result.get(0);
     }
 
-    /** Assert the load throws, the errors list stays empty, and the message names each fragment. */
+    /** Assert the load throws and the message names each fragment. */
     private static void assertFatal(Rec[] recs, String... fragments) {
-        List<String> errors = new ArrayList<>();
-        DataFileParseException e = assertThrows(DataFileParseException.class, () -> assemble(errors, recs));
-        assertTrue(errors.isEmpty(), "a fatal error must not also go to the errors list: " + errors);
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> assemble(recs));
         for (String fragment : fragments) {
             assertTrue(e.getMessage().contains(fragment), e::getMessage);
         }

@@ -14,7 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-// Generated from NamesGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/NamesGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.names;
 
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
@@ -24,46 +24,31 @@ import org.antlr.v4.runtime.tree.ParseTreeVisitor;
  * by {@link NamesGrammar}.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
- *            operations with no return type.
+ * operations with no return type.
  */
 public interface NamesGrammarVisitor<T> extends ParseTreeVisitor<T> {
-    /**
-     * Visit a parse tree produced by {@link NamesGrammar#recordCount}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitRecordCount(NamesGrammar.RecordCountContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link NamesGrammar#section}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitSection(NamesGrammar.SectionContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link NamesGrammar#word}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitWord(NamesGrammar.WordContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link NamesGrammar#record}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitRecord(NamesGrammar.RecordContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link NamesGrammar#file}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitFile(NamesGrammar.FileContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link NamesGrammar#section}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitSection(NamesGrammar.SectionContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link NamesGrammar#word}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitWord(NamesGrammar.WordContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link NamesGrammar#record}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitRecord(NamesGrammar.RecordContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link NamesGrammar#file}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFile(NamesGrammar.FileContext ctx);
 }

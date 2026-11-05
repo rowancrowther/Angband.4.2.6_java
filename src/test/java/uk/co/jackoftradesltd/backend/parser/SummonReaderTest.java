@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -99,9 +100,6 @@ class SummonReaderTest {
 
     // ---- fixture helpers -------------------------------------------------
 
-    private static String withHeader(int count, String body) {
-        return "record-count:" + count + "\n" + body;
-    }
 
     /**
      * A complete summon record. {@code discriminator} is the optional base/race-flag/fallback
@@ -140,7 +138,6 @@ class SummonReaderTest {
     void realFileLoadsAllSeventeenSummonsWithNoErrors() throws IOException {
         ParseResult<Summon> result = new SummonReader().parseWithResults(REAL_FILE);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(17, result.items().size());
 
         // ANY is the first record: no restriction, uniques allowed.
@@ -166,9 +163,8 @@ class SummonReaderTest {
     void absentRaceFlagResolvesToRfNoneAndTheRecordStillLoads() throws IOException {
         // Regression guard: an omitted race-flag arrives as "" and must map to RF_NONE, NOT be
         // treated as an invalid flag that drops the record.
-        ParseResult<Summon> result = load("no-flag.txt", withHeader(1, plainSummon("MONSTER")));
+        ParseResult<Summon> result = load("no-flag.txt", plainSummon("MONSTER"));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size());
         assertEquals(MonsterRaceFlag.RF_NONE, result.items().get(0).getRaceFlag());
     }
@@ -177,20 +173,18 @@ class SummonReaderTest {
     void digitBearingRaceFlagResolves() throws IOException {
         // FLAG coverage including a digit-bearing name: DROP_4 -> RF_DROP_4.
         ParseResult<Summon> result =
-                load("digit-flag.txt", withHeader(1, summon("MONSTER", "SUM_MONSTER", "0",
-                        "race-flag:DROP_4", "test")));
+                load("digit-flag.txt", summon("MONSTER", "SUM_MONSTER", "0",
+                        "race-flag:DROP_4", "test"));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(MonsterRaceFlag.RF_DROP_4, result.items().get(0).getRaceFlag());
     }
 
     @Test
     void baseResolvesAgainstTheLoadedMonsterBases() throws IOException {
         ParseResult<Summon> result =
-                load("base.txt", withHeader(1, summon("DRAGON", "SUM_DRAGON", "1",
-                        "base:" + KNOWN_BASE, "ancient dragons")));
+                load("base.txt", summon("DRAGON", "SUM_DRAGON", "1",
+                        "base:" + KNOWN_BASE, "ancient dragons"));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().get(0).getBases().size());
         assertEquals(MessageType.MSG_SUM_DRAGON, result.items().get(0).getMessageType());
     }
@@ -200,23 +194,23 @@ class SummonReaderTest {
     @Test
     void invalidMessageTypeStopsTheLoad() {
         DataFileParseException e = assertThrows(DataFileParseException.class,
-                () -> load("bad-msgt.txt", withHeader(1, summon("MONSTER", "NOTREAL", "0", "", "test"))));
+                () -> load("bad-msgt.txt", summon("MONSTER", "NOTREAL", "0", "", "test")));
         assertTrue(e.getMessage().contains("message type") && e.getMessage().contains("NOTREAL"), e::getMessage);
     }
 
     @Test
     void presentButInvalidRaceFlagStopsTheLoad() {
         DataFileParseException e = assertThrows(DataFileParseException.class,
-                () -> load("bad-flag.txt", withHeader(1, summon("MONSTER", "SUM_MONSTER", "0",
-                        "race-flag:NOTAFLAG", "test"))));
+                () -> load("bad-flag.txt", summon("MONSTER", "SUM_MONSTER", "0",
+                        "race-flag:NOTAFLAG", "test")));
         assertTrue(e.getMessage().contains("race flag") && e.getMessage().contains("NOTAFLAG"), e::getMessage);
     }
 
     @Test
     void unknownBaseStopsTheLoad() {
         DataFileParseException e = assertThrows(DataFileParseException.class,
-                () -> load("bad-base.txt", withHeader(1, summon("MONSTER", "SUM_MONSTER", "0",
-                        "base:no such base", "test"))));
+                () -> load("bad-base.txt", summon("MONSTER", "SUM_MONSTER", "0",
+                        "base:no such base", "test")));
         assertTrue(e.getMessage().contains("monster base") && e.getMessage().contains("no such base"),
                 e::getMessage);
     }
@@ -227,12 +221,11 @@ class SummonReaderTest {
     void unresolvableFallbackIsSilentAndTheRecordStillLoads() throws IOException {
         // finish_parse_summon stores summon_name_to_idx() = -1 for an unknown name, with no error.
         ParseResult<Summon> result =
-                load("bad-fallback.txt", withHeader(1, summon("MONSTER", "SUM_MONSTER", "0",
-                        "fallback:NOSUCH", "test")));
+                load("bad-fallback.txt", summon("MONSTER", "SUM_MONSTER", "0",
+                        "fallback:NOSUCH", "test"));
 
         assertEquals(1, result.items().size());
         assertNull(result.items().get(0).getFallback());
-        assertFalse(result.hasErrors(), result.errors()::toString);
     }
 
     // ---- Fallback resolution ---------------------------------------------
@@ -243,9 +236,8 @@ class SummonReaderTest {
         // one before any linking happens, the forward reference still resolves to the B instance.
         String body = summon("A", "SUM_MONSTER", "0", "fallback:B", "first")
                 + summon("B", "SUM_MONSTER", "0", "", "second");
-        ParseResult<Summon> result = load("forward.txt", withHeader(2, body));
+        ParseResult<Summon> result = load("forward.txt", body);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(2, result.items().size());
         assertSame(byName(result.items(), "B"), byName(result.items(), "A").getFallback());
     }
@@ -253,33 +245,11 @@ class SummonReaderTest {
     // ---- record-count + hard (fail-closed) errors ------------------------
 
     @Test
-    void recordCountMismatchIsReportedButValidRecordStillLoads() throws IOException {
-        ParseResult<Summon> result = load("bad-count.txt", withHeader(5, plainSummon("MONSTER")));
-
-        assertEquals(1, result.items().size());
-        assertTrue(result.errors().stream().anyMatch(
-                        e -> e.contains("declares 5") && e.contains("contains 1")),
-                result.errors()::toString);
-    }
-
-    @Test
-    void missingRecordCountHeaderIsAHardError() throws IOException {
-        // The file rule requires the record-count header; without it the parse fails and the hard
-        // channel yields an empty result carrying the error.
-        ParseResult<Summon> result = load("no-header.txt", plainSummon("MONSTER"));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
-    }
-
-    @Test
     void recordNotOpeningWithNameIsAHardError() throws IOException {
         // A record must open with name:; starting with msgt: is a syntax error.
         String noName = "msgt:SUM_MONSTER\nuniques:0\ndesc:orphan\n";
-        ParseResult<Summon> result = load("no-name.txt", withHeader(1, noName));
+        assertThrows(ParseCancellationException.class, () -> load("no-name.txt", noName));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     // ---- Two faults at once ----------------------------------------------
@@ -293,7 +263,7 @@ class SummonReaderTest {
                 + summon("BADFLAG", "SUM_MONSTER", "0", "race-flag:NOTAFLAG", "bad flag");
 
         DataFileParseException e = assertThrows(DataFileParseException.class,
-                () -> load("two-errors.txt", withHeader(3, body)));
+                () -> load("two-errors.txt", body));
         assertTrue(e.getMessage().contains("NOTREAL"), e::getMessage);
     }
 
@@ -360,17 +330,17 @@ class SummonReaderTest {
     void parseThrowsOnAnAssemblerFaultToo() throws IOException {
         String body = plainSummon("GOOD") + summon("BAD", "NOTREAL", "0", "", "bad msgt");
         Path file = tempDir.resolve("parse-fault.txt");
-        Files.writeString(file, withHeader(2, body));
+        Files.writeString(file, body);
 
         assertThrows(DataFileParseException.class, () -> new SummonReader().parse(file.toString()));
     }
 
     @Test
-    void parseReturnsAnEmptyListOnASyntaxError() throws IOException {
+    void parseThrowsOnASyntaxErrorRatherThanReturningAnEmptyList() throws IOException {
         Path file = tempDir.resolve("parse-hard.txt");
-        Files.writeString(file, withHeader(1, "msgt:SUM_MONSTER\nuniques:0\ndesc:orphan\n"));
+        Files.writeString(file, "msgt:SUM_MONSTER\nuniques:0\ndesc:orphan\n");
 
-        assertTrue(new SummonReader().parse(file.toString()).isEmpty());
+        assertThrows(ParseCancellationException.class, () -> new SummonReader().parse(file.toString()));
     }
 
     @Test
@@ -387,7 +357,7 @@ class SummonReaderTest {
         // C's array is in file order (unlike blow_methods), so a later name that sorts earlier
         // must not move.
         String body = plainSummon("ZETA") + plainSummon("ALPHA") + plainSummon("MID");
-        ParseResult<Summon> result = load("order.txt", withHeader(3, body));
+        ParseResult<Summon> result = load("order.txt", body);
 
         assertEquals(List.of("ZETA", "ALPHA", "MID"),
                 result.items().stream().map(Summon::getName).toList());
@@ -400,9 +370,8 @@ class SummonReaderTest {
         String body = summon("TWIN", "SUM_MONSTER", "0", "", "first twin")
                 + summon("TWIN", "SUM_MONSTER", "0", "", "second twin")
                 + summon("USER", "SUM_MONSTER", "0", "fallback:TWIN", "user");
-        ParseResult<Summon> result = load("dup.txt", withHeader(3, body));
+        ParseResult<Summon> result = load("dup.txt", body);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(3, result.items().size());
         assertSame(result.items().get(0), result.items().get(2).getFallback());
     }
@@ -413,7 +382,7 @@ class SummonReaderTest {
         String body = summon("BAD", "NOTREAL", "0", "", "bad")
                 + plainSummon("LATER");
 
-        assertThrows(DataFileParseException.class, () -> load("stop.txt", withHeader(2, body)));
+        assertThrows(DataFileParseException.class, () -> load("stop.txt", body));
     }
 
     @Test
@@ -421,21 +390,18 @@ class SummonReaderTest {
         // finish_parse_summon back-patches fallback = summon_name_to_idx(name), -1 for no match,
         // with no error. Here the record is kept and nothing is reported.
         ParseResult<Summon> result = load("fb.txt",
-                withHeader(1, summon("A", "SUM_MONSTER", "0", "fallback:NOSUCH", "a")));
+                summon("A", "SUM_MONSTER", "0", "fallback:NOSUCH", "a"));
 
         assertEquals(1, result.items().size());
         assertNull(result.items().get(0).getFallback());
         assertEquals("NOSUCH", result.items().get(0).getFallbackName());
-        assertFalse(result.hasErrors());
     }
 
     @Test
     void multiWordBaseNameAndColonFreeDescriptionAreKeptWhole() throws IOException {
         // base is a sym in C (tokenized on ':' only), so a name with spaces stays in one piece.
-        ParseResult<Summon> result = load("multiword.txt", withHeader(1,
-                summon("H", "SUM_MONSTER", "0", "base:zephyr hound\nbase:canine", "two words here")));
+        ParseResult<Summon> result = load("multiword.txt", summon("H", "SUM_MONSTER", "0", "base:zephyr hound\nbase:canine", "two words here"));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         Summon h = result.items().get(0);
         assertEquals(List.of("zephyr hound", "canine"),
                 h.getBases().stream().map(MonsterBase::getCodeName).toList());
@@ -448,8 +414,8 @@ class SummonReaderTest {
     void uniquesOtherThanOneIsTrueAsInCWhichTreatsAnyNonZeroAsTrue() throws IOException {
         // parse_summon_unique: unique = parser_getint(); if (unique) s->unique_allowed = true.
         // So C reads 2 and -1 as true.
-        ParseResult<Summon> two = load("u2.txt", withHeader(1, summon("A", "SUM_MONSTER", "2", "", "a")));
-        ParseResult<Summon> minusOne = load("um1.txt", withHeader(1, summon("A", "SUM_MONSTER", "-1", "", "a")));
+        ParseResult<Summon> two = load("u2.txt", summon("A", "SUM_MONSTER", "2", "", "a"));
+        ParseResult<Summon> minusOne = load("um1.txt", summon("A", "SUM_MONSTER", "-1", "", "a"));
 
         assertTrue(two.items().get(0).isUniquesAllowed());
         assertTrue(minusOne.items().get(0).isUniquesAllowed());
@@ -457,8 +423,7 @@ class SummonReaderTest {
 
     @Test
     void uniquesZeroAndOneAreReadAsC() throws IOException {
-        ParseResult<Summon> result = load("u01.txt", withHeader(2,
-                summon("OFF", "SUM_MONSTER", "0", "", "off") + summon("ON", "SUM_MONSTER", "1", "", "on")));
+        ParseResult<Summon> result = load("u01.txt", summon("OFF", "SUM_MONSTER", "0", "", "off") + summon("ON", "SUM_MONSTER", "1", "", "on"));
 
         assertFalse(byName(result.items(), "OFF").isUniquesAllowed());
         assertTrue(byName(result.items(), "ON").isUniquesAllowed());
@@ -468,97 +433,77 @@ class SummonReaderTest {
     void raceFlagBeforeBaseIsAHardErrorHereWhereCTakesAnyOrder() throws IOException {
         // C dispatches each line on its own, so race-flag: may precede base:.
         String body = "name:A\nmsgt:SUM_MONSTER\nuniques:0\nrace-flag:UNIQUE\nbase:" + KNOWN_BASE + "\ndesc:a\n";
-        ParseResult<Summon> result = load("order-rb.txt", withHeader(1, body));
+        assertThrows(ParseCancellationException.class, () -> load("order-rb.txt", body));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void baseLinesSplitByAnotherDirectiveAreAHardErrorHereWhereCAccumulatesThem() throws IOException {
         // parse_summon_base pushes onto s->bases whenever it runs; here base: lines must be adjacent.
         String body = "name:A\nmsgt:SUM_MONSTER\nuniques:0\nbase:" + KNOWN_BASE + "\nrace-flag:UNIQUE\nbase:vampire\ndesc:a\n";
-        ParseResult<Summon> result = load("split-base.txt", withHeader(1, body));
+        assertThrows(ParseCancellationException.class, () -> load("split-base.txt", body));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void repeatedRaceFlagIsAHardErrorHereWhereCKeepsTheLast() throws IOException {
         // parse_summon_race_flag overwrites s->race_flag.
         String body = summon("A", "SUM_MONSTER", "0", "race-flag:DEMON\nrace-flag:UNDEAD", "a");
-        ParseResult<Summon> result = load("two-flags.txt", withHeader(1, body));
+        assertThrows(ParseCancellationException.class, () -> load("two-flags.txt", body));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void repeatedDescIsAHardErrorHereWhereCKeepsTheLast() throws IOException {
         // parse_summon_desc is string_make, an overwrite (unlike parse_eff_desc, which appends).
         String body = "name:A\nmsgt:SUM_MONSTER\nuniques:0\ndesc:first\ndesc:second\n";
-        ParseResult<Summon> result = load("two-desc.txt", withHeader(1, body));
+        assertThrows(ParseCancellationException.class, () -> load("two-desc.txt", body));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void missingMsgtIsAHardErrorHereWhereCLeavesTheGenericMessage() throws IOException {
         // msgt: is optional in C (mem_zalloc leaves message_type 0).
         String body = "name:A\nuniques:0\ndesc:a\n";
-        ParseResult<Summon> result = load("no-msgt.txt", withHeader(1, body));
+        assertThrows(ParseCancellationException.class, () -> load("no-msgt.txt", body));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void missingDescIsAHardErrorHereWhereCLeavesItNull() throws IOException {
         String body = "name:A\nmsgt:SUM_MONSTER\nuniques:0\n";
-        ParseResult<Summon> result = load("no-desc.txt", withHeader(1, body));
+        assertThrows(ParseCancellationException.class, () -> load("no-desc.txt", body));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void aFileWithNoRecordsIsAHardErrorHereWhereCLoadsNothing() throws IOException {
         // init/run/finish_parse_summon accept an empty file (summon_max becomes 1, one blank slot).
-        ParseResult<Summon> result = load("empty.txt", "record-count:0\n");
+        assertThrows(ParseCancellationException.class, () -> load("empty.txt", ""));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void lowerCaseMessageTypeIsAHardErrorHereWhereCMatchesCaseInsensitively() throws IOException {
         // message_lookup_by_name compares with my_stricmp. The lexer's FLAG token is upper-case only.
-        ParseResult<Summon> result = load("lower-msgt.txt",
-                withHeader(1, summon("A", "sum_monster", "0", "", "a")));
+        assertThrows(ParseCancellationException.class, () -> load("lower-msgt.txt",
+                summon("A", "sum_monster", "0", "", "a")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void numericMessageTypeIsAHardErrorHereWhereCAcceptsAMessageNumber() throws IOException {
         // message_lookup_by_name reads digits as a message number first.
-        ParseResult<Summon> result = load("num-msgt.txt",
-                withHeader(1, summon("A", "12", "0", "", "a")));
+        assertThrows(ParseCancellationException.class, () -> load("num-msgt.txt",
+                summon("A", "12", "0", "", "a")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void unknownDirectiveIsAHardErrorAsInC() throws IOException {
         // PARSE_ERROR_UNDEFINED_DIRECTIVE is fatal in C too.
         String body = "name:A\nmsgt:SUM_MONSTER\nuniques:0\nweight:5\ndesc:a\n";
-        ParseResult<Summon> result = load("unknown.txt", withHeader(1, body));
+        assertThrows(ParseCancellationException.class, () -> load("unknown.txt", body));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 }

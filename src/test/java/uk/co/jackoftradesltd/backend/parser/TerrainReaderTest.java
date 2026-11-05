@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
@@ -80,7 +81,6 @@ class TerrainReaderTest {
     void cleanLoadOfTheRealFileReportsNoErrorsAndAll25Features() throws IOException {
         ParseResult<Feature> result = new TerrainReader().parseWithResults(REAL_FILE);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(25, result.items().size(), () -> "loaded: " + result.items().size());
 
         // Spot-check the first record and a flag-bearing one via the getters Feature exposes.
@@ -99,43 +99,17 @@ class TerrainReaderTest {
     @Test
     void colonGlyphTerrainTokenisesAndLoads() throws IOException {
         String path = tempFile("colon-glyph.txt",
-                "record-count:1\ncode:RUBBLE\nname:pile of rubble\ngraphics:::W\n");
+                "code:RUBBLE\nname:pile of rubble\ngraphics:::W\n");
 
         ParseResult<Feature> result = new TerrainReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size());
         assertEquals(TerrainFlags.FEAT_RUBBLE, result.items().get(0).getCodeFlags());
     }
 
     // ---- Hard grammar error (fail closed) --------------------------------
 
-    @Test
-    void missingRecordCountHeaderIsReportedWithNoItems() throws IOException {
-        // The file rule is `recordCount (terrain)+ EOF`; with no record-count directive the parse
-        // fails hard through ParseErrors and the whole file is dropped (empty items, errors carried).
-        String path = tempFile("no-header.txt", VALID_RECORD);
-
-        ParseResult<Feature> result = new TerrainReader().parseWithResults(path);
-
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty(), result.items()::toString);
-    }
-
     // ---- Soft record-count mismatch --------------------------------------
-
-    @Test
-    void recordCountMismatchIsReportedButValidRecordStillLoads() throws IOException {
-        // Header over-declares (5 vs the single record). The mismatch is soft: the valid record
-        // still loads alongside the reported discrepancy.
-        String path = tempFile("bad-count.txt", "record-count:5\n" + VALID_RECORD);
-
-        ParseResult<Feature> result = new TerrainReader().parseWithResults(path);
-
-        assertEquals(1, result.items().size());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("declares 5") && e.contains("contains 1")),
-                result.errors()::toString);
-    }
 
     // ---- One test per assembler fatal branch -----------------------------
 
@@ -152,15 +126,15 @@ class TerrainReaderTest {
     /** C: {@code lookup_feat_code} returns -1 and {@code parse_feat_code} fails with {@code PARSE_ERROR_OUT_OF_BOUNDS}. */
     @Test
     void unknownTerrainCodeIsFatal() throws IOException {
-        assertFatal("bad-code.txt", "record-count:1\ncode:NOTACODE\nname:x\ngraphics:.:w\n",
-                "illegal terrain feature value: NOTACODE", "line: 2");
+        assertFatal("bad-code.txt", "code:NOTACODE\nname:x\ngraphics:.:w\n",
+                "illegal terrain feature value: NOTACODE", "line: 1");
     }
 
     /** C: the same lookup in {@code parse_feat_mimic}, so the same error. */
     @Test
     void unknownMimicCodeIsFatal() throws IOException {
         assertFatal("bad-mimic.txt",
-                "record-count:1\ncode:FLOOR\nname:open floor\ngraphics:.:w\nmimic:NOTAMIMIC\n",
+                "code:FLOOR\nname:open floor\ngraphics:.:w\nmimic:NOTAMIMIC\n",
                 "illegal mimic value: NOTAMIMIC");
     }
 
@@ -168,7 +142,7 @@ class TerrainReaderTest {
     @Test
     void unknownTerrainFlagIsFatal() throws IOException {
         assertFatal("bad-flag.txt",
-                "record-count:1\ncode:FLOOR\nname:open floor\ngraphics:.:w\nflags:NOTAFLAG\n",
+                "code:FLOOR\nname:open floor\ngraphics:.:w\nflags:NOTAFLAG\n",
                 "illegal terrain flag value: NOTAFLAG");
     }
 
@@ -176,7 +150,7 @@ class TerrainReaderTest {
     @Test
     void unknownResistFlagIsFatal() throws IOException {
         assertFatal("bad-resist.txt",
-                "record-count:1\ncode:FLOOR\nname:open floor\ngraphics:.:w\nresist-flag:NOTARESIST\n",
+                "code:FLOOR\nname:open floor\ngraphics:.:w\nresist-flag:NOTARESIST\n",
                 "illegal monster race flag value: NOTARESIST");
     }
 
@@ -184,7 +158,7 @@ class TerrainReaderTest {
     @Test
     void resistFlagNoneIsFatal() throws IOException {
         assertFatal("none-resist.txt",
-                "record-count:1\ncode:FLOOR\nname:open floor\ngraphics:.:w\nresist-flag:NONE\n",
+                "code:FLOOR\nname:open floor\ngraphics:.:w\nresist-flag:NONE\n",
                 "sentinel monster race flag", "NONE");
     }
 
@@ -195,11 +169,10 @@ class TerrainReaderTest {
     @Test
     void overflowingPriorityClampsToIntMax() throws IOException {
         String path = tempFile("big-priority.txt",
-                "record-count:1\ncode:FLOOR\nname:open floor\ngraphics:.:w\npriority:99999999999999999999\n");
+                "code:FLOOR\nname:open floor\ngraphics:.:w\npriority:99999999999999999999\n");
 
         ParseResult<Feature> result = new TerrainReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), result.errors()::toString);
         assertEquals(Integer.MAX_VALUE, result.items().get(0).getPriority());
     }
 
@@ -207,7 +180,7 @@ class TerrainReaderTest {
     @Test
     void overflowingDiggingIsOutOfRangeAndFatal() throws IOException {
         assertFatal("bad-digging.txt",
-                "record-count:1\ncode:FLOOR\nname:open floor\ngraphics:.:w\ndigging:99999999999999999999\n",
+                "code:FLOOR\nname:open floor\ngraphics:.:w\ndigging:99999999999999999999\n",
                 "out of range digging");
     }
 
@@ -215,14 +188,14 @@ class TerrainReaderTest {
     @Test
     void diggingZeroIsFatal() throws IOException {
         assertFatal("zero-digging.txt",
-                "record-count:1\ncode:FLOOR\nname:open floor\ngraphics:.:w\ndigging:0\n",
+                "code:FLOOR\nname:open floor\ngraphics:.:w\ndigging:0\n",
                 "out of range digging");
     }
 
     /** C: {@code parse_feat_name} returns {@code PARSE_ERROR_REPEATED_DIRECTIVE} on the slot's second name. */
     @Test
     void aRepeatedCodeWithASecondNameIsFatal() throws IOException {
-        assertFatal("repeat-code.txt", "record-count:2\n" + VALID_RECORD
+        assertFatal("repeat-code.txt", VALID_RECORD
                         + "code:FLOOR\nname:another floor\ngraphics:.:w\n",
                 "second name value: another floor", "FLOOR");
     }
@@ -244,11 +217,10 @@ class TerrainReaderTest {
     @Test
     void digitBearingFlagTokenisesAndResolves() throws IOException {
         String path = tempFile("digit-flag.txt",
-                "record-count:1\ncode:FLOOR\nname:open floor\ngraphics:.:w\nresist-flag:RAND_50\n");
+                "code:FLOOR\nname:open floor\ngraphics:.:w\nresist-flag:RAND_50\n");
 
         ParseResult<Feature> result = new TerrainReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size(), result.items()::toString);
         assertEquals(TerrainFlags.FEAT_FLOOR, result.items().get(0).getCodeFlags());
     }
@@ -262,7 +234,6 @@ class TerrainReaderTest {
     @Test
     void theFirstBadRecordStopsTheLoad() throws IOException {
         String content = String.join("\n",
-                "record-count:3",
                 "code:FLOOR\nname:open floor\ngraphics:.:w",
                 "code:NOTACODE\nname:x\ngraphics:.:w",
                 "code:CLOSED\nname:closed door\ngraphics:+:w\nflags:NOTAFLAG",
@@ -284,14 +255,14 @@ class TerrainReaderTest {
         return new TerrainReader().parseWithResults(tempFile(name, content));
     }
 
-    private static String withHeader(int count, String records) {
-        return "record-count:" + count + "\n" + records;
-    }
-
-    /** A hard grammar or lexer error: nothing loads and the messages come back. */
-    private static void assertHardError(ParseResult<Feature> r) {
-        assertTrue(r.hasErrors(), "expected the messages of a hard error");
-        assertTrue(r.items().isEmpty(), r.items()::toString);
+    /**
+     * A grammar or lexer error: the load stops with a {@link ParseCancellationException}.
+     *
+     * <p>Function assertHardError coded before 261104, rewritten on 261104 for the removal of the
+     * soft-error path: it now takes the fixture rather than a result, since a failed load has none.
+     */
+    private void assertHardError(String name, String content) {
+        assertThrows(ParseCancellationException.class, () -> load(name, content));
     }
 
     // =====================================================================
@@ -338,17 +309,19 @@ class TerrainReaderTest {
     }
 
     /**
-     * The shipped file differs from upstream in the {@code record-count:25} header with the blank
-     * line after it, one trailing space on a comment, and the trailing space on the lava
-     * {@code walk-msg:} and {@code run-msg:} lines; every other line is identical. The trailing
-     * spaces are part of the C message, as {@code str} takes the rest of the line.
+     * The shipped file carries no {@code record-count:} header. It still differs from upstream in one
+     * trailing space on a comment and the trailing space on the lava {@code walk-msg:} and
+     * {@code run-msg:} lines, which this checks are kept. The trailing spaces are part of the C
+     * message, as {@code str} takes the rest of the line.
+     *
+     * <p>Function theShippedFileHasNoHeaderAndKeepsTheLavaMessages coded on 261104, commented in full
+     * on 261104. It replaces theShippedFileDiffersFromUpstreamInTheHeaderAndThreeTrailingSpaces.
      */
     @Test
-    void theShippedFileDiffersFromUpstreamInTheHeaderAndThreeTrailingSpaces() throws IOException {
+    void theShippedFileHasNoHeaderAndKeepsTheLavaMessages() throws IOException {
         List<String> lines = Files.readAllLines(Path.of(REAL_FILE));
 
-        assertEquals(1, lines.stream().filter(l -> l.startsWith("record-count:")).count());
-        assertTrue(lines.contains("record-count:25"));
+        assertEquals(0, lines.stream().filter(l -> l.startsWith("record-count:")).count());
         assertTrue(lines.contains("walk-msg:The lava will scald you!  Really step in?"));
         assertTrue(lines.contains("run-msg:Lava blocks your path.  Step into it?"));
     }
@@ -375,7 +348,7 @@ class TerrainReaderTest {
 
     @Test
     void aHardGrammarErrorReturnsNoFeaturesAndTheMessages() throws IOException {
-        assertHardError(load("hard.txt", withHeader(2, VALID_RECORD + "nonsense:1\n")));
+        assertHardError("hard.txt", VALID_RECORD + "nonsense:1\n");
     }
 
     // =====================================================================
@@ -385,10 +358,9 @@ class TerrainReaderTest {
     /** C: {@code parse_feat_priority}, {@code parse_feat_digging} and {@code parse_feat_mimic} assign, so the last wins. */
     @Test
     void aRepeatedPriorityDiggingOrMimicKeepsTheLastLine() throws IOException {
-        ParseResult<Feature> r = load("repeat-assign.txt", withHeader(1, VALID_RECORD
-                + "priority:1\npriority:7\ndigging:2\ndigging:4\nmimic:NONE\nmimic:GRANITE\n"));
+        ParseResult<Feature> r = load("repeat-assign.txt", VALID_RECORD
+                + "priority:1\npriority:7\ndigging:2\ndigging:4\nmimic:NONE\nmimic:GRANITE\n");
 
-        assertFalse(r.hasErrors(), r.errors()::toString);
         String text = r.items().get(0).toString();
         assertTrue(text.contains("priority=7"), text);
         assertTrue(text.contains("dig=4"), text);
@@ -398,11 +370,10 @@ class TerrainReaderTest {
     /** C: {@code parse_feat_desc} calls {@code string_append}, so lines join with no separator added. */
     @Test
     void descLinesJoinInFileOrderKeepingTheLeadingBlank() throws IOException {
-        ParseResult<Feature> r = load("desc.txt", withHeader(1, VALID_RECORD
+        ParseResult<Feature> r = load("desc.txt", VALID_RECORD
                 + "desc:An open floor or bare ground.  Can be walked across by anything, and can\n"
-                + "desc: hold traps or items.\n"));
+                + "desc: hold traps or items.\n");
 
-        assertFalse(r.hasErrors(), r.errors()::toString);
         assertTrue(r.items().get(0).toString().contains(
                 "description='An open floor or bare ground.  Can be walked across by anything, and can"
                         + " hold traps or items.'"), r.items().get(0)::toString);
@@ -411,21 +382,18 @@ class TerrainReaderTest {
     /** C: {@code name} is a {@code str}, which takes the rest of the line, colons included. */
     @Test
     void aColonInTheNameIsKept() throws IOException {
-        ParseResult<Feature> r = load("colon-name.txt", withHeader(1,
-                "code:FLOOR\nname:a: b:c\ngraphics:.:w\n"));
+        ParseResult<Feature> r = load("colon-name.txt", "code:FLOOR\nname:a: b:c\ngraphics:.:w\n");
 
-        assertFalse(r.hasErrors(), r.errors()::toString);
         assertEquals("a: b:c", r.items().get(0).getName());
     }
 
     /** C: any order of the optional lines is accepted after the three header lines. */
     @Test
     void optionalLinesMayComeInAnyOrder() throws IOException {
-        ParseResult<Feature> r = load("order.txt", withHeader(1, VALID_RECORD
+        ParseResult<Feature> r = load("order.txt", VALID_RECORD
                 + "resist-flag:RAND_50\ndesc:d\nlook-prefix:a\nflags:LOS | PROJECT\npriority:3\n"
-                + "flags:PASSABLE\n"));
+                + "flags:PASSABLE\n");
 
-        assertFalse(r.hasErrors(), r.errors()::toString);
         assertTrue(r.items().get(0).isPassable());
         assertTrue(r.items().get(0).isLos());
     }
@@ -437,30 +405,29 @@ class TerrainReaderTest {
     /** C: {@code parse_feat_code} is the only line a record needs. */
     @Test
     void aRecordWithOnlyACodeIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        assertHardError(load("code-only.txt", withHeader(1, "code:FLOOR\n")));
+        assertHardError("code-only.txt", "code:FLOOR\n");
     }
 
     @Test
     void aRecordWithNoGraphicsIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        assertHardError(load("no-graphics.txt", withHeader(1, "code:FLOOR\nname:open floor\n")));
+        assertHardError("no-graphics.txt", "code:FLOOR\nname:open floor\n");
     }
 
     @Test
     void aRecordWithNoNameIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        assertHardError(load("no-name.txt", withHeader(1, "code:FLOOR\ngraphics:.:w\n")));
+        assertHardError("no-name.txt", "code:FLOOR\ngraphics:.:w\n");
     }
 
     /** C: after {@code code:} the handlers run in whatever order the lines come. */
     @Test
     void graphicsBeforeTheNameIsAHardErrorHereWhereCAcceptsAnyOrder() throws IOException {
-        assertHardError(load("graphics-first.txt", withHeader(1,
-                "code:FLOOR\ngraphics:.:w\nname:open floor\n")));
+        assertHardError("graphics-first.txt", "code:FLOOR\ngraphics:.:w\nname:open floor\n");
     }
 
     /** C: {@code parse_feat_graphics} assigns, so a second line replaces the first. */
     @Test
     void aRepeatedGraphicsLineIsAHardErrorHereWhereCKeepsTheLast() throws IOException {
-        assertHardError(load("two-graphics.txt", withHeader(1, VALID_RECORD + "graphics:#:r\n")));
+        assertHardError("two-graphics.txt", VALID_RECORD + "graphics:#:r\n");
     }
 
     /** C: {@code string_append} on a {@code walk-msg:} line that already has text, so the lines join. */
@@ -471,10 +438,9 @@ class TerrainReaderTest {
                 {"die-msg", "dieMsg"}, {"confused-msg", "confusedMsg"}
         };
         for (String[] d : directives) {
-            ParseResult<Feature> r = load(d[0] + ".txt", withHeader(1, VALID_RECORD
-                    + d[0] + ":first\n" + d[0] + ":second\n"));
+            ParseResult<Feature> r = load(d[0] + ".txt", VALID_RECORD
+                    + d[0] + ":first\n" + d[0] + ":second\n");
 
-            assertFalse(r.hasErrors(), r.errors()::toString);
             String text = r.items().get(0).toString();
             assertTrue(text.contains(d[1] + "='second'"), d[0] + ": " + text);
         }
@@ -483,11 +449,10 @@ class TerrainReaderTest {
     /** C: the same append, then {@code finish_parse_feat} adds one trailing space. */
     @Test
     void repeatedLookLinesReplaceEachOtherHereWhereCAppendsThem() throws IOException {
-        ParseResult<Feature> r = load("look.txt", withHeader(1, VALID_RECORD
+        ParseResult<Feature> r = load("look.txt", VALID_RECORD
                 + "look-prefix:first\nlook-prefix:second\n"
-                + "look-in-preposition:in\nlook-in-preposition:to\n"));
+                + "look-in-preposition:in\nlook-in-preposition:to\n");
 
-        assertFalse(r.hasErrors(), r.errors()::toString);
         String text = r.items().get(0).toString();
         assertTrue(text.contains("lookPrefix='second '"), text);
         assertTrue(text.contains("lookInPreposition='to '"), text);
@@ -496,55 +461,55 @@ class TerrainReaderTest {
     /** C: {@code strtok(flags, " |")}, so a space alone separates two flags. */
     @Test
     void flagsSeparatedByASpaceAloneAreAHardErrorHereWhereCSplitsOnSpaceToo() throws IOException {
-        assertHardError(load("space-flags.txt", withHeader(1, VALID_RECORD + "flags:LOS PASSABLE\n")));
+        assertHardError("space-flags.txt", VALID_RECORD + "flags:LOS PASSABLE\n");
     }
 
     /** C: {@code flags} is {@code ?str}, and an absent value is {@code PARSE_ERROR_NONE}. */
     @Test
     void anEmptyFlagsLineIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        assertHardError(load("empty-flags.txt", withHeader(1, VALID_RECORD + "flags:\n")));
+        assertHardError("empty-flags.txt", VALID_RECORD + "flags:\n");
     }
 
     /** C: a file with a header and no records runs {@code finish_parse_feat} over a zeroed table. */
     @Test
     void aHeaderWithNoRecordsIsAHardErrorHereWhereCAcceptsAnEmptyFile() throws IOException {
-        assertHardError(load("empty.txt", "record-count:0\n"));
+        assertHardError("empty.txt", "");
     }
 
     /** C: {@code strtoul(tok, &z, 0)}, so {@code 0x3} is 3. */
     @Test
     void aHexadecimalPriorityIsAHardErrorHereWhereCReadsBaseZero() throws IOException {
-        assertHardError(load("hex-priority.txt", withHeader(1, VALID_RECORD + "priority:0x3\n")));
+        assertHardError("hex-priority.txt", VALID_RECORD + "priority:0x3\n");
     }
 
     /** C: {@code strtoul} stops at the {@code x} and {@code z != tok}, so {@code 3x} is 3. */
     @Test
     void textAfterThePriorityNumberIsAHardErrorHereWhereCIgnoresIt() throws IOException {
-        assertHardError(load("junk-priority.txt", withHeader(1, VALID_RECORD + "priority:3x\n")));
+        assertHardError("junk-priority.txt", VALID_RECORD + "priority:3x\n");
     }
 
     /** C: an {@code int} is tokenised on a colon and nothing checks what follows the last field. */
     @Test
     void aSecondFieldAfterTheDiggingNumberIsAHardErrorHereWhereCIgnoresIt() throws IOException {
-        assertHardError(load("junk-digging.txt", withHeader(1, VALID_RECORD + "digging:2:junk\n")));
+        assertHardError("junk-digging.txt", VALID_RECORD + "digging:2:junk\n");
     }
 
     /** C: {@code resist-flag} is a {@code sym}, tokenised on a colon, so the text after it is ignored. */
     @Test
     void aSecondFieldAfterTheResistFlagIsAHardErrorHereWhereCIgnoresIt() throws IOException {
-        assertHardError(load("junk-resist.txt", withHeader(1, VALID_RECORD + "resist-flag:RAND_50:x\n")));
+        assertHardError("junk-resist.txt", VALID_RECORD + "resist-flag:RAND_50:x\n");
     }
 
     /** C: {@code color_text_to_attr} answers white for a name it does not know. */
     @Test
     void anUnknownColourNameIsAHardErrorHereWhereCDrawsItWhite() throws IOException {
-        assertHardError(load("bad-colour.txt", withHeader(1, "code:FLOOR\nname:x\ngraphics:.:nonsense\n")));
+        assertHardError("bad-colour.txt", "code:FLOOR\nname:x\ngraphics:.:nonsense\n");
     }
 
     /** C: {@code parser_parse} skips leading whitespace before it reads the directive. */
     @Test
     void anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent() throws IOException {
-        assertHardError(load("indented.txt", withHeader(1, VALID_RECORD + "  priority:3\n")));
+        assertHardError("indented.txt", VALID_RECORD + "  priority:3\n");
     }
 
     // =====================================================================
@@ -558,11 +523,9 @@ class TerrainReaderTest {
      */
     @Test
     void recordsComeBackInFileOrderHereWhereCFilesEachUnderItsCode() throws IOException {
-        ParseResult<Feature> r = load("order.txt", withHeader(2,
-                "code:MORE\nname:down staircase\ngraphics:>:w\n"
-                        + "code:FLOOR\nname:open floor\ngraphics:.:w\n"));
+        ParseResult<Feature> r = load("order.txt", "code:MORE\nname:down staircase\ngraphics:>:w\n"
+                        + "code:FLOOR\nname:open floor\ngraphics:.:w\n");
 
-        assertFalse(r.hasErrors(), r.errors()::toString);
         assertEquals(List.of(TerrainFlags.FEAT_MORE, TerrainFlags.FEAT_FLOOR),
                 r.items().stream().map(Feature::getCodeFlags).toList());
     }

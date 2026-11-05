@@ -34,13 +34,6 @@ options { tokenVocab = SlayLexer; }
     import uk.co.jackoftradesltd.backend.parser.slay.SlayParseRecord;
 }
 
-// "record-count:<n>" header; the declared count is handed to the reader to
-// check against the number of records actually parsed.
-recordCount
-        returns[String count]
-        :   RECORD_COUNT INTEGER { $count = $INTEGER.getText(); }
-        ;
-
 // "code:<CODE>" - the record header that opens each slay. Also captures the
 // source line number so the assembler can report errors against the record.
 code
@@ -137,12 +130,11 @@ slay
         |   rangeVerb { rVerbInit = $rangeVerb.rVerb; }
         )*;
 
-// Top-level rule: the record-count header followed by one or more slay records.
+// Top-level rule: one or more slay records.
 file
-        returns[List<SlayParseRecord> records, String declaredRecordCount]
+        returns[List<SlayParseRecord> records]
         @init {
             $records = new ArrayList<>();
         }
-        :   recordCount { $declaredRecordCount = $recordCount.count; }
-            (slay { $records.add($slay.record); })+ EOF
+        :   (slay { $records.add($slay.record); })+ EOF
         ;

@@ -6,11 +6,6 @@ options { tokenVocab = QuestLexer; }
     import uk.co.jackoftradesltd.backend.parser.quest.QuestParseRecord;
 }
 
-recordCount
-        returns[String count]
-        :   RECORD_COUNT INTEGER { $count = $INTEGER.getText(); }
-        ;
-
 name
         returns[String nameStr, int line]
         :   NAME STRING { $nameStr = $STRING.getText();
@@ -52,10 +47,9 @@ quest
         ;
 
 file
-        returns[String declaredRecordCount, List<QuestParseRecord> quests]
+        returns[List<QuestParseRecord> quests]
         @init {
             $quests = new ArrayList<>();
         }
-        :   recordCount { $declaredRecordCount = $recordCount.count; }
-            (quest { $quests.add($quest.q); })+ EOF
+        :   (quest { $quests.add($quest.q); })+ EOF
         ;

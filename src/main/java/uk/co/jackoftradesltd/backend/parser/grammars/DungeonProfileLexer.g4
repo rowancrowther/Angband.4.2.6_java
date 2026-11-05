@@ -48,18 +48,6 @@ import CommentsAndEol;
 /*
  * @author Rowan Crowther
  *
- * The number of records in this file, declared by the file itself. A port-ism
- * with no counterpart in C, checked against the number of records actually
- * parsed.
- * cf DungeonProfileGrammar.g4's 'recordCount' rule.
- */
-RECORD_COUNT
-        :   'record-count:'
-        ;
-
-/*
- * @author Rowan Crowther
- *
  * Opens a profile record. C reads the value with parser_getstr, i.e. the whole
  * rest of the line, so the name may contain spaces ("hard centre") - hence the
  * switch into REST_OF_LINE.

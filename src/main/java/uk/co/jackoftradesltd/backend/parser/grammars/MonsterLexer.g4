@@ -2,10 +2,6 @@ lexer grammar MonsterLexer;
 
 import CommentsAndEol, DiceStrings, Flags, Colours;
 
-RECORD_COUNT
-        :   'record-count:'
-        ;
-
 NAME
         :   'name:' -> pushMode(REST_OF_LINE)
         ;

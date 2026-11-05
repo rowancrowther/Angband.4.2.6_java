@@ -17,10 +17,12 @@
 
 package uk.co.jackoftradesltd.middle.game.globals.data;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +49,7 @@ import java.util.List;
  *       in the middle of the melee or ranged level list, which C allows. This is a deliberate Java-only
  *       rule, confirmed by Rowan on 261002.</li>
  *   <li>The four level lists are the builder's own {@link ArrayList}s, handed over without a copy, so
- *       they stay mutable after {@link GameConstantsBuilder#build(List)} returns. C's lists are just as
+ *       they stay mutable after {@link GameConstantsBuilder#build()} returns. C's lists are just as
  *       mutable, so this matches C rather than diverging from it.</li>
  * </ul>
  *
@@ -102,6 +104,17 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
                                 List<ORangedCriticalLevelData> oRangedCriticalLevel) {
 
     /**
+     * Log4j logger for this record and its builder. Every rejected {@code constants.txt} value is
+     * logged here at {@code FATAL} just before {@link GameConstantsBuilder} throws its
+     * {@link DataFileParseException}. This stands in for C's {@code plog()} call in
+     * {@code finish_parse_constants()} ({@code init.c}) and for the parse-error report that
+     * {@code run_parser()} prints when a handler returns an error.
+     *
+     * <p>Field logger coded before 261002, commented in full on 261104.
+     */
+    private static final Logger logger = LogManager.getLogger(GameConstantsData.class);
+
+    /**
      * Collects {@code constants.txt} values one at a time as {@code GameConstantsAssembler} dispatches
      * each parsed line, then assembles them into a {@link GameConstantsData}. This plays the part of the
      * zeroed {@code struct angband_constants} that {@code init_parse_constants()} in {@code init.c}
@@ -109,15 +122,18 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
      * writes one field of it, and {@code finish_parse_constants()} checks the critical level lists.
      *
      * <p>The constants live in {@link Integer} fields that start as {@code null}, so it is visible
-     * whether a line set them. {@link #build(List)} turns any constant still {@code null} into
+     * whether a line set them. {@link #build()} turns any constant still {@code null} into
      * {@code 0}, which is what C's {@code mem_zalloc} leaves in a field that no line sets.
      *
      * <p>The setters store whatever they are given. Label matching, number parsing and message
      * lookup happen in {@code GameConstantsAssembler} before a setter is called. The builder does
      * its own checking only on the O-combat level rows ({@link #addOMeleeCriticalLevelData} and
-     * {@link #addORangedCriticalLevel}) and in {@link #checkCriticalLevelDataLists()}.
+     * {@link #addORangedCriticalLevel}) and in {@link #checkCriticalLevelDataLists()}. Each of those
+     * checks is fatal: it logs at {@code FATAL} and throws a {@link DataFileParseException}, as C's
+     * {@code run_parser()} abandons the whole file on the first error. There is no error list to
+     * collect into.
      *
-     * <p>Class GameConstantsBuilder coded before 261002, commented in full on 261002.
+     * <p>Class GameConstantsBuilder coded before 261002, commented in full on 261104.
      *
      * @author Rowan Crowther
      */
@@ -799,24 +815,33 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * both {@code chance} and {@code dice} as {@code uint}, so the parser has already refused a
          * negative value before the handler runs. Java holds them as signed ints, so this method rejects
          * {@code chance <= 0} and {@code dice < 0} to cover both cases. The chance is checked first. A
-         * rejected row is not added. C's message lookup ({@code PARSE_ERROR_INVALID_MESSAGE}) is done in
-         * {@code GameConstantsAssembler} before this method is called.
+         * rejected row is not added, and the error is fatal. C's message lookup
+         * ({@code PARSE_ERROR_INVALID_MESSAGE}) is done in {@code GameConstantsAssembler} before this
+         * method is called.
          *
-         * <p>Function addORangedCriticalLevel coded before 261002, commented in full on 261002.
+         * <p>Only the wording of the error can differ from C. For a row such as
+         * {@code 0:-1:...}, C's {@code uint} parse refuses the negative dice before the handler runs,
+         * while Java reports the zero chance. Both reject the row.
+         *
+         * <p>Function addORangedCriticalLevel coded before 261002, commented in full on 261104.
          *
          * @param value the parsed row, with its message type already resolved
-         * @return an empty string if the row was added, otherwise the error message
+         * @throws DataFileParseException if {@code chance} is zero or negative, or {@code dice} is
+         *                                negative
          */
         @Contract(mutates = "this")
-        public String addORangedCriticalLevel(ORangedCriticalLevelData value) {
+        public void addORangedCriticalLevel(ORangedCriticalLevelData value) {
             if (value.chance() <= 0) {
-                return "Negative or zero chance found in oRanged critical level data";
+                String message = "Negative or zero chance found in oRanged critical level data";
+                logger.fatal(message);
+                throw new DataFileParseException(message);
             }
             if (value.dice() < 0) {
-                return "Negative dice found in oRanged critical level data";
+                String message = "Negative dice found in oRanged critical level data";
+                logger.fatal(message);
+                throw new DataFileParseException(message);
             }
             oRangedCriticalLevelDataList.add(value);
-            return "";
         }
 
         /**
@@ -960,24 +985,33 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * both {@code chance} and {@code dice} as {@code uint}, so the parser has already refused a
          * negative value before the handler runs. Java holds them as signed ints, so this method rejects
          * {@code chance <= 0} and {@code dice < 0} to cover both cases. The chance is checked first. A
-         * rejected row is not added. C's message lookup ({@code PARSE_ERROR_INVALID_MESSAGE}) is done in
-         * {@code GameConstantsAssembler} before this method is called.
+         * rejected row is not added, and the error is fatal. C's message lookup
+         * ({@code PARSE_ERROR_INVALID_MESSAGE}) is done in {@code GameConstantsAssembler} before this
+         * method is called.
          *
-         * <p>Function addOMeleeCriticalLevelData coded before 261002, commented in full on 261002.
+         * <p>Only the wording of the error can differ from C. For a row such as
+         * {@code 0:-1:...}, C's {@code uint} parse refuses the negative dice before the handler runs,
+         * while Java reports the zero chance. Both reject the row.
+         *
+         * <p>Function addOMeleeCriticalLevelData coded before 261002, commented in full on 261104.
          *
          * @param value the parsed row, with its message type already resolved
-         * @return an empty string if the row was added, otherwise the error message
+         * @throws DataFileParseException if {@code chance} is zero or negative, or {@code dice} is
+         *                                negative
          */
         @Contract(mutates = "this")
-        public String addOMeleeCriticalLevelData(OMeleeCriticalLevelData value) {
+        public void addOMeleeCriticalLevelData(OMeleeCriticalLevelData value) {
             if (value.chance() <= 0) {
-                return "Negative or zero chance found in oMelee critical level data";
+                String message = "Negative or zero chance found in oMelee critical level data";
+                logger.fatal(message);
+                throw new DataFileParseException(message);
             }
             if (value.dice() < 0) {
-                return "Negative dice found in oMelee critical level data";
+                String message = "Negative dice found in oMelee critical level data";
+                logger.fatal(message);
+                throw new DataFileParseException(message);
             }
             oMeleeCriticalLevelDataList.add(value);
-            return "";
         }
 
         /**
@@ -1266,28 +1300,32 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * "not strictly increasing" error. (C accepts {@code [-5, -1, 10, -1]}, for instance; Java
          * rejects it.) {@code constants.txt} uses {@code -1} only as the unused last cutoff.
          *
-         * <p>Function checkCriticalLevelDataLists coded before 261002, commented in full on 261002.
+         * <p>Like C, the melee list is checked in full before the ranged list, so a file with both lists
+         * out of order reports the melee error. The O-combat lists are not checked here, in Java or in C.
          *
-         * @return an empty string if both lists pass, otherwise the first error found (melee before
-         *         ranged)
+         * <p>Function checkCriticalLevelDataLists coded before 261002, commented in full on 261104.
+         *
+         * @throws DataFileParseException if a compared cutoff in the melee or ranged list is {@code -1},
+         *                                or is not strictly greater than the cutoff before it
          */
-        public String checkCriticalLevelDataLists() {
+        public void checkCriticalLevelDataLists() {
             int listSize = meleeCriticalLevelDataList.size();
             int prevCutOff;
             if (listSize != 0) {
                 prevCutOff = meleeCriticalLevelDataList.getFirst().powerCutoff();
                 for (int index = 1; index < listSize - 1; index++) {
                     if (meleeCriticalLevelDataList.get(index).powerCutoff() == -1) {
-                        return "Invalid sentinel value -1 found in middle of melee critical level data";
+                        String message = "Invalid sentinel value -1 found in middle of melee critical level data";
+                        logger.fatal(message);
+                        throw new DataFileParseException(message);
                     }
                     if (meleeCriticalLevelDataList.get(index).powerCutoff() <= prevCutOff) {
-                        return "Melee critical level data not strictly increasing.";
+                        String message = "Melee critical level data not strictly increasing.";
+                        logger.fatal(message);
+                        throw new DataFileParseException(message);
                     }
                     prevCutOff = meleeCriticalLevelDataList.get(index).powerCutoff();
                 }
-//                if (meleeCriticalLevelDataList.getLast().powerCutoff() != -1) {
-//                    return "No -1 sentinal at end of melee critical level data";
-//                }
             }
 
             listSize = rangedCriticalLevelDataList.size();
@@ -1295,19 +1333,18 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
                 prevCutOff = rangedCriticalLevelDataList.getFirst().powerCutoff();
                 for (int index = 1; index < listSize - 1; index++) {
                     if (rangedCriticalLevelDataList.get(index).powerCutoff() == -1) {
-                        return "Invalid sentinel value -1 found in middle of ranged critical level data";
+                        String message = "Invalid sentinel value -1 found in middle of ranged critical level data";
+                        logger.fatal(message);
+                        throw new DataFileParseException(message);
                     }
                     if (rangedCriticalLevelDataList.get(index).powerCutoff() <= prevCutOff) {
-                        return "Ranged critical level data not strictly increasing.";
+                        String message = "Ranged critical level data not strictly increasing.";
+                        logger.fatal(message);
+                        throw new DataFileParseException(message);
                     }
                     prevCutOff = rangedCriticalLevelDataList.get(index).powerCutoff();
                 }
-//                if (rangedCriticalLevelDataList.getLast().powerCutoff() != -1) {
-//                    return "No -1 sentinal at end of ranged critical level data";
-//                }
             }
-
-            return "";
         }
 
         /**
@@ -2119,24 +2156,22 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * <p>Every constant still {@code null} (no {@code constants.txt} line set it) is first replaced
          * with {@code 0}. Missing constants are not reported as errors. This matches C, where
          * {@code init_parse_constants()} allocates the struct with {@code mem_zalloc} and an unset field
-         * just stays zero. Note that the defaulting writes into the builder's own fields, so it happens
-         * even when the method then returns {@code null}.
+         * just stays zero. The defaulting writes into the builder's own fields, so a second call to
+         * {@code build()} sees them as set.
          *
-         * <p>If {@code errors} already holds anything (from the assembler, or from
-         * {@link #checkCriticalLevelDataLists()}), the method returns {@code null} instead of a record,
-         * as C's {@code run_parser()} fails the whole file on any error. Otherwise each group record is
-         * built and the four critical level lists are passed into the result as they are, not copied.
+         * <p>Each group record is then built and the four critical level lists are passed into the
+         * result as they are, not copied. This method does no checking of its own and never returns
+         * {@code null}. Any bad value has already been rejected by a {@link DataFileParseException}
+         * from the assembler, the O-combat {@code add} methods or {@link #checkCriticalLevelDataLists()}.
+         * The {@code @Nullable} annotation is left over from the earlier error-list design.
          *
-         * <p>Function build coded before 261002, commented in full on 261002.
+         * <p>Function build coded before 261002, commented in full on 261104.
          *
-         * @param errors the errors collected so far while assembling {@code constants.txt}; only read
-         *               here, never added to
-         * @return the filled-in {@link GameConstantsData}, or {@code null} if {@code errors} is not
-         *         empty
+         * @return the filled-in {@link GameConstantsData}, never {@code null}
          */
         @Nullable
         @CheckReturnValue
-        public GameConstantsData build(@NotNull List<String> errors) {
+        public GameConstantsData build() {
             // Level maxima
             if (levelMaxMonsters == null) {
                 levelMaxMonsters = 0;
@@ -2417,9 +2452,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
             if (oRangedCriticalChanceAddDenominator == null) {
                 oRangedCriticalChanceAddDenominator = 0;
             }
-
-            if (!errors.isEmpty())
-                return null;
 
             LevelMaxData levelMaxData = new LevelMaxData(levelMaxMonsters);
 

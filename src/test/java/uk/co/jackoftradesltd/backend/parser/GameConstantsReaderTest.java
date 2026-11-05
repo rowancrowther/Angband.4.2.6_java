@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -49,16 +50,17 @@ import static org.junit.jupiter.api.Assertions.*;
  * original's {@code constants.txt}. Most of the error-path tests start from that same complete file
  * and inject defects on appended lines, so the only error is the one under test.
  *
- * <p>A bad line does not come back as a message in the result. {@code GameConstantsAssembler} throws
- * a {@link DataFileParseException} for it, as C's {@code parse_constants_*()} handlers return a
- * {@code PARSE_ERROR_*} and the load stops, so those tests use {@code assertThrows}. Only two faults
- * reach the result's error list: an O-combat level row with a {@code chance} of 0, and critical
- * cutoffs that do not strictly increase. A grammar error is the third kind and comes back as a
- * result with no data.
+ * <p>Every error ends the load, as C's {@code parse_constants_*()} handlers return a
+ * {@code PARSE_ERROR_*} and the load stops, so the error-path tests use {@code assertThrows}. There
+ * are two exception types. A bad line, an O-combat level row with a {@code chance} of 0, and critical
+ * cutoffs that do not strictly increase are thrown as a {@link DataFileParseException}, by
+ * {@code GameConstantsAssembler} or by the data builder. A grammar or lexer error is thrown as a
+ * {@link ParseCancellationException} before the assembler runs.
  *
  * <p>Class GameConstantsReaderTest coded before 261002, updated on 261002 once missing constants
  * defaulted to 0 and duplicates overwrote, as in C, and on 261025 once {@code GameConstantsAssembler}
- * was brought in line with the C handlers (sign rules, message lookup, extra fields, base 0 numbers).
+ * was brought in line with the C handlers (sign rules, message lookup, extra fields, base 0 numbers),
+ * and on 261104 for the removal of the soft-error path and of {@code GameConstantsParseResult}.
  *
  * @author Rowan Crowther
  */
@@ -108,14 +110,15 @@ class GameConstantsReaderTest {
     }
 
     /**
-     * Loads {@code content} and returns the data, failing the test if the load reports any error.
+     * Loads {@code content} and returns the data. Any error fails the test by throwing out of it.
+     *
+     * <p>Function load coded before 261002, updated on 261104 for the removal of the soft-error path.
      */
     private GameConstantsData load(String content) throws IOException {
-        GameConstantsParseResult result = new GameConstantsReader().parseWithResults(tempFile("load.txt", content));
+        GameConstantsData data = new GameConstantsReader().parseWithResults(tempFile("load.txt", content));
 
-        assertFalse(result.hasErrors(), () -> result.getErrors().toString());
-        assertNotNull(result.getData());
-        return result.getData();
+        assertNotNull(data);
+        return data;
     }
 
     /**
@@ -130,24 +133,22 @@ class GameConstantsReaderTest {
     }
 
     /**
-     * Loads {@code content}, expects it to come back with errors in the result and no data, and
-     * returns the errors.
+     * Loads {@code content}, expects the grammar or lexer to refuse it with a
+     * {@link ParseCancellationException}, before anything is assembled.
+     *
+     * <p>Function grammarRefusal coded on 261104, commented in full on 261104. It replaces
+     * softErrors, which read the errors list off the deleted {@code GameConstantsParseResult}.
      */
-    private List<String> softErrors(String content) throws IOException {
-        GameConstantsParseResult result = new GameConstantsReader().parseWithResults(tempFile("soft.txt", content));
+    private void grammarRefusal(String content) throws IOException {
+        String path = tempFile("grammar.txt", content);
 
-        assertTrue(result.hasErrors());
-        assertNull(result.getData());
-        return result.getErrors();
+        assertThrows(ParseCancellationException.class, () -> new GameConstantsReader().parseWithResults(path));
     }
 
     @Test
-    void cleanLoadReportsNoErrorsAndPopulatesTheCarrier() throws IOException {
-        GameConstantsParseResult result = new GameConstantsReader().parseWithResults(REAL_FILE);
+    void cleanLoadPopulatesTheCarrier() throws IOException {
+        GameConstantsData data = new GameConstantsReader().parseWithResults(REAL_FILE);
 
-        assertFalse(result.hasErrors(), () -> result.getErrors().toString());
-
-        GameConstantsData data = result.getData();
         assertNotNull(data);
 
         // A couple of scalar spot-checks straight from constants.txt.
@@ -182,22 +183,22 @@ class GameConstantsReaderTest {
     }
 
     /**
-     * The two faults that are reported through the result are both collected, each tagged by the
-     * builder's own wording, and the result has no data. A {@code chance} of 0 on an O-combat melee
-     * row and on an O-combat ranged row are each C's {@code INVALID_VALUE}, but here the rest of the
-     * file is still read.
+     * A {@code chance} of 0 on an O-combat level row ends the load at that row, as C's handler returns
+     * {@code PARSE_ERROR_INVALID_VALUE}. With a bad melee row followed by a bad ranged row, only the
+     * melee one is reported, because the builder throws at the first.
      *
-     * <p>Function softErrorsAreCollectedTogetherAndGiveNoData coded on 261025, commented in full on
-     * 261025.
+     * <p>Function aZeroOCombatChanceEndsTheLoadAtTheFirstRow coded on 261104, commented in full on
+     * 261104. It replaces softErrorsAreCollectedTogetherAndGiveNoData, which expected both rows to be
+     * collected.
      */
     @Test
-    void softErrorsAreCollectedTogetherAndGiveNoData() throws IOException {
-        List<String> errors = softErrors(realText()
+    void aZeroOCombatChanceEndsTheLoadAtTheFirstRow() throws IOException {
+        String message = refusal(realText()
                 + "o-melee-critical-level:0:1:HIT_GOOD\n" + "o-ranged-critical-level:0:1:HIT_GOOD\n");
 
-        assertEquals(2, errors.size(), errors::toString);
-        assertTrue(errors.stream().anyMatch(e -> e.contains("oMelee") && e.contains("chance")), errors::toString);
-        assertTrue(errors.stream().anyMatch(e -> e.contains("oRanged") && e.contains("chance")), errors::toString);
+        assertTrue(message.contains("oMelee") && message.contains("chance"), message);
+        assertFalse(message.contains("oRanged"), message);
+        assertTrue(refusal(realText() + "o-ranged-critical-level:0:1:HIT_GOOD\n").contains("oRanged"));
     }
 
     /**
@@ -209,14 +210,8 @@ class GameConstantsReaderTest {
      */
     @Test
     void missingConstantIsLeftAtZero() throws IOException {
-        String path = tempFile("missing.txt", realTextWithout("world:max-depth:"));
+        GameConstantsData data = load(realTextWithout("world:max-depth:"));
 
-        GameConstantsParseResult result = new GameConstantsReader().parseWithResults(path);
-
-        assertFalse(result.hasErrors(), () -> result.getErrors().toString());
-
-        GameConstantsData data = result.getData();
-        assertNotNull(data);
         assertEquals(0, data.world().maxDepth());
         assertEquals(1024, data.levelMax().monsters());
     }
@@ -230,14 +225,8 @@ class GameConstantsReaderTest {
      */
     @Test
     void duplicateScalarConstantOverwritesEarlierValue() throws IOException {
-        String path = tempFile("duplicate.txt", realText() + "world:max-depth:1\n");
+        GameConstantsData data = load(realText() + "world:max-depth:1\n");
 
-        GameConstantsParseResult result = new GameConstantsReader().parseWithResults(path);
-
-        assertFalse(result.hasErrors(), () -> result.getErrors().toString());
-
-        GameConstantsData data = result.getData();
-        assertNotNull(data);
         assertEquals(1, data.world().maxDepth());
     }
 
@@ -288,11 +277,8 @@ class GameConstantsReaderTest {
      */
     @Test
     void anEmptyFileLoadsAllZeroes() throws IOException {
-        GameConstantsParseResult result = new GameConstantsReader().parseWithResults(tempFile("empty.txt", ""));
+        GameConstantsData data = load("");
 
-        assertFalse(result.hasErrors(), () -> result.getErrors().toString());
-        GameConstantsData data = result.getData();
-        assertNotNull(data);
         assertEquals(0, data.levelMax().monsters());
         assertEquals(0, data.world().maxDepth());
         assertTrue(data.meleeCriticalLevel().isEmpty());
@@ -309,13 +295,9 @@ class GameConstantsReaderTest {
      */
     @Test
     void aCommentOnlyFileLoadsAllZeroes() throws IOException {
-        String path = tempFile("comments.txt", "# File: constants.txt\n\n# nothing here\n\n");
+        GameConstantsData data = load("# File: constants.txt\n\n# nothing here\n\n");
 
-        GameConstantsParseResult result = new GameConstantsReader().parseWithResults(path);
-
-        assertFalse(result.hasErrors(), () -> result.getErrors().toString());
-        assertNotNull(result.getData());
-        assertEquals(0, result.getData().levelMax().monsters());
+        assertEquals(0, data.levelMax().monsters());
     }
 
     /**
@@ -333,63 +315,48 @@ class GameConstantsReaderTest {
     }
 
     /**
-     * {@code parse} is the same call as {@code parseWithResults}: same data, same errors.
+     * {@code parse} is the same call as {@code parseWithResults}: the same data for a clean file, and
+     * the same exception for a bad one.
      *
      * <p>Function parseGivesTheSameResultAsParseWithResults coded on 261019, commented in full on
-     * 261019.
+     * 261019, updated on 261104 for the removal of the soft-error path.
      */
     @Test
     void parseGivesTheSameResultAsParseWithResults() throws IOException {
-        GameConstantsParseResult viaParse = new GameConstantsReader().parse(REAL_FILE);
-        GameConstantsParseResult viaResults = new GameConstantsReader().parseWithResults(REAL_FILE);
+        GameConstantsData viaParse = new GameConstantsReader().parse(REAL_FILE);
+        GameConstantsData viaResults = new GameConstantsReader().parseWithResults(REAL_FILE);
 
-        assertFalse(viaParse.hasErrors(), () -> viaParse.getErrors().toString());
-        assertEquals(viaResults.getData(), viaParse.getData());
-        assertEquals(viaResults.getErrors(), viaParse.getErrors());
+        assertEquals(viaResults, viaParse);
 
         String bad = tempFile("bad.txt", "Level-Max:monsters:1\n");
-        GameConstantsParseResult badParse = new GameConstantsReader().parse(bad);
-        GameConstantsParseResult badResults = new GameConstantsReader().parseWithResults(bad);
-        assertNull(badParse.getData());
-        assertEquals(badResults.getErrors(), badParse.getErrors());
+        assertThrows(ParseCancellationException.class, () -> new GameConstantsReader().parse(bad));
+        assertThrows(ParseCancellationException.class, () -> new GameConstantsReader().parseWithResults(bad));
     }
 
     /**
-     * A grammar error is hard: no data, the lexer/parser message with the file and line, and nothing
-     * from the assembler. An upper-case category cannot be a {@code GC_NAME}, so it is a syntax error
-     * here, where C would report an undefined directive. Either way the file is refused.
+     * A grammar error ends the load. An upper-case category cannot be a {@code GC_NAME}, so it is a
+     * syntax error here, where C would report an undefined directive. Either way the file is refused.
      *
-     * <p>Function aGrammarErrorGivesNoDataAndTheLexerMessage coded on 261019, commented in full on
-     * 261019.
+     * <p>Function aGrammarErrorEndsTheLoad coded on 261019, commented in full on 261019, updated on
+     * 261104 for the removal of the soft-error path; the line number now goes to the error log, not
+     * to a result, so it is no longer asserted.
      */
     @Test
-    void aGrammarErrorGivesNoDataAndTheLexerMessage() throws IOException {
-        String path = tempFile("hard.txt", "level-max:monsters:1024\nLEVEL-MAX:monsters:1\n");
-
-        GameConstantsParseResult result = new GameConstantsReader().parseWithResults(path);
-
-        assertTrue(result.hasErrors());
-        assertNull(result.getData());
-        assertTrue(result.getErrors().stream().allMatch(e -> e.contains("line 2")), result.getErrors()::toString);
+    void aGrammarErrorEndsTheLoad() throws IOException {
+        grammarRefusal("level-max:monsters:1024\nLEVEL-MAX:monsters:1\n");
     }
 
     /**
-     * Soft and hard errors do not mix: a hard error stops before the assembler runs, so a bad
-     * category on an earlier line is not reported alongside it.
+     * A grammar error anywhere stops the load before the assembler runs, so a bad category on an
+     * earlier line, which the assembler would refuse, is never reached: the exception is the
+     * grammar's, not the assembler's.
      *
-     * <p>Function aHardErrorStopsTheAssemblerBeforeItReportsSoftOnes coded on 261019, commented in
-     * full on 261019.
+     * <p>Function aGrammarErrorStopsTheLoadBeforeTheAssemblerRuns coded on 261019, commented in full on
+     * 261019, renamed and updated on 261104 for the removal of the soft-error path.
      */
     @Test
-    void aHardErrorStopsTheAssemblerBeforeItReportsSoftOnes() throws IOException {
-        String path = tempFile("mixed.txt", "nonsense:foo:1\nLEVEL-MAX:monsters:1\n");
-
-        GameConstantsParseResult result = new GameConstantsReader().parseWithResults(path);
-
-        assertNull(result.getData());
-        assertFalse(result.getErrors().isEmpty());
-        assertTrue(result.getErrors().stream().noneMatch(e -> e.contains("unknown category")),
-                result.getErrors()::toString);
+    void aGrammarErrorStopsTheLoadBeforeTheAssemblerRuns() throws IOException {
+        grammarRefusal("nonsense:foo:1\nLEVEL-MAX:monsters:1\n");
     }
 
     /**
@@ -401,17 +368,12 @@ class GameConstantsReaderTest {
      */
     @Test
     void nonIncreasingMeleeCutoffsRefuseTheFile() throws IOException {
-        String path = tempFile("melee-order.txt",
+        String message = refusal(
                 "melee-critical-level:10:2:5:HIT_GOOD\n"
                         + "melee-critical-level:5:3:10:HIT_GREAT\n"
                         + "melee-critical-level:20:4:15:HIT_SUPERB\n");
 
-        GameConstantsParseResult result = new GameConstantsReader().parseWithResults(path);
-
-        assertTrue(result.hasErrors());
-        assertNull(result.getData());
-        assertEquals(1, result.getErrors().size(), result.getErrors()::toString);
-        assertTrue(result.getErrors().get(0).toLowerCase().contains("melee"), result.getErrors()::toString);
+        assertTrue(message.toLowerCase().contains("melee"), message);
     }
 
     /**
@@ -422,17 +384,12 @@ class GameConstantsReaderTest {
      */
     @Test
     void nonIncreasingRangedCutoffsRefuseTheFile() throws IOException {
-        String path = tempFile("ranged-order.txt",
+        String message = refusal(
                 "ranged-critical-level:10:2:5:HIT_GOOD\n"
                         + "ranged-critical-level:10:3:10:HIT_GREAT\n"
                         + "ranged-critical-level:20:4:15:HIT_SUPERB\n");
 
-        GameConstantsParseResult result = new GameConstantsReader().parseWithResults(path);
-
-        assertTrue(result.hasErrors());
-        assertNull(result.getData());
-        assertEquals(1, result.getErrors().size(), result.getErrors()::toString);
-        assertTrue(result.getErrors().get(0).toLowerCase().contains("ranged"), result.getErrors()::toString);
+        assertTrue(message.toLowerCase().contains("ranged"), message);
     }
 
     /**
@@ -444,18 +401,15 @@ class GameConstantsReaderTest {
      */
     @Test
     void theLastCutoffIsNotComparedAndShortListsPass() throws IOException {
-        String path = tempFile("last-cutoff.txt",
+        GameConstantsData data = load(
                 "melee-critical-level:10:2:5:HIT_GOOD\n"
                         + "melee-critical-level:20:3:10:HIT_GREAT\n"
                         + "melee-critical-level:1:4:15:HIT_SUPERB\n"
                         + "ranged-critical-level:10:2:5:HIT_GOOD\n"
                         + "ranged-critical-level:5:3:10:HIT_GREAT\n");
 
-        GameConstantsParseResult result = new GameConstantsReader().parseWithResults(path);
-
-        assertFalse(result.hasErrors(), () -> result.getErrors().toString());
-        assertEquals(3, result.getData().meleeCriticalLevel().size());
-        assertEquals(2, result.getData().rangedCriticalLevel().size());
+        assertEquals(3, data.meleeCriticalLevel().size());
+        assertEquals(2, data.rangedCriticalLevel().size());
     }
 
     /**
@@ -498,11 +452,7 @@ class GameConstantsReaderTest {
      */
     @Test
     void aHexadecimalValueIsRefusedHereWhereCReadsBaseZero() throws IOException {
-        GameConstantsParseResult result = new GameConstantsReader()
-                .parseWithResults(tempFile("hex.txt", "world:max-depth:0x10\n"));
-
-        assertTrue(result.hasErrors());
-        assertNull(result.getData());
+        grammarRefusal("world:max-depth:0x10\n");
     }
 
     /**
@@ -530,11 +480,7 @@ class GameConstantsReaderTest {
      */
     @Test
     void anIndentedLineIsRefusedHereWhereCSkipsTheIndent() throws IOException {
-        GameConstantsParseResult result = new GameConstantsReader()
-                .parseWithResults(tempFile("indent.txt", "  world:max-depth:7\n"));
-
-        assertTrue(result.hasErrors());
-        assertNull(result.getData());
+        grammarRefusal("  world:max-depth:7\n");
     }
 
     /**
@@ -546,11 +492,7 @@ class GameConstantsReaderTest {
      */
     @Test
     void aLowerCaseMessageNameIsRefusedHereWhereCIsCaseBlind() throws IOException {
-        GameConstantsParseResult result = new GameConstantsReader()
-                .parseWithResults(tempFile("lower-msg.txt", "melee-critical-level:10:2:5:hit_good\n"));
-
-        assertTrue(result.hasErrors());
-        assertNull(result.getData());
+        grammarRefusal("melee-critical-level:10:2:5:hit_good\n");
     }
 
     /**
@@ -575,11 +517,7 @@ class GameConstantsReaderTest {
      */
     @Test
     void aFinalCommentWithoutANewlineIsRefusedHereWhereCSkipsIt() throws IOException {
-        GameConstantsParseResult result = new GameConstantsReader()
-                .parseWithResults(tempFile("tail-comment.txt", "world:max-depth:7\n# the end"));
-
-        assertTrue(result.hasErrors());
-        assertNull(result.getData());
+        grammarRefusal("world:max-depth:7\n# the end");
     }
 
     /**
@@ -973,23 +911,22 @@ class GameConstantsReaderTest {
 
     /**
      * On the O-combat level lines a {@code dice} of 0 loads, and a {@code chance} of 0 does not. C
-     * refuses the 0 chance with {@code PARSE_ERROR_INVALID_VALUE}; here the builder reports it in
-     * the result's error list, and the result has no data.
+     * refuses the 0 chance with {@code PARSE_ERROR_INVALID_VALUE}, and here the builder throws, so
+     * the load ends either way.
      *
-     * <p>Function anOCombatChanceOfZeroIsReportedAndADiceOfZeroLoads coded on 261025, commented in
-     * full on 261025.
+     * <p>Function anOCombatChanceOfZeroEndsTheLoadAndADiceOfZeroLoads coded on 261025, commented in
+     * full on 261025, renamed and updated on 261104 for the removal of the soft-error path.
      */
     @ParameterizedTest
     @ValueSource(strings = {"o-melee-critical-level", "o-ranged-critical-level"})
-    void anOCombatChanceOfZeroIsReportedAndADiceOfZeroLoads(String category) throws IOException {
+    void anOCombatChanceOfZeroEndsTheLoadAndADiceOfZeroLoads(String category) throws IOException {
         GameConstantsData data = load(category + ":1:0:HIT_GOOD\n");
 
         assertEquals(MessageType.MSG_HIT_GOOD, messageOf(category, data));
 
-        List<String> errors = softErrors(category + ":0:1:HIT_GOOD\n");
+        String message = refusal(category + ":0:1:HIT_GOOD\n");
 
-        assertEquals(1, errors.size(), errors::toString);
-        assertTrue(errors.get(0).contains("chance"), errors::toString);
+        assertTrue(message.contains("chance"), message);
     }
 
     /**

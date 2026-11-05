@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
@@ -29,7 +30,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * End-to-end throughput tests for {@link BodyReader}: file text -> {@code BodyLexer}/
@@ -62,9 +64,6 @@ class BodyReaderTest {
 
     // ---- fixture helpers -------------------------------------------------
 
-    private static String withHeader(int count, String body) {
-        return "record-count:" + count + "\n" + body;
-    }
 
     private ParseResult<PlayerBody> load(String name, String content) throws IOException {
         Path file = tempDir.resolve(name);
@@ -82,7 +81,6 @@ class BodyReaderTest {
     void realFileLoadsOneHumanoidBodyWithNoErrors() throws IOException {
         ParseResult<PlayerBody> result = new BodyReader().parseWithResults(REAL_FILE);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size());
 
         PlayerBody humanoid = result.items().get(0);
@@ -122,11 +120,9 @@ class BodyReaderTest {
 
     @Test
     void multipleBodiesEachLoadWithTheirOwnSlots() throws IOException {
-        ParseResult<PlayerBody> result = load("two-bodies.txt", withHeader(2,
-                "body:First\nslot:WEAPON:weapon\n"
-                        + "body:Second\nslot:AMULET:neck\nslot:LIGHT:light\n"));
+        ParseResult<PlayerBody> result = load("two-bodies.txt", "body:First\nslot:WEAPON:weapon\n"
+                        + "body:Second\nslot:AMULET:neck\nslot:LIGHT:light\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(2, result.items().size());
         assertEquals(1, byName(result.items(), "First").getCount());
         assertEquals(2, byName(result.items(), "Second").getCount());
@@ -136,53 +132,30 @@ class BodyReaderTest {
 
     @Test
     void invalidSlotTypeEndsTheLoad() {
-        assertThrows(DataFileParseException.class, () -> load("bad-slot.txt", withHeader(1,
-                "body:Weird\nslot:WEAPON:weapon\nslot:NOTASLOT:somewhere\n")));
+        assertThrows(DataFileParseException.class, () -> load("bad-slot.txt", "body:Weird\nslot:WEAPON:weapon\nslot:NOTASLOT:somewhere\n"));
     }
 
     @Test
     void oneBadBodyEndsTheLoadForTheGoodOneToo() {
         // C's first parser error ends the whole file, so there is no partial result.
-        assertThrows(DataFileParseException.class, () -> load("mixed.txt", withHeader(2,
-                "body:Good\nslot:WEAPON:weapon\n"
-                        + "body:Bad\nslot:NOTASLOT:somewhere\n")));
-    }
-
-    @Test
-    void recordCountMismatchIsReportedButValidBodyStillLoads() throws IOException {
-        ParseResult<PlayerBody> result = load("bad-count.txt", withHeader(5,
-                "body:Solo\nslot:WEAPON:weapon\n"));
-
-        assertEquals(1, result.items().size());
-        assertTrue(result.hasErrors());
+        assertThrows(DataFileParseException.class, () -> load("mixed.txt", "body:Good\nslot:WEAPON:weapon\n"
+                        + "body:Bad\nslot:NOTASLOT:somewhere\n"));
     }
 
     // ---- Hard errors: fail closed, nothing loads -------------------------
 
     @Test
-    void missingRecordCountHeaderIsAHardError() throws IOException {
-        ParseResult<PlayerBody> result = load("no-header.txt", "body:Solo\nslot:WEAPON:weapon\n");
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
-    }
-
-    @Test
     void bodyWithNoSlotsIsAHardError() throws IOException {
         // The grammar requires at least one slot per body.
-        ParseResult<PlayerBody> result = load("no-slots.txt", withHeader(1, "body:Empty\n"));
+        assertThrows(ParseCancellationException.class, () -> load("no-slots.txt", "body:Empty\n"));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void slotWithoutAPrecedingBodyIsAHardError() throws IOException {
         // A record must open with a body: line; a leading slot has nothing to attach to.
-        ParseResult<PlayerBody> result = load("orphan-slot.txt", withHeader(1, "slot:WEAPON:weapon\n"));
+        assertThrows(ParseCancellationException.class, () -> load("orphan-slot.txt", "slot:WEAPON:weapon\n"));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     // ---- Reader contract and the C-derived table -------------------------
@@ -215,11 +188,11 @@ class BodyReaderTest {
     }
 
     @Test
-    void parseReturnsNothingForAHardGrammarError() throws IOException {
+    void parseThrowsOnAHardGrammarError() throws IOException {
         Path file = tempDir.resolve("hard.txt");
-        Files.writeString(file, "body:Solo\nslot:WEAPON:weapon\n");
+        Files.writeString(file, "not a directive\n");
 
-        assertTrue(new BodyReader().parse(file.toString()).isEmpty());
+        assertThrows(ParseCancellationException.class, () -> new BodyReader().parse(file.toString()));
     }
 
     @Test
@@ -231,45 +204,32 @@ class BodyReaderTest {
     @Test
     void bodiesComeBackNewestFirstAsCListsThem() throws IOException {
         // C's parse_body_body pushes each body on the front, so its list reads Third, Second, First.
-        ParseResult<PlayerBody> result = load("order.txt", withHeader(3,
-                "body:First\nslot:WEAPON:a\nbody:Second\nslot:BOW:b\nbody:Third\nslot:LIGHT:c\n"));
+        ParseResult<PlayerBody> result = load("order.txt", "body:First\nslot:WEAPON:a\nbody:Second\nslot:BOW:b\nbody:Third\nslot:LIGHT:c\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(List.of("Third", "Second", "First"),
                 result.items().stream().map(PlayerBody::getName).toList());
     }
 
     @Test
     void aBodyAndSlotNameKeepTheirSpacesAndColonsWhole() throws IOException {
-        ParseResult<PlayerBody> result = load("names.txt", withHeader(1,
-                "body:Two Words: more\nslot:RING:on the left hand\n"));
+        ParseResult<PlayerBody> result = load("names.txt", "body:Two Words: more\nslot:RING:on the left hand\n");
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals("Two Words: more", result.items().get(0).getName());
         assertEquals("on the left hand", result.items().get(0).getSlot(0).getName());
-    }
-
-    @Test
-    void theRecordCountMismatchMessageNamesBothCounts() throws IOException {
-        ParseResult<PlayerBody> result = load("count-text.txt", withHeader(5,
-                "body:Solo\nslot:WEAPON:weapon\n"));
-
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("declares 5") && e.contains("contains 1")),
-                result.errors()::toString);
     }
 
     @Test
     void slotTypeNoneEndsTheLoadAsInC() {
         // C: lookup_flag(slots, "NONE") returns 0, so parse_body_slot returns PARSE_ERROR_INVALID_FLAG.
         assertThrows(DataFileParseException.class,
-                () -> load("none.txt", withHeader(1, "body:Odd\nslot:NONE:nothing\n")));
+                () -> load("none.txt", "body:Odd\nslot:NONE:nothing\n"));
     }
 
     @Test
     void slotTypeMaxEndsTheLoadAsInC() {
         // C: "MAX" is not in the slots table, so lookup_flag returns 0 and the line is an invalid flag.
         assertThrows(DataFileParseException.class,
-                () -> load("max.txt", withHeader(1, "body:Odd\nslot:MAX:nothing\n")));
+                () -> load("max.txt", "body:Odd\nslot:MAX:nothing\n"));
     }
 
     // ---- Differences from C ------------------------------------------------
@@ -277,17 +237,13 @@ class BodyReaderTest {
     @Test
     void aLowerCaseSlotTypeIsAHardLexerErrorWhereCReportsAnInvalidFlag() throws IOException {
         // Both fail the load; only the channel differs (C: parser error, Java: the lexer's SLOT_NAME is A-Z and _).
-        ParseResult<PlayerBody> result = load("lower.txt", withHeader(1, "body:Odd\nslot:weapon:weapon\n"));
+        assertThrows(ParseCancellationException.class, () -> load("lower.txt", "body:Odd\nslot:weapon:weapon\n"));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void aHeaderWithNoBodiesIsAHardErrorHereWhereCAcceptsAnEmptyFile() throws IOException {
-        ParseResult<PlayerBody> result = load("header-only.txt", withHeader(0, ""));
+        assertThrows(ParseCancellationException.class, () -> load("header-only.txt", ""));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 }

@@ -34,12 +34,13 @@ import java.util.List;
  * {@code WorldDataLoader} is where the sentinel is tested, when it checks that every named neighbour
  * exists.
  *
- * <p>Class WorldAssembler coded before 260915, commented in full on 261014.
+ * <p>Unlike most assemblers in this suite this one has no checks of its own, because every field a
+ * record carries is already well-formed by the time it reaches here. The level number is the one
+ * value parsed as an integer, and a malformed one would make {@link Integer#parseInt} throw a
+ * {@link NumberFormatException}.
  *
- * <p>Unlike most assemblers in this suite this one has no soft-error channel: {@code errors} is
- * accepted to satisfy the {@link Assembler} contract but never written to, because every field a
- * record carries is already well-formed by the time it reaches here (the level number is the one
- * value parsed as an integer, and a malformed one would throw rather than being reported softly).
+ * <p>Class WorldAssembler coded before 260915, commented in full on 261014, updated on 261105 for the
+ * removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -53,13 +54,10 @@ public class WorldAssembler
      * <p>Function assemble coded before 260915, commented in full on 261014.
      *
      * @param records List of {@link WorldParseRecord} objects
-     * @param errors  List of errors as string messages - ignored
-     *                in this assembler as it doesn't raise any
-     *                errors
      * @return result of assembling list of {@link World} objects
      */
     @Override
-    public List<World> assemble(@NotNull List<WorldParseRecord> records, @NotNull List<String> errors,
+    public List<World> assemble(@NotNull List<WorldParseRecord> records,
                                     String filename) {
         List<World> results = new ArrayList<>();
         for (WorldParseRecord record : records) {

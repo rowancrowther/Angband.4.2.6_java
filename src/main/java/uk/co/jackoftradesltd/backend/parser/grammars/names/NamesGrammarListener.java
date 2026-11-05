@@ -14,7 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-// Generated from NamesGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/NamesGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.names;
 
 import org.antlr.v4.runtime.tree.ParseTreeListener;
@@ -24,73 +24,44 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
  * {@link NamesGrammar}.
  */
 public interface NamesGrammarListener extends ParseTreeListener {
-    /**
-     * Enter a parse tree produced by {@link NamesGrammar#recordCount}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterRecordCount(NamesGrammar.RecordCountContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link NamesGrammar#recordCount}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitRecordCount(NamesGrammar.RecordCountContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link NamesGrammar#section}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterSection(NamesGrammar.SectionContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link NamesGrammar#section}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitSection(NamesGrammar.SectionContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link NamesGrammar#word}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterWord(NamesGrammar.WordContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link NamesGrammar#word}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitWord(NamesGrammar.WordContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link NamesGrammar#record}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterRecord(NamesGrammar.RecordContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link NamesGrammar#record}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitRecord(NamesGrammar.RecordContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link NamesGrammar#file}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterFile(NamesGrammar.FileContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link NamesGrammar#file}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitFile(NamesGrammar.FileContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link NamesGrammar#section}.
+	 * @param ctx the parse tree
+	 */
+	void enterSection(NamesGrammar.SectionContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link NamesGrammar#section}.
+	 * @param ctx the parse tree
+	 */
+	void exitSection(NamesGrammar.SectionContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link NamesGrammar#word}.
+	 * @param ctx the parse tree
+	 */
+	void enterWord(NamesGrammar.WordContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link NamesGrammar#word}.
+	 * @param ctx the parse tree
+	 */
+	void exitWord(NamesGrammar.WordContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link NamesGrammar#record}.
+	 * @param ctx the parse tree
+	 */
+	void enterRecord(NamesGrammar.RecordContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link NamesGrammar#record}.
+	 * @param ctx the parse tree
+	 */
+	void exitRecord(NamesGrammar.RecordContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link NamesGrammar#file}.
+	 * @param ctx the parse tree
+	 */
+	void enterFile(NamesGrammar.FileContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link NamesGrammar#file}.
+	 * @param ctx the parse tree
+	 */
+	void exitFile(NamesGrammar.FileContext ctx);
 }

@@ -17,10 +17,6 @@ lexer grammar BlowMethodLexer;
 
 import CommentsAndEol;
 
-RECORD_COUNT
-        :   'record-count:'
-        ;
-
 NAME
         :   'name:' -> pushMode(FREE_TEXT_MODE)
         ;

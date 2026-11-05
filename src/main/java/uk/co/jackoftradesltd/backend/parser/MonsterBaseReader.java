@@ -75,15 +75,14 @@ import java.util.List;
  * and a first-match search over this list finds the earlier. The order is set by
  * {@link MonsterBaseAssembler}; see {@code docs/Assembler_Issues.md}.
  * <p>
+ * As in C, the first error stops the load and nothing is returned: a syntax error is thrown from
+ * {@link #extract} as a {@code ParseCancellationException}, and a record the assembler refuses (an
+ * unknown race flag, a glyph that is not one {@code char}, a {@code pain:} no loaded set has) is
+ * thrown as a {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}. Neither is
+ * caught here.
+ * <p>
  * Differences from C worth knowing about:
  * <ul>
- *   <li>The {@code record-count:} header is a Java-only addition; the upstream
- *       {@code monster_base.txt} has no such line, and this repository's copy adds
- *       {@code record-count:56}. A wrong count is a soft error and the records still load, but a
- *       missing header is a syntax error and loads nothing.</li>
- *   <li>C stops at the first parse error. Here a syntax error is fatal and returns no items, but an
- *       assembler error (an unknown race flag, a glyph that is not one {@code char}, a {@code pain:}
- *       no loaded set has) skips only the offending record and the rest still load.</li>
  *   <li>C takes the directives in any order, with {@code flags:} optional and written as a list
  *       split on spaces and bars. The grammar needs {@code name:}, {@code glyph:}, {@code pain:},
  *       any number of {@code flags:} lines, then {@code desc:}, in that order, and each flag list
@@ -100,32 +99,33 @@ import java.util.List;
  *
  * @author Rowan Crowther
  *
- * <p>Class MonsterBaseReader coded before 260915, commented in full on 261017.
+ * <p>Class MonsterBaseReader coded before 260915, commented in full on 261017, updated on 261105
+ * for the removal of the soft-error path.
  */
 public class MonsterBaseReader implements Reader<MonsterBase> {
     /**
      * Logger handed to {@link GrammarDriver#run} so that an {@link IOException} while reading
      * {@code monster_base.txt} is logged under this reader's name before it is rethrown. Syntax and
-     * soft errors do not go through it; they travel in the {@link ParseResult}.
+     * assembler errors do not go through it; they are thrown unlogged to the caller.
      *
-     * <p>Field logger coded before 260915, commented in full on 261017.
+     * <p>Field logger coded before 260915, commented in full on 261017, updated on 261105 for the
+     * removal of the soft-error path.
      */
     private final static Logger logger = LogManager.getLogger();
 
     /**
      * Parse the given file and return just the assembled monster bases, in file order (see the
-     * class block for how that differs from C's chain), discarding the soft-error channel (use
-     * {@link #parseWithResults} to inspect the errors). Satisfies the {@link Reader} contract.
+     * class block for how that differs from C's chain), unwrapped from the {@link ParseResult}
+     * that {@link #parseWithResults} gives. Satisfies the {@link Reader} contract.
      * <p>
-     * Because the errors are dropped, a syntax error and a clean load are told apart only by the
-     * list being empty, and a record skipped for an unknown race flag, a bad glyph or an unknown
-     * pain set just goes missing. Callers that must tell a partial or failed load from a clean one
-     * have to use {@link #parseWithResults}, as {@code MonsterDataLoader.loadMonsterBases} does.
+     * A syntax error or a refused record throws, exactly as in {@link #parseWithResults}, so an
+     * empty list only ever means a clean file with no records.
      *
-     * <p>Function parse coded before 260915, commented in full on 261017.
+     * <p>Function parse coded before 260915, commented in full on 261017, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param filename the data file to read
-     * @return the assembled {@link MonsterBase} list (empty if the parse failed closed)
+     * @return every {@link MonsterBase} in the file, in file order
      * @throws IOException if the file cannot be read
      */
     @NotNull
@@ -136,65 +136,57 @@ public class MonsterBaseReader implements Reader<MonsterBase> {
 
     /**
      * The {@link GrammarDriver.Extractor} for this grammar: run the parser's {@code file} entry
-     * rule, fail closed on any hard lexer/parser error, validate the {@code record-count:} header,
-     * and hand back the raw {@link MonsterBaseParseRecord}s, still holding unconverted text.
+     * rule, fail closed on any hard lexer/parser error, and hand back the raw
+     * {@link MonsterBaseParseRecord}s, still holding unconverted text.
      * <p>
      * Ordering matters: {@link ParseErrors#throwIfAny()} must fire <em>after</em> the parse but
      * <em>before</em> the records are used, so a malformed file aborts with a
-     * {@code ParseCancellationException} here rather than reaching the assembler, and a half-built
-     * record list is never measured against the declared count to produce a second, misleading
-     * error. That covers the cases where C returns a parser error too: a directive before any
-     * {@code name:} (C's {@code PARSE_ERROR_MISSING_RECORD_HEADER}) and a {@code glyph:} longer
-     * than one character (C's {@code PARSE_ERROR_FIELD_TOO_LONG}). The header check is soft -
-     * {@link GrammarDriver#checkRecordCount} only appends to {@code errors}, so a miscount never
-     * discards the records that did parse.
+     * {@code ParseCancellationException} here rather than reaching the assembler. That covers the
+     * cases where C returns a parser error too: a directive before any {@code name:} (C's
+     * {@code PARSE_ERROR_MISSING_RECORD_HEADER}) and a {@code glyph:} longer than one character
+     * (C's {@code PARSE_ERROR_FIELD_TOO_LONG}).
      * <p>
      * The records stay in file order. The copy at the end detaches the result from the parse tree,
      * so the returned list is the caller's to keep.
      *
-     * <p>Function extract coded before 260915, commented in full on 261017.
+     * <p>Function extract coded before 260915, commented in full on 261017, updated on 261105 for
+     * the removal of the soft-error path and the {@code record-count:} header.
      *
      * @param parser       the generated parser, positioned at the start of the file
      * @param errorCatcher the hard-error channel; {@code throwIfAny} aborts before the records are used
-     * @param errors       the soft-error sink, appended to on a record-count mismatch
      * @return the parsed {@link MonsterBaseParseRecord}s in file order
      */
     private static List<MonsterBaseParseRecord> extract(
             @NotNull MonsterBaseGrammar parser,
-            @NotNull ParseErrors errorCatcher,
-            @NotNull List<String> errors) {
+            @NotNull ParseErrors errorCatcher) {
         MonsterBaseGrammar.FileContext output = parser.file();
         List<MonsterBaseParseRecord> records = output.bases;
+        
         errorCatcher.throwIfAny();
-
-        String declaredRecordCount = output.declaredRecordCount;
-        GrammarDriver.checkRecordCount(declaredRecordCount, records.size(), errors);
 
         return new ArrayList<>(records);
     }
 
     /**
-     * Parse the given file, returning both the assembled {@link MonsterBase} list (in file order)
-     * and any soft errors gathered along the way, for callers that need to tell a clean load from a
-     * partial one.
+     * Parse the given file, returning the assembled {@link MonsterBase} list (in file order)
+     * wrapped in a {@link ParseResult}.
      * <p>
      * This is the Java counterpart of {@code run_parse_mon_base} and the {@code parse_mon_base_*}
      * handlers in {@code mon-init.c}: it wires {@code MonsterBaseLexer}, {@code MonsterBaseGrammar},
      * {@link #extract} and {@link MonsterBaseAssembler} into {@link GrammarDriver#run}, so the
-     * reader stays a thin wiring layer. A syntax error returns no items and the collected messages;
-     * an unknown race flag, a bad glyph, an unknown pain set or a {@code record-count:} mismatch
-     * leaves the good records in the result alongside the messages, so the list can be short
-     * without anything having been thrown. C would have stopped at the first of any of these. An
-     * unreadable file is not a result at all but an {@link IOException}, the analogue of
+     * reader stays a thin wiring layer. As C stops at the first error, so does this: a syntax error
+     * throws a {@code ParseCancellationException}, and an unknown race flag, a bad glyph or an
+     * unknown pain set throws a {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException},
+     * and no result is returned. An unreadable file is an {@link IOException}, the analogue of
      * {@code parse_file_quit_not_found}'s {@code quit()}.
      * <p>
-     * This is the variant callers should prefer: {@code MonsterDataLoader.loadMonsterBases} gates on
-     * the result's errors for exactly that reason. {@code pain.txt} must have been loaded first.
+     * {@code pain.txt} must have been loaded first.
      *
-     * <p>Function parseWithResults coded before 260915, commented in full on 261017.
+     * <p>Function parseWithResults coded before 260915, commented in full on 261017, updated on
+     * 261105 for the removal of the soft-error path.
      *
      * @param filename the monster-base data file to read
-     * @return a {@link ParseResult} of the assembled bases plus any soft errors
+     * @return every monster base in the file, in file order
      * @throws IOException if the file cannot be read
      */
     public ParseResult<MonsterBase> parseWithResults(@NotNull String filename) throws IOException {

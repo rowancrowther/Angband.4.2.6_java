@@ -38,16 +38,6 @@ options { tokenVocab = ProjectionLexer; }
 /*
  * @author Rowan Crowther
  *
- * The declared number of records in the file
- */
-recordCount
-        returns[String count]
-        :   RECORD_COUNT INTEGER { $count = $INTEGER.getText(); }
-        ;
-
-/*
- * @author Rowan Crowther
- *
  * "code:<PROJ_CODE>" - starts a new projection record.
  */
 code    returns[String projectionCode]
@@ -259,12 +249,11 @@ projection
  *
  * Top-level rule: the whole file is one or more projection records.
  */
-file    returns[List<List<String>> projections, String records]
+file    returns[List<List<String>> projections]
         @init {
             $projections = new ArrayList<>();
         }
-        :   recordCount { $records = $recordCount.count; }
-            (projection {
+        :   (projection {
                 $projections.add($projection.proj);
             })+
             EOF

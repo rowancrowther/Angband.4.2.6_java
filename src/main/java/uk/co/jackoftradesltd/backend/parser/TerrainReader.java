@@ -62,16 +62,16 @@ import java.util.List;
  * slot. The two agree for the shipped file, which has all 25 records in that order; for a shorter or
  * shuffled file the Java list has only the records it was given, and the missing code has no entry.
  *
- * <p>C quits on the first bad line. This reader follows the shared two-channel contract instead: a
- * lexer or grammar error returns no features and the messages, and a {@code record-count:} mismatch
- * is a soft error that leaves the features that did parse loaded. The {@code record-count:} header
- * is Java-only, the upstream file has none, and it counts {@code code:} lines. A file that cannot be
- * opened is an {@link IOException}, where C quits.
+ * <p>C quits on the first bad line, and so does this reader: a lexer or grammar error is thrown
+ * from {@link #extract} as a {@code ParseCancellationException}, and a value the assembler cannot
+ * resolve is thrown as a {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}.
+ * Neither is caught here, and no features are returned. A file that cannot be opened is an
+ * {@link IOException}, where C quits.
  *
  * <p>The grammar is stricter than C in several places, each a hard error where C loads the file: a
  * record that is not a {@code code:}, {@code name:} and {@code graphics:} line in that order, a
  * repeated {@code graphics:} line, flags separated by a space alone, an empty {@code flags:} line,
- * a header with no records, hexadecimal or trailing text after a number, a second field after
+ * a file with no records, hexadecimal or trailing text after a number, a second field after
  * {@code resist-flag:}, an unknown colour name and an indented line. It also differs in one way that
  * still loads: a repeated {@code walk-msg:}, {@code run-msg:}, {@code hurt-msg:}, {@code die-msg:},
  * {@code confused-msg:}, {@code look-prefix:} or {@code look-in-preposition:} line replaces the
@@ -83,7 +83,8 @@ import java.util.List;
  * {@code file} rule, and the assembler. Implementing {@link Reader} keeps
  * {@link uk.co.jackoftradesltd.middle.game.globals.GameConstants} agnostic of the grammar behind it.
  *
- * <p>Class TerrainReader coded before 260915, commented in full on 261019.
+ * <p>Class TerrainReader coded before 260915, commented in full on 261019, updated on 261105 for the
+ * removal of the soft-error path and the {@code record-count:} header.
  *
  * @author Rowan Crowther
  */
@@ -94,19 +95,18 @@ public class TerrainReader implements Reader<Feature> {
      *
      * <p>Field logger coded before 260915, commented in full on 261019.
      */
-    Logger logger = LogManager.getLogger();
+    private static final Logger logger = LogManager.getLogger(TerrainReader.class);
 
     /**
      * {@link Reader} entry point: reads {@code filename} and returns the assembled features in file
-     * order, discarding the error messages. The convenience form of {@link #parseWithResults}, which
-     * is the one to call when the errors matter: with this one a hard grammar error and a file in
-     * which every record was dropped both come back as an empty list. A record the assembler cannot
-     * resolve is skipped, where C would quit.
+     * order, unwrapped from the {@link ParseResult} that {@link #parseWithResults} gives. Any error
+     * throws exactly as it does there, as C quits.
      *
-     * <p>Function parse coded before 260915, commented in full on 261019.
+     * <p>Function parse coded before 260915, commented in full on 261019, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param filename the terrain data file to read
-     * @return the features read from the file, empty if the parse failed
+     * @return every feature in the file, in file order
      * @throws IOException if the file cannot be opened or read
      */
     @NotNull
@@ -117,58 +117,53 @@ public class TerrainReader implements Reader<Feature> {
 
     /**
      * The grammar-specific step handed to {@link GrammarDriver}: runs the grammar's {@code file}
-     * rule, fails closed on any hard lexer or grammar error through {@link ParseErrors#throwIfAny()},
-     * and soft-checks the {@code record-count:} header against the number of {@code code:} blocks
-     * parsed. No value is interpreted here: the code, flags, numbers and colour stay as text for
-     * {@link TerrainFeatureAssembler}.
+     * rule and fails closed on any hard lexer or grammar error through
+     * {@link ParseErrors#throwIfAny()}. No value is interpreted here: the code, flags, numbers and
+     * colour stay as text for {@link TerrainFeatureAssembler}.
      *
      * <p>The ordering is deliberate: {@code throwIfAny} fires straight after the parse, so a hard
-     * grammar error (a missing {@code record-count:} header, a record without its {@code name:} or
-     * {@code graphics:} line, a line the lexer does not know) fails closed before the count check
-     * runs against whatever did parse. The driver owns the surrounding cancellation catch, which is
-     * why it passes {@code errorCatcher} in rather than this method calling {@code file()} itself.
-     * The rule needs at least one record, where C accepts a file with none. The rows are copied into
-     * a new list so the assembler cannot alter the parser's own.
+     * grammar error (a record without its {@code name:} or {@code graphics:} line, a line the lexer
+     * does not know) fails closed with a {@code ParseCancellationException} before any row is
+     * used. The driver catches nothing but an {@link IOException}, so that exception reaches the
+     * loader. The rule needs at least one record, where C accepts a file with none. The rows are
+     * copied into a new list so the assembler cannot alter the parser's own.
      *
-     * <p>Function extract coded before 260915, commented in full on 261019.
+     * <p>Function extract coded before 260915, commented in full on 261019, updated on 261105 for
+     * the removal of the soft-error path and the {@code record-count:} header.
      *
      * @param parser       the generated parser, positioned at the start of the file
      * @param errorCatcher the hard-error channel; {@code throwIfAny} aborts before the rows are used
-     * @param errors       the soft-error sink: a record-count mismatch is appended here
      * @return the parse records, one per {@code code:} block, in file order
      */
     private static List<TerrainFeatureParseRecord> extract(
             @NotNull TerrainFeatureGrammar parser,
-            @NotNull ParseErrors errorCatcher,
-            @NotNull List<String> errors) {
+            @NotNull ParseErrors errorCatcher) {
         TerrainFeatureGrammar.FileContext output = parser.file();
         List<TerrainFeatureParseRecord> results = output.features;
         errorCatcher.throwIfAny();
-
-        String declaredRecordCount = output.declaredRecordCount;
-        GrammarDriver.checkRecordCount(declaredRecordCount, results.size(), errors);
 
         return new ArrayList<>(results);
     }
 
     /**
-     * Reads {@code filename} and returns the full {@link ParseResult}: the assembled
-     * {@link Feature}s and every error message collected on the way. This is the Java form of C's
-     * {@code run_parse_feat} followed by the list-building half of {@code finish_parse_feat}, and the
-     * entry point {@code TerrainDataLoader.loadTerrainFeatures()} uses so that it can inspect
-     * {@link ParseResult#hasErrors()} before registering the result. {@link GrammarDriver#run} does
-     * the lex, parse, extract and assemble.
+     * Reads {@code filename} and returns the assembled {@link Feature}s wrapped in a
+     * {@link ParseResult}. This is the Java form of C's {@code run_parse_feat} followed by the
+     * list-building half of {@code finish_parse_feat}, and the entry point
+     * {@code TerrainDataLoader.loadTerrainFeatures()} uses. {@link GrammarDriver#run} does the lex,
+     * parse, extract and assemble.
      *
-     * <p>Where C quits on a code, mimic, flag, resist flag or number it cannot resolve, the assembler
-     * records a soft error and drops the whole record. An unknown colour never gets that far: the
-     * lexer rejects it as a hard error. A repeated {@code code:} is the exception in the other
-     * direction: the assembler throws, as C quits on it. A file that cannot be opened is an
-     * {@link IOException}, where C's {@code parse_file_quit_not_found} quits.
+     * <p>As C quits on a code, mimic, flag, resist flag or number it cannot resolve, or on a
+     * repeated {@code code:}, the assembler throws a
+     * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException} there. An unknown colour
+     * never gets that far: the lexer rejects it, and it is thrown as a
+     * {@code ParseCancellationException}. No result is returned for a file that fails. A file that
+     * cannot be opened is an {@link IOException}, where C's {@code parse_file_quit_not_found} quits.
      *
-     * <p>Function parseWithResults coded before 260915, commented in full on 261019.
+     * <p>Function parseWithResults coded before 260915, commented in full on 261019, updated on
+     * 261105 for the removal of the soft-error path.
      *
      * @param filename the terrain data file to read
-     * @return the parse result: the features in file order plus any error messages
+     * @return every feature in the file, in file order
      * @throws IOException if the file cannot be opened or read
      */
     public ParseResult<Feature> parseWithResults(@NotNull String filename) throws IOException {

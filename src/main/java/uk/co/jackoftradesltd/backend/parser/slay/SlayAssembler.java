@@ -52,8 +52,8 @@ import java.util.List;
  *
  * <p><strong>Every fault stops the load.</strong> C's first parser error ends
  * the whole file, and so does this: a fault is logged as fatal and thrown as a
- * {@link DataFileParseException}, no later record is read, and nothing is added
- * to the {@code errors} list. The faults are an unknown race flag (a miss, or
+ * {@link DataFileParseException}, and no later record is read. The faults are
+ * an unknown race flag (a miss, or
  * {@code NONE}, which {@code lookup_flag} in {@code datafile.c} never matches
  * because it starts at {@code FLAG_START}), an unknown monster base, both a
  * race flag and a base, a leading {@code -} on a number, and a number with no
@@ -74,7 +74,8 @@ import java.util.List;
  * so a name that matches one resolves and the slay loads. No shipped slay uses
  * {@code base:}. See "Slay" in {@code docs/Accepted_Deviations.md}.
  *
- * <p>Class SlayAssembler coded before 260915, commented in full on 261029.
+ * <p>Class SlayAssembler coded before 260915, commented in full on 261029, updated on 261105 for the
+ * removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -120,13 +121,12 @@ public class SlayAssembler implements Assembler<SlayParseRecord, List<Slay>> {
      * <p>Function assemble coded before 260915, commented in full on 261029.
      *
      * @param records  the raw slay records from the parser
-     * @param errors   not used: a fault is thrown, never added to this list
      * @param filename the file being read, for the fault messages
      * @return the assembled slays, in reverse file order (C's {@code slays[]} order)
      * @throws DataFileParseException on the first fault in any record
      */
     @Override
-    public List<Slay> assemble(@NotNull List<SlayParseRecord> records, @NotNull List<String> errors,
+    public List<Slay> assemble(@NotNull List<SlayParseRecord> records,
                                     String filename) {
         List<Slay> slays = new ArrayList<>();
 

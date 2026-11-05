@@ -23,13 +23,6 @@ options { tokenVocab = RealmLexer; }
     import java.util.ArrayList;
 }
 
-// record-count:<n> header - returns the declared count as text for the reader to
-// validate against the number of records actually parsed.
-recordCount
-        returns[String count]
-        :   RECORD_COUNT INTEGER { $count = $INTEGER.getText(); }
-        ;
-
 // name:<realm name> - opens a record; also captures the source line so the
 // assembler can report any error against the record's position.
 name
@@ -88,13 +81,11 @@ realm
         |   bookNoun { bookNounInit = $bookNoun.bookNounStr; } )+
         ;
 
-// The whole file: the record-count header, then one or more realm records to
-// end of input.
+// The whole file: one or more realm records to end of input.
 file
-        returns[List<RealmParseRecord> realms, String declaredRecordCount]
+        returns[List<RealmParseRecord> realms]
         @init {
             $realms = new ArrayList<>();
         }
-        :   recordCount { $declaredRecordCount = $recordCount.count; }
-            (realm { $realms.add($realm.record); })+ EOF
+        :   (realm { $realms.add($realm.record); })+ EOF
         ;

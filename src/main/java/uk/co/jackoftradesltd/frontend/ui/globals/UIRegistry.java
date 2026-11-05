@@ -70,11 +70,12 @@ public class UIRegistry {
      */
     public static final int MAX_SHORTENED = 10;
     /**
-     * Logger for the fatal, unloaded-registry state {@link #getUIEntry} throws on.
-     * {@link #getUIEntryRenderer} has no matching log call, since its own unloaded case is
-     * reported through {@code errors} instead - see that method's Javadoc.
+     * Logger for the fatal states the two lookups throw on. {@link #getUIEntry} logs one case, an
+     * unloaded registry. {@link #getUIEntryRenderer} logs two, an unloaded registry and a name with
+     * no match. Each is logged at {@code fatal} just before the throw.
      *
-     * <p>Field logger coded before 260924, commented in full on 261102.
+     * <p>Field logger coded before 260924, commented in full on 261102, updated on 261105 for the
+     * removal of the soft-error path.
      */
     private static final Logger logger = LogManager.getLogger();
     /**
@@ -173,41 +174,49 @@ public class UIRegistry {
     /**
      * Finds a loaded UI-entry renderer by name, the port of C's {@code ui_entry_renderer_lookup}
      * in {@code ui-entry-renderers.c}, which {@code parse_entry_renderer} in {@code ui-entry.c}
-     * calls wherever a {@code renderer:} directive names one. C compares with {@code streq} - whole name, case-sensitive - and returns the first
-     * match's index plus one, or 0 for no match; this returns the renderer itself, or {@code null}.
+     * calls wherever a {@code renderer:} directive names one. C compares with {@code streq} - whole
+     * name, case-sensitive - and returns the first match's index plus one, or 0 for no match; this
+     * returns the renderer itself.
      *
-     * <p>Unlike {@link #getUIEntry} - which throws when queried before load - this one collects its
-     * failures into the supplied {@code errors} list and returns {@code null}, because it is called
-     * from the assembler's collect-every-error load path rather than from the running game, where an
-     * unloaded registry or an unknown name should skip one record rather than halt the process. In C
-     * an unloaded {@code renderers[]} is empty, so the lookup just returns 0; the extra
-     * "hasn't been initialized" error is a Java-only report.
+     * <p>The two failure cases are handled differently:
+     * <ul>
+     *   <li>An unloaded registry throws {@link IllegalArgumentException}, logged at {@code fatal}.
+     *   In C an unloaded {@code renderers[]} is empty, so the lookup just returns 0; the "hasn't
+     *   been initialized" report is Java-only.</li>
+     *   <li>A name with no match returns {@code null}, as C's lookup returns 0, and leaves the error
+     *   to the caller. Both callers, {@code UIEntryAssembler} and {@code UIEntryBaseAssembler},
+     *   check for {@code null} and throw a {@code DataFileParseException} naming the record's line
+     *   and the file, which stops the load. That is where C's {@code parse_entry_renderer} gets 0
+     *   back and returns {@code PARSE_ERROR_INVALID_VALUE}, which fails the parse of the file.</li>
+     * </ul>
+     *
+     * <p>This matches {@link #getUIEntry}, which also throws only for an unloaded registry and
+     * returns {@code null} for an unknown name.
      *
      * <p>The name is compared with {@code String.equals}, so it matches case-sensitively as C's
      * {@code streq} does.
      *
-     * <p>Function getUIEntryRenderer coded before 260924, commented in full on 261102.
+     * <p>Function getUIEntryRenderer coded before 260924, commented in full on 261102, updated on
+     * 261105 for the removal of the soft-error path and again on 261105 for the {@code null} return
+     * on an unknown name.
      *
-     * @param name   the name of the renderer we wish to obtain
-     * @param errors the running error list to append to if the renderers are unloaded or no match is found
-     * @return the renderer with the same name as {@code name}, or {@code null} if unloaded or not found
+     * @param name the name of the renderer we wish to obtain
+     * @return the renderer with the same name as {@code name} or {@code null} if no renderer with
+     * that name was found.
+     * @throws IllegalArgumentException if the renderers have not yet been loaded
      */
     @Nullable
-    public static UIEntryRenderer getUIEntryRenderer(@NotNull String name, @NotNull List<String> errors) {
+    public static UIEntryRenderer getUIEntryRenderer(@NotNull String name) {
         if (uiEntryRenderers == null) {
-            errors.add("Invalid attempt to access uiEntryRenderers when it hasn't been initialized");
-            return null;
+            String message = "Invalid attempt to access uiEntryRenderers when it hasn't been initialized";
+            logger.fatal(message);
+            throw new IllegalArgumentException(message);
         }
 
         UIEntryRenderer renderer = uiEntryRenderers.stream()
                 .filter(e -> e.getName().equals(name))
                 .findFirst()
                 .orElse(null);
-
-        if (renderer == null) {
-            errors.add("Invalid UIEntryRenderer name: " + name + " no records found");
-            return null;
-        }
 
         return renderer;
     }

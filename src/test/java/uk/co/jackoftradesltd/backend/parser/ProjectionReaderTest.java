@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
@@ -85,37 +86,9 @@ class ProjectionReaderTest {
     void cleanLoadOfTheRealFileReportsNoErrorsAndAllProjections() throws IOException {
         ParseResult<Projection> result = new ProjectionReader().parseWithResults(REAL_FILE);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(56, result.items().size());
         // Spot-check the first record (ACID) via the one getter Projection exposes.
         assertEquals("acid", result.items().get(0).getLashDescription());
-    }
-
-    @Test
-    void aRecordCountMismatchDoesNotHideTheElementCountFailure() throws IOException {
-        // Header over-declares: 5 vs the single record present. The header count is a Java-only
-        // soft error (C's file has no such line), and a one-record file cannot satisfy the element
-        // rule either: C's finish_parse_projection() quits unless exactly 25 records are of type
-        // element, so the assembler stops the load. The exception message names the element count
-        // only; the soft header error is not carried by it.
-        DataFileParseException e = loadAndStop("bad-count.txt", "record-count:5\n" + ONE_RECORD);
-
-        assertTrue(e.getMessage().contains("expected: 25 got: 1"), e.getMessage());
-    }
-
-    @Test
-    void headerMismatchOnTheRealFileIsReportedButAllProjectionsStillLoad() throws IOException {
-        // The shipped file with its header changed to over-declare by one: the mismatch is a soft
-        // error and the 56 valid records, which satisfy the element rule, all still load.
-        String path = tempFile("real-bad-count.txt",
-                Files.readString(Path.of(REAL_FILE)).replace("record-count:56", "record-count:57"));
-
-        ParseResult<Projection> result = new ProjectionReader().parseWithResults(path);
-
-        assertEquals(56, result.items().size());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("declares 57") &&
-                        e.contains("contains 56")),
-                result.errors()::toString);
     }
 
     @Test
@@ -123,33 +96,21 @@ class ProjectionReaderTest {
         // NOTACODE is not a ProjectionEnum value, so it cannot be element_names[0]: C quits on the
         // mismatch in parse_projection_code.
         DataFileParseException e = loadAndStop("bad-code.txt",
-                "record-count:1\ncode:NOTACODE\ntype:element\ndesc:x\nblind-desc:x\nobvious:1\ncolor:Slate\n");
+                "code:NOTACODE\ntype:element\ndesc:x\nblind-desc:x\nobvious:1\ncolor:Slate\n");
 
         assertTrue(e.getMessage().contains("NOTACODE"), e.getMessage());
     }
 
     @Test
-    void missingRecordCountHeaderIsReportedWithNoItems() throws IOException {
-        // No record-count directive: a grammar syntax error surfaced through ParseErrors.
-        String path = tempFile("no-header.txt", ONE_RECORD);
-
-        ParseResult<Projection> result = new ProjectionReader().parseWithResults(path);
-
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty());
-    }
-
-    @Test
     void unknownCodeAfterTheElementBlockIsStoredWithNoCodeAndNoError() throws IOException {
-        // The shipped file plus one extra block whose code is not a ProjectionEnum value, with the
-        // header raised to match. C does not read the code past the element block and keeps the
+        // The shipped file plus one extra block whose code is not a ProjectionEnum value. C does not
+        // read the code past the element block and keeps the
         // record, so the port stores it as PROJ_NONE and reports nothing.
         String extra = "\ncode:NOTACODE\ntype:monster\ndesc:x\nblind-desc:x\nobvious:1\ncolor:Slate\n";
         ParseResult<Projection> result = load("real-plus-bad-code.txt",
-                shipped().replace("record-count:56", "record-count:57") + extra);
+                shipped() + extra);
 
         assertEquals(57, result.items().size(), result.items()::toString);
-        assertFalse(result.hasErrors(), result.errors()::toString);
         assertEquals(ProjectionEnum.PROJ_NONE, result.items().getLast().getProjection());
         assertEquals(ProjectionEnum.PROJ_ACID, result.items().getFirst().getProjection());
     }
@@ -161,7 +122,6 @@ class ProjectionReaderTest {
         // type, so it no longer counts as an element, the file has 1, and the element rule stops
         // the load - with the element count as the only complaint.
         DataFileParseException e = loadAndStop("unknown-type.txt", String.join("\n",
-                "record-count:2",
                 "code:ACID\ntype:element\ndesc:x\nblind-desc:x\nobvious:1\ncolor:Slate",
                 "code:ELEC\ntype:NOTATYPE\ndesc:x\nblind-desc:x\nobvious:1\ncolor:Blue",
                 ""));
@@ -196,9 +156,15 @@ class ProjectionReaderTest {
         return (T) f.get(target);
     }
 
-    private static void assertHardError(ParseResult<Projection> result) {
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty(), result.items()::toString);
+    /**
+     * A grammar or lexer error: the load stops with a {@link ParseCancellationException}.
+     *
+     * <p>Function assertHardError coded before 261104, rewritten on 261104 for the removal of the
+     * soft-error path: it now takes the fixture rather than a result, since a failed load has none.
+     * The grammar's own message now goes to the error log, not to the test.
+     */
+    private void assertHardError(String name, String content) {
+        assertThrows(ParseCancellationException.class, () -> load(name, content));
     }
 
     /**
@@ -214,11 +180,11 @@ class ProjectionReaderTest {
     }
 
     /**
-     * {@code parse} is {@code parseWithResults} without the messages, so a hard grammar error and
-     * an empty list look alike through it.
+     * {@code parse} is {@code parseWithResults(...).items()}, so it gives the same list, and an
+     * error ends the load through it too: a one-record file fails the element-count check.
      */
     @Test
-    void parseReturnsTheSameListAsParseWithResultsAndHidesTheErrors() throws IOException {
+    void parseReturnsTheSameListAsParseWithResultsAndThrowsTheSameErrors() throws IOException {
         List<Projection> viaParse = new ProjectionReader().parse(REAL_FILE);
         List<Projection> viaResults = new ProjectionReader().parseWithResults(REAL_FILE).items();
 
@@ -226,37 +192,8 @@ class ProjectionReaderTest {
         for (int i = 0; i < 56; i++) {
             assertEquals(viaResults.get(i).getProjection(), viaParse.get(i).getProjection());
         }
-        assertTrue(new ProjectionReader().parse(tempFile("headerless.txt", ONE_RECORD)).isEmpty());
-    }
-
-    /**
-     * An under-declared header is a soft error and all 56 projections load. (The over-declared
-     * header is pinned above.) C has no header, so there is no C value to compare with.
-     */
-    @Test
-    void anUnderDeclaredHeaderIsASoftErrorAndEveryProjectionLoads() throws IOException {
-        ParseResult<Projection> result = load("under.txt", shipped().replace("record-count:56", "record-count:55"));
-
-        assertEquals(56, result.items().size());
-        assertEquals(1, result.errors().size(), result.errors()::toString);
-        assertTrue(result.errors().getFirst().contains("declares 55") &&
-                result.errors().getFirst().contains("contains 56"), result.errors()::toString);
-    }
-
-    /**
-     * A header of 0 or -1 lexes as an integer, so it is the same soft mismatch; one that is not a
-     * number is a hard error.
-     */
-    @Test
-    void aZeroOrNegativeHeaderIsASoftMismatchAndANonNumberIsAHardError() throws IOException {
-        for (String declared : List.of("0", "-1")) {
-            ParseResult<Projection> result = load("count" + declared + ".txt",
-                    shipped().replace("record-count:56", "record-count:" + declared));
-            assertEquals(56, result.items().size(), declared);
-            assertTrue(result.errors().getFirst().contains("declares " + declared), result.errors()::toString);
-        }
-
-        assertHardError(load("count-abc.txt", shipped().replace("record-count:56", "record-count:abc")));
+        String oneRecord = tempFile("one-record.txt", ONE_RECORD);
+        assertThrows(DataFileParseException.class, () -> new ProjectionReader().parse(oneRecord));
     }
 
     /**
@@ -336,7 +273,6 @@ class ProjectionReaderTest {
         String upstream = shipped().replaceFirst("(?s)(code:DARK_WEAK.*?color:)Light Dark", "$1L_DARK");
         ParseResult<Projection> result = load("l-dark.txt", upstream);
 
-        assertFalse(result.hasErrors(), result.errors()::toString);
         assertEquals(ColourEnum.COLOUR_WHITE, field(result.items().get(darkWeak), "colour"));
     }
 
@@ -357,7 +293,6 @@ class ProjectionReaderTest {
         };
         for (Object[] c : cases) {
             ParseResult<Projection> result = load("colour.txt", shipped().replaceFirst("color:Slate", "color:" + c[0]));
-            assertFalse(result.hasErrors(), c[0] + ": " + result.errors());
             assertEquals(c[1], field(result.items().getFirst(), "colour"), "color:" + c[0]);
         }
     }
@@ -377,7 +312,6 @@ class ProjectionReaderTest {
         };
         for (Object[] c : cases) {
             ParseResult<Projection> result = load("den.txt", shipped().replaceFirst("denominator:3\n", "denominator:" + c[0] + "\n"));
-            assertFalse(result.hasErrors(), c[0] + ": " + result.errors());
             assertDenominator(result.items().getFirst(), (int) c[1], (int) c[2], (int) c[3], (int) c[4],
                     "denominator:" + c[0]);
         }
@@ -392,7 +326,6 @@ class ProjectionReaderTest {
         String text = shipped().replaceFirst("obvious:1", "obvious:2").replaceFirst("wake:1", "wake:01");
         ParseResult<Projection> result = load("bool.txt", text);
 
-        assertFalse(result.hasErrors(), result.errors()::toString);
         assertFalse((boolean) field(result.items().getFirst(), "isObvious"));
         assertTrue((boolean) field(result.items().getFirst(), "willWake"));
     }
@@ -402,43 +335,35 @@ class ProjectionReaderTest {
     @Test
     void aRepeatedOrMisplacedDirectiveIsAHardErrorWhereCTakesAnyOrder() throws IOException {
         // C replaces a repeated string and takes the directives in any order.
-        assertHardError(load("dup-desc.txt", shipped().replaceFirst("(?m)^(desc:.*)$", "$1\n$1x")));
-        assertHardError(load("late-name.txt", shipped().replaceFirst("(?m)^(type:element)\n", "$1\nname:acid\n")));
-        assertHardError(load("pre-code.txt", shipped().replaceFirst("(?m)^code:ACID", "name:x\ncode:ACID")));
+        assertHardError("dup-desc.txt", shipped().replaceFirst("(?m)^(desc:.*)$", "$1\n$1x"));
+        assertHardError("late-name.txt", shipped().replaceFirst("(?m)^(type:element)\n", "$1\nname:acid\n"));
+        assertHardError("pre-code.txt", shipped().replaceFirst("(?m)^code:ACID", "name:x\ncode:ACID"));
     }
 
     @Test
     void aLeftOutTypeDescBlindDescObviousOrColourIsAHardErrorWhereCLeavesItZero() throws IOException {
         for (String directive : List.of("type:", "desc:", "blind-desc:", "obvious:", "color:")) {
-            ParseResult<Projection> result = load("missing.txt",
-                    shipped().replaceFirst("(?m)^" + directive + ".*\n", ""));
-            assertHardError(result);
-            assertTrue(result.errors().getFirst().contains("mismatched input"), directive + ": " + result.errors());
+            assertHardError("missing.txt", shipped().replaceFirst("(?m)^" + directive + ".*\n", ""));
         }
     }
 
+    /**
+     * An empty file is a grammar error here, where C's {@code finish_parse_projection} would quit on
+     * too few elements; either way the load stops.
+     *
+     * <p>Function anEmptyFileIsAHardError coded on 261104, commented in full on 261104. It replaces
+     * aHeaderWithNoRecordsAndAnEmptyFileAreHardErrors, whose header-only half went with the header.
+     */
     @Test
-    void theUpstreamFileWithNoRecordCountHeaderIsAHardError() throws IOException {
-        // The header is Java-only. The shipped file has it added to the upstream text.
-        ParseResult<Projection> result = load("headerless.txt", shipped().replace("record-count:56\n", ""));
-
-        assertHardError(result);
-        assertTrue(result.errors().getFirst().contains("expecting 'record-count:'"), result.errors()::toString);
-    }
-
-    @Test
-    void aHeaderWithNoRecordsAndAnEmptyFileAreHardErrors() throws IOException {
-        assertHardError(load("header-only.txt", "record-count:0\n"));
-        assertHardError(load("empty.txt", ""));
+    void anEmptyFileIsAHardError() throws IOException {
+        assertHardError("empty.txt", "");
     }
 
     @Test
     void aLowerCaseOrNumericMsgtIsAHardErrorWhereCAcceptsBoth() throws IOException {
         // message_lookup_by_name matches names with my_stricmp and takes a number below MSG_MAX.
         for (String msgt : List.of("br_acid", "20")) {
-            ParseResult<Projection> result = load("msgt.txt", shipped().replaceFirst("msgt:BR_ACID", "msgt:" + msgt));
-            assertHardError(result);
-            assertTrue(result.errors().getFirst().contains("token recognition error"), msgt + ": " + result.errors());
+            assertHardError("msgt.txt", shipped().replaceFirst("msgt:BR_ACID", "msgt:" + msgt));
         }
     }
 
@@ -448,7 +373,6 @@ class ProjectionReaderTest {
         // "BR_ACID " is not a message name.
         for (String edit : List.of("code:ACID", "msgt:BR_ACID")) {
             ParseResult<Projection> result = load("blank.txt", shipped().replaceFirst(edit, edit + " "));
-            assertFalse(result.hasErrors(), edit + ": " + result.errors());
             assertEquals(56, result.items().size(), edit);
         }
     }
@@ -468,7 +392,7 @@ class ProjectionReaderTest {
     void aPlusSignHexPrefixTrailingTextOrLeadingBlankInAnIntegerIsAHardErrorWhereCAcceptsIt() throws IOException {
         // strtoul with base 0 skips leading blanks, takes +5 and 0x10, and ignores trailing text.
         for (String value : List.of("+1", "0x1", "1abc", " 1")) {
-            assertHardError(load("int.txt", shipped().replaceFirst("numerator:1", "numerator:" + value)));
+            assertHardError("int.txt", shipped().replaceFirst("numerator:1", "numerator:" + value));
         }
     }
 
@@ -477,23 +401,21 @@ class ProjectionReaderTest {
         // strtoul base 0 reads 010 as 8, and the assembler reads a uint field the same way.
         ParseResult<Projection> result = load("octal.txt", shipped().replaceFirst("numerator:1", "numerator:010"));
 
-        assertFalse(result.hasErrors(), result.errors()::toString);
         assertEquals(8, (int) field(result.items().getFirst(), "numerator"));
     }
 
     @Test
     void aLeadingBlankInADenominatorIsAHardErrorAndALowerCaseMIsAcceptedWhereCTakesTheOpposite() throws Exception {
         // parse_random skips leading blanks (strtoul) and takes only an upper-case M.
-        assertHardError(load("den-blank.txt", shipped().replaceFirst("denominator:3\n", "denominator: 3\n")));
+        assertHardError("den-blank.txt", shipped().replaceFirst("denominator:3\n", "denominator: 3\n"));
 
         ParseResult<Projection> result = load("den-m.txt", shipped().replaceFirst("denominator:3\n", "denominator:5+1d4m2\n"));
-        assertFalse(result.hasErrors(), result.errors()::toString);
         assertDenominator(result.items().getFirst(), 5, 1, 4, 2, "denominator:5+1d4m2");
     }
 
     @Test
     void anIndentedDirectiveIsAHardErrorWhereCSkipsTheIndent() throws IOException {
-        assertHardError(load("indent.txt", shipped().replaceFirst("(?m)^desc:acid", "  desc:acid")));
+        assertHardError("indent.txt", shipped().replaceFirst("(?m)^desc:acid", "  desc:acid"));
     }
 
     // ---- Where the assembler differs from C (docs/Assembler_Issues.md) -------------------------
@@ -515,7 +437,6 @@ class ProjectionReaderTest {
         // docs/Accepted_Deviations.md), so the record loads with Integer.MAX_VALUE.
         ParseResult<Projection> result = load("big.txt", shipped().replaceFirst("numerator:1", "numerator:2147483648"));
 
-        assertFalse(result.hasErrors(), result.errors()::toString);
         assertEquals(Integer.MAX_VALUE, (int) field(result.items().getFirst(), "numerator"));
     }
 
@@ -556,13 +477,8 @@ class ProjectionReaderTest {
         // assembler's own empty-code stop is only reached with hand-built records.
         String empty = "\ncode:\ntype:monster\ndesc:x\nblind-desc:x\nobvious:1\ncolor:Slate\n";
 
-        ParseResult<Projection> first = load("empty-first.txt",
-                shipped().replaceFirst("code:ACID", "code:"));
-        ParseResult<Projection> after = load("empty-after.txt",
-                shipped().replace("record-count:56", "record-count:57") + empty);
-
-        assertHardError(first);
-        assertHardError(after);
+        assertHardError("empty-first.txt", shipped().replaceFirst("code:ACID", "code:"));
+        assertHardError("empty-after.txt", shipped() + empty);
     }
 
     // ---- Expected values, worked out from the upstream projection.txt ---------------------------

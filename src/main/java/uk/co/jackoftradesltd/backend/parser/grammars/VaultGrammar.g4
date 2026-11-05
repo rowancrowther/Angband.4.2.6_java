@@ -30,12 +30,6 @@ options { tokenVocab = VaultLexer; }
     import java.util.List;
 }
 
-/** The file's {@code record-count:} header, kept as text for {@code file} to validate later. */
-recordCount
-        returns[String count]
-        :   RECORD_COUNT c=INTEGER { $count = $c.getText(); }
-        ;
-
 /**
  * The vault's {@code name:} directive. {@code line} is captured here (from {@code $start}, the
  * NAME token itself) because it becomes the whole record's line number in {@link #profileRecord}
@@ -169,14 +163,10 @@ profileRecord
         ;
 
 /**
- * The whole file: the {@code record-count:} header followed by one or more vault records.
- * {@code declaredRecordCount} is kept as text rather than validated here — VaultReader compares it
- * against {@code profiles.size()} after the parse completes, since a mismatch is a soft error, not
- * a reason to fail the parse.
+ * The whole file: one or more vault records.
  */
 file
-        returns[List<VaultParseRecord> profiles, String declaredRecordCount]
+        returns[List<VaultParseRecord> profiles]
         @init { $profiles = new ArrayList<>(); }
-        :   recordCount { $declaredRecordCount = $recordCount.count; }
-            (profileRecord { $profiles.add($profileRecord.record); })+ EOF
+        :   (profileRecord { $profiles.add($profileRecord.record); })+ EOF
         ;

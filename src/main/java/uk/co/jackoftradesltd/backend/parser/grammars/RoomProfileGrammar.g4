@@ -19,12 +19,6 @@ options { tokenVocab = RoomProfileLexer; }
     import java.util.ArrayList;
 }
 
-/** The file's {@code record-count:} header, kept as text for {@code file} to validate later. */
-recordCount
-        returns[String count]
-        :   RECORD_COUNT c=INTEGER { $count = $c.getText(); }
-        ;
-
 /**
  * The room's {@code name:} directive. {@code line} is captured here (from {@code $start}, the
  * NAME token itself) because it becomes the whole record's {@code profileLineNo} in
@@ -153,16 +147,12 @@ roomProfile
         ;
 
 /**
- * The whole file: the {@code record-count:} header followed by one or more room records.
- * {@code declaredCount} is kept as text rather than validated here — RoomProfileReader compares
- * it against {@code records.size()} after the parse completes, since a mismatch is a soft error,
- * not a reason to fail the parse.
+ * The whole file: one or more room records.
  */
 file
-        returns[String declaredCount, List<RoomProfileParseRecord> records]
+        returns[List<RoomProfileParseRecord> records]
         @init {
             $records = new ArrayList<>();
         }
-        :   recordCount { $declaredCount = $recordCount.count; }
-            (roomProfile { $records.add($roomProfile.profile); })+ EOF
+        :   (roomProfile { $records.add($roomProfile.profile); })+ EOF
         ;

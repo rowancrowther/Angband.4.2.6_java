@@ -19,7 +19,7 @@
 // directive rule strips its keyword and returns the raw String payload; the
 // `object_base` rule accumulates one base's directives (name/graphics header,
 // then optional break/max-stack and any number of flags: lines) into an
-// ObjectBaseParseRecord, and `file` reads the record-count header, captures the
+// ObjectBaseParseRecord, and `file` captures the
 // two file-wide default: values, and folds them into any base that omitted its
 // own break/max-stack. No interpretation happens here: tval/colour/flag/integer
 // resolution is deferred to ObjectBaseAssembler, so the rules deal only in raw
@@ -37,11 +37,6 @@ options { tokenVocab = ObjectBaseLexer; }
     import java.util.List;
     import java.util.ArrayList;
 }
-
-recordCount
-        returns[String count]
-        :   RECORD_COUNT INTEGER { $count = $INTEGER.getText(); }
-        ;
 
 // "default:break-chance:<value>" or "default:max-stack:<value>" - file-wide
 // fallback values applied in `file` to any base that omits its own break: or
@@ -156,19 +151,17 @@ object_base
             })*
         ;
 
-// Top-level rule: the record-count header, the file-wide default: lines, then
+// Top-level rule: the file-wide default: lines, then
 // one or more base records - folding the defaults into any base that left
 // break/max-stack empty before collecting it.
 file
-        returns[List<ObjectBaseParseRecord> objectBaseList, String declaredRecordCount]
+        returns[List<ObjectBaseParseRecord> objectBaseList]
         @init {
             $objectBaseList = new ArrayList<>();
             String defaultMaxStack = "";
             String defaultBreakChance = "";
         }
-        :   recordCount { $declaredRecordCount = $recordCount.count; }
-
-            (default_value {
+        :   (default_value {
                 if ($default_value.maxStackNum.isEmpty())
                     defaultBreakChance = $default_value.breakChanceNum;
                 else

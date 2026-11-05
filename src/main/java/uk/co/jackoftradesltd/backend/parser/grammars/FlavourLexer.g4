@@ -38,12 +38,6 @@ lexer grammar FlavourLexer;
 // end-of-line handling.
 import CommentsAndEol;
 
-// "record-count:<n>" - header declaring how many kind: blocks follow; checked
-// against the number actually parsed by the reader.
-RECORD_COUNT
-        :   'record-count:'
-        ;
-
 // "kind:<tval>:<glyph>" - opens a new block, naming the object type and the
 // display glyph its flavours use. Enters DELIM to read the two ':'-separated
 // values.
@@ -65,8 +59,8 @@ FLAVOUR
         :   'flavor:' -> pushMode(DELIM)
         ;
 
-// A literal integer for the record-count header. Sign-capable by shared suite
-// convention; flavour counts are always non-negative.
+// A literal integer, sign-capable by shared suite convention. No FlavourGrammar
+// rule has referenced it since the record-count: header was removed (261104).
 INTEGER
         :   '-'? ('0'..'9')+
         ;

@@ -37,6 +37,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * absent optional) followed by the record's source line number. All values are verbatim strings;
  * enum resolution and defaulting are the reader's job.
  *
+ * <p>Class UIEntryRendererGrammarTest coded before 261104, updated on 261104 once the {@code record-count:} header was removed.
+ *
  * @author Rowan Crowther
  */
 class UIEntryRendererGrammarTest {
@@ -66,16 +68,15 @@ class UIEntryRendererGrammarTest {
     void fullRecordKeepsEveryFieldVerbatimAndAppendsLineNumber() {
         Errors errors = new Errors();
         UIEntryRendererGrammar.FileContext ctx = parser(
-                "record-count:1\nname:foo\ncode:BAR\ncolors:wG\nlabelcolors:sr\n"
+                "name:foo\ncode:BAR\ncolors:wG\nlabelcolors:sr\n"
                         + "symbols:?.+\nndigit:1\nsign:NO_SIGN\n",
                 errors).file();
 
         assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
-        assertEquals("1", ctx.record);
         assertEquals(1, ctx.renderers.size());
-        // [name, code, colours, labelcolours, symbols, ndigit, sign, lineNo]; name: is on source line 2.
+        // [name, code, colours, labelcolours, symbols, ndigit, sign, lineNo]; name: is on source line 1.
         assertEquals(
-                List.of("foo", "BAR", "wG", "sr", "?.+", "1", "NO_SIGN", "2"),
+                List.of("foo", "BAR", "wG", "sr", "?.+", "1", "NO_SIGN", "1"),
                 ctx.renderers.get(0));
     }
 
@@ -83,12 +84,12 @@ class UIEntryRendererGrammarTest {
     void absentNdigitAndSignAreEmptyStrings() {
         Errors errors = new Errors();
         UIEntryRendererGrammar.FileContext ctx = parser(
-                "record-count:1\nname:foo\ncode:BAR\ncolors:wG\nlabelcolors:sr\nsymbols:?.+\n",
+                "name:foo\ncode:BAR\ncolors:wG\nlabelcolors:sr\nsymbols:?.+\n",
                 errors).file();
 
         assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
         assertEquals(
-                List.of("foo", "BAR", "wG", "sr", "?.+", "", "", "2"),
+                List.of("foo", "BAR", "wG", "sr", "?.+", "", "", "1"),
                 ctx.renderers.get(0));
     }
 
@@ -96,7 +97,7 @@ class UIEntryRendererGrammarTest {
     void digitBearingFlagIsKeptVerbatim() {
         Errors errors = new Errors();
         UIEntryRendererGrammar.FileContext ctx = parser(
-                "record-count:1\nname:foo\ncode:FOO_2\ncolors:wG\nlabelcolors:sr\nsymbols:?.+\n",
+                "name:foo\ncode:FOO_2\ncolors:wG\nlabelcolors:sr\nsymbols:?.+\n",
                 errors).file();
 
         assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
@@ -104,46 +105,18 @@ class UIEntryRendererGrammarTest {
     }
 
     @Test
-    void recordCountIsCapturedAndMultipleRecordsAreCollectedInOrder() {
-        Errors errors = new Errors();
-        UIEntryRendererGrammar.FileContext ctx = parser(
-                "record-count:2\n"
-                        + "name:a\ncode:A\ncolors:w\nlabelcolors:s\nsymbols:?\n"
-                        + "name:b\ncode:B\ncolors:G\nlabelcolors:r\nsymbols:.\n",
-                errors).file();
-
-        assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
-        assertEquals("2", ctx.record);
-        assertEquals(2, ctx.renderers.size());
-        assertEquals("a", ctx.renderers.get(0).get(0));
-        assertEquals("b", ctx.renderers.get(1).get(0));
-        // First name: on line 2, second on line 7 (five directives per record).
-        assertEquals("2", ctx.renderers.get(0).getLast());
-        assertEquals("7", ctx.renderers.get(1).getLast());
-    }
-
-    @Test
     void lineNumbersSurviveSkippedComments() {
         Errors errors = new Errors();
         UIEntryRendererGrammar.FileContext ctx = parser(
-                "record-count:2\n"
-                        + "name:a\ncode:A\ncolors:w\nlabelcolors:s\nsymbols:?\n"
+                "name:a\ncode:A\ncolors:w\nlabelcolors:s\nsymbols:?\n"
                         + "# a comment line\n"
                         + "name:b\ncode:B\ncolors:G\nlabelcolors:r\nsymbols:.\n",
                 errors).file();
 
         assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
-        // First name: on line 2; second on line 8 (the comment on line 7 is skipped but still counted).
-        assertEquals("2", ctx.renderers.get(0).getLast());
-        assertEquals("8", ctx.renderers.get(1).getLast());
-    }
-
-    @Test
-    void missingRecordCountIsAParseError() {
-        Errors errors = new Errors();
-        parser("name:foo\ncode:BAR\ncolors:wG\nlabelcolors:sr\nsymbols:?.+\n", errors).file();
-
-        assertFalse(errors.messages.isEmpty(), "a file that does not open with record-count must not parse");
+        // First name: on line 1; second on line 7 (the comment on line 6 is skipped but still counted).
+        assertEquals("1", ctx.renderers.get(0).getLast());
+        assertEquals("7", ctx.renderers.get(1).getLast());
     }
 
     @Test
@@ -154,13 +127,13 @@ class UIEntryRendererGrammarTest {
         // optionals surfaced as empty strings.
         Errors errors = new Errors();
         UIEntryRendererGrammar.FileContext ctx = parser(
-                "record-count:1\nname:foo\ncode:BAR\n", errors).file();
+                "name:foo\ncode:BAR\n", errors).file();
 
         assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
         assertEquals(1, ctx.renderers.size());
         // [name, code, colours, labelcolours, symbols, ndigit, sign, lineNo]; name: is on source line 2.
         assertEquals(
-                List.of("foo", "BAR", "", "", "", "", "", "2"),
+                List.of("foo", "BAR", "", "", "", "", "", "1"),
                 ctx.renderers.get(0));
     }
 
@@ -169,8 +142,32 @@ class UIEntryRendererGrammarTest {
         // code: is mandatory (unlike the optional colour/symbol fields), so a record that
         // supplies only name: cannot complete the mandatory name->code sequence.
         Errors errors = new Errors();
-        parser("record-count:1\nname:foo\n", errors).file();
+        parser("name:foo\n", errors).file();
 
         assertFalse(errors.messages.isEmpty(), "a record missing the mandatory code: field must not parse");
+    }
+
+    /**
+     * Two records are collected in file order, each carrying the line of its {@code name:}.
+     *
+     * <p>Function multipleRecordsAreCollectedInOrder coded on 261104, commented in full on 261104.
+     * It replaces recordCountIsCapturedAndMultipleRecordsAreCollectedInOrder, whose
+     * {@code record-count:} half went with the header.
+     */
+    @Test
+    void multipleRecordsAreCollectedInOrder() {
+        Errors errors = new Errors();
+        UIEntryRendererGrammar.FileContext ctx = parser(
+                "name:a\ncode:A\ncolors:w\nlabelcolors:s\nsymbols:?\n"
+                        + "name:b\ncode:B\ncolors:G\nlabelcolors:r\nsymbols:.\n",
+                errors).file();
+
+        assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
+        assertEquals(2, ctx.renderers.size());
+        assertEquals("a", ctx.renderers.get(0).get(0));
+        assertEquals("b", ctx.renderers.get(1).get(0));
+        // First name: on line 1, second on line 6 (five directives per record).
+        assertEquals("1", ctx.renderers.get(0).getLast());
+        assertEquals("6", ctx.renderers.get(1).getLast());
     }
 }

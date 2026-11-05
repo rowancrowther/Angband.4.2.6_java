@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
@@ -61,7 +62,7 @@ class RoomProfileReaderTest {
     private static final String REAL_FILE = "lib/gamedata/room_template.txt";
 
     /**
-     * The file's {@code record-count:} header, and the number of {@code name:} records in it.
+     * The number of {@code name:} records in the real file.
      */
     private static final int EXPECTED_TEMPLATES = 500;
 
@@ -99,7 +100,6 @@ class RoomProfileReaderTest {
     void cleanLoadOfTheRealFileReportsNoErrorsAndAllTemplates() throws IOException {
         ParseResult<RoomTemplate> result = new RoomProfileReader().parseWithResults(REAL_FILE);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(EXPECTED_TEMPLATES, result.items().size());
 
         // C prepends each record (parse_room_name), so the list runs in reverse file order.
@@ -196,11 +196,10 @@ class RoomProfileReaderTest {
      */
     @Test
     void theFixtureRecordLoadsCleanly() throws IOException {
-        String path = tempFile("good.txt", "record-count:1\n" + GOOD_RECORD + "\n");
+        String path = tempFile("good.txt", GOOD_RECORD + "\n");
 
         ParseResult<RoomTemplate> result = new RoomProfileReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         RoomTemplate good = result.items().getFirst();
         assertEquals("Good room", good.getName());
         assertEquals("%%%%.%%%%", good.getMapText());
@@ -209,13 +208,13 @@ class RoomProfileReaderTest {
     /**
      * The assembler's refusal is a {@link DataFileParseException} that comes straight out of the
      * reader, naming the {@code name:} line of the bad record and the file. Every fixture puts the
-     * bad record first, after the {@code record-count:} header, so that line is 2.
+     * bad record first, so that line is 1.
      */
     private void assertStopsTheLoad(String fileName, String content, String message) {
         DataFileParseException thrown = assertThrows(DataFileParseException.class,
                 () -> new RoomProfileReader().parseWithResults(tempFile(fileName, content)));
         assertTrue(thrown.getMessage().contains(message), thrown::getMessage);
-        assertTrue(thrown.getMessage().contains("line: 2"), thrown::getMessage);
+        assertTrue(thrown.getMessage().contains("line: 1"), thrown::getMessage);
         assertTrue(thrown.getMessage().contains(fileName), thrown::getMessage);
     }
 
@@ -229,7 +228,7 @@ class RoomProfileReaderTest {
         String tooTall = GOOD_RECORD.replace("name:Good room", "name:Too tall")
                 .replace("rows:3", "rows:12");
 
-        assertStopsTheLoad("too-tall.txt", "record-count:2\n" + tooTall + "\n" + GOOD_RECORD + "\n",
+        assertStopsTheLoad("too-tall.txt", tooTall + "\n" + GOOD_RECORD + "\n",
                 "illegal row count value (outside room template size) 12");
     }
 
@@ -244,12 +243,11 @@ class RoomProfileReaderTest {
         String zeroWide = GOOD_RECORD.replace("name:Good room", "name:No width")
                 .replace("columns:3", "columns:0");
 
-        assertStopsTheLoad("too-wide.txt", "record-count:1\n" + tooWide + "\n",
+        assertStopsTheLoad("too-wide.txt", tooWide + "\n",
                 "illegal column count value (outside room template size) 34");
 
         ParseResult<RoomTemplate> result = new RoomProfileReader()
-                .parseWithResults(tempFile("zero-wide.txt", "record-count:1\n" + zeroWide + "\n"));
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
+                .parseWithResults(tempFile("zero-wide.txt", zeroWide + "\n"));
         assertEquals(0, result.items().getFirst().getWidth());
     }
 
@@ -271,11 +269,10 @@ class RoomProfileReaderTest {
                 "D:%%%%",
                 "D:%.%",
                 "D:%%");
-        String path = tempFile("ragged.txt", "record-count:1\n" + ragged + "\n");
+        String path = tempFile("ragged.txt", ragged + "\n");
 
         ParseResult<RoomTemplate> result = new RoomProfileReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         RoomTemplate template = result.items().getFirst();
         assertEquals(List.of("%%%%", "%.%", "%%"), template.getMap());
         assertEquals("%%%%%.%%%", template.getMapText());
@@ -297,11 +294,10 @@ class RoomProfileReaderTest {
                 "tval:0",
                 "D:%%%",
                 "D:%%%");
-        String path = tempFile("short-map.txt", "record-count:1\n" + shortMap + "\n");
+        String path = tempFile("short-map.txt", shortMap + "\n");
 
         ParseResult<RoomTemplate> result = new RoomProfileReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         RoomTemplate template = result.items().getFirst();
         assertEquals(3, template.getHeight());
         assertEquals(2, template.getMap().size());
@@ -317,9 +313,9 @@ class RoomProfileReaderTest {
         String badName = GOOD_RECORD.replace("tval:0", "tval:no such tval");
         String badNumber = GOOD_RECORD.replace("tval:0", "tval:9999");
 
-        assertStopsTheLoad("bad-tval-name.txt", "record-count:1\n" + badName + "\n",
+        assertStopsTheLoad("bad-tval-name.txt", badName + "\n",
                 "illegal tValue value: no such tval");
-        assertStopsTheLoad("bad-tval-number.txt", "record-count:1\n" + badNumber + "\n",
+        assertStopsTheLoad("bad-tval-number.txt", badNumber + "\n",
                 "illegal tValue value: 9999");
     }
 
@@ -331,24 +327,8 @@ class RoomProfileReaderTest {
     void anUnknownFlagStopsTheLoadAtTheFirstBadName() {
         String badFlags = GOOD_RECORD.replace("tval:0", "tval:0\nflags:NOT_A_FLAG|ALSO_NOT_A_FLAG");
 
-        assertStopsTheLoad("bad-flags.txt", "record-count:1\n" + badFlags + "\n",
+        assertStopsTheLoad("bad-flags.txt", badFlags + "\n",
                 "illegal room flag value: NOT_A_FLAG");
-    }
-
-    /**
-     * A wrong {@code record-count:} is soft: reported, but the records that parsed still load. C's
-     * own parser never validates this header at all, so this check is stricter than the original.
-     */
-    @Test
-    void recordCountMismatchIsReportedButTemplatesStillLoad() throws IOException {
-        String path = tempFile("bad-count.txt", "record-count:7\n" + GOOD_RECORD + "\n");
-
-        ParseResult<RoomTemplate> result = new RoomProfileReader().parseWithResults(path);
-
-        assertEquals(1, result.items().size(), "the count check must not cost the file its records");
-        assertTrue(result.errors().stream()
-                        .anyMatch(e -> e.contains("declares 7") && e.contains("contains 1")),
-                result.errors()::toString);
     }
 
     /**
@@ -358,12 +338,10 @@ class RoomProfileReaderTest {
     @Test
     void aMissingMandatoryDirectiveFailsClosed() throws IOException {
         String noDoors = GOOD_RECORD.replace("doors:1\n", "");
-        String path = tempFile("no-doors.txt", "record-count:2\n" + noDoors + "\n" + GOOD_RECORD + "\n");
+        String path = tempFile("no-doors.txt", noDoors + "\n" + GOOD_RECORD + "\n");
 
-        ParseResult<RoomTemplate> result = new RoomProfileReader().parseWithResults(path);
+        assertThrows(ParseCancellationException.class, () -> new RoomProfileReader().parseWithResults(path));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty(), result.items()::toString);
     }
 
     /**
@@ -374,12 +352,10 @@ class RoomProfileReaderTest {
     void aRecordWithNoMapFailsClosed() throws IOException {
         String noMap = String.join("\n",
                 "name:No map", "type:1", "rating:1", "rows:3", "columns:3", "doors:1", "tval:0");
-        String path = tempFile("no-map.txt", "record-count:1\n" + noMap + "\n");
+        String path = tempFile("no-map.txt", noMap + "\n");
 
-        ParseResult<RoomTemplate> result = new RoomProfileReader().parseWithResults(path);
+        assertThrows(ParseCancellationException.class, () -> new RoomProfileReader().parseWithResults(path));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty(), result.items()::toString);
     }
 
     /**
@@ -400,11 +376,10 @@ class RoomProfileReaderTest {
                 "D:###",
                 "D:#.#",
                 "D:###");
-        String path = tempFile("hashes.txt", "# a real comment\nrecord-count:1\n" + hashMap + "\n");
+        String path = tempFile("hashes.txt", "# a real comment\n" + hashMap + "\n");
 
         ParseResult<RoomTemplate> result = new RoomProfileReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         RoomTemplate hashes = result.items().getFirst();
         assertEquals(List.of("###", "#.#", "###"), hashes.getMap());
         assertEquals("####.####", hashes.getMapText());
@@ -439,10 +414,8 @@ class RoomProfileReaderTest {
      * and no templates at all.
      */
     private void assertWholeFileRefused(String fileName, String content) throws IOException {
-        ParseResult<RoomTemplate> result = new RoomProfileReader().parseWithResults(tempFile(fileName, content));
+        assertThrows(ParseCancellationException.class, () -> new RoomProfileReader().parseWithResults(tempFile(fileName, content)), "expected a hard error");
 
-        assertTrue(result.hasErrors(), "expected a hard error");
-        assertTrue(result.items().isEmpty(), result.items()::toString);
     }
 
     /**
@@ -453,7 +426,7 @@ class RoomProfileReaderTest {
     void directivesInAnotherOrderAreRefusedHereWhereCAcceptsThem() throws IOException {
         String swapped = GOOD_RECORD.replace("type:1\nrating:1", "rating:1\ntype:1");
 
-        assertWholeFileRefused("swapped.txt", "record-count:1\n" + swapped + "\n");
+        assertWholeFileRefused("swapped.txt", swapped + "\n");
     }
 
     /**
@@ -464,7 +437,7 @@ class RoomProfileReaderTest {
     void aRepeatedFlagsLineIsRefusedHereWhereCAccumulatesIt() throws IOException {
         String twice = GOOD_RECORD.replace("tval:0", "tval:0\nflags:FEW_ENTRANCES\nflags:FEW_ENTRANCES");
 
-        assertWholeFileRefused("two-flags.txt", "record-count:1\n" + twice + "\n");
+        assertWholeFileRefused("two-flags.txt", twice + "\n");
     }
 
     /**
@@ -478,11 +451,10 @@ class RoomProfileReaderTest {
         String spaced = GOOD_RECORD.replace("tval:0", "tval:0\nflags:FEW_ENTRANCES FEW_ENTRANCES");
 
         ParseResult<RoomTemplate> control = new RoomProfileReader()
-                .parseWithResults(tempFile("piped.txt", "record-count:1\n" + piped + "\n"));
-        assertFalse(control.hasErrors(), () -> control.errors().toString());
+                .parseWithResults(tempFile("piped.txt", piped + "\n"));
         assertTrue(control.items().getFirst().getFlags().has(RoomFlags.FEW_ENTRANCES));
 
-        assertWholeFileRefused("spaced.txt", "record-count:1\n" + spaced + "\n");
+        assertWholeFileRefused("spaced.txt", spaced + "\n");
     }
 
     /**
@@ -491,7 +463,7 @@ class RoomProfileReaderTest {
      */
     @Test
     void aFileWithNoTemplatesIsRefusedHereWhereCLoadsAnEmptyList() throws IOException {
-        assertWholeFileRefused("empty.txt", "record-count:0\n");
+        assertWholeFileRefused("empty.txt", "");
     }
 
     /**
@@ -502,7 +474,7 @@ class RoomProfileReaderTest {
     void anIndentedDirectiveIsRefusedHereWhereCSkipsTheIndent() throws IOException {
         String indented = GOOD_RECORD.replace("rating:1", "  rating:1");
 
-        assertWholeFileRefused("indented.txt", "record-count:1\n" + indented + "\n");
+        assertWholeFileRefused("indented.txt", indented + "\n");
     }
 
     /**
@@ -513,7 +485,7 @@ class RoomProfileReaderTest {
     void aHexadecimalRowCountIsRefusedHereWhereCReadsBaseZero() throws IOException {
         String hex = GOOD_RECORD.replace("rows:3", "rows:0x3");
 
-        assertWholeFileRefused("hex.txt", "record-count:1\n" + hex + "\n");
+        assertWholeFileRefused("hex.txt", hex + "\n");
     }
 
     /**
@@ -524,7 +496,7 @@ class RoomProfileReaderTest {
     void aFieldAfterTheValueIsRefusedHereWhereCIgnoresIt() throws IOException {
         String extra = GOOD_RECORD.replace("type:1", "type:1:7");
 
-        assertWholeFileRefused("extra-field.txt", "record-count:1\n" + extra + "\n");
+        assertWholeFileRefused("extra-field.txt", extra + "\n");
     }
 
     /**
@@ -534,7 +506,7 @@ class RoomProfileReaderTest {
      */
     @Test
     void aFinalCommentWithoutANewlineIsRefusedHereWhereCSkipsIt() throws IOException {
-        assertWholeFileRefused("tail-comment.txt", "record-count:1\n" + GOOD_RECORD + "\n# the end");
+        assertWholeFileRefused("tail-comment.txt", GOOD_RECORD + "\n# the end");
     }
 
     /**
@@ -546,7 +518,7 @@ class RoomProfileReaderTest {
     void textAfterATvalNameIsTreatedAsPartOfTheNameHereWhereCDropsIt() {
         String extra = GOOD_RECORD.replace("tval:0", "tval:rod:junk");
 
-        assertStopsTheLoad("tval-extra.txt", "record-count:1\n" + extra + "\n",
+        assertStopsTheLoad("tval-extra.txt", extra + "\n",
                 "illegal tValue value: rod:junk");
     }
 
@@ -557,11 +529,10 @@ class RoomProfileReaderTest {
     @Test
     void aTvalNumberWithATrailingSpaceResolvesAsInC() throws IOException {
         String trailing = GOOD_RECORD.replace("tval:0", "tval:0 ");
-        String path = tempFile("tval-space.txt", "record-count:1\n" + trailing + "\n");
+        String path = tempFile("tval-space.txt", trailing + "\n");
 
         ParseResult<RoomTemplate> result = new RoomProfileReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(TValue.TV_NONE, result.items().getFirst().getTval());
     }
 
@@ -575,9 +546,9 @@ class RoomProfileReaderTest {
         String negativeType = GOOD_RECORD.replace("type:1", "type:-1");
         String negativeDoors = GOOD_RECORD.replace("doors:1", "doors:-1");
 
-        assertStopsTheLoad("negative-type.txt", "record-count:1\n" + negativeType + "\n",
+        assertStopsTheLoad("negative-type.txt", negativeType + "\n",
                 "illegal negative type value: -1");
-        assertStopsTheLoad("negative-doors.txt", "record-count:1\n" + negativeDoors + "\n",
+        assertStopsTheLoad("negative-doors.txt", negativeDoors + "\n",
                 "illegal negative doors value: -1");
     }
 
@@ -588,11 +559,10 @@ class RoomProfileReaderTest {
     @Test
     void aTypeThatDoesNotFitAByteIsTruncatedAsInC() throws IOException {
         String big = GOOD_RECORD.replace("type:1", "type:257");
-        String path = tempFile("big-type.txt", "record-count:1\n" + big + "\n");
+        String path = tempFile("big-type.txt", big + "\n");
 
         ParseResult<RoomTemplate> result = new RoomProfileReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().getFirst().getType());
     }
 
@@ -607,7 +577,7 @@ class RoomProfileReaderTest {
     void anEmptyMapLineFailsClosedAsInC() throws IOException {
         String empty = GOOD_RECORD.replace("D:%.%", "D:");
 
-        assertWholeFileRefused("empty-d.txt", "record-count:1\n" + empty + "\n");
+        assertWholeFileRefused("empty-d.txt", empty + "\n");
     }
 
     /**
@@ -617,9 +587,8 @@ class RoomProfileReaderTest {
     @Test
     void aFinalLineWithoutANewlineStillLoads() throws IOException {
         ParseResult<RoomTemplate> result = new RoomProfileReader()
-                .parseWithResults(tempFile("no-eol.txt", "record-count:1\n" + GOOD_RECORD));
+                .parseWithResults(tempFile("no-eol.txt", GOOD_RECORD));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals("%%%%.%%%%", result.items().getFirst().getMapText());
     }
 
@@ -630,7 +599,7 @@ class RoomProfileReaderTest {
     @Test
     void theResultRunsInReverseFileOrderAsInC() throws IOException {
         String second = GOOD_RECORD.replace("name:Good room", "name:Second room");
-        String path = tempFile("two.txt", "record-count:2\n" + GOOD_RECORD + "\n" + second + "\n");
+        String path = tempFile("two.txt", GOOD_RECORD + "\n" + second + "\n");
 
         List<RoomTemplate> items = new RoomProfileReader().parseWithResults(path).items();
 

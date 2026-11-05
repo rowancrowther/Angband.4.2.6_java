@@ -106,15 +106,13 @@ public class ShapeAssembler implements Assembler<ShapeParseRecord, List<PlayerSh
      * <p>Function assemble coded before 260915, commented in full on 261029.
      *
      * @param records  the raw shape records captured by the grammar
-     * @param errors   passed to {@link EffectAssembler#assemble}, which no longer appends to it;
-     *                 this method adds nothing to it either
      * @param filename the data file the records came from, for the error messages
      * @return the assembled shapes in file order, one per record
      * @throws DataFileParseException if a number, flag name, {@code values:} name or effect does
      *                                not resolve
      */
     @Override
-    public List<PlayerShape> assemble(@NotNull List<ShapeParseRecord> records, @NotNull List<String> errors,
+    public List<PlayerShape> assemble(@NotNull List<ShapeParseRecord> records,
                                     String filename) {
         List<PlayerShape> shapes = new ArrayList<>();
 
@@ -225,7 +223,7 @@ public class ShapeAssembler implements Assembler<ShapeParseRecord, List<PlayerSh
             }
             // EffectAssembler is all-or-nothing: the first effect that fails to resolve throws,
             // so a shape is never built with an effect silently missing.
-            List<Effect> effects = EffectAssembler.assemble(record.effects(), errors, filename);
+            List<Effect> effects = EffectAssembler.assemble(record.effects(), filename);
             List<PlayerBlow> blowList = new ArrayList<>();
             for (String blow : record.blowMethod()) {
                 blowList.addFirst(new PlayerBlow(blow));

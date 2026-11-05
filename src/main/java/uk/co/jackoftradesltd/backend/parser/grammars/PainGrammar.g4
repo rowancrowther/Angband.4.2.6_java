@@ -35,13 +35,6 @@ options { tokenVocab = PainLexer; }
     import java.util.List;
 }
 
-// "record-count:<n>" header; the declared count is handed to the reader to
-// check against the number of records actually parsed.
-recordCount
-        returns[String count]
-        :   RECORD_COUNT INTEGER { $count = $INTEGER.getText(); }
-        ;
-
 // "type:<serial number>" - starts a new pain-message set; should increase
 // for each new entry (not validated by this grammar).
 type
@@ -78,12 +71,11 @@ painEntry
 
 // Top-level rule: the whole file is one or more pain-message sets.
 file
-        returns[List<PainParseRecord> monsterPain, String declaredRecords]
+        returns[List<PainParseRecord> monsterPain]
         @init {
             $monsterPain = new ArrayList<>();
         }
-        :   recordCount { $declaredRecords = $recordCount.count; }
-            (painEntry {
+        :   (painEntry {
             $monsterPain.add($painEntry.record);
         })+ EOF
         ;

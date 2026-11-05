@@ -58,8 +58,6 @@
 # section: section type (1 for Tolkienish names, 2 for scroll names)
 # word: data
 
-record-count:2
-
 # Tolkien names
 section:1
 word:adanedhel

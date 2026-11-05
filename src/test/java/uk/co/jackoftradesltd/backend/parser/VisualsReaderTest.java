@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -38,7 +39,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -60,14 +60,14 @@ import static org.junit.jupiter.api.Assertions.*;
  * The suite is split four ways:
  * <ul>
  *   <li>{@link EndToEnd} - the real shipped file and synthetic files driven through the reader,
- *       covering the happy path, the two single-half files, and the hard (fail-closed) parse
- *       errors that {@code GrammarDriver} turns into an empty result plus error messages.</li>
+ *       covering the happy path, the two single-half files, and the parse errors that
+ *       {@code GrammarDriver} throws as a {@code ParseCancellationException}.</li>
  *   <li>{@link ReaderAgainstC} - the reader checked clause by clause against {@code ui-visuals.c}:
  *       the shipped file's 38 cycles at their upstream step counts, the missing-file and
  *       hard-error contract, the convenience methods' {@code getFirst()} unwrap, and each place the
  *       grammar or assembler is stricter or looser than C (colour codes, the field after the name,
  *       block order, and the group, cycle and step caps C enforces).</li>
- *   <li>{@link CycleAssemblerUnit} - the cycle assembler in isolation, reaching the soft-error and
+ *   <li>{@link CycleAssemblerUnit} - the cycle assembler in isolation, reaching the refusal and
  *       grouping branches that grammar-valid input cannot (an empty colour string is impossible to
  *       lex, so it can only be injected by hand).</li>
  *   <li>{@link FlickerAssemblerUnit} - the flicker assembler in isolation, at the shallow depth the
@@ -79,6 +79,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * through {@code ColourCycle.getSteps()}. That reaches the per-step colour mapping and the
  * base-attribute collision behaviour; once the designed runtime accessor lands
  * ({@code FlickerTable.stepFor}), the reflection can go.
+ *
+ * <p>Test class VisualsReaderTest coded before 261105, updated on 261105 for the removal of the
+ * soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -97,8 +100,8 @@ class VisualsReaderTest {
     /**
      * Reader-level tests: everything here starts from raw file text and exercises the lexer, the
      * grammar and both assemblers together, exactly as {@code MonsterDataLoader.loadVisualTables()}
-     * does. Grammar-valid input can never carry a soft error (see {@link CycleAssemblerUnit}), so
-     * these cases are either fully clean or hard parse failures.
+     * does. Grammar-valid input can never reach an assembler refusal (see
+     * {@link CycleAssemblerUnit}), so these cases are either fully clean or parse failures.
      *
      * @author Rowan Crowther
      */
@@ -142,7 +145,6 @@ class VisualsReaderTest {
         void realFileLoadsCyclerWithNoErrorsAsASingleAggregate() throws IOException {
             ParseResult<VisualsCycler> result = new VisualsReader().parseCyclerWithResults(REAL_FILE);
 
-            assertFalse(result.hasErrors(), () -> result.errors().toString());
             assertEquals(1, result.items().size(), "the cycler folds the whole file into one aggregate");
         }
 
@@ -171,7 +173,6 @@ class VisualsReaderTest {
         void realFileLoadsFlickerTableWithNoErrorsAsASingleAggregate() throws IOException {
             ParseResult<FlickerTable> result = new VisualsReader().parseFlickerWithResults(REAL_FILE);
 
-            assertFalse(result.hasErrors(), () -> result.errors().toString());
             assertEquals(1, result.items().size());
             assertNotNull(result.items().getFirst());
         }
@@ -179,12 +180,11 @@ class VisualsReaderTest {
         @Test
         void neitherHalfReportsErrorsSoGameConstantsWouldPopulateBothTables() throws IOException {
             VisualsReader reader = new VisualsReader();
-            ParseResult<VisualsCycler> cyclers = reader.parseCyclerWithResults(REAL_FILE);
-            ParseResult<FlickerTable> flickers = reader.parseFlickerWithResults(REAL_FILE);
 
-            // Mirrors the hasErrors() bail-out guard in GameConstants.loadVisualTables().
-            assertFalse(cyclers.hasErrors() || flickers.hasErrors(),
-                    () -> "cycler=" + cyclers.errors() + " flicker=" + flickers.errors());
+            // Both halves load the real file cleanly, so MonsterDataLoader.loadVisualTables() can
+            // register both tables.
+            assertDoesNotThrow(() -> reader.parseCyclerWithResults(REAL_FILE));
+            assertDoesNotThrow(() -> reader.parseFlickerWithResults(REAL_FILE));
         }
 
         // ---- Convenience accessors (the getFirst() unwrap) ---------------
@@ -213,7 +213,6 @@ class VisualsReaderTest {
 
             assertEquals(List.of("fancy"), cycler.getKeys());
             assertTrue(cycler.getByGroup("fancy").containsKey("mine"));
-            assertFalse(flicker.hasErrors(), () -> flicker.errors().toString());
             assertNotNull(flicker.items().getFirst());
         }
 
@@ -249,21 +248,18 @@ class VisualsReaderTest {
 
             ParseResult<FlickerTable> result = new VisualsReader().parseFlickerWithResults(file.toString());
 
-            assertFalse(result.hasErrors(), () -> result.errors().toString());
             assertNotNull(result.items().getFirst(), "no flicker blocks -> an empty-but-present table");
         }
 
-        // ---- Hard (fail-closed) parse errors: empty result + errors ------
+        // ---- Parse errors: the load throws ---------------------------------
 
         @Test
         void flickerBlockWithNoColourLinesIsAHardError() throws IOException {
             // flickerBlock requires (flickerColour)+ ; a bare header then EOF is a syntax error.
             Path file = write("no-flick-colour.txt", "flicker:d:dark\n");
 
-            ParseResult<FlickerTable> result = new VisualsReader().parseFlickerWithResults(file.toString());
+            assertThrows(ParseCancellationException.class, () -> new VisualsReader().parseFlickerWithResults(file.toString()));
 
-            assertTrue(result.items().isEmpty());
-            assertTrue(result.hasErrors());
         }
 
         @Test
@@ -271,10 +267,8 @@ class VisualsReaderTest {
             // cycleBlock requires (cycleColour)+ likewise.
             Path file = write("no-cyc-colour.txt", "cycle:fancy:mine\n");
 
-            ParseResult<VisualsCycler> result = new VisualsReader().parseCyclerWithResults(file.toString());
+            assertThrows(ParseCancellationException.class, () -> new VisualsReader().parseCyclerWithResults(file.toString()));
 
-            assertTrue(result.items().isEmpty());
-            assertTrue(result.hasErrors());
         }
 
         @Test
@@ -282,10 +276,8 @@ class VisualsReaderTest {
             // 'q' is not one of the 28 COLOUR_CODE chars, so COLOUR_CHAR cannot lex it: hard, not soft.
             Path file = write("bad-code.txt", "flicker:d:dark\nflicker-color:q\n");
 
-            ParseResult<FlickerTable> result = new VisualsReader().parseFlickerWithResults(file.toString());
+            assertThrows(ParseCancellationException.class, () -> new VisualsReader().parseFlickerWithResults(file.toString()));
 
-            assertTrue(result.items().isEmpty());
-            assertTrue(result.hasErrors());
         }
 
         @Test
@@ -293,10 +285,8 @@ class VisualsReaderTest {
             // The file rule is (flickerBlock | cycleBlock)+ EOF - at least one block is mandatory.
             Path file = write("empty.txt", "# just a comment\n");
 
-            ParseResult<VisualsCycler> result = new VisualsReader().parseCyclerWithResults(file.toString());
+            assertThrows(ParseCancellationException.class, () -> new VisualsReader().parseCyclerWithResults(file.toString()));
 
-            assertTrue(result.items().isEmpty());
-            assertTrue(result.hasErrors());
         }
     }
 
@@ -392,23 +382,19 @@ class VisualsReaderTest {
             Path file = write("bad.txt", "cycle:fancy:mine\ncycle-color:q\n");
             VisualsReader reader = new VisualsReader();
 
-            ParseResult<VisualsCycler> cyclers = reader.parseCyclerWithResults(file.toString());
-            ParseResult<FlickerTable> flickers = reader.parseFlickerWithResults(file.toString());
+            assertThrows(ParseCancellationException.class, () -> reader.parseCyclerWithResults(file.toString()));
+            assertThrows(ParseCancellationException.class, () -> reader.parseFlickerWithResults(file.toString()));
 
-            assertTrue(cyclers.items().isEmpty());
-            assertTrue(cyclers.hasErrors());
-            assertTrue(flickers.items().isEmpty());
-            assertTrue(flickers.hasErrors());
         }
 
         @Test
-        void theConvenienceMethodsThrowNoSuchElementOnAHardError() throws IOException {
-            // parseCycler and parseFlicker unwrap with items().getFirst(); a hard failure leaves the
-            // list empty, so the unwrap throws rather than returning null.
+        void theConvenienceMethodsPassTheParseErrorStraightThrough() throws IOException {
+            // parseCycler and parseFlicker unwrap with items().getFirst(), but the parse error is
+            // thrown before the unwrap, so it reaches the caller unchanged.
             Path file = write("bad2.txt", "cycle:fancy:mine\ncycle-color:q\n");
 
-            assertThrows(NoSuchElementException.class, () -> new VisualsReader().parseCycler(file.toString()));
-            assertThrows(NoSuchElementException.class, () -> new VisualsReader().parseFlicker(file.toString()));
+            assertThrows(ParseCancellationException.class, () -> new VisualsReader().parseCycler(file.toString()));
+            assertThrows(ParseCancellationException.class, () -> new VisualsReader().parseFlicker(file.toString()));
         }
 
         @Test
@@ -460,43 +446,35 @@ class VisualsReaderTest {
         void anUnlistedColourLetterOnACycleColourIsAHardErrorHereWhereCReadsItAsWhite() throws IOException {
             // color_char_to_attr falls through to COLOUR_WHITE for a character not in color_table, so
             // "cycle-color:q" loads as a white step in C. The lexer only knows the 28 listed letters.
-            ParseResult<VisualsCycler> result = new VisualsReader()
-                    .parseCyclerWithResults(write("q.txt", "cycle:g:n\ncycle-color:q\n").toString());
+            assertThrows(ParseCancellationException.class, () -> new VisualsReader()
+                    .parseCyclerWithResults(write("q.txt", "cycle:g:n\ncycle-color:q\n").toString()));
 
-            assertTrue(result.items().isEmpty());
-            assertTrue(result.hasErrors());
         }
 
         @Test
         void aColourWrittenAsAWordIsAHardErrorHereWhereCTakesItsFirstLetter() throws IOException {
             // The handlers pass only color_code[0] to color_char_to_attr, so "cycle-color:red" is the
             // letter r (red) in C. The lexer reads one letter and then meets "ed".
-            ParseResult<VisualsCycler> result = new VisualsReader()
-                    .parseCyclerWithResults(write("word.txt", "cycle:g:n\ncycle-color:red\n").toString());
+            assertThrows(ParseCancellationException.class, () -> new VisualsReader()
+                    .parseCyclerWithResults(write("word.txt", "cycle:g:n\ncycle-color:red\n").toString()));
 
-            assertTrue(result.items().isEmpty());
-            assertTrue(result.hasErrors());
         }
 
         @Test
         void aTwoLetterBaseColourOnAFlickerHeaderIsAHardErrorHereWhereCTakesTheFirst() throws IOException {
             // visuals_parse_flicker reads color_code[0] only, so "flicker:dd:name" selects dark in C.
-            ParseResult<FlickerTable> result = new VisualsReader().parseFlickerWithResults(
-                    write("dd.txt", "flicker:dd:name\nflicker-color:d\n").toString());
+            assertThrows(ParseCancellationException.class, () -> new VisualsReader().parseFlickerWithResults(
+                    write("dd.txt", "flicker:dd:name\nflicker-color:d\n").toString()));
 
-            assertTrue(result.items().isEmpty());
-            assertTrue(result.hasErrors());
         }
 
         @Test
         void aBlankAfterAColourLetterIsAHardErrorHereWhereCReadsTheLetter() throws IOException {
             // strtok on ':' leaves "d " as the token and only its first character is read, so a
             // trailing blank is harmless in C. COLOUR_EOL takes no blanks before the newline.
-            ParseResult<FlickerTable> result = new VisualsReader().parseFlickerWithResults(
-                    write("trailing.txt", "flicker:d:name\nflicker-color:d \n").toString());
+            assertThrows(ParseCancellationException.class, () -> new VisualsReader().parseFlickerWithResults(
+                    write("trailing.txt", "flicker:d:name\nflicker-color:d \n").toString()));
 
-            assertTrue(result.items().isEmpty());
-            assertTrue(result.hasErrors());
         }
 
         // ---- Where Java differs: the name field -----------------------------
@@ -520,32 +498,26 @@ class VisualsReaderTest {
             // between. flickerBlock needs its colour lines to follow the header at once.
             String body = EndToEnd.flickerBlock('d', "dark", 'd') + cycle("g", "n", 1) + "flicker-color:D\n";
 
-            ParseResult<FlickerTable> result = new VisualsReader()
-                    .parseFlickerWithResults(write("late.txt", body).toString());
+            assertThrows(ParseCancellationException.class, () -> new VisualsReader()
+                    .parseFlickerWithResults(write("late.txt", body).toString()));
 
-            assertTrue(result.items().isEmpty());
-            assertTrue(result.hasErrors());
         }
 
         @Test
         void aColourLineBeforeAnyHeaderIsAHardErrorHereWhereCWritesToCycleZero() throws IOException {
             // flicker_cycle_index starts at 0, so C stores a leading flicker-color: against the dark
             // cycle. (A leading cycle-color: dereferences cycles[0], which is NULL, in C.)
-            ParseResult<FlickerTable> result = new VisualsReader().parseFlickerWithResults(
-                    write("early.txt", "flicker-color:d\n" + EndToEnd.flickerBlock('w', "white", 'w')).toString());
+            assertThrows(ParseCancellationException.class, () -> new VisualsReader().parseFlickerWithResults(
+                    write("early.txt", "flicker-color:d\n" + EndToEnd.flickerBlock('w', "white", 'w')).toString()));
 
-            assertTrue(result.items().isEmpty());
-            assertTrue(result.hasErrors());
         }
 
         @Test
         void anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent() throws IOException {
             // parser_parse skips leading whitespace; the shared CommentsAndEol rules do not.
-            ParseResult<VisualsCycler> result = new VisualsReader().parseCyclerWithResults(
-                    write("indent.txt", "cycle:g:n\n  cycle-color:r\n").toString());
+            assertThrows(ParseCancellationException.class, () -> new VisualsReader().parseCyclerWithResults(
+                    write("indent.txt", "cycle:g:n\n  cycle-color:r\n").toString()));
 
-            assertTrue(result.items().isEmpty());
-            assertTrue(result.hasErrors());
         }
 
         // ---- The caps C enforces (matched by VisualsCycleAssembler from 261030) ----
@@ -628,13 +600,11 @@ class VisualsReaderTest {
 
         @Test
         void groupsRecordsByGroupThenName() {
-            List<String> errors = new ArrayList<>();
             List<VisualsCycler> out = new VisualsCycleAssembler().assemble(List.of(
                     record("g1", "a", List.of("r")),
                     record("g1", "b", List.of("g")),
-                    record("g2", "c", List.of("b"))), errors, "test.txt");
+                    record("g2", "c", List.of("b"))), "test.txt");
 
-            assertTrue(errors.isEmpty(), errors::toString);
             VisualsCycler cycler = out.getFirst();
             assertEquals(2, cycler.getKeys().size());
             Map<String, ?> g1 = cycler.getByGroup("g1");
@@ -646,33 +616,27 @@ class VisualsReaderTest {
         @Test
         void emptyColourStringStopsTheLoadAsInC() {
             // visuals_parse_cycle_color: strlen(color_code) == 0 is PARSE_ERROR_INVALID_COLOR.
-            List<String> errors = new ArrayList<>();
 
             assertThrows(DataFileParseException.class, () -> new VisualsCycleAssembler()
-                    .assemble(List.of(record("g", "bad", List.of("r", ""))), errors, "test.txt"));
-            assertTrue(errors.isEmpty(), "a load-ending error is thrown, never added to the error list");
+                    .assemble(List.of(record("g", "bad", List.of("r", ""))), "test.txt"));
         }
 
         @Test
         void oneBadRecordStopsTheLoadEvenAlongsideAGoodOne() {
             // C's first handler error ends the whole file: no partial cycler comes back.
-            List<String> errors = new ArrayList<>();
 
             assertThrows(DataFileParseException.class, () -> new VisualsCycleAssembler().assemble(List.of(
                     record("g", "good", List.of("r", "g")),
-                    record("g", "bad", List.of(""))), errors, "test.txt"));
-            assertTrue(errors.isEmpty());
+                    record("g", "bad", List.of(""))), "test.txt"));
         }
 
         @Test
         void unknownColourCharIsReadAsWhiteAsInC() {
             // 'q' is not one of the 28 colour codes; color_char_to_attr falls through to
             // COLOUR_WHITE ("we assume white").
-            List<String> errors = new ArrayList<>();
             List<VisualsCycler> out = new VisualsCycleAssembler()
-                    .assemble(List.of(record("g", "q", List.of("q"))), errors, "test.txt");
+                    .assemble(List.of(record("g", "q", List.of("q"))), "test.txt");
 
-            assertTrue(errors.isEmpty(), errors::toString);
             assertEquals(ColourEnum.COLOUR_WHITE, out.getFirst().getByGroup("g").get("q").getColour(0));
         }
 
@@ -680,11 +644,9 @@ class VisualsReaderTest {
         void emptyInputStopsTheLoadAsInC() {
             // visuals_cycler_new(0) returns NULL, so visuals_file_parser_finish answers
             // PARSE_ERROR_INTERNAL.
-            List<String> errors = new ArrayList<>();
 
             assertThrows(DataFileParseException.class,
-                    () -> new VisualsCycleAssembler().assemble(List.of(), errors, "test.txt"));
-            assertTrue(errors.isEmpty());
+                    () -> new VisualsCycleAssembler().assemble(List.of(), "test.txt"));
         }
     }
 
@@ -710,8 +672,8 @@ class VisualsReaderTest {
             return new VisualsFlickerParseRecord("name", base, steps, 1);
         }
 
-        private static FlickerTable assemble(List<String> errors, VisualsFlickerParseRecord... records) {
-            List<FlickerTable> out = new VisualsFlickerAssembler().assemble(List.of(records), errors, "test.txt");
+        private static FlickerTable assemble(VisualsFlickerParseRecord... records) {
+            List<FlickerTable> out = new VisualsFlickerAssembler().assemble(List.of(records), "test.txt");
             assertEquals(1, out.size());
             return out.getFirst();
         }
@@ -735,17 +697,15 @@ class VisualsReaderTest {
 
         @Test
         void threeStepsLoadInOrder() {
-            List<String> errors = new ArrayList<>();
-            FlickerTable t = assemble(errors, record("r", List.of("r", "o", "y")));
+            FlickerTable t = assemble(record("r", List.of("r", "o", "y")));
 
             assertEquals(List.of(ColourEnum.COLOUR_RED, ColourEnum.COLOUR_ORANGE, ColourEnum.COLOUR_YELLOW),
                     cycleFor(t, ColourEnum.COLOUR_RED));
-            assertTrue(errors.isEmpty());
         }
 
         @Test
         void aFourthStepIsDroppedAsCSetColorIgnoresIndexThree() {
-            FlickerTable t = assemble(new ArrayList<>(), record("r", List.of("r", "o", "y", "w")));
+            FlickerTable t = assemble(record("r", List.of("r", "o", "y", "w")));
 
             assertEquals(List.of(ColourEnum.COLOUR_RED, ColourEnum.COLOUR_ORANGE, ColourEnum.COLOUR_YELLOW),
                     cycleFor(t, ColourEnum.COLOUR_RED));
@@ -753,8 +713,7 @@ class VisualsReaderTest {
 
         @Test
         void manyStepsStillGiveExactlyThree() {
-            FlickerTable t = assemble(new ArrayList<>(),
-                    record("b", List.of("b", "B", "g", "G", "v", "V")));
+            FlickerTable t = assemble(record("b", List.of("b", "B", "g", "G", "v", "V")));
 
             assertEquals(List.of(ColourEnum.COLOUR_BLUE, ColourEnum.COLOUR_LIGHT_BLUE, ColourEnum.COLOUR_GREEN),
                     cycleFor(t, ColourEnum.COLOUR_BLUE));
@@ -762,7 +721,7 @@ class VisualsReaderTest {
 
         @Test
         void twoStepsArePaddedWithDark() {
-            FlickerTable t = assemble(new ArrayList<>(), record("r", List.of("r", "o")));
+            FlickerTable t = assemble(record("r", List.of("r", "o")));
 
             assertEquals(List.of(ColourEnum.COLOUR_RED, ColourEnum.COLOUR_ORANGE, ColourEnum.COLOUR_DARK),
                     cycleFor(t, ColourEnum.COLOUR_RED));
@@ -770,7 +729,7 @@ class VisualsReaderTest {
 
         @Test
         void oneStepIsPaddedWithTwoDarks() {
-            FlickerTable t = assemble(new ArrayList<>(), record("r", List.of("y")));
+            FlickerTable t = assemble(record("r", List.of("y")));
 
             assertEquals(List.of(ColourEnum.COLOUR_YELLOW, ColourEnum.COLOUR_DARK, ColourEnum.COLOUR_DARK),
                     cycleFor(t, ColourEnum.COLOUR_RED));
@@ -779,7 +738,7 @@ class VisualsReaderTest {
         @Test
         void noStepsGivesAnAllDarkCycleAsCsZeroedRowDoes() {
             // Unreachable through the grammar (flickerColour is '+'), but C's row is all zero here.
-            FlickerTable t = assemble(new ArrayList<>(), record("r", List.of()));
+            FlickerTable t = assemble(record("r", List.of()));
 
             assertEquals(List.of(ColourEnum.COLOUR_DARK, ColourEnum.COLOUR_DARK, ColourEnum.COLOUR_DARK),
                     cycleFor(t, ColourEnum.COLOUR_RED));
@@ -787,8 +746,7 @@ class VisualsReaderTest {
 
         @Test
         void aRepeatedBaseWithFewerStepsKeepsTheEarlierTail() {
-            FlickerTable t = assemble(new ArrayList<>(),
-                    record("r", List.of("r", "o", "y")),
+            FlickerTable t = assemble(record("r", List.of("r", "o", "y")),
                     record("r", List.of("g")));
 
             assertEquals(List.of(ColourEnum.COLOUR_GREEN, ColourEnum.COLOUR_ORANGE, ColourEnum.COLOUR_YELLOW),
@@ -797,8 +755,7 @@ class VisualsReaderTest {
 
         @Test
         void aRepeatedBaseOverAPaddedCycleOverwritesTheDarkPadding() {
-            FlickerTable t = assemble(new ArrayList<>(),
-                    record("r", List.of("r")),
+            FlickerTable t = assemble(record("r", List.of("r")),
                     record("r", List.of("g", "b")));
 
             assertEquals(List.of(ColourEnum.COLOUR_GREEN, ColourEnum.COLOUR_BLUE, ColourEnum.COLOUR_DARK),
@@ -807,8 +764,7 @@ class VisualsReaderTest {
 
         @Test
         void aRepeatedBaseWithFourStepsStillStopsAtThree() {
-            FlickerTable t = assemble(new ArrayList<>(),
-                    record("r", List.of("r", "o", "y")),
+            FlickerTable t = assemble(record("r", List.of("r", "o", "y")),
                     record("r", List.of("g", "b", "v", "w")));
 
             assertEquals(List.of(ColourEnum.COLOUR_GREEN, ColourEnum.COLOUR_BLUE, ColourEnum.COLOUR_VIOLET),
@@ -817,8 +773,7 @@ class VisualsReaderTest {
 
         @Test
         void aThirdBlockForTheSameBaseMergesOnceMore() {
-            FlickerTable t = assemble(new ArrayList<>(),
-                    record("r", List.of("r", "o", "y")),
+            FlickerTable t = assemble(record("r", List.of("r", "o", "y")),
                     record("r", List.of("g", "b")),
                     record("r", List.of("w")));
 
@@ -828,8 +783,7 @@ class VisualsReaderTest {
 
         @Test
         void differentBasesDoNotInterfere() {
-            FlickerTable t = assemble(new ArrayList<>(),
-                    record("r", List.of("r", "o", "y")),
+            FlickerTable t = assemble(record("r", List.of("r", "o", "y")),
                     record("b", List.of("g")));
 
             assertEquals(2, byAttr(t).size());
@@ -842,8 +796,7 @@ class VisualsReaderTest {
         @Test
         void caseMattersForTheBaseCode() {
             // 'b' is Blue and 'B' is Light Blue in C's color_table: two separate rows.
-            FlickerTable t = assemble(new ArrayList<>(),
-                    record("b", List.of("b")),
+            FlickerTable t = assemble(record("b", List.of("b")),
                     record("B", List.of("B")));
 
             assertEquals(ColourEnum.COLOUR_BLUE, cycleFor(t, ColourEnum.COLOUR_BLUE).getFirst());
@@ -852,17 +805,15 @@ class VisualsReaderTest {
 
         @Test
         void anUnknownStepCodeBecomesWhiteAsInColorCharToAttr() {
-            List<String> errors = new ArrayList<>();
-            FlickerTable t = assemble(errors, record("r", List.of("x", "r", "o")));
+            FlickerTable t = assemble(record("r", List.of("x", "r", "o")));
 
             assertEquals(List.of(ColourEnum.COLOUR_WHITE, ColourEnum.COLOUR_RED, ColourEnum.COLOUR_ORANGE),
                     cycleFor(t, ColourEnum.COLOUR_RED));
-            assertTrue(errors.isEmpty());
         }
 
         @Test
         void anUnknownBaseCodeKeysOnWhiteAsInColorCharToAttr() {
-            FlickerTable t = assemble(new ArrayList<>(), record("x", List.of("r", "o", "y")));
+            FlickerTable t = assemble(record("x", List.of("r", "o", "y")));
 
             assertEquals(List.of(ColourEnum.COLOUR_RED, ColourEnum.COLOUR_ORANGE, ColourEnum.COLOUR_YELLOW),
                     cycleFor(t, ColourEnum.COLOUR_WHITE));
@@ -870,7 +821,7 @@ class VisualsReaderTest {
 
         @Test
         void aSpaceStepCodeIsDarkAsInColorCharToAttr() {
-            FlickerTable t = assemble(new ArrayList<>(), record("r", List.of(" ", "r", "o")));
+            FlickerTable t = assemble(record("r", List.of(" ", "r", "o")));
 
             assertEquals(List.of(ColourEnum.COLOUR_DARK, ColourEnum.COLOUR_RED, ColourEnum.COLOUR_ORANGE),
                     cycleFor(t, ColourEnum.COLOUR_RED));
@@ -879,7 +830,6 @@ class VisualsReaderTest {
         @Test
         void realFileGivesTwentyEightThreeStepCycles() throws IOException {
             List<FlickerTable> tables = new ArrayList<>();
-            List<String> errors = new ArrayList<>();
             List<VisualsFlickerParseRecord> records = new ArrayList<>();
             for (String line : Files.readAllLines(Path.of(REAL_FILE))) {
                 if (line.startsWith("flicker:")) {
@@ -888,12 +838,11 @@ class VisualsReaderTest {
                     records.getLast().colours().add(line.substring(14, 15));
                 }
             }
-            tables.addAll(new VisualsFlickerAssembler().assemble(records, errors, REAL_FILE));
+            tables.addAll(new VisualsFlickerAssembler().assemble(records, REAL_FILE));
 
             Map<ColourEnum, ColourCycle> map = byAttr(tables.getFirst());
             assertEquals(FLICKER_GROUP_CYCLES, map.size());
             map.values().forEach(c -> assertEquals(3, c.getSize()));
-            assertTrue(errors.isEmpty());
         }
 
         @Test
@@ -920,8 +869,7 @@ class VisualsReaderTest {
         void anUnknownBaseAndAWhiteBaseShareOneRow() {
             // color_char_to_attr gives COLOUR_WHITE for both 'x' and 'w', so C's second block
             // writes over row 1 from step 0.
-            FlickerTable t = assemble(new ArrayList<>(),
-                    record("x", List.of("r", "o", "y")),
+            FlickerTable t = assemble(record("x", List.of("r", "o", "y")),
                     record("w", List.of("g")));
 
             assertEquals(1, byAttr(t).size());
@@ -931,7 +879,7 @@ class VisualsReaderTest {
 
         @Test
         void aSpaceBaseCodeKeysOnDarkAsInColorCharToAttr() {
-            FlickerTable t = assemble(new ArrayList<>(), record(" ", List.of("r", "o", "y")));
+            FlickerTable t = assemble(record(" ", List.of("r", "o", "y")));
 
             assertEquals(List.of(ColourEnum.COLOUR_RED, ColourEnum.COLOUR_ORANGE, ColourEnum.COLOUR_YELLOW),
                     cycleFor(t, ColourEnum.COLOUR_DARK));
@@ -939,19 +887,16 @@ class VisualsReaderTest {
 
         @Test
         void producesExactlyOneTableWrappedInAList() {
-            List<String> errors = new ArrayList<>();
             List<FlickerTable> out = new VisualsFlickerAssembler()
-                    .assemble(List.of(record("d", List.of("d", "D", "R"))), errors, "test.txt");
+                    .assemble(List.of(record("d", List.of("d", "D", "R"))), "test.txt");
 
             assertEquals(1, out.size());
             assertNotNull(out.getFirst());
-            assertTrue(errors.isEmpty());
         }
 
         @Test
         void emptyInputStillYieldsAPresentTable() {
-            List<String> errors = new ArrayList<>();
-            List<FlickerTable> out = new VisualsFlickerAssembler().assemble(List.of(), errors, "test.txt");
+            List<FlickerTable> out = new VisualsFlickerAssembler().assemble(List.of(), "test.txt");
 
             assertEquals(1, out.size());
             assertNotNull(out.getFirst());
@@ -961,14 +906,11 @@ class VisualsReaderTest {
         void twoRecordsSharingABaseAttributeDoNotThrow() {
             // Both records key on 'd'. C writes the second over the first step by step, so the
             // padded third step of the first block survives: [d,R,dark] then w,W gives [w,W,dark].
-            List<String> errors = new ArrayList<>();
-            FlickerTable t = assemble(errors,
-                    record("d", List.of("d", "R")),
+            FlickerTable t = assemble(record("d", List.of("d", "R")),
                     record("d", List.of("w", "W")));
 
             assertEquals(List.of(ColourEnum.COLOUR_WHITE, ColourEnum.COLOUR_LIGHT_SLATE, ColourEnum.COLOUR_DARK),
                     cycleFor(t, ColourEnum.COLOUR_DARK));
-            assertTrue(errors.isEmpty());
         }
     }
 }

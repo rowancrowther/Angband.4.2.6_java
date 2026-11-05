@@ -37,23 +37,21 @@ import java.util.List;
 /**
  * Reads {@code flavor.txt} into a list of {@link FlavourKind}s, wiring the
  * {@code FlavourLexer}/{@code FlavourGrammar} to the {@link FlavourKindAssembler}
- * through the shared {@link GrammarDriver}. Callers wanting the collected soft
- * errors as well as the items use {@link #parseWithResults}; {@link #parse}
- * returns just the items.
+ * through the shared {@link GrammarDriver}. {@link #parseWithResults} returns the
+ * items wrapped in a {@link ParseResult}; {@link #parse} returns just the items.
  *
  * <p>Stands in for three C functions in {@code init.c}. {@code init_parse_flavor} registers
  * {@code kind}, {@code flavor} and {@code fixed}; here that directive table is the grammar.
  * {@code run_parse_flavor} is {@code parse_file_quit_not_found}, which quits when the file is
  * missing; here that is an {@link IOException}, and the quit is left to
  * {@code MiscDataLoader.loadFlavours}. {@code finish_parse_flavor} assigns the parsed list to the
- * global {@code flavors}; here the loader hands {@link #parse}'s items to {@code MiscRegistry}.
+ * global {@code flavors}; here the loader hands {@link #parseWithResults}'s items to
+ * {@code MiscRegistry}.
  * The per-line work of {@code parse_flavor_kind} and {@code parse_flavor_flavor} (the tval, the
  * colour, the sval) belongs to the assemblers, not to this class.
  *
  * <p>Where the port differs from C, none of it visible on the shipped file:
  * <ul>
- *   <li>The file starts with a {@code record-count:} header, which upstream's {@code flavor.txt}
- *       does not have. It counts the {@code kind:} blocks (eight), not the 302 flavours.</li>
  *   <li>C keeps one flat list with each flavour carrying its tval and glyph. Here a
  *       {@code kind:} line and the lines under it make one {@link FlavourKind}, so two
  *       {@code kind:} lines for one tval are two blocks. {@link FlavourKind} stores a block last
@@ -62,12 +60,17 @@ import java.util.List;
  *       flavour before any {@code kind:}, a colon in a description, a trailing colon after the
  *       colour, an indented line and text after the glyph are hard errors where C accepts them,
  *       and an empty file is one too. They are written up in {@code docs/grammar_issues.md}.</li>
- *   <li>A hard error gives an empty result with the syntax errors, where C quits; the soft errors
- *       (an unknown tval or colour, a bad index, an unresolvable {@code fixed:} sval) drop a record or a
- *       block. Those are in {@code docs/Assembler_Issues.md}.</li>
  * </ul>
  *
- * <p>Class FlavourReader coded before 260915, commented in full on 261018.
+ * <p>Every error is fatal, as C quits on the first: a syntax error is thrown from
+ * {@link #extract} as a {@code ParseCancellationException}, and an unknown tval, a glyph that is
+ * not one character or a bad index is thrown by the assemblers as a
+ * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}. Neither is caught here, and
+ * nothing is returned. An unknown colour is not an error; it becomes white, as in C. The
+ * assembler differences are in {@code docs/Assembler_Issues.md}.
+ *
+ * <p>Class FlavourReader coded before 260915, commented in full on 261018, updated on 261105 for
+ * the removal of the soft-error path and the {@code record-count:} header.
  *
  * @author Rowan Crowther
  */
@@ -81,19 +84,18 @@ public class FlavourReader implements Reader<FlavourKind> {
     private static final Logger logger = LogManager.getLogger();
 
     /**
-     * Parses {@code filename} and returns just the assembled flavours, discarding the
-     * soft-error channel (use {@link #parseWithResults} to inspect errors). This is the
-     * {@link Reader} entry point {@code MiscDataLoader.loadFlavours} does not use; it calls
-     * {@link #parseWithResults} so that it can report the errors.
+     * Parses {@code filename} and returns just the assembled flavours, unwrapped from the
+     * {@link ParseResult} that {@link #parseWithResults} gives. This is the {@link Reader} entry
+     * point; {@code MiscDataLoader.loadFlavours} calls {@link #parseWithResults} instead.
      *
-     * <p>The blocks come back in file order, each holding its flavours last file line first.
-     * A hard syntax error gives an empty list, so a caller of this method cannot tell it from an
-     * empty file.
+     * <p>The blocks come back in file order, each holding its flavours last file line first. Any
+     * error throws exactly as it does in {@link #parseWithResults}.
      *
-     * <p>Function parse coded before 260915, commented in full on 261018.
+     * <p>Function parse coded before 260915, commented in full on 261018, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param filename the data file to read
-     * @return the flavours read from the file
+     * @return every flavour kind in the file, in file order
      * @throws IOException if the file cannot be read
      */
     @Override
@@ -103,48 +105,44 @@ public class FlavourReader implements Reader<FlavourKind> {
 
     /**
      * Drives the parse and pulls the raw kind blocks off the tree: runs the
-     * {@code file} rule, surfaces any syntax errors, then soft-checks the
-     * declared record-count against the number of kind blocks parsed.
+     * {@code file} rule and surfaces any syntax errors.
      *
-     * <p>{@link ParseErrors#throwIfAny()} runs before the count check, so a syntax error ends the
-     * parse with no items and no record-count message. The count is of {@code kind:} blocks, the
-     * list {@code file} returns, not of the flavours inside them. C has no header to check.
+     * <p>{@link ParseErrors#throwIfAny()} runs straight after the parse, so a syntax error throws
+     * a {@code ParseCancellationException} before any block is used. The list returned holds the
+     * {@code kind:} blocks, not the flavours inside them.
      *
-     * <p>Function extract coded before 260915, commented in full on 261018.
+     * <p>Function extract coded before 260915, commented in full on 261018, updated on 261105 for
+     * the removal of the soft-error path and the {@code record-count:} header.
      *
      * @param parser       the grammar to run
      * @param errorCatcher collects syntax errors raised during the parse
-     * @param errors       the soft-error sink for the record-count check
      * @return the raw {@link FlavourKindParseRecord}s for the assembler
      */
     private static List<FlavourKindParseRecord> extract(
             @NotNull FlavourGrammar parser,
-            @NotNull ParseErrors errorCatcher,
-            @NotNull List<String> errors) {
+            @NotNull ParseErrors errorCatcher) {
         FlavourGrammar.FileContext output = parser.file();
         List<FlavourKindParseRecord> records = output.sections;
         errorCatcher.throwIfAny();
-
-        String declaredRecordCount = output.declaredRecordCount;
-        GrammarDriver.checkRecordCount(declaredRecordCount, records.size(), errors);
 
         return new ArrayList<>(records);
     }
 
     /**
-     * Parses the file and returns both the assembled flavour kinds and any soft
-     * errors collected along the way (unknown tval/colour, unresolvable sval,
-     * record-count mismatch).
+     * Parses the file and returns the assembled flavour kinds wrapped in a {@link ParseResult}.
      *
      * <p>This is the port of {@code run_parse_flavor}: a file that cannot be read is an
-     * {@link IOException} where C quits. The {@link FlavourKindAssembler} needs the object-kind
-     * table, artifact-synthesised kinds included, to resolve a {@code fixed:} sval, so the caller
-     * loads this after artifacts.
+     * {@link IOException} where C quits. A syntax error throws a
+     * {@code ParseCancellationException} and a record the assemblers refuse throws a
+     * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}, so no partial result is
+     * returned. The {@link FlavourKindAssembler} needs the object-kind table, artifact-synthesised
+     * kinds included, to resolve a {@code fixed:} sval, so the caller loads this after artifacts.
      *
-     * <p>Function parseWithResults coded before 260915, commented in full on 261018.
+     * <p>Function parseWithResults coded before 260915, commented in full on 261018, updated on
+     * 261105 for the removal of the soft-error path.
      *
      * @param filename the file to read
-     * @return the parse result — items plus collected errors
+     * @return every flavour kind in the file, in file order
      * @throws IOException if the file cannot be read
      */
     public @NotNull ParseResult<FlavourKind> parseWithResults(@NotNull String filename) throws IOException {

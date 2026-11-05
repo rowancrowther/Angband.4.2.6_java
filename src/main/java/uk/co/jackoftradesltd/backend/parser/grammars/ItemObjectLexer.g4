@@ -2,10 +2,6 @@ lexer grammar ItemObjectLexer;
 
 import CommentsAndEol, Flags, EffectBlockLexer, AngbandDisplayCharacter, DiceStrings;
 
-RECORD_COUNT
-        :   'record-count:'
-        ;
-
 NAME
         :   'name:' -> pushMode(OBJ_FREE_TEXT_MODE)
         ;

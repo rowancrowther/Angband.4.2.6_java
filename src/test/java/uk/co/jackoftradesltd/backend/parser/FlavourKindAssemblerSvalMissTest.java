@@ -91,7 +91,7 @@ class FlavourKindAssemblerSvalMissTest {
 
     private static List<Flavour> assembleRingBlock(FlavourParseRecord... flavours) {
         FlavourKindParseRecord record = new FlavourKindParseRecord("ring", "=", List.of(flavours), 1);
-        List<FlavourKind> kinds = new FlavourKindAssembler().assemble(List.of(record), new ArrayList<>(), FILE);
+        List<FlavourKind> kinds = new FlavourKindAssembler().assemble(List.of(record), FILE);
         assertEquals(1, kinds.size());
         return kinds.getFirst().getFlavours();
     }
@@ -141,7 +141,7 @@ class FlavourKindAssemblerSvalMissTest {
     void theSameNameUnderAnotherTvalIsAMiss() {
         FlavourKindParseRecord record = new FlavourKindParseRecord("amulet", "\"",
                 List.of(fixed("1", "Ring of Power")), 1);
-        List<FlavourKind> kinds = new FlavourKindAssembler().assemble(List.of(record), new ArrayList<>(), FILE);
+        List<FlavourKind> kinds = new FlavourKindAssembler().assemble(List.of(record), FILE);
         assertEquals(255, kinds.getFirst().getFlavours().getFirst().getsVal());
     }
 

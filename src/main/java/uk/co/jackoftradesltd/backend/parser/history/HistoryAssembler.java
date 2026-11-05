@@ -114,8 +114,6 @@ public class HistoryAssembler implements Assembler<HistoryParseRecord, List<Play
      * <p>Function assemble commented in full before 260915, commented again in full on 261026.
      *
      * @param records  the raw {@link HistoryParseRecord}s in source order
-     * @param errors   not used; every failure throws, and the parameter is kept to satisfy
-     *                 {@link Assembler}
      * @param filename the file the records came from, named in each thrown message
      * @return the assembled {@link PlayerHistoryChart}s in first-appearance order, each linked to
      *         its successor
@@ -124,7 +122,7 @@ public class HistoryAssembler implements Assembler<HistoryParseRecord, List<Play
      *                                names no chart
      */
     @Override
-    public List<PlayerHistoryChart> assemble(@NotNull List<HistoryParseRecord> records, @NotNull List<String> errors,
+    public List<PlayerHistoryChart> assemble(@NotNull List<HistoryParseRecord> records,
                                     String filename) {
         List<PlayerHistoryChart> charts = new ArrayList<>();
         Map<Integer, PlayerHistoryChart> entryMap = new HashMap<>();

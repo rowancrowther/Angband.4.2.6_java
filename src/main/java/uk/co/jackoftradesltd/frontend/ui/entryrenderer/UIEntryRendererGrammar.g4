@@ -38,18 +38,6 @@ options { tokenVocab = UIEntryRendererLexer; }
 /*
  * @author Rowan Crowther
  *
- * The declared number of records in the file
- */
-recordCount
-        returns[String count]
-        :   RECORD_COUNT INTEGER {
-                $count = $INTEGER.getText();
-            }
-        ;
-
-/*
- * @author Rowan Crowther
- *
  * "name:<text>" - starts a new renderer record; referenced by
  * ui_entry.txt's renderer:.
  */
@@ -174,12 +162,11 @@ uiEntry
  * Top-level rule: the whole file is one or more renderer records.
  */
 file
-        returns[List<List<String>> renderers, String record]
+        returns[List<List<String>> renderers]
         @init {
             $renderers = new ArrayList<>();
         }
-        :   recordCount { $record = $recordCount.count; }
-            (uiEntry
+        :   (uiEntry
             {
                 $renderers.add($uiEntry.renderer);
             })+ EOF

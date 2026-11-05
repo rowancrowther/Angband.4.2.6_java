@@ -27,7 +27,6 @@ import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.middle.objects.Flavour;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -37,12 +36,17 @@ import static org.junit.jupiter.api.Assertions.*;
  * come from C: {@code index} is a {@code uint} that {@code parser_parse} reads with {@code strtoul}
  * base 0 after refusing a leading {@code -}; {@code attr} goes to {@code color_char_to_attr} when
  * it is one character long and {@code color_text_to_attr} otherwise.
+ *
+ * <p>Test class FlavourAssemblerTest coded before 261105, updated on 261105 for the removal of the
+ * soft-error path.
+ *
+ * @author Rowan Crowther
  */
 class FlavourAssemblerTest {
 
     private static Flavour one(String index, String sVal, String attr, String text) {
         List<Flavour> out = new FlavourAssembler().assemble(
-                List.of(new FlavourParseRecord(index, sVal, attr, text, 7)), new ArrayList<>(), "flavor.txt");
+                List.of(new FlavourParseRecord(index, sVal, attr, text, 7)), "flavor.txt");
         assertEquals(1, out.size());
         return out.getFirst();
     }
@@ -112,21 +116,19 @@ class FlavourAssemblerTest {
 
     /** Every record becomes a flavour, in order: a bad colour is white, not a dropped record. */
     @Test
-    void everyRecordIsKeptInOrderAndNoSoftErrorIsRaised() {
-        List<String> errors = new ArrayList<>();
+    void everyRecordIsKeptInOrder() {
         List<Flavour> out = new FlavourAssembler().assemble(List.of(
                 new FlavourParseRecord("2", null, "Green", "A", 3),
                 new FlavourParseRecord("3", null, "Mauve", "B", 4),
-                new FlavourParseRecord("4", "Some Ring", "q", "C", 5)), errors, "flavor.txt");
+                new FlavourParseRecord("4", "Some Ring", "q", "C", 5)), "flavor.txt");
         assertEquals(List.of(2, 3, 4), out.stream().map(Flavour::getIndex).toList());
         assertEquals(List.of(ColourEnum.COLOUR_GREEN, ColourEnum.COLOUR_WHITE, ColourEnum.COLOUR_WHITE),
                 out.stream().map(Flavour::getColour).toList());
-        assertTrue(errors.isEmpty());
     }
 
     @Test
     void anEmptyBlockGivesNoFlavours() {
-        assertTrue(new FlavourAssembler().assemble(List.of(), new ArrayList<>(), "flavor.txt").isEmpty());
+        assertTrue(new FlavourAssembler().assemble(List.of(), "flavor.txt").isEmpty());
     }
 
     /** The error names the record, its line and the file. */

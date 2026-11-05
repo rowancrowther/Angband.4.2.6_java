@@ -48,8 +48,8 @@ import java.util.Map;
  *
  * <p>Every field that cannot be resolved ends the load. C's handler returns a parser error and
  * {@code init_angband} quits, so this class logs the message at fatal level and throws
- * {@link DataFileParseException} naming the record's line and the file; no record is skipped and
- * the {@code errors} list is never written to. The cases are an unrecognized {@code type:},
+ * {@link DataFileParseException} naming the record's line and the file; no record is skipped. The
+ * cases are an unrecognized {@code type:},
  * {@code subtype:} or {@code id-type:}, a {@code code:} that names nothing in the table its type
  * selects, a {@code type-mult:} tval that resolves to nothing, and a number that
  * {@link ParseUtils#parseIntString} cannot read.
@@ -116,7 +116,8 @@ import java.util.Map;
  * deviation (decided 261009, "for the time being"): the list here is base 0, has no blank slot,
  * and its size is the record count.
  *
- * <p>Class ObjectPropertyAssembler coded before 260915, commented in full on 261102.
+ * <p>Class ObjectPropertyAssembler coded before 260915, commented in full on 261102, updated on
+ * 261105 for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -145,14 +146,13 @@ public class ObjectPropertyAssembler implements Assembler<ObjectPropertyParseRec
      * <p>Function assemble coded before 260915, commented in full on 261028.
      *
      * @param records  the raw records extracted by the grammar, in file order
-     * @param errors   unused: every fault ends the load, so nothing is appended
      * @param filename the file the records came from, named in the message of each failure
      * @return the resolved properties, in file order
      * @throws DataFileParseException if a type, subtype, id-type, code, tval or number cannot be
      *                                resolved
      */
     @Override
-    public List<ObjectProperty> assemble(@NotNull List<ObjectPropertyParseRecord> records, @NotNull List<String> errors,
+    public List<ObjectProperty> assemble(@NotNull List<ObjectPropertyParseRecord> records,
                                     String filename) {
         List<ObjectProperty> objectProperties = new ArrayList<>();
 

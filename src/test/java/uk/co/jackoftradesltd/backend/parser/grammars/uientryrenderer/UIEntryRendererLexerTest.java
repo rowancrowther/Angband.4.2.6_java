@@ -36,6 +36,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * stay in the default mode and take a {@code COLOURCHARS} run built from the shared {@code Colours}
  * import; numeric fields are the single sign-capable {@code INTEGER} (C7).
  *
+ * <p>Class UIEntryRendererLexerTest coded before 261104, updated on 261104 once the {@code record-count:} header and its token were removed.
+ *
  * @author Rowan Crowther
  */
 class UIEntryRendererLexerTest {
@@ -79,15 +81,14 @@ class UIEntryRendererLexerTest {
         // One directive of each shape, showing FREE_TEXT_MODE (name/symbols), FLAG_MODE (code/sign)
         // and the default-mode COLOURCHARS/INTEGER all push/pop cleanly between directives.
         assertEquals(
-                List.of("RECORD_COUNT=record-count:", "INTEGER=1",
-                        "NAME=name:", "STRING=foo",
+                List.of("NAME=name:", "STRING=foo",
                         "CODE=code:", "FLAG=BAR",
                         "COLOURS=colors:", "COLOURCHARS=wG",
                         "LABELCOLOURS=labelcolors:", "COLOURCHARS=sr",
                         "SYMBOLS=symbols:", "STRING=?.+",
                         "NDIGITS=ndigit:", "INTEGER=1",
                         "SIGN=sign:", "FLAG=NO_SIGN"),
-                tokens("record-count:1\nname:foo\ncode:BAR\ncolors:wG\nlabelcolors:sr\n"
+                tokens("name:foo\ncode:BAR\ncolors:wG\nlabelcolors:sr\n"
                         + "symbols:?.+\nndigit:1\nsign:NO_SIGN\n"));
     }
 
@@ -118,9 +119,9 @@ class UIEntryRendererLexerTest {
 
     @Test
     void commentsAndBlankLinesAreSkippedAndCrlfIsClean() {
-        String src = "# File: ui_entry_renderer.txt\r\n\r\nrecord-count:5\r\nname:foo\r\n";
+        String src = "# File: ui_entry_renderer.txt\r\n\r\nname:foo\r\n";
         assertEquals(
-                List.of("RECORD_COUNT=record-count:", "INTEGER=5", "NAME=name:", "STRING=foo"),
+                List.of("NAME=name:", "STRING=foo"),
                 tokens(src));
         assertEquals(0, lexErrors(src));
     }

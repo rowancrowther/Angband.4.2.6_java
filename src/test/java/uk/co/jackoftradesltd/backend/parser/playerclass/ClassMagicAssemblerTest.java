@@ -104,18 +104,18 @@ class ClassMagicAssemblerTest {
         return new ClassMagicParseRecord(first, weight, numBooks, books(bookCount), LINE);
     }
 
-    private static List<ClassMagic> run(List<String> errors, ClassMagicParseRecord... records) {
-        return new ClassMagicAssembler().assemble(List.of(records), errors, FILE);
+    private static List<ClassMagic> run(ClassMagicParseRecord... records) {
+        return new ClassMagicAssembler().assemble(List.of(records), FILE);
     }
 
     private static ClassMagic one(String first, String weight, String numBooks) {
-        List<ClassMagic> result = run(new ArrayList<>(), magic(first, weight, numBooks, 0));
+        List<ClassMagic> result = run(magic(first, weight, numBooks, 0));
         assertEquals(1, result.size());
         return result.getFirst();
     }
 
     private static DataFileParseException stops(ClassMagicParseRecord record) {
-        return assertThrows(DataFileParseException.class, () -> run(new ArrayList<>(), record));
+        return assertThrows(DataFileParseException.class, () -> run(record));
     }
 
     private static void assertNames(DataFileParseException e, String... parts) {
@@ -148,13 +148,13 @@ class ClassMagicAssemblerTest {
     @Test
     @DisplayName("an empty record list gives an empty result, which PlayerClassAssembler reads as a non-caster")
     void noRecordsGivesNoResult() {
-        assertTrue(new ClassMagicAssembler().assemble(List.of(), new ArrayList<>(), FILE).isEmpty());
+        assertTrue(new ClassMagicAssembler().assemble(List.of(), FILE).isEmpty());
     }
 
     @Test
     @DisplayName("two records give two results in order, each read on its own")
     void recordsAreReadInOrder() {
-        List<ClassMagic> result = run(new ArrayList<>(), magic("1", "100", "0", 0), magic("5", "200", "0", 0));
+        List<ClassMagic> result = run(magic("1", "100", "0", 0), magic("5", "200", "0", 0));
 
         assertEquals(2, result.size());
         assertEquals(1, result.get(0).getSpellFirst());
@@ -255,20 +255,17 @@ class ClassMagicAssemblerTest {
     @Test
     @DisplayName("as many books as declared is the ordinary case, and the book is kept")
     void declaredCountMatching() {
-        List<String> errors = new ArrayList<>();
-
-        List<ClassMagic> result = run(errors, magic("1", "100", "1", 1));
+        List<ClassMagic> result = run(magic("1", "100", "1", 1));
 
         assertEquals(1, result.size());
         assertEquals(1, result.getFirst().getNumBooks());
-        assertTrue(errors.isEmpty(), errors::toString);
     }
 
     @Test
     @DisplayName("fewer books than declared is accepted, as in C where the count only sizes the array")
     void fewerBooksThanDeclared() {
-        assertEquals(1, run(new ArrayList<>(), magic("1", "100", "5", 1)).getFirst().getNumBooks());
-        assertEquals(0, run(new ArrayList<>(), magic("1", "100", "5", 0)).getFirst().getNumBooks());
+        assertEquals(1, run(magic("1", "100", "5", 1)).getFirst().getNumBooks());
+        assertEquals(0, run(magic("1", "100", "5", 0)).getFirst().getNumBooks());
     }
 
     @Test
@@ -288,7 +285,7 @@ class ClassMagicAssemblerTest {
     @DisplayName("three books against a declared two stop the load, and against a declared three do not")
     void everyBookCountsTowardTheLimit() {
         assertNames(stops(magic("1", "100", "2", 3)), "one or more illegal book entries");
-        assertDoesNotThrow(() -> run(new ArrayList<>(), magic("1", "100", "3", 3)));
+        assertDoesNotThrow(() -> run(magic("1", "100", "3", 3)));
     }
 
     @Test
@@ -310,12 +307,8 @@ class ClassMagicAssemblerTest {
     }
 
     @Test
-    @DisplayName("the scalar errors never touch the errors list")
+    @DisplayName("a scalar fault is thrown")
     void scalarFaultsAreThrownNotAppended() {
-        List<String> errors = new ArrayList<>();
-
-        assertThrows(DataFileParseException.class, () -> run(errors, magic("-1", "1", "1", 0)));
-
-        assertTrue(errors.isEmpty(), errors::toString);
+        assertThrows(DataFileParseException.class, () -> run(magic("-1", "1", "1", 0)));
     }
 }

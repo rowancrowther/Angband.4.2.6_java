@@ -14,11 +14,6 @@ import EffectBlock;
     import java.util.HashMap;
 }
 
-recordCount
-        returns[String count]
-        :   RECORD_COUNT INTEGER { $count = $INTEGER.getText(); }
-        ;
-
 name
         returns[String nameStr, int lineNo]
         :   NAME STRING { $nameStr = $STRING.getText();
@@ -169,8 +164,7 @@ shape
         ;
 
 file
-        returns[List<ShapeParseRecord> shapes, String declaredRecordCount]
-        :   recordCount { $declaredRecordCount = $recordCount.count;
-                          $shapes = new ArrayList<>(); }
+        returns[List<ShapeParseRecord> shapes]
+        :   { $shapes = new ArrayList<>(); }
             (shape { $shapes.add($shape.shapeInit); })+ EOF
         ;

@@ -15,16 +15,8 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from CurseGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/CurseGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.curse;
-
-    import uk.co.jackoftradesltd.backend.parser.curse.CurseParseRecord;
-    import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
-
-    import java.util.Map;
-    import java.util.List;
-    import java.util.HashMap;
-    import java.util.ArrayList;
 
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
@@ -33,16 +25,6 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
  * {@link CurseGrammar}.
  */
 public interface CurseGrammarListener extends ParseTreeListener {
-	/**
-	 * Enter a parse tree produced by {@link CurseGrammar#recordCount}.
-	 * @param ctx the parse tree
-	 */
-	void enterRecordCount(CurseGrammar.RecordCountContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link CurseGrammar#recordCount}.
-	 * @param ctx the parse tree
-	 */
-	void exitRecordCount(CurseGrammar.RecordCountContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link CurseGrammar#name}.
 	 * @param ctx the parse tree

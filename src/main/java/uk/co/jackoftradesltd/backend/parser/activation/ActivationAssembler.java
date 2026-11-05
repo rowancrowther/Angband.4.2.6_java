@@ -65,7 +65,7 @@ import java.util.List;
  * <p><b>Error policy.</b> The first bad record stops the load: a number that cannot be read, a
  * negative {@code aim:} or {@code power:}, or an effect {@link EffectAssembler} cannot resolve
  * throws {@link DataFileParseException}, as C's {@code print_error} in {@code datafile.c} quits.
- * Nothing is skipped and nothing goes to the soft-error channel for later. Records are checked in
+ * Nothing is skipped. Records are checked in
  * file order, and within a record {@code aim:}, then {@code level:}, then {@code power:}, then the
  * effects. A bad effect throws from inside {@link EffectAssembler#assemble}, which names the
  * effect's own line; that method never returns a partial list and never returns {@code null}.
@@ -104,7 +104,8 @@ import java.util.List;
  * activation's index is one lower than C's {@code activations[]} slot.
  *
  * <p>Class ActivationAssembler coded before 260915, commented in full on 261102 (error policy
- * brought into line with {@link EffectAssembler} throwing, outstanding notes added).
+ * brought into line with {@link EffectAssembler} throwing, outstanding notes added), updated on
+ * 261105 for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -136,15 +137,13 @@ public class ActivationAssembler implements Assembler<ActivationParseRecord, Lis
      * stop the load on a bad record.
      *
      * @param records  the raw activation records captured by the grammar
-     * @param errors   the soft-error channel, passed on to {@link EffectAssembler#assemble}, which no
-     *                 longer appends to it; this method never skips a record and adds nothing to it itself
      * @param filename the file the records came from, named in every stop-the-load message
      * @return the assembled activations, in reverse file order (C's {@code activations[]} order)
      * @throws DataFileParseException if a number cannot be read, {@code aim:} or {@code power:} is negative,
      *                                or an effect does not resolve (thrown by {@link EffectAssembler})
      */
     @Override
-    public List<Activation> assemble(@NotNull List<ActivationParseRecord> records, @NotNull List<String> errors,
+    public List<Activation> assemble(@NotNull List<ActivationParseRecord> records, 
                                      String filename) {
         List<Activation> activations = new ArrayList<>();
 
@@ -189,7 +188,7 @@ public class ActivationAssembler implements Assembler<ActivationParseRecord, Lis
             // fails to resolve it throws (not a partial list), so one bad effect
             // stops the load rather than silently loading the activation minus a power.
             // The null test below is a leftover from when it returned null instead.
-            List<Effect> effects = EffectAssembler.assemble(record.effects(), errors, filename);
+            List<Effect> effects = EffectAssembler.assemble(record.effects(), filename);
             if (effects == null) {
                 String message = "A malformed effect was found in the Activation beginning at line: " +
                         line + " of file: " + filename;

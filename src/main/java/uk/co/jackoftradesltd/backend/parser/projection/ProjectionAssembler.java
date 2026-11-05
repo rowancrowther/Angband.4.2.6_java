@@ -48,9 +48,7 @@ import java.util.List;
  * throwing a {@link DataFileParseException}, and no record is skipped. A fault is a negative or
  * non-numeric numerator, divisor, damage cap, {@code obvious} or {@code wake}, a denominator that
  * is neither a number nor a dice string, an unresolvable {@code msgt}, or a bad code or element
- * count (below). The {@code errors} list is never written to; it stays in the signature because
- * {@link Assembler} requires it. An unknown colour is not a fault: it falls back to white, as C
- * does.
+ * count (below). An unknown colour is not a fault: it falls back to white, as C does.
  *
  * <p>C reads the file a line at a time and quits on the first bad line; this port has the whole
  * record, so it checks the code first, then the numerator, denominator, divisor, damage cap,
@@ -94,7 +92,8 @@ import java.util.List;
  * array holds the same records, and {@code z_info->projection_max} is their count.
  *
  * <p>Class ProjectionAssembler coded before 260915, commented in full on 261029; every fault now
- * stops the load, the denominator range deviation recorded, on 261029.
+ * stops the load, the denominator range deviation recorded, on 261029; updated on 261105 for the
+ * removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -164,8 +163,6 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
      * <p>Function assemble coded before 260915, commented in full on 261029.
      *
      * @param records  the parsed records, in file order
-     * @param errors   never written to; it is required by the {@link Assembler} signature, and a
-     *                 fault stops the load by exception instead
      * @param filename the data file being assembled, used in the stop-the-load messages
      * @return the assembled projections, in file order, always with exactly 25 of type
      *         {@code element}
@@ -177,7 +174,7 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
      *                                element records is not 25
      */
     @Override
-    public List<Projection> assemble(@NotNull List<ProjectionParseRecord> records, @NotNull List<String> errors,
+    public List<Projection> assemble(@NotNull List<ProjectionParseRecord> records,
                                     String filename) {
         List<Projection> result = new ArrayList<>();
         int currentRecord = 0;
@@ -189,7 +186,7 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
             currentRecord++;
             ProjectionEnum projCode;
             if (currentRecord <= EXPECTED_ELEMENT_COUNT) {
-                projCode = resolveCode(line, codeString, errors, true, filename);
+                projCode = resolveCode(line, codeString, true, filename);
                 if (projCode == null) {
                     String message = "Projection starting at line: " + line + " of file: " + filename + 
                             " is out of order\nInput string: " + record.code() + " is invalid";
@@ -212,7 +209,7 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
                     throw new DataFileParseException(message);                    
                 }
                 
-                projCode = resolveCode(line, codeString, errors, false, filename);
+                projCode = resolveCode(line, codeString, false, filename);
                 if (projCode == null) projCode = ProjectionEnum.PROJ_NONE;
             }
             String projName = record.name();
@@ -389,7 +386,6 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
      * @param line        the line of the projection block in the {@code lib/gamedata} file, used in
      *                    the error message
      * @param code        the tag from the {@code code:} line, without its {@code PROJ_} prefix
-     * @param errors      unused
      * @param insideCount true for one of the first 25 records, where C reads the code and an unknown
      *                    one is a fault; false from the 26th on, where C does not read it
      * @param filename    the data file being assembled, used in the error message
@@ -400,7 +396,7 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
     @CheckReturnValue
     @Nullable
     private ProjectionEnum resolveCode(int line, @NotNull String code,
-                                       @NotNull List<String> errors, boolean insideCount, String filename) {
+                                       boolean insideCount, String filename) {
         try {
             return ProjectionEnum.valueOf("PROJ_" + code);
         } catch (IllegalArgumentException e) {
@@ -423,12 +419,13 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
      *
      * <p>C keeps the tag as a string and only ever tests it against {@code "element"}, in
      * {@code finish_parse_projection()} in {@code obj-init.c}; the enum is a Java addition so the
-     * type survives as data. It never reports a fault, so {@code line} and {@code errors} are
-     * unused. The grammar makes {@code type:} mandatory, so the tag is never {@code null}; a
-     * hand-built record with a {@code null} type would throw a {@link NullPointerException} from
-     * the {@code switch}, where C's zeroed record would hold NULL and count as no element.
+     * type survives as data. It never reports a fault. The grammar makes {@code type:} mandatory,
+     * so the tag is never {@code null}; a hand-built record with a {@code null} type would throw a
+     * {@link NullPointerException} from the {@code switch}, where C's zeroed record would hold NULL
+     * and count as no element.
      *
-     * <p>Function resolveType coded before 260915, commented in full on 261029.
+     * <p>Function resolveType coded before 260915, commented in full on 261029, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param type   the tag from the {@code type:} line
      * @return the matching constant, or {@code PT_NONE} if the tag is not one of the three
@@ -484,9 +481,10 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
      * <p>{@link ColourEnum#COLOUR_SHADE} is never returned. {@link ColourEnum#fromCode(String)}
      * matches the name {@code Shade}, a Java addition, but C's colour table has no usable row for
      * it, so the name falls back to white here like any unknown one. The method never returns
-     * {@code null} and never writes to {@code errors}.
+     * {@code null} and never throws.
      *
-     * <p>Function resolveColour coded before 260915, commented in full on 261029.
+     * <p>Function resolveColour coded before 260915, commented in full on 261029, updated on 261105
+     * for the removal of the soft-error path.
      *
      * @param colour the value from the {@code color:} line
      * @return the matching colour, {@code COLOUR_DARK} for an empty or blank value, or

@@ -54,8 +54,8 @@ import java.util.Locale;
  *
  * <p><b>Fatal errors:</b> a record that fails any resolution ends the load. The assembler logs the
  * problem at fatal level and throws a {@link DataFileParseException} naming the record's line and
- * the file, as C's parser stops on the first error. The {@code errors} list is not used for this; it
- * is only handed on to {@link EffectAssembler}.
+ * the file, as C's parser stops on the first error. The begin and end effect blocks go through
+ * {@link EffectAssembler}, which throws in the same way.
  *
  * <p><b>A repeated {@code name:}:</b> C's {@code parse_player_timed_name} only points at the existing
  * {@code timed_effects[]} slot, so a second record with the same name carries on the first. Here the
@@ -90,7 +90,8 @@ import java.util.Locale;
  * {@link ObjectRegistry#lookupBrandCode}/{@link ObjectRegistry#lookupSlay}, so {@code brand.txt} and
  * {@code slay.txt} must already be loaded when this runs.
  *
- * <p>Class PlayerTimedAssembler coded before 260915, commented in full on 261029.
+ * <p>Class PlayerTimedAssembler coded before 260915, commented in full on 261029, updated on 261105
+ * for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -128,14 +129,12 @@ public class PlayerTimedAssembler implements Assembler<PlayerTimedParseRecord, L
      * <p>Function assemble coded before 260915, commented in full on 261029.
      *
      * @param records  the parsed timed-effect records, in file order
-     * @param errors   passed on to {@link EffectAssembler} for the begin and end effects; nothing here
-     *                 appends to it
      * @param filename the data file's name, for the error messages
      * @return the resolved effects, one per distinct name, ordered by each name's last record
      * @throws DataFileParseException on the first value that does not resolve
      */
     @Override
-    public List<PlayerTimedEffect> assemble(@NotNull List<PlayerTimedParseRecord> records, @NotNull List<String> errors,
+    public List<PlayerTimedEffect> assemble(@NotNull List<PlayerTimedParseRecord> records,
                                     String filename) {
         List<PlayerTimedEffect> effects = new ArrayList<>();
         TimedEffect previousEffect = TimedEffect.TMD_NONE;
@@ -333,7 +332,7 @@ public class PlayerTimedAssembler implements Assembler<PlayerTimedParseRecord, L
             else
                 onBeginEffects = new ArrayList<>();
             if (record.onBeginEffect() != null && !record.onBeginEffect().typeInit().isEmpty()) {
-                begin = EffectAssembler.assemble(List.of(record.onBeginEffect()), errors, filename);
+                begin = EffectAssembler.assemble(List.of(record.onBeginEffect()), filename);
                 onBeginEffects.addAll(begin);
             }
             List<Effect> end;
@@ -343,7 +342,7 @@ public class PlayerTimedAssembler implements Assembler<PlayerTimedParseRecord, L
             else
                 onEndEffects = new ArrayList<>();
             if (record.onEndEffect() != null && !record.onEndEffect().typeInit().isEmpty()) {
-                end = EffectAssembler.assemble(List.of(record.onEndEffect()), errors, filename);
+                end = EffectAssembler.assemble(List.of(record.onEndEffect()), filename);
                 onEndEffects.addAll(end);
             }
             ElementEnum resist = updatePrevious ? previous.getTempResist() : ElementEnum.ELEM_NONE;

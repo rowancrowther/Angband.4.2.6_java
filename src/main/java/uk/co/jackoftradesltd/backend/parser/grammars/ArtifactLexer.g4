@@ -2,10 +2,6 @@ lexer grammar ArtifactLexer;
 
 import AngbandDisplayCharacter, CommentsAndEol, Flags, DiceStrings;
 
-RECORD_COUNT
-        :   'record-count:'
-        ;
-
 NAME
         :   'name:' -> pushMode(ARTIFACT_FREE_TEXT)
         ;

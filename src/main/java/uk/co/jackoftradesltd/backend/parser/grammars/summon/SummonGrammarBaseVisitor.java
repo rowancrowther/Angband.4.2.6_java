@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/SummonGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/SummonGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.summon;
 
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
@@ -36,98 +36,61 @@ public class SummonGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T> imp
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitRecordCount(SummonGrammar.RecordCountContext ctx) {
-		return visitChildren(ctx);
-	}
+	@Override public T visitName(SummonGrammar.NameContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitName(SummonGrammar.NameContext ctx) {
-		return visitChildren(ctx);
-	}
+	@Override public T visitMsgt(SummonGrammar.MsgtContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitMsgt(SummonGrammar.MsgtContext ctx) {
-		return visitChildren(ctx);
-	}
+	@Override public T visitUniques(SummonGrammar.UniquesContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitUniques(SummonGrammar.UniquesContext ctx) {
-		return visitChildren(ctx);
-	}
+	@Override public T visitBase(SummonGrammar.BaseContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitBase(SummonGrammar.BaseContext ctx) {
-		return visitChildren(ctx);
-	}
+	@Override public T visitRaceFlag(SummonGrammar.RaceFlagContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitRaceFlag(SummonGrammar.RaceFlagContext ctx) {
-		return visitChildren(ctx);
-	}
+	@Override public T visitFallback(SummonGrammar.FallbackContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitFallback(SummonGrammar.FallbackContext ctx) {
-		return visitChildren(ctx);
-	}
+	@Override public T visitDesc(SummonGrammar.DescContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitDesc(SummonGrammar.DescContext ctx) {
-		return visitChildren(ctx);
-	}
+	@Override public T visitSummon(SummonGrammar.SummonContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitSummon(SummonGrammar.SummonContext ctx) {
-		return visitChildren(ctx);
-	}
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override
-	public T visitFile(SummonGrammar.FileContext ctx) {
-		return visitChildren(ctx);
-	}
+	@Override public T visitFile(SummonGrammar.FileContext ctx) { return visitChildren(ctx); }
 }

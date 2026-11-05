@@ -89,14 +89,12 @@ import java.util.List;
  * first handler that returns an error. A negative {@code appear:} number, unreadable
  * {@code visibility:} dice, an unknown or sentinel flag or save flag, and a bad effect block (thrown
  * from inside {@link EffectAssembler}) each log a fatal message and throw a
- * {@link DataFileParseException}, so no record is dropped and no index is skipped. The
- * {@code errors} list is no longer written here; it is only passed on to {@link EffectAssembler},
- * which does not write it either. Hard grammar/lexer errors are handled upstream by
- * {@code GrammarDriver}.
+ * {@link DataFileParseException}, so no record is dropped and no index is skipped. Hard
+ * grammar/lexer errors are handled upstream by {@code GrammarDriver}.
  *
  * <p>Class TrapAssembler coded before 260915, commented in full on 261030 (first commented 260915,
  * updated 261020 for the zeroed defaults; rewritten 261030 once soft errors became fatal and the
- * sentinels were refused).
+ * sentinels were refused; updated on 261105 for the removal of the soft-error path).
  *
  * @author Rowan Crowther
  */
@@ -128,8 +126,6 @@ public class TrapAssembler implements Assembler<TrapParseRecord, List<TrapKind>>
      * 260915, updated 261020 for the zeroed defaults; rewritten 261030 for the fatal errors).
      *
      * @param records  the raw trap records captured by the grammar
-     * @param errors   unused here; formerly the soft-error channel, now only passed on to
-     *                 {@link EffectAssembler}
      * @param filename the data file the records came from, for error messages
      * @return the assembled trap kinds, in source order, indexed from 0
      * @throws DataFileParseException if any appear number is negative or not a number, the
@@ -137,7 +133,7 @@ public class TrapAssembler implements Assembler<TrapParseRecord, List<TrapKind>>
      *                                or a sentinel, or an effect block fails to resolve
      */
     @Override
-    public List<TrapKind> assemble(@NotNull List<TrapParseRecord> records, @NotNull List<String> errors,
+    public List<TrapKind> assemble(@NotNull List<TrapParseRecord> records,
                                     String filename) {
         List<TrapKind> traps = new ArrayList<>();
         int index = -1;
@@ -237,8 +233,8 @@ public class TrapAssembler implements Assembler<TrapParseRecord, List<TrapKind>>
                     throw new DataFileParseException(message);
                 }
             }
-            List<Effect> effects = EffectAssembler.assemble(record.effects(), errors, filename);
-            List<Effect> xtraEffects = EffectAssembler.assemble(record.xtraEffects(), errors, filename);
+            List<Effect> effects = EffectAssembler.assemble(record.effects(), filename);
+            List<Effect> xtraEffects = EffectAssembler.assemble(record.xtraEffects(), filename);
             index++;
 
             traps.add(new TrapKind(trapKindName, trapText, trapDescription,

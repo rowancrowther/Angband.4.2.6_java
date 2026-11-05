@@ -91,16 +91,16 @@ import java.util.*;
  * <p><b>Error policy:</b> every failure is fatal. An unknown {@code type:}, an unknown flag,
  * modifier, element, brand, slay or curse, and a figure or dice string that does not parse each log
  * a fatal message and throw a {@link DataFileParseException} naming the record's line and the file,
- * as C's {@code PARSE_ERROR_*} results stop the load. Nothing is skipped and the {@code errors}
- * list is never written to; {@link EffectAssembler} follows the same policy, so a bad effect ends
- * the load as well. Hard grammar and lexer errors are handled upstream by {@code GrammarDriver}.
+ * as C's {@code PARSE_ERROR_*} results stop the load. Nothing is skipped; {@link EffectAssembler}
+ * follows the same policy, so a bad effect ends the load as well. Hard grammar and lexer errors are handled upstream by {@code GrammarDriver}.
  *
  * <p>The kind's index and sval are left at 0 here: {@link ObjectRegistry#addObjectKind} sets both
  * when the kind is registered, as C's {@code parse_object_type} and {@code finish_parse_object} do.
  * The flavour, the aware and unaware notes, and the aware, tried and everseen state belong to the
  * running game and start empty, and the ignore flags start empty.
  *
- * <p>Class ItemObjectAssembler coded before 260915, commented in full on 261026.
+ * <p>Class ItemObjectAssembler coded before 260915, commented in full on 261026, updated on 261105
+ * for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -129,8 +129,6 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
      * {@code alloc:} handling.
      *
      * @param records  the raw object records captured by the grammar
-     * @param errors   not written to; kept so the signature matches {@link Assembler}, and passed
-     *                 on to {@link EffectAssembler}, which does not write to it either
      * @param filename the file the records came from, named in every exception message
      * @return the assembled object kinds, one per record, in source order
      * @throws DataFileParseException if any record has an unknown {@code type:}, flag, modifier,
@@ -139,7 +137,7 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
      *                                parse
      */
     @Override
-    public List<ObjectKind> assemble(@NotNull List<ItemObjectParseRecord> records, @NotNull List<String> errors,
+    public List<ObjectKind> assemble(@NotNull List<ItemObjectParseRecord> records,
                                     String filename) {
         List<ObjectKind> itemObjects = new ArrayList<>();
 
@@ -400,7 +398,7 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
             }
             int power = ParseUtils.parseIntString("Object kind", record.power(), line, filename, "power");
             String description = record.desc();
-            List<Effect> effects = EffectAssembler.assemble(record.effects(), errors, filename);
+            List<Effect> effects = EffectAssembler.assemble(record.effects(), filename);
             int dd = attBase.getDice();
             int ds = attBase.getSides();
 

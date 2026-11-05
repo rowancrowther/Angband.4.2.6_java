@@ -90,14 +90,14 @@ class TrapAssemblerTest {
     }
 
     private static TrapKind one(TrapParseRecord record) {
-        List<TrapKind> kinds = new TrapAssembler().assemble(List.of(record), new ArrayList<>(), FILE);
+        List<TrapKind> kinds = new TrapAssembler().assemble(List.of(record), FILE);
         assertEquals(1, kinds.size());
         return kinds.get(0);
     }
 
     private static void assertThrowsFor(TrapParseRecord record) {
         assertThrows(DataFileParseException.class,
-                () -> new TrapAssembler().assemble(List.of(record), new ArrayList<>(), FILE));
+                () -> new TrapAssembler().assemble(List.of(record), FILE));
     }
 
     @SuppressWarnings("unchecked")
@@ -115,14 +115,14 @@ class TrapAssemblerTest {
 
     @Test
     void emptyRecordListGivesNoKinds() {
-        assertTrue(new TrapAssembler().assemble(List.of(), new ArrayList<>(), FILE).isEmpty());
+        assertTrue(new TrapAssembler().assemble(List.of(), FILE).isEmpty());
     }
 
     @Test
     void indicesCountFromZeroInFileOrder() {
         // finish_parse_trap gives the first record in the file tidx 0
         List<TrapKind> kinds = new TrapAssembler().assemble(
-                List.of(plain(1), plain(10), plain(20)), new ArrayList<>(), FILE);
+                List.of(plain(1), plain(10), plain(20)), FILE);
         assertEquals(3, kinds.size());
         for (int i = 0; i < 3; i++) {
             assertEquals(i, kinds.get(i).getTrapKindIndex());
@@ -403,6 +403,6 @@ class TrapAssemblerTest {
     void badLaterRecordStopsTheWholeLoad() {
         // C stops the load at the first handler error; nothing is returned
         assertThrows(DataFileParseException.class, () -> new TrapAssembler().assemble(
-                List.of(plain(1), withAppear("-1", "1", "0")), new ArrayList<>(), FILE));
+                List.of(plain(1), withAppear("-1", "1", "0")), FILE));
     }
 }

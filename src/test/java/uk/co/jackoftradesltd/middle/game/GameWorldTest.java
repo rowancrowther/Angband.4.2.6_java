@@ -97,7 +97,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * each is saved before every test and put back afterwards.
  *
  * <p>Class GameWorldTest coded on 261006, commented in full on 261006, timed effects installed
- * through {@code setPlayerTimedEffects} on 261016 so the food thresholds are filled.
+ * through {@code setPlayerTimedEffects} on 261016 so the food thresholds are filled, updated on 261104 once {@code GameConstantsParseResult} was deleted.
  *
  * @author Rowan Crowther
  */
@@ -233,7 +233,7 @@ class GameWorldTest {
      * @throws Exception if the file cannot be read
      */
     private static GameConstantsData shippedConstants() throws Exception {
-        return new GameConstantsReader().parseWithResults("lib/gamedata/constants.txt").getData();
+        return new GameConstantsReader().parseWithResults("lib/gamedata/constants.txt");
     }
 
     /**

@@ -15,14 +15,8 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from TrapGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/TrapGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.trap;
-
-    import uk.co.jackoftradesltd.backend.parser.trap.TrapParseRecord;
-    import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
-
-    import java.util.List;
-    import java.util.ArrayList;
 
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
@@ -31,16 +25,6 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
  * {@link TrapGrammar}.
  */
 public interface TrapGrammarListener extends ParseTreeListener {
-	/**
-	 * Enter a parse tree produced by {@link TrapGrammar#recordCount}.
-	 * @param ctx the parse tree
-	 */
-	void enterRecordCount(TrapGrammar.RecordCountContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link TrapGrammar#recordCount}.
-	 * @param ctx the parse tree
-	 */
-	void exitRecordCount(TrapGrammar.RecordCountContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link TrapGrammar#name}.
 	 * @param ctx the parse tree

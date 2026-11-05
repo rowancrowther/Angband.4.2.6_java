@@ -111,12 +111,12 @@ import java.util.*;
  * quits in {@code lookup_realm}); a glyph that is not exactly one character (C's parser refuses it
  * as too long); a cost, commonness, minimum or maximum that is not an integer; any error from
  * {@link ClassSpellAssembler} for the book's spells; more spells than declared; and a tval with no
- * object base. Nothing is added to the soft-error list: it is passed on to
- * {@link ClassSpellAssembler} and that is all. Looking up the book's kind throws
+ * object base. No book is skipped. Looking up the book's kind throws
  * {@link IllegalStateException} if no object kinds are loaded, and looking up the realm does the
  * same if no realms are, so {@code object.txt} and the realms must be loaded before any class.
  *
- * <p>Class ClassSpellBookAssembler coded before 260915, commented in full on 261028.
+ * <p>Class ClassSpellBookAssembler coded before 260915, commented in full on 261028, updated on
+ * 261105 for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -144,8 +144,6 @@ public class ClassSpellBookAssembler implements Assembler<ClassSpellBookParseRec
      * <p>Function assemble coded before 260915, commented in full on 261028.
      *
      * @param records  the raw book records for one class, in file order
-     * @param errors   the soft-error list, passed on to {@link ClassSpellAssembler}; this method adds
-     *                 nothing to it
      * @param filename the data file the records came from, named in every error message
      * @return a new list with one {@link MagicBook} for each record, in file order
      * @throws DataFileParseException if a record has an unknown tval, a negative or non-integer
@@ -156,7 +154,7 @@ public class ClassSpellBookAssembler implements Assembler<ClassSpellBookParseRec
      * @throws IllegalStateException  if no object kinds or no realms are loaded
      */
     @Override
-    public List<MagicBook> assemble(@NotNull List<ClassSpellBookParseRecord> records, @NotNull List<String> errors,
+    public List<MagicBook> assemble(@NotNull List<ClassSpellBookParseRecord> records,
                                     String filename) {
         List<MagicBook> magicBooks = new ArrayList<>();
         for (ClassSpellBookParseRecord record : records) {
@@ -226,7 +224,7 @@ public class ClassSpellBookAssembler implements Assembler<ClassSpellBookParseRec
             int commonness = ParseUtils.parseIntString("Class spell book", record.commonness(), line, filename, "commonness");
             int min = ParseUtils.parseIntString("Class spell book", record.min(), line, filename, "minimum");
             int max = ParseUtils.parseIntString("Class spell book", record.max(), line, filename, "maximum");
-            List<MagicSpell> spells = new ClassSpellAssembler().assemble(record.spells(), errors, filename);
+            List<MagicSpell> spells = new ClassSpellAssembler().assemble(record.spells(), filename);
             if (spells.size() > noOfSpells) {
                 String msg = "Class spell book starting at line: " + line + " of file: " + filename + " has " +
                         "too many spells declared. " + spells.size() + " spells found. " + noOfSpells + " declared";

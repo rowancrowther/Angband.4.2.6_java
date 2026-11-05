@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from FlavourGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/FlavourGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.flavour;
 
 import org.antlr.v4.runtime.tree.ParseTreeListener;
@@ -25,101 +25,64 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
  * {@link FlavourGrammar}.
  */
 public interface FlavourGrammarListener extends ParseTreeListener {
-    /**
-     * Enter a parse tree produced by {@link FlavourGrammar#recordCount}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterRecordCount(FlavourGrammar.RecordCountContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link FlavourGrammar#recordCount}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitRecordCount(FlavourGrammar.RecordCountContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link FlavourGrammar#kind}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterKind(FlavourGrammar.KindContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link FlavourGrammar#kind}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitKind(FlavourGrammar.KindContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link FlavourGrammar#fixed}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterFixed(FlavourGrammar.FixedContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link FlavourGrammar#fixed}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitFixed(FlavourGrammar.FixedContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link FlavourGrammar#flavour}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterFlavour(FlavourGrammar.FlavourContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link FlavourGrammar#flavour}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitFlavour(FlavourGrammar.FlavourContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link FlavourGrammar#fixedOrFlavourBlock}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterFixedOrFlavourBlock(FlavourGrammar.FixedOrFlavourBlockContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link FlavourGrammar#fixedOrFlavourBlock}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitFixedOrFlavourBlock(FlavourGrammar.FixedOrFlavourBlockContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link FlavourGrammar#section}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterSection(FlavourGrammar.SectionContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link FlavourGrammar#section}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitSection(FlavourGrammar.SectionContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link FlavourGrammar#file}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterFile(FlavourGrammar.FileContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link FlavourGrammar#file}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitFile(FlavourGrammar.FileContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link FlavourGrammar#kind}.
+	 * @param ctx the parse tree
+	 */
+	void enterKind(FlavourGrammar.KindContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link FlavourGrammar#kind}.
+	 * @param ctx the parse tree
+	 */
+	void exitKind(FlavourGrammar.KindContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link FlavourGrammar#fixed}.
+	 * @param ctx the parse tree
+	 */
+	void enterFixed(FlavourGrammar.FixedContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link FlavourGrammar#fixed}.
+	 * @param ctx the parse tree
+	 */
+	void exitFixed(FlavourGrammar.FixedContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link FlavourGrammar#flavour}.
+	 * @param ctx the parse tree
+	 */
+	void enterFlavour(FlavourGrammar.FlavourContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link FlavourGrammar#flavour}.
+	 * @param ctx the parse tree
+	 */
+	void exitFlavour(FlavourGrammar.FlavourContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link FlavourGrammar#fixedOrFlavourBlock}.
+	 * @param ctx the parse tree
+	 */
+	void enterFixedOrFlavourBlock(FlavourGrammar.FixedOrFlavourBlockContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link FlavourGrammar#fixedOrFlavourBlock}.
+	 * @param ctx the parse tree
+	 */
+	void exitFixedOrFlavourBlock(FlavourGrammar.FixedOrFlavourBlockContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link FlavourGrammar#section}.
+	 * @param ctx the parse tree
+	 */
+	void enterSection(FlavourGrammar.SectionContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link FlavourGrammar#section}.
+	 * @param ctx the parse tree
+	 */
+	void exitSection(FlavourGrammar.SectionContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link FlavourGrammar#file}.
+	 * @param ctx the parse tree
+	 */
+	void enterFile(FlavourGrammar.FileContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link FlavourGrammar#file}.
+	 * @param ctx the parse tree
+	 */
+	void exitFile(FlavourGrammar.FileContext ctx);
 }

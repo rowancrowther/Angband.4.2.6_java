@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/SummonGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/SummonGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.summon;
 
 import org.antlr.v4.runtime.tree.ParseTreeListener;
@@ -25,143 +25,94 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
  * {@link SummonGrammar}.
  */
 public interface SummonGrammarListener extends ParseTreeListener {
-    /**
-     * Enter a parse tree produced by {@link SummonGrammar#recordCount}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterRecordCount(SummonGrammar.RecordCountContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link SummonGrammar#recordCount}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitRecordCount(SummonGrammar.RecordCountContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link SummonGrammar#name}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterName(SummonGrammar.NameContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link SummonGrammar#name}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitName(SummonGrammar.NameContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link SummonGrammar#msgt}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterMsgt(SummonGrammar.MsgtContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link SummonGrammar#msgt}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitMsgt(SummonGrammar.MsgtContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link SummonGrammar#uniques}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterUniques(SummonGrammar.UniquesContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link SummonGrammar#uniques}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitUniques(SummonGrammar.UniquesContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link SummonGrammar#base}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterBase(SummonGrammar.BaseContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link SummonGrammar#base}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitBase(SummonGrammar.BaseContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link SummonGrammar#raceFlag}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterRaceFlag(SummonGrammar.RaceFlagContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link SummonGrammar#raceFlag}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitRaceFlag(SummonGrammar.RaceFlagContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link SummonGrammar#fallback}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterFallback(SummonGrammar.FallbackContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link SummonGrammar#fallback}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitFallback(SummonGrammar.FallbackContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link SummonGrammar#desc}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterDesc(SummonGrammar.DescContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link SummonGrammar#desc}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitDesc(SummonGrammar.DescContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link SummonGrammar#summon}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterSummon(SummonGrammar.SummonContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link SummonGrammar#summon}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitSummon(SummonGrammar.SummonContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link SummonGrammar#file}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterFile(SummonGrammar.FileContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link SummonGrammar#file}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitFile(SummonGrammar.FileContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link SummonGrammar#name}.
+	 * @param ctx the parse tree
+	 */
+	void enterName(SummonGrammar.NameContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link SummonGrammar#name}.
+	 * @param ctx the parse tree
+	 */
+	void exitName(SummonGrammar.NameContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link SummonGrammar#msgt}.
+	 * @param ctx the parse tree
+	 */
+	void enterMsgt(SummonGrammar.MsgtContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link SummonGrammar#msgt}.
+	 * @param ctx the parse tree
+	 */
+	void exitMsgt(SummonGrammar.MsgtContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link SummonGrammar#uniques}.
+	 * @param ctx the parse tree
+	 */
+	void enterUniques(SummonGrammar.UniquesContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link SummonGrammar#uniques}.
+	 * @param ctx the parse tree
+	 */
+	void exitUniques(SummonGrammar.UniquesContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link SummonGrammar#base}.
+	 * @param ctx the parse tree
+	 */
+	void enterBase(SummonGrammar.BaseContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link SummonGrammar#base}.
+	 * @param ctx the parse tree
+	 */
+	void exitBase(SummonGrammar.BaseContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link SummonGrammar#raceFlag}.
+	 * @param ctx the parse tree
+	 */
+	void enterRaceFlag(SummonGrammar.RaceFlagContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link SummonGrammar#raceFlag}.
+	 * @param ctx the parse tree
+	 */
+	void exitRaceFlag(SummonGrammar.RaceFlagContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link SummonGrammar#fallback}.
+	 * @param ctx the parse tree
+	 */
+	void enterFallback(SummonGrammar.FallbackContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link SummonGrammar#fallback}.
+	 * @param ctx the parse tree
+	 */
+	void exitFallback(SummonGrammar.FallbackContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link SummonGrammar#desc}.
+	 * @param ctx the parse tree
+	 */
+	void enterDesc(SummonGrammar.DescContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link SummonGrammar#desc}.
+	 * @param ctx the parse tree
+	 */
+	void exitDesc(SummonGrammar.DescContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link SummonGrammar#summon}.
+	 * @param ctx the parse tree
+	 */
+	void enterSummon(SummonGrammar.SummonContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link SummonGrammar#summon}.
+	 * @param ctx the parse tree
+	 */
+	void exitSummon(SummonGrammar.SummonContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link SummonGrammar#file}.
+	 * @param ctx the parse tree
+	 */
+	void enterFile(SummonGrammar.FileContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link SummonGrammar#file}.
+	 * @param ctx the parse tree
+	 */
+	void exitFile(SummonGrammar.FileContext ctx);
 }

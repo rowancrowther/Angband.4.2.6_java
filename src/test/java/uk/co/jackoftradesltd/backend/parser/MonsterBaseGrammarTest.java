@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *   <li>the lexer's {@code FREE_TEXT} mode captures a whole {@code name:} / {@code desc:} line as one
  *       {@code STRING} (the missing-{@code +} maximal-munch bug), while {@code GLYPH_MODE} keeps the
  *       glyph a single character;</li>
- *   <li>the {@code file} rule reads the {@code record-count:} header once, then loops the entries;</li>
+ *   <li>the {@code file} rule loops the entries, one record each;</li>
  *   <li>each {@code monsterBase} captures name/glyph/pain/desc raw and accumulates repeated
  *       {@code flags:} lines, with {@code flags:} optional;</li>
  *   <li>{@code inGameName} is currently wired to the {@code desc:} text (so it mirrors
@@ -49,6 +49,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p>Both lexer and parser are wired to {@link #FAIL_FAST} so any hard syntax error surfaces as a
  * test failure rather than ANTLR's silent recovery.
+ *
+ * <p>Class MonsterBaseGrammarTest coded before 261104, updated on 261104 once the {@code record-count:} header was removed.
  *
  * @author Rowan Crowther
  */
@@ -70,12 +72,6 @@ class MonsterBaseGrammarTest {
 
     // ---- fixture helpers -------------------------------------------------
 
-    /**
-     * Prefix a body with the {@code record-count:} header the {@code file} rule requires.
-     */
-    private static String withHeader(int count, String body) {
-        return "record-count:" + count + "\n" + body;
-    }
 
     /**
      * Render one template block. {@code flags} may be empty (the grammar makes {@code flags:}
@@ -113,7 +109,6 @@ class MonsterBaseGrammarTest {
     void cleanLoadOfTheRealFileParsesAll56Templates() throws IOException {
         MonsterBaseGrammar.FileContext file = parse(CharStreams.fromFileName(REAL_FILE));
 
-        assertEquals("56", file.declaredRecordCount, "record-count header captured raw");
         assertEquals(56, file.bases.size(), "one record per name: template");
     }
 
@@ -126,7 +121,7 @@ class MonsterBaseGrammarTest {
         assertEquals("D", first.glyph(), "glyph captured as a single-char string");
         assertEquals("1", first.pain(), "pain index captured raw, unresolved");
         assertEquals("Ancient Dragon/Wyrm", first.description());
-        assertEquals(34, first.line(), "line is the name: line in monster_base.txt");
+        assertEquals(32, first.line(), "line is the name: line in C's monster_base.txt");
     }
 
     @Test
@@ -153,12 +148,10 @@ class MonsterBaseGrammarTest {
     // ---- Synthetic structure checks --------------------------------------
 
     @Test
-    void headerIsReadOnceAndEveryTemplateBecomesItsOwnRecord() {
-        MonsterBaseGrammar.FileContext file = parse(withHeader(2,
-                entry("orc", 'o', 3, "Orc", "ANIMAL")
-                        + entry("troll", 'T', 6, "Troll", "GIANT | HURT_LIGHT")));
+    void everyTemplateBecomesItsOwnRecord() {
+        MonsterBaseGrammar.FileContext file = parse(entry("orc", 'o', 3, "Orc", "ANIMAL")
+                        + entry("troll", 'T', 6, "Troll", "GIANT | HURT_LIGHT"));
 
-        assertEquals("2", file.declaredRecordCount);
         assertEquals(2, file.bases.size());
         assertEquals("orc", file.bases.get(0).codeName());
         assertEquals("troll", file.bases.get(1).codeName());
@@ -167,7 +160,7 @@ class MonsterBaseGrammarTest {
     @Test
     void aTemplateWithNoFlagsLinesStillParses() {
         // monsterBase makes flags: a zero-or-more group, so a base can carry none.
-        MonsterBaseGrammar.FileContext file = parse(withHeader(1, entry("mold", 'm', 2, "Mold")));
+        MonsterBaseGrammar.FileContext file = parse(entry("mold", 'm', 2, "Mold"));
 
         assertEquals(1, file.bases.size());
         assertTrue(file.bases.get(0).flags().isEmpty(), "no flags: lines -> empty flag list");
@@ -177,15 +170,14 @@ class MonsterBaseGrammarTest {
     void nameWithSpacesIsCapturedWhole() {
         // Regression for the single-char STRING bug: multi-word names must survive intact.
         MonsterBaseGrammar.FileContext file =
-                parse(withHeader(1, entry("creeping coins", '$', 9, "Creeping Coins")));
+                parse(entry("creeping coins", '$', 9, "Creeping Coins"));
 
         assertEquals("creeping coins", file.bases.get(0).codeName());
     }
 
     @Test
     void commentsAndBlankLinesAreSkippedAroundEntries() {
-        String src = "record-count:1\n"
-                + "# a leading comment\n"
+        String src = "# a leading comment\n"
                 + "\n"
                 + entry("ant", 'a', 7, "Ant", "ANIMAL | WEIRD_MIND");
         MonsterBaseGrammar.FileContext file = parse(src);

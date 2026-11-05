@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -147,7 +148,6 @@ class TrapReaderTest {
     void realFileLoadsAll40TrapsWithNoErrors() throws IOException {
         ParseResult<TrapKind> result = new TrapReader().parseWithResults(REAL_FILE);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(40, result.items().size());
     }
 
@@ -235,8 +235,7 @@ class TrapReaderTest {
     @Test
     void unknownTrapFlagStopsTheLoadAsInC() throws IOException {
         String path = tempFile("bad-flag.txt",
-                "record-count:1\n" +
-                        "name:test:test trap\n" +
+                "name:test:test trap\n" +
                         "graphics:^:w\n" +
                         "flags:TRAP | NOTAFLAG\n");
 
@@ -249,8 +248,7 @@ class TrapReaderTest {
     @Test
     void unknownSaveFlagStopsTheLoadAsInC() throws IOException {
         String path = tempFile("bad-save.txt",
-                "record-count:1\n" +
-                        "name:test:test trap\n" +
+                "name:test:test trap\n" +
                         "graphics:^:w\n" +
                         "save:NOTAFLAG\n");
 
@@ -270,21 +268,20 @@ class TrapReaderTest {
         return (T) f.get(kind);
     }
 
-    private static String withHeader(int count, String body) {
-        return "record-count:" + count + "\n" + body;
-    }
 
     private ParseResult<TrapKind> load(String name, String content) throws IOException {
         return new TrapReader().parseWithResults(tempFile(name, content));
     }
 
-    private static boolean hasError(ParseResult<TrapKind> r, String fragment) {
-        return r.errors().stream().anyMatch(e -> e.contains(fragment));
-    }
-
-    private static void assertHardError(ParseResult<TrapKind> r) {
-        assertTrue(r.hasErrors());
-        assertTrue(r.items().isEmpty(), "a hard error must not leak the kinds that did parse");
+    /**
+     * A grammar or lexer error: the load stops with a {@link ParseCancellationException}, so no kind
+     * that did parse can leak out.
+     *
+     * <p>Function assertHardError coded before 261104, rewritten on 261104 for the removal of the
+     * soft-error path: it now takes the fixture rather than a result, since a failed load has none.
+     */
+    private void assertHardError(String name, String content) {
+        assertThrows(ParseCancellationException.class, () -> load(name, content));
     }
 
     private static String namesOf(List<TrapKind> traps) {
@@ -400,15 +397,18 @@ class TrapReaderTest {
     }
 
     /**
-     * The shipped file adds a {@code record-count:40} header and the blank line after it to the
-     * upstream file; every other line is identical. The tests above rely on the header.
+     * The shipped file is the upstream file: it carries no {@code record-count:} header, and holds
+     * C's forty {@code name:} records.
+     *
+     * <p>Function theShippedFileHasNoRecordCountHeader coded on 261104, commented in full on 261104.
+     * It replaces theShippedFileDiffersFromUpstreamOnlyByTheRecordCountHeader.
      */
     @Test
-    void theShippedFileDiffersFromUpstreamOnlyByTheRecordCountHeader() throws IOException {
+    void theShippedFileHasNoRecordCountHeader() throws IOException {
         List<String> lines = Files.readAllLines(Path.of(REAL_FILE));
 
-        assertEquals(1, lines.stream().filter(l -> l.startsWith("record-count:")).count());
-        assertTrue(lines.contains("record-count:40"));
+        assertEquals(0, lines.stream().filter(l -> l.startsWith("record-count:")).count());
+        assertEquals(40, lines.stream().filter(l -> l.startsWith("name:")).count());
     }
 
     // =====================================================================
@@ -430,33 +430,15 @@ class TrapReaderTest {
     }
 
     @Test
-    void aHardGrammarErrorReturnsNoTrapsAndTheMessages() throws IOException {
-        ParseResult<TrapKind> r = load("hard.txt", withHeader(2,
-                "name:a:good\ngraphics:^:w\nname:b:bad\nnonsense:1\n"));
-
-        assertHardError(r);
-    }
-
-    @Test
-    void aMissingRecordCountHeaderIsAHardError() throws IOException {
-        assertHardError(load("no-header.txt", "name:a:b\ngraphics:^:w\n"));
-    }
-
-    @Test
-    void aRecordCountMismatchIsASoftErrorAndTheTrapsStillLoad() throws IOException {
-        ParseResult<TrapKind> r = load("count.txt", withHeader(5, "name:a:b\ngraphics:^:w\n"));
-
-        assertTrue(r.hasErrors());
-        assertEquals(1, r.items().size());
+    void aHardGrammarErrorStopsTheLoad() throws IOException {
+        assertHardError("hard.txt", "name:a:good\ngraphics:^:w\nname:b:bad\nnonsense:1\n");
     }
 
     /** C's list is newest first, but {@code finish_parse_trap} fills {@code trap_info} from the back. */
     @Test
     void trapsComeBackInFileOrderForASyntheticFile() throws IOException {
-        ParseResult<TrapKind> r = load("order.txt", withHeader(3,
-                "name:z:third\ngraphics:^:w\nname:a:first\ngraphics:^:w\nname:m:second\ngraphics:^:w\n"));
+        ParseResult<TrapKind> r = load("order.txt", "name:z:third\ngraphics:^:w\nname:a:first\ngraphics:^:w\nname:m:second\ngraphics:^:w\n");
 
-        assertFalse(r.hasErrors(), r.errors()::toString);
         assertEquals("third,first,second", namesOf(r.items()));
         assertEquals(0, r.items().get(0).getTrapKindIndex());
         assertEquals(2, r.items().get(2).getTrapKindIndex());
@@ -466,10 +448,9 @@ class TrapReaderTest {
     @Test
     void aBadMiddleTrapStopsTheWholeLoadAsInC() {
         DataFileParseException e = assertThrows(DataFileParseException.class,
-                () -> load("dropped.txt", withHeader(3,
-                        "name:a:first\ngraphics:^:w\n"
+                () -> load("dropped.txt", "name:a:first\ngraphics:^:w\n"
                                 + "name:b:second\ngraphics:^:w\nflags:NOTAFLAG\n"
-                                + "name:c:third\ngraphics:^:w\n")));
+                                + "name:c:third\ngraphics:^:w\n"));
         assertTrue(e.getMessage().contains("NOTAFLAG"), e::getMessage);
     }
 
@@ -480,9 +461,8 @@ class TrapReaderTest {
     /** C: {@code string_append} on {@code text}, {@code msg}, {@code msg_good}, {@code msg_bad}, {@code msg_xtra}. */
     @Test
     void repeatedTextAndMessageLinesJoinAsInC() throws Exception {
-        ParseResult<TrapKind> r = load("join.txt", withHeader(1,
-                "name:a:b\ndesc:D1\ndesc: D2\nmsg:A\nmsg:B\nmsg-good:G\nmsg-good:H\n"
-                        + "msg-bad:X\nmsg-bad:Y\nmsg-xtra:P\nmsg-xtra:Q\n"));
+        ParseResult<TrapKind> r = load("join.txt", "name:a:b\ndesc:D1\ndesc: D2\nmsg:A\nmsg:B\nmsg-good:G\nmsg-good:H\n"
+                        + "msg-bad:X\nmsg-bad:Y\nmsg-xtra:P\nmsg-xtra:Q\n");
 
         TrapKind t = r.items().getFirst();
         assertEquals("D1 D2", t.getText());
@@ -495,9 +475,8 @@ class TrapReaderTest {
     /** C: {@code graphics}, {@code appear} and {@code visibility} assign, so the last line wins. */
     @Test
     void aRepeatedGraphicsAppearOrVisibilityLineTakesTheLastValueAsInC() throws Exception {
-        ParseResult<TrapKind> r = load("last.txt", withHeader(1,
-                "name:a:b\ngraphics:^:w\ngraphics:%:r\nappear:1:2:3\nappear:4:5:6\n"
-                        + "visibility:10\nvisibility:20\n"));
+        ParseResult<TrapKind> r = load("last.txt", "name:a:b\ngraphics:^:w\ngraphics:%:r\nappear:1:2:3\nappear:4:5:6\n"
+                        + "visibility:10\nvisibility:20\n");
 
         TrapKind t = r.items().getFirst();
         AngbandDisplayCharacter adc = field(t, "angbandDisplayCharacter");
@@ -513,8 +492,7 @@ class TrapReaderTest {
     /** C: {@code grab_flag} turns bits on and never off, so repeated lines accumulate. */
     @Test
     void repeatedFlagAndSaveLinesAccumulateAsInC() throws IOException {
-        ParseResult<TrapKind> r = load("accumulate.txt", withHeader(1,
-                "name:a:b\nflags:TRAP\nflags:FLOOR | PIT\nsave:FEATHER\nsave:FREE_ACT\n"));
+        ParseResult<TrapKind> r = load("accumulate.txt", "name:a:b\nflags:TRAP\nflags:FLOOR | PIT\nsave:FEATHER\nsave:FREE_ACT\n");
 
         TrapKind t = r.items().getFirst();
         assertTrue(t.getFlags().has(TrapEnum.TRF_TRAP));
@@ -527,10 +505,8 @@ class TrapReaderTest {
     /** C: every line after {@code name:} is its own handler, with no required order. */
     @Test
     void directivesAfterNameMayComeInAnyOrderAsInC() throws Exception {
-        ParseResult<TrapKind> r = load("any-order.txt", withHeader(1,
-                "name:a:b\ndesc:T\nflags:TRAP\ngraphics:^:w\nmsg:M\nappear:1:2:3\n"));
+        ParseResult<TrapKind> r = load("any-order.txt", "name:a:b\ndesc:T\nflags:TRAP\ngraphics:^:w\nmsg:M\nappear:1:2:3\n");
 
-        assertFalse(r.hasErrors(), r.errors()::toString);
         TrapKind t = r.items().getFirst();
         assertEquals("T", t.getText());
         assertEquals("M", field(t, "message"));
@@ -540,9 +516,8 @@ class TrapReaderTest {
     /** C: {@code strtok(flags, " |")} splits on a bare bar as well as on {@code " | "}. */
     @Test
     void flagsSeparatedByABareBarSplitAsInC() throws IOException {
-        ParseResult<TrapKind> r = load("bare-bar.txt", withHeader(1, "name:a:b\nflags:TRAP|FLOOR\n"));
+        ParseResult<TrapKind> r = load("bare-bar.txt", "name:a:b\nflags:TRAP|FLOOR\n");
 
-        assertFalse(r.hasErrors(), r.errors()::toString);
         assertTrue(r.items().getFirst().getFlags().has(TrapEnum.TRF_FLOOR));
     }
 
@@ -553,13 +528,13 @@ class TrapReaderTest {
     @Test
     void flagNoneStopsTheLoadAsInC() {
         assertThrows(DataFileParseException.class,
-                () -> load("flag-none.txt", withHeader(1, "name:a:b\nflags:NONE\n")));
+                () -> load("flag-none.txt", "name:a:b\nflags:NONE\n"));
     }
 
     /** C: a record with no {@code appear:} line is zeroed. */
     @Test
     void aMissingAppearLineLeavesZeroesAsInC() throws Exception {
-        TrapKind t = load("no-appear.txt", withHeader(1, "name:a:b\ngraphics:^:w\n")).items().getFirst();
+        TrapKind t = load("no-appear.txt", "name:a:b\ngraphics:^:w\n").items().getFirst();
 
         assertEquals(0, (int) field(t, "rarity"));
         assertEquals(0, (int) field(t, "minDepth"));
@@ -569,10 +544,10 @@ class TrapReaderTest {
     /** C: {@code color_text_to_attr} compares with {@code my_stricmp}; a single character is case-sensitive. */
     @Test
     void colourNamesIgnoreCaseButColourCharactersDoNotAsInC() throws Exception {
-        TrapKind lower = load("c-lower.txt", withHeader(1, "name:a:b\ngraphics:^:light yellow\n")).items().getFirst();
-        TrapKind mixed = load("c-mixed.txt", withHeader(1, "name:a:b\ngraphics:^:Light Yellow\n")).items().getFirst();
-        TrapKind upperChar = load("c-char.txt", withHeader(1, "name:a:b\ngraphics:^:Y\n")).items().getFirst();
-        TrapKind lowerChar = load("c-char2.txt", withHeader(1, "name:a:b\ngraphics:^:y\n")).items().getFirst();
+        TrapKind lower = load("c-lower.txt", "name:a:b\ngraphics:^:light yellow\n").items().getFirst();
+        TrapKind mixed = load("c-mixed.txt", "name:a:b\ngraphics:^:Light Yellow\n").items().getFirst();
+        TrapKind upperChar = load("c-char.txt", "name:a:b\ngraphics:^:Y\n").items().getFirst();
+        TrapKind lowerChar = load("c-char2.txt", "name:a:b\ngraphics:^:y\n").items().getFirst();
 
         assertEquals("Light Yellow", colourOf(lower));
         assertEquals("Light Yellow", colourOf(mixed));
@@ -592,91 +567,85 @@ class TrapReaderTest {
     /** C: a {@code name:} line alone allocates a zeroed kind, and nothing else is required. */
     @Test
     void aNameOnlyRecordIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        assertHardError(load("name-only.txt", withHeader(1, "name:a:b\n")));
+        assertHardError("name-only.txt", "name:a:b\n");
     }
 
     /** C: a file with no {@code name:} line leaves the list empty and loads without error. */
     @Test
     void aHeaderWithNoRecordsIsAHardErrorHereWhereCAcceptsAnEmptyFile() throws IOException {
-        assertHardError(load("no-records.txt", withHeader(0, "")));
+        assertHardError("no-records.txt", "");
     }
 
     /** C: the second field of {@code name:} is a {@code str}, which takes the rest of the line. */
     @Test
     void aColonInTheNameDescriptionIsAHardErrorHereWhereCTakesTheRestOfTheLine() throws IOException {
-        assertHardError(load("name-colon.txt", withHeader(1, "name:a:b: c\ngraphics:^:w\n")));
+        assertHardError("name-colon.txt", "name:a:b: c\ngraphics:^:w\n");
     }
 
     /** C: a colon in a {@code msg:} line is part of the text, and the port agrees. */
     @Test
     void aColonInAMessageLoadsAsInC() throws Exception {
-        TrapKind t = load("msg-colon.txt", withHeader(1, "name:a:b\nmsg:Look: a trap\n")).items().getFirst();
+        TrapKind t = load("msg-colon.txt", "name:a:b\nmsg:Look: a trap\n").items().getFirst();
 
         assertEquals("Look: a trap", field(t, "message"));
     }
 
     @Test
     void flagsSeparatedByASpaceAloneAreAHardErrorHereWhereCSplitsOnSpaceToo() throws IOException {
-        assertHardError(load("space-flags.txt", withHeader(1, "name:a:b\nflags:TRAP FLOOR\n")));
+        assertHardError("space-flags.txt", "name:a:b\nflags:TRAP FLOOR\n");
     }
 
     @Test
     void saveFlagsSeparatedByASpaceAloneAreAHardErrorHereWhereCSplitsOnSpaceToo() throws IOException {
-        assertHardError(load("space-save.txt", withHeader(1, "name:a:b\nsave:FEATHER FREE_ACT\n")));
+        assertHardError("space-save.txt", "name:a:b\nsave:FEATHER FREE_ACT\n");
     }
 
     /** C: {@code flags} is {@code ?str}, so the value may be missing. */
     @Test
     void anEmptyFlagsLineIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        assertHardError(load("empty-flags.txt", withHeader(1, "name:a:b\nflags:\n")));
+        assertHardError("empty-flags.txt", "name:a:b\nflags:\n");
     }
 
     /** C: {@code parse_trap_effect_yx_xtra} sets the position of the last extra effect. */
     @Test
     void effectYxXtraIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        assertHardError(load("yx-xtra.txt", withHeader(1,
-                "name:a:b\neffect-xtra:DAMAGE\neffect-yx-xtra:1:2\n")));
+        assertHardError("yx-xtra.txt", "name:a:b\neffect-xtra:DAMAGE\neffect-yx-xtra:1:2\n");
     }
 
     /** C: with no effect yet, {@code parse_trap_dice} returns {@code PARSE_ERROR_NONE} and does nothing. */
     @Test
     void aDiceLineBeforeAnyEffectIsAHardErrorHereWhereCIgnoresIt() throws IOException {
-        assertHardError(load("dice-first.txt", withHeader(1, "name:a:b\ndice:1d4\n")));
+        assertHardError("dice-first.txt", "name:a:b\ndice:1d4\n");
     }
 
     @Test
     void aDiceXtraLineBeforeAnyExtraEffectIsAHardErrorHereWhereCIgnoresIt() throws IOException {
-        assertHardError(load("dice-xtra-first.txt", withHeader(1, "name:a:b\ndice-xtra:1d4\n")));
+        assertHardError("dice-xtra-first.txt", "name:a:b\ndice-xtra:1d4\n");
     }
 
     /** C: {@code parse_trap_expr} returns {@code PARSE_ERROR_NONE} when the last effect has no dice. */
     @Test
     void anExprLineWithNoDiceBeforeItIsAHardErrorHereWhereCIgnoresIt() throws IOException {
-        assertHardError(load("expr-no-dice.txt", withHeader(1,
-                "name:a:b\neffect:DAMAGE\nexpr:S:DUNGEON_LEVEL:/ 2\n")));
+        assertHardError("expr-no-dice.txt", "name:a:b\neffect:DAMAGE\nexpr:S:DUNGEON_LEVEL:/ 2\n");
     }
 
     /** C: {@code parse_trap_dice} walks the primary list, so it still reaches {@code effect:} after an extra effect. */
     @Test
     void aDiceLineAfterAnExtraEffectIsAHardErrorHereWhereCReachesThePrimaryEffect() throws IOException {
-        assertHardError(load("dice-after-xtra.txt", withHeader(1,
-                "name:a:b\neffect:DAMAGE\neffect-xtra:DAMAGE\ndice:1d4\n")));
+        assertHardError("dice-after-xtra.txt", "name:a:b\neffect:DAMAGE\neffect-xtra:DAMAGE\ndice:1d4\n");
     }
 
     /** C: {@code effect-yx} and {@code dice} both act on the last effect, in either order. */
     @Test
     void effectYxAndDiceOnTheSameEffectAreAHardErrorHereWhereCTakesBoth() throws IOException {
-        assertHardError(load("yx-and-dice.txt", withHeader(1,
-                "name:a:b\neffect:DAMAGE\neffect-yx:1:2\ndice:1d4\n")));
+        assertHardError("yx-and-dice.txt", "name:a:b\neffect:DAMAGE\neffect-yx:1:2\ndice:1d4\n");
     }
 
     /** C: {@code init_parse_trap} registers no {@code effect-msg}, so it is an undefined directive. */
     @Test
     void effectMsgIsAcceptedHereWhereCHasNoSuchDirective() throws IOException {
-        ParseResult<TrapKind> r = load("effect-msg.txt", withHeader(1,
-                "name:a:b\neffect:DAMAGE\ndice:1d4\neffect-msg:hi\n"));
+        ParseResult<TrapKind> r = load("effect-msg.txt", "name:a:b\neffect:DAMAGE\ndice:1d4\neffect-msg:hi\n");
 
-        assertFalse(r.hasErrors(), r.errors()::toString);
         assertEquals(1, r.items().getFirst().getEffect().size());
     }
 
@@ -684,38 +653,38 @@ class TrapReaderTest {
     @Test
     void aNegativeAppearValueStopsTheLoadAsInC() {
         assertThrows(DataFileParseException.class,
-                () -> load("neg-appear.txt", withHeader(1, "name:a:b\nappear:-1:-2:-3\n")));
+                () -> load("neg-appear.txt", "name:a:b\nappear:-1:-2:-3\n"));
     }
 
     /** C: {@code dice_parse_string} skips whitespace, so {@code 2d10 M50} is {@code 2d10M50}. */
     @Test
     void aSpaceInsideTheVisibilityDiceIsAHardErrorHereWhereCSkipsIt() throws IOException {
-        assertHardError(load("vis-space.txt", withHeader(1, "name:a:b\nvisibility:2d10 M50\n")));
+        assertHardError("vis-space.txt", "name:a:b\nvisibility:2d10 M50\n");
     }
 
     /** C: {@code color_text_to_attr} answers white for a name it does not know. */
     @Test
     void anUnknownColourNameIsAHardErrorHereWhereCDrawsItWhite() throws IOException {
-        assertHardError(load("colour-name.txt", withHeader(1, "name:a:b\ngraphics:^:nonsense\n")));
+        assertHardError("colour-name.txt", "name:a:b\ngraphics:^:nonsense\n");
     }
 
     /** C: {@code parser_parse} skips leading whitespace on a line. */
     @Test
     void anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent() throws IOException {
-        assertHardError(load("indented.txt", withHeader(1, "name:a:b\n  graphics:^:w\n")));
+        assertHardError("indented.txt", "name:a:b\n  graphics:^:w\n");
     }
 
     /** C: {@code list_obj_flag_names} and {@code trap_flags} hold no {@code MAX}. */
     @Test
     void flagMaxStopsTheLoadAsInC() {
         assertThrows(DataFileParseException.class,
-                () -> load("flag-max.txt", withHeader(1, "name:a:b\nflags:MAX\n")));
+                () -> load("flag-max.txt", "name:a:b\nflags:MAX\n"));
     }
 
     @Test
     void saveMaxStopsTheLoadAsInC() {
         assertThrows(DataFileParseException.class,
-                () -> load("save-max.txt", withHeader(1, "name:a:b\nsave:MAX\n")));
+                () -> load("save-max.txt", "name:a:b\nsave:MAX\n"));
     }
 
     /**
@@ -725,7 +694,7 @@ class TrapReaderTest {
      */
     @Test
     void aKindWithNoGraphicsLineHasTheBlankDisplayCharacter() throws Exception {
-        TrapKind t = load("no-graphics.txt", withHeader(1, "name:a:b\ndesc:x\n")).items().getFirst();
+        TrapKind t = load("no-graphics.txt", "name:a:b\ndesc:x\n").items().getFirst();
 
         assertSame(AngbandDisplayCharacter.blank, field(t, "angbandDisplayCharacter"));
     }
@@ -733,7 +702,7 @@ class TrapReaderTest {
     /** C: {@code mem_zalloc} leaves {@code power} as a zero {@code random_value}, which {@code randcalc} accepts. */
     @Test
     void aKindWithNoVisibilityLineHasAZeroRandomPowerAsInC() throws Exception {
-        TrapKind t = load("no-vis.txt", withHeader(1, "name:a:b\ngraphics:^:w\n")).items().getFirst();
+        TrapKind t = load("no-vis.txt", "name:a:b\ngraphics:^:w\n").items().getFirst();
 
         Random power = field(t, "power");
         assertNotNull(power);
@@ -754,7 +723,7 @@ class TrapReaderTest {
     /** C: an absent {@code msg:} is {@code NULL}, and {@code trap.c} tests the pointer; here it is empty text. */
     @Test
     void anAbsentMessageIsEmptyTextHereWhereCHasNull() throws Exception {
-        TrapKind t = load("no-msg.txt", withHeader(1, "name:a:b\ngraphics:^:w\n")).items().getFirst();
+        TrapKind t = load("no-msg.txt", "name:a:b\ngraphics:^:w\n").items().getFirst();
 
         assertEquals("", field(t, "message"));
         assertEquals("", field(t, "messageOnSave"));
@@ -772,9 +741,9 @@ class TrapReaderTest {
     @Test
     void aBadEffectStopsTheLoad() {
         DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("bad-effect.txt",
-                withHeader(1, "name:a:b\ngraphics:^:w\neffect:NOTANEFFECT\ndice:1\n")));
+                "name:a:b\ngraphics:^:w\neffect:NOTANEFFECT\ndice:1\n"));
 
-        assertTrue(e.getMessage().contains("Effect starting at line: 4"), e::getMessage);
+        assertTrue(e.getMessage().contains("Effect starting at line: 3"), e::getMessage);
         assertTrue(e.getMessage().contains("illegal element value: NOTANEFFECT"), e::getMessage);
     }
 
@@ -782,9 +751,9 @@ class TrapReaderTest {
     void aBadExtraEffectStopsTheLoad() {
         // parse_trap_effect_xtra returns the same grab_effect_data error as parse_trap_effect
         DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("bad-xtra.txt",
-                withHeader(1, "name:a:b\ngraphics:^:w\neffect-xtra:NOTANEFFECT\ndice-xtra:1\n")));
+                "name:a:b\ngraphics:^:w\neffect-xtra:NOTANEFFECT\ndice-xtra:1\n"));
 
-        assertTrue(e.getMessage().contains("Effect starting at line: 4"), e::getMessage);
+        assertTrue(e.getMessage().contains("Effect starting at line: 3"), e::getMessage);
         assertTrue(e.getMessage().contains("illegal element value: NOTANEFFECT"), e::getMessage);
     }
 
@@ -793,8 +762,8 @@ class TrapReaderTest {
         // C quits at the bad effect line, so the second trap is never parsed and no index is
         // handed on; the exception names the first trap's effect, line 4.
         DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("bad-then-good.txt",
-                withHeader(2, "name:a:b\ngraphics:^:w\neffect:NOTANEFFECT\ndice:1\nname:c:d\ngraphics:^:w\n")));
+                "name:a:b\ngraphics:^:w\neffect:NOTANEFFECT\ndice:1\nname:c:d\ngraphics:^:w\n"));
 
-        assertTrue(e.getMessage().contains("Effect starting at line: 4"), e::getMessage);
+        assertTrue(e.getMessage().contains("Effect starting at line: 3"), e::getMessage);
     }
 }

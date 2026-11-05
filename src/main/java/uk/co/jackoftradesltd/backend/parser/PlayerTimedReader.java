@@ -55,14 +55,18 @@ import java.util.List;
  * C's {@code init_arrays}. A grade's food figures are scaled by {@code player:food-value}, so
  * {@code constants.txt} must be loaded too.
  *
- * <p><b>Where it differs from C.</b> The file needs a {@code record-count:} header that the upstream
- * file does not carry and at least one record, and the grammar accepts a narrower set of lines than
- * C's parser (see {@code docs/grammar_issues.md}). A value that fails to resolve drops only its own
- * record and is reported as a soft error, where C stops on the first bad line; the assembler is also
- * more lenient than C in places (see {@code docs/Assembler_Issues.md}). A missing file is an
- * {@code IOException}, where C quits.
+ * <p><b>Errors.</b> As C stops on the first bad line, so does this reader: a syntax error is thrown
+ * from {@link #extract} as a {@code ParseCancellationException}, and a value that fails to resolve
+ * is thrown by the assembler as a
+ * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}. Neither is caught here, and
+ * no effects are returned. A missing file is an {@code IOException}, where C quits.
  *
- * <p>Class commented in full on 261019.
+ * <p><b>Where it differs from C.</b> The file needs at least one record, and the grammar accepts a
+ * narrower set of lines than C's parser (see {@code docs/grammar_issues.md}). The assembler is
+ * also more lenient than C in places (see {@code docs/Assembler_Issues.md}).
+ *
+ * <p>Class commented in full on 261019, updated on 261105 for the removal of the soft-error path
+ * and the {@code record-count:} header.
  *
  * @author Rowan Crowther
  */
@@ -78,16 +82,15 @@ public class PlayerTimedReader implements Reader<PlayerTimedEffect> {
     private static final Logger logger = LogManager.getLogger();
 
     /**
-     * Parses {@code filename} and returns just the assembled player timed effects, discarding
-     * the soft-error channel (use {@link #parseWithResults} to inspect errors).
+     * Parses {@code filename} and returns just the assembled player timed effects, unwrapped from
+     * the {@link ParseResult} that {@link #parseWithResults} gives. Any error throws exactly as it
+     * does there.
      *
-     * <p>A file broken enough to fail the grammar comes back as an empty list with no hint why;
-     * callers that need the reason use {@link #parseWithResults}.
-     *
-     * <p>Function parse coded before 260915, commented in full on 261019.
+     * <p>Function parse coded before 260915, commented in full on 261019, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param filename the data file to read
-     * @return the player timed effects read from the file
+     * @return every player timed effect in the file, in file order
      * @throws IOException if the file cannot be read
      */
     @Override
@@ -97,50 +100,43 @@ public class PlayerTimedReader implements Reader<PlayerTimedEffect> {
 
     /**
      * The grammar-specific extraction step handed to {@link GrammarDriver}: runs the {@code file}
-     * rule, fails closed on any hard grammar/lexer error via {@link ParseErrors#throwIfAny()}, then
-     * soft-checks the declared {@code record-count:} header against the number of records actually
-     * parsed.
+     * rule and fails closed on any hard grammar/lexer error via {@link ParseErrors#throwIfAny()},
+     * which throws a {@code ParseCancellationException} before any record is used.
      *
-     * <p>The count is this port's own addition - C's player timed parser registers no
-     * {@code record-count} directive - so the check exists to catch a hand-edited file, not to
-     * mirror the original. A wrong or unparseable count is a soft error and the records still come
-     * back. The returned list is a copy, so the assembler cannot disturb the parse tree.
+     * <p>The returned list is a copy, so the assembler cannot disturb the parse tree.
      *
-     * <p>Function extract coded before 260915, commented in full on 261019.
+     * <p>Function extract coded before 260915, commented in full on 261019, updated on 261105 for
+     * the removal of the soft-error path and the {@code record-count:} header.
      *
      * @param parser       the generated parser, positioned at the start of the file
      * @param errorCatcher the hard-error channel; {@code throwIfAny} aborts before the records are used
-     * @param errors       the soft-error sink, appended to on a record-count mismatch
      * @return a defensive copy of the parsed player-timed-effect records for the assembler
-     * @throws IOException never thrown here, but declared by the {@link GrammarDriver.Extractor} contract
      */
     private static List<PlayerTimedParseRecord> extract(
             @NotNull PlayerTimedGrammar parser,
-            @NotNull ParseErrors errorCatcher,
-            @NotNull List<String> errors) throws IOException {
+            @NotNull ParseErrors errorCatcher) {
         PlayerTimedGrammar.FileContext output = parser.file();
         List<PlayerTimedParseRecord> records = output.results;
         errorCatcher.throwIfAny();
-
-        String declaredRecordCount = output.declaredRecordCount;
-        GrammarDriver.checkRecordCount(declaredRecordCount, records.size(), errors);
 
         return new ArrayList<>(records);
     }
 
     /**
-     * Parses {@code filename} and returns the full {@link ParseResult}: the assembled
-     * {@link PlayerTimedEffect}s together with any soft errors collected during parsing and
-     * assembly. {@link #parse} is the items-only convenience over this.
+     * Parses {@code filename} and returns the assembled {@link PlayerTimedEffect}s wrapped in a
+     * {@link ParseResult}. {@link #parse} is the items-only convenience over this.
      *
      * <p>The port of {@code run_parse_player_timed}. A missing file is an {@code IOException}, where
-     * C quits. A hard grammar or lexer failure comes back as errors with no effects, not as an
-     * exception, and an unresolvable record is skipped with a soft error while the rest still load.
+     * C quits. A hard grammar or lexer failure throws a {@code ParseCancellationException}, and an
+     * unresolvable record throws a
+     * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}; no result is returned
+     * for a file that fails.
      *
-     * <p>Function parseWithResults coded before 260915, commented in full on 261019.
+     * <p>Function parseWithResults coded before 260915, commented in full on 261019, updated on
+     * 261105 for the removal of the soft-error path.
      *
      * @param filename the player-timed-effect data file to read
-     * @return the parse result: the player-timed effects plus any error messages
+     * @return every player timed effect in the file, in file order
      * @throws IOException if the file cannot be read
      */
     public ParseResult<PlayerTimedEffect> parseWithResults(@NotNull String filename) throws IOException {

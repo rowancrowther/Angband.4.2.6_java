@@ -32,16 +32,6 @@ import CommentsAndEol, Colours, Flags;
 /*
  * @author Rowan Crowther
  *
- * record-count directive
- * cf UIEntryRendererGrammar.g4's 'recordCount' rule
- */
-RECORD_COUNT
-        :   'record-count:'
-        ;
-
-/*
- * @author Rowan Crowther
- *
  * name directive
  * cf UIEntryRendererGrammar.g4's 'name' rule
  */

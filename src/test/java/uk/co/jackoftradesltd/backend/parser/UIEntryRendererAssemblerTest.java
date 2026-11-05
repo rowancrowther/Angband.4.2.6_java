@@ -25,7 +25,6 @@ import uk.co.jackoftradesltd.frontend.entries.enums.UIEntryRendererEnum;
 import uk.co.jackoftradesltd.frontend.ui.entryrenderer.assembler.UIEntryRendererAssembler;
 import uk.co.jackoftradesltd.frontend.ui.entryrenderer.assembler.UIEntryRendererParseRecord;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalInt;
 
@@ -67,12 +66,10 @@ class UIEntryRendererAssemblerTest {
 
     @Test
     void resolvesAllFieldsWhenPresent() {
-        List<String> errors = new ArrayList<>();
         List<UIEntryRenderer> out = new UIEntryRendererAssembler().assemble(
                 List.of(rec("r", "NUMERIC_RENDERER_WITH_BOOL_AUX", "abc", "def", "ghi", "3", "ALWAYS_SIGN")),
-                errors, "test.txt");
+                "test.txt");
 
-        assertTrue(errors.isEmpty(), errors::toString);
         assertEquals(1, out.size());
         UIEntryRenderer u = out.get(0);
         assertEquals(UIEntryRendererEnum.UI_ENTRY_RENDERER_NUMERIC_RENDERER_WITH_BOOL_AUX, u.getCode());
@@ -88,12 +85,10 @@ class UIEntryRendererAssemblerTest {
 
     @Test
     void emptyOptionalFieldsFallBackToBackendDefaults() {
-        List<String> errors = new ArrayList<>();
         List<UIEntryRenderer> out = new UIEntryRendererAssembler().assemble(
                 List.of(rec("r", "COMPACT_FLAG_RENDERER_WITH_COMBINED_AUX", "", "", "", "", "")),
-                errors, "test.txt");
+                "test.txt");
 
-        assertTrue(errors.isEmpty(), errors::toString);
         assertEquals(1, out.size());
         UIEntryRenderer u = out.get(0);
         assertEquals(FLAG.getDefaultColours(), u.getColours());
@@ -105,12 +100,12 @@ class UIEntryRendererAssemblerTest {
 
     private static DataFileParseException fatal(UIEntryRendererParseRecord... records) {
         return assertThrows(DataFileParseException.class,
-                () -> new UIEntryRendererAssembler().assemble(List.of(records), new ArrayList<>(), "test.txt"));
+                () -> new UIEntryRendererAssembler().assemble(List.of(records), "test.txt"));
     }
 
     private static UIEntryRenderer one(UIEntryRendererParseRecord record) {
         List<UIEntryRenderer> out = new UIEntryRendererAssembler()
-                .assemble(List.of(record), new ArrayList<>(), "test.txt");
+                .assemble(List.of(record), "test.txt");
         assertEquals(1, out.size());
         return out.get(0);
     }
@@ -260,7 +255,7 @@ class UIEntryRendererAssemblerTest {
         List<UIEntryRenderer> out = new UIEntryRendererAssembler().assemble(List.of(
                 rec("a", FLAG_CODE, "", "", "", "", ""),
                 rec("b", FLAG_CODE, "", "", "", "", ""),
-                rec("c", FLAG_CODE, "", "", "", "", "")), new ArrayList<>(), "test.txt");
+                rec("c", FLAG_CODE, "", "", "", "", "")), "test.txt");
 
         assertEquals(List.of("a", "b", "c"), out.stream().map(UIEntryRenderer::getName).toList());
     }
@@ -270,7 +265,7 @@ class UIEntryRendererAssemblerTest {
         List<UIEntryRenderer> out = new UIEntryRendererAssembler().assemble(List.of(
                 rec("a", FLAG_CODE, "", "", "", "", ""),
                 rec("b", FLAG_CODE, "", "", "", "", ""),
-                rec("a", "", "", "", "", "5", "")), new ArrayList<>(), "test.txt");
+                rec("a", "", "", "", "", "5", "")), "test.txt");
 
         assertEquals(List.of("a", "b"), out.stream().map(UIEntryRenderer::getName).toList());
         assertEquals(OptionalInt.of(5), out.get(0).getnDigit());
@@ -280,7 +275,7 @@ class UIEntryRendererAssemblerTest {
     void aRepeatedNameKeepsWhatTheEarlierBlockSet() {
         List<UIEntryRenderer> out = new UIEntryRendererAssembler().assemble(List.of(
                 rec("a", "NUMERIC_RENDERER_WITH_BOOL_AUX", "abc", "def", "ghi", "3", "ALWAYS_SIGN"),
-                rec("a", "", "", "", "", "", "")), new ArrayList<>(), "test.txt");
+                rec("a", "", "", "", "", "", "")), "test.txt");
 
         UIEntryRenderer u = out.get(0);
         assertEquals(UIEntryRendererEnum.UI_ENTRY_RENDERER_NUMERIC_RENDERER_WITH_BOOL_AUX, u.getCode());
@@ -296,7 +291,7 @@ class UIEntryRendererAssemblerTest {
         // FLAG defaults "wwwwGWWWWG", "swBw", "?..+!".
         List<UIEntryRenderer> out = new UIEntryRendererAssembler().assemble(List.of(
                 rec("a", FLAG_CODE, "", "", "", "", ""),
-                rec("a", "", "x", "y", "z", "", "")), new ArrayList<>(), "test.txt");
+                rec("a", "", "x", "y", "z", "", "")), "test.txt");
 
         UIEntryRenderer u = out.get(0);
         assertEquals("xwwwGWWWWG", u.getColours());
@@ -310,7 +305,7 @@ class UIEntryRendererAssemblerTest {
         // padded from FLAG's defaults, not BOOL's.
         List<UIEntryRenderer> out = new UIEntryRendererAssembler().assemble(List.of(
                 rec("a", "NUMERIC_RENDERER_WITH_BOOL_AUX", "abc", "d", "e", "", ""),
-                rec("a", FLAG_CODE, "", "", "", "", "")), new ArrayList<>(), "test.txt");
+                rec("a", FLAG_CODE, "", "", "", "", "")), "test.txt");
 
         UIEntryRenderer u = out.get(0);
         assertEquals(FLAG, u.getCode());
@@ -326,7 +321,7 @@ class UIEntryRendererAssemblerTest {
         // backend, the merged record is padded and defaulted from it.
         List<UIEntryRenderer> out = new UIEntryRendererAssembler().assemble(List.of(
                 rec("a", "", "ab", "", "", "", ""),
-                rec("a", "NUMERIC_RENDERER_WITH_BOOL_AUX", "", "", "", "", "")), new ArrayList<>(), "test.txt");
+                rec("a", "NUMERIC_RENDERER_WITH_BOOL_AUX", "", "", "", "", "")), "test.txt");
 
         UIEntryRenderer u = out.get(0);
         assertEquals("absgGgrRwdsgGgrR", u.getColours());
@@ -340,7 +335,7 @@ class UIEntryRendererAssemblerTest {
     void aSignSetEarlierSurvivesALaterCodeChange() {
         List<UIEntryRenderer> out = new UIEntryRendererAssembler().assemble(List.of(
                 rec("a", "", "", "", "", "", "NEGATIVE_SIGN"),
-                rec("a", FLAG_CODE, "", "", "", "", "")), new ArrayList<>(), "test.txt");
+                rec("a", FLAG_CODE, "", "", "", "", "")), "test.txt");
 
         assertEquals(UIEntryEnum.UI_ENTRY_NEGATIVE_SIGN, out.get(0).getSign());
     }
@@ -349,7 +344,7 @@ class UIEntryRendererAssemblerTest {
     void aLaterSignReplacesAnEarlierOne() {
         List<UIEntryRenderer> out = new UIEntryRendererAssembler().assemble(List.of(
                 rec("a", FLAG_CODE, "", "", "", "", "ALWAYS_SIGN"),
-                rec("a", "", "", "", "", "", "NO_SIGN")), new ArrayList<>(), "test.txt");
+                rec("a", "", "", "", "", "", "NO_SIGN")), "test.txt");
 
         assertEquals(UIEntryEnum.UI_ENTRY_NO_SIGN, out.get(0).getSign());
     }
@@ -359,7 +354,7 @@ class UIEntryRendererAssemblerTest {
         String seventy = "x".repeat(70);
         List<UIEntryRenderer> out = new UIEntryRendererAssembler().assemble(List.of(
                 rec("a", "", seventy, "", "", "", ""),
-                rec("a", FLAG_CODE, "", "", "", "", "")), new ArrayList<>(), "test.txt");
+                rec("a", FLAG_CODE, "", "", "", "", "")), "test.txt");
 
         assertEquals("x".repeat(64), out.get(0).getColours());
     }

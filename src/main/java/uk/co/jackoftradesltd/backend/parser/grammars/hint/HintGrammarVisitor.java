@@ -14,7 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-// Generated from HintGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/HintGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.hint;
 
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
@@ -24,38 +24,25 @@ import org.antlr.v4.runtime.tree.ParseTreeVisitor;
  * by {@link HintGrammar}.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
- *            operations with no return type.
+ * operations with no return type.
  */
 public interface HintGrammarVisitor<T> extends ParseTreeVisitor<T> {
-    /**
-     * Visit a parse tree produced by {@link HintGrammar#recordCount}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitRecordCount(HintGrammar.RecordCountContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link HintGrammar#hint}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitHint(HintGrammar.HintContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link HintGrammar#hintRecord}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitHintRecord(HintGrammar.HintRecordContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link HintGrammar#file}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitFile(HintGrammar.FileContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link HintGrammar#hint}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitHint(HintGrammar.HintContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link HintGrammar#hintRecord}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitHintRecord(HintGrammar.HintRecordContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link HintGrammar#file}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFile(HintGrammar.FileContext ctx);
 }

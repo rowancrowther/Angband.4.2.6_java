@@ -89,9 +89,7 @@ class RoomProfileAssemblerTest {
     }
 
     private static RoomTemplate assembleOne(RoomProfileParseRecord record) {
-        List<String> errors = new ArrayList<>();
-        List<RoomTemplate> result = new RoomProfileAssembler().assemble(List.of(record), errors, FILE);
-        assertTrue(errors.isEmpty(), "the errors list is not used: " + errors);
+        List<RoomTemplate> result = new RoomProfileAssembler().assemble(List.of(record), FILE);
         assertEquals(1, result.size());
         return result.getFirst();
     }
@@ -102,7 +100,7 @@ class RoomProfileAssemblerTest {
      */
     private static void assertStopsTheLoad(RoomProfileParseRecord record, String message) {
         DataFileParseException thrown = assertThrows(DataFileParseException.class,
-                () -> new RoomProfileAssembler().assemble(List.of(record), new ArrayList<>(), FILE));
+                () -> new RoomProfileAssembler().assemble(List.of(record), FILE));
         assertTrue(thrown.getMessage().contains(message), thrown::getMessage);
         assertTrue(thrown.getMessage().contains("line: " + NAME_LINE), thrown::getMessage);
         assertTrue(thrown.getMessage().contains("file: " + FILE), thrown::getMessage);
@@ -132,14 +130,11 @@ class RoomProfileAssemblerTest {
     }
 
     /**
-     * No records is no templates, and the errors list stays empty.
+     * No records is no templates.
      */
     @Test
     void noRecordsGiveAnEmptyList() {
-        List<String> errors = new ArrayList<>();
-
-        assertTrue(new RoomProfileAssembler().assemble(List.of(), errors, FILE).isEmpty());
-        assertTrue(errors.isEmpty());
+        assertTrue(new RoomProfileAssembler().assemble(List.of(), FILE).isEmpty());
     }
 
     /**
@@ -153,14 +148,13 @@ class RoomProfileAssemblerTest {
             records.add(new RoomProfileParseRecord(name, "1", "1", "3", "3", "1", "0", List.of(), SQUARE, 1, 2));
         }
 
-        List<RoomTemplate> result = new RoomProfileAssembler().assemble(records, new ArrayList<>(), FILE);
+        List<RoomTemplate> result = new RoomProfileAssembler().assemble(records, FILE);
 
         assertEquals(List.of("third", "second", "first"), result.stream().map(RoomTemplate::getName).toList());
     }
 
     /**
-     * Nothing is skipped: the first fault throws, so the records behind it are never reached, and
-     * the errors list is left alone.
+     * Nothing is skipped: the first fault throws, so the records behind it are never reached.
      */
     @Test
     void aBadRecordStopsTheLoadAndNothingIsReturned() {
@@ -168,11 +162,9 @@ class RoomProfileAssemblerTest {
                 record("1", "1", "3", "3", "1"),
                 record("1", "1", "12", "3", "1"),
                 record("1", "1", "3", "3", "1"));
-        List<String> errors = new ArrayList<>();
 
         assertThrows(DataFileParseException.class,
-                () -> new RoomProfileAssembler().assemble(records, errors, FILE));
-        assertTrue(errors.isEmpty());
+                () -> new RoomProfileAssembler().assemble(records, FILE));
     }
 
     // ---- uint8_t storage -----------------------------------------------------

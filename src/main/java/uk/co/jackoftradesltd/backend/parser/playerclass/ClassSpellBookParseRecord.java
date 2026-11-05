@@ -35,6 +35,9 @@ import java.util.List;
  * <p>Format: {@code book:oBase:locFrom:name:noOfSpells:realm}, then optionally
  * {@code book-graphics:glyph:colour} and {@code book-properties:cost:commonness:min to max}.
  *
+ * <p>Record ClassSpellBookParseRecord coded before 261105, updated on 261105 for the removal of
+ * the soft-error path.
+ *
  * @param oBase      the book's object-base name, e.g. {@code "magic book"} (resolved to a {@code TValue})
  * @param locFrom    where the book is obtained: {@code "town"} or {@code "dungeon"}
  * @param name       the book's display name, e.g. {@code "[First Spells]"}
@@ -47,7 +50,8 @@ import java.util.List;
  * @param min        the minimum depth from {@code book-properties:}, or {@code ""} if absent
  * @param max        the maximum depth from {@code book-properties:}, or {@code ""} if absent
  * @param spells     the parsed spell blocks contained in this book, in file order
- * @param line       the 1-based source line, retained so soft errors can point back at the file
+ * @param line       the 1-based source line, quoted in the {@code DataFileParseException} the
+ *                   assembler throws if it refuses the record
  * @author Rowan Crowther
  */
 public record ClassSpellBookParseRecord(String oBase,

@@ -14,7 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-// Generated from BlowEffectGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/BlowEffectGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.bloweffect;
 
 import org.antlr.v4.runtime.*;
@@ -38,17 +38,16 @@ public class BlowEffectGrammar extends Parser {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		RECORD_COUNT=1, NAME=2, POWER=3, EVAL=4, DESC=5, LORE_COLOUR_BASE=6, LORE_COLOUR_RESIST=7, 
-		LORE_COLOUR_IMMUNE=8, EFFECT_TYPE=9, RESIST=10, LASH=11, INTEGER=12, COMMENT=13, 
-		EOL=14, STRING=15, EOL_POP=16;
+		NAME=1, POWER=2, EVAL=3, DESC=4, LORE_COLOUR_BASE=5, LORE_COLOUR_RESIST=6, 
+		LORE_COLOUR_IMMUNE=7, EFFECT_TYPE=8, RESIST=9, LASH=10, INTEGER=11, COMMENT=12, 
+		EOL=13, STRING=14, EOL_POP=15;
 	public static final int
-		RULE_recordCount = 0, RULE_name = 1, RULE_power = 2, RULE_eval = 3, RULE_desc = 4, 
-		RULE_loreColourBase = 5, RULE_loreColourResist = 6, RULE_loreColourImmune = 7, 
-		RULE_effectType = 8, RULE_resist = 9, RULE_lashType = 10, RULE_blowEffect = 11, 
-		RULE_file = 12;
+		RULE_name = 0, RULE_power = 1, RULE_eval = 2, RULE_desc = 3, RULE_loreColourBase = 4, 
+		RULE_loreColourResist = 5, RULE_loreColourImmune = 6, RULE_effectType = 7, 
+		RULE_resist = 8, RULE_lashType = 9, RULE_blowEffect = 10, RULE_file = 11;
 	private static String[] makeRuleNames() {
 		return new String[] {
-			"recordCount", "name", "power", "eval", "desc", "loreColourBase", "loreColourResist", 
+			"name", "power", "eval", "desc", "loreColourBase", "loreColourResist", 
 			"loreColourImmune", "effectType", "resist", "lashType", "blowEffect", 
 			"file"
 		};
@@ -57,17 +56,17 @@ public class BlowEffectGrammar extends Parser {
 
 	private static String[] makeLiteralNames() {
 		return new String[] {
-			null, "'record-count:'", "'name:'", "'power:'", "'eval:'", "'desc:'", 
-			"'lore-color-base:'", "'lore-color-resist:'", "'lore-color-immune:'", 
-			"'effect-type:'", "'resist:'", "'lash-type:'"
+			null, "'name:'", "'power:'", "'eval:'", "'desc:'", "'lore-color-base:'", 
+			"'lore-color-resist:'", "'lore-color-immune:'", "'effect-type:'", "'resist:'", 
+			"'lash-type:'"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
-			null, "RECORD_COUNT", "NAME", "POWER", "EVAL", "DESC", "LORE_COLOUR_BASE", 
-			"LORE_COLOUR_RESIST", "LORE_COLOUR_IMMUNE", "EFFECT_TYPE", "RESIST", 
-			"LASH", "INTEGER", "COMMENT", "EOL", "STRING", "EOL_POP"
+			null, "NAME", "POWER", "EVAL", "DESC", "LORE_COLOUR_BASE", "LORE_COLOUR_RESIST", 
+			"LORE_COLOUR_IMMUNE", "EFFECT_TYPE", "RESIST", "LASH", "INTEGER", "COMMENT", 
+			"EOL", "STRING", "EOL_POP"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -122,50 +121,6 @@ public class BlowEffectGrammar extends Parser {
 	}
 
 	@SuppressWarnings("CheckReturnValue")
-	public static class RecordCountContext extends ParserRuleContext {
-		public String count;
-		public Token INTEGER;
-		public TerminalNode RECORD_COUNT() { return getToken(BlowEffectGrammar.RECORD_COUNT, 0); }
-		public TerminalNode INTEGER() { return getToken(BlowEffectGrammar.INTEGER, 0); }
-		public RecordCountContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-		@Override public int getRuleIndex() { return RULE_recordCount; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof BlowEffectGrammarListener ) ((BlowEffectGrammarListener)listener).enterRecordCount(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof BlowEffectGrammarListener ) ((BlowEffectGrammarListener)listener).exitRecordCount(this);
-		}
-	}
-
-	public final RecordCountContext recordCount() throws RecognitionException {
-		RecordCountContext _localctx = new RecordCountContext(_ctx, getState());
-		enterRule(_localctx, 0, RULE_recordCount);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(26);
-			match(RECORD_COUNT);
-			setState(27);
-			((RecordCountContext)_localctx).INTEGER = match(INTEGER);
-			 ((RecordCountContext)_localctx).count =  ((RecordCountContext)_localctx).INTEGER.getText(); 
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	@SuppressWarnings("CheckReturnValue")
 	public static class NameContext extends ParserRuleContext {
 		public String nameStr;
 		public int line;
@@ -188,13 +143,13 @@ public class BlowEffectGrammar extends Parser {
 
 	public final NameContext name() throws RecognitionException {
 		NameContext _localctx = new NameContext(_ctx, getState());
-		enterRule(_localctx, 2, RULE_name);
+		enterRule(_localctx, 0, RULE_name);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(30);
+			setState(24);
 			match(NAME);
-			setState(31);
+			setState(25);
 			((NameContext)_localctx).STRING = match(STRING);
 			 ((NameContext)_localctx).line =  _localctx.start.getLine(); ((NameContext)_localctx).nameStr =  ((NameContext)_localctx).STRING.getText(); 
 			}
@@ -232,13 +187,13 @@ public class BlowEffectGrammar extends Parser {
 
 	public final PowerContext power() throws RecognitionException {
 		PowerContext _localctx = new PowerContext(_ctx, getState());
-		enterRule(_localctx, 4, RULE_power);
+		enterRule(_localctx, 2, RULE_power);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(34);
+			setState(28);
 			match(POWER);
-			setState(35);
+			setState(29);
 			((PowerContext)_localctx).INTEGER = match(INTEGER);
 			 ((PowerContext)_localctx).powerVal =  ((PowerContext)_localctx).INTEGER.getText(); 
 			}
@@ -276,13 +231,13 @@ public class BlowEffectGrammar extends Parser {
 
 	public final EvalContext eval() throws RecognitionException {
 		EvalContext _localctx = new EvalContext(_ctx, getState());
-		enterRule(_localctx, 6, RULE_eval);
+		enterRule(_localctx, 4, RULE_eval);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(38);
+			setState(32);
 			match(EVAL);
-			setState(39);
+			setState(33);
 			((EvalContext)_localctx).INTEGER = match(INTEGER);
 			 ((EvalContext)_localctx).evalVal =  ((EvalContext)_localctx).INTEGER.getText(); 
 			}
@@ -320,13 +275,13 @@ public class BlowEffectGrammar extends Parser {
 
 	public final DescContext desc() throws RecognitionException {
 		DescContext _localctx = new DescContext(_ctx, getState());
-		enterRule(_localctx, 8, RULE_desc);
+		enterRule(_localctx, 6, RULE_desc);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(42);
+			setState(36);
 			match(DESC);
-			setState(43);
+			setState(37);
 			((DescContext)_localctx).STRING = match(STRING);
 			 ((DescContext)_localctx).descStr =  ((DescContext)_localctx).STRING.getText(); 
 			}
@@ -364,13 +319,13 @@ public class BlowEffectGrammar extends Parser {
 
 	public final LoreColourBaseContext loreColourBase() throws RecognitionException {
 		LoreColourBaseContext _localctx = new LoreColourBaseContext(_ctx, getState());
-		enterRule(_localctx, 10, RULE_loreColourBase);
+		enterRule(_localctx, 8, RULE_loreColourBase);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(46);
+			setState(40);
 			match(LORE_COLOUR_BASE);
-			setState(47);
+			setState(41);
 			((LoreColourBaseContext)_localctx).STRING = match(STRING);
 			 ((LoreColourBaseContext)_localctx).colourStr =  ((LoreColourBaseContext)_localctx).STRING.getText(); 
 			}
@@ -408,13 +363,13 @@ public class BlowEffectGrammar extends Parser {
 
 	public final LoreColourResistContext loreColourResist() throws RecognitionException {
 		LoreColourResistContext _localctx = new LoreColourResistContext(_ctx, getState());
-		enterRule(_localctx, 12, RULE_loreColourResist);
+		enterRule(_localctx, 10, RULE_loreColourResist);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(50);
+			setState(44);
 			match(LORE_COLOUR_RESIST);
-			setState(51);
+			setState(45);
 			((LoreColourResistContext)_localctx).STRING = match(STRING);
 			 ((LoreColourResistContext)_localctx).colourStr =  ((LoreColourResistContext)_localctx).STRING.getText(); 
 			}
@@ -452,13 +407,13 @@ public class BlowEffectGrammar extends Parser {
 
 	public final LoreColourImmuneContext loreColourImmune() throws RecognitionException {
 		LoreColourImmuneContext _localctx = new LoreColourImmuneContext(_ctx, getState());
-		enterRule(_localctx, 14, RULE_loreColourImmune);
+		enterRule(_localctx, 12, RULE_loreColourImmune);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(54);
+			setState(48);
 			match(LORE_COLOUR_IMMUNE);
-			setState(55);
+			setState(49);
 			((LoreColourImmuneContext)_localctx).STRING = match(STRING);
 			 ((LoreColourImmuneContext)_localctx).colourStr =  ((LoreColourImmuneContext)_localctx).STRING.getText(); 
 			}
@@ -496,13 +451,13 @@ public class BlowEffectGrammar extends Parser {
 
 	public final EffectTypeContext effectType() throws RecognitionException {
 		EffectTypeContext _localctx = new EffectTypeContext(_ctx, getState());
-		enterRule(_localctx, 16, RULE_effectType);
+		enterRule(_localctx, 14, RULE_effectType);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(58);
+			setState(52);
 			match(EFFECT_TYPE);
-			setState(59);
+			setState(53);
 			((EffectTypeContext)_localctx).STRING = match(STRING);
 			 ((EffectTypeContext)_localctx).type =  ((EffectTypeContext)_localctx).STRING.getText(); 
 			}
@@ -540,13 +495,13 @@ public class BlowEffectGrammar extends Parser {
 
 	public final ResistContext resist() throws RecognitionException {
 		ResistContext _localctx = new ResistContext(_ctx, getState());
-		enterRule(_localctx, 18, RULE_resist);
+		enterRule(_localctx, 16, RULE_resist);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(62);
+			setState(56);
 			match(RESIST);
-			setState(63);
+			setState(57);
 			((ResistContext)_localctx).STRING = match(STRING);
 			 ((ResistContext)_localctx).resistStr =  ((ResistContext)_localctx).STRING.getText(); 
 			}
@@ -584,13 +539,13 @@ public class BlowEffectGrammar extends Parser {
 
 	public final LashTypeContext lashType() throws RecognitionException {
 		LashTypeContext _localctx = new LashTypeContext(_ctx, getState());
-		enterRule(_localctx, 20, RULE_lashType);
+		enterRule(_localctx, 18, RULE_lashType);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(66);
+			setState(60);
 			match(LASH);
-			setState(67);
+			setState(61);
 			((LashTypeContext)_localctx).STRING = match(STRING);
 			 ((LashTypeContext)_localctx).lashStr =  ((LashTypeContext)_localctx).STRING.getText(); 
 			}
@@ -692,7 +647,7 @@ public class BlowEffectGrammar extends Parser {
 
 	public final BlowEffectContext blowEffect() throws RecognitionException {
 		BlowEffectContext _localctx = new BlowEffectContext(_ctx, getState());
-		enterRule(_localctx, 22, RULE_blowEffect);
+		enterRule(_localctx, 20, RULE_blowEffect);
 
 		            String nameInit = "";
 		            String powerInit = "";
@@ -711,76 +666,76 @@ public class BlowEffectGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(70);
+			setState(64);
 			((BlowEffectContext)_localctx).name = name();
 			 nameInit = ((BlowEffectContext)_localctx).name.nameStr; line = ((BlowEffectContext)_localctx).name.line; 
-			setState(99); 
+			setState(93); 
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			do {
 				{
-				setState(99);
+				setState(93);
 				_errHandler.sync(this);
 				switch (_input.LA(1)) {
 				case POWER:
 					{
-					setState(72);
+					setState(66);
 					((BlowEffectContext)_localctx).power = power();
 					 powerInit = ((BlowEffectContext)_localctx).power.powerVal; 
 					}
 					break;
 				case EVAL:
 					{
-					setState(75);
+					setState(69);
 					((BlowEffectContext)_localctx).eval = eval();
 					 evalInit = ((BlowEffectContext)_localctx).eval.evalVal; 
 					}
 					break;
 				case DESC:
 					{
-					setState(78);
+					setState(72);
 					((BlowEffectContext)_localctx).desc = desc();
 					 descSb.append(((BlowEffectContext)_localctx).desc.descStr); 
 					}
 					break;
 				case LORE_COLOUR_BASE:
 					{
-					setState(81);
+					setState(75);
 					((BlowEffectContext)_localctx).loreColourBase = loreColourBase();
 					 loreColourBaseInit = ((BlowEffectContext)_localctx).loreColourBase.colourStr; 
 					}
 					break;
 				case LORE_COLOUR_RESIST:
 					{
-					setState(84);
+					setState(78);
 					((BlowEffectContext)_localctx).loreColourResist = loreColourResist();
 					 loreColourResistInit = ((BlowEffectContext)_localctx).loreColourResist.colourStr; 
 					}
 					break;
 				case LORE_COLOUR_IMMUNE:
 					{
-					setState(87);
+					setState(81);
 					((BlowEffectContext)_localctx).loreColourImmune = loreColourImmune();
 					 loreColourImmuneInit = ((BlowEffectContext)_localctx).loreColourImmune.colourStr; 
 					}
 					break;
 				case EFFECT_TYPE:
 					{
-					setState(90);
+					setState(84);
 					((BlowEffectContext)_localctx).effectType = effectType();
 					 effectTypeInit = ((BlowEffectContext)_localctx).effectType.type; 
 					}
 					break;
 				case RESIST:
 					{
-					setState(93);
+					setState(87);
 					((BlowEffectContext)_localctx).resist = resist();
 					 resistInit = ((BlowEffectContext)_localctx).resist.resistStr; 
 					}
 					break;
 				case LASH:
 					{
-					setState(96);
+					setState(90);
 					((BlowEffectContext)_localctx).lashType = lashType();
 					 lashTypeInit = ((BlowEffectContext)_localctx).lashType.lashStr; 
 					}
@@ -789,10 +744,10 @@ public class BlowEffectGrammar extends Parser {
 					throw new NoViableAltException(this);
 				}
 				}
-				setState(101); 
+				setState(95); 
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-			} while ( (((_la) & ~0x3f) == 0 && ((1L << _la) & 4088L) != 0) );
+			} while ( (((_la) & ~0x3f) == 0 && ((1L << _la) & 2044L) != 0) );
 			}
 			_ctx.stop = _input.LT(-1);
 
@@ -816,13 +771,8 @@ public class BlowEffectGrammar extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class FileContext extends ParserRuleContext {
-		public String declaredRecordCount;
 		public List<BlowEffectParseRecord> blowEffects;
-		public RecordCountContext recordCount;
 		public BlowEffectContext blowEffect;
-		public RecordCountContext recordCount() {
-			return getRuleContext(RecordCountContext.class,0);
-		}
 		public TerminalNode EOF() { return getToken(BlowEffectGrammar.EOF, 0); }
 		public List<BlowEffectContext> blowEffect() {
 			return getRuleContexts(BlowEffectContext.class);
@@ -846,7 +796,7 @@ public class BlowEffectGrammar extends Parser {
 
 	public final FileContext file() throws RecognitionException {
 		FileContext _localctx = new FileContext(_ctx, getState());
-		enterRule(_localctx, 24, RULE_file);
+		enterRule(_localctx, 22, RULE_file);
 
 		            ((FileContext)_localctx).blowEffects =  new ArrayList<>();
 		        
@@ -854,25 +804,22 @@ public class BlowEffectGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(103);
-			((FileContext)_localctx).recordCount = recordCount();
-			 ((FileContext)_localctx).declaredRecordCount =  ((FileContext)_localctx).recordCount.count; 
-			setState(108); 
+			setState(100); 
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			do {
 				{
 				{
-				setState(105);
+				setState(97);
 				((FileContext)_localctx).blowEffect = blowEffect();
 				 _localctx.blowEffects.add(((FileContext)_localctx).blowEffect.effect); 
 				}
 				}
-				setState(110); 
+				setState(102); 
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			} while ( _la==NAME );
-			setState(112);
+			setState(104);
 			match(EOF);
 			}
 		}
@@ -888,69 +835,64 @@ public class BlowEffectGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u0010s\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001\u000fk\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007\u0002"+
-		"\b\u0007\b\u0002\t\u0007\t\u0002\n\u0007\n\u0002\u000b\u0007\u000b\u0002"+
-		"\f\u0007\f\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0001"+
-		"\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0002\u0001\u0002\u0001\u0002"+
-		"\u0001\u0002\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0004"+
-		"\u0001\u0004\u0001\u0004\u0001\u0004\u0001\u0005\u0001\u0005\u0001\u0005"+
-		"\u0001\u0005\u0001\u0006\u0001\u0006\u0001\u0006\u0001\u0006\u0001\u0007"+
-		"\u0001\u0007\u0001\u0007\u0001\u0007\u0001\b\u0001\b\u0001\b\u0001\b\u0001"+
-		"\t\u0001\t\u0001\t\u0001\t\u0001\n\u0001\n\u0001\n\u0001\n\u0001\u000b"+
-		"\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b"+
-		"\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b"+
-		"\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b"+
-		"\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b"+
-		"\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0004\u000bd\b\u000b"+
-		"\u000b\u000b\f\u000be\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0004\f"+
-		"m\b\f\u000b\f\f\fn\u0001\f\u0001\f\u0001\f\u0000\u0000\r\u0000\u0002\u0004"+
-		"\u0006\b\n\f\u000e\u0010\u0012\u0014\u0016\u0018\u0000\u0000o\u0000\u001a"+
-		"\u0001\u0000\u0000\u0000\u0002\u001e\u0001\u0000\u0000\u0000\u0004\"\u0001"+
-		"\u0000\u0000\u0000\u0006&\u0001\u0000\u0000\u0000\b*\u0001\u0000\u0000"+
-		"\u0000\n.\u0001\u0000\u0000\u0000\f2\u0001\u0000\u0000\u0000\u000e6\u0001"+
-		"\u0000\u0000\u0000\u0010:\u0001\u0000\u0000\u0000\u0012>\u0001\u0000\u0000"+
-		"\u0000\u0014B\u0001\u0000\u0000\u0000\u0016F\u0001\u0000\u0000\u0000\u0018"+
-		"g\u0001\u0000\u0000\u0000\u001a\u001b\u0005\u0001\u0000\u0000\u001b\u001c"+
-		"\u0005\f\u0000\u0000\u001c\u001d\u0006\u0000\uffff\uffff\u0000\u001d\u0001"+
-		"\u0001\u0000\u0000\u0000\u001e\u001f\u0005\u0002\u0000\u0000\u001f \u0005"+
-		"\u000f\u0000\u0000 !\u0006\u0001\uffff\uffff\u0000!\u0003\u0001\u0000"+
-		"\u0000\u0000\"#\u0005\u0003\u0000\u0000#$\u0005\f\u0000\u0000$%\u0006"+
-		"\u0002\uffff\uffff\u0000%\u0005\u0001\u0000\u0000\u0000&\'\u0005\u0004"+
-		"\u0000\u0000\'(\u0005\f\u0000\u0000()\u0006\u0003\uffff\uffff\u0000)\u0007"+
-		"\u0001\u0000\u0000\u0000*+\u0005\u0005\u0000\u0000+,\u0005\u000f\u0000"+
-		"\u0000,-\u0006\u0004\uffff\uffff\u0000-\t\u0001\u0000\u0000\u0000./\u0005"+
-		"\u0006\u0000\u0000/0\u0005\u000f\u0000\u000001\u0006\u0005\uffff\uffff"+
-		"\u00001\u000b\u0001\u0000\u0000\u000023\u0005\u0007\u0000\u000034\u0005"+
-		"\u000f\u0000\u000045\u0006\u0006\uffff\uffff\u00005\r\u0001\u0000\u0000"+
-		"\u000067\u0005\b\u0000\u000078\u0005\u000f\u0000\u000089\u0006\u0007\uffff"+
-		"\uffff\u00009\u000f\u0001\u0000\u0000\u0000:;\u0005\t\u0000\u0000;<\u0005"+
-		"\u000f\u0000\u0000<=\u0006\b\uffff\uffff\u0000=\u0011\u0001\u0000\u0000"+
-		"\u0000>?\u0005\n\u0000\u0000?@\u0005\u000f\u0000\u0000@A\u0006\t\uffff"+
-		"\uffff\u0000A\u0013\u0001\u0000\u0000\u0000BC\u0005\u000b\u0000\u0000"+
-		"CD\u0005\u000f\u0000\u0000DE\u0006\n\uffff\uffff\u0000E\u0015\u0001\u0000"+
-		"\u0000\u0000FG\u0003\u0002\u0001\u0000Gc\u0006\u000b\uffff\uffff\u0000"+
-		"HI\u0003\u0004\u0002\u0000IJ\u0006\u000b\uffff\uffff\u0000Jd\u0001\u0000"+
-		"\u0000\u0000KL\u0003\u0006\u0003\u0000LM\u0006\u000b\uffff\uffff\u0000"+
-		"Md\u0001\u0000\u0000\u0000NO\u0003\b\u0004\u0000OP\u0006\u000b\uffff\uffff"+
-		"\u0000Pd\u0001\u0000\u0000\u0000QR\u0003\n\u0005\u0000RS\u0006\u000b\uffff"+
-		"\uffff\u0000Sd\u0001\u0000\u0000\u0000TU\u0003\f\u0006\u0000UV\u0006\u000b"+
-		"\uffff\uffff\u0000Vd\u0001\u0000\u0000\u0000WX\u0003\u000e\u0007\u0000"+
-		"XY\u0006\u000b\uffff\uffff\u0000Yd\u0001\u0000\u0000\u0000Z[\u0003\u0010"+
-		"\b\u0000[\\\u0006\u000b\uffff\uffff\u0000\\d\u0001\u0000\u0000\u0000]"+
-		"^\u0003\u0012\t\u0000^_\u0006\u000b\uffff\uffff\u0000_d\u0001\u0000\u0000"+
-		"\u0000`a\u0003\u0014\n\u0000ab\u0006\u000b\uffff\uffff\u0000bd\u0001\u0000"+
-		"\u0000\u0000cH\u0001\u0000\u0000\u0000cK\u0001\u0000\u0000\u0000cN\u0001"+
-		"\u0000\u0000\u0000cQ\u0001\u0000\u0000\u0000cT\u0001\u0000\u0000\u0000"+
-		"cW\u0001\u0000\u0000\u0000cZ\u0001\u0000\u0000\u0000c]\u0001\u0000\u0000"+
-		"\u0000c`\u0001\u0000\u0000\u0000de\u0001\u0000\u0000\u0000ec\u0001\u0000"+
-		"\u0000\u0000ef\u0001\u0000\u0000\u0000f\u0017\u0001\u0000\u0000\u0000"+
-		"gh\u0003\u0000\u0000\u0000hl\u0006\f\uffff\uffff\u0000ij\u0003\u0016\u000b"+
-		"\u0000jk\u0006\f\uffff\uffff\u0000km\u0001\u0000\u0000\u0000li\u0001\u0000"+
-		"\u0000\u0000mn\u0001\u0000\u0000\u0000nl\u0001\u0000\u0000\u0000no\u0001"+
-		"\u0000\u0000\u0000op\u0001\u0000\u0000\u0000pq\u0005\u0000\u0000\u0001"+
-		"q\u0019\u0001\u0000\u0000\u0000\u0003cen";
+		"\b\u0007\b\u0002\t\u0007\t\u0002\n\u0007\n\u0002\u000b\u0007\u000b\u0001"+
+		"\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0001"+
+		"\u0001\u0001\u0001\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0002\u0001"+
+		"\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0004\u0001\u0004\u0001"+
+		"\u0004\u0001\u0004\u0001\u0005\u0001\u0005\u0001\u0005\u0001\u0005\u0001"+
+		"\u0006\u0001\u0006\u0001\u0006\u0001\u0006\u0001\u0007\u0001\u0007\u0001"+
+		"\u0007\u0001\u0007\u0001\b\u0001\b\u0001\b\u0001\b\u0001\t\u0001\t\u0001"+
+		"\t\u0001\t\u0001\n\u0001\n\u0001\n\u0001\n\u0001\n\u0001\n\u0001\n\u0001"+
+		"\n\u0001\n\u0001\n\u0001\n\u0001\n\u0001\n\u0001\n\u0001\n\u0001\n\u0001"+
+		"\n\u0001\n\u0001\n\u0001\n\u0001\n\u0001\n\u0001\n\u0001\n\u0001\n\u0001"+
+		"\n\u0001\n\u0001\n\u0001\n\u0004\n^\b\n\u000b\n\f\n_\u0001\u000b\u0001"+
+		"\u000b\u0001\u000b\u0004\u000be\b\u000b\u000b\u000b\f\u000bf\u0001\u000b"+
+		"\u0001\u000b\u0001\u000b\u0000\u0000\f\u0000\u0002\u0004\u0006\b\n\f\u000e"+
+		"\u0010\u0012\u0014\u0016\u0000\u0000h\u0000\u0018\u0001\u0000\u0000\u0000"+
+		"\u0002\u001c\u0001\u0000\u0000\u0000\u0004 \u0001\u0000\u0000\u0000\u0006"+
+		"$\u0001\u0000\u0000\u0000\b(\u0001\u0000\u0000\u0000\n,\u0001\u0000\u0000"+
+		"\u0000\f0\u0001\u0000\u0000\u0000\u000e4\u0001\u0000\u0000\u0000\u0010"+
+		"8\u0001\u0000\u0000\u0000\u0012<\u0001\u0000\u0000\u0000\u0014@\u0001"+
+		"\u0000\u0000\u0000\u0016d\u0001\u0000\u0000\u0000\u0018\u0019\u0005\u0001"+
+		"\u0000\u0000\u0019\u001a\u0005\u000e\u0000\u0000\u001a\u001b\u0006\u0000"+
+		"\uffff\uffff\u0000\u001b\u0001\u0001\u0000\u0000\u0000\u001c\u001d\u0005"+
+		"\u0002\u0000\u0000\u001d\u001e\u0005\u000b\u0000\u0000\u001e\u001f\u0006"+
+		"\u0001\uffff\uffff\u0000\u001f\u0003\u0001\u0000\u0000\u0000 !\u0005\u0003"+
+		"\u0000\u0000!\"\u0005\u000b\u0000\u0000\"#\u0006\u0002\uffff\uffff\u0000"+
+		"#\u0005\u0001\u0000\u0000\u0000$%\u0005\u0004\u0000\u0000%&\u0005\u000e"+
+		"\u0000\u0000&\'\u0006\u0003\uffff\uffff\u0000\'\u0007\u0001\u0000\u0000"+
+		"\u0000()\u0005\u0005\u0000\u0000)*\u0005\u000e\u0000\u0000*+\u0006\u0004"+
+		"\uffff\uffff\u0000+\t\u0001\u0000\u0000\u0000,-\u0005\u0006\u0000\u0000"+
+		"-.\u0005\u000e\u0000\u0000./\u0006\u0005\uffff\uffff\u0000/\u000b\u0001"+
+		"\u0000\u0000\u000001\u0005\u0007\u0000\u000012\u0005\u000e\u0000\u0000"+
+		"23\u0006\u0006\uffff\uffff\u00003\r\u0001\u0000\u0000\u000045\u0005\b"+
+		"\u0000\u000056\u0005\u000e\u0000\u000067\u0006\u0007\uffff\uffff\u0000"+
+		"7\u000f\u0001\u0000\u0000\u000089\u0005\t\u0000\u00009:\u0005\u000e\u0000"+
+		"\u0000:;\u0006\b\uffff\uffff\u0000;\u0011\u0001\u0000\u0000\u0000<=\u0005"+
+		"\n\u0000\u0000=>\u0005\u000e\u0000\u0000>?\u0006\t\uffff\uffff\u0000?"+
+		"\u0013\u0001\u0000\u0000\u0000@A\u0003\u0000\u0000\u0000A]\u0006\n\uffff"+
+		"\uffff\u0000BC\u0003\u0002\u0001\u0000CD\u0006\n\uffff\uffff\u0000D^\u0001"+
+		"\u0000\u0000\u0000EF\u0003\u0004\u0002\u0000FG\u0006\n\uffff\uffff\u0000"+
+		"G^\u0001\u0000\u0000\u0000HI\u0003\u0006\u0003\u0000IJ\u0006\n\uffff\uffff"+
+		"\u0000J^\u0001\u0000\u0000\u0000KL\u0003\b\u0004\u0000LM\u0006\n\uffff"+
+		"\uffff\u0000M^\u0001\u0000\u0000\u0000NO\u0003\n\u0005\u0000OP\u0006\n"+
+		"\uffff\uffff\u0000P^\u0001\u0000\u0000\u0000QR\u0003\f\u0006\u0000RS\u0006"+
+		"\n\uffff\uffff\u0000S^\u0001\u0000\u0000\u0000TU\u0003\u000e\u0007\u0000"+
+		"UV\u0006\n\uffff\uffff\u0000V^\u0001\u0000\u0000\u0000WX\u0003\u0010\b"+
+		"\u0000XY\u0006\n\uffff\uffff\u0000Y^\u0001\u0000\u0000\u0000Z[\u0003\u0012"+
+		"\t\u0000[\\\u0006\n\uffff\uffff\u0000\\^\u0001\u0000\u0000\u0000]B\u0001"+
+		"\u0000\u0000\u0000]E\u0001\u0000\u0000\u0000]H\u0001\u0000\u0000\u0000"+
+		"]K\u0001\u0000\u0000\u0000]N\u0001\u0000\u0000\u0000]Q\u0001\u0000\u0000"+
+		"\u0000]T\u0001\u0000\u0000\u0000]W\u0001\u0000\u0000\u0000]Z\u0001\u0000"+
+		"\u0000\u0000^_\u0001\u0000\u0000\u0000_]\u0001\u0000\u0000\u0000_`\u0001"+
+		"\u0000\u0000\u0000`\u0015\u0001\u0000\u0000\u0000ab\u0003\u0014\n\u0000"+
+		"bc\u0006\u000b\uffff\uffff\u0000ce\u0001\u0000\u0000\u0000da\u0001\u0000"+
+		"\u0000\u0000ef\u0001\u0000\u0000\u0000fd\u0001\u0000\u0000\u0000fg\u0001"+
+		"\u0000\u0000\u0000gh\u0001\u0000\u0000\u0000hi\u0005\u0000\u0000\u0001"+
+		"i\u0017\u0001\u0000\u0000\u0000\u0003]_f";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

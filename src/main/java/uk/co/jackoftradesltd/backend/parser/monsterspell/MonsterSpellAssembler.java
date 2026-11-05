@@ -110,27 +110,25 @@ public class MonsterSpellAssembler implements Assembler<MonsterSpellParseRecord,
      *       it, and neither does this.</li>
      *   <li><b>Effects.</b> {@link EffectAssembler#assemble} returns every effect or throws.</li>
      *   <li><b>Levels.</b> {@link MonsterSpellLevelAssembler#assemble} returns every level or
-     *       {@code null}, and {@code null} is fatal.</li>
+     *       throws; it never returns {@code null}.</li>
      * </ol>
      * The finished spell is added at the front of the result, so the last record in the file ends
      * up first, as in C's {@code monster_spells} chain.
      *
-     * <p>{@code errors} is passed to the effect and level assemblers. The effect assembler never
-     * writes to it; the level assembler may append a message for a bad {@code power-cutoff:}
-     * before it returns {@code null}, and that message is not repeated in the exception thrown
-     * here.
+     * <p>A fault in a spell's effects or levels is thrown from inside the effect or level
+     * assembler, and passes straight through this method; no spell is dropped.
      *
-     * <p>Function assemble coded before 260915, commented in full on 261027.
+     * <p>Function assemble coded before 260915, commented in full on 261027, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param records  the raw parse records, in file order
-     * @param errors   passed down to the effect and level assemblers; this method adds nothing
      * @param filename the data file the records came from, for error messages
      * @return the assembled monster spells, one per record, last record first
      * @throws DataFileParseException if a name, message type, hit chance, effect or level fails
      *                                to resolve
      */
     @Override
-    public List<MonsterSpellType> assemble(@NotNull List<MonsterSpellParseRecord> records, @NotNull List<String> errors,
+    public List<MonsterSpellType> assemble(@NotNull List<MonsterSpellParseRecord> records,
                                     String filename) {
         List<MonsterSpellType> monsterSpellTypes = new ArrayList<>();
         MonsterSpellLevelAssembler assembler = new MonsterSpellLevelAssembler();
@@ -171,8 +169,8 @@ public class MonsterSpellAssembler implements Assembler<MonsterSpellParseRecord,
             // EffectAssembler is all-or-nothing: it returns every effect in this spell's block or
             // throws on the first one that fails to resolve, so a spell is never built with one of
             // its effects missing. It never returns null.
-            List<Effect> effects = EffectAssembler.assemble(record.effects(), errors, filename);
-            List<MonsterSpellLevel> levels = assembler.assemble(record.levels(), errors, filename);
+            List<Effect> effects = EffectAssembler.assemble(record.effects(), filename);
+            List<MonsterSpellLevel> levels = assembler.assemble(record.levels(), filename);
             monsterSpellTypes.addFirst(new MonsterSpellType(nameType, messageType, hit, effects, levels));
         }
 

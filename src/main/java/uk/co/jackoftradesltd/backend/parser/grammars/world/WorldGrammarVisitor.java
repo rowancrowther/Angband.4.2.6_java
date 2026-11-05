@@ -14,7 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-// Generated from WorldGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/WorldGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.world;
 
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
@@ -27,48 +27,34 @@ import org.antlr.v4.runtime.tree.ParseTreeVisitor;
  * operations with no return type.
  */
 public interface WorldGrammarVisitor<T> extends ParseTreeVisitor<T> {
-    /**
-     * Visit a parse tree produced by {@link WorldGrammar#recordCount}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitRecordCount(WorldGrammar.RecordCountContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link WorldGrammar#levelNum}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitLevelNum(WorldGrammar.LevelNumContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link WorldGrammar#levelName}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitLevelName(WorldGrammar.LevelNameContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link WorldGrammar#upAndDown}.
+	/**
+	 * Visit a parse tree produced by {@link WorldGrammar#levelNum}.
 	 * @param ctx the parse tree
-     * @return the visitor result
-     */
+	 * @return the visitor result
+	 */
+	T visitLevelNum(WorldGrammar.LevelNumContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link WorldGrammar#levelName}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitLevelName(WorldGrammar.LevelNameContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link WorldGrammar#upAndDown}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
 	T visitUpAndDown(WorldGrammar.UpAndDownContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link WorldGrammar#line}.
+	/**
+	 * Visit a parse tree produced by {@link WorldGrammar#line}.
 	 * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitLine(WorldGrammar.LineContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link WorldGrammar#file}.
+	 * @return the visitor result
+	 */
+	T visitLine(WorldGrammar.LineContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link WorldGrammar#file}.
 	 * @param ctx the parse tree
-     * @return the visitor result
+	 * @return the visitor result
 	 */
 	T visitFile(WorldGrammar.FileContext ctx);
 }

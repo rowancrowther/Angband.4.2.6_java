@@ -23,7 +23,6 @@ import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.magic.MagicRealm;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -59,21 +58,19 @@ class RealmAssemblerTest {
         return new RealmParseRecord(name, stat, "cast", "spell", "magic book", line);
     }
 
-    private static List<MagicRealm> assemble(List<String> errors, RealmParseRecord... records) {
-        return new RealmAssembler().assemble(List.of(records), errors, FILE);
+    private static List<MagicRealm> assemble(RealmParseRecord... records) {
+        return new RealmAssembler().assemble(List.of(records), FILE);
     }
 
     private static Stats statOf(String stat) {
-        List<String> errors = new ArrayList<>();
-        List<MagicRealm> realms = assemble(errors, record("r", stat, 1));
-        assertTrue(errors.isEmpty(), errors::toString);
+        List<MagicRealm> realms = assemble(record("r", stat, 1));
         assertEquals(1, realms.size());
         return realms.get(0).getStat();
     }
 
     private static DataFileParseException refused(RealmParseRecord... records) {
         return assertThrows(DataFileParseException.class,
-                () -> assemble(new ArrayList<>(), records));
+                () -> assemble(records));
     }
 
     @SuppressWarnings("unchecked")
@@ -170,24 +167,12 @@ class RealmAssemblerTest {
         assertTrue(e.getMessage().endsWith("ZZZ"), e::getMessage);
     }
 
-    @Test
-    void theErrorsListIsNeverWrittenTo() {
-        List<String> errors = new ArrayList<>();
-        assemble(errors, record("a", "INT", 1), record("b", "WIS", 6));
-        assertTrue(errors.isEmpty());
-
-        assertThrows(DataFileParseException.class, () -> new RealmAssembler()
-                .assemble(List.of(record("c", "ZZZ", 1)), errors, FILE));
-        assertTrue(errors.isEmpty(), errors::toString);
-    }
-
     // ---- order, count and the free text ----------------------------------
 
     @Test
     void theRealmsComeBackInReverseFileOrderAsCsHeadPushesLeaveThem() {
         // C: parse_realm_name sets realm->next to the list built so far, so the last record is first.
-        List<MagicRealm> realms = assemble(new ArrayList<>(),
-                record("arcane", "INT", 1), record("divine", "WIS", 7), record("nature", "WIS", 13));
+        List<MagicRealm> realms = assemble(record("arcane", "INT", 1), record("divine", "WIS", 7), record("nature", "WIS", 13));
 
         assertEquals(List.of("nature", "divine", "arcane"),
                 realms.stream().map(MagicRealm::getName).toList());
@@ -195,14 +180,13 @@ class RealmAssemblerTest {
 
     @Test
     void noRecordsGiveNoRealms() {
-        assertTrue(assemble(new ArrayList<>()).isEmpty());
+        assertTrue(assemble().isEmpty());
     }
 
     @Test
     void aRepeatedNameIsNotMergedBecauseCStartsANewRealmEachTime() {
         // C: parse_realm_name allocates a fresh realm for every name: line, and nothing de-duplicates.
-        List<MagicRealm> realms = assemble(new ArrayList<>(),
-                record("arcane", "INT", 1), record("arcane", "WIS", 7));
+        List<MagicRealm> realms = assemble(record("arcane", "INT", 1), record("arcane", "WIS", 7));
 
         assertEquals(2, realms.size());
         assertEquals(Stats.STAT_WIS, realms.get(0).getStat());
@@ -212,7 +196,7 @@ class RealmAssemblerTest {
     @Test
     void theNameAndTheThreeTextsPassThroughAsGiven() throws Exception {
         // C stores the text as written; tests/parse/realm.c loads "exercise manual" as a book-noun.
-        MagicRealm realm = assemble(new ArrayList<>(), new RealmParseRecord(
+        MagicRealm realm = assemble(new RealmParseRecord(
                 "Odd Realm", "CON", "Cast  Twice", "Spell-Thing", "exercise manual", 4)).get(0);
 
         assertEquals("Odd Realm", realm.getName());
@@ -225,8 +209,7 @@ class RealmAssemblerTest {
     void anEmptyTextIsPassedThroughAsEmptyWhereCHoldsNull() throws Exception {
         // The grammar seeds "" for an absent verb:, spell-noun: or book-noun:, where C leaves NULL
         // (docs/grammar_issues.md); the assembler does not turn it into null.
-        MagicRealm realm = assemble(new ArrayList<>(),
-                new RealmParseRecord("r", "INT", "", "", "", 2)).get(0);
+        MagicRealm realm = assemble(new RealmParseRecord("r", "INT", "", "", "", 2)).get(0);
 
         assertEquals("", field(realm, "verb"));
         assertEquals("", field(realm, "spellNoun"));
@@ -236,8 +219,7 @@ class RealmAssemblerTest {
     @Test
     void theRecordsOwnStatDoesNotLeakIntoTheNextRealm() {
         // C zero-fills every realm separately, so a realm with no stat: is STR even after an INT realm.
-        List<MagicRealm> realms = assemble(new ArrayList<>(),
-                record("first", "INT", 1), record("second", "", 7));
+        List<MagicRealm> realms = assemble(record("first", "INT", 1), record("second", "", 7));
 
         assertEquals(Stats.STAT_STR, realms.get(0).getStat());
         assertEquals(Stats.STAT_INT, realms.get(1).getStat());

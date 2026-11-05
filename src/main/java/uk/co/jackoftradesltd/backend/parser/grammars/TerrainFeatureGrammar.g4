@@ -19,8 +19,8 @@
 // directive rule strips its keyword and returns the raw String payload; the
 // `terrain` rule accumulates one record's directives - the mandatory
 // code/name/graphics header, then any mix of the optional directives in any
-// order and quantity - into a TerrainFeatureParseRecord, and `file` collects the
-// record-count header plus every record. No interpretation happens here: enum
+// order and quantity - into a TerrainFeatureParseRecord, and `file` collects
+// every record. No interpretation happens here: enum
 // resolution and number parsing are deferred to TerrainFeatureAssembler, so the
 // rules deal only in raw text. Cf. src/init.c struct file_parser feat_parser.
 //
@@ -36,11 +36,6 @@ options { tokenVocab = TerrainFeatureLexer; }
             import java.util.List;
             import java.util.ArrayList;
         }
-
-recordCount
-        returns[String count]
-        :   RECORD_COUNT INTEGER { $count = $INTEGER.getText(); }
-        ;
 
 // "code:<FEAT_CODE>" - starts a new terrain record; must match a code from
 // list-terrain.h.
@@ -289,11 +284,9 @@ terrain
 
 // Top-level rule: the whole file is one or more terrain records.
 file
-        returns[List<TerrainFeatureParseRecord> features,
-                String declaredRecordCount]
+        returns[List<TerrainFeatureParseRecord> features]
         @init{ $features = new ArrayList<>(); }
-        :   recordCount { $declaredRecordCount = $recordCount.count; }
-            (terrain {
+        :   (terrain {
                 $features.add($terrain.feature);
             })+ EOF
         ;

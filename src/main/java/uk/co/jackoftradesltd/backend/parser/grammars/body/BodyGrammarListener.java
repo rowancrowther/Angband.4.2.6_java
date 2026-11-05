@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from BodyGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/BodyGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.body;
 
 import org.antlr.v4.runtime.tree.ParseTreeListener;
@@ -25,73 +25,44 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
  * {@link BodyGrammar}.
  */
 public interface BodyGrammarListener extends ParseTreeListener {
-    /**
-     * Enter a parse tree produced by {@link BodyGrammar#recordCount}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterRecordCount(BodyGrammar.RecordCountContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link BodyGrammar#recordCount}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitRecordCount(BodyGrammar.RecordCountContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link BodyGrammar#body}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterBody(BodyGrammar.BodyContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link BodyGrammar#body}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitBody(BodyGrammar.BodyContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link BodyGrammar#slot}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterSlot(BodyGrammar.SlotContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link BodyGrammar#slot}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitSlot(BodyGrammar.SlotContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link BodyGrammar#bodyType}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterBodyType(BodyGrammar.BodyTypeContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link BodyGrammar#bodyType}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitBodyType(BodyGrammar.BodyTypeContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link BodyGrammar#file}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterFile(BodyGrammar.FileContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link BodyGrammar#file}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitFile(BodyGrammar.FileContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link BodyGrammar#body}.
+	 * @param ctx the parse tree
+	 */
+	void enterBody(BodyGrammar.BodyContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link BodyGrammar#body}.
+	 * @param ctx the parse tree
+	 */
+	void exitBody(BodyGrammar.BodyContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link BodyGrammar#slot}.
+	 * @param ctx the parse tree
+	 */
+	void enterSlot(BodyGrammar.SlotContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link BodyGrammar#slot}.
+	 * @param ctx the parse tree
+	 */
+	void exitSlot(BodyGrammar.SlotContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link BodyGrammar#bodyType}.
+	 * @param ctx the parse tree
+	 */
+	void enterBodyType(BodyGrammar.BodyTypeContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link BodyGrammar#bodyType}.
+	 * @param ctx the parse tree
+	 */
+	void exitBodyType(BodyGrammar.BodyTypeContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link BodyGrammar#file}.
+	 * @param ctx the parse tree
+	 */
+	void enterFile(BodyGrammar.FileContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link BodyGrammar#file}.
+	 * @param ctx the parse tree
+	 */
+	void exitFile(BodyGrammar.FileContext ctx);
 }

@@ -17,12 +17,12 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
-import uk.co.jackoftradesltd.channel.parser.ParseErrors;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.channel.parser.Reader;
 import uk.co.jackoftradesltd.middle.cave.profiles.dungeon.CaveProfile;
@@ -68,7 +68,7 @@ class DungeonProfileReaderTest {
     private static final String REAL_FILE = "lib/gamedata/dungeon_profile.txt";
 
     /**
-     * The file's {@code record-count:} header, and the number of {@code name:} records in it.
+     * The number of {@code name:} records in the real file.
      */
     private static final int EXPECTED_PROFILES = 9;
 
@@ -120,7 +120,6 @@ class DungeonProfileReaderTest {
     void cleanLoadOfTheRealFileReportsNoErrorsAndAllProfiles() throws IOException {
         ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(REAL_FILE);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
 
         List<CaveProfile> profiles = result.items();
         assertEquals(EXPECTED_PROFILES, profiles.size());
@@ -279,14 +278,12 @@ class DungeonProfileReaderTest {
     @Test
     void absentDirectivesReadAsZeroAsInC() throws IOException {
         String path = tempFile("bare.txt", String.join("\n",
-                "record-count:1",
                 "name:town",
                 "alloc:5",
                 ""));
 
         ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         CaveProfile bare = result.items().getFirst();
 
         // No params: line - mem_zalloc's 0 in all four.
@@ -309,7 +306,6 @@ class DungeonProfileReaderTest {
     @Test
     void aRepeatedDirectiveIsOverwrittenByItsLastOccurrence() throws IOException {
         String path = tempFile("repeat.txt", String.join("\n",
-                "record-count:1",
                 "name:classic",
                 "alloc:1",
                 "alloc:2",
@@ -319,31 +315,10 @@ class DungeonProfileReaderTest {
 
         ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         CaveProfile profile = result.items().getFirst();
         assertEquals(2, profile.getAlloc());
         assertEquals(2, profile.getBlockSize());
         assertEquals(100, profile.getDunUnusual());
-    }
-
-    /**
-     * A wrong {@code record-count:} is a soft error here: it is reported, but every profile that
-     * parsed still loads. C has no such header at all, so this check is a port-ism.
-     */
-    @Test
-    void recordCountMismatchIsReportedButProfilesStillLoad() throws IOException {
-        String path = tempFile("bad-count.txt", String.join("\n",
-                "record-count:5",
-                "name:town",
-                "alloc:1",
-                ""));
-
-        ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
-
-        assertEquals(1, result.items().size(), "the count check must not cost the file its records");
-        assertTrue(result.errors().stream()
-                        .anyMatch(e -> e.contains("declares 5") && e.contains("contains 1")),
-                result.errors()::toString);
     }
 
     /**
@@ -355,7 +330,6 @@ class DungeonProfileReaderTest {
     @Test
     void anOverflowingParamsValueClampsWhereCWraps() throws IOException {
         String path = tempFile("overflow-params.txt", String.join("\n",
-                "record-count:3",
                 "name:town",
                 "alloc:1",
                 "name:classic",
@@ -367,7 +341,6 @@ class DungeonProfileReaderTest {
 
         ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(List.of("town", "classic", "cavern"),
                 result.items().stream().map(CaveProfile::getName).toList());
         CaveProfile classic = result.items().get(1);
@@ -382,7 +355,6 @@ class DungeonProfileReaderTest {
     @Test
     void anOverflowingAllocOrMinLevelClampsWhereCWraps() throws IOException {
         String path = tempFile("overflow-alloc.txt", String.join("\n",
-                "record-count:2",
                 "name:classic",
                 "alloc:99999999999",
                 "name:modified",
@@ -392,7 +364,6 @@ class DungeonProfileReaderTest {
 
         ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(2, result.items().size());
         assertEquals(Integer.MAX_VALUE, result.items().get(0).getAlloc(), "C would hold 1215752191");
         assertEquals(Integer.MAX_VALUE, result.items().get(1).getMinLevel(), "C would hold 1215752191");
@@ -408,7 +379,6 @@ class DungeonProfileReaderTest {
     @Test
     void paramsMinLevelAndAllocAreReadInBase0AsInC() throws IOException {
         String path = tempFile("base0.txt", String.join("\n",
-                "record-count:1",
                 "name:classic",
                 "params:010:08:017:-010",
                 "min-level:019",
@@ -417,7 +387,6 @@ class DungeonProfileReaderTest {
 
         ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         CaveProfile p = result.items().getFirst();
         assertEquals(8, p.getBlockSize());
         assertEquals(0, p.getDunRooms());
@@ -435,14 +404,12 @@ class DungeonProfileReaderTest {
     @Test
     void anAbsentAllocIsZeroAsInC() throws IOException {
         String path = tempFile("no-alloc.txt", String.join("\n",
-                "record-count:1",
                 "name:moria",
                 "params:1:50:250:2",
                 ""));
 
         ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(0, result.items().getFirst().getAlloc());
     }
 
@@ -455,7 +422,6 @@ class DungeonProfileReaderTest {
     @ValueSource(strings = {"Town", "CLASSIC", "classic ", "hard_centre", "hardcentre", "hard  centre"})
     void aNearMissProfileNameStopsTheLoadAfterAGoodProfile(String bad) throws IOException {
         String path = tempFile("near-miss-profile.txt", String.join("\n",
-                "record-count:2",
                 "name:town",
                 "alloc:1",
                 "name:" + bad,
@@ -464,7 +430,7 @@ class DungeonProfileReaderTest {
 
         DataFileParseException e = loadAndStop(path);
 
-        assertTrue(e.getMessage().contains("line: 4"), e.getMessage());
+        assertTrue(e.getMessage().contains("line: 3"), e.getMessage());
     }
 
     /**
@@ -476,7 +442,6 @@ class DungeonProfileReaderTest {
     @Test
     void anOverflowingRoomFieldIsClampedAndTheRoomKept() throws IOException {
         String path = tempFile("overflow-room.txt", String.join("\n",
-                "record-count:1",
                 "name:classic",
                 "params:11:50:200:2",
                 "alloc:90",
@@ -491,7 +456,6 @@ class DungeonProfileReaderTest {
         assertEquals(List.of("simple room", "large room", "staircase room"),
                 rooms.stream().map(RoomProfile::getName).toList());
         assertEquals(Integer.MAX_VALUE, rooms.get(1).getLevel());
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
     }
 
     /**
@@ -502,7 +466,6 @@ class DungeonProfileReaderTest {
     @Test
     void unknownRoomNameStopsTheLoadAsInC() throws IOException {
         String path = tempFile("unknown-room.txt", String.join("\n",
-                "record-count:1",
                 "name:classic",
                 "alloc:1",
                 "room:no such room:0:11:33:1:0:0:100",
@@ -511,7 +474,7 @@ class DungeonProfileReaderTest {
         DataFileParseException e = loadAndStop(path);
 
         assertTrue(e.getMessage().contains("no such room"), e.getMessage());
-        assertTrue(e.getMessage().contains("line: 4"), e.getMessage());
+        assertTrue(e.getMessage().contains("line: 3"), e.getMessage());
         assertTrue(e.getMessage().contains(path), e.getMessage());
     }
 
@@ -523,7 +486,6 @@ class DungeonProfileReaderTest {
     @ValueSource(strings = {"Simple room", "simple room ", "simple_room", "Greater Vault"})
     void aNearMissRoomNameStopsTheLoadAfterAGoodRoom(String bad) throws IOException {
         String path = tempFile("near-miss-room.txt", String.join("\n",
-                "record-count:1",
                 "name:classic",
                 "alloc:1",
                 "room:simple room:0:11:33:1:0:0:100",
@@ -532,21 +494,7 @@ class DungeonProfileReaderTest {
 
         DataFileParseException e = loadAndStop(path);
 
-        assertTrue(e.getMessage().contains("line: 5"), e.getMessage());
-    }
-
-    /**
-     * A missing {@code record-count:} header is a grammar error, so it goes down the hard channel:
-     * {@link ParseErrors#throwIfAny()} fires and nothing loads.
-     */
-    @Test
-    void missingRecordCountHeaderFailsClosed() throws IOException {
-        String path = tempFile("no-header.txt", "name:town\nalloc:-1\n");
-
-        ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
-
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty(), result.items()::toString);
+        assertTrue(e.getMessage().contains("line: 4"), e.getMessage());
     }
 
     /**
@@ -556,12 +504,10 @@ class DungeonProfileReaderTest {
      */
     @Test
     void aProfileWithNoDirectivesFailsClosed() throws IOException {
-        String path = tempFile("empty-profile.txt", "record-count:1\nname:town\n");
+        String path = tempFile("empty-profile.txt", "name:town\n");
 
-        ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
+        assertThrows(ParseCancellationException.class, () -> new DungeonProfileReader().parseWithResults(path));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty(), result.items()::toString);
     }
 
     /**
@@ -573,7 +519,6 @@ class DungeonProfileReaderTest {
         String path = tempFile("commented.txt", String.join("\n",
                 "# a leading comment",
                 "",
-                "record-count:1",
                 "",
                 "## Town",
                 "name:town",
@@ -586,7 +531,6 @@ class DungeonProfileReaderTest {
 
         ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size());
         assertEquals("town", result.items().getFirst().getName());
         assertEquals(-1, result.items().getFirst().getAlloc());
@@ -708,7 +652,6 @@ class DungeonProfileReaderTest {
     @Test
     void aPitWrittenWithALeadingZeroIsAPitAsInC() throws IOException {
         String path = tempFile("pit-01.txt", String.join("\n",
-                "record-count:1",
                 "name:classic",
                 "alloc:1",
                 "room:monster pit:0:11:33:5:01:2:8",
@@ -716,7 +659,6 @@ class DungeonProfileReaderTest {
 
         ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertTrue(result.items().getFirst().getRoomProfiles().getFirst().isPit());
     }
 
@@ -728,7 +670,6 @@ class DungeonProfileReaderTest {
     @Test
     void anUnknownProfileNameStopsTheLoadAsInC() throws IOException {
         String path = tempFile("unknown-profile.txt", String.join("\n",
-                "record-count:1",
                 "name:no such profile",
                 "alloc:1",
                 ""));
@@ -736,7 +677,7 @@ class DungeonProfileReaderTest {
         DataFileParseException e = loadAndStop(path);
 
         assertTrue(e.getMessage().contains("no such profile"), e.getMessage());
-        assertTrue(e.getMessage().contains("line 2") || e.getMessage().contains("line: 2"), e.getMessage());
+        assertTrue(e.getMessage().contains("line 2") || e.getMessage().contains("line: 1"), e.getMessage());
         assertTrue(e.getMessage().contains(path), e.getMessage());
     }
 
@@ -754,7 +695,6 @@ class DungeonProfileReaderTest {
         String[] values = {"10", "30", "15", "25", "50"};
         values[field] = "99999999999";
         String path = tempFile("overflow-tunnel.txt", String.join("\n",
-                "record-count:2",
                 "name:town",
                 "alloc:1",
                 "name:classic",
@@ -765,7 +705,6 @@ class DungeonProfileReaderTest {
 
         ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         TunnelProfile t = byName(result.items(), "classic").getTun();
         int[] got = {t.getRnd(), t.getChg(), t.getCon(), t.getPen(), t.getJct()};
         int[] expected = {10, 30, 15, 25, 50};
@@ -785,7 +724,6 @@ class DungeonProfileReaderTest {
         String[] values = {"5", "2", "3", "90", "2", "40"};
         values[field] = "99999999999";
         String path = tempFile("overflow-streamer.txt", String.join("\n",
-                "record-count:2",
                 "name:town",
                 "alloc:1",
                 "name:classic",
@@ -796,7 +734,6 @@ class DungeonProfileReaderTest {
 
         ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         StreamerProfile s = byName(result.items(), "classic").getStr();
         int[] got = {s.getDen(), s.getRng(), s.getMam(), s.getMc(), s.getQua(), s.getQc()};
         int[] expected = {5, 2, 3, 90, 2, 40};
@@ -811,12 +748,10 @@ class DungeonProfileReaderTest {
      */
     @Test
     void aFileWithNoProfilesIsRefusedHereWhereCLoadsAnEmptyList() throws IOException {
-        String path = tempFile("no-profiles.txt", "record-count:0\n");
+        String path = tempFile("no-profiles.txt", "");
 
-        ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
+        assertThrows(ParseCancellationException.class, () -> new DungeonProfileReader().parseWithResults(path));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty(), result.items()::toString);
     }
 
     /**
@@ -827,16 +762,13 @@ class DungeonProfileReaderTest {
     @Test
     void aDirectiveBeforeAnyNameFailsClosedAsInC() throws IOException {
         String path = tempFile("headless.txt", String.join("\n",
-                "record-count:1",
                 "params:1:0:200:0",
                 "name:town",
                 "alloc:-1",
                 ""));
 
-        ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
+        assertThrows(ParseCancellationException.class, () -> new DungeonProfileReader().parseWithResults(path));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty(), result.items()::toString);
     }
 
     /**
@@ -849,15 +781,12 @@ class DungeonProfileReaderTest {
     void hexIndentedAndTrailingFieldValuesAreRefusedHereWhereCAcceptsThem() throws IOException {
         for (String line : List.of("alloc:0x10", "  alloc:5", "alloc:5:junk")) {
             String path = tempFile("odd.txt", String.join("\n",
-                    "record-count:1",
                     "name:odd",
                     line,
                     ""));
 
-            ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
+            assertThrows(ParseCancellationException.class, () -> new DungeonProfileReader().parseWithResults(path), line);
 
-            assertTrue(result.hasErrors(), line);
-            assertTrue(result.items().isEmpty(), line);
         }
     }
 
@@ -868,15 +797,12 @@ class DungeonProfileReaderTest {
     @Test
     void aParamsLineWithAFieldMissingFailsClosedAsInC() throws IOException {
         String path = tempFile("short-params.txt", String.join("\n",
-                "record-count:1",
                 "name:short",
                 "params:1:0:200",
                 ""));
 
-        ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
+        assertThrows(ParseCancellationException.class, () -> new DungeonProfileReader().parseWithResults(path));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty(), result.items()::toString);
     }
 
     /**
@@ -886,7 +812,6 @@ class DungeonProfileReaderTest {
     @Test
     void profilesComeBackInFileOrderNotBuilderTableOrder() throws IOException {
         String path = tempFile("order.txt", String.join("\n",
-                "record-count:3",
                 "name:cavern",
                 "alloc:1",
                 "name:town",

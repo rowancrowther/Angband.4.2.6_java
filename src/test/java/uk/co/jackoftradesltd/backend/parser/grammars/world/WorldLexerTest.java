@@ -31,11 +31,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p>These exercise the lexer in isolation, asserting the exact token stream — symbolic name plus
  * text — for each {@code world.txt} directive shape. They pin down the behaviours designed by hand:
- * the five token kinds ({@code RECORD_COUNT}, {@code LEVEL}, {@code COLON}, {@code INTEGER},
- * {@code NAME}), the single sign-capable {@code INTEGER} (C7), {@code INTEGER} winning the
+ * the four token kinds ({@code LEVEL}, {@code COLON}, {@code INTEGER}, {@code NAME}), the single sign-capable {@code INTEGER} (C7), {@code INTEGER} winning the
  * longest-match tie against {@code NAME} for a bare depth, names carrying embedded spaces, and the
  * imported {@code CommentsAndEol} comment/EOL rules being skipped (so CRLF gamedata tokenises clean
  * — C9).
+ *
+ * <p>Class WorldLexerTest coded before 261104, updated on 261104 once the {@code record-count:}
+ * header and its {@code RECORD_COUNT} token were removed.
  *
  * @author Rowan Crowther
  */
@@ -76,11 +78,6 @@ class WorldLexerTest {
     }
 
     @Test
-    void recordCountLineTokenises() {
-        assertEquals(List.of("RECORD_COUNT=record-count:", "INTEGER=128"), tokens("record-count:128"));
-    }
-
-    @Test
     void levelRecordTokenises() {
         // Locks in three things at once: the depth "0" is an INTEGER (not a NAME) thanks to the
         // longest-match-then-declaration-order tie-break; "Angband 1" is a single NAME despite the
@@ -94,22 +91,21 @@ class WorldLexerTest {
     @Test
     void signedIntegerIsOneToken() {
         // World depths are never negative, but INTEGER is sign-capable (C7): '-5' is one token.
-        assertEquals(List.of("RECORD_COUNT=record-count:", "INTEGER=-5"), tokens("record-count:-5"));
+        assertEquals(List.of("LEVEL=level:", "INTEGER=-5"), tokens("level:-5"));
     }
 
     @Test
     void commentsAndBlankLinesAreSkipped() {
         assertEquals(
-                List.of("RECORD_COUNT=record-count:", "INTEGER=128"),
-                tokens("# a header comment\n\nrecord-count:128\n"));
+                List.of("LEVEL=level:", "INTEGER=0"),
+                tokens("# a header comment\n\nlevel:0\n"));
     }
 
     @Test
     void crlfLineEndingsTokeniseCleanly() {
-        String src = "record-count:128\r\nlevel:0:Town:None:Angband 1\r\n";
+        String src = "# a comment\r\nlevel:0:Town:None:Angband 1\r\n";
         assertEquals(
-                List.of("RECORD_COUNT=record-count:", "INTEGER=128",
-                        "LEVEL=level:", "INTEGER=0", "COLON=:", "NAME=Town", "COLON=:", "NAME=None",
+                List.of("LEVEL=level:", "INTEGER=0", "COLON=:", "NAME=Town", "COLON=:", "NAME=None",
                         "COLON=:", "NAME=Angband 1"),
                 tokens(src));
         assertEquals(0, lexErrors(src));
@@ -117,7 +113,7 @@ class WorldLexerTest {
 
     @Test
     void unrecognisedCharacterRaisesLexerError() {
-        // '.' matches no token rule (values are integer-only), so a decimal count is a lexer error.
-        assertTrue(lexErrors("record-count:1.5") > 0, "a '.' in a value position should be a lexer error");
+        // '.' matches no token rule (values are integer-only), so a decimal depth is a lexer error.
+        assertTrue(lexErrors("level:1.5") > 0, "a '.' in a value position should be a lexer error");
     }
 }

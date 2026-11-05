@@ -11,11 +11,6 @@ options { tokenVocab = PlayerRaceLexer; }
     import uk.co.jackoftradesltd.backend.parser.playerrace.PlayerRaceParseRecord;
 }
 
-recordCount
-        returns[String count]
-        :   RECORD_COUNT INTEGER { $count = $INTEGER.getText(); }
-        ;
-
 name
         returns[String nameStr, int line]
         :   NAME STRING { $nameStr = $STRING.getText(); $line = $start.getLine(); }
@@ -222,10 +217,9 @@ playerRace
         ;
 
 file
-        returns[List<PlayerRaceParseRecord> races, String declaredRecordCount]
+        returns[List<PlayerRaceParseRecord> races]
         @init {
             $races = new ArrayList<>();
         }
-        :   recordCount { $declaredRecordCount = $recordCount.count; }
-            (playerRace { $races.add($playerRace.race); })+ EOF
+        :   (playerRace { $races.add($playerRace.race); })+ EOF
         ;

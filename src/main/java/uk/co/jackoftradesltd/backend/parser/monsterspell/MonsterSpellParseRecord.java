@@ -27,12 +27,16 @@ import java.util.List;
  * This is the flat, uninterpreted hand-off between the parser and
  * {@link MonsterSpellAssembler}: every field is the raw token text, with no lookup, conversion
  * or validation applied. {@code hit} is a {@link String} rather than an {@code int} for that
- * reason - turning it into a number is the assembler's job, so that a malformed value becomes a
- * reported soft error naming the file line rather than an exception thrown mid-parse.
+ * reason - turning it into a number is the assembler's job, so that a malformed value is refused
+ * with a {@code DataFileParseException} naming the file line, not an exception from inside the
+ * grammar.
  * <p>
  * An absent optional directive arrives as an empty string rather than null, because the grammar
  * initializes each accumulator before the alternation that fills it. {@code messageType} is the
  * one that matters: it is empty for the 49 shipped records that carry no {@code msgt:} line.
+ *
+ * <p>Record MonsterSpellParseRecord coded before 261105, updated on 261105 for the removal of
+ * the soft-error path.
  *
  * @param name        the spell's name, without its {@code RSF_} prefix
  * @param messageType the message type without its {@code MSG_} prefix, empty if not given

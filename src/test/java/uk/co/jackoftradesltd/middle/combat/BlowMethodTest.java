@@ -135,7 +135,6 @@ class BlowMethodTest {
     void everyMethodHasDescAndAction() throws IOException {
         ParseResult<BlowMethod> result = new BlowMethodReader().parseWithResults(REAL_FILE);
 
-        assertFalse(result.hasErrors());
         for (BlowMethod m : result.items()) {
             assertFalse(m.getDesc().isEmpty(), m.getName());
             assertFalse(m.getBlowMessage().isEmpty(), m.getName());

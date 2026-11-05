@@ -11,11 +11,6 @@ options { tokenVocab = ArtifactLexer; }
     import java.util.HashMap;
 }
 
-recordCount
-        returns[String count]
-        :   RECORD_COUNT c=ARTIFACT_INTEGER { $count = $c.getText(); }
-        ;
-
 name
         returns[String nameStr, int line]
         :   NAME STRING { $nameStr = $STRING.getText(); $line = $start.getLine(); }
@@ -213,10 +208,9 @@ artifact
         )+;
 
 file
-        returns[List<ArtifactParseRecord> records, String declaredRecordCount]
+        returns[List<ArtifactParseRecord> records]
         @init {
             $records = new ArrayList<>();
         }
-        :   recordCount { $declaredRecordCount = $recordCount.count; }
-            (artifact { $records.add($artifact.artifactRecord); })+ EOF
+        :   (artifact { $records.add($artifact.artifactRecord); })+ EOF
         ;

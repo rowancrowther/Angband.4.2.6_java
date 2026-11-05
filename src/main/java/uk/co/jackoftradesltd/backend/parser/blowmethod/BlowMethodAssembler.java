@@ -44,14 +44,15 @@ import java.util.List;
  * <p>
  * As C's handlers end the whole {@code blow_methods.txt} load on their first parser error
  * ({@code PARSE_ERROR_NOT_NUMBER}, {@code PARSE_ERROR_INVALID_MESSAGE}), so does this
- * assembler: a bad value is logged and thrown as a {@link DataFileParseException} rather
- * than reported as a soft error, and nothing is added to the caller's error list.
+ * assembler: a bad value is logged and thrown as a {@link DataFileParseException}, and no
+ * record is skipped.
  * <p>
  * Accepted deviation (decided 261009): C's {@code blow_methods} array keeps slot 0 blank
  * and starts its records at 1, so {@code z_info->blow_methods_max} is one more than the
  * record count. The list returned here holds only the real records, from index 0.
  *
- * <p>Class BlowMethodAssembler coded before 260915, commented in full on 261023.
+ * <p>Class BlowMethodAssembler coded before 260915, commented in full on 261023, updated on 261105
+ * for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -113,14 +114,13 @@ public class BlowMethodAssembler implements Assembler<BlowMethodParseRecord, Lis
      * the load-ending errors, base 0 flags and C's message lookup on 261023.
      *
      * @param records  the raw parse records, in file order
-     * @param errors   unused: every error ends the load by throwing instead
      * @param filename the name of the data file, used in the error messages
      * @return the assembled blow methods, in reverse file order
      * @throws DataFileParseException on a flag with a leading {@code -} or no digits, or a
      *                                {@code msg:} that names no message type
      */
     @Override
-    public List<BlowMethod> assemble(@NotNull List<BlowMethodParseRecord> records, @NotNull List<String> errors,
+    public List<BlowMethod> assemble(@NotNull List<BlowMethodParseRecord> records,
                                      String filename) {
         List<BlowMethod> methods = new ArrayList<>();
 

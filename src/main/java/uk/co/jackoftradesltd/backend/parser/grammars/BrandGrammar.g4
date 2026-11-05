@@ -33,13 +33,6 @@ options { tokenVocab = BrandLexer; }
     import java.util.List;
 }
 
-// "record-count:<n>" header; the declared count is handed to the reader to
-// check against the number of records actually parsed.
-recordCount
-        returns[String count]
-        :   RECORD_COUNT INTEGER { $count = $INTEGER.getText(); }
-        ;
-
 // "code:<CODE>" - the record header that opens each brand. Also captures the
 // source line number so the assembler can report errors against the record.
 code
@@ -123,12 +116,11 @@ brand
             (vulnFlag { vulnFlagInit = $vulnFlag.vFlag; })?
         ;
 
-// Top-level rule: the record-count header followed by one or more brand records.
+// Top-level rule: one or more brand records.
 file
-        returns[List<BrandParseRecord> records, String declaredRecordCount]
+        returns[List<BrandParseRecord> records]
         @init {
             $records = new ArrayList<>();
         }
-        :   recordCount { $declaredRecordCount = $recordCount.count; }
-            (brand { $records.add($brand.record); })+ EOF
+        :   (brand { $records.add($brand.record); })+ EOF
         ;

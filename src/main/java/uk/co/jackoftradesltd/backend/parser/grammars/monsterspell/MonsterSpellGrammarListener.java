@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from MonsterSpellGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/MonsterSpellGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.monsterspell;
 
 import org.antlr.v4.runtime.tree.ParseTreeListener;
@@ -25,16 +25,6 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
  * {@link MonsterSpellGrammar}.
  */
 public interface MonsterSpellGrammarListener extends ParseTreeListener {
-	/**
-	 * Enter a parse tree produced by {@link MonsterSpellGrammar#recordCount}.
-	 * @param ctx the parse tree
-	 */
-	void enterRecordCount(MonsterSpellGrammar.RecordCountContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link MonsterSpellGrammar#recordCount}.
-	 * @param ctx the parse tree
-	 */
-	void exitRecordCount(MonsterSpellGrammar.RecordCountContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link MonsterSpellGrammar#name}.
 	 * @param ctx the parse tree

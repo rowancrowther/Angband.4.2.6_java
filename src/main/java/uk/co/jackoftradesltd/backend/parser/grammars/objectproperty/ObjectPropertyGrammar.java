@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from ObjectPropertyGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ObjectPropertyGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.objectproperty;
 
 import org.antlr.v4.runtime.*;
@@ -42,40 +42,39 @@ public class ObjectPropertyGrammar extends Parser {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		RECORD_COUNT=1, NAME=2, TYPE=3, SUBTYPE=4, ID_TYPE=5, CODE=6, POWER=7, 
-		MULT=8, TYPE_MULT=9, ADJECTIVE=10, NEG_ADJECTIVE=11, MSG=12, BINDUI=13, 
-		DESC=14, COLON=15, INTEGER=16, LTHAN=17, GTHAN=18, LCASE=19, UCASE=20, 
-		COMMENT=21, EOL=22, STRING=23, EOL_POP=24, DELIM_INTEGER=25, STRING_BETWEEN_COLONS=26, 
-		DELIM_COLON=27, END_SKIP=28;
+		NAME=1, TYPE=2, SUBTYPE=3, ID_TYPE=4, CODE=5, POWER=6, MULT=7, TYPE_MULT=8, 
+		ADJECTIVE=9, NEG_ADJECTIVE=10, MSG=11, BINDUI=12, DESC=13, COLON=14, INTEGER=15, 
+		LTHAN=16, GTHAN=17, LCASE=18, UCASE=19, COMMENT=20, EOL=21, STRING=22, 
+		EOL_POP=23, DELIM_INTEGER=24, STRING_BETWEEN_COLONS=25, DELIM_COLON=26, 
+		END_SKIP=27;
 	public static final int
-		RULE_recordCount = 0, RULE_name = 1, RULE_type = 2, RULE_subtype = 3, 
-		RULE_idType = 4, RULE_codeVal = 5, RULE_power = 6, RULE_mult = 7, RULE_typeMult = 8, 
-		RULE_adjective = 9, RULE_negAdjective = 10, RULE_msg = 11, RULE_bindui = 12, 
-		RULE_desc = 13, RULE_objectProperty = 14, RULE_file = 15;
+		RULE_name = 0, RULE_type = 1, RULE_subtype = 2, RULE_idType = 3, RULE_codeVal = 4, 
+		RULE_power = 5, RULE_mult = 6, RULE_typeMult = 7, RULE_adjective = 8, 
+		RULE_negAdjective = 9, RULE_msg = 10, RULE_bindui = 11, RULE_desc = 12, 
+		RULE_objectProperty = 13, RULE_file = 14;
 	private static String[] makeRuleNames() {
 		return new String[] {
-			"recordCount", "name", "type", "subtype", "idType", "codeVal", "power", 
-			"mult", "typeMult", "adjective", "negAdjective", "msg", "bindui", "desc", 
-			"objectProperty", "file"
+			"name", "type", "subtype", "idType", "codeVal", "power", "mult", "typeMult", 
+			"adjective", "negAdjective", "msg", "bindui", "desc", "objectProperty", 
+			"file"
 		};
 	}
 	public static final String[] ruleNames = makeRuleNames();
 
 	private static String[] makeLiteralNames() {
 		return new String[] {
-			null, "'record-count:'", "'name:'", "'type:'", "'subtype:'", "'id-type:'", 
-			"'code:'", "'power:'", "'mult:'", "'type-mult:'", "'adjective:'", "'neg-adjective:'", 
-			"'msg:'", "'bindui:'", "'desc:'", null, null, "'<'", "'>'"
+			null, "'name:'", "'type:'", "'subtype:'", "'id-type:'", "'code:'", "'power:'", 
+			"'mult:'", "'type-mult:'", "'adjective:'", "'neg-adjective:'", "'msg:'", 
+			"'bindui:'", "'desc:'", null, null, "'<'", "'>'"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
-			null, "RECORD_COUNT", "NAME", "TYPE", "SUBTYPE", "ID_TYPE", "CODE", "POWER", 
-			"MULT", "TYPE_MULT", "ADJECTIVE", "NEG_ADJECTIVE", "MSG", "BINDUI", "DESC", 
-			"COLON", "INTEGER", "LTHAN", "GTHAN", "LCASE", "UCASE", "COMMENT", "EOL", 
-			"STRING", "EOL_POP", "DELIM_INTEGER", "STRING_BETWEEN_COLONS", "DELIM_COLON", 
-			"END_SKIP"
+			null, "NAME", "TYPE", "SUBTYPE", "ID_TYPE", "CODE", "POWER", "MULT", 
+			"TYPE_MULT", "ADJECTIVE", "NEG_ADJECTIVE", "MSG", "BINDUI", "DESC", "COLON", 
+			"INTEGER", "LTHAN", "GTHAN", "LCASE", "UCASE", "COMMENT", "EOL", "STRING", 
+			"EOL_POP", "DELIM_INTEGER", "STRING_BETWEEN_COLONS", "DELIM_COLON", "END_SKIP"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -130,55 +129,6 @@ public class ObjectPropertyGrammar extends Parser {
 	}
 
 	@SuppressWarnings("CheckReturnValue")
-	public static class RecordCountContext extends ParserRuleContext {
-		public String count;
-		public Token INTEGER;
-		public TerminalNode RECORD_COUNT() { return getToken(ObjectPropertyGrammar.RECORD_COUNT, 0); }
-		public TerminalNode INTEGER() { return getToken(ObjectPropertyGrammar.INTEGER, 0); }
-		public RecordCountContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-		@Override public int getRuleIndex() { return RULE_recordCount; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof ObjectPropertyGrammarListener ) ((ObjectPropertyGrammarListener)listener).enterRecordCount(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof ObjectPropertyGrammarListener ) ((ObjectPropertyGrammarListener)listener).exitRecordCount(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ObjectPropertyGrammarVisitor ) return ((ObjectPropertyGrammarVisitor<? extends T>)visitor).visitRecordCount(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	public final RecordCountContext recordCount() throws RecognitionException {
-		RecordCountContext _localctx = new RecordCountContext(_ctx, getState());
-		enterRule(_localctx, 0, RULE_recordCount);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(32);
-			match(RECORD_COUNT);
-			setState(33);
-			((RecordCountContext)_localctx).INTEGER = match(INTEGER);
-			 ((RecordCountContext)_localctx).count =  ((RecordCountContext)_localctx).INTEGER.getText(); 
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	@SuppressWarnings("CheckReturnValue")
 	public static class NameContext extends ParserRuleContext {
 		public String nameString;
 		public int lineNo;
@@ -206,13 +156,13 @@ public class ObjectPropertyGrammar extends Parser {
 
 	public final NameContext name() throws RecognitionException {
 		NameContext _localctx = new NameContext(_ctx, getState());
-		enterRule(_localctx, 2, RULE_name);
+		enterRule(_localctx, 0, RULE_name);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(36);
+			setState(30);
 			match(NAME);
-			setState(37);
+			setState(31);
 			((NameContext)_localctx).STRING = match(STRING);
 			 ((NameContext)_localctx).nameString =  ((NameContext)_localctx).STRING.getText(); ((NameContext)_localctx).lineNo =  _localctx.start.getLine(); 
 			}
@@ -255,13 +205,13 @@ public class ObjectPropertyGrammar extends Parser {
 
 	public final TypeContext type() throws RecognitionException {
 		TypeContext _localctx = new TypeContext(_ctx, getState());
-		enterRule(_localctx, 4, RULE_type);
+		enterRule(_localctx, 2, RULE_type);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(40);
+			setState(34);
 			match(TYPE);
-			setState(41);
+			setState(35);
 			((TypeContext)_localctx).LCASE = match(LCASE);
 			 ((TypeContext)_localctx).typeStr =  ((TypeContext)_localctx).LCASE.getText(); 
 			}
@@ -304,13 +254,13 @@ public class ObjectPropertyGrammar extends Parser {
 
 	public final SubtypeContext subtype() throws RecognitionException {
 		SubtypeContext _localctx = new SubtypeContext(_ctx, getState());
-		enterRule(_localctx, 6, RULE_subtype);
+		enterRule(_localctx, 4, RULE_subtype);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(44);
+			setState(38);
 			match(SUBTYPE);
-			setState(45);
+			setState(39);
 			((SubtypeContext)_localctx).STRING = match(STRING);
 			 ((SubtypeContext)_localctx).subTypeStr =  ((SubtypeContext)_localctx).STRING.getText();
 			}
@@ -353,13 +303,13 @@ public class ObjectPropertyGrammar extends Parser {
 
 	public final IdTypeContext idType() throws RecognitionException {
 		IdTypeContext _localctx = new IdTypeContext(_ctx, getState());
-		enterRule(_localctx, 8, RULE_idType);
+		enterRule(_localctx, 6, RULE_idType);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(48);
+			setState(42);
 			match(ID_TYPE);
-			setState(49);
+			setState(43);
 			((IdTypeContext)_localctx).STRING = match(STRING);
 			 ((IdTypeContext)_localctx).idTypeStr =  ((IdTypeContext)_localctx).STRING.getText(); 
 			}
@@ -402,13 +352,13 @@ public class ObjectPropertyGrammar extends Parser {
 
 	public final CodeValContext codeVal() throws RecognitionException {
 		CodeValContext _localctx = new CodeValContext(_ctx, getState());
-		enterRule(_localctx, 10, RULE_codeVal);
+		enterRule(_localctx, 8, RULE_codeVal);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(52);
+			setState(46);
 			match(CODE);
-			setState(53);
+			setState(47);
 			((CodeValContext)_localctx).UCASE = match(UCASE);
 			 ((CodeValContext)_localctx).codeStr =  ((CodeValContext)_localctx).UCASE.getText(); 
 			}
@@ -451,13 +401,13 @@ public class ObjectPropertyGrammar extends Parser {
 
 	public final PowerContext power() throws RecognitionException {
 		PowerContext _localctx = new PowerContext(_ctx, getState());
-		enterRule(_localctx, 12, RULE_power);
+		enterRule(_localctx, 10, RULE_power);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(56);
+			setState(50);
 			match(POWER);
-			setState(57);
+			setState(51);
 			((PowerContext)_localctx).INTEGER = match(INTEGER);
 			 ((PowerContext)_localctx).powerVal =  ((PowerContext)_localctx).INTEGER.getText(); 
 			}
@@ -500,13 +450,13 @@ public class ObjectPropertyGrammar extends Parser {
 
 	public final MultContext mult() throws RecognitionException {
 		MultContext _localctx = new MultContext(_ctx, getState());
-		enterRule(_localctx, 14, RULE_mult);
+		enterRule(_localctx, 12, RULE_mult);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(60);
+			setState(54);
 			match(MULT);
-			setState(61);
+			setState(55);
 			((MultContext)_localctx).INTEGER = match(INTEGER);
 			 ((MultContext)_localctx).multVal =  ((MultContext)_localctx).INTEGER.getText(); 
 			}
@@ -553,17 +503,17 @@ public class ObjectPropertyGrammar extends Parser {
 
 	public final TypeMultContext typeMult() throws RecognitionException {
 		TypeMultContext _localctx = new TypeMultContext(_ctx, getState());
-		enterRule(_localctx, 16, RULE_typeMult);
+		enterRule(_localctx, 14, RULE_typeMult);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(64);
+			setState(58);
 			match(TYPE_MULT);
-			setState(65);
+			setState(59);
 			((TypeMultContext)_localctx).t = match(STRING_BETWEEN_COLONS);
-			setState(66);
+			setState(60);
 			match(DELIM_COLON);
-			setState(67);
+			setState(61);
 			((TypeMultContext)_localctx).v = match(DELIM_INTEGER);
 
 			                ((TypeMultContext)_localctx).typeTval =  ((TypeMultContext)_localctx).t.getText();
@@ -608,13 +558,13 @@ public class ObjectPropertyGrammar extends Parser {
 
 	public final AdjectiveContext adjective() throws RecognitionException {
 		AdjectiveContext _localctx = new AdjectiveContext(_ctx, getState());
-		enterRule(_localctx, 18, RULE_adjective);
+		enterRule(_localctx, 16, RULE_adjective);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(70);
+			setState(64);
 			match(ADJECTIVE);
-			setState(71);
+			setState(65);
 			((AdjectiveContext)_localctx).LCASE = match(LCASE);
 			 ((AdjectiveContext)_localctx).adj =  ((AdjectiveContext)_localctx).LCASE.getText(); 
 			}
@@ -657,13 +607,13 @@ public class ObjectPropertyGrammar extends Parser {
 
 	public final NegAdjectiveContext negAdjective() throws RecognitionException {
 		NegAdjectiveContext _localctx = new NegAdjectiveContext(_ctx, getState());
-		enterRule(_localctx, 20, RULE_negAdjective);
+		enterRule(_localctx, 18, RULE_negAdjective);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(74);
+			setState(68);
 			match(NEG_ADJECTIVE);
-			setState(75);
+			setState(69);
 			((NegAdjectiveContext)_localctx).LCASE = match(LCASE);
 			 ((NegAdjectiveContext)_localctx).negAdj =  ((NegAdjectiveContext)_localctx).LCASE.getText(); 
 			}
@@ -706,13 +656,13 @@ public class ObjectPropertyGrammar extends Parser {
 
 	public final MsgContext msg() throws RecognitionException {
 		MsgContext _localctx = new MsgContext(_ctx, getState());
-		enterRule(_localctx, 22, RULE_msg);
+		enterRule(_localctx, 20, RULE_msg);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(78);
+			setState(72);
 			match(MSG);
-			setState(79);
+			setState(73);
 			((MsgContext)_localctx).STRING = match(STRING);
 			 ((MsgContext)_localctx).msgLine =  ((MsgContext)_localctx).STRING.getText(); 
 			}
@@ -772,7 +722,7 @@ public class ObjectPropertyGrammar extends Parser {
 
 	public final BinduiContext bindui() throws RecognitionException {
 		BinduiContext _localctx = new BinduiContext(_ctx, getState());
-		enterRule(_localctx, 24, RULE_bindui);
+		enterRule(_localctx, 22, RULE_bindui);
 
 		            ((BinduiContext)_localctx).tag =  "";
 		            ((BinduiContext)_localctx).uiVal =  null;
@@ -781,39 +731,39 @@ public class ObjectPropertyGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(82);
+			setState(76);
 			match(BINDUI);
-			setState(83);
+			setState(77);
 			((BinduiContext)_localctx).b = match(LCASE);
 			 ((BinduiContext)_localctx).binding =  ((BinduiContext)_localctx).b.getText(); 
-			setState(89);
+			setState(83);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			if (_la==LTHAN) {
 				{
-				setState(85);
+				setState(79);
 				match(LTHAN);
-				setState(86);
+				setState(80);
 				((BinduiContext)_localctx).t = match(UCASE);
-				setState(87);
+				setState(81);
 				match(GTHAN);
 				 ((BinduiContext)_localctx).tag =  ((BinduiContext)_localctx).t.getText(); 
 				}
 			}
 
-			setState(91);
+			setState(85);
 			match(COLON);
-			setState(92);
+			setState(86);
 			((BinduiContext)_localctx).a = match(INTEGER);
 			((BinduiContext)_localctx).aux =  ((BinduiContext)_localctx).a.getText(); 
-			setState(97);
+			setState(91);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			if (_la==COLON) {
 				{
-				setState(94);
+				setState(88);
 				match(COLON);
-				setState(95);
+				setState(89);
 				((BinduiContext)_localctx).u = match(INTEGER);
 				((BinduiContext)_localctx).uiVal =  ((BinduiContext)_localctx).u.getText(); 
 				}
@@ -859,13 +809,13 @@ public class ObjectPropertyGrammar extends Parser {
 
 	public final DescContext desc() throws RecognitionException {
 		DescContext _localctx = new DescContext(_ctx, getState());
-		enterRule(_localctx, 26, RULE_desc);
+		enterRule(_localctx, 24, RULE_desc);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(99);
+			setState(93);
 			match(DESC);
-			setState(100);
+			setState(94);
 			((DescContext)_localctx).STRING = match(STRING);
 			 ((DescContext)_localctx).line =  ((DescContext)_localctx).STRING.getText(); 
 			}
@@ -990,7 +940,7 @@ public class ObjectPropertyGrammar extends Parser {
 
 	public final ObjectPropertyContext objectProperty() throws RecognitionException {
 		ObjectPropertyContext _localctx = new ObjectPropertyContext(_ctx, getState());
-		enterRule(_localctx, 28, RULE_objectProperty);
+		enterRule(_localctx, 26, RULE_objectProperty);
 
 		            String nameInit = "";
 		            String typeInit = "";
@@ -1016,86 +966,86 @@ public class ObjectPropertyGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(103);
+			setState(97);
 			((ObjectPropertyContext)_localctx).name = name();
 			 line = ((ObjectPropertyContext)_localctx).name.lineNo; nameInit = ((ObjectPropertyContext)_localctx).name.nameString; 
-			setState(105);
+			setState(99);
 			((ObjectPropertyContext)_localctx).type = type();
 			 typeInit = ((ObjectPropertyContext)_localctx).type.typeStr; 
-			setState(140); 
+			setState(134); 
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			do {
 				{
-				setState(140);
+				setState(134);
 				_errHandler.sync(this);
 				switch (_input.LA(1)) {
 				case SUBTYPE:
 					{
-					setState(107);
+					setState(101);
 					((ObjectPropertyContext)_localctx).subtype = subtype();
 					 subTypeInit = ((ObjectPropertyContext)_localctx).subtype.subTypeStr; 
 					}
 					break;
 				case ID_TYPE:
 					{
-					setState(110);
+					setState(104);
 					((ObjectPropertyContext)_localctx).idType = idType();
 					 idTypeInit = ((ObjectPropertyContext)_localctx).idType.idTypeStr; 
 					}
 					break;
 				case CODE:
 					{
-					setState(113);
+					setState(107);
 					((ObjectPropertyContext)_localctx).codeVal = codeVal();
 					 codeInit = ((ObjectPropertyContext)_localctx).codeVal.codeStr; 
 					}
 					break;
 				case POWER:
 					{
-					setState(116);
+					setState(110);
 					((ObjectPropertyContext)_localctx).power = power();
 					 powerInit = ((ObjectPropertyContext)_localctx).power.powerVal; 
 					}
 					break;
 				case MULT:
 					{
-					setState(119);
+					setState(113);
 					((ObjectPropertyContext)_localctx).mult = mult();
 					 multInit = ((ObjectPropertyContext)_localctx).mult.multVal; 
 					}
 					break;
 				case TYPE_MULT:
 					{
-					setState(122);
+					setState(116);
 					((ObjectPropertyContext)_localctx).typeMult = typeMult();
 					 typeMultInit.put(((ObjectPropertyContext)_localctx).typeMult.typeTval, ((ObjectPropertyContext)_localctx).typeMult.multVal); 
 					}
 					break;
 				case ADJECTIVE:
 					{
-					setState(125);
+					setState(119);
 					((ObjectPropertyContext)_localctx).adjective = adjective();
 					 adjectiveInit = ((ObjectPropertyContext)_localctx).adjective.adj; 
 					}
 					break;
 				case NEG_ADJECTIVE:
 					{
-					setState(128);
+					setState(122);
 					((ObjectPropertyContext)_localctx).negAdjective = negAdjective();
 					 negAdjectiveInit = ((ObjectPropertyContext)_localctx).negAdjective.negAdj; 
 					}
 					break;
 				case MSG:
 					{
-					setState(131);
+					setState(125);
 					((ObjectPropertyContext)_localctx).msg = msg();
 					 msgSB.append(((ObjectPropertyContext)_localctx).msg.msgLine); 
 					}
 					break;
 				case BINDUI:
 					{
-					setState(134);
+					setState(128);
 					((ObjectPropertyContext)_localctx).bindui = bindui();
 					 binduiInit = ((ObjectPropertyContext)_localctx).bindui.binding;
 					                     tagInit = ((ObjectPropertyContext)_localctx).bindui.tag;
@@ -1105,7 +1055,7 @@ public class ObjectPropertyGrammar extends Parser {
 					break;
 				case DESC:
 					{
-					setState(137);
+					setState(131);
 					((ObjectPropertyContext)_localctx).desc = desc();
 					 descSB.append(((ObjectPropertyContext)_localctx).desc.line); 
 					}
@@ -1114,10 +1064,10 @@ public class ObjectPropertyGrammar extends Parser {
 					throw new NoViableAltException(this);
 				}
 				}
-				setState(142); 
+				setState(136); 
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-			} while ( (((_la) & ~0x3f) == 0 && ((1L << _la) & 32752L) != 0) );
+			} while ( (((_la) & ~0x3f) == 0 && ((1L << _la) & 16376L) != 0) );
 			}
 			_ctx.stop = _input.LT(-1);
 
@@ -1143,13 +1093,8 @@ public class ObjectPropertyGrammar extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class FileContext extends ParserRuleContext {
-		public String declaredRecordCount;
 		public List<ObjectPropertyParseRecord> properties;
-		public RecordCountContext recordCount;
 		public ObjectPropertyContext objectProperty;
-		public RecordCountContext recordCount() {
-			return getRuleContext(RecordCountContext.class,0);
-		}
 		public TerminalNode EOF() { return getToken(ObjectPropertyGrammar.EOF, 0); }
 		public List<ObjectPropertyContext> objectProperty() {
 			return getRuleContexts(ObjectPropertyContext.class);
@@ -1178,7 +1123,7 @@ public class ObjectPropertyGrammar extends Parser {
 
 	public final FileContext file() throws RecognitionException {
 		FileContext _localctx = new FileContext(_ctx, getState());
-		enterRule(_localctx, 30, RULE_file);
+		enterRule(_localctx, 28, RULE_file);
 
 		            ((FileContext)_localctx).properties =  new ArrayList<>();
 		        
@@ -1186,25 +1131,22 @@ public class ObjectPropertyGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(144);
-			((FileContext)_localctx).recordCount = recordCount();
-			((FileContext)_localctx).declaredRecordCount =  ((FileContext)_localctx).recordCount.count; 
-			setState(149); 
+			setState(141); 
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			do {
 				{
 				{
-				setState(146);
+				setState(138);
 				((FileContext)_localctx).objectProperty = objectProperty();
 				_localctx.properties.add(((FileContext)_localctx).objectProperty.property); 
 				}
 				}
-				setState(151); 
+				setState(143); 
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			} while ( _la==NAME );
-			setState(153);
+			setState(145);
 			match(EOF);
 			}
 		}
@@ -1220,97 +1162,90 @@ public class ObjectPropertyGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u001c\u009c\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001"+
+		"\u0004\u0001\u001b\u0094\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001"+
 		"\u0002\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004"+
 		"\u0002\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007"+
 		"\u0002\b\u0007\b\u0002\t\u0007\t\u0002\n\u0007\n\u0002\u000b\u0007\u000b"+
-		"\u0002\f\u0007\f\u0002\r\u0007\r\u0002\u000e\u0007\u000e\u0002\u000f\u0007"+
-		"\u000f\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0001\u0001"+
-		"\u0001\u0001\u0001\u0001\u0001\u0001\u0002\u0001\u0002\u0001\u0002\u0001"+
-		"\u0002\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0004\u0001"+
-		"\u0004\u0001\u0004\u0001\u0004\u0001\u0005\u0001\u0005\u0001\u0005\u0001"+
-		"\u0005\u0001\u0006\u0001\u0006\u0001\u0006\u0001\u0006\u0001\u0007\u0001"+
-		"\u0007\u0001\u0007\u0001\u0007\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b"+
-		"\u0001\b\u0001\t\u0001\t\u0001\t\u0001\t\u0001\n\u0001\n\u0001\n\u0001"+
-		"\n\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001\f\u0001\f\u0001"+
-		"\f\u0001\f\u0001\f\u0001\f\u0001\f\u0003\fZ\b\f\u0001\f\u0001\f\u0001"+
-		"\f\u0001\f\u0001\f\u0001\f\u0003\fb\b\f\u0001\r\u0001\r\u0001\r\u0001"+
-		"\r\u0001\u000e\u0001\u000e\u0001\u000e\u0001\u000e\u0001\u000e\u0001\u000e"+
-		"\u0001\u000e\u0001\u000e\u0001\u000e\u0001\u000e\u0001\u000e\u0001\u000e"+
-		"\u0001\u000e\u0001\u000e\u0001\u000e\u0001\u000e\u0001\u000e\u0001\u000e"+
-		"\u0001\u000e\u0001\u000e\u0001\u000e\u0001\u000e\u0001\u000e\u0001\u000e"+
-		"\u0001\u000e\u0001\u000e\u0001\u000e\u0001\u000e\u0001\u000e\u0001\u000e"+
-		"\u0001\u000e\u0001\u000e\u0001\u000e\u0001\u000e\u0001\u000e\u0001\u000e"+
-		"\u0001\u000e\u0004\u000e\u008d\b\u000e\u000b\u000e\f\u000e\u008e\u0001"+
-		"\u000f\u0001\u000f\u0001\u000f\u0001\u000f\u0001\u000f\u0004\u000f\u0096"+
-		"\b\u000f\u000b\u000f\f\u000f\u0097\u0001\u000f\u0001\u000f\u0001\u000f"+
-		"\u0000\u0000\u0010\u0000\u0002\u0004\u0006\b\n\f\u000e\u0010\u0012\u0014"+
-		"\u0016\u0018\u001a\u001c\u001e\u0000\u0000\u0099\u0000 \u0001\u0000\u0000"+
-		"\u0000\u0002$\u0001\u0000\u0000\u0000\u0004(\u0001\u0000\u0000\u0000\u0006"+
-		",\u0001\u0000\u0000\u0000\b0\u0001\u0000\u0000\u0000\n4\u0001\u0000\u0000"+
-		"\u0000\f8\u0001\u0000\u0000\u0000\u000e<\u0001\u0000\u0000\u0000\u0010"+
-		"@\u0001\u0000\u0000\u0000\u0012F\u0001\u0000\u0000\u0000\u0014J\u0001"+
-		"\u0000\u0000\u0000\u0016N\u0001\u0000\u0000\u0000\u0018R\u0001\u0000\u0000"+
-		"\u0000\u001ac\u0001\u0000\u0000\u0000\u001cg\u0001\u0000\u0000\u0000\u001e"+
-		"\u0090\u0001\u0000\u0000\u0000 !\u0005\u0001\u0000\u0000!\"\u0005\u0010"+
-		"\u0000\u0000\"#\u0006\u0000\uffff\uffff\u0000#\u0001\u0001\u0000\u0000"+
-		"\u0000$%\u0005\u0002\u0000\u0000%&\u0005\u0017\u0000\u0000&\'\u0006\u0001"+
-		"\uffff\uffff\u0000\'\u0003\u0001\u0000\u0000\u0000()\u0005\u0003\u0000"+
-		"\u0000)*\u0005\u0013\u0000\u0000*+\u0006\u0002\uffff\uffff\u0000+\u0005"+
-		"\u0001\u0000\u0000\u0000,-\u0005\u0004\u0000\u0000-.\u0005\u0017\u0000"+
-		"\u0000./\u0006\u0003\uffff\uffff\u0000/\u0007\u0001\u0000\u0000\u0000"+
-		"01\u0005\u0005\u0000\u000012\u0005\u0017\u0000\u000023\u0006\u0004\uffff"+
-		"\uffff\u00003\t\u0001\u0000\u0000\u000045\u0005\u0006\u0000\u000056\u0005"+
-		"\u0014\u0000\u000067\u0006\u0005\uffff\uffff\u00007\u000b\u0001\u0000"+
-		"\u0000\u000089\u0005\u0007\u0000\u00009:\u0005\u0010\u0000\u0000:;\u0006"+
-		"\u0006\uffff\uffff\u0000;\r\u0001\u0000\u0000\u0000<=\u0005\b\u0000\u0000"+
-		"=>\u0005\u0010\u0000\u0000>?\u0006\u0007\uffff\uffff\u0000?\u000f\u0001"+
-		"\u0000\u0000\u0000@A\u0005\t\u0000\u0000AB\u0005\u001a\u0000\u0000BC\u0005"+
-		"\u001b\u0000\u0000CD\u0005\u0019\u0000\u0000DE\u0006\b\uffff\uffff\u0000"+
-		"E\u0011\u0001\u0000\u0000\u0000FG\u0005\n\u0000\u0000GH\u0005\u0013\u0000"+
-		"\u0000HI\u0006\t\uffff\uffff\u0000I\u0013\u0001\u0000\u0000\u0000JK\u0005"+
-		"\u000b\u0000\u0000KL\u0005\u0013\u0000\u0000LM\u0006\n\uffff\uffff\u0000"+
-		"M\u0015\u0001\u0000\u0000\u0000NO\u0005\f\u0000\u0000OP\u0005\u0017\u0000"+
-		"\u0000PQ\u0006\u000b\uffff\uffff\u0000Q\u0017\u0001\u0000\u0000\u0000"+
-		"RS\u0005\r\u0000\u0000ST\u0005\u0013\u0000\u0000TY\u0006\f\uffff\uffff"+
-		"\u0000UV\u0005\u0011\u0000\u0000VW\u0005\u0014\u0000\u0000WX\u0005\u0012"+
-		"\u0000\u0000XZ\u0006\f\uffff\uffff\u0000YU\u0001\u0000\u0000\u0000YZ\u0001"+
-		"\u0000\u0000\u0000Z[\u0001\u0000\u0000\u0000[\\\u0005\u000f\u0000\u0000"+
-		"\\]\u0005\u0010\u0000\u0000]a\u0006\f\uffff\uffff\u0000^_\u0005\u000f"+
-		"\u0000\u0000_`\u0005\u0010\u0000\u0000`b\u0006\f\uffff\uffff\u0000a^\u0001"+
-		"\u0000\u0000\u0000ab\u0001\u0000\u0000\u0000b\u0019\u0001\u0000\u0000"+
-		"\u0000cd\u0005\u000e\u0000\u0000de\u0005\u0017\u0000\u0000ef\u0006\r\uffff"+
-		"\uffff\u0000f\u001b\u0001\u0000\u0000\u0000gh\u0003\u0002\u0001\u0000"+
-		"hi\u0006\u000e\uffff\uffff\u0000ij\u0003\u0004\u0002\u0000j\u008c\u0006"+
-		"\u000e\uffff\uffff\u0000kl\u0003\u0006\u0003\u0000lm\u0006\u000e\uffff"+
-		"\uffff\u0000m\u008d\u0001\u0000\u0000\u0000no\u0003\b\u0004\u0000op\u0006"+
-		"\u000e\uffff\uffff\u0000p\u008d\u0001\u0000\u0000\u0000qr\u0003\n\u0005"+
-		"\u0000rs\u0006\u000e\uffff\uffff\u0000s\u008d\u0001\u0000\u0000\u0000"+
-		"tu\u0003\f\u0006\u0000uv\u0006\u000e\uffff\uffff\u0000v\u008d\u0001\u0000"+
-		"\u0000\u0000wx\u0003\u000e\u0007\u0000xy\u0006\u000e\uffff\uffff\u0000"+
-		"y\u008d\u0001\u0000\u0000\u0000z{\u0003\u0010\b\u0000{|\u0006\u000e\uffff"+
-		"\uffff\u0000|\u008d\u0001\u0000\u0000\u0000}~\u0003\u0012\t\u0000~\u007f"+
-		"\u0006\u000e\uffff\uffff\u0000\u007f\u008d\u0001\u0000\u0000\u0000\u0080"+
-		"\u0081\u0003\u0014\n\u0000\u0081\u0082\u0006\u000e\uffff\uffff\u0000\u0082"+
-		"\u008d\u0001\u0000\u0000\u0000\u0083\u0084\u0003\u0016\u000b\u0000\u0084"+
-		"\u0085\u0006\u000e\uffff\uffff\u0000\u0085\u008d\u0001\u0000\u0000\u0000"+
-		"\u0086\u0087\u0003\u0018\f\u0000\u0087\u0088\u0006\u000e\uffff\uffff\u0000"+
-		"\u0088\u008d\u0001\u0000\u0000\u0000\u0089\u008a\u0003\u001a\r\u0000\u008a"+
-		"\u008b\u0006\u000e\uffff\uffff\u0000\u008b\u008d\u0001\u0000\u0000\u0000"+
-		"\u008ck\u0001\u0000\u0000\u0000\u008cn\u0001\u0000\u0000\u0000\u008cq"+
-		"\u0001\u0000\u0000\u0000\u008ct\u0001\u0000\u0000\u0000\u008cw\u0001\u0000"+
-		"\u0000\u0000\u008cz\u0001\u0000\u0000\u0000\u008c}\u0001\u0000\u0000\u0000"+
-		"\u008c\u0080\u0001\u0000\u0000\u0000\u008c\u0083\u0001\u0000\u0000\u0000"+
-		"\u008c\u0086\u0001\u0000\u0000\u0000\u008c\u0089\u0001\u0000\u0000\u0000"+
-		"\u008d\u008e\u0001\u0000\u0000\u0000\u008e\u008c\u0001\u0000\u0000\u0000"+
-		"\u008e\u008f\u0001\u0000\u0000\u0000\u008f\u001d\u0001\u0000\u0000\u0000"+
-		"\u0090\u0091\u0003\u0000\u0000\u0000\u0091\u0095\u0006\u000f\uffff\uffff"+
-		"\u0000\u0092\u0093\u0003\u001c\u000e\u0000\u0093\u0094\u0006\u000f\uffff"+
-		"\uffff\u0000\u0094\u0096\u0001\u0000\u0000\u0000\u0095\u0092\u0001\u0000"+
-		"\u0000\u0000\u0096\u0097\u0001\u0000\u0000\u0000\u0097\u0095\u0001\u0000"+
-		"\u0000\u0000\u0097\u0098\u0001\u0000\u0000\u0000\u0098\u0099\u0001\u0000"+
-		"\u0000\u0000\u0099\u009a\u0005\u0000\u0000\u0001\u009a\u001f\u0001\u0000"+
-		"\u0000\u0000\u0005Ya\u008c\u008e\u0097";
+		"\u0002\f\u0007\f\u0002\r\u0007\r\u0002\u000e\u0007\u000e\u0001\u0000\u0001"+
+		"\u0000\u0001\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0001\u0001\u0001"+
+		"\u0001\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0003\u0001"+
+		"\u0003\u0001\u0003\u0001\u0003\u0001\u0004\u0001\u0004\u0001\u0004\u0001"+
+		"\u0004\u0001\u0005\u0001\u0005\u0001\u0005\u0001\u0005\u0001\u0006\u0001"+
+		"\u0006\u0001\u0006\u0001\u0006\u0001\u0007\u0001\u0007\u0001\u0007\u0001"+
+		"\u0007\u0001\u0007\u0001\u0007\u0001\b\u0001\b\u0001\b\u0001\b\u0001\t"+
+		"\u0001\t\u0001\t\u0001\t\u0001\n\u0001\n\u0001\n\u0001\n\u0001\u000b\u0001"+
+		"\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0003"+
+		"\u000bT\b\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001"+
+		"\u000b\u0001\u000b\u0003\u000b\\\b\u000b\u0001\f\u0001\f\u0001\f\u0001"+
+		"\f\u0001\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001"+
+		"\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001"+
+		"\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001"+
+		"\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001"+
+		"\r\u0001\r\u0004\r\u0087\b\r\u000b\r\f\r\u0088\u0001\u000e\u0001\u000e"+
+		"\u0001\u000e\u0004\u000e\u008e\b\u000e\u000b\u000e\f\u000e\u008f\u0001"+
+		"\u000e\u0001\u000e\u0001\u000e\u0000\u0000\u000f\u0000\u0002\u0004\u0006"+
+		"\b\n\f\u000e\u0010\u0012\u0014\u0016\u0018\u001a\u001c\u0000\u0000\u0092"+
+		"\u0000\u001e\u0001\u0000\u0000\u0000\u0002\"\u0001\u0000\u0000\u0000\u0004"+
+		"&\u0001\u0000\u0000\u0000\u0006*\u0001\u0000\u0000\u0000\b.\u0001\u0000"+
+		"\u0000\u0000\n2\u0001\u0000\u0000\u0000\f6\u0001\u0000\u0000\u0000\u000e"+
+		":\u0001\u0000\u0000\u0000\u0010@\u0001\u0000\u0000\u0000\u0012D\u0001"+
+		"\u0000\u0000\u0000\u0014H\u0001\u0000\u0000\u0000\u0016L\u0001\u0000\u0000"+
+		"\u0000\u0018]\u0001\u0000\u0000\u0000\u001aa\u0001\u0000\u0000\u0000\u001c"+
+		"\u008d\u0001\u0000\u0000\u0000\u001e\u001f\u0005\u0001\u0000\u0000\u001f"+
+		" \u0005\u0016\u0000\u0000 !\u0006\u0000\uffff\uffff\u0000!\u0001\u0001"+
+		"\u0000\u0000\u0000\"#\u0005\u0002\u0000\u0000#$\u0005\u0012\u0000\u0000"+
+		"$%\u0006\u0001\uffff\uffff\u0000%\u0003\u0001\u0000\u0000\u0000&\'\u0005"+
+		"\u0003\u0000\u0000\'(\u0005\u0016\u0000\u0000()\u0006\u0002\uffff\uffff"+
+		"\u0000)\u0005\u0001\u0000\u0000\u0000*+\u0005\u0004\u0000\u0000+,\u0005"+
+		"\u0016\u0000\u0000,-\u0006\u0003\uffff\uffff\u0000-\u0007\u0001\u0000"+
+		"\u0000\u0000./\u0005\u0005\u0000\u0000/0\u0005\u0013\u0000\u000001\u0006"+
+		"\u0004\uffff\uffff\u00001\t\u0001\u0000\u0000\u000023\u0005\u0006\u0000"+
+		"\u000034\u0005\u000f\u0000\u000045\u0006\u0005\uffff\uffff\u00005\u000b"+
+		"\u0001\u0000\u0000\u000067\u0005\u0007\u0000\u000078\u0005\u000f\u0000"+
+		"\u000089\u0006\u0006\uffff\uffff\u00009\r\u0001\u0000\u0000\u0000:;\u0005"+
+		"\b\u0000\u0000;<\u0005\u0019\u0000\u0000<=\u0005\u001a\u0000\u0000=>\u0005"+
+		"\u0018\u0000\u0000>?\u0006\u0007\uffff\uffff\u0000?\u000f\u0001\u0000"+
+		"\u0000\u0000@A\u0005\t\u0000\u0000AB\u0005\u0012\u0000\u0000BC\u0006\b"+
+		"\uffff\uffff\u0000C\u0011\u0001\u0000\u0000\u0000DE\u0005\n\u0000\u0000"+
+		"EF\u0005\u0012\u0000\u0000FG\u0006\t\uffff\uffff\u0000G\u0013\u0001\u0000"+
+		"\u0000\u0000HI\u0005\u000b\u0000\u0000IJ\u0005\u0016\u0000\u0000JK\u0006"+
+		"\n\uffff\uffff\u0000K\u0015\u0001\u0000\u0000\u0000LM\u0005\f\u0000\u0000"+
+		"MN\u0005\u0012\u0000\u0000NS\u0006\u000b\uffff\uffff\u0000OP\u0005\u0010"+
+		"\u0000\u0000PQ\u0005\u0013\u0000\u0000QR\u0005\u0011\u0000\u0000RT\u0006"+
+		"\u000b\uffff\uffff\u0000SO\u0001\u0000\u0000\u0000ST\u0001\u0000\u0000"+
+		"\u0000TU\u0001\u0000\u0000\u0000UV\u0005\u000e\u0000\u0000VW\u0005\u000f"+
+		"\u0000\u0000W[\u0006\u000b\uffff\uffff\u0000XY\u0005\u000e\u0000\u0000"+
+		"YZ\u0005\u000f\u0000\u0000Z\\\u0006\u000b\uffff\uffff\u0000[X\u0001\u0000"+
+		"\u0000\u0000[\\\u0001\u0000\u0000\u0000\\\u0017\u0001\u0000\u0000\u0000"+
+		"]^\u0005\r\u0000\u0000^_\u0005\u0016\u0000\u0000_`\u0006\f\uffff\uffff"+
+		"\u0000`\u0019\u0001\u0000\u0000\u0000ab\u0003\u0000\u0000\u0000bc\u0006"+
+		"\r\uffff\uffff\u0000cd\u0003\u0002\u0001\u0000d\u0086\u0006\r\uffff\uffff"+
+		"\u0000ef\u0003\u0004\u0002\u0000fg\u0006\r\uffff\uffff\u0000g\u0087\u0001"+
+		"\u0000\u0000\u0000hi\u0003\u0006\u0003\u0000ij\u0006\r\uffff\uffff\u0000"+
+		"j\u0087\u0001\u0000\u0000\u0000kl\u0003\b\u0004\u0000lm\u0006\r\uffff"+
+		"\uffff\u0000m\u0087\u0001\u0000\u0000\u0000no\u0003\n\u0005\u0000op\u0006"+
+		"\r\uffff\uffff\u0000p\u0087\u0001\u0000\u0000\u0000qr\u0003\f\u0006\u0000"+
+		"rs\u0006\r\uffff\uffff\u0000s\u0087\u0001\u0000\u0000\u0000tu\u0003\u000e"+
+		"\u0007\u0000uv\u0006\r\uffff\uffff\u0000v\u0087\u0001\u0000\u0000\u0000"+
+		"wx\u0003\u0010\b\u0000xy\u0006\r\uffff\uffff\u0000y\u0087\u0001\u0000"+
+		"\u0000\u0000z{\u0003\u0012\t\u0000{|\u0006\r\uffff\uffff\u0000|\u0087"+
+		"\u0001\u0000\u0000\u0000}~\u0003\u0014\n\u0000~\u007f\u0006\r\uffff\uffff"+
+		"\u0000\u007f\u0087\u0001\u0000\u0000\u0000\u0080\u0081\u0003\u0016\u000b"+
+		"\u0000\u0081\u0082\u0006\r\uffff\uffff\u0000\u0082\u0087\u0001\u0000\u0000"+
+		"\u0000\u0083\u0084\u0003\u0018\f\u0000\u0084\u0085\u0006\r\uffff\uffff"+
+		"\u0000\u0085\u0087\u0001\u0000\u0000\u0000\u0086e\u0001\u0000\u0000\u0000"+
+		"\u0086h\u0001\u0000\u0000\u0000\u0086k\u0001\u0000\u0000\u0000\u0086n"+
+		"\u0001\u0000\u0000\u0000\u0086q\u0001\u0000\u0000\u0000\u0086t\u0001\u0000"+
+		"\u0000\u0000\u0086w\u0001\u0000\u0000\u0000\u0086z\u0001\u0000\u0000\u0000"+
+		"\u0086}\u0001\u0000\u0000\u0000\u0086\u0080\u0001\u0000\u0000\u0000\u0086"+
+		"\u0083\u0001\u0000\u0000\u0000\u0087\u0088\u0001\u0000\u0000\u0000\u0088"+
+		"\u0086\u0001\u0000\u0000\u0000\u0088\u0089\u0001\u0000\u0000\u0000\u0089"+
+		"\u001b\u0001\u0000\u0000\u0000\u008a\u008b\u0003\u001a\r\u0000\u008b\u008c"+
+		"\u0006\u000e\uffff\uffff\u0000\u008c\u008e\u0001\u0000\u0000\u0000\u008d"+
+		"\u008a\u0001\u0000\u0000\u0000\u008e\u008f\u0001\u0000\u0000\u0000\u008f"+
+		"\u008d\u0001\u0000\u0000\u0000\u008f\u0090\u0001\u0000\u0000\u0000\u0090"+
+		"\u0091\u0001\u0000\u0000\u0000\u0091\u0092\u0005\u0000\u0000\u0001\u0092"+
+		"\u001d\u0001\u0000\u0000\u0000\u0005S[\u0086\u0088\u008f";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

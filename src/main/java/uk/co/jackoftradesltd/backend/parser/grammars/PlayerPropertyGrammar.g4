@@ -66,13 +66,6 @@ options { tokenVocab = PlayerPropertyLexer; }
     import java.util.List;
 }
 
-recordCount
-        returns[String count]
-        :   RECORD_COUNT INTEGER {
-                $count = $INTEGER.getText();
-            }
-        ;
-
 type
         returns[String propertyType, int lineNo]
         :   TYPE TYPE_VALUE {
@@ -177,12 +170,11 @@ property
 
 // Top-level rule: the whole file is one or more property records.
 file
-        returns[List<PlayerPropertyParseRecord> properties, String declaredRecords]
+        returns[List<PlayerPropertyParseRecord> properties]
         @init {
             $properties = new ArrayList<>();
         }
-        :   recordCount { $declaredRecords = $recordCount.count; }
-            (property {
+        :   (property {
                 $properties.add($property.playerProp);
             })+ EOF
         ;

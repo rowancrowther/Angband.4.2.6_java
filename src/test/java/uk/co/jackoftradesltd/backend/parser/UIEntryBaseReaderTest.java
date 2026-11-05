@@ -17,9 +17,11 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.channel.utils.combiners.CombinerName;
 import uk.co.jackoftradesltd.frontend.entries.UIEntry;
@@ -43,15 +45,19 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@link UIEntryBaseAssembler} → {@code TEMPLATE_ONLY}
  * {@link UIEntry} objects, wrapped in a {@link ParseResult}.
  *
- * <p>These drive real fixtures through the whole chain and exercise both error channels:
+ * <p>These drive real fixtures through the whole chain. Every error stops the load, as C's
+ * {@code run_parser()} quits on the first one:
  * <ul>
- *   <li><b>hard</b> grammar/lex errors, caught by {@code ParseErrors} - fail-closed: empty list +
- *       collected errors (missing {@code record-count} header, a record missing a mandatory field);</li>
- *   <li><b>soft</b> interpretation/validation errors, appended while partial results survive
- *       (unknown {@code renderer}, {@code record-count} mismatch).</li>
+ *   <li>a grammar or lexer error (a record missing a mandatory field) is thrown as a
+ *       {@link ParseCancellationException};</li>
+ *   <li>a record the assembler refuses (an unknown {@code renderer}, an illegal {@code combine})
+ *       is thrown as a {@link DataFileParseException}, at the first bad record.</li>
  * </ul>
  * The renderer registry the assembler resolves against is seeded via reflection (see
  * {@link UIEntryBaseAssemblerTest} for the same rationale).
+ *
+ * <p>Class UIEntryBaseReaderTest coded before 261104, updated on 261104 for the removal of the
+ * soft-error path and the {@code record-count:} header.
  *
  * @author Rowan Crowther
  */
@@ -91,7 +97,6 @@ class UIEntryBaseReaderTest {
     void cleanLoadOfTheRealFileResolvesAllTemplates() throws IOException {
         ParseResult<UIEntry> result = new UIEntryBaseReader().parseWithResults(REAL_FILE);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(3, result.items().size());
 
         UIEntry first = result.items().get(0);
@@ -104,83 +109,57 @@ class UIEntryBaseReaderTest {
         assertEquals(CombinerName.ADD, last.getCombineType());
     }
 
-    // ---- soft errors (partial results survive) ----------------------------------------------
+    // ---- assembler errors ---------------------------------------------------------------------
 
+    /**
+     * An unknown renderer stops the load, naming the renderer.
+     *
+     * <p>Function unknownRendererStopsTheLoad coded on 261104, commented in full on 261104. It
+     * replaces unknownRendererIsLoggedAndRecordSkipped.
+     */
     @Test
-    void recordCountMismatchIsLoggedButValidRecordSurvives() throws IOException {
-        // Header over-declares (5) vs one actual record; the record itself is valid and comes through.
-        String path = tempFile("bad-count.txt",
-                "record-count:5\n" + record("x", "char_screen1_flag_renderer", "LOGICAL_OR"));
-
-        ParseResult<UIEntry> result = new UIEntryBaseReader().parseWithResults(path);
-
-        assertEquals(1, result.items().size());
-        assertTrue(result.errors().stream()
-                        .anyMatch(e -> e.contains("declares 5") && e.contains("contains 1")),
-                result.errors()::toString);
-    }
-
-    @Test
-    void unknownRendererIsLoggedAndRecordSkipped() throws IOException {
+    void unknownRendererStopsTheLoad() throws IOException {
         String path = tempFile("bad-renderer.txt",
-                "record-count:1\n" + record("x", "no_such_renderer", "LOGICAL_OR"));
+                record("x", "no_such_renderer", "LOGICAL_OR"));
 
-        ParseResult<UIEntry> result = new UIEntryBaseReader().parseWithResults(path);
+        DataFileParseException thrown =
+                assertThrows(DataFileParseException.class, () -> new UIEntryBaseReader().parseWithResults(path));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("no_such_renderer")),
-                result.errors()::toString);
+        assertTrue(thrown.getMessage().contains("no_such_renderer"), thrown.getMessage());
     }
 
-    // ---- hard errors (fail-closed: empty list) ----------------------------------------------
-
-    @Test
-    void missingRecordCountHeaderFailsClosed() throws IOException {
-        // No record-count directive -> the file rule can't match -> grammar error via ParseErrors.
-        String path = tempFile("no-header.txt", record("x", "char_screen1_flag_renderer", "LOGICAL_OR"));
-
-        ParseResult<UIEntry> result = new UIEntryBaseReader().parseWithResults(path);
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
-    }
+    // ---- grammar errors -----------------------------------------------------------------------
 
     @Test
     void recordMissingMandatoryDescFailsClosed() throws IOException {
         // desc: is mandatory; a record that stops after flags cannot complete the fixed sequence.
         String path = tempFile("no-desc.txt",
-                "record-count:1\nname:x\nrenderer:char_screen1_flag_renderer\ncombine:LOGICAL_OR\n"
+                "name:x\nrenderer:char_screen1_flag_renderer\ncombine:LOGICAL_OR\n"
                         + "category:CHAR_SCREEN1\nflags:TIMED_AS_AUX\n");
 
-        ParseResult<UIEntry> result = new UIEntryBaseReader().parseWithResults(path);
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
+        assertThrows(ParseCancellationException.class, () -> new UIEntryBaseReader().parseWithResults(path));
     }
 
     // ---- several distinct failures at once ---------------------------------------------------
 
+    /**
+     * With two bad records among good ones, the load stops at the first bad one, the unknown
+     * renderer, and the later illegal {@code combine} is never reached.
+     *
+     * <p>Function theFirstOfSeveralFailuresStopsTheLoad coded on 261104, commented in full on 261104.
+     * It replaces multipleDistinctFailuresAreLoggedAndGoodRecordsSurvive.
+     */
     @Test
-    void multipleDistinctFailuresAreLoggedAndGoodRecordsSurvive() throws IOException {
-        // Four records: valid, unknown-renderer, invalid-combine, valid. record-count matches the raw
-        // count (4), so the only errors are the two semantic ones - both valid records survive in order.
-        String path = tempFile("mixed.txt", "record-count:4\n"
-                + record("good_first", "char_screen1_flag_renderer", "LOGICAL_OR")
+    void theFirstOfSeveralFailuresStopsTheLoad() throws IOException {
+        String path = tempFile("mixed.txt", record("good_first", "char_screen1_flag_renderer", "LOGICAL_OR")
                 + record("bad_renderer", "no_such_renderer", "LOGICAL_OR")
                 + record("bad_combine", "char_screen1_flag_renderer", "BOGUS")
                 + record("good_last", "char_screen1_numeric_as_sign_renderer", "ADD"));
 
-        ParseResult<UIEntry> result = new UIEntryBaseReader().parseWithResults(path);
+        DataFileParseException thrown =
+                assertThrows(DataFileParseException.class, () -> new UIEntryBaseReader().parseWithResults(path));
 
-        List<UIEntry> items = result.items();
-        assertEquals(2, items.size(), items::toString);
-        assertEquals("good_first", items.get(0).getName());
-        assertEquals("good_last", items.get(1).getName());
-
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("no_such_renderer")),
-                result.errors()::toString);
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("Illegal combine name")),
-                result.errors()::toString);
+        assertTrue(thrown.getMessage().contains("no_such_renderer"), thrown.getMessage());
+        assertFalse(thrown.getMessage().contains("BOGUS"), thrown.getMessage());
     }
 }

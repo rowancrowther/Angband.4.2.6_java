@@ -14,10 +14,6 @@ lexer grammar PlayerTimedLexer;
 
 import CommentsAndEol, Flags, Colours;
 
-RECORD_COUNT
-        :   'record-count:'
-        ;
-
 NAME
         :   'name:' -> pushMode(FLAG_MODE)
         ;

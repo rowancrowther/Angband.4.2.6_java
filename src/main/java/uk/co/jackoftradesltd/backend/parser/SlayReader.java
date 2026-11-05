@@ -66,13 +66,14 @@ import java.util.List;
  * comes last. It matters wherever two slays are equivalent and the first is kept, such as
  * {@code Rune.initRunes}.
  * <p>
+ * As in C, the first error stops the load and nothing is returned: a syntax error is thrown from
+ * {@link #extract} as a {@code ParseCancellationException}, and a record the assembler refuses (an
+ * unknown race flag or monster base, both or neither of them, a number too large for an int) is
+ * thrown as a {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}. Neither is
+ * caught here.
+ * <p>
  * Differences from C worth knowing about:
  * <ul>
- *   <li>The {@code record-count:} header is a Java-only addition, checked as a soft error; the
- *       upstream {@code slay.txt} has no such line, and this repository's copy adds it.</li>
- *   <li>C stops at the first parse error. Here a syntax error is fatal and returns no items, but an
- *       assembler error (an unknown race flag or monster base, both or neither of them, a number too
- *       large for an int) skips only the offending record and the rest still load.</li>
  *   <li>C takes the directives in any order, leaves any of them out, and lets a repeated one
  *       overwrite. The grammar takes them in any order and a repeat keeps the last value, but a
  *       directive left out is read as empty text, which the assembler rejects for the three numbers
@@ -86,34 +87,35 @@ import java.util.List;
  *       customised copy in the user directory first.</li>
  * </ul>
  *
- * <p>Class SlayReader coded before 260915, commented in full on 261017.
+ * <p>Class SlayReader coded before 260915, commented in full on 261017, updated on 261105 for the
+ * removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
 public class SlayReader implements Reader<Slay> {
     /**
      * Logger handed to {@link GrammarDriver#run} so that an {@link IOException} while reading
-     * {@code slay.txt} is logged under this reader's name before it is rethrown. Syntax and soft
-     * errors do not go through it; they travel in the {@link ParseResult}.
+     * {@code slay.txt} is logged under this reader's name before it is rethrown. Syntax and
+     * assembler errors do not go through it; they are thrown unlogged to the caller.
      *
-     * <p>Field logger coded before 260915, commented in full on 261017.
+     * <p>Field logger coded before 260915, commented in full on 261017, updated on 261105 for the
+     * removal of the soft-error path.
      */
     private static final Logger logger = LogManager.getLogger();
 
     /**
      * Parse the given file and return just the assembled slays, in C's order (the reverse of the
-     * file's, see the class block), discarding the soft-error channel (use
-     * {@link #parseWithResults} to inspect the errors). Satisfies the {@link Reader} contract.
+     * file's, see the class block), unwrapped from the {@link ParseResult} that
+     * {@link #parseWithResults} gives. Satisfies the {@link Reader} contract.
      * <p>
-     * Because the errors are dropped, a syntax error and a clean empty file are indistinguishable
-     * here: both give an empty list, and a record skipped for an unknown race flag or base just goes
-     * missing. Callers that must tell a partial or failed load from a clean one have to use
-     * {@link #parseWithResults}.
+     * A syntax error or a refused record throws, exactly as in {@link #parseWithResults}, so an
+     * empty list only ever means a clean file with no records.
      *
-     * <p>Function parse coded before 260915, commented in full on 261017.
+     * <p>Function parse coded before 260915, commented in full on 261017, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param filename the slay data file to read
-     * @return the assembled {@link Slay} list (empty if the parse failed closed)
+     * @return every {@link Slay} in the file, in C's order
      * @throws IOException if the file cannot be read
      */
     @Override
@@ -123,67 +125,56 @@ public class SlayReader implements Reader<Slay> {
 
     /**
      * The {@link GrammarDriver.Extractor} for this grammar: run the parser's {@code file} entry
-     * rule, fail closed on any hard lexer/parser error, validate the {@code record-count:} header,
-     * and hand back the raw {@link SlayParseRecord}s, still holding unresolved text.
+     * rule, fail closed on any hard lexer/parser error, and hand back the raw
+     * {@link SlayParseRecord}s, still holding unresolved text.
      * <p>
      * Ordering matters: {@link ParseErrors#throwIfAny()} must fire <em>after</em> the parse but
      * <em>before</em> the records are used, so a malformed file aborts with a
-     * {@code ParseCancellationException} here rather than reaching the assembler, and a half-built
-     * record list is never measured against the declared count to produce a second, misleading
-     * error. That covers the cases where C returns a parser error too: a directive before any
-     * {@code code:} line (C's {@code PARSE_ERROR_MISSING_RECORD_HEADER}) and a numeric directive
-     * with no number. The header check is soft - {@link GrammarDriver#checkRecordCount} only appends
-     * to {@code errors}, so a miscount never discards the records that did parse.
+     * {@code ParseCancellationException} here rather than reaching the assembler. That covers the
+     * cases where C returns a parser error too: a directive before any {@code code:} line (C's
+     * {@code PARSE_ERROR_MISSING_RECORD_HEADER}) and a numeric directive with no number.
      * <p>
      * The records stay in file order here. The reversal into C's order is done later, by
      * {@link SlayAssembler}. The copy at the end detaches the result from the parse tree, so the
      * returned list is the caller's to keep.
      *
      * <p>Function extract commented in full before 260915, provenance stamp added on 260915,
-     * commented in full again on 261017.
+     * commented in full again on 261017, updated on 261105 for the removal of the soft-error path
+     * and the {@code record-count:} header.
      *
      * @param parser       the generated Slay parser
      * @param errorCatcher the live hard-error collector installed by the driver
-     * @param errors       the soft-error sink, mutated in place
      * @return the parsed {@link SlayParseRecord}s in file order
      */
-    @Contract("_, _, _ -> new")
+    @Contract("_, _ -> new")
     private static @NotNull List<SlayParseRecord> extract(
             @NotNull SlayGrammar parser,
-            @NotNull ParseErrors errorCatcher,
-            @NotNull List<String> errors) {
+            @NotNull ParseErrors errorCatcher) {
         SlayGrammar.FileContext output = parser.file();
         List<SlayParseRecord> results = output.records;
         errorCatcher.throwIfAny();
-
-        String declaredRecordCount = output.declaredRecordCount;
-        GrammarDriver.checkRecordCount(declaredRecordCount, results.size(), errors);
 
         return new ArrayList<>(results);
     }
 
     /**
-     * Parse the given file, returning both the assembled {@link Slay} list (in C's order, the
-     * reverse of the file's) and any soft errors gathered along the way, for callers that need to
-     * tell a clean load from a partial one.
+     * Parse the given file, returning the assembled {@link Slay} list (in C's order, the reverse of
+     * the file's) wrapped in a {@link ParseResult}.
      * <p>
      * This is the Java counterpart of {@code run_parse_slay} and the {@code parse_slay_*} handlers
      * in {@code obj-init.c}: it wires {@code SlayLexer}, {@code SlayGrammar}, {@link #extract} and
-     * {@link SlayAssembler} into {@link GrammarDriver#run}. A syntax error returns no items and the
-     * collected messages; an unresolved race flag or monster base, a record naming both or neither,
-     * or a {@code record-count:} mismatch leaves the good records in the result alongside the
-     * messages, so the list can be short without anything having been thrown. C would have stopped
-     * at the first of any of these. An unreadable file is not a result at all but an
-     * {@link IOException}, the analogue of {@code parse_file_quit_not_found}'s {@code quit()}.
-     * <p>
-     * This is the variant callers should prefer: {@code ObjectDataLoader.loadSlays} gates on the
-     * errors for exactly that reason.
+     * {@link SlayAssembler} into {@link GrammarDriver#run}. As C stops at the first error, so does
+     * this: a syntax error throws a {@code ParseCancellationException}, and an unresolved race flag
+     * or monster base, or a record naming both or neither, throws a
+     * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}, and no result is
+     * returned. An unreadable file is an {@link IOException}, the analogue of
+     * {@code parse_file_quit_not_found}'s {@code quit()}.
      *
      * <p>Function parseWithResults commented in full before 260915, provenance stamp added on 260915,
-     * commented in full again on 261017.
+     * commented in full again on 261017, updated on 261105 for the removal of the soft-error path.
      *
      * @param filename the slay data file to read
-     * @return a {@link ParseResult} of the assembled slays plus any soft errors
+     * @return every slay in the file, in C's order
      * @throws IOException if the file cannot be read
      */
     public @NotNull ParseResult<Slay> parseWithResults(@NotNull String filename) throws IOException {

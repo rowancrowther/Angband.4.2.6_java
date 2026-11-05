@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from RealmGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/RealmGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.realm;
 
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
@@ -25,70 +25,49 @@ import org.antlr.v4.runtime.tree.ParseTreeVisitor;
  * by {@link RealmGrammar}.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
- *            operations with no return type.
+ * operations with no return type.
  */
 public interface RealmGrammarVisitor<T> extends ParseTreeVisitor<T> {
-    /**
-     * Visit a parse tree produced by {@link RealmGrammar#recordCount}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitRecordCount(RealmGrammar.RecordCountContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link RealmGrammar#name}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitName(RealmGrammar.NameContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link RealmGrammar#stat}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitStat(RealmGrammar.StatContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link RealmGrammar#verb}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitVerb(RealmGrammar.VerbContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link RealmGrammar#spellNoun}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitSpellNoun(RealmGrammar.SpellNounContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link RealmGrammar#bookNoun}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitBookNoun(RealmGrammar.BookNounContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link RealmGrammar#realm}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitRealm(RealmGrammar.RealmContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link RealmGrammar#file}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitFile(RealmGrammar.FileContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link RealmGrammar#name}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitName(RealmGrammar.NameContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link RealmGrammar#stat}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitStat(RealmGrammar.StatContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link RealmGrammar#verb}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitVerb(RealmGrammar.VerbContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link RealmGrammar#spellNoun}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitSpellNoun(RealmGrammar.SpellNounContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link RealmGrammar#bookNoun}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitBookNoun(RealmGrammar.BookNounContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link RealmGrammar#realm}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitRealm(RealmGrammar.RealmContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link RealmGrammar#file}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFile(RealmGrammar.FileContext ctx);
 }

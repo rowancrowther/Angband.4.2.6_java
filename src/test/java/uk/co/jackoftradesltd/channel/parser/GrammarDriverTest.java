@@ -17,125 +17,126 @@
 
 package uk.co.jackoftradesltd.channel.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import uk.co.jackoftradesltd.backend.parser.grammars.activations.ActivationsGrammar;
 import uk.co.jackoftradesltd.backend.parser.grammars.activations.ActivationsLexer;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for {@link GrammarDriver}.
+ * Unit tests for {@link GrammarDriver#run}.
  *
- * <p>Two groups of behaviour are exercised:
+ * <p>{@code run} has no single C original; it stands in for the parse-then-finish sequence of
+ * {@code run_parser()} ({@code datafile.c}), which quits on the first error. The tests pin the
+ * one rule that follows from that: every failure leaves {@code run} as an exception, and a
+ * {@link ParseResult} is only built for a clean file. The extractor and assembler here are
+ * test doubles, so the tests are about the driver's plumbing rather than any one grammar:
  * <ul>
- *   <li>{@link GrammarDriver#checkRecordCount}, driven directly with hand-picked
- *       {@code declared}/{@code actual} pairs. This method has no C original - the
- *       {@code record-count} header is a Java-only addition to this port's grammars, per its
- *       Javadoc - so the expected values are derived from the method's own documented contract
- *       rather than from the C source. The 260915 sentinel-collision fix (a declared {@code "-1"}
- *       silently treated as "no count declared") and the earlier double-error regression it
- *       briefly introduced are both covered directly;</li>
- *   <li>{@link GrammarDriver#run}'s file-not-found branch, which the per-grammar reader test
- *       suites (e.g. {@code ActivationReaderTest}) don't cover, since they only ever pass real
- *       or temp-written files. {@code run}'s other branches (clean parse, hard grammar error,
- *       soft record-count mismatch riding out with partial results) are already exercised end to
- *       end by those reader suites and are not duplicated here.</li>
+ *   <li>a clean run hands the extractor's records to the assembler and wraps its list;</li>
+ *   <li>a grammar error raised through {@link ParseErrors#throwIfAny()} inside the extractor
+ *       propagates as a {@link ParseCancellationException}, and the assembler never runs;</li>
+ *   <li>a {@link DataFileParseException} from the assembler propagates unchanged;</li>
+ *   <li>a missing file is an {@link IOException}, and neither callback runs.</li>
  * </ul>
  *
  * @author Rowan Crowther
  *
- * <p>Class GrammarDriverTest coded on 260915, commented in full on 260915.
+ * <p>Class GrammarDriverTest coded on 260915, commented in full on 260915, rewritten on 261104
+ * for the removal of the soft-error path and of {@code checkRecordCount}.
  */
 class GrammarDriverTest {
 
     private static final Logger logger = LogManager.getLogger();
 
-    @Test
-    void matchingCountAddsNoError() {
-        List<String> errors = new ArrayList<>();
+    @TempDir
+    Path tempDir;
 
-        GrammarDriver.checkRecordCount("3", 3, errors);
-
-        assertTrue(errors.isEmpty(), errors.toString());
+    /**
+     * Writes a throwaway file for {@code run} to open. The test-double extractors never run the
+     * parser, so the content only has to exist.
+     *
+     * <p>Function anyFile coded on 261104, commented in full on 261104.
+     *
+     * @return the path of the written file
+     * @throws IOException if the temp file cannot be written
+     */
+    private String anyFile() throws IOException {
+        Path file = tempDir.resolve("any.txt");
+        Files.writeString(file, "");
+        return file.toString();
     }
 
     @Test
-    void mismatchedCountAddsOneError() {
-        List<String> errors = new ArrayList<>();
+    void aCleanRunWrapsTheAssemblersListInFileOrder() throws IOException {
+        GrammarDriver.Extractor<ActivationsGrammar, String> extractor = (parser, errorCatcher) -> {
+            errorCatcher.throwIfAny();
+            return List.of("first", "second");
+        };
+        Assembler<String, List<String>> assembler = (records, filename) ->
+                records.stream().map(String::toUpperCase).toList();
 
-        GrammarDriver.checkRecordCount("5", 1, errors);
+        ParseResult<String> result = GrammarDriver.run(anyFile(), ActivationsLexer::new,
+                ActivationsGrammar::new, extractor, assembler, logger);
 
-        assertEquals(1, errors.size());
-        String error = errors.get(0);
-        assertTrue(error.contains("declares 5"), error);
-        assertTrue(error.contains("contains 1"), error);
+        assertEquals(List.of("FIRST", "SECOND"), result.items());
     }
 
     @Test
-    void nonNumericDeclaredAddsExactlyOneFormatError() {
-        // Before the 260915 fix, a non-numeric header could add a second, fabricated
-        // "declares -1" mismatch line on top of the format error, since count fell back to a
-        // sentinel of -1 on the catch. The method now returns immediately after reporting the
-        // format problem, so only one error is ever added here.
-        List<String> errors = new ArrayList<>();
+    void aGrammarErrorPropagatesAndTheAssemblerNeverRuns() throws IOException {
+        // C: run_parser() quits on the first parser error, before finish_parse_* is called.
+        GrammarDriver.Extractor<ActivationsGrammar, String> extractor = (parser, errorCatcher) -> {
+            errorCatcher.add(1, "a bad line");
+            errorCatcher.throwIfAny();
+            return List.of("unreachable");
+        };
+        Assembler<String, List<String>> assembler = (records, filename) -> {
+            fail("assembler should not run after a grammar error");
+            return List.of();
+        };
+        String file = anyFile();
 
-        GrammarDriver.checkRecordCount("abc", 5, errors);
-
-        assertEquals(1, errors.size());
-        String error = errors.get(0);
-        assertTrue(error.contains("Invalid number format"), error);
-        assertTrue(error.contains("abc"), error);
+        assertThrows(ParseCancellationException.class, () -> GrammarDriver.run(file,
+                ActivationsLexer::new, ActivationsGrammar::new, extractor, assembler, logger));
     }
 
     @Test
-    void declaredNegativeOneIsTreatedAsARealMismatchNotASentinel() {
-        // Before the 260915 fix, count was pre-seeded to -1 as an "unset" sentinel, so a
-        // *parsed* declared value of -1 collided with it and the mismatch check was silently
-        // skipped even though a count was genuinely declared. actual is always >= 0 in
-        // production (it is a parsed-record List#size()), so declared="-1" can never
-        // legitimately match and must now be reported.
-        List<String> errors = new ArrayList<>();
+    void anAssemblerErrorPropagatesUnchanged() throws IOException {
+        // C: a non-zero finish_parse_* return makes run_parser() quit; here the assembler throws.
+        DataFileParseException thrown = new DataFileParseException("refused");
+        GrammarDriver.Extractor<ActivationsGrammar, String> extractor = (parser, errorCatcher) -> List.of("x");
+        Assembler<String, List<String>> assembler = (records, filename) -> {
+            throw thrown;
+        };
+        String file = anyFile();
 
-        GrammarDriver.checkRecordCount("-1", 5, errors);
-
-        assertEquals(1, errors.size());
-        String error = errors.get(0);
-        assertTrue(error.contains("declares -1"), error);
-        assertTrue(error.contains("contains 5"), error);
-    }
-
-    @Test
-    void declaredNegativeOneMatchingActualAddsNoError() {
-        // actual can't really be -1 in production, but this isolates the equality check
-        // itself: with the sentinel gone, count == actual is what governs the outcome, for
-        // any pair of values including -1.
-        List<String> errors = new ArrayList<>();
-
-        GrammarDriver.checkRecordCount("-1", -1, errors);
-
-        assertTrue(errors.isEmpty(), errors.toString());
+        DataFileParseException caught = assertThrows(DataFileParseException.class, () -> GrammarDriver.run(file,
+                ActivationsLexer::new, ActivationsGrammar::new, extractor, assembler, logger));
+        assertSame(thrown, caught);
     }
 
     @Test
     void runPropagatesIOExceptionForAMissingFile() {
-        GrammarDriver.Extractor<ActivationsGrammar, Object> extractor = (parser, errorCatcher, errs) -> {
+        GrammarDriver.Extractor<ActivationsGrammar, Object> extractor = (parser, errorCatcher) -> {
             fail("extractor should not run when the file cannot be opened");
             return List.of();
         };
-        Assembler<Object, List<Object>> assembler = (records, errs, filename) -> {
+        Assembler<Object, List<Object>> assembler = (records, filename) -> {
             fail("assembler should not run when the file cannot be opened");
             return List.of();
         };
 
         assertThrows(IOException.class, () -> GrammarDriver.run(
-                "no-such-file-should-exist.txt",
+                tempDir.resolve("no-such-file-should-exist.txt").toString(),
                 ActivationsLexer::new,
                 ActivationsGrammar::new,
                 extractor,

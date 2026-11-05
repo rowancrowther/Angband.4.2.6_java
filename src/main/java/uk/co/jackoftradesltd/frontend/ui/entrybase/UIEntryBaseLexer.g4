@@ -31,15 +31,10 @@ lexer grammar UIEntryBaseLexer;
 
 import CommentsAndEol, Flags;
 
-RECORD_COUNT
-        :   'record-count:'
-        ;
-
 /*
  * @author Rowan Crowther
  *
  * name directive
- * cf UIEntryGrammar.g4's 'recordCount' rule
  */
 NAME
         :   'name:'
@@ -65,10 +60,10 @@ DESC
         :   'desc:' -> pushMode(FREE_TEXT_MODE)
         ;
 
-// INTEGER is declared before LCASE deliberately. LCASE also admits digits, so a pure-digit token
-// (only the record-count: value) matches both rules at the same length; ANTLR's equal-length
-// tie-break favours the rule declared first, so INTEGER must precede LCASE or the record-count
-// header would lex as LCASE and the `recordCount: RECORD_COUNT INTEGER` rule could never match.
+// INTEGER is declared before LCASE. LCASE also admits digits, so a pure-digit token matches both
+// rules at the same length, and ANTLR's equal-length tie-break favours the rule declared first.
+// No UIEntryBaseGrammar rule has referenced INTEGER since the record-count: header was removed
+// (261104), so a pure-digit token is now a syntax error wherever it appears.
 // Mixed identifiers like good_flag_ui_compact_0 still win via longest-match on LCASE.
 INTEGER
         :   '-'? ('0'..'9')+

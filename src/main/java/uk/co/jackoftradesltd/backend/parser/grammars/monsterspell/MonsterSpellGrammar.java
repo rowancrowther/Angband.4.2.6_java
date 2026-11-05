@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from MonsterSpellGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/MonsterSpellGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.monsterspell;
 
 import org.antlr.v4.runtime.*;
@@ -41,50 +41,48 @@ public class MonsterSpellGrammar extends Parser {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		RECORD_COUNT=1, NAME=2, MSGT=3, HIT=4, POWER_CUTOFF=5, LORE=6, LORE_COLOUR_BASE=7, 
-		LORE_COLOUR_RESIST=8, LORE_COLOUR_IMMUNE=9, MESSAGE_SAVE=10, MESSAGE_VIS=11, 
-		MESSAGE_INVIS=12, MESSAGE_MISS=13, COMMENT=14, EOL=15, EFFECT=16, EFFECT_MESSAGE=17, 
-		DICE=18, TIME=19, EFFECT_YX=20, EXPR=21, COLON=22, UCASE=23, INTEGER=24, 
-		SIMPLE_DICE_STRING=25, COMPLEX_DICE_STRING=26, STRING=27, FREE_TEXT_EOL=28, 
-		FREE_TEXT=29, DICE_SIMPLE_VALUE=30, DICE_COMPLEX_VALUE=31, EXPR_CHAR=32, 
-		EXPR_COLON=33, EXPR_UCASE=34, EXPR_OP=35, EXPR_EOL=36;
+		NAME=1, MSGT=2, HIT=3, POWER_CUTOFF=4, LORE=5, LORE_COLOUR_BASE=6, LORE_COLOUR_RESIST=7, 
+		LORE_COLOUR_IMMUNE=8, MESSAGE_SAVE=9, MESSAGE_VIS=10, MESSAGE_INVIS=11, 
+		MESSAGE_MISS=12, COMMENT=13, EOL=14, EFFECT=15, EFFECT_MESSAGE=16, DICE=17, 
+		TIME=18, EFFECT_YX=19, EXPR=20, COLON=21, UCASE=22, INTEGER=23, SIMPLE_DICE_STRING=24, 
+		COMPLEX_DICE_STRING=25, STRING=26, FREE_TEXT_EOL=27, FREE_TEXT=28, DICE_SIMPLE_VALUE=29, 
+		DICE_COMPLEX_VALUE=30, EXPR_CHAR=31, EXPR_COLON=32, EXPR_UCASE=33, EXPR_OP=34, 
+		EXPR_EOL=35;
 	public static final int
-		RULE_recordCount = 0, RULE_name = 1, RULE_msgt = 2, RULE_hit = 3, RULE_powerCutoff = 4, 
-		RULE_lore = 5, RULE_loreColourBase = 6, RULE_loreColourResist = 7, RULE_loreColourImmune = 8, 
-		RULE_messageSave = 9, RULE_messageVis = 10, RULE_messageInvis = 11, RULE_messageMiss = 12, 
-		RULE_levelDirectives = 13, RULE_powerCutoffBlock = 14, RULE_monsterSpell = 15, 
-		RULE_file = 16, RULE_effect = 17, RULE_effectYX = 18, RULE_dice = 19, 
-		RULE_expr = 20, RULE_effectMsg = 21, RULE_time = 22, RULE_effectBlock = 23;
+		RULE_name = 0, RULE_msgt = 1, RULE_hit = 2, RULE_powerCutoff = 3, RULE_lore = 4, 
+		RULE_loreColourBase = 5, RULE_loreColourResist = 6, RULE_loreColourImmune = 7, 
+		RULE_messageSave = 8, RULE_messageVis = 9, RULE_messageInvis = 10, RULE_messageMiss = 11, 
+		RULE_levelDirectives = 12, RULE_powerCutoffBlock = 13, RULE_monsterSpell = 14, 
+		RULE_file = 15, RULE_effect = 16, RULE_effectYX = 17, RULE_dice = 18, 
+		RULE_expr = 19, RULE_effectMsg = 20, RULE_time = 21, RULE_effectBlock = 22;
 	private static String[] makeRuleNames() {
 		return new String[] {
-			"recordCount", "name", "msgt", "hit", "powerCutoff", "lore", "loreColourBase", 
-			"loreColourResist", "loreColourImmune", "messageSave", "messageVis", 
-			"messageInvis", "messageMiss", "levelDirectives", "powerCutoffBlock", 
-			"monsterSpell", "file", "effect", "effectYX", "dice", "expr", "effectMsg", 
-			"time", "effectBlock"
+			"name", "msgt", "hit", "powerCutoff", "lore", "loreColourBase", "loreColourResist", 
+			"loreColourImmune", "messageSave", "messageVis", "messageInvis", "messageMiss", 
+			"levelDirectives", "powerCutoffBlock", "monsterSpell", "file", "effect", 
+			"effectYX", "dice", "expr", "effectMsg", "time", "effectBlock"
 		};
 	}
 	public static final String[] ruleNames = makeRuleNames();
 
 	private static String[] makeLiteralNames() {
 		return new String[] {
-			null, "'record-count:'", "'name:'", "'msgt:'", "'hit:'", "'power-cutoff:'", 
-			"'lore:'", "'lore-color-base:'", "'lore-color-resist:'", "'lore-color-immune:'", 
-			"'message-save:'", "'message-vis:'", "'message-invis:'", "'message-miss:'", 
-			null, null, "'effect:'", "'effect-msg:'", "'dice:'", "'time:'", "'effect-yx:'", 
-			"'expr:'"
+			null, "'name:'", "'msgt:'", "'hit:'", "'power-cutoff:'", "'lore:'", "'lore-color-base:'", 
+			"'lore-color-resist:'", "'lore-color-immune:'", "'message-save:'", "'message-vis:'", 
+			"'message-invis:'", "'message-miss:'", null, null, "'effect:'", "'effect-msg:'", 
+			"'dice:'", "'time:'", "'effect-yx:'", "'expr:'"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
-			null, "RECORD_COUNT", "NAME", "MSGT", "HIT", "POWER_CUTOFF", "LORE", 
-			"LORE_COLOUR_BASE", "LORE_COLOUR_RESIST", "LORE_COLOUR_IMMUNE", "MESSAGE_SAVE", 
-			"MESSAGE_VIS", "MESSAGE_INVIS", "MESSAGE_MISS", "COMMENT", "EOL", "EFFECT", 
-			"EFFECT_MESSAGE", "DICE", "TIME", "EFFECT_YX", "EXPR", "COLON", "UCASE", 
-			"INTEGER", "SIMPLE_DICE_STRING", "COMPLEX_DICE_STRING", "STRING", "FREE_TEXT_EOL", 
-			"FREE_TEXT", "DICE_SIMPLE_VALUE", "DICE_COMPLEX_VALUE", "EXPR_CHAR", 
-			"EXPR_COLON", "EXPR_UCASE", "EXPR_OP", "EXPR_EOL"
+			null, "NAME", "MSGT", "HIT", "POWER_CUTOFF", "LORE", "LORE_COLOUR_BASE", 
+			"LORE_COLOUR_RESIST", "LORE_COLOUR_IMMUNE", "MESSAGE_SAVE", "MESSAGE_VIS", 
+			"MESSAGE_INVIS", "MESSAGE_MISS", "COMMENT", "EOL", "EFFECT", "EFFECT_MESSAGE", 
+			"DICE", "TIME", "EFFECT_YX", "EXPR", "COLON", "UCASE", "INTEGER", "SIMPLE_DICE_STRING", 
+			"COMPLEX_DICE_STRING", "STRING", "FREE_TEXT_EOL", "FREE_TEXT", "DICE_SIMPLE_VALUE", 
+			"DICE_COMPLEX_VALUE", "EXPR_CHAR", "EXPR_COLON", "EXPR_UCASE", "EXPR_OP", 
+			"EXPR_EOL"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -139,55 +137,6 @@ public class MonsterSpellGrammar extends Parser {
 	}
 
 	@SuppressWarnings("CheckReturnValue")
-	public static class RecordCountContext extends ParserRuleContext {
-		public String count;
-		public Token INTEGER;
-		public TerminalNode RECORD_COUNT() { return getToken(MonsterSpellGrammar.RECORD_COUNT, 0); }
-		public TerminalNode INTEGER() { return getToken(MonsterSpellGrammar.INTEGER, 0); }
-		public RecordCountContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-		@Override public int getRuleIndex() { return RULE_recordCount; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).enterRecordCount(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof MonsterSpellGrammarListener ) ((MonsterSpellGrammarListener)listener).exitRecordCount(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof MonsterSpellGrammarVisitor ) return ((MonsterSpellGrammarVisitor<? extends T>)visitor).visitRecordCount(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	public final RecordCountContext recordCount() throws RecognitionException {
-		RecordCountContext _localctx = new RecordCountContext(_ctx, getState());
-		enterRule(_localctx, 0, RULE_recordCount);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(48);
-			match(RECORD_COUNT);
-			setState(49);
-			((RecordCountContext)_localctx).INTEGER = match(INTEGER);
-			((RecordCountContext)_localctx).count =  ((RecordCountContext)_localctx).INTEGER.getText(); 
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	@SuppressWarnings("CheckReturnValue")
 	public static class NameContext extends ParserRuleContext {
 		public String nameStr;
 		public int line;
@@ -215,13 +164,13 @@ public class MonsterSpellGrammar extends Parser {
 
 	public final NameContext name() throws RecognitionException {
 		NameContext _localctx = new NameContext(_ctx, getState());
-		enterRule(_localctx, 2, RULE_name);
+		enterRule(_localctx, 0, RULE_name);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(52);
+			setState(46);
 			match(NAME);
-			setState(53);
+			setState(47);
 			((NameContext)_localctx).STRING = match(STRING);
 			 ((NameContext)_localctx).nameStr =  ((NameContext)_localctx).STRING.getText(); ((NameContext)_localctx).line =  _localctx.start.getLine(); 
 			}
@@ -264,13 +213,13 @@ public class MonsterSpellGrammar extends Parser {
 
 	public final MsgtContext msgt() throws RecognitionException {
 		MsgtContext _localctx = new MsgtContext(_ctx, getState());
-		enterRule(_localctx, 4, RULE_msgt);
+		enterRule(_localctx, 2, RULE_msgt);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(56);
+			setState(50);
 			match(MSGT);
-			setState(57);
+			setState(51);
 			((MsgtContext)_localctx).STRING = match(STRING);
 			 ((MsgtContext)_localctx).msgTStr =  ((MsgtContext)_localctx).STRING.getText(); 
 			}
@@ -313,13 +262,13 @@ public class MonsterSpellGrammar extends Parser {
 
 	public final HitContext hit() throws RecognitionException {
 		HitContext _localctx = new HitContext(_ctx, getState());
-		enterRule(_localctx, 6, RULE_hit);
+		enterRule(_localctx, 4, RULE_hit);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(60);
+			setState(54);
 			match(HIT);
-			setState(61);
+			setState(55);
 			((HitContext)_localctx).INTEGER = match(INTEGER);
 			 ((HitContext)_localctx).hitVal =  ((HitContext)_localctx).INTEGER.getText(); 
 			}
@@ -362,13 +311,13 @@ public class MonsterSpellGrammar extends Parser {
 
 	public final PowerCutoffContext powerCutoff() throws RecognitionException {
 		PowerCutoffContext _localctx = new PowerCutoffContext(_ctx, getState());
-		enterRule(_localctx, 8, RULE_powerCutoff);
+		enterRule(_localctx, 6, RULE_powerCutoff);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(64);
+			setState(58);
 			match(POWER_CUTOFF);
-			setState(65);
+			setState(59);
 			((PowerCutoffContext)_localctx).INTEGER = match(INTEGER);
 			 ((PowerCutoffContext)_localctx).cutoffVal =  ((PowerCutoffContext)_localctx).INTEGER.getText(); 
 			}
@@ -411,13 +360,13 @@ public class MonsterSpellGrammar extends Parser {
 
 	public final LoreContext lore() throws RecognitionException {
 		LoreContext _localctx = new LoreContext(_ctx, getState());
-		enterRule(_localctx, 10, RULE_lore);
+		enterRule(_localctx, 8, RULE_lore);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(68);
+			setState(62);
 			match(LORE);
-			setState(69);
+			setState(63);
 			((LoreContext)_localctx).STRING = match(STRING);
 			 ((LoreContext)_localctx).loreStr =  ((LoreContext)_localctx).STRING.getText(); 
 			}
@@ -460,13 +409,13 @@ public class MonsterSpellGrammar extends Parser {
 
 	public final LoreColourBaseContext loreColourBase() throws RecognitionException {
 		LoreColourBaseContext _localctx = new LoreColourBaseContext(_ctx, getState());
-		enterRule(_localctx, 12, RULE_loreColourBase);
+		enterRule(_localctx, 10, RULE_loreColourBase);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(72);
+			setState(66);
 			match(LORE_COLOUR_BASE);
-			setState(73);
+			setState(67);
 			((LoreColourBaseContext)_localctx).STRING = match(STRING);
 			 ((LoreColourBaseContext)_localctx).colourBase =  ((LoreColourBaseContext)_localctx).STRING.getText(); 
 			}
@@ -509,13 +458,13 @@ public class MonsterSpellGrammar extends Parser {
 
 	public final LoreColourResistContext loreColourResist() throws RecognitionException {
 		LoreColourResistContext _localctx = new LoreColourResistContext(_ctx, getState());
-		enterRule(_localctx, 14, RULE_loreColourResist);
+		enterRule(_localctx, 12, RULE_loreColourResist);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(76);
+			setState(70);
 			match(LORE_COLOUR_RESIST);
-			setState(77);
+			setState(71);
 			((LoreColourResistContext)_localctx).STRING = match(STRING);
 			 ((LoreColourResistContext)_localctx).colourResist =  ((LoreColourResistContext)_localctx).STRING.getText(); 
 			}
@@ -558,13 +507,13 @@ public class MonsterSpellGrammar extends Parser {
 
 	public final LoreColourImmuneContext loreColourImmune() throws RecognitionException {
 		LoreColourImmuneContext _localctx = new LoreColourImmuneContext(_ctx, getState());
-		enterRule(_localctx, 16, RULE_loreColourImmune);
+		enterRule(_localctx, 14, RULE_loreColourImmune);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(80);
+			setState(74);
 			match(LORE_COLOUR_IMMUNE);
-			setState(81);
+			setState(75);
 			((LoreColourImmuneContext)_localctx).STRING = match(STRING);
 			 ((LoreColourImmuneContext)_localctx).colourImmune =  ((LoreColourImmuneContext)_localctx).STRING.getText(); 
 			}
@@ -607,13 +556,13 @@ public class MonsterSpellGrammar extends Parser {
 
 	public final MessageSaveContext messageSave() throws RecognitionException {
 		MessageSaveContext _localctx = new MessageSaveContext(_ctx, getState());
-		enterRule(_localctx, 18, RULE_messageSave);
+		enterRule(_localctx, 16, RULE_messageSave);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(84);
+			setState(78);
 			match(MESSAGE_SAVE);
-			setState(85);
+			setState(79);
 			((MessageSaveContext)_localctx).STRING = match(STRING);
 			 ((MessageSaveContext)_localctx).saveMsg =  ((MessageSaveContext)_localctx).STRING.getText(); 
 			}
@@ -656,13 +605,13 @@ public class MonsterSpellGrammar extends Parser {
 
 	public final MessageVisContext messageVis() throws RecognitionException {
 		MessageVisContext _localctx = new MessageVisContext(_ctx, getState());
-		enterRule(_localctx, 20, RULE_messageVis);
+		enterRule(_localctx, 18, RULE_messageVis);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(88);
+			setState(82);
 			match(MESSAGE_VIS);
-			setState(89);
+			setState(83);
 			((MessageVisContext)_localctx).STRING = match(STRING);
 			 ((MessageVisContext)_localctx).visMsg =  ((MessageVisContext)_localctx).STRING.getText(); 
 			}
@@ -705,13 +654,13 @@ public class MonsterSpellGrammar extends Parser {
 
 	public final MessageInvisContext messageInvis() throws RecognitionException {
 		MessageInvisContext _localctx = new MessageInvisContext(_ctx, getState());
-		enterRule(_localctx, 22, RULE_messageInvis);
+		enterRule(_localctx, 20, RULE_messageInvis);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(92);
+			setState(86);
 			match(MESSAGE_INVIS);
-			setState(93);
+			setState(87);
 			((MessageInvisContext)_localctx).STRING = match(STRING);
 			 ((MessageInvisContext)_localctx).invisMsg =  ((MessageInvisContext)_localctx).STRING.getText(); 
 			}
@@ -754,13 +703,13 @@ public class MonsterSpellGrammar extends Parser {
 
 	public final MessageMissContext messageMiss() throws RecognitionException {
 		MessageMissContext _localctx = new MessageMissContext(_ctx, getState());
-		enterRule(_localctx, 24, RULE_messageMiss);
+		enterRule(_localctx, 22, RULE_messageMiss);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(96);
+			setState(90);
 			match(MESSAGE_MISS);
-			setState(97);
+			setState(91);
 			((MessageMissContext)_localctx).STRING = match(STRING);
 			 ((MessageMissContext)_localctx).missMsg =  ((MessageMissContext)_localctx).STRING.getText(); 
 			}
@@ -864,7 +813,7 @@ public class MonsterSpellGrammar extends Parser {
 
 	public final LevelDirectivesContext levelDirectives() throws RecognitionException {
 		LevelDirectivesContext _localctx = new LevelDirectivesContext(_ctx, getState());
-		enterRule(_localctx, 26, RULE_levelDirectives);
+		enterRule(_localctx, 24, RULE_levelDirectives);
 		try {
 			int _alt;
 			enterOuterAlt(_localctx, 1);
@@ -878,68 +827,68 @@ public class MonsterSpellGrammar extends Parser {
 			                  ((LevelDirectivesContext)_localctx).messageInvisStr =  "";
 			                  ((LevelDirectivesContext)_localctx).messageMissStr =  "";
 			                  ((LevelDirectivesContext)_localctx).messageSaveStr =  ""; 
-			setState(125); 
+			setState(119); 
 			_errHandler.sync(this);
 			_alt = 1;
 			do {
 				switch (_alt) {
 				case 1:
 					{
-					setState(125);
+					setState(119);
 					_errHandler.sync(this);
 					switch (_input.LA(1)) {
 					case LORE:
 						{
-						setState(101);
+						setState(95);
 						((LevelDirectivesContext)_localctx).lore = lore();
 						 ((LevelDirectivesContext)_localctx).loreStr =  _localctx.loreStr + ((LevelDirectivesContext)_localctx).lore.loreStr; 
 						}
 						break;
 					case LORE_COLOUR_BASE:
 						{
-						setState(104);
+						setState(98);
 						((LevelDirectivesContext)_localctx).loreColourBase = loreColourBase();
 						 ((LevelDirectivesContext)_localctx).loreColourBaseStr =  ((LevelDirectivesContext)_localctx).loreColourBase.colourBase; 
 						}
 						break;
 					case LORE_COLOUR_RESIST:
 						{
-						setState(107);
+						setState(101);
 						((LevelDirectivesContext)_localctx).loreColourResist = loreColourResist();
 						 ((LevelDirectivesContext)_localctx).loreColourResistStr =  ((LevelDirectivesContext)_localctx).loreColourResist.colourResist; 
 						}
 						break;
 					case LORE_COLOUR_IMMUNE:
 						{
-						setState(110);
+						setState(104);
 						((LevelDirectivesContext)_localctx).loreColourImmune = loreColourImmune();
 						 ((LevelDirectivesContext)_localctx).loreColourImmuneStr =   ((LevelDirectivesContext)_localctx).loreColourImmune.colourImmune; 
 						}
 						break;
 					case MESSAGE_VIS:
 						{
-						setState(113);
+						setState(107);
 						((LevelDirectivesContext)_localctx).messageVis = messageVis();
 						 ((LevelDirectivesContext)_localctx).messageVisStr =  _localctx.messageVisStr + ((LevelDirectivesContext)_localctx).messageVis.visMsg; 
 						}
 						break;
 					case MESSAGE_INVIS:
 						{
-						setState(116);
+						setState(110);
 						((LevelDirectivesContext)_localctx).messageInvis = messageInvis();
 						 ((LevelDirectivesContext)_localctx).messageInvisStr =  _localctx.messageInvisStr + ((LevelDirectivesContext)_localctx).messageInvis.invisMsg; 
 						}
 						break;
 					case MESSAGE_MISS:
 						{
-						setState(119);
+						setState(113);
 						((LevelDirectivesContext)_localctx).messageMiss = messageMiss();
 						 ((LevelDirectivesContext)_localctx).messageMissStr =  _localctx.messageMissStr + ((LevelDirectivesContext)_localctx).messageMiss.missMsg; 
 						}
 						break;
 					case MESSAGE_SAVE:
 						{
-						setState(122);
+						setState(116);
 						((LevelDirectivesContext)_localctx).messageSave = messageSave();
 						 ((LevelDirectivesContext)_localctx).messageSaveStr =  _localctx.messageSaveStr + ((LevelDirectivesContext)_localctx).messageSave.saveMsg; 
 						}
@@ -952,7 +901,7 @@ public class MonsterSpellGrammar extends Parser {
 				default:
 					throw new NoViableAltException(this);
 				}
-				setState(127); 
+				setState(121); 
 				_errHandler.sync(this);
 				_alt = getInterpreter().adaptivePredict(_input,1,_ctx);
 			} while ( _alt!=2 && _alt!=org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER );
@@ -1010,7 +959,7 @@ public class MonsterSpellGrammar extends Parser {
 
 	public final PowerCutoffBlockContext powerCutoffBlock() throws RecognitionException {
 		PowerCutoffBlockContext _localctx = new PowerCutoffBlockContext(_ctx, getState());
-		enterRule(_localctx, 28, RULE_powerCutoffBlock);
+		enterRule(_localctx, 26, RULE_powerCutoffBlock);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
@@ -1022,16 +971,16 @@ public class MonsterSpellGrammar extends Parser {
 			                  ((PowerCutoffBlockContext)_localctx).messageInvisStr =  "";
 			                  ((PowerCutoffBlockContext)_localctx).messageMissStr =  "";
 			                  ((PowerCutoffBlockContext)_localctx).messageSaveStr =  ""; 
-			setState(130);
+			setState(124);
 			((PowerCutoffBlockContext)_localctx).powerCutoff = powerCutoff();
 			 ((PowerCutoffBlockContext)_localctx).powerCutOffVal =  ((PowerCutoffBlockContext)_localctx).powerCutoff.cutoffVal;
 			                            ((PowerCutoffBlockContext)_localctx).line =  (((PowerCutoffBlockContext)_localctx).powerCutoff!=null?(((PowerCutoffBlockContext)_localctx).powerCutoff.start):null).getLine(); 
-			setState(135);
+			setState(129);
 			_errHandler.sync(this);
 			switch ( getInterpreter().adaptivePredict(_input,2,_ctx) ) {
 			case 1:
 				{
-				setState(132);
+				setState(126);
 				((PowerCutoffBlockContext)_localctx).levelDirectives = levelDirectives();
 				 ((PowerCutoffBlockContext)_localctx).loreStr =  ((PowerCutoffBlockContext)_localctx).levelDirectives.loreStr;
 				                                    ((PowerCutoffBlockContext)_localctx).loreColourBaseStr =  ((PowerCutoffBlockContext)_localctx).levelDirectives.loreColourBaseStr;
@@ -1120,7 +1069,7 @@ public class MonsterSpellGrammar extends Parser {
 
 	public final MonsterSpellContext monsterSpell() throws RecognitionException {
 		MonsterSpellContext _localctx = new MonsterSpellContext(_ctx, getState());
-		enterRule(_localctx, 30, RULE_monsterSpell);
+		enterRule(_localctx, 28, RULE_monsterSpell);
 
 		              String nameStrInit = "";
 		              String msgtStrInit = "";
@@ -1133,34 +1082,34 @@ public class MonsterSpellGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(137);
+			setState(131);
 			((MonsterSpellContext)_localctx).name = name();
 			 nameStrInit = ((MonsterSpellContext)_localctx).name.nameStr; lineInit = ((MonsterSpellContext)_localctx).name.line; 
-			setState(154); 
+			setState(148); 
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			do {
 				{
-				setState(154);
+				setState(148);
 				_errHandler.sync(this);
 				switch (_input.LA(1)) {
 				case MSGT:
 					{
-					setState(139);
+					setState(133);
 					((MonsterSpellContext)_localctx).msgt = msgt();
 					 msgtStrInit = ((MonsterSpellContext)_localctx).msgt.msgTStr; 
 					}
 					break;
 				case HIT:
 					{
-					setState(142);
+					setState(136);
 					((MonsterSpellContext)_localctx).hit = hit();
 					 hitInit = ((MonsterSpellContext)_localctx).hit.hitVal; 
 					}
 					break;
 				case EFFECT:
 					{
-					setState(145);
+					setState(139);
 					((MonsterSpellContext)_localctx).effectBlock = effectBlock();
 					 effects.add(new EffectParseRecord(((MonsterSpellContext)_localctx).effectBlock.typeInit,
 					                      ((MonsterSpellContext)_localctx).effectBlock.subtypeWrapperInit, ((MonsterSpellContext)_localctx).effectBlock.radius, ((MonsterSpellContext)_localctx).effectBlock.other,
@@ -1172,7 +1121,7 @@ public class MonsterSpellGrammar extends Parser {
 					break;
 				case POWER_CUTOFF:
 					{
-					setState(148);
+					setState(142);
 					((MonsterSpellContext)_localctx).powerCutoffBlock = powerCutoffBlock();
 					 levels.add(new MonsterSpellParseRecord.MonsterSpellLevelParseRecord(
 					                      ((MonsterSpellContext)_localctx).powerCutoffBlock.powerCutOffVal, ((MonsterSpellContext)_localctx).powerCutoffBlock.loreStr,
@@ -1191,7 +1140,7 @@ public class MonsterSpellGrammar extends Parser {
 				case MESSAGE_INVIS:
 				case MESSAGE_MISS:
 					{
-					setState(151);
+					setState(145);
 					((MonsterSpellContext)_localctx).levelDirectives = levelDirectives();
 					 levels.add(new MonsterSpellParseRecord.MonsterSpellLevelParseRecord(
 					                      null, ((MonsterSpellContext)_localctx).levelDirectives.loreStr,
@@ -1205,10 +1154,10 @@ public class MonsterSpellGrammar extends Parser {
 					throw new NoViableAltException(this);
 				}
 				}
-				setState(156); 
+				setState(150); 
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-			} while ( (((_la) & ~0x3f) == 0 && ((1L << _la) & 81912L) != 0) );
+			} while ( (((_la) & ~0x3f) == 0 && ((1L << _la) & 40956L) != 0) );
 			}
 			_ctx.stop = _input.LT(-1);
 
@@ -1229,13 +1178,8 @@ public class MonsterSpellGrammar extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class FileContext extends ParserRuleContext {
-		public String declaredRecordCount;
 		public List<MonsterSpellParseRecord> monsterSpells;
-		public RecordCountContext recordCount;
 		public MonsterSpellContext monsterSpell;
-		public RecordCountContext recordCount() {
-			return getRuleContext(RecordCountContext.class,0);
-		}
 		public TerminalNode EOF() { return getToken(MonsterSpellGrammar.EOF, 0); }
 		public List<MonsterSpellContext> monsterSpell() {
 			return getRuleContexts(MonsterSpellContext.class);
@@ -1264,31 +1208,28 @@ public class MonsterSpellGrammar extends Parser {
 
 	public final FileContext file() throws RecognitionException {
 		FileContext _localctx = new FileContext(_ctx, getState());
-		enterRule(_localctx, 32, RULE_file);
+		enterRule(_localctx, 30, RULE_file);
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(158);
-			((FileContext)_localctx).recordCount = recordCount();
-			 ((FileContext)_localctx).declaredRecordCount =  ((FileContext)_localctx).recordCount.count;
-			                          ((FileContext)_localctx).monsterSpells =  new ArrayList<>(); 
-			setState(163); 
+			 ((FileContext)_localctx).monsterSpells =  new ArrayList<>(); 
+			setState(156); 
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			do {
 				{
 				{
-				setState(160);
+				setState(153);
 				((FileContext)_localctx).monsterSpell = monsterSpell();
 				 _localctx.monsterSpells.add(((FileContext)_localctx).monsterSpell.spell); 
 				}
 				}
-				setState(165); 
+				setState(158); 
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			} while ( _la==NAME );
-			setState(167);
+			setState(160);
 			match(EOF);
 			}
 		}
@@ -1347,7 +1288,7 @@ public class MonsterSpellGrammar extends Parser {
 
 	public final EffectContext effect() throws RecognitionException {
 		EffectContext _localctx = new EffectContext(_ctx, getState());
-		enterRule(_localctx, 34, RULE_effect);
+		enterRule(_localctx, 32, RULE_effect);
 
 		            ((EffectContext)_localctx).wrapper =  "";
 		            ((EffectContext)_localctx).radius =  "";
@@ -1357,45 +1298,45 @@ public class MonsterSpellGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(169);
+			setState(162);
 			match(EFFECT);
-			setState(170);
+			setState(163);
 			((EffectContext)_localctx).t = match(UCASE);
 
 			                ((EffectContext)_localctx).type =  ((EffectContext)_localctx).t.getText();
 			            
-			setState(185);
+			setState(178);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			if (_la==COLON) {
 				{
-				setState(172);
+				setState(165);
 				match(COLON);
-				setState(173);
+				setState(166);
 				((EffectContext)_localctx).st = match(UCASE);
 
 				                ((EffectContext)_localctx).wrapper =  ((EffectContext)_localctx).st.getText();
 				            
-				setState(183);
+				setState(176);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 				if (_la==COLON) {
 					{
-					setState(175);
+					setState(168);
 					match(COLON);
-					setState(176);
+					setState(169);
 					((EffectContext)_localctx).rad = match(INTEGER);
 
 					                ((EffectContext)_localctx).radius =  ((EffectContext)_localctx).rad.getText();
 					            
-					setState(181);
+					setState(174);
 					_errHandler.sync(this);
 					_la = _input.LA(1);
 					if (_la==COLON) {
 						{
-						setState(178);
+						setState(171);
 						match(COLON);
-						setState(179);
+						setState(172);
 						((EffectContext)_localctx).oth = match(INTEGER);
 
 						                ((EffectContext)_localctx).other =  ((EffectContext)_localctx).oth.getText();
@@ -1455,17 +1396,17 @@ public class MonsterSpellGrammar extends Parser {
 
 	public final EffectYXContext effectYX() throws RecognitionException {
 		EffectYXContext _localctx = new EffectYXContext(_ctx, getState());
-		enterRule(_localctx, 36, RULE_effectYX);
+		enterRule(_localctx, 34, RULE_effectYX);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(187);
+			setState(180);
 			match(EFFECT_YX);
-			setState(188);
+			setState(181);
 			((EffectYXContext)_localctx).yVal = match(INTEGER);
-			setState(189);
+			setState(182);
 			match(COLON);
-			setState(190);
+			setState(183);
 			((EffectYXContext)_localctx).xVal = match(INTEGER);
 
 			                ((EffectYXContext)_localctx).y =  ((EffectYXContext)_localctx).yVal.getText();
@@ -1522,7 +1463,7 @@ public class MonsterSpellGrammar extends Parser {
 
 	public final DiceContext dice() throws RecognitionException {
 		DiceContext _localctx = new DiceContext(_ctx, getState());
-		enterRule(_localctx, 38, RULE_dice);
+		enterRule(_localctx, 36, RULE_dice);
 
 		            String charHolder = "";
 		            String baseHolder = "";
@@ -1536,26 +1477,26 @@ public class MonsterSpellGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(193);
+			setState(186);
 			match(DICE);
-			setState(205);
+			setState(198);
 			_errHandler.sync(this);
 			switch (_input.LA(1)) {
 			case DICE_COMPLEX_VALUE:
 				{
 				{
-				setState(194);
+				setState(187);
 				((DiceContext)_localctx).val = match(DICE_COMPLEX_VALUE);
 
 				                ((DiceContext)_localctx).diceString =  ((DiceContext)_localctx).val.getText();
 				            
-				setState(199); 
+				setState(192); 
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 				do {
 					{
 					{
-					setState(196);
+					setState(189);
 					((DiceContext)_localctx).expr = expr();
 
 					                if (charHolder.isEmpty()) {
@@ -1570,7 +1511,7 @@ public class MonsterSpellGrammar extends Parser {
 					            
 					}
 					}
-					setState(201); 
+					setState(194); 
 					_errHandler.sync(this);
 					_la = _input.LA(1);
 				} while ( _la==EXPR );
@@ -1579,7 +1520,7 @@ public class MonsterSpellGrammar extends Parser {
 				break;
 			case DICE_SIMPLE_VALUE:
 				{
-				setState(203);
+				setState(196);
 				((DiceContext)_localctx).val = match(DICE_SIMPLE_VALUE);
 
 				                ((DiceContext)_localctx).diceString =  ((DiceContext)_localctx).val.getText();
@@ -1645,21 +1586,21 @@ public class MonsterSpellGrammar extends Parser {
 
 	public final ExprContext expr() throws RecognitionException {
 		ExprContext _localctx = new ExprContext(_ctx, getState());
-		enterRule(_localctx, 40, RULE_expr);
+		enterRule(_localctx, 38, RULE_expr);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(207);
+			setState(200);
 			match(EXPR);
-			setState(208);
+			setState(201);
 			((ExprContext)_localctx).ch = match(EXPR_CHAR);
-			setState(209);
+			setState(202);
 			match(EXPR_COLON);
-			setState(210);
+			setState(203);
 			((ExprContext)_localctx).base = match(EXPR_UCASE);
-			setState(211);
+			setState(204);
 			match(EXPR_COLON);
-			setState(212);
+			setState(205);
 			((ExprContext)_localctx).op = match(EXPR_OP);
 
 			                ((ExprContext)_localctx).exprChar =  ((ExprContext)_localctx).ch.getText();
@@ -1706,13 +1647,13 @@ public class MonsterSpellGrammar extends Parser {
 
 	public final EffectMsgContext effectMsg() throws RecognitionException {
 		EffectMsgContext _localctx = new EffectMsgContext(_ctx, getState());
-		enterRule(_localctx, 42, RULE_effectMsg);
+		enterRule(_localctx, 40, RULE_effectMsg);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(215);
+			setState(208);
 			match(EFFECT_MESSAGE);
-			setState(216);
+			setState(209);
 			((EffectMsgContext)_localctx).FREE_TEXT = match(FREE_TEXT);
 			 ((EffectMsgContext)_localctx).message =  ((EffectMsgContext)_localctx).FREE_TEXT.getText(); 
 			}
@@ -1755,13 +1696,13 @@ public class MonsterSpellGrammar extends Parser {
 
 	public final TimeContext time() throws RecognitionException {
 		TimeContext _localctx = new TimeContext(_ctx, getState());
-		enterRule(_localctx, 44, RULE_time);
+		enterRule(_localctx, 42, RULE_time);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(219);
+			setState(212);
 			match(TIME);
-			setState(220);
+			setState(213);
 			((TimeContext)_localctx).DICE_SIMPLE_VALUE = match(DICE_SIMPLE_VALUE);
 			 ((TimeContext)_localctx).timeStr =  ((TimeContext)_localctx).DICE_SIMPLE_VALUE.getText(); 
 			}
@@ -1828,7 +1769,7 @@ public class MonsterSpellGrammar extends Parser {
 
 	public final EffectBlockContext effectBlock() throws RecognitionException {
 		EffectBlockContext _localctx = new EffectBlockContext(_ctx, getState());
-		enterRule(_localctx, 46, RULE_effectBlock);
+		enterRule(_localctx, 44, RULE_effectBlock);
 
 		            String expressionString = "";
 		            String baseString = "";
@@ -1842,7 +1783,7 @@ public class MonsterSpellGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(223);
+			setState(216);
 			((EffectBlockContext)_localctx).effect = effect();
 
 			                ((EffectBlockContext)_localctx).lineNo =  _localctx.start.getLine();
@@ -1851,13 +1792,13 @@ public class MonsterSpellGrammar extends Parser {
 			                ((EffectBlockContext)_localctx).radius =  ((EffectBlockContext)_localctx).effect.radius;
 			                ((EffectBlockContext)_localctx).other =  ((EffectBlockContext)_localctx).effect.other;
 			            
-			setState(233);
+			setState(226);
 			_errHandler.sync(this);
 			switch (_input.LA(1)) {
 			case EFFECT_YX:
 				{
 				{
-				setState(225);
+				setState(218);
 				((EffectBlockContext)_localctx).effectYX = effectYX();
 
 				                ((EffectBlockContext)_localctx).yVal =  ((EffectBlockContext)_localctx).effectYX.y;
@@ -1884,12 +1825,12 @@ public class MonsterSpellGrammar extends Parser {
 			case DICE:
 				{
 				{
-				setState(231);
+				setState(224);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 				if (_la==DICE) {
 					{
-					setState(228);
+					setState(221);
 					((EffectBlockContext)_localctx).dice = dice();
 
 					                ((EffectBlockContext)_localctx).diceString =  ((EffectBlockContext)_localctx).dice.diceString;
@@ -1906,12 +1847,12 @@ public class MonsterSpellGrammar extends Parser {
 			default:
 				throw new NoViableAltException(this);
 			}
-			setState(238);
+			setState(231);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			if (_la==EFFECT_MESSAGE) {
 				{
-				setState(235);
+				setState(228);
 				((EffectBlockContext)_localctx).effectMsg = effectMsg();
 				 ((EffectBlockContext)_localctx).effectMessage =  ((EffectBlockContext)_localctx).effectMsg.message; 
 				}
@@ -1937,155 +1878,150 @@ public class MonsterSpellGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001$\u00f1\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001#\u00ea\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007\u0002"+
 		"\b\u0007\b\u0002\t\u0007\t\u0002\n\u0007\n\u0002\u000b\u0007\u000b\u0002"+
 		"\f\u0007\f\u0002\r\u0007\r\u0002\u000e\u0007\u000e\u0002\u000f\u0007\u000f"+
 		"\u0002\u0010\u0007\u0010\u0002\u0011\u0007\u0011\u0002\u0012\u0007\u0012"+
 		"\u0002\u0013\u0007\u0013\u0002\u0014\u0007\u0014\u0002\u0015\u0007\u0015"+
-		"\u0002\u0016\u0007\u0016\u0002\u0017\u0007\u0017\u0001\u0000\u0001\u0000"+
-		"\u0001\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001"+
-		"\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0003\u0001\u0003"+
-		"\u0001\u0003\u0001\u0003\u0001\u0004\u0001\u0004\u0001\u0004\u0001\u0004"+
-		"\u0001\u0005\u0001\u0005\u0001\u0005\u0001\u0005\u0001\u0006\u0001\u0006"+
-		"\u0001\u0006\u0001\u0006\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007"+
-		"\u0001\b\u0001\b\u0001\b\u0001\b\u0001\t\u0001\t\u0001\t\u0001\t\u0001"+
-		"\n\u0001\n\u0001\n\u0001\n\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b"+
-		"\u0001\f\u0001\f\u0001\f\u0001\f\u0001\r\u0001\r\u0001\r\u0001\r\u0001"+
-		"\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001"+
-		"\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001"+
-		"\r\u0001\r\u0001\r\u0004\r~\b\r\u000b\r\f\r\u007f\u0001\u000e\u0001\u000e"+
-		"\u0001\u000e\u0001\u000e\u0001\u000e\u0001\u000e\u0003\u000e\u0088\b\u000e"+
-		"\u0001\u000f\u0001\u000f\u0001\u000f\u0001\u000f\u0001\u000f\u0001\u000f"+
-		"\u0001\u000f\u0001\u000f\u0001\u000f\u0001\u000f\u0001\u000f\u0001\u000f"+
-		"\u0001\u000f\u0001\u000f\u0001\u000f\u0001\u000f\u0001\u000f\u0004\u000f"+
-		"\u009b\b\u000f\u000b\u000f\f\u000f\u009c\u0001\u0010\u0001\u0010\u0001"+
-		"\u0010\u0001\u0010\u0001\u0010\u0004\u0010\u00a4\b\u0010\u000b\u0010\f"+
-		"\u0010\u00a5\u0001\u0010\u0001\u0010\u0001\u0011\u0001\u0011\u0001\u0011"+
-		"\u0001\u0011\u0001\u0011\u0001\u0011\u0001\u0011\u0001\u0011\u0001\u0011"+
-		"\u0001\u0011\u0001\u0011\u0001\u0011\u0003\u0011\u00b6\b\u0011\u0003\u0011"+
-		"\u00b8\b\u0011\u0003\u0011\u00ba\b\u0011\u0001\u0012\u0001\u0012\u0001"+
-		"\u0012\u0001\u0012\u0001\u0012\u0001\u0012\u0001\u0013\u0001\u0013\u0001"+
-		"\u0013\u0001\u0013\u0001\u0013\u0001\u0013\u0004\u0013\u00c8\b\u0013\u000b"+
-		"\u0013\f\u0013\u00c9\u0001\u0013\u0001\u0013\u0003\u0013\u00ce\b\u0013"+
-		"\u0001\u0014\u0001\u0014\u0001\u0014\u0001\u0014\u0001\u0014\u0001\u0014"+
-		"\u0001\u0014\u0001\u0014\u0001\u0015\u0001\u0015\u0001\u0015\u0001\u0015"+
-		"\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0017\u0001\u0017"+
-		"\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017"+
-		"\u0003\u0017\u00e8\b\u0017\u0003\u0017\u00ea\b\u0017\u0001\u0017\u0001"+
-		"\u0017\u0001\u0017\u0003\u0017\u00ef\b\u0017\u0001\u0017\u0000\u0000\u0018"+
-		"\u0000\u0002\u0004\u0006\b\n\f\u000e\u0010\u0012\u0014\u0016\u0018\u001a"+
-		"\u001c\u001e \"$&(*,.\u0000\u0000\u00ef\u00000\u0001\u0000\u0000\u0000"+
-		"\u00024\u0001\u0000\u0000\u0000\u00048\u0001\u0000\u0000\u0000\u0006<"+
-		"\u0001\u0000\u0000\u0000\b@\u0001\u0000\u0000\u0000\nD\u0001\u0000\u0000"+
-		"\u0000\fH\u0001\u0000\u0000\u0000\u000eL\u0001\u0000\u0000\u0000\u0010"+
-		"P\u0001\u0000\u0000\u0000\u0012T\u0001\u0000\u0000\u0000\u0014X\u0001"+
-		"\u0000\u0000\u0000\u0016\\\u0001\u0000\u0000\u0000\u0018`\u0001\u0000"+
-		"\u0000\u0000\u001ad\u0001\u0000\u0000\u0000\u001c\u0081\u0001\u0000\u0000"+
-		"\u0000\u001e\u0089\u0001\u0000\u0000\u0000 \u009e\u0001\u0000\u0000\u0000"+
-		"\"\u00a9\u0001\u0000\u0000\u0000$\u00bb\u0001\u0000\u0000\u0000&\u00c1"+
-		"\u0001\u0000\u0000\u0000(\u00cf\u0001\u0000\u0000\u0000*\u00d7\u0001\u0000"+
-		"\u0000\u0000,\u00db\u0001\u0000\u0000\u0000.\u00df\u0001\u0000\u0000\u0000"+
-		"01\u0005\u0001\u0000\u000012\u0005\u0018\u0000\u000023\u0006\u0000\uffff"+
-		"\uffff\u00003\u0001\u0001\u0000\u0000\u000045\u0005\u0002\u0000\u0000"+
-		"56\u0005\u001b\u0000\u000067\u0006\u0001\uffff\uffff\u00007\u0003\u0001"+
-		"\u0000\u0000\u000089\u0005\u0003\u0000\u00009:\u0005\u001b\u0000\u0000"+
-		":;\u0006\u0002\uffff\uffff\u0000;\u0005\u0001\u0000\u0000\u0000<=\u0005"+
-		"\u0004\u0000\u0000=>\u0005\u0018\u0000\u0000>?\u0006\u0003\uffff\uffff"+
-		"\u0000?\u0007\u0001\u0000\u0000\u0000@A\u0005\u0005\u0000\u0000AB\u0005"+
-		"\u0018\u0000\u0000BC\u0006\u0004\uffff\uffff\u0000C\t\u0001\u0000\u0000"+
-		"\u0000DE\u0005\u0006\u0000\u0000EF\u0005\u001b\u0000\u0000FG\u0006\u0005"+
-		"\uffff\uffff\u0000G\u000b\u0001\u0000\u0000\u0000HI\u0005\u0007\u0000"+
-		"\u0000IJ\u0005\u001b\u0000\u0000JK\u0006\u0006\uffff\uffff\u0000K\r\u0001"+
-		"\u0000\u0000\u0000LM\u0005\b\u0000\u0000MN\u0005\u001b\u0000\u0000NO\u0006"+
-		"\u0007\uffff\uffff\u0000O\u000f\u0001\u0000\u0000\u0000PQ\u0005\t\u0000"+
-		"\u0000QR\u0005\u001b\u0000\u0000RS\u0006\b\uffff\uffff\u0000S\u0011\u0001"+
-		"\u0000\u0000\u0000TU\u0005\n\u0000\u0000UV\u0005\u001b\u0000\u0000VW\u0006"+
-		"\t\uffff\uffff\u0000W\u0013\u0001\u0000\u0000\u0000XY\u0005\u000b\u0000"+
-		"\u0000YZ\u0005\u001b\u0000\u0000Z[\u0006\n\uffff\uffff\u0000[\u0015\u0001"+
-		"\u0000\u0000\u0000\\]\u0005\f\u0000\u0000]^\u0005\u001b\u0000\u0000^_"+
-		"\u0006\u000b\uffff\uffff\u0000_\u0017\u0001\u0000\u0000\u0000`a\u0005"+
-		"\r\u0000\u0000ab\u0005\u001b\u0000\u0000bc\u0006\f\uffff\uffff\u0000c"+
-		"\u0019\u0001\u0000\u0000\u0000d}\u0006\r\uffff\uffff\u0000ef\u0003\n\u0005"+
-		"\u0000fg\u0006\r\uffff\uffff\u0000g~\u0001\u0000\u0000\u0000hi\u0003\f"+
-		"\u0006\u0000ij\u0006\r\uffff\uffff\u0000j~\u0001\u0000\u0000\u0000kl\u0003"+
-		"\u000e\u0007\u0000lm\u0006\r\uffff\uffff\u0000m~\u0001\u0000\u0000\u0000"+
-		"no\u0003\u0010\b\u0000op\u0006\r\uffff\uffff\u0000p~\u0001\u0000\u0000"+
-		"\u0000qr\u0003\u0014\n\u0000rs\u0006\r\uffff\uffff\u0000s~\u0001\u0000"+
-		"\u0000\u0000tu\u0003\u0016\u000b\u0000uv\u0006\r\uffff\uffff\u0000v~\u0001"+
-		"\u0000\u0000\u0000wx\u0003\u0018\f\u0000xy\u0006\r\uffff\uffff\u0000y"+
-		"~\u0001\u0000\u0000\u0000z{\u0003\u0012\t\u0000{|\u0006\r\uffff\uffff"+
-		"\u0000|~\u0001\u0000\u0000\u0000}e\u0001\u0000\u0000\u0000}h\u0001\u0000"+
-		"\u0000\u0000}k\u0001\u0000\u0000\u0000}n\u0001\u0000\u0000\u0000}q\u0001"+
-		"\u0000\u0000\u0000}t\u0001\u0000\u0000\u0000}w\u0001\u0000\u0000\u0000"+
-		"}z\u0001\u0000\u0000\u0000~\u007f\u0001\u0000\u0000\u0000\u007f}\u0001"+
-		"\u0000\u0000\u0000\u007f\u0080\u0001\u0000\u0000\u0000\u0080\u001b\u0001"+
-		"\u0000\u0000\u0000\u0081\u0082\u0006\u000e\uffff\uffff\u0000\u0082\u0083"+
-		"\u0003\b\u0004\u0000\u0083\u0087\u0006\u000e\uffff\uffff\u0000\u0084\u0085"+
-		"\u0003\u001a\r\u0000\u0085\u0086\u0006\u000e\uffff\uffff\u0000\u0086\u0088"+
-		"\u0001\u0000\u0000\u0000\u0087\u0084\u0001\u0000\u0000\u0000\u0087\u0088"+
-		"\u0001\u0000\u0000\u0000\u0088\u001d\u0001\u0000\u0000\u0000\u0089\u008a"+
-		"\u0003\u0002\u0001\u0000\u008a\u009a\u0006\u000f\uffff\uffff\u0000\u008b"+
-		"\u008c\u0003\u0004\u0002\u0000\u008c\u008d\u0006\u000f\uffff\uffff\u0000"+
-		"\u008d\u009b\u0001\u0000\u0000\u0000\u008e\u008f\u0003\u0006\u0003\u0000"+
-		"\u008f\u0090\u0006\u000f\uffff\uffff\u0000\u0090\u009b\u0001\u0000\u0000"+
-		"\u0000\u0091\u0092\u0003.\u0017\u0000\u0092\u0093\u0006\u000f\uffff\uffff"+
-		"\u0000\u0093\u009b\u0001\u0000\u0000\u0000\u0094\u0095\u0003\u001c\u000e"+
-		"\u0000\u0095\u0096\u0006\u000f\uffff\uffff\u0000\u0096\u009b\u0001\u0000"+
-		"\u0000\u0000\u0097\u0098\u0003\u001a\r\u0000\u0098\u0099\u0006\u000f\uffff"+
-		"\uffff\u0000\u0099\u009b\u0001\u0000\u0000\u0000\u009a\u008b\u0001\u0000"+
-		"\u0000\u0000\u009a\u008e\u0001\u0000\u0000\u0000\u009a\u0091\u0001\u0000"+
-		"\u0000\u0000\u009a\u0094\u0001\u0000\u0000\u0000\u009a\u0097\u0001\u0000"+
-		"\u0000\u0000\u009b\u009c\u0001\u0000\u0000\u0000\u009c\u009a\u0001\u0000"+
-		"\u0000\u0000\u009c\u009d\u0001\u0000\u0000\u0000\u009d\u001f\u0001\u0000"+
-		"\u0000\u0000\u009e\u009f\u0003\u0000\u0000\u0000\u009f\u00a3\u0006\u0010"+
-		"\uffff\uffff\u0000\u00a0\u00a1\u0003\u001e\u000f\u0000\u00a1\u00a2\u0006"+
-		"\u0010\uffff\uffff\u0000\u00a2\u00a4\u0001\u0000\u0000\u0000\u00a3\u00a0"+
-		"\u0001\u0000\u0000\u0000\u00a4\u00a5\u0001\u0000\u0000\u0000\u00a5\u00a3"+
-		"\u0001\u0000\u0000\u0000\u00a5\u00a6\u0001\u0000\u0000\u0000\u00a6\u00a7"+
-		"\u0001\u0000\u0000\u0000\u00a7\u00a8\u0005\u0000\u0000\u0001\u00a8!\u0001"+
-		"\u0000\u0000\u0000\u00a9\u00aa\u0005\u0010\u0000\u0000\u00aa\u00ab\u0005"+
-		"\u0017\u0000\u0000\u00ab\u00b9\u0006\u0011\uffff\uffff\u0000\u00ac\u00ad"+
-		"\u0005\u0016\u0000\u0000\u00ad\u00ae\u0005\u0017\u0000\u0000\u00ae\u00b7"+
-		"\u0006\u0011\uffff\uffff\u0000\u00af\u00b0\u0005\u0016\u0000\u0000\u00b0"+
-		"\u00b1\u0005\u0018\u0000\u0000\u00b1\u00b5\u0006\u0011\uffff\uffff\u0000"+
-		"\u00b2\u00b3\u0005\u0016\u0000\u0000\u00b3\u00b4\u0005\u0018\u0000\u0000"+
-		"\u00b4\u00b6\u0006\u0011\uffff\uffff\u0000\u00b5\u00b2\u0001\u0000\u0000"+
-		"\u0000\u00b5\u00b6\u0001\u0000\u0000\u0000\u00b6\u00b8\u0001\u0000\u0000"+
-		"\u0000\u00b7\u00af\u0001\u0000\u0000\u0000\u00b7\u00b8\u0001\u0000\u0000"+
-		"\u0000\u00b8\u00ba\u0001\u0000\u0000\u0000\u00b9\u00ac\u0001\u0000\u0000"+
-		"\u0000\u00b9\u00ba\u0001\u0000\u0000\u0000\u00ba#\u0001\u0000\u0000\u0000"+
-		"\u00bb\u00bc\u0005\u0014\u0000\u0000\u00bc\u00bd\u0005\u0018\u0000\u0000"+
-		"\u00bd\u00be\u0005\u0016\u0000\u0000\u00be\u00bf\u0005\u0018\u0000\u0000"+
-		"\u00bf\u00c0\u0006\u0012\uffff\uffff\u0000\u00c0%\u0001\u0000\u0000\u0000"+
-		"\u00c1\u00cd\u0005\u0012\u0000\u0000\u00c2\u00c3\u0005\u001f\u0000\u0000"+
-		"\u00c3\u00c7\u0006\u0013\uffff\uffff\u0000\u00c4\u00c5\u0003(\u0014\u0000"+
-		"\u00c5\u00c6\u0006\u0013\uffff\uffff\u0000\u00c6\u00c8\u0001\u0000\u0000"+
-		"\u0000\u00c7\u00c4\u0001\u0000\u0000\u0000\u00c8\u00c9\u0001\u0000\u0000"+
-		"\u0000\u00c9\u00c7\u0001\u0000\u0000\u0000\u00c9\u00ca\u0001\u0000\u0000"+
-		"\u0000\u00ca\u00ce\u0001\u0000\u0000\u0000\u00cb\u00cc\u0005\u001e\u0000"+
-		"\u0000\u00cc\u00ce\u0006\u0013\uffff\uffff\u0000\u00cd\u00c2\u0001\u0000"+
-		"\u0000\u0000\u00cd\u00cb\u0001\u0000\u0000\u0000\u00ce\'\u0001\u0000\u0000"+
-		"\u0000\u00cf\u00d0\u0005\u0015\u0000\u0000\u00d0\u00d1\u0005 \u0000\u0000"+
-		"\u00d1\u00d2\u0005!\u0000\u0000\u00d2\u00d3\u0005\"\u0000\u0000\u00d3"+
-		"\u00d4\u0005!\u0000\u0000\u00d4\u00d5\u0005#\u0000\u0000\u00d5\u00d6\u0006"+
-		"\u0014\uffff\uffff\u0000\u00d6)\u0001\u0000\u0000\u0000\u00d7\u00d8\u0005"+
-		"\u0011\u0000\u0000\u00d8\u00d9\u0005\u001d\u0000\u0000\u00d9\u00da\u0006"+
-		"\u0015\uffff\uffff\u0000\u00da+\u0001\u0000\u0000\u0000\u00db\u00dc\u0005"+
-		"\u0013\u0000\u0000\u00dc\u00dd\u0005\u001e\u0000\u0000\u00dd\u00de\u0006"+
-		"\u0016\uffff\uffff\u0000\u00de-\u0001\u0000\u0000\u0000\u00df\u00e0\u0003"+
-		"\"\u0011\u0000\u00e0\u00e9\u0006\u0017\uffff\uffff\u0000\u00e1\u00e2\u0003"+
-		"$\u0012\u0000\u00e2\u00e3\u0006\u0017\uffff\uffff\u0000\u00e3\u00ea\u0001"+
-		"\u0000\u0000\u0000\u00e4\u00e5\u0003&\u0013\u0000\u00e5\u00e6\u0006\u0017"+
-		"\uffff\uffff\u0000\u00e6\u00e8\u0001\u0000\u0000\u0000\u00e7\u00e4\u0001"+
-		"\u0000\u0000\u0000\u00e7\u00e8\u0001\u0000\u0000\u0000\u00e8\u00ea\u0001"+
-		"\u0000\u0000\u0000\u00e9\u00e1\u0001\u0000\u0000\u0000\u00e9\u00e7\u0001"+
-		"\u0000\u0000\u0000\u00ea\u00ee\u0001\u0000\u0000\u0000\u00eb\u00ec\u0003"+
-		"*\u0015\u0000\u00ec\u00ed\u0006\u0017\uffff\uffff\u0000\u00ed\u00ef\u0001"+
-		"\u0000\u0000\u0000\u00ee\u00eb\u0001\u0000\u0000\u0000\u00ee\u00ef\u0001"+
-		"\u0000\u0000\u0000\u00ef/\u0001\u0000\u0000\u0000\u000e}\u007f\u0087\u009a"+
-		"\u009c\u00a5\u00b5\u00b7\u00b9\u00c9\u00cd\u00e7\u00e9\u00ee";
+		"\u0002\u0016\u0007\u0016\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000"+
+		"\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0002\u0001\u0002"+
+		"\u0001\u0002\u0001\u0002\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0003"+
+		"\u0001\u0004\u0001\u0004\u0001\u0004\u0001\u0004\u0001\u0005\u0001\u0005"+
+		"\u0001\u0005\u0001\u0005\u0001\u0006\u0001\u0006\u0001\u0006\u0001\u0006"+
+		"\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001\b\u0001\b\u0001"+
+		"\b\u0001\b\u0001\t\u0001\t\u0001\t\u0001\t\u0001\n\u0001\n\u0001\n\u0001"+
+		"\n\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001\f\u0001\f\u0001"+
+		"\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001"+
+		"\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001"+
+		"\f\u0001\f\u0001\f\u0001\f\u0001\f\u0004\fx\b\f\u000b\f\f\fy\u0001\r\u0001"+
+		"\r\u0001\r\u0001\r\u0001\r\u0001\r\u0003\r\u0082\b\r\u0001\u000e\u0001"+
+		"\u000e\u0001\u000e\u0001\u000e\u0001\u000e\u0001\u000e\u0001\u000e\u0001"+
+		"\u000e\u0001\u000e\u0001\u000e\u0001\u000e\u0001\u000e\u0001\u000e\u0001"+
+		"\u000e\u0001\u000e\u0001\u000e\u0001\u000e\u0004\u000e\u0095\b\u000e\u000b"+
+		"\u000e\f\u000e\u0096\u0001\u000f\u0001\u000f\u0001\u000f\u0001\u000f\u0004"+
+		"\u000f\u009d\b\u000f\u000b\u000f\f\u000f\u009e\u0001\u000f\u0001\u000f"+
+		"\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010"+
+		"\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010"+
+		"\u0003\u0010\u00af\b\u0010\u0003\u0010\u00b1\b\u0010\u0003\u0010\u00b3"+
+		"\b\u0010\u0001\u0011\u0001\u0011\u0001\u0011\u0001\u0011\u0001\u0011\u0001"+
+		"\u0011\u0001\u0012\u0001\u0012\u0001\u0012\u0001\u0012\u0001\u0012\u0001"+
+		"\u0012\u0004\u0012\u00c1\b\u0012\u000b\u0012\f\u0012\u00c2\u0001\u0012"+
+		"\u0001\u0012\u0003\u0012\u00c7\b\u0012\u0001\u0013\u0001\u0013\u0001\u0013"+
+		"\u0001\u0013\u0001\u0013\u0001\u0013\u0001\u0013\u0001\u0013\u0001\u0014"+
+		"\u0001\u0014\u0001\u0014\u0001\u0014\u0001\u0015\u0001\u0015\u0001\u0015"+
+		"\u0001\u0015\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016\u0001\u0016"+
+		"\u0001\u0016\u0001\u0016\u0001\u0016\u0003\u0016\u00e1\b\u0016\u0003\u0016"+
+		"\u00e3\b\u0016\u0001\u0016\u0001\u0016\u0001\u0016\u0003\u0016\u00e8\b"+
+		"\u0016\u0001\u0016\u0000\u0000\u0017\u0000\u0002\u0004\u0006\b\n\f\u000e"+
+		"\u0010\u0012\u0014\u0016\u0018\u001a\u001c\u001e \"$&(*,\u0000\u0000\u00e9"+
+		"\u0000.\u0001\u0000\u0000\u0000\u00022\u0001\u0000\u0000\u0000\u00046"+
+		"\u0001\u0000\u0000\u0000\u0006:\u0001\u0000\u0000\u0000\b>\u0001\u0000"+
+		"\u0000\u0000\nB\u0001\u0000\u0000\u0000\fF\u0001\u0000\u0000\u0000\u000e"+
+		"J\u0001\u0000\u0000\u0000\u0010N\u0001\u0000\u0000\u0000\u0012R\u0001"+
+		"\u0000\u0000\u0000\u0014V\u0001\u0000\u0000\u0000\u0016Z\u0001\u0000\u0000"+
+		"\u0000\u0018^\u0001\u0000\u0000\u0000\u001a{\u0001\u0000\u0000\u0000\u001c"+
+		"\u0083\u0001\u0000\u0000\u0000\u001e\u0098\u0001\u0000\u0000\u0000 \u00a2"+
+		"\u0001\u0000\u0000\u0000\"\u00b4\u0001\u0000\u0000\u0000$\u00ba\u0001"+
+		"\u0000\u0000\u0000&\u00c8\u0001\u0000\u0000\u0000(\u00d0\u0001\u0000\u0000"+
+		"\u0000*\u00d4\u0001\u0000\u0000\u0000,\u00d8\u0001\u0000\u0000\u0000."+
+		"/\u0005\u0001\u0000\u0000/0\u0005\u001a\u0000\u000001\u0006\u0000\uffff"+
+		"\uffff\u00001\u0001\u0001\u0000\u0000\u000023\u0005\u0002\u0000\u0000"+
+		"34\u0005\u001a\u0000\u000045\u0006\u0001\uffff\uffff\u00005\u0003\u0001"+
+		"\u0000\u0000\u000067\u0005\u0003\u0000\u000078\u0005\u0017\u0000\u0000"+
+		"89\u0006\u0002\uffff\uffff\u00009\u0005\u0001\u0000\u0000\u0000:;\u0005"+
+		"\u0004\u0000\u0000;<\u0005\u0017\u0000\u0000<=\u0006\u0003\uffff\uffff"+
+		"\u0000=\u0007\u0001\u0000\u0000\u0000>?\u0005\u0005\u0000\u0000?@\u0005"+
+		"\u001a\u0000\u0000@A\u0006\u0004\uffff\uffff\u0000A\t\u0001\u0000\u0000"+
+		"\u0000BC\u0005\u0006\u0000\u0000CD\u0005\u001a\u0000\u0000DE\u0006\u0005"+
+		"\uffff\uffff\u0000E\u000b\u0001\u0000\u0000\u0000FG\u0005\u0007\u0000"+
+		"\u0000GH\u0005\u001a\u0000\u0000HI\u0006\u0006\uffff\uffff\u0000I\r\u0001"+
+		"\u0000\u0000\u0000JK\u0005\b\u0000\u0000KL\u0005\u001a\u0000\u0000LM\u0006"+
+		"\u0007\uffff\uffff\u0000M\u000f\u0001\u0000\u0000\u0000NO\u0005\t\u0000"+
+		"\u0000OP\u0005\u001a\u0000\u0000PQ\u0006\b\uffff\uffff\u0000Q\u0011\u0001"+
+		"\u0000\u0000\u0000RS\u0005\n\u0000\u0000ST\u0005\u001a\u0000\u0000TU\u0006"+
+		"\t\uffff\uffff\u0000U\u0013\u0001\u0000\u0000\u0000VW\u0005\u000b\u0000"+
+		"\u0000WX\u0005\u001a\u0000\u0000XY\u0006\n\uffff\uffff\u0000Y\u0015\u0001"+
+		"\u0000\u0000\u0000Z[\u0005\f\u0000\u0000[\\\u0005\u001a\u0000\u0000\\"+
+		"]\u0006\u000b\uffff\uffff\u0000]\u0017\u0001\u0000\u0000\u0000^w\u0006"+
+		"\f\uffff\uffff\u0000_`\u0003\b\u0004\u0000`a\u0006\f\uffff\uffff\u0000"+
+		"ax\u0001\u0000\u0000\u0000bc\u0003\n\u0005\u0000cd\u0006\f\uffff\uffff"+
+		"\u0000dx\u0001\u0000\u0000\u0000ef\u0003\f\u0006\u0000fg\u0006\f\uffff"+
+		"\uffff\u0000gx\u0001\u0000\u0000\u0000hi\u0003\u000e\u0007\u0000ij\u0006"+
+		"\f\uffff\uffff\u0000jx\u0001\u0000\u0000\u0000kl\u0003\u0012\t\u0000l"+
+		"m\u0006\f\uffff\uffff\u0000mx\u0001\u0000\u0000\u0000no\u0003\u0014\n"+
+		"\u0000op\u0006\f\uffff\uffff\u0000px\u0001\u0000\u0000\u0000qr\u0003\u0016"+
+		"\u000b\u0000rs\u0006\f\uffff\uffff\u0000sx\u0001\u0000\u0000\u0000tu\u0003"+
+		"\u0010\b\u0000uv\u0006\f\uffff\uffff\u0000vx\u0001\u0000\u0000\u0000w"+
+		"_\u0001\u0000\u0000\u0000wb\u0001\u0000\u0000\u0000we\u0001\u0000\u0000"+
+		"\u0000wh\u0001\u0000\u0000\u0000wk\u0001\u0000\u0000\u0000wn\u0001\u0000"+
+		"\u0000\u0000wq\u0001\u0000\u0000\u0000wt\u0001\u0000\u0000\u0000xy\u0001"+
+		"\u0000\u0000\u0000yw\u0001\u0000\u0000\u0000yz\u0001\u0000\u0000\u0000"+
+		"z\u0019\u0001\u0000\u0000\u0000{|\u0006\r\uffff\uffff\u0000|}\u0003\u0006"+
+		"\u0003\u0000}\u0081\u0006\r\uffff\uffff\u0000~\u007f\u0003\u0018\f\u0000"+
+		"\u007f\u0080\u0006\r\uffff\uffff\u0000\u0080\u0082\u0001\u0000\u0000\u0000"+
+		"\u0081~\u0001\u0000\u0000\u0000\u0081\u0082\u0001\u0000\u0000\u0000\u0082"+
+		"\u001b\u0001\u0000\u0000\u0000\u0083\u0084\u0003\u0000\u0000\u0000\u0084"+
+		"\u0094\u0006\u000e\uffff\uffff\u0000\u0085\u0086\u0003\u0002\u0001\u0000"+
+		"\u0086\u0087\u0006\u000e\uffff\uffff\u0000\u0087\u0095\u0001\u0000\u0000"+
+		"\u0000\u0088\u0089\u0003\u0004\u0002\u0000\u0089\u008a\u0006\u000e\uffff"+
+		"\uffff\u0000\u008a\u0095\u0001\u0000\u0000\u0000\u008b\u008c\u0003,\u0016"+
+		"\u0000\u008c\u008d\u0006\u000e\uffff\uffff\u0000\u008d\u0095\u0001\u0000"+
+		"\u0000\u0000\u008e\u008f\u0003\u001a\r\u0000\u008f\u0090\u0006\u000e\uffff"+
+		"\uffff\u0000\u0090\u0095\u0001\u0000\u0000\u0000\u0091\u0092\u0003\u0018"+
+		"\f\u0000\u0092\u0093\u0006\u000e\uffff\uffff\u0000\u0093\u0095\u0001\u0000"+
+		"\u0000\u0000\u0094\u0085\u0001\u0000\u0000\u0000\u0094\u0088\u0001\u0000"+
+		"\u0000\u0000\u0094\u008b\u0001\u0000\u0000\u0000\u0094\u008e\u0001\u0000"+
+		"\u0000\u0000\u0094\u0091\u0001\u0000\u0000\u0000\u0095\u0096\u0001\u0000"+
+		"\u0000\u0000\u0096\u0094\u0001\u0000\u0000\u0000\u0096\u0097\u0001\u0000"+
+		"\u0000\u0000\u0097\u001d\u0001\u0000\u0000\u0000\u0098\u009c\u0006\u000f"+
+		"\uffff\uffff\u0000\u0099\u009a\u0003\u001c\u000e\u0000\u009a\u009b\u0006"+
+		"\u000f\uffff\uffff\u0000\u009b\u009d\u0001\u0000\u0000\u0000\u009c\u0099"+
+		"\u0001\u0000\u0000\u0000\u009d\u009e\u0001\u0000\u0000\u0000\u009e\u009c"+
+		"\u0001\u0000\u0000\u0000\u009e\u009f\u0001\u0000\u0000\u0000\u009f\u00a0"+
+		"\u0001\u0000\u0000\u0000\u00a0\u00a1\u0005\u0000\u0000\u0001\u00a1\u001f"+
+		"\u0001\u0000\u0000\u0000\u00a2\u00a3\u0005\u000f\u0000\u0000\u00a3\u00a4"+
+		"\u0005\u0016\u0000\u0000\u00a4\u00b2\u0006\u0010\uffff\uffff\u0000\u00a5"+
+		"\u00a6\u0005\u0015\u0000\u0000\u00a6\u00a7\u0005\u0016\u0000\u0000\u00a7"+
+		"\u00b0\u0006\u0010\uffff\uffff\u0000\u00a8\u00a9\u0005\u0015\u0000\u0000"+
+		"\u00a9\u00aa\u0005\u0017\u0000\u0000\u00aa\u00ae\u0006\u0010\uffff\uffff"+
+		"\u0000\u00ab\u00ac\u0005\u0015\u0000\u0000\u00ac\u00ad\u0005\u0017\u0000"+
+		"\u0000\u00ad\u00af\u0006\u0010\uffff\uffff\u0000\u00ae\u00ab\u0001\u0000"+
+		"\u0000\u0000\u00ae\u00af\u0001\u0000\u0000\u0000\u00af\u00b1\u0001\u0000"+
+		"\u0000\u0000\u00b0\u00a8\u0001\u0000\u0000\u0000\u00b0\u00b1\u0001\u0000"+
+		"\u0000\u0000\u00b1\u00b3\u0001\u0000\u0000\u0000\u00b2\u00a5\u0001\u0000"+
+		"\u0000\u0000\u00b2\u00b3\u0001\u0000\u0000\u0000\u00b3!\u0001\u0000\u0000"+
+		"\u0000\u00b4\u00b5\u0005\u0013\u0000\u0000\u00b5\u00b6\u0005\u0017\u0000"+
+		"\u0000\u00b6\u00b7\u0005\u0015\u0000\u0000\u00b7\u00b8\u0005\u0017\u0000"+
+		"\u0000\u00b8\u00b9\u0006\u0011\uffff\uffff\u0000\u00b9#\u0001\u0000\u0000"+
+		"\u0000\u00ba\u00c6\u0005\u0011\u0000\u0000\u00bb\u00bc\u0005\u001e\u0000"+
+		"\u0000\u00bc\u00c0\u0006\u0012\uffff\uffff\u0000\u00bd\u00be\u0003&\u0013"+
+		"\u0000\u00be\u00bf\u0006\u0012\uffff\uffff\u0000\u00bf\u00c1\u0001\u0000"+
+		"\u0000\u0000\u00c0\u00bd\u0001\u0000\u0000\u0000\u00c1\u00c2\u0001\u0000"+
+		"\u0000\u0000\u00c2\u00c0\u0001\u0000\u0000\u0000\u00c2\u00c3\u0001\u0000"+
+		"\u0000\u0000\u00c3\u00c7\u0001\u0000\u0000\u0000\u00c4\u00c5\u0005\u001d"+
+		"\u0000\u0000\u00c5\u00c7\u0006\u0012\uffff\uffff\u0000\u00c6\u00bb\u0001"+
+		"\u0000\u0000\u0000\u00c6\u00c4\u0001\u0000\u0000\u0000\u00c7%\u0001\u0000"+
+		"\u0000\u0000\u00c8\u00c9\u0005\u0014\u0000\u0000\u00c9\u00ca\u0005\u001f"+
+		"\u0000\u0000\u00ca\u00cb\u0005 \u0000\u0000\u00cb\u00cc\u0005!\u0000\u0000"+
+		"\u00cc\u00cd\u0005 \u0000\u0000\u00cd\u00ce\u0005\"\u0000\u0000\u00ce"+
+		"\u00cf\u0006\u0013\uffff\uffff\u0000\u00cf\'\u0001\u0000\u0000\u0000\u00d0"+
+		"\u00d1\u0005\u0010\u0000\u0000\u00d1\u00d2\u0005\u001c\u0000\u0000\u00d2"+
+		"\u00d3\u0006\u0014\uffff\uffff\u0000\u00d3)\u0001\u0000\u0000\u0000\u00d4"+
+		"\u00d5\u0005\u0012\u0000\u0000\u00d5\u00d6\u0005\u001d\u0000\u0000\u00d6"+
+		"\u00d7\u0006\u0015\uffff\uffff\u0000\u00d7+\u0001\u0000\u0000\u0000\u00d8"+
+		"\u00d9\u0003 \u0010\u0000\u00d9\u00e2\u0006\u0016\uffff\uffff\u0000\u00da"+
+		"\u00db\u0003\"\u0011\u0000\u00db\u00dc\u0006\u0016\uffff\uffff\u0000\u00dc"+
+		"\u00e3\u0001\u0000\u0000\u0000\u00dd\u00de\u0003$\u0012\u0000\u00de\u00df"+
+		"\u0006\u0016\uffff\uffff\u0000\u00df\u00e1\u0001\u0000\u0000\u0000\u00e0"+
+		"\u00dd\u0001\u0000\u0000\u0000\u00e0\u00e1\u0001\u0000\u0000\u0000\u00e1"+
+		"\u00e3\u0001\u0000\u0000\u0000\u00e2\u00da\u0001\u0000\u0000\u0000\u00e2"+
+		"\u00e0\u0001\u0000\u0000\u0000\u00e3\u00e7\u0001\u0000\u0000\u0000\u00e4"+
+		"\u00e5\u0003(\u0014\u0000\u00e5\u00e6\u0006\u0016\uffff\uffff\u0000\u00e6"+
+		"\u00e8\u0001\u0000\u0000\u0000\u00e7\u00e4\u0001\u0000\u0000\u0000\u00e7"+
+		"\u00e8\u0001\u0000\u0000\u0000\u00e8-\u0001\u0000\u0000\u0000\u000ewy"+
+		"\u0081\u0094\u0096\u009e\u00ae\u00b0\u00b2\u00c2\u00c6\u00e0\u00e2\u00e7";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

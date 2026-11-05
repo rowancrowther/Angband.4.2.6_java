@@ -53,29 +53,26 @@ import java.util.List;
  * <p>The kinds come back in file order, which is C's {@code trap_info} order: {@code parse_trap_name}
  * pushes each record on the front of a list, and {@code finish_parse_trap} copies the list into the
  * array from the back, so the first record in the file is {@code tidx} 0. {@link TrapAssembler} numbers
- * {@code trapKindIndex} by position among the records that assemble, so a record it drops moves every
- * later kind down one place, where C would have quit. C also allocates one blank element after the last
- * kind and counts {@code z_info->trap_max} without it; the Java list holds only real kinds and its size
- * is that count, the accepted deviation recorded on {@code TerrainDataLoader.loadTraps()}.
+ * {@code trapKindIndex} by position. C also allocates one blank element after the last kind and counts
+ * {@code z_info->trap_max} without it; the Java list holds only real kinds and its size is that count,
+ * the accepted deviation recorded on {@code TerrainDataLoader.loadTraps()}.
  *
- * <p>C quits on the first bad line. This reader follows the shared two-channel contract instead: a
- * lexer or grammar error returns no kinds and the messages, and a {@code record-count:} mismatch is a
- * soft error that leaves the kinds that did parse loaded. The {@code record-count:} header is
- * Java-only, the upstream file has none, and it counts {@code name:} lines. A file that cannot be
- * opened is an {@link IOException}, where C quits.
+ * <p>C quits on the first bad line, and so does this reader: a lexer or grammar error is thrown
+ * from {@link #extract} as a {@code ParseCancellationException}, and a value the assembler refuses
+ * is thrown as a {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}. Neither is
+ * caught here, and no kinds are returned. A file that cannot be opened is an {@link IOException},
+ * where C quits.
  *
  * <p>The grammar is stricter than C in several places: a record with only a {@code name:} line, a
  * colon in the second field of {@code name:}, flags separated by a space alone, an empty
  * {@code flags:} line, {@code effect-yx-xtra:}, and a {@code dice:}, {@code dice-xtra:} or
- * {@code expr:} with no effect before it are hard errors where C accepts them. The grammar and
- * assembler are looser in others: {@code effect-msg:} is taken where C has no such directive, a
- * negative {@code appear:} value loads, and {@code flags:MAX} and {@code save:MAX} resolve to the
- * enum's sentinel. A kind with no {@code graphics:} or {@code visibility:} line has a {@code null}
- * display character or power where C has zeroes, and a kind with a bad effect line is kept with a
- * {@code null} effect list where C quits. They are written up in {@code docs/grammar_issues.md} and
- * {@code docs/Assembler_Issues.md}.
+ * {@code expr:} with no effect before it are hard errors where C accepts them. The grammar is looser
+ * in one: {@code effect-msg:} is taken where C has no such directive. They are written up in
+ * {@code docs/grammar_issues.md} and {@code docs/Assembler_Issues.md}.
  *
- * <p>Class TrapReader coded before 260915, commented in full on 261018.
+ * <p>Class TrapReader coded before 260915, commented in full on 261018, updated on 261105 for the
+ * removal of the soft-error path and the {@code record-count:} header, and for the assembler now
+ * refusing negative {@code appear:} values and sentinel flags.
  *
  * @author Rowan Crowther
  */
@@ -89,15 +86,15 @@ public class TrapReader implements Reader<TrapKind> {
     private static final Logger logger = LogManager.getLogger();
 
     /**
-     * Reads {@code filename} and returns the assembled trap kinds in file order, discarding the error
-     * messages. The convenience form of {@link #parseWithResults}, which is the one to call when the
-     * errors matter: with this one a hard grammar error and a file in which every record was dropped
-     * look the same.
+     * Reads {@code filename} and returns the assembled trap kinds in file order, unwrapped from the
+     * {@link ParseResult} that {@link #parseWithResults} gives. Any error throws exactly as it does
+     * there.
      *
-     * <p>Function parse coded before 260915, commented in full on 261018.
+     * <p>Function parse coded before 260915, commented in full on 261018, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param filename the trap data file to read
-     * @return the trap kinds read from the file, empty if the parse failed
+     * @return every trap kind in the file, in file order
      * @throws IOException if the file cannot be opened or read
      */
     @Override
@@ -107,59 +104,53 @@ public class TrapReader implements Reader<TrapKind> {
 
     /**
      * The grammar-specific step handed to {@link GrammarDriver}: runs the grammar's {@code file}
-     * rule, fails closed on any hard lexer or grammar error through {@link ParseErrors#throwIfAny()},
-     * and soft-checks the {@code record-count:} header against the number of {@code name:} blocks
-     * parsed. No value is interpreted here: the colour, flags, numbers and dice stay as text for
-     * {@link TrapAssembler}, and the grammar has already gathered each record's lines, repeated
-     * message lines joined as C's {@code string_append} joins them, into its {@link TrapParseRecord}.
+     * rule and fails closed on any hard lexer or grammar error through
+     * {@link ParseErrors#throwIfAny()}. No value is interpreted here: the colour, flags, numbers and
+     * dice stay as text for {@link TrapAssembler}, and the grammar has already gathered each
+     * record's lines, repeated message lines joined as C's {@code string_append} joins them, into
+     * its {@link TrapParseRecord}.
      *
      * <p>The ordering is deliberate: {@code throwIfAny} fires straight after the parse, so a hard
-     * grammar error (a missing {@code record-count:} header, a directive before any {@code name:},
-     * a {@code name:} with nothing after it, a line the lexer does not know) fails closed before the
-     * count check runs against whatever did parse. The rule needs at least one record, where C
-     * accepts a file with none. The rows are copied into a new list so the assembler cannot alter
-     * the parser's own.
+     * grammar error (a directive before any {@code name:}, a {@code name:} with nothing after it, a
+     * line the lexer does not know) fails closed before any row is used. The rule needs at least
+     * one record, where C accepts a file with none. The rows are copied into a new list so the
+     * assembler cannot alter the parser's own.
      *
-     * <p>Function extract coded before 260915, commented in full on 261018.
+     * <p>Function extract coded before 260915, commented in full on 261018, updated on 261105 for
+     * the removal of the soft-error path and the {@code record-count:} header.
      *
      * @param parser       the generated parser, positioned at the start of the file
      * @param errorCatcher the hard-error channel; {@code throwIfAny} aborts before the rows are used
-     * @param errors       the soft-error sink: a record-count mismatch is appended here
      * @return the parse records, one per {@code name:} block, in file order
      */
     private static List<TrapParseRecord> extract(
             @NotNull TrapGrammar parser,
-            @NotNull ParseErrors errorCatcher,
-            @NotNull List<String> errors) {
+            @NotNull ParseErrors errorCatcher) {
         TrapGrammar.FileContext output = parser.file();
         List<TrapParseRecord> results = output.traps;
         errorCatcher.throwIfAny();
-
-        String declaredRecordCount = output.declaredRecordCount;
-        GrammarDriver.checkRecordCount(declaredRecordCount, results.size(), errors);
 
         return new ArrayList<>(results);
     }
 
     /**
-     * Reads {@code filename} and returns the full {@link ParseResult}: the assembled
-     * {@link TrapKind}s and every error message collected on the way. This is the Java form of C's
-     * {@code run_parse_trap} followed by {@code finish_parse_trap}, and the entry point
-     * {@code TerrainDataLoader.loadTraps()} uses so that it can inspect {@link ParseResult#hasErrors()}
-     * before registering the result. {@link GrammarDriver#run} does the lex, parse, extract and
-     * assemble.
+     * Reads {@code filename} and returns the assembled {@link TrapKind}s wrapped in a
+     * {@link ParseResult}. This is the Java form of C's {@code run_parse_trap} followed by
+     * {@code finish_parse_trap}, and the entry point {@code TerrainDataLoader.loadTraps()} uses.
+     * {@link GrammarDriver#run} does the lex, parse, extract and assemble.
      *
-     * <p>Where C quits on a flag or save flag it cannot resolve, or on an {@code appear:} number too
-     * large for an {@code int}, the assembler records a soft error and drops the whole trap. An unknown
-     * colour, a non-numeric number and a malformed {@code visibility:} never get that far: the lexer
-     * rejects them as hard errors. A bad effect line is the exception to the dropping: the error is
-     * recorded but the kind is still built, with a {@code null} effect list. A file that cannot be
-     * opened is an {@link IOException}, where C's {@code parse_file_quit_not_found} quits.
+     * <p>As C quits on a flag or save flag it cannot resolve, or on a bad {@code appear:} number,
+     * the assembler throws a {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}
+     * there; a non-numeric number and a malformed {@code visibility:} are rejected by the lexer and
+     * thrown as a {@code ParseCancellationException}. No result is returned for a file that fails.
+     * A file that cannot be opened is an {@link IOException}, where C's
+     * {@code parse_file_quit_not_found} quits.
      *
-     * <p>Function parseWithResults coded before 260915, commented in full on 261018.
+     * <p>Function parseWithResults coded before 260915, commented in full on 261018, updated on
+     * 261105 for the removal of the soft-error path.
      *
      * @param filename the trap data file to read
-     * @return the parse result: the trap kinds in file order plus any error messages
+     * @return every trap kind in the file, in file order
      * @throws IOException if the file cannot be opened or read
      */
     public ParseResult<TrapKind> parseWithResults(@NotNull String filename) throws IOException {

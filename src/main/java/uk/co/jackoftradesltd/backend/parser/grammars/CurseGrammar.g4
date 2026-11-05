@@ -14,11 +14,6 @@ import EffectBlock;
     import java.util.ArrayList;
 }
 
-recordCount
-        returns[String count]
-        :   RECORD_COUNT INTEGER { $count = $INTEGER.getText(); }
-        ;
-
 name
         returns[String nameStr, int line]
         :   NAME FREE_TEXT { $nameStr = $FREE_TEXT.getText();
@@ -144,8 +139,7 @@ curseRecord
         ;
 
 file
-        returns[List<CurseParseRecord> records, String declaredCount]
-        :   recordCount { $declaredCount = $recordCount.count;
-                          $records = new ArrayList<>(); }
+        returns[List<CurseParseRecord> records]
+        :   { $records = new ArrayList<>(); }
             (curseRecord { $records.add($curseRecord.record); })+ EOF
         ;

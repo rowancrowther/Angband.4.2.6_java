@@ -19,6 +19,7 @@ package uk.co.jackoftradesltd.channel.parser;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -28,54 +29,70 @@ import static org.junit.jupiter.api.Assertions.*;
  * Direct unit tests for {@link ParseResult}, the generic result holder every list-shaped
  * {@code lib/gamedata} reader wraps its output in.
  *
- * <p>There is no single C original for this record to be checked against - the C parser
- * (see {@code struct parser_state} in {@code parser.h}) reports one {@code enum parser_error}
- * at a time and fails fast, rather than aggregating a soft-error list. These tests only pin
- * the holder's own contract: {@link ParseResult#hasErrors()} reflects whether the errors list
- * is empty, independently of whether any items were parsed.
+ * <p>There is no single C original for this record. C's {@code parse_file()} in
+ * {@code datafile.c} stops at the first parser error and never returns a partial list; the
+ * records reach the game only through each {@code finish} hook. With soft errors now fatal,
+ * the Java holder matches that: it carries the items and nothing else. These tests pin that
+ * contract - the record has exactly one component, hands back the very list it was given
+ * (no defensive copy, no reordering), and imposes no null check of its own.
  *
  * @author Rowan Crowther
  */
 class ParseResultTest {
     @Test
-    void resultWithItemsAndNoErrorsReportsNoErrors() {
-        List<String> items = List.of("a", "b");
-        List<String> errors = Collections.emptyList();
+    void recordHasOnlyAnItemsComponent() {
+        var components = ParseResult.class.getRecordComponents();
 
-        ParseResult<String> result = new ParseResult<>(items, errors);
-
-        assertFalse(result.hasErrors());
-        assertSame(items, result.items());
-        assertSame(errors, result.errors());
+        assertEquals(1, components.length);
+        assertEquals("items", components[0].getName());
+        assertEquals(List.class, components[0].getType());
     }
 
     @Test
-    void resultWithErrorsReportsErrorsRegardlessOfItems() {
-        List<String> items = List.of("a");
-        List<String> errors = List.of("Line: 12: duplicate world:max-depth");
+    void itemsReturnsTheSameListInstance() {
+        List<String> items = List.of("a", "b", "c");
 
-        ParseResult<String> result = new ParseResult<>(items, errors);
+        ParseResult<String> result = new ParseResult<>(items);
 
-        assertTrue(result.hasErrors());
         assertSame(items, result.items());
-        assertSame(errors, result.errors());
     }
 
     @Test
-    void emptyItemsWithNoErrorsReportsNoErrors() {
-        ParseResult<String> result = new ParseResult<>(Collections.emptyList(), Collections.emptyList());
+    void itemsKeepsAssemblerOrder() {
+        List<String> items = List.of("third", "first", "second");
 
-        assertFalse(result.hasErrors());
+        assertEquals(List.of("third", "first", "second"), new ParseResult<>(items).items());
+    }
+
+    @Test
+    void itemsIsNotADefensiveCopy() {
+        List<String> items = new ArrayList<>(List.of("a"));
+        ParseResult<String> result = new ParseResult<>(items);
+
+        items.add("b");
+
+        assertEquals(List.of("a", "b"), result.items());
+    }
+
+    @Test
+    void emptyItemsAreHeldAsEmpty() {
+        ParseResult<String> result = new ParseResult<>(Collections.emptyList());
+
         assertTrue(result.items().isEmpty());
     }
 
     @Test
-    void emptyItemsWithErrorsStillReportsErrors() {
-        List<String> errors = List.of("Line: 3: unrecognised directive");
+    void nullItemsAreAcceptedUnchecked() {
+        assertNull(new ParseResult<String>(null).items());
+    }
 
-        ParseResult<String> result = new ParseResult<>(Collections.emptyList(), errors);
+    @Test
+    void equalItemsGiveEqualResults() {
+        ParseResult<String> a = new ParseResult<>(List.of("x", "y"));
+        ParseResult<String> b = new ParseResult<>(new ArrayList<>(List.of("x", "y")));
 
-        assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty());
+        assertEquals(a, b);
+        assertEquals(a.hashCode(), b.hashCode());
+        assertNotEquals(a, new ParseResult<>(List.of("y", "x")));
     }
 }

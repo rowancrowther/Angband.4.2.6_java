@@ -186,7 +186,7 @@ class ArtifactBrandSlayOrderTest {
     @Test
     @DisplayName("every artifact's brands iterate in C index order")
     void brandsInRegistryOrder() throws Exception {
-        assertEquals(138, result.items().size(), () -> "artifact.txt load errors: " + result.errors());
+        assertEquals(138, result.items().size());
         List<List<String>> expected = expectedPerArtifact("brand", codes(BRAND_FILE));
         assertEquals(expected.size(), result.items().size());
 
@@ -206,7 +206,7 @@ class ArtifactBrandSlayOrderTest {
     @Test
     @DisplayName("every artifact's slays iterate in C index order")
     void slaysInRegistryOrder() throws Exception {
-        assertEquals(138, result.items().size(), () -> "artifact.txt load errors: " + result.errors());
+        assertEquals(138, result.items().size());
         List<List<String>> expected = expectedPerArtifact("slay", codes(SLAY_FILE));
 
         List<String> wrong = new ArrayList<>();

@@ -41,10 +41,6 @@ lexer grammar ObjectBaseLexer;
 
 import CommentsAndEol, Flags;
 
-RECORD_COUNT
-        :   'record-count:'
-        ;
-
 DEFAULT_MAX_STACK
         :   'default:max-stack:'
         ;

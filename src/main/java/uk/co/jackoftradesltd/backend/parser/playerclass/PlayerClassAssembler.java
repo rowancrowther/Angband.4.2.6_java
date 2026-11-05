@@ -56,9 +56,8 @@ import java.util.Map;
  * {@link ObjectFlag}, {@link PlayerFlag}) and parses every scalar. A fault is fatal, as it is in
  * C, where the matching {@code PARSE_ERROR_*} stops the parse: the problem is logged and a
  * {@link DataFileParseException} naming the line and file is thrown, so one broken class ends
- * the load. The {@code errors} list the {@link Assembler} contract passes in is never written to
- * here; it is handed on to {@link ClassMagicAssembler} and {@link ClassEquipAssembler}. The
- * checks run in a fixed order (stats, base skills, skill increments, the five scalars, magic,
+ * the load. {@link ClassMagicAssembler} and {@link ClassEquipAssembler} throw in the same way for
+ * the nested records. The checks run in a fixed order (stats, base skills, skill increments, the five scalars, magic,
  * equipment, object flags, player flags, titles), where C reports whichever line comes first in
  * the file; with several faults in one class only the message differs.
  *
@@ -82,7 +81,8 @@ import java.util.Map;
  *       {@code docs/grammar_issues.md}).</li>
  * </ul>
  *
- * <p>Class PlayerClassAssembler coded before 260915, commented in full on 261028.
+ * <p>Class PlayerClassAssembler coded before 260915, commented in full on 261028, updated on 261105
+ * for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -130,8 +130,8 @@ public class PlayerClassAssembler implements Assembler<PlayerClassParseRecord, L
      * the in-book {@code equip:} lines together, goes to {@link ClassEquipAssembler}; the result is
      * stored as it comes back, so its order is whatever that class documents. A {@code magic:}
      * record is wrapped in a one-element list for {@link ClassMagicAssembler}; if nothing comes
-     * back the class stores {@link ClassMagic#NONE}. See {@code docs/Assembler_Issues.md} for the
-     * case where every book of a caster is dropped.
+     * back the class stores {@link ClassMagic#NONE}. A bad book throws rather than being dropped,
+     * so a caster can no longer load as a non-caster by losing all its books.
      *
      * <p>A record is refused with a {@link DataFileParseException} when:
      * <ul>
@@ -144,17 +144,15 @@ public class PlayerClassAssembler implements Assembler<PlayerClassParseRecord, L
      * Faults inside the nested equipment and magic records are thrown by those assemblers.
      *
      * <p>Function assemble coded before 260915, commented in full on 261028 (soft errors made
-     * fatal by 261028).
+     * fatal by 261028), updated on 261105 for the removal of the soft-error path.
      *
      * @param records  the raw class records, in file order
-     * @param errors   not written to by this method; it is passed on to {@link ClassMagicAssembler}
-     *                 and {@link ClassEquipAssembler}
      * @param filename the class file being read, for the error messages
      * @return one {@link PlayerClass} per record, in file order
      * @throws DataFileParseException if a name, number, flag or title count is bad, as listed above
      */
     @Override
-    public List<PlayerClass> assemble(@NotNull List<PlayerClassParseRecord> records, @NotNull List<String> errors,
+    public List<PlayerClass> assemble(@NotNull List<PlayerClassParseRecord> records,
                                     String filename) {
         List<PlayerClass> playerClasses = new ArrayList<>();
         List<StartItem> startItems;
@@ -213,12 +211,12 @@ public class PlayerClassAssembler implements Assembler<PlayerClassParseRecord, L
             if (record.magic() != null) {
                 List<ClassMagicParseRecord> cmpr = new ArrayList<>();
                 cmpr.add(record.magic());
-                magic = new ClassMagicAssembler().assemble(cmpr, errors, filename);
+                magic = new ClassMagicAssembler().assemble(cmpr, filename);
             }
 
             ClassMagic classMagic = magic.isEmpty() ? ClassMagic.NONE : magic.getFirst();
             
-            startItems = new ClassEquipAssembler().assemble(record.equipment(), errors, filename);
+            startItems = new ClassEquipAssembler().assemble(record.equipment(), filename);
             Flag<ObjectFlag> oFlags = new Flag<>(ObjectFlag.class);
             for (String oFlag : record.oFlags()) {
                 String flagString = "OF_" + oFlag;

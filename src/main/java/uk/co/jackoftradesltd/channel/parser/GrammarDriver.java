@@ -18,12 +18,11 @@
 package uk.co.jackoftradesltd.channel.parser;
 
 import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.misc.ParseCancellationException;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
@@ -43,7 +42,9 @@ import java.util.function.Function;
  * <p>
  * <strong>What the driver owns</strong> (the invariant part): the ANTLR
  * plumbing, the error-listener install, the assemble call, the
- * {@link ParseResult} wrapping, and the IO / cancellation handling.
+ * {@link ParseResult} wrapping, and the logging of an IO failure. It catches
+ * nothing else: a grammar or assembler error passes straight through to the
+ * loader, so a bad file stops the load, as C's {@code run_parser()} quits.
  * <strong>What the caller supplies</strong> (the four knobs): the lexer
  * constructor, the parser constructor, an {@link Extractor} (the one
  * grammar-specific step), and the grammar's {@link Assembler}.
@@ -58,9 +59,12 @@ import java.util.function.Function;
  *
  * @author Rowan Crowther
  *
- * <p>Class GrammarDriver coded on 260911, commented in full on 260915.
+ * <p>Class GrammarDriver coded on 260911, commented in full on 260915, updated on 261104 for the
+ * removal of the soft-error path.
  */
 public final class GrammarDriver {
+    private static final Logger logger = LogManager.getLogger(GrammarDriver.class);
+    
     /**
      * Private, no-op constructor. {@code GrammarDriver} is a static-only
      * utility class - every reader drives its file through {@link #run}
@@ -74,7 +78,7 @@ public final class GrammarDriver {
 
     /**
      * Drive one data file through the full parse-and-assemble pipeline and
-     * return its results plus any soft errors gathered along the way.
+     * return the assembled items.
      * <p>
      * The fixed skeleton: open the file, build the lexer/parser from the two
      * constructor references, install the shared {@link ParseErrors} listener,
@@ -82,15 +86,22 @@ public final class GrammarDriver {
      * {@code assembler}, and wrap the assembled {@code List<T>} in a
      * {@link ParseResult}.
      * <p>
-     * <strong>Error handling has two channels.</strong> Hard grammar/lexer
-     * errors are collected by {@link ParseErrors} and rethrown as a
-     * {@link ParseCancellationException} by the extractor's
-     * {@link ParseErrors#throwIfAny()}; that is caught here and returned as an
-     * <em>empty</em> {@link ParseResult} carrying the collected error messages.
-     * Soft errors (bad record-count, unresolvable fields) accumulate in the
-     * {@code errors} list and ride out alongside whatever records did assemble,
-     * preserving the partial-results contract. An {@link IOException} is logged
-     * and rethrown rather than swallowed.
+     * <strong>Every error is fatal</strong>, as in C, where {@code run_parser()}
+     * ({@code datafile.c}) quits on the first one. There are three ways out
+     * other than a clean return:
+     * <ul>
+     *   <li>a grammar or lexer error is collected by {@link ParseErrors} and
+     *       thrown as a
+     *       {@code org.antlr.v4.runtime.misc.ParseCancellationException} by the
+     *       extractor's call to {@link ParseErrors#throwIfAny()};</li>
+     *   <li>a record the assembler refuses is thrown as a
+     *       {@link DataFileParseException};</li>
+     *   <li>an {@link IOException} is logged under the caller's logger and
+     *       rethrown.</li>
+     * </ul>
+     * The first two are unchecked and are not caught here, so they reach the
+     * loader unlogged and unwrapped. No {@link ParseResult} is built for a file
+     * that fails, so a caller never sees a partial list.
      * <p>
      * The {@code Assembler<R, List<T>>} bound is what restricts this to
      * list-shaped readers and keeps the assembler's {@code List<T>} result in
@@ -107,11 +118,11 @@ public final class GrammarDriver {
      * @param <P>       the generated parser type
      * @param <R>       the per-grammar parse-record (DTO) type
      * @param <T>       the assembled element type held by the {@link ParseResult}
-     * @return a {@link ParseResult} of the assembled items and any soft errors;
-     * empty items (with errors) if the parse was cancelled
+     * @return a {@link ParseResult} of every item assembled from the file
      * @throws IOException if the file cannot be read
      *
-     * <p>Method run coded on 260911, commented in full on 260915.
+     * <p>Method run coded on 260911, commented in full on 260915, updated on
+     * 261104 for the removal of the soft-error path.
      */
     public static <L extends Lexer, P extends Parser, R, T> ParseResult<T> run(
             @NotNull String filename,
@@ -122,7 +133,6 @@ public final class GrammarDriver {
             @NotNull Logger logger) throws IOException {
 
         ParseErrors errorCatcher = null;
-        List<String> errors = new ArrayList<>();
 
         try {
             CharStream input = CharStreams.fromFileName(filename);
@@ -132,65 +142,19 @@ public final class GrammarDriver {
 
             errorCatcher = ParseErrors.install(lexer, parser, filename);
 
-            List<R> records = extractor.extract(parser, errorCatcher, errors);
-            List<T> items = assembler.assemble(records, errors, filename);
-            return new ParseResult<>(items, errors);
+            List<R> records = extractor.extract(parser, errorCatcher);
+            List<T> items = assembler.assemble(records, filename);
+            return new ParseResult<>(items);
         } catch (IOException e) {
             logger.error("Error reading file {}", filename, e);
             throw e;
-        } catch (ParseCancellationException e) {
-            return new ParseResult<>(List.of(), errorCatcher != null ? errorCatcher.getErrors() : List.of());
-        }
-    }
-
-    /**
-     * Validate the file's declared {@code record-count} header against the
-     * number of records actually parsed, recording a soft error on any
-     * discrepancy. A mismatch (or a non-numeric header) is never fatal - the
-     * records that did parse still load, per the partial-results contract - so
-     * this reports into {@code errors} rather than throwing.
-     * <p>
-     * The {@code record-count} header is a Java-only addition to this port's
-     * data-file grammars; the original C parser (Angband 4.2.6's
-     * {@code datafile.c} / {@code parser.c}) has no declared-count check to
-     * cross-reference, so this method has no C original.
-     * <p>
-     * Its purpose is the side effect on {@code errors}; there is no return
-     * value to consume (the parsed count is used only for the comparison
-     * here). On a non-numeric {@code declared} value the method reports the
-     * format error and returns immediately, without also attempting the
-     * numeric comparison.
-     *
-     * @param declared the header's declared-count text
-     * @param actual   the number of records actually parsed
-     * @param errors   the soft-error sink, mutated in place
-     *
-     * <p>Method checkRecordCount coded on 260911, commented in full on 260915;
-     * fixed a sentinel-value collision on 260915 where a declared count of
-     * {@code "-1"} was silently treated as "no count declared" and skipped
-     * the mismatch check.
-     */
-    public static void checkRecordCount(@NotNull String declared,
-                                        int actual,
-                                        @NotNull List<String> errors) {
-        int count;
-        try {
-            count = Integer.parseInt(declared);
-        } catch (NumberFormatException e) {
-            errors.add("Invalid number format on declared record count: " + declared);
-            return;
-        }
-
-        if (count != actual) {
-            errors.add("record-count header declares " + count + " records, but file contains " + actual);
         }
     }
 
     /**
      * The one step {@link #run} cannot perform itself: turn a parsed file into
      * a list of parse-records. An implementation runs the parser's entry rule
-     * ({@code parser.file()}), fires {@link ParseErrors#throwIfAny()}, validates
-     * the record-count header (see {@link #checkRecordCount}), and maps each raw
+     * ({@code parser.file()}), fires {@link ParseErrors#throwIfAny()}, and maps each raw
      * row to a grammar-specific DTO of type {@code R}.
      * <p>
      * It receives the live {@link ParseErrors} handle - not just the parser -
@@ -201,43 +165,43 @@ public final class GrammarDriver {
      *       fail-closed check has to live inside the extractor, not in
      *       {@link #run}.</li>
      *   <li><strong>No common supertype:</strong> each grammar's
-     *       {@code FileContext} names its record-list and count fields
-     *       differently (e.g. {@code .projections}/{@code .records} vs
-     *       {@code .renderers}/{@code .record}), so only grammar-specific code
-     *       can reach them.</li>
+     *       {@code FileContext} names its record-list field differently, so
+     *       only grammar-specific code can reach it.</li>
      * </ul>
-     * Soft (recoverable) problems are appended to {@code errors}; hard
-     * grammar/lexer problems surface through the {@code errorCatcher}.
+     * There is no error list to append to: a grammar or lexer problem surfaces
+     * through the {@code errorCatcher}, and anything later is the assembler's
+     * to throw.
      *
      * @param <P> the concrete generated parser type (e.g. {@code ProjectionGrammar})
      * @param <R> the per-grammar parse-record (DTO) type
      * @author Rowan Crowther
      *
-     * <p>Interface Extractor coded on 260911, commented in full on 260915.
+     * <p>Interface Extractor coded on 260911, commented in full on 260915,
+     * updated on 261104 for the removal of the soft-error path and the
+     * {@code record-count:} header.
      */
     @FunctionalInterface
     public interface Extractor<P extends Parser, R> {
         /**
          * Runs the parser's entry rule, fail-closes on any hard grammar/lexer
          * error via {@code errorCatcher.throwIfAny()}, then maps each parsed
-         * row into a grammar-specific record of type {@code R}. Soft problems
-         * (e.g. a {@link GrammarDriver#checkRecordCount} mismatch) are
-         * appended to {@code errors} rather than thrown.
+         * row into a grammar-specific record of type {@code R}. Nothing is
+         * collected for later: a hard error throws here, and the rows are only
+         * mapped once the parse is clean.
          *
          * @param parser       the constructed grammar parser, not yet run
          * @param errorCatcher the installed {@link ParseErrors} listener; call
          *                     {@link ParseErrors#throwIfAny()} after parsing
          *                     and before mapping rows, so hard errors fail
          *                     closed
-         * @param errors       the soft-error sink, mutated in place
          * @return the parsed records, one per row, in file order
          * @throws IOException if the underlying read fails
          *
-         *                     <p>Method extract coded on 260911, commented in full on 260915.
+         *                     <p>Method extract coded on 260911, commented in full on 260915,
+         *                     updated on 261104 for the removal of the soft-error path.
          */
         @NotNull
         List<R> extract(@NotNull P parser,
-                        @NotNull ParseErrors errorCatcher,
-                        @NotNull List<String> errors) throws IOException;
+                        @NotNull ParseErrors errorCatcher) throws IOException;
     }
 }

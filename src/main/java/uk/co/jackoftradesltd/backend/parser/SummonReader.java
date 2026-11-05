@@ -73,15 +73,15 @@ import java.util.List;
  * which record wins when two share a name, and the first does in both, as in
  * {@code summon_name_to_idx}.
  * <p>
+ * As in C, the first error stops the load and nothing is returned: a syntax error is thrown from
+ * {@link #extract} as a {@code ParseCancellationException}, and an unresolved {@code msgt:},
+ * {@code base:} or {@code race-flag:} is thrown by the assembler as a
+ * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}. Neither is caught here. An
+ * unresolved {@code fallback:} name is no error, as in C, which stores -1: the summon is kept with
+ * a {@code null} fallback.
+ * <p>
  * Differences from C worth knowing about:
  * <ul>
- *   <li>The {@code record-count:} header is a Java-only addition, checked as a soft error; the
- *       upstream {@code summon.txt} has no such line, and this repository's copy adds it.</li>
- *   <li>C stops at the first parse error, and an unresolved {@code msgt:}, {@code base:} or
- *       {@code race-flag:} is one. Here a syntax error is fatal and returns no items, but an
- *       assembler error skips only the offending record and the rest still load.</li>
- *   <li>An unresolved {@code fallback:} name is no error in C, which stores -1. Here it is reported as a
- *       soft error, but the summon is kept with a {@code null} fallback.</li>
  *   <li>C takes the directives in any order and leaves any but {@code name:} out. The grammar
  *       demands one fixed sequence; see {@code docs/grammar_issues.md}. The assembler's reading of
  *       {@code uniques:} and {@code msgt:} differs too; see {@code docs/Assembler_Issues.md}.</li>
@@ -94,32 +94,33 @@ import java.util.List;
  *
  * @author Rowan Crowther
  *
- * <p>Class SummonReader coded before 260915, commented in full on 261017.
+ * <p>Class SummonReader coded before 260915, commented in full on 261017, updated on 261105 for the
+ * removal of the soft-error path.
  */
 public class SummonReader implements Reader<Summon> {
     /**
      * Logger handed to {@link GrammarDriver#run} so that an {@link IOException} while reading
-     * {@code summon.txt} is logged under this reader's name before it is rethrown. Syntax and soft
-     * errors do not go through it; they travel in the {@link ParseResult}.
+     * {@code summon.txt} is logged under this reader's name before it is rethrown. Syntax and
+     * assembler errors do not go through it; they are thrown unlogged to the caller.
      *
-     * <p>Field logger coded before 260915, commented in full on 261017.
+     * <p>Field logger coded before 260915, commented in full on 261017, updated on 261105 for the
+     * removal of the soft-error path.
      */
     private static final Logger logger = LogManager.getLogger();
 
     /**
      * Parse the given file and return just the assembled summons, in file order (which is C's
-     * order too, see the class block), discarding the soft-error channel (use
-     * {@link #parseWithResults} to inspect the errors). Satisfies the {@link Reader} contract.
+     * order too, see the class block), unwrapped from the {@link ParseResult} that
+     * {@link #parseWithResults} gives. Satisfies the {@link Reader} contract.
      * <p>
-     * Because the errors are dropped, a syntax error and a clean empty file are indistinguishable
-     * here: both give an empty list, and a record skipped for an unresolved {@code msgt:},
-     * {@code base:} or {@code race-flag:} just goes missing. Callers that must tell a partial or
-     * failed load from a clean one have to use {@link #parseWithResults}.
+     * A syntax error or a refused record throws, exactly as in {@link #parseWithResults}, so an
+     * empty list only ever means a clean file with no records.
      *
-     * <p>Function parse coded before 260915, commented in full on 261017.
+     * <p>Function parse coded before 260915, commented in full on 261017, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param filename the data file to read
-     * @return the assembled {@link Summon} list (empty if the parse failed closed)
+     * @return every {@link Summon} in the file, in file order
      * @throws IOException if the file cannot be read
      */
     @Override
@@ -129,67 +130,56 @@ public class SummonReader implements Reader<Summon> {
 
     /**
      * The {@link GrammarDriver.Extractor} for this grammar: run the parser's {@code file} entry
-     * rule, fail closed on any hard lexer/parser error, validate the {@code record-count:} header,
-     * and hand back the raw {@link SummonParseRecord}s, still holding unresolved text.
+     * rule, fail closed on any hard lexer/parser error, and hand back the raw
+     * {@link SummonParseRecord}s, still holding unresolved text.
      * <p>
      * Ordering matters: {@link ParseErrors#throwIfAny()} must fire <em>after</em> the parse but
      * <em>before</em> the records are used, so a malformed file aborts with a
-     * {@code ParseCancellationException} here rather than reaching the assembler, and a half-built
-     * record list is never measured against the declared count to produce a second, misleading
-     * error. That covers the cases where C fails too: a {@code msgt:} line before any {@code name:}
-     * (an {@code assert} in {@code parse_summon_message_type}, as in every handler but
-     * {@code parse_summon_name}) and a {@code uniques:} line with no number
-     * ({@code PARSE_ERROR_MISSING_FIELD}). The header check is soft -
-     * {@link GrammarDriver#checkRecordCount} only appends to {@code errors}, so a miscount never
-     * discards the records that did parse.
+     * {@code ParseCancellationException} here rather than reaching the assembler. That covers the
+     * cases where C fails too: a {@code msgt:} line before any {@code name:} (an {@code assert} in
+     * {@code parse_summon_message_type}, as in every handler but {@code parse_summon_name}) and a
+     * {@code uniques:} line with no number ({@code PARSE_ERROR_MISSING_FIELD}).
      * <p>
      * The records stay in file order, and so does the result: nothing later reverses them. The copy
      * at the end detaches the result from the parse tree, so the returned list is the caller's to
      * keep.
      *
-     * <p>Function extract coded before 260915, commented in full on 261017.
+     * <p>Function extract coded before 260915, commented in full on 261017, updated on 261105 for
+     * the removal of the soft-error path and the {@code record-count:} header.
      *
      * @param parser       the generated parser for this file
      * @param errorCatcher the live hard-error collector installed by the driver
-     * @param errors       the soft-error sink, mutated in place
      * @return the parsed {@link SummonParseRecord}s in file order
      */
     private static List<SummonParseRecord> extract(
             @NotNull SummonGrammar parser,
-            @NotNull ParseErrors errorCatcher,
-            @NotNull List<String> errors) {
+            @NotNull ParseErrors errorCatcher) {
         SummonGrammar.FileContext output = parser.file();
         List<SummonParseRecord> records = output.summons;
         errorCatcher.throwIfAny();
-
-        String declaredRecordCount = output.declaredRecordCount;
-        GrammarDriver.checkRecordCount(declaredRecordCount, records.size(), errors);
 
         return new ArrayList<>(records);
     }
 
     /**
-     * Parse the given file, returning both the assembled {@link Summon} list (in file order) and
-     * any soft errors gathered along the way, for callers that need to tell a clean load from a
-     * partial one.
+     * Parse the given file, returning the assembled {@link Summon} list (in file order) wrapped in
+     * a {@link ParseResult}.
      * <p>
      * This is the Java counterpart of {@code run_parse_summon} and the {@code parse_summon_*}
      * handlers in {@code mon-summon.c}: it wires {@code SummonLexer}, {@code SummonGrammar},
-     * {@link #extract} and {@link SummonAssembler} into {@link GrammarDriver#run}. A syntax error
-     * returns no items and the collected messages; an unresolved {@code msgt:}, {@code base:} or
-     * {@code race-flag:} name, an unresolved {@code fallback:} name or a {@code record-count:}
-     * mismatch leaves the good records in the result alongside the messages, so the list can be
-     * short without anything having been thrown. C would have stopped at the first of the
-     * first three and ignored the fourth. An unreadable file is not a result at all but an
-     * {@link IOException}, the analogue of {@code parse_file_quit_not_found}'s {@code quit()}.
-     * <p>
-     * This is the variant callers should prefer: {@code MonsterDataLoader.loadSummons} gates on
-     * the soft errors for exactly that reason.
+     * {@link #extract} and {@link SummonAssembler} into {@link GrammarDriver#run}. As C stops at
+     * the first error, so does this: a syntax error throws a {@code ParseCancellationException},
+     * and an unresolved {@code msgt:}, {@code base:} or {@code race-flag:} name throws a
+     * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}, and no result is
+     * returned. An unresolved {@code fallback:} name is not an error, as in C. An unreadable file
+     * is an {@link IOException}, the analogue of {@code parse_file_quit_not_found}'s
+     * {@code quit()}.
      *
-     * <p>Function parseWithResults coded before 260915, commented in full on 261017.
+     * <p>Function parseWithResults coded before 260915, commented in full on 261017, updated on
+     * 261105 for the removal of the soft-error path.
      *
      * @param filename the data file to parse
-     * @return a {@link ParseResult} of the assembled summons plus any soft errors
+     * @return every summon in the file, in file order
      * @throws IOException if the file cannot be read
      */
     public @NotNull ParseResult<Summon> parseWithResults(@NotNull String filename) throws IOException {

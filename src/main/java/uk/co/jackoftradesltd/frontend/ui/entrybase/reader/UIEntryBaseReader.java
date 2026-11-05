@@ -67,14 +67,18 @@ public class UIEntryBaseReader implements Reader<UIEntry> {
 
     /**
      * Runs the full lexer &rarr; parser &rarr; extract &rarr; assemble pipeline for
-     * {@code ui_entry_base.txt} and returns the outcome together with any
-     * accumulated errors. This is the method {@link #parse(String)} delegates to;
-     * callers that need the error list (rather than just the items) use this
-     * variant directly.
+     * {@code ui_entry_base.txt} through {@link GrammarDriver#run} and returns the
+     * assembled entries. This is the method {@link #parse(String)} delegates to.
+     * Every error is fatal and none is caught here: a syntax error is thrown as a
+     * {@code ParseCancellationException} by {@link #extract}, and a record the
+     * assembler refuses as a {@code DataFileParseException}.
+     *
+     * <p>Method parseWithResults coded before 261104, commented in full on 261104
+     * for the removal of the soft-error path.
      *
      * @param filename the name of the file to parse
      * @return a {@link ParseResult} carrying the assembled {@code TEMPLATE_ONLY}
-     * {@link UIEntry} objects, one per base record, and any non-fatal errors collected along the way
+     * {@link UIEntry} objects, one per base record
      * @throws IOException if the file cannot be found or its {@code CharStream}
      *                     cannot be created
      */
@@ -89,27 +93,23 @@ public class UIEntryBaseReader implements Reader<UIEntry> {
     /**
      * Bridges the generated parser's typed output back to the plain
      * {@link UIEntryBaseParseRecord} list the {@link GrammarDriver} expects.
-     * Runs the top-level {@code file} rule, rethrows immediately if the parse
-     * collected any syntax errors, then cross-checks the record-count header
-     * declared in the file against the number of records actually parsed,
-     * appending a message to {@code errors} on a mismatch.
+     * Runs the top-level {@code file} rule and throws, through
+     * {@link ParseErrors#throwIfAny()}, if the parse collected any syntax
+     * errors, so the records are only returned from a clean parse.
+     *
+     * <p>Method extract coded before 261104, commented in full on 261104 for the
+     * removal of the soft-error path and the {@code record-count:} header.
      *
      * @param parser       the ANTLR parser positioned at the start of the file
      * @param errorCatcher accumulator of syntax errors gathered during the parse
-     * @param errors       collector for non-syntax (e.g. record-count) problems
      * @return the list of raw records parsed from the file
      */
     private static List<UIEntryBaseParseRecord> extract(
             @NotNull UIEntryBaseGrammar parser,
-            @NotNull ParseErrors errorCatcher,
-            @NotNull List<String> errors) {
+            @NotNull ParseErrors errorCatcher) {
         UIEntryBaseGrammar.FileContext output = parser.file();
         List<UIEntryBaseParseRecord> results = output.uiEntryBases;
         errorCatcher.throwIfAny();
-
-        String declaredRecordCount = output.declaredCount;
-        GrammarDriver.checkRecordCount(declaredRecordCount,
-                results.size(), errors);
 
         return results;
     }

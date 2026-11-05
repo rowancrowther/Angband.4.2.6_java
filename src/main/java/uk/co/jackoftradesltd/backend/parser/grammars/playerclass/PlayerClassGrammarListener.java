@@ -15,16 +15,8 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from PlayerClassGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/PlayerClassGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.playerclass;
-
-    import uk.co.jackoftradesltd.backend.parser.playerclass.*;
-    import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
-
-    import java.util.List;
-    import java.util.ArrayList;
-    import java.util.Map;
-    import java.util.HashMap;
 
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
@@ -33,16 +25,6 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
  * {@link PlayerClassGrammar}.
  */
 public interface PlayerClassGrammarListener extends ParseTreeListener {
-	/**
-	 * Enter a parse tree produced by {@link PlayerClassGrammar#recordCount}.
-	 * @param ctx the parse tree
-	 */
-	void enterRecordCount(PlayerClassGrammar.RecordCountContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link PlayerClassGrammar#recordCount}.
-	 * @param ctx the parse tree
-	 */
-	void exitRecordCount(PlayerClassGrammar.RecordCountContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link PlayerClassGrammar#name}.
 	 * @param ctx the parse tree

@@ -2,10 +2,6 @@ lexer grammar BodyLexer;
 
 import CommentsAndEol;
 
-RECORD_COUNT
-        :   'record-count:'
-        ;
-
 BODY
         :   'body:' -> pushMode(FREE_TEXT_MODE)
         ;

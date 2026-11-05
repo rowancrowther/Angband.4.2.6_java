@@ -34,16 +34,6 @@ import CommentsAndEol, DiceStrings, Flags;
 /*
  * @author Rowan Crowther
  *
- * record-count directive
- * cf ProjectionGrammar.g4's 'recordCount' rule
- */
-RECORD_COUNT
-        :   'record-count:'
-        ;
-
-/*
- * @author Rowan Crowther
- *
  * code directive
  * cf ProjectionGrammar.g4's 'code' rule
  */
@@ -186,7 +176,7 @@ COLOUR  :   'color:' -> pushMode(FREE_TEXT)
  * @author Rowan Crowther
  *
  * A bare (optionally signed) integer
- * cf ProjectionGrammar.g4's 'recordCount', 'numerator', 'divisor',
+ * cf ProjectionGrammar.g4's 'numerator', 'divisor',
  * 'damageCap', 'obvious' and 'wake' rules
  */
 INTEGER :   '-'? ('0'..'9')+

@@ -30,7 +30,6 @@ import uk.co.jackoftradesltd.middle.monsters.MonsterBase;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftradesltd.middle.objects.Slay;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -103,21 +102,19 @@ class SlayAssemblerTest {
         return record("EVIL_2", "EVIL", "", "2", "18", "200");
     }
 
-    private static List<Slay> assemble(List<SlayParseRecord> records, List<String> errors) {
-        return new SlayAssembler().assemble(records, errors, FILE);
+    private static List<Slay> assemble(List<SlayParseRecord> records) {
+        return new SlayAssembler().assemble(records, FILE);
     }
 
     private static Slay one(SlayParseRecord record) {
-        List<Slay> slays = assemble(List.of(record), new ArrayList<>());
+        List<Slay> slays = assemble(List.of(record));
         assertEquals(1, slays.size());
         return slays.getFirst();
     }
 
     private static DataFileParseException refused(SlayParseRecord record) {
-        List<String> errors = new ArrayList<>();
         DataFileParseException e =
-                assertThrows(DataFileParseException.class, () -> assemble(List.of(record), errors));
-        assertTrue(errors.isEmpty(), "a load-ending error is thrown, never added to the error list");
+                assertThrows(DataFileParseException.class, () -> assemble(List.of(record)));
         return e;
     }
 
@@ -141,21 +138,14 @@ class SlayAssemblerTest {
         List<Slay> slays = assemble(List.of(
                 record("EVIL_2", "EVIL", "", "2", "18", "200"),
                 record("ORC_3", "ORC", "", "3", "25", "101"),
-                record("UNDEAD_5", "UNDEAD", "", "5", "35", "130")), new ArrayList<>());
+                record("UNDEAD_5", "UNDEAD", "", "5", "35", "130")));
 
         assertEquals(List.of("UNDEAD_5", "ORC_3", "EVIL_2"), slays.stream().map(Slay::getCode).toList());
     }
 
     @Test
     void noRecordsGiveNoSlays() {
-        assertTrue(assemble(List.of(), new ArrayList<>()).isEmpty());
-    }
-
-    @Test
-    void theErrorListIsLeftAloneOnSuccess() {
-        List<String> errors = new ArrayList<>(List.of("kept"));
-        assemble(List.of(evil2()), errors);
-        assertEquals(List.of("kept"), errors);
+        assertTrue(assemble(List.of()).isEmpty());
     }
 
     @ParameterizedTest
@@ -169,7 +159,7 @@ class SlayAssemblerTest {
         // C does not check codes for uniqueness: both go onto the chain.
         List<Slay> slays = assemble(List.of(
                 record("EVIL_2", "EVIL", "", "2", "18", "200"),
-                record("EVIL_2", "ORC", "", "3", "25", "101")), new ArrayList<>());
+                record("EVIL_2", "ORC", "", "3", "25", "101")));
 
         assertEquals(2, slays.size());
         assertEquals(3, slays.get(0).getMultiplier());
@@ -358,13 +348,11 @@ class SlayAssemblerTest {
     @Test
     void aBadRecordAfterGoodOnesEndsTheWholeLoad() {
         // C's first parser error ends the file; the earlier good records are not handed back.
-        List<String> errors = new ArrayList<>();
         List<SlayParseRecord> records = List.of(
                 evil2(),
                 record("BAD_2", "NOTAFLAG", "", "2", "18", "200"),
                 record("ORC_3", "ORC", "", "3", "25", "101"));
 
-        assertThrows(DataFileParseException.class, () -> assemble(records, errors));
-        assertTrue(errors.isEmpty());
+        assertThrows(DataFileParseException.class, () -> assemble(records));
     }
 }

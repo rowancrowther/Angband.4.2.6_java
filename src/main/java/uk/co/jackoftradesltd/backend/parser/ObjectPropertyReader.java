@@ -81,17 +81,14 @@ import java.util.List;
  * {@link ObjectProperty.UIBinding}, and {@code UIEntryValueRegistry} looks the entry up when it is
  * needed.
  * <p>
+ * As in C, the first error stops the load and nothing is returned: a syntax error is thrown from
+ * {@link #extract} as a {@code ParseCancellationException}, and a record the assembler refuses (an
+ * unknown type, subtype, id-type or code, a {@code type-mult:} naming no tval, a malformed
+ * integer) is thrown as a {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}.
+ * Neither is caught here.
+ * <p>
  * Differences from C worth knowing about:
  * <ul>
- *   <li>The {@code record-count:} header is a Java-only addition, checked as a soft error; the
- *       upstream {@code object_property.txt} has no such line, and this repository's copy adds it
- *       (79 records).</li>
- *   <li>C stops at the first parse error. Here a syntax error is fatal and returns no items, but
- *       an assembler error (an unknown type, subtype, id-type or code, a record with no {@code code:}
- *       at all, a subtype on a record that is not a flag, a malformed integer) skips only the
- *       offending record and the rest still load. A
- *       {@code type-mult:} naming no tval is the exception: the line is dropped and the record is
- *       kept.</li>
  *   <li>C takes the directives after {@code name:} in any order, accepts a record with no
  *       {@code type:} or with {@code type:} after other directives, and accepts a file with no
  *       records. The grammar needs {@code name:} then {@code type:} then at least one more
@@ -99,10 +96,6 @@ import java.util.List;
  *       appends where C replaces it, a second {@code bindui:} replaces the first where C binds both,
  *       and {@code adjective:} takes one lower-case word where C takes any string; see
  *       {@code docs/grammar_issues.md}.</li>
- *   <li>A {@code code:} of {@code NONE} or {@code MAX} on a modifier, or {@code MAX} on a flag, or
- *       either on an element, resolves to a sentinel constant and loads, where C rejects it; and an
- *       aux written as {@code 00} or {@code -0} is true, where C reads zero. See
- *       {@code docs/Assembler_Issues.md}.</li>
  *   <li>The list is base 0 and holds only real records: no blank slot 0. This is the accepted
  *       deviation recorded in the registry's class block, so {@code property_max} is the plain
  *       record count, one lower than C's. A record's {@code type_mult} slots are not all filled
@@ -112,7 +105,9 @@ import java.util.List;
  *       customised copy in the user directory first.</li>
  * </ul>
  *
- * <p>Class ObjectPropertyReader coded before 260915, commented in full on 261017.
+ * <p>Class ObjectPropertyReader coded before 260915, commented in full on 261017, updated on 261105
+ * for the removal of the soft-error path, and for the {@code code:} sentinel and aux handling now
+ * matching C.
  *
  * @author Rowan Crowther
  */
@@ -120,26 +115,26 @@ public class ObjectPropertyReader implements Reader<ObjectProperty> {
     /**
      * Logger handed to {@link GrammarDriver#run} so that an {@link IOException} while reading
      * {@code object_property.txt} is logged under this reader's name before it is rethrown. Syntax
-     * and soft errors do not go through it; they travel in the {@link ParseResult}.
+     * and assembler errors do not go through it; they are thrown unlogged to the caller.
      *
-     * <p>Field logger coded before 260915, commented in full on 261017.
+     * <p>Field logger coded before 260915, commented in full on 261017, updated on 261105 for the
+     * removal of the soft-error path.
      */
     private static final Logger logger = LogManager.getLogger();
 
     /**
      * Parse the given file and return just the assembled object properties, in file order (which is
-     * C's {@code obj_properties} order, see the class block), discarding the soft-error channel (use
-     * {@link #parseWithResults} to inspect the errors). Satisfies the {@link Reader} contract.
+     * C's {@code obj_properties} order, see the class block), unwrapped from the
+     * {@link ParseResult} that {@link #parseWithResults} gives. Satisfies the {@link Reader}
+     * contract.
      * <p>
-     * Because the errors are dropped, a syntax error and a clean empty file are indistinguishable
-     * here: both give an empty list, and a record skipped for an unknown code or subtype just goes
-     * missing. Callers that must tell a partial or failed load from a clean one have to use
-     * {@link #parseWithResults}.
+     * A syntax error or a refused record throws, exactly as in {@link #parseWithResults}.
      *
-     * <p>Function parse coded before 260915, commented in full on 261017.
+     * <p>Function parse coded before 260915, commented in full on 261017, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param filename the data file to read
-     * @return the object properties read from the file
+     * @return every object property in the file, in file order
      * @throws IOException if the file cannot be read
      */
     @Override
@@ -149,68 +144,58 @@ public class ObjectPropertyReader implements Reader<ObjectProperty> {
 
     /**
      * The {@link GrammarDriver.Extractor} for this grammar: run the parser's {@code file} entry
-     * rule, fail closed on any hard lexer/parser error, validate the {@code record-count:} header,
-     * and hand back the raw {@link ObjectPropertyParseRecord}s, still holding unresolved text.
+     * rule, fail closed on any hard lexer/parser error, and hand back the raw
+     * {@link ObjectPropertyParseRecord}s, still holding unresolved text.
      * <p>
      * Ordering matters: {@link ParseErrors#throwIfAny()} must fire <em>after</em> the parse but
      * <em>before</em> the records are used, so a malformed file aborts with a
-     * {@code ParseCancellationException} here rather than reaching the assembler, and a half-built
-     * record list is never measured against the declared count to produce a second, misleading
-     * error. That covers the cases where C returns a parser error too: a directive before any
-     * {@code name:} line (C's {@code PARSE_ERROR_MISSING_RECORD_HEADER}), an unknown directive
+     * {@code ParseCancellationException} here rather than reaching the assembler. That covers the
+     * cases where C returns a parser error too: a directive before any {@code name:} line (C's
+     * {@code PARSE_ERROR_MISSING_RECORD_HEADER}), an unknown directive
      * ({@code PARSE_ERROR_UNDEFINED_DIRECTIVE}) and a numeric directive with no number
      * ({@code PARSE_ERROR_NOT_NUMBER}), and {@code code:} before {@code type:}
      * ({@code PARSE_ERROR_MISSING_OBJ_PROP_TYPE}), which is a syntax error here because the record
-     * shape puts {@code type:} straight after {@code name:}. The header check is soft - {@link GrammarDriver#checkRecordCount} only appends to {@code errors}, so a
-     * miscount never discards the records that did parse.
+     * shape puts {@code type:} straight after {@code name:}.
      * <p>
      * The records stay in file order, and that is the order the assembler keeps. The list returned is
      * the one the grammar built, not a copy.
      *
-     * <p>Function extract coded before 260915, commented in full on 261017.
+     * <p>Function extract coded before 260915, commented in full on 261017, updated on 261105 for
+     * the removal of the soft-error path and the {@code record-count:} header.
      *
      * @param parser       the generated object-property parser, positioned at the start of the file
      * @param errorCatcher the live hard-error collector installed by the driver
-     * @param errors       the soft-error sink, appended to on a record-count mismatch
      * @return the parsed {@link ObjectPropertyParseRecord}s in file order
      */
     private static List<ObjectPropertyParseRecord> extract(
             @NotNull ObjectPropertyGrammar parser,
-            @NotNull ParseErrors errorCatcher,
-            @NotNull List<String> errors) {
+            @NotNull ParseErrors errorCatcher) {
         ObjectPropertyGrammar.FileContext output = parser.file();
         List<ObjectPropertyParseRecord> result = output.properties;
         errorCatcher.throwIfAny();
-
-        String declaredRecordCount = output.declaredRecordCount;
-        GrammarDriver.checkRecordCount(declaredRecordCount, result.size(), errors);
 
         return result;
     }
 
     /**
-     * Parse the given file, returning both the assembled {@link ObjectProperty} list (in file order,
-     * see the class block) and any soft errors gathered along the way, for callers that need to tell
-     * a clean load from a partial one.
+     * Parse the given file, returning the assembled {@link ObjectProperty} list (in file order, see
+     * the class block) wrapped in a {@link ParseResult}.
      * <p>
      * This is the Java counterpart of {@code run_parse_object_property} and the
      * {@code parse_object_property_*} handlers in {@code obj-init.c}: it wires
      * {@code ObjectPropertyLexer}, {@code ObjectPropertyGrammar}, {@link #extract} and
-     * {@link ObjectPropertyAssembler} into {@link GrammarDriver#run}. A syntax error returns no items
-     * and the collected messages; an unresolved type, subtype, id-type or code, a subtype on a record
-     * that is not a flag, a malformed integer, a {@code type-mult:} naming no tval or a
-     * {@code record-count:} mismatch leaves the good records in the result alongside the messages, so
-     * the list can be short without anything having been thrown. C would have stopped at the first of
-     * any of these. An unreadable file is not a result at all but an {@link IOException}, the analogue
-     * of {@code parse_file_quit_not_found}'s {@code quit()}.
-     * <p>
-     * This is the variant callers should prefer: {@code ObjectDataLoader.loadObjectProperties} gates
-     * on the errors for exactly that reason.
+     * {@link ObjectPropertyAssembler} into {@link GrammarDriver#run}. As C stops at the first error,
+     * so does this: a syntax error throws a {@code ParseCancellationException}, and an unresolved
+     * type, subtype, id-type or code, a malformed integer or a {@code type-mult:} naming no tval
+     * throws a {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}, and no result
+     * is returned. An unreadable file is an {@link IOException}, the analogue of
+     * {@code parse_file_quit_not_found}'s {@code quit()}.
      *
-     * <p>Function parseWithResults coded before 260915, commented in full on 261017.
+     * <p>Function parseWithResults coded before 260915, commented in full on 261017, updated on
+     * 261105 for the removal of the soft-error path.
      *
      * @param filename the object-property data file to read
-     * @return the parse result: the object properties plus any error messages
+     * @return every object property in the file, in file order
      * @throws IOException if the file cannot be read
      */
     public @NotNull ParseResult<ObjectProperty> parseWithResults(@NotNull String filename) throws IOException {

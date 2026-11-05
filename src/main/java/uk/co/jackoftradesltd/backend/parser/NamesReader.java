@@ -48,9 +48,10 @@ import java.util.List;
  * and the assembler turns the section text into the {@code int} of a {@link Name}. The flattening
  * of the words into one list per section, which {@code finish_parse_names} does into
  * {@code name_sections}, is {@code MiscRegistry.setNames}, called by
- * {@code MiscDataLoader.loadNames()}; the range check on the section number, C's
- * {@code PARSE_ERROR_OUT_OF_BOUNDS}, happens there too, not here. {@code cleanup_names} has no
- * counterpart, as the garbage collector frees the words.
+ * {@code MiscDataLoader.loadNames()}. The range check on the section number, C's
+ * {@code PARSE_ERROR_OUT_OF_BOUNDS}, is made by {@link NamesAssembler}, and {@code setNames}
+ * checks it again. {@code cleanup_names} has no counterpart, as the garbage collector frees the
+ * words.
  *
  * <p>A record here is a whole section block, not a single word. C keeps a running section number
  * and a word list per section, so a second {@code section:1} block adds to the first; this reader
@@ -60,14 +61,14 @@ import java.util.List;
  *
  * <p>The text of a word is everything after {@code word:} to the end of the line, as it is in C.
  *
- * <p>C quits on the first bad line. This reader follows the shared two-channel contract instead: a
- * lexer or grammar error returns no names and the messages, and a {@code record-count:} mismatch is
- * a soft error that leaves the sections that did parse loaded. The {@code record-count:} header is
- * Java-only, the upstream file has none, and it counts {@code section:} blocks, not words. A file
- * that cannot be opened is an {@link IOException}, where C quits. The assembler's only soft error,
- * a section that is not an integer, cannot arise from the grammar.
+ * <p>C quits on the first bad line, and so does this reader: a lexer or grammar error is thrown
+ * from {@link #extract} as a {@code ParseCancellationException}, and a section number the
+ * assembler refuses (negative, zero or past the last name type) is thrown as a
+ * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}. Neither is caught here, and
+ * no names are returned. A file that cannot be opened is an {@link IOException}, where C quits.
  *
- * <p>Class NamesReader coded before 260915, commented in full on 261018.
+ * <p>Class NamesReader coded before 260915, commented in full on 261018, updated on 261105 for the
+ * removal of the soft-error path and the {@code record-count:} header.
  *
  * @author Rowan Crowther
  */
@@ -82,14 +83,15 @@ public class NamesReader implements Reader<Name> {
 
     /**
      * Reads {@code filename} and returns the assembled names, one per {@code section:} block in
-     * file order, discarding the error messages. The convenience form of {@link #parseWithResults},
-     * which is the one to call when the errors matter: with this one a hard grammar error and a
-     * file with no sections look the same.
+     * file order, unwrapped from the {@link ParseResult} that {@link #parseWithResults} gives. Any
+     * error throws exactly as it does there, so an empty list only ever means a file with no
+     * sections.
      *
-     * <p>Function parse coded before 260915, commented in full on 261018.
+     * <p>Function parse coded before 260915, commented in full on 261018, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param filename the names data file to read
-     * @return the names read from the file, empty if the parse failed
+     * @return every name section in the file, in file order
      * @throws IOException if the file cannot be opened or read
      */
     @Override
@@ -99,56 +101,50 @@ public class NamesReader implements Reader<Name> {
 
     /**
      * The grammar-specific step handed to {@link GrammarDriver}: runs the grammar's {@code file}
-     * rule, fails closed on any hard lexer or grammar error through {@link ParseErrors#throwIfAny()},
-     * and soft-checks the {@code record-count:} header against the number of {@code section:}
-     * blocks parsed. No value is interpreted here: the section text is parsed to an {@code int} by
-     * the assembler, and the words are copied through.
+     * rule and fails closed on any hard lexer or grammar error through
+     * {@link ParseErrors#throwIfAny()}. No value is interpreted here: the section text is parsed to
+     * an {@code int} by the assembler, and the words are copied through.
      *
      * <p>The ordering is deliberate: {@code throwIfAny} fires straight after the parse, so a hard
-     * grammar error (a missing {@code record-count:} header, a {@code word:} line before the first
-     * {@code section:}, a non-numeric section, a line the lexer does not know) fails closed before
-     * the count check runs against whatever did parse. The grammar builds each
+     * grammar error (a {@code word:} line before the first {@code section:}, a non-numeric section,
+     * a line the lexer does not know) fails closed before any row is used. The grammar builds each
      * {@link NamesParseRecord} itself, so the rows are only copied into a new list. The rule takes
      * zero or more sections, as C accepts a file with none.
      *
-     * <p>Function extract coded before 260915, commented in full on 261018.
+     * <p>Function extract coded before 260915, commented in full on 261018, updated on 261105 for
+     * the removal of the soft-error path and the {@code record-count:} header.
      *
      * @param parser       the generated parser, positioned at the start of the file
      * @param errorCatcher the hard-error channel; {@code throwIfAny} aborts before the rows are used
-     * @param errors       the soft-error sink: a record-count mismatch is appended here
      * @return the parsed name records, one per {@code section:} block, in file order
      */
     private static List<NamesParseRecord> extract(
             @NotNull NamesGrammar parser,
-            @NotNull ParseErrors errorCatcher,
-            @NotNull List<String> errors) {
+            @NotNull ParseErrors errorCatcher) {
         NamesGrammar.FileContext output = parser.file();
         List<NamesParseRecord> records = output.records;
         errorCatcher.throwIfAny();
-
-        String declaredRecordCount = output.declaredRecordCount;
-        GrammarDriver.checkRecordCount(declaredRecordCount, records.size(), errors);
 
         return new ArrayList<>(records);
     }
 
     /**
-     * Reads {@code filename} and returns the full {@link ParseResult}: the assembled {@link Name}s
-     * in file order, and every error message collected on the way. This is the Java form of C's
-     * {@code run_parse_names} followed by the reading half of {@code finish_parse_names}, and the
-     * entry point {@code MiscDataLoader.loadNames()} uses so that it can gate on
-     * {@link ParseResult#hasErrors()} before storing the result.
+     * Reads {@code filename} and returns the assembled {@link Name}s, in file order, wrapped in a
+     * {@link ParseResult}. This is the Java form of C's {@code run_parse_names} followed by the
+     * reading half of {@code finish_parse_names}, and the entry point
+     * {@code MiscDataLoader.loadNames()} uses.
      *
-     * <p>There are three outcomes. A clean file gives the names and no errors; the shipped file
-     * gives two, section 1 with 601 words and section 2 with 587. A lexer or grammar error gives no
-     * names and the parser's messages. A {@code record-count:} that disagrees with the number of
-     * {@code section:} blocks gives every name beside the message. A file that cannot be opened is
-     * an {@link IOException}.
+     * <p>A clean file gives the names; the shipped file gives two, section 1 with 601 words and
+     * section 2 with 587. A lexer or grammar error throws a {@code ParseCancellationException}, a
+     * section number out of range throws a
+     * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}, and neither gives a
+     * result. A file that cannot be opened is an {@link IOException}.
      *
-     * <p>Function parseWithResults coded before 260915, commented in full on 261018.
+     * <p>Function parseWithResults coded before 260915, commented in full on 261018, updated on
+     * 261105 for the removal of the soft-error path.
      *
      * @param filename the names data file to read
-     * @return the parse result: the names plus any error messages
+     * @return every name section in the file, in file order
      * @throws IOException if the file cannot be opened or read
      */
     public ParseResult<Name> parseWithResults(@NotNull String filename) throws IOException {

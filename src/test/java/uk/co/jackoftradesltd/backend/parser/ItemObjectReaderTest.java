@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -124,9 +125,6 @@ class ItemObjectReaderTest {
      */
     private static final String HEAD = "type:sword\ngraphics:|:w\n";
 
-    private static String withHeader(int count, String body) {
-        return "record-count:" + count + "\n" + body;
-    }
 
     /**
      * An object record: a name line followed by whatever body lines the test supplies.
@@ -150,7 +148,6 @@ class ItemObjectReaderTest {
     void realFileLoadsAllKindsWithNoErrors() throws IOException {
         ParseResult<ObjectKind> result = new ItemObjectReader().parseWithResults(REAL_FILE);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(375, result.items().size());
     }
 
@@ -184,28 +181,28 @@ class ItemObjectReaderTest {
     @Test
     void unknownTypeStopsTheLoadAsCDoes() {
         assertLoadIsFatal("bad-type.txt",
-                withHeader(1, obj("weird", "type:no such tval\ngraphics:|:w\n")),
-                "no such tval", "bad-type.txt", "line: 2");
+                obj("weird", "type:no such tval\ngraphics:|:w\n"),
+                "no such tval", "bad-type.txt", "line: 1");
     }
 
     @Test
     void unknownFlagStopsTheLoad() {
         assertLoadIsFatal("bad-flag.txt",
-                withHeader(1, obj("weird", HEAD + "flags:NOTAFLAG\n")),
-                "unknown flag: NOTAFLAG", "bad-flag.txt", "line: 2");
+                obj("weird", HEAD + "flags:NOTAFLAG\n"),
+                "unknown flag: NOTAFLAG", "bad-flag.txt", "line: 1");
     }
 
     @Test
     void unknownModifierStopsTheLoad() {
         assertLoadIsFatal("bad-mod.txt",
-                withHeader(1, obj("weird", HEAD + "values:NOTAMOD[1]\n")),
+                obj("weird", HEAD + "values:NOTAMOD[1]\n"),
                 "object modifier", "NOTAMOD", "bad-mod.txt");
     }
 
     @Test
     void unknownResistanceElementStopsTheLoad() {
         assertLoadIsFatal("bad-res.txt",
-                withHeader(1, obj("weird", HEAD + "values:RES_NOTREAL[1]\n")),
+                obj("weird", HEAD + "values:RES_NOTREAL[1]\n"),
                 "resistance element", "RES_NOTREAL", "bad-res.txt");
     }
 
@@ -215,7 +212,7 @@ class ItemObjectReaderTest {
     @Test
     void unknownBrandStopsTheLoadAndTheMessageNamesThatBrand() {
         DataFileParseException thrown = assertLoadIsFatal("bad-brand.txt",
-                withHeader(1, obj("weird", HEAD + "brand:FIRE_3\nbrand:NOTABRAND\n")),
+                obj("weird", HEAD + "brand:FIRE_3\nbrand:NOTABRAND\n"),
                 "brand value: NOTABRAND");
 
         assertFalse(thrown.getMessage().contains("["), "no list brackets: " + thrown.getMessage());
@@ -227,7 +224,7 @@ class ItemObjectReaderTest {
     @Test
     void unknownSlayStopsTheLoadAndTheMessageNamesThatSlay() {
         DataFileParseException thrown = assertLoadIsFatal("bad-slay.txt",
-                withHeader(1, obj("weird", HEAD + "slay:EVIL_2\nslay:NOTASLAY\n")),
+                obj("weird", HEAD + "slay:EVIL_2\nslay:NOTASLAY\n"),
                 "slay value: NOTASLAY");
 
         assertFalse(thrown.getMessage().contains("["), "no list brackets: " + thrown.getMessage());
@@ -236,7 +233,7 @@ class ItemObjectReaderTest {
     @Test
     void unknownCurseStopsTheLoad() {
         assertLoadIsFatal("bad-curse.txt",
-                withHeader(1, obj("weird", HEAD + "curse:no such curse:10\n")),
+                obj("weird", HEAD + "curse:no such curse:10\n"),
                 "no such curse", "bad-curse.txt");
     }
 
@@ -251,10 +248,8 @@ class ItemObjectReaderTest {
      */
     @Test
     void curseResolvesToAnEntryKeyedByCurseCarryingItsPower() throws Exception {
-        ParseResult<ObjectKind> result = load("cursed.txt", withHeader(1,
-                obj("cursed blade", HEAD + "curse:teleportation:100\n")));
+        ParseResult<ObjectKind> result = load("cursed.txt", obj("cursed blade", HEAD + "curse:teleportation:100\n"));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         Map<Curse, CurseData> curses = kindField(result.items().get(0), "curses");
 
         assertEquals(1, curses.size());
@@ -271,10 +266,8 @@ class ItemObjectReaderTest {
      */
     @Test
     void powerZeroCurseIsNotRecorded() throws Exception {
-        ParseResult<ObjectKind> result = load("zero-curse.txt", withHeader(1,
-                obj("uncursed blade", HEAD + "curse:teleportation:0\n")));
+        ParseResult<ObjectKind> result = load("zero-curse.txt", obj("uncursed blade", HEAD + "curse:teleportation:0\n"));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size(), "a zero-power curse is not an error; the kind loads");
         Map<Curse, CurseData> curses = kindField(result.items().get(0), "curses");
         assertTrue(curses.isEmpty(), () -> "power 0 must not be recorded, got: " + curses);
@@ -302,10 +295,8 @@ class ItemObjectReaderTest {
      */
     @Test
     void timeAfterTheEffectReachesTheKind() throws IOException {
-        ParseResult<ObjectKind> result = load("timed.txt", withHeader(1,
-                obj("rod of waking", HEAD + "effect:WAKE\ntime:100+1d50\n")));
+        ParseResult<ObjectKind> result = load("timed.txt", obj("rod of waking", HEAD + "effect:WAKE\ntime:100+1d50\n"));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertSameDice(Random.parseStr("100+1d50"), result.items().get(0).getTime());
     }
 
@@ -315,10 +306,8 @@ class ItemObjectReaderTest {
      */
     @Test
     void timeWithSeveralEffectsReachesTheKindOnce() throws IOException {
-        ParseResult<ObjectKind> result = load("timed-two.txt", withHeader(1,
-                obj("rod of two things", HEAD + "effect:WAKE\neffect:ACQUIRE\ntime:1d500\n")));
+        ParseResult<ObjectKind> result = load("timed-two.txt", obj("rod of two things", HEAD + "effect:WAKE\neffect:ACQUIRE\ntime:1d500\n"));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         ObjectKind kind = result.items().get(0);
         assertEquals(2, kind.getEffect().size());
         assertSameDice(Random.parseStr("1d500"), kind.getTime());
@@ -330,10 +319,8 @@ class ItemObjectReaderTest {
      */
     @Test
     void timeBeforeTheEffectReachesTheKind() throws IOException {
-        ParseResult<ObjectKind> result = load("timed-first.txt", withHeader(1,
-                obj("rod of early time", HEAD + "time:d100\neffect:WAKE\n")));
+        ParseResult<ObjectKind> result = load("timed-first.txt", obj("rod of early time", HEAD + "time:d100\neffect:WAKE\n"));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertSameDice(Random.parseStr("d100"), result.items().get(0).getTime());
     }
 
@@ -343,10 +330,8 @@ class ItemObjectReaderTest {
      */
     @Test
     void absentTimeIsZeroNotNull() throws IOException {
-        ParseResult<ObjectKind> result = load("untimed.txt", withHeader(1,
-                obj("plain blade", HEAD + "effect:WAKE\n")));
+        ParseResult<ObjectKind> result = load("untimed.txt", obj("plain blade", HEAD + "effect:WAKE\n"));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertSameDice(Random.Zero(), result.items().get(0).getTime());
     }
 
@@ -387,8 +372,8 @@ class ItemObjectReaderTest {
                 + obj("badflag", HEAD + "flags:NOTAFLAG\n")
                 + obj("badmod", HEAD + "values:NOTAMOD[1]\n");
 
-        DataFileParseException thrown = assertLoadIsFatal("two-errors.txt", withHeader(3, body),
-                "unknown flag: NOTAFLAG", "line: 5");
+        DataFileParseException thrown = assertLoadIsFatal("two-errors.txt", body,
+                "unknown flag: NOTAFLAG", "line: 4");
 
         assertFalse(thrown.getMessage().contains("NOTAMOD"), thrown.getMessage());
     }
@@ -396,27 +381,9 @@ class ItemObjectReaderTest {
     // ---- record-count + hard (fail-closed) errors ------------------------
 
     @Test
-    void recordCountMismatchIsReportedButValidKindStillLoads() throws IOException {
-        ParseResult<ObjectKind> result = load("bad-count.txt", withHeader(5, obj("plain", HEAD)));
-
-        assertEquals(1, result.items().size());
-        assertTrue(result.hasErrors());
-    }
-
-    @Test
-    void missingRecordCountHeaderIsAHardError() throws IOException {
-        ParseResult<ObjectKind> result = load("no-header.txt", obj("plain", HEAD));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
-    }
-
-    @Test
     void recordNotOpeningWithNameIsAHardError() throws IOException {
-        ParseResult<ObjectKind> result = load("no-name.txt", withHeader(1, HEAD));
+        assertThrows(ParseCancellationException.class, () -> load("no-name.txt", HEAD));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     // ---- kind flags and IGNORE_ element flags (obj-init.c: parse_object_flags) --------------
@@ -429,10 +396,8 @@ class ItemObjectReaderTest {
      */
     @Test
     void kindFlagTokenReachesKindFlagsAndBaseFlagsAreUnioned() throws IOException {
-        ParseResult<ObjectKind> result = load("kf.txt", withHeader(1,
-                obj("kf", HEAD + "flags:EASY_KNOW\n")));
+        ParseResult<ObjectKind> result = load("kf.txt", obj("kf", HEAD + "flags:EASY_KNOW\n"));
 
-        assertFalse(result.hasErrors(), result.errors()::toString);
         ObjectKind kind = result.items().get(0);
         assertTrue(kind.getKindFlags().has(ObjectKindFlag.KF_EASY_KNOW));
         assertTrue(kind.getKindFlags().has(ObjectKindFlag.KF_SHOW_DICE));
@@ -445,10 +410,8 @@ class ItemObjectReaderTest {
      */
     @Test
     void ignoreTokenSetsIgnoreOnThatElementOfTheKindOnly() throws IOException {
-        ParseResult<ObjectKind> result = load("ign.txt", withHeader(1,
-                obj("ign", HEAD + "flags:IGNORE_FIRE\n")));
+        ParseResult<ObjectKind> result = load("ign.txt", obj("ign", HEAD + "flags:IGNORE_FIRE\n"));
 
-        assertFalse(result.hasErrors(), result.errors()::toString);
         ObjectKind kind = result.items().get(0);
         assertTrue(kind.getElInfo(ElementEnum.ELEM_FIRE).has(ElementInfoEnum.EL_INFO_IGNORE));
         assertFalse(kind.getElInfo(ElementEnum.ELEM_ACID).has(ElementInfoEnum.EL_INFO_IGNORE));
@@ -461,10 +424,8 @@ class ItemObjectReaderTest {
      */
     @Test
     void severalIgnoreTokensAndAKindFlagShareOneLine() throws IOException {
-        ParseResult<ObjectKind> result = load("ign2.txt", withHeader(1,
-                obj("ign2", HEAD + "flags:IGNORE_ACID | EASY_KNOW | IGNORE_FIRE\n")));
+        ParseResult<ObjectKind> result = load("ign2.txt", obj("ign2", HEAD + "flags:IGNORE_ACID | EASY_KNOW | IGNORE_FIRE\n"));
 
-        assertFalse(result.hasErrors(), result.errors()::toString);
         ObjectKind kind = result.items().get(0);
         assertTrue(kind.getElInfo(ElementEnum.ELEM_ACID).has(ElementInfoEnum.EL_INFO_IGNORE));
         assertTrue(kind.getElInfo(ElementEnum.ELEM_FIRE).has(ElementInfoEnum.EL_INFO_IGNORE));
@@ -478,11 +439,9 @@ class ItemObjectReaderTest {
      */
     @Test
     void ignoreOnOneKindDoesNotReachItsBaseOrItsSiblings() throws IOException {
-        ParseResult<ObjectKind> result = load("sib.txt", withHeader(2,
-                obj("fireproof", HEAD + "flags:IGNORE_FIRE\n")
-                        + obj("plain", HEAD)));
+        ParseResult<ObjectKind> result = load("sib.txt", obj("fireproof", HEAD + "flags:IGNORE_FIRE\n")
+                        + obj("plain", HEAD));
 
-        assertFalse(result.hasErrors(), result.errors()::toString);
         ObjectKind fireproof = result.items().get(0);
         ObjectKind plain = result.items().get(1);
         assertFalse(plain.getElInfo(ElementEnum.ELEM_FIRE).has(ElementInfoEnum.EL_INFO_IGNORE));
@@ -498,7 +457,7 @@ class ItemObjectReaderTest {
      */
     @Test
     void bareElementNameIsNotAFlag() {
-        assertLoadIsFatal("bare.txt", withHeader(1, obj("bare", HEAD + "flags:FIRE\n")),
+        assertLoadIsFatal("bare.txt", obj("bare", HEAD + "flags:FIRE\n"),
                 "unknown flag: FIRE");
     }
 
@@ -508,7 +467,7 @@ class ItemObjectReaderTest {
      */
     @Test
     void shortUnknownTokenIsAnUnknownFlag() {
-        assertLoadIsFatal("short.txt", withHeader(1, obj("short", HEAD + "flags:FOO\n")),
+        assertLoadIsFatal("short.txt", obj("short", HEAD + "flags:FOO\n"),
                 "unknown flag: FOO");
     }
 
@@ -518,7 +477,7 @@ class ItemObjectReaderTest {
      */
     @Test
     void tokenWithWrongPrefixButAnElementSuffixIsNotAnIgnoreFlag() {
-        assertLoadIsFatal("prefix.txt", withHeader(1, obj("prefix", HEAD + "flags:XXXXXXXFIRE\n")),
+        assertLoadIsFatal("prefix.txt", obj("prefix", HEAD + "flags:XXXXXXXFIRE\n"),
                 "unknown flag: XXXXXXXFIRE");
     }
 
@@ -528,9 +487,9 @@ class ItemObjectReaderTest {
      */
     @Test
     void anElementPrefixWithNoElementAfterItIsAnUnknownFlag() {
-        assertLoadIsFatal("ign-none.txt", withHeader(1, obj("none", HEAD + "flags:IGNORE_NOTANELEMENT\n")),
+        assertLoadIsFatal("ign-none.txt", obj("none", HEAD + "flags:IGNORE_NOTANELEMENT\n"),
                 "unknown flag: IGNORE_NOTANELEMENT");
-        assertLoadIsFatal("hates-none.txt", withHeader(1, obj("none", HEAD + "flags:HATES_NOTANELEMENT\n")),
+        assertLoadIsFatal("hates-none.txt", obj("none", HEAD + "flags:HATES_NOTANELEMENT\n"),
                 "unknown flag: HATES_NOTANELEMENT");
     }
 
@@ -949,11 +908,8 @@ class ItemObjectReaderTest {
      */
     @Test
     void attackWithOnlyTwoOfItsThreeFieldsIsAHardError() throws IOException {
-        ParseResult<ObjectKind> result = load("short-attack.txt", withHeader(1,
-                obj("short", HEAD + "attack:1d4:0\n")));
+        assertThrows(ParseCancellationException.class, () -> load("short-attack.txt", obj("short", HEAD + "attack:1d4:0\n")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     /**
@@ -962,11 +918,8 @@ class ItemObjectReaderTest {
      */
     @Test
     void unknownDirectiveIsAHardError() throws IOException {
-        ParseResult<ObjectKind> result = load("unknown-directive.txt", withHeader(1,
-                obj("odd", HEAD + "foo:bar\n")));
+        assertThrows(ParseCancellationException.class, () -> load("unknown-directive.txt", obj("odd", HEAD + "foo:bar\n")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     /**
@@ -975,11 +928,8 @@ class ItemObjectReaderTest {
      */
     @Test
     void allocWithoutToIsAHardError() throws IOException {
-        ParseResult<ObjectKind> result = load("alloc-no-to.txt", withHeader(1,
-                obj("no to", HEAD + "alloc:5:10\n")));
+        assertThrows(ParseCancellationException.class, () -> load("alloc-no-to.txt", obj("no to", HEAD + "alloc:5:10\n")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     // ---- repeated and accumulating directives (obj-init.c: parse_object_*) -----
@@ -989,10 +939,8 @@ class ItemObjectReaderTest {
      */
     @Test
     void aRepeatedScalarDirectiveKeepsTheLastValue() throws Exception {
-        ParseResult<ObjectKind> result = load("repeat-level.txt", withHeader(1,
-                obj("again", HEAD + "level:3\nlevel:9\n")));
+        ParseResult<ObjectKind> result = load("repeat-level.txt", obj("again", HEAD + "level:3\nlevel:9\n"));
 
-        assertFalse(result.hasErrors(), result.errors()::toString);
         assertEquals(9, (int) kindField(result.items().get(0), "level"));
     }
 
@@ -1002,10 +950,8 @@ class ItemObjectReaderTest {
      */
     @Test
     void msgVisMsgAndDescAppendWithNoSeparator() throws Exception {
-        ParseResult<ObjectKind> result = load("append.txt", withHeader(1,
-                obj("joined", HEAD + "msg:one\nmsg: two\nvis-msg:three\nvis-msg:four\ndesc:five\ndesc: six\n")));
+        ParseResult<ObjectKind> result = load("append.txt", obj("joined", HEAD + "msg:one\nmsg: two\nvis-msg:three\nvis-msg:four\ndesc:five\ndesc: six\n"));
 
-        assertFalse(result.hasErrors(), result.errors()::toString);
         ObjectKind kind = result.items().get(0);
         assertEquals("one two", kindField(kind, "effectMessage"));
         assertEquals("threefour", kindField(kind, "visMessage"));
@@ -1018,11 +964,9 @@ class ItemObjectReaderTest {
      */
     @Test
     void flagsSlaysAndBrandsAccumulateAcrossLines() throws Exception {
-        ParseResult<ObjectKind> result = load("accumulate.txt", withHeader(1,
-                obj("more", HEAD + "flags:EASY_KNOW\nflags:GOOD | SHOW_MULT\n"
-                        + "slay:EVIL_2\nslay:ANIMAL_2\nbrand:FIRE_2\nbrand:COLD_2\n")));
+        ParseResult<ObjectKind> result = load("accumulate.txt", obj("more", HEAD + "flags:EASY_KNOW\nflags:GOOD | SHOW_MULT\n"
+                        + "slay:EVIL_2\nslay:ANIMAL_2\nbrand:FIRE_2\nbrand:COLD_2\n"));
 
-        assertFalse(result.hasErrors(), result.errors()::toString);
         ObjectKind kind = result.items().get(0);
         assertTrue(kind.getKindFlags().has(ObjectKindFlag.KF_EASY_KNOW));
         assertTrue(kind.getKindFlags().has(ObjectKindFlag.KF_GOOD));
@@ -1038,10 +982,8 @@ class ItemObjectReaderTest {
      */
     @Test
     void valuesOnTwoLinesAreBothKept() throws Exception {
-        ParseResult<ObjectKind> result = load("two-values.txt", withHeader(1,
-                obj("both", HEAD + "values:STR[2]\nvalues:RES_FIRE[1] | DEX[3]\n")));
+        ParseResult<ObjectKind> result = load("two-values.txt", obj("both", HEAD + "values:STR[2]\nvalues:RES_FIRE[1] | DEX[3]\n"));
 
-        assertFalse(result.hasErrors(), result.errors()::toString);
         ObjectKind kind = result.items().get(0);
         assertEquals("2+0d0m0", dice(kind.getModifier(ObjectModifier.OM_STR)));
         assertEquals("3+0d0m0", dice(kind.getModifier(ObjectModifier.OM_DEX)));
@@ -1053,10 +995,8 @@ class ItemObjectReaderTest {
      */
     @Test
     void twoKindsWithTheSameNameBothLoadInFileOrder() throws IOException {
-        ParseResult<ObjectKind> result = load("dup.txt", withHeader(3,
-                obj("same", HEAD + "level:1\n") + obj("other", HEAD) + obj("same", HEAD + "level:2\n")));
+        ParseResult<ObjectKind> result = load("dup.txt", obj("same", HEAD + "level:1\n") + obj("other", HEAD) + obj("same", HEAD + "level:2\n"));
 
-        assertFalse(result.hasErrors(), result.errors()::toString);
         assertEquals(List.of("same", "other", "same"),
                 result.items().stream().map(ObjectKind::getName).collect(Collectors.toList()));
     }
@@ -1092,10 +1032,8 @@ class ItemObjectReaderTest {
      */
     @Test
     void aRecordWithOnlyANameLineIsASyntaxErrorHereWhereCAcceptsIt() throws IOException {
-        ParseResult<ObjectKind> result = load("name-only.txt", withHeader(1, "name:bare\n"));
+        assertThrows(ParseCancellationException.class, () -> load("name-only.txt", "name:bare\n"));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     /**
@@ -1104,10 +1042,8 @@ class ItemObjectReaderTest {
      */
     @Test
     void allocWithNoSpacesAroundToIsAcceptedHereWhereCRejectsIt() throws Exception {
-        ParseResult<ObjectKind> result = load("alloc-tight.txt", withHeader(1,
-                obj("tight", HEAD + "alloc:5:1to100\n")));
+        ParseResult<ObjectKind> result = load("alloc-tight.txt", obj("tight", HEAD + "alloc:5:1to100\n"));
 
-        assertFalse(result.hasErrors(), result.errors()::toString);
         ObjectKind kind = result.items().get(0);
         assertEquals(1, (int) kindField(kind, "alloc_min"));
         assertEquals(100, (int) kindField(kind, "alloc_max"));
@@ -1121,10 +1057,8 @@ class ItemObjectReaderTest {
      */
     @Test
     void aLaterZeroPowerCurseDropsAnEarlierOneHereWhereCKeepsIt() throws Exception {
-        ParseResult<ObjectKind> result = load("curse-zero-after.txt", withHeader(1,
-                obj("cursed", HEAD + "curse:teleportation:50\ncurse:teleportation:0\n")));
+        ParseResult<ObjectKind> result = load("curse-zero-after.txt", obj("cursed", HEAD + "curse:teleportation:50\ncurse:teleportation:0\n"));
 
-        assertFalse(result.hasErrors(), result.errors()::toString);
         Map<Curse, CurseData> curses = kindField(result.items().get(0), "curses");
         assertTrue(curses.isEmpty(), () -> "C would hold teleportation at 50, got: " + curses);
     }
@@ -1134,10 +1068,8 @@ class ItemObjectReaderTest {
      */
     @Test
     void aZeroPowerCurseBeforeANonZeroOneLeavesTheNonZeroOne() throws Exception {
-        ParseResult<ObjectKind> result = load("curse-zero-before.txt", withHeader(1,
-                obj("cursed", HEAD + "curse:teleportation:0\ncurse:teleportation:50\n")));
+        ParseResult<ObjectKind> result = load("curse-zero-before.txt", obj("cursed", HEAD + "curse:teleportation:0\ncurse:teleportation:50\n"));
 
-        assertFalse(result.hasErrors(), result.errors()::toString);
         Map<Curse, CurseData> curses = kindField(result.items().get(0), "curses");
         assertEquals(1, curses.size());
         assertEquals(50, curses.values().iterator().next().getPower());
@@ -1150,10 +1082,8 @@ class ItemObjectReaderTest {
      */
     @Test
     void aHatesTokenSetsTheHatesBitOnThatElementOnly() throws IOException {
-        ParseResult<ObjectKind> result = load("hates.txt", withHeader(1,
-                obj("hates", HEAD + "flags:HATES_FIRE\n")));
+        ParseResult<ObjectKind> result = load("hates.txt", obj("hates", HEAD + "flags:HATES_FIRE\n"));
 
-        assertFalse(result.hasErrors(), result.errors()::toString);
         ObjectKind kind = result.items().get(0);
         assertTrue(kind.getElInfo(ElementEnum.ELEM_FIRE).has(ElementInfoEnum.EL_INFO_HATES));
         assertFalse(kind.getElInfo(ElementEnum.ELEM_FIRE).has(ElementInfoEnum.EL_INFO_IGNORE));
@@ -1168,10 +1098,8 @@ class ItemObjectReaderTest {
      */
     @Test
     void ignoreAndHatesTokensReachTheirOwnBitsOfTheSameElementInfo() throws IOException {
-        ParseResult<ObjectKind> result = load("ign-hates.txt", withHeader(1,
-                obj("both", HEAD + "flags:IGNORE_FIRE | HATES_FIRE | IGNORE_ACID | HATES_COLD\n")));
+        ParseResult<ObjectKind> result = load("ign-hates.txt", obj("both", HEAD + "flags:IGNORE_FIRE | HATES_FIRE | IGNORE_ACID | HATES_COLD\n"));
 
-        assertFalse(result.hasErrors(), result.errors()::toString);
         ObjectKind kind = result.items().get(0);
         assertTrue(kind.getElInfo(ElementEnum.ELEM_FIRE).has(ElementInfoEnum.EL_INFO_IGNORE));
         assertTrue(kind.getElInfo(ElementEnum.ELEM_FIRE).has(ElementInfoEnum.EL_INFO_HATES));
@@ -1187,10 +1115,8 @@ class ItemObjectReaderTest {
      */
     @Test
     void anElementFlagAndAResistanceLevelShareTheElementInfo() throws IOException {
-        ParseResult<ObjectKind> result = load("hates-res.txt", withHeader(1,
-                obj("shared", HEAD + "flags:HATES_FIRE\nvalues:RES_FIRE[1]\n")));
+        ParseResult<ObjectKind> result = load("hates-res.txt", obj("shared", HEAD + "flags:HATES_FIRE\nvalues:RES_FIRE[1]\n"));
 
-        assertFalse(result.hasErrors(), result.errors()::toString);
         ElementInfo fire = result.items().get(0).getElInfo(ElementEnum.ELEM_FIRE);
         assertTrue(fire.has(ElementInfoEnum.EL_INFO_HATES));
         assertEquals(1, fire.getResLevel());
@@ -1202,10 +1128,8 @@ class ItemObjectReaderTest {
      */
     @Test
     void effectMsgIsAcceptedHereWhereCHasNoSuchDirective() throws IOException {
-        ParseResult<ObjectKind> result = load("effect-msg.txt", withHeader(1,
-                obj("chatty", HEAD + "effect:HEAL_HP\ndice:5\neffect-msg:hello\n")));
+        ParseResult<ObjectKind> result = load("effect-msg.txt", obj("chatty", HEAD + "effect:HEAL_HP\ndice:5\neffect-msg:hello\n"));
 
-        assertFalse(result.hasErrors(), result.errors()::toString);
         assertEquals(1, result.items().size());
     }
 
@@ -1217,10 +1141,8 @@ class ItemObjectReaderTest {
      */
     @Test
     void aRecordWithNoTypeHasTvNoneAndANullBaseAsInC() throws Exception {
-        ParseResult<ObjectKind> result = load("no-type.txt", withHeader(1,
-                obj("typeless", "graphics:|:w\n")));
+        ParseResult<ObjectKind> result = load("no-type.txt", obj("typeless", "graphics:|:w\n"));
 
-        assertFalse(result.hasErrors(), result.errors()::toString);
         ObjectKind kind = result.items().get(0);
         assertEquals(TValue.TV_NONE, kind.gettValue());
         assertNull(kind.getBase());
@@ -1236,11 +1158,8 @@ class ItemObjectReaderTest {
     @Test
     void anUnknownColourIsAHardErrorHereWhereCFallsBackToWhite() throws IOException {
         for (String colour : List.of("9", "q")) {
-            ParseResult<ObjectKind> result = load("bad-colour.txt", withHeader(1,
-                    obj("dim", "type:sword\ngraphics:|:" + colour + "\n")));
+            assertThrows(ParseCancellationException.class, () -> load("bad-colour.txt", obj("dim", "type:sword\ngraphics:|:" + colour + "\n")), "colour " + colour);
 
-            assertTrue(result.items().isEmpty(), "colour " + colour);
-            assertTrue(result.hasErrors(), "colour " + colour);
         }
     }
 
@@ -1261,7 +1180,7 @@ class ItemObjectReaderTest {
     }
 
     private static ObjectKind assembleOne(ItemObjectParseRecord record) {
-        return new ItemObjectAssembler().assemble(List.of(record), new ArrayList<>(), "probe.txt").get(0);
+        return new ItemObjectAssembler().assemble(List.of(record), "probe.txt").get(0);
     }
 
     /**

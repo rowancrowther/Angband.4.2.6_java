@@ -9,11 +9,6 @@ options { tokenVocab = HistoryLexer; }
     import java.util.ArrayList;
 }
 
-recordCount
-        returns[String count]
-        :   RECORD_COUNT INTEGER { $count = $INTEGER.getText(); }
-        ;
-
 chart
         returns[String currentChart, String nextChart, String percent, int line]
         :   CHART cc=INTEGER COLON nc=INTEGER COLON p=INTEGER {
@@ -53,9 +48,8 @@ record
         ;
 
 file
-        returns[List<HistoryParseRecord> records, String declaredRecordCount]
+        returns[List<HistoryParseRecord> records]
         : {
             { $records = new ArrayList<>(); }
-        }   recordCount { $declaredRecordCount = $recordCount.count; }
-            ( record { $records.add($record.hist); } )+ EOF
+        }   ( record { $records.add($record.hist); } )+ EOF
         ;

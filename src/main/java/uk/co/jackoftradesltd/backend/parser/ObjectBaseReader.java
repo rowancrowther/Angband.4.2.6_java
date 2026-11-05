@@ -70,17 +70,14 @@ import java.util.List;
  * but {@code ObjectRegistry.getBaseFromTVal} takes the first match, so a lookup by tval finds the
  * same base. Order matters nowhere else: a lookup by name also takes the first match.
  * <p>
+ * As in C, the first error stops the load and nothing is returned: a syntax error is thrown from
+ * {@link #extract} as a {@code ParseCancellationException}, and an error found by
+ * {@link ObjectBaseAssembler} (an unknown tval, an unknown flag, a break chance or maximum stack
+ * with no digits) is thrown as a {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}.
+ * Neither is caught here, so no record is skipped and no partial list comes back.
+ * <p>
  * Differences from C worth knowing about:
  * <ul>
- *   <li>The {@code record-count:} header is a Java-only addition, checked as a soft error; the
- *       upstream {@code object_base.txt} has no such line, and this repository's copy adds it.</li>
- *   <li>C stops at the first parse error, and so does this reader, by two routes. A syntax error is
- *       collected, and returns no items and the messages in the {@link ParseResult}. An error found
- *       by {@link ObjectBaseAssembler} (an unknown tval, an unknown flag, a break chance or maximum
- *       stack with no digits) is thrown as a {@code DataFileParseException} out of
- *       {@link #parseWithResults} and {@link #parse}, so no record is skipped and no partial list
- *       comes back. Only the {@code record-count:} mismatch is left as a soft error that keeps
- *       the records.</li>
  *   <li>C takes the directives in any order, leaves any of them out and lets a repeated one
  *       overwrite, and accepts any number of {@code default:} lines anywhere, each affecting only
  *       the records that follow it. The grammar insists on at least one {@code default:} line before
@@ -96,7 +93,8 @@ import java.util.List;
  *       customised copy in the user directory first.</li>
  * </ul>
  *
- * <p>Class ObjectBaseReader coded before 260915, commented in full on 261028.
+ * <p>Class ObjectBaseReader coded before 260915, commented in full on 261028, updated on 261105
+ * for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -104,31 +102,29 @@ public class ObjectBaseReader implements Reader<ObjectBase> {
     /**
      * Logger handed to {@link GrammarDriver#run} so that an {@link IOException} while reading
      * {@code object_base.txt} is logged under this reader's name before it is rethrown. Syntax and
-     * soft errors do not go through it; they travel in the {@link ParseResult}.
+     * assembler errors do not go through it; they are thrown unlogged to the caller.
      *
      * <p>Unlike the other readers' loggers this one is {@code public}; nothing outside this class
      * reads it.
      *
-     * <p>Field logger coded before 260915, commented in full on 261017.
+     * <p>Field logger coded before 260915, commented in full on 261017, updated on 261105 for the
+     * removal of the soft-error path.
      */
     public static final Logger logger = LogManager.getLogger();
 
     /**
-     * Parse the given file and return just the assembled bases, discarding the soft-error channel
-     * (use {@link #parseWithResults} to inspect the errors). Satisfies the {@link Reader} contract.
+     * Parse the given file and return just the assembled bases, unwrapped from the
+     * {@link ParseResult} that {@link #parseWithResults} gives. Satisfies the {@link Reader}
+     * contract.
      * <p>
-     * Because the errors are dropped, a syntax error is visible only as an empty list, where a clean
-     * load always ends in the synthetic {@code TV_NONE} base. A {@code record-count:} mismatch is
-     * invisible here, since it keeps every record. An error found by {@link ObjectBaseAssembler} is
-     * not dropped but thrown as a {@code DataFileParseException}, by this method as by
-     * {@link #parseWithResults}. Callers that must see a syntax message or a count mismatch have to use
-     * {@link #parseWithResults}.
+     * A syntax error or a refused record throws, exactly as in {@link #parseWithResults}, so a list
+     * that comes back always ends in the synthetic {@code TV_NONE} base.
      *
-     * <p>Function parse coded before 260915, commented in full on 261028.
+     * <p>Function parse coded before 260915, commented in full on 261028, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param filename the object-base data file to read
      * @return the assembled {@link ObjectBase} list, ending in the synthetic {@code TV_NONE} base
-     * (empty if the parse failed closed)
      * @throws IOException if the file cannot be read
      */
     @Override
@@ -138,69 +134,59 @@ public class ObjectBaseReader implements Reader<ObjectBase> {
 
     /**
      * The {@link GrammarDriver.Extractor} for this grammar: run the parser's {@code file} entry
-     * rule, fail closed on any hard lexer/parser error, validate the {@code record-count:} header,
-     * and hand back the raw {@link ObjectBaseParseRecord}s, still holding unresolved text.
+     * rule, fail closed on any hard lexer/parser error, and hand back the raw
+     * {@link ObjectBaseParseRecord}s, still holding unresolved text.
      * <p>
      * Ordering matters: {@link ParseErrors#throwIfAny()} must fire <em>after</em> the parse but
      * <em>before</em> the records are used, so a malformed file aborts with a
-     * {@code ParseCancellationException} here rather than reaching the assembler, and a half-built
-     * record list is never measured against the declared count to produce a second, misleading
-     * error. That covers the cases where C returns a parser error too: a {@code graphics:},
-     * {@code break:}, {@code max-stack:} or {@code flags:} line before any {@code name:} (C's
+     * {@code ParseCancellationException} here rather than reaching the assembler. That covers the
+     * cases where C returns a parser error too: a {@code graphics:}, {@code break:},
+     * {@code max-stack:} or {@code flags:} line before any {@code name:} (C's
      * {@code PARSE_ERROR_MISSING_RECORD_HEADER}), a {@code default:} label other than the two C
-     * knows (C's {@code PARSE_ERROR_UNDEFINED_DIRECTIVE}) and a numeric directive with no number. The
-     * header check is soft - {@link GrammarDriver#checkRecordCount} only appends to {@code errors},
-     * so a miscount never discards the records that did parse.
+     * knows (C's {@code PARSE_ERROR_UNDEFINED_DIRECTIVE}) and a numeric directive with no number.
      * <p>
      * The records come back in file order, with the file-wide {@code default:} values already folded
      * into any record that omitted {@code break:} or {@code max-stack:}; that folding is done by the
      * grammar's {@code file} rule, not here. The copy at the end detaches the result from the parse
      * tree, so the returned list is the caller's to keep.
      *
-     * <p>Function extract coded before 260915, commented in full on 261017.
+     * <p>Function extract coded before 260915, commented in full on 261017, updated on 261105 for
+     * the removal of the soft-error path and the {@code record-count:} header.
      *
      * @param parser       the generated ObjectBase parser, positioned at the start of the file
      * @param errorCatcher the live hard-error collector installed by the driver
-     * @param errors       the soft-error sink, mutated in place
      * @return the parsed {@link ObjectBaseParseRecord}s in file order
      */
     private static List<ObjectBaseParseRecord> extract(
             @NotNull ObjectBaseGrammar parser,
-            @NotNull ParseErrors errorCatcher,
-            @NotNull List<String> errors) {
+            @NotNull ParseErrors errorCatcher) {
         ObjectBaseGrammar.FileContext output = parser.file();
         List<ObjectBaseParseRecord> result = output.objectBaseList;
         errorCatcher.throwIfAny();
-
-        String declaredCount = output.declaredRecordCount;
-        GrammarDriver.checkRecordCount(declaredCount, result.size(), errors);
 
         return new ArrayList<>(result);
     }
 
     /**
-     * Parse the given file, returning both the assembled {@link ObjectBase} list (file order, then
-     * the synthetic {@code TV_NONE} base) and any soft errors gathered along the way, for callers
-     * that need to tell a clean load from a partial one.
+     * Parse the given file, returning the assembled {@link ObjectBase} list (file order, then the
+     * synthetic {@code TV_NONE} base) wrapped in a {@link ParseResult}.
      * <p>
      * This is the Java counterpart of {@code run_parse_object_base} and the
      * {@code parse_object_base_*} handlers in {@code obj-init.c}: it wires {@code ObjectBaseLexer},
      * {@code ObjectBaseGrammar}, {@link #extract} and {@link ObjectBaseAssembler} into
-     * {@link GrammarDriver#run}. A syntax error returns no items and the collected messages; a
-     * {@code record-count:} mismatch leaves every record in the result alongside a message. An
-     * unresolved tval or flag, or a break chance or maximum stack with no digits, is not a result at
-     * all but a {@code DataFileParseException} from {@link ObjectBaseAssembler}, as C stops at the
-     * first of these. So is an unreadable file, which is an {@link IOException}, the analogue of
-     * {@code parse_file_quit_not_found}'s {@code quit()}. An unknown colour is neither: it is white,
-     * as in C.
-     * <p>
-     * This is the variant callers should prefer: {@code ObjectDataLoader.loadObjectBases} gates on
-     * the errors for exactly that reason.
+     * {@link GrammarDriver#run}. As C stops at the first error, so does this: a syntax error throws
+     * a {@code ParseCancellationException}, and an unresolved tval or flag, or a break chance or
+     * maximum stack with no digits, throws a
+     * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException} from
+     * {@link ObjectBaseAssembler}, and no result is returned. An unreadable file is an
+     * {@link IOException}, the analogue of {@code parse_file_quit_not_found}'s {@code quit()}. An
+     * unknown colour is not an error: it is white, as in C.
      *
-     * <p>Function parseWithResults coded before 260915, commented in full on 261028.
+     * <p>Function parseWithResults coded before 260915, commented in full on 261028, updated on
+     * 261105 for the removal of the soft-error path.
      *
      * @param filename the object-base data file to read
-     * @return a {@link ParseResult} of the assembled bases plus any soft errors
+     * @return every base in the file, in file order, then the synthetic {@code TV_NONE} base
      * @throws IOException if the file cannot be read
      */
     public @NotNull ParseResult<ObjectBase> parseWithResults(@NotNull String filename) throws IOException {

@@ -58,7 +58,6 @@ import static uk.co.jackoftradesltd.middle.effect.EffectSubTypeWrapper.teleportT
  * {@code expr:} lines are read by the sibling C handlers and are carried across here too.
  *
  * <p>Every failure stops the load with a {@link DataFileParseException}, as a C parse error does.
- * The old soft-error channel survives only as an unused {@code errors} parameter.
  *
  * <p>Two things C does at load are deliberately not done here. Dice and expressions are kept
  * as raw text and not evaluated - see the note in {@link #assembleOne} - and the load-time
@@ -83,7 +82,8 @@ import static uk.co.jackoftradesltd.middle.effect.EffectSubTypeWrapper.teleportT
  * timed-effect names come from Java enums, not from a loaded file, so C's need to load
  * {@code player_timed.txt} first does not arise.
  *
- * <p>Class EffectAssembler coded before 260915, commented in full on 261029 (first on 261026).
+ * <p>Class EffectAssembler coded before 260915, commented in full on 261029 (first on 261026),
+ * updated on 261105 for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -115,13 +115,12 @@ public class EffectAssembler {
      * list and never returns {@code null}, so a caller does not need to test the result.
      *
      * <p>{@code filename} is stored in a static field for the helpers to put in their error
-     * messages. {@code errors} is passed down but nothing appends to it any more; it is kept so
-     * the callers' signatures did not have to change.
+     * messages.
      *
-     * <p>Function assemble coded before 260915, commented in full on 261029.
+     * <p>Function assemble coded before 260915, commented in full on 261029, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param records  the parsed effect blocks for one owning record
-     * @param errors   unused; formerly the soft-error channel
      * @param filename the data file the records came from, for error messages
      * @return the resolved effects in order; empty if {@code records} is empty
      * @throws DataFileParseException if any effect fails to resolve
@@ -130,12 +129,11 @@ public class EffectAssembler {
     @NotNull
     @CheckReturnValue
     public static List<Effect> assemble(@NotNull List<EffectParseRecord> records,
-                                        @NotNull List<String> errors,
                                         @NotNull String filename) {
         EffectAssembler.filename = filename;
         List<Effect> effects = new ArrayList<>();
         for (EffectParseRecord record : records) {
-            Effect e = assembleOne(record, errors, record.line());
+            Effect e = assembleOne(record, record.line());
             effects.add(e);
         }
         return effects;
@@ -165,14 +163,12 @@ public class EffectAssembler {
      * <p>Function assembleOne coded before 260915, commented in full on 261029.
      *
      * @param record the raw effect record to resolve
-     * @param errors unused; formerly the soft-error sink
      * @param line   the record's source line, for error messages
      * @return the resolved effect; never {@code null}
      * @throws DataFileParseException if the effect name is empty or not one of {@link EffectEnum},
      *                                the sub-type does not resolve, or a number or expression is bad
      */
     private static Effect assembleOne(@NotNull EffectParseRecord record,
-                                      @NotNull List<String> errors,
                                       int line) {
         if (record.typeInit().isEmpty()) {
             String msg = "Effect starting at line: " + line + " of file: " + filename + " has " +
@@ -198,7 +194,7 @@ public class EffectAssembler {
         // sub-type.
         EffectSubTypeWrapper wrapper;
         EffectSubTypeEnum kind = effectEnum.getSubType();
-        wrapper = getWrapperSubType(kind, record.subTypeWrapper(), errors, line);
+        wrapper = getWrapperSubType(kind, record.subTypeWrapper(), line);
         int radius = ParseUtils.parseIntString("Effect", record.radius(), line, filename, "radius");
         int otherParameter = ParseUtils.parseIntString("Effect", record.other(), line, filename, "other parameter");
         int yVal = ParseUtils.parseIntString("Effect", record.yVal(), line, filename, "y-val");
@@ -208,7 +204,7 @@ public class EffectAssembler {
         String expressionBases = record.expressionBases();
         String expressionOperations = record.expressionOperations();
         List<Expression> expressions = getExpressions(expressionChars,
-                expressionBases, expressionOperations, line, errors);
+                expressionBases, expressionOperations, line);
         String msg = record.effectMessage();
 
         // The evaluated dice value (the Random field) is intentionally left null here.
@@ -255,7 +251,6 @@ public class EffectAssembler {
      * @param operations the {@code ^}-delimited raw operation strings, paired positionally with
      *                   {@code chars}
      * @param line       the owning record's source line, for error messages
-     * @param errors     unused; formerly the soft-error sink
      * @return the resolved expressions in order; empty if {@code chars} is empty
      * @throws DataFileParseException if the three strings split into different numbers of parts,
      *                                or a code is not exactly one character
@@ -264,8 +259,7 @@ public class EffectAssembler {
             @NotNull String chars,
             @NotNull String bases,
             @NotNull String operations,
-            int line,
-            @NotNull List<String> errors) {
+            int line) {
         List<Expression> results = new ArrayList<>();
 
         if (chars.isEmpty()) return results;
@@ -357,7 +351,6 @@ public class EffectAssembler {
      *
      * @param type   the effect's sub-type kind, which selects how {@code value} is resolved
      * @param value  the raw sub-type token from the data file, or empty if the line gave none
-     * @param errors unused; formerly the soft-error sink
      * @param line   the owning record's source line, for error messages
      * @return the resolved wrapper; never {@code null}
      * @throws DataFileParseException if {@code value} is not in the list for {@code type}, or it
@@ -366,7 +359,7 @@ public class EffectAssembler {
      *                                loaded, or {@code value} is empty and the summon list is empty
      */
     static EffectSubTypeWrapper getWrapperSubType(EffectSubTypeEnum type, String value,
-                                                          List<String> errors, int line) {
+                                                          int line) {
         switch (type) {
             case EST_PROJ -> {
                 ProjectionEnum pe;

@@ -67,17 +67,6 @@ import EffectBlock;
 /*
  * @author Rowan Crowther
  *
- * The declared number of records in the file. An addition of this port -
- * the C parser registers no such directive for chest_trap.txt.
- */
-recordCount
-        returns[String count]
-        :   RECORD_COUNT c=INTEGER { $count = $c.getText(); }
-        ;
-
-/*
- * @author Rowan Crowther
- *
  * "name:<text>" - the trap's display name, and the directive that opens a
  * record. Returns the line it was found on as well, so every error the
  * assembler reports about this trap can name a line in the file.
@@ -217,16 +206,13 @@ chestTrap
 /*
  * @author Rowan Crowther
  *
- * The whole file: the record count, then one or more traps, then EOF.
+ * The whole file: one or more traps, then EOF.
  *
- * Both returns are read by ChestTrapReader - the count is compared against
- * the number of records recovered, and the list is handed to
- * ChestTrapAssembler. Requiring EOF is what stops a trailing malformed
+ * The list is read by ChestTrapReader and handed to ChestTrapAssembler. Requiring EOF is what stops a trailing malformed
  * record being silently ignored.
  */
 file
-        returns[String declaredRecordCount, List<ChestTrapParseRecord> chestTraps]
-        :   recordCount { $declaredRecordCount = $recordCount.count;
-                          $chestTraps = new ArrayList<>(); }
+        returns[List<ChestTrapParseRecord> chestTraps]
+        :   { $chestTraps = new ArrayList<>(); }
             (chestTrap { $chestTraps.add($chestTrap.trap); })+ EOF
         ;

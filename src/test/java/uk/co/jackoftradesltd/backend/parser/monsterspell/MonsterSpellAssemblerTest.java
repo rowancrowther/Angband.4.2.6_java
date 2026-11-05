@@ -23,7 +23,6 @@ import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.middle.monsters.MonsterSpellType;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -58,7 +57,7 @@ class MonsterSpellAssemblerTest {
     }
 
     private static List<MonsterSpellType> assemble(MonsterSpellParseRecord... records) {
-        return new MonsterSpellAssembler().assemble(List.of(records), new ArrayList<>(), FILE);
+        return new MonsterSpellAssembler().assemble(List.of(records), FILE);
     }
 
     private static Object field(Object target, String name) throws Exception {
@@ -166,7 +165,7 @@ class MonsterSpellAssemblerTest {
         }
     }
 
-    // ---- Levels, order and the error list ----------------------------------
+    // ---- Levels and order ------------------------------------------------
 
     @Test
     void aPowerCutoffThatIsNotANumberStopsTheLoad() {
@@ -206,17 +205,6 @@ class MonsterSpellAssemblerTest {
     @Test
     void noRecordsGiveAnEmptyList() {
         assertTrue(assemble().isEmpty());
-    }
-
-    @Test
-    void aCleanAssemblyWritesNothingToTheErrorList() {
-        List<String> errors = new ArrayList<>();
-
-        List<MonsterSpellType> spells = new MonsterSpellAssembler()
-                .assemble(List.of(record("BLINK", "TELEPORT", "100")), errors, FILE);
-
-        assertEquals(1, spells.size());
-        assertTrue(errors.isEmpty(), errors::toString);
     }
 
     @Test

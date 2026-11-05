@@ -34,7 +34,6 @@ import uk.co.jackoftradesltd.middle.monsters.enums.MonTimed;
 import uk.co.jackoftradesltd.middle.player.enums.TimedEffect;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -83,7 +82,7 @@ class EffectAssemblerSubTypeTest {
     }
 
     private static EffectSubTypeWrapper sub(EffectSubTypeEnum kind, String value) {
-        return EffectAssembler.getWrapperSubType(kind, value, new ArrayList<>(), 1);
+        return EffectAssembler.getWrapperSubType(kind, value, 1);
     }
 
     private static void refused(EffectSubTypeEnum kind, String value) {
@@ -93,7 +92,7 @@ class EffectAssemblerSubTypeTest {
     private static Effect assembleOne(String type, String sub, String chars, String bases, String ops) {
         EffectParseRecord r = new EffectParseRecord(type, sub, "", "", "", "", "",
                 chars, bases, ops, null, 1);
-        return EffectAssembler.assemble(List.of(r), new ArrayList<>(), "test.txt").get(0);
+        return EffectAssembler.assemble(List.of(r), "test.txt").get(0);
     }
 
     // ---- the four stage 1 findings ----

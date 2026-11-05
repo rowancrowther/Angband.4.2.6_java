@@ -56,14 +56,14 @@ import java.util.List;
  * shapes with the same name would resolve differently here. The shipped file has nine shapes with
  * unique names.
  *
- * <p>C quits on the first bad line. This reader follows the shared two-channel contract instead: a
- * lexer or grammar error returns no shapes and the messages, and a shape whose flags, values or
- * effects do not resolve, or a {@code record-count:} mismatch, is a soft error that leaves the
- * other shapes loaded. The {@code record-count:} header is Java-only: the upstream file has none,
- * and the copy in {@code lib/gamedata} adds it. A file that cannot be opened is an
- * {@link IOException}, where C quits.
+ * <p>C quits on the first bad line, and so does this reader: a lexer or grammar error is thrown
+ * from {@link #extract} as a {@code ParseCancellationException}, and a shape whose flags, values
+ * or effects do not resolve is thrown by the assembler as a
+ * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}. Neither is caught here, and
+ * no shapes are returned. A file that cannot be opened is an {@link IOException}, where C quits.
  *
- * <p>Class ShapeReader coded before 260915, commented in full on 261018.
+ * <p>Class ShapeReader coded before 260915, commented in full on 261018, updated on 261105 for the
+ * removal of the soft-error path and the {@code record-count:} header.
  *
  * @author Rowan Crowther
  */
@@ -77,15 +77,15 @@ public class ShapeReader implements Reader<PlayerShape> {
     private static final Logger logger = LogManager.getLogger();
 
     /**
-     * Reads {@code filename} and returns the assembled shapes in file order, discarding the error
-     * messages. The convenience form of {@link #parseWithResults}, which is the one to call when
-     * the errors matter: with this one a hard grammar error and a file whose every shape was
-     * dropped look the same.
+     * Reads {@code filename} and returns the assembled shapes in file order, unwrapped from the
+     * {@link ParseResult} that {@link #parseWithResults} gives. Any error throws exactly as it does
+     * there.
      *
-     * <p>Function parse coded before 260915, commented in full on 261018.
+     * <p>Function parse coded before 260915, commented in full on 261018, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param filename the data file to read
-     * @return the player shapes read from the file, empty if the parse failed
+     * @return every player shape in the file, in file order
      * @throws IOException if the file cannot be opened or read
      */
     @Override
@@ -95,10 +95,10 @@ public class ShapeReader implements Reader<PlayerShape> {
 
     /**
      * The grammar-specific step handed to {@link GrammarDriver}: runs the grammar's {@code file}
-     * rule, fails closed on any hard lexer or grammar error through {@link ParseErrors#throwIfAny()},
-     * and soft-checks the {@code record-count:} header against the number of shape records parsed.
-     * No value is interpreted here: the numbers, flag names and {@code values:} tokens are
-     * resolved by the assembler, as they are in C's {@code parse_shape_*} handlers.
+     * rule and fails closed on any hard lexer or grammar error through
+     * {@link ParseErrors#throwIfAny()}. No value is interpreted here: the numbers, flag names and
+     * {@code values:} tokens are resolved by the assembler, as they are in C's
+     * {@code parse_shape_*} handlers.
      *
      * <p>The grammar builds each {@link ShapeParseRecord} itself, so the records are only copied
      * into a new list. A directive that takes one value ({@code combat}, a {@code skill-*} line)
@@ -108,43 +108,40 @@ public class ShapeReader implements Reader<PlayerShape> {
      * {@code effect-msg:}, {@code dice:} or {@code expr:} line only after an {@code effect:} line,
      * where C ignores one that comes first.
      *
-     * <p>Function extract coded before 260915, commented in full on 261018.
+     * <p>Function extract coded before 260915, commented in full on 261018, updated on 261105 for
+     * the removal of the soft-error path and the {@code record-count:} header.
      *
      * @param parser       the generated parser, positioned at the start of the file
      * @param errorCatcher the hard-error channel; {@code throwIfAny} aborts before the records are used
-     * @param errors       the soft-error sink: a record-count mismatch is appended here
      * @return the raw shape parse records, one per {@code name:} line, in file order
      * @throws IOException if reading fails downstream
      */
     private static List<ShapeParseRecord> extract(
             @NotNull ShapeGrammar parser,
-            @NotNull ParseErrors errorCatcher,
-            @NotNull List<String> errors) throws IOException {
+            @NotNull ParseErrors errorCatcher) throws IOException {
         ShapeGrammar.FileContext output = parser.file();
         List<ShapeParseRecord> records = output.shapes;
         errorCatcher.throwIfAny();
-
-        String declaredRecordCount = output.declaredRecordCount;
-        GrammarDriver.checkRecordCount(declaredRecordCount, records.size(), errors);
 
         return new ArrayList<>(records);
     }
 
     /**
-     * Reads {@code filename} and returns the full {@link ParseResult}: the assembled
-     * {@link PlayerShape}s in file order, and every error message collected on the way. This is the
-     * Java form of C's {@code run_parse_shape} followed by {@code finish_parse_shape}.
+     * Reads {@code filename} and returns the assembled {@link PlayerShape}s, in file order, wrapped
+     * in a {@link ParseResult}. This is the Java form of C's {@code run_parse_shape} followed by
+     * {@code finish_parse_shape}.
      *
-     * <p>There are three outcomes. A clean file gives nine shapes and no errors for the shipped
-     * data. A lexer or grammar error gives no shapes and the parser's messages. A shape whose
-     * flags, values or effects do not resolve is dropped with a message beside the shapes that
-     * survived, where C raises a parse error and quits. A file that cannot be opened is an
-     * {@link IOException}.
+     * <p>A clean file gives nine shapes for the shipped data. A lexer or grammar error throws a
+     * {@code ParseCancellationException}. A shape whose flags, values or effects do not resolve
+     * throws a {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}, as C raises a
+     * parse error and quits. A file that cannot be opened is an {@link IOException}. No result is
+     * returned for a file that fails.
      *
-     * <p>Function parseWithResults coded before 260915, commented in full on 261018.
+     * <p>Function parseWithResults coded before 260915, commented in full on 261018, updated on
+     * 261105 for the removal of the soft-error path.
      *
      * @param filename the shape data file to read
-     * @return the parse result: the shapes plus any error messages
+     * @return every player shape in the file, in file order
      * @throws IOException if the file cannot be opened or read
      */
     public @NotNull ParseResult<PlayerShape> parseWithResults(String filename) throws IOException {

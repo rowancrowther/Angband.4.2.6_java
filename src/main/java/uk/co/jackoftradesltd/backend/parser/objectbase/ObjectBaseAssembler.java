@@ -49,8 +49,8 @@ import java.util.List;
  *
  * <p>Every field that cannot be resolved ends the load. C's handler returns a parser error and
  * {@code init_angband} quits, so this class logs the message at fatal level and throws
- * {@link DataFileParseException} naming the record's line and the file; no record is skipped and
- * the {@code errors} list is never written to. The cases are an unknown tval, a flag that is
+ * {@link DataFileParseException} naming the record's line and the file; no record is skipped. The
+ * cases are an unknown tval, a flag that is
  * neither an object flag, a kind flag nor an element flag, a {@code HATES_} or {@code IGNORE_}
  * flag whose element does not exist, the bare token {@code NONE}, and a break chance or maximum
  * stack that {@link ParseUtils#parseIntString} cannot read. An unknown colour is the one
@@ -60,7 +60,8 @@ import java.util.List;
  * order: here the tval is checked first, then the flags, then the two numbers. A record with more
  * than one fault therefore reports a different one first, and the load ends either way.
  *
- * <p>Class ObjectBaseAssembler coded before 260915, commented in full on 261028.
+ * <p>Class ObjectBaseAssembler coded before 260915, commented in full on 261028, updated on 261105
+ * for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -128,14 +129,13 @@ public class ObjectBaseAssembler implements Assembler<ObjectBaseParseRecord, Lis
      *
      * @param records  the raw object-base records from the grammar, in file order, with the
      *                 {@code default:} values already folded in
-     * @param errors   unused: every fault ends the load, so nothing is appended
      * @param filename the file the records came from, named in the message of each failure
      * @return the assembled object bases in file order, followed by the {@code TV_NONE} sentinel
      * @throws DataFileParseException if a tval, flag, break chance or maximum stack cannot be
      *                                resolved
      */
     @Override
-    public List<ObjectBase> assemble(@NotNull List<ObjectBaseParseRecord> records, @NotNull List<String> errors,
+    public List<ObjectBase> assemble(@NotNull List<ObjectBaseParseRecord> records,
                                     String filename) {
         List<ObjectBase> results = new ArrayList<>();
 

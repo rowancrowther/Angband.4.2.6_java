@@ -44,8 +44,8 @@ import java.util.List;
  *
  * <p>Every unresolvable field is fatal, as in C, where each of these handlers returns a parser
  * error and the load stops: an unknown race flag, a glyph that is not exactly one code point and a
- * pain serial with no loaded set each log and throw {@link DataFileParseException}. The
- * {@code errors} list that {@link #assemble} receives is therefore never written to by this class.
+ * pain serial with no loaded set each log and throw {@link DataFileParseException}. No record is
+ * skipped.
  *
  * <p>The bases come back in C's order, not file order. {@code parse_mon_base_name} pushes each new
  * record on the head of the chain ({@code rb->next = h}), so {@code rb_info} starts with the last
@@ -53,7 +53,8 @@ import java.util.List;
  * matters only when a name is used twice: {@code lookup_monster_base} in {@code mon-util.c} then
  * answers the later record, and a first-match search over this list does the same.
  *
- * <p>Class MonsterBaseAssembler coded before 260915, commented in full on 261027.
+ * <p>Class MonsterBaseAssembler coded before 260915, commented in full on 261027, updated on 261105
+ * for the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -96,15 +97,13 @@ public class MonsterBaseAssembler implements Assembler<MonsterBaseParseRecord, L
      * <p>Function assemble coded before 260915, commented in full on 261027.
      *
      * @param records  the raw monster-base records from the grammar, in file order
-     * @param errors   the soft-error sink required by {@link Assembler}; this assembler never
-     *                 writes to it, because every failure is fatal
      * @param filename the data file being read, named in each exception
      * @return the assembled monster bases, in the reverse of file order
      * @throws DataFileParseException if a race flag is unknown, a glyph is not exactly one code
      *                                point, or a pain serial is not a number or has no loaded set
      */
     @Override
-    public List<MonsterBase> assemble(@NotNull List<MonsterBaseParseRecord> records, @NotNull List<String> errors,
+    public List<MonsterBase> assemble(@NotNull List<MonsterBaseParseRecord> records,
                                     String filename) {
         List<MonsterBase> results = new ArrayList<>();
 

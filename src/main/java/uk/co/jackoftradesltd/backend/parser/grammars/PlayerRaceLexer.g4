@@ -2,10 +2,6 @@ lexer grammar PlayerRaceLexer;
 
 import CommentsAndEol, Flags;
 
-RECORD_COUNT
-        :   'record-count:'
-        ;
-
 NAME
         :   'name:' -> pushMode(FREE_TEXT_MODE)
         ;

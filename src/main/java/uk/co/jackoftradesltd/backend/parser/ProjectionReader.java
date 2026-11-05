@@ -52,38 +52,40 @@ import java.util.List;
  * {@code element_names} and nothing after that, so a list index is the enum ordinal minus one for
  * those 25 ({@code PROJ_NONE} takes ordinal 0) and nothing more.
  *
- * <p>C quits on the first bad line. This reader follows the shared two-channel contract for most
- * faults: a lexer or grammar error returns no projections and the messages, and a bad record or a
- * {@code record-count:} mismatch is a soft error that leaves the other records loaded. The
- * faults C quits on in {@code parse_projection_code} and {@code finish_parse_projection} stop the
- * load instead: {@link ProjectionAssembler} throws a {@code DataFileParseException}, which
- * {@link GrammarDriver} does not catch, so it comes out of {@link #parseWithResults} and
- * {@link #parse} with no {@link ParseResult}. The {@code record-count:} header is Java-only; the
- * upstream file has none. A file that cannot be opened is an {@link IOException}, where C quits.
+ * <p>C quits on the first bad line, and so does this reader. A lexer or grammar error is thrown
+ * from {@link #extract} as a {@code ParseCancellationException}. Every fault in a record, and the
+ * faults C quits on in {@code parse_projection_code} and {@code finish_parse_projection}, make
+ * {@link ProjectionAssembler} throw a {@link DataFileParseException}. {@link GrammarDriver} catches
+ * neither, so both come out of {@link #parseWithResults} and {@link #parse} with no
+ * {@link ParseResult}. A file that cannot be opened is an {@link IOException}, where C quits.
  *
  * <p>Class ProjectionReader coded before 260915, commented in full on 261018; the stop-the-load
- * paragraph rewritten on 261021.
+ * paragraph rewritten on 261021, and again on 261105 for the removal of the soft-error path and
+ * the {@code record-count:} header.
  *
  * @author Rowan Crowther
  */
 public class ProjectionReader implements Reader<Projection> {
     /**
      * Logger handed to {@link GrammarDriver#run}, which logs an {@link IOException} under this
-     * reader's name before rethrowing it. The reader itself never logs.
+     * reader's name before rethrowing it. The reader itself logs only in {@link #extract}'s
+     * line-number branch, which a data file cannot reach.
      *
-     * <p>Field logger coded before 260915, commented in full on 261018.
+     * <p>Field logger coded before 260915, commented in full on 261018, updated on 261105 to
+     * mention the {@link #extract} warning.
      */
-    private static final Logger logger = LogManager.getLogger();
+    private static final Logger logger = LogManager.getLogger(ProjectionReader.class);
 
     /**
-     * Reads {@code filename} and returns the assembled projections in file order, discarding the
-     * error messages. The convenience form of {@link #parseWithResults}, which is the one to call
-     * when the errors matter: with this one a hard grammar error and an empty file look the same.
+     * Reads {@code filename} and returns the assembled projections in file order, unwrapped from
+     * the {@link ParseResult} that {@link #parseWithResults} gives. Any error throws exactly as it
+     * does there.
      *
-     * <p>Function parse coded before 260915, commented in full on 261018.
+     * <p>Function parse coded before 260915, commented in full on 261018, updated on 261105 for
+     * the removal of the soft-error path.
      *
      * @param filename the data file to read
-     * @return the projections read from the file, empty if the parse failed
+     * @return every projection in the file, in file order
      * @throws IOException if the file cannot be opened or read
      */
     @NotNull
@@ -96,8 +98,7 @@ public class ProjectionReader implements Reader<Projection> {
     /**
      * The grammar-specific step handed to {@link GrammarDriver}: runs the grammar's {@code file}
      * rule, fails closed on any hard lexer or grammar error through {@link ParseErrors#throwIfAny()},
-     * soft-checks the {@code record-count:} header against the number of records parsed, and builds
-     * one {@link ProjectionParseRecord} per record. No value is interpreted here: that is the
+     * and builds one {@link ProjectionParseRecord} per record. No value is interpreted here: that is the
      * assembler's work, as it is C's in the {@code parse_projection_*} handlers.
      *
      * <p>Each row the grammar hands back holds sixteen strings: the fifteen directives in the order
@@ -106,27 +107,23 @@ public class ProjectionReader implements Reader<Projection> {
      * {@code divisor}, {@code damage-cap}, {@code msgt}, {@code obvious}, {@code wake} and
      * {@code color}, with {@code ""} for a directive the record does not have, then the line the
      * record starts on. The line is turned into an {@code int} here. The grammar writes it with
-     * {@code String.valueOf}, so the {@code NumberFormatException} branch, which would report the
-     * problem and store {@code -1}, cannot be reached from a data file.
+     * {@code String.valueOf}, so the {@code NumberFormatException} branch, which would log a
+     * warning and store {@code -1}, cannot be reached from a data file.
      *
-     * <p>Function extract coded before 260915, commented in full on 261018.
+     * <p>Function extract coded before 260915, commented in full on 261018, updated on 261105 for
+     * the removal of the soft-error path and the {@code record-count:} header.
      *
      * @param parser       the generated parser, positioned at the start of the file
      * @param errorCatcher the hard-error channel; {@code throwIfAny} aborts before the rows are used
-     * @param errors       the soft-error sink: a record-count mismatch is appended here, as is a
-     *                     line number that does not parse
      * @return the parsed projection records, one per record, in file order
      */
     private static List<ProjectionParseRecord> extract(
-            @NotNull ProjectionGrammar parser, @NotNull ParseErrors errorCatcher,
-            @NotNull List<String> errors) {
+            @NotNull ProjectionGrammar parser, @NotNull ParseErrors errorCatcher) {
 
         List<ProjectionParseRecord> records = new ArrayList<>();
         ProjectionGrammar.FileContext output = parser.file();
         List<List<String>> results = output.projections;
         errorCatcher.throwIfAny();
-        String declaredRecordCount = output.records;
-        GrammarDriver.checkRecordCount(declaredRecordCount, results.size(), errors);
 
         for (List<String> result : results) {
             String lineStr = result.getLast();
@@ -134,9 +131,10 @@ public class ProjectionReader implements Reader<Projection> {
             try {
                 line = Integer.parseInt(lineStr);
             } catch (NumberFormatException e) {
-                errors.add("Invalid number format for declared line: " + lineStr +
-                        " Projection code: " + result.getFirst());
-                line = -1;
+                String message = "Invalid number format for declared line: " + lineStr +
+                        " Projection code: " + result.getFirst();
+                logger.fatal(message, e);
+                throw new DataFileParseException(message);
             }
 
             records.add(new ProjectionParseRecord(result.get(0), result.get(1),
@@ -150,28 +148,26 @@ public class ProjectionReader implements Reader<Projection> {
     }
 
     /**
-     * Reads {@code filename} and returns the full {@link ParseResult}: the assembled
-     * {@link Projection}s in file order, and every error message collected on the way. This is
-     * the Java form of C's {@code run_parse_projection} followed by {@code finish_parse_projection}.
+     * Reads {@code filename} and returns the assembled {@link Projection}s, in file order, wrapped
+     * in a {@link ParseResult}. This is the Java form of C's {@code run_parse_projection} followed
+     * by {@code finish_parse_projection}.
      *
-     * <p>There are four outcomes. A clean file gives 56 projections and no errors for the shipped
-     * data. A lexer or grammar error, which includes a {@code code:} with no value, gives no
-     * projections and the parser's messages. A soft fault in a record is a message beside the
-     * records that survived. A fault C quits on stops the load: one of the first 25 records has an
-     * unknown or misplaced code, or the number of surviving {@code type:element} records is not 25,
-     * and the assembler's {@code DataFileParseException} comes out of this method, its message
-     * carrying the position, the ordinal and the errors gathered so far. A file that cannot be
-     * opened is an {@link IOException}.
+     * <p>A clean file gives 56 projections for the shipped data. A lexer or grammar error, which
+     * includes a {@code code:} with no value, throws a {@code ParseCancellationException}. Any
+     * fault in a record, an unknown or misplaced code in one of the first 25 records, or a count
+     * of {@code type:element} records other than 25, throws the assembler's
+     * {@link DataFileParseException} out of this method. A file that cannot be opened is an
+     * {@link IOException}. No result is returned for a file that fails.
      *
      * <p>Function parseWithResults coded before 260915, commented in full on 261018; the
-     * stop-the-load outcome documented on 261021.
+     * stop-the-load outcome documented on 261021, and the outcomes rewritten on 261105 for the
+     * removal of the soft-error path.
      *
      * @param filename the name of the file to parse
      * @return a {@link ParseResult} of type {@link Projection}
      * @throws IOException when the file cannot be found or read
-     * @throws DataFileParseException if the
-     *         assembler stops the load, as C quits in {@code parse_projection_code} or
-     *         {@code finish_parse_projection}
+     * @throws DataFileParseException if the assembler refuses a record or the element block, as C
+     *         quits in its {@code parse_projection_*} handlers or {@code finish_parse_projection}
      */
     public ParseResult<Projection> parseWithResults(@NotNull String filename) throws IOException {
         return GrammarDriver.run(filename, ProjectionLexer::new,

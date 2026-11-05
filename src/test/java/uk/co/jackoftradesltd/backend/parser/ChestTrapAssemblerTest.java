@@ -79,12 +79,8 @@ class ChestTrapAssemblerTest {
         return records;
     }
 
-    private static List<ChestTrap> assemble(List<ChestTrapParseRecord> records, List<String> errors) {
-        return new ChestTrapAssembler().assemble(records, errors, "test.txt");
-    }
-
     private static List<ChestTrap> assemble(List<ChestTrapParseRecord> records) {
-        return assemble(records, new ArrayList<>());
+        return new ChestTrapAssembler().assemble(records, "test.txt");
     }
 
     private static DataFileParseException refused(List<ChestTrapParseRecord> records) {
@@ -96,11 +92,9 @@ class ChestTrapAssemblerTest {
     @Test
     void aWellFormedRecordListAssemblesInFileOrder() {
         // parse_chest_trap_name appends to the tail, so C's list is file order.
-        List<String> errors = new ArrayList<>();
 
-        List<ChestTrap> traps = assemble(validFile(), errors);
+        List<ChestTrap> traps = assemble(validFile());
 
-        assertTrue(errors.isEmpty(), errors::toString);
         assertEquals(List.of(ChestTrapCode.values()), traps.stream().map(ChestTrap::getCode).toList());
         assertEquals(List.of(1, 2, 3, 4, 5, 6, 7), traps.stream().map(ChestTrap::getLevel).toList());
     }
@@ -367,20 +361,17 @@ class ChestTrapAssemblerTest {
     @Test
     void anEffectBlockThatFailsToResolveEndsTheLoad() {
         // As an error from grab_effect_data ends the C load. EffectAssembler throws the
-        // DataFileParseException itself, naming the effect's own line (7), and adds nothing to the
-        // error list.
+        // DataFileParseException itself, naming the effect's own line (7).
         EffectParseRecord untyped = new EffectParseRecord("", "", "", "", "", "", "", "", "", "", "", 7);
         List<ChestTrapParseRecord> records = validFile();
         records.set(1, new ChestTrapParseRecord("gas trap", "POISON", "2",
                 new ArrayList<>(List.of(untyped)), "", "", "", "", 6));
-        List<String> errors = new ArrayList<>();
 
         DataFileParseException e = assertThrows(DataFileParseException.class,
-                () -> assemble(records, errors));
+                () -> assemble(records));
 
         assertTrue(e.getMessage().contains("Effect starting at line: 7"), e::getMessage);
         assertTrue(e.getMessage().contains("has an empty element value"), e::getMessage);
-        assertTrue(errors.isEmpty(), errors::toString);
     }
 
     // ---- Error handling ---------------------------------------------------
@@ -392,14 +383,12 @@ class ChestTrapAssemblerTest {
                 new ArrayList<>(), "", "", "", "", 6));
         records.set(2, new ChestTrapParseRecord("x", "SECOND_BAD", "3",
                 new ArrayList<>(), "", "", "", "", 10));
-        List<String> errors = new ArrayList<>();
 
         DataFileParseException e = assertThrows(DataFileParseException.class,
-                () -> assemble(records, errors));
+                () -> assemble(records));
 
         assertTrue(e.getMessage().contains("FIRST_BAD"), e::getMessage);
         assertFalse(e.getMessage().contains("SECOND_BAD"), e::getMessage);
-        assertTrue(errors.isEmpty(), errors::toString);
     }
 
     // ---- null fields only a hand-built record can carry ----------------------

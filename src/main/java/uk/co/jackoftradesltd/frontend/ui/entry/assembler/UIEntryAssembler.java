@@ -67,10 +67,11 @@ import java.util.List;
  * {@code resist_ui_compact_0} fanned out, so all thirteen take this branch (see
  * {@code docs/precis/260920.md}, "Correction: the create path is not the common case").
  * <p>
- * Assembly is fail-fast: a record whose parameter, renderer, combiner, template, priority or flags cannot
+ * Assembly is fail-fast: a record whose parameter, combiner, template, priority or flags cannot
  * be resolved ends the load with a {@link DataFileParseException}, as a failed {@code parse_entry_*}
- * callback ends {@code parse_file} in C. A renderer that cannot be found is also appended to
- * {@code errors} by {@link UIRegistry#getUIEntryRenderer} before the exception is thrown.
+ * callback ends {@code parse_file} in C. A renderer that cannot be found ends it too, but with the
+ * {@link IllegalArgumentException} that {@link UIRegistry#getUIEntryRenderer} throws, so the
+ * {@code renderer == null} branch in {@link #assemble} is never reached.
  * <p>
  * The label directives are cut as C cuts them: {@code label} to {@code MAX_ENTRY_LABEL} (80)
  * characters, {@code label2} to 2 and {@code label5} to 5. {@link #registerLabel} stores the explicit
@@ -85,19 +86,22 @@ import java.util.List;
  * {@code label10} lines (only {@code label}, {@code label2} and {@code label5} are read), and a
  * {@code priority:} of {@code -2147483648} or below loading as {@code -2147483647}.
  *
- * <p>Class UIEntryAssembler coded before 260922, commented in full on 261102.
+ * <p>Class UIEntryAssembler coded before 260922, commented in full on 261102, updated on 261105 for
+ * the removal of the soft-error path.
  *
  * @author Rowan Crowther
  */
 public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEntry>> {    
     /**
      * Logger for every fatal state this assembler throws a {@link DataFileParseException} on: an illegal
-     * parameter, renderer, combiner, flag, priority or template, a pre-existing parameterized name, a
-     * new entry with no combiner, and an override record whose incoming entry still carries a stat or
-     * element parameter. Each mirrors a failed {@code parse_entry_*} callback, or a C
-     * {@code quit()}/{@code assert}, that ends the load rather than a soft, error-collecting failure.
+     * parameter, combiner, flag, priority or template, a pre-existing parameterized name, a new entry
+     * with no combiner, and an override record whose incoming entry still carries a stat or element
+     * parameter. Each mirrors a failed {@code parse_entry_*} callback, or a C
+     * {@code quit()}/{@code assert}, that ends the load. An unknown renderer is logged and thrown by
+     * {@link UIRegistry#getUIEntryRenderer} instead, so this logger never sees it.
      *
-     * <p>Field logger coded before 260922, commented in full on 261102.
+     * <p>Field logger coded before 260922, commented in full on 261102, updated on 261105 for the
+     * removal of the soft-error path.
      */
     private final static Logger logger = LogManager.getLogger(UIEntryAssembler.class);
 
@@ -190,9 +194,11 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
     /**
      * Resolve each {@link UIEntryParseRecord} into one or more {@link UIEntry}
      * objects and fold them into the shared list, throwing a {@link DataFileParseException} on the
-     * first record whose present fields fail to resolve (an unknown {@code parameter:}, renderer,
-     * combiner, template or flag, a {@code priority:} that is neither {@code index},
-     * {@code negative_index} nor a signed decimal, or a new entry with no combiner). A
+     * first record whose present fields fail to resolve (an unknown {@code parameter:}, combiner,
+     * template or flag, a {@code priority:} that is neither {@code index},
+     * {@code negative_index} nor a signed decimal, or a new entry with no combiner). An unknown
+     * renderer also ends the load, through the {@link IllegalArgumentException} that
+     * {@link UIRegistry#getUIEntryRenderer} throws. A
      * {@code priority:} number may be preceded by whitespace (space, tab, form feed, newline, carriage
      * return or vertical tab - the set {@code strtol} skips, so {@code " 5"} loads as 5), but is refused
      * if anything but digits follows the sign, trailing whitespace included, as
@@ -217,9 +223,6 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
      * fixed 260922, once a regression test for the override-path fix below caught it.
      *
      * @param records  the raw parse records, in file order, from the grammar.
-     * @param errors   the error sink; {@link UIRegistry#getUIEntryRenderer} appends a message to it
-     *                 when a renderer cannot be found, just before this method throws. Mutated in
-     *                 place.
      * @param filename the file being assembled, quoted in every error message
      * @return the entries seeded from {@link UIRegistry#getUIEntries()} (the
      * {@code ui_entry_base.txt} placeholders) plus every entry created from the records, sorted by
@@ -227,6 +230,7 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
      * record are therefore not kept where that record sat
      * @throws DataFileParseException on the first record that cannot be resolved, or whose
      *                                {@code parameter:} names an entry that already exists
+     * @throws IllegalArgumentException if a {@code renderer:} names no loaded renderer
      *
      * <p><b>Accepted deviation (261102):</b> a record that repeats the previous record's name
      * is resolved on its own here, where C's {@code parse_entry_name} returns at once and the second
@@ -259,11 +263,11 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
      * always applied first (see {@link #parseEachEntry}). See "UI entry" in
      * {@code docs/Accepted_Deviations.md}.
      *
-     * <p>Function assemble coded before 260922, commented in full on 261102.
+     * <p>Function assemble coded before 260922, commented in full on 261102, updated on 261105 for
+     * the removal of the soft-error path.
      */
     @Override
     public List<UIEntry> assemble(@NotNull List<UIEntryParseRecord> records,
-                                  @NotNull List<String> errors,
                                   @NotNull String filename) {
         this.filename = filename;
         List<UIEntry> results = new ArrayList<>(UIRegistry.getUIEntries());
@@ -285,7 +289,7 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
             String rendStr = record.renderer();
             UIEntryRenderer renderer;
             if (!rendStr.isEmpty()) {
-                renderer = UIRegistry.getUIEntryRenderer(rendStr, errors);
+                renderer = UIRegistry.getUIEntryRenderer(rendStr);
                 if (renderer == null) {
                     String message = "UI entry starting at line: " + line + " of file: " + filename + " has " +
                             "an illegal renderer value: " + record.renderer();

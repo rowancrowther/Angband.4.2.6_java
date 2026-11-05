@@ -63,13 +63,13 @@ class BodyAssemblerTest {
         return new BodySlotRecord(type, name);
     }
 
-    private static List<PlayerBody> assemble(List<BodyParseRecord> records, List<String> errors) {
-        return new BodyAssembler().assemble(records, errors, FILE);
+    private static List<PlayerBody> assemble(List<BodyParseRecord> records) {
+        return new BodyAssembler().assemble(records, FILE);
     }
 
     private static PlayerBody one(String type) {
         List<PlayerBody> bodies = assemble(
-                List.of(new BodyParseRecord("Solo", List.of(slot(type, "somewhere")), 2)), new ArrayList<>());
+                List.of(new BodyParseRecord("Solo", List.of(slot(type, "somewhere")), 2)));
         assertEquals(1, bodies.size());
         return bodies.getFirst();
     }
@@ -95,9 +95,8 @@ class BodyAssemblerTest {
         for (String[] pair : upstream) {
             slots.add(slot(pair[0], pair[1]));
         }
-        List<String> errors = new ArrayList<>();
 
-        PlayerBody body = assemble(List.of(new BodyParseRecord("Humanoid", slots, 2)), errors).getFirst();
+        PlayerBody body = assemble(List.of(new BodyParseRecord("Humanoid", slots, 2))).getFirst();
 
         assertEquals("Humanoid", body.getName());
         assertEquals(12, body.getCount());
@@ -105,13 +104,12 @@ class BodyAssemblerTest {
             assertEquals(EquipmentSlotsEnum.valueOf("EQUIP_" + upstream[i][0]), body.getSlot(i).getType(), "type " + i);
             assertEquals(upstream[i][1], body.getSlot(i).getName(), "name " + i);
         }
-        assertTrue(errors.isEmpty());
     }
 
     @Test
     void aRepeatedSlotTypeIsKeptAsTwoSlots() {
         PlayerBody body = assemble(List.of(new BodyParseRecord("Hands",
-                List.of(slot("RING", "right hand"), slot("RING", "left hand")), 2)), new ArrayList<>()).getFirst();
+                List.of(slot("RING", "right hand"), slot("RING", "left hand")), 2))).getFirst();
 
         assertEquals(2, body.getCount());
         assertEquals(EquipmentSlotsEnum.EQUIP_RING, body.getSlot(0).getType());
@@ -126,7 +124,7 @@ class BodyAssemblerTest {
         List<PlayerBody> bodies = assemble(List.of(
                 new BodyParseRecord("Third", List.of(slot("LIGHT", "c")), 6),
                 new BodyParseRecord("Second", List.of(slot("BOW", "b")), 4),
-                new BodyParseRecord("First", List.of(slot("WEAPON", "a")), 2)), new ArrayList<>());
+                new BodyParseRecord("First", List.of(slot("WEAPON", "a")), 2)));
 
         assertEquals(List.of("Third", "Second", "First"), bodies.stream().map(PlayerBody::getName).toList());
     }
@@ -134,7 +132,7 @@ class BodyAssemblerTest {
     @Test
     void namesAreCopiedVerbatim() {
         PlayerBody body = assemble(List.of(new BodyParseRecord("Two Words: more",
-                List.of(slot("RING", "on the left hand")), 2)), new ArrayList<>()).getFirst();
+                List.of(slot("RING", "on the left hand")), 2))).getFirst();
 
         assertEquals("Two Words: more", body.getName());
         assertEquals("on the left hand", body.getSlot(0).getName());
@@ -142,7 +140,7 @@ class BodyAssemblerTest {
 
     @Test
     void noRecordsGiveNoBodies() {
-        assertTrue(assemble(List.of(), new ArrayList<>()).isEmpty());
+        assertTrue(assemble(List.of()).isEmpty());
     }
 
     // ---- Load-ending errors ------------------------------------------------
@@ -157,11 +155,9 @@ class BodyAssemblerTest {
             "EQUIP_WEAPON",  // slots[] holds the bare names, so the prefix is not a match
             ""})
     void aSlotTypeCsLookupFlagCannotFindEndsTheLoad(String type) {
-        List<String> errors = new ArrayList<>();
         List<BodyParseRecord> records = List.of(new BodyParseRecord("Odd", List.of(slot(type, "x")), 2));
 
-        assertThrows(DataFileParseException.class, () -> assemble(records, errors));
-        assertTrue(errors.isEmpty(), "errors are thrown, not collected");
+        assertThrows(DataFileParseException.class, () -> assemble(records));
     }
 
     @Test
@@ -171,14 +167,14 @@ class BodyAssemblerTest {
                 new BodyParseRecord("Good", List.of(slot("WEAPON", "weapon")), 2),
                 new BodyParseRecord("Bad", List.of(slot("WEAPON", "weapon"), slot("NOTASLOT", "x")), 4));
 
-        assertThrows(DataFileParseException.class, () -> assemble(records, new ArrayList<>()));
+        assertThrows(DataFileParseException.class, () -> assemble(records));
     }
 
     @Test
     void theErrorMessageNamesTheLineFileAndBadSlot() {
         List<BodyParseRecord> records = List.of(new BodyParseRecord("Odd", List.of(slot("NOTASLOT", "x")), 17));
 
-        DataFileParseException e = assertThrows(DataFileParseException.class, () -> assemble(records, new ArrayList<>()));
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> assemble(records));
 
         assertTrue(e.getMessage().contains("line: 17"), e.getMessage());
         assertTrue(e.getMessage().contains(FILE), e.getMessage());

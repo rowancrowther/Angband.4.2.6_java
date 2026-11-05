@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
@@ -64,9 +65,6 @@ class BrandReaderTest {
 
     // ---- fixture helpers -------------------------------------------------
 
-    private static String withHeader(int count, String body) {
-        return "record-count:" + count + "\n" + body;
-    }
 
     /**
      * A complete brand record in the file's fixed directive order. Pass {@code ""} for
@@ -107,7 +105,6 @@ class BrandReaderTest {
     void realFileLoadsAllTenBrandsWithNoErrors() throws IOException {
         ParseResult<Brand> result = new BrandReader().parseWithResults(REAL_FILE);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(10, result.items().size());
         // C's brands[] runs in reverse file order, so the last record, POIS_2, is first
         assertEquals("POIS_2", result.items().get(0).getCode());
@@ -115,9 +112,8 @@ class BrandReaderTest {
 
     @Test
     void syntheticBrandWithVulnFlagAssembles() throws IOException {
-        ParseResult<Brand> result = load("ok-vuln.txt", withHeader(1, validBrand("FIRE_3")));
+        ParseResult<Brand> result = load("ok-vuln.txt", validBrand("FIRE_3"));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size());
         assertTrue(result.items().get(0).toString().contains("vulnerableFlag=RF_HURT_FIRE"),
                 () -> result.items().get(0).toString());
@@ -127,9 +123,8 @@ class BrandReaderTest {
     void syntheticBrandWithoutVulnFlagUsesTheNoneSentinel() throws IOException {
         // The optional vuln-flag is omitted, so the assembler must leave RF_NONE, not skip the record.
         ParseResult<Brand> result =
-                load("ok-novuln.txt", withHeader(1, brand("ACID_3", "acid", "dissolve", "3", "25", "161", "IM_ACID", "")));
+                load("ok-novuln.txt", brand("ACID_3", "acid", "dissolve", "3", "25", "161", "IM_ACID", ""));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size());
         assertTrue(result.items().get(0).toString().contains("vulnerableFlag=RF_NONE"),
                 () -> result.items().get(0).toString());
@@ -141,7 +136,7 @@ class BrandReaderTest {
     void illegalResistFlagEndsTheLoad() {
         // parse_brand_resist_flag: lookup_flag misses, PARSE_ERROR_INVALID_FLAG.
         DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("bad-resist.txt",
-                withHeader(1, brand("FIRE_3", "fire", "burn", "3", "25", "113", "NOTAFLAG", ""))));
+                brand("FIRE_3", "fire", "burn", "3", "25", "113", "NOTAFLAG", "")));
 
         assertTrue(e.getMessage().contains("invalid resist flag value: NOTAFLAG"), e::getMessage);
     }
@@ -149,7 +144,7 @@ class BrandReaderTest {
     @Test
     void illegalVulnFlagEndsTheLoad() {
         DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("bad-vuln.txt",
-                withHeader(1, brand("FIRE_3", "fire", "burn", "3", "25", "113", "IM_FIRE", "NOTAVULN"))));
+                brand("FIRE_3", "fire", "burn", "3", "25", "113", "IM_FIRE", "NOTAVULN")));
 
         assertTrue(e.getMessage().contains("invalid vulnerable flag value: NOTAVULN"), e::getMessage);
     }
@@ -158,18 +153,16 @@ class BrandReaderTest {
     void overflowingMultiplierIsClampedHereWhereCWraps() throws IOException {
         // Accepted deviation (ParseUtils): C keeps the low 32 bits, here the value clamps.
         ParseResult<Brand> result = load("big-mult.txt",
-                withHeader(1, brand("FIRE_3", "fire", "burn", "99999999999999", "25", "113", "IM_FIRE", "")));
+                brand("FIRE_3", "fire", "burn", "99999999999999", "25", "113", "IM_FIRE", ""));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(Integer.MAX_VALUE, result.items().get(0).getMultiplier());
     }
 
     @Test
     void overflowingOMultiplierIsClampedHereWhereCWraps() throws IOException {
         ParseResult<Brand> result = load("big-omult.txt",
-                withHeader(1, brand("FIRE_3", "fire", "burn", "3", "99999999999999", "113", "IM_FIRE", "")));
+                brand("FIRE_3", "fire", "burn", "3", "99999999999999", "113", "IM_FIRE", ""));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertTrue(result.items().get(0).toString().contains("oMultiplier=" + Integer.MAX_VALUE),
                 () -> result.items().get(0).toString());
     }
@@ -177,43 +170,20 @@ class BrandReaderTest {
     @Test
     void overflowingPowerIsClampedHereWhereCWraps() throws IOException {
         ParseResult<Brand> result = load("big-power.txt",
-                withHeader(1, brand("FIRE_3", "fire", "burn", "3", "25", "99999999999999", "IM_FIRE", "")));
+                brand("FIRE_3", "fire", "burn", "3", "25", "99999999999999", "IM_FIRE", ""));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(Integer.MAX_VALUE, result.items().get(0).getPower());
     }
 
-    @Test
-    void recordCountMismatchIsReportedButValidRecordStillLoads() throws IOException {
-        ParseResult<Brand> result = load("bad-count.txt", withHeader(5, validBrand("FIRE_3")));
-
-        assertEquals(1, result.items().size());
-        assertTrue(result.errors().stream().anyMatch(
-                        e -> e.contains("declares 5") && e.contains("contains 1")),
-                result.errors()::toString);
-    }
-
     // ---- Hard (fail-closed) parse errors ---------------------------------
-
-    @Test
-    void missingRecordCountHeaderIsAHardError() throws IOException {
-        // The file rule requires the record-count header; without it the parse fails and the hard
-        // channel yields an empty result carrying the error.
-        ParseResult<Brand> result = load("no-header.txt", validBrand("FIRE_3"));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
-    }
 
     @Test
     void missingCodeHeaderIsAHardError() throws IOException {
         // A record must open with code:; starting with name: is a syntax error.
         String noCode = "name:fire\nverb:burn\nmultiplier:3\no-multiplier:25\n"
                 + "power:113\nresist-flag:IM_FIRE\n";
-        ParseResult<Brand> result = load("no-code.txt", withHeader(1, noCode));
+        assertThrows(ParseCancellationException.class, () -> load("no-code.txt", noCode));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     // ---- Two bad records at once -----------------------------------------
@@ -227,7 +197,7 @@ class BrandReaderTest {
                 + brand("COLD_3", "cold", "freeze", "3", "25", "119", "IM_COLD", "NOTAVULN");
 
         DataFileParseException e = assertThrows(DataFileParseException.class,
-                () -> load("two-errors.txt", withHeader(3, body)));
+                () -> load("two-errors.txt", body));
 
         assertTrue(e.getMessage().contains("NOTAFLAG"), e::getMessage);
         assertFalse(e.getMessage().contains("NOTAVULN"), e::getMessage);
@@ -274,22 +244,22 @@ class BrandReaderTest {
 
         ParseResult<Brand> result = new BrandReader().parseWithResults(REAL_FILE);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(expected, printedAll(result.items()));
     }
 
+    /**
+     * With the {@code record-count:} header gone, the shipped file is the upstream file line for
+     * line, so the expected values above are C's.
+     *
+     * <p>Function realFileMatchesTheUpstreamFile coded on 261104, commented in full on 261104. It
+     * replaces realFileMatchesTheUpstreamFileApartFromTheRecordCountHeader.
+     */
     @Test
-    void realFileMatchesTheUpstreamFileApartFromTheRecordCountHeader() throws IOException {
-        // The shipped copy adds one record-count: line and a blank line after it; the upstream file
-        // has neither. Every other line is the same, so the expected values above are C's.
+    void realFileMatchesTheUpstreamFile() throws IOException {
         Path upstream = Path.of(System.getProperty("user.home"), "Desktop/Angband-4.2.6/lib/gamedata/brand.txt");
         org.junit.jupiter.api.Assumptions.assumeTrue(Files.exists(upstream));
 
-        List<String> ours = new ArrayList<>(Files.readAllLines(Path.of(REAL_FILE)));
-        ours.removeIf(l -> l.startsWith("record-count:"));
-        ours.remove(ours.indexOf("code:ACID_3") - 1);
-
-        assertEquals(Files.readAllLines(upstream), ours);
+        assertEquals(Files.readAllLines(upstream), Files.readAllLines(Path.of(REAL_FILE)));
     }
 
     @Test
@@ -303,8 +273,8 @@ class BrandReaderTest {
     @Test
     void parseAlsoEndsTheLoadOnABadRecord() throws IOException {
         Path file = tempDir.resolve("parse-bad.txt");
-        Files.writeString(file, withHeader(2, validBrand("FIRE_3")
-                + brand("ELEC_3", "lightning", "shock", "3", "25", "116", "NOTAFLAG", "")));
+        Files.writeString(file, validBrand("FIRE_3")
+                + brand("ELEC_3", "lightning", "shock", "3", "25", "116", "NOTAFLAG", ""));
 
         assertThrows(DataFileParseException.class, () -> new BrandReader().parse(file.toString()));
     }
@@ -319,10 +289,8 @@ class BrandReaderTest {
 
     @Test
     void listIsInReverseFileOrder() throws IOException {
-        ParseResult<Brand> result = load("order.txt", withHeader(3,
-                validBrand("FIRE_3") + validBrand("COLD_3") + validBrand("ACID_3")));
+        ParseResult<Brand> result = load("order.txt", validBrand("FIRE_3") + validBrand("COLD_3") + validBrand("ACID_3"));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(List.of("ACID_3", "COLD_3", "FIRE_3"),
                 result.items().stream().map(Brand::getCode).toList());
     }
@@ -334,17 +302,15 @@ class BrandReaderTest {
                 + brand("COLD_3", "cold", "freeze", "3", "25", "119", "NOTAFLAG", "")
                 + validBrand("ACID_3");
 
-        assertThrows(DataFileParseException.class, () -> load("skip-order.txt", withHeader(3, body)));
+        assertThrows(DataFileParseException.class, () -> load("skip-order.txt", body));
     }
 
     @Test
     void twoRecordsWithTheSameCodeBothLoadAsInC() throws IOException {
         // C never checks for a repeated code: parse_brand_code allocates a fresh record each time.
-        ParseResult<Brand> result = load("dup.txt", withHeader(2,
-                brand("FIRE_3", "fire", "burn", "3", "25", "113", "IM_FIRE", "")
-                        + brand("FIRE_3", "fire", "singe", "2", "15", "107", "IM_FIRE", "")));
+        ParseResult<Brand> result = load("dup.txt", brand("FIRE_3", "fire", "burn", "3", "25", "113", "IM_FIRE", "")
+                        + brand("FIRE_3", "fire", "singe", "2", "15", "107", "IM_FIRE", ""));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(2, result.items().size());
         assertTrue(result.items().get(0).toString().contains("verb='singe'"));
         assertTrue(result.items().get(1).toString().contains("verb='burn'"));
@@ -354,10 +320,8 @@ class BrandReaderTest {
     void freeTextValueKeepsColonsAndTrailingSpaces() throws IOException {
         // "str" fields consume the rest of the line untokenized, so a colon is ordinary text and the
         // trailing spaces stay in the value.
-        ParseResult<Brand> result = load("free-text.txt", withHeader(1,
-                brand("FIRE_3", "fire: hot  ", "burn it", "3", "25", "113", "IM_FIRE", "")));
+        ParseResult<Brand> result = load("free-text.txt", brand("FIRE_3", "fire: hot  ", "burn it", "3", "25", "113", "IM_FIRE", ""));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertTrue(result.items().get(0).toString().contains("name='fire: hot  '"),
                 () -> result.items().get(0).toString());
         assertTrue(result.items().get(0).toString().contains("verb='burn it'"),
@@ -368,9 +332,8 @@ class BrandReaderTest {
     void commentAndBlankLinesInsideARecordAreIgnored() throws IOException {
         String body = "code:FIRE_3\n# a note\nname:fire\n\nverb:burn\nmultiplier:3\n"
                 + "o-multiplier:25\npower:113\n# another\nresist-flag:IM_FIRE\n";
-        ParseResult<Brand> result = load("comments.txt", withHeader(1, body));
+        ParseResult<Brand> result = load("comments.txt", body);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(printed("FIRE_3", "fire", "burn", "IM_FIRE", "NONE", 3, 25, 113),
                 result.items().get(0).toString());
     }
@@ -379,17 +342,16 @@ class BrandReaderTest {
     void theErrorNamesTheLineOfTheRecordsCodeDirective() {
         // Header on line 1, the good record (with a vuln-flag) on lines 2-9, the bad one starts on line 10.
         DataFileParseException e = assertThrows(DataFileParseException.class,
-                () -> load("lines.txt", withHeader(2, validBrand("FIRE_3")
-                        + brand("ELEC_3", "lightning", "shock", "3", "25", "116", "NOTAFLAG", ""))));
+                () -> load("lines.txt", validBrand("FIRE_3")
+                        + brand("ELEC_3", "lightning", "shock", "3", "25", "116", "NOTAFLAG", "")));
 
-        assertTrue(e.getMessage().contains("line: 10"), e::getMessage);
+        assertTrue(e.getMessage().contains("line: 9"), e::getMessage);
     }
 
     @Test
     void emptyVulnFlagIsRfNoneAndAPresentOneIsNot() throws IOException {
-        ParseResult<Brand> result = load("vuln.txt", withHeader(2,
-                brand("ACID_3", "acid", "dissolve", "3", "25", "161", "IM_ACID", "")
-                        + validBrand("FIRE_3")));
+        ParseResult<Brand> result = load("vuln.txt", brand("ACID_3", "acid", "dissolve", "3", "25", "161", "IM_ACID", "")
+                        + validBrand("FIRE_3"));
 
         assertEquals("RF_NONE", flagOf(result.items().get(1), "vulnerableFlag"));
         assertEquals("RF_HURT_FIRE", flagOf(result.items().get(0), "vulnerableFlag"));
@@ -409,29 +371,23 @@ class BrandReaderTest {
         // C registers each directive on its own and runs them in file order; verb: before name: is fine.
         String body = "code:FIRE_3\nverb:burn\nname:fire\nmultiplier:3\no-multiplier:25\n"
                 + "power:113\nresist-flag:IM_FIRE\n";
-        ParseResult<Brand> result = load("order-swap.txt", withHeader(1, body));
+        assertThrows(ParseCancellationException.class, () -> load("order-swap.txt", body));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void missingPowerIsAHardErrorHereWhereCLeavesItZero() throws IOException {
         String body = "code:FIRE_3\nname:fire\nverb:burn\nmultiplier:3\no-multiplier:25\n"
                 + "resist-flag:IM_FIRE\n";
-        ParseResult<Brand> result = load("no-power.txt", withHeader(1, body));
+        assertThrows(ParseCancellationException.class, () -> load("no-power.txt", body));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void missingResistFlagIsAHardErrorHereWhereCLeavesFlagZero() throws IOException {
         String body = "code:FIRE_3\nname:fire\nverb:burn\nmultiplier:3\no-multiplier:25\npower:113\n";
-        ParseResult<Brand> result = load("no-resist.txt", withHeader(1, body));
+        assertThrows(ParseCancellationException.class, () -> load("no-resist.txt", body));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
@@ -440,10 +396,8 @@ class BrandReaderTest {
         // missing its power: line.
         String bad = "code:COLD_3\nname:cold\nverb:freeze\nmultiplier:3\no-multiplier:25\n"
                 + "resist-flag:IM_COLD\n";
-        ParseResult<Brand> result = load("one-bad.txt", withHeader(2, validBrand("FIRE_3") + bad));
+        assertThrows(ParseCancellationException.class, () -> load("one-bad.txt", validBrand("FIRE_3") + bad));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
@@ -451,53 +405,42 @@ class BrandReaderTest {
         // parse_brand_name frees the old name and stores the new one, so C keeps the last.
         String body = "code:FIRE_3\nname:fire\nname:flame\nverb:burn\nmultiplier:3\n"
                 + "o-multiplier:25\npower:113\nresist-flag:IM_FIRE\n";
-        ParseResult<Brand> result = load("two-names.txt", withHeader(1, body));
+        assertThrows(ParseCancellationException.class, () -> load("two-names.txt", body));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void headerOnlyFileIsAHardErrorHereWhereCAcceptsAnEmptyFile() throws IOException {
         // C: an empty chain, brand_max ends at 1. Here the file rule needs at least one record.
-        ParseResult<Brand> result = load("header-only.txt", "record-count:0\n");
+        assertThrows(ParseCancellationException.class, () -> load("header-only.txt", ""));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void negativeMultiplierEndsTheLoadAsCParserGetUintDoes() {
         // parser_parse refuses a uint token that starts with '-' (PARSE_ERROR_NOT_NUMBER).
-        assertThrows(DataFileParseException.class, () -> load("neg-mult.txt", withHeader(1,
-                brand("FIRE_3", "fire", "burn", "-2", "25", "113", "IM_FIRE", ""))));
+        assertThrows(DataFileParseException.class, () -> load("neg-mult.txt", brand("FIRE_3", "fire", "burn", "-2", "25", "113", "IM_FIRE", "")));
     }
 
     @Test
     void minusZeroEndsTheLoadAsInC() {
         // The refusal is on the leading '-', not the value, so -0 is refused too.
-        assertThrows(DataFileParseException.class, () -> load("neg-zero.txt", withHeader(1,
-                brand("FIRE_3", "fire", "burn", "3", "25", "-0", "IM_FIRE", ""))));
+        assertThrows(DataFileParseException.class, () -> load("neg-zero.txt", brand("FIRE_3", "fire", "burn", "3", "25", "-0", "IM_FIRE", "")));
     }
 
     @Test
     void leadingZeroNumberIsOctalAsInC() throws IOException {
         // strtoul(tok, &z, 0): "010" is 8 in C.
-        ParseResult<Brand> result = load("octal.txt", withHeader(1,
-                brand("FIRE_3", "fire", "burn", "010", "25", "113", "IM_FIRE", "")));
+        ParseResult<Brand> result = load("octal.txt", brand("FIRE_3", "fire", "burn", "010", "25", "113", "IM_FIRE", ""));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(8, result.items().get(0).getMultiplier());
     }
 
     @Test
     void hexNumberIsAHardErrorHereWhereCReadsItAsSixteen() throws IOException {
         // strtoul(tok, &z, 0): "0x10" is 16 in C.
-        ParseResult<Brand> result = load("hex.txt", withHeader(1,
-                brand("FIRE_3", "fire", "burn", "0x10", "25", "113", "IM_FIRE", "")));
+        assertThrows(ParseCancellationException.class, () -> load("hex.txt", brand("FIRE_3", "fire", "burn", "0x10", "25", "113", "IM_FIRE", "")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
@@ -505,10 +448,8 @@ class BrandReaderTest {
         // C's sym token is "IM_FIRE " (strtok splits on ':' only), which lookup_flag cannot match,
         // so parse_brand_resist_flag returns PARSE_ERROR_INVALID_FLAG. Here the lexer's end-of-line
         // rule swallows the spaces and the flag resolves.
-        ParseResult<Brand> result = load("flag-space.txt", withHeader(1,
-                brand("FIRE_3", "fire", "burn", "3", "25", "113", "IM_FIRE ", "")));
+        ParseResult<Brand> result = load("flag-space.txt", brand("FIRE_3", "fire", "burn", "3", "25", "113", "IM_FIRE ", ""));
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size());
     }
 
@@ -516,11 +457,9 @@ class BrandReaderTest {
     void lowerCaseFlagIsAHardLexerErrorWhereCReportsAnInvalidFlag() throws IOException {
         // Both reject it; this pins that here it is a syntax error that costs the whole file, not
         // the soft "illegal resist flag" that skips one record.
-        ParseResult<Brand> result = load("lower.txt", withHeader(2, validBrand("FIRE_3")
+        assertThrows(ParseCancellationException.class, () -> load("lower.txt", validBrand("FIRE_3")
                 + brand("COLD_3", "cold", "freeze", "3", "25", "119", "im_cold", "")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     // ---- Flag edge cases the assembler now handles as C does ----
@@ -529,21 +468,19 @@ class BrandReaderTest {
     void resistFlagNoneEndsTheLoadAsCLookupFlagSkipsIt() {
         // lookup_flag starts at FLAG_START (1), so the NONE entry at index 0 of mon_race_flags is
         // never matched and parse_brand_resist_flag returns PARSE_ERROR_INVALID_FLAG.
-        assertThrows(DataFileParseException.class, () -> load("resist-none.txt", withHeader(1,
-                brand("FIRE_3", "fire", "burn", "3", "25", "113", "NONE", ""))));
+        assertThrows(DataFileParseException.class, () -> load("resist-none.txt", brand("FIRE_3", "fire", "burn", "3", "25", "113", "NONE", "")));
     }
 
     @Test
     void vulnFlagNoneEndsTheLoadAsCLookupFlagSkipsIt() {
-        assertThrows(DataFileParseException.class, () -> load("vuln-none.txt", withHeader(1,
-                brand("FIRE_3", "fire", "burn", "3", "25", "113", "IM_FIRE", "NONE"))));
+        assertThrows(DataFileParseException.class, () -> load("vuln-none.txt", brand("FIRE_3", "fire", "burn", "3", "25", "113", "IM_FIRE", "NONE")));
     }
 
     @Test
     void resistFlagMaxIsRejectedAsInC() {
         // The RF_MAX terminator is not in mon_race_flags[] as a name, and has no enum constant here.
         DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("resist-max.txt",
-                withHeader(1, brand("FIRE_3", "fire", "burn", "3", "25", "113", "MAX", ""))));
+                brand("FIRE_3", "fire", "burn", "3", "25", "113", "MAX", "")));
 
         assertTrue(e.getMessage().contains("invalid resist flag value: MAX"), e::getMessage);
     }
@@ -557,9 +494,8 @@ class BrandReaderTest {
         for (int i = 0; i < 255; i++) {
             body.append(brand("B_" + i, "fire", "burn", "3", "25", "113", "IM_FIRE", ""));
         }
-        ParseResult<Brand> result = load("many.txt", withHeader(255, body.toString()));
+        ParseResult<Brand> result = load("many.txt", body.toString());
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(255, result.items().size());
     }
 }

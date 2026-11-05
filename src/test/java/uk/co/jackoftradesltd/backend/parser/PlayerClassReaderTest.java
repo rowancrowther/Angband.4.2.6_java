@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -64,11 +65,10 @@ import static org.junit.jupiter.api.Assertions.*;
  *   <li><b>The happy path</b> — the real {@code class.txt} loads all nine classes with no errors
  *       (itself proof the whole descent resolved), plus targeted field checks and a synthetic
  *       minimal caster built from scratch.</li>
- *   <li><b>Every reachable soft-error site</b> — one focused test per place the pipeline can append
- *       a soft error and drop/keep a record. See the note below on what "reachable" means here.</li>
- *   <li><b>Two different errors on one path</b> — a single effect block carrying two distinct bad
- *       effects, proving {@code EffectAssembler} keeps going and reports both rather than failing
- *       fast on the first.</li>
+ *   <li><b>Every reachable load-stopping error</b> — one focused test per place the pipeline can
+ *       refuse a record and end the load. See the note below on what "reachable" means here.</li>
+ *   <li><b>Two different errors on one path</b> — two distinct bad lines in one block, proving
+ *       the first stops the load and the second is never reached, as C quits on the first.</li>
  * </ol>
  *
  * <p><b>What is deliberately not tested:</b> the assemblers guard every numeric field with a
@@ -81,6 +81,9 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p>{@link PlayerClass} exposes no getters, so field-level assertions read its private fields
  * reflectively via {@link #field}.
+ *
+ * <p>Test class PlayerClassReaderTest coded before 261105, updated on 261105 for the removal of the
+ * soft-error path.
  *
  * @author Rowan Crowther
  */
@@ -180,16 +183,6 @@ class PlayerClassReaderTest {
                 () -> new PlayerClassReader().parseWithResults(file.toString()));
     }
 
-    private static String withHeader(int count, String body) {
-        return "record-count:" + count + "\n" + body;
-    }
-
-    /**
-     * True if any collected error contains {@code fragment}.
-     */
-    private static boolean hasError(ParseResult<PlayerClass> r, String fragment) {
-        return r.errors().stream().anyMatch(s -> s.contains(fragment));
-    }
 
     private static Object setStatic(String field, Object value) throws Exception {
         Field f = RegistrySeeding.resolve(field);
@@ -234,8 +227,7 @@ class PlayerClassReaderTest {
     @Test
     void realFileLoadsAllNineClassesWithNoErrors() {
         // A clean load is the end-to-end proof: any unresolved realm, book base or shapechange
-        // target would have appended a soft error rather than thrown.
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        // target would have thrown and ended the load.
         assertEquals(9, result.items().size());
     }
 
@@ -330,15 +322,13 @@ class PlayerClassReaderTest {
         // Build one caster from nothing but the mandatory pieces: name, magic line, one book, one
         // spell with a well-formed effect. Proves the whole caster path works on hand-built input,
         // not just the shipped file.
-        ParseResult<PlayerClass> r = load("mini.txt", withHeader(1,
-                "name:TestMage\n"
+        ParseResult<PlayerClass> r = load("mini.txt", "name:TestMage\n"
                         + "magic:1:100:1\n"
                         + "book:magic book:town:[Test Book]:1:arcane\n"
                         + "spell:Test Bolt:1:1:20:4\n"
                         + "effect:BOLT:MISSILE\n"
-                        + "dice:1\n"));
+                        + "dice:1\n");
 
-        assertFalse(r.hasErrors(), () -> r.errors().toString());
         assertEquals(1, r.items().size());
         assertTrue(this.<ClassMagic>castMagic(r).isCaster());
     }
@@ -348,7 +338,7 @@ class PlayerClassReaderTest {
     }
 
     // =====================================================================
-    // (2) EVERY REACHABLE SOFT-ERROR SITE  (one test per site)
+    // (2) EVERY REACHABLE LOAD-STOPPING ERROR  (one test per site)
     // =====================================================================
 
     // ---- PlayerClassAssembler: flag resolution ---------------------------
@@ -356,7 +346,7 @@ class PlayerClassReaderTest {
     @Test
     void unknownObjectFlagStopsTheLoad() throws IOException {
         // C: grab_flag() gives PARSE_ERROR_INVALID_FLAG and the load quits.
-        String file = withHeader(1, "name:Weird\nobj-flags:NOTAFLAG\n");
+        String file = "name:Weird\nobj-flags:NOTAFLAG\n";
         DataFileParseException e = loadAndStop("bad-oflag.txt", file);
 
         assertTrue(e.getMessage().contains("Player class starting at line: " + lineOf(file, "name:Weird")),
@@ -367,7 +357,7 @@ class PlayerClassReaderTest {
     @Test
     void unknownPlayerFlagStopsTheLoad() throws IOException {
         // C: grab_flag() gives PARSE_ERROR_INVALID_FLAG and the load quits.
-        String file = withHeader(1, "name:Weird\nplayer-flags:NOTAFLAG\n");
+        String file = "name:Weird\nplayer-flags:NOTAFLAG\n";
         DataFileParseException e = loadAndStop("bad-pflag.txt", file);
 
         assertTrue(e.getMessage().contains("Player class starting at line: " + lineOf(file, "name:Weird")),
@@ -394,7 +384,7 @@ class PlayerClassReaderTest {
     void invalidEquipTvalStopsTheLoad() {
         // C returns PARSE_ERROR_UNRECOGNISED_TVAL and the load quits, so the class never loads.
         assertEquipStops("bad-tval.txt",
-                withHeader(1, "name:Adventurer\nequip:notatval:Thing:1:1:none\ntitle:X\n"),
+                "name:Adventurer\nequip:notatval:Thing:1:1:none\ntitle:X\n",
                 "equip:notatval", "illegal tValue value: notatval");
     }
 
@@ -402,14 +392,14 @@ class PlayerClassReaderTest {
     void nonBirthEquipOptionStopsTheLoad() {
         // use_sound is an INTERFACE option, not a birth option; only birth options are valid here.
         assertEquipStops("nonbirth-opt.txt",
-                withHeader(1, "name:Adventurer\nequip:food:Ration of Food:1:1:use_sound\n"),
+                "name:Adventurer\nequip:food:Ration of Food:1:1:use_sound\n",
                 "equip:food", "illegal non-birth option value: OP_use_sound");
     }
 
     @Test
     void unknownEquipOptionStopsTheLoad() {
         assertEquipStops("bad-opt.txt",
-                withHeader(1, "name:Adventurer\nequip:food:Ration of Food:1:1:notanoption\n"),
+                "name:Adventurer\nequip:food:Ration of Food:1:1:notanoption\n",
                 "equip:food", "illegal birth option value: notanoption");
     }
 
@@ -418,22 +408,20 @@ class PlayerClassReaderTest {
         // parse_class_equip() returns PARSE_ERROR_INVALID_OPTION and the load quits, so the good
         // food line before it is not kept and the valid birth_no_recall beside the bad token does not
         // save the line.
-        assertEquipStops("bad-opt-drops.txt", withHeader(1,
-                "name:Adventurer\n"
+        assertEquipStops("bad-opt-drops.txt", "name:Adventurer\n"
                         + "equip:food:Ration of Food:1:3:none\n"
                         + "equip:scroll:Word of Recall:1:1:birth_no_recall | notanoption\n"
-                        + "title:X\n"),
+                        + "title:X\n",
                 "equip:scroll", "illegal birth option value: notanoption");
     }
 
     @Test
     void startItemsAreHeldInReverseFileOrder() throws IOException {
         // C pushes each equip: line on the head of the chain, so the last line is walked first.
-        ParseResult<PlayerClass> r = load("equip-order.txt", withHeader(1,
-                "name:Adventurer\n"
+        ParseResult<PlayerClass> r = load("equip-order.txt", "name:Adventurer\n"
                         + "equip:food:Ration of Food:1:3:none\n"
                         + "equip:light:Wooden Torch:1:3:none\n"
-                        + "title:X\n"));
+                        + "title:X\n");
 
         List<StartItem> items = r.items().get(0).getStartItems();
         assertEquals(2, items.size());
@@ -446,13 +434,12 @@ class PlayerClassReaderTest {
     @Test
     void unknownBookTvalStopsTheLoad() throws IOException {
         // "notabase" resolves to no tval; C returns PARSE_ERROR_UNRECOGNISED_TVAL and the load stops.
-        DataFileParseException e = loadAndStop("bad-base.txt", withHeader(1,
-                "name:Caster\nmagic:1:100:1\n"
+        DataFileParseException e = loadAndStop("bad-base.txt", "name:Caster\nmagic:1:100:1\n"
                         + "book:notabase:town:[B]:1:arcane\n"
-                        + "spell:S:1:1:1:1\n"));
+                        + "spell:S:1:1:1:1\n");
 
         // The message echoes the tval exactly as the file spelled it, and names the book: line.
-        assertTrue(e.getMessage().contains("line: 4"), e::getMessage);
+        assertTrue(e.getMessage().contains("line: 3"), e::getMessage);
         assertTrue(e.getMessage().contains("illegal tValue value: notabase"), e::getMessage);
     }
 
@@ -465,12 +452,11 @@ class PlayerClassReaderTest {
      */
     @Test
     void unknownBookRealmStopsTheLoad() throws IOException {
-        DataFileParseException e = loadAndStop("bad-realm.txt", withHeader(1,
-                "name:Caster\nmagic:1:100:1\n"
+        DataFileParseException e = loadAndStop("bad-realm.txt", "name:Caster\nmagic:1:100:1\n"
                         + "book:magic book:town:[B]:1:notarealm\n"
-                        + "spell:S:1:1:1:1\n"));
+                        + "spell:S:1:1:1:1\n");
 
-        assertTrue(e.getMessage().contains("line: 4"), e::getMessage);
+        assertTrue(e.getMessage().contains("line: 3"), e::getMessage);
         assertTrue(e.getMessage().contains("illegal realm value: notarealm"), e::getMessage);
     }
 
@@ -484,8 +470,7 @@ class PlayerClassReaderTest {
      */
     @Test
     void moreBooksThanDeclaredStopsTheLoad() {
-        String file = withHeader(1,
-                "name:Caster\nmagic:1:100:1\n"
+        String file = "name:Caster\nmagic:1:100:1\n"
                         + "book:magic book:town:[Book One]:1:arcane\n"
                         + "spell:S1:1:1:20:4\n"
                         + "effect:BOLT:MISSILE\n"
@@ -493,7 +478,7 @@ class PlayerClassReaderTest {
                         + "book:magic book:town:[Book Two]:1:arcane\n"
                         + "spell:S2:1:1:20:4\n"
                         + "effect:BOLT:MISSILE\n"
-                        + "dice:1\n");
+                        + "dice:1\n";
         DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("too-many-books.txt", file));
 
         assertTrue(e.getMessage().contains("Class magic starting at line: " + lineOf(file, "magic:1:100:1")),
@@ -507,8 +492,7 @@ class PlayerClassReaderTest {
      */
     @Test
     void declaredBookCountMatchingIsAccepted() throws IOException {
-        ParseResult<PlayerClass> r = load("two-books.txt", withHeader(1,
-                "name:Caster\nmagic:1:100:2\n"
+        ParseResult<PlayerClass> r = load("two-books.txt", "name:Caster\nmagic:1:100:2\n"
                         + "book:magic book:town:[Book One]:1:arcane\n"
                         + "spell:S1:1:1:20:4\n"
                         + "effect:BOLT:MISSILE\n"
@@ -516,9 +500,9 @@ class PlayerClassReaderTest {
                         + "book:magic book:town:[Book Two]:1:arcane\n"
                         + "spell:S2:1:1:20:4\n"
                         + "effect:BOLT:MISSILE\n"
-                        + "dice:1\n"));
+                        + "dice:1\n");
 
-        assertFalse(hasError(r, "different number of books"), r.errors()::toString);
+        assertEquals(1, r.items().size());
     }
 
     /**
@@ -528,14 +512,12 @@ class PlayerClassReaderTest {
      */
     @Test
     void fewerBooksThanDeclaredIsAcceptedAsInC() throws Exception {
-        ParseResult<PlayerClass> r = load("too-few-books.txt", withHeader(1,
-                "name:Caster\nmagic:1:100:2\n"
+        ParseResult<PlayerClass> r = load("too-few-books.txt", "name:Caster\nmagic:1:100:2\n"
                         + "book:magic book:town:[Book One]:1:arcane\n"
                         + "spell:S1:1:1:20:4\n"
                         + "effect:BOLT:MISSILE\n"
-                        + "dice:1\n"));
+                        + "dice:1\n");
 
-        assertFalse(r.hasErrors(), () -> r.errors().toString());
         assertEquals(1, castMagic(r).getNumBooks());
     }
 
@@ -545,10 +527,9 @@ class PlayerClassReaderTest {
      */
     @Test
     void aBadBookIsReportedForItsOwnFaultNotAsACountError() throws Exception {
-        DataFileParseException e = loadAndStop("bad-book.txt", withHeader(1,
-                "name:Caster\nmagic:1:100:1\n"
+        DataFileParseException e = loadAndStop("bad-book.txt", "name:Caster\nmagic:1:100:1\n"
                         + "book:magic book:town:[B]:1:notarealm\n"
-                        + "spell:S:1:1:1:1\n"));
+                        + "spell:S:1:1:1:1\n");
 
         assertTrue(e.getMessage().contains("illegal realm value: notarealm"), e::getMessage);
         assertFalse(e.getMessage().contains("one or more illegal book entries"), e::getMessage);
@@ -562,14 +543,13 @@ class PlayerClassReaderTest {
      */
     @Test
     void aBadBookIsReportedBeforeTheCountOfBooksIsChecked() {
-        String file = withHeader(1,
-                "name:Caster\nmagic:1:100:1\n"
+        String file = "name:Caster\nmagic:1:100:1\n"
                         + "book:magic book:town:[B]:1:notarealm\n"
                         + "spell:S:1:1:1:1\n"
                         + "book:magic book:town:[Book Two]:1:arcane\n"
                         + "spell:S2:1:1:20:4\n"
                         + "effect:BOLT:MISSILE\n"
-                        + "dice:1\n");
+                        + "dice:1\n";
         DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("dropped-plus-extra.txt", file));
 
         assertTrue(e.getMessage().contains("illegal realm value: notarealm"), e::getMessage);
@@ -581,11 +561,10 @@ class PlayerClassReaderTest {
     @Test
     void unknownEffectTypeInASpellStopsTheLoad() {
         // grab_name finds no such effect, so grab_effect_data fails and C quits
-        String file = withHeader(1,
-                "name:Caster\nmagic:1:100:1\n"
+        String file = "name:Caster\nmagic:1:100:1\n"
                         + "book:magic book:town:[B]:1:arcane\n"
                         + "spell:S:1:1:1:1\n"
-                        + "effect:NOTANEFFECT\n");
+                        + "effect:NOTANEFFECT\n";
         DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("bad-effect.txt", file));
 
         assertTrue(e.getMessage().contains("Effect starting at line: " + lineOf(file, "effect:NOTANEFFECT")),
@@ -597,11 +576,10 @@ class PlayerClassReaderTest {
     void unknownShapechangeTargetInASpellStopsTheLoad() {
         // Exercises the EST_SHAPECHANGE registry lookup (C: shape_name_to_idx, which returns -1 for
         // a name lookup_player_shape cannot find, so effect_subtype fails and C quits).
-        String file = withHeader(1,
-                "name:Caster\nmagic:1:100:1\n"
+        String file = "name:Caster\nmagic:1:100:1\n"
                         + "book:magic book:town:[B]:1:arcane\n"
                         + "spell:S:1:1:1:1\n"
-                        + "effect:SHAPECHANGE:notashape\n");
+                        + "effect:SHAPECHANGE:notashape\n";
         DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("bad-shape.txt", file));
 
         // As in C, the sub-type token reaches the case-exact shape lookup as written in the file,
@@ -614,11 +592,10 @@ class PlayerClassReaderTest {
     @Test
     void invalidProjectionSubtypeInASpellStopsTheLoad() {
         // BOLT's sub-type is a projection; NOTAPROJ is not one (proj_name_to_idx gives -1).
-        String file = withHeader(1,
-                "name:Caster\nmagic:1:100:1\n"
+        String file = "name:Caster\nmagic:1:100:1\n"
                         + "book:magic book:town:[B]:1:arcane\n"
                         + "spell:S:1:1:1:1\n"
-                        + "effect:BOLT:NOTAPROJ\n");
+                        + "effect:BOLT:NOTAPROJ\n";
         DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("bad-proj.txt", file));
 
         assertTrue(e.getMessage().contains("Effect starting at line: " + lineOf(file, "effect:BOLT:NOTAPROJ")),
@@ -643,29 +620,10 @@ class PlayerClassReaderTest {
     // ---- GrammarDriver: record-count + hard structural errors ------------
 
     @Test
-    void recordCountMismatchIsReportedButTheValidClassStillLoads() throws IOException {
-        ParseResult<PlayerClass> r = load("bad-count.txt",
-                withHeader(5, "name:Solo\ntitle:X\n"));
-
-        assertEquals(1, r.items().size());
-        assertTrue(hasError(r, "record-count header declares 5"), r.errors()::toString);
-    }
-
-    @Test
-    void missingRecordCountHeaderIsAHardError() throws IOException {
-        ParseResult<PlayerClass> r = load("no-header.txt", "name:Solo\ntitle:X\n");
-
-        assertTrue(r.items().isEmpty());
-        assertTrue(r.hasErrors());
-    }
-
-    @Test
     void aRecordWithNoNameLineIsAHardError() throws IOException {
         // A class record must open with name:; a leading directive has nothing to attach to.
-        ParseResult<PlayerClass> r = load("no-name.txt", withHeader(1, "title:X\n"));
+        assertThrows(ParseCancellationException.class, () -> load("no-name.txt", "title:X\n"));
 
-        assertTrue(r.items().isEmpty());
-        assertTrue(r.hasErrors());
     }
 
     // =====================================================================
@@ -676,12 +634,11 @@ class PlayerClassReaderTest {
     void theFirstBadEffectInABlockStopsTheLoadAndTheSecondIsNeverReached() {
         // C quits at the first line grab_effect_data rejects, so of two bad effects in one spell's
         // block only the first is reported; the bad projection sub-type is never looked at.
-        String file = withHeader(1,
-                "name:Caster\nmagic:1:100:1\n"
+        String file = "name:Caster\nmagic:1:100:1\n"
                         + "book:magic book:town:[B]:1:arcane\n"
                         + "spell:S:1:1:1:1\n"
                         + "effect:NOTANEFFECT\n"
-                        + "effect:BOLT:NOTAPROJ\n");
+                        + "effect:BOLT:NOTAPROJ\n";
         DataFileParseException e = assertThrows(DataFileParseException.class,
                 () -> load("two-effect-errors.txt", file));
 
@@ -695,10 +652,9 @@ class PlayerClassReaderTest {
     void theFirstBadEquipLineStopsTheLoadAndTheSecondIsNeverReached() {
         // C quits at the first equip: line parse_class_equip() rejects, so only the unresolvable
         // tval is reported; the non-birth option on the line after it is never looked at.
-        String file = withHeader(1,
-                "name:Adventurer\n"
+        String file = "name:Adventurer\n"
                         + "equip:notatval:Thing:1:1:none\n"
-                        + "equip:food:Ration of Food:1:1:use_sound\n");
+                        + "equip:food:Ration of Food:1:1:use_sound\n";
         DataFileParseException e = assertThrows(DataFileParseException.class,
                 () -> load("two-equip-errors.txt", file));
 
@@ -758,19 +714,14 @@ class PlayerClassReaderTest {
 
     @Test
     void aHardGrammarErrorReturnsNoClassesAndTheMessages() throws IOException {
-        ParseResult<PlayerClass> r = load("hard.txt", withHeader(2,
-                "name:Good\ntitle:X\nname:Bad\nnonsense:1\n"));
+        assertThrows(ParseCancellationException.class, () -> load("hard.txt", "name:Good\ntitle:X\nname:Bad\nnonsense:1\n"));
 
-        assertTrue(r.items().isEmpty(), "a hard error must not leak the classes that did parse");
-        assertTrue(r.hasErrors());
     }
 
     @Test
     void classesComeBackInFileOrderForASyntheticFile() throws Exception {
-        ParseResult<PlayerClass> r = load("order.txt", withHeader(3,
-                "name:Third\ntitle:X\nname:First\ntitle:X\nname:Second\ntitle:X\n"));
+        ParseResult<PlayerClass> r = load("order.txt", "name:Third\ntitle:X\nname:First\ntitle:X\nname:Second\ntitle:X\n");
 
-        assertFalse(r.hasErrors(), r.errors()::toString);
         assertEquals(List.of("Third", "First", "Second"), namesOf(r.items()));
     }
 
@@ -781,10 +732,9 @@ class PlayerClassReaderTest {
      */
     @Test
     void aBadClassInTheMiddleStopsTheWholeLoad() throws Exception {
-        String file = withHeader(3,
-                "name:A\ntitle:X\n"
+        String file = "name:A\ntitle:X\n"
                         + "name:B\nobj-flags:NOTAFLAG\n"
-                        + "name:C\ntitle:X\n");
+                        + "name:C\ntitle:X\n";
         DataFileParseException e = loadAndStop("dropped-middle.txt", file);
 
         assertTrue(e.getMessage().contains("Player class starting at line: " + lineOf(file, "name:B")),
@@ -799,55 +749,41 @@ class PlayerClassReaderTest {
     /** C: a {@code name:} line alone allocates a zeroed class, and nothing else is required. */
     @Test
     void aNameOnlyClassIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        ParseResult<PlayerClass> r = load("name-only.txt", withHeader(1, "name:Empty\n"));
+        assertThrows(ParseCancellationException.class, () -> load("name-only.txt", "name:Empty\n"));
 
-        assertTrue(r.items().isEmpty());
-        assertTrue(r.hasErrors());
     }
 
     /** C: a file with no {@code name:} line leaves {@code classes} NULL and loads without error. */
     @Test
     void aHeaderWithNoClassesIsAHardErrorHereWhereCAcceptsAnEmptyFile() throws IOException {
-        ParseResult<PlayerClass> r = load("no-classes.txt", withHeader(0, ""));
+        assertThrows(ParseCancellationException.class, () -> load("no-classes.txt", ""));
 
-        assertTrue(r.items().isEmpty());
-        assertTrue(r.hasErrors());
     }
 
     /** C: {@code strtok(flags, " |")} splits on a space as well as a bar. */
     @Test
     void playerFlagsSeparatedByASpaceAreAHardErrorHereWhereCSplitsOnSpaceToo() throws IOException {
-        ParseResult<PlayerClass> r = load("flag-space.txt", withHeader(1,
-                "name:X\nplayer-flags:NO_MANA SHIELD_BASH\n"));
+        assertThrows(ParseCancellationException.class, () -> load("flag-space.txt", "name:X\nplayer-flags:NO_MANA SHIELD_BASH\n"));
 
-        assertTrue(r.items().isEmpty());
-        assertTrue(r.hasErrors());
     }
 
     @Test
     void objectFlagsSeparatedByASpaceAreAHardErrorHereWhereCSplitsOnSpaceToo() throws IOException {
-        ParseResult<PlayerClass> r = load("oflag-space.txt", withHeader(1,
-                "name:X\nobj-flags:PROT_FEAR SUST_STR\n"));
+        assertThrows(ParseCancellationException.class, () -> load("oflag-space.txt", "name:X\nobj-flags:PROT_FEAR SUST_STR\n"));
 
-        assertTrue(r.items().isEmpty());
-        assertTrue(r.hasErrors());
     }
 
     /** C: {@code obj-flags ?str flags} — the argument is optional, so an empty list is accepted. */
     @Test
     void anEmptyFlagListIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        ParseResult<PlayerClass> r = load("empty-flags.txt", withHeader(1,
-                "name:X\nplayer-flags:\n"));
+        assertThrows(ParseCancellationException.class, () -> load("empty-flags.txt", "name:X\nplayer-flags:\n"));
 
-        assertTrue(r.items().isEmpty());
-        assertTrue(r.hasErrors());
     }
 
     /** C: {@code parse_class_magic} returns {@code PARSE_ERROR_REPEATED_DIRECTIVE}. */
     @Test
     void aRepeatedMagicLineReplacesTheFirstHereWhereCRejectsIt() throws Exception {
-        ParseResult<PlayerClass> r = load("two-magic.txt", withHeader(1,
-                "name:Caster\n"
+        ParseResult<PlayerClass> r = load("two-magic.txt", "name:Caster\n"
                         + "magic:1:100:1\n"
                         + "book:magic book:town:[First]:1:arcane\n"
                         + "spell:A:1:1:1:1\n"
@@ -855,9 +791,8 @@ class PlayerClassReaderTest {
                         + "magic:2:200:1\n"
                         + "book:magic book:town:[Second]:1:arcane\n"
                         + "spell:B:1:1:1:1\n"
-                        + "effect:BOLT:MISSILE\ndice:1\n"));
+                        + "effect:BOLT:MISSILE\ndice:1\n");
 
-        assertFalse(r.hasErrors(), r.errors()::toString);
         ClassMagic magic = castMagic(r);
         assertEquals(2, (int) field(magic, ClassMagic.class, "firstSpellLevel"));
         assertEquals(200, (int) field(magic, ClassMagic.class, "spellWeight"));
@@ -866,21 +801,15 @@ class PlayerClassReaderTest {
     /** C: a class may have a {@code magic:} line declaring books and then no {@code book:} lines. */
     @Test
     void aMagicLineWithNoBookIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        ParseResult<PlayerClass> r = load("magic-no-book.txt", withHeader(1,
-                "name:X\nmagic:1:100:1\ntitle:Y\n"));
+        assertThrows(ParseCancellationException.class, () -> load("magic-no-book.txt", "name:X\nmagic:1:100:1\ntitle:Y\n"));
 
-        assertTrue(r.items().isEmpty());
-        assertTrue(r.hasErrors());
     }
 
     /** C: a book declaring {@code spells} 0 needs no {@code spell:} lines. */
     @Test
     void aBookWithNoSpellLineIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        ParseResult<PlayerClass> r = load("book-no-spell.txt", withHeader(1,
-                "name:X\nmagic:1:100:1\nbook:magic book:town:[B]:0:arcane\n"));
+        assertThrows(ParseCancellationException.class, () -> load("book-no-spell.txt", "name:X\nmagic:1:100:1\nbook:magic book:town:[B]:0:arcane\n"));
 
-        assertTrue(r.items().isEmpty());
-        assertTrue(r.hasErrors());
     }
 
     /**
@@ -890,15 +819,14 @@ class PlayerClassReaderTest {
      */
     @Test
     void moreSpellsThanDeclaredStopTheLoadAsInC() throws Exception {
-        DataFileParseException e = loadAndStop("extra-spell.txt", withHeader(1,
-                "name:Caster\nmagic:1:100:1\n"
+        DataFileParseException e = loadAndStop("extra-spell.txt", "name:Caster\nmagic:1:100:1\n"
                         + "book:magic book:town:[B]:1:arcane\n"
                         + "spell:A:1:1:1:1\neffect:BOLT:MISSILE\ndice:1\n"
-                        + "spell:B:2:1:1:1\neffect:BOLT:MISSILE\ndice:1\n"));
+                        + "spell:B:2:1:1:1\neffect:BOLT:MISSILE\ndice:1\n");
 
         assertTrue(e.getMessage().contains("too many spells declared"), e.getMessage());
         assertTrue(e.getMessage().contains("2 spells found. 1 declared"), e.getMessage());
-        assertTrue(e.getMessage().contains("line: 4"), e.getMessage());
+        assertTrue(e.getMessage().contains("line: 3"), e.getMessage());
         assertTrue(e.getMessage().contains("extra-spell.txt"), e.getMessage());
     }
 
@@ -908,10 +836,9 @@ class PlayerClassReaderTest {
      */
     @Test
     void aSpellAfterABookDeclaringNoneStopsTheLoadAsInC() throws Exception {
-        DataFileParseException e = loadAndStop("zero-declared.txt", withHeader(1,
-                "name:Caster\nmagic:1:100:1\n"
+        DataFileParseException e = loadAndStop("zero-declared.txt", "name:Caster\nmagic:1:100:1\n"
                         + "book:magic book:town:[B]:0:arcane\n"
-                        + "spell:A:1:1:1:1\neffect:BOLT:MISSILE\ndice:1\n"));
+                        + "spell:A:1:1:1:1\neffect:BOLT:MISSILE\ndice:1\n");
 
         assertTrue(e.getMessage().contains("1 spells found. 0 declared"), e.getMessage());
     }
@@ -922,12 +849,10 @@ class PlayerClassReaderTest {
      */
     @Test
     void fewerSpellsThanDeclaredLoadAsInC() throws Exception {
-        ParseResult<PlayerClass> r = load("few-spells.txt", withHeader(1,
-                "name:Caster\nmagic:1:100:1\n"
+        ParseResult<PlayerClass> r = load("few-spells.txt", "name:Caster\nmagic:1:100:1\n"
                         + "book:magic book:town:[B]:3:arcane\n"
-                        + "spell:A:1:1:1:1\neffect:BOLT:MISSILE\ndice:1\n"));
+                        + "spell:A:1:1:1:1\neffect:BOLT:MISSILE\ndice:1\n");
 
-        assertFalse(r.hasErrors(), r.errors()::toString);
         MagicBook book = this.<List<MagicBook>>field(castMagic(r), ClassMagic.class, "magicBooks").getFirst();
         assertEquals(1, this.<List<?>>field(book, MagicBook.class, "spells").size());
     }
@@ -939,53 +864,44 @@ class PlayerClassReaderTest {
      */
     @Test
     void theSpellCapIsPerBookAsInC() throws Exception {
-        DataFileParseException e = loadAndStop("cap-per-book.txt", withHeader(1,
-                "name:Caster\nmagic:1:100:2\n"
+        DataFileParseException e = loadAndStop("cap-per-book.txt", "name:Caster\nmagic:1:100:2\n"
                         + "book:magic book:town:[One]:2:arcane\n"
                         + "spell:A:1:1:1:1\neffect:BOLT:MISSILE\ndice:1\n"
                         + "spell:B:2:1:1:1\neffect:BOLT:MISSILE\ndice:1\n"
                         + "book:magic book:town:[Two]:1:arcane\n"
                         + "spell:C:1:1:1:1\neffect:BOLT:MISSILE\ndice:1\n"
-                        + "spell:D:2:1:1:1\neffect:BOLT:MISSILE\ndice:1\n"));
+                        + "spell:D:2:1:1:1\neffect:BOLT:MISSILE\ndice:1\n");
 
         assertTrue(e.getMessage().contains("2 spells found. 1 declared"), e.getMessage());
-        assertTrue(e.getMessage().contains("line: 11"), e.getMessage());
+        assertTrue(e.getMessage().contains("line: 10"), e.getMessage());
     }
 
     /** C: {@code lookup_realm} compares with {@code my_stricmp}, so the realm name is case-blind. */
     @Test
     void aRealmNameInADifferentCaseResolvesAsInC() throws IOException {
-        ParseResult<PlayerClass> r = load("realm-case.txt", withHeader(1,
-                "name:Caster\nmagic:1:100:1\n"
+        ParseResult<PlayerClass> r = load("realm-case.txt", "name:Caster\nmagic:1:100:1\n"
                         + "book:magic book:town:[B]:1:Arcane\n"
-                        + "spell:S:1:1:1:1\neffect:BOLT:MISSILE\ndice:1\n"));
+                        + "spell:S:1:1:1:1\neffect:BOLT:MISSILE\ndice:1\n");
 
-        assertFalse(r.hasErrors(), r.errors()::toString);
         assertEquals(1, r.items().size());
     }
 
     /** C: any directive may follow {@code magic:} before its first {@code book:}. */
     @Test
     void aTitleBetweenMagicAndItsFirstBookIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        ParseResult<PlayerClass> r = load("magic-title.txt", withHeader(1,
-                "name:Caster\nmagic:1:100:1\ntitle:Y\n"
+        assertThrows(ParseCancellationException.class, () -> load("magic-title.txt", "name:Caster\nmagic:1:100:1\ntitle:Y\n"
                         + "book:magic book:town:[B]:1:arcane\n"
                         + "spell:S:1:1:1:1\neffect:BOLT:MISSILE\ndice:1\n"));
 
-        assertTrue(r.items().isEmpty());
-        assertTrue(r.hasErrors());
     }
 
     /** C: {@code dice:} with no effect before it is ignored ("assume that this is human"). */
     @Test
     void aDiceLineWithNoEffectIsAHardErrorHereWhereCIgnoresIt() throws IOException {
-        ParseResult<PlayerClass> r = load("dice-no-effect.txt", withHeader(1,
-                "name:Caster\nmagic:1:100:1\n"
+        assertThrows(ParseCancellationException.class, () -> load("dice-no-effect.txt", "name:Caster\nmagic:1:100:1\n"
                         + "book:magic book:town:[B]:1:arcane\n"
                         + "spell:S:1:1:1:1\ndice:1\n"));
 
-        assertTrue(r.items().isEmpty());
-        assertTrue(r.hasErrors());
     }
 
     // ---- boundaries and ordinary behaviour C and Java agree on -----------
@@ -996,11 +912,10 @@ class PlayerClassReaderTest {
         StringBuilder ten = new StringBuilder("name:X\n");
         for (int i = 1; i <= 10; i++) ten.append("title:T").append(i).append('\n');
 
-        ParseResult<PlayerClass> ok = load("ten-titles.txt", withHeader(1, ten.toString()));
-        assertFalse(ok.hasErrors(), ok.errors()::toString);
+        ParseResult<PlayerClass> ok = load("ten-titles.txt", ten.toString());
         assertEquals(1, ok.items().size());
 
-        String file = withHeader(1, ten + "title:T11\n");
+        String file = ten + "title:T11\n";
         DataFileParseException e = loadAndStop("eleven-titles.txt", file);
         assertTrue(e.getMessage().contains("Player class starting at line: " + lineOf(file, "name:X")),
                 e::getMessage);
@@ -1010,42 +925,36 @@ class PlayerClassReaderTest {
     /** C: {@code si->min > 99 || si->max > 99} is {@code PARSE_ERROR_INVALID_ITEM_NUMBER}. */
     @Test
     void equipCountsOfNinetyNineLoadAndOneHundredStopsTheLoad() throws Exception {
-        ParseResult<PlayerClass> ok = load("equip-99.txt", withHeader(1,
-                "name:X\nequip:food:Ration of Food:99:99:none\n"));
-        assertFalse(ok.hasErrors(), ok.errors()::toString);
+        ParseResult<PlayerClass> ok = load("equip-99.txt", "name:X\nequip:food:Ration of Food:99:99:none\n");
         assertEquals(1, ok.items().getFirst().getStartItems().size());
 
         assertEquipStops("equip-min-100.txt",
-                withHeader(1, "name:X\nequip:food:Ration of Food:100:1:none\n"),
+                "name:X\nequip:food:Ration of Food:100:1:none\n",
                 "equip:food", "out of range minimum value: 100");
 
         assertEquipStops("equip-max-100.txt",
-                withHeader(1, "name:X\nequip:food:Ration of Food:1:100:none\n"),
+                "name:X\nequip:food:Ration of Food:1:100:none\n",
                 "equip:food", "out of range maximum value: 100");
     }
 
     /** C: each handler overwrites, so the last {@code hitdie:} wins. */
     @Test
     void aRepeatedScalarTakesTheLastValueAsInC() throws Exception {
-        ParseResult<PlayerClass> r = load("repeat-hitdie.txt", withHeader(1,
-                "name:X\nhitdie:3\nhitdie:9\n"));
+        ParseResult<PlayerClass> r = load("repeat-hitdie.txt", "name:X\nhitdie:3\nhitdie:9\n");
 
-        assertFalse(r.hasErrors(), r.errors()::toString);
         assertEquals(9, (int) field(r.items().getFirst(), "hpAdj"));
     }
 
     /** C: {@code parse_class_desc} appends with {@code string_append}, so desc lines join in order. */
     @Test
     void descLinesJoinInFileOrderAndMayContainAColon() throws Exception {
-        ParseResult<PlayerClass> r = load("desc.txt", withHeader(1,
-                "name:Caster\nmagic:1:100:1\n"
+        ParseResult<PlayerClass> r = load("desc.txt", "name:Caster\nmagic:1:100:1\n"
                         + "book:magic book:town:[B]:1:arcane\n"
                         + "spell:S:1:1:1:1\n"
                         + "effect:BOLT:MISSILE\ndice:1\n"
                         + "desc:First part: with a colon,\n"
-                        + "desc: then the second.\n"));
+                        + "desc: then the second.\n");
 
-        assertFalse(r.hasErrors(), r.errors()::toString);
         MagicBook book = this.<List<MagicBook>>field(castMagic(r), ClassMagic.class, "magicBooks").getFirst();
         Object spell = this.<List<?>>field(book, MagicBook.class, "spells").getFirst();
         assertEquals("First part: with a colon, then the second.", field(spell, spell.getClass(), "spellDescription"));
@@ -1057,10 +966,9 @@ class PlayerClassReaderTest {
      */
     @Test
     void aClassWhoseOnlyBookIsBadStopsTheLoad() throws Exception {
-        DataFileParseException e = loadAndStop("bad-only-book.txt", withHeader(1,
-                "name:Caster\nmagic:1:100:1\n"
+        DataFileParseException e = loadAndStop("bad-only-book.txt", "name:Caster\nmagic:1:100:1\n"
                         + "book:magic book:town:[B]:1:notarealm\n"
-                        + "spell:S:1:1:1:1\neffect:BOLT:MISSILE\ndice:1\n"));
+                        + "spell:S:1:1:1:1\neffect:BOLT:MISSILE\ndice:1\n");
 
         assertTrue(e.getMessage().contains("illegal realm value: notarealm"), e::getMessage);
     }

@@ -23,7 +23,6 @@ import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftradesltd.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
-import uk.co.jackoftradesltd.backend.parser.GameConstantsParseResult;
 import uk.co.jackoftradesltd.backend.parser.GameConstantsReader;
 import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
@@ -190,11 +189,12 @@ public class GameConstants {
      * The scalar tunables read from {@code constants.txt}, which every {@code get*} accessor below
      * reads through.
      *
-     * <p>Left {@code null} until {@link #loadGameConstants()} succeeds. A file that fails to parse is
-     * not a soft failure: it is logged and rethrown, which aborts {@link #init(Core)}. The accessors
-     * therefore assume {@link #init(Core)} has completed.
+     * <p>Left {@code null} until {@link #loadGameConstants()} succeeds. A file that fails to parse
+     * throws out of the reader, which aborts {@link #init(Core)} before anything is assigned here. The
+     * accessors therefore assume {@link #init(Core)} has completed.
      *
-     * <p>Field data coded before 261010, commented in full on 261010.
+     * <p>Field data coded before 261010, commented in full on 261010, updated on 261104 for the
+     * removal of the soft-error path.
      */
     private static GameConstantsData data;
     /**
@@ -246,36 +246,27 @@ public class GameConstants {
     /**
      * Load the scalar tunables from {@code constants.txt} into {@link #data}, which the {@code get*}
      * accessors read. This is the port of C's {@code init_game_constants}, which runs the
-     * {@code constants_parser} and fills {@code z_info}. A file with parse errors is logged as fatal and
-     * rethrown as a {@link RuntimeException}, matching C's {@code quit_fmt} on a failed parse; an IO
-     * error is logged and rethrown. Called first in {@link #init(Core)} because nothing else here
-     * depends on it, but the running game reads these values throughout.
+     * {@code constants_parser} and fills {@code z_info}. A grammar or assembler error is not caught
+     * here: the reader throws it, unchecked, and {@link #init(Core)} logs it and rethrows it wrapped in
+     * a {@link RuntimeException}, matching C's {@code quit_fmt} on a failed parse. An IO error is
+     * logged here and rethrown. Called first in {@link #init(Core)} because nothing else here depends
+     * on it, but the running game reads these values throughout.
      *
-     * <p>Function loadGameConstants coded before 261010, commented in full on 261010.
+     * <p>Function loadGameConstants coded before 261010, commented in full on 261010, updated on 261104
+     * for the removal of the soft-error path.
      *
      * @throws IOException if the file cannot be read
      */
     private static void loadGameConstants() throws IOException {
         String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "constants.txt";
         GameConstantsReader reader = new GameConstantsReader();
-        GameConstantsParseResult result;
 
         try {
-            result = reader.parse(filename);
-            if (result.hasErrors()) {
-                StringBuilder msg = new StringBuilder("Cannot initialize constants.txt\n");
-                for (String error : result.getErrors()) {
-                    msg.append(error).append("\n");
-                }
-                logger.fatal(msg.toString());
-                throw new RuntimeException(msg.toString());
-            }
+            data = reader.parse(filename);
         } catch (IOException e) {
             logger.error("Error while reading file {}", filename, e);
             throw e;
         }
-
-        data = result.getData();
     }
 
     /**

@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from RealmGrammar.g4 by ANTLR 4.13.2
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/RealmGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.realm;
 
 import org.antlr.v4.runtime.tree.ParseTreeListener;
@@ -25,115 +25,74 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
  * {@link RealmGrammar}.
  */
 public interface RealmGrammarListener extends ParseTreeListener {
-    /**
-     * Enter a parse tree produced by {@link RealmGrammar#recordCount}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterRecordCount(RealmGrammar.RecordCountContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link RealmGrammar#recordCount}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitRecordCount(RealmGrammar.RecordCountContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link RealmGrammar#name}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterName(RealmGrammar.NameContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link RealmGrammar#name}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitName(RealmGrammar.NameContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link RealmGrammar#stat}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterStat(RealmGrammar.StatContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link RealmGrammar#stat}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitStat(RealmGrammar.StatContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link RealmGrammar#verb}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterVerb(RealmGrammar.VerbContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link RealmGrammar#verb}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitVerb(RealmGrammar.VerbContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link RealmGrammar#spellNoun}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterSpellNoun(RealmGrammar.SpellNounContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link RealmGrammar#spellNoun}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitSpellNoun(RealmGrammar.SpellNounContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link RealmGrammar#bookNoun}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterBookNoun(RealmGrammar.BookNounContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link RealmGrammar#bookNoun}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitBookNoun(RealmGrammar.BookNounContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link RealmGrammar#realm}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterRealm(RealmGrammar.RealmContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link RealmGrammar#realm}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitRealm(RealmGrammar.RealmContext ctx);
-
-    /**
-     * Enter a parse tree produced by {@link RealmGrammar#file}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterFile(RealmGrammar.FileContext ctx);
-
-    /**
-     * Exit a parse tree produced by {@link RealmGrammar#file}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitFile(RealmGrammar.FileContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link RealmGrammar#name}.
+	 * @param ctx the parse tree
+	 */
+	void enterName(RealmGrammar.NameContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link RealmGrammar#name}.
+	 * @param ctx the parse tree
+	 */
+	void exitName(RealmGrammar.NameContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link RealmGrammar#stat}.
+	 * @param ctx the parse tree
+	 */
+	void enterStat(RealmGrammar.StatContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link RealmGrammar#stat}.
+	 * @param ctx the parse tree
+	 */
+	void exitStat(RealmGrammar.StatContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link RealmGrammar#verb}.
+	 * @param ctx the parse tree
+	 */
+	void enterVerb(RealmGrammar.VerbContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link RealmGrammar#verb}.
+	 * @param ctx the parse tree
+	 */
+	void exitVerb(RealmGrammar.VerbContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link RealmGrammar#spellNoun}.
+	 * @param ctx the parse tree
+	 */
+	void enterSpellNoun(RealmGrammar.SpellNounContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link RealmGrammar#spellNoun}.
+	 * @param ctx the parse tree
+	 */
+	void exitSpellNoun(RealmGrammar.SpellNounContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link RealmGrammar#bookNoun}.
+	 * @param ctx the parse tree
+	 */
+	void enterBookNoun(RealmGrammar.BookNounContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link RealmGrammar#bookNoun}.
+	 * @param ctx the parse tree
+	 */
+	void exitBookNoun(RealmGrammar.BookNounContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link RealmGrammar#realm}.
+	 * @param ctx the parse tree
+	 */
+	void enterRealm(RealmGrammar.RealmContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link RealmGrammar#realm}.
+	 * @param ctx the parse tree
+	 */
+	void exitRealm(RealmGrammar.RealmContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link RealmGrammar#file}.
+	 * @param ctx the parse tree
+	 */
+	void enterFile(RealmGrammar.FileContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link RealmGrammar#file}.
+	 * @param ctx the parse tree
+	 */
+	void exitFile(RealmGrammar.FileContext ctx);
 }

@@ -2,10 +2,6 @@ lexer grammar HintLexer;
 
 import CommentsAndEol;
 
-RECORD_COUNT
-        :   'record-count:'
-        ;
-
 HINT
         :   'H:' -> pushMode(STRING_MODE)
         ;

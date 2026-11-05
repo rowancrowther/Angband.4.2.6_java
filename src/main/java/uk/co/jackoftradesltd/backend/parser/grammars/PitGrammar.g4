@@ -13,13 +13,6 @@ options { tokenVocab = PitLexer; }
     import java.util.ArrayList;
 }
 
-// "record-count:<n>" header - the count is returned as text and checked (softly)
-// by the reader against the number of records actually parsed.
-recordCount
-        returns[String count]
-        :   RECORD_COUNT PIT_INTEGER { $count = $PIT_INTEGER.getText(); }
-        ;
-
 // "name:<text>" - opens a record. The source line is captured too so the
 // assembler can attribute any error to the right line in the file.
 name
@@ -161,11 +154,10 @@ pitRecord
         |   spellBan { bannedSpells.addAll($spellBan.spells); })+
         ;
 
-// The whole file: the count header, then one or more records, then EOF (which
+// The whole file: one or more records, then EOF (which
 // forces the parser to consume every record rather than stopping early).
 file
-        returns[String declaredRecordCount, List<PitParseRecord> pits]
+        returns[List<PitParseRecord> pits]
         @init { $pits = new ArrayList<>(); }
-        :   recordCount { $declaredRecordCount = $recordCount.count; }
-            (pitRecord { $pits.add($pitRecord.pit); })+ EOF
+        :   (pitRecord { $pits.add($pitRecord.pit); })+ EOF
         ;

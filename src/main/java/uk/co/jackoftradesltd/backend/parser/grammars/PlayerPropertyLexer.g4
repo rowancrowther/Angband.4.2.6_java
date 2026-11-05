@@ -59,10 +59,6 @@
 lexer grammar PlayerPropertyLexer;
 import CommentsAndEol, Flags;
 
-RECORD_COUNT
-        :   'record-count:'
-        ;
-
 TYPE
         :   'type:'
         ;

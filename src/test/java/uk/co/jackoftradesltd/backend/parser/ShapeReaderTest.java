@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
@@ -65,9 +66,6 @@ class ShapeReaderTest {
 
     // ---- fixture helpers -------------------------------------------------
 
-    private static String withHeader(int count, String body) {
-        return "record-count:" + count + "\n" + body;
-    }
 
     /**
      * A shape record: a name line followed by whatever body lines the test supplies.
@@ -108,7 +106,6 @@ class ShapeReaderTest {
     void realFileLoadsAllNineShapesWithNoErrors() throws IOException {
         ParseResult<PlayerShape> result = new ShapeReader().parseWithResults(REAL_FILE);
 
-        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(9, result.items().size());
     }
 
@@ -203,37 +200,33 @@ class ShapeReaderTest {
 
     @Test
     void anUnknownObjectFlagStopsTheLoad() {
-        DataFileParseException e = loadFails("bad-oflag.txt", withHeader(1,
-                shape("weird", "obj-flags:NOTAFLAG\n")));
+        DataFileParseException e = loadFails("bad-oflag.txt", shape("weird", "obj-flags:NOTAFLAG\n"));
 
-        assertTrue(e.getMessage().contains("Shape starting at line: 2"), e::getMessage);
+        assertTrue(e.getMessage().contains("Shape starting at line: 1"), e::getMessage);
         assertTrue(e.getMessage().contains("illegal object flag value: NOTAFLAG"), e::getMessage);
     }
 
     @Test
     void anUnknownPlayerFlagStopsTheLoad() {
-        DataFileParseException e = loadFails("bad-pflag.txt", withHeader(1,
-                shape("weird", "player-flags:NOTREAL\n")));
+        DataFileParseException e = loadFails("bad-pflag.txt", shape("weird", "player-flags:NOTREAL\n"));
 
-        assertTrue(e.getMessage().contains("Shape starting at line: 2"), e::getMessage);
+        assertTrue(e.getMessage().contains("Shape starting at line: 1"), e::getMessage);
         assertTrue(e.getMessage().contains("illegal player flag value: NOTREAL"), e::getMessage);
     }
 
     @Test
     void anUnknownModifierStopsTheLoad() {
-        DataFileParseException e = loadFails("bad-mod.txt", withHeader(1,
-                shape("weird", "values:NOTAMOD[1]\n")));
+        DataFileParseException e = loadFails("bad-mod.txt", shape("weird", "values:NOTAMOD[1]\n"));
 
-        assertTrue(e.getMessage().contains("Shape starting at line: 2"), e::getMessage);
+        assertTrue(e.getMessage().contains("Shape starting at line: 1"), e::getMessage);
         assertTrue(e.getMessage().contains("illegal object modifier name value: NOTAMOD"), e::getMessage);
     }
 
     @Test
     void anUnknownResistanceElementStopsTheLoad() {
-        DataFileParseException e = loadFails("bad-res.txt", withHeader(1,
-                shape("weird", "values:RES_NOTREAL[1]\n")));
+        DataFileParseException e = loadFails("bad-res.txt", shape("weird", "values:RES_NOTREAL[1]\n"));
 
-        assertTrue(e.getMessage().contains("Shape starting at line: 2"), e::getMessage);
+        assertTrue(e.getMessage().contains("Shape starting at line: 1"), e::getMessage);
         assertTrue(e.getMessage().contains("illegal element name value: RES_NOTREAL"), e::getMessage);
     }
 
@@ -241,44 +234,25 @@ class ShapeReaderTest {
     void theNoneNameIsRefusedForObjectAndPlayerFlags() {
         // lookup_flag starts at FLAG_START (1), past the "NONE" slot 0 of list_obj_flag_names and
         // player_info_flags, so NONE never matches.
-        assertTrue(loadFails("of-none.txt", withHeader(1, shape("a", "obj-flags:NONE\n")))
+        assertTrue(loadFails("of-none.txt", shape("a", "obj-flags:NONE\n"))
                 .getMessage().contains("illegal sentinel object flag value: NONE"));
-        assertTrue(loadFails("pf-none.txt", withHeader(1, shape("a", "player-flags:NONE\n")))
+        assertTrue(loadFails("pf-none.txt", shape("a", "player-flags:NONE\n"))
                 .getMessage().contains("illegal sentinel player flag value: NONE"));
     }
 
     @Test
     void theMaxNameIsRefusedForObjectFlagsAsCsTableHasNone() {
         // list_obj_flag_names is "NONE", the OF() entries, then NULL: there is no "MAX".
-        assertTrue(loadFails("of-max.txt", withHeader(1, shape("a", "obj-flags:MAX\n")))
+        assertTrue(loadFails("of-max.txt", shape("a", "obj-flags:MAX\n"))
                 .getMessage().contains("illegal sentinel object flag value: MAX"));
     }
 
     // ---- record-count + hard (fail-closed) errors ------------------------
 
     @Test
-    void recordCountMismatchIsReportedButValidShapeStillLoads() throws IOException {
-        ParseResult<PlayerShape> result = load("bad-count.txt", withHeader(5,
-                shape("plain", "combat:0:0:0\n")));
-
-        assertEquals(1, result.items().size());
-        assertTrue(result.hasErrors());
-    }
-
-    @Test
-    void missingRecordCountHeaderIsAHardError() throws IOException {
-        ParseResult<PlayerShape> result = load("no-header.txt", shape("plain", "combat:0:0:0\n"));
-
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
-    }
-
-    @Test
     void recordNotOpeningWithNameIsAHardError() throws IOException {
-        ParseResult<PlayerShape> result = load("no-name.txt", withHeader(1, "combat:0:0:0\n"));
+        assertThrows(ParseCancellationException.class, () -> load("no-name.txt", "combat:0:0:0\n"));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     // ---- Reader contract: the C parser's three entry points ---------------
@@ -306,14 +280,20 @@ class ShapeReaderTest {
                 viaParse.stream().map(PlayerShape::getName).toList());
     }
 
+    /**
+     * A grammar error is thrown from both entry points: {@code parse} no longer hides it as an
+     * empty list.
+     *
+     * <p>Function bothEntryPointsThrowOnAGrammarError coded on 261104, commented in full on 261104.
+     * It replaces parseDiscardsTheErrorsSoAHardErrorLooksLikeAnEmptyFile.
+     */
     @Test
-    void parseDiscardsTheErrorsSoAHardErrorLooksLikeAnEmptyFile() throws IOException {
-        // The convenience form cannot tell a grammar error from an empty result.
+    void bothEntryPointsThrowOnAGrammarError() throws IOException {
         Path file = tempDir.resolve("hard.txt");
-        Files.writeString(file, "record-count:1\nbogus:1\n");
+        Files.writeString(file, "bogus:1\n");
 
-        assertTrue(new ShapeReader().parse(file.toString()).isEmpty());
-        assertTrue(new ShapeReader().parseWithResults(file.toString()).hasErrors());
+        assertThrows(ParseCancellationException.class, () -> new ShapeReader().parse(file.toString()));
+        assertThrows(ParseCancellationException.class, () -> new ShapeReader().parseWithResults(file.toString()));
     }
 
     @Test
@@ -330,10 +310,8 @@ class ShapeReaderTest {
     void twoShapesWithOneNameBothLoadInFileOrder() throws IOException {
         // C's lookup_player_shape walks the reversed list, so it finds the LAST of two same-named
         // shapes; the Java list is in file order and PlayerRegistry looks up first-match.
-        ParseResult<PlayerShape> result = load("dup-name.txt", withHeader(2,
-                shape("twin", "combat:1:1:1\n") + shape("twin", "combat:2:2:2\n")));
+        ParseResult<PlayerShape> result = load("dup-name.txt", shape("twin", "combat:1:1:1\n") + shape("twin", "combat:2:2:2\n"));
 
-        assertFalse(result.hasErrors(), result.errors()::toString);
         assertEquals(2, result.items().size());
         assertEquals(1, result.items().get(0).getToHit());
         assertEquals(2, result.items().get(1).getToHit());
@@ -440,8 +418,8 @@ class ShapeReaderTest {
     @Test
     void aRepeatedCombatOrSkillLineKeepsTheLastValueAsCDoes() throws IOException {
         // parse_shape_combat and parse_shape_skill_dig assign, so the second line wins.
-        PlayerShape s = load("repeat.txt", withHeader(1, shape("r",
-                "combat:1:1:1\ncombat:2:3:4\nskill-dig:1\nskill-dig:7\n"))).items().get(0);
+        PlayerShape s = load("repeat.txt", shape("r",
+                "combat:1:1:1\ncombat:2:3:4\nskill-dig:1\nskill-dig:7\n")).items().get(0);
 
         assertEquals(2, s.getToHit());
         assertEquals(3, s.getToDam());
@@ -452,9 +430,9 @@ class ShapeReaderTest {
     @Test
     void repeatedFlagAndValuesLinesAccumulate() throws IOException {
         // The flag handlers OR into shape->flags and the values handler writes by index.
-        PlayerShape s = load("accumulate.txt", withHeader(1, shape("acc",
+        PlayerShape s = load("accumulate.txt", shape("acc",
                 "obj-flags:REGEN\nobj-flags:FREE_ACT\nplayer-flags:ROCK\n"
-                        + "values:STR[1]\nvalues:INT[2] | RES_FIRE[1]\n"))).items().get(0);
+                        + "values:STR[1]\nvalues:INT[2] | RES_FIRE[1]\n")).items().get(0);
 
         assertTrue(s.getFlags().has(ObjectFlag.OF_REGEN));
         assertTrue(s.getFlags().has(ObjectFlag.OF_FREE_ACT));
@@ -465,7 +443,7 @@ class ShapeReaderTest {
 
     @Test
     void aValueNamedTwiceKeepsTheLastAsCDoes() throws IOException {
-        PlayerShape s = load("dup-key.txt", withHeader(1, shape("d", "values:STR[1] | STR[2]\n")))
+        PlayerShape s = load("dup-key.txt", shape("d", "values:STR[1] | STR[2]\n"))
                 .items().get(0);
 
         assertEquals(2, s.getObjectValueModifiers().get(ObjectModifier.OM_STR));
@@ -474,7 +452,7 @@ class ShapeReaderTest {
     @Test
     void negativeCombatAndSkillFiguresAreAccepted() throws IOException {
         // parser_getint takes a leading minus; the shipped bear and bat rely on it.
-        PlayerShape s = load("neg.txt", withHeader(1, shape("n", "combat:-5:-3:2\nskill-dig:-10\n")))
+        PlayerShape s = load("neg.txt", shape("n", "combat:-5:-3:2\nskill-dig:-10\n"))
                 .items().get(0);
 
         assertEquals(-5, s.getToHit());
@@ -485,7 +463,7 @@ class ShapeReaderTest {
 
     @Test
     void anExplicitZeroSkillIsKept() throws IOException {
-        PlayerShape s = load("zero.txt", withHeader(1, shape("z", "skill-dig:0\n"))).items().get(0);
+        PlayerShape s = load("zero.txt", shape("z", "skill-dig:0\n")).items().get(0);
 
         assertEquals(0, s.getSkills().get(PlayerSkill.SKILL_DIGGING));
     }
@@ -495,17 +473,16 @@ class ShapeReaderTest {
     @Test
     void aBadShapeEndsTheLoadBeforeTheNextOneIsBuilt() {
         // The bad shape starts on line 2; the good one after it on line 4 is never reached.
-        DataFileParseException e = loadFails("one-bad.txt", withHeader(2,
-                shape("bad", "obj-flags:NOTAFLAG\n") + shape("good", "combat:1:2:3\n")));
+        DataFileParseException e = loadFails("one-bad.txt", shape("bad", "obj-flags:NOTAFLAG\n") + shape("good", "combat:1:2:3\n"));
 
-        assertTrue(e.getMessage().contains("Shape starting at line: 2"), e::getMessage);
+        assertTrue(e.getMessage().contains("Shape starting at line: 1"), e::getMessage);
     }
 
     @Test
     void anOversizedFigureClampsToIntMaxWhereCWraps() throws IOException {
         // parser_getint stores strtol's long in an int, so C wraps: 99999999999 is 1215752191 on a
         // 64-bit long. ParseUtils clamps to Integer.MAX_VALUE instead and raises no error.
-        PlayerShape s = load("huge.txt", withHeader(1, shape("h", "skill-dig:99999999999\n"))).items().get(0);
+        PlayerShape s = load("huge.txt", shape("h", "skill-dig:99999999999\n")).items().get(0);
 
         assertEquals(Integer.MAX_VALUE, s.getSkills().get(PlayerSkill.SKILL_DIGGING));
     }
@@ -515,49 +492,44 @@ class ShapeReaderTest {
         // grab_effect_data's error from parse_shape_effect ends the C load. Record-count is
         // line 1, name 2 and the effect line 3, which is the line the message names.
         DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("bad-effect.txt",
-                withHeader(1, shape("e", "effect:NOTANEFFECT\n"))));
+                shape("e", "effect:NOTANEFFECT\n")));
 
-        assertTrue(e.getMessage().contains("Effect starting at line: 3"), e::getMessage);
+        assertTrue(e.getMessage().contains("Effect starting at line: 2"), e::getMessage);
         assertTrue(e.getMessage().contains("illegal element value: NOTANEFFECT"), e::getMessage);
     }
 
     @Test
     void aNonNumericResistanceLevelIsAHardErrorHere() throws IOException {
         // The value lexer takes only an integer inside the brackets, so this never reaches the assembler.
-        ParseResult<PlayerShape> result = load("res-x.txt", withHeader(1,
-                shape("r", "values:RES_FIRE[x]\n")));
+        assertThrows(ParseCancellationException.class, () -> load("res-x.txt", shape("r", "values:RES_FIRE[x]\n")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     // ---- Where the grammar and assembler differ from C (docs/grammar_issues.md, docs/Assembler_Issues.md) ----
 
     @Test
     void anEmptyFileIsAHardErrorWhereCAcceptsOne() throws IOException {
-        ParseResult<PlayerShape> result = load("empty.txt", "record-count:0\n");
+        assertThrows(ParseCancellationException.class, () -> load("empty.txt", ""));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void anEmptyFlagLineIsAHardErrorWhereCTakesAnOptionalString() throws IOException {
         // "obj-flags ?str flags" and "player-flags ?str flags": C returns PARSE_ERROR_NONE with no flags.
-        assertTrue(load("empty-of.txt", withHeader(1, shape("a", "obj-flags:\n"))).hasErrors());
-        assertTrue(load("empty-pf.txt", withHeader(1, shape("a", "player-flags:\n"))).hasErrors());
+        assertThrows(ParseCancellationException.class, () -> load("empty-of.txt", shape("a", "obj-flags:\n")));
+        assertThrows(ParseCancellationException.class, () -> load("empty-pf.txt", shape("a", "player-flags:\n")));
     }
 
     @Test
     void namesSeparatedBySpacesAreAHardErrorWhereCSplitsOnSpaceAndBar() throws IOException {
         // strtok(s, " |") in parse_shape_obj_flags and parse_shape_values.
-        assertTrue(load("sp-flags.txt", withHeader(1, shape("a", "obj-flags:REGEN FREE_ACT\n"))).hasErrors());
-        assertTrue(load("sp-vals.txt", withHeader(1, shape("a", "values:STR[1] INT[2]\n"))).hasErrors());
+        assertThrows(ParseCancellationException.class, () -> load("sp-flags.txt", shape("a", "obj-flags:REGEN FREE_ACT\n")));
+        assertThrows(ParseCancellationException.class, () -> load("sp-vals.txt", shape("a", "values:STR[1] INT[2]\n")));
     }
 
     @Test
     void aBarWithNoBlanksAroundItIsAccepted() throws IOException {
-        PlayerShape s = load("tight.txt", withHeader(1, shape("t", "obj-flags:REGEN|FREE_ACT\nvalues:STR[1]|INT[2]\n")))
+        PlayerShape s = load("tight.txt", shape("t", "obj-flags:REGEN|FREE_ACT\nvalues:STR[1]|INT[2]\n"))
                 .items().get(0);
 
         assertTrue(s.getFlags().has(ObjectFlag.OF_REGEN));
@@ -568,48 +540,40 @@ class ShapeReaderTest {
     @Test
     void aBlankAfterValuesColonIsAHardErrorWhereCSkipsIt() throws IOException {
         // The upstream shape.txt writes "values: STR[3] | ..." for bear; the shipped copy had the blank removed.
-        ParseResult<PlayerShape> result = load("lead-blank.txt", withHeader(1, shape("a", "values: STR[3]\n")));
+        assertThrows(ParseCancellationException.class, () -> load("lead-blank.txt", shape("a", "values: STR[3]\n")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void aPlusSignOrBlankInAFigureIsAHardErrorWhereStrtolTakesThem() throws IOException {
-        assertTrue(load("plus.txt", withHeader(1, shape("a", "combat:+5:0:0\n"))).hasErrors());
-        assertTrue(load("plus-skill.txt", withHeader(1, shape("a", "skill-dig:+5\n"))).hasErrors());
-        assertTrue(load("blank-skill.txt", withHeader(1, shape("a", "skill-dig: 5\n"))).hasErrors());
-        assertTrue(load("blank-combat.txt", withHeader(1, shape("a", "combat: 1 : 2 : 3\n"))).hasErrors());
+        assertThrows(ParseCancellationException.class, () -> load("plus.txt", shape("a", "combat:+5:0:0\n")));
+        assertThrows(ParseCancellationException.class, () -> load("plus-skill.txt", shape("a", "skill-dig:+5\n")));
+        assertThrows(ParseCancellationException.class, () -> load("blank-skill.txt", shape("a", "skill-dig: 5\n")));
+        assertThrows(ParseCancellationException.class, () -> load("blank-combat.txt", shape("a", "combat: 1 : 2 : 3\n")));
     }
 
     @Test
     void anEffectMessageBeforeTheFirstEffectIsAHardErrorWhereCDropsItSilently() throws IOException {
         // The upstream werewolf record opens its effects with an effect-msg line; parse_shape_effect_msg
         // returns PARSE_ERROR_NONE when shape->effect is NULL. The shipped copy moves that line down.
-        ParseResult<PlayerShape> result = load("msg-first.txt", withHeader(1, shape("w",
+        assertThrows(ParseCancellationException.class, () -> load("msg-first.txt", shape("w",
                 "effect-msg:taking form\neffect:DAMAGE\ndice:5\n")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void diceBeforeTheFirstEffectIsAHardErrorWhereCIgnoresIt() throws IOException {
-        ParseResult<PlayerShape> result = load("dice-first.txt", withHeader(1, shape("w",
+        assertThrows(ParseCancellationException.class, () -> load("dice-first.txt", shape("w",
                 "dice:5\neffect:DAMAGE\n")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void aSecondEffectMessageIsAHardErrorWhereCAppendsIt() throws IOException {
         // parse_shape_effect_msg uses string_append, so two lines join in C.
-        ParseResult<PlayerShape> result = load("msg-twice.txt", withHeader(1, shape("w",
+        assertThrows(ParseCancellationException.class, () -> load("msg-twice.txt", shape("w",
                 "effect:DAMAGE\ndice:5\neffect-msg:one\neffect-msg:two\n")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
@@ -617,13 +581,13 @@ class ShapeReaderTest {
         // C's obj_mods table (list-stats.h then list-object-modifiers.h) and list_element_names
         // contain neither NONE nor MAX, so grab_int_value and grab_index_and_int fail and the
         // handler returns PARSE_ERROR_INVALID_VALUE.
-        assertTrue(loadFails("mod-none.txt", withHeader(1, shape("n", "values:NONE[1]\n")))
+        assertTrue(loadFails("mod-none.txt", shape("n", "values:NONE[1]\n"))
                 .getMessage().contains("illegal sentinel object modifier value: NONE"));
-        assertTrue(loadFails("mod-max.txt", withHeader(1, shape("n", "values:MAX[2]\n")))
+        assertTrue(loadFails("mod-max.txt", shape("n", "values:MAX[2]\n"))
                 .getMessage().contains("illegal sentinel object modifier value: MAX"));
-        assertTrue(loadFails("res-none.txt", withHeader(1, shape("n", "values:RES_NONE[1]\n")))
+        assertTrue(loadFails("res-none.txt", shape("n", "values:RES_NONE[1]\n"))
                 .getMessage().contains("illegal sentinel element value: RES_NONE"));
-        assertTrue(loadFails("res-max.txt", withHeader(1, shape("n", "values:RES_MAX[2]\n")))
+        assertTrue(loadFails("res-max.txt", shape("n", "values:RES_MAX[2]\n"))
                 .getMessage().contains("illegal sentinel element value: RES_MAX"));
     }
 
@@ -633,7 +597,7 @@ class ShapeReaderTest {
     void blowsAreHeldInReverseFileOrderAsCPushesThemOnTheHead() throws IOException {
         // parse_shape_blow sets blow->next = shape->blows; shape->blows = blow. player-attack.c walks
         // `choice` steps from the head, so index 0 is the LAST blow: line and index 2 the first.
-        PlayerShape s = load("blow-order.txt", withHeader(1, shape("b", "blow:hit\nblow:bite\nblow:claw\n")))
+        PlayerShape s = load("blow-order.txt", shape("b", "blow:hit\nblow:bite\nblow:claw\n"))
                 .items().get(0);
 
         assertEquals(List.of("claw", "bite", "hit"),
@@ -644,7 +608,7 @@ class ShapeReaderTest {
     @Test
     void aRepeatedBlowKeepsEachOccurrenceInReverseOrder() throws IOException {
         // num_blows++ per line, so a repeated verb counts twice and is picked twice as often.
-        PlayerShape s = load("blow-dup.txt", withHeader(1, shape("b", "blow:hit\nblow:bite\nblow:hit\n")))
+        PlayerShape s = load("blow-dup.txt", shape("b", "blow:hit\nblow:bite\nblow:hit\n"))
                 .items().get(0);
 
         assertEquals(List.of("hit", "bite", "hit"),
@@ -655,7 +619,7 @@ class ShapeReaderTest {
     @Test
     void aShapeWithNoSkillLinesHoldsAllEightSkillsAtZero() throws IOException {
         // C's zero-filled struct holds 0 for every skill a shape does not name.
-        PlayerShape s = load("no-skills.txt", withHeader(1, shape("n", "combat:1:2:3\n"))).items().get(0);
+        PlayerShape s = load("no-skills.txt", shape("n", "combat:1:2:3\n")).items().get(0);
 
         assertEquals(allEightSkills(Map.of()), s.getSkills());
     }
@@ -664,9 +628,9 @@ class ShapeReaderTest {
     void eachSkillLineLandsOnItsOwnSkill() throws IOException {
         // The eight handlers write skills[SKILL_DISARM_PHYS], _DISARM_MAGIC, _SAVE, _STEALTH, _SEARCH,
         // _TO_HIT_MELEE, _TO_HIT_THROW and _DIGGING; distinct figures show none is crossed.
-        PlayerShape s = load("skills.txt", withHeader(1, shape("n",
+        PlayerShape s = load("skills.txt", shape("n",
                 "skill-disarm-phys:1\nskill-disarm-magic:2\nskill-save:3\nskill-stealth:4\n"
-                        + "skill-search:5\nskill-melee:6\nskill-throw:7\nskill-dig:8\n"))).items().get(0);
+                        + "skill-search:5\nskill-melee:6\nskill-throw:7\nskill-dig:8\n")).items().get(0);
 
         assertEquals(Map.of(PlayerSkill.SKILL_DISARM_PHYS, 1, PlayerSkill.SKILL_DISARM_MAGIC, 2,
                 PlayerSkill.SKILL_SAVE, 3, PlayerSkill.SKILL_STEALTH, 4, PlayerSkill.SKILL_SEARCH, 5,
@@ -677,7 +641,7 @@ class ShapeReaderTest {
     @Test
     void combatFiguresLandOnToHitToDamageAndToAcInTheOrderCReadsThem() throws IOException {
         // "combat int to-h int to-d int to-a": distinct figures show none is crossed.
-        PlayerShape s = load("combat.txt", withHeader(1, shape("n", "combat:1:2:3\n"))).items().get(0);
+        PlayerShape s = load("combat.txt", shape("n", "combat:1:2:3\n")).items().get(0);
 
         assertEquals(1, s.getToHit());
         assertEquals(2, s.getToDam());
@@ -688,7 +652,7 @@ class ShapeReaderTest {
     void anUnsetResistanceIsAbsentWhereCHoldsLevelZero() throws IOException {
         // el_info[] is zero-filled in C, so an element the line does not name reads level 0; here
         // it is absent from the map and a named one carries its level, -1 (vulnerable) included.
-        PlayerShape s = load("res.txt", withHeader(1, shape("n", "values:RES_FIRE[-1] | RES_COLD[0]\n")))
+        PlayerShape s = load("res.txt", shape("n", "values:RES_FIRE[-1] | RES_COLD[0]\n"))
                 .items().get(0);
 
         assertEquals(-1, s.getElementValueModifiers().get(ElementEnum.ELEM_FIRE).getResLevel());
@@ -699,32 +663,30 @@ class ShapeReaderTest {
     @Test
     void aLowerCaseFlagOrValueNameFailsHereAsItDoesInC() throws IOException {
         // lookup_flag and grab_int_value compare with streq, so C rejects these too; here the lexer does.
-        assertTrue(load("lc-flag.txt", withHeader(1, shape("a", "obj-flags:regen\n"))).hasErrors());
-        assertTrue(load("lc-val.txt", withHeader(1, shape("a", "values:str[1]\n"))).hasErrors());
+        assertThrows(ParseCancellationException.class, () -> load("lc-flag.txt", shape("a", "obj-flags:regen\n")));
+        assertThrows(ParseCancellationException.class, () -> load("lc-val.txt", shape("a", "values:str[1]\n")));
     }
 
     @Test
     void aDirectiveBeforeNameOrAnUnknownDirectiveIsAHardError() throws IOException {
         // C: PARSE_ERROR_MISSING_RECORD_HEADER and PARSE_ERROR_UNDEFINED_DIRECTIVE.
-        assertTrue(load("before-name.txt", withHeader(1, "combat:1:1:1\nname:a\n")).hasErrors());
-        assertTrue(load("unknown-dir.txt", withHeader(1, shape("a", "bogus:1\n"))).hasErrors());
+        assertThrows(ParseCancellationException.class, () -> load("before-name.txt", "combat:1:1:1\nname:a\n"));
+        assertThrows(ParseCancellationException.class, () -> load("unknown-dir.txt", shape("a", "bogus:1\n")));
     }
 
     @Test
     void anIndentedDirectiveIsAHardErrorHereWhereCSkipsLeadingWhitespace() throws IOException {
-        ParseResult<PlayerShape> result = load("indent.txt", withHeader(1, shape("a", "  combat:1:1:1\n")));
+        assertThrows(ParseCancellationException.class, () -> load("indent.txt", shape("a", "  combat:1:1:1\n")));
 
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.hasErrors());
     }
 
     @Test
     void theShippedFileDiffersFromUpstreamInThreeLinesThatTheseTestsDependOn() throws IOException {
-        // lib/gamedata/shape.txt adds the record-count header, drops the blank after "values:" on bear,
+        // lib/gamedata/shape.txt drops the blank after "values:" on bear,
         // and moves the werewolf effect-msg below its first effect; the upstream file loads in none of those forms.
         String text = Files.readString(Path.of(REAL_FILE));
 
-        assertTrue(text.contains("record-count:9"));
+        assertFalse(text.contains("record-count:"));
         assertFalse(text.contains("values: "));
         assertTrue(text.indexOf("effect-msg:taking werewolf form") > text.indexOf("effect:PROJECT_LOS:TURN_ALL"));
     }

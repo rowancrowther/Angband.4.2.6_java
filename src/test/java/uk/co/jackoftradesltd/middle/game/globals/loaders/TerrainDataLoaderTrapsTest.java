@@ -17,12 +17,14 @@
 
 package uk.co.jackoftradesltd.middle.game.globals.loaders;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
+import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.middle.cave.TrapKind;
 import uk.co.jackoftradesltd.middle.game.globals.registry.MonsterRegistry;
 import uk.co.jackoftradesltd.middle.game.globals.registry.TerrainRegistry;
@@ -46,9 +48,10 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p>C has no such check: {@code lookup_trap()} in {@code trap.c} starts its loop at 1 and
  * {@code finish_parse_trap()} in {@code init.c} numbers records from 0 in file order, and C quits on any bad record.
- * Java drops a bad record and carries on, so a dropped {@code no trap} would hand index 0 to the next kind and
- * {@code lookupTrap} would skip it. The loader therefore stops the load unless the first kept kind is
- * {@code no trap}.
+ * Java quits on a bad record too ({@code TrapAssembler} throws a {@link DataFileParseException}), so the guard now
+ * only catches a file whose first record is some other kind, which would hand index 0 to a real kind that
+ * {@code lookupTrap} would then skip. Its empty-list half cannot be reached through the reader:
+ * {@code TrapGrammar} needs at least one record, so an empty file is a grammar error.
  *
  * <p>Beyond the guard, the tests pin the rest of {@code trap_parser}: a missing file stops the load as
  * {@code parse_file_quit_not_found} quits and leaves the registry alone, a reload replaces the list rather than
@@ -61,7 +64,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * data needs loading. The shipped file does carry summon effects, so its test loads the pain messages, monster bases
  * and summons first, in that order, and puts those three registry fields back afterwards.
  *
- * <p>Class TerrainDataLoaderTrapsTest coded on 261009, commented in full on 261013.
+ * <p>Class TerrainDataLoaderTrapsTest coded on 261009, commented in full on 261013, updated on 261104 for the
+ * removal of the soft-error path and the {@code record-count:} header.
  *
  * @author Rowan Crowther
  */
@@ -94,14 +98,14 @@ class TerrainDataLoaderTrapsTest {
         TerrainRegistry.setTrapInfo(savedTraps);
     }
 
-    private void writeTrapFile(int recordCount, String... records) throws IOException {
-        Files.writeString(tempDir.resolve("trap.txt"), "record-count:" + recordCount + "\n" + String.join("", records));
+    private void writeTrapFile(String... records) throws IOException {
+        Files.writeString(tempDir.resolve("trap.txt"), String.join("", records));
     }
 
     @Test
     @DisplayName("a file that opens with no trap loads, and the registry holds every record in file order")
     void noTrapFirstLoads() throws IOException {
-        writeTrapFile(2, NO_TRAP, GLYPH);
+        writeTrapFile(NO_TRAP, GLYPH);
 
         TerrainDataLoader.loadTraps();
 
@@ -119,21 +123,21 @@ class TerrainDataLoaderTrapsTest {
     @DisplayName("a bad later record stops the load, as in C, and the registry is left as it was")
     void laterBadRecordStopsTheLoad() throws IOException {
         TerrainRegistry.setTrapInfo(new ArrayList<>());
-        writeTrapFile(3, NO_TRAP, badFlagRecord("broken"), GLYPH);
+        writeTrapFile(NO_TRAP, badFlagRecord("broken"), GLYPH);
 
-        assertThrows(RuntimeException.class, TerrainDataLoader::loadTraps);
+        assertThrows(DataFileParseException.class, TerrainDataLoader::loadTraps);
 
         assertTrue(TerrainRegistry.getTrapInfo().isEmpty());
         assertEquals(0, TerrainRegistry.getTrapMax());
     }
 
     @Test
-    @DisplayName("when no trap itself is dropped the load stops and the registry is left as it was")
-    void droppedNoTrapStopsTheLoad() throws IOException {
+    @DisplayName("a bad no trap record stops the load at that record, and the registry is left as it was")
+    void badNoTrapStopsTheLoad() throws IOException {
         TerrainRegistry.setTrapInfo(new ArrayList<>());
-        writeTrapFile(2, badFlagRecord("no trap"), GLYPH);
+        writeTrapFile(badFlagRecord("no trap"), GLYPH);
 
-        assertThrows(RuntimeException.class, TerrainDataLoader::loadTraps);
+        assertThrows(DataFileParseException.class, TerrainDataLoader::loadTraps);
 
         assertTrue(TerrainRegistry.getTrapInfo().isEmpty());
         assertEquals(0, TerrainRegistry.getTrapMax());
@@ -142,7 +146,7 @@ class TerrainDataLoaderTrapsTest {
     @Test
     @DisplayName("a file whose first record is some other kind stops the load")
     void otherFirstKindStopsTheLoad() throws IOException {
-        writeTrapFile(2, GLYPH, NO_TRAP);
+        writeTrapFile(GLYPH, NO_TRAP);
 
         RuntimeException thrown = assertThrows(RuntimeException.class, TerrainDataLoader::loadTraps);
 
@@ -150,12 +154,12 @@ class TerrainDataLoaderTrapsTest {
     }
 
     @Test
-    @DisplayName("a file in which every record is dropped (an empty result) stops the load")
-    void emptyResultStopsTheLoad() throws IOException {
+    @DisplayName("a file with no records is a grammar error and stops the load")
+    void emptyFileStopsTheLoad() throws IOException {
         TerrainRegistry.setTrapInfo(new ArrayList<>());
-        writeTrapFile(1, badFlagRecord("no trap"));
+        writeTrapFile();
 
-        assertThrows(RuntimeException.class, TerrainDataLoader::loadTraps);
+        assertThrows(ParseCancellationException.class, TerrainDataLoader::loadTraps);
 
         assertTrue(TerrainRegistry.getTrapInfo().isEmpty());
     }
@@ -163,7 +167,7 @@ class TerrainDataLoaderTrapsTest {
     @Test
     @DisplayName("the loaded list is the one the registry holds, so lookupTrap skips no trap")
     void loadedListFeedsLookupTrap() throws IOException {
-        writeTrapFile(2, NO_TRAP, GLYPH);
+        writeTrapFile(NO_TRAP, GLYPH);
 
         TerrainDataLoader.loadTraps();
 
@@ -188,7 +192,7 @@ class TerrainDataLoaderTrapsTest {
     @Test
     @DisplayName("loading twice replaces the list rather than appending")
     void reloadReplaces() throws IOException {
-        writeTrapFile(2, NO_TRAP, GLYPH);
+        writeTrapFile(NO_TRAP, GLYPH);
 
         TerrainDataLoader.loadTraps();
         TerrainDataLoader.loadTraps();
